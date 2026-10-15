@@ -13,6 +13,7 @@
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -145,11 +146,25 @@ void xiiRenderWorldModule::Deinitialize()
   for (const auto& view : views)
     DestroyView(view);
 
+  m_pGpuInstances.Clear();
+
   xiiDebugRenderer::ClearContext(GetWorld());
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
 {
+}
+
+xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame)
+{
+  return UpdateGpuInstances(packets.GetAllRenderData(), frame);
+}
+
+xiiResult xiiRenderWorldModule::UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)
+{
+  if (!m_pGpuInstances)
+    m_pGpuInstances = XII_DEFAULT_NEW(xiiGpuInstanceData, *GetWorld());
+  return m_pGpuInstances->UpdateFromExtraction(packets, frame);
 }
 
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
@@ -658,7 +673,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     ViewDetail& viewDetail = it.Value();
     if (viewDetail.m_bPrepared && viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
     {
-      if (viewDetail.m_pView->PrepareRenderResources().Failed() || !viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex))
+      if (viewDetail.m_pView->PrepareRenderResources().Failed())
       {
         viewDetail.m_bPrepared = false;
         viewDetail.m_pView->InvalidateTemporalHistory();
@@ -667,6 +682,23 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       }
     }
   }
+
+  if (m_RuntimeFeatures.IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing))
+  {
+    xiiDynamicArray<xiiRenderData*> packets;
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+      if (it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled())
+        packets.PushBackRange(it.Value().m_pExtractedData->GetAllRenderData());
+    if (UpdateGpuInstances(packets, uiFrameIndex).Failed())
+    {
+      xiiLog::Error("Failed to extract world GPU instances.");
+      return;
+    }
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+      m_pGpuInstances->SelectInstances(it.Value().m_pExtractedData->GetAllRenderData(), it.Value().m_pView->m_GpuInstanceSelection);
+  }
+  else
+    m_pGpuInstances.Clear();
 
   // Scene synchronization can acquire resource-backed materials that did not exist at the start
   // of the frame. Resolve their bindless textures before any view captures its material upload.

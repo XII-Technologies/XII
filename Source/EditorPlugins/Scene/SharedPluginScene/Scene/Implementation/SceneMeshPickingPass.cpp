@@ -124,9 +124,10 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
     state.Invalidate();
     state.m_uiFingerprint = fingerprint;
   }
-  if (!state.m_Scene.IsInitialized())
-    XII_SUCCEED_OR_RETURN(state.m_Scene.Initialize());
-  XII_SUCCEED_OR_RETURN(state.m_Scene.SynchronizeExtractedMeshes(state.m_Packets, context.m_Graph.GetFrameIndex()));
+  const auto* instancesData = view->GetGpuInstanceData();
+  if (!instancesData)
+    return XII_FAILURE;
+  instancesData->SelectInstances(state.m_Packets, state.m_Candidates);
   if (m_bSelectionOnly && state.m_Packets.IsEmpty())
     return XII_SUCCESS;
 
@@ -138,9 +139,8 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   if (!geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuGeometryBaseIndex, geometry.m_uiGeometryBaseIndex) || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuMaximumResidentMeshlets, geometry.m_uiMaximumResidentMeshletCount) || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuSurfaceMaterialBaseIndex, materials.m_uiSurfaceBaseIndex))
     return XII_FAILURE;
 
-  const auto instances = state.m_Scene.GetDatabase().GetObjectCount();
-  xiiUInt64  meshlets  = 0;
-  XII_SUCCEED_OR_RETURN(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(state.m_Scene.GetHandle(), meshlets));
+  const auto      instances = instancesData->GetInstanceCount();
+  const xiiUInt64 meshlets  = instancesData->GetMaximumMeshletCount();
   XII_SUCCEED_OR_RETURN(state.ResizeVisibility(instances, meshlets));
   const auto& viewport = view->GetViewport();
   // Full viewport resolution, independent of dynamic scene resolution. The query target starts
@@ -158,7 +158,9 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   visibilityDescription.m_sName              = context.m_sPassName;
   visibilityDescription.m_Purpose            = xiiGpuVisibilityPurpose::Editor;
   visibilityDescription.m_bEnableLodFeedback = false;
-  const auto visibility                      = xiiGpuVisibilityManager::AddPasses(state.m_hVisibility, context.m_Graph, context.m_Graph.GetFrameIndex(), state.m_Scene.GetHandle(), visibilityView, geometry, visibilityDescription);
+  visibilityDescription.m_bUseCandidates     = true;
+  visibilityDescription.m_Candidates         = state.m_Candidates;
+  const auto visibility                      = xiiGpuVisibilityManager::AddPasses(state.m_hVisibility, context.m_Graph, context.m_Graph.GetFrameIndex(), *instancesData, visibilityView, geometry, visibilityDescription);
 
   xiiGpuSceneGBufferRasterDescription raster;
   raster.m_ViewProjectionMatrix      = matrix;

@@ -47,7 +47,8 @@ struct GpuVisibilityView
   uint     ExcludedFlags;
   uint     GeometryBaseIndex;
   uint     MaxVisibleMeshlets;
-  uint2    Padding;
+  uint     CandidateCount;
+  uint     UseCandidates;
 };
 
 struct GpuGeometryLod

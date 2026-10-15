@@ -237,13 +237,9 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
   return pass.first->m_hDepthAtlas;
 }
 
-xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiGpuVisibilityContextHandle hVisibilityContext, xiiSceneDatabaseContextHandle hSceneContext, xiiRenderGraphTextureHandle hDepthAtlas, xiiArrayPtr<const xiiLocalShadowAtlasData> shadowData, xiiUInt32 uiAtlasSize, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset)
+xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiGpuVisibilityContextHandle hVisibilityContext, const xiiGpuInstanceData& instances, xiiRenderGraphTextureHandle hDepthAtlas, xiiArrayPtr<const xiiLocalShadowAtlasData> shadowData, xiiUInt32 uiAtlasSize, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset, xiiArrayPtr<const xiiUInt32> candidates)
 {
-  if (!IsSupported() || !xiiGpuVisibilityManager::IsValid(hVisibilityContext) || hSceneContext.IsInvalidated() || !hDepthAtlas.IsValid() || shadowData.IsEmpty() || uiAtlasSize == 0U || uiVertexStride == 0U || !geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid())
-    return hDepthAtlas;
-
-  const xiiSceneDatabase* pSceneDatabase = xiiSceneDatabaseManager::GetDatabase(hSceneContext);
-  if (pSceneDatabase == nullptr)
+  if (!IsSupported() || !xiiGpuVisibilityManager::IsValid(hVisibilityContext) || !hDepthAtlas.IsValid() || shadowData.IsEmpty() || uiAtlasSize == 0U || uiVertexStride == 0U || !geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid())
     return hDepthAtlas;
 
   const xiiUInt32 uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(hVisibilityContext);
@@ -266,7 +262,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(xiiRe
         continue;
 
       const xiiFrustum     frustum = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
-      xiiGpuVisibilityView view    = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, shadow.m_LightPositionAndInvRange.GetAsVec3(), uiTileSize, uiTileSize, 0U, pSceneDatabase->GetObjectCount());
+      xiiGpuVisibilityView view    = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, shadow.m_LightPositionAndInvRange.GetAsVec3(), uiTileSize, uiTileSize, 0U, instances.GetInstanceCount());
       view.m_uiRequiredFlags       = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
 
       xiiGpuVisibilityPassDescription visibilityDescription;
@@ -274,10 +270,12 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(xiiRe
       visibilityName.SetFormat("Local Shadow L{} F{}", uiLightIndex, uiFaceIndex);
       visibilityDescription.m_sName              = visibilityName;
       visibilityDescription.m_sResourceSetName   = "Local Shadow Scratch";
+      visibilityDescription.m_bUseCandidates     = true;
+      visibilityDescription.m_Candidates         = candidates;
       visibilityDescription.m_Purpose            = xiiGpuVisibilityPurpose::Shadow;
       visibilityDescription.m_bEnableLodFeedback = false;
       visibilityDescription.m_bAsyncCompute      = true;
-      const xiiGpuVisibilityOutputs visibility   = xiiGpuVisibilityManager::AddPasses(hVisibilityContext, graph, uiFrameIndex, hSceneContext, view, geometry, visibilityDescription);
+      const xiiGpuVisibilityOutputs visibility   = xiiGpuVisibilityManager::AddPasses(hVisibilityContext, graph, uiFrameIndex, instances, view, geometry, visibilityDescription);
 
       const xiiVec4&  atlasScaleBias = shadow.m_AtlasScaleBias[uiFaceIndex];
       const xiiInt32  iMaximumOrigin = static_cast<xiiInt32>(uiAtlasSize - uiTileSize);

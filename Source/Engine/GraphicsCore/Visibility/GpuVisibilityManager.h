@@ -6,7 +6,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
 class xiiGpuVisibilityManagerState;
@@ -52,7 +52,7 @@ public:
   static void                                        DestroyContext(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static bool                          IsValid(xiiGpuVisibilityContextHandle handle);
 
-  [[nodiscard]] static xiiGpuVisibilityOutputs AddPasses(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiSceneDatabaseContextHandle sceneHandle, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
+  [[nodiscard]] static xiiGpuVisibilityOutputs AddPasses(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiGpuInstanceData& instances, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
 
   /// Prepares subsystem-owned temporal Hi-Z storage for this context. A resolution change
   /// recreates and invalidates the history, so the next visibility pass remains conservative.

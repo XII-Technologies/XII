@@ -12,6 +12,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -21,7 +22,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -84,9 +84,9 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   const auto projection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
   const auto frustum    = xiiFrustum::MakeFromMVP(projection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
-  xiiSceneDatabaseContext sceneContext;
-  xiiRenderGraphContext   graphContext;
-  if (!XII_TEST_RESULT(sceneContext.Initialize()) || !XII_TEST_RESULT(graphContext.Initialize("Native LOD selection")))
+  xiiGpuInstanceData    sceneContext(world);
+  xiiRenderGraphContext graphContext;
+  if (!XII_TEST_RESULT(graphContext.Initialize("Native LOD selection")))
     return;
   const auto visibilityContext = xiiGpuVisibilityManager::CreateContext();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiGpuVisibilityManager::DestroyContext(visibilityContext));
@@ -120,9 +120,9 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
       if (missingForced)
         packet->m_uiLODIndex = missingLod;
     }
-    if (!XII_TEST_RESULT(sceneContext.SynchronizeExtractedMeshes(extracted, frame)))
+    if (!XII_TEST_RESULT(sceneContext.UpdateFromExtraction(extracted, frame)))
       return;
-    const auto instances = sceneContext.GetDatabase().GetGpuInstances();
+    const auto instances = sceneContext.GetInstances();
     if (!XII_TEST_INT(instances.GetCount(), 1))
       return;
     XII_TEST_INT(instances[0].m_uiForcedLod, missingForced ? missingLod : forcedLod);
@@ -159,7 +159,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
         hiZ = data.m_Depth = builder.WriteTexture("LOD Hi-Z input", texture, xiiGALResourceStateFlags::DepthWrite);
         builder.SetPassRenderPassManaged(); }, [](const Depth& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0); });
     }
-    const auto                          visible = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, sceneContext.GetHandle(), visibilityView, uploaded, description, hiZ);
+    const auto                          visible = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, sceneContext, visibilityView, uploaded, description, hiZ);
     xiiGpuSceneGBufferRasterDescription raster;
     raster.m_ViewProjectionMatrix = projection;
     raster.m_uiWidth = raster.m_uiHeight = 64;
@@ -209,8 +209,8 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     XII_TEST_INT(selected.m_uiLodIndex, expectedLod);
     if (forcedLod != xiiInvalidIndex)
     {
-      xiiSceneMeshSource source;
-      XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(sceneContext.GetHandle(), instances[0].m_uiObjectId, source));
+      xiiGpuInstanceSource source;
+      XII_TEST_RESULT(sceneContext.Resolve(instances[0].m_uiObjectId, source));
       XII_TEST_BOOL(source.m_hOwnerComponent == component->GetHandle());
       XII_TEST_INT(source.m_uiMaterialIndex, expectedLod);
       XII_TEST_INT(instances[0].m_uiFirstPrimitive, expectedLod * 12);
@@ -243,20 +243,20 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid extracted selection controls preserve the synchronized scene")
   {
-    const auto        revision = sceneContext.GetDatabase().GetRevision();
+    const auto        unchanged = sceneContext.GetInstances()[0];
     xiiMeshRenderData invalid;
     invalid.m_hMesh          = mesh;
     invalid.m_fLodBias       = xiiMath::NaN<float>();
     xiiRenderData* packets[] = {&invalid};
-    XII_TEST_BOOL(sceneContext.SynchronizeExtractedMeshes(xiiMakeArrayPtr(packets), frame + 1).Failed());
+    XII_TEST_BOOL(sceneContext.UpdateFromExtraction(xiiMakeArrayPtr(packets), frame + 1).Failed());
     invalid.m_fLodBias = 0;
     invalid.m_Flags.Add(xiiMeshRenderDataFlags::ForceLOD);
     invalid.m_uiLODIndex = 8;
-    XII_TEST_BOOL(sceneContext.SynchronizeExtractedMeshes(xiiMakeArrayPtr(packets), frame + 1).Failed());
+    XII_TEST_BOOL(sceneContext.UpdateFromExtraction(xiiMakeArrayPtr(packets), frame + 1).Failed());
     invalid.m_Flags.Remove(xiiMeshRenderDataFlags::ForceLOD);
     invalid.m_RangeMode = static_cast<xiiMeshRenderData::RangeMode>(255);
-    XII_TEST_BOOL(sceneContext.SynchronizeExtractedMeshes(xiiMakeArrayPtr(packets), frame + 1).Failed());
-    XII_TEST_INT(sceneContext.GetDatabase().GetRevision(), revision);
-    XII_TEST_INT(sceneContext.GetDatabase().GetObjectCount(), 1);
+    XII_TEST_BOOL(sceneContext.UpdateFromExtraction(xiiMakeArrayPtr(packets), frame + 1).Failed());
+    XII_TEST_BOOL(xiiMemoryUtils::RawByteCompare(&sceneContext.GetInstances()[0], &unchanged, sizeof(unchanged)) == 0);
+    XII_TEST_INT(sceneContext.GetInstanceCount(), 1);
   }
 }

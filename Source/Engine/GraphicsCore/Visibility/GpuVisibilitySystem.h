@@ -6,7 +6,7 @@
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Scene/SceneDatabase.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 
 class xiiGpuVisibilityManager;
@@ -29,7 +29,8 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiUInt32 m_uiExcludedFlags      = 0U;
   xiiUInt32 m_uiGeometryBaseIndex  = 0U;
   xiiUInt32 m_uiMaxVisibleMeshlets = 0U;
-  xiiUInt32 m_uiPadding[2]         = {};
+  xiiUInt32 m_uiCandidateCount     = 0U;
+  xiiUInt32 m_uiUseCandidates      = 0U;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetFrustumPlaneCount() const { return 6U; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiVec4   GetFrustumPlane(xiiUInt32 uiIndex) const { return m_FrustumPlanes[uiIndex]; }
@@ -67,6 +68,9 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPassDescription
   xiiUInt32                        m_uiMaxVisibleMeshlets = 0U;    ///< Zero uses the visibility context capacity.
   bool                             m_bEnableLodFeedback   = true;
   bool                             m_bAsyncCompute        = true;
+  /// Optional camera/query selection into shared world GPU records. Borrowed only during setup.
+  bool                         m_bUseCandidates = false;
+  xiiArrayPtr<const xiiUInt32> m_Candidates;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPassDescription);
@@ -162,12 +166,12 @@ private:
 
   /// Adds upload and async-compute visibility passes. The geometry handles must be returned by
   /// xiiGeometryResidencyManager::AddUploadPass in the same graph setup.
-  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
+  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiGpuInstanceData& instances, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
 
   /// Compatibility overload for the main view.
-  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, xiiRenderGraphTextureHandle hHiZ = {})
+  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiGpuInstanceData& instances, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, xiiRenderGraphTextureHandle hHiZ = {})
   {
-    return AddPasses(graph, uiFrameIndex, scene, view, geometry, xiiGpuVisibilityPassDescription{}, hHiZ);
+    return AddPasses(graph, uiFrameIndex, instances, view, geometry, xiiGpuVisibilityPassDescription{}, hHiZ);
   }
 
   [[nodiscard]] xiiUInt32 GetMeshDispatchGroupCountX() const { return m_uiMeshDispatchGroupCountX; }
@@ -195,7 +199,7 @@ private:
   /// required because consecutive CPU frames rotate across different GPU allocations.
   xiiDynamicArray<xiiDynamicArray<xiiGpuSceneInstance>> m_SceneBufferMirrors;
   xiiRenderGraph*                                       m_pPreparedGraph  = nullptr;
-  const xiiSceneDatabase*                               m_pPreparedScene  = nullptr;
+  const xiiGpuInstanceData*                             m_pPreparedScene  = nullptr;
   xiiUInt64                                             m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
   xiiRenderGraphBufferHandle                            m_hPreparedScene;
   xiiRenderGraphBufferHandle                            m_hPreparedSkinning;

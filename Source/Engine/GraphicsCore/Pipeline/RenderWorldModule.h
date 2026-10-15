@@ -18,6 +18,7 @@ struct xiiMsgExtractRenderData;
 
 class xiiView;
 class xiiGameObject;
+class xiiGpuInstanceData;
 
 struct XII_GRAPHICSCORE_DLL xiiViewEventType
 {
@@ -88,6 +89,11 @@ class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 public:
   xiiRenderWorldModule(xiiWorld* pWorld);
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return m_ExtractionRequirements; }
+  const xiiGpuInstanceData*                GetGpuInstanceData() const { return m_pGpuInstances.Borrow(); }
+  /// Publishes derived mesh draw data at the CPU extraction boundary. Tools that build graphs
+  /// explicitly use this same path; inputs must carry live handles in this world.
+  xiiResult UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame);
+  xiiResult UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame);
 
   virtual ~xiiRenderWorldModule();
 
@@ -198,6 +204,7 @@ private:
   xiiEvent<xiiViewEvent, xiiMutex>         m_ViewEvents;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
+  xiiUniquePtr<xiiGpuInstanceData>         m_pGpuInstances;
 
   static xiiUniquePtr<ExtractionEvent> s_pRenderEvent;
 };

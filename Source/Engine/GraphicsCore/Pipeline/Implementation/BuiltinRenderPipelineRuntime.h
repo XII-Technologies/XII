@@ -18,6 +18,7 @@
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
@@ -25,7 +26,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 

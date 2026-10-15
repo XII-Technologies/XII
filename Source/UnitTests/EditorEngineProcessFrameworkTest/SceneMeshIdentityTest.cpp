@@ -13,6 +13,7 @@
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -21,7 +22,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -140,6 +140,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
   auto              firstComponent  = xiiMeshComponent::CreateComponent(object, component);
   auto              secondComponent = xiiMeshComponent::CreateComponent(object, component);
 
+  world.Update();
   xiiMeshRenderData first, second;
   first.m_hMesh        = mesh;
   second.m_hMesh       = mesh;
@@ -160,18 +161,18 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
   extracted.AddRenderData(&first);
   extracted.AddRenderData(&second);
   extracted.SortAndBatches();
-  xiiSceneDatabaseContext context;
-  if (!XII_TEST_RESULT(context.Initialize()) || !XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, 1)))
+  xiiGpuInstanceData context(world);
+  if (!XII_TEST_RESULT(context.UpdateFromExtraction(extracted, 1)))
     return;
-  auto&              scene = context.GetDatabase();
-  xiiSceneMeshSource source;
-  xiiUInt32          firstId = 0, secondId = 0;
+  auto&                scene = context;
+  xiiGpuInstanceSource source;
+  xiiUInt32            firstId = 0, secondId = 0;
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Colliding application IDs preserve independent native component owners")
   {
-    XII_TEST_INT(scene.GetObjectCount(), 2);
-    for (const auto& instance : scene.GetGpuInstances())
+    XII_TEST_INT(scene.GetInstanceCount(), 2);
+    for (const auto& instance : scene.GetInstances())
     {
-      XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), instance.m_uiObjectId, source));
+      XII_TEST_RESULT(context.Resolve(instance.m_uiObjectId, source));
       XII_TEST_BOOL(source.m_hOwnerObject == owner);
       XII_TEST_INT(source.m_uiSectionIndex, 0);
       XII_TEST_INT(source.m_uiRenderDataId, 0);
@@ -183,15 +184,13 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         XII_TEST_BOOL(false);
     }
     XII_TEST_BOOL(firstId != 0 && secondId != 0 && firstId != secondId);
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), 0, source).Failed());
+    XII_TEST_BOOL(context.Resolve(0, source).Failed());
     XII_TEST_BOOL(source.m_hOwnerObject.IsInvalidated());
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh({}, firstId, source).Failed());
-    const auto directObject = scene.CreateObject(xiiSceneObjectDesc());
-    const auto directId     = directObject.GetInternalID().m_Data + 1U;
-    XII_TEST_BOOL(scene.ResolveGpuObjectId(directId) == directObject);
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), directId, source).Failed());
-    XII_TEST_BOOL(source.m_hSceneObject.IsInvalidated());
-    XII_TEST_BOOL(scene.DestroyObject(directObject));
+    xiiWorldDescription otherDescription("Foreign identity world");
+    xiiWorld            other(otherDescription);
+    xiiGpuInstanceData  foreign(other);
+    XII_TEST_BOOL(foreign.Resolve(firstId, source).Failed());
+    XII_TEST_BOOL(source.m_hOwnerComponent.IsInvalidated());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native mesh shader G-buffer writes the generation identity rather than user data")
@@ -212,11 +211,8 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       const auto completed = frame.GetCompletedFrame();
       xiiGeometryResidencyManager::ProcessStreaming(1, completed, xiiMath::MaxValue<xiiUInt64>());
       xiiUInt64 capacity = 0;
-      XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(context.GetHandle(), capacity));
+      capacity           = context.GetMaximumMeshletCount();
       XII_TEST_BOOL(capacity > 0);
-      xiiUInt64 invalidCapacity = 42;
-      XII_TEST_BOOL(xiiSceneDatabaseManager::GetExtractedMeshletCapacity({}, invalidCapacity).Failed());
-      XII_TEST_INT(invalidCapacity, 0);
       cache.BeginFrame(1, completed);
       graph.BeginSetup(1);
       const auto uploadedGeometry = xiiGeometryResidencyManager::AddUploadPass(graph, 1);
@@ -234,11 +230,11 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       view->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
       const auto                      viewProjection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
       const auto                      frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
-      const auto                      visibilityView = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetObjectCount());
+      const auto                      visibilityView = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetInstanceCount());
       xiiGpuVisibilityPassDescription visibilityDescription;
       visibilityDescription.m_bAsyncCompute        = false;
       visibilityDescription.m_bEnableLodFeedback   = false;
-      const auto                        visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, 1, context.GetHandle(), visibilityView, uploadedGeometry, visibilityDescription);
+      const auto                        visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, 1, context, visibilityView, uploadedGeometry, visibilityDescription);
       xiiGpuSceneDepthRasterDescription depthDescription;
       depthDescription.m_ViewProjectionMatrix = viewProjection;
       depthDescription.m_uiWidth = depthDescription.m_uiHeight = 32;
@@ -332,7 +328,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
             for (xiiUInt32 x = 8; x < 24; ++x)
               XII_TEST_INT(pixels[y * 32 + x], firstId);
         XII_TEST_INT(pixels[0], 0);
-        XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), pixels[16 * 32 + 16], source));
+        XII_TEST_RESULT(context.Resolve(pixels[16 * 32 + 16], source));
         XII_TEST_BOOL(source.m_hOwnerComponent == firstComponent);
       }
       auto queryTexture = graph.GetExportedTexture(query);
@@ -405,7 +401,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
               }
           }
           const xiiUInt32 expectedId = poseFrame == 2 || poseFrame == 4 ? 0 : firstId;
-          XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, poseFrame));
+          XII_TEST_RESULT(context.UpdateFromExtraction(extracted, poseFrame));
           xiiGpuVisibilityManager::BeginFrame(poseFrame, poseFrame - 1);
           xiiMaterialManager::BeginFrame(poseFrame, poseFrame - 1);
           xiiGeometryResidencyManager::ProcessStreaming(poseFrame, poseFrame - 1, xiiMath::MaxValue<xiiUInt64>());
@@ -414,7 +410,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           const auto poseGeometry               = xiiGeometryResidencyManager::AddUploadPass(graph, poseFrame);
           const auto poseMaterials              = xiiMaterialManager::AddUploadPasses(graph);
           visibilityDescription.m_bAsyncCompute = true;
-          const auto poseVisibility             = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, poseFrame, context.GetHandle(), visibilityView, poseGeometry, visibilityDescription);
+          const auto poseVisibility             = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, poseFrame, context, visibilityView, poseGeometry, visibilityDescription);
           const auto poseDepth                  = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "Posed depth", poseVisibility, poseGeometry, poseMaterials, depthDescription);
           auto       poseVelocity               = graph.AddPass<Velocity>("Posed velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
             xiiGALTextureCreationDescription target;
@@ -522,7 +518,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           return;
         first.m_hMaterials.SetCount(1);
         first.m_hMaterials[0] = material;
-        if (!XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, frame)))
+        if (!XII_TEST_RESULT(context.UpdateFromExtraction(extracted, frame)))
           return;
         xiiMaterialManager::PrepareGpuResources();
         xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
@@ -533,12 +529,12 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         graph.BeginSetup(frame);
         const auto uploadedGeometry      = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
         const auto materials             = xiiMaterialManager::AddUploadPasses(graph);
-        auto       visibilityView        = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetObjectCount());
+        auto       visibilityView        = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetInstanceCount());
         visibilityView.m_uiExcludedFlags = pickTransparent ? 0 : xiiGpuInstanceFlags::Transparent;
         xiiGpuVisibilityPassDescription visibilityDescription;
         visibilityDescription.m_bAsyncCompute      = false;
         visibilityDescription.m_bEnableLodFeedback = false;
-        const auto                  visibility     = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, context.GetHandle(), visibilityView, uploadedGeometry, visibilityDescription);
+        const auto                  visibility     = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, context, visibilityView, uploadedGeometry, visibilityDescription);
         xiiRenderGraphTextureHandle query;
         auto                        invalidRaster = raster;
         invalidRaster.m_uiWidth                   = 0;
@@ -570,7 +566,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           XII_TEST_INT(pixels[0], 0);
           const auto expectedClip = viewProjection * xiiVec4(expectedId == firstId ? -0.5f : 2.5f, 0, 0, 1);
           XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 1]), expectedClip.z / expectedClip.w, 0.0001f);
-          XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), pixels[center], source));
+          XII_TEST_RESULT(context.Resolve(pixels[center], source));
           XII_TEST_BOOL(source.m_hOwnerComponent == (expectedId == firstId ? firstComponent : secondComponent));
         }
       };
@@ -596,12 +592,12 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
     section.m_uiPrimitiveCount = first.m_uiPrimitiveCount;
     extracted.AddRenderData(&section);
     extracted.SortAndBatches();
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, nextFrame++));
-    XII_TEST_INT(scene.GetObjectCount(), 3);
+    XII_TEST_RESULT(context.UpdateFromExtraction(extracted, nextFrame++));
+    XII_TEST_INT(scene.GetInstanceCount(), 3);
     xiiUInt32 sectionId = 0;
-    for (const auto& instance : scene.GetGpuInstances())
+    for (const auto& instance : scene.GetInstances())
     {
-      XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), instance.m_uiObjectId, source));
+      XII_TEST_RESULT(context.Resolve(instance.m_uiObjectId, source));
       if (source.m_uiSectionIndex == 1)
       {
         XII_TEST_BOOL(source.m_hOwnerComponent == firstComponent);
@@ -609,7 +605,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       }
     }
     XII_TEST_BOOL(sectionId != 0 && sectionId != firstId && sectionId != secondId);
-    XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), firstId, source));
+    XII_TEST_RESULT(context.Resolve(firstId, source));
     XII_TEST_INT(source.m_uiSectionIndex, 0);
   }
 
@@ -618,33 +614,34 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
     const auto     frame = nextFrame++;
     xiiRenderData  nonMesh;
     xiiRenderData* filtered[] = {nullptr, &second, &nonMesh};
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(xiiMakeArrayPtr(filtered), frame));
-    XII_TEST_INT(scene.GetObjectCount(), 1);
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), firstId, source).Failed());
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, frame));
-    XII_TEST_INT(scene.GetObjectCount(), 3);
+    XII_TEST_RESULT(context.UpdateFromExtraction(xiiMakeArrayPtr(filtered), frame));
+    XII_TEST_INT(scene.GetInstanceCount(), 1);
+    XII_TEST_BOOL(context.Resolve(firstId, source).Failed());
+    XII_TEST_RESULT(context.UpdateFromExtraction(extracted, frame));
+    XII_TEST_INT(scene.GetInstanceCount(), 3);
     // Repeated membership changes in a single GPU frame must not keep absent packets alive.
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(xiiMakeArrayPtr(filtered), frame));
-    XII_TEST_INT(scene.GetObjectCount(), 1);
-    XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source));
+    XII_TEST_RESULT(context.UpdateFromExtraction(xiiMakeArrayPtr(filtered), frame));
+    XII_TEST_INT(scene.GetInstanceCount(), 1);
+    XII_TEST_RESULT(context.Resolve(secondId, source));
     extracted.Clear();
     extracted.AddRenderData(&second);
     extracted.SortAndBatches();
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, nextFrame++));
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), firstId, source).Failed());
+    XII_TEST_RESULT(context.UpdateFromExtraction(extracted, nextFrame++));
+    XII_TEST_BOOL(context.Resolve(firstId, source).Failed());
     XII_TEST_BOOL(source.m_hOwnerComponent.IsInvalidated());
-    XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source));
-    scene.Clear();
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source).Failed());
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, nextFrame++));
-    XII_TEST_INT(scene.GetObjectCount(), 1);
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source).Failed());
-    const auto replacementId = scene.GetGpuInstances()[0].m_uiObjectId;
-    XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), replacementId, source));
+    XII_TEST_RESULT(context.Resolve(secondId, source));
+    XII_TEST_RESULT(context.UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const>{}, nextFrame++));
+    XII_TEST_BOOL(context.Resolve(secondId, source).Failed());
+    XII_TEST_RESULT(context.UpdateFromExtraction(extracted, nextFrame++));
+    XII_TEST_INT(scene.GetInstanceCount(), 1);
+    XII_TEST_BOOL(context.Resolve(secondId, source).Failed());
+    const auto replacementId = scene.GetInstances()[0].m_uiObjectId;
+    XII_TEST_RESULT(context.Resolve(replacementId, source));
     XII_TEST_BOOL(source.m_hOwnerComponent == secondComponent);
-    const auto oldContext = context.GetHandle();
-    context.Shutdown();
-    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(oldContext, replacementId, source).Failed());
+    world.DeleteObjectNow(owner);
+    XII_TEST_BOOL(context.Resolve(replacementId, source).Failed());
+    XII_TEST_RESULT(context.UpdateFromExtraction(extracted, nextFrame++));
+    XII_TEST_INT(context.GetInstanceCount(), 0);
     XII_TEST_BOOL(source.m_hOwnerObject.IsInvalidated());
   }
 }

@@ -6,6 +6,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
@@ -114,20 +115,15 @@ xiiView::~xiiView()
   }
   xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
   m_hGpuVisibilityContext = {};
-  m_GpuSceneContext.Shutdown();
   m_RenderGraphContext.Shutdown();
   xiiViewRenderResourceManager::DestroyContext(m_hPipelineRuntime);
   m_hPipelineRuntime = {};
 }
 
-bool xiiView::SynchronizeGpuScene(xiiUInt64 uiFrameIndex)
+const xiiGpuInstanceData* xiiView::GetGpuInstanceData() const
 {
-  if (!m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
-    return true;
-  if (m_pExtractedData == nullptr || !m_GpuSceneContext.IsInitialized())
-    return false;
-
-  return m_GpuSceneContext.SynchronizeExtractedMeshes(*m_pExtractedData, uiFrameIndex).Succeeded();
+  const auto* module = m_pWorld ? m_pWorld->GetModule<xiiRenderWorldModule>() : nullptr;
+  return module ? module->GetGpuInstanceData() : nullptr;
 }
 
 xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
@@ -393,13 +389,6 @@ xiiResult xiiView::PrepareRenderResources()
   const auto* pipeline     = GetBuiltinRuntime()->m_Instance.GetPipeline();
   const auto  rootFeatures = m_RenderGraphBuilder.IsValid() ? m_CustomRuntimeFeatures : pipeline ? pipeline->GetRootRuntimeFeatures() :
                                                                                                    xiiBitflags<xiiRenderPipelineFeature>{};
-  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
-  {
-    if (!m_GpuSceneContext.IsInitialized())
-      XII_SUCCEED_OR_RETURN(m_GpuSceneContext.Initialize());
-  }
-  else
-    m_GpuSceneContext.Shutdown();
   if (rootFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
   {
     if (m_hGpuVisibilityContext.IsInvalidated())

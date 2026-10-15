@@ -247,9 +247,8 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
   output.m_BindFlags = xiiGALBindFlags::RenderTarget;
   auto target        = environment.GetDevice()->CreateTexture(output);
   view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  xiiSceneDatabaseContext mainScene;
-  if (!XII_TEST_RESULT(mainScene.Initialize()))
-    return;
+  XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, 0));
+  const auto&           mainScene = *renderer->GetGpuInstanceData();
   xiiRenderGraphContext graphContext;
   if (!XII_TEST_RESULT(graphContext.Initialize("Native query graph")))
     return;
@@ -263,7 +262,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     xiiGALBindlessResourceTable::Collect(completed);
     xiiMaterialManager::BeginFrame(frame, completed);
     xiiGpuVisibilityManager::BeginFrame(frame, completed);
-    if (!XII_TEST_RESULT(mainScene.SynchronizeExtractedMeshes(extracted, frame)))
+    if (!XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, frame)))
       return false;
     xiiMaterialManager::PrepareGpuResources();
     xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
@@ -469,8 +468,8 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
       return;
     bool releasedOld = false;
     XII_SCOPE_EXIT(if (!releasedOld) xiiGeometryResidencyManager::ReleaseMeshGeometry(oldGeometry, nextFrame - 1));
-    xiiSceneDatabaseContext delayed;
-    if (!XII_TEST_RESULT(delayed.Initialize()) || !XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, nextFrame - 1)))
+    xiiGpuInstanceData delayed(world);
+    if (!XII_TEST_RESULT(delayed.UpdateFromExtraction(extracted, nextFrame - 1)))
       return;
     if (!publish(2.0f))
       return;
@@ -526,11 +525,11 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
       }
     }
     bool delayedUsesOld = false;
-    for (const auto& entry : delayed.GetDatabase().GetGpuInstances())
+    for (const auto& entry : delayed.GetInstances())
       delayedUsesOld |= entry.m_uiGeometryIndex == oldGeometry.GetInternalID().m_InstanceIndex;
     XII_TEST_BOOL(delayedUsesOld);
-    XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, nextFrame - 1));
-    for (const auto& entry : delayed.GetDatabase().GetGpuInstances())
+    XII_TEST_RESULT(delayed.UpdateFromExtraction(extracted, nextFrame - 1));
+    for (const auto& entry : delayed.GetInstances())
       XII_TEST_BOOL(entry.m_uiGeometryIndex != oldGeometry.GetInternalID().m_InstanceIndex);
     XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(oldGeometry) == xiiGeometryResidencyState::Resident);
     xiiGeometryResidencyManager::ReleaseMeshGeometry(oldGeometry, nextFrame - 1);
@@ -583,8 +582,8 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
     XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == backOwner);
     XII_TEST_FLOAT(hit.m_vWorldPosition.x, 2.5f, 0.001f);
-    XII_TEST_INT(mainScene.GetDatabase().GetObjectCount(), 2);
-    for (const auto& entry : mainScene.GetDatabase().GetGpuInstances())
+    XII_TEST_INT(mainScene.GetInstanceCount(), 2);
+    for (const auto& entry : mainScene.GetInstances())
       XII_TEST_BOOL((entry.m_uiFlags & xiiGpuInstanceFlags::Enabled) != 0);
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native selected surfaces compose visible and occluded selection independently of click-through")
@@ -752,7 +751,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     if (!render() || !render())
       return;
     xiiUInt64 capacity = 0;
-    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(mainScene.GetHandle(), capacity));
+    capacity           = mainScene.GetMaximumMeshletCount();
     XII_TEST_INT(capacity, sectionCount);
     XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
     XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
