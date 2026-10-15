@@ -208,7 +208,7 @@ void xiiQtNode::SetActive(bool bActive)
   update();
 }
 
-void xiiQtNode::CreatePins()
+void xiiQtNode::ClearPins()
 {
   for (auto pQtPin : m_Inputs)
   {
@@ -221,6 +221,11 @@ void xiiQtNode::CreatePins()
     delete pQtPin;
   }
   m_Outputs.Clear();
+}
+
+void xiiQtNode::CreatePins()
+{
+  ClearPins();
 
   auto inputs = m_pManager->GetInputPins(m_pObject);
   for (auto& pPinTarget : inputs)
@@ -234,6 +239,7 @@ void xiiQtNode::CreatePins()
     m_Inputs.PushBack(pQtPin);
 
     pQtPin->SetPin(*pPinTarget);
+    pQtPin->setFlag(QGraphicsItem::ItemIsSelectable, m_pManager->GetPinPropertyObject(*pPinTarget) != nullptr);
   }
 
   auto outputs = m_pManager->GetOutputPins(m_pObject);
@@ -249,6 +255,7 @@ void xiiQtNode::CreatePins()
     m_Outputs.PushBack(pQtPin);
 
     pQtPin->SetPin(*pPinSource);
+    pQtPin->setFlag(QGraphicsItem::ItemIsSelectable, m_pManager->GetPinPropertyObject(*pPinSource) != nullptr);
   }
 }
 

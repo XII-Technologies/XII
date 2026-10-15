@@ -94,6 +94,8 @@ private:
   void NodeEventsHandler(const xiiDocumentNodeManagerEvent& e);
   void PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e);
   void SelectionEventsHandler(const xiiSelectionManagerEvent& e);
+  void UpdateSelection();
+  void CancelConnection();
   void GetSelectedNodes(xiiDeque<xiiQtNode*>& selection) const;
   void MarkupConnectablePins(xiiQtPin* pSourcePin);
   void ResetConnectablePinMarkup();
@@ -126,6 +128,7 @@ private:
   xiiQtPin*                              m_pStartPin              = nullptr;
   xiiQtConnection*                       m_pTempConnection        = nullptr;
   xiiQtNode*                             m_pTempNode              = nullptr;
+  xiiHybridArray<xiiUuid, 8>             m_PinSelectionBeforeRebuild;
   xiiDeque<const xiiDocumentObject*>     m_Selection;
   xiiVec2                                m_vMousePos = xiiVec2::MakeZero();
   QString                                m_sContextMenuSearchText;

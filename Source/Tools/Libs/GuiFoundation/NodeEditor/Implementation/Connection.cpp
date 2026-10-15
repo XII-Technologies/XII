@@ -25,6 +25,7 @@ void xiiQtConnection::InitConnection(const xiiDocumentObject* pObject, const xii
 {
   m_pObject     = pObject;
   m_pConnection = pConnection;
+  setFlag(QGraphicsItem::ItemIsSelectable, pObject != nullptr);
 }
 
 void xiiQtConnection::SetPosIn(const QPointF& point)

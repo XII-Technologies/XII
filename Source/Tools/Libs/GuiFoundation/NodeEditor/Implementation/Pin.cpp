@@ -239,6 +239,10 @@ bool xiiQtPin::UpdatePinColors(const xiiColorGammaUB* pOverwriteColor)
 
   m_pLabel->setDefaultTextColor(labelColor);
 
+  auto selectedPen = pen();
+  selectedPen.setWidthF(isSelected() ? 5.0 : 3.0);
+  setPen(selectedPen);
+
   return true;
 }
 
@@ -247,6 +251,11 @@ QVariant xiiQtPin::itemChange(GraphicsItemChange change, const QVariant& value)
   if (change == QGraphicsItem::ItemScenePositionHasChanged)
   {
     UpdateConnections();
+  }
+  else if (change == QGraphicsItem::ItemSelectedHasChanged && m_pPin)
+  {
+    UpdatePinColors();
+    update();
   }
 
   return QGraphicsPathItem::itemChange(change, value);

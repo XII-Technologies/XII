@@ -148,6 +148,11 @@ public:
 
   virtual const xiiRTTI* GetConnectionType() const;
 
+  /// Optional persistent document object inspected when this pin is selected. It must belong
+  /// to this document and follow its normal commands, serialization and lifetime. Return null
+  /// for graphs whose pins have no authored properties. No Qt or rendering dependency.
+  virtual const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const { return nullptr; }
+
   xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
   const xiiConnection& GetConnection(const xiiDocumentObject* pObject) const;
   const xiiConnection* GetConnectionIfExists(const xiiDocumentObject* pObject) const;
