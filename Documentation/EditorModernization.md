@@ -76,18 +76,19 @@ does not satisfy it.
   IDs no longer overwrite one another. Shared geometry and material acquisition
   remain with the existing managers. Clearing a database also causes stale
   extraction entries to be retired and recreated on the next synchronization.
-- `xiiSceneMeshSource` and `ResolveExtractedMesh` resolve native GPU identities to
-  non-owning object/component handles and mesh sections in expected O(1), without
-  allocating query containers. Lookup state belongs to the scene context and is
-  retired with extraction entries. `xiiView::ResolveRenderedMesh` additionally
-  validates live, active owners and view include/exclude tags. Resolution returns
-  `xiiResult` and clears output on failure. Implementation is split between scene
-  synchronization, source resolution and view validation.
-- IDs are runtime identities, not asset identifiers. They must be paired with
-  the producing context/view. The existing 24/8-bit Foundation handle has finite
-  generation wraparound; asynchronous consumers must bound capture lifetime and
-  validate their view/capture state, camera and resource changes. Querying requires
-  a CPU frame boundary and world access; concurrent mutation is unsupported.
+- The world-authoritative migration supersedes the database synchronization and
+  context identity storage described above. `xiiGpuInstanceData::Resolve` maps
+  non-reused GPU draw IDs to validated world/component handles and mesh sections.
+  The existing render world module owns this derived data, shared by cameras and
+  picking; no separate rendering object lifecycle or hierarchy remains.
+  `xiiView::ResolveRenderedMesh` also checks active owners and view tags, returns
+  `xiiResult`, and clears output on failure. Instanced component index shifts
+  invalidate their old GPU identities before extraction runs again.
+- IDs are runtime identities, not asset identifiers. Pair asynchronous readbacks
+  with their producing world/view and validate capture state, camera and resource
+  changes. Resolution requires world read access at the CPU frame boundary.
+  See [the migration report](Rendering/WorldRenderingMigration.md) for the current
+  ownership, lifecycle, upload and verification contracts.
 - Windows Debug builds pass for GraphicsCoreTest, EditorEngineProcessFrameworkTest,
   EditorEngineProcess and EditorFrameworkTest. All 18 GraphicsCore tests, all 40
   Vulkan engine-process tests and all 6 EditorFramework tests pass. The new test

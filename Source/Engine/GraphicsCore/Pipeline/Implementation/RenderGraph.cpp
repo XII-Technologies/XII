@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Algorithm/HashingUtils.h>
@@ -551,9 +552,11 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_ExportedTextures.Clear();
   m_ExportedBuffers.Clear();
 
-  m_uiFrameIndex = uiFrameIndex;
-  m_bIsSetupOpen = true;
-  m_bIsCompiled  = false;
+  static xiiAtomicInteger64 setupSerial;
+  m_uiSetupSerial = static_cast<xiiUInt64>(setupSerial.Increment());
+  m_uiFrameIndex  = uiFrameIndex;
+  m_bIsSetupOpen  = true;
+  m_bIsCompiled   = false;
 }
 
 void xiiRenderGraph::EndSetup()

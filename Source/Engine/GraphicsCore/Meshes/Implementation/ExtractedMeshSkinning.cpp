@@ -3,9 +3,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <GraphicsCore/Meshes/Implementation/ExtractedMeshSkinning.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Meshes/MeshSkinning.h>
-#include <GraphicsCore/Scene/Implementation/SceneExtractedSkinning.h>
 
 xiiResult xiiPrepareExtractedMeshSkinning(const xiiMeshResource& mesh, const xiiMeshRenderData& packet, xiiExtractedMeshSkinning& out_skinning)
 {

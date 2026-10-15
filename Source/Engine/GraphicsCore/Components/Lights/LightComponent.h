@@ -32,6 +32,7 @@ class XII_GRAPHICSCORE_DLL xiiLightComponent : public xiiRenderComponent
 
 public:
   xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Lights; }
+  bool                                     IsRenderDataViewIndependent() const override { return true; }
   virtual void                             SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void                             DeserializeComponent(xiiWorldReader& inout_stream) override;
 

@@ -16,6 +16,7 @@
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
@@ -24,7 +25,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 class xiiBuiltinRenderPipelineRuntime;
@@ -183,7 +183,9 @@ public:
   const xiiRenderExtractionStatistics&     GetExtractionStatistics() const { return m_ExtractionStatistics; }
   /// Custom graph builders default to All for compatibility; specialize their demand explicitly.
   void                                  SetRenderGraphExtractionRequirements(xiiBitflags<xiiRenderExtractionCategory> requirements) { m_CustomExtractionRequirements = requirements; }
-  bool                                  IsGpuSceneInitialized() const { return m_GpuSceneContext.IsInitialized(); }
+  bool                                  IsGpuSceneInitialized() const { return GetGpuInstanceData() != nullptr; }
+  const xiiGpuInstanceData*             GetGpuInstanceData() const;
+  xiiArrayPtr<const xiiUInt32>          GetGpuInstanceSelection() const { return m_GpuInstanceSelection; }
   xiiBitflags<xiiRenderPipelineFeature> GetRuntimeFeatures() const { return m_RuntimeFeatures; }
   void                                  SetRenderGraphRuntimeFeatures(xiiBitflags<xiiRenderPipelineFeature> features) { m_CustomRuntimeFeatures = features; }
 
@@ -191,7 +193,7 @@ public:
   /// Call at a CPU frame boundary under world access. The ID must come from this view;
   /// asynchronous callers must also retain/validate their view, camera and capture state.
   /// Returns failure and clears output for background, retired packets or deleted owners.
-  [[nodiscard]] xiiResult     ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiSceneMeshSource& out_source) const;
+  [[nodiscard]] xiiResult     ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiGpuInstanceSource& out_source) const;
   void                        SetPipelineParameter(xiiStringView name, const xiiVariant& value);
   void                        RemovePipelineParameter(xiiStringView name);
   const xiiVariantDictionary& GetPipelineParameters() const { return m_PipelineParameters; }
@@ -233,11 +235,10 @@ private:
 
   void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
 
-  void               UpdateCachedMatrices() const;
-  void               UpdateRenderResolutionState() const;
-  [[nodiscard]] bool SynchronizeGpuScene(xiiUInt64 uiFrameIndex);
-  xiiResult          SynchronizeRenderPipeline();
-  xiiResult          PrepareRenderResources();
+  void      UpdateCachedMatrices() const;
+  void      UpdateRenderResolutionState() const;
+  xiiResult SynchronizeRenderPipeline();
+  xiiResult PrepareRenderResources();
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
@@ -269,7 +270,7 @@ private:
   mutable xiiViewData m_Data;
 
   xiiRenderGraphContext         m_RenderGraphContext;
-  xiiSceneDatabaseContext       m_GpuSceneContext;
+  xiiDynamicArray<xiiUInt32>    m_GpuInstanceSelection;
   xiiGpuVisibilityContextHandle m_hGpuVisibilityContext;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.

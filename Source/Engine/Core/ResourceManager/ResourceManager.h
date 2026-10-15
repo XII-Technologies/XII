@@ -443,6 +443,7 @@ private:
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Core, ResourceManager);
   static void OnEngineShutdown();
+  static void OnEngineStartup();
   static void OnCoreShutdown();
   static void OnCoreStartup();
   static void PluginEventHandler(const xiiPluginEvent& e);

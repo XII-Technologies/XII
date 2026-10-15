@@ -5,11 +5,11 @@
 #include <Core/World/World.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-xiiResult xiiView::ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiSceneMeshSource& out_source) const
+xiiResult xiiView::ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiGpuInstanceSource& out_source) const
 {
   out_source = {};
-  xiiSceneMeshSource source;
-  if (!m_pWorld || xiiSceneDatabaseManager::ResolveExtractedMesh(m_GpuSceneContext.GetHandle(), uiGpuObjectId, source).Failed())
+  xiiGpuInstanceSource source;
+  if (!m_pWorld || !GetGpuInstanceData() || GetGpuInstanceData()->Resolve(uiGpuObjectId, source).Failed())
     return XII_FAILURE;
   const xiiGameObject* object    = nullptr;
   const xiiComponent*  component = nullptr;

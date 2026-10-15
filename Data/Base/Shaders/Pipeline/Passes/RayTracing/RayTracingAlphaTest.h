@@ -19,7 +19,7 @@ bool xiiShouldIgnoreRayTracingHitInternal(uint instanceIndex, uint primitiveInde
   if (material.TextureIndices0.x != 0xFFFFFFFFU && geometry.VertexLayout.w != 0xFFFFFFFFU && geometry.VertexAttributes.z != 0U)
   {
     const uint vertexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.x);
-    uint3      indices           = primitiveIndex * 3U + uint3(0U, 1U, 2U);
+    uint3      indices           = (geometry.VertexAttributes.w + primitiveIndex) * 3U + uint3(0U, 1U, 2U);
     if (geometry.BufferIndices.z != 0U)
     {
       const uint indexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.y);

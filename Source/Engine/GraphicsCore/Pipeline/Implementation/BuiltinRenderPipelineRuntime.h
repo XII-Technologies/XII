@@ -15,9 +15,10 @@
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
-#include <GraphicsCore/Lighting/RayTracingScene.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
@@ -25,7 +26,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
@@ -166,6 +166,7 @@ public:
   xiiResult                                                              PrepareTemporalResources(xiiStringView stage);
   xiiResult                                                              PrepareShadowResources();
   xiiResult                                                              PrepareSensorOutput();
+  xiiUniquePtr<xiiRayTracingFrameResources>                              m_RayTracingResources;
   xiiRenderPipelineInstance                                              m_Instance;
   xiiHashTable<xiiString, xiiUniquePtr<xiiBuiltinRenderPipelineRuntime>> m_Subgraphs;
   xiiGpuVisibilityContextHandle                                          m_hInstanceVisibility;
@@ -457,7 +458,7 @@ private:
     xiiMaterialGpuStorage::UploadHandles                            materials;
     xiiGpuVisibilityOutputs                                         mainVisibility;
     xiiVirtualShadowMapManager::UploadHandles                       virtualShadowHandles;
-    xiiRayTracingSceneManager::BuildHandles                         rayTracing;
+    xiiRayTracingResources::BuildHandles                            rayTracing;
     bool                                                            m_bSharedServicesPrepared = false;
     std::pair<xiiLightListData*, xiiRenderGraphPassHandle>          lightListPass;
     std::pair<xiiLightSamplingData*, xiiRenderGraphPassHandle>      lightSamplingPass;

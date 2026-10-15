@@ -12,6 +12,7 @@ StructuredBuffer<GpuSceneInstance> g_SceneInstances;
 StructuredBuffer<GpuVisibilityView> g_VisibilityView;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<uint4> g_PreviousLodHistory;
+StructuredBuffer<uint> g_CandidateInstances;
 RWStructuredBuffer<uint4> g_CurrentLodHistory;
 RWStructuredBuffer<uint> g_VisibleInstances;
 RWStructuredBuffer<uint> g_VisibleInstanceCount;
@@ -62,7 +63,14 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     return;
 
   const GpuVisibilityView view = g_VisibilityView[0];
-  const uint instanceIndex = dispatchThreadId.x;
+  uint instanceIndex = dispatchThreadId.x;
+  if (view.UseCandidates != 0u)
+  {
+    uint candidateCount, candidateStride;
+    g_CandidateInstances.GetDimensions(candidateCount, candidateStride);
+    if (instanceIndex >= min(view.CandidateCount, candidateCount)) return;
+    instanceIndex = g_CandidateInstances[instanceIndex];
+  }
   if (instanceIndex >= min(view.InstanceCount, sceneCount))
     return;
 

@@ -182,7 +182,7 @@ xiiResult xiiMaterialManager::Configure(const xiiMaterialGpuStorageDescription& 
     return XII_SUCCESS;
 
   s_pState->m_Description = description;
-  return s_pState->m_bEngineStarted ? ApplyConfiguration() : XII_SUCCESS;
+  return s_pState->m_bInitialized ? ApplyConfiguration() : XII_SUCCESS;
 }
 
 bool xiiMaterialManager::IsSubsystemInitialized()
@@ -195,8 +195,18 @@ bool xiiMaterialManager::IsInitialized()
   return s_pState != nullptr && s_pState->m_bInitialized;
 }
 
+xiiResult xiiMaterialManager::EnsureInitialized()
+{
+  if (!s_pState || !s_pState->m_bEngineStarted)
+    return XII_FAILURE;
+  XII_LOCK(s_pState->m_Mutex);
+  return IsInitialized() ? XII_SUCCESS : ApplyConfiguration();
+}
+
 void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame)
 {
+  if (EnsureInitialized().Failed())
+    return;
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before BeginFrame().");
   if (!IsInitialized())
     return;
@@ -210,6 +220,8 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
 
 void xiiMaterialManager::PrepareGpuResources()
 {
+  if (EnsureInitialized().Failed())
+    return;
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before preparing GPU resources.");
   if (!IsInitialized())
     return;
@@ -271,6 +283,8 @@ void xiiMaterialManager::PrepareGpuResources()
 
 xiiMaterialGpuHandle xiiMaterialManager::RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance)
 {
+  if (EnsureInitialized().Failed())
+    return {};
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before registering materials.");
   if (!IsInitialized())
     return {};
@@ -288,6 +302,8 @@ void xiiMaterialManager::UnregisterMaterial(xiiMaterialGpuHandle handle)
 
 xiiMaterialGpuHandle xiiMaterialManager::AcquireMaterialResource(const xiiMaterialResourceHandle& hMaterial)
 {
+  if (!hMaterial.IsValid() || EnsureInitialized().Failed())
+    return {};
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before acquiring material resources.");
   if (!IsInitialized() || !hMaterial.IsValid())
     return {};
@@ -344,6 +360,8 @@ void xiiMaterialManager::ReleaseMaterialResource(const xiiMaterialResourceHandle
 
 xiiRenderGraphBufferHandle xiiMaterialManager::AddUploadPass(xiiRenderGraph& graph)
 {
+  if (EnsureInitialized().Failed())
+    return {};
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before adding upload passes.");
   if (!IsInitialized())
     return {};
@@ -353,6 +371,8 @@ xiiRenderGraphBufferHandle xiiMaterialManager::AddUploadPass(xiiRenderGraph& gra
 
 xiiMaterialGpuStorage::UploadHandles xiiMaterialManager::AddUploadPasses(xiiRenderGraph& graph)
 {
+  if (EnsureInitialized().Failed())
+    return {};
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before adding upload passes.");
   if (!IsInitialized())
     return {};
@@ -370,6 +390,7 @@ xiiResult xiiMaterialManager::ExtractRenderData(xiiMaterialGpuHandle handle, xii
 
 xiiMaterialGpuStorage& xiiMaterialManager::GetGpuStorage()
 {
+  EnsureInitialized().IgnoreResult();
   XII_ASSERT_ALWAYS(IsInitialized(), "Material manager GPU storage is not initialized.");
   return s_pState->m_pSystem->GetGpuStorage();
 }
@@ -393,7 +414,6 @@ void xiiMaterialManager::EngineStartup()
 {
   XII_ASSERT_DEV(s_pState != nullptr, "Core startup must precede material manager engine startup.");
   s_pState->m_bEngineStarted = true;
-  ApplyConfiguration().IgnoreResult();
 }
 
 void xiiMaterialManager::EngineShutdown()

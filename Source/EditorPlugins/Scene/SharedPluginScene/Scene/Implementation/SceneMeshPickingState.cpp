@@ -118,11 +118,11 @@ xiiResult xiiSceneMeshPickingState::Capture(xiiRenderPipelinePassContext& contex
     return XII_SUCCESS;
   auto& owners = m_SlotOwners[slot];
   owners.Clear();
-  owners.Reserve(m_Scene.GetDatabase().GetObjectCount());
-  for (const auto& instance : m_Scene.GetDatabase().GetGpuInstances())
+  owners.Reserve(context.m_pView->GetGpuInstanceData()->GetInstanceCount());
+  for (const auto& instance : context.m_pView->GetGpuInstanceData()->GetInstances())
   {
     Owner owner;
-    XII_SUCCEED_OR_RETURN(xiiSceneDatabaseManager::ResolveExtractedMesh(m_Scene.GetHandle(), instance.m_uiObjectId, owner.m_Source));
+    XII_SUCCEED_OR_RETURN(context.m_pView->GetGpuInstanceData()->Resolve(instance.m_uiObjectId, owner.m_Source));
     const xiiGameObject*        object    = nullptr;
     const xiiMeshComponentBase* component = nullptr;
     if (!context.m_pView->GetWorld()->TryGetObject(owner.m_Source.m_hOwnerObject, object) || !context.m_pView->GetWorld()->TryGetComponent(owner.m_Source.m_hOwnerComponent, component) || component->GetOwner() != object)

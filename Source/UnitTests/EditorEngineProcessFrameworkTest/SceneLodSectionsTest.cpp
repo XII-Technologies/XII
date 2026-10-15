@@ -14,6 +14,7 @@
 #include <GraphicsCore/Lighting/EmissiveLightManager.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -23,7 +24,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -148,11 +148,11 @@ static void TestLodSections(bool enableMeshShaders)
   XII_SCOPE_EXIT(renderer->DestroyView(viewHandle));
   view->SetCamera(&camera);
   view->SetViewport({0, 0, 64, 64});
-  const auto              projection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
-  const auto              frustum    = xiiFrustum::MakeFromMVP(projection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
-  xiiSceneDatabaseContext scene;
-  xiiRenderGraphContext   graphContext;
-  if (!XII_TEST_RESULT(scene.Initialize()) || !XII_TEST_RESULT(graphContext.Initialize("LOD section query")))
+  const auto            projection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
+  const auto            frustum    = xiiFrustum::MakeFromMVP(projection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+  xiiGpuInstanceData    scene(world);
+  xiiRenderGraphContext graphContext;
+  if (!XII_TEST_RESULT(graphContext.Initialize("LOD section query")))
     return;
   xiiGpuVisibilityDescription visibilitySettings;
   visibilitySettings.m_uiMaxInstances       = 16;
@@ -193,17 +193,17 @@ static void TestLodSections(bool enableMeshShaders)
       const auto* packet = xiiDynamicCast<const xiiMeshRenderData*>(extracted.GetAllRenderData()[0]);
       XII_TEST_INT(packet->m_uiPrimitiveCount, 0); // No indexed draw in CPU LOD zero.
     }
-    if (!XII_TEST_RESULT(scene.SynchronizeExtractedMeshes(extracted, frame)) || !XII_TEST_INT(scene.GetDatabase().GetObjectCount(), expectedCandidates))
+    if (!XII_TEST_RESULT(scene.UpdateFromExtraction(extracted, frame)) || !XII_TEST_INT(scene.GetInstanceCount(), expectedCandidates))
       return;
     xiiUInt64 meshletCapacity = 0;
-    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(scene.GetHandle(), meshletCapacity));
+    meshletCapacity           = scene.GetMaximumMeshletCount();
     // Each candidate owns one box meshlet. Whole-LOD accounting would report fourteen
     // rather than six for the unfiltered mesh, and grows quadratically with section count.
     XII_TEST_INT(meshletCapacity, expectedCandidates);
-    for (const auto& instance : scene.GetDatabase().GetGpuInstances())
+    for (const auto& instance : scene.GetInstances())
     {
-      xiiSceneMeshSource source;
-      XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(scene.GetHandle(), instance.m_uiObjectId, source));
+      xiiGpuInstanceSource source;
+      XII_TEST_RESULT(scene.Resolve(instance.m_uiObjectId, source));
       XII_TEST_BOOL(source.m_hOwnerObject == owner && source.m_hOwnerComponent == component->GetHandle());
       XII_TEST_INT(source.m_uiLodIndex, instance.m_uiDrawLod);
       if (forcedLod == xiiInvalidIndex && section == xiiInvalidIndex)
@@ -220,7 +220,7 @@ static void TestLodSections(bool enableMeshShaders)
     xiiMaterialManager::BeginFrame(frame, completed);
     xiiGpuVisibilityManager::BeginFrame(frame, completed);
     xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
-    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(scene.GetHandle(), meshletCapacity));
+    meshletCapacity = scene.GetMaximumMeshletCount();
     XII_TEST_INT(meshletCapacity, expectedCandidates);
     auto& graph = graphContext.GetGraph();
     auto& cache = graphContext.GetResourceCache();
@@ -230,9 +230,9 @@ static void TestLodSections(bool enableMeshShaders)
     const auto materialUpload = xiiMaterialManager::AddUploadPasses(graph);
     auto       visibilityView = xiiGpuVisibilitySystem::BuildView(projection, frustum, camera.GetCenterPosition(), 64, 64, 0, expectedCandidates);
     if (excludeTransparent)
-      visibilityView.m_uiExcludedFlags = xiiSceneObjectFlags::Transparent;
+      visibilityView.m_uiExcludedFlags = xiiGpuInstanceFlags::Transparent;
     if (onlyTransparent)
-      visibilityView.m_uiRequiredFlags |= xiiSceneObjectFlags::Transparent;
+      visibilityView.m_uiRequiredFlags |= xiiGpuInstanceFlags::Transparent;
     xiiGpuVisibilityPassDescription visibilityDescription;
     visibilityDescription.m_bAsyncCompute      = false;
     visibilityDescription.m_bEnableLodFeedback = false;
@@ -253,7 +253,7 @@ static void TestLodSections(bool enableMeshShaders)
         builder.SetPassRenderPassManaged(); }, [](const EmptyHiZ& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Texture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); });
       hiZ               = source.first->m_Texture;
     }
-    auto visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, scene.GetHandle(), visibilityView, geometryUpload, visibilityDescription, hiZ);
+    auto visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, scene, visibilityView, geometryUpload, visibilityDescription, hiZ);
     // A single-section candidate contains one box meshlet. Exercise an exact 16-byte indirect
     // command allocation as well as the normal retained visibility capacity.
     if (!enableMeshShaders && expectedCandidates == 1)
@@ -350,8 +350,8 @@ static void TestLodSections(bool enableMeshShaders)
     {
       if (words[pixel] == 0)
         continue;
-      xiiSceneMeshSource source;
-      if (!XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(scene.GetHandle(), words[pixel], source)))
+      xiiGpuInstanceSource source;
+      if (!XII_TEST_RESULT(scene.Resolve(words[pixel], source)))
         return;
       if (!XII_TEST_INT(source.m_uiLodIndex, expectedLod))
         return;

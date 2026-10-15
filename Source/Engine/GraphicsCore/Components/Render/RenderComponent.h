@@ -30,6 +30,10 @@ public:
   ~xiiRenderComponent();
   virtual xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const { return xiiRenderExtractionCategory::All; }
 
+  /// Opt in only when packets are independent of cameras and extraction requirement sets.
+  /// Shared packets are immutable until the CPU rendering boundary has finished.
+  virtual bool IsRenderDataViewIndependent() const { return false; }
+
   /// Called by xiiRenderComponent::OnUpdateLocalBounds().
   ///
   /// If XII_SUCCESS is returned, out_bounds and out_bAlwaysVisible will be integrated into the xiiMsgUpdateLocalBounds ref_msg,

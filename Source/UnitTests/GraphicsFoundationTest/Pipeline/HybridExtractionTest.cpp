@@ -5,6 +5,8 @@
 #include <Core/World/World.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -31,6 +33,7 @@ public:
   mutable xiiUInt32                        m_uiExtractions = 0;
   xiiUInt32                                m_uiValue       = 1;
   xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return m_Category; }
+  bool                                     IsRenderDataViewIndependent() const override { return true; }
   xiiResult                                GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& alwaysVisible, xiiMsgUpdateLocalBounds&) override
   {
     bounds        = xiiBoundingBoxSphere::MakeZero();
@@ -115,6 +118,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
+  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized());
+  XII_TEST_BOOL(!xiiMaterialManager::IsInitialized());
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Views aggregate demand and reuse only requested component packets")
@@ -152,9 +157,9 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     light->m_uiValue  = 2;
     xiiCamera camera;
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
-    xiiView*                                views[3];
-    const xiiRenderExtractionCategory::Enum categories[] = {xiiRenderExtractionCategory::Geometry, xiiRenderExtractionCategory::Lights, xiiRenderExtractionCategory::None};
-    for (xiiUInt32 i = 0; i < 3; ++i)
+    xiiView*                                views[4];
+    const xiiRenderExtractionCategory::Enum categories[] = {xiiRenderExtractionCategory::Geometry, xiiRenderExtractionCategory::Lights, xiiRenderExtractionCategory::None, xiiRenderExtractionCategory::Geometry};
+    for (xiiUInt32 i = 0; i < 4; ++i)
     {
       xiiVariantDictionary properties;
       properties.Insert("Categories", static_cast<xiiUInt32>(categories[i]));
@@ -180,10 +185,17 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     XII_TEST_BOOL(!views[2]->IsGpuSceneInitialized());
     XII_TEST_BOOL(!views[0]->IsGpuSceneInitialized() && !views[1]->IsGpuSceneInitialized());
     XII_TEST_INT(views[2]->GetExtractionStatistics().m_uiDispatchedComponents, 0);
+    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized());
+    XII_TEST_BOOL(!xiiMaterialManager::IsInitialized());
+    XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr);
+    XII_TEST_INT(views[3]->GetExtractionStatistics().m_uiDispatchedComponents, 0);
+    XII_TEST_BOOL(views[0]->GetExtractedRenderData()->GetAllRenderData()[0] == views[3]->GetExtractedRenderData()->GetAllRenderData()[0]);
     world.Update();
     XII_TEST_INT(geometry->m_uiExtractions, 1);
     XII_TEST_INT(light->m_uiExtractions, 1);
+    const auto* snapshot = static_cast<const xiiExtractionTestPacket*>(views[0]->GetExtractedRenderData()->GetAllRenderData()[0]);
     geometry->SetValue(7);
+    XII_TEST_INT(snapshot->m_uiValue, 1); // Invalidating the cache must not destroy this frame's packet.
     world.Update();
     XII_TEST_INT(geometry->m_uiExtractions, 2);
     XII_TEST_INT(light->m_uiExtractions, 1);
@@ -192,11 +204,13 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     world.Update();
     XII_TEST_FLOAT(views[0]->GetExtractedRenderData()->GetAllRenderData()[0]->m_GlobalTransform.m_vPosition.x, 5.0f, 0.0001f);
     views[0]->SetRenderEnabled(false);
+    views[3]->SetRenderEnabled(false);
     world.Update();
     XII_TEST_BOOL(!module->GetExtractionRequirements().IsSet(xiiRenderExtractionCategory::Geometry));
     auto* derived     = world.GetOrCreateModule<xiiExtractionDerivedModule>();
     derived->m_Target = geometry->GetHandle();
     views[0]->SetRenderEnabled(true);
+    views[3]->SetRenderEnabled(true);
     world.Update();
     XII_TEST_INT(static_cast<xiiExtractionTestPacket*>(views[0]->GetExtractedRenderData()->GetAllRenderData()[0])->m_uiValue, 11);
     XII_TEST_BOOL(derived->m_bObservedGeometryDemand);

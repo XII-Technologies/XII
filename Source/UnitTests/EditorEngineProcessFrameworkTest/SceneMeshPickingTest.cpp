@@ -247,23 +247,23 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
   output.m_BindFlags = xiiGALBindFlags::RenderTarget;
   auto target        = environment.GetDevice()->CreateTexture(output);
   view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  xiiSceneDatabaseContext mainScene;
-  if (!XII_TEST_RESULT(mainScene.Initialize()))
-    return;
+  XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, 0));
+  const auto&           mainScene = *renderer->GetGpuInstanceData();
   xiiRenderGraphContext graphContext;
   if (!XII_TEST_RESULT(graphContext.Initialize("Native query graph")))
     return;
   xiiGpuFrameCompletionTracker completion;
   completion.Initialize(environment.GetDevice());
-  xiiUInt64            nextFrame = 1;
-  xiiVariantDictionary parameters;
-  auto                 render = [&](xiiRenderPipelineInstance* runtime = nullptr, xiiView* queryView = nullptr) -> bool {
+  xiiUInt64                  nextFrame = 1;
+  xiiRenderGraphBufferHandle worldInstances;
+  xiiVariantDictionary       parameters;
+  auto                       render = [&](xiiRenderPipelineInstance* runtime = nullptr, xiiView* queryView = nullptr) -> bool {
     const auto frame     = nextFrame++;
     const auto completed = completion.PollCompletedFrames();
     xiiGALBindlessResourceTable::Collect(completed);
     xiiMaterialManager::BeginFrame(frame, completed);
     xiiGpuVisibilityManager::BeginFrame(frame, completed);
-    if (!XII_TEST_RESULT(mainScene.SynchronizeExtractedMeshes(extracted, frame)))
+    if (!XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, frame)))
       return false;
     xiiMaterialManager::PrepareGpuResources();
     xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
@@ -272,6 +272,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     XII_SCOPE_EXIT(cache.EndFrame());
     auto& graph = graphContext.GetGraph();
     graph.BeginSetup(frame);
+    worldInstances = mainScene.AddUploadPass(graph, frame).m_Instances;
     graphContext.GetBlackboard().ClearFrame();
     auto& execution = runtime ? *runtime : instance;
     if (!XII_TEST_RESULT(execution.Build(queryView ? queryView : view, graph, graphContext.GetBlackboard(), parameters)))
@@ -283,7 +284,8 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     graph.AddPass<Export>("Query test export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
       const auto color = builder.ReadTexture(graph.FindTexture("Query test Color"), xiiGALResourceStateFlags::CopySource);
       builder.ExportTexture(color, xiiGALResourceStateFlags::CopySource);
-      for (const xiiStringView name : {"Query GPU Scene Instances", "Query GPU Visible Instance Count", "Query GPU Visible Meshlet Count"})
+      builder.ExportBuffer(builder.ReadBuffer(worldInstances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      for (const xiiStringView name : {"Query GPU Visible Instance Count", "Query GPU Visible Meshlet Count"})
         if (const auto buffer = graph.FindBuffer(name); buffer.IsValid())
           builder.ExportBuffer(builder.ReadBuffer(buffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
     graph.EndSetup();
@@ -469,8 +471,8 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
       return;
     bool releasedOld = false;
     XII_SCOPE_EXIT(if (!releasedOld) xiiGeometryResidencyManager::ReleaseMeshGeometry(oldGeometry, nextFrame - 1));
-    xiiSceneDatabaseContext delayed;
-    if (!XII_TEST_RESULT(delayed.Initialize()) || !XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, nextFrame - 1)))
+    xiiGpuInstanceData delayed(world);
+    if (!XII_TEST_RESULT(delayed.UpdateFromExtraction(extracted, nextFrame - 1)))
       return;
     if (!publish(2.0f))
       return;
@@ -501,7 +503,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
         XII_TEST_BOOL(xiiMemoryUtils::RawByteCompare(&uploaded, current, sizeof(uploaded)) == 0);
       auto&               graph = graphContext.GetGraph();
       xiiGpuSceneInstance gpuInstance;
-      if (ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(graph.FindBuffer("Query GPU Scene Instances")).Borrow(), 0, gpuInstance))
+      if (ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(worldInstances).Borrow(), 0, gpuInstance))
       {
         XII_TEST_INT(gpuInstance.m_uiGeometryIndex, currentGeometry.GetInternalID().m_InstanceIndex);
         XII_TEST_FLOAT(gpuInstance.m_BoundsExtents.x, 1.0f, 0.001f);
@@ -526,11 +528,11 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
       }
     }
     bool delayedUsesOld = false;
-    for (const auto& entry : delayed.GetDatabase().GetGpuInstances())
+    for (const auto& entry : delayed.GetInstances())
       delayedUsesOld |= entry.m_uiGeometryIndex == oldGeometry.GetInternalID().m_InstanceIndex;
     XII_TEST_BOOL(delayedUsesOld);
-    XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, nextFrame - 1));
-    for (const auto& entry : delayed.GetDatabase().GetGpuInstances())
+    XII_TEST_RESULT(delayed.UpdateFromExtraction(extracted, nextFrame - 1));
+    for (const auto& entry : delayed.GetInstances())
       XII_TEST_BOOL(entry.m_uiGeometryIndex != oldGeometry.GetInternalID().m_InstanceIndex);
     XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(oldGeometry) == xiiGeometryResidencyState::Resident);
     xiiGeometryResidencyManager::ReleaseMeshGeometry(oldGeometry, nextFrame - 1);
@@ -583,9 +585,9 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
     XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == backOwner);
     XII_TEST_FLOAT(hit.m_vWorldPosition.x, 2.5f, 0.001f);
-    XII_TEST_INT(mainScene.GetDatabase().GetObjectCount(), 2);
-    for (const auto& entry : mainScene.GetDatabase().GetGpuInstances())
-      XII_TEST_BOOL((entry.m_uiFlags & xiiSceneObjectFlags::Enabled) != 0);
+    XII_TEST_INT(mainScene.GetInstanceCount(), 2);
+    for (const auto& entry : mainScene.GetInstances())
+      XII_TEST_BOOL((entry.m_uiFlags & xiiGpuInstanceFlags::Enabled) != 0);
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native selected surfaces compose visible and occluded selection independently of click-through")
   {
@@ -752,7 +754,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     if (!render() || !render())
       return;
     xiiUInt64 capacity = 0;
-    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(mainScene.GetHandle(), capacity));
+    capacity           = mainScene.GetMaximumMeshletCount();
     XII_TEST_INT(capacity, sectionCount);
     XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
     XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);

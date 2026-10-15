@@ -19,7 +19,7 @@
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/EmissiveLightManager.h>
 #include <GraphicsCore/Lighting/GpuShadowRaster.h>
-#include <GraphicsCore/Lighting/RayTracingScene.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>

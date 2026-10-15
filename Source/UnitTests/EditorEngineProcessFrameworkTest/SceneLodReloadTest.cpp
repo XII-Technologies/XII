@@ -10,6 +10,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -19,7 +20,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 
 static void RunSceneLodReload(bool skinned)
@@ -92,9 +92,7 @@ static void RunSceneLodReload(bool skinned)
   XII_SCOPE_EXIT(renderer->DestroyView(viewHandle));
   view->SetCamera(&camera);
   view->SetViewport({0, 0, 32, 32});
-  xiiSceneDatabaseContext primary, delayed;
-  if (!XII_TEST_RESULT(primary.Initialize()) || !XII_TEST_RESULT(delayed.Initialize()))
-    return;
+  xiiGpuInstanceData     primary(world), delayed(world);
   xiiExtractedRenderData extracted;
   auto                   extract = [&] {
     extracted.Clear();
@@ -108,31 +106,31 @@ static void RunSceneLodReload(bool skinned)
   if (!XII_TEST_INT(extracted.GetAllRenderData().GetCount(), 1))
     return;
   XII_TEST_INT(xiiDynamicCast<const xiiMeshRenderData*>(extracted.GetAllRenderData()[0])->m_uiPrimitiveCount, 0);
-  XII_TEST_RESULT(primary.SynchronizeExtractedMeshes(extracted, 1));
-  XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, 1));
-  XII_TEST_INT(primary.GetDatabase().GetObjectCount(), 2);
-  XII_TEST_INT(delayed.GetDatabase().GetObjectCount(), 2);
-  auto checkPose = [&](const xiiSceneDatabase& database, float offset) {
+  XII_TEST_RESULT(primary.UpdateFromExtraction(extracted, 1));
+  XII_TEST_RESULT(delayed.UpdateFromExtraction(extracted, 1));
+  XII_TEST_INT(primary.GetInstanceCount(), 2);
+  XII_TEST_INT(delayed.GetInstanceCount(), 2);
+  auto checkPose = [&](const xiiGpuInstanceData& database, float offset) {
     if (!skinned)
       return;
     // All sections/LODs share one current palette. Reload resets history in each
     // context when that context adopts the new geometry, without changing its peers.
-    XII_TEST_INT(database.GetGpuSkinningMatrices().GetCount(), 1);
-    for (const auto& instance : database.GetGpuInstances())
+    XII_TEST_INT(database.GetSkinningMatrices().GetCount(), 1);
+    for (const auto& instance : database.GetInstances())
     {
       XII_TEST_INT(instance.m_uiSkinningCount, 1);
       XII_TEST_INT(instance.m_uiPreviousSkinningCount, 1);
       XII_TEST_INT(instance.m_uiSkinningOffset, instance.m_uiPreviousSkinningOffset);
-      XII_TEST_FLOAT(database.GetGpuSkinningMatrices()[instance.m_uiSkinningOffset].GetTranslationVector().y, offset, 0);
+      XII_TEST_FLOAT(database.GetSkinningMatrices()[instance.m_uiSkinningOffset].GetTranslationVector().y, offset, 0);
     }
   };
-  checkPose(primary.GetDatabase(), 1);
-  checkPose(delayed.GetDatabase(), 1);
+  checkPose(primary, 1);
+  checkPose(delayed, 1);
   xiiUInt32 retainedId = 0, retiredId = 0;
-  for (const auto& instance : primary.GetDatabase().GetGpuInstances())
+  for (const auto& instance : primary.GetInstances())
   {
-    xiiSceneMeshSource source;
-    XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(primary.GetHandle(), instance.m_uiObjectId, source));
+    xiiGpuInstanceSource source;
+    XII_TEST_RESULT(primary.Resolve(instance.m_uiObjectId, source));
     XII_TEST_INT(source.m_uiLodIndex, 1);
     XII_TEST_INT(source.m_uiMaterialIndex, source.m_uiSectionIndex + 1);
     XII_TEST_INT(instance.m_uiFirstPrimitive, source.m_uiSectionIndex * 6);
@@ -187,35 +185,35 @@ static void RunSceneLodReload(bool skinned)
     XII_TEST_RESULT(skinnedComponent->SetSkinningMatrices(xiiMakeArrayPtr(&palette, 1)));
   }
   extract();
-  XII_TEST_RESULT(primary.SynchronizeExtractedMeshes(extracted, 2));
-  XII_TEST_INT(primary.GetDatabase().GetObjectCount(), 3);
+  XII_TEST_RESULT(primary.UpdateFromExtraction(extracted, 2));
+  XII_TEST_INT(primary.GetInstanceCount(), 3);
   const auto newGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
   XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(newGeometry, 3));
   XII_TEST_BOOL(newGeometry != oldGeometry);
-  xiiSceneMeshSource source;
-  XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(primary.GetHandle(), retiredId, source).Failed());
-  XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(primary.GetHandle(), retainedId, source));
+  xiiGpuInstanceSource source;
+  XII_TEST_BOOL(primary.Resolve(retiredId, source).Failed());
+  XII_TEST_RESULT(primary.Resolve(retainedId, source));
   XII_TEST_INT(source.m_uiLodIndex, 1);
   XII_TEST_INT(source.m_uiMaterialIndex, 4);
-  for (const auto& instance : primary.GetDatabase().GetGpuInstances())
+  for (const auto& instance : primary.GetInstances())
   {
     XII_TEST_INT(instance.m_uiGeometryIndex, newGeometry.GetInternalID().m_InstanceIndex);
     XII_TEST_FLOAT(instance.m_fLodBias, skinned ? 0 : 2, 0);
   }
-  for (const auto& instance : delayed.GetDatabase().GetGpuInstances())
+  for (const auto& instance : delayed.GetInstances())
   {
     XII_TEST_INT(instance.m_uiGeometryIndex, oldGeometry.GetInternalID().m_InstanceIndex);
     XII_TEST_FLOAT(instance.m_fLodBias, 0, 0);
-    XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(delayed.GetHandle(), instance.m_uiObjectId, source));
+    XII_TEST_RESULT(delayed.Resolve(instance.m_uiObjectId, source));
     XII_TEST_INT(source.m_uiMaterialIndex, source.m_uiSectionIndex + 1);
   }
-  checkPose(primary.GetDatabase(), 3);
-  checkPose(delayed.GetDatabase(), 1);
-  XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, 3));
-  XII_TEST_INT(delayed.GetDatabase().GetObjectCount(), 3);
-  for (const auto& instance : delayed.GetDatabase().GetGpuInstances())
+  checkPose(primary, 3);
+  checkPose(delayed, 1);
+  XII_TEST_RESULT(delayed.UpdateFromExtraction(extracted, 3));
+  XII_TEST_INT(delayed.GetInstanceCount(), 3);
+  for (const auto& instance : delayed.GetInstances())
     XII_TEST_INT(instance.m_uiGeometryIndex, newGeometry.GetInternalID().m_InstanceIndex);
-  checkPose(delayed.GetDatabase(), 3);
+  checkPose(delayed, 3);
 }
 
 XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)

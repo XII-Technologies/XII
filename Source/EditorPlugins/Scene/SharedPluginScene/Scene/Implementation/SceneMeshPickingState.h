@@ -4,8 +4,8 @@
 
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Threading/AtomicInteger.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
@@ -22,7 +22,7 @@ public:
 
   struct Owner
   {
-    xiiSceneMeshSource    m_Source;
+    xiiGpuInstanceSource  m_Source;
     xiiTransform          m_Transform;
     xiiMeshResourceHandle m_hMesh;
     xiiUInt64             m_uiConfiguration = 0;
@@ -36,7 +36,7 @@ public:
   xiiResult        Pick(const xiiView& view, xiiUInt32 x, xiiUInt32 y, xiiSceneMeshPickingPass::PickingResult& out_hit);
   xiiResult        Marquee(const xiiView& view, const xiiRectU32& rectangle, xiiDynamicArray<xiiGameObjectHandle>& out_objects);
 
-  xiiSceneDatabaseContext         m_Scene;
+  xiiDynamicArray<xiiUInt32>      m_Candidates;
   xiiGpuVisibilityContextHandle   m_hVisibility;
   xiiDynamicArray<xiiRenderData*> m_Packets;
   xiiHashSet<xiiGameObjectHandle> m_Selected;

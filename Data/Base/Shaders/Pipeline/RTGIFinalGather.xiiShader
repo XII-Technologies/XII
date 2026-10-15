@@ -204,7 +204,7 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   const xiiRayTracingMaterialData material = g_RayTracingMaterials[InstanceIndex()];
   const xiiRayTracingGeometryData geometry = g_RayTracingGeometry[InstanceIndex()];
   const uint vertexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.x);
-  uint3 indices = PrimitiveIndex() * 3U + uint3(0U, 1U, 2U);
+  uint3 indices = (geometry.VertexAttributes.w + PrimitiveIndex()) * 3U + uint3(0U, 1U, 2U);
   if (geometry.BufferIndices.z != 0U)
   {
     const uint indexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.y);

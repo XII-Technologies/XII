@@ -91,7 +91,7 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiMeshRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 1)
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 2)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -100,6 +100,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 1)
     XII_ACCESSOR_PROPERTY("SectionIndex", GetSectionIndex, SetSectionIndex)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiInvalidIndex))),
     XII_ACCESSOR_PROPERTY("PreferMeshShaders", GetPreferMeshShaders, SetPreferMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("RayTracingVisible", GetRayTracingVisible, SetRayTracingVisible)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ACCESSOR_PROPERTY("VisibilityMask", GetVisibilityMask, SetVisibilityMask)->AddAttributes(new xiiDefaultValueAttribute(0xFFFFFFFFU)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
@@ -132,6 +133,7 @@ void xiiMeshComponentBase::SerializeComponent(xiiWorldWriter& inout_stream) cons
   s << m_bPreferMeshShaders;
   s << m_bRayTracingVisible;
   s << m_bCpuCullingFallback;
+  s << m_uiVisibilityMask;
 }
 
 void xiiMeshComponentBase::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -147,6 +149,17 @@ void xiiMeshComponentBase::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_bPreferMeshShaders;
   s >> m_bRayTracingVisible;
   s >> m_bCpuCullingFallback;
+  // Version 1 worlds had no component mask: retain their all-visible behavior.
+  if (inout_stream.GetComponentTypeVersion(GetStaticRTTI()) >= 2)
+    s >> m_uiVisibilityMask;
+}
+
+void xiiMeshComponentBase::SetVisibilityMask(xiiUInt32 mask)
+{
+  if (m_uiVisibilityMask == mask)
+    return;
+  m_uiVisibilityMask = mask;
+  InvalidateCachedRenderData();
 }
 
 xiiResult xiiMeshComponentBase::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
@@ -313,7 +326,9 @@ bool xiiMeshComponentBase::GetRayTracingVisible() const
 
 void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const
 {
-  if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
+  // Mesh authoring and animation are world data. Camera-dependent consumers select from the
+  // same packets later; world extraction and acceleration-structure preparation need no view.
+  if (ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
   if (!m_hMesh.IsValid())
@@ -383,13 +398,14 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_m
 
 void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const
 {
-  ref_renderData.m_hMesh          = m_hMesh;
-  ref_renderData.m_hMeshBuffer    = mesh.GetMeshBuffer();
-  ref_renderData.m_uiUniqueID     = GetUniqueIdForRendering();
-  ref_renderData.m_uiLODIndex     = SelectLOD(mesh);
-  ref_renderData.m_uiSectionIndex = m_uiSectionIndex;
-  ref_renderData.m_RangeMode      = m_uiSectionIndex == xiiInvalidIndex ? xiiMeshRenderData::RangeMode::WholeMesh : xiiMeshRenderData::RangeMode::MeshSection;
-  ref_renderData.m_Flags          = GetMeshRenderFlags();
+  ref_renderData.m_hMesh            = m_hMesh;
+  ref_renderData.m_hMeshBuffer      = mesh.GetMeshBuffer();
+  ref_renderData.m_uiUniqueID       = GetUniqueIdForRendering();
+  ref_renderData.m_uiVisibilityMask = m_uiVisibilityMask;
+  ref_renderData.m_uiLODIndex       = SelectLOD(mesh);
+  ref_renderData.m_uiSectionIndex   = m_uiSectionIndex;
+  ref_renderData.m_RangeMode        = m_uiSectionIndex == xiiInvalidIndex ? xiiMeshRenderData::RangeMode::WholeMesh : xiiMeshRenderData::RangeMode::MeshSection;
+  ref_renderData.m_Flags            = GetMeshRenderFlags();
 
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::PreferMeshShader, m_bPreferMeshShaders);
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::CpuCullingFallback, m_bCpuCullingFallback);
@@ -442,7 +458,7 @@ xiiUInt32 xiiMeshComponentBase::SelectLOD(const xiiMeshResource& mesh) const
 
 xiiRenderData::Caching::Enum xiiMeshComponentBase::GetRenderDataCaching() const
 {
-  return xiiRenderData::Caching::Never;
+  return GetOwner()->IsStatic() && !GetMeshRenderFlags().IsAnySet(xiiMeshRenderDataFlags::DynamicObject | xiiMeshRenderDataFlags::Skinned) ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never;
 }
 
 xiiBitflags<xiiMeshRenderDataFlags> xiiMeshComponentBase::GetMeshRenderFlags() const
@@ -465,7 +481,7 @@ xiiStaticMeshComponent::~xiiStaticMeshComponent() = default;
 
 xiiRenderData::Caching::Enum xiiStaticMeshComponent::GetRenderDataCaching() const
 {
-  return xiiRenderData::Caching::IfStatic;
+  return GetOwner()->IsStatic() ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never;
 }
 
 xiiBitflags<xiiMeshRenderDataFlags> xiiStaticMeshComponent::GetMeshRenderFlags() const
@@ -654,6 +670,7 @@ xiiInstancedMeshComponent::~xiiInstancedMeshComponent() = default;
 xiiUInt32 xiiInstancedMeshComponent::AddInstance(const xiiMat4& transform)
 {
   m_InstanceTransforms.PushBack(transform);
+  ++m_uiTopologyRevision;
 
   TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
@@ -681,6 +698,7 @@ void xiiInstancedMeshComponent::RemoveInstance(xiiUInt32 uiIndex)
     return;
 
   m_InstanceTransforms.RemoveAtAndCopy(uiIndex);
+  ++m_uiTopologyRevision;
 
   TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
@@ -693,6 +711,7 @@ void xiiInstancedMeshComponent::SetInstanceCount(xiiUInt32 uiCount)
     return;
 
   m_InstanceTransforms.SetCount(uiCount);
+  ++m_uiTopologyRevision;
   for (xiiUInt32 i = uiOldCount; i < uiCount; ++i)
   {
     m_InstanceTransforms[i].SetIdentity();
@@ -708,6 +727,7 @@ void xiiInstancedMeshComponent::ClearInstances()
     return;
 
   m_InstanceTransforms.Clear();
+  ++m_uiTopologyRevision;
 
   TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
@@ -744,6 +764,7 @@ void xiiInstancedMeshComponent::DeserializeComponent(xiiWorldReader& inout_strea
   s >> uiInstanceCount;
 
   m_InstanceTransforms.SetCount(uiInstanceCount);
+  ++m_uiTopologyRevision;
   for (xiiMat4& transform : m_InstanceTransforms)
   {
     s >> transform;
@@ -754,8 +775,9 @@ void xiiInstancedMeshComponent::FillRenderData(xiiMeshRenderData& ref_renderData
 {
   SUPER::FillRenderData(ref_renderData, mesh);
 
-  ref_renderData.m_InstanceTransforms = m_InstanceTransforms;
-  ref_renderData.m_uiInstanceCount    = m_InstanceTransforms.GetCount();
+  ref_renderData.m_InstanceTransforms         = m_InstanceTransforms;
+  ref_renderData.m_uiInstanceCount            = m_InstanceTransforms.GetCount();
+  ref_renderData.m_uiInstanceTopologyRevision = m_uiTopologyRevision;
   ref_renderData.m_Flags.Add(xiiMeshRenderDataFlags::Instanced);
 }
 
