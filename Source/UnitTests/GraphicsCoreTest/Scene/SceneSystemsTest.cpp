@@ -9,6 +9,32 @@ XII_CREATE_SIMPLE_TEST_GROUP(Scene);
 
 XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unchanged scene updates preserve revision and upload only one settling frame")
+  {
+    xiiSceneDatabaseContext context;
+    XII_TEST_RESULT(context.Initialize());
+    auto& scene = context.GetDatabase();
+    xiiSceneObjectDesc description;
+    const auto         object = scene.CreateObject(description);
+    scene.CommitFrame(1);
+    const auto revision = scene.GetRevision();
+    XII_TEST_BOOL(scene.SetLocalTransform(object, description.m_LocalTransform));
+    XII_TEST_BOOL(scene.SetLocalBounds(object, description.m_LocalBounds));
+    XII_TEST_BOOL(scene.SetFlags(object, description.m_Flags));
+    XII_TEST_BOOL(scene.SetGeometry(object, description.m_uiGeometryIndex));
+    XII_TEST_BOOL(scene.SetMaterial(object, description.m_uiMaterialIndex));
+    XII_TEST_INT(scene.GetRevision(), revision);
+    scene.CommitFrame(2);
+    XII_TEST_BOOL(scene.GetUploadRanges().IsEmpty());
+    XII_TEST_BOOL(scene.SetLocalTransform(object, xiiMat4::MakeTranslation(xiiVec3(3, 0, 0))));
+    scene.CommitFrame(3);
+    XII_TEST_BOOL(!scene.GetUploadRanges().IsEmpty());
+    scene.CommitFrame(4);
+    XII_TEST_BOOL(!scene.GetUploadRanges().IsEmpty());
+    XII_TEST_BOOL(scene.GetGpuInstances()[0].m_GlobalTransform == scene.GetGpuInstances()[0].m_PreviousGlobalTransform);
+    scene.CommitFrame(5);
+    XII_TEST_BOOL(scene.GetUploadRanges().IsEmpty());
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pose snapshots share section palettes and preserve one frame of vertex motion")
   {
     xiiSceneDatabaseContext context;
