@@ -7,6 +7,7 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
@@ -92,8 +93,9 @@ public:
   const xiiGpuInstanceData*                GetGpuInstanceData() const { return m_pGpuInstances.Borrow(); }
   /// Publishes derived mesh draw data at the CPU extraction boundary. Tools that build graphs
   /// explicitly use this same path; inputs must carry live handles in this world.
-  xiiResult UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame);
-  xiiResult UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame);
+  xiiResult                            UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame);
+  xiiResult                            UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame);
+  xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame) const;
 
   virtual ~xiiRenderWorldModule();
 
@@ -200,11 +202,12 @@ private:
     ViewExtractionCache                  m_ExtractionCache;
   };
 
-  xiiIdTable<xiiViewId, ViewDetail>        m_ViewIdTable;
-  xiiEvent<xiiViewEvent, xiiMutex>         m_ViewEvents;
-  xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
-  xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
-  xiiUniquePtr<xiiGpuInstanceData>         m_pGpuInstances;
+  xiiIdTable<xiiViewId, ViewDetail>                 m_ViewIdTable;
+  xiiEvent<xiiViewEvent, xiiMutex>                  m_ViewEvents;
+  xiiBitflags<xiiRenderExtractionCategory>          m_ExtractionRequirements;
+  xiiBitflags<xiiRenderPipelineFeature>             m_RuntimeFeatures;
+  xiiUniquePtr<xiiGpuInstanceData>                  m_pGpuInstances;
+  mutable xiiUniquePtr<xiiRayTracingFrameResources> m_pRayTracingResources;
 
   static xiiUniquePtr<ExtractionEvent> s_pRenderEvent;
 };

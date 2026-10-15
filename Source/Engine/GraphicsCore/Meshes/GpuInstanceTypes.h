@@ -14,15 +14,16 @@ struct XII_GRAPHICSCORE_DLL xiiGpuInstanceFlags
 
   enum Enum : StorageType
   {
-    None           = 0,
-    Enabled        = XII_BIT(0),
-    Static         = XII_BIT(1),
-    CastShadows    = XII_BIT(2),
-    ReceiveShadows = XII_BIT(3),
-    AlwaysVisible  = XII_BIT(4),
-    Occluder       = XII_BIT(5),
-    Transparent    = XII_BIT(6),
-    SensorVisible  = XII_BIT(7),
+    None              = 0,
+    Enabled           = XII_BIT(0),
+    Static            = XII_BIT(1),
+    CastShadows       = XII_BIT(2),
+    ReceiveShadows    = XII_BIT(3),
+    AlwaysVisible     = XII_BIT(4),
+    Occluder          = XII_BIT(5),
+    Transparent       = XII_BIT(6),
+    SensorVisible     = XII_BIT(7),
+    RayTracingVisible = XII_BIT(8),
 
     Default = Enabled | CastShadows | ReceiveShadows
   };
@@ -37,6 +38,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuInstanceFlags
     StorageType Occluder : 1;
     StorageType Transparent : 1;
     StorageType SensorVisible : 1;
+    StorageType RayTracingVisible : 1;
   };
 };
 

@@ -44,6 +44,7 @@ namespace
   {
     xiiBitflags<xiiGpuInstanceFlags> flags = xiiGpuInstanceFlags::Default;
     flags.Add(xiiGpuInstanceFlags::SensorVisible);
+    flags.AddOrRemove(xiiGpuInstanceFlags::RayTracingVisible, packet.m_Flags.IsSet(xiiMeshRenderDataFlags::RayTracingVisible));
     flags.AddOrRemove(xiiGpuInstanceFlags::Static, packet.m_Flags.IsSet(xiiMeshRenderDataFlags::StaticObject));
     if (handle.IsValid())
     {
@@ -73,6 +74,7 @@ public:
     PacketKey                 m_Key;
     xiiGpuInstanceSource      m_Source;
     xiiGeometryHandle         m_Geometry;
+    xiiMeshResourceHandle     m_Mesh;
     xiiMaterialResourceHandle m_Material;
     xiiMaterialGpuHandle      m_GpuMaterial;
     xiiDynamicArray<xiiMat4>  m_CurrentPose, m_PreviousPose;
@@ -180,6 +182,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (!fresh)
       xiiGeometryResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, frame);
     entry.m_Geometry = geometry;
+    entry.m_Mesh     = packet.m_hMesh;
     if (fresh || entry.m_Material != material)
     {
       const auto gpuMaterial = xiiMaterialManager::AcquireMaterialResource(material);
@@ -358,6 +361,16 @@ xiiUInt64 xiiGpuInstanceData::GetMaximumMeshletCount() const
   for (const auto& entry : m_pState->m_Entries)
     count += entry.m_MaximumMeshlets;
   return count;
+}
+
+xiiMeshResourceHandle xiiGpuInstanceData::GetMeshResource(xiiUInt32 index) const
+{
+  return m_pState->m_Entries[index].m_Mesh;
+}
+
+xiiMaterialGpuHandle xiiGpuInstanceData::GetMaterialHandle(xiiUInt32 index) const
+{
+  return m_pState->m_Entries[index].m_GpuMaterial;
 }
 
 xiiResult xiiGpuInstanceData::Resolve(xiiUInt32 identity, xiiGpuInstanceSource& source) const

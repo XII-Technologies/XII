@@ -27,7 +27,7 @@ struct XII_SHADER_STRUCT xiiRayTracingGeometryData
 {
   UINT4(BufferIndices);    ///< x = vertex SRV, y = index SRV or invalid, z = index stride, w = normal stride.
   UINT4(VertexLayout);     ///< x = vertex stride, y = position offset, z = normal offset or invalid, w = UV0 offset or invalid.
-  UINT4(VertexAttributes); ///< x = tangent offset or invalid, y = tangent stride, z = UV0 stride, w = reserved.
+  UINT4(VertexAttributes); ///< x = tangent offset or invalid, y = tangent stride, z = UV0 stride, w = first source primitive.
 };
 
 #if XII_ENABLED(XII_SHADER_PLATFORM)

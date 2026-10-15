@@ -15,8 +15,8 @@
 #include <Core/Graphics/Camera.h>
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
-#include <Foundation/Memory/FrameAllocator.h>
 #include <Core/System/Window.h>
+#include <Foundation/Memory/FrameAllocator.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -399,10 +399,12 @@ public:
 private:
   void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
   {
-    const auto                                geometry            = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
-    const auto                                materials           = xiiMaterialManager::AddUploadPasses(graph);
-    const xiiRenderGraphBufferHandle          hMaterials          = materials.m_hSurfaceData;
-    const auto                                rayTracingScene     = xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex);
+    const auto                       geometry        = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
+    const auto                       materials       = xiiMaterialManager::AddUploadPasses(graph);
+    const xiiRenderGraphBufferHandle hMaterials      = materials.m_hSurfaceData;
+    const auto                       rayTracingScene = m_World.AddRayTracingBuildPass(graph, m_uiFrameIndex);
+    if (m_uiFrameIndex == 0 && xiiRayTracingResources::IsHardwareRayTracingSupported())
+      xiiLog::Info("World-derived ray tracing contains {} TLAS instances.", rayTracingScene.m_uiInstanceCount);
     const xiiRenderGraphTextureHandle         hPreviousHiZ        = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
     xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex);

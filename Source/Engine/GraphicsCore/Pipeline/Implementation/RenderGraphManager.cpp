@@ -6,7 +6,7 @@
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Lighting/RayTracingScene.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
@@ -316,8 +316,8 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiMaterialManager::GetGpuStorage().GetFramesInFlight());
   if (xiiGeometryResidencyManager::IsInitialized())
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
-  if (xiiRayTracingSceneManager::IsInitialized())
-    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiRayTracingSceneManager::GetConfiguration().m_uiFramesInFlight);
+  if (xiiRayTracingResources::IsInitialized())
+    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiRayTracingResources::GetConfiguration().m_uiFramesInFlight);
   if (xiiVirtualShadowMapManager::IsInitialized())
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiVirtualShadowMapManager::GetConfiguration().m_uiFramesInFlight);
   const xiiUInt32 uiVisibilityFrames = xiiGpuVisibilityManager::GetMinimumFramesInFlight();

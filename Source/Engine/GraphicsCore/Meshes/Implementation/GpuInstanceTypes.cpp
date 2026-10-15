@@ -5,6 +5,7 @@
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGpuInstanceFlags, 1)
   XII_BITFLAGS_CONSTANTS(xiiGpuInstanceFlags::Enabled, xiiGpuInstanceFlags::Static, xiiGpuInstanceFlags::CastShadows, xiiGpuInstanceFlags::ReceiveShadows)
   XII_BITFLAGS_CONSTANTS(xiiGpuInstanceFlags::AlwaysVisible, xiiGpuInstanceFlags::Occluder, xiiGpuInstanceFlags::Transparent, xiiGpuInstanceFlags::SensorVisible)
+  XII_BITFLAGS_CONSTANT(xiiGpuInstanceFlags::RayTracingVisible)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 // clang-format on
 

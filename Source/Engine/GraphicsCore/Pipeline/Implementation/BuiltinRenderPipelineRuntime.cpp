@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineHelpers.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 using namespace xiiBuiltinPipelineUtils;
 
@@ -116,8 +117,13 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
       services.geometry  = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
       services.materials = xiiMaterialManager::AddUploadPasses(graph);
     }
-    if (features.IsSet(xiiRenderPipelineFeature::RayTracing))
-      services.rayTracing = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
+    if (features.IsSet(xiiRenderPipelineFeature::RayTracing) && m_View.GetGpuInstanceData())
+    {
+      if (!serviceOwner->m_RayTracingResources)
+        serviceOwner->m_RayTracingResources = XII_DEFAULT_NEW(xiiRayTracingFrameResources);
+      const auto selection = m_View.GetGpuInstanceSelection();
+      services.rayTracing  = xiiRayTracingResources::AddBuildPass(graph, uiFrameIndex, *serviceOwner->m_RayTracingResources, *m_View.GetGpuInstanceData(), &selection);
+    }
     graph.SetResourceNamespace(previousScope);
     services.m_bSharedServicesPrepared = true;
   }
@@ -163,11 +169,11 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
     mainVisibility                         = xiiGpuVisibilityManager::AddPasses(GetVisibilityContext(), graph, uiFrameIndex, *m_View.GetGpuInstanceData(), visibilityView, geometry, visibilityDescription, hPreviousGpuHiZ);
   }
 
-  const xiiRayTracingSceneManager::BuildHandles rayTracingScene = m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::RayTracing) ? services.rayTracing : xiiRayTracingSceneManager::BuildHandles{};
-  m_Resources.m_LightingPasses.m_pRayTracingScene               = rayTracingScene.m_pTopLevelAS;
-  m_Resources.m_LightingPasses.m_hRayTracingSceneDependency     = rayTracingScene.m_hSceneDependency;
-  m_Resources.m_LightingPasses.m_hRayTracingMaterialData        = rayTracingScene.m_hMaterialData;
-  m_Resources.m_LightingPasses.m_hRayTracingGeometryData        = rayTracingScene.m_hGeometryData;
+  const xiiRayTracingResources::BuildHandles rayTracingScene = m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::RayTracing) ? services.rayTracing : xiiRayTracingResources::BuildHandles{};
+  m_Resources.m_LightingPasses.m_pRayTracingScene            = rayTracingScene.m_pTopLevelAS;
+  m_Resources.m_LightingPasses.m_hRayTracingSceneDependency  = rayTracingScene.m_hSceneDependency;
+  m_Resources.m_LightingPasses.m_hRayTracingMaterialData     = rayTracingScene.m_hMaterialData;
+  m_Resources.m_LightingPasses.m_hRayTracingGeometryData     = rayTracingScene.m_hGeometryData;
 
   if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::Lighting) && m_View.m_pExtractedData != nullptr)
   {

@@ -4,6 +4,8 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Material/MaterialTypes.h>
 #include <GraphicsCore/Meshes/GpuInstanceTypes.h>
 
 class xiiWorld;
@@ -30,6 +32,8 @@ public:
   xiiArrayPtr<const xiiGpuInstanceUploadRange> GetUploadRanges() const { return m_UploadRanges; }
   xiiUInt32                                    GetInstanceCount() const { return m_Instances.GetCount(); }
   xiiUInt64                                    GetMaximumMeshletCount() const;
+  xiiMeshResourceHandle                        GetMeshResource(xiiUInt32 drawIndex) const;
+  xiiMaterialGpuHandle                         GetMaterialHandle(xiiUInt32 drawIndex) const;
   /// Returns failure for background, retired candidates, a foreign world's identity or dead owners.
   xiiResult Resolve(xiiUInt32 gpuIdentity, xiiGpuInstanceSource& source) const;
   /// Produces a compact candidate stream for a camera or picking subset; records are not copied.

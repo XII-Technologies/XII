@@ -7,7 +7,7 @@
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
-#include <GraphicsCore/Lighting/RayTracingScene.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Lighting/VolumetricMedium.h>
@@ -29,7 +29,7 @@ static_assert(!std::is_default_constructible_v<xiiLightingManager>, "Lighting co
 static_assert(!std::is_default_constructible_v<xiiGpuShadowRasterManager>, "GPU shadow raster state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiVirtualShadowMapManager>, "Virtual shadow residency must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiAtmosphereManager>, "Atmosphere LUT state must be owned by its subsystem.");
-static_assert(!std::is_default_constructible_v<xiiRayTracingSceneManager>, "Ray tracing scene state must be owned by its subsystem.");
+static_assert(!std::is_default_constructible_v<xiiRayTracingResources>, "Ray tracing scene state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSensorRenderingManager>, "Sensor profiles must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiDisplayOutputManager>, "Display defaults must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiVolumetricMediumManager>, "Volumetric media must be owned by their subsystem.");
@@ -51,7 +51,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiGpuShadowRasterManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiVirtualShadowMapManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiAtmosphereManager::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiRayTracingSceneManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiRayTracingResources::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiSensorRenderingManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiDisplayOutputManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiVolumetricMediumManager::IsSubsystemInitialized());

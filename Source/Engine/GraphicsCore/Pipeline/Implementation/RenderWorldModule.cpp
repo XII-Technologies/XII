@@ -146,6 +146,7 @@ void xiiRenderWorldModule::Deinitialize()
   for (const auto& view : views)
     DestroyView(view);
 
+  m_pRayTracingResources.Clear();
   m_pGpuInstances.Clear();
 
   xiiDebugRenderer::ClearContext(GetWorld());
@@ -158,6 +159,15 @@ void xiiRenderWorldModule::OnSimulationStarted()
 xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame)
 {
   return UpdateGpuInstances(packets.GetAllRenderData(), frame);
+}
+
+xiiRayTracingResources::BuildHandles xiiRenderWorldModule::AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame) const
+{
+  if (!m_pGpuInstances || !xiiRayTracingResources::IsHardwareRayTracingSupported())
+    return {};
+  if (!m_pRayTracingResources)
+    m_pRayTracingResources = XII_DEFAULT_NEW(xiiRayTracingFrameResources);
+  return xiiRayTracingResources::AddBuildPass(graph, frame, *m_pRayTracingResources, *m_pGpuInstances);
 }
 
 xiiResult xiiRenderWorldModule::UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)
@@ -702,7 +712,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
   // Scene synchronization can acquire resource-backed materials that did not exist at the start
   // of the frame. Resolve their bindless textures before any view captures its material upload.
-  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && xiiMaterialManager::IsInitialized())
+  if (m_RuntimeFeatures.IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing) && xiiMaterialManager::IsInitialized())
     xiiMaterialManager::PrepareGpuResources();
 
   if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && xiiGeometryResidencyManager::IsInitialized())

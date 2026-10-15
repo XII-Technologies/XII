@@ -69,11 +69,11 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   virtualShadowDescription.m_uiFramesInFlight        = configuration.m_uiFramesInFlight;
   XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::Configure(virtualShadowDescription));
 
-  xiiRayTracingSceneDescription rayTracingDescription;
+  xiiRayTracingResourceLimits rayTracingDescription;
   rayTracingDescription.m_uiMaxGeometries  = 4U;
   rayTracingDescription.m_uiMaxInstances   = configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U;
   rayTracingDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
-  return xiiRayTracingSceneManager::Configure(rayTracingDescription);
+  return xiiRayTracingResources::Configure(rayTracingDescription);
 }
 
 xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
@@ -97,18 +97,14 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
 
 void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
 {
-  for (xiiRayTracingInstanceHandle handle : m_RayTracingInstances)
-    xiiRayTracingSceneManager::DestroyInstance(handle);
   for (GeometryAsset& asset : m_GeometryAssets)
   {
     xiiGeometryResidencyManager::ReleaseMeshGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
-    xiiRayTracingSceneManager::UnregisterGeometry(asset.m_hRayTracingGeometry);
   }
   m_World.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
   m_Objects.Clear();
-  m_RayTracingInstances.Clear();
   m_BasePositions.Clear();
   m_hAssemblyRoot.Invalidate();
 }
@@ -171,10 +167,6 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     asset.m_hGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(asset.m_hMesh);
     if (asset.m_hGeometry.IsInvalidated())
       return XII_FAILURE;
-    xiiResourceLock<xiiMeshResource> mesh(asset.m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
-    xiiRayTracingGeometryDescription rayTracing;
-    rayTracing.m_hMeshBuffer    = mesh->GetMeshBuffer();
-    asset.m_hRayTracingGeometry = xiiRayTracingSceneManager::RegisterGeometry(rayTracing);
   }
   xiiGeometryResidencyManager::ProcessStreaming(0, 0, 128ULL * 1024ULL * 1024ULL);
   return XII_SUCCESS;
@@ -221,16 +213,6 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   if (GetGpuInstances().GetInstanceCount() != m_Objects.GetCount() * 2U)
     return XII_FAILURE;
   xiiLog::Info("Extracted {} GPU draw candidates from {} world mesh components.", GetGpuInstances().GetInstanceCount(), m_Objects.GetCount());
-  // Temporary resource build inputs are derived from world extraction. The global TLAS
-  // registry is removed in the following migration phase.
-  for (const auto& instance : GetGpuInstances().GetInstances())
-  {
-    xiiRayTracingInstanceDescription rayTracing;
-    rayTracing.m_hGeometry        = m_GeometryAssets[instance.m_uiUserData % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
-    rayTracing.m_Transform        = instance.m_GlobalTransform;
-    rayTracing.m_uiStableObjectId = instance.m_uiObjectId;
-    m_RayTracingInstances.PushBack(xiiRayTracingSceneManager::CreateInstance(rayTracing));
-  }
   return XII_SUCCESS;
 }
 

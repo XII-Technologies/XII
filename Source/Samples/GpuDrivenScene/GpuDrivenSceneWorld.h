@@ -7,7 +7,7 @@
 #include <Foundation/Math/BoundingBox.h>
 #include <Foundation/Math/Color.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Lighting/RayTracingScene.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -58,30 +58,33 @@ public:
     XII_LOCK(m_World->GetReadMarker());
     return *static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->GetGpuInstanceData();
   }
+  xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame) const
+  {
+    XII_LOCK(m_World->GetReadMarker());
+    return static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->AddRayTracingBuildPass(graph, frame);
+  }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
   [[nodiscard]] xiiBoundingBox                GetAnimatedShadowBounds() const;
 
 private:
   struct GeometryAsset
   {
-    xiiGeometryHandle           m_hGeometry;
-    xiiRayTracingGeometryHandle m_hRayTracingGeometry;
-    xiiMeshResourceHandle       m_hMesh;
+    xiiGeometryHandle     m_hGeometry;
+    xiiMeshResourceHandle m_hMesh;
   };
 
   xiiResult CreateMaterials();
   xiiResult CreateGeometry();
   xiiResult CreateSceneObjects();
 
-  xiiGpuDrivenSceneConfiguration               m_Configuration;
-  xiiGpuDrivenSceneLight                       m_SunLight;
-  xiiUniquePtr<xiiWorld>                       m_World;
-  xiiDynamicArray<GeometryAsset>               m_GeometryAssets;
-  xiiDynamicArray<xiiMaterialResourceHandle>   m_Materials;
-  xiiGameObjectHandle                          m_hAssemblyRoot;
-  xiiDynamicArray<xiiGameObjectHandle>         m_Objects;
-  xiiDynamicArray<xiiRayTracingInstanceHandle> m_RayTracingInstances;
-  xiiDynamicArray<xiiVec3>                     m_BasePositions;
-  xiiBoundingBox                               m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
-  float                                        m_fAnimationTime                   = 0.0f;
+  xiiGpuDrivenSceneConfiguration             m_Configuration;
+  xiiGpuDrivenSceneLight                     m_SunLight;
+  xiiUniquePtr<xiiWorld>                     m_World;
+  xiiDynamicArray<GeometryAsset>             m_GeometryAssets;
+  xiiDynamicArray<xiiMaterialResourceHandle> m_Materials;
+  xiiGameObjectHandle                        m_hAssemblyRoot;
+  xiiDynamicArray<xiiGameObjectHandle>       m_Objects;
+  xiiDynamicArray<xiiVec3>                   m_BasePositions;
+  xiiBoundingBox                             m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
+  float                                      m_fAnimationTime                   = 0.0f;
 };
