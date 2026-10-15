@@ -58,8 +58,9 @@ integration tests where runtime behavior changes. Record actual results below.
 
 Definitions and immutable compilations may be shared. Mutable pass objects,
 history and bindings belong to one expanded occurrence in one view. World modules
-own scene-derived CPU caches; view contexts own visibility and view-dependent
-GPU data; device subsystems own residency, allocation and deferred destruction.
+own shared component packets and derived GPU instance/pose buffers; view contexts
+own candidate selections, visibility and view-dependent GPU data. Device
+subsystems own asset residency, allocation and deferred destruction.
 Document identity is `(definition UUID, instance UUID path, node UUID)`. Runtime
 handles are valid only in their owning graph and need explicit remapping.
 
@@ -266,15 +267,17 @@ Representative coverage:
   instance overrides, infer external pin types, deduplicate shared asset
   references, and preserve the previous valid output on an invalid export.
   Existing editor tests exercise main-scene and selection query resources in one
-  graph, with separate writable scene uploads and both mesh-shader paths.
+  graph, sharing world instance uploads with separate writable view histories and
+  both mesh-shader paths.
 * Vulkan pipeline tests execute repeated subgraphs and read back GPU results.
   Explicit temporal feedback is tested across two occurrences in two views,
   including disabled views and camera cuts. Current-frame cycles still fail.
 * World demand tests aggregate independent views, skip unused components and
   empty-demand traversal, reuse static packets, invalidate property/transform
   changes, and consume a world module's current PostTransform update. CPU-only
-  geometry/light consumers leave GPU-scene features uninitialized. Scene database
-  tests cover unchanged revisions, dirty uploads and motion-history settling.
+  geometry/light consumers leave GPU-scene features uninitialized. World-driven
+  extraction tests cover dirty uploads, compaction, identity validation,
+  component serialization and motion-history settling.
 
 An integration regression exposed identical writable upload names in independent
 visibility contexts. Upload names now follow the context's resource-set name;
