@@ -13,7 +13,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
   {
     xiiSceneDatabaseContext context;
     XII_TEST_RESULT(context.Initialize());
-    auto& scene = context.GetDatabase();
+    auto&              scene = context.GetDatabase();
     xiiSceneObjectDesc description;
     const auto         object = scene.CreateObject(description);
     scene.CommitFrame(1);

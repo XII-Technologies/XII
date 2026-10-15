@@ -40,14 +40,18 @@ public:
     }
     xiiSharedPtr<xiiGraphCompiledComposition> compiled = XII_DEFAULT_NEW(xiiGraphCompiledComposition);
     XII_SUCCEED_OR_RETURN(xiiGraphComposition::Expand(root, resolveRoot, compiled->m_Expansion, out_error));
-    m_Root = root.m_Id;
-    m_pCompiled = compiled;
+    m_Root          = root.m_Id;
+    m_pCompiled     = compiled;
     out_composition = std::move(compiled);
     return XII_SUCCESS;
   }
-  void Clear() { m_pCompiled = nullptr; m_Root = {}; }
+  void Clear()
+  {
+    m_pCompiled = nullptr;
+    m_Root      = {};
+  }
 
 private:
-  xiiUuid m_Root;
+  xiiUuid                                         m_Root;
   xiiSharedPtr<const xiiGraphCompiledComposition> m_pCompiled;
 };
