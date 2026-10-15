@@ -5,7 +5,13 @@
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 2, xiiRTTINoAllocator)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MAP_MEMBER_PROPERTY("ParameterOverrides", m_ParameterOverrides),
+    } XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiResult xiiRenderPipelinePass::Configure(const xiiVariantDictionary& properties)
@@ -50,6 +56,8 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderG
   const auto i = FindPin(name, false);
   if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Texture)
     return XII_FAILURE;
+  if (m_Pins[i].m_bTemporalHistoryOutput != m_bTemporalHistoryPhase)
+    return XII_FAILURE;
   const auto* description = m_Graph.GetTextureDescription(texture);
   if (!description || (m_Pins[i].m_Format != xiiGALResourceFormat::Unknown && description->m_Format != m_Pins[i].m_Format))
     return XII_FAILURE;
@@ -60,6 +68,8 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderG
 {
   const auto i = FindPin(name, false);
   if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Buffer)
+    return XII_FAILURE;
+  if (m_Pins[i].m_bTemporalHistoryOutput != m_bTemporalHistoryPhase)
     return XII_FAILURE;
   if (!m_Graph.GetBufferDescription(buffer))
     return XII_FAILURE;

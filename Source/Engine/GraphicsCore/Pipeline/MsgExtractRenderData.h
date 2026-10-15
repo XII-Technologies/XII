@@ -7,6 +7,7 @@
 #include <Foundation/Communication/Message.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderExtraction.h>
 
 class xiiView;
 
@@ -16,7 +17,8 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
   XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractRenderData, xiiMessage);
 
 public:
-  using SubmitRenderDataFunction = void (*)(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
+  using SubmitRenderDataFunction                          = void (*)(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
+  xiiBitflags<xiiRenderExtractionCategory> m_Requirements = xiiRenderExtractionCategory::All;
 
   /// Adds a single extracted render data item.
   void AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);

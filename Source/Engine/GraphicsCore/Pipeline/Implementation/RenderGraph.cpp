@@ -129,6 +129,8 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView 
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiRenderGraphResourceFlags> flags)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(HasValidOwnedLifetimeFlags(flags), "Resource '{}' must be exactly one of Transient or Persistent; External resources must be imported.", sName);
 
   xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
@@ -158,7 +160,19 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView 
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView sName, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> currentState)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(pTexture != nullptr, "Cannot import a null texture.");
+  xiiUInt32 physicalIndex;
+  if (m_Graph.m_ImportedTextureIndices.TryGetValue(pTexture.Borrow(), physicalIndex))
+  {
+    xiiUInt32 namedIndex;
+    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), namedIndex) && namedIndex != physicalIndex)
+      return {};
+    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(sName), physicalIndex);
+    const auto& existing = m_Graph.m_Resources[physicalIndex];
+    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
+  }
 
   xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex))
@@ -183,6 +197,9 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiTextureResourceIndex);
   }
 
+  if (!m_Graph.m_Resources[uiTextureResourceIndex].m_bIsImported || m_Graph.m_Resources[uiTextureResourceIndex].m_pImportedTexture != pTexture)
+    return {};
+  m_Graph.m_ImportedTextureIndices.Insert(pTexture.Borrow(), uiTextureResourceIndex);
   return xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
 }
 
@@ -212,6 +229,8 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiStringView sNa
   xiiRenderGraphTextureHandle bound;
   if (m_Graph.m_SetupTextureBindings.TryGetValue(xiiTempHashedString(sName), bound))
     return ReadTexture(bound, requiredState);
+  const auto qualified              = m_Graph.QualifyResourceName(sName);
+  sName                             = qualified;
   xiiUInt32  uiTextureResourceIndex = xiiInvalidIndex;
   const bool bFound                 = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read texture '{}' because it was not declared or imported.", sName);
@@ -290,6 +309,8 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiRenderGraphResourceFlags> flags)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(HasValidOwnedLifetimeFlags(flags), "Resource '{}' must be exactly one of Transient or Persistent; External resources must be imported.", sName);
 
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
@@ -319,7 +340,19 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sName, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> currentState)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(pBuffer != nullptr, "Cannot import a null buffer.");
+  xiiUInt32 physicalIndex;
+  if (m_Graph.m_ImportedBufferIndices.TryGetValue(pBuffer.Borrow(), physicalIndex))
+  {
+    xiiUInt32 namedIndex;
+    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), namedIndex) && namedIndex != physicalIndex)
+      return {};
+    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(sName), physicalIndex);
+    const auto& existing = m_Graph.m_Resources[physicalIndex];
+    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
+  }
 
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex))
@@ -344,6 +377,9 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiBufferResourceIndex);
   }
 
+  if (!m_Graph.m_Resources[uiBufferResourceIndex].m_bIsImported || m_Graph.m_Resources[uiBufferResourceIndex].m_pImportedBuffer != pBuffer)
+    return {};
+  m_Graph.m_ImportedBufferIndices.Insert(pBuffer.Borrow(), uiBufferResourceIndex);
   return xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
 }
 
@@ -372,6 +408,8 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiStringView sName
   xiiRenderGraphBufferHandle bound;
   if (m_Graph.m_SetupBufferBindings.TryGetValue(xiiTempHashedString(sName), bound))
     return ReadBuffer(bound, requiredState);
+  const auto qualified             = m_Graph.QualifyResourceName(sName);
+  sName                            = qualified;
   xiiUInt32  uiBufferResourceIndex = xiiInvalidIndex;
   const bool bFound                = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read buffer '{}' because it was not declared or imported.", sName);
@@ -505,6 +543,10 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_Passes.Clear();
   m_Resources.Clear();
   m_ResourceNameIndex.Clear();
+  m_ImportedTextureIndices.Clear();
+  m_ImportedBufferIndices.Clear();
+  m_sResourceNamespace.Clear();
+  m_pSetupBlackboard = nullptr;
   ClearSetupBindings();
   m_ExportedTextures.Clear();
   m_ExportedBuffers.Clear();
@@ -525,9 +567,9 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 {
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while setup is still open.");
 
-  // The signature remains useful for diagnostics and future immutable-plan caching. Frame setup
-  // rebuilds pass data, imported objects, initial states, and resource descriptions, so retaining
-  // a previous frame's compiled plan would leave dangling pass-data pointers and stale barriers.
+  // Cache only frame-independent topology analysis. Every hit rebuilds compiled pass records
+  // from current callbacks and data; imported states, lifetimes, barriers and allocation plans
+  // are re-evaluated below. No prior frame callback, GAL object or history binding is retained.
   m_Statistics = {};
   PhaseG_SignatureAndCache(settings);
 
@@ -552,7 +594,12 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 
   // Phase B: topological sort + culling.
   xiiDynamicArray<xiiUInt32> sortedIndices;
-  PhaseB_TopologicalSortAndCull(settings, sortedIndices);
+  if (!RestoreTopologyCache(settings, sortedIndices))
+  {
+    PhaseB_TopologicalSortAndCull(settings, sortedIndices);
+    if (settings.m_bEnableCompileCache && sortedIndices.GetCount() == m_Passes.GetCount())
+      StoreTopologyCache(settings, sortedIndices);
+  }
 
   if (sortedIndices.GetCount() != m_Passes.GetCount())
   {
@@ -1517,11 +1564,17 @@ xiiUInt64 xiiRenderGraph::ComputeSignature(const xiiDynamicArray<PassEntry>& pas
 
     for (const ResourceUsage& read : passEntry.m_Reads)
     {
-      uiHash = xiiHashingUtils::xxHash64(&read, sizeof(read), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&read.m_uiResourceIndex, sizeof(read.m_uiResourceIndex), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&read.m_uiVersion, sizeof(read.m_uiVersion), uiHash);
+      const auto state = read.m_RequiredState.GetValue();
+      uiHash           = xiiHashingUtils::xxHash64(&state, sizeof(state), uiHash);
     }
     for (const ResourceUsage& write : passEntry.m_Writes)
     {
-      uiHash = xiiHashingUtils::xxHash64(&write, sizeof(write), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&write.m_uiResourceIndex, sizeof(write.m_uiResourceIndex), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&write.m_uiVersion, sizeof(write.m_uiVersion), uiHash);
+      const auto state = write.m_RequiredState.GetValue();
+      uiHash           = xiiHashingUtils::xxHash64(&state, sizeof(state), uiHash);
     }
   }
   return uiHash;
@@ -1810,7 +1863,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       {
         xiiRenderGraphPassContext preparationContext;
         preparationContext.m_pCommandList     = pCommandList.Borrow();
-        preparationContext.m_pBlackboard      = pBlackboard;
+        preparationContext.m_pBlackboard      = m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard ? m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard : pBlackboard;
         preparationContext.m_pResourceCache   = pResourceCache;
         preparationContext.m_pView            = pView;
         preparationContext.m_uiFrameIndex     = m_uiFrameIndex;
@@ -1865,7 +1918,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         context.m_pRenderPass    = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass;
         context.m_uiSubpassIndex = 0U;
       }
-      context.m_pBlackboard      = pBlackboard;
+      context.m_pBlackboard      = m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard ? m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard : pBlackboard;
       context.m_pResourceCache   = pResourceCache;
       context.m_pView            = pView;
       context.m_uiFrameIndex     = m_uiFrameIndex;

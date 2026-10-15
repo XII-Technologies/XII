@@ -2,6 +2,7 @@
 
 #include <Core/Graph/GraphAlgorithms.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
@@ -12,17 +13,110 @@ xiiRenderPipeline::xiiRenderPipeline() :
 
 xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
-  const auto fail = [&](xiiStringView message) {
+  if (!descriptor.m_References.IsEmpty())
+  {
+    xiiRenderPipelineResourceDescriptor resolved;
+    XII_SUCCEED_OR_RETURN(xiiRenderPipelineResource::ResolveDefinitions(descriptor, resolved, nullptr, out_error));
+    return Compile(resolved, {}, out_pipeline, out_error);
+  }
+  return Compile(descriptor, {}, out_pipeline, out_error);
+}
+
+xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& authored, xiiGraphComposition::Resolver externalResolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
+{
+  xiiRenderPipelineResourceDescriptor descriptor;
+  xiiUInt32                           diagnosticPass = xiiInvalidIndex;
+  const auto                          fail           = [&](xiiStringView message) {
     if (out_error)
+    {
       out_error->Set(message);
+      if (diagnosticPass < descriptor.m_Passes.GetCount())
+        out_error->Append(" Pass/instance: ", descriptor.m_Passes[diagnosticPass].m_sName);
+    }
     return XII_FAILURE;
   };
   if (out_error)
     out_error->Clear();
-  if (descriptor.m_Passes.GetCount() > 4096 || descriptor.m_Connections.GetCount() > 65536)
+  if (authored.m_Passes.GetCount() > 4096 || authored.m_Connections.GetCount() > 65536 || authored.m_Definitions.GetCount() > 4096)
     return fail("Pipeline exceeds definition limits.");
+  xiiGraphDefinition root;
+  if (authored.MakeGraphDefinition(root).Failed())
+    return fail("Invalid pipeline document identities or topology.");
+  xiiHashTable<xiiUuid, const xiiGraphDefinition*> definitions;
+  definitions.Insert(root.m_Id, &root);
+  for (const auto& definition : authored.m_Definitions)
+  {
+    if (definitions.Contains(definition.m_Id))
+      return fail("Duplicate graph definition identity.");
+    definitions.Insert(definition.m_Id, &definition);
+  }
+  const auto resolver = [&](const xiiUuid& id) -> const xiiGraphDefinition* {
+    const xiiGraphDefinition* definition = nullptr;
+    if (definitions.TryGetValue(id, definition))
+      return definition;
+    return externalResolver.IsValid() ? externalResolver(id) : nullptr;
+  };
+  xiiGraphExpansion           expanded;
+  xiiGraphComposition::Limits limits;
+  limits.m_uiNodes = 4096;
+  limits.m_uiEdges = 65536;
+  XII_SUCCEED_OR_RETURN(xiiGraphComposition::Expand(root, resolver, limits, expanded, out_error));
+  descriptor.m_Id         = authored.m_Id;
+  descriptor.m_Parameters = authored.m_Parameters;
+  for (const auto& node : expanded.m_Nodes)
+  {
+    xiiStringBuilder name, id;
+    for (const auto& instance : node.m_Source.m_InstancePath)
+    {
+      xiiConversionUtils::ToString(instance, id);
+      name.Append(id, "/");
+    }
+    name.Append(node.m_sName);
+    const auto index                        = descriptor.AddPass(name, node.m_sType, node.m_Properties);
+    descriptor.m_Passes[index].m_Id         = node.m_Source.m_Element;
+    descriptor.m_Passes[index].m_Parameters = node.m_Parameters;
+    xiiStringBuilder instanceScope;
+    for (const auto& instance : node.m_Source.m_InstancePath)
+    {
+      xiiConversionUtils::ToString(instance, id);
+      if (!instanceScope.IsEmpty())
+        instanceScope.Append("/");
+      instanceScope.Append(id);
+    }
+    descriptor.m_Passes[index].m_sInstanceScope = instanceScope;
+    for (const auto& instance : node.m_Source.m_InstancePath)
+      descriptor.m_Passes[index].m_Id.HashCombine(instance);
+  }
+  for (const auto& edge : expanded.m_Edges)
+  {
+    auto& connection      = descriptor.m_Connections.ExpandAndGetRef();
+    connection.m_uiSource = expanded.m_Graph.GetVertexIndex(expanded.m_Graph.GetSource(edge.m_hEdge));
+    connection.m_uiTarget = expanded.m_Graph.GetVertexIndex(expanded.m_Graph.GetTarget(edge.m_hEdge));
+    connection.m_sOutput  = edge.m_sSourcePort;
+    connection.m_sInput   = edge.m_sTargetPort;
+    connection.m_Id       = edge.m_Source.m_Element;
+    for (const auto& instance : edge.m_Source.m_InstancePath)
+      connection.m_Id.HashCombine(instance);
+    connection.m_Id.HashCombine(descriptor.m_Passes[connection.m_uiTarget].m_Id);
+    connection.m_Id.HashCombine(xiiUuid::MakeStableUuidFromString(connection.m_sInput));
+  }
   xiiSharedPtr<xiiRenderPipeline> result = XII_DEFAULT_NEW(xiiRenderPipeline);
   result->m_Descriptor                   = descriptor;
+  result->m_Dependencies                 = expanded.m_Dependencies;
+  for (const auto& node : expanded.m_Nodes)
+  {
+    result->m_Provenance.PushBack(node.m_Source);
+    result->m_PassParameters.PushBack(node.m_Parameters);
+    xiiStringBuilder scope, id;
+    for (const auto& instance : node.m_Source.m_InstancePath)
+    {
+      xiiConversionUtils::ToString(instance, id);
+      if (!scope.IsEmpty())
+        scope.Append("/");
+      scope.Append(id);
+    }
+    result->m_ResourceScopes.PushBack(scope);
+  }
   XII_SUCCEED_OR_RETURN(result->m_Topology.Reserve(descriptor.m_Passes.GetCount(), descriptor.m_Connections.GetCount()));
   xiiDynamicArray<xiiGraphVertexHandle>   vertices;
   xiiDynamicArray<xiiRenderPipelinePass*> prototypes;
@@ -30,12 +124,15 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   xiiHashTable<xiiString, bool> names;
   for (const auto& definition : descriptor.m_Passes)
   {
+    diagnosticPass = result->m_Passes.GetCount();
     if (definition.m_sName.IsEmpty() || names.Contains(definition.m_sName))
       return fail("Pass names must be nonempty and unique.");
     names.Insert(definition.m_sName, true);
     const auto* type = xiiRTTI::FindTypeByName(definition.m_sType);
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
       return fail("Unknown or abstract render pipeline pass type.");
+    if (definition.m_sType == "xiiRenderPipelineSubgraphPass" || definition.m_sType == "xiiRenderPipelineInterfacePass")
+      return fail("Authoring interface and subgraph nodes must be lowered to definition references before compilation.");
     xiiRenderPipelinePass* prototype = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     prototypes.PushBack(prototype);
     if (prototype->Configure(definition.m_Properties).Failed())
@@ -44,6 +141,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     pass.m_pType           = type;
     pass.m_uiBindingOffset = result->m_uiBindingCount;
     prototype->GetPins(pass.m_Pins);
+    result->m_ExtractionRequirements |= prototype->GetExtractionRequirements();
+    result->m_RuntimeFeatures |= prototype->GetRuntimeFeatures();
     if (pass.m_Pins.GetCount() > 256)
       return fail("Pass exceeds pin limit.");
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
@@ -51,6 +150,12 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       const auto& pin = pass.m_Pins[i];
       if (pin.m_sName.IsEmpty())
         return fail("Pin names must be nonempty.");
+      if (pin.m_bTemporalHistoryOutput)
+      {
+        if (pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
+          return fail("Temporal history must be a typed resource output pin.");
+        pass.m_bHasTemporalHistory = true;
+      }
       if (pin.m_Type > xiiRenderPipelinePin::Order || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
         return fail("Invalid pin resource schema.");
       for (xiiUInt32 j = 0; j < i; ++j)
@@ -62,10 +167,57 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddVertex(vertex));
     vertices.PushBack(vertex);
   }
+  xiiHashTable<xiiString, xiiBitflags<xiiRenderExtractionCategory>> groups;
+  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
+    groups[result->m_ResourceScopes[i]] |= prototypes[i]->GetExtractionRequirements();
+  for (const auto& scope : result->m_ResourceScopes)
+    result->m_GroupRequirements.PushBack(groups[scope]);
+  xiiHashTable<xiiString, xiiBitflags<xiiRenderPipelineFeature>> featureGroups;
+  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
+    featureGroups[result->m_ResourceScopes[i]] |= prototypes[i]->GetRuntimeFeatures();
+  for (const auto& scope : result->m_ResourceScopes)
+    result->m_GroupFeatures.PushBack(featureGroups[scope]);
   xiiDynamicArray<xiiUInt8> connected;
   connected.SetCount(result->m_uiBindingCount, 0);
+  xiiHashTable<xiiString, xiiRenderPipelinePin> boundarySchemas;
+  for (const auto& boundary : expanded.m_Boundary)
+  {
+    xiiStringBuilder boundaryKey, sourceId;
+    xiiConversionUtils::ToString(boundary.m_Source.m_Definition, sourceId);
+    boundaryKey.SetFormat("{}:{}:{}:", sourceId, boundary.m_Source.m_InstancePath.GetCount(), boundary.m_bInput);
+    for (const auto& instance : boundary.m_Source.m_InstancePath)
+    {
+      xiiConversionUtils::ToString(instance, sourceId);
+      boundaryKey.Append(sourceId, "/");
+    }
+    boundaryKey.AppendFormat("{}:{}", boundary.m_sName.GetElementCount(), boundary.m_sName);
+    diagnosticPass    = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
+    bool        found = false;
+    const auto& pass  = result->m_Passes[diagnosticPass];
+    for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
+      if (pass.m_Pins[i].m_sName == boundary.m_sPort && pass.m_Pins[i].m_bInput == boundary.m_bInput)
+      {
+        found                          = true;
+        const auto&           pin      = pass.m_Pins[i];
+        xiiRenderPipelinePin* existing = nullptr;
+        if (boundarySchemas.TryGetValue(boundaryKey.GetView(), existing))
+        {
+          if (existing->m_Type != pin.m_Type || (existing->m_Format != xiiGALResourceFormat::Unknown && pin.m_Format != xiiGALResourceFormat::Unknown && existing->m_Format != pin.m_Format))
+            return fail("Subgraph interface fan-out maps incompatible reflected resource pins.");
+          if (existing->m_Format == xiiGALResourceFormat::Unknown)
+            existing->m_Format = pin.m_Format;
+        }
+        else
+          boundarySchemas.Insert(boundaryKey.GetView(), pin);
+        if (boundary.m_bInput && boundary.m_Source.m_InstancePath.IsEmpty())
+          connected[pass.m_uiBindingOffset + i] = 1;
+      }
+    if (!found)
+      return fail("Subgraph interface references an unknown reflected pin or direction.");
+  }
   for (const auto& connection : descriptor.m_Connections)
   {
+    diagnosticPass = connection.m_uiTarget;
     if (connection.m_uiSource >= vertices.GetCount() || connection.m_uiTarget >= vertices.GetCount())
       return fail("Invalid pass endpoint.");
     const auto& source = result->m_Passes[connection.m_uiSource];
@@ -88,20 +240,42 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       return fail("An input resource pin has multiple producers.");
     connected[targetBinding] = 1;
     result->m_Connections.PushBack({source.m_uiBindingOffset + output, targetBinding});
-    xiiGraphEdgeHandle edge;
-    XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddEdge(vertices[connection.m_uiSource], vertices[connection.m_uiTarget], edge));
+    if (!a.m_bTemporalHistoryOutput)
+    {
+      xiiGraphEdgeHandle edge;
+      XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddEdge(vertices[connection.m_uiSource], vertices[connection.m_uiTarget], edge));
+    }
   }
+  diagnosticPass = 0;
   for (const auto& pass : result->m_Passes)
+  {
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
       if (pass.m_Pins[i].m_bInput && !pass.m_Pins[i].m_bOptional && !connected[pass.m_uiBindingOffset + i])
         return fail("A required input pin is disconnected.");
+    ++diagnosticPass;
+  }
   xiiDynamicArray<xiiGraphVertexHandle> order;
   if (xiiGraphAlgorithms::TopologicalSort(result->m_Topology, order).Failed())
-    return fail("Render pipeline contains a dependency cycle.");
+  {
+    diagnosticPass = xiiInvalidIndex;
+    fail("Render pipeline contains an intra-frame dependency cycle. Use explicit pass-owned previous-frame resources for temporal history.");
+    if (out_error)
+      for (xiiUInt32 i = 0; i < vertices.GetCount(); ++i)
+        if (!order.Contains(vertices[i]))
+          out_error->Append(" ", descriptor.m_Passes[i].m_sName);
+    return XII_FAILURE;
+  }
   for (auto vertex : order)
     result->m_Order.PushBack(result->m_Topology.GetVertexIndex(vertex));
   for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
-    XII_SUCCEED_OR_RETURN(prototypes[i]->ValidatePipeline(descriptor, result->m_Order, i, out_error));
+  {
+    if (prototypes[i]->ValidatePipeline(descriptor, result->m_Order, i, out_error).Failed())
+    {
+      if (out_error)
+        out_error->Append(" Pass/instance: ", descriptor.m_Passes[i].m_sName);
+      return XII_FAILURE;
+    }
+  }
   result->m_Connections.Sort([](const Connection& a, const Connection& b) { return a.m_uiTargetBinding < b.m_uiTargetBinding; });
   xiiUInt32 offset = 0;
   for (auto& pass : result->m_Passes)

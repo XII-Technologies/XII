@@ -25,7 +25,7 @@ XII_ALWAYS_INLINE bool xiiRenderGraphBlackboard::TryGet(xiiStringView sKey, T& o
 
   xiiVariant value;
   if (!m_FrameEntries.TryGetValue(xiiTempHashedString(sKey), value))
-    return false;
+    return m_pParent ? m_pParent->TryGet(sKey, out_value) : false;
 
   if (!value.IsA<T>())
     return false;
@@ -42,7 +42,9 @@ XII_ALWAYS_INLINE bool xiiRenderGraphBlackboard::TryGetScoped(xiiStringView sKey
   const xiiVariant* pValue = m_FrameEntries.GetValue(xiiTempHashedString(sKey));
   if (pValue == nullptr)
     pValue = m_GraphEntries.GetValue(xiiTempHashedString(sKey));
-  if (pValue == nullptr || !pValue->IsA<T>())
+  if (pValue == nullptr)
+    return m_pParent ? m_pParent->TryGetScoped(sKey, out_value) : false;
+  if (!pValue->IsA<T>())
     return false;
 
   out_value = pValue->Get<T>();
@@ -57,6 +59,8 @@ XII_ALWAYS_INLINE const T& xiiRenderGraphBlackboard::GetRef(xiiStringView sKey) 
   const xiiVariant* pValue = m_FrameEntries.GetValue(xiiTempHashedString(sKey));
   if (pValue == nullptr)
     pValue = m_GraphEntries.GetValue(xiiTempHashedString(sKey));
+  if (pValue == nullptr && m_pParent)
+    return m_pParent->GetRef<T>(sKey);
   XII_ASSERT_DEV(pValue != nullptr, "Blackboard key '{}' does not exist.", sKey);
   XII_ASSERT_DEV(pValue->IsA<T>(), "Blackboard key '{}' exists but type does not match.", sKey);
   return pValue->Get<T>();
@@ -66,7 +70,7 @@ XII_ALWAYS_INLINE bool xiiRenderGraphBlackboard::Contains(xiiStringView sKey) co
 {
   XII_LOCK(m_ReadMutex);
 
-  return m_FrameEntries.Contains(xiiTempHashedString(sKey)) || m_GraphEntries.Contains(xiiTempHashedString(sKey));
+  return m_FrameEntries.Contains(xiiTempHashedString(sKey)) || m_GraphEntries.Contains(xiiTempHashedString(sKey)) || (m_pParent && m_pParent->Contains(sKey));
 }
 
 XII_ALWAYS_INLINE void xiiRenderGraphBlackboard::Remove(xiiStringView sKey)
@@ -79,6 +83,7 @@ XII_ALWAYS_INLINE void xiiRenderGraphBlackboard::Clear()
 {
   m_FrameEntries.Clear();
   m_GraphEntries.Clear();
+  m_pParent = nullptr;
 }
 
 XII_ALWAYS_INLINE void xiiRenderGraphBlackboard::ClearFrame()

@@ -88,6 +88,7 @@ std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStrin
   passEntry.m_bHasSideEffects = bHasSideEffects;
   passEntry.m_bAllowMerge     = true;
   passEntry.m_sName.Assign(sName);
+  passEntry.m_pBlackboard = m_pSetupBlackboard;
 
   TPassData* pPassData                = XII_NEW(xiiAlignedAllocatorWrapper::GetAllocator(), TPassData);
   passEntry.m_pPassData               = pPassData;

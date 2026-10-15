@@ -76,10 +76,6 @@ xiiView::xiiView(xiiWorld* pWorld) :
   m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext(*this);
   XII_ASSERT_DEV(!m_hPipelineRuntime.IsInvalidated(), "Failed to create the view render-resource context.");
   XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
-  XII_VERIFY(m_GpuSceneContext.Initialize().Succeeded(), "Failed to create the view GPU scene context.");
-  m_hGpuVisibilityContext = xiiGpuVisibilityManager::CreateContext();
-  XII_ASSERT_DEV(!m_hGpuVisibilityContext.IsInvalidated(), "Failed to create the view GPU visibility context.");
-  XII_VERIFY(GetBuiltinRuntime()->m_Resources.m_LightingSystem.Initialize().Succeeded(), "Failed to create the view lighting context.");
 
   UpdateRenderResolutionState();
 }
@@ -126,7 +122,9 @@ xiiView::~xiiView()
 
 bool xiiView::SynchronizeGpuScene(xiiUInt64 uiFrameIndex)
 {
-  if (m_pExtractedData == nullptr || !m_GpuSceneContext.IsInitialized() || !xiiGpuVisibilityManager::IsValid(m_hGpuVisibilityContext))
+  if (!m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
+    return true;
+  if (m_pExtractedData == nullptr || !m_GpuSceneContext.IsInitialized())
     return false;
 
   return m_GpuSceneContext.SynchronizeExtractedMeshes(*m_pExtractedData, uiFrameIndex).Succeeded();
@@ -363,17 +361,71 @@ void xiiView::SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& p
   InvalidateTemporalHistory();
 }
 
-xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& shadows)
+xiiResult xiiView::SynchronizeRenderPipeline()
 {
   auto* runtime = GetBuiltinRuntime();
-  bool  changed = false;
+  if (m_RenderGraphBuilder.IsValid())
+  {
+    m_ExtractionRequirements = m_CustomExtractionRequirements;
+    m_RuntimeFeatures        = m_CustomRuntimeFeatures;
+    return XII_SUCCESS;
+  }
+  bool changed = false;
   if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed())
   {
+    m_ExtractionRequirements = {};
+    m_RuntimeFeatures        = {};
     InvalidateTemporalHistory();
     return XII_FAILURE;
   }
   if (changed)
+  {
+    runtime->ClearSubgraphs();
     InvalidateTemporalHistory();
+  }
+  m_ExtractionRequirements = runtime->m_Instance.GetPipeline()->GetExtractionRequirements();
+  m_RuntimeFeatures        = runtime->m_Instance.GetPipeline()->GetRuntimeFeatures();
+  return XII_SUCCESS;
+}
+
+xiiResult xiiView::PrepareRenderResources()
+{
+  const auto* pipeline     = GetBuiltinRuntime()->m_Instance.GetPipeline();
+  const auto  rootFeatures = m_RenderGraphBuilder.IsValid() ? m_CustomRuntimeFeatures : pipeline ? pipeline->GetRootRuntimeFeatures() :
+                                                                                                   xiiBitflags<xiiRenderPipelineFeature>{};
+  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
+  {
+    if (!m_GpuSceneContext.IsInitialized())
+      XII_SUCCEED_OR_RETURN(m_GpuSceneContext.Initialize());
+  }
+  else
+    m_GpuSceneContext.Shutdown();
+  if (rootFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
+  {
+    if (m_hGpuVisibilityContext.IsInvalidated())
+      m_hGpuVisibilityContext = xiiGpuVisibilityManager::CreateContext();
+    if (m_hGpuVisibilityContext.IsInvalidated())
+      return XII_FAILURE;
+  }
+  else
+  {
+    xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
+    m_hGpuVisibilityContext = {};
+  }
+  auto& lighting = GetBuiltinRuntime()->m_Resources.m_LightingSystem;
+  if (rootFeatures.IsSet(xiiRenderPipelineFeature::Lighting))
+  {
+    if (!lighting.IsInitialized())
+      XII_SUCCEED_OR_RETURN(lighting.Initialize());
+  }
+  else
+    lighting.Shutdown();
+  return XII_SUCCESS;
+}
+
+xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& shadows)
+{
+  auto* runtime = GetBuiltinRuntime();
   RunDynamicResolutionPID();
   runtime->BeginFrame(shadows);
   const xiiResult result = runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);

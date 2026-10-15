@@ -272,7 +272,9 @@ bool xiiSceneDatabase::SetLocalTransform(xiiSceneObjectHandle hObject, const xii
 {
   if (!IsAlive(hObject) || !localTransform.IsValid())
     return false;
-  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (m_LocalTransforms[uiObject] == localTransform)
+    return true;
   m_LocalTransforms[uiObject] = localTransform;
   MarkSubtreeDirty(uiObject);
   ++m_uiRevision;
@@ -284,7 +286,9 @@ bool xiiSceneDatabase::SetLocalBounds(xiiSceneObjectHandle hObject, const xiiBou
   if (!IsAlive(hObject) || !localBounds.IsValid())
     return false;
   const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
-  m_LocalBounds[uiObject]  = localBounds;
+  if (m_LocalBounds[uiObject] == localBounds)
+    return true;
+  m_LocalBounds[uiObject] = localBounds;
   MarkSubtreeDirty(uiObject);
   ++m_uiRevision;
   return true;
@@ -294,7 +298,9 @@ bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeo
 {
   if (!IsAlive(hObject))
     return false;
-  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (m_GeometryIndices[uiObject] == uiGeometryIndex)
+    return true;
   m_GeometryIndices[uiObject] = uiGeometryIndex;
   m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
@@ -305,7 +311,9 @@ bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMat
 {
   if (!IsAlive(hObject))
     return false;
-  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (m_MaterialIndices[uiObject] == uiMaterialIndex)
+    return true;
   m_MaterialIndices[uiObject] = uiMaterialIndex;
   m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
@@ -362,8 +370,10 @@ bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSce
   if (!IsAlive(hObject))
     return false;
   const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
-  m_Flags[uiObject]        = flags;
-  m_GpuDirty[uiObject]     = 1U;
+  if (m_Flags[uiObject] == flags)
+    return true;
+  m_Flags[uiObject]    = flags;
+  m_GpuDirty[uiObject] = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -372,7 +382,9 @@ bool xiiSceneDatabase::SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32
 {
   if (!IsAlive(hObject))
     return false;
-  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (m_VisibilityMasks[uiObject] == uiVisibilityMask)
+    return true;
   m_VisibilityMasks[uiObject] = uiVisibilityMask;
   m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
@@ -479,6 +491,20 @@ void xiiSceneDatabase::RebuildGpuInstances()
     const xiiUInt32      selectionIndex  = IsAlive(hRepresentative) ? m_ObjectToGpuIndex[hRepresentative.GetInternalID().m_InstanceIndex] : xiiInvalidIndex;
     if (instance.m_uiLodSelectionIndex != selectionIndex)
       m_GpuDirty[uiObject] = 1;
+    // The frame after movement must upload the settled previous transform even when no
+    // component changes again. All subsequent unchanged frames keep their GPU records intact.
+    if (m_GpuDirty[uiObject] == 0 && (instance.m_GlobalTransform != m_GlobalTransforms[uiObject] || instance.m_PreviousGlobalTransform != m_PreviousGlobalTransforms[uiObject]))
+      m_GpuDirty[uiObject] = 1;
+    BuildSkinningSnapshot(uiObject, instance);
+    if (m_GpuDirty[uiObject] == 0)
+    {
+      if (bRangeOpen)
+      {
+        m_UploadRanges.PushBack({uiRangeStart, uiGpuIndex - uiRangeStart});
+        bRangeOpen = false;
+      }
+      continue;
+    }
     instance.m_uiLodSelectionIndex     = selectionIndex;
     instance.m_GlobalTransform         = m_GlobalTransforms[uiObject];
     instance.m_PreviousGlobalTransform = m_PreviousGlobalTransforms[uiObject];
@@ -513,9 +539,7 @@ void xiiSceneDatabase::RebuildGpuInstances()
     instance.m_uiForcedLod             = m_ForcedLods[uiObject];
     instance.m_uiDrawLod               = m_DrawLods[uiObject];
     instance.m_fLodBias                = m_LodBiases[uiObject];
-    BuildSkinningSnapshot(uiObject, instance);
-
-    const bool bDirty = m_GpuDirty[uiObject] != 0U;
+    const bool bDirty                  = m_GpuDirty[uiObject] != 0U;
     if (bDirty && !bRangeOpen)
     {
       bRangeOpen   = true;

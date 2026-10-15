@@ -3,6 +3,13 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
+xiiStringBuilder xiiRenderGraph::QualifyResourceName(xiiStringView name) const
+{
+  if (m_sResourceNamespace.IsEmpty())
+    return xiiStringBuilder(name);
+  return xiiStringBuilder(m_sResourceNamespace, "/", name);
+}
+
 void xiiRenderGraph::SetSetupBinding(xiiStringView name, xiiRenderGraphTextureHandle texture)
 {
   xiiHashedString key;
@@ -38,6 +45,8 @@ const xiiGALBufferCreationDescription* xiiRenderGraph::GetBufferDescription(xiiR
 }
 xiiRenderGraphTextureHandle xiiRenderGraph::FindTexture(xiiStringView name) const
 {
+  const auto qualified = QualifyResourceName(name);
+  name                 = qualified;
   xiiUInt32 index;
   if (!m_ResourceNameIndex.TryGetValue(xiiTempHashedString(name), index) || !m_Resources[index].m_bIsTexture)
     return {};
@@ -45,6 +54,8 @@ xiiRenderGraphTextureHandle xiiRenderGraph::FindTexture(xiiStringView name) cons
 }
 xiiRenderGraphBufferHandle xiiRenderGraph::FindBuffer(xiiStringView name) const
 {
+  const auto qualified = QualifyResourceName(name);
+  name                 = qualified;
   xiiUInt32 index;
   if (!m_ResourceNameIndex.TryGetValue(xiiTempHashedString(name), index) || m_Resources[index].m_bIsTexture)
     return {};

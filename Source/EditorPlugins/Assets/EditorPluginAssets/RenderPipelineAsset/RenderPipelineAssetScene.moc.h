@@ -15,4 +15,7 @@ class xiiQtRenderPipelineAssetScene : public xiiQtNodeScene
 public:
   xiiQtRenderPipelineAssetScene(QObject* pParent = nullptr);
   ~xiiQtRenderPipelineAssetScene();
+
+protected:
+  void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 };

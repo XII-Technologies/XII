@@ -181,6 +181,7 @@ class XII_GRAPHICSCORE_DLL xiiSkyAtmosphereComponent : public xiiRenderComponent
 
 public:
   xiiSkyAtmosphereComponent();
+  xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Atmosphere; }
   ~xiiSkyAtmosphereComponent();
 
   virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;

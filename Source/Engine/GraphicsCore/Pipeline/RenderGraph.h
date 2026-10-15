@@ -260,7 +260,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompileSettings : public xiiHashableSt
   XII_DECLARE_POD_TYPE();
 
   bool      m_bEnablePassCulling   = true;  ///< Remove passes not reachable from any side-effect pass.
-  bool      m_bEnableCompileCache  = true;  ///< Skip recompilation when the graph signature is unchanged.
+  bool      m_bEnableCompileCache  = true;  ///< Reuse topology/culling analysis; frame bindings, barriers and allocations remain current.
   bool      m_bEnableSplitBarriers = false; ///< Use Begin/End split barriers to overlap transitions.
   bool      m_bEnableAsyncQueues   = true;  ///< Schedule async-compute/transfer passes on separate queues.
   bool      m_bEnableGPUProfiling  = false; ///< Emit Duration queries around each pass via the profiler.
@@ -511,9 +511,15 @@ public:
 
   /// Named-resource bridge for resource-defined pipeline passes. Bindings are scoped to setup;
   /// handle-based pass code remains the preferred interface. Clear before leaving the scope.
-  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphTextureHandle texture);
-  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphBufferHandle buffer);
-  void                        ClearSetupBindings();
+  void SetSetupBinding(xiiStringView name, xiiRenderGraphTextureHandle texture);
+  void SetSetupBinding(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  void ClearSetupBindings();
+  /// Namespace for named setup resources in one expanded subgraph occurrence. Handle-based
+  /// boundary connections cross namespaces explicitly. Restore the previous scope after Build.
+  void                        SetResourceNamespace(xiiStringView name) { m_sResourceNamespace = name; }
+  xiiStringView               GetResourceNamespace() const { return m_sResourceNamespace; }
+  void                        SetSetupBlackboard(xiiRenderGraphBlackboard* blackboard) { m_pSetupBlackboard = blackboard; }
+  xiiRenderGraphBlackboard*   GetSetupBlackboard() const { return m_pSetupBlackboard; }
   xiiRenderGraphTextureHandle FindTexture(xiiStringView name) const;
   xiiRenderGraphBufferHandle  FindBuffer(xiiStringView name) const;
   /// Setup-time descriptions. Invalid handles and mismatched resource identities return null.
@@ -606,6 +612,8 @@ public:
 
 private:
   friend class xiiRenderGraphBuilder;
+  xiiStringBuilder QualifyResourceName(xiiStringView name) const;
+  xiiString        m_sResourceNamespace;
 
   struct VersionEntry
   {
@@ -658,7 +666,8 @@ private:
 
   struct PassEntry
   {
-    xiiRenderGraphPassId m_Id;
+    xiiRenderGraphPassId      m_Id;
+    xiiRenderGraphBlackboard* m_pBlackboard = nullptr;
 
     xiiHashedString                      m_sName;
     xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
@@ -681,6 +690,9 @@ private:
   void                    PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
   [[nodiscard]] xiiResult MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError);
   void                    PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
+  void                    BuildTopologyCacheKey(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& key) const;
+  bool                    RestoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_order);
+  void                    StoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiArrayPtr<const xiiUInt32> order);
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
@@ -690,6 +702,8 @@ private:
   xiiDynamicArray<PassEntry>                                 m_Passes;
   xiiDynamicArray<ResourceEntry>                             m_Resources;
   xiiHashTable<xiiHashedString, xiiUInt32>                   m_ResourceNameIndex;
+  xiiHashTable<const xiiGALTexture*, xiiUInt32>              m_ImportedTextureIndices;
+  xiiHashTable<const xiiGALBuffer*, xiiUInt32>               m_ImportedBufferIndices;
   xiiHashTable<xiiHashedString, xiiRenderGraphTextureHandle> m_SetupTextureBindings;
   xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
   xiiHashedString                                            m_sName;
@@ -712,9 +726,14 @@ private:
   xiiRenderGraphStatistics      m_Statistics;
   xiiRenderGraphCompileSettings m_LastCompileSettings;
   xiiUInt64                     m_uiLastSignature = 0ULL;
-  xiiUInt64                     m_uiFrameIndex    = 0ULL;
-  bool                          m_bIsSetupOpen    = false;
-  bool                          m_bIsCompiled     = false;
+  xiiDynamicArray<xiiUInt32>    m_CachedTopologyKey;
+  xiiDynamicArray<xiiUInt32>    m_CachedTopologyOrder;
+  xiiDynamicArray<xiiUInt8>     m_CachedTopologyCulled;
+  bool                          m_bTopologyCacheValid = false;
+  xiiRenderGraphBlackboard*     m_pSetupBlackboard    = nullptr;
+  xiiUInt64                     m_uiFrameIndex        = 0ULL;
+  bool                          m_bIsSetupOpen        = false;
+  bool                          m_bIsCompiled         = false;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderGraph_inl.h>

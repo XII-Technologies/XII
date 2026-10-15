@@ -4,8 +4,10 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <Core/Messages/TransformChangedMessage.h>
 #include <Core/Messages/UpdateLocalBoundsMessage.h>
 #include <Core/World/World.h>
+#include <GraphicsCore/Pipeline/RenderExtraction.h>
 
 /// Base class for objects that should be rendered.
 class XII_GRAPHICSCORE_DLL xiiRenderComponent : public xiiComponent
@@ -26,6 +28,7 @@ protected:
 public:
   xiiRenderComponent();
   ~xiiRenderComponent();
+  virtual xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const { return xiiRenderExtractionCategory::All; }
 
   /// Called by xiiRenderComponent::OnUpdateLocalBounds().
   ///
@@ -45,4 +48,5 @@ public:
 protected:
   void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);
   void InvalidateCachedRenderData();
+  void OnTransformChanged(xiiMsgTransformChanged& msg);
 };

@@ -9,6 +9,7 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
+#include <GraphicsCore/Pipeline/RenderExtraction.h>
 
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
@@ -64,7 +65,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
 /// External code may override this by calling xiiView::SetRenderGraphBuilder().
 ///
 /// ## Render data
-/// During the Async world-update phase, xiiRenderWorldModule walks all world objects and sends
+/// After world transforms and normal PostTransform derived-data updates, this module sends
 /// xiiMsgExtractRenderData. Components handling this message submit data as usual, but the extracted
 /// data cache is owned by xiiRenderWorldModule (not by xiiView) and keeps static/dynamic streams.
 /// Static-only objects are persisted per-view and reused across frames until invalidated through the
@@ -86,6 +87,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 
 public:
   xiiRenderWorldModule(xiiWorld* pWorld);
+  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return m_ExtractionRequirements; }
 
   virtual ~xiiRenderWorldModule();
 
@@ -158,6 +160,7 @@ private:
 
   struct ViewExtractionCache
   {
+    xiiBitflags<xiiRenderExtractionCategory>                               m_Requirements;
     xiiHashTable<xiiGameObjectHandle, CachedStaticObjectData>              m_StaticObjectCache;
     xiiHashTable<xiiComponentHandle, CachedStaticComponentData>            m_StaticComponentCache;
     xiiHashTable<xiiGameObjectHandle, xiiDynamicArray<xiiComponentHandle>> m_ObjectToCachedComponents;
@@ -177,6 +180,7 @@ private:
   void RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject);
 
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
+  void PrepareExtraction(const xiiWorldModule::UpdateContext& context);
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
@@ -184,13 +188,16 @@ private:
 
   struct ViewDetail
   {
+    bool                                 m_bPrepared = false;
     xiiUniquePtr<xiiView>                m_pView;
     xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
     ViewExtractionCache                  m_ExtractionCache;
   };
 
-  xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
-  xiiEvent<xiiViewEvent, xiiMutex>  m_ViewEvents;
+  xiiIdTable<xiiViewId, ViewDetail>        m_ViewIdTable;
+  xiiEvent<xiiViewEvent, xiiMutex>         m_ViewEvents;
+  xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
+  xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
 
   static xiiUniquePtr<ExtractionEvent> s_pRenderEvent;
 };

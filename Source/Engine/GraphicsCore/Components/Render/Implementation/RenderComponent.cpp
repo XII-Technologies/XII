@@ -15,7 +15,8 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiRenderComponent, 1)
   XII_END_ATTRIBUTES;
   XII_BEGIN_MESSAGEHANDLERS
   {
-    XII_MESSAGE_HANDLER(xiiMsgUpdateLocalBounds, OnUpdateLocalBounds)
+    XII_MESSAGE_HANDLER(xiiMsgUpdateLocalBounds, OnUpdateLocalBounds),
+    XII_MESSAGE_HANDLER(xiiMsgTransformChanged, OnTransformChanged)
   }
   XII_END_MESSAGEHANDLERS;
 }
@@ -34,11 +35,14 @@ void xiiRenderComponent::Deinitialize()
 
 void xiiRenderComponent::OnActivated()
 {
+  GetOwner()->EnableStaticTransformChangesNotifications();
+  GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   TriggerLocalBoundsUpdate();
 }
 
 void xiiRenderComponent::OnDeactivated()
 {
+  GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   // Only update the local bounds if the owner is still active, if not no other components are active anymore and the bounds update would be pointless.
   // The bounds will be updated when the owner is re-activated anyway.
   if (GetOwner()->IsActive())
@@ -68,6 +72,11 @@ void xiiRenderComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
       msg.SetAlwaysVisible(category);
     }
   }
+}
+
+void xiiRenderComponent::OnTransformChanged(xiiMsgTransformChanged&)
+{
+  InvalidateCachedRenderData();
 }
 
 void xiiRenderComponent::InvalidateCachedRenderData()

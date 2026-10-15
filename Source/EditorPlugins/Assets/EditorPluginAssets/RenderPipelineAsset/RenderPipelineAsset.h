@@ -15,6 +15,7 @@ public:
   virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
 
   virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
+  bool              InternalCanConnectToSelf(const xiiPin& source, const xiiPin& target) const override;
 
 private:
   mutable xiiDynamicArray<xiiNodePropertyValue> m_BuiltinProperties;
@@ -27,6 +28,9 @@ class xiiRenderPipelineAssetDocument : public xiiAssetDocument
 public:
   xiiRenderPipelineAssetDocument(xiiStringView sDocumentPath);
   ~xiiRenderPipelineAssetDocument();
+  /// Replace one reference node with configured leaf nodes and remapped boundary connections.
+  /// Uses one undoable transaction and leaves the document unchanged on failure.
+  xiiStatus ExpandSubgraph(const xiiDocumentObject* object);
 
 protected:
   virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;

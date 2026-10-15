@@ -139,6 +139,272 @@ namespace PipelineResourceTest
 
 static_assert(!std::is_copy_constructible_v<xiiRenderPipelineInstance>);
 
+class xiiPipelineTestHistory : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiPipelineTestHistory, xiiRenderPipelinePass);
+
+public:
+  bool      m_bTemporal      = true;
+  xiiUInt32 m_uiHistoryCalls = 0;
+  xiiUInt32 m_uiBuildCalls   = 0;
+  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  {
+    pins.PushBack({"Previous", xiiRenderPipelinePin::Buffer, true, true});
+    xiiRenderPipelinePin history{"History", xiiRenderPipelinePin::Buffer, false, true};
+    history.m_bTemporalHistoryOutput = m_bTemporal;
+    pins.PushBack(history);
+  }
+  xiiResult BuildTemporalHistory(xiiRenderPipelinePassContext& context) override
+  {
+    ++m_uiHistoryCalls;
+    return context.m_bTemporalHistoryPhase ? XII_SUCCESS : XII_FAILURE;
+  }
+  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  {
+    ++m_uiBuildCalls;
+    return !context.m_bTemporalHistoryPhase ? XII_SUCCESS : XII_FAILURE;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineTestHistory, 1, xiiRTTIDefaultAllocator<xiiPipelineTestHistory>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Temporal", m_bTemporal),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(Pipeline, TemporalDependencyPolicy)
+{
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unused interface fan-out still requires a consistent native resource schema")
+  {
+    auto invalid = PipelineResourceTest::MakeDefinition();
+    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[0].m_Id, "Texture"});
+    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[1].m_Id, "Before"});
+    xiiSharedPtr<const xiiRenderPipeline> rejected;
+    xiiStringBuilder                      diagnostic;
+    XII_TEST_BOOL(xiiRenderPipeline::Compile(invalid, rejected, &diagnostic).Failed());
+    XII_TEST_BOOL(diagnostic.FindSubString("fan-out") != nullptr);
+  }
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.AddPass("Feedback", "xiiPipelineTestHistory");
+  XII_TEST_RESULT(descriptor.Connect(0, "History", 0, "Previous"));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
+  XII_TEST_INT(compiled->GetTopology().GetEdgeCount(), 0);
+  XII_TEST_INT(compiled->GetDescriptor().m_Connections.GetCount(), 1);
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  graph.BeginSetup(1);
+  XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+  graph.EndSetup();
+  const auto* pass = static_cast<const xiiPipelineTestHistory*>(instance.GetPass(0));
+  XII_TEST_INT(pass->m_uiHistoryCalls, 1);
+  XII_TEST_INT(pass->m_uiBuildCalls, 1);
+  descriptor.m_Passes[0].m_Properties.Insert("Temporal", false);
+  xiiStringBuilder error;
+  XII_TEST_BOOL(xiiRenderPipeline::Compile(descriptor, compiled, &error).Failed());
+  XII_TEST_BOOL(error.FindSubString("intra-frame") != nullptr);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, IncrementalRenderGraphCompilation)
+{
+  struct Data
+  {
+    xiiUInt32                  m_uiFrame;
+    xiiRenderGraphBufferHandle m_Buffer;
+  };
+  xiiRenderGraph graph;
+  const auto     setup = [&](xiiUInt32 frame, xiiUInt32 size, xiiStringView name, bool sideEffects) {
+    graph.BeginSetup(frame);
+    const auto pass = graph.AddPass<Data>(name, xiiGALCommandQueueFlags::Transfer, [=](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_uiFrame = frame;
+      xiiGALBufferCreationDescription description;
+      description.m_uiSize = size;
+      description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+      data.m_Buffer = builder.WriteBuffer("Data", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data&, xiiRenderGraphPassContext&) {}, sideEffects);
+    graph.EndSetup();
+    return pass.first->m_Buffer;
+  };
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Topology reuse keeps current callbacks and resource descriptions")
+  {
+    setup(1, 16, "First label", true);
+    XII_TEST_RESULT(graph.Compile());
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+    const auto buffer = setup(2, 32, "Presentation changed", true);
+    XII_TEST_RESULT(graph.Compile());
+    XII_TEST_BOOL(graph.GetStatistics().m_bUsedCachedCompile);
+    XII_TEST_INT(graph.GetBufferDescription(buffer)->m_uiSize, 32);
+    XII_TEST_INT(static_cast<Data*>(graph.GetCompiledPasses()[0].m_pPassData)->m_uiFrame, 2);
+    setup(3, 32, "Presentation changed", false);
+    XII_TEST_RESULT(graph.Compile());
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+    XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 0);
+    setup(4, 32, "Presentation changed", false);
+    xiiRenderGraphCompileSettings settings;
+    settings.m_bEnablePassCulling = false;
+    XII_TEST_RESULT(graph.Compile(settings));
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+    XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 1);
+    setup(5, 32, "Presentation changed", false);
+    XII_TEST_RESULT(graph.Compile(settings));
+    XII_TEST_BOOL(graph.GetStatistics().m_bUsedCachedCompile);
+    settings.m_uiCacheSalt = 7;
+    setup(6, 32, "Presentation changed", false);
+    XII_TEST_RESULT(graph.Compile(settings));
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, HundredsOfReflectedPasses)
+{
+  auto               shared = PipelineResourceTest::MakeDefinition();
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(shared.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  for (xiiUInt32 i = 0; i < 100; ++i)
+  {
+    xiiStringBuilder name;
+    name.SetFormat("Instance {}", i);
+    root.AddSubgraph(name, shared.m_Id);
+  }
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
+  XII_TEST_INT(compiled->GetTopology().GetVertexCount(), 200);
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  graph.BeginSetup(1);
+  XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+  graph.EndSetup();
+  XII_TEST_RESULT(graph.Compile());
+  XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 200);
+  XII_TEST_INT(graph.GetResourceDescriptions().GetCount(), 100);
+  XII_TEST_INT(graph.GetQueueSubmissions().GetCount(), 1);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
+{
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Independent asset definitions, selective dependencies and child hot reload")
+  {
+    auto                  leaf          = PipelineResourceTest::MakeDefinition();
+    const auto            child         = xiiResourceManager::LoadResource<xiiRenderPipelineResource>("HierarchyChild");
+    auto                  initialLoader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+    xiiMemoryStreamWriter initialWriter(&initialLoader->m_CustomData);
+    initialWriter << "HierarchyChild";
+    XII_TEST_RESULT(leaf.Serialize(initialWriter));
+    xiiResourceManager::UpdateResourceWithCustomLoader(child, std::move(initialLoader));
+    xiiRenderPipelineResourceDescriptor root;
+    root.m_References.PushBack({leaf.m_Id, "HierarchyChild"});
+    root.m_References.PushBack({xiiUuid::MakeUuid(), "UnusedDefinitionMustNotLoad"});
+    root.AddSubgraph("First", leaf.m_Id);
+    root.AddSubgraph("Second", leaf.m_Id);
+    const auto                                                       parent = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("HierarchyParent", xiiRenderPipelineResourceDescriptor(root));
+    xiiRenderPipelineResourceDescriptor                              resolved;
+    xiiDynamicArray<xiiRenderPipelineResource::DefinitionDependency> dependencies;
+    XII_TEST_RESULT(xiiRenderPipelineResource::ResolveDefinitions(root, resolved, &dependencies));
+    XII_TEST_INT(dependencies.GetCount(), 1);
+    xiiRenderPipelineInstance instance;
+    XII_TEST_RESULT(instance.Synchronize(parent));
+    const auto*                                previous = instance.GetPipeline();
+    xiiResourceLock<xiiRenderPipelineResource> parentLock(parent, xiiResourceAcquireMode::BlockTillLoaded);
+    const auto                                 snapshot = parentLock->GetPipeline();
+    XII_TEST_BOOL(snapshot.Borrow() == previous);
+    leaf.m_Passes[1].m_Properties.Insert("Value", 12U);
+    auto                                                  loader = XII_DEFAULT_NEW(PipelineResourceTest::MemoryLoader);
+    xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>> closed = XII_DEFAULT_NEW(xiiRefCountedContainer<xiiThreadSignal>);
+    loader->m_pClosed                                            = closed;
+    xiiMemoryStreamWriter writer(&loader->m_CustomData);
+    writer << "HierarchyChild";
+    XII_TEST_RESULT(leaf.Serialize(writer));
+    xiiResourceManager::UpdateResourceWithCustomLoader(child, std::move(loader));
+    if (!XII_TEST_BOOL(closed->m_Content.WaitForSignal(xiiTime::MakeFromSeconds(5)) == xiiThreadSignal::WaitResult::Signaled))
+      return;
+    bool changed = false;
+    XII_TEST_RESULT(instance.Synchronize(parent, &changed));
+    XII_TEST_BOOL(changed && instance.GetPipeline() != previous);
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(instance.GetPass(1))->m_uiValue, 12);
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(instance.GetPass(3))->m_uiValue, 12);
+    XII_TEST_INT(snapshot->GetDescriptor().m_Passes[1].m_Properties.GetValue("Value")->Get<xiiUInt32>(), 4);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Nested repeated definitions, parameters, resource namespaces and independent history")
+  {
+    auto leaf = PipelineResourceTest::MakeDefinition();
+    leaf.m_Interface.PushBack({"Output", false, leaf.m_Passes[1].m_Id, "Data"});
+    xiiGraphDefinition leafGraph;
+    XII_TEST_RESULT(leaf.MakeGraphDefinition(leafGraph));
+    xiiRenderPipelineResourceDescriptor nested;
+    nested.AddSubgraph("Inner", leaf.m_Id);
+    nested.m_Interface.PushBack({"Output", false, nested.m_Passes[0].m_Id, "Output"});
+    xiiGraphDefinition nestedGraph;
+    XII_TEST_RESULT(nested.MakeGraphDefinition(nestedGraph));
+    xiiRenderPipelineResourceDescriptor root;
+    root.m_Definitions.PushBack(leafGraph);
+    root.m_Definitions.PushBack(nestedGraph);
+    root.AddSubgraph("A", nested.m_Id);
+    root.AddSubgraph("B", nested.m_Id);
+    root.AddPass("Sink A", "xiiPipelineTestSink");
+    root.AddPass("Sink B", "xiiPipelineTestSink");
+    XII_TEST_RESULT(root.Connect(0, "Output", 2, "Input"));
+    XII_TEST_RESULT(root.Connect(1, "Output", 3, "Input"));
+    root.m_Passes[1].m_Parameters.Insert("Exposure", 2.0f);
+    auto& override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+    override.m_Path.PushBack(nested.m_Passes[0].m_Id);
+    override.m_Path.PushBack(leaf.m_Passes[1].m_Id);
+    override.m_Properties.Insert("Value", 9U);
+    xiiSharedPtr<const xiiRenderPipeline> compiled, again;
+    xiiStringBuilder                      error;
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled, &error));
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(root, again));
+    XII_TEST_INT(compiled->GetTopology().GetVertexCount(), 6);
+    XII_TEST_BOOL(compiled->GetExecutionOrder() == again->GetExecutionOrder());
+    XII_TEST_INT(compiled->GetProvenance()[1].m_InstancePath.GetCount(), 2);
+    XII_TEST_BOOL(compiled->GetProvenance()[1].m_InstancePath != compiled->GetProvenance()[3].m_InstancePath);
+    XII_TEST_FLOAT(compiled->GetPassParameters(3).GetValue("Exposure")->Get<float>(), 2.0f, 0);
+    xiiRenderPipelineInstance a, b;
+    XII_TEST_RESULT(a.Initialize(compiled));
+    XII_TEST_RESULT(b.Initialize(compiled));
+    XII_TEST_BOOL(a.GetPass(1) != a.GetPass(3) && a.GetPass(1) != b.GetPass(1));
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(a.GetPass(1))->m_uiValue, 4);
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(a.GetPass(3))->m_uiValue, 9);
+    a.InvalidateTemporalHistory();
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(a.GetPass(1))->m_uiHistoryResets, 1);
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(b.GetPass(1))->m_uiHistoryResets, 0);
+    xiiRenderGraph           graph;
+    xiiRenderGraphBlackboard blackboard;
+    graph.BeginSetup(1);
+    XII_TEST_RESULT(a.Build(nullptr, graph, blackboard));
+    XII_TEST_BOOL(graph.GetResourceNamespace().IsEmpty());
+    graph.EndSetup();
+    XII_TEST_RESULT(graph.Compile());
+    XII_TEST_INT(graph.GetResourceDescriptions().GetCount(), 2);
+    XII_TEST_INT(graph.GetBufferDescription(graph.FindBuffer(graph.GetResourceDescriptions()[0].m_sName))->m_uiSize, 64);
+    XII_TEST_INT(graph.GetBufferDescription(graph.FindBuffer(graph.GetResourceDescriptions()[1].m_sName))->m_uiSize, 144);
+    xiiDefaultMemoryStreamStorage storage;
+    xiiMemoryStreamWriter         writer(&storage);
+    XII_TEST_RESULT(root.Serialize(writer));
+    xiiMemoryStreamContainerStorage<xiiDynamicArray<xiiUInt8>> firstBytes, secondBytes;
+    xiiMemoryStreamWriter                                      firstWriter(&firstBytes), secondWriter(&secondBytes);
+    XII_TEST_RESULT(root.Serialize(firstWriter));
+    XII_TEST_RESULT(root.Serialize(secondWriter));
+    XII_TEST_BOOL(xiiConstByteArrayPtr(firstBytes.GetData(), firstBytes.GetStorageSize32()) == xiiConstByteArrayPtr(secondBytes.GetData(), secondBytes.GetStorageSize32()));
+    xiiMemoryStreamReader               reader(&storage);
+    xiiRenderPipelineResourceDescriptor loaded;
+    XII_TEST_RESULT(loaded.Deserialize(reader));
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(loaded, again));
+    XII_TEST_BOOL(compiled->GetExecutionOrder() == again->GetExecutionOrder());
+    XII_TEST_BOOL(loaded.m_Definitions[0].m_Id == leaf.m_Id);
+    root.m_Definitions[0].m_Nodes[1].m_sType = "MissingReflectedPass";
+    XII_TEST_BOOL(xiiRenderPipeline::Compile(root, again, &error).Failed());
+    XII_TEST_BOOL(error.FindSubString("Pass/instance:") != nullptr);
+    XII_TEST_BOOL(error.FindSubString("Producer") != nullptr);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compilation, reflected settings and independent view instances")
