@@ -109,8 +109,10 @@ struct XII_GRAPHICSCORE_DLL xiiGpuInstanceSource
 {
   xiiGameObjectHandle m_hOwnerObject;
   xiiComponentHandle  m_hOwnerComponent;
-  xiiUInt32           m_uiLodIndex      = xiiInvalidIndex;
-  xiiUInt32           m_uiSectionIndex  = xiiInvalidIndex;
-  xiiUInt32           m_uiMaterialIndex = 0;
-  xiiUInt32           m_uiRenderDataId  = 0;
+  xiiUInt32           m_uiLodIndex                 = xiiInvalidIndex;
+  xiiUInt32           m_uiSectionIndex             = xiiInvalidIndex;
+  xiiUInt32           m_uiMaterialIndex            = 0;
+  xiiUInt32           m_uiRenderDataId             = 0;
+  xiiUInt32           m_uiInstanceIndex            = xiiInvalidIndex;
+  xiiUInt64           m_uiInstanceTopologyRevision = 0;
 };

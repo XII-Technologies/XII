@@ -261,6 +261,56 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_INT(views[0]->GetExtractionStatistics().m_uiDispatchedComponents + views[1]->GetExtractionStatistics().m_uiDispatchedComponents, 1);
     XII_TEST_BOOL(renderer->GetGpuInstanceData() == nullptr);
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Component instances retain transforms and reject identities after index compaction")
+  {
+    xiiGameObject*           object = nullptr;
+    xiiGameObjectDescription authored;
+    authored.m_bDynamic      = true;
+    authored.m_LocalPosition = xiiVec3(10, 0, 0);
+    world.CreateObject(authored, object);
+    xiiInstancedMeshComponent* renderable = nullptr;
+    xiiInstancedMeshComponent::CreateComponent(object, renderable);
+    renderable->SetMesh(mesh);
+    renderable->SetVisibilityMask(0x42);
+    renderable->AddInstance(xiiMat4::MakeTranslation(xiiVec3(1, 0, 0)));
+    renderable->AddInstance(xiiMat4::MakeTranslation(xiiVec3(2, 0, 0)));
+    world.Update();
+    auto extractInstances = [&] {
+      extracted.Clear();
+      xiiMsgExtractRenderData message;
+      message.m_pExtractedRenderData = &extracted;
+      renderable->SendMessage(message);
+      extracted.SortAndBatches();
+      XII_TEST_RESULT(module->UpdateGpuInstances(extracted, ++frame));
+    };
+    extractInstances();
+    XII_TEST_INT(instances->GetInstanceCount(), 2);
+    const auto first  = instances->GetInstances()[0].m_uiObjectId;
+    const auto second = instances->GetInstances()[1].m_uiObjectId;
+    XII_TEST_FLOAT(instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 11, 0);
+    XII_TEST_FLOAT(instances->GetInstances()[1].m_GlobalTransform.GetTranslationVector().x, 12, 0);
+    XII_TEST_INT(instances->GetInstances()[0].m_uiVisibilityMask, 0x42);
+    XII_TEST_RESULT(instances->Resolve(second, source));
+    XII_TEST_INT(source.m_uiInstanceIndex, 1);
+    xiiDynamicArray<xiiUInt32> selection;
+    instances->SelectInstances(extracted.GetAllRenderData(), selection);
+    XII_TEST_INT(selection.GetCount(), 2);
+    renderable->SetInstanceTransform(1, xiiMat4::MakeTranslation(xiiVec3(3, 0, 0)));
+    extractInstances();
+    XII_TEST_INT(instances->GetInstances()[1].m_uiObjectId, second);
+    XII_TEST_FLOAT(instances->GetInstances()[1].m_GlobalTransform.GetTranslationVector().x, 13, 0);
+    XII_TEST_FLOAT(instances->GetInstances()[1].m_PreviousGlobalTransform.GetTranslationVector().x, 12, 0);
+    renderable->RemoveInstance(0);
+    XII_TEST_BOOL(instances->Resolve(first, source).Failed());
+    XII_TEST_BOOL(instances->Resolve(second, source).Failed());
+    extractInstances();
+    XII_TEST_INT(instances->GetInstanceCount(), 1);
+    XII_TEST_FLOAT(instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 13, 0);
+    XII_TEST_BOOL(instances->GetInstances()[0].m_uiObjectId != first && instances->GetInstances()[0].m_uiObjectId != second);
+    renderable->ClearInstances();
+    extractInstances();
+    XII_TEST_INT(instances->GetInstanceCount(), 0);
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Packing benchmark for 1024 unchanged world components")
   {
     xiiWorldDescription benchmarkDescription("GPU extraction packing benchmark");

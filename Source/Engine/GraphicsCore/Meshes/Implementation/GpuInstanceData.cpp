@@ -28,6 +28,8 @@ namespace
     xiiUInt32           m_RenderId = 0;
     xiiUInt32           m_Section  = xiiInvalidIndex;
     xiiUInt32           m_Lod      = xiiInvalidIndex;
+    xiiUInt32           m_Instance = xiiInvalidIndex;
+    xiiUInt64           m_Topology = 0;
   };
   struct PacketHash
   {
@@ -36,11 +38,13 @@ namespace
       auto hash = xiiHashingUtils::CombineHashValues32(xiiHashHelper<xiiGameObjectHandle>::Hash(key.m_Object), xiiHashHelper<xiiComponentHandle>::Hash(key.m_Component));
       hash      = xiiHashingUtils::CombineHashValues32(hash, key.m_RenderId);
       hash      = xiiHashingUtils::CombineHashValues32(hash, key.m_Section);
-      return xiiHashingUtils::CombineHashValues32(hash, key.m_Lod);
+      hash      = xiiHashingUtils::CombineHashValues32(hash, key.m_Lod);
+      hash      = xiiHashingUtils::CombineHashValues32(hash, key.m_Instance);
+      return xiiHashingUtils::CombineHashValues32(hash, xiiHashHelper<xiiUInt64>::Hash(key.m_Topology));
     }
     static bool Equal(const PacketKey& a, const PacketKey& b)
     {
-      return a.m_Object == b.m_Object && a.m_Component == b.m_Component && a.m_RenderId == b.m_RenderId && a.m_Section == b.m_Section && a.m_Lod == b.m_Lod;
+      return a.m_Object == b.m_Object && a.m_Component == b.m_Component && a.m_RenderId == b.m_RenderId && a.m_Section == b.m_Section && a.m_Lod == b.m_Lod && a.m_Instance == b.m_Instance && a.m_Topology == b.m_Topology;
     }
   };
   xiiBitflags<xiiGpuInstanceFlags> GetFlags(const xiiMeshRenderData& packet, const xiiMaterialResourceHandle& handle)
@@ -122,7 +126,14 @@ public:
     if (source.m_hOwnerComponent.IsInvalidated())
       return true;
     const xiiComponent* component = nullptr;
-    return m_World.TryGetComponent(source.m_hOwnerComponent, component) && component->IsActiveAndInitialized() && component->GetOwner() == object;
+    if (!m_World.TryGetComponent(source.m_hOwnerComponent, component) || !component->IsActiveAndInitialized() || component->GetOwner() != object)
+      return false;
+    if (source.m_uiInstanceIndex != xiiInvalidIndex)
+    {
+      const auto* instances = xiiDynamicCast<const xiiInstancedMeshComponent*>(component);
+      return instances && source.m_uiInstanceIndex < instances->GetInstanceCount() && source.m_uiInstanceTopologyRevision == instances->GetInstanceTopologyRevision();
+    }
+    return true;
   }
   void Release(Entry& entry) const
   {
@@ -154,6 +165,14 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     {
       if (!xiiMath::IsFinite(mesh->m_fLodBias) || (mesh->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && mesh->m_uiLODIndex >= 8) || mesh->m_RangeMode > xiiMeshRenderData::RangeMode::WholeMesh)
         return XII_FAILURE;
+      if (mesh->m_Flags.IsSet(xiiMeshRenderDataFlags::Instanced))
+      {
+        if (mesh->m_uiInstanceCount != mesh->m_InstanceTransforms.GetCount())
+          return XII_FAILURE;
+        for (const auto& transform : mesh->m_InstanceTransforms)
+          if (!transform.IsValid())
+            return XII_FAILURE;
+      }
       xiiResourceLock<xiiMeshResource> resource(mesh->m_hMesh, xiiResourceAcquireMode::PointerOnly);
       if (resource.GetAcquireResult() == xiiResourceAcquireResult::Final)
       {
@@ -190,7 +209,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       index               = state.m_Entries.GetCount();
       auto& entry         = state.m_Entries.ExpandAndGetRef();
       entry.m_Key         = key;
-      entry.m_Source      = {key.m_Object, key.m_Component, key.m_Lod, key.m_Section, materialIndex, key.m_RenderId};
+      entry.m_Source      = {key.m_Object, key.m_Component, key.m_Lod, key.m_Section, materialIndex, key.m_RenderId, key.m_Instance, key.m_Topology};
       entry.m_Changed     = true;
       auto& record        = m_Instances.ExpandAndGetRef();
       record              = xiiGpuSceneInstance{};
@@ -221,9 +240,10 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     entry.m_Representative           = representative;
     record.m_uiGeometryIndex         = geometry.GetInternalID().m_InstanceIndex;
     record.m_uiMaterialIndex         = entry.m_GpuMaterial.IsInvalidated() ? xiiInvalidIndex : entry.m_GpuMaterial.GetInternalID().m_InstanceIndex;
-    record.m_PreviousGlobalTransform = fresh ? packet.m_GlobalTransform.GetAsMat4() : nextFrame ? record.m_GlobalTransform :
-                                                                                                                               record.m_PreviousGlobalTransform;
-    record.m_GlobalTransform         = packet.m_GlobalTransform.GetAsMat4();
+    const auto transform             = key.m_Instance == xiiInvalidIndex ? packet.m_GlobalTransform.GetAsMat4() : packet.m_GlobalTransform.GetAsMat4() * packet.m_InstanceTransforms[key.m_Instance];
+    record.m_PreviousGlobalTransform = fresh ? transform : nextFrame ? record.m_GlobalTransform :
+                                                                                                    record.m_PreviousGlobalTransform;
+    record.m_GlobalTransform         = transform;
     auto normal                      = record.m_GlobalTransform.GetRotationalPart();
     if (normal.Invert().Succeeded())
       normal.Transpose();
@@ -239,6 +259,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     record.m_BoundsExtents      = xiiVec4(bounds.m_vBoxHalfExtents.x, bounds.m_vBoxHalfExtents.y, bounds.m_vBoxHalfExtents.z, 0);
     record.m_uiFlags            = GetFlags(packet, material).GetValue();
     record.m_uiUserData         = packet.m_uiUniqueID;
+    record.m_uiVisibilityMask   = packet.m_uiVisibilityMask;
     record.m_uiFirstPrimitive   = first;
     record.m_uiPrimitiveCount   = count;
     record.m_uiForcedLod        = packet.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? packet.m_uiLODIndex : xiiInvalidIndex;
@@ -274,39 +295,47 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     PacketKey key{packet->m_hOwnerObject, packet->m_hOwnerComponent, packet->m_uiUniqueID, packet->m_uiSectionIndex};
     if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::WholeMesh)
       key.m_Section = xiiInvalidIndex;
-    if (groups.Insert(key))
-      continue;
     xiiResourceLock<xiiMeshResource> mesh(packet->m_hMesh, xiiResourceAcquireMode::PointerOnly);
     if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
       continue;
     xiiExtractedMeshSkinning skinning;
     XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*mesh.GetPointer(), *packet, skinning));
-    xiiUInt32 representative = 0;
-    if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::PrimitiveRange)
+    const bool instanced = packet->m_Flags.IsSet(xiiMeshRenderDataFlags::Instanced);
+    const auto group     = key;
+    for (xiiUInt32 instance = 0; instance < (instanced ? packet->m_InstanceTransforms.GetCount() : 1U); ++instance)
     {
-      xiiUInt32  material = 0;
-      const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[xiiMath::Min(packet->m_uiLODIndex, mesh->GetLODs().GetCount() - 1)].m_Sections.GetArrayPtr();
-      if (key.m_Section < sections.GetCount())
-        material = sections[key.m_Section].m_uiMaterialIndex;
-      XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, key, material, packet->m_uiFirstPrimitive, packet->m_uiPrimitiveCount, representative));
-    }
-    else
-      for (xiiUInt32 lod = 0; lod < xiiMath::Max(1U, mesh->GetLODs().GetCount()); ++lod)
+      key            = group;
+      key.m_Instance = instanced ? instance : xiiInvalidIndex;
+      key.m_Topology = instanced ? packet->m_uiInstanceTopologyRevision : 0;
+      if (groups.Insert(key))
+        continue;
+      xiiUInt32 representative = 0;
+      if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::PrimitiveRange)
       {
-        if (packet->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && lod != packet->m_uiLODIndex)
-          continue;
-        const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[lod].m_Sections.GetArrayPtr();
-        for (xiiUInt32 section = 0; section < sections.GetCount(); ++section)
-        {
-          if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::MeshSection && section != packet->m_uiSectionIndex)
-            continue;
-          if (sections[section].m_uiPrimitiveCount == 0)
-            continue;
-          key.m_Section = section;
-          key.m_Lod     = lod;
-          XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, key, sections[section].m_uiMaterialIndex, sections[section].m_uiFirstPrimitive, sections[section].m_uiPrimitiveCount, representative));
-        }
+        xiiUInt32  material = 0;
+        const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[xiiMath::Min(packet->m_uiLODIndex, mesh->GetLODs().GetCount() - 1)].m_Sections.GetArrayPtr();
+        if (key.m_Section < sections.GetCount())
+          material = sections[key.m_Section].m_uiMaterialIndex;
+        XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, key, material, packet->m_uiFirstPrimitive, packet->m_uiPrimitiveCount, representative));
       }
+      else
+        for (xiiUInt32 lod = 0; lod < xiiMath::Max(1U, mesh->GetLODs().GetCount()); ++lod)
+        {
+          if (packet->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && lod != packet->m_uiLODIndex)
+            continue;
+          const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[lod].m_Sections.GetArrayPtr();
+          for (xiiUInt32 section = 0; section < sections.GetCount(); ++section)
+          {
+            if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::MeshSection && section != packet->m_uiSectionIndex)
+              continue;
+            if (sections[section].m_uiPrimitiveCount == 0)
+              continue;
+            key.m_Section = section;
+            key.m_Lod     = lod;
+            XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, key, sections[section].m_uiMaterialIndex, sections[section].m_uiFirstPrimitive, sections[section].m_uiPrimitiveCount, representative));
+          }
+        }
+    }
   }
   // Dense draw storage is compacted without creating/destroying an independently owned object.
   for (xiiUInt32 i = 0; i < state.m_Entries.GetCount();)
@@ -420,7 +449,16 @@ void xiiGpuInstanceData::SelectInstances(xiiArrayPtr<xiiRenderData* const> packe
   xiiHashSet<PacketKey, PacketHash> selected;
   for (const auto* data : packets)
     if (const auto* packet = xiiDynamicCast<const xiiMeshRenderData*>(data))
-      selected.Insert(PacketKey{packet->m_hOwnerObject, packet->m_hOwnerComponent, packet->m_uiUniqueID, packet->m_RangeMode == xiiMeshRenderData::RangeMode::WholeMesh ? xiiInvalidIndex : packet->m_uiSectionIndex});
+    {
+      PacketKey  key{packet->m_hOwnerObject, packet->m_hOwnerComponent, packet->m_uiUniqueID, packet->m_RangeMode == xiiMeshRenderData::RangeMode::WholeMesh ? xiiInvalidIndex : packet->m_uiSectionIndex};
+      const bool instanced = packet->m_Flags.IsSet(xiiMeshRenderDataFlags::Instanced);
+      for (xiiUInt32 instance = 0; instance < (instanced ? packet->m_InstanceTransforms.GetCount() : 1U); ++instance)
+      {
+        key.m_Instance = instanced ? instance : xiiInvalidIndex;
+        key.m_Topology = instanced ? packet->m_uiInstanceTopologyRevision : 0;
+        selected.Insert(key);
+      }
+    }
   for (xiiUInt32 i = 0; i < m_pState->m_Entries.GetCount(); ++i)
   {
     auto key         = m_pState->m_Entries[i].m_Key;

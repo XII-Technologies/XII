@@ -86,14 +86,16 @@ public:
   xiiMeshBufferResourceHandle                m_hMeshBuffer; ///< The mesh buffer resource containing the GPU buffers for this mesh, used for rendering and culling.
   xiiDynamicArray<xiiMaterialResourceHandle> m_hMaterials;  ///< The material resources for this mesh, used for rendering.
 
-  xiiUInt32 m_uiUniqueID       = 0U;              ///< A unique identifier for this mesh render data, used for caching and sorting.
-  xiiUInt32 m_uiLODIndex       = 0U;              ///< The LOD index to render, used to select the appropriate LOD from the mesh resource.
-  xiiUInt32 m_uiFirstMeshlet   = 0U;              ///< The index of the first meshlet to render, used for meshlet-based rendering.
-  xiiUInt32 m_uiMeshletCount   = 0U;              ///< The number of meshlets to render, used for meshlet-based rendering.
-  xiiUInt32 m_uiFirstPrimitive = 0U;              ///< The index of the first primitive to render, used for indexed rendering.
-  xiiUInt32 m_uiPrimitiveCount = 0U;              ///< The number of primitives to render, used for indexed rendering.
-  xiiUInt32 m_uiSectionIndex   = xiiInvalidIndex; ///< The section index to render, used to select a specific section of the mesh for rendering.
-  xiiUInt32 m_uiInstanceCount  = 1U;              ///< The number of instances to render, used for instanced rendering.
+  xiiUInt32 m_uiUniqueID                 = 0U;              ///< A unique identifier for this mesh render data, used for caching and sorting.
+  xiiUInt32 m_uiLODIndex                 = 0U;              ///< The LOD index to render, used to select the appropriate LOD from the mesh resource.
+  xiiUInt32 m_uiFirstMeshlet             = 0U;              ///< The index of the first meshlet to render, used for meshlet-based rendering.
+  xiiUInt32 m_uiMeshletCount             = 0U;              ///< The number of meshlets to render, used for meshlet-based rendering.
+  xiiUInt32 m_uiFirstPrimitive           = 0U;              ///< The index of the first primitive to render, used for indexed rendering.
+  xiiUInt32 m_uiPrimitiveCount           = 0U;              ///< The number of primitives to render, used for indexed rendering.
+  xiiUInt32 m_uiSectionIndex             = xiiInvalidIndex; ///< The section index to render, used to select a specific section of the mesh for rendering.
+  xiiUInt32 m_uiInstanceCount            = 1U;              ///< The number of instances to render, used for instanced rendering.
+  xiiUInt64 m_uiInstanceTopologyRevision = 0;               ///< Runtime identity epoch; index shifts must not reuse an earlier GPU identity.
+  xiiUInt32 m_uiVisibilityMask           = 0xFFFFFFFFU;
 
   float m_fLodBias = 0.0f; ///< Projected-coverage octaves for automatic GPU LOD selection; +1 doubles coverage and favors finer LODs.
 
@@ -187,6 +189,9 @@ public:
   /// Returns whether this mesh is visible to ray tracing, used to determine ray tracing visibility for this mesh.
   bool GetRayTracingVisible() const; // [ property ]
 
+  void      SetVisibilityMask(xiiUInt32 mask);                       // [ property ]
+  xiiUInt32 GetVisibilityMask() const { return m_uiVisibilityMask; } // [ property ]
+
 protected:
   /// Handles the message for extracting render data for this mesh, used to prepare and submit the render data for this mesh when requested by the renderer.
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
@@ -211,9 +216,10 @@ protected:
   xiiDynamicArray<xiiMaterialResourceHandle> m_MaterialOverrides; ///< Array of material overrides for this component, used to override the materials specified in the mesh resource for rendering.
 
   xiiUInt32 m_uiSectionIndex      = xiiInvalidIndex; ///< The section index for this component, used to select a specific section of the mesh for rendering.
-  bool      m_bPreferMeshShaders  = true;            ///< Whether to prefer using mesh shaders for rendering this mesh, if available, used to optimize rendering performance on supported hardware.
-  bool      m_bRayTracingVisible  = true;            ///< Whether this mesh should be visible to ray tracing, used to control ray tracing visibility for this mesh.
-  bool      m_bCpuCullingFallback = true;            ///< Whether to use CPU culling as a fallback, used to determine whether to fall back to CPU culling if GPU culling is not available or fails for this mesh.
+  xiiUInt32 m_uiVisibilityMask    = 0xFFFFFFFFU;
+  bool      m_bPreferMeshShaders  = true; ///< Whether to prefer using mesh shaders for rendering this mesh, if available, used to optimize rendering performance on supported hardware.
+  bool      m_bRayTracingVisible  = true; ///< Whether this mesh should be visible to ray tracing, used to control ray tracing visibility for this mesh.
+  bool      m_bCpuCullingFallback = true; ///< Whether to use CPU culling as a fallback, used to determine whether to fall back to CPU culling if GPU culling is not available or fails for this mesh.
 };
 
 /// Static mesh component optimized for cached extraction and GPU-driven rendering.
@@ -357,6 +363,7 @@ public:
 
   /// Returns the number of instances for this instanced mesh component, used to determine how many instances of this mesh are being rendered.
   xiiUInt32 GetInstanceCount() const;
+  xiiUInt64 GetInstanceTopologyRevision() const { return m_uiTopologyRevision; }
 
   /// Returns a reference to the array of instance transforms for this instanced mesh component, used to access the transformation data for rendering each instance of this mesh.
   xiiArrayPtr<const xiiMat4> GetInstanceTransforms() const;
@@ -378,6 +385,7 @@ public:
 
 protected:
   xiiDynamicArray<xiiMat4> m_InstanceTransforms; ///< Array of instance transforms for this instanced mesh component, used to provide the transformation data for rendering each instance.
+  xiiUInt64                m_uiTopologyRevision = 0;
 };
 
 /// Mesh component with explicit CPU-side LOD controls.
