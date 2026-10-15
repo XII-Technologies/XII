@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
