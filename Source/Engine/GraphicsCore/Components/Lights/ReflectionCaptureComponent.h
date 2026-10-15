@@ -76,6 +76,7 @@ class XII_GRAPHICSCORE_DLL xiiReflectionCaptureComponent : public xiiRenderCompo
 
 public:
   xiiReflectionCaptureComponent();
+  xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Lights; }
   ~xiiReflectionCaptureComponent();
 
   virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;

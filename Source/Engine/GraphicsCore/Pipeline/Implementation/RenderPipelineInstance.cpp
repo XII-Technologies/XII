@@ -16,6 +16,8 @@ void xiiRenderPipelineInstance::Clear()
   m_Parameters.Clear();
   m_Overrides.Clear();
   m_PassParameters.Clear();
+  m_Blackboards.Clear();
+  m_PassBlackboards.Clear();
 }
 xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline)
 {
@@ -38,6 +40,21 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
   m_Bindings.SetCount(m_pPipeline->m_uiBindingCount);
   m_Parameters     = m_pPipeline->m_Descriptor.m_Parameters;
   m_PassParameters = m_pPipeline->m_PassParameters;
+  for (const auto& scope : m_pPipeline->m_ResourceScopes)
+  {
+    xiiRenderGraphBlackboard* blackboard = nullptr;
+    if (!scope.IsEmpty())
+    {
+      xiiUniquePtr<xiiRenderGraphBlackboard>* owned = nullptr;
+      if (!m_Blackboards.TryGetValue(scope, owned))
+      {
+        m_Blackboards.Insert(scope, XII_DEFAULT_NEW(xiiRenderGraphBlackboard));
+        m_Blackboards.TryGetValue(scope, owned);
+      }
+      blackboard = owned->Borrow();
+    }
+    m_PassBlackboards.PushBack(blackboard);
+  }
   return XII_SUCCESS;
 }
 xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed)
@@ -63,6 +80,10 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
     return XII_FAILURE;
   const xiiString previousScope = graph.GetResourceNamespace();
   XII_SCOPE_EXIT(graph.SetResourceNamespace(previousScope));
+  auto* previousBlackboard = graph.GetSetupBlackboard();
+  XII_SCOPE_EXIT(graph.SetSetupBlackboard(previousBlackboard));
+  for (auto it = m_Blackboards.GetIterator(); it.IsValid(); ++it)
+    XII_SUCCEED_OR_RETURN(it.Value()->BeginFrameFrom(blackboard));
   if (m_Overrides != overrides)
   {
     m_Overrides  = overrides;
@@ -79,14 +100,19 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
   for (auto index : m_pPipeline->m_Order)
   {
     graph.SetResourceNamespace(m_pPipeline->m_ResourceScopes[index]);
+    auto& localBlackboard = m_PassBlackboards[index] ? *m_PassBlackboards[index] : blackboard;
+    graph.SetSetupBlackboard(&localBlackboard);
     const auto& pass = m_pPipeline->m_Passes[index];
     for (xiiUInt32 i = 0; i < pass.m_uiConnectionCount; ++i)
     {
       const auto& connection                   = m_pPipeline->m_Connections[pass.m_uiConnectionOffset + i];
       m_Bindings[connection.m_uiTargetBinding] = m_Bindings[connection.m_uiSourceBinding];
     }
-    xiiRenderPipelinePassContext context{view, graph, blackboard, m_PassParameters[index], pass.m_Pins, m_Bindings.GetArrayPtr().GetSubArray(pass.m_uiBindingOffset, pass.m_Pins.GetCount()), m_pPipeline->m_Descriptor.m_Passes[index].m_sName};
-    auto                         validateBindings = [&](bool inputs) -> xiiResult {
+    xiiRenderPipelinePassContext context{view, graph, localBlackboard, m_PassParameters[index], pass.m_Pins, m_Bindings.GetArrayPtr().GetSubArray(pass.m_uiBindingOffset, pass.m_Pins.GetCount()), m_pPipeline->m_Descriptor.m_Passes[index].m_sName};
+    context.m_sInstanceScope         = m_pPipeline->m_ResourceScopes[index];
+    context.m_ExtractionRequirements = m_pPipeline->m_GroupRequirements[index];
+    context.m_RuntimeFeatures        = m_pPipeline->m_GroupFeatures[index];
+    auto validateBindings            = [&](bool inputs) -> xiiResult {
       for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
       {
         const auto& pin = pass.m_Pins[i];

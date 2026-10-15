@@ -8,6 +8,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
@@ -103,18 +104,26 @@ xiiRenderWorldModule::~xiiRenderWorldModule() = default;
 
 void xiiRenderWorldModule::Initialize()
 {
-  // Register ExtractRenderData (concurrent, runs on async worker threads per component manager).
+  // Compile CPU-only view demand before scene updates. Extract only after authoritative world
+  // transforms are final, then record/execute after extraction in the same PostTransform phase.
+  {
+    auto description                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::PrepareExtraction, this);
+    description.m_Phase                     = xiiWorldUpdatePhase::PreAsync;
+    description.m_bOnlyUpdateWhenSimulating = false;
+    RegisterUpdateFunction(description);
+  }
   {
     auto description                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExtractRenderData, this);
-    description.m_Phase                     = xiiWorldUpdatePhase::Async;
+    description.m_Phase                     = xiiWorldUpdatePhase::PostTransform;
     description.m_bOnlyUpdateWhenSimulating = false;
     RegisterUpdateFunction(description);
   }
 
   // Register ExecuteRenderGraphs (post-async, single-threaded, after all extraction is complete).
   {
-    auto description                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExecuteRenderGraphs, this);
-    description.m_Phase                     = xiiWorldUpdatePhase::PostAsync;
+    auto description    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExecuteRenderGraphs, this);
+    description.m_Phase = xiiWorldUpdatePhase::PostTransform;
+    description.m_DependsOn.PushBack(xiiMakeHashedString("xiiRenderWorldModule::ExtractRenderData"));
     description.m_bOnlyUpdateWhenSimulating = false;
     RegisterUpdateFunction(description);
   }
@@ -442,9 +451,16 @@ void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObje
   if (hOwnerObject.IsInvalidated())
     return;
 
+  xiiBitflags<xiiRenderExtractionCategory> categories = xiiRenderExtractionCategory::All;
+  const xiiComponent*                      component  = nullptr;
+  if (!hComponent.IsInvalidated() && GetWorld()->TryGetComponent(hComponent, component))
+    if (const auto* renderComponent = xiiDynamicCast<const xiiRenderComponent*>(component))
+      categories = renderComponent->GetRenderExtractionCategories();
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     auto& value = it.Value();
+    if (!value.m_pView->GetExtractionRequirements().IsAnySet(categories))
+      continue;
 
     if (!hComponent.IsInvalidated() && !value.m_ExtractionCache.m_StaticObjectCache.Contains(hOwnerObject))
     {
@@ -481,6 +497,31 @@ void xiiRenderWorldModule::DeleteAllCachedRenderData()
   }
 }
 
+void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext&)
+{
+  m_ExtractionRequirements = {};
+  m_RuntimeFeatures        = {};
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& detail                  = it.Value();
+    auto& view                    = *detail.m_pView;
+    view.m_ExtractionRequirements = {};
+    view.m_RuntimeFeatures        = {};
+    view.m_ExtractionStatistics   = {};
+    if (view.IsRenderEnabled() && view.IsValid() && view.SynchronizeRenderPipeline().Succeeded())
+    {
+      m_ExtractionRequirements |= view.GetExtractionRequirements();
+      m_RuntimeFeatures |= view.GetRuntimeFeatures();
+    }
+    if (detail.m_ExtractionCache.m_Requirements != view.GetExtractionRequirements())
+    {
+      ViewExtractionCache empty;
+      detail.m_ExtractionCache                = std::move(empty);
+      detail.m_ExtractionCache.m_Requirements = view.GetExtractionRequirements();
+    }
+  }
+}
+
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
@@ -495,6 +536,9 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     viewDetail.m_ExtractionCache.m_FrameObjectData.Clear();
 
     viewDetail.m_pExtractedData->Clear();
+    const auto requirements = viewDetail.m_pView->GetExtractionRequirements();
+    if (requirements.IsNoFlagSet())
+      continue;
 
     xiiRenderWorldModuleExtractionEvent extractionEvent;
     extractionEvent.m_Type  = xiiRenderWorldModuleExtractionEvent::Type::BeforeViewExtraction;
@@ -502,6 +546,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     s_pRenderEvent->Broadcast(extractionEvent);
 
     xiiMsgExtractRenderData msg;
+    msg.m_Requirements             = requirements;
     msg.m_pView                    = viewDetail.m_pView.Borrow();
     msg.m_pExtractedRenderData     = viewDetail.m_pExtractedData.Borrow();
     msg.m_SubmitRenderDataFunction = &xiiRenderWorldModule::SubmitRenderData;
@@ -537,17 +582,28 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
         for (const xiiComponent* pComponent : pObject->GetComponents())
         {
-          if (pComponent == nullptr)
+          if (pComponent == nullptr || !pComponent->IsActiveAndInitialized())
             continue;
+          const auto* renderComponent = xiiDynamicCast<const xiiRenderComponent*>(pComponent);
+          const auto  categories      = renderComponent ? renderComponent->GetRenderExtractionCategories() : xiiBitflags<xiiRenderExtractionCategory>(xiiRenderExtractionCategory::Custom);
+          if (!requirements.IsAnySet(categories))
+          {
+            ++viewDetail.m_pView->m_ExtractionStatistics.m_uiSkippedComponents;
+            continue;
+          }
 
           const xiiComponentHandle hComponent = pComponent->GetHandle();
 
           if (ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hComponent, *viewDetail.m_pExtractedData))
+          {
+            ++viewDetail.m_pView->m_ExtractionStatistics.m_uiReusedComponents;
             continue;
+          }
 
           msg.m_hCurrentComponent = hComponent;
 
           pComponent->SendMessage(msg);
+          ++viewDetail.m_pView->m_ExtractionStatistics.m_uiDispatchedComponents;
 
           msg.m_hCurrentComponent = xiiComponentHandle();
         }
@@ -568,6 +624,8 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
 void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context)
 {
+  if (!xiiGALDevice::HasDefaultDevice())
+    return;
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (!pDevice)
     return;
@@ -592,15 +650,19 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   {
     ViewDetail& viewDetail = it.Value();
     if (viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
+    {
+      if (viewDetail.m_pView->PrepareRenderResources().Failed())
+        continue;
       XII_IGNORE_UNUSED(viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex));
+    }
   }
 
   // Scene synchronization can acquire resource-backed materials that did not exist at the start
   // of the frame. Resolve their bindless textures before any view captures its material upload.
-  if (xiiMaterialManager::IsInitialized())
+  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && xiiMaterialManager::IsInitialized())
     xiiMaterialManager::PrepareGpuResources();
 
-  if (xiiGeometryResidencyManager::IsInitialized())
+  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && xiiGeometryResidencyManager::IsInitialized())
   {
     const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
     xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
@@ -629,7 +691,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     // Publish virtual-shadow residency before the view builds its passes. Consumers
     // can therefore declare proper render-graph reads and inherit the transfer
     // dependency without reaching into the manager during execution.
-    const xiiVirtualShadowMapManager::UploadHandles virtualShadowHandles = xiiVirtualShadowMapManager::AddUploadPass(*pGraph, uiFrameIndex);
+    const xiiVirtualShadowMapManager::UploadHandles virtualShadowHandles = viewDetail.m_pView->GetRuntimeFeatures().IsSet(xiiRenderPipelineFeature::VirtualShadows) ? xiiVirtualShadowMapManager::AddUploadPass(*pGraph, uiFrameIndex) : xiiVirtualShadowMapManager::UploadHandles{};
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowHandles.m_uiFrameBaseIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowHandles.m_uiPhysicalPageCount);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowHandles.m_uiVirtualTableBaseIndex);

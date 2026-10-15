@@ -72,8 +72,18 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       name.Append(id, "/");
     }
     name.Append(node.m_sName);
-    const auto index                = descriptor.AddPass(name, node.m_sType, node.m_Properties);
-    descriptor.m_Passes[index].m_Id = node.m_Source.m_Element;
+    const auto index                        = descriptor.AddPass(name, node.m_sType, node.m_Properties);
+    descriptor.m_Passes[index].m_Id         = node.m_Source.m_Element;
+    descriptor.m_Passes[index].m_Parameters = node.m_Parameters;
+    xiiStringBuilder instanceScope;
+    for (const auto& instance : node.m_Source.m_InstancePath)
+    {
+      xiiConversionUtils::ToString(instance, id);
+      if (!instanceScope.IsEmpty())
+        instanceScope.Append("/");
+      instanceScope.Append(id);
+    }
+    descriptor.m_Passes[index].m_sInstanceScope = instanceScope;
     for (const auto& instance : node.m_Source.m_InstancePath)
       descriptor.m_Passes[index].m_Id.HashCombine(instance);
   }
@@ -131,6 +141,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     pass.m_pType           = type;
     pass.m_uiBindingOffset = result->m_uiBindingCount;
     prototype->GetPins(pass.m_Pins);
+    result->m_ExtractionRequirements |= prototype->GetExtractionRequirements();
+    result->m_RuntimeFeatures |= prototype->GetRuntimeFeatures();
     if (pass.m_Pins.GetCount() > 256)
       return fail("Pass exceeds pin limit.");
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
@@ -149,6 +161,16 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddVertex(vertex));
     vertices.PushBack(vertex);
   }
+  xiiHashTable<xiiString, xiiBitflags<xiiRenderExtractionCategory>> groups;
+  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
+    groups[result->m_ResourceScopes[i]] |= prototypes[i]->GetExtractionRequirements();
+  for (const auto& scope : result->m_ResourceScopes)
+    result->m_GroupRequirements.PushBack(groups[scope]);
+  xiiHashTable<xiiString, xiiBitflags<xiiRenderPipelineFeature>> featureGroups;
+  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
+    featureGroups[result->m_ResourceScopes[i]] |= prototypes[i]->GetRuntimeFeatures();
+  for (const auto& scope : result->m_ResourceScopes)
+    result->m_GroupFeatures.PushBack(featureGroups[scope]);
   xiiDynamicArray<xiiUInt8> connected;
   connected.SetCount(result->m_uiBindingCount, 0);
   for (const auto& boundary : expanded.m_Boundary)

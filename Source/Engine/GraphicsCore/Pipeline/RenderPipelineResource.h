@@ -19,6 +19,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassDescriptor
   xiiUuid                                   m_Definition; ///< Shared definition reference; invalid for an ordinary reflected pass.
   xiiVariantDictionary                      m_Parameters;
   xiiDynamicArray<xiiGraphPropertyOverride> m_Overrides;
+  xiiString                                 m_sInstanceScope; ///< Compiled diagnostic/ownership scope; derived from the Core instance path.
 };
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineConnection
@@ -93,6 +94,15 @@ public:
   xiiArrayPtr<const xiiGraphProvenance>           GetProvenance() const { return m_Provenance; }
   xiiArrayPtr<const xiiGraphDefinitionDependency> GetDependencies() const { return m_Dependencies; }
   const xiiVariantDictionary&                     GetPassParameters(xiiUInt32 index) const { return m_PassParameters[index]; }
+  xiiBitflags<xiiRenderExtractionCategory>        GetExtractionRequirements() const { return m_ExtractionRequirements; }
+  xiiBitflags<xiiRenderPipelineFeature>           GetRuntimeFeatures() const { return m_RuntimeFeatures; }
+  xiiBitflags<xiiRenderPipelineFeature>           GetRootRuntimeFeatures() const
+  {
+    for (xiiUInt32 i = 0; i < m_ResourceScopes.GetCount(); ++i)
+      if (m_ResourceScopes[i].IsEmpty())
+        return m_GroupFeatures[i];
+    return {};
+  }
   /// Inclusive CPU memory estimate, including topology, compiled bindings and nested configuration.
   xiiUInt64 GetHeapMemoryUsage() const;
 
@@ -109,6 +119,10 @@ private:
   xiiDynamicArray<xiiVariantDictionary>                                                       m_PassParameters;
   xiiDynamicArray<xiiString>                                                                  m_ResourceScopes;
   xiiUInt32                                                                                   m_uiBindingCount = 0;
+  xiiBitflags<xiiRenderExtractionCategory>                                                    m_ExtractionRequirements;
+  xiiDynamicArray<xiiBitflags<xiiRenderExtractionCategory>>                                   m_GroupRequirements;
+  xiiBitflags<xiiRenderPipelineFeature>                                                       m_RuntimeFeatures;
+  xiiDynamicArray<xiiBitflags<xiiRenderPipelineFeature>>                                      m_GroupFeatures;
 };
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;

@@ -178,7 +178,14 @@ public:
   /// Read-only view-local pass state from the most recent pipeline build. Call only at a CPU frame
   /// boundary while holding world access. Pass pointers/arrays are borrowed until the next build;
   /// resource replacement or a failed synchronization can destroy them. Empty before the first build.
-  const xiiRenderPipelineInstance& GetRenderPipelineInstance() const;
+  const xiiRenderPipelineInstance&         GetRenderPipelineInstance() const;
+  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return m_ExtractionRequirements; }
+  const xiiRenderExtractionStatistics&     GetExtractionStatistics() const { return m_ExtractionStatistics; }
+  /// Custom graph builders default to All for compatibility; specialize their demand explicitly.
+  void                                  SetRenderGraphExtractionRequirements(xiiBitflags<xiiRenderExtractionCategory> requirements) { m_CustomExtractionRequirements = requirements; }
+  bool                                  IsGpuSceneInitialized() const { return m_GpuSceneContext.IsInitialized(); }
+  xiiBitflags<xiiRenderPipelineFeature> GetRuntimeFeatures() const { return m_RuntimeFeatures; }
+  void                                  SetRenderGraphRuntimeFeatures(xiiBitflags<xiiRenderPipelineFeature> features) { m_CustomRuntimeFeatures = features; }
 
   /// Resolves an object ID produced by this view's native GPU scene to a live mesh owner.
   /// Call at a CPU frame boundary under world access. The ID must come from this view;
@@ -229,6 +236,8 @@ private:
   void               UpdateCachedMatrices() const;
   void               UpdateRenderResolutionState() const;
   [[nodiscard]] bool SynchronizeGpuScene(xiiUInt64 uiFrameIndex);
+  xiiResult          SynchronizeRenderPipeline();
+  xiiResult          PrepareRenderResources();
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
@@ -271,10 +280,15 @@ private:
   const xiiGALSwapChain*          m_pSwapChain = nullptr;
   xiiSharedPtr<xiiGALTextureView> m_pRenderTargetView;
 
-  xiiViewRenderResourceContextHandle m_hPipelineRuntime;
-  xiiRenderPipelineResourceHandle    m_hRenderPipeline;
-  xiiVariantDictionary               m_PipelineParameters;
-  xiiBuiltinRenderPipelineRuntime*   GetBuiltinRuntime() const;
+  xiiViewRenderResourceContextHandle       m_hPipelineRuntime;
+  xiiRenderPipelineResourceHandle          m_hRenderPipeline;
+  xiiVariantDictionary                     m_PipelineParameters;
+  xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
+  xiiBitflags<xiiRenderExtractionCategory> m_CustomExtractionRequirements = xiiRenderExtractionCategory::All;
+  xiiRenderExtractionStatistics            m_ExtractionStatistics;
+  xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
+  xiiBitflags<xiiRenderPipelineFeature>    m_CustomRuntimeFeatures = xiiRenderPipelineFeature::All;
+  xiiBuiltinRenderPipelineRuntime*         GetBuiltinRuntime() const;
 
   xiiDisplayOutputSettings m_DisplayOutputSettings;
 };

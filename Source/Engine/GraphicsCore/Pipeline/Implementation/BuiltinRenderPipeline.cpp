@@ -31,12 +31,40 @@ xiiResult xiiBuiltinRenderPipelinePass::Configure(const xiiVariantDictionary& pr
   return XII_FAILURE;
 }
 
+xiiBitflags<xiiRenderExtractionCategory> xiiBuiltinRenderPipelinePass::GetExtractionRequirements() const
+{
+  if (m_sStage == "Visibility" || m_sStage == "Shadows")
+    return xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Decals;
+  if (m_sStage == "DepthAndGeometry" || m_sStage == "OpaqueComposition")
+    return xiiRenderExtractionCategory::Geometry;
+  if (m_sStage == "LightingPreparation" || m_sStage == "Lighting")
+    return xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Geometry;
+  if (m_sStage == "Transparency")
+    return xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Particles | xiiRenderExtractionCategory::Decals;
+  if (m_sStage == "ScreenEffects")
+    return xiiRenderExtractionCategory::Atmosphere;
+  if (m_sStage == "Debug")
+    return xiiRenderExtractionCategory::Custom;
+  return {};
+}
+
+xiiBitflags<xiiRenderPipelineFeature> xiiBuiltinRenderPipelinePass::GetRuntimeFeatures() const
+{
+  if (m_sStage == "Visibility" || m_sStage == "DepthAndGeometry" || m_sStage == "OpaqueComposition" || m_sStage == "Transparency")
+    return xiiRenderPipelineFeature::GpuScene;
+  if (m_sStage == "Shadows")
+    return xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::VirtualShadows | xiiRenderPipelineFeature::Lighting | xiiRenderPipelineFeature::RayTracing;
+  if (m_sStage == "LightingPreparation" || m_sStage == "Lighting")
+    return xiiRenderPipelineFeature::Lighting | xiiRenderPipelineFeature::RayTracing | xiiRenderPipelineFeature::GpuScene;
+  return {};
+}
+
 xiiResult xiiBuiltinRenderPipelinePass::ValidatePipeline(const xiiRenderPipelineResourceDescriptor& descriptor, xiiArrayPtr<const xiiUInt32> order, xiiUInt32 index, xiiStringBuilder* error) const
 {
   if (m_sStage == "PrepareFrame")
   {
     xiiDisplayOutputSettings settings;
-    if (xiiResolvePipelineDisplaySettings(descriptor.m_Parameters, settings).Failed())
+    if (xiiResolvePipelineDisplaySettings(descriptor.m_Passes[index].m_Parameters, settings).Failed())
     {
       if (error)
         error->Set("Invalid DisplayOutput pipeline parameters.");
@@ -48,6 +76,8 @@ xiiResult xiiBuiltinRenderPipelinePass::ValidatePipeline(const xiiRenderPipeline
   for (auto passIndex : order)
   {
     const auto& definition = descriptor.m_Passes[passIndex];
+    if (definition.m_sInstanceScope != descriptor.m_Passes[index].m_sInstanceScope)
+      continue;
     if (definition.m_sType != "xiiBuiltinRenderPipelinePass")
       continue;
     xiiString  stage = "Bloom";
@@ -495,9 +525,15 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
 {
   if (!context.m_pView)
     return XII_FAILURE;
-  auto* runtime = context.m_pView->GetBuiltinRuntime();
+  auto* rootRuntime                 = context.m_pView->GetBuiltinRuntime();
+  auto* runtime                     = rootRuntime->GetSubgraphRuntime(context.m_sInstanceScope);
+  runtime->m_ExtractionRequirements = context.m_ExtractionRequirements;
+  runtime->m_RuntimeFeatures        = context.m_RuntimeFeatures;
   if (m_sStage == "PrepareFrame")
   {
+    if (runtime != rootRuntime)
+      runtime->BeginFrame(rootRuntime->m_Frame.virtualShadowHandles);
+    XII_SUCCEED_OR_RETURN(runtime->PrepareInstanceResources());
     runtime->m_DisplayOutputSettings = context.m_pView->GetDisplayOutputSettings();
     XII_SUCCEED_OR_RETURN(xiiResolvePipelineDisplaySettings(context.m_Parameters, runtime->m_DisplayOutputSettings));
   }
@@ -520,6 +556,15 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
       context.m_Bindings[i].m_hTexture = context.m_Graph.FindTexture(pin.m_sName);
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer)
       context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
+  }
+  if (m_sStage == "PrepareFrame")
+  {
+    const xiiString previousScope = context.m_Graph.GetResourceNamespace();
+    context.m_Graph.SetResourceNamespace({});
+    for (xiiUInt32 i = 0; i < context.m_Pins.GetCount(); ++i)
+      if (!context.m_Pins[i].m_bInput && context.m_Pins[i].m_Type == xiiRenderPipelinePin::Buffer)
+        context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(context.m_Pins[i].m_sName);
+    context.m_Graph.SetResourceNamespace(previousScope);
   }
   return result;
 }

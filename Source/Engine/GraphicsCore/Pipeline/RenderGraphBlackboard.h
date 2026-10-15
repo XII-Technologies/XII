@@ -62,11 +62,23 @@ public:
 
   /// Clears only graph-scoped entries.
   void ClearGraph();
+  /// Begin an occurrence-local frame with read-only parent inputs. Writes stay local.
+  /// The parent must outlive this frame and remain immutable during execution.
+  xiiResult BeginFrameFrom(const xiiRenderGraphBlackboard& parent)
+  {
+    for (auto* ancestor = &parent; ancestor; ancestor = ancestor->m_pParent)
+      if (ancestor == this)
+        return XII_FAILURE;
+    ClearFrame();
+    m_pParent = &parent;
+    return XII_SUCCESS;
+  }
 
 private:
   xiiHashTable<xiiHashedString, xiiVariant> m_FrameEntries;
   xiiHashTable<xiiHashedString, xiiVariant> m_GraphEntries;
   mutable xiiMutex                          m_ReadMutex;
+  const xiiRenderGraphBlackboard*           m_pParent = nullptr;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderGraphBlackboard_inl.h>

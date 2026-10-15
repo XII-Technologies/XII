@@ -47,6 +47,7 @@ class XII_GRAPHICSCORE_DLL xiiVolumetricCloudComponent : public xiiRenderCompone
 
 public:
   xiiVolumetricCloudComponent();
+  xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Atmosphere; }
   ~xiiVolumetricCloudComponent();
 
   virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;

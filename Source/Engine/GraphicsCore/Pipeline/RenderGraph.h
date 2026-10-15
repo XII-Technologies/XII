@@ -518,6 +518,8 @@ public:
   /// boundary connections cross namespaces explicitly. Restore the previous scope after Build.
   void                        SetResourceNamespace(xiiStringView name) { m_sResourceNamespace = name; }
   xiiStringView               GetResourceNamespace() const { return m_sResourceNamespace; }
+  void                        SetSetupBlackboard(xiiRenderGraphBlackboard* blackboard) { m_pSetupBlackboard = blackboard; }
+  xiiRenderGraphBlackboard*   GetSetupBlackboard() const { return m_pSetupBlackboard; }
   xiiRenderGraphTextureHandle FindTexture(xiiStringView name) const;
   xiiRenderGraphBufferHandle  FindBuffer(xiiStringView name) const;
   /// Setup-time descriptions. Invalid handles and mismatched resource identities return null.
@@ -664,7 +666,8 @@ private:
 
   struct PassEntry
   {
-    xiiRenderGraphPassId m_Id;
+    xiiRenderGraphPassId      m_Id;
+    xiiRenderGraphBlackboard* m_pBlackboard = nullptr;
 
     xiiHashedString                      m_sName;
     xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
@@ -699,6 +702,8 @@ private:
   xiiDynamicArray<PassEntry>                                 m_Passes;
   xiiDynamicArray<ResourceEntry>                             m_Resources;
   xiiHashTable<xiiHashedString, xiiUInt32>                   m_ResourceNameIndex;
+  xiiHashTable<const xiiGALTexture*, xiiUInt32>              m_ImportedTextureIndices;
+  xiiHashTable<const xiiGALBuffer*, xiiUInt32>               m_ImportedBufferIndices;
   xiiHashTable<xiiHashedString, xiiRenderGraphTextureHandle> m_SetupTextureBindings;
   xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
   xiiHashedString                                            m_sName;
@@ -725,6 +730,7 @@ private:
   xiiDynamicArray<xiiUInt32>    m_CachedTopologyOrder;
   xiiDynamicArray<xiiUInt8>     m_CachedTopologyCulled;
   bool                          m_bTopologyCacheValid = false;
+  xiiRenderGraphBlackboard*     m_pSetupBlackboard    = nullptr;
   xiiUInt64                     m_uiFrameIndex        = 0ULL;
   bool                          m_bIsSetupOpen        = false;
   bool                          m_bIsCompiled         = false;

@@ -163,6 +163,16 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
   const auto qualified = m_Graph.QualifyResourceName(sName);
   sName                = qualified;
   XII_ASSERT_DEV(pTexture != nullptr, "Cannot import a null texture.");
+  xiiUInt32 physicalIndex;
+  if (m_Graph.m_ImportedTextureIndices.TryGetValue(pTexture.Borrow(), physicalIndex))
+  {
+    xiiUInt32 namedIndex;
+    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), namedIndex) && namedIndex != physicalIndex)
+      return {};
+    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(sName), physicalIndex);
+    const auto& existing = m_Graph.m_Resources[physicalIndex];
+    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
+  }
 
   xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex))
@@ -187,6 +197,9 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiTextureResourceIndex);
   }
 
+  if (!m_Graph.m_Resources[uiTextureResourceIndex].m_bIsImported || m_Graph.m_Resources[uiTextureResourceIndex].m_pImportedTexture != pTexture)
+    return {};
+  m_Graph.m_ImportedTextureIndices.Insert(pTexture.Borrow(), uiTextureResourceIndex);
   return xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
 }
 
@@ -330,6 +343,16 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
   const auto qualified = m_Graph.QualifyResourceName(sName);
   sName                = qualified;
   XII_ASSERT_DEV(pBuffer != nullptr, "Cannot import a null buffer.");
+  xiiUInt32 physicalIndex;
+  if (m_Graph.m_ImportedBufferIndices.TryGetValue(pBuffer.Borrow(), physicalIndex))
+  {
+    xiiUInt32 namedIndex;
+    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), namedIndex) && namedIndex != physicalIndex)
+      return {};
+    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(sName), physicalIndex);
+    const auto& existing = m_Graph.m_Resources[physicalIndex];
+    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
+  }
 
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex))
@@ -354,6 +377,9 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiBufferResourceIndex);
   }
 
+  if (!m_Graph.m_Resources[uiBufferResourceIndex].m_bIsImported || m_Graph.m_Resources[uiBufferResourceIndex].m_pImportedBuffer != pBuffer)
+    return {};
+  m_Graph.m_ImportedBufferIndices.Insert(pBuffer.Borrow(), uiBufferResourceIndex);
   return xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
 }
 
@@ -517,7 +543,10 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_Passes.Clear();
   m_Resources.Clear();
   m_ResourceNameIndex.Clear();
+  m_ImportedTextureIndices.Clear();
+  m_ImportedBufferIndices.Clear();
   m_sResourceNamespace.Clear();
+  m_pSetupBlackboard = nullptr;
   ClearSetupBindings();
   m_ExportedTextures.Clear();
   m_ExportedBuffers.Clear();
@@ -1834,7 +1863,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       {
         xiiRenderGraphPassContext preparationContext;
         preparationContext.m_pCommandList     = pCommandList.Borrow();
-        preparationContext.m_pBlackboard      = pBlackboard;
+        preparationContext.m_pBlackboard      = m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard ? m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard : pBlackboard;
         preparationContext.m_pResourceCache   = pResourceCache;
         preparationContext.m_pView            = pView;
         preparationContext.m_uiFrameIndex     = m_uiFrameIndex;
@@ -1889,7 +1918,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         context.m_pRenderPass    = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass;
         context.m_uiSubpassIndex = 0U;
       }
-      context.m_pBlackboard      = pBlackboard;
+      context.m_pBlackboard      = m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard ? m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard : pBlackboard;
       context.m_pResourceCache   = pResourceCache;
       context.m_pView            = pView;
       context.m_uiFrameIndex     = m_uiFrameIndex;

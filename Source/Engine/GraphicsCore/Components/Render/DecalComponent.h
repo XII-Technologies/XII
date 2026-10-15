@@ -62,8 +62,9 @@ class XII_GRAPHICSCORE_DLL xiiDecalComponent : public xiiRenderComponent
   //////////////////////////////////////////////////////////////////////////
   // xiiComponent
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Decals; }
+  virtual void                             SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void                             DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent

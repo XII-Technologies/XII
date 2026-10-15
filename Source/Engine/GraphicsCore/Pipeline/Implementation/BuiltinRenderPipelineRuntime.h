@@ -15,6 +15,7 @@
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
+#include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -137,29 +138,40 @@ class xiiBuiltinRenderPipelineRuntime
 {
 public:
   explicit xiiBuiltinRenderPipelineRuntime(xiiView& view) : m_View(view) {}
-  void                        BuildPrepareFrame(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                   BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                   BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                   BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                   BuildViewRenderMode(xiiRenderGraph& graph);
-  void                        BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
-  void                        InvalidateTemporalHistory();
-  void                        BindFrameResources(xiiGALCommandList& commandList) const;
-  xiiSharedPtr<xiiGALSampler> m_CommonSamplers[5];
-  xiiResult                   BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                   PrepareTemporalResources(xiiStringView stage);
-  xiiResult                   PrepareShadowResources();
-  xiiResult                   PrepareSensorOutput();
-  xiiRenderPipelineInstance   m_Instance;
-  xiiDisplayOutputSettings    m_DisplayOutputSettings;
+  ~xiiBuiltinRenderPipelineRuntime();
+  xiiBuiltinRenderPipelineRuntime*                                       GetSubgraphRuntime(xiiStringView scope);
+  void                                                                   ClearSubgraphs();
+  xiiResult                                                              PrepareInstanceResources();
+  xiiGpuVisibilityContextHandle                                          GetVisibilityContext() const;
+  xiiBitflags<xiiRenderExtractionCategory>                               m_ExtractionRequirements;
+  xiiBitflags<xiiRenderPipelineFeature>                                  m_RuntimeFeatures;
+  void                                                                   BuildPrepareFrame(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                                                              BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                                                              BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                                                              BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                                                              BuildViewRenderMode(xiiRenderGraph& graph);
+  void                                                                   BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                                                                   BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
+  void                                                                   InvalidateTemporalHistory();
+  void                                                                   BindFrameResources(xiiGALCommandList& commandList) const;
+  xiiSharedPtr<xiiGALSampler>                                            m_CommonSamplers[5];
+  xiiResult                                                              BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                                                              PrepareTemporalResources(xiiStringView stage);
+  xiiResult                                                              PrepareShadowResources();
+  xiiResult                                                              PrepareSensorOutput();
+  xiiRenderPipelineInstance                                              m_Instance;
+  xiiHashTable<xiiString, xiiUniquePtr<xiiBuiltinRenderPipelineRuntime>> m_Subgraphs;
+  xiiGpuVisibilityContextHandle                                          m_hInstanceVisibility;
+  bool                                                                   m_bSubgraphInstance = false;
+  xiiBuiltinRenderPipelineRuntime*                                       m_pServiceOwner     = nullptr;
+  xiiDisplayOutputSettings                                               m_DisplayOutputSettings;
   struct Resources
   {
     //  CPU PID state for dynamic resolution
@@ -432,6 +444,7 @@ public:
   Resources m_Resources;
 
 private:
+  friend class xiiBuiltinRenderPipelinePass;
   xiiView& m_View;
   // Render-graph setup callbacks are void. Accumulate pipeline creation failures
   // during one stage so its resource-backed Build() can reject GPU execution.
@@ -444,6 +457,8 @@ private:
     xiiMaterialGpuStorage::UploadHandles                            materials;
     xiiGpuVisibilityOutputs                                         mainVisibility;
     xiiVirtualShadowMapManager::UploadHandles                       virtualShadowHandles;
+    xiiRayTracingSceneManager::BuildHandles                         rayTracing;
+    bool                                                            m_bSharedServicesPrepared = false;
     std::pair<xiiLightListData*, xiiRenderGraphPassHandle>          lightListPass;
     std::pair<xiiLightSamplingData*, xiiRenderGraphPassHandle>      lightSamplingPass;
     std::pair<xiiShadowCascadeSetupData*, xiiRenderGraphPassHandle> shadowCascadePass;

@@ -4,6 +4,7 @@
 
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Variant.h>
+#include <GraphicsCore/Pipeline/RenderExtraction.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
 class xiiView;
@@ -44,10 +45,12 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiReflectedClass
 public:
   virtual ~xiiRenderPipelinePass() = default;
   /// Authored, occurrence-local parameter overrides. Kept separate from compile-time pass properties.
-  xiiVariantDictionary m_ParameterOverrides;
-  virtual xiiResult    Configure(const xiiVariantDictionary& properties);
-  virtual void         GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
-  virtual xiiResult    Build(xiiRenderPipelinePassContext& context)                   = 0;
+  xiiVariantDictionary                             m_ParameterOverrides;
+  virtual xiiResult                                Configure(const xiiVariantDictionary& properties);
+  virtual void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
+  virtual xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return {}; }
+  virtual xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const { return {}; }
+  virtual xiiResult                                Build(xiiRenderPipelinePassContext& context) = 0;
   /// Optional domain validation after generic connectivity and ordering have been validated.
   /// Runs on CPU during compilation; failure prevents publication of the entire resource.
   virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }
@@ -59,13 +62,16 @@ public:
 /// output bindings are written by the pass. Input/output access does not allocate.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
 {
-  xiiView*                                m_pView;
-  xiiRenderGraph&                         m_Graph;
-  xiiRenderGraphBlackboard&               m_Blackboard;
-  const xiiVariantDictionary&             m_Parameters;
-  xiiArrayPtr<const xiiRenderPipelinePin> m_Pins;
-  xiiArrayPtr<xiiRenderPipelineBinding>   m_Bindings;
-  xiiStringView                           m_sPassName;
+  xiiView*                                 m_pView;
+  xiiRenderGraph&                          m_Graph;
+  xiiRenderGraphBlackboard&                m_Blackboard;
+  const xiiVariantDictionary&              m_Parameters;
+  xiiArrayPtr<const xiiRenderPipelinePin>  m_Pins;
+  xiiArrayPtr<xiiRenderPipelineBinding>    m_Bindings;
+  xiiStringView                            m_sPassName;
+  xiiStringView                            m_sInstanceScope;
+  xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
+  xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
 
   xiiUInt32                   FindPin(xiiStringView name, bool input) const;
   xiiRenderGraphTextureHandle GetInputTexture(xiiStringView name) const;

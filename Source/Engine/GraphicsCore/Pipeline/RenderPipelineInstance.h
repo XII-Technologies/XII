@@ -22,10 +22,12 @@ public:
   const xiiRenderPipelinePass* GetPass(xiiUInt32 index) const { return index < m_Passes.GetCount() ? m_Passes[index] : nullptr; }
 
 private:
-  xiiSharedPtr<const xiiRenderPipeline>     m_pPipeline;
-  xiiDynamicArray<xiiRenderPipelinePass*>   m_Passes;
-  xiiDynamicArray<xiiRenderPipelineBinding> m_Bindings;
-  xiiVariantDictionary                      m_Parameters;
-  xiiVariantDictionary                      m_Overrides;
-  xiiDynamicArray<xiiVariantDictionary>     m_PassParameters;
+  xiiSharedPtr<const xiiRenderPipeline>                           m_pPipeline;
+  xiiDynamicArray<xiiRenderPipelinePass*>                         m_Passes;
+  xiiDynamicArray<xiiRenderPipelineBinding>                       m_Bindings;
+  xiiVariantDictionary                                            m_Parameters;
+  xiiVariantDictionary                                            m_Overrides;
+  xiiDynamicArray<xiiVariantDictionary>                           m_PassParameters;
+  xiiHashTable<xiiString, xiiUniquePtr<xiiRenderGraphBlackboard>> m_Blackboards;
+  xiiDynamicArray<xiiRenderGraphBlackboard*>                      m_PassBlackboards;
 };
