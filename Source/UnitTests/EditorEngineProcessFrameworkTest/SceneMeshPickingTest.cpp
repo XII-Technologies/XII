@@ -285,7 +285,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
       const auto color = builder.ReadTexture(graph.FindTexture("Query test Color"), xiiGALResourceStateFlags::CopySource);
       builder.ExportTexture(color, xiiGALResourceStateFlags::CopySource);
       builder.ExportBuffer(builder.ReadBuffer(worldInstances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-      for (const xiiStringView name : { "Query GPU Visible Instance Count", "Query GPU Visible Meshlet Count"})
+      for (const xiiStringView name : {"Query GPU Visible Instance Count", "Query GPU Visible Meshlet Count"})
         if (const auto buffer = graph.FindBuffer(name); buffer.IsValid())
           builder.ExportBuffer(builder.ReadBuffer(buffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
     graph.EndSetup();
