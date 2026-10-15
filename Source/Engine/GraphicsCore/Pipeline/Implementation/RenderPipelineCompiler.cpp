@@ -179,15 +179,36 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     result->m_GroupFeatures.PushBack(featureGroups[scope]);
   xiiDynamicArray<xiiUInt8> connected;
   connected.SetCount(result->m_uiBindingCount, 0);
+  xiiHashTable<xiiString, xiiRenderPipelinePin> boundarySchemas;
   for (const auto& boundary : expanded.m_Boundary)
   {
+    xiiStringBuilder boundaryKey, sourceId;
+    xiiConversionUtils::ToString(boundary.m_Source.m_Definition, sourceId);
+    boundaryKey.SetFormat("{}:{}:{}:", sourceId, boundary.m_Source.m_InstancePath.GetCount(), boundary.m_bInput);
+    for (const auto& instance : boundary.m_Source.m_InstancePath)
+    {
+      xiiConversionUtils::ToString(instance, sourceId);
+      boundaryKey.Append(sourceId, "/");
+    }
+    boundaryKey.AppendFormat("{}:{}", boundary.m_sName.GetElementCount(), boundary.m_sName);
     diagnosticPass    = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
     bool        found = false;
     const auto& pass  = result->m_Passes[diagnosticPass];
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
       if (pass.m_Pins[i].m_sName == boundary.m_sPort && pass.m_Pins[i].m_bInput == boundary.m_bInput)
       {
-        found = true;
+        found                          = true;
+        const auto&           pin      = pass.m_Pins[i];
+        xiiRenderPipelinePin* existing = nullptr;
+        if (boundarySchemas.TryGetValue(boundaryKey.GetView(), existing))
+        {
+          if (existing->m_Type != pin.m_Type || (existing->m_Format != xiiGALResourceFormat::Unknown && pin.m_Format != xiiGALResourceFormat::Unknown && existing->m_Format != pin.m_Format))
+            return fail("Subgraph interface fan-out maps incompatible reflected resource pins.");
+          if (existing->m_Format == xiiGALResourceFormat::Unknown)
+            existing->m_Format = pin.m_Format;
+        }
+        else
+          boundarySchemas.Insert(boundaryKey.GetView(), pin);
         if (boundary.m_bInput && boundary.m_Source.m_InstancePath.IsEmpty())
           connected[pass.m_uiBindingOffset + i] = 1;
       }

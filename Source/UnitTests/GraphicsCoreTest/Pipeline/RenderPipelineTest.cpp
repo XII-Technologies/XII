@@ -176,6 +176,16 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST(Pipeline, TemporalDependencyPolicy)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unused interface fan-out still requires a consistent native resource schema")
+  {
+    auto invalid = PipelineResourceTest::MakeDefinition();
+    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[0].m_Id, "Texture"});
+    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[1].m_Id, "Before"});
+    xiiSharedPtr<const xiiRenderPipeline> rejected;
+    xiiStringBuilder                      diagnostic;
+    XII_TEST_BOOL(xiiRenderPipeline::Compile(invalid, rejected, &diagnostic).Failed());
+    XII_TEST_BOOL(diagnostic.FindSubString("fan-out") != nullptr);
+  }
   xiiRenderPipelineResourceDescriptor descriptor;
   descriptor.AddPass("Feedback", "xiiPipelineTestHistory");
   XII_TEST_RESULT(descriptor.Connect(0, "History", 0, "Previous"));
@@ -246,6 +256,35 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IncrementalRenderGraphCompilation)
     XII_TEST_RESULT(graph.Compile(settings));
     XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, HundredsOfReflectedPasses)
+{
+  auto               shared = PipelineResourceTest::MakeDefinition();
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(shared.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  for (xiiUInt32 i = 0; i < 100; ++i)
+  {
+    xiiStringBuilder name;
+    name.SetFormat("Instance {}", i);
+    root.AddSubgraph(name, shared.m_Id);
+  }
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
+  XII_TEST_INT(compiled->GetTopology().GetVertexCount(), 200);
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  graph.BeginSetup(1);
+  XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+  graph.EndSetup();
+  XII_TEST_RESULT(graph.Compile());
+  XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 200);
+  XII_TEST_INT(graph.GetResourceDescriptions().GetCount(), 100);
+  XII_TEST_INT(graph.GetQueueSubmissions().GetCount(), 1);
 }
 
 XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
