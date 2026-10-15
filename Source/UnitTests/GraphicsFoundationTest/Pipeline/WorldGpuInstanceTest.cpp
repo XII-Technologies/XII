@@ -5,6 +5,8 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
+#include <Core/WorldSerializer/WorldReader.h>
+#include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -296,16 +298,17 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   {
     xiiGameObject*           object = nullptr;
     xiiGameObjectDescription authored;
-    authored.m_bDynamic      = true;
-    authored.m_LocalPosition = xiiVec3(10, 0, 0);
-    world.CreateObject(authored, object);
-    xiiInstancedMeshComponent* renderable = nullptr;
+    authored.m_bDynamic                     = true;
+    authored.m_LocalPosition                = xiiVec3(10, 0, 0);
+    const auto                 objectHandle = world.CreateObject(authored, object);
+    xiiInstancedMeshComponent* renderable   = nullptr;
     xiiInstancedMeshComponent::CreateComponent(object, renderable);
     renderable->SetMesh(mesh);
     renderable->SetVisibilityMask(0x42);
     renderable->AddInstance(xiiMat4::MakeTranslation(xiiVec3(1, 0, 0)));
     renderable->AddInstance(xiiMat4::MakeTranslation(xiiVec3(2, 0, 0)));
     world.Update();
+    XII_TEST_BOOL(world.TryGetObject(objectHandle, object)); // Object storage may compact during Update().
     auto extractInstances = [&] {
       extracted.Clear();
       xiiMsgExtractRenderData message;
@@ -331,6 +334,39 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_INT(instances->GetInstances()[1].m_uiObjectId, second);
     XII_TEST_FLOAT(instances->GetInstances()[1].m_GlobalTransform.GetTranslationVector().x, 13, 0);
     XII_TEST_FLOAT(instances->GetInstances()[1].m_PreviousGlobalTransform.GetTranslationVector().x, 12, 0);
+    {
+      xiiDefaultMemoryStreamStorage bytes;
+      xiiMemoryStreamWriter         writer(&bytes);
+      xiiWorldWriter                worldWriter;
+      const xiiGameObject*          root = object;
+      worldWriter.WriteObjects(writer, xiiMakeArrayPtr(&root, 1));
+      xiiMemoryStreamReader reader(&bytes);
+      xiiWorldReader        worldReader;
+      XII_TEST_RESULT(worldReader.ReadWorldDescription(reader));
+      xiiWorldDescription loadedDescription("Deserialized component instances");
+      xiiWorld            loadedWorld(loadedDescription);
+      XII_LOCK(loadedWorld.GetWriteMarker());
+      loadedWorld.SetWorldSimulationEnabled(false);
+      xiiDynamicArray<xiiGameObject*> roots;
+      xiiPrefabInstantiationOptions   options;
+      options.m_pCreatedRootObjectsOut = &roots;
+      worldReader.InstantiatePrefab(loadedWorld, xiiTransform::MakeIdentity(), options);
+      if (!XII_TEST_INT(roots.GetCount(), 1))
+        return;
+      const auto restoredHandle = roots[0]->GetHandle();
+      loadedWorld.Update();
+      xiiGameObject* restoredObject = nullptr;
+      if (!XII_TEST_BOOL(loadedWorld.TryGetObject(restoredHandle, restoredObject)))
+        return;
+      xiiInstancedMeshComponent* restored = nullptr;
+      if (XII_TEST_BOOL(restoredObject->TryGetComponentOfBaseType(restored)))
+      {
+        XII_TEST_BOOL(restored->GetMesh() == mesh);
+        XII_TEST_INT(restored->GetVisibilityMask(), 0x42);
+        XII_TEST_INT(restored->GetInstanceCount(), 2);
+        XII_TEST_FLOAT(restored->GetInstanceTransforms()[1].GetTranslationVector().x, 3, 0);
+      }
+    }
     renderable->RemoveInstance(0);
     XII_TEST_BOOL(instances->Resolve(first, source).Failed());
     XII_TEST_BOOL(instances->Resolve(second, source).Failed());
