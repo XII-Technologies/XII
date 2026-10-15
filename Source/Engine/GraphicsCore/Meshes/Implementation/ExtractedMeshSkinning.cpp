@@ -7,10 +7,51 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Meshes/MeshSkinning.h>
 
+xiiResult xiiComputeMorphedMeshBounds(const xiiMeshResource& mesh, xiiArrayPtr<const float> weights, xiiBoundingBoxSphere& out_bounds)
+{
+  if (weights.GetCount() > mesh.GetMorphTargets().GetCount())
+    return XII_FAILURE;
+  if (weights.IsEmpty())
+  {
+    out_bounds = mesh.GetBounds();
+    return XII_SUCCESS;
+  }
+  xiiResourceLock<xiiMeshBufferResource> buffer(mesh.GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+  if (buffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    return XII_FAILURE;
+  auto center  = mesh.GetBounds().m_vCenter;
+  auto extents = mesh.GetBounds().m_vBoxHalfExtents;
+  for (xiiUInt32 i = 0; i < weights.GetCount(); ++i)
+  {
+    if (!xiiMath::IsFinite(weights[i]))
+      return XII_FAILURE;
+    const auto& target = mesh.GetMorphTargets()[i];
+    if (target.m_uiVertexOffset > buffer->GetVertexCount() || target.m_uiVertexCount > buffer->GetVertexCount() - target.m_uiVertexOffset)
+      return XII_FAILURE;
+    if (weights[i] == 0)
+      continue;
+    const auto& delta = mesh.GetMorphTargets()[i].m_Bounds;
+    if (!delta.IsValid())
+      return XII_FAILURE;
+    // Vertices outside the target's range retain zero delta.
+    auto deltaBox = delta.GetBox();
+    deltaBox.ExpandToInclude(xiiVec3::MakeZero());
+    center += weights[i] * deltaBox.GetCenter();
+    extents += xiiMath::Abs(weights[i]) * deltaBox.GetHalfExtents();
+  }
+  const auto result = xiiBoundingBoxSphere::MakeFromBox(xiiBoundingBox::MakeFromCenterAndHalfExtents(center, extents));
+  if (!result.IsValid())
+    return XII_FAILURE;
+  out_bounds = result;
+  return XII_SUCCESS;
+}
+
 xiiResult xiiPrepareExtractedMeshSkinning(const xiiMeshResource& mesh, const xiiMeshRenderData& packet, xiiExtractedMeshSkinning& out_skinning)
 {
   xiiExtractedMeshSkinning result;
-  XII_SUCCEED_OR_RETURN(xiiMeshSkinning::ComputeBounds(mesh.GetBounds(), packet.m_SkinningMatrices, result.m_Bounds));
+  xiiBoundingBoxSphere     morphed;
+  XII_SUCCEED_OR_RETURN(xiiComputeMorphedMeshBounds(mesh, packet.m_MorphWeights, morphed));
+  XII_SUCCEED_OR_RETURN(xiiMeshSkinning::ComputeBounds(morphed, packet.m_SkinningMatrices, result.m_Bounds));
   if (!packet.m_SkinningMatrices.IsEmpty())
   {
     xiiResourceLock<xiiMeshBufferResource> buffer(mesh.GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);

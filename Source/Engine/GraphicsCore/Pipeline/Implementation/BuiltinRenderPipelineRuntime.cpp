@@ -122,7 +122,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
       if (!serviceOwner->m_RayTracingResources)
         serviceOwner->m_RayTracingResources = XII_DEFAULT_NEW(xiiRayTracingFrameResources);
       const auto selection = m_View.GetGpuInstanceSelection();
-      services.rayTracing  = xiiRayTracingResources::AddBuildPass(graph, uiFrameIndex, *serviceOwner->m_RayTracingResources, *m_View.GetGpuInstanceData(), &selection);
+      services.rayTracing  = m_View.GetWorld()->GetModule<xiiRenderWorldModule>()->AddRayTracingBuildPass(graph, uiFrameIndex, serviceOwner->m_RayTracingResources.Borrow(), &selection);
     }
     graph.SetResourceNamespace(previousScope);
     services.m_bSharedServicesPrepared = true;

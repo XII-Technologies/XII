@@ -10,8 +10,8 @@
 | Geometry and material GPU addresses | Existing device residency services, acquired from resource handles. No per-scene asset index tables. |
 | Camera culling, LOD hysteresis, exposure and image history | Views / graph occurrences; visibility consumes world instance buffers and a per-view candidate stream. |
 | Picking subsets | Candidate indices into the same world extraction; validate authoritative object/component handles on readback. Remove picking-owned scene copies. |
-| BLAS allocations | Shared device geometry resource cache. |
-| TLAS transforms and membership | Derived world extraction and world-scoped rotating TLAS resources. Remove the global ray-tracing instance registry. |
+| BLAS allocations | Shared device geometry resource cache for static meshes; frame-sliced world-derived deformation and dynamic BLAS for animated components. |
+| TLAS transforms and membership | Derived world extraction and rotating resources owned by each pipeline occurrence/view. The explicit low-level world path has its own default owner. Remove the global ray-tracing instance registry. |
 | CPU render-side spatial hierarchy | Delete; use the world spatial system and existing GPU culling. |
 
 ## Deleted infrastructure
@@ -105,6 +105,36 @@ resource revision/range; two frame-resource owners never share writable TLAS,
 instance or hit-data allocations. Hit shaders account for section primitive
 offsets. Non-indexed BLAS builds also offset their source vertex address correctly.
 
+Animated ray geometry now consumes the extracted native mesh revision, skinning
+palette and instance morph weights. A graph compute pass copies the native vertex
+layout, applies additive morph deltas before skinning, and transforms normals by
+the inverse transpose. Tangents retain their reflected handedness. Active joint
+indices are range-checked; zero-weight influences do not access the palette.
+Mesh resources need no CPU-readable vertex copy for this path.
+
+The existing morph descriptor identifies dense delta vertices in the immutable
+native buffer: `m_uiVertexOffset` starts the delta range for base vertices
+`[0, m_uiVertexCount)`. Position, normal and tangent xyz carry deltas; other
+streams retain their base values. Weighted delta bounds include zero and support
+negative weights. This uses the existing serialized mesh format. Asset importers
+that reject morph animation still require an authored native morph resource;
+this change does not add importer support.
+
+Deformation outputs and dynamic BLAS belong to the world, keyed by validated GPU
+draw identity and frame slot. Repeated sections and views reuse the same native
+vertex output; each primitive range has its own BLAS. Exact pose/morph/revision
+comparison skips deformation and BLAS updates for unchanged warmed slots. BLAS
+uses update-capable allocations and maximum build/update scratch capacity. TLAS
+invalidation includes deformation revision even when the world transform is
+unchanged. Each pipeline occurrence retains separate TLAS and hit-data frames.
+
+Typed graph dependencies order deformation, BLAS construction and ray dispatch.
+Readiness advances when commands record, so an abandoned graph setup cannot
+silently mark an allocation initialized. Source leases, frame rotation, bindless
+retirement and the existing device fence clock protect in-flight resources.
+Hot reload replaces the captured native revision; no scene object lifecycle or
+CPU transform hierarchy is introduced.
+
 The sample authors mesh, material, hierarchy, animation transforms and sunlight
 through a real world and components. Its low-level graph remains an integration
 sample for GPU algorithms; production pass order continues to come from reflected
@@ -167,7 +197,7 @@ GPU/editor tests additionally specify `-renderer Vulkan`.
 | --- | ---: |
 | CoreTest | 24 |
 | GraphicsCoreTest | 24 |
-| GraphicsFoundationTest, Vulkan | 45 |
+| GraphicsFoundationTest, Vulkan | 47 |
 | EditorEngineProcessFrameworkTest, Vulkan | 73 |
 
 The suites include Core selected/induced views, compaction and composition;
@@ -196,21 +226,40 @@ Local evidence is in ignored `Workspace/scene-migration-*.log` files, including
 `completion-build`, `final-core-tests`, `final-graphics-tests`, `final-gpu-tests`,
 `final-editor-tests` and `final-sample`.
 
-## Remaining coverage and functionality limits
+## Animated ray geometry and optimized verification
 
-Only Vulkan is configured (`XII_BUILD_VULKAN=ON`, `XII_BUILD_D3D12=OFF`). D3D12 and
-other platform/backend combinations have not been built or exercised. There is
-no release benchmark or before/after production profile.
+`PipelineExtraction/RayTracingDeformation` performs actual hardware ray dispatch
+and GPU readback. It checks two components sharing one mesh with independent
+poses and morph weights, two independently allocated TLAS owners sharing world
+deformation, warmed-slot reuse, animated silhouettes without object movement,
+negative weights, reflected/nonuniform normal transforms, tangent handedness,
+bind-pose restoration and mesh hot reload. Delayed readback spans two frame-ring
+rotations without per-frame device-idle waits. Object deletion and replacement
+validate stale identity rejection while earlier GPU results remain readable.
+Malformed morph inputs fail without replacing the last valid extraction.
 
-The retained ray-tracing path builds BLAS from mesh resource vertex buffers.
-It updates instance transforms and mesh resource revisions, but does not deform
-BLAS vertices from animated skinning palettes or morph weights. This pre-existing
-limitation remains in `Lighting/Implementation/RayTracingResources.cpp`; raster
-skinning, palettes, bounds, motion history and picking are preserved and tested.
-Correct animated ray-tracing silhouettes require a graph-managed deformation and
-per-frame dynamic BLAS path. The migration does not claim that capability.
+The opt-in `RenderingBenchmarks/WorldExtraction` fixture measures optimized
+packing and real GPU incremental uploads across two cameras against the exact
+pre-change renderer. Reproduction, measurements and scope are recorded in
+[RenderExtractionPerformance.md](RenderExtractionPerformance.md).
 
-Repository searches find no production references to the removed database,
-manager, scene handles, spatial hierarchy or global RT instance registry. The
-scene-ownership removal is implemented; the backend and dynamic-BLAS limitations
-above prevent claiming every rendering configuration is fully verified.
+The follow-up builds GraphicsFoundationTest in optimized Shipping and all affected
+Debug renderer/editor/plugin/sample targets. Full Vulkan GPU suites pass all 47
+subtests in both configurations. After retaining unchanged resource leases, the
+three extraction subtests pass again in Debug and Shipping, including hot reload
+and hardware ray readback. Seven optimized baseline/updated benchmark pairs pass
+their exact upload checks. Local evidence uses `Workspace/deformation-*.log` and
+`Workspace/extraction-*-shipping-*.log`.
+
+Early follow-up runs exposed invalid shader syntax, an unaligned constant-buffer
+update and a benchmark moving objects marked static. The shader syntax was
+corrected, uniform updates use the existing discard-map path, and the benchmark
+authors dynamic world objects. These failures are resolved in the passing runs
+above. The benchmark's initial CPU regression also prompted removal of redundant
+resource-handle assignments; final results include that change.
+
+Only Vulkan is configured (`XII_BUILD_VULKAN=ON`, `XII_BUILD_D3D12=OFF`). D3D12 is
+excluded from this follow-up at the user's request; other platform combinations
+are not covered by these local results. Repository searches continue to find no
+production references to the removed database, manager, scene handles, spatial
+hierarchy or global RT instance registry.

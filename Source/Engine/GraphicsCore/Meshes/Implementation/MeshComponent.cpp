@@ -8,6 +8,7 @@
 #include <GraphicsCore/AnimationSystem/AnimationPose.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Meshes/Implementation/ExtractedMeshSkinning.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Meshes/MeshSkinning.h>
@@ -640,6 +641,8 @@ void xiiSkinnedMeshComponent::FillRenderData(xiiMeshRenderData& ref_renderData, 
 xiiResult xiiSkinnedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   XII_SUCCEED_OR_RETURN(SUPER::GetLocalBounds(ref_bounds, ref_bAlwaysVisible, ref_msg));
+  xiiResourceLock<xiiMeshResource> mesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  XII_SUCCEED_OR_RETURN(xiiComputeMorphedMeshBounds(*mesh.GetPointer(), m_MorphWeights, ref_bounds));
   return xiiMeshSkinning::ComputeBounds(ref_bounds, m_SkinningMatrices, ref_bounds);
 }
 

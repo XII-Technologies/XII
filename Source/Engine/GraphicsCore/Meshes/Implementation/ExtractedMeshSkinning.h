@@ -13,3 +13,4 @@ struct xiiExtractedMeshSkinning
 };
 
 xiiResult xiiPrepareExtractedMeshSkinning(const xiiMeshResource& mesh, const xiiMeshRenderData& packet, xiiExtractedMeshSkinning& out_skinning);
+xiiResult xiiComputeMorphedMeshBounds(const xiiMeshResource& mesh, xiiArrayPtr<const float> weights, xiiBoundingBoxSphere& out_bounds);

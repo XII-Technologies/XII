@@ -15,8 +15,9 @@
 
 class xiiGpuInstanceData;
 class xiiRayTracingFrameResourcesState;
-/// World-owned rotating TLAS allocations. Contains no object handles, object registry or
-/// authored transforms; each build consumes the world's extracted draw records.
+/// Rotating derived ray-tracing allocations owned by a world or pipeline occurrence.
+/// Worlds share deformation/BLAS caches; occurrences retain writable TLAS/hit-data frames.
+/// Contains no authoritative object registry or transforms; builds consume world extraction.
 class XII_GRAPHICSCORE_DLL xiiRayTracingFrameResources
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRayTracingFrameResources);
@@ -113,7 +114,9 @@ public:
     xiiRenderGraphBufferHandle m_hMaterialData;
     /// Shader-readable geometry addressing records indexed by HLSL InstanceIndex().
     xiiRenderGraphBufferHandle m_hGeometryData;
-    xiiUInt32                  m_uiInstanceCount = 0U;
+    xiiUInt32                  m_uiInstanceCount            = 0U;
+    xiiUInt32                  m_uiDeformationDispatchCount = 0;
+    xiiUInt32                  m_uiDynamicBLASBuildCount    = 0;
   };
 
   /// Adds BLAS/TLAS construction to the graph on the compute queue.
@@ -121,7 +124,9 @@ public:
   /// A frame-in-flight TLAS ring prevents updates from mutating acceleration structures still used
   /// by older GPU submissions. The returned dependency buffer must be declared as a BuildASRead by
   /// every trace pass that consumes the returned TLAS.
-  [[nodiscard]] static BuildHandles AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRayTracingFrameResources& worldResources, const xiiGpuInstanceData& instances, const xiiArrayPtr<const xiiUInt32>* selection = nullptr);
+  /// sharedGeometry optionally reuses the same world's deformation and dynamic BLAS across
+  /// occurrences without sharing their writable TLAS or hit-data allocations.
+  [[nodiscard]] static BuildHandles AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRayTracingFrameResources& worldResources, const xiiGpuInstanceData& instances, const xiiArrayPtr<const xiiUInt32>* selection = nullptr, xiiRayTracingFrameResources* sharedGeometry = nullptr);
 
 private:
   static void      Startup();
