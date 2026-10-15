@@ -762,9 +762,11 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
     build.m_pIndexBuffer         = geometry.m_pIndexBuffer;
     build.m_pScratchBuffer       = geometry.m_pScratchBuffer;
     build.m_uiVertexBufferOffset = geometry.m_uiVertexBufferOffset;
-    build.m_uiVertexStride       = geometry.m_uiVertexStride;
-    build.m_uiPrimitiveCount     = geometry.m_uiPrimitiveCount;
-    build.m_uiIndexBufferOffset  = xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3U * geometry.m_uiIndexStride;
+    if (geometry.m_pIndexBuffer == nullptr)
+      build.m_uiVertexBufferOffset += xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3U * geometry.m_uiVertexStride;
+    build.m_uiVertexStride      = geometry.m_uiVertexStride;
+    build.m_uiPrimitiveCount    = geometry.m_uiPrimitiveCount;
+    build.m_uiIndexBufferOffset = xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3U * geometry.m_uiIndexStride;
   }
 
   for (const auto& instance : inputs)

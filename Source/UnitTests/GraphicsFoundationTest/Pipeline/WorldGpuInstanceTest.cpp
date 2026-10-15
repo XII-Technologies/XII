@@ -106,6 +106,37 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   XII_TEST_RESULT(instances->Resolve(identity, source));
   XII_TEST_BOOL(source.m_hOwnerObject == childHandle);
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ray tracing builds use independent mutable frame resources")
+  {
+    if (!xiiRayTracingResources::IsHardwareRayTracingSupported())
+      xiiTestFramework::Output(xiiTestOutput::Details, "Hardware ray tracing unavailable: TLAS integration check skipped.");
+    else
+    {
+      xiiRayTracingFrameResources resources[2];
+      xiiRenderGraphContext       context;
+      XII_TEST_RESULT(context.Initialize("Independent extracted TLAS"));
+      xiiRenderGraphFrame gpuFrame;
+      XII_TEST_RESULT(gpuFrame.Begin());
+      auto& graph = context.GetGraph();
+      auto& cache = context.GetResourceCache();
+      cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
+      graph.BeginSetup(gpuFrame.GetFrameIndex());
+      const auto first  = xiiRayTracingResources::AddBuildPass(graph, gpuFrame.GetFrameIndex(), resources[0], *instances);
+      const auto second = xiiRayTracingResources::AddBuildPass(graph, gpuFrame.GetFrameIndex(), resources[1], *instances);
+      XII_TEST_INT(first.m_uiInstanceCount, 1);
+      XII_TEST_INT(second.m_uiInstanceCount, 1);
+      XII_TEST_BOOL(first.m_pTopLevelAS != nullptr && second.m_pTopLevelAS != nullptr && first.m_pTopLevelAS != second.m_pTopLevelAS);
+      XII_TEST_BOOL(first.m_hMaterialData != second.m_hMaterialData);
+      graph.EndSetup();
+      if (XII_TEST_RESULT(graph.Compile()))
+        XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache));
+      cache.EndFrame();
+      gpuFrame.End();
+      environment.GetDevice()->WaitIdle();
+      xiiTestFramework::Output(xiiTestOutput::Details, "Built two independent TLAS instances from one authoritative world extraction.");
+    }
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "World hierarchy propagates transforms; stopped motion settles once")
   {
     XII_TEST_RESULT(extract());

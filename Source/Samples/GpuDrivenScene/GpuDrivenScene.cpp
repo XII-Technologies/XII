@@ -341,7 +341,7 @@ public:
 
     m_World.Initialize(m_pDevice.Borrow(), m_Configuration).AssertSuccess();
     xiiGpuVisibilityDescription visibilityDescription;
-    visibilityDescription.m_uiMaxInstances       = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight + 1U;
+    visibilityDescription.m_uiMaxInstances       = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight * 2U + 1U;
     visibilityDescription.m_uiMaxVisibleMeshlets = m_Configuration.m_uiMaxVisibleMeshlets;
     visibilityDescription.m_uiMaxDrawCommands    = 1U;
     visibilityDescription.m_uiFramesInFlight     = m_Configuration.m_uiFramesInFlight;
@@ -403,8 +403,13 @@ private:
     const auto                       materials       = xiiMaterialManager::AddUploadPasses(graph);
     const xiiRenderGraphBufferHandle hMaterials      = materials.m_hSurfaceData;
     const auto                       rayTracingScene = m_World.AddRayTracingBuildPass(graph, m_uiFrameIndex);
-    if (m_uiFrameIndex == 0 && xiiRayTracingResources::IsHardwareRayTracingSupported())
-      xiiLog::Info("World-derived ray tracing contains {} TLAS instances.", rayTracingScene.m_uiInstanceCount);
+    if (m_uiFrameIndex == 1)
+    {
+      if (xiiRayTracingResources::IsHardwareRayTracingSupported())
+        xiiLog::Info("World-derived ray tracing contains {} TLAS instances.", rayTracingScene.m_uiInstanceCount);
+      else
+        xiiLog::Info("Hardware ray tracing is unavailable on this configured device; raster validation remains active.");
+    }
     const xiiRenderGraphTextureHandle         hPreviousHiZ        = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
     xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex);

@@ -6,6 +6,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
@@ -21,17 +22,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xi
       XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(262144U)),
       XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(2U, 8U)),
       XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    } XII_END_PROPERTIES;
-  }
-XII_END_STATIC_REFLECTED_TYPE;
-
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneLight, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneLight>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Direction", m_vDirection),
-      XII_MEMBER_PROPERTY("Color", m_Color),
-      XII_MEMBER_PROPERTY("Intensity", m_fIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.35f), new xiiClampValueAttribute(0.0f, 100.0f)),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -88,6 +78,16 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   m_World = XII_DEFAULT_NEW(xiiWorld, worldDescription);
   XII_LOCK(m_World->GetWriteMarker());
   m_World->SetWorldSimulationEnabled(false);
+  const xiiGpuDrivenSceneLight sunlight;
+  xiiGameObjectDescription     lightDescription;
+  lightDescription.m_LocalRotation = xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), sunlight.m_vDirection.GetNormalized());
+  xiiGameObject* lightObject       = nullptr;
+  m_World->CreateObject(lightDescription, lightObject);
+  xiiDirectionalLightComponent* light = nullptr;
+  m_hSunLight                         = xiiDirectionalLightComponent::CreateComponent(lightObject, light);
+  light->SetLightColor(xiiColorGammaUB(sunlight.m_Color));
+  light->SetIntensity(sunlight.m_fIntensity);
+  light->SetCastShadows(true);
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
   XII_SUCCEED_OR_RETURN(CreateGeometry());
@@ -107,6 +107,21 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   m_Objects.Clear();
   m_BasePositions.Clear();
   m_hAssemblyRoot.Invalidate();
+  m_hSunLight.Invalidate();
+}
+
+xiiGpuDrivenSceneLight xiiGpuDrivenSceneWorld::GetSunLight() const
+{
+  XII_LOCK(m_World->GetReadMarker());
+  const xiiDirectionalLightComponent* light = nullptr;
+  xiiGpuDrivenSceneLight              result;
+  if (static_cast<const xiiWorld*>(m_World.Borrow())->TryGetComponent(m_hSunLight, light))
+  {
+    result.m_vDirection = light->GetOwner()->GetGlobalRotation() * xiiVec3::MakeAxisX();
+    result.m_Color      = light->GetLightColor();
+    result.m_fIntensity = light->GetIntensity();
+  }
+  return result;
 }
 
 xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()

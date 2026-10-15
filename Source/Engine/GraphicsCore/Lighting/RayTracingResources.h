@@ -30,7 +30,7 @@ private:
   xiiUniquePtr<xiiRayTracingFrameResourcesState> m_pState;
 };
 
-/// Generation-checked handle for one mesh geometry in the hardware ray-tracing scene.
+/// Generation-checked lease for one device-resident BLAS geometry.
 using xiiRayTracingGeometryId = xiiGenericId<24, 8>;
 
 class XII_GRAPHICSCORE_DLL xiiRayTracingGeometryHandle
@@ -54,7 +54,7 @@ struct XII_GRAPHICSCORE_DLL xiiRayTracingGeometryDescription
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRayTracingGeometryDescription);
 
-/// Process startup limits for the hardware ray-tracing scene.
+/// Device geometry capacity and per-extraction acceleration-structure limits.
 struct XII_GRAPHICSCORE_DLL xiiRayTracingResourceLimits
 {
   xiiUInt32 m_uiMaxGeometries  = 16384U;
@@ -64,7 +64,7 @@ struct XII_GRAPHICSCORE_DLL xiiRayTracingResourceLimits
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRayTracingResourceLimits);
 
-/// Tool-facing scene and acceleration-structure counters.
+/// Tool-facing device geometry and acceleration-structure counters.
 struct XII_GRAPHICSCORE_DLL xiiRayTracingResourceStats
 {
   XII_DECLARE_POD_TYPE();
@@ -76,7 +76,7 @@ struct XII_GRAPHICSCORE_DLL xiiRayTracingResourceStats
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRayTracingResourceStats);
 
-/// Process-wide ray-tracing scene service.
+/// Device-level shared BLAS residency. Owns no scene objects or TLAS instance registry.
 ///
 /// CPU containers are allocated during core-system startup and released during core-system
 /// shutdown. Backend resources are created only after the GAL device exists and are released
@@ -105,7 +105,7 @@ public:
 
   struct BuildHandles
   {
-    /// Rotating TLAS owned by the subsystem. It becomes trace-ready after the build pass executes.
+    /// Rotating TLAS owned by the supplied frame resources. Trace-ready after the build pass executes.
     xiiSharedPtr<xiiGALTopLevelAS> m_pTopLevelAS;
     /// Render-graph dependency token for ray-dispatch passes that consume m_pTopLevelAS.
     xiiRenderGraphBufferHandle m_hSceneDependency;

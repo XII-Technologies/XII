@@ -27,15 +27,13 @@ struct xiiGpuDrivenSceneConfiguration
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiGpuDrivenSceneConfiguration);
 
-/// A simple light authored as scene data and consumed by the GPU-driven draw pass.
+/// Shader constants derived from the world's directional light component.
 struct xiiGpuDrivenSceneLight
 {
   xiiVec3  m_vDirection = xiiVec3(-0.4f, 0.6f, -0.7f);
   xiiColor m_Color      = xiiColor(1.0f, 0.92f, 0.78f);
   float    m_fIntensity = 1.35f;
 };
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiGpuDrivenSceneLight);
 
 /// Owns authoring/runtime scene state used by the sample. The class intentionally exercises the
 /// same stable handles, streaming, bindless tables and frame-sliced material storage used by a
@@ -63,8 +61,8 @@ public:
     XII_LOCK(m_World->GetReadMarker());
     return static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->AddRayTracingBuildPass(graph, frame);
   }
-  [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
-  [[nodiscard]] xiiBoundingBox                GetAnimatedShadowBounds() const;
+  [[nodiscard]] xiiGpuDrivenSceneLight GetSunLight() const;
+  [[nodiscard]] xiiBoundingBox         GetAnimatedShadowBounds() const;
 
 private:
   struct GeometryAsset
@@ -78,7 +76,7 @@ private:
   xiiResult CreateSceneObjects();
 
   xiiGpuDrivenSceneConfiguration             m_Configuration;
-  xiiGpuDrivenSceneLight                     m_SunLight;
+  xiiComponentHandle                         m_hSunLight;
   xiiUniquePtr<xiiWorld>                     m_World;
   xiiDynamicArray<GeometryAsset>             m_GeometryAssets;
   xiiDynamicArray<xiiMaterialResourceHandle> m_Materials;
