@@ -10,16 +10,20 @@
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelinePassDescriptor, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderPipelinePassDescriptor>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelinePassDescriptor, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiRenderPipelinePassDescriptor>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_sName),
     XII_MEMBER_PROPERTY("Type", m_sType),
     XII_MAP_MEMBER_PROPERTY("Properties", m_Properties),
+    XII_MEMBER_PROPERTY("Id", m_Id),
+    XII_MEMBER_PROPERTY("Definition", m_Definition),
+    XII_MAP_MEMBER_PROPERTY("Parameters", m_Parameters),
+    XII_ARRAY_MEMBER_PROPERTY("Overrides", m_Overrides),
   } XII_END_PROPERTIES;
 } XII_END_STATIC_REFLECTED_TYPE;
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineConnection, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineConnection>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineConnection, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiRenderPipelineConnection>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -27,15 +31,19 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineConnection, xiiNoBase, 1, xiiRT
     XII_MEMBER_PROPERTY("Target", m_uiTarget),
     XII_MEMBER_PROPERTY("Output", m_sOutput),
     XII_MEMBER_PROPERTY("Input", m_sInput),
+    XII_MEMBER_PROPERTY("Id", m_Id),
   } XII_END_PROPERTIES;
 } XII_END_STATIC_REFLECTED_TYPE;
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineResourceDescriptor, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineResourceDescriptor>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineResourceDescriptor, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiRenderPipelineResourceDescriptor>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ARRAY_MEMBER_PROPERTY("Passes", m_Passes),
     XII_ARRAY_MEMBER_PROPERTY("Connections", m_Connections),
     XII_MAP_MEMBER_PROPERTY("Parameters", m_Parameters),
+    XII_MEMBER_PROPERTY("Id", m_Id),
+    XII_ARRAY_MEMBER_PROPERTY("Interface", m_Interface),
+    XII_ARRAY_MEMBER_PROPERTY("Definitions", m_Definitions),
   } XII_END_PROPERTIES;
 } XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
@@ -50,6 +58,9 @@ xiiResult xiiRenderPipelineResourceDescriptor::RemovePass(xiiUInt32 index)
 {
   if (index >= m_Passes.GetCount())
     return XII_FAILURE;
+  for (xiiUInt32 i = m_Interface.GetCount(); i > 0; --i)
+    if (m_Interface[i - 1].m_Node == m_Passes[index].m_Id)
+      m_Interface.RemoveAtAndCopy(i - 1);
   for (xiiUInt32 i = m_Connections.GetCount(); i > 0; --i)
   {
     auto& c = m_Connections[i - 1];
@@ -64,6 +75,44 @@ xiiResult xiiRenderPipelineResourceDescriptor::RemovePass(xiiUInt32 index)
     }
   }
   m_Passes.RemoveAtAndCopy(index);
+  return XII_SUCCESS;
+}
+xiiUInt32 xiiRenderPipelineResourceDescriptor::AddSubgraph(xiiStringView name, const xiiUuid& definition)
+{
+  const auto index             = AddPass(name, {});
+  m_Passes[index].m_Definition = definition;
+  return index;
+}
+
+xiiResult xiiRenderPipelineResourceDescriptor::MakeGraphDefinition(xiiGraphDefinition& out_definition) const
+{
+  xiiGraphDefinition definition;
+  definition.m_Id                       = m_Id;
+  definition.m_Parameters               = m_Parameters;
+  definition.m_Boundary                 = m_Interface;
+  definition.m_Topology.m_uiVertexCount = m_Passes.GetCount();
+  for (const auto& pass : m_Passes)
+  {
+    auto& node        = definition.m_Nodes.ExpandAndGetRef();
+    node.m_Id         = pass.m_Id;
+    node.m_Definition = pass.m_Definition;
+    node.m_sName      = pass.m_sName;
+    node.m_sType      = pass.m_sType;
+    node.m_Properties = pass.m_Properties;
+    node.m_Parameters = pass.m_Parameters;
+    node.m_Overrides  = pass.m_Overrides;
+  }
+  for (const auto& connection : m_Connections)
+  {
+    definition.m_Topology.m_EdgeSources.PushBack(connection.m_uiSource);
+    definition.m_Topology.m_EdgeTargets.PushBack(connection.m_uiTarget);
+    auto& edge         = definition.m_Edges.ExpandAndGetRef();
+    edge.m_Id          = connection.m_Id;
+    edge.m_sSourcePort = connection.m_sOutput;
+    edge.m_sTargetPort = connection.m_sInput;
+  }
+  XII_SUCCEED_OR_RETURN(definition.Validate());
+  out_definition = std::move(definition);
   return XII_SUCCESS;
 }
 xiiResult xiiRenderPipelineResourceDescriptor::Connect(xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input)
@@ -84,7 +133,13 @@ xiiResult xiiRenderPipelineResourceDescriptor::Serialize(xiiStreamWriter& stream
 {
   xiiMemoryStreamContainerStorage<xiiDynamicArray<xiiUInt8>> storage;
   xiiMemoryStreamWriter                                      writer(&storage);
-  xiiReflectionSerializer::WriteObjectToBinary(writer, xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), this);
+  // Seed converter object identities from the document, not a random runtime UUID.
+  xiiAbstractObjectGraph  graph;
+  xiiRttiConverterContext context;
+  xiiRttiConverterWriter  converter(&graph, &context, false, true);
+  context.RegisterObject(m_Id, xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), const_cast<xiiRenderPipelineResourceDescriptor*>(this));
+  converter.AddObjectToGraph(xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), const_cast<xiiRenderPipelineResourceDescriptor*>(this), "root");
+  xiiAbstractGraphBinarySerializer::Write(writer, &graph);
   if (storage.GetStorageSize64() > 32 * 1024 * 1024)
     return XII_FAILURE;
   const xiiUInt32 version = 2;

@@ -511,9 +511,13 @@ public:
 
   /// Named-resource bridge for resource-defined pipeline passes. Bindings are scoped to setup;
   /// handle-based pass code remains the preferred interface. Clear before leaving the scope.
-  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphTextureHandle texture);
-  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphBufferHandle buffer);
-  void                        ClearSetupBindings();
+  void SetSetupBinding(xiiStringView name, xiiRenderGraphTextureHandle texture);
+  void SetSetupBinding(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  void ClearSetupBindings();
+  /// Namespace for named setup resources in one expanded subgraph occurrence. Handle-based
+  /// boundary connections cross namespaces explicitly. Restore the previous scope after Build.
+  void                        SetResourceNamespace(xiiStringView name) { m_sResourceNamespace = name; }
+  xiiStringView               GetResourceNamespace() const { return m_sResourceNamespace; }
   xiiRenderGraphTextureHandle FindTexture(xiiStringView name) const;
   xiiRenderGraphBufferHandle  FindBuffer(xiiStringView name) const;
   /// Setup-time descriptions. Invalid handles and mismatched resource identities return null.
@@ -606,6 +610,8 @@ public:
 
 private:
   friend class xiiRenderGraphBuilder;
+  xiiStringBuilder QualifyResourceName(xiiStringView name) const;
+  xiiString        m_sResourceNamespace;
 
   struct VersionEntry
   {

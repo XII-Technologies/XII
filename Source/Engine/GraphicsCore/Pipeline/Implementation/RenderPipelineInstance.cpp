@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 
@@ -14,6 +15,7 @@ void xiiRenderPipelineInstance::Clear()
   m_pPipeline = nullptr;
   m_Parameters.Clear();
   m_Overrides.Clear();
+  m_PassParameters.Clear();
 }
 xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline)
 {
@@ -34,7 +36,8 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
     }
   }
   m_Bindings.SetCount(m_pPipeline->m_uiBindingCount);
-  m_Parameters = m_pPipeline->m_Descriptor.m_Parameters;
+  m_Parameters     = m_pPipeline->m_Descriptor.m_Parameters;
+  m_PassParameters = m_pPipeline->m_PassParameters;
   return XII_SUCCESS;
 }
 xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed)
@@ -58,24 +61,31 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
 {
   if (!m_pPipeline)
     return XII_FAILURE;
+  const xiiString previousScope = graph.GetResourceNamespace();
+  XII_SCOPE_EXIT(graph.SetResourceNamespace(previousScope));
   if (m_Overrides != overrides)
   {
     m_Overrides  = overrides;
     m_Parameters = m_pPipeline->m_Descriptor.m_Parameters;
     for (auto it = overrides.GetIterator(); it.IsValid(); ++it)
       m_Parameters.Insert(it.Key(), it.Value());
+    m_PassParameters = m_pPipeline->m_PassParameters;
+    for (auto& parameters : m_PassParameters)
+      for (auto it = overrides.GetIterator(); it.IsValid(); ++it)
+        parameters.Insert(it.Key(), it.Value());
   }
   for (auto& binding : m_Bindings)
     binding = {};
   for (auto index : m_pPipeline->m_Order)
   {
+    graph.SetResourceNamespace(m_pPipeline->m_ResourceScopes[index]);
     const auto& pass = m_pPipeline->m_Passes[index];
     for (xiiUInt32 i = 0; i < pass.m_uiConnectionCount; ++i)
     {
       const auto& connection                   = m_pPipeline->m_Connections[pass.m_uiConnectionOffset + i];
       m_Bindings[connection.m_uiTargetBinding] = m_Bindings[connection.m_uiSourceBinding];
     }
-    xiiRenderPipelinePassContext context{view, graph, blackboard, m_Parameters, pass.m_Pins, m_Bindings.GetArrayPtr().GetSubArray(pass.m_uiBindingOffset, pass.m_Pins.GetCount()), m_pPipeline->m_Descriptor.m_Passes[index].m_sName};
+    xiiRenderPipelinePassContext context{view, graph, blackboard, m_PassParameters[index], pass.m_Pins, m_Bindings.GetArrayPtr().GetSubArray(pass.m_uiBindingOffset, pass.m_Pins.GetCount()), m_pPipeline->m_Descriptor.m_Passes[index].m_sName};
     auto                         validateBindings = [&](bool inputs) -> xiiResult {
       for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
       {

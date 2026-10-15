@@ -27,4 +27,5 @@ private:
   xiiDynamicArray<xiiRenderPipelineBinding> m_Bindings;
   xiiVariantDictionary                      m_Parameters;
   xiiVariantDictionary                      m_Overrides;
+  xiiDynamicArray<xiiVariantDictionary>     m_PassParameters;
 };

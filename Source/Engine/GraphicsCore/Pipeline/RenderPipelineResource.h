@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Core/Graph/Graph.h>
+#include <Core/Graph/GraphComposition.h>
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Threading/Mutex.h>
@@ -11,9 +12,13 @@
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassDescriptor
 {
-  xiiString            m_sName;
-  xiiString            m_sType;
-  xiiVariantDictionary m_Properties;
+  xiiString                                 m_sName;
+  xiiString                                 m_sType;
+  xiiVariantDictionary                      m_Properties;
+  xiiUuid                                   m_Id = xiiUuid::MakeUuid();
+  xiiUuid                                   m_Definition; ///< Shared definition reference; invalid for an ordinary reflected pass.
+  xiiVariantDictionary                      m_Parameters;
+  xiiDynamicArray<xiiGraphPropertyOverride> m_Overrides;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineConnection
@@ -22,13 +27,17 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineConnection
   xiiUInt32 m_uiTarget = 0;
   xiiString m_sOutput;
   xiiString m_sInput;
+  xiiUuid   m_Id = xiiUuid::MakeUuid();
 };
 
 /// Portable resource definition. Indices are serialized identities within this definition.
 /// RemovePass updates indices and removes incident connections. Compilation validates the entire definition.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
 {
-  xiiUInt32                                        AddPass(xiiStringView name, xiiStringView type, const xiiVariantDictionary& properties = {});
+  xiiUInt32 AddPass(xiiStringView name, xiiStringView type, const xiiVariantDictionary& properties = {});
+  xiiUInt32 AddSubgraph(xiiStringView name, const xiiUuid& definition);
+  /// Capture authoring topology with document identities, never runtime graph handles.
+  xiiResult                                        MakeGraphDefinition(xiiGraphDefinition& out_definition) const;
   xiiResult                                        RemovePass(xiiUInt32 index);
   xiiResult                                        Connect(xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input);
   xiiResult                                        Disconnect(xiiUInt32 connection);
@@ -37,6 +46,10 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
   xiiDynamicArray<xiiRenderPipelinePassDescriptor> m_Passes;
   xiiDynamicArray<xiiRenderPipelineConnection>     m_Connections;
   xiiVariantDictionary                             m_Parameters;
+  xiiUuid                                          m_Id = xiiUuid::MakeUuid();
+  xiiDynamicArray<xiiGraphBoundaryMapping>         m_Interface;
+  /// Shared definitions are stored once per document/library, regardless of instance count.
+  xiiDynamicArray<xiiGraphDefinition> m_Definitions;
 };
 
 /// Immutable, shared compilation. Core graph owns structural dependencies; execution uses a flat order.
@@ -59,10 +72,14 @@ public:
     xiiUInt32 m_uiSourceBinding;
     xiiUInt32 m_uiTargetBinding;
   };
-  static xiiResult                           Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
-  const xiiGraph&                            GetTopology() const { return m_Topology; }
-  const xiiRenderPipelineResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
-  xiiArrayPtr<const xiiUInt32>               GetExecutionOrder() const { return m_Order; }
+  static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
+  static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
+  const xiiGraph&                                 GetTopology() const { return m_Topology; }
+  const xiiRenderPipelineResourceDescriptor&      GetDescriptor() const { return m_Descriptor; }
+  xiiArrayPtr<const xiiUInt32>                    GetExecutionOrder() const { return m_Order; }
+  xiiArrayPtr<const xiiGraphProvenance>           GetProvenance() const { return m_Provenance; }
+  xiiArrayPtr<const xiiGraphDefinitionDependency> GetDependencies() const { return m_Dependencies; }
+  const xiiVariantDictionary&                     GetPassParameters(xiiUInt32 index) const { return m_PassParameters[index]; }
   /// Inclusive CPU memory estimate, including topology, compiled bindings and nested configuration.
   xiiUInt64 GetHeapMemoryUsage() const;
 
@@ -74,6 +91,10 @@ private:
   xiiDynamicArray<Pass>                                                                       m_Passes;
   xiiDynamicArray<Connection>                                                                 m_Connections;
   xiiDynamicArray<xiiUInt32>                                                                  m_Order;
+  xiiDynamicArray<xiiGraphProvenance>                                                         m_Provenance;
+  xiiDynamicArray<xiiGraphDefinitionDependency>                                               m_Dependencies;
+  xiiDynamicArray<xiiVariantDictionary>                                                       m_PassParameters;
+  xiiDynamicArray<xiiString>                                                                  m_ResourceScopes;
   xiiUInt32                                                                                   m_uiBindingCount = 0;
 };
 

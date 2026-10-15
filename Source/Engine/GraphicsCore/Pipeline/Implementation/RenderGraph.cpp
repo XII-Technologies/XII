@@ -129,6 +129,8 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView 
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiRenderGraphResourceFlags> flags)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(HasValidOwnedLifetimeFlags(flags), "Resource '{}' must be exactly one of Transient or Persistent; External resources must be imported.", sName);
 
   xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
@@ -158,6 +160,8 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView 
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView sName, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> currentState)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(pTexture != nullptr, "Cannot import a null texture.");
 
   xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
@@ -212,6 +216,8 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiStringView sNa
   xiiRenderGraphTextureHandle bound;
   if (m_Graph.m_SetupTextureBindings.TryGetValue(xiiTempHashedString(sName), bound))
     return ReadTexture(bound, requiredState);
+  const auto qualified              = m_Graph.QualifyResourceName(sName);
+  sName                             = qualified;
   xiiUInt32  uiTextureResourceIndex = xiiInvalidIndex;
   const bool bFound                 = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read texture '{}' because it was not declared or imported.", sName);
@@ -290,6 +296,8 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiRenderGraphResourceFlags> flags)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(HasValidOwnedLifetimeFlags(flags), "Resource '{}' must be exactly one of Transient or Persistent; External resources must be imported.", sName);
 
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
@@ -319,6 +327,8 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sName, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> currentState)
 {
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  sName                = qualified;
   XII_ASSERT_DEV(pBuffer != nullptr, "Cannot import a null buffer.");
 
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
@@ -372,6 +382,8 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiStringView sName
   xiiRenderGraphBufferHandle bound;
   if (m_Graph.m_SetupBufferBindings.TryGetValue(xiiTempHashedString(sName), bound))
     return ReadBuffer(bound, requiredState);
+  const auto qualified             = m_Graph.QualifyResourceName(sName);
+  sName                            = qualified;
   xiiUInt32  uiBufferResourceIndex = xiiInvalidIndex;
   const bool bFound                = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read buffer '{}' because it was not declared or imported.", sName);
@@ -505,6 +517,7 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_Passes.Clear();
   m_Resources.Clear();
   m_ResourceNameIndex.Clear();
+  m_sResourceNamespace.Clear();
   ClearSetupBindings();
   m_ExportedTextures.Clear();
   m_ExportedBuffers.Clear();
