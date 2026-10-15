@@ -15,8 +15,9 @@
 
 class xiiGpuInstanceData;
 class xiiRayTracingFrameResourcesState;
-/// World-owned rotating TLAS allocations. Contains no object handles, object registry or
-/// authored transforms; each build consumes the world's extracted draw records.
+/// Rotating derived ray-tracing allocations owned by a world or pipeline occurrence.
+/// Worlds share deformation/BLAS caches; occurrences retain writable TLAS/hit-data frames.
+/// Contains no authoritative object registry or transforms; builds consume world extraction.
 class XII_GRAPHICSCORE_DLL xiiRayTracingFrameResources
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRayTracingFrameResources);
@@ -123,6 +124,8 @@ public:
   /// A frame-in-flight TLAS ring prevents updates from mutating acceleration structures still used
   /// by older GPU submissions. The returned dependency buffer must be declared as a BuildASRead by
   /// every trace pass that consumes the returned TLAS.
+  /// sharedGeometry optionally reuses the same world's deformation and dynamic BLAS across
+  /// occurrences without sharing their writable TLAS or hit-data allocations.
   [[nodiscard]] static BuildHandles AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRayTracingFrameResources& worldResources, const xiiGpuInstanceData& instances, const xiiArrayPtr<const xiiUInt32>* selection = nullptr, xiiRayTracingFrameResources* sharedGeometry = nullptr);
 
 private:

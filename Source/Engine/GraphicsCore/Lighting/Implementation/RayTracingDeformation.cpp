@@ -93,8 +93,6 @@ xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xi
       return XII_FAILURE;
     cache.m_ReadyRevision = 0;
   }
-  if (cache.m_SetupSerial == graph.GetSetupSerial() && !changed)
-    return XII_SUCCESS;
   const bool needsDispatch = cache.m_ReadyRevision != cache.m_Revision;
   if (needsDispatch && !pipeline)
   {
