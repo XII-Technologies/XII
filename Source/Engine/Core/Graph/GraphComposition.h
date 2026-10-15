@@ -6,6 +6,7 @@
 #include <Foundation/Types/Variant.h>
 
 /// An override targets a persistent node path relative to an instance, including nested instances.
+/// Target paths must be unique within one instance. Outer instance overrides take precedence over inner overrides.
 struct XII_CORE_DLL xiiGraphPropertyOverride
 {
   xiiDynamicArray<xiiUuid> m_Path;
@@ -26,7 +27,7 @@ struct XII_CORE_DLL xiiGraphDefinitionNode
 struct XII_CORE_DLL xiiGraphDefinitionEdge
 {
   xiiUuid              m_Id;
-  xiiString            m_sSourcePort;
+  xiiString            m_sSourcePort; ///< Optional for ordinary graph algorithms; consumers may require named ports.
   xiiString            m_sTargetPort;
   xiiVariantDictionary m_Properties;
 };

@@ -214,21 +214,27 @@ xiiResult xiiGraphDefinition::Validate(xiiStringBuilder* out_error) const
     if (!node.m_Id.IsValid() || ids.Contains(node.m_Id) || (!node.m_Definition.IsValid() && !node.m_Overrides.IsEmpty()))
       return fail("Invalid or duplicate node identity or leaf override.");
     ids.Insert(node.m_Id);
-    for (const auto& propertyOverride : node.m_Overrides)
+    for (xiiUInt32 i = 0; i < node.m_Overrides.GetCount(); ++i)
+    {
+      const auto& propertyOverride = node.m_Overrides[i];
       if (propertyOverride.m_Path.IsEmpty())
         return fail("An override must target a persistent node path.");
+      for (xiiUInt32 j = 0; j < i; ++j)
+        if (propertyOverride.m_Path == node.m_Overrides[j].m_Path)
+          return fail("Duplicate property override target path.");
+    }
   }
   xiiHashSet<xiiUuid> edgeIds;
   for (const auto& edge : m_Edges)
   {
-    if (!edge.m_Id.IsValid() || edgeIds.Contains(edge.m_Id) || edge.m_sSourcePort.IsEmpty() || edge.m_sTargetPort.IsEmpty())
-      return fail("Invalid edge identity or port name.");
+    if (!edge.m_Id.IsValid() || edgeIds.Contains(edge.m_Id))
+      return fail("Invalid or duplicate edge identity.");
     edgeIds.Insert(edge.m_Id);
   }
   for (xiiUInt32 i = 0; i < m_Boundary.GetCount(); ++i)
   {
     const auto& mapping = m_Boundary[i];
-    if (mapping.m_sName.IsEmpty() || mapping.m_sPort.IsEmpty() || !ids.Contains(mapping.m_Node))
+    if (mapping.m_sName.IsEmpty() || !ids.Contains(mapping.m_Node))
       return fail("Invalid interface mapping.");
     for (xiiUInt32 j = 0; j < i; ++j)
       if (mapping.m_bInput == m_Boundary[j].m_bInput && mapping.m_sName == m_Boundary[j].m_sName && (!mapping.m_bInput || (mapping.m_Node == m_Boundary[j].m_Node && mapping.m_sPort == m_Boundary[j].m_sPort)))

@@ -34,19 +34,21 @@ XII_CREATE_SIMPLE_TEST(Graph, Composition)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Selective immutable composition cache invalidation")
   {
-    auto leaf = GraphCompositionTest::Make(6, 1);
+    auto leaf      = GraphCompositionTest::Make(6, 1);
     auto unrelated = GraphCompositionTest::Make(7, 1);
-    auto root = GraphCompositionTest::Make(8, 2);
+    auto root      = GraphCompositionTest::Make(8, 2);
     for (auto& node : root.m_Nodes)
       node.m_Definition = leaf.m_Id;
     const auto resolver = [&](const xiiUuid& id) -> const xiiGraphDefinition* {
-      if (id == leaf.m_Id) return &leaf;
-      if (id == unrelated.m_Id) return &unrelated;
+      if (id == leaf.m_Id)
+        return &leaf;
+      if (id == unrelated.m_Id)
+        return &unrelated;
       return nullptr;
     };
-    xiiGraphCompositionCache cache;
+    xiiGraphCompositionCache                        cache;
     xiiSharedPtr<const xiiGraphCompiledComposition> first, current;
-    bool reused = true;
+    bool                                            reused = true;
     XII_TEST_RESULT(cache.Compile(root, resolver, first, &reused));
     XII_TEST_BOOL(!reused);
     ++leaf.m_uiPresentationRevision;
@@ -136,6 +138,8 @@ XII_CREATE_SIMPLE_TEST(Graph, Composition)
   {
     auto definition = GraphCompositionTest::Make(4, 1);
     GraphCompositionTest::Link(definition, 0, 0);
+    definition.m_Edges[0].m_sSourcePort.Clear();
+    definition.m_Edges[0].m_sTargetPort.Clear(); // Core topology composition does not require resource pins.
     xiiGraphExpansion expanded;
     XII_TEST_RESULT(xiiGraphComposition::Expand(definition, {}, expanded));
     xiiDynamicArray<xiiGraphVertexHandle> order;

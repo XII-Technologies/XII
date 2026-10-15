@@ -16,6 +16,7 @@ XII_STATICLINK_LIBRARY(Core)
   XII_STATICLINK_REFERENCE(Core_GameState_Implementation_ForwardEventsToGameStateComponent);
   XII_STATICLINK_REFERENCE(Core_GameState_Implementation_GameStateBase);
   XII_STATICLINK_REFERENCE(Core_Graph_Implementation_GraphReflection);
+  XII_STATICLINK_REFERENCE(Core_Graph_Implementation_GraphCompositionReflection);
   XII_STATICLINK_REFERENCE(Core_Graphics_Implementation_Camera);
   XII_STATICLINK_REFERENCE(Core_Input_DeviceTypes_Implementation_DeviceTypes);
   XII_STATICLINK_REFERENCE(Core_Input_Implementation_InputDevice);
