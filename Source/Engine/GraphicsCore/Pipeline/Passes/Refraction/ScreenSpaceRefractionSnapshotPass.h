@@ -7,10 +7,12 @@ class XII_GRAPHICSCORE_DLL xiiScreenSpaceRefractionSnapshotPass final : public x
   XII_ADD_DYNAMIC_REFLECTION(xiiScreenSpaceRefractionSnapshotPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputHDRSceneColor{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::None, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputRefractionSceneColorInput{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+
   xiiScreenSpaceRefractionSnapshotPass();
   ~xiiScreenSpaceRefractionSnapshotPass();
 
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
   xiiResult Build(xiiRenderPipelinePassContext& context) override;
 
 private:

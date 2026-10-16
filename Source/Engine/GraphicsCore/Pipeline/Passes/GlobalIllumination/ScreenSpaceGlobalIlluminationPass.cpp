@@ -41,6 +41,20 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceGlobalIlluminationPass, 1, xiiRTT
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("SceneDepthInput", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("SceneDepth")),
+    XII_MEMBER_PROPERTY("GBufferNormalInput", m_InputGBufferNormal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferNormal")),
+    XII_MEMBER_PROPERTY("GBufferAlbedoInput", m_InputGBufferAlbedo)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferAlbedo")),
+    XII_MEMBER_PROPERTY("GBufferMaterialInput", m_InputGBufferMaterial)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferMaterial")),
+    XII_MEMBER_PROPERTY("HDRSceneColor", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("PerFrameGlobal", m_InputPerFrameGlobal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("SSGITerm", m_OutputSSGITerm)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("xiiSSGIConstants", m_OutputxiiSSGIConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("SceneDepthOutput", m_OutputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("SceneDepth")),
+    XII_MEMBER_PROPERTY("GBufferNormalOutput", m_OutputGBufferNormal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferNormal")),
+    XII_MEMBER_PROPERTY("GBufferAlbedoOutput", m_OutputGBufferAlbedo)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferAlbedo")),
+    XII_MEMBER_PROPERTY("GBufferMaterialOutput", m_OutputGBufferMaterial)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferMaterial")),
+    XII_MEMBER_PROPERTY("HardwareGI", m_InputHardwareGI)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("RayLength", m_fRayLength)->AddAttributes(new xiiDefaultValueAttribute(2.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(8U), new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("Thickness", m_fThickness)->AddAttributes(new xiiDefaultValueAttribute(0.15f), new xiiClampValueAttribute(0.001f, xiiVariant())),
@@ -63,48 +77,14 @@ xiiResult xiiScreenSpaceGlobalIlluminationPass::Configure(const xiiVariantDictio
   return xiiMath::IsFinite(m_fRayLength) && m_fRayLength >= 0 && m_uiSampleCount > 0 && m_uiSampleCount <= 32 && xiiMath::IsFinite(m_fThickness) && m_fThickness >= 0.001f && xiiMath::IsFinite(m_fIntensity) && m_fIntensity >= 0 ? XII_SUCCESS : XII_FAILURE;
 }
 
-void xiiScreenSpaceGlobalIlluminationPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"GBufferNormal", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"GBufferAlbedo", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"GBufferMaterial", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"PerFrameCamera", xiiRenderPipelinePin::Buffer, true});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  pins.PushBack({"PerFrameGlobal", xiiRenderPipelinePin::Buffer, true});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  pins.PushBack({"SSGITerm", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PushBack({"xiiSSGIConstants", xiiRenderPipelinePin::Buffer, false, false});
-  pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-  pins.PushBack({"GBufferNormal", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-  pins.PushBack({"GBufferAlbedo", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-  pins.PushBack({"GBufferMaterial", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-  pins.PushBack({"HardwareGI", xiiRenderPipelinePin::Texture, true, true});
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-    }
-}
+
 
 xiiResult xiiScreenSpaceGlobalIlluminationPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  const float intensity = m_fRayLength == 0 || (m_bSkipWithHardwareGI && context.GetInputTexture("HardwareGI").IsValid()) ? 0.0f : m_fIntensity;
+  const float intensity = m_fRayLength == 0 || (m_bSkipWithHardwareGI && context.GetInputTexture(m_InputHardwareGI).IsValid()) ? 0.0f : m_fIntensity;
   if (intensity > 0)
   {
     XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/SSGI.xiiShader"));
@@ -112,28 +92,28 @@ xiiResult xiiScreenSpaceGlobalIlluminationPass::Build(xiiRenderPipelinePassConte
     XII_SUCCEED_OR_RETURN(LinearClampSampler(m_pState->m_Linear));
   }
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("SceneDepth"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputSceneDepth), 0, 0, size));
   const auto queue   = intensity > 0 ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, queue, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_hSceneDepth = context.GetInputTexture("SceneDepth");
-    data.m_hGBufferNormal = context.GetInputTexture("GBufferNormal");
-    data.m_hGBufferAlbedo = context.GetInputTexture("GBufferAlbedo");
-    data.m_hGBufferMaterial = context.GetInputTexture("GBufferMaterial");
-    data.m_hHDRIn = context.GetInputTexture("HDRSceneColor");
-    data.m_hPerFrameCamera = context.GetInputBuffer("PerFrameCamera");
-    data.m_hPerFrameGlobal = context.GetInputBuffer("PerFrameGlobal");
+    data.m_hSceneDepth = context.GetInputTexture(m_InputSceneDepth);
+    data.m_hGBufferNormal = context.GetInputTexture(m_InputGBufferNormal);
+    data.m_hGBufferAlbedo = context.GetInputTexture(m_InputGBufferAlbedo);
+    data.m_hGBufferMaterial = context.GetInputTexture(m_InputGBufferMaterial);
+    data.m_hHDRIn = context.GetInputTexture(m_InputHDRSceneColor);
+    data.m_hPerFrameCamera = context.GetInputBuffer(m_InputPerFrameCamera);
+    data.m_hPerFrameGlobal = context.GetInputBuffer(m_InputPerFrameGlobal);
     data.m_Constants.RayLength = m_fRayLength;
     data.m_Constants.SampleCount = m_uiSampleCount;
     data.m_Constants.Thickness = m_fThickness;
     data.m_Constants.Intensity = intensity;
     Setup(data, builder); }, xiiMakeDelegate(&xiiScreenSpaceGlobalIlluminationPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("SSGITerm", emitted.first->m_hSSGIOut));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("xiiSSGIConstants", emitted.first->m_hConstants));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("SceneDepth", context.GetInputTexture("SceneDepth")));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("GBufferNormal", context.GetInputTexture("GBufferNormal")));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("GBufferAlbedo", context.GetInputTexture("GBufferAlbedo")));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("GBufferMaterial", context.GetInputTexture("GBufferMaterial")));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputSSGITerm, emitted.first->m_hSSGIOut));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputxiiSSGIConstants, emitted.first->m_hConstants));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputSceneDepth, context.GetInputTexture(m_InputSceneDepth)));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGBufferNormal, context.GetInputTexture(m_InputGBufferNormal)));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGBufferAlbedo, context.GetInputTexture(m_InputGBufferAlbedo)));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGBufferMaterial, context.GetInputTexture(m_InputGBufferMaterial)));
   return XII_SUCCESS;
 }
 

@@ -36,6 +36,19 @@ xiiAtmosphereCompositePass::~xiiAtmosphereCompositePass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereCompositePass, 1, xiiRTTIDefaultAllocator<xiiAtmosphereCompositePass>)
 {
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("SceneDepth", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("AtmTransmittanceInput", m_InputAtmTransmittance)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("AtmTransmittance")),
+    XII_MEMBER_PROPERTY("AtmMultiScatterInput", m_InputAtmMultiScatter)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("AtmMultiScatter")),
+    XII_MEMBER_PROPERTY("HDRSceneColorInput", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("HDRSceneColor")),
+    XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("PerFrameLight", m_InputPerFrameLight)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("HDRSceneColorOutput", m_OutputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("HDRSceneColor")),
+    XII_MEMBER_PROPERTY("AtmTransmittanceOutput", m_OutputAtmTransmittance)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("AtmTransmittance")),
+    XII_MEMBER_PROPERTY("AtmMultiScatterOutput", m_OutputAtmMultiScatter)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("AtmMultiScatter")),
+    XII_MEMBER_PROPERTY("AtmosphereConstants", m_InputAtmosphereConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+  } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Rendering/Atmosphere")
@@ -46,35 +59,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 
-void xiiAtmosphereCompositePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"AtmTransmittance", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"AtmMultiScatter", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UnorderedAccess;
-  pins.PushBack({"PerFrameCamera", xiiRenderPipelinePin::Buffer, true});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  pins.PushBack({"PerFrameLight", xiiRenderPipelinePin::Buffer, true});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PushBack({"AtmTransmittance", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-  pins.PushBack({"AtmMultiScatter", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-  pins.PushBack({"AtmosphereConstants", xiiRenderPipelinePin::Buffer, true});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-    }
-}
 
 xiiResult xiiAtmosphereCompositePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -84,20 +68,20 @@ xiiResult xiiAtmosphereCompositePass::Build(xiiRenderPipelinePassContext& contex
   XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/AtmosphereComposite.xiiShader"));
   XII_SUCCEED_OR_RETURN(LinearClampSampler(m_pState->m_Linear));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("SceneDepth"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputSceneDepth), 0, 0, size));
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_hSceneDepth = context.GetInputTexture("SceneDepth");
-    data.m_hAtmosphereTransmittanceLUT = context.GetInputTexture("AtmTransmittance");
-    data.m_hAtmosphereMultiScatterLUT = context.GetInputTexture("AtmMultiScatter");
-    data.m_hHDRSceneColor = context.GetInputTexture("HDRSceneColor");
-    data.m_hPerFrameCamera = context.GetInputBuffer("PerFrameCamera");
-    data.m_hPerFrameLight = context.GetInputBuffer("PerFrameLight");
-    data.m_hConstants = context.GetInputBuffer("AtmosphereConstants");
+    data.m_hSceneDepth = context.GetInputTexture(m_InputSceneDepth);
+    data.m_hAtmosphereTransmittanceLUT = context.GetInputTexture(m_InputAtmTransmittance);
+    data.m_hAtmosphereMultiScatterLUT = context.GetInputTexture(m_InputAtmMultiScatter);
+    data.m_hHDRSceneColor = context.GetInputTexture(m_InputHDRSceneColor);
+    data.m_hPerFrameCamera = context.GetInputBuffer(m_InputPerFrameCamera);
+    data.m_hPerFrameLight = context.GetInputBuffer(m_InputPerFrameLight);
+    data.m_hConstants = context.GetInputBuffer(m_InputAtmosphereConstants);
     Setup(data, builder); }, xiiMakeDelegate(&xiiAtmosphereCompositePass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("HDRSceneColor", emitted.first->m_hHDRSceneColor));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("AtmTransmittance", context.GetInputTexture("AtmTransmittance")));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("AtmMultiScatter", context.GetInputTexture("AtmMultiScatter")));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputHDRSceneColor, emitted.first->m_hHDRSceneColor));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputAtmTransmittance, context.GetInputTexture(m_InputAtmTransmittance)));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputAtmMultiScatter, context.GetInputTexture(m_InputAtmMultiScatter)));
   return XII_SUCCESS;
 }
 

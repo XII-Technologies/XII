@@ -8,13 +8,24 @@ class XII_GRAPHICSCORE_DLL xiiSensorOutputPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiSensorOutputPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputHDRSceneColor{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputSceneDepth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputGBufferNormal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputGBufferAlbedo{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputDilatedVelocityBuffer{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineBufferInputPin   m_InputPerFrameCamera{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferInputPin   m_InputPerFrameGlobal{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineTextureOutputPin m_OutputSensorOutput{xiiGALResourceFormat::RGBA32Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineBufferOutputPin  m_OutputSensorOutputConstants;
+  xiiRenderPipelineTextureOutputPin m_OutputDilatedVelocityBuffer{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read};
+
   xiiSensorOutputPass();
   ~xiiSensorOutputPass();
-  bool                                        m_bUseViewProfile = false;
-  xiiSensorProfile                            m_Profile;
-  xiiSharedPtr<xiiGALTexture>                 GetViewOutput(xiiSensorProfileHandle profile) const;
-  void                                        InvalidateTemporalHistory() override;
-  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  bool                        m_bUseViewProfile = false;
+  xiiSensorProfile            m_Profile;
+  xiiSharedPtr<xiiGALTexture> GetViewOutput(xiiSensorProfileHandle profile) const;
+  void                        InvalidateTemporalHistory() override;
+
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

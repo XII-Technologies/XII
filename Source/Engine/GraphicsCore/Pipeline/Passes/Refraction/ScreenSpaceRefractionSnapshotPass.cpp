@@ -25,6 +25,11 @@ xiiScreenSpaceRefractionSnapshotPass::~xiiScreenSpaceRefractionSnapshotPass() = 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceRefractionSnapshotPass, 1, xiiRTTIDefaultAllocator<xiiScreenSpaceRefractionSnapshotPass>)
 {
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("HDRSceneColor", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("RefractionSceneColorInput", m_OutputRefractionSceneColorInput)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+  } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Rendering/Refraction")
@@ -35,30 +40,17 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 
-void xiiScreenSpaceRefractionSnapshotPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::None;
-  pins.PushBack({"RefractionSceneColorInput", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-    }
-}
 
 xiiResult xiiScreenSpaceRefractionSnapshotPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
   xiiSizeU32                 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("HDRSceneColor"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), 0, 0, size));
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_hHDRSource = context.GetInputTexture("HDRSceneColor");
+    data.m_hHDRSource = context.GetInputTexture(m_InputHDRSceneColor);
     Setup(data, builder); }, xiiMakeDelegate(&xiiScreenSpaceRefractionSnapshotPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("RefractionSceneColorInput", emitted.first->m_hSnapshot));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputRefractionSceneColorInput, emitted.first->m_hSnapshot));
   return XII_SUCCESS;
 }
 

@@ -14,6 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereConstantsPass, 1, xiiRTTIDefaultAl
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("AtmosphereConstants", m_OutputAtmosphereConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseWorldAtmosphere", m_bUseWorldAtmosphere)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Settings", m_Settings),
   }
@@ -27,12 +28,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereConstantsPass, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiAtmosphereConstantsPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  pins.PushBack({"AtmosphereConstants", xiiRenderPipelinePin::Buffer, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-}
+
 xiiResult xiiAtmosphereConstantsPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
@@ -69,6 +65,6 @@ xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& contex
       transition.m_NewState = xiiGALResourceStateFlags::ConstantBuffer;
       transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
       commands.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1)); });
-  return context.SetOutput("AtmosphereConstants", emitted.first->m_Buffer);
+  return context.SetOutput(m_OutputAtmosphereConstants, emitted.first->m_Buffer);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Atmosphere_AtmosphereConstantsPass);

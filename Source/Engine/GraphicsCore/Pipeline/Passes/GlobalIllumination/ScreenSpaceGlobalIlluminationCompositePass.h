@@ -7,11 +7,16 @@ class XII_GRAPHICSCORE_DLL xiiScreenSpaceGlobalIlluminationCompositePass final :
   XII_ADD_DYNAMIC_REFLECTION(xiiScreenSpaceGlobalIlluminationCompositePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputSSGITerm{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputHDRSceneColor{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputHDRSceneColor{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputHardwareGI{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Texture2D, 1};
+
   xiiScreenSpaceGlobalIlluminationCompositePass();
   ~xiiScreenSpaceGlobalIlluminationCompositePass();
-  bool                                        m_bEnabled            = true;
-  bool                                        m_bSkipWithHardwareGI = false;
-  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  bool m_bEnabled            = true;
+  bool m_bSkipWithHardwareGI = false;
+
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

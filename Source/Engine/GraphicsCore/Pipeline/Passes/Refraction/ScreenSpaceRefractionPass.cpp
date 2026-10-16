@@ -40,6 +40,16 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceRefractionPass, 1, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("SceneDepth", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferNormal", m_InputGBufferNormal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferMaterial", m_InputGBufferMaterial)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferEmissiveInput", m_InputGBufferEmissive)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferEmissive")),
+    XII_MEMBER_PROPERTY("RefractionSceneColorInput", m_InputRefractionSceneColorInput)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("HDRSceneColorInput", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("HDRSceneColor")),
+    XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("HDRSceneColorOutput", m_OutputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("HDRSceneColor")),
+    XII_MEMBER_PROPERTY("xiiSSRefractionConstants", m_OutputxiiSSRefractionConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferEmissiveOutput", m_OutputGBufferEmissive)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GBufferEmissive")),
     XII_MEMBER_PROPERTY("PerturbScale", m_fPerturbScale)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.0f, 0.5f)),
     XII_MEMBER_PROPERTY("MaximumDistance", m_fMaximumDistance)->AddAttributes(new xiiDefaultValueAttribute(0.1f), new xiiClampValueAttribute(0.0f, 0.5f)),
     XII_MEMBER_PROPERTY("Chromatic", m_fChromatic)->AddAttributes(new xiiDefaultValueAttribute(0.002f), new xiiClampValueAttribute(0.0f, 0.1f)),
@@ -60,34 +70,7 @@ xiiResult xiiScreenSpaceRefractionPass::Configure(const xiiVariantDictionary& pr
   return xiiMath::IsFinite(m_fPerturbScale) && m_fPerturbScale >= 0 && m_fPerturbScale <= 0.5f && xiiMath::IsFinite(m_fMaximumDistance) && m_fMaximumDistance >= 0 && m_fMaximumDistance <= 0.5f && xiiMath::IsFinite(m_fChromatic) && m_fChromatic >= 0 && m_fChromatic <= 0.1f ? XII_SUCCESS : XII_FAILURE;
 }
 
-void xiiScreenSpaceRefractionPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"GBufferNormal", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"GBufferMaterial", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"GBufferEmissive", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"RefractionSceneColorInput", xiiRenderPipelinePin::Texture, true, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UnorderedAccess;
-  pins.PushBack({"PerFrameCamera", xiiRenderPipelinePin::Buffer, true});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PushBack({"xiiSSRefractionConstants", xiiRenderPipelinePin::Buffer, false, false});
-  pins.PushBack({"GBufferEmissive", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-    }
-}
+
 
 xiiResult xiiScreenSpaceRefractionPass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -97,24 +80,24 @@ xiiResult xiiScreenSpaceRefractionPass::Build(xiiRenderPipelinePassContext& cont
   XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/SSRefraction.xiiShader"));
   XII_SUCCEED_OR_RETURN(LinearClampSampler(m_pState->m_Linear));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("SceneDepth"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputSceneDepth), 0, 0, size));
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_hSceneDepth = context.GetInputTexture("SceneDepth");
-    data.m_hGBufferNormal = context.GetInputTexture("GBufferNormal");
-    data.m_hGBufferMaterial = context.GetInputTexture("GBufferMaterial");
-    data.m_hGBufferEmissive = context.GetInputTexture("GBufferEmissive");
-    data.m_hHDRIn = context.GetInputTexture("RefractionSceneColorInput");
-    data.m_hHDROut = context.GetInputTexture("HDRSceneColor");
-    data.m_hPerFrameCamera = context.GetInputBuffer("PerFrameCamera");
+    data.m_hSceneDepth = context.GetInputTexture(m_InputSceneDepth);
+    data.m_hGBufferNormal = context.GetInputTexture(m_InputGBufferNormal);
+    data.m_hGBufferMaterial = context.GetInputTexture(m_InputGBufferMaterial);
+    data.m_hGBufferEmissive = context.GetInputTexture(m_InputGBufferEmissive);
+    data.m_hHDRIn = context.GetInputTexture(m_InputRefractionSceneColorInput);
+    data.m_hHDROut = context.GetInputTexture(m_InputHDRSceneColor);
+    data.m_hPerFrameCamera = context.GetInputBuffer(m_InputPerFrameCamera);
     data.m_Constants.PerturbScale = m_fPerturbScale;
     data.m_Constants.MaxDistance = m_fMaximumDistance;
     data.m_Constants.Chromatic = m_fChromatic;
     data.m_Constants.Padding = 0;
     Setup(data, builder); }, xiiMakeDelegate(&xiiScreenSpaceRefractionPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("HDRSceneColor", emitted.first->m_hHDROut));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("xiiSSRefractionConstants", emitted.first->m_hConstants));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("GBufferEmissive", context.GetInputTexture("GBufferEmissive")));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputHDRSceneColor, emitted.first->m_hHDROut));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputxiiSSRefractionConstants, emitted.first->m_hConstants));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGBufferEmissive, context.GetInputTexture(m_InputGBufferEmissive)));
   return XII_SUCCESS;
 }
 

@@ -31,6 +31,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceGlobalIlluminationCompositePass, 
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("SSGITerm", m_InputSSGITerm)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("HDRSceneColorInput", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("HDRSceneColor")),
+    XII_MEMBER_PROPERTY("HDRSceneColorOutput", m_OutputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("HDRSceneColor")),
+    XII_MEMBER_PROPERTY("HardwareGI", m_InputHardwareGI)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("SkipWithHardwareGI", m_bSkipWithHardwareGI)->AddAttributes(new xiiDefaultValueAttribute(false)),
   }
@@ -46,39 +50,24 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiResult xiiScreenSpaceGlobalIlluminationCompositePass::Configure(const xiiVariantDictionary& properties) { return xiiRenderPipelinePass::Configure(properties); }
 
-void xiiScreenSpaceGlobalIlluminationCompositePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"SSGITerm", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UnorderedAccess;
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PushBack({"HardwareGI", xiiRenderPipelinePin::Texture, true, true});
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-    }
-}
+
 
 xiiResult xiiScreenSpaceGlobalIlluminationCompositePass::Build(xiiRenderPipelinePassContext& context)
 {
-  if (!m_bEnabled || (m_bSkipWithHardwareGI && context.GetInputTexture("HardwareGI").IsValid()))
-    return context.SetOutput("HDRSceneColor", context.GetInputTexture("HDRSceneColor"));
+  if (!m_bEnabled || (m_bSkipWithHardwareGI && context.GetInputTexture(m_InputHardwareGI).IsValid()))
+    return context.SetOutput(m_OutputHDRSceneColor, context.GetInputTexture(m_InputHDRSceneColor));
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
   XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/SSGIComposite.xiiShader"));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("SSGITerm"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputSSGITerm), 0, 0, size));
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_hSSGI = context.GetInputTexture("SSGITerm");
-    data.m_hHDRScene = context.GetInputTexture("HDRSceneColor");
+    data.m_hSSGI = context.GetInputTexture(m_InputSSGITerm);
+    data.m_hHDRScene = context.GetInputTexture(m_InputHDRSceneColor);
     Setup(data, builder); }, xiiMakeDelegate(&xiiScreenSpaceGlobalIlluminationCompositePass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("HDRSceneColor", emitted.first->m_hHDRScene));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputHDRSceneColor, emitted.first->m_hHDRScene));
   return XII_SUCCESS;
 }
 
