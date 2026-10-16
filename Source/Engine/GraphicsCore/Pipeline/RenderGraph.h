@@ -421,6 +421,11 @@ public:
   ///        Call this for passes that write to swap-chain images, initiate readbacks, etc.
   void SetPassSideEffects(bool bHasSideEffects);
 
+  /// Device-side readiness for resources produced outside this graph, including
+  /// previous-frame history. The wait precedes submission barriers on this pass's
+  /// queue. The graph owns the fence until execution; this never blocks the CPU.
+  [[nodiscard]] xiiResult WaitForFence(xiiSharedPtr<xiiGALFence> fence, xiiUInt64 value);
+
   /// Controls whether this pass participates in render-pass merge groups.
   ///        Default is true. Set to false if the pass must stand alone (e.g. readback).
   void SetPassAllowMerge(bool bAllowMerge);
@@ -678,6 +683,8 @@ private:
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
+    xiiHybridArray<xiiSharedPtr<xiiGALFence>, 2>  m_WaitFences;
+    xiiHybridArray<xiiUInt64, 2>                  m_WaitValues;
     void*                                         m_pPassData = nullptr;
     xiiDelegate<void(void*)>                      m_DestroyPassDataDelegate;
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;

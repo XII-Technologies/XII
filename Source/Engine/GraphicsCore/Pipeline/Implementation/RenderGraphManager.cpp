@@ -299,6 +299,18 @@ void      xiiRenderGraphFrame::End()
     xiiRenderGraphManager::EndFrame(*this);
 }
 
+xiiResult xiiRenderGraphManager::GetFrameCompletion(xiiUInt64 uiFrameIndex, xiiUInt64& out_uiCompletedFrame)
+{
+  out_uiCompletedFrame = 0;
+  if (!IsInitialized())
+    return XII_FAILURE;
+  XII_LOCK(s_pState->m_FrameMutex);
+  if (!s_pState->m_bFrameActive || uiFrameIndex == 0 || uiFrameIndex != s_pState->m_uiFrameIndex)
+    return XII_FAILURE;
+  out_uiCompletedFrame = s_pState->m_FrameCompletionTracker.GetLastCompletedFrame();
+  return XII_SUCCESS;
+}
+
 xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt32 uiFramesInFlight)
 {
   if (!IsInitialized() || frame.IsActive() || uiFramesInFlight == 0U)

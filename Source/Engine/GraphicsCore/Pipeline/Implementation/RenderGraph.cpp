@@ -482,6 +482,22 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiStringView sNam
   return WriteBuffer(DeclareBuffer(sName, description), requiredState);
 }
 
+xiiResult xiiRenderGraphBuilder::WaitForFence(xiiSharedPtr<xiiGALFence> fence, xiiUInt64 value)
+{
+  if (!fence || value == 0 || fence->GetDescription().m_Type != xiiGALFenceType::General)
+    return XII_FAILURE;
+  auto& pass = m_Graph.m_Passes[m_uiPassIndex];
+  for (xiiUInt32 i = 0; i < pass.m_WaitFences.GetCount(); ++i)
+    if (pass.m_WaitFences[i] == fence)
+    {
+      pass.m_WaitValues[i] = xiiMath::Max(pass.m_WaitValues[i], value);
+      return XII_SUCCESS;
+    }
+  pass.m_WaitFences.PushBack(std::move(fence));
+  pass.m_WaitValues.PushBack(value);
+  return XII_SUCCESS;
+}
+
 void xiiRenderGraphBuilder::SetPassSideEffects(bool bHasSideEffects)
 {
   m_Graph.m_Passes[m_uiPassIndex].m_bHasSideEffects = bHasSideEffects;
@@ -1360,6 +1376,19 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
         m_QueueSubmissions[uiConsumerSubmission].m_WaitSubmissionIndices.PushBack(uiProducerSubmission);
     };
 
+    // Waits are frame-specific execution data, not part of the cached topology.
+    auto& submission = m_QueueSubmissions[compiledToSubmissionIndex[uiConsumerCompiledIndex]];
+    for (xiiUInt32 i = 0; i < pass.m_WaitFences.GetCount(); ++i)
+    {
+      xiiUInt32 existing = submission.m_WaitFences.IndexOf(pass.m_WaitFences[i]);
+      if (existing == xiiInvalidIndex)
+      {
+        submission.m_WaitFences.PushBack(pass.m_WaitFences[i]);
+        submission.m_WaitValues.PushBack(pass.m_WaitValues[i]);
+      }
+      else
+        submission.m_WaitValues[existing] = xiiMath::Max(submission.m_WaitValues[existing], pass.m_WaitValues[i]);
+    }
     for (const ResourceUsage& read : pass.m_Reads)
       AddProducer(m_Resources[read.m_uiResourceIndex].m_Versions[read.m_uiVersion].m_uiProducerPassIdx);
 

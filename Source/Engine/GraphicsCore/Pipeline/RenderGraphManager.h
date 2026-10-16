@@ -130,6 +130,11 @@ public:
   [[nodiscard]] static xiiRenderGraphResourceCache*     GetResourceCache();
   [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler();
 
+  /// Conservative queue completion for the currently active shared GPU frame. Allows
+  /// pass-owned histories to retire images after all consumers have finished. Requires
+  /// the caller's graph to belong to this frame; does not wait or advance the timeline.
+  [[nodiscard]] static xiiResult GetFrameCompletion(xiiUInt64 uiFrameIndex, xiiUInt64& out_uiCompletedFrame);
+
   /// Executes eligible graphs in a newly allocated shared GPU frame. Frequency decisions use
   /// the device-wide frame index, including world submissions. Failed frames are captured too.
   [[nodiscard]] static xiiResult ExecuteFrame(const xiiView* pView, xiiUInt32 uiFramesInFlight = 3U, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
