@@ -764,3 +764,90 @@ and clear-state declarations; the corrected fixtures pass Vulkan validation.
 Temporary authoring include/API/mount errors were also corrected before packaging.
 D3D12 remains excluded. No controlled upload-throughput, frame-time or GPU
 submission benchmark ran. The whole-stack architecture goal remains active.
+
+
+## Typed ray scene resources and view feedback - 2026-10-16
+
+Acceleration structures are now a distinct reflected pipeline resource kind.
+Texture, Buffer and Order keep their existing serialized values; the new kind is
+appended. Native input/output pins are concrete XII_MEMBER_PROPERTY members.
+They carry no editable or serialized runtime handle. The execution binding owns
+a TLAS reference together with the explicit render-graph buffer version establishing
+build readiness. Consumers declare BuildASRead on that dependency. Pin contracts
+reject texture constraints and buffer binding flags on acceleration structures;
+compilation rejects kind mismatches and unsupported temporal AS outputs. Runtime
+validation rejects absent required and partially populated bindings. Passes may
+report a detailed build failure through their existing context, with the instance
+adding source node/type/scope diagnostics.
+
+RayTracingScene is an independent reflected pass. It requests geometry extraction,
+uses xiiRenderWorldModule's existing world-derived GPU instance data, and delegates
+the actual BLAS/TLAS work to xiiRayTracingResources. Each pass occurrence owns an
+existing xiiRayTracingFrameResources ring for writable TLAS and hit-data allocations.
+Device BLAS residency and world deformation caches remain shared. No object registry,
+scene creation API, authoritative transforms or new world module was introduced.
+UseViewSelection and RequireHardwareRayTracing are authored member properties.
+The latter explicitly controls whether unavailable hardware is an error; empty
+eligible selections remain valid. BuildHandles now distinguishes empty success
+from failed resource preparation. The native pass exposes typed scene, material
+and geometry outputs instead of allowing consumers to reach into a shared runtime.
+
+The existing real deformation-tracing regression now builds two repeated reflected
+scene subgraphs and consumes their typed AS and buffer bindings. It retains checks
+for distinct TLAS instances, shared deformation/BLAS work, warmed frame slots,
+skinning/morph changes, resource reload, object-generation safety, delayed captures
+and frames in flight. This exposed a missing readiness handle on unchanged TLAS
+slots. Reused slots now import their instance-data buffer as readiness, without
+forcing a rebuild or adding an extra rendering algorithm.
+
+Qt uses the same generic pin selection/property inspector for acceleration structures,
+with a distinct pin color. Its regression selects the parent node and pin, edits the
+pin display name, undoes/redoes, rejects an incompatible texture connection, saves,
+reloads and compiles the persistent pin identity/type. Pin references are reacquired
+after property changes rebuild the node. The test also exposed a generic command
+helper bug: a failed connection could leave an orphan connection object and crash
+asset hashing/saving. AddAndConnectCommand now validates before mutation, snapshots
+persistent endpoints before events can rebuild pins, and rolls back its nested
+transaction on failure. The regression verifies unchanged document child count
+on rejection and successful subsequent save/export.
+
+The obsolete GpuOcclusionReadback logical pass, its data structure, setup/execute
+functions, declarations and three-slot ring fields are deleted. A repository search
+confirmed that no producer ever populated that ring. The actual GPU profiler and
+occlusion algorithms remain. Dynamic-resolution feedback reads the existing render
+graph profiler directly. Its CPU scale/integrator state now belongs to xiiView;
+the unused duplicate stored GPU-time field is removed. RenderScale is a reflected
+view property. GPU constant readback checks independent 0.5/0.75 camera scales and
+immutable snapshots. Resolution access no longer looks up legacy runtime state.
+
+The SDK scene assets still use PrepareFrame, Visibility, Shadows, DepthAndGeometry,
+LightingPreparation and Lighting composites. RayTracingScene is available for independent authoring; those production
+composites have not yet been replaced by it. Six selector branches, 58 original
+operation-data structures and thirteen Builtin implementation files remain. Full
+consumer migration and final Builtin deletion are still required. No final-system
+completion is claimed, and D3D12 remains excluded.
+
+All four affected Debug test targets and GpuDrivenScene build. Final results:
+35 GraphicsCore, 57 Vulkan GAL, 73 Vulkan editor-engine, 16 Qt and 28
+ToolsFoundation subtests pass. Evidence: Workspace/view-resolution-ownership-build.log,
+view-resolution-ownership-{core,gal,editor-gpu,qt}.log,
+reflected-ray-scene-tools.log and view-resolution-sample-build.log. The Vulkan
+sample exits normally after both 3 and 60 frames, with no logged errors or device
+loss (Workspace/view-resolution-sample-{run,warmed}.log). That sample still authors
+a manual low-level graph and needs migration; these runs verify backend behavior,
+not its completion of the resource-authoring requirements.
+
+An intermittent particle fixture failure during the first ownership run read
+uninitialized state (for example ID 0 instead of 1061 at element 61). Its implicit
+CreateBuffer initial-data upload ran on graphics while compute consumed it without
+an explicit cross-queue dependency. The fixture now captures initial particle data
+in a graph-owned upload producer and publishes its written buffer version. The
+initialization flag advances during execution, so an unexecuted graph does not
+suppress a later upload. The complete Vulkan suite and five repeated PipelineResources
+runs pass afterward (Workspace/particle-initialization-build.log and
+particle-initialization-repeat-{1,2,3,4,5}.log). No global device wait or backend
+workaround was introduced; this follows the existing GAL initialization contract.
+
+No controlled frame-time, CPU lookup or GPU submission benchmark was performed.
+The removed readback pass was a forced live no-op; avoiding its scheduling and
+legacy resolution lookups is a source-derived effect, not a measured speedup.
