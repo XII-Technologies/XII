@@ -1009,3 +1009,41 @@ still need rebuilding and finer decomposition; full game/editor graphs and sever
 integration fixtures remain absent. NativePassInventory.md is the current class
 count, ownership map, deletion report, consumer list and outstanding-work inventory.
 The full architecture goal remains active.
+
+
+## Native instance visibility and explicit buffer history - 2026-10-16
+
+InstanceCullPass performs the supplied frustum/flags/mask/residency tests and LOD
+selection as one reflected compute operation. LodHistoryResetPass separately
+initializes generation-invalid GPU entries. BufferHistoryPass is an independent
+structured-buffer temporal operation with private completion-checked allocations
+and explicit GPU readiness. Previous LOD history is wired through a temporal pin;
+there is no hidden stage order or culling-owned scene state. Constructors and
+configuration do not touch GAL. Static-link retention is regenerated through XII's
+existing tool. The native source inventory now has 44 concrete reflected classes.
+
+VisibilityViewPass now advances LOD tokens per occurrence when its snapshot upload
+executes. Interleaved frames from another world no longer invalidate LOD history,
+and a cut in one camera resets only that occurrence. The world GPU regression checks
+these tokens through actual readback. Shared buffer readback code was consolidated
+inside GraphicsFoundationTest's existing testing-environment directory.
+
+Debug builds of GraphicsCoreTest, GraphicsFoundationTest,
+EditorEngineProcessFrameworkTest and EditorFrameworkTest pass. The full CPU suite
+(41 subtests), Vulkan NativeVisibility and PipelineExtraction groups, and all 15 Qt
+EditorDocuments tests pass. NativeVisibility executes two views with repeated nested
+instances over eight phases, testing explicit temporal versus intra-frame cycles,
+LOD hysteresis, identity/generation invalidation, candidate filtering, empty input,
+per-view history cuts and buffer resizing from 67 to 129 records. Current/previous
+buffer ownership is checked independently for every occurrence. See the current
+NativePassInventory.md for logs, initial fixture corrections and limitations.
+
+World sparse upload behavior remains 288 bytes once for a changed instance across
+two cameras and zero bytes for warmed static input. Latest uncontrolled Debug
+packing is 2.436 ms/update for 1024 unchanged components. No controlled GPU visibility,
+history-copy or queue-overlap performance claim is made. D3D12 is excluded.
+
+The full goal remains active. Meshlet culling, Hi-Z, LOD feedback, indirect work,
+authored native visibility assets, geometry/lighting/shadow paths and complete
+renderer graphs are still pending. No legacy runtime or compatibility pipeline was
+restored to make these tests pass.

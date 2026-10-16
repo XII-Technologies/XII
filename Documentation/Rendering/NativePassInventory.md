@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **41 concrete reflected operation classes** in
+Current source inventory: **44 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -30,10 +30,10 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 1 | `xiiSensorOutputPass` |
-| Temporal | 1 | `xiiTemporalAntiAliasingPass` |
+| Temporal | 2 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 5 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
-| Visibility | 1 | `xiiVisibilityViewPass` |
+| Visibility | 3 | `xiiInstanceCullPass`, `xiiLodHistoryResetPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
 Every operation above declares concrete typed pin members through
@@ -45,9 +45,15 @@ Properties remain reflected members and retain normal editor attribute handling.
 - WorldInstancesUpload publishes the existing world's sparse instance/pose uploads.
   Repeated occurrences use the same graph upload and buffer versions. No hierarchy,
   scene object registry or transform propagation is added.
+- InstanceCull applies supplied flags, masks, frustum and residency tests and writes
+  generation-validated LOD selections. LodHistoryReset initializes every entry on
+  the GPU, including unselected/empty candidates. Neither consumes live world state.
+- BufferHistory retains structured GPU buffers in completion-checked private
+  slots, publishes explicit previous-frame pins and declares GPU readiness waits.
 - VisibilityView captures camera/frustum and selected component indices during
   setup. Execute consumes owned immutable frame data. Its parameters belong to
-  each reflected occurrence.
+  each reflected occurrence. LOD tokens advance with that occurrence, including
+  across interleaved device frames from other worlds.
 - GeometryUpload and MaterialUpload publish the existing device residency services.
   They allocate no world-specific copies of shared mesh or material assets.
 - CounterReset creates one graph-owned counter with a reflected initial value;
@@ -65,7 +71,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum and meshlet culling, temporal Hi-Z, GPU LOD selection/feedback, indirect dispatch and draw preparation as independent nodes. Current low-level GPU visibility service/sample still needs decomposition. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling, temporal Hi-Z, LOD streaming feedback, indirect dispatch and draw preparation still need independent nodes. Current low-level visibility service/sample still needs decomposition, followed by authored world visibility assets. |
 | Geometry | Depth raster and indexed fallback, GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery already provides nearest-surface queries. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
@@ -133,3 +139,46 @@ consumers still refer to those assets and must be rebuilt with native graphs:
 Application/editor rendering that relied on the removed default graphs remains
 unavailable until native raster/lighting/shadow operations and their assets are
 rebuilt. This migration is active, incomplete, and has no compatibility fallback.
+
+
+## Native visibility verification - 2026-10-16
+
+Three classes added: InstanceCullPass, LodHistoryResetPass and BufferHistoryPass.
+All consume typed member pins, with no static pin tables, stage checks, scene
+ownership, automatic extraction demand, or new service manager. AsyncCompute is a
+reflected culling property. Persistent temporal storage is an independently wired
+operation rather than hidden culling state. A missing previous input uses an
+initialized invalid record; previous/current logical aliasing and invalid layouts
+fail with occurrence diagnostics.
+
+Debug builds pass for all four affected test targets and their editor consumers
+(`Workspace/native-visibility-final-build.log`, native-visibility-resize-build.log).
+All 41 GraphicsCore CPU subtests pass (`Workspace/native-visibility-core.log`).
+The Vulkan NativeVisibility test runs eight phases through two views, each with two
+instances of one serialized definition. GPU readback verifies masks, flags,
+frustum rejection, candidate selection, LOD hysteresis, geometry generation changes,
+recycled object IDs, explicit temporal feedback, per-view invalidation, empty input,
+67-to-129-entry resizing and the final record beyond the original capacity. Every
+occurrence is checked; writable previous buffers remain distinct. The CPU test
+accepts the temporal cycle and rejects its equivalent intra-frame cycle.
+
+Vulkan PipelineExtraction passes after the native visibility-token change
+(`Workspace/native-visibility-world-gpu.log`). World producer readback verifies
+independent camera tokens across an unrelated device frame and a cut in only one
+camera. Incremental uploads still report 288 bytes once for one changed instance
+across two cameras, and zero warmed static upload bytes. The uncontrolled Debug
+packing sample is 2.436 ms/update for 1024 unchanged components; no performance
+comparison is claimed. All 15 Qt EditorDocuments tests pass, including the retained
+asset library and pin properties (`Workspace/native-visibility-qt.log`).
+
+Initial GPU fixture failures placed a sphere tangent to the frustum, where correct
+conservative culling keeps it visible; the outside test now moves it fully beyond
+the plane. Resize fixture expectations were updated to the actual candidate capacity.
+Final results above pass after these fixture corrections.
+
+These are native source operations and tests, not a completed world visibility or
+rendering asset. Authored native visibility assets, remaining meshlet/Hi-Z/feedback
+nodes and the missing complete renderer graphs still need implementation. History
+copy bandwidth, deep GPU queue overlap and large-scene dispatch limits have not been
+benchmarked. The full renderer suites remain unverified while their old complete
+pipeline assets are absent. D3D12 remains excluded.
