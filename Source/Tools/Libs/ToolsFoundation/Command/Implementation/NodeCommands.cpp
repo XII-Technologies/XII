@@ -2,6 +2,7 @@
 
 #include <ToolsFoundation/ToolsFoundationPCH.h>
 
+#include <Foundation/Types/ScopeExit.h>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
@@ -280,6 +281,22 @@ xiiStatus xiiDisconnectNodePinsCommand::UndoInternal(bool bFireEvents)
 // static
 xiiStatus xiiNodeCommands::AddAndConnectCommand(xiiCommandHistory* pHistory, const xiiRTTI* pConnectionType, const xiiPin& sourcePin, const xiiPin& targetPin)
 {
+  const auto* manager = static_cast<const xiiDocumentNodeManager*>(pHistory->GetDocument()->GetObjectManager());
+  if (sourcePin.GetParent()->GetDocumentObjectManager() != manager || targetPin.GetParent()->GetDocumentObjectManager() != manager)
+    return xiiStatus("Connection pins must belong to this document.");
+  xiiDocumentNodeManager::CanConnectResult canConnect;
+  XII_SUCCEED_OR_RETURN(manager->CanConnect(pConnectionType, sourcePin, targetPin, canConnect));
+
+  // Property events can rebuild dynamic pins. Snapshot their persistent endpoints
+  // before mutation and roll back the entire operation if any command fails.
+  const auto      sourceId   = sourcePin.GetParent()->GetGuid();
+  const auto      targetId   = targetPin.GetParent()->GetGuid();
+  const xiiString sourceName = sourcePin.GetName();
+  const xiiString targetName = targetPin.GetName();
+  pHistory->StartTransaction("Connect Node Pins");
+  bool finished = false;
+  XII_SCOPE_EXIT(if (!finished) pHistory->CancelTransaction());
+
   xiiAddObjectCommand addCmd;
   addCmd.m_pType         = pConnectionType;
   addCmd.m_NewObjectGuid = xiiUuid::MakeUuid();
@@ -294,10 +311,10 @@ xiiStatus xiiNodeCommands::AddAndConnectCommand(xiiCommandHistory* pHistory, con
     "TargetPin"_xiisv,
   };
   xiiVariant propertyValues[] = {
-    sourcePin.GetParent()->GetGuid(),
-    targetPin.GetParent()->GetGuid(),
-    sourcePin.GetName(),
-    targetPin.GetName(),
+    sourceId,
+    targetId,
+    sourceName,
+    targetName,
   };
   static_assert(XII_ARRAY_SIZE(propertyNames) == XII_ARRAY_SIZE(propertyValues));
 
@@ -313,12 +330,15 @@ xiiStatus xiiNodeCommands::AddAndConnectCommand(xiiCommandHistory* pHistory, con
 
   xiiConnectNodePinsCommand connectCmd;
   connectCmd.m_ConnectionObject = addCmd.m_NewObjectGuid;
-  connectCmd.m_ObjectSource     = sourcePin.GetParent()->GetGuid();
-  connectCmd.m_ObjectTarget     = targetPin.GetParent()->GetGuid();
-  connectCmd.m_sSourcePin       = sourcePin.GetName();
-  connectCmd.m_sTargetPin       = targetPin.GetName();
+  connectCmd.m_ObjectSource     = sourceId;
+  connectCmd.m_ObjectTarget     = targetId;
+  connectCmd.m_sSourcePin       = sourceName;
+  connectCmd.m_sTargetPin       = targetName;
 
-  return pHistory->AddCommand(connectCmd);
+  XII_SUCCEED_OR_RETURN(pHistory->AddCommand(connectCmd));
+  pHistory->FinishTransaction();
+  finished = true;
+  return XII_SUCCESS;
 }
 
 // static
