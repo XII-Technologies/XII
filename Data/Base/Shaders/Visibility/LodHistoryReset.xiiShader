@@ -1,0 +1,13 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+[COMPUTE_SHADER]
+RWStructuredBuffer<uint4> g_LodHistory;
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  uint count, stride;
+  g_LodHistory.GetDimensions(count, stride);
+  if (tid.x < count) g_LodHistory[tid.x] = uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
+}
