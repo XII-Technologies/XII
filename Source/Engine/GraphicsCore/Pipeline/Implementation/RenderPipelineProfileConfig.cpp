@@ -13,9 +13,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 1, xiiRTTIDefau
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("GamePipeline", m_sGamePipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/Deferred.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("EditorScenePipeline", m_sEditorScenePipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/EditorScene.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("AssetPreviewPipeline", m_sAssetPreviewPipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/Deferred.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("GamePipeline", m_sGamePipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("EditorScenePipeline", m_sEditorScenePipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("AssetPreviewPipeline", m_sAssetPreviewPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
       XII_MEMBER_PROPERTY("TexturePreviewPipeline", m_sTexturePreviewPipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/TexturePreview.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
       XII_MEMBER_PROPERTY("CubeTexturePreviewPipeline", m_sCubeTexturePreviewPipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/TextureCubePreview.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
     } XII_END_PROPERTIES;

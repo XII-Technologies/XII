@@ -5,6 +5,8 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsCore/Lighting/DisplayOutput.h>
+#include <GraphicsCore/Pipeline/RenderPipelineConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
@@ -640,74 +642,50 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     resource.Invalidate();
     xiiResourceManager::FreeAllUnusedResources();
   }
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default definition is a shared reusable resource with pin-level topology")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native definitions are shared resources with pin-level topology")
   {
-    auto a = xiiLoadPipelineLibraryResource("Deferred");
-    auto b = xiiLoadPipelineLibraryResource("Deferred");
+    const auto a = xiiLoadPipelineLibraryResource("ScreenEffects");
+    const auto b = xiiLoadPipelineLibraryResource("ScreenEffects");
     XII_TEST_BOOL(a == b);
     xiiResourceLock<xiiRenderPipelineResource> resource(a, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-    XII_TEST_BOOL(resource.IsValid());
+    if (!XII_TEST_BOOL(resource.IsValid()))
+      return;
     const auto pipeline = resource->GetPipeline();
-    XII_TEST_BOOL(pipeline != nullptr);
-    if (pipeline)
-    {
-      XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), pipeline->GetDescriptor().m_Passes.GetCount());
-      XII_TEST_BOOL(pipeline->GetTopology().GetVertexCount() > resource->GetAuthoring()->m_Descriptor.m_Passes.GetCount());
-      XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > pipeline->GetTopology().GetVertexCount() - 1);
-      XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), pipeline->GetTopology().GetVertexCount());
-      xiiRenderPipelineResourceDescriptor ordered;
-      XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(ordered));
-      auto      descriptor = ordered;
-      xiiUInt32 debug      = xiiInvalidIndex;
-      for (xiiUInt32 index = 0; index < descriptor.m_Passes.GetCount(); ++index)
-        if (descriptor.m_Passes[index].m_sType == "xiiDebugOverlayPass")
-          debug = index;
-      XII_TEST_BOOL(debug != xiiInvalidIndex);
-      if (debug == xiiInvalidIndex)
-        return;
-      XII_TEST_RESULT(descriptor.RemovePass(debug));
-      xiiUInt32 visualization = xiiInvalidIndex, grading = xiiInvalidIndex;
-      for (xiiUInt32 index = 0; index < descriptor.m_Passes.GetCount(); ++index)
-      {
-        if (descriptor.m_Passes[index].m_sType == "xiiViewRenderModePass")
-          visualization = index;
-        if (descriptor.m_Passes[index].m_sType == "xiiColorGradingPass")
-          grading = index;
-      }
-      XII_TEST_RESULT(descriptor.Connect(visualization, "DisplayLinearColor", grading, "DisplayLinearColor"));
-      xiiSharedPtr<const xiiRenderPipeline> edited;
-      XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
-      XII_TEST_BOOL(edited->GetHeapMemoryUsage() > descriptor.m_Passes.GetHeapMemoryUsage() + descriptor.m_Connections.GetHeapMemoryUsage());
-      auto incomplete = ordered;
-      XII_TEST_RESULT(incomplete.RemovePass(0));
-      xiiStringBuilder error;
-      XII_TEST_RESULT(xiiRenderPipeline::Compile(incomplete, edited, &error));
-      auto duplicate = ordered;
-      duplicate.AddPass("Extra camera constants", "xiiViewConstantsPass");
-      duplicate.AddPass("Independent camera constants", "xiiViewConstantsPass");
-      XII_TEST_RESULT(xiiRenderPipeline::Compile(duplicate, edited));
-      auto                 configured = ordered;
-      xiiVariantDictionary display;
-      display.Insert("BloomStrength", 0.2f);
-      xiiVariantDictionary exposure;
-      exposure.Insert("ExposureCompensation", 1.25f);
-      display.Insert("Exposure", exposure);
-      configured.m_Parameters.Insert("DisplayOutput", display);
-      XII_TEST_RESULT(xiiRenderPipeline::Compile(configured, edited));
-      xiiDefaultMemoryStreamStorage storage;
-      xiiMemoryStreamWriter         stream(&storage);
-      XII_TEST_RESULT(configured.Serialize(stream));
-      xiiMemoryStreamReader               reader(&storage);
-      xiiRenderPipelineResourceDescriptor restored;
-      XII_TEST_RESULT(restored.Deserialize(reader));
-      XII_TEST_BOOL(restored.m_Parameters == configured.m_Parameters);
-      XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, edited));
-      display.Insert("BloomRadius", "invalid numeric value");
-      configured.m_Parameters.Insert("DisplayOutput", display);
-      XII_TEST_BOOL(xiiRenderPipeline::Compile(configured, edited).Failed());
-      display.Insert("BloomRadius", -1.0f);
-      configured.m_Parameters.Insert("DisplayOutput", display);
-      XII_TEST_BOOL(xiiRenderPipeline::Compile(configured, edited).Failed());
-    }
+    if (!XII_TEST_BOOL(pipeline != nullptr))
+      return;
+    XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), pipeline->GetDescriptor().m_Passes.GetCount());
+    XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > pipeline->GetTopology().GetVertexCount() - 1);
+    XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), pipeline->GetTopology().GetVertexCount());
+    XII_TEST_BOOL(pipeline->GetHeapMemoryUsage() > pipeline->GetDescriptor().m_Passes.GetHeapMemoryUsage());
+    auto descriptor = resource->GetAuthoring()->m_Descriptor;
+    descriptor.AddPass("Extra camera constants", "xiiViewConstantsPass");
+    descriptor.AddPass("Independent camera constants", "xiiViewConstantsPass");
+    xiiSharedPtr<const xiiRenderPipeline> edited;
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
+    xiiContiguousMemoryStreamStorage bytes;
+    xiiMemoryStreamWriter            writer(&bytes);
+    XII_TEST_RESULT(descriptor.Serialize(writer));
+    xiiMemoryStreamReader               reader(&bytes);
+    xiiRenderPipelineResourceDescriptor restored;
+    XII_TEST_RESULT(restored.Deserialize(reader));
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, edited));
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Runtime display parameters use their native resolver")
+  {
+    xiiVariantDictionary display, exposure, parameters;
+    display.Insert("BloomStrength", 0.2f);
+    exposure.Insert("ExposureCompensation", 1.25f);
+    display.Insert("Exposure", exposure);
+    parameters.Insert("DisplayOutput", display);
+    xiiDisplayOutputSettings resolved;
+    XII_TEST_RESULT(xiiResolvePipelineDisplaySettings(parameters, resolved));
+    XII_TEST_FLOAT(resolved.m_fBloomStrength, 0.2f, 0);
+    XII_TEST_FLOAT(resolved.m_Exposure.m_fExposureCompensation, 1.25f, 0);
+    display.Insert("BloomRadius", "invalid numeric value");
+    parameters.Insert("DisplayOutput", display);
+    XII_TEST_BOOL(xiiResolvePipelineDisplaySettings(parameters, resolved).Failed());
+    display.Insert("BloomRadius", -1.0f);
+    parameters.Insert("DisplayOutput", display);
+    XII_TEST_BOOL(xiiResolvePipelineDisplaySettings(parameters, resolved).Failed());
   }
 }

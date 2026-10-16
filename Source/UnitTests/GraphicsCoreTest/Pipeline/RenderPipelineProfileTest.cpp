@@ -15,8 +15,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
   auto* config = profile.GetTypeConfig<xiiRenderPipelineProfileConfig>();
   if (!XII_TEST_BOOL(config != nullptr))
     return;
-  XII_TEST_STRING(config->m_sGamePipeline, "RenderPipelines/Deferred.xiiBinRenderPipeline");
-  XII_TEST_STRING(config->m_sEditorScenePipeline, "RenderPipelines/EditorScene.xiiBinRenderPipeline");
+  XII_TEST_BOOL(config->m_sGamePipeline.IsEmpty());
+  XII_TEST_BOOL(config->m_sEditorScenePipeline.IsEmpty());
+  XII_TEST_BOOL(config->m_sAssetPreviewPipeline.IsEmpty());
   config->m_sGamePipeline               = "Project/Simulation.xiiBinRenderPipeline";
   config->m_sEditorScenePipeline        = "Project/Scene.xiiBinRenderPipeline";
   config->m_sAssetPreviewPipeline       = "Project/Preview.xiiBinRenderPipeline";

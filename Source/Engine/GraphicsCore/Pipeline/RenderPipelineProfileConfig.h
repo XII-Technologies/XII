@@ -27,9 +27,9 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineProfileConfig : public xiiProfileCon
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineProfileConfig, xiiProfileConfigData);
 
 public:
-  xiiString m_sGamePipeline               = "RenderPipelines/Deferred.xiiBinRenderPipeline";
-  xiiString m_sEditorScenePipeline        = "RenderPipelines/EditorScene.xiiBinRenderPipeline";
-  xiiString m_sAssetPreviewPipeline       = "RenderPipelines/Deferred.xiiBinRenderPipeline";
+  xiiString m_sGamePipeline;
+  xiiString m_sEditorScenePipeline;
+  xiiString m_sAssetPreviewPipeline;
   xiiString m_sTexturePreviewPipeline     = "RenderPipelines/TexturePreview.xiiBinRenderPipeline";
   xiiString m_sCubeTexturePreviewPipeline = "RenderPipelines/TextureCubePreview.xiiBinRenderPipeline";
 
