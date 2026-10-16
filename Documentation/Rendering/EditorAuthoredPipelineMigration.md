@@ -90,3 +90,13 @@ The resource-selection factories, composite stage implementation and render-pin
 configuration integration remain migration targets; these checkpoints do not
 close the complete objective. Local evidence is in ignored
 `Workspace/pipeline-pin-*.log` and `Workspace/pipeline-assets-*.log` files.
+
+`xiiRenderPipelineProfileConfig` now extends the existing reflected platform
+profile with game, scene-editor, asset-preview and texture-preview resource
+references. Explicit view references precede project policy; empty selections and
+invalid runtime policy chunks produce no selected resource. Runtime chunks and
+the existing reflected project serializer preserve the policy. Game-state main
+view creation now selects the configured resource. All 25 GraphicsCore subtests
+and 49 Vulkan EditorViews subtests pass, including both wireframe raster paths
+using the packaged deferred asset. Evidence: `Workspace/pipeline-profile-*.log`.
+Other entry points and constructor fallback deletion remain in progress.

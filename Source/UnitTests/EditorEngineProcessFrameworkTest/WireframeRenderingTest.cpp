@@ -11,6 +11,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
@@ -61,7 +62,12 @@ namespace
     view->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
     view->SetViewport({0, 0, 64, 64});
     view->SetViewRenderMode(xiiViewRenderMode::Wireframe);
-    view->SetRenderPipelineResource(xiiRenderPipelineResource::GetDefaultPipeline());
+    xiiPlatformProfile profile;
+    profile.AddMissingConfigs();
+    xiiRenderPipelineResourceHandle pipeline;
+    if (!XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource({}, &profile, xiiRenderPipelineUsage::Game, pipeline)))
+      return;
+    view->SetRenderPipelineResource(pipeline);
     xiiGALTextureCreationDescription targetDescription;
     targetDescription.m_Type      = xiiGALResourceDimension::Texture2D;
     targetDescription.m_Size      = {64, 64};
