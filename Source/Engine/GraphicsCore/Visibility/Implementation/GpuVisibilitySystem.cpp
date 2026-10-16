@@ -215,6 +215,25 @@ namespace
 
 xiiGpuVisibilitySystem::~xiiGpuVisibilitySystem() { Shutdown(); }
 
+xiiResult xiiGpuVisibilitySystem::ComputeMeshDispatchShape(const xiiGALMeshShaderProperties& properties, xiiUInt32 capacity, xiiUInt32& out_width, xiiUInt32& out_height)
+{
+  out_width = out_height = 0;
+  if (capacity == 0 || properties.m_uiMaxThreadGroupCountX == 0 || properties.m_uiMaxThreadGroupCountY == 0 || properties.m_uiMaxThreadGroupCountZ == 0 || capacity > properties.m_uiMaxThreadGroupTotalCount)
+    return XII_FAILURE;
+  // Fixed row widths let mesh consumers linearize SV_GroupID without backend draw IDs.
+  for (xiiUInt32 width = xiiMath::Min(properties.m_uiMaxThreadGroupCountX, capacity); width > 0; --width)
+  {
+    const xiiUInt64 rows = (static_cast<xiiUInt64>(capacity) + width - 1) / width;
+    if (rows <= properties.m_uiMaxThreadGroupCountY && rows * width <= properties.m_uiMaxThreadGroupTotalCount)
+    {
+      out_width  = width;
+      out_height = static_cast<xiiUInt32>(rows);
+      return XII_SUCCESS;
+    }
+  }
+  return XII_FAILURE;
+}
+
 xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpuVisibilityDescription& description)
 {
   Shutdown();
@@ -225,35 +244,13 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
   if (pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled)
   {
     const xiiGALMeshShaderProperties& meshProperties = pDevice->GetGraphicsDeviceAdapterProperties().m_MeshShaderProperties;
-    if (meshProperties.m_uiMaxThreadGroupCountX == 0U || meshProperties.m_uiMaxThreadGroupCountY == 0U || meshProperties.m_uiMaxThreadGroupCountZ == 0U || meshProperties.m_uiMaxThreadGroupTotalCount == 0U || description.m_uiMaxVisibleMeshlets > meshProperties.m_uiMaxThreadGroupTotalCount)
+    if (ComputeMeshDispatchShape(meshProperties, description.m_uiMaxVisibleMeshlets, m_uiMeshDispatchGroupCountX, m_uiMeshDispatchGroupCountY).Failed())
     {
-      xiiLog::Error("GPU visibility requires mesh dispatch capacity for {} visible meshlets; device supports {} total groups.", description.m_uiMaxVisibleMeshlets, meshProperties.m_uiMaxThreadGroupTotalCount);
+      xiiLog::Error("GPU visibility cannot tile {} meshlets within the device's mesh-dispatch limits.", description.m_uiMaxVisibleMeshlets);
       Shutdown();
       return XII_FAILURE;
-    }
-    // Choose a fixed row width whose worst-case padded rectangle still fits the total
-    // mesh-workgroup limit. Fixed strides let the mesh shader linearize SV_GroupID without
-    // requiring backend-specific draw IDs or an extra command metadata lookup.
-    m_uiMeshDispatchGroupCountX = xiiMath::Min(meshProperties.m_uiMaxThreadGroupCountX, description.m_uiMaxVisibleMeshlets);
-    while (m_uiMeshDispatchGroupCountX > 0U)
-    {
-      const xiiUInt64 uiRows             = (static_cast<xiiUInt64>(description.m_uiMaxVisibleMeshlets) + m_uiMeshDispatchGroupCountX - 1U) / m_uiMeshDispatchGroupCountX;
-      const xiiUInt64 uiPaddedGroupCount = static_cast<xiiUInt64>(m_uiMeshDispatchGroupCountX) * uiRows;
-      if (uiRows <= meshProperties.m_uiMaxThreadGroupCountY && uiPaddedGroupCount <= meshProperties.m_uiMaxThreadGroupTotalCount)
-      {
-        m_uiMeshDispatchGroupCountY = static_cast<xiiUInt32>(uiRows);
-        break;
-      }
-      --m_uiMeshDispatchGroupCountX;
     }
     m_uiMeshDispatchGroupTotalCount = meshProperties.m_uiMaxThreadGroupTotalCount;
-    const xiiUInt64 uiTiledCapacity = static_cast<xiiUInt64>(m_uiMeshDispatchGroupCountX) * m_uiMeshDispatchGroupCountY;
-    if (m_uiMeshDispatchGroupCountX == 0U || uiTiledCapacity < description.m_uiMaxVisibleMeshlets)
-    {
-      xiiLog::Error("GPU visibility mesh dispatch tiling supports {} groups, below the requested {} visible meshlets.", uiTiledCapacity, description.m_uiMaxVisibleMeshlets);
-      Shutdown();
-      return XII_FAILURE;
-    }
   }
   const xiiUInt32 uiResourceSlotCount = description.m_uiFramesInFlight * description.m_uiMaxVisibilitySets;
   m_pViewBuffers.SetCount(uiResourceSlotCount);

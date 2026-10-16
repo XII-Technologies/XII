@@ -660,22 +660,21 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
       auto      descriptor = ordered;
       xiiUInt32 debug      = xiiInvalidIndex;
       for (xiiUInt32 index = 0; index < descriptor.m_Passes.GetCount(); ++index)
-        if (const auto* selected = descriptor.m_Passes[index].m_Properties.GetValue("Stage"))
-          if (*selected == xiiVariant("Debug"))
-            debug = index;
+        if (descriptor.m_Passes[index].m_sType == "xiiDebugOverlayPass")
+          debug = index;
       XII_TEST_BOOL(debug != xiiInvalidIndex);
       if (debug == xiiInvalidIndex)
         return;
       XII_TEST_RESULT(descriptor.RemovePass(debug));
-      xiiUInt32 tone = xiiInvalidIndex, grading = xiiInvalidIndex;
+      xiiUInt32 visualization = xiiInvalidIndex, grading = xiiInvalidIndex;
       for (xiiUInt32 index = 0; index < descriptor.m_Passes.GetCount(); ++index)
       {
-        if (descriptor.m_Passes[index].m_sType == "xiiToneMappingPass")
-          tone = index;
+        if (descriptor.m_Passes[index].m_sType == "xiiViewRenderModePass")
+          visualization = index;
         if (descriptor.m_Passes[index].m_sType == "xiiColorGradingPass")
           grading = index;
       }
-      XII_TEST_RESULT(descriptor.Connect(tone, "DisplayLinearColor", grading, "DisplayLinearColor"));
+      XII_TEST_RESULT(descriptor.Connect(visualization, "DisplayLinearColor", grading, "DisplayLinearColor"));
       xiiSharedPtr<const xiiRenderPipeline> edited;
       XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
       XII_TEST_BOOL(edited->GetHeapMemoryUsage() > descriptor.m_Passes.GetHeapMemoryUsage() + descriptor.m_Connections.GetHeapMemoryUsage());

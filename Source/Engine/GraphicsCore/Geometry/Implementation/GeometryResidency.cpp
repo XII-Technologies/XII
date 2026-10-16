@@ -909,6 +909,11 @@ xiiResult xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometr
   return XII_SUCCESS;
 }
 
+xiiUInt32 xiiGeometryResidencyManager::GetMetadataBaseIndex(xiiUInt64 frameIndex)
+{
+  return s_pState && s_pState->m_uiFramesInFlight ? static_cast<xiiUInt32>(frameIndex % s_pState->m_uiFramesInFlight) * s_pState->m_Slots.GetCount() : 0;
+}
+
 xiiSharedPtr<xiiGALBuffer> xiiGeometryResidencyManager::GetMetadataBuffer()
 {
   return s_pState != nullptr ? s_pState->m_pMetadataBuffer : nullptr;
@@ -1018,7 +1023,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
   UploadHandles result;
   result.m_hGeometryMetadata             = pass.first->m_hGeometryBuffer;
   result.m_hMeshletMetadata              = pass.first->m_hMeshletBuffer;
-  result.m_uiGeometryBaseIndex           = uiFrameSlice * pState->m_Slots.GetCount();
+  result.m_uiGeometryBaseIndex           = GetMetadataBaseIndex(uiFrameIndex);
   result.m_uiMaximumResidentMeshletCount = uiMaximumResidentMeshletCount;
   return result;
 }

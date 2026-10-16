@@ -10,6 +10,7 @@
 #include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 
 class xiiGpuVisibilityManager;
+struct xiiGALMeshShaderProperties;
 
 struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
 {
@@ -153,6 +154,8 @@ class XII_GRAPHICSCORE_DLL xiiGpuVisibilitySystem
 
 public:
   ~xiiGpuVisibilitySystem();
+  /// Shared deterministic tiling for producers and consumers of mesh indirect commands.
+  static xiiResult ComputeMeshDispatchShape(const xiiGALMeshShaderProperties& properties, xiiUInt32 capacity, xiiUInt32& out_width, xiiUInt32& out_height);
 
   static xiiGpuVisibilityView BuildView(const xiiMat4& viewProjectionMatrix, const xiiFrustum& frustum, const xiiVec3& vCameraPosition, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiHiZMipCount, xiiUInt32 uiInstanceCount, xiiUInt32 uiVisibilityMask = 0xFFFFFFFFU);
 

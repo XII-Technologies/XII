@@ -488,12 +488,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildTransparency(xiiRenderGraph& graph, x
   graph.AddPass<xiiWeightedBlendedOITData>("WeightedBlendedOIT", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupWeightedBlendedOIT, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteWeightedBlendedOIT, this));
 }
 
-xiiResult xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth)
-{
-  // Debug and visualization passes.
-  XII_SUCCEED_OR_RETURN(BuildViewRenderMode(graph, color));
-  return xiiDebugRenderer::AddRenderGraphPasses(graph, color, depth);
-}
+
 
 void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows)
 {

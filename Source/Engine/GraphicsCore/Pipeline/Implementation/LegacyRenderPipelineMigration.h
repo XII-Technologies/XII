@@ -9,4 +9,9 @@ inline xiiUuid xiiScreenEffectsDefinitionId()
 
 /// Versioned conversion of the former composite node to an ordinary authored resource.
 /// This does not construct its replacement topology; the resource owns that definition.
-void xiiMigrateLegacyScreenEffects(xiiRenderPipelineResourceDescriptor& descriptor);
+inline xiiUuid xiiDebugVisualizationDefinitionId()
+{
+  return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.DebugVisualization");
+}
+
+void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor);

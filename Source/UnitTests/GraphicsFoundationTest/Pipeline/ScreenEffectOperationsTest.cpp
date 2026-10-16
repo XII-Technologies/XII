@@ -20,7 +20,9 @@ class xiiScreenEffectTestSource : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiScreenEffectTestSource, xiiRenderPipelinePass);
 
 public:
-  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  float    m_fDepth     = 0;
+  xiiColor m_Attributes = xiiColor::Black;
+  void     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
   {
     pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
     pins.PushBack({"Attributes", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
@@ -31,8 +33,12 @@ public:
     struct Data
     {
       xiiRenderGraphTextureHandle m_Color, m_Attributes, m_Depth;
+      xiiColor                    m_AttributeColor;
+      float                       m_fDepth = 0;
     };
     const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_AttributeColor = m_Attributes;
+      data.m_fDepth = m_fDepth;
       xiiGALTextureCreationDescription description;
       description.m_Type = xiiGALResourceDimension::Texture2D;
       description.m_Size = {8, 8};
@@ -43,14 +49,21 @@ public:
       description.m_Format = xiiGALResourceFormat::R32Float;
       data.m_Depth = builder.WriteTexture(xiiStringBuilder(context.m_sPassName, "/Depth"), description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(4, 4, 4, 1));
-      execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Attributes)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
-      execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); });
+      execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Attributes)->GetDefaultView(xiiGALTextureViewType::RenderTarget), data.m_AttributeColor);
+      execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(data.m_fDepth, 0, 0, 1)); });
     XII_SUCCEED_OR_RETURN(context.SetOutput("Color", emitted.first->m_Color));
     XII_SUCCEED_OR_RETURN(context.SetOutput("Attributes", emitted.first->m_Attributes));
     return context.SetOutput("Depth", emitted.first->m_Depth);
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenEffectTestSource, 1, xiiRTTIDefaultAllocator<xiiScreenEffectTestSource>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Depth", m_fDepth),
+      XII_MEMBER_PROPERTY("Attributes", m_Attributes),
+    } XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServices)

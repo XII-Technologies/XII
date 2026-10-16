@@ -524,3 +524,50 @@ the previously failing multi-world test pass. The complete final test results ar
 Evidence: Workspace/geometry-init-build.log and Workspace/screen-final-*.log. The
 race failure is retained in Workspace/screen-settings-verified-editor-gpu.log.
 D3D12 is excluded; no contention or throughput benchmark was run.
+
+
+## Independent visualization and overlays
+
+BuiltinRenderPipelineVisualization.cpp is deleted, together with BuildDebug,
+BuildViewRenderMode, the Debug selector branch and the shared PostProcessPasses
+state group (including its unused effect caches). SurfaceQuery, ViewRenderMode and
+DebugOverlay are independent reflected operations. They consume explicit resource
+pins and expose their own reflected member properties. DebugVisualization is an
+ordinary authored three-node resource referenced by Deferred and EditorScene.
+No replacement C++ pipeline factory remains. Existing source and binary consumers
+were converted and exported using production document commands and compilation.
+
+The surface query consumes supplied canonical visibility, skinning, geometry and
+material buffers; it does not own scene objects or create another visibility
+context. It uses the existing device residency services' frame-slice offsets and
+supports both mesh and indexed rasterization. Mesh indirect producers and query
+consumers share one deterministic tiling calculation. Wireframe activation is a
+local algorithm option based on view configuration, with no other pass-stage check.
+Channel inspection consumes selected pins, a camera uniform buffer and its output
+target. Shader/sampler state belongs to that pass occurrence. Debug overlays reuse
+the existing extracted world/view debug data and rendering backend with explicit
+color/depth targets. Inactive operations forward resources or emit no GPU work.
+
+Versioned conversion preserves node/pin IDs, connections, layout and parameters,
+including embedded Core definitions. Former hidden visibility and camera dependencies
+become explicit interface connections. Editor mode filtering now describes supported
+visualization modes rather than a built-in pipeline. Generic Qt property inspection
+and pin editing continue through the same reflected document objects.
+
+All four affected Debug targets build. All 31 GraphicsCore, 53 Vulkan GAL,
+73 Vulkan editor-engine and 15 Qt subtests pass. Evidence is in
+Workspace/visualization-tests-build.log and Workspace/visualization-{core,gal,
+editor-gpu,qt}.log. New coverage checks native configuration, legacy root/nested
+conversion, deterministic serialization, shared-definition provenance, tiling limits,
+and actual BaseColor/Metallic GPU readback from differently configured occurrences.
+The specialized visualization graph leaves geometry and material services uninitialized.
+Existing tests verify rendered wireframe edges using both mesh and indexed paths,
+debug drawing, multiple views/worlds, sensor and temporal lifetime, and deterministic
+SDK source export. Initial enum/type-forward-declaration and temporary packaging
+API compilation errors were fixed before verification. The temporary asset authoring
+fixture was removed. D3D12 remains excluded; no controlled performance benchmark ran.
+
+Thirteen Builtin implementation files and the public selector remain. Eight composite
+branches and 70 original operation-data structures still need migration. This is
+concrete progress toward complete removal, not completion of the entire rendering
+stack decomposition or the broader final audit.

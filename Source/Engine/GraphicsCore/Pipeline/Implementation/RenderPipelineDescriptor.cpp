@@ -187,7 +187,7 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
   context.RegisterObject(root->GetGuid(), xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
   xiiRttiConverterReader converter(&graph, &context);
   converter.ApplyPropertiesToObject(root, xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
-  xiiMigrateLegacyScreenEffects(replacement);
+  xiiMigrateLegacyRenderPipelineDefinitions(replacement);
   *this = std::move(replacement);
   return XII_SUCCESS;
 }

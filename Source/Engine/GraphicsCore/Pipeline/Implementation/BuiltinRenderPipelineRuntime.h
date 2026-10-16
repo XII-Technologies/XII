@@ -135,8 +135,6 @@ public:
   void                                                                   BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                                                              BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth);
-  xiiResult                                                              BuildViewRenderMode(xiiRenderGraph& graph, xiiRenderGraphTextureHandle& color);
   void                                                                   BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
   void                                                                   InvalidateTemporalHistory();
   void                                                                   BindFrameResources(xiiGALCommandList& commandList) const;
@@ -372,20 +370,6 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSCausticsPipeline;
       xiiSharedPtr<xiiGALTexture>              m_pPlanarReflectionTarget;
     } m_ScreenSpacePasses;
-
-    //  Stage 11 - Post-Processing
-    struct PostProcessPasses
-    {
-      xiiSharedPtr<xiiGALComputePipelineState> m_pLensDirtPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pLensFlarePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pChromaticAberrPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pVignettePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pViewRenderModePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pFilmGrainPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pDepthOfFieldPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pMotionBlurPipeline;
-      xiiTexture2DResourceHandle               m_hLensDirtTexture;
-    } m_PostProcessPasses;
   };
   Resources m_Resources;
 

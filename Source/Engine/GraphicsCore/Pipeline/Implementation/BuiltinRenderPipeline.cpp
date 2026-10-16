@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 4, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 5, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -25,8 +25,6 @@ xiiBitflags<xiiRenderExtractionCategory> xiiBuiltinRenderPipelinePass::GetExtrac
     return xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Geometry;
   if (m_sStage == "Transparency")
     return xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Particles | xiiRenderExtractionCategory::Decals;
-  if (m_sStage == "Debug")
-    return xiiRenderExtractionCategory::Custom;
   return {};
 }
 
@@ -61,6 +59,8 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
   pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
   if (m_sStage == "PrepareFrame")
   {
+    for (xiiStringView name : {"SceneInstances", "SkinningMatrices", "VisibleMeshlets", "VisibleMeshletCount", "MeshIndirectCommands", "MeshIndirectCommandCount", "GeometryMetadata", "MeshletMetadata", "SurfaceMaterials"})
+      pins.PushBack({name, xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"GPU Geometry Metadata", xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"GPU Meshlet Metadata", xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"Surface Material GPU Storage", xiiRenderPipelinePin::Buffer, false, true});
@@ -369,16 +369,6 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"DrawIndirectCommands", xiiRenderPipelinePin::Buffer, false, true});
   }
-
-  if (m_sStage == "Debug")
-  {
-    for (xiiStringView name : {"GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "EnvironmentSpecular", "BloomTexture"})
-      pins.PushBack({name, xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
-  }
 }
 xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -406,16 +396,7 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
     if (pin.m_bInput && binding.m_hBuffer.IsValid())
       context.m_Graph.SetSetupBinding(pin.m_sName, binding.m_hBuffer);
   }
-  if (m_sStage == "Debug")
-  {
-    auto       color  = context.GetInputTexture("DisplayLinearColor");
-    auto       depth  = context.GetInputTexture("SceneDepth");
-    const auto result = runtime->BuildDebug(context.m_Graph, context.m_Blackboard, color, depth);
-    context.m_Graph.ClearSetupBindings();
-    XII_SUCCEED_OR_RETURN(result);
-    XII_SUCCEED_OR_RETURN(context.SetOutput("DisplayLinearColor", color));
-    return context.SetOutput("SceneDepth", depth);
-  }
+
   const auto result = runtime->BuildStage(m_sStage, context.m_Graph, context.m_Blackboard);
   context.m_Graph.ClearSetupBindings();
   for (xiiUInt32 i = 0; i < context.m_Pins.GetCount(); ++i)
@@ -430,11 +411,37 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
   {
     const xiiString previousScope = context.m_Graph.GetResourceNamespace();
     context.m_Graph.SetResourceNamespace({});
+    const auto& frame = runtime->m_Frame;
     for (xiiUInt32 i = 0; i < context.m_Pins.GetCount(); ++i)
-      if (!context.m_Pins[i].m_bInput && context.m_Pins[i].m_Type == xiiRenderPipelinePin::Buffer)
-        context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(context.m_Pins[i].m_sName);
+    {
+      const auto& pin = context.m_Pins[i];
+      if (pin.m_bInput || pin.m_Type != xiiRenderPipelinePin::Buffer)
+        continue;
+      auto& buffer = context.m_Bindings[i].m_hBuffer;
+      if (pin.m_sName == "SceneInstances")
+        buffer = frame.mainVisibility.m_hSceneInstances;
+      else if (pin.m_sName == "SkinningMatrices")
+        buffer = frame.mainVisibility.m_hSkinningMatrices;
+      else if (pin.m_sName == "VisibleMeshlets")
+        buffer = frame.mainVisibility.m_hVisibleMeshlets;
+      else if (pin.m_sName == "VisibleMeshletCount")
+        buffer = frame.mainVisibility.m_hVisibleMeshletCount;
+      else if (pin.m_sName == "MeshIndirectCommands")
+        buffer = frame.mainVisibility.m_hIndirectCommands;
+      else if (pin.m_sName == "MeshIndirectCommandCount")
+        buffer = frame.mainVisibility.m_hIndirectCommandCount;
+      else if (pin.m_sName == "GeometryMetadata")
+        buffer = frame.geometry.m_hGeometryMetadata;
+      else if (pin.m_sName == "MeshletMetadata")
+        buffer = frame.geometry.m_hMeshletMetadata;
+      else if (pin.m_sName == "SurfaceMaterials")
+        buffer = frame.materials.m_hSurfaceData;
+      else
+        buffer = context.m_Graph.FindBuffer(pin.m_sName);
+    }
     context.m_Graph.SetResourceNamespace(previousScope);
   }
+
   return result;
 }
 
