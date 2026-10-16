@@ -4,8 +4,13 @@
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -13,9 +18,13 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
+#include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
 
 class xiiOpaqueTestExport : public xiiRenderPipelinePass
 {
@@ -494,4 +503,197 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
   }
   for (auto* view : views)
     module->DestroyView(view->GetHandle());
+}
+
+/// Synthetic GI preparation supplies initialized resources through graph-owned uploads.
+/// This lets gather operations run without any light manager, residency or extraction.
+class xiiIrradianceTestSource : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiIrradianceTestSource, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineBufferOutputPin m_Light{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferOutputPin m_ProbeConstants{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferOutputPin m_States{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_PageTable{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_Levels{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_Pool{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_VoxelConstants{false, xiiGALBindFlags::UniformBuffer};
+  xiiResult                        Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphBufferHandle m_Light, m_ProbeConstants, m_States, m_PageTable, m_Levels, m_Pool, m_VoxelConstants;
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [](Data& data, xiiRenderGraphBuilder& builder) {
+      const auto create = [&](xiiStringView name, xiiUInt32 size, xiiUInt32 stride = 0) {
+        xiiGALBufferCreationDescription description;
+        description.m_uiSize = size;
+        description.m_uiElementByteStride = stride;
+        description.m_Mode = stride ? xiiGALBufferMode::Structured : xiiGALBufferMode::Undefined;
+        description.m_BindFlags = stride ? xiiGALBindFlags::ShaderResource : xiiGALBindFlags::UniformBuffer;
+        description.m_Usage = xiiGALResourceUsage::Dynamic;
+        description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+        return builder.WriteBuffer(name, description, stride ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::ConstantBuffer);
+      };
+      data.m_Light = create("Test Light", sizeof(xiiFrameLightConstants));
+      data.m_ProbeConstants = create("Test Probe Constants", sizeof(xiiDDGIProbeConstants));
+      data.m_States = create("Test Probes", sizeof(xiiGpuDDGIProbeState), sizeof(xiiGpuDDGIProbeState));
+      data.m_PageTable = create("Test Pages", 8 * sizeof(xiiUInt32), sizeof(xiiUInt32));
+      data.m_Levels = create("Test Levels", sizeof(xiiGpuSparseVoxelLevel), sizeof(xiiGpuSparseVoxelLevel));
+      data.m_Pool = create("Test Radiance", 8 * sizeof(xiiVec4), sizeof(xiiVec4));
+      data.m_VoxelConstants = create("Test Voxel Constants", sizeof(xiiSparseVoxelRadianceConstants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      auto& commands = execute.GetCommandList();
+      {
+        xiiGALMapHelper<xiiFrameLightConstants> mapped(commands, execute.GetBuffer(data.m_Light), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        *mapped = xiiFrameLightConstants();
+        mapped->m_AmbientLightColor = xiiVec4(0.3f, 0.4f, 0.5f, 1);
+      }
+      {
+        xiiGALMapHelper<xiiDDGIProbeConstants> mapped(commands, execute.GetBuffer(data.m_ProbeConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        mapped->MinimumCellAndAtlasWidth = xiiVec4I32(0, 0, 0, 1);
+        mapped->ProbeCountsAndUpdateCount = xiiVec4U32(1, 1, 1, 0);
+        mapped->SpacingHysteresisDistance = xiiVec4(4, 0.97f, 16, 0);
+      }
+      {
+        xiiGALMapHelper<xiiGpuDDGIProbeState> mapped(commands, execute.GetBuffer(data.m_States), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        mapped->m_vPositionAndLastUpdate = xiiVec4::MakeZero();
+        mapped->m_vCellAndFlags = xiiVec4I32::MakeZero(); // No valid probe: use explicit ambient fallback.
+      }
+      {
+        xiiGALMapHelper<xiiUInt32> mapped(commands, execute.GetBuffer(data.m_PageTable), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        xiiMemoryUtils::ZeroFill(mapped.GetMappedData(), 8);
+      }
+      {
+        xiiGALMapHelper<xiiGpuSparseVoxelLevel> mapped(commands, execute.GetBuffer(data.m_Levels), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        mapped->m_vMinimumCellAndPageOffset = xiiVec4I32(-1, -1, -1, 0);
+        mapped->m_vVoxelAndBrickSize = xiiVec4(5000, 10000, 0, 0);
+      }
+      {
+        xiiGALMapHelper<xiiVec4> mapped(commands, execute.GetBuffer(data.m_Pool), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        for (xiiUInt32 i = 0; i < 8; ++i) mapped.GetMappedData()[i] = xiiVec4(2, 4, 8, 1);
+      }
+      {
+        xiiGALMapHelper<xiiSparseVoxelRadianceConstants> mapped(commands, execute.GetBuffer(data.m_VoxelConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        mapped->ClipmapAndUpdateCounts = xiiVec4U32(1, 2, 2, 0);
+        mapped->PoolLayout = xiiVec4U32(8, 1, 0, 0);
+        mapped->RadianceSettings = xiiVec4::MakeZero();
+      } });
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Light, emitted.first->m_Light));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_ProbeConstants, emitted.first->m_ProbeConstants));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_States, emitted.first->m_States));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_PageTable, emitted.first->m_PageTable));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Levels, emitted.first->m_Levels));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Pool, emitted.first->m_Pool));
+    return context.SetOutput(m_VoxelConstants, emitted.first->m_VoxelConstants);
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiIrradianceTestSource, 1, xiiRTTIDefaultAllocator<xiiIrradianceTestSource>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("PerFrameLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("DDGIProbeConstants", m_ProbeConstants)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("DDGIProbeStates", m_States)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("SparseVoxelPageTable", m_PageTable)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("SparseVoxelLevelData", m_Levels)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("SparseVoxelRadiancePool", m_Pool)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("SparseVoxelConstants", m_VoxelConstants)->AddFlags(xiiPropertyFlags::ReadOnly),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentIrradianceGathers)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor leaf;
+  const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format) {
+    xiiClearTexturePass pass;
+    pass.m_Color  = color;
+    pass.m_Format = format;
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(pass.GetProperties(properties));
+    return leaf.AddPass(name, "xiiClearTexturePass", properties);
+  };
+  const auto depth           = clear("Surface Depth", {0.5f, 0, 0, 0}, xiiGALResourceFormat::R32Float);
+  const auto normal          = clear("Surface Normal", {0.5f, 0.5f, 0, 0}, xiiGALResourceFormat::RG16Float);
+  const auto irradianceAtlas = clear("Irradiance Atlas", xiiColor::MakeZero(), xiiGALResourceFormat::RGBA16Float);
+  const auto distanceAtlas   = clear("Distance Atlas", xiiColor::MakeZero(), xiiGALResourceFormat::RG16Float);
+  const auto resources       = leaf.AddPass("Prepared GI", "xiiIrradianceTestSource");
+  const auto camera          = leaf.AddPass("Camera", "xiiViewConstantsPass");
+  const auto ddgi            = leaf.AddPass("DDGI", "xiiDDGIProbeGatherPass");
+  const auto sparse          = leaf.AddPass("Sparse", "xiiSparseVoxelGatherPass");
+  for (auto operation : {ddgi, sparse})
+  {
+    XII_TEST_RESULT(leaf.Connect(depth, "Texture", operation, "SceneDepth"));
+    XII_TEST_RESULT(leaf.Connect(normal, "Texture", operation, "GBufferNormal"));
+    XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", operation, "PerFrameCamera"));
+  }
+  XII_TEST_RESULT(leaf.Connect(irradianceAtlas, "Texture", ddgi, "DDGIProbeIrradianceAtlas"));
+  XII_TEST_RESULT(leaf.Connect(distanceAtlas, "Texture", ddgi, "DDGIProbeDistanceAtlas"));
+  for (auto pin : {"DDGIProbeStates", "DDGIProbeConstants", "PerFrameLight"})
+    XII_TEST_RESULT(leaf.Connect(resources, pin, ddgi, pin));
+  for (auto pin : {"SparseVoxelPageTable", "SparseVoxelLevelData", "SparseVoxelRadiancePool", "SparseVoxelConstants"})
+    XII_TEST_RESULT(leaf.Connect(resources, pin, sparse, pin));
+  const auto ddgiExport   = leaf.AddPass("Read DDGI", "xiiOpaqueTestExport");
+  const auto sparseExport = leaf.AddPass("Read Sparse", "xiiOpaqueTestExport");
+  XII_TEST_RESULT(leaf.Connect(ddgi, "DDGIIrradiance", ddgiExport, "Input"));
+  XII_TEST_RESULT(leaf.Connect(sparse, "SparseVoxelIrradiance", sparseExport, "Input"));
+  const auto         ddgiId = leaf.m_Passes[ddgiExport].m_Id, sparseId = leaf.m_Passes[sparseExport].m_Id;
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  root.AddSubgraph("First Gather", definition.m_Id);
+  root.AddSubgraph("Second Gather", definition.m_Id);
+  const auto secondId     = root.m_Passes[1].m_Id;
+  auto&      ddgiOverride = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  ddgiOverride.m_Path.PushBack(leaf.m_Passes[ddgi].m_Id);
+  ddgiOverride.m_Properties.Insert("Intensity", 2.0f);
+  auto& sparseOverride = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  sparseOverride.m_Path.PushBack(leaf.m_Passes[sparse].m_Id);
+  sparseOverride.m_Properties.Insert("Intensity", 0.25f);
+  const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Independent irradiance algorithms", std::move(root));
+  xiiWorldDescription description("GI gathers without scene features");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera viewCamera;
+  viewCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView*   view   = nullptr;
+  const auto handle = module->CreateView("GI Gather", view);
+  view->SetCamera(&viewCamera);
+  view->SetViewport({0, 0, 10, 12});
+  view->SetRenderPipelineResource(resource);
+  for (xiiUInt32 frame = 0; frame < 2; ++frame)
+  {
+    world.Update();
+    const auto& instance = view->GetRenderPipelineInstance();
+    const auto* compiled = instance.GetPipeline();
+    if (!XII_TEST_BOOL(compiled != nullptr))
+      return;
+    XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet() && compiled->GetExtractionRequirements().IsNoFlagSet());
+    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+    xiiUInt32 outputs = 0;
+    for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
+    {
+      const auto& provenance = compiled->GetProvenance()[i];
+      if (provenance.m_Element != ddgiId && provenance.m_Element != sparseId)
+        continue;
+      const bool  other   = provenance.m_InstancePath[0] == secondId;
+      const auto* binding = instance.GetOutputBinding(i, "Output");
+      const auto  texture = binding ? view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture) : xiiSharedPtr<xiiGALTexture>();
+      if (!XII_TEST_BOOL(texture != nullptr))
+        return;
+      CheckOpaquePixels(environment, texture, provenance.m_Element == ddgiId ? (other ? xiiColor(0.6f, 0.8f, 1, 0) : xiiColor(0.3f, 0.4f, 0.5f, 0)) : (other ? xiiColor(0.5f, 1, 2, 1) : xiiColor(2, 4, 8, 1)));
+      ++outputs;
+    }
+    XII_TEST_INT(outputs, 4);
+  }
+  module->DestroyView(handle);
 }
