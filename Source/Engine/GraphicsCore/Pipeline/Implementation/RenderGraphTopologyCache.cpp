@@ -80,4 +80,4 @@ void xiiRenderGraph::StoreTopologyCache(const xiiRenderGraphCompileSettings& set
   m_bTopologyCacheValid = true;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderGraphTopologyCache);
+

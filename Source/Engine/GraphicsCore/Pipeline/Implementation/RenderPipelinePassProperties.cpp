@@ -352,4 +352,4 @@ xiiResult xiiRenderPipelinePass::GetProperties(xiiVariantDictionary& out_propert
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelinePassProperties);
+

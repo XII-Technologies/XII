@@ -32,4 +32,4 @@ xiiFrameGlobalConstants xiiSnapshotGlobalConstants(const xiiView& view, xiiUInt3
   result.m_RenderScaleJitter = xiiVec4(view.GetRenderResolutionScale(), 0, 0, 0);
   return result;
 }
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_FrameConstants);
+

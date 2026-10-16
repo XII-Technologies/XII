@@ -93,7 +93,7 @@ xiiResult xiiRenderPassUtils::DisplayConfiguration::Resolve(const xiiRenderPipel
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Implementation_RenderPassUtils);
+
 
 namespace xiiRenderPassUtils
 {

@@ -59,4 +59,4 @@ xiiResult xiiResolvePipelineDisplaySettings(const xiiVariantDictionary& paramete
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelineConfiguration);
+
