@@ -1,0 +1,2079 @@
+HeaderV2
+{
+o
+{
+	Uuid %id{u4{2327796391522460168,5465088055755085492}}
+	s %t{"xiiAssetDocumentInfo"}
+	u3 %v{2}
+	s %n{"Header"}
+	p
+	{
+		s %AssetType{"RenderPipeline"}
+		VarArray %Dependencies{}
+		Uuid %DocumentID{u4{2327796391522460168,5465088055755085492}}
+		u4 %Hash{0}
+		VarArray %MetaInfo{}
+		VarArray %Outputs{}
+		VarArray %PackageDeps{}
+		VarArray %References{}
+		s %Tags{""}
+	}
+}
+}
+Objects
+{
+o
+{
+	Uuid %id{u4{3210868167076654172,157386594501197287}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0,0x00007044}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Upscale"}
+	}
+}
+o
+{
+	Uuid %id{u4{11566645708442498946,968385062596189555}}
+	s %t{"xiiSceneShapeIconPass"}
+	u3 %v{1}
+	p
+	{
+		f %MaxScreenSize{0x00008042}
+		Vec2 %Node::Pos{f{0,0x0000B444}}
+		VarDict %ParameterOverrides{}
+		f %Size{0x0000803F}
+	}
+}
+o
+{
+	Uuid %id{u4{17279928368136476374,1626707798263884106}}
+	s %t{"xiiSceneSelectionPass"}
+	u3 %v{1}
+	p
+	{
+		f %FillOpacity{0xCDCCCC3D}
+		Vec2 %Node::Pos{f{0x0080AC44,0x0000B444}}
+		Color %OccludedColor{f{0xCDCC4C3E,0xCDCCCC3E,0x0000803F,0x0000003F}}
+		u3 %OutlineWidth{1}
+		VarDict %ParameterOverrides{}
+		Color %VisibleColor{f{0x0000803F,0x0000003F,0,0x0000803F}}
+	}
+}
+o
+{
+	Uuid %id{u4{17282471267611088448,2299836498949776161}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x00006644,0}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Shadows"}
+	}
+}
+o
+{
+	Uuid %id{u4{3094782963385043180,2824406971250058542}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x00C00F45,0}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Lighting"}
+	}
+}
+o
+{
+	Uuid %id{u4{5522749529032984217,3865740101620447699}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0080AC44,0x00007044}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Debug"}
+	}
+}
+o
+{
+	Uuid %id{u4{9207936607721496749,3886379147220973615}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0,0x0000F043}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"OpaqueComposition"}
+	}
+}
+o
+{
+	Uuid %id{u4{14562634449109903179,4497054733962953712}}
+	s %t{"xiiSceneMeshPickingPass"}
+	u3 %v{2}
+	p
+	{
+		Vec2 %Node::Pos{f{0x00006644,0x0000B444}}
+		VarDict %ParameterOverrides{}
+		b %SelectionOnly{1}
+		b %UseMeshShaders{1}
+	}
+}
+o
+{
+	Uuid %id{u4{7940294922721873078,4612978029301342852}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"GBufferEmissive"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"GBufferEmissive"}
+	}
+}
+o
+{
+	Uuid %id{u4{2878927247293920440,4614888008960961803}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17751466286663026031,14748776446238415861}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{17279928368136476374,1626707798263884106}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{8805881546704698555,4616569203185029265}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{11776752914435020350,15682191100436788704}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{9783207132206574495,4635427636616708752}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"LightIndexBuffer"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"LightIndexBuffer"}
+	}
+}
+o
+{
+	Uuid %id{u4{13109895904794857631,4637590301215336120}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{5522749529032984217,3865740101620447699}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{15462311147390685758,6814038549207923433}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{14463089579962344859,4640871749810763196}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"HiZClosestPyramid"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"HiZClosestPyramid"}
+	}
+}
+o
+{
+	Uuid %id{u4{10668799795215896508,4643356112143416228}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"HiZPyramid"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"HiZPyramid"}
+	}
+}
+o
+{
+	Uuid %id{u4{13284478612701324418,4662252375314455298}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"GBufferMaterial"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"GBufferMaterial"}
+	}
+}
+o
+{
+	Uuid %id{u4{7141913169127809429,4684459202029956299}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"AtmMultiScatter"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"AtmMultiScatter"}
+	}
+}
+o
+{
+	Uuid %id{u4{11413287041555590033,4694242074047334997}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"FroxelMetadata"}
+		Uuid %Target{u4{7992469333793339284,14290933845381298542}}
+		s %TargetPin{"FroxelMetadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{1080471878195878049,4710366237209999943}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17751466286663026031,14748776446238415861}}
+		s %SourcePin{"DisplayLinearColor"}
+		Uuid %Target{u4{17279928368136476374,1626707798263884106}}
+		s %TargetPin{"Color"}
+	}
+}
+o
+{
+	Uuid %id{u4{17136840945677801902,4711686749049342501}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"VisibleCandidates"}
+		Uuid %Target{u4{18306915346437498022,9309284035583063865}}
+		s %TargetPin{"VisibleCandidates"}
+	}
+}
+o
+{
+	Uuid %id{u4{1606599285894041,4719720625933502384}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"GBufferNormal"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{14626535483084561543,4728355558364217839}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{5522749529032984217,3865740101620447699}}
+		s %SourcePin{"DisplayLinearColor"}
+		Uuid %Target{u4{15462311147390685758,6814038549207923433}}
+		s %TargetPin{"DisplayLinearColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{9295927139996003715,4742019063811154276}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"FroxelScattering"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"FroxelScattering"}
+	}
+}
+o
+{
+	Uuid %id{u4{8930532247826214583,4747955399238966062}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"DrawIndirectCommands"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"DrawIndirectCommands"}
+	}
+}
+o
+{
+	Uuid %id{u4{3838968428937911944,4755550595218588967}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"SparseVoxelIrradiance"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"SparseVoxelIrradiance"}
+	}
+}
+o
+{
+	Uuid %id{u4{15909823986527306669,4761671071282156558}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"EnvironmentSpecular"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"EnvironmentSpecular"}
+	}
+}
+o
+{
+	Uuid %id{u4{5658806652105083808,4767952037647658198}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9103777811720271829,11831090753880792510}}
+		s %SourcePin{"Surface Material GPU Storage"}
+		Uuid %Target{u4{14562634449109903179,4497054733962953712}}
+		s %TargetPin{"Surface Material GPU Storage"}
+	}
+}
+o
+{
+	Uuid %id{u4{8168005746425569464,4770442825175870914}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"HDRSceneColor"}
+		Uuid %Target{u4{9831080987432695220,4846129308559880398}}
+		s %TargetPin{"HDRSceneColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{6730385400110304430,4771449139032004176}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9103777811720271829,11831090753880792510}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{7271038080363231794,12015299646081299617}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{14767071471906889118,4772036034007266185}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"AtmTransmittance"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"AtmTransmittance"}
+	}
+}
+o
+{
+	Uuid %id{u4{16023961456176258738,4784986736783697567}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"GBufferMaterial"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"GBufferMaterial"}
+	}
+}
+o
+{
+	Uuid %id{u4{12827837900510437796,4786103001758474282}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"ReflectionProbeConstants"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"ReflectionProbeConstants"}
+	}
+}
+o
+{
+	Uuid %id{u4{303148770454506630,4789011052204259030}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"AtmTransmittance"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"AtmTransmittance"}
+	}
+}
+o
+{
+	Uuid %id{u4{9792959546135032985,4810380666046388112}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"LightGrid"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"LightGrid"}
+	}
+}
+o
+{
+	Uuid %id{u4{4639368690366749841,4818580287814198440}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11776752914435020350,15682191100436788704}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{14515604462359162755,4830744990604809833}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17279928368136476374,1626707798263884106}}
+		s %SourcePin{"Color"}
+		Uuid %Target{u4{11566645708442498946,968385062596189555}}
+		s %TargetPin{"Color"}
+	}
+}
+o
+{
+	Uuid %id{u4{15631836616626946200,4836245040901471545}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"AtmMultiScatter"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"AtmMultiScatter"}
+	}
+}
+o
+{
+	Uuid %id{u4{9831080987432695220,4846129308559880398}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x00C00F45,0x0000F043}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"TemporalAntiAliasing"}
+	}
+}
+o
+{
+	Uuid %id{u4{15853197644186127009,4853807131378862432}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"SkyRadiance"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"SkyRadiance"}
+	}
+}
+o
+{
+	Uuid %id{u4{7049563046548171963,4887386138746157514}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{7992469333793339284,14290933845381298542}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{2826227352145709756,4892554338075248145}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"GBufferMaterial"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"GBufferMaterial"}
+	}
+}
+o
+{
+	Uuid %id{u4{16794907422943130513,4903107345032155905}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"DilatedVelocityBuffer"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"DilatedVelocityBuffer"}
+	}
+}
+o
+{
+	Uuid %id{u4{7014863234875873207,4905749617070103435}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11566645708442498946,968385062596189555}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{14340459069516317090,4916020324324940385}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"DilatedVelocityBuffer"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"DilatedVelocityBuffer"}
+	}
+}
+o
+{
+	Uuid %id{u4{3867386551565514627,4922999730540990587}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{9831080987432695220,4846129308559880398}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{15042120756270238891,4927580396004734121}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{9777611821479314337,4939559554603307404}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"ReflectionProbeClusters"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"ReflectionProbeClusters"}
+	}
+}
+o
+{
+	Uuid %id{u4{7850886052786108291,4940180441708957917}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"GBufferAlbedo"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"GBufferAlbedo"}
+	}
+}
+o
+{
+	Uuid %id{u4{10964908460738086573,4948582789570619907}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"GBufferEmissive"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"GBufferEmissive"}
+	}
+}
+o
+{
+	Uuid %id{u4{2488032262716129688,4960942169714763283}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"ReSTIRDISurfacePrevious"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"ReSTIRDISurfacePrevious"}
+	}
+}
+o
+{
+	Uuid %id{u4{7183747870832879491,4961015177652576792}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"InstanceBounds"}
+		Uuid %Target{u4{17282471267611088448,2299836498949776161}}
+		s %TargetPin{"InstanceBounds"}
+	}
+}
+o
+{
+	Uuid %id{u4{2758714860773736332,4968284340763007286}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{5645203562266223499,4986913005697252884}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17282471267611088448,2299836498949776161}}
+		s %SourcePin{"LocalShadowAtlas"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"LocalShadowAtlas"}
+	}
+}
+o
+{
+	Uuid %id{u4{2805606994639374254,5002715475525219707}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9831080987432695220,4846129308559880398}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{3210868167076654172,157386594501197287}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{404695945675931582,5009268016772795886}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"IndirectLighting"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"IndirectLighting"}
+	}
+}
+o
+{
+	Uuid %id{u4{15941204614128648605,5041980728630689012}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"GBufferEmissive"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"GBufferEmissive"}
+	}
+}
+o
+{
+	Uuid %id{u4{8330432646349026976,5046031487743322037}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3210868167076654172,157386594501197287}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{3917916290908824229,9193980856582265709}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{15058234926454683029,5067454811329688501}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"DilatedVelocityBuffer"}
+		Uuid %Target{u4{9831080987432695220,4846129308559880398}}
+		s %TargetPin{"DilatedVelocityBuffer"}
+	}
+}
+o
+{
+	Uuid %id{u4{9877654831216409519,5067648326657810515}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"DirectLighting"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"DirectLighting"}
+	}
+}
+o
+{
+	Uuid %id{u4{193829215957378981,5072583379127934588}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"NormalRoughness"}
+		Uuid %Target{u4{7992469333793339284,14290933845381298542}}
+		s %TargetPin{"NormalRoughness"}
+	}
+}
+o
+{
+	Uuid %id{u4{14259895709811856041,5078015794498321981}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{10376704278192489143,5078061386702462421}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9103777811720271829,11831090753880792510}}
+		s %SourcePin{"GPU Meshlet Metadata"}
+		Uuid %Target{u4{2455969442181177917,14677648472765387396}}
+		s %TargetPin{"GPU Meshlet Metadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{10664233473070942339,5086456968086772333}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11776752914435020350,15682191100436788704}}
+		s %SourcePin{"HDRSceneColor"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"HDRSceneColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{12360145178344622265,5094931692918418516}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{17279928368136476374,1626707798263884106}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{9745799204996225672,5102644393617819323}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17282471267611088448,2299836498949776161}}
+		s %SourcePin{"ShadowCascadeMatrices"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"ShadowCascadeMatrices"}
+	}
+}
+o
+{
+	Uuid %id{u4{15317179222597134500,5113216772305150507}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{11776752914435020350,15682191100436788704}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{2569905833827391874,5156410369836314400}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"ReflectionProbeData"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"ReflectionProbeData"}
+	}
+}
+o
+{
+	Uuid %id{u4{16437249383506066316,5159521353128366053}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"DilatedVelocityBuffer"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"DilatedVelocityBuffer"}
+	}
+}
+o
+{
+	Uuid %id{u4{17765845057718904234,5163148176600065219}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"GBufferMaterial"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"GBufferMaterial"}
+	}
+}
+o
+{
+	Uuid %id{u4{5236784393981503903,5179906231495126397}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17282471267611088448,2299836498949776161}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{18306915346437498022,9309284035583063865}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{17072567043242744986,5189013992282961800}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12446509256780206272,12766003369809087949}}
+		s %SourcePin{"LuminanceHistogram"}
+		Uuid %Target{u4{6190465470311458614,18280970855620828646}}
+		s %TargetPin{"LuminanceHistogram"}
+	}
+}
+o
+{
+	Uuid %id{u4{11997925426311772862,5196947771352691858}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"StableAO"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"StableAO"}
+	}
+}
+o
+{
+	Uuid %id{u4{1820845089699486648,5199377471289407455}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"DrawIndirectCommands"}
+		Uuid %Target{u4{11776752914435020350,15682191100436788704}}
+		s %TargetPin{"DrawIndirectCommands"}
+	}
+}
+o
+{
+	Uuid %id{u4{1827597957801617308,5211473441010841295}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{8828293736103430532,5217147192520484300}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{7992469333793339284,14290933845381298542}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{12735348368121572778,5223671503496965156}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17282471267611088448,2299836498949776161}}
+		s %SourcePin{"LocalShadowAtlasDescs"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"LocalShadowAtlasDescs"}
+	}
+}
+o
+{
+	Uuid %id{u4{16060623216776021180,5250169499363722992}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17282471267611088448,2299836498949776161}}
+		s %SourcePin{"InstanceBounds"}
+		Uuid %Target{u4{18306915346437498022,9309284035583063865}}
+		s %TargetPin{"InstanceBounds"}
+	}
+}
+o
+{
+	Uuid %id{u4{16458667996082429342,5253663989765709491}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15462311147390685758,6814038549207923433}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{8031150832131385739,6042580064797568937}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{17967885374507726505,5259218329584534527}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"LightingDataReady"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"LightingDataReady"}
+	}
+}
+o
+{
+	Uuid %id{u4{5253602655012931973,5261283651137879907}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"BRDFLut"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"BRDFLut"}
+	}
+}
+o
+{
+	Uuid %id{u4{16505484385052716215,5266355522477590435}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"GBufferAlbedo"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"GBufferAlbedo"}
+	}
+}
+o
+{
+	Uuid %id{u4{17943022044310580131,5273442817731347088}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9103777811720271829,11831090753880792510}}
+		s %SourcePin{"GPU Geometry Metadata"}
+		Uuid %Target{u4{14562634449109903179,4497054733962953712}}
+		s %TargetPin{"GPU Geometry Metadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{16737868966413425072,5300300439319479429}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"FroxelMetadata"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"FroxelMetadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{6261823794682610305,5306768246201074860}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{11566645708442498946,968385062596189555}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{12491581967630967740,5321863975052033849}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3917916290908824229,9193980856582265709}}
+		s %SourcePin{"BloomTexture"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"BloomTexture"}
+	}
+}
+o
+{
+	Uuid %id{u4{14543230267942809483,5331389921148875033}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9103777811720271829,11831090753880792510}}
+		s %SourcePin{"GPU Meshlet Metadata"}
+		Uuid %Target{u4{14562634449109903179,4497054733962953712}}
+		s %TargetPin{"GPU Meshlet Metadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{16628995816508455357,5338049962239633067}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"GBufferAlbedo"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"GBufferAlbedo"}
+	}
+}
+o
+{
+	Uuid %id{u4{4460321878588136846,5364982413644341567}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17279928368136476374,1626707798263884106}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{11566645708442498946,968385062596189555}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{10186923422644886174,5373276168535962935}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"GBufferObjectId"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"GBufferObjectId"}
+	}
+}
+o
+{
+	Uuid %id{u4{14977149190982016407,5386733500594646279}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3210868167076654172,157386594501197287}}
+		s %SourcePin{"UpscaledColor"}
+		Uuid %Target{u4{3917916290908824229,9193980856582265709}}
+		s %TargetPin{"UpscaledColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{15664976438808637333,5387513294710447408}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"DDGIIrradiance"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"DDGIIrradiance"}
+	}
+}
+o
+{
+	Uuid %id{u4{16249208816529418658,5387964822839657508}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15462311147390685758,6814038549207923433}}
+		s %SourcePin{"GradedColor"}
+		Uuid %Target{u4{8031150832131385739,6042580064797568937}}
+		s %TargetPin{"GradedColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{612094587270599811,5389224472079611659}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"GBufferObjectId"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"GBufferObjectId"}
+	}
+}
+o
+{
+	Uuid %id{u4{10188960091303270549,5398913059049403908}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"DilatedVelocityBuffer"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"DilatedVelocityBuffer"}
+	}
+}
+o
+{
+	Uuid %id{u4{8304907151851719569,5409012936194623392}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"GBufferNormal"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{16090531470376608649,5415325321919258521}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9103777811720271829,11831090753880792510}}
+		s %SourcePin{"GPU Geometry Metadata"}
+		Uuid %Target{u4{2455969442181177917,14677648472765387396}}
+		s %TargetPin{"GPU Geometry Metadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{3402574647594100112,5417261316436994768}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"EnvironmentSpecular"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"EnvironmentSpecular"}
+	}
+}
+o
+{
+	Uuid %id{u4{5646833833632497329,5428909913518561826}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"LightSamplingTotals"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"LightSamplingTotals"}
+	}
+}
+o
+{
+	Uuid %id{u4{18055177555527817118,5429070601627582016}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3210868167076654172,157386594501197287}}
+		s %SourcePin{"UpscaledColor"}
+		Uuid %Target{u4{17751466286663026031,14748776446238415861}}
+		s %TargetPin{"UpscaledColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{12307545213705907603,5439178939427470473}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3917916290908824229,9193980856582265709}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{17751466286663026031,14748776446238415861}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{18347475230193366934,5446157898677777202}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11566645708442498946,968385062596189555}}
+		s %SourcePin{"Color"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"DisplayLinearColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{15921229382584294319,5453530684041500559}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"GBufferNormal"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{17574534690120097421,5462322215094210828}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{17282471267611088448,2299836498949776161}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{10006387719556775334,5490905201137542117}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{6190465470311458614,18280970855620828646}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{9831080987432695220,4846129308559880398}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{8431439351967062452,5503434624060866468}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{4538216396093067434,5504852144247276389}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3917916290908824229,9193980856582265709}}
+		s %SourcePin{"BloomTexture"}
+		Uuid %Target{u4{17751466286663026031,14748776446238415861}}
+		s %TargetPin{"BloomTexture"}
+	}
+}
+o
+{
+	Uuid %id{u4{2249469621791239861,5517576159340977158}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{6190465470311458614,18280970855620828646}}
+		s %SourcePin{"CurrentExposure"}
+		Uuid %Target{u4{17751466286663026031,14748776446238415861}}
+		s %TargetPin{"CurrentExposure"}
+	}
+}
+o
+{
+	Uuid %id{u4{3060661970353890209,5518516926182591521}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"GBufferAlbedo"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"GBufferAlbedo"}
+	}
+}
+o
+{
+	Uuid %id{u4{15646749419836159411,5546840220611264562}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9831080987432695220,4846129308559880398}}
+		s %SourcePin{"TAAResolved"}
+		Uuid %Target{u4{3210868167076654172,157386594501197287}}
+		s %TargetPin{"TAAResolved"}
+	}
+}
+o
+{
+	Uuid %id{u4{6142991331715089598,5550992150540071870}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7271038080363231794,12015299646081299617}}
+		s %SourcePin{"FroxelScattering"}
+		Uuid %Target{u4{7992469333793339284,14290933845381298542}}
+		s %TargetPin{"FroxelScattering"}
+	}
+}
+o
+{
+	Uuid %id{u4{6577590512066941112,5562538162194099704}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"GBufferObjectId"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"GBufferObjectId"}
+	}
+}
+o
+{
+	Uuid %id{u4{5561979441929893277,5562867615996133085}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{14562634449109903179,4497054733962953712}}
+		s %SourcePin{"Surface"}
+		Uuid %Target{u4{17279928368136476374,1626707798263884106}}
+		s %TargetPin{"SelectionSurface"}
+	}
+}
+o
+{
+	Uuid %id{u4{6312320937409628322,5574533320554651948}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12446509256780206272,12766003369809087949}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{6190465470311458614,18280970855620828646}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{12119863237382782876,5587807525322510379}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"GBufferNormal"}
+		Uuid %Target{u4{7992469333793339284,14290933845381298542}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{8483290550897132464,5603998780979017162}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18306915346437498022,9309284035583063865}}
+		s %SourcePin{"ContactShadows"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"ContactShadows"}
+	}
+}
+o
+{
+	Uuid %id{u4{1954194447676672169,5638551039782157613}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11776752914435020350,15682191100436788704}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{11671515496379915160,14583762954194484591}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{17646980634297668796,5645285541944719028}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"GBufferNormal"}
+		Uuid %Target{u4{5522749529032984217,3865740101620447699}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{8320458003220058244,5692783138176653750}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"HDRSceneColor"}
+		Uuid %Target{u4{12446509256780206272,12766003369809087949}}
+		s %TargetPin{"HDRSceneColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{5783947661505028759,5697965640090758364}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"IndirectLighting"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"IndirectLighting"}
+	}
+}
+o
+{
+	Uuid %id{u4{11409505753444703113,5711739789315352045}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{7992469333793339284,14290933845381298542}}
+		s %SourcePin{"RawAO"}
+		Uuid %Target{u4{3094782963385043180,2824406971250058542}}
+		s %TargetPin{"RawAO"}
+	}
+}
+o
+{
+	Uuid %id{u4{16678135307651510207,5726407792831723276}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9103777811720271829,11831090753880792510}}
+		s %SourcePin{"Surface Material GPU Storage"}
+		Uuid %Target{u4{2455969442181177917,14677648472765387396}}
+		s %TargetPin{"Surface Material GPU Storage"}
+	}
+}
+o
+{
+	Uuid %id{u4{224861628171922604,5751554786384954971}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3094782963385043180,2824406971250058542}}
+		s %SourcePin{"GBufferEmissive"}
+		Uuid %Target{u4{9207936607721496749,3886379147220973615}}
+		s %TargetPin{"GBufferEmissive"}
+	}
+}
+o
+{
+	Uuid %id{u4{1877482789902512028,5754388541241376601}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9207936607721496749,3886379147220973615}}
+		s %SourcePin{"HDRSceneColor"}
+		Uuid %Target{u4{11776752914435020350,15682191100436788704}}
+		s %TargetPin{"HDRSceneColor"}
+	}
+}
+o
+{
+	Uuid %id{u4{14722421672503834046,5763757796728923955}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11671515496379915160,14583762954194484591}}
+		s %SourcePin{"After"}
+		Uuid %Target{u4{12446509256780206272,12766003369809087949}}
+		s %TargetPin{"Before"}
+	}
+}
+o
+{
+	Uuid %id{u4{8031150832131385739,6042580064797568937}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x00C00F45,0x00007044}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Present"}
+	}
+}
+o
+{
+	Uuid %id{u4{18096612296587978288,6449934965513159559}}
+	s %t{"xiiDocumentRoot"}
+	u3 %v{1}
+	s %n{"ObjectTree"}
+	p
+	{
+		VarArray %Children
+		{
+			Uuid{u4{9103777811720271829,11831090753880792510}}
+			Uuid{u4{7271038080363231794,12015299646081299617}}
+			Uuid{u4{17282471267611088448,2299836498949776161}}
+			Uuid{u4{18306915346437498022,9309284035583063865}}
+			Uuid{u4{7992469333793339284,14290933845381298542}}
+			Uuid{u4{3094782963385043180,2824406971250058542}}
+			Uuid{u4{9207936607721496749,3886379147220973615}}
+			Uuid{u4{11776752914435020350,15682191100436788704}}
+			Uuid{u4{11671515496379915160,14583762954194484591}}
+			Uuid{u4{12446509256780206272,12766003369809087949}}
+			Uuid{u4{6190465470311458614,18280970855620828646}}
+			Uuid{u4{9831080987432695220,4846129308559880398}}
+			Uuid{u4{3210868167076654172,157386594501197287}}
+			Uuid{u4{3917916290908824229,9193980856582265709}}
+			Uuid{u4{17751466286663026031,14748776446238415861}}
+			Uuid{u4{5522749529032984217,3865740101620447699}}
+			Uuid{u4{15462311147390685758,6814038549207923433}}
+			Uuid{u4{8031150832131385739,6042580064797568937}}
+			Uuid{u4{11566645708442498946,968385062596189555}}
+			Uuid{u4{2455969442181177917,14677648472765387396}}
+			Uuid{u4{14562634449109903179,4497054733962953712}}
+			Uuid{u4{17279928368136476374,1626707798263884106}}
+			Uuid{u4{6730385400110304430,4771449139032004176}}
+			Uuid{u4{17574534690120097421,5462322215094210828}}
+			Uuid{u4{7183747870832879491,4961015177652576792}}
+			Uuid{u4{5236784393981503903,5179906231495126397}}
+			Uuid{u4{17136840945677801902,4711686749049342501}}
+			Uuid{u4{16060623216776021180,5250169499363722992}}
+			Uuid{u4{8828293736103430532,5217147192520484300}}
+			Uuid{u4{11413287041555590033,4694242074047334997}}
+			Uuid{u4{6142991331715089598,5550992150540071870}}
+			Uuid{u4{7049563046548171963,4887386138746157514}}
+			Uuid{u4{12119863237382782876,5587807525322510379}}
+			Uuid{u4{193829215957378981,5072583379127934588}}
+			Uuid{u4{8431439351967062452,5503434624060866468}}
+			Uuid{u4{1827597957801617308,5211473441010841295}}
+			Uuid{u4{7850886052786108291,4940180441708957917}}
+			Uuid{u4{8304907151851719569,5409012936194623392}}
+			Uuid{u4{17765845057718904234,5163148176600065219}}
+			Uuid{u4{10964908460738086573,4948582789570619907}}
+			Uuid{u4{16437249383506066316,5159521353128366053}}
+			Uuid{u4{9792959546135032985,4810380666046388112}}
+			Uuid{u4{9783207132206574495,4635427636616708752}}
+			Uuid{u4{5646833833632497329,5428909913518561826}}
+			Uuid{u4{5645203562266223499,4986913005697252884}}
+			Uuid{u4{12735348368121572778,5223671503496965156}}
+			Uuid{u4{11409505753444703113,5711739789315352045}}
+			Uuid{u4{8483290550897132464,5603998780979017162}}
+			Uuid{u4{9745799204996225672,5102644393617819323}}
+			Uuid{u4{15664976438808637333,5387513294710447408}}
+			Uuid{u4{3838968428937911944,4755550595218588967}}
+			Uuid{u4{15853197644186127009,4853807131378862432}}
+			Uuid{u4{2569905833827391874,5156410369836314400}}
+			Uuid{u4{9777611821479314337,4939559554603307404}}
+			Uuid{u4{17967885374507726505,5259218329584534527}}
+			Uuid{u4{12827837900510437796,4786103001758474282}}
+			Uuid{u4{303148770454506630,4789011052204259030}}
+			Uuid{u4{15631836616626946200,4836245040901471545}}
+			Uuid{u4{10186923422644886174,5373276168535962935}}
+			Uuid{u4{9295927139996003715,4742019063811154276}}
+			Uuid{u4{16737868966413425072,5300300439319479429}}
+			Uuid{u4{14259895709811856041,5078015794498321981}}
+			Uuid{u4{9877654831216409519,5067648326657810515}}
+			Uuid{u4{5783947661505028759,5697965640090758364}}
+			Uuid{u4{224861628171922604,5751554786384954971}}
+			Uuid{u4{15042120756270238891,4927580396004734121}}
+			Uuid{u4{8930532247826214583,4747955399238966062}}
+			Uuid{u4{2826227352145709756,4892554338075248145}}
+			Uuid{u4{1606599285894041,4719720625933502384}}
+			Uuid{u4{16505484385052716215,5266355522477590435}}
+			Uuid{u4{5253602655012931973,5261283651137879907}}
+			Uuid{u4{14463089579962344859,4640871749810763196}}
+			Uuid{u4{10668799795215896508,4643356112143416228}}
+			Uuid{u4{612094587270599811,5389224472079611659}}
+			Uuid{u4{14340459069516317090,4916020324324940385}}
+			Uuid{u4{2488032262716129688,4960942169714763283}}
+			Uuid{u4{15909823986527306669,4761671071282156558}}
+			Uuid{u4{15317179222597134500,5113216772305150507}}
+			Uuid{u4{1877482789902512028,5754388541241376601}}
+			Uuid{u4{8805881546704698555,4616569203185029265}}
+			Uuid{u4{1820845089699486648,5199377471289407455}}
+			Uuid{u4{1954194447676672169,5638551039782157613}}
+			Uuid{u4{4639368690366749841,4818580287814198440}}
+			Uuid{u4{15921229382584294319,5453530684041500559}}
+			Uuid{u4{3060661970353890209,5518516926182591521}}
+			Uuid{u4{16023961456176258738,4784986736783697567}}
+			Uuid{u4{10664233473070942339,5086456968086772333}}
+			Uuid{u4{7940294922721873078,4612978029301342852}}
+			Uuid{u4{14767071471906889118,4772036034007266185}}
+			Uuid{u4{7141913169127809429,4684459202029956299}}
+			Uuid{u4{16794907422943130513,4903107345032155905}}
+			Uuid{u4{14722421672503834046,5763757796728923955}}
+			Uuid{u4{8320458003220058244,5692783138176653750}}
+			Uuid{u4{6312320937409628322,5574533320554651948}}
+			Uuid{u4{17072567043242744986,5189013992282961800}}
+			Uuid{u4{10006387719556775334,5490905201137542117}}
+			Uuid{u4{8168005746425569464,4770442825175870914}}
+			Uuid{u4{15058234926454683029,5067454811329688501}}
+			Uuid{u4{3867386551565514627,4922999730540990587}}
+			Uuid{u4{2805606994639374254,5002715475525219707}}
+			Uuid{u4{15646749419836159411,5546840220611264562}}
+			Uuid{u4{8330432646349026976,5046031487743322037}}
+			Uuid{u4{14977149190982016407,5386733500594646279}}
+			Uuid{u4{12307545213705907603,5439178939427470473}}
+			Uuid{u4{18055177555527817118,5429070601627582016}}
+			Uuid{u4{4538216396093067434,5504852144247276389}}
+			Uuid{u4{2249469621791239861,5517576159340977158}}
+			Uuid{u4{16628995816508455357,5338049962239633067}}
+			Uuid{u4{17646980634297668796,5645285541944719028}}
+			Uuid{u4{13284478612701324418,4662252375314455298}}
+			Uuid{u4{15941204614128648605,5041980728630689012}}
+			Uuid{u4{6577590512066941112,5562538162194099704}}
+			Uuid{u4{10188960091303270549,5398913059049403908}}
+			Uuid{u4{11997925426311772862,5196947771352691858}}
+			Uuid{u4{404695945675931582,5009268016772795886}}
+			Uuid{u4{3402574647594100112,5417261316436994768}}
+			Uuid{u4{12491581967630967740,5321863975052033849}}
+			Uuid{u4{2758714860773736332,4968284340763007286}}
+			Uuid{u4{13109895904794857631,4637590301215336120}}
+			Uuid{u4{14626535483084561543,4728355558364217839}}
+			Uuid{u4{16458667996082429342,5253663989765709491}}
+			Uuid{u4{16249208816529418658,5387964822839657508}}
+			Uuid{u4{5561979441929893277,5562867615996133085}}
+			Uuid{u4{16090531470376608649,5415325321919258521}}
+			Uuid{u4{17943022044310580131,5273442817731347088}}
+			Uuid{u4{10376704278192489143,5078061386702462421}}
+			Uuid{u4{14543230267942809483,5331389921148875033}}
+			Uuid{u4{16678135307651510207,5726407792831723276}}
+			Uuid{u4{5658806652105083808,4767952037647658198}}
+			Uuid{u4{2878927247293920440,4614888008960961803}}
+			Uuid{u4{4460321878588136846,5364982413644341567}}
+			Uuid{u4{7014863234875873207,4905749617070103435}}
+			Uuid{u4{1080471878195878049,4710366237209999943}}
+			Uuid{u4{14515604462359162755,4830744990604809833}}
+			Uuid{u4{18347475230193366934,5446157898677777202}}
+			Uuid{u4{6261823794682610305,5306768246201074860}}
+			Uuid{u4{12360145178344622265,5094931692918418516}}
+		}
+	}
+}
+o
+{
+	Uuid %id{u4{15462311147390685758,6814038549207923433}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0000E644,0x00007044}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"ColorGrading"}
+	}
+}
+o
+{
+	Uuid %id{u4{3917916290908824229,9193980856582265709}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0000E643,0x00007044}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Bloom"}
+	}
+}
+o
+{
+	Uuid %id{u4{18306915346437498022,9309284035583063865}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0080AC44,0}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"DepthAndGeometry"}
+	}
+}
+o
+{
+	Uuid %id{u4{9103777811720271829,11831090753880792510}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0,0}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"PrepareFrame"}
+	}
+}
+o
+{
+	Uuid %id{u4{7271038080363231794,12015299646081299617}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0000E643,0}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Visibility"}
+	}
+}
+o
+{
+	Uuid %id{u4{12446509256780206272,12766003369809087949}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0080AC44,0x0000F043}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"LuminanceHistogram"}
+	}
+}
+o
+{
+	Uuid %id{u4{7992469333793339284,14290933845381298542}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0000E644,0}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"LightingPreparation"}
+	}
+}
+o
+{
+	Uuid %id{u4{11671515496379915160,14583762954194484591}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x00006644,0x0000F043}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"ScreenEffects"}
+	}
+}
+o
+{
+	Uuid %id{u4{2455969442181177917,14677648472765387396}}
+	s %t{"xiiSceneMeshPickingPass"}
+	u3 %v{2}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0000E643,0x0000B444}}
+		VarDict %ParameterOverrides{}
+		b %SelectionOnly{0}
+		b %UseMeshShaders{1}
+	}
+}
+o
+{
+	Uuid %id{u4{17751466286663026031,14748776446238415861}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x00006644,0x00007044}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"ToneMapping"}
+	}
+}
+o
+{
+	Uuid %id{u4{11776752914435020350,15682191100436788704}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0000E643,0x0000F043}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"Transparency"}
+	}
+}
+o
+{
+	Uuid %id{u4{6190465470311458614,18280970855620828646}}
+	s %t{"xiiBuiltinRenderPipelinePass"}
+	u3 %v{1}
+	p
+	{
+		Vec2 %Node::Pos{f{0x0000E644,0x0000F043}}
+		VarDict %ParameterOverrides{}
+		s %Stage{"AutoExposure"}
+	}
+}
+}
+Types
+{
+o
+{
+	Uuid %id{u4{8224268647907297484,2300230217040154700}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDocumentRoot"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{14212397541982075057,6548985883735981742}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDocumentObject_ConnectionBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{7291393106794571875,8917018486734508932}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiSceneSelectionPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{3018867168187570300,10471737327230947864}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiSceneMeshPickingPass"}
+		u3 %TypeVersion{2}
+	}
+}
+o
+{
+	Uuid %id{u4{11757360558073105519,15956676577570765383}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiReflectedClass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{8123387449293018946,16018995656632428859}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelinePass"}
+		u3 %TypeVersion{2}
+	}
+}
+o
+{
+	Uuid %id{u4{6241109283764053602,17072403971875188518}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiBuiltinRenderPipelinePass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{838875625327644520,17321522637438236640}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiSceneShapeIconPass"}
+		u3 %TypeVersion{1}
+	}
+}
+}

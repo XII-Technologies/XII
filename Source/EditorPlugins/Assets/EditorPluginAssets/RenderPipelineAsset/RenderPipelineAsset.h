@@ -3,9 +3,10 @@
 #pragma once
 
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
-class xiiRenderPipelineNodeManager : public xiiDocumentNodeManager
+class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineNodeManager : public xiiDocumentNodeManager
 {
 public:
   void         GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
@@ -21,12 +22,13 @@ private:
   mutable xiiDynamicArray<xiiNodePropertyValue> m_BuiltinProperties;
 };
 
-class xiiRenderPipelineAssetDocument : public xiiAssetDocument
+class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineAssetDocument : public xiiAssetDocument
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineAssetDocument, xiiAssetDocument);
 
 public:
-  xiiRenderPipelineAssetDocument(xiiStringView sDocumentPath);
+  /// Offline authoring/asset automation can omit IPC; interactive documents use full mirroring.
+  xiiRenderPipelineAssetDocument(xiiStringView sDocumentPath, xiiAssetDocEngineConnection connection = xiiAssetDocEngineConnection::FullObjectMirroring);
   ~xiiRenderPipelineAssetDocument();
   /// Replace one reference node with configured leaf nodes and remapped boundary connections.
   /// Uses one undoable transaction and leaves the document unchanged on failure.

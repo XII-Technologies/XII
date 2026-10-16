@@ -64,3 +64,29 @@ All gates require current source and executable evidence before closing:
 
 D3D12 remains excluded by the user's instruction. The complete objective remains
 open until every gate is supported by evidence.
+
+## Verified checkpoints
+
+The generic node editor now supports persistent pin property objects through
+`xiiDocumentNodeManager::GetPinPropertyObject`. Pin clicks inspect their backing
+document objects in the existing property grid; dragging still wires nodes.
+Native/visual pin rebuild order preserves live selections and clears selections
+for removed pins. Document connections are selectable and support undoable deletion.
+The Qt regression checks actual reflected widgets, read-only/range metadata,
+editing, undo/redo, dynamic pins, wiring, copy/paste and saved identities.
+Full EditorFrameworkTest and ToolsFoundationTest pass 13 and 28 subtests at this
+checkpoint, and EditorPluginVisualScript builds against the shared API.
+
+Four ordinary source/compiled assets now exist in `Data/Base/RenderPipelines`:
+Deferred, EditorScene, TexturePreview and TextureCubePreview. The production
+pipeline document supports offline authoring through the existing connection
+policy. `EditorDocuments/PipelineAssetLibrary` opens the sources, reconstructs
+their Qt graph, invokes the production compiler and verifies ResourceManager
+loading and deterministic packaged bytes. All 13 EditorDocuments subtests pass
+after this addition. The temporary one-time exporter and its build reference are
+removed.
+
+The resource-selection factories, composite stage implementation and render-pin
+configuration integration remain migration targets; these checkpoints do not
+close the complete objective. Local evidence is in ignored
+`Workspace/pipeline-pin-*.log` and `Workspace/pipeline-assets-*.log` files.
