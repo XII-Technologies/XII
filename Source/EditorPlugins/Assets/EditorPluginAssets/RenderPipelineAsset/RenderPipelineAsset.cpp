@@ -8,7 +8,6 @@
 #include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
@@ -175,8 +174,6 @@ void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiN
   GetCreateableTypes(types);
   for (const auto* type : types)
   {
-    if (type == xiiGetStaticRTTI<xiiBuiltinRenderPipelinePass>())
-      continue;
     auto& entry       = out_templates.ExpandAndGetRef();
     entry.m_pType     = type;
     entry.m_sTypeName = type->GetTypeName();

@@ -36,9 +36,6 @@ inline xiiResult xiiLoadPipelineLibraryDescriptor(xiiRenderPipelineResourceDescr
   {
     remap[old] = passes.GetCount();
     passes.PushBack(definition.m_Passes[old]);
-    xiiVariant stage;
-    if (passes.PeekBack().m_Properties.TryGetValue("Stage", stage))
-      passes.PeekBack().m_sName = stage.Get<xiiString>();
   }
   definition.m_Passes = std::move(passes);
   for (auto& connection : definition.m_Connections)

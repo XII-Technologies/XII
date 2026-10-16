@@ -1,8 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
-#include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <Foundation/Serialization/GraphVersioning.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
@@ -246,70 +244,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionMemberPins)
   XII_TEST_BOOL(xiiMakeArrayPtr(first.GetData(), first.GetStorageSize32()) == xiiMakeArrayPtr(second.GetData(), second.GetStorageSize32()));
 }
 
-XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionAssetMigration)
+XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredAmbientOcclusion)
 {
-  xiiRenderPipelineResourceDescriptor legacy;
-  for (auto stage : {"PrepareFrame", "Visibility", "DepthAndGeometry", "LightingPreparation", "Lighting"})
-  {
-    xiiVariantDictionary properties;
-    properties.Insert("Stage", xiiString(stage));
-    legacy.AddPass(stage, "xiiBuiltinRenderPipelinePass", properties);
-  }
-  XII_TEST_RESULT(legacy.Connect(3, "RawAO", 4, "RawAO"));
-  const auto edgeId = legacy.m_Connections[0].m_Id;
-  legacy.m_Interface.PushBack({"Raw", false, legacy.m_Passes[3].m_Id, "RawAO"});
-  xiiVariantDictionary metadata, configuration;
-  metadata.Insert("Name", "RawAO");
-  metadata.Insert("Input", false);
-  configuration.Insert("Metadata", metadata);
-  const auto configurationId = xiiUuid::MakeStableUuidFromString("Authored AO output contract");
-  configuration.Insert("Id", configurationId);
-  configuration.Insert("DisplayName", "Ambient Visibility");
-  xiiVariantArray configurations;
-  configurations.PushBack(configuration);
-  legacy.m_Passes[3].m_Properties.Insert("PinConfigurations", configurations);
-  xiiGraphDefinition nested;
-  XII_TEST_RESULT(legacy.MakeGraphDefinition(nested));
-  legacy.m_Definitions.PushBack(nested);
-  xiiContiguousMemoryStreamStorage original;
-  xiiMemoryStreamWriter            writer(&original);
-  XII_TEST_RESULT(legacy.Serialize(writer));
-  // Version 2 authoring documents predate independently authored AO operations.
-  writer.SetWritePosition(0);
-  const xiiUInt32 oldVersion = 2;
-  XII_TEST_RESULT(writer.WriteDWordValue(&oldVersion));
-  xiiMemoryStreamReader               reader(&original);
-  xiiRenderPipelineResourceDescriptor migrated;
-  XII_TEST_RESULT(migrated.Deserialize(reader));
-  XII_TEST_INT(migrated.m_Passes.GetCount(), 8);
-  XII_TEST_BOOL(migrated.m_Passes[5].m_Definition.IsValid());
-  XII_TEST_BOOL(migrated.m_Connections[0].m_Id == edgeId && migrated.m_Connections[0].m_uiSource == 5);
-  XII_TEST_BOOL(migrated.m_Interface[0].m_Node == migrated.m_Passes[5].m_Id);
-  XII_TEST_BOOL(migrated.m_Passes[5].m_Properties.GetValue("PinConfigurations") != nullptr);
-  XII_TEST_BOOL(migrated.m_Passes[5].m_Properties["PinConfigurations"].Get<xiiVariantArray>()[0].Get<xiiVariantDictionary>().GetValue("Id")->Get<xiiUuid>() == configurationId);
-  XII_TEST_RESULT(migrated.m_Definitions[0].Validate());
-  XII_TEST_INT(migrated.m_Definitions[0].m_Nodes.GetCount(), 8);
-  XII_TEST_BOOL(migrated.m_Definitions[0].m_Boundary[0].m_Node == migrated.m_Definitions[0].m_Nodes[5].m_Id);
-  xiiContiguousMemoryStreamStorage first, second;
-  xiiMemoryStreamWriter            firstWriter(&first), secondWriter(&second);
-  XII_TEST_RESULT(migrated.Serialize(firstWriter));
-  xiiMemoryStreamReader               firstReader(&first);
-  xiiRenderPipelineResourceDescriptor repeated;
-  XII_TEST_RESULT(repeated.Deserialize(firstReader));
-  XII_TEST_RESULT(repeated.Serialize(secondWriter));
-  XII_TEST_BOOL(xiiMakeArrayPtr(first.GetData(), first.GetStorageSize32()) == xiiMakeArrayPtr(second.GetData(), second.GetStorageSize32()));
-  auto malformed                        = legacy;
-  malformed.m_Connections[0].m_uiTarget = xiiInvalidIndex;
-  xiiContiguousMemoryStreamStorage invalidBytes;
-  xiiMemoryStreamWriter            invalidWriter(&invalidBytes);
-  XII_TEST_RESULT(malformed.Serialize(invalidWriter));
-  invalidWriter.SetWritePosition(0);
-  XII_TEST_RESULT(invalidWriter.WriteDWordValue(&oldVersion));
-  xiiMemoryStreamReader               invalidReader(&invalidBytes);
-  xiiRenderPipelineResourceDescriptor rejected;
-  XII_TEST_RESULT(rejected.Deserialize(invalidReader));
-  xiiSharedPtr<const xiiRenderPipeline> invalidPipeline;
-  XII_TEST_BOOL(xiiRenderPipeline::Compile(rejected, invalidPipeline).Failed());
   const auto                                 resource = xiiLoadPipelineLibraryResource("AmbientOcclusion");
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetPipeline() && loaded->GetAuthoring()))
@@ -318,7 +254,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionAssetMigration)
   XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet() && loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
 }
 
-XII_CREATE_SIMPLE_TEST(Pipeline, IrradianceGatherMemberPinsAndMigration)
+XII_CREATE_SIMPLE_TEST(Pipeline, IrradianceGatherMemberPins)
 {
   xiiDDGIProbeGatherPass   probe;
   xiiSparseVoxelGatherPass sparse;
@@ -344,58 +280,4 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IrradianceGatherMemberPinsAndMigration)
   XII_TEST_RESULT(sparse.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[sparse.m_PageTable.GetBindingIndex()].m_Type == xiiRenderPipelinePin::Buffer);
   XII_TEST_BOOL(sparse.GetExtractionRequirements().IsNoFlagSet() && sparse.GetRuntimeFeatures().IsNoFlagSet());
-
-  // Source conversion moves the existing pin configuration object and connections.
-  xiiAbstractObjectGraph graph;
-  const auto             preparationId = xiiUuid::MakeStableUuidFromString("Legacy GI Preparation");
-  const auto             lightingId    = xiiUuid::MakeStableUuidFromString("Legacy GI Consumer");
-  const auto             pinId         = xiiUuid::MakeStableUuidFromString("Legacy GI Pin");
-  const auto             metadataId    = xiiUuid::MakeStableUuidFromString("Legacy GI Pin Metadata");
-  const auto             edgeId        = xiiUuid::MakeStableUuidFromString("Legacy GI Edge");
-  auto*                  root          = graph.AddNode(xiiUuid::MakeUuid(), "xiiDocumentRoot", 1, "ObjectTree");
-  xiiVariantArray        children, configurations;
-  children.PushBack(preparationId);
-  children.PushBack(lightingId);
-  children.PushBack(edgeId);
-  root->AddProperty("Children", children);
-  auto* preparation = graph.AddNode(preparationId, "xiiBuiltinRenderPipelinePass", 8);
-  preparation->AddProperty("Stage", "LightingPreparation");
-  configurations.PushBack(pinId);
-  preparation->AddProperty("PinConfigurations", configurations);
-  auto* config = graph.AddNode(pinId, "xiiRenderPipelinePinConfiguration", 1);
-  config->AddProperty("Id", pinId);
-  config->AddProperty("DisplayName", "Probe Illumination");
-  config->AddProperty("Metadata", metadataId);
-  auto* metadata = graph.AddNode(metadataId, "xiiRenderPipelinePinMetadata", 1);
-  metadata->AddProperty("Name", "DDGIIrradiance");
-  metadata->AddProperty("Input", false);
-  auto* lighting = graph.AddNode(lightingId, "xiiBuiltinRenderPipelinePass", 8);
-  lighting->AddProperty("Stage", "Lighting");
-  auto* edge = graph.AddNode(edgeId, "xiiDocumentObject_ConnectionBase", 1);
-  edge->AddProperty("Source", preparationId);
-  edge->AddProperty("Target", lightingId);
-  edge->AddProperty("SourcePin", "DDGIIrradiance");
-  edge->AddProperty("TargetPin", "DDGIIrradiance");
-  xiiAbstractObjectGraph types;
-  for (xiiStringView name : {"xiiDocumentRoot", "xiiDocumentObject_ConnectionBase"})
-  {
-    auto* type = types.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
-    type->AddProperty("TypeName", xiiString(name));
-    type->AddProperty("ParentTypeName", "");
-    type->AddProperty("TypeVersion", 1U);
-  }
-  xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
-  auto gatherId = preparationId;
-  gatherId.HashCombine(xiiUuid::MakeStableUuidFromString("xiiDDGIProbeGatherPass"));
-  const auto* gather = graph.GetNode(gatherId);
-  if (!XII_TEST_BOOL(gather != nullptr))
-    return;
-  XII_TEST_STRING(gather->GetType(), "xiiDDGIProbeGatherPass");
-  XII_TEST_BOOL(edge->FindProperty("Source")->m_Value == xiiVariant(gatherId));
-  XII_TEST_INT(preparation->FindProperty("PinConfigurations")->m_Value.Get<xiiVariantArray>().GetCount(), 0);
-  XII_TEST_BOOL(gather->FindProperty("PinConfigurations")->m_Value.Get<xiiVariantArray>()[0] == xiiVariant(pinId));
-  XII_TEST_BOOL(config->FindProperty("DisplayName")->m_Value == xiiVariant("Probe Illumination"));
-  const auto count = graph.GetAllNodes().GetCount();
-  xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
-  XII_TEST_INT(graph.GetAllNodes().GetCount(), count);
 }

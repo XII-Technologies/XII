@@ -11,43 +11,6 @@
 
 XII_CREATE_SIMPLE_TEST(Pipeline, IndependentVisualizationComposition)
 {
-  xiiRenderPipelineResourceDescriptor legacy;
-  for (xiiStringView stage : {"PrepareFrame", "Visibility", "Debug"})
-  {
-    xiiVariantDictionary properties;
-    properties.Insert("Stage", xiiString(stage));
-    legacy.AddPass(stage, "xiiBuiltinRenderPipelinePass", properties);
-  }
-  const auto debugId = legacy.m_Passes[2].m_Id;
-  legacy.m_Passes[2].m_Parameters.Insert("Keep", 9U);
-  xiiGraphDefinition nested;
-  XII_TEST_RESULT(legacy.MakeGraphDefinition(nested));
-  legacy.m_Definitions.PushBack(nested);
-  xiiContiguousMemoryStreamStorage bytes;
-  xiiMemoryStreamWriter            writer(&bytes);
-  XII_TEST_RESULT(legacy.Serialize(writer));
-  xiiMemoryStreamReader               reader(&bytes);
-  xiiRenderPipelineResourceDescriptor migrated;
-  XII_TEST_RESULT(migrated.Deserialize(reader));
-  XII_TEST_BOOL(migrated.m_Passes[2].m_Id == debugId);
-  XII_TEST_BOOL(migrated.m_Passes[2].m_sType.IsEmpty());
-  XII_TEST_BOOL(migrated.m_Passes[2].m_Definition.IsValid());
-  XII_TEST_BOOL(migrated.m_Passes[2].m_Parameters == legacy.m_Passes[2].m_Parameters);
-  XII_TEST_INT(migrated.m_Connections.GetCount(), 10);
-  XII_TEST_INT(migrated.m_Definitions[0].m_Edges.GetCount(), 10);
-  XII_TEST_RESULT(migrated.m_Definitions[0].Validate());
-  XII_TEST_INT(migrated.m_References.GetCount(), 1);
-  XII_TEST_BOOL(migrated.m_References[0].m_Id == migrated.m_Passes[2].m_Definition);
-  XII_TEST_BOOL(migrated.m_References[0].m_sResource == "RenderPipelines/DebugVisualization.xiiBinRenderPipeline");
-  xiiContiguousMemoryStreamStorage first, second;
-  xiiMemoryStreamWriter            firstWriter(&first), secondWriter(&second);
-  XII_TEST_RESULT(migrated.Serialize(firstWriter));
-  xiiMemoryStreamReader               firstReader(&first);
-  xiiRenderPipelineResourceDescriptor repeated;
-  XII_TEST_RESULT(repeated.Deserialize(firstReader));
-  XII_TEST_RESULT(repeated.Serialize(secondWriter));
-  XII_TEST_BOOL(xiiMakeArrayPtr(first.GetData(), first.GetStorageSize32()) == xiiMakeArrayPtr(second.GetData(), second.GetStorageSize32()));
-
   xiiViewRenderModePass visualization;
   visualization.m_Mode = xiiViewRenderMode::BaseColor;
   xiiVariantDictionary properties;
@@ -91,8 +54,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentVisualizationComposition)
   if (!XII_TEST_BOOL(child.IsValid() && child->GetPipeline()))
     return;
   XII_TEST_INT(child->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 3);
-  for (const auto& pass : child->GetPipeline()->GetDescriptor().m_Passes)
-    XII_TEST_BOOL(pass.m_sType != "xiiBuiltinRenderPipelinePass");
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({child->GetAuthoring()->m_Descriptor.m_Id, resource.GetResourceID()});
   root.AddSubgraph("First", child->GetAuthoring()->m_Descriptor.m_Id);

@@ -10,25 +10,6 @@
 
 XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
 {
-  const char* operations[] = {"Upscale", "Bloom", "ToneMapping", "ColorGrading", "LuminanceHistogram", "AutoExposure", "TemporalAntiAliasing", "Present"};
-  const char* types[]      = {"xiiUpscalePass", "xiiBloomPass", "xiiToneMappingPass", "xiiColorGradingPass", "xiiLuminanceHistogramPass", "xiiAutoExposurePass", "xiiTemporalAntiAliasingPass", "xiiPresentPass"};
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(operations); ++i)
-  {
-    xiiRenderPipelineResourceDescriptor legacy;
-    xiiVariantDictionary                properties;
-    properties.Insert("Stage", operations[i]);
-    const auto                       index = legacy.AddPass("Authored operation", "xiiBuiltinRenderPipelinePass", properties);
-    const auto                       id    = legacy.m_Passes[index].m_Id;
-    xiiContiguousMemoryStreamStorage bytes;
-    xiiMemoryStreamWriter            writer(&bytes);
-    XII_TEST_RESULT(legacy.Serialize(writer));
-    xiiMemoryStreamReader               reader(&bytes);
-    xiiRenderPipelineResourceDescriptor migrated;
-    XII_TEST_RESULT(migrated.Deserialize(reader));
-    XII_TEST_BOOL(migrated.m_Passes[index].m_sType == types[i]);
-    XII_TEST_BOOL(migrated.m_Passes[index].m_Id == id);
-    XII_TEST_BOOL(!migrated.m_Passes[index].m_Properties.Contains("Stage"));
-  }
   xiiUpscalePass authored;
   authored.m_uiWidth  = 128;
   authored.m_uiHeight = 64;
@@ -64,12 +45,4 @@ XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
   XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet());
   XII_TEST_BOOL(compiled->GetPins(0)[2].m_Id != compiled->GetPins(1)[2].m_Id);
-
-  xiiRenderPipelineResourceDescriptor sdk;
-  XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(sdk));
-  xiiUInt32 migrated = 0;
-  for (const auto& pass : sdk.m_Passes)
-    for (const auto* type : types)
-      migrated += pass.m_sType == type ? 1 : 0;
-  XII_TEST_INT(migrated, 8);
 }

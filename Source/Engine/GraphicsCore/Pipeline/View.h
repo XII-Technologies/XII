@@ -27,7 +27,7 @@
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
-class xiiBuiltinRenderPipelineRuntime;
+
 class xiiRenderPipelineInstance;
 class xiiFrustum;
 class xiiWorld;
@@ -228,8 +228,6 @@ public:
 
 private:
   friend class xiiRenderWorldModule;
-  friend class xiiBuiltinRenderPipelineRuntime;
-  friend class xiiBuiltinRenderPipelinePass;
   friend class xiiViewRenderResourceManager;
   friend class xiiViewRenderResourceManagerState;
   friend class xiiMemoryUtils;
@@ -301,7 +299,7 @@ private:
   xiiRenderExtractionStatistics            m_ExtractionStatistics;
   xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
   xiiBitflags<xiiRenderPipelineFeature>    m_CustomRuntimeFeatures = xiiRenderPipelineFeature::All;
-  xiiBuiltinRenderPipelineRuntime*         GetBuiltinRuntime() const;
+  xiiRenderPipelineInstance*               GetPipelineInstance() const;
 
   xiiSensorProfileHandle   m_hSensorProfile;
   xiiDisplayOutputSettings m_DisplayOutputSettings;

@@ -5,7 +5,7 @@
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
+
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -56,16 +56,16 @@ void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
                                                        xiiSharedPtr<xiiGALTextureView>(pRenderTargetView, pRenderTargetView->GetDevice()->GetAllocator());
 }
 
-xiiBuiltinRenderPipelineRuntime* xiiView::GetBuiltinRuntime() const
+xiiRenderPipelineInstance* xiiView::GetPipelineInstance() const
 {
-  auto* runtime = static_cast<xiiBuiltinRenderPipelineRuntime*>(xiiViewRenderResourceManager::GetContext(m_hPipelineRuntime));
+  auto* runtime = xiiViewRenderResourceManager::GetContext(m_hPipelineRuntime);
   XII_ASSERT_DEV(runtime != nullptr, "View pipeline runtime is unavailable after subsystem shutdown.");
   return runtime;
 }
 
 const xiiRenderPipelineInstance& xiiView::GetRenderPipelineInstance() const
 {
-  return GetBuiltinRuntime()->m_Instance;
+  return (*GetPipelineInstance());
 }
 
 xiiView::xiiView(xiiWorld* pWorld) :
@@ -76,7 +76,7 @@ xiiView::xiiView(xiiWorld* pWorld) :
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
 
-  m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext(*this);
+  m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext();
   XII_ASSERT_DEV(!m_hPipelineRuntime.IsInvalidated(), "Failed to create the view render-resource context.");
   XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
 
@@ -101,20 +101,13 @@ const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
 void xiiView::InvalidateTemporalHistory()
 {
   xiiGpuVisibilityManager::InvalidateHiZHistory(m_hGpuVisibilityContext);
-  GetBuiltinRuntime()->InvalidateTemporalHistory();
-  GetBuiltinRuntime()->m_Instance.InvalidateTemporalHistory();
+  GetPipelineInstance()->InvalidateTemporalHistory();
 }
 
 xiiView::~xiiView()
 {
   m_InternalId.Invalidate();
 
-  // High-level subsystem shutdown may have invalidated the handle before a late world teardown.
-  // In that case all persistent resources (including the lighting context) are already released.
-  if (auto* pResources = static_cast<xiiBuiltinRenderPipelineRuntime*>(xiiViewRenderResourceManager::GetContext(m_hPipelineRuntime)))
-  {
-    pResources->m_Resources.m_LightingSystem.Shutdown();
-  }
   xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
   m_hGpuVisibilityContext = {};
   m_RenderGraphContext.Shutdown();
@@ -362,7 +355,7 @@ void xiiView::SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& p
 
 xiiResult xiiView::SynchronizeRenderPipeline()
 {
-  auto* runtime = GetBuiltinRuntime();
+  auto* runtime = GetPipelineInstance();
   if (m_RenderGraphBuilder.IsValid())
   {
     m_bPipelineSynchronizationFailed = false;
@@ -371,7 +364,7 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     return XII_SUCCESS;
   }
   bool changed = false;
-  if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed())
+  if (runtime->Synchronize(m_hRenderPipeline, &changed).Failed())
   {
     if (!m_bPipelineSynchronizationFailed)
     {
@@ -389,19 +382,16 @@ xiiResult xiiView::SynchronizeRenderPipeline()
   m_bPipelineSynchronizationFailed = false;
   if (changed)
   {
-    runtime->ClearSubgraphs();
     InvalidateTemporalHistory();
   }
-  m_ExtractionRequirements = runtime->m_Instance.GetPipeline()->GetExtractionRequirements();
-  m_RuntimeFeatures        = runtime->m_Instance.GetPipeline()->GetRuntimeFeatures();
+  m_ExtractionRequirements = runtime->GetPipeline()->GetExtractionRequirements();
+  m_RuntimeFeatures        = runtime->GetPipeline()->GetRuntimeFeatures();
   return XII_SUCCESS;
 }
 
 xiiResult xiiView::PrepareRenderResources()
 {
-  const auto* pipeline     = GetBuiltinRuntime()->m_Instance.GetPipeline();
-  const auto  rootFeatures = m_RenderGraphBuilder.IsValid() ? m_CustomRuntimeFeatures : pipeline ? pipeline->GetRootRuntimeFeatures() :
-                                                                                                   xiiBitflags<xiiRenderPipelineFeature>{};
+  const auto rootFeatures = m_RenderGraphBuilder.IsValid() ? m_CustomRuntimeFeatures : xiiBitflags<xiiRenderPipelineFeature>{};
   if (rootFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
   {
     if (m_hGpuVisibilityContext.IsInvalidated())
@@ -414,23 +404,14 @@ xiiResult xiiView::PrepareRenderResources()
     xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
     m_hGpuVisibilityContext = {};
   }
-  auto& lighting = GetBuiltinRuntime()->m_Resources.m_LightingSystem;
-  if (rootFeatures.IsSet(xiiRenderPipelineFeature::Lighting))
-  {
-    if (!lighting.IsInitialized())
-      XII_SUCCEED_OR_RETURN(lighting.Initialize());
-  }
-  else
-    lighting.Shutdown();
   return XII_SUCCESS;
 }
 
-xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& shadows)
+xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles&)
 {
-  auto* runtime = GetBuiltinRuntime();
+  auto* runtime = GetPipelineInstance();
   RunDynamicResolutionPID();
-  runtime->BeginFrame(shadows);
-  const xiiResult result = runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
+  const xiiResult result = runtime->Build(this, graph, blackboard, m_PipelineParameters);
   if (result.Failed())
     InvalidateTemporalHistory();
   return result;

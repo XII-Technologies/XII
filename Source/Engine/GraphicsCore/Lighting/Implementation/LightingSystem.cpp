@@ -7,8 +7,6 @@
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Reflection/Implementation/Casts.h>
-#include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <Foundation/Serialization/GraphPatch.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
@@ -63,38 +61,6 @@ namespace
   {
     return xiiMath::Log2(xiiMath::Max(fFarPlane, fNearPlane + 0.001f) / xiiMath::Max(fNearPlane, 0.001f));
   }
-} // namespace
-
-namespace
-{
-  // These settings used to affect an implicit composite. The independently authored
-  // passes own their properties now; retained custom serialized values need authoring.
-  class LightingScreenSettingsPatch : public xiiGraphPatch
-  {
-  public:
-    LightingScreenSettingsPatch() : xiiGraphPatch("xiiLightingSystemSettings", 14) {}
-    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* node) const override
-    {
-      const auto remove = [&](xiiStringView name, float previousDefault, xiiStringView passProperty) {
-        if (const auto* property = node->FindProperty(name))
-        {
-          xiiResult   converted = XII_FAILURE;
-          const float value     = property->m_Value.ConvertTo<float>(&converted);
-          if (converted.Failed() || value != previousDefault)
-            xiiLog::Warning("Legacy lighting property '{}' no longer configures screen effects. Author '{}' on the corresponding render pipeline pass to preserve this custom value.", name, passProperty);
-          node->RemoveProperty(name);
-        }
-      };
-      remove("SSGIRayLength", 2.0f, "ScreenSpaceGlobalIllumination.RayLength");
-      remove("SSGISampleCount", 8.0f, "ScreenSpaceGlobalIllumination.SampleCount");
-      remove("SSGIThickness", 0.15f, "ScreenSpaceGlobalIllumination.Thickness");
-      remove("SSGIIntensity", 1.0f, "ScreenSpaceGlobalIllumination.Intensity");
-      remove("SSRefractionScale", 0.05f, "ScreenSpaceRefraction.PerturbScale");
-      remove("SSRefractionMaxDistance", 0.1f, "ScreenSpaceRefraction.MaximumDistance");
-      remove("SSRefractionChromatic", 0.002f, "ScreenSpaceRefraction.Chromatic");
-    }
-  };
-  static LightingScreenSettingsPatch s_LightingScreenSettingsPatch;
 } // namespace
 
 // clang-format off

@@ -8,7 +8,7 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-class xiiView;
+class xiiRenderPipelineInstance;
 class xiiViewRenderResourceManagerState;
 
 /// Generation-checked reference to one view's persistent render resources.
@@ -28,8 +28,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderResourceContextH
 ///
 /// Views still receive isolated state, but pipelines, history textures, buffers, and subordinate
 /// contexts are destroyed during high-level subsystem shutdown while the GAL device and allocators
-/// are valid. The opaque accessors are intentionally restricted to xiiView, which defines the
-/// private resource layout.
+/// are valid. Accessors are restricted to the owning view.
 class XII_GRAPHICSCORE_DLL xiiViewRenderResourceManager
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiViewRenderResourceManager);
@@ -44,11 +43,11 @@ public:
 private:
   friend class xiiView;
 
-  [[nodiscard]] static xiiViewRenderResourceContextHandle CreateContext(xiiView& view);
+  [[nodiscard]] static xiiViewRenderResourceContextHandle CreateContext();
   static void                                             DestroyContext(xiiViewRenderResourceContextHandle handle);
   [[nodiscard]] static bool                               IsValid(xiiViewRenderResourceContextHandle handle);
-  [[nodiscard]] static void*                              GetContext(xiiViewRenderResourceContextHandle handle);
-  [[nodiscard]] static const void*                        GetContextConst(xiiViewRenderResourceContextHandle handle);
+  [[nodiscard]] static xiiRenderPipelineInstance*         GetContext(xiiViewRenderResourceContextHandle handle);
+  [[nodiscard]] static const xiiRenderPipelineInstance*   GetContextConst(xiiViewRenderResourceContextHandle handle);
 
   static void Startup();
   static void EngineStartup();

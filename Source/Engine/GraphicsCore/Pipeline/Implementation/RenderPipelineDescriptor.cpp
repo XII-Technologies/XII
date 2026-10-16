@@ -7,7 +7,7 @@
 #include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Pipeline/Implementation/LegacyRenderPipelineMigration.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 // clang-format off
@@ -166,7 +166,7 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
   xiiUInt32 version, size;
   XII_SUCCEED_OR_RETURN(stream.ReadDWordValue(&version));
   XII_SUCCEED_OR_RETURN(stream.ReadDWordValue(&size));
-  if ((version < 2 || version > 4) || size > 32 * 1024 * 1024 || size == 0)
+  if (version != 4 || size > 32 * 1024 * 1024 || size == 0)
     return XII_FAILURE;
   xiiUInt64 checksum;
   XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&checksum));
@@ -187,7 +187,6 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
   context.RegisterObject(root->GetGuid(), xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
   xiiRttiConverterReader converter(&graph, &context);
   converter.ApplyPropertiesToObject(root, xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
-  xiiMigrateLegacyRenderPipelineDefinitions(replacement, version < 3, version < 4);
   *this = std::move(replacement);
   return XII_SUCCESS;
 }
