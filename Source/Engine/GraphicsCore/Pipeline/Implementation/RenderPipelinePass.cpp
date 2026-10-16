@@ -37,6 +37,14 @@ void xiiRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_p
     const auto* member = static_cast<const xiiAbstractMemberProperty*>(property);
     const auto* handle = static_cast<const xiiRenderPipelinePinHandle*>(member->GetPropertyPointer(this));
     XII_ASSERT_DEV(handle, "Pin members must provide direct reflected storage.");
+    if (const auto* enabled = property->GetAttributeByType<xiiRenderPipelinePinEnabledAttribute>())
+    {
+      const auto* flag = GetDynamicRTTI()->FindPropertyByName(enabled->m_sProperty);
+      XII_ASSERT_DEV(flag && flag->GetCategory() == xiiPropertyCategory::Member && flag->GetSpecificType() == xiiGetStaticRTTI<bool>(), "Pin presence must reference a boolean member property.");
+      if (!flag || flag->GetCategory() != xiiPropertyCategory::Member || flag->GetSpecificType() != xiiGetStaticRTTI<bool>() ||
+          !xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(flag), this).Get<bool>())
+        continue;
+    }
     auto        pin  = handle->m_Declaration;
     const auto* name = property->GetAttributeByType<xiiRenderPipelinePinNameAttribute>();
     pin.m_sName      = name ? name->m_sName.GetView() : property->GetPropertyName();
@@ -47,13 +55,17 @@ void xiiRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_p
       if (flag && flag->GetCategory() == xiiPropertyCategory::Member && flag->GetSpecificType() == xiiGetStaticRTTI<bool>())
         pin.m_bOptional = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(flag), this).Get<bool>();
     }
-    handle->m_uiBindingIndex = out_pins.GetCount();
     out_pins.PushBack(std::move(pin));
   }
 }
 
 xiiResult xiiRenderPipelinePass::InitializePinBindings(xiiArrayPtr<const xiiRenderPipelinePin> pins) const
 {
+  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  GetDynamicRTTI()->GetAllProperties(properties);
+  for (const auto* property : properties)
+    if (property->GetCategory() == xiiPropertyCategory::Member && !property->GetFlags().IsSet(xiiPropertyFlags::Pointer) && property->GetSpecificType()->IsDerivedFrom<xiiRenderPipelinePinHandle>())
+      static_cast<const xiiRenderPipelinePinHandle*>(static_cast<const xiiAbstractMemberProperty*>(property)->GetPropertyPointer(this))->m_uiBindingIndex = xiiInvalidIndex;
   xiiDynamicArray<xiiRenderPipelinePin> native;
   GetPins(native);
   if (native.GetCount() != pins.GetCount())
@@ -61,6 +73,20 @@ xiiResult xiiRenderPipelinePass::InitializePinBindings(xiiArrayPtr<const xiiRend
   for (xiiUInt32 i = 0; i < native.GetCount(); ++i)
     if (native[i].m_sName != pins[i].m_sName || native[i].m_Type != pins[i].m_Type || native[i].m_bInput != pins[i].m_bInput)
       return XII_FAILURE;
+  for (const auto* property : properties)
+  {
+    if (property->GetCategory() != xiiPropertyCategory::Member || property->GetFlags().IsSet(xiiPropertyFlags::Pointer) || !property->GetSpecificType()->IsDerivedFrom<xiiRenderPipelinePinHandle>())
+      continue;
+    const auto*         handle = static_cast<const xiiRenderPipelinePinHandle*>(static_cast<const xiiAbstractMemberProperty*>(property)->GetPropertyPointer(this));
+    const auto*         alias  = property->GetAttributeByType<xiiRenderPipelinePinNameAttribute>();
+    const xiiStringView name   = alias ? alias->m_sName.GetView() : property->GetPropertyName();
+    for (xiiUInt32 i = 0; i < pins.GetCount(); ++i)
+      if (pins[i].m_sName == name && pins[i].m_bInput == handle->m_Declaration.m_bInput && pins[i].m_Type == handle->m_Declaration.m_Type)
+      {
+        handle->m_uiBindingIndex = i;
+        break;
+      }
+  }
   return XII_SUCCESS;
 }
 

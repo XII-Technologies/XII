@@ -99,6 +99,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinOptionalAttribute, 1, xiiRT
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinEnabledAttribute, 1, xiiRTTIDefaultAllocator<xiiRenderPipelinePinEnabledAttribute>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Property", m_sProperty),
+    } XII_END_PROPERTIES;
+    XII_BEGIN_FUNCTIONS
+    {
+      XII_CONSTRUCTOR_PROPERTY(const char*),
+    } XII_END_FUNCTIONS;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiRenderPipelinePinHandle::xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Type type, bool input, bool optional,
                                                        xiiGALResourceFormat::Enum format, xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension,
                                                        xiiUInt32 samples, xiiRenderPipelinePinAccess::Enum access, bool temporal)

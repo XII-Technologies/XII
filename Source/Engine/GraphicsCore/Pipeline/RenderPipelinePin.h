@@ -208,3 +208,14 @@ public:
   explicit xiiRenderPipelinePinOptionalAttribute(const char* property) : m_sProperty(property) {}
   xiiString m_sProperty;
 };
+
+/// Declarative presence for genuinely dynamic authored pin members.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelinePinEnabledAttribute : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePinEnabledAttribute, xiiPropertyAttribute);
+
+public:
+  xiiRenderPipelinePinEnabledAttribute() = default;
+  explicit xiiRenderPipelinePinEnabledAttribute(const char* property) : m_sProperty(property) {}
+  xiiString m_sProperty;
+};
