@@ -40,7 +40,7 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
     m_Passes.PushBack(pass);
     auto properties = m_pPipeline->m_Descriptor.m_Passes[i].m_Properties;
     properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
-    if (pass->Configure(properties).Failed())
+    if (pass->Configure(properties).Failed() || pass->InitializePinBindings(m_pPipeline->m_Passes[i].m_Pins).Failed())
     {
       Clear();
       return XII_FAILURE;

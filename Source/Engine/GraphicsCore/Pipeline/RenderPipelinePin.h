@@ -112,3 +112,99 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   bool                         Accepts(const xiiGALBufferCreationDescription& description) const;
   bool                         IsCompatibleWith(const xiiRenderPipelinePin& other) const;
 };
+
+/// A native pass member declared with XII_MEMBER_PROPERTY. Its type fixes the
+/// resource kind and direction. The compiler assigns an occurrence-local binding
+/// index; this is neither a graph handle nor a persistent document identity.
+/// Authored requirements remain in the document's persistent pin configurations.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelinePinHandle : public xiiReflectedClass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePinHandle, xiiReflectedClass);
+
+public:
+  xiiUInt32 GetBindingIndex() const { return m_uiBindingIndex; }
+
+protected:
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Type type, bool input, bool optional,
+                             xiiGALResourceFormat::Enum format, xiiBitflags<xiiGALBindFlags> bindings,
+                             xiiGALResourceDimension::Enum dimension, xiiUInt32 samples,
+                             xiiRenderPipelinePinAccess::Enum access, bool temporal);
+
+private:
+  friend class xiiRenderPipelinePass;
+  xiiRenderPipelinePin m_Declaration;
+  mutable xiiUInt32    m_uiBindingIndex = xiiInvalidIndex;
+};
+
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineTextureInputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineTextureInputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineTextureInputPin(xiiGALResourceFormat::Enum format = xiiGALResourceFormat::Unknown,
+                                            bool optional = false, xiiBitflags<xiiGALBindFlags> bindings = {},
+                                            xiiGALResourceDimension::Enum dimension = xiiGALResourceDimension::Undefined, xiiUInt32 samples = 0);
+};
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineTextureOutputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineTextureOutputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineTextureOutputPin(xiiGALResourceFormat::Enum format = xiiGALResourceFormat::Unknown,
+                                             bool optional = false, xiiBitflags<xiiGALBindFlags> bindings = {},
+                                             xiiGALResourceDimension::Enum dimension = xiiGALResourceDimension::Undefined, xiiUInt32 samples = 0,
+                                             xiiRenderPipelinePinAccess::Enum access = xiiRenderPipelinePinAccess::Automatic, bool temporal = false);
+};
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineBufferInputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineBufferInputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineBufferInputPin(bool optional = false, xiiBitflags<xiiGALBindFlags> bindings = {});
+};
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineBufferOutputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineBufferOutputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineBufferOutputPin(bool optional = false, xiiBitflags<xiiGALBindFlags> bindings = {},
+                                            xiiRenderPipelinePinAccess::Enum access = xiiRenderPipelinePinAccess::Automatic, bool temporal = false);
+};
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineOrderInputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineOrderInputPin, xiiRenderPipelinePinHandle);
+
+public:
+  xiiRenderPipelineOrderInputPin();
+};
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineOrderOutputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineOrderOutputPin, xiiRenderPipelinePinHandle);
+
+public:
+  xiiRenderPipelineOrderOutputPin();
+};
+
+/// Optional serialization name for an input/output pair with the same external
+/// name. RTTI member property names themselves must remain unique.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelinePinNameAttribute : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePinNameAttribute, xiiPropertyAttribute);
+
+public:
+  xiiRenderPipelinePinNameAttribute() = default;
+  explicit xiiRenderPipelinePinNameAttribute(const char* name) : m_sName(name) {}
+  xiiString m_sName;
+};
+
+/// Read optionality from a reflected boolean pass member. Pin discovery remains
+/// valid even while unrelated authored properties are temporarily invalid.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelinePinOptionalAttribute : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePinOptionalAttribute, xiiPropertyAttribute);
+
+public:
+  xiiRenderPipelinePinOptionalAttribute() = default;
+  explicit xiiRenderPipelinePinOptionalAttribute(const char* property) : m_sProperty(property) {}
+  xiiString m_sProperty;
+};

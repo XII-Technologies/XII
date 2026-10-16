@@ -57,6 +57,77 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinConfiguration, 1, xiiRTTIDe
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+
+// Native pin members contain no serialized runtime handles. Persistent authoring
+// contracts are applied after RTTI schema discovery.
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinHandle, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureInputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureOutputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineBufferInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineBufferInputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineBufferOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineBufferOutputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderInputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderOutputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinNameAttribute, 1, xiiRTTIDefaultAllocator<xiiRenderPipelinePinNameAttribute>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Name", m_sName),
+    } XII_END_PROPERTIES;
+    XII_BEGIN_FUNCTIONS
+    {
+      XII_CONSTRUCTOR_PROPERTY(const char*),
+    } XII_END_FUNCTIONS;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinOptionalAttribute, 1, xiiRTTIDefaultAllocator<xiiRenderPipelinePinOptionalAttribute>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Property", m_sProperty),
+    } XII_END_PROPERTIES;
+    XII_BEGIN_FUNCTIONS
+    {
+      XII_CONSTRUCTOR_PROPERTY(const char*),
+    } XII_END_FUNCTIONS;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiRenderPipelinePinHandle::xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Type type, bool input, bool optional,
+                                                       xiiGALResourceFormat::Enum format, xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension,
+                                                       xiiUInt32 samples, xiiRenderPipelinePinAccess::Enum access, bool temporal)
+{
+  m_Declaration.m_Type                            = type;
+  m_Declaration.m_bInput                          = input;
+  m_Declaration.m_bOptional                       = optional;
+  m_Declaration.m_Format                          = format;
+  m_Declaration.m_Constraints.m_RequiredBindFlags = bindings;
+  m_Declaration.m_Constraints.m_Dimension         = dimension;
+  m_Declaration.m_Constraints.m_uiSamples         = samples;
+  m_Declaration.m_Access                          = access;
+  m_Declaration.m_bTemporalHistoryOutput          = temporal;
+}
+xiiRenderPipelineTextureInputPin::xiiRenderPipelineTextureInputPin(xiiGALResourceFormat::Enum format, bool optional,
+                                                                   xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension, xiiUInt32 samples) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Texture, true, optional, format, bindings, dimension, samples, xiiRenderPipelinePinAccess::Automatic, false) {}
+xiiRenderPipelineTextureOutputPin::xiiRenderPipelineTextureOutputPin(xiiGALResourceFormat::Enum format, bool optional,
+                                                                     xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension, xiiUInt32 samples, xiiRenderPipelinePinAccess::Enum access, bool temporal) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Texture, false, optional, format, bindings, dimension, samples, access, temporal) {}
+xiiRenderPipelineBufferInputPin::xiiRenderPipelineBufferInputPin(bool optional, xiiBitflags<xiiGALBindFlags> bindings) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Buffer, true, optional, xiiGALResourceFormat::Unknown, bindings, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
+xiiRenderPipelineBufferOutputPin::xiiRenderPipelineBufferOutputPin(bool optional, xiiBitflags<xiiGALBindFlags> bindings, xiiRenderPipelinePinAccess::Enum access, bool temporal) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Buffer, false, optional, xiiGALResourceFormat::Unknown, bindings, xiiGALResourceDimension::Undefined, 0, access, temporal) {}
+xiiRenderPipelineOrderInputPin::xiiRenderPipelineOrderInputPin() :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, true, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
+xiiRenderPipelineOrderOutputPin::xiiRenderPipelineOrderOutputPin() :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, false, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
+
 xiiRenderPipelinePinMetadata xiiRenderPipelinePin::GetMetadata() const
 {
   xiiRenderPipelinePinMetadata metadata;

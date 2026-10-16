@@ -36,8 +36,11 @@ public:
   virtual xiiResult                                   Configure(const xiiVariantDictionary& properties);
   /// Capture authored reflected properties, including arrays, value maps and owned settings objects.
   /// Occurrence-local ParameterOverrides remain in the descriptor's parameter scope.
-  xiiResult                                           GetProperties(xiiVariantDictionary& out_properties) const;
-  virtual void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
+  xiiResult GetProperties(xiiVariantDictionary& out_properties) const;
+  /// Static pins are discovered from typed XII_MEMBER_PROPERTY members. Only
+  /// authoring interfaces whose topology comes from another definition are dynamic.
+  virtual void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const;
+  xiiResult                                           InitializePinBindings(xiiArrayPtr<const xiiRenderPipelinePin> pins) const;
   xiiResult                                           GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
   virtual xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const { return {}; }
   virtual xiiBitflags<xiiRenderExtractionCategory>    GetExtractionRequirements() const { return {}; }
@@ -52,6 +55,9 @@ public:
   virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }
   /// Clears view-local history after camera cuts and configuration changes.
   virtual void InvalidateTemporalHistory() {}
+
+  xiiRenderPipelineOrderInputPin  m_Before;
+  xiiRenderPipelineOrderOutputPin m_After;
 };
 
 /// Bindings use the pass schema's flat pin indices. Input bindings are resolved before Build;
@@ -75,4 +81,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   xiiRenderGraphBufferHandle  GetInputBuffer(xiiStringView name) const;
   xiiResult                   SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture);
   xiiResult                   SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  xiiRenderGraphTextureHandle GetInputTexture(const xiiRenderPipelineTextureInputPin& pin) const;
+  xiiRenderGraphBufferHandle  GetInputBuffer(const xiiRenderPipelineBufferInputPin& pin) const;
+  xiiResult                   SetOutput(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle texture);
+  xiiResult                   SetOutput(const xiiRenderPipelineBufferOutputPin& pin, xiiRenderGraphBufferHandle buffer);
 };

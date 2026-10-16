@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 3, xiiRTTINoAllocator)
@@ -10,6 +11,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 3, xiiRTTINoAllocator)
     {
       XII_MAP_MEMBER_PROPERTY("ParameterOverrides", m_ParameterOverrides),
       XII_ARRAY_MEMBER_PROPERTY("PinConfigurations", m_PinConfigurations)->AddFlags(xiiPropertyFlags::PointerOwner)->AddAttributes(new xiiContainerAttribute(false, false, false)),
+      XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -19,6 +22,46 @@ xiiRenderPipelinePass::~xiiRenderPipelinePass()
   for (auto* configuration : m_PinConfigurations)
     if (configuration)
       configuration->GetDynamicRTTI()->GetAllocator()->Deallocate(configuration);
+}
+
+void xiiRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  GetDynamicRTTI()->GetAllProperties(properties);
+  for (const auto* property : properties)
+  {
+    if (property->GetCategory() != xiiPropertyCategory::Member ||
+        property->GetFlags().IsSet(xiiPropertyFlags::Pointer) ||
+        !property->GetSpecificType()->IsDerivedFrom<xiiRenderPipelinePinHandle>())
+      continue;
+    const auto* member = static_cast<const xiiAbstractMemberProperty*>(property);
+    const auto* handle = static_cast<const xiiRenderPipelinePinHandle*>(member->GetPropertyPointer(this));
+    XII_ASSERT_DEV(handle, "Pin members must provide direct reflected storage.");
+    auto        pin  = handle->m_Declaration;
+    const auto* name = property->GetAttributeByType<xiiRenderPipelinePinNameAttribute>();
+    pin.m_sName      = name ? name->m_sName.GetView() : property->GetPropertyName();
+    if (const auto* optional = property->GetAttributeByType<xiiRenderPipelinePinOptionalAttribute>())
+    {
+      const auto* flag = GetDynamicRTTI()->FindPropertyByName(optional->m_sProperty);
+      XII_ASSERT_DEV(flag && flag->GetCategory() == xiiPropertyCategory::Member && flag->GetSpecificType() == xiiGetStaticRTTI<bool>(), "Pin optionality must reference a boolean member property.");
+      if (flag && flag->GetCategory() == xiiPropertyCategory::Member && flag->GetSpecificType() == xiiGetStaticRTTI<bool>())
+        pin.m_bOptional = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(flag), this).Get<bool>();
+    }
+    handle->m_uiBindingIndex = out_pins.GetCount();
+    out_pins.PushBack(std::move(pin));
+  }
+}
+
+xiiResult xiiRenderPipelinePass::InitializePinBindings(xiiArrayPtr<const xiiRenderPipelinePin> pins) const
+{
+  xiiDynamicArray<xiiRenderPipelinePin> native;
+  GetPins(native);
+  if (native.GetCount() != pins.GetCount())
+    return XII_FAILURE;
+  for (xiiUInt32 i = 0; i < native.GetCount(); ++i)
+    if (native[i].m_sName != pins[i].m_sName || native[i].m_Type != pins[i].m_Type || native[i].m_bInput != pins[i].m_bInput)
+      return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiRenderPipelinePass::GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error) const
@@ -84,6 +127,38 @@ xiiRenderGraphBufferHandle xiiRenderPipelinePassContext::GetInputBuffer(xiiStrin
 {
   const auto i = FindPin(name, true);
   return i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Buffer ? xiiRenderGraphBufferHandle() : m_Bindings[i].m_hBuffer;
+}
+xiiRenderGraphTextureHandle xiiRenderPipelinePassContext::GetInputTexture(const xiiRenderPipelineTextureInputPin& pin) const
+{
+  const auto i = pin.GetBindingIndex();
+  return i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || !m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::Texture ? xiiRenderGraphTextureHandle() : m_Bindings[i].m_hTexture;
+}
+xiiRenderGraphBufferHandle xiiRenderPipelinePassContext::GetInputBuffer(const xiiRenderPipelineBufferInputPin& pin) const
+{
+  const auto i = pin.GetBindingIndex();
+  return i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || !m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::Buffer ? xiiRenderGraphBufferHandle() : m_Bindings[i].m_hBuffer;
+}
+xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle texture)
+{
+  const auto i = pin.GetBindingIndex();
+  if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::Texture || m_Pins[i].m_bTemporalHistoryOutput != m_bTemporalHistoryPhase)
+    return XII_FAILURE;
+  const auto* description = m_Graph.GetTextureDescription(texture);
+  if (!description || !m_Pins[i].Accepts(*description))
+    return XII_FAILURE;
+  m_Bindings[i].m_hTexture = texture;
+  return XII_SUCCESS;
+}
+xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineBufferOutputPin& pin, xiiRenderGraphBufferHandle buffer)
+{
+  const auto i = pin.GetBindingIndex();
+  if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::Buffer || m_Pins[i].m_bTemporalHistoryOutput != m_bTemporalHistoryPhase)
+    return XII_FAILURE;
+  const auto* description = m_Graph.GetBufferDescription(buffer);
+  if (!description || !m_Pins[i].Accepts(*description))
+    return XII_FAILURE;
+  m_Bindings[i].m_hBuffer = buffer;
+  return XII_SUCCESS;
 }
 xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture)
 {
