@@ -308,3 +308,32 @@ Focused operation passes, authored operation subgraphs and specialized sample
 migration must still replace `BuiltinRenderPipelineRuntime.cpp` stage orchestration.
 Capability validation, the final compiler/runtime audit and performance evidence
 also remain required.
+
+## Pipeline contract checkpoint and pass migration priority
+
+`xiiRenderPipelineSettings` is now a persistent reflected asset object. The
+production pipeline window selects it when graph selection clears. Device feature
+requirements and final output format/sample contracts survive save/load, export
+and hot reload. Referenced resources contribute their device requirements to the
+containing compilation. Checks run before algorithm construction without runtime
+reflection. Older source documents initialize settings through normal commands;
+older binary descriptors retain unconstrained defaults for the additive field.
+
+The SDK assets now declare single-sample outputs, with compute support required
+by Deferred and EditorScene. Their sources reproduce the packaged binaries through
+the production compiler. No one-time exporter remains in the test source.
+Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest,
+EditorEngineProcessFrameworkTest, EditorFrameworkTest and EditorPluginVisualScript.
+All 28 GraphicsCore, 47 Vulkan GAL, 73 Vulkan editor-engine and 15 Qt subtests pass.
+The Qt run includes the actual pipeline window, selection clearing, settings undo,
+save/reopen and independent old/new settings snapshots across reload. Evidence:
+`Workspace/pipeline-settings-final-*.log`. Initial device-free validation and
+fixture compilation/export errors were corrected before these final runs.
+No controlled performance benchmark was run; these checks emit no graph operations
+or GPU submissions. D3D12 remains excluded.
+
+The user's latest direction makes removal of built-in pipeline orchestration and
+conversion of the entire rendering stack into small reflected operations the next
+implementation priority. Selecting a node must expose its authored pin properties
+through the existing property grid, respecting reflection attributes. Configuration
+work above does not close that migration or the remaining complete-objective gates.

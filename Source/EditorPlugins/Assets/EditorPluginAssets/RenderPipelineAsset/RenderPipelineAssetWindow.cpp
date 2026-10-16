@@ -3,6 +3,7 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
+#include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAssetScene.moc.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAssetWindow.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
@@ -10,6 +11,7 @@
 #include <GuiFoundation/DockPanels/DocumentPanel.moc.h>
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
+#include <QTimer>
 
 xiiQtRenderPipelineAssetDocumentWindow::xiiQtRenderPipelineAssetDocumentWindow(xiiDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
@@ -74,7 +76,26 @@ xiiQtRenderPipelineAssetDocumentWindow::xiiQtRenderPipelineAssetDocumentWindow(x
     m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
   }
 
+  GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtRenderPipelineAssetDocumentWindow::SelectionEventHandler, this));
   FinishWindowCreation();
+  SelectionEventHandler(xiiSelectionManagerEvent());
 }
 
-xiiQtRenderPipelineAssetDocumentWindow::~xiiQtRenderPipelineAssetDocumentWindow() = default;
+xiiQtRenderPipelineAssetDocumentWindow::~xiiQtRenderPipelineAssetDocumentWindow()
+{
+  if (GetDocument())
+    GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtRenderPipelineAssetDocumentWindow::SelectionEventHandler, this));
+}
+
+void xiiQtRenderPipelineAssetDocumentWindow::SelectionEventHandler(const xiiSelectionManagerEvent& event)
+{
+  if (!GetDocument() || !GetDocument()->GetSelectionManager()->IsSelectionEmpty())
+    return;
+  // Match other graph assets: select pipeline properties after the graph has
+  // finished clearing its visual selection, without a recursive selection event.
+  QTimer::singleShot(0, this, [this]() {
+    if (GetDocument() && GetDocument()->GetSelectionManager()->IsSelectionEmpty())
+      if (const auto* settings = static_cast<xiiRenderPipelineAssetDocument*>(GetDocument())->GetSettingsObject())
+        GetDocument()->GetSelectionManager()->SetSelection(settings);
+  });
+}

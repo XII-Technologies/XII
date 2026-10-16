@@ -7,6 +7,7 @@
 
 class xiiQtRenderPipelineAssetScene;
 class xiiQtNodeView;
+struct xiiSelectionManagerEvent;
 
 class xiiQtRenderPipelineAssetDocumentWindow : public xiiQtDocumentWindow
 {
@@ -21,6 +22,7 @@ public:
 private Q_SLOTS:
 
 private:
+  void                           SelectionEventHandler(const xiiSelectionManagerEvent& event);
   xiiQtRenderPipelineAssetScene* m_pScene;
   xiiQtNodeView*                 m_pView;
 };

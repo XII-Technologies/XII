@@ -33,11 +33,15 @@ public:
   /// Offline authoring/asset automation can omit IPC; interactive documents use full mirroring.
   xiiRenderPipelineAssetDocument(xiiStringView sDocumentPath, xiiAssetDocEngineConnection connection = xiiAssetDocEngineConnection::FullObjectMirroring);
   ~xiiRenderPipelineAssetDocument();
+  const xiiDocumentObject* GetSettingsObject() const;
+  /// Initialize new/older documents through ordinary commands, never a const getter.
+  xiiStatus EnsureSettingsObject();
   /// Replace one reference node with configured leaf nodes and remapped boundary connections.
   /// Uses one undoable transaction and leaves the document unchanged on failure.
   xiiStatus ExpandSubgraph(const xiiDocumentObject* object);
 
 protected:
+  void                       InitializeAfterLoading(bool bFirstTimeCreation) override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 

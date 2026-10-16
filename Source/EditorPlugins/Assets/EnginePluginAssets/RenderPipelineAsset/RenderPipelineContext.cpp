@@ -59,6 +59,12 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
 
   xiiRenderPipelineResourceDescriptor descriptor;
   descriptor.m_Id = GetDocumentGuid();
+  xiiDynamicArray<xiiRenderPipelineSettings*> settings;
+  m_Context.GetObjectsByType(settings);
+  if (settings.GetCount() > 1)
+    return xiiStatus("Render pipeline has more than one pipeline settings object.");
+  if (!settings.IsEmpty())
+    descriptor.m_Settings = *settings[0];
   xiiHashTable<xiiUuid, xiiUInt32>                             passUuidToIndex;
   xiiHashTable<xiiUuid, const xiiRenderPipelineInterfacePass*> interfaces;
   xiiDynamicArray<xiiUInt32>                                   sortedPasses;

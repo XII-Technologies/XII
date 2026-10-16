@@ -81,6 +81,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     XII_TEST_STATUS(opened);
     if (opened.Failed())
       return;
+    XII_TEST_BOOL(storage.GetSettingsObject() != nullptr);
     XII_TEST_BOOL(document->IsInstanceOf<xiiRenderPipelineAssetDocument>());
     auto*     nodes     = static_cast<const xiiDocumentNodeManager*>(document->GetObjectManager());
     xiiUInt32 passCount = 0, connectionCount = 0;
@@ -122,7 +123,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/", name, ".xiiBinRenderPipeline");
     message.m_uiAssetHash = 1;
-    message.m_uiVersion   = 5;
+    message.m_uiVersion   = 7;
     auto exported         = context.ExportDocument(&message);
     XII_TEST_STATUS(exported);
     if (exported.Failed())
@@ -132,6 +133,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
       return;
     const auto authoring = loaded->GetAuthoring();
+    XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, 1);
+    XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute) == (name == "Deferred" || name == "EditorScene"));
     XII_TEST_BOOL(authoring->m_Descriptor.m_Id == document->GetGuid());
     XII_TEST_INT(authoring->m_Descriptor.m_Passes.GetCount(), passCount);
     XII_TEST_INT(authoring->m_Descriptor.m_Connections.GetCount(), connectionCount);

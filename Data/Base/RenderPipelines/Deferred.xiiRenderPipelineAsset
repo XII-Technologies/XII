@@ -7675,6 +7675,7 @@ o
 			Uuid{u4{2693394951520093834,5453467762466815136}}
 			Uuid{u4{2299689317265583772,4951801086115291867}}
 			Uuid{u4{14572538710695661499,5134001525197414231}}
+			Uuid{u4{13699639454600882090,14529869909913627737}}
 		}
 	}
 }
@@ -15059,6 +15060,18 @@ o
 }
 o
 {
+	Uuid %id{u4{13699639454600882090,14529869909913627737}}
+	s %t{"xiiRenderPipelineSettings"}
+	u3 %v{1}
+	p
+	{
+		s %OutputFormat{"xiiGALResourceFormat::Unknown"}
+		u3 %OutputSamples{1}
+		s %RequiredDeviceFeatures{"xiiRenderPipelineDeviceFeature::Compute"}
+	}
+}
+o
+{
 	Uuid %id{u4{13023190116031048617,14566865048724541375}}
 	s %t{"xiiRenderPipelinePinConstraints"}
 	u3 %v{1}
@@ -19263,6 +19276,23 @@ o
 }
 o
 {
+	Uuid %id{u4{7472093128209303291,7859963556939932389}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiBitflagsBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineDeviceFeature"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{5831823031350089913,9281053940656755343}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -19326,6 +19356,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelinePinMetadata"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{15974180456963999743,11937793320628216215}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineSettings"}
 		u3 %TypeVersion{1}
 	}
 }

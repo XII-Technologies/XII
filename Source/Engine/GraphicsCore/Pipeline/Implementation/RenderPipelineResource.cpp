@@ -114,6 +114,10 @@ xiiResult xiiRenderPipelineResource::ResolveDefinitions(const xiiRenderPipelineR
       const auto                                 snapshot = acquired.IsValid() ? acquired->GetAuthoring() : xiiSharedPtr<const xiiRenderPipelineAuthoring>();
       if (!snapshot || snapshot->m_Descriptor.m_Id != id)
         return fail("Referenced pipeline is missing or its document identity does not match.");
+      XII_SUCCEED_OR_RETURN(snapshot->m_Descriptor.m_Settings.Validate(out_error));
+      // A reusable definition's device requirements constrain every containing pipeline.
+      // Its final presentation contract applies only when it is itself the root.
+      resolved.m_Settings.m_RequiredDeviceFeatures.Add(snapshot->m_Descriptor.m_Settings.m_RequiredDeviceFeatures);
       xiiGraphDefinition definition;
       XII_SUCCEED_OR_RETURN(snapshot->m_Descriptor.MakeGraphDefinition(definition));
       index = resolved.m_Definitions.GetCount();
@@ -190,7 +194,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineRe
   xiiSharedPtr<const xiiRenderPipeline> pipeline;
   xiiStringBuilder                      error;
   xiiGraphDefinition                    definition;
-  if (descriptor.MakeGraphDefinition(definition).Failed() || (descriptor.m_References.IsEmpty() && xiiRenderPipeline::Compile(descriptor, pipeline, &error).Failed()))
+  if (descriptor.m_Settings.Validate(&error).Failed() || descriptor.MakeGraphDefinition(definition).Failed() || (descriptor.m_References.IsEmpty() && xiiRenderPipeline::Compile(descriptor, pipeline, &error).Failed()))
   {
     xiiLog::Error("Render pipeline '{}': {}", GetResourceIdOrDescription(), error);
     return {xiiResourceState::LoadedResourceMissing, 0, 0};

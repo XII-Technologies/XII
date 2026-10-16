@@ -132,6 +132,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   auto*            accessor = document.GetObjectAccessor();
   xiiUuid          nodes[2];
   accessor->StartTransaction("Create reflected passes");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
   for (auto& id : nodes)
   {
     XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiEditorPinTestPass>(), id));
@@ -142,7 +143,22 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   PinScene    scene;
   scene.InitScene(manager);
   xiiQtPropertyGridWidget grid(nullptr, &document);
-  const auto*             pin = manager->GetInputPinByName(target, "Input");
+  const auto*             pipelineSettings = document.GetSettingsObject();
+  if (!XII_TEST_BOOL(pipelineSettings != nullptr))
+    return;
+  document.GetSelectionManager()->SetSelection(pipelineSettings);
+  bool outputWidget = false;
+  for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+    outputWidget |= widget->GetProperty() && widget->GetProperty()->GetPropertyName() == "OutputFormat";
+  XII_TEST_BOOL(outputWidget);
+  accessor->StartTransaction("Configure pipeline output");
+  XII_TEST_STATUS(accessor->SetValueByName(pipelineSettings, "OutputFormat", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA8UNormalized)));
+  XII_TEST_STATUS(accessor->SetValueByName(pipelineSettings, "OutputSamples", 1U));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_INT(pipelineSettings->GetTypeAccessor().GetValue("OutputSamples").Get<xiiUInt32>(), 0);
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  const auto* pin = manager->GetInputPinByName(target, "Input");
   if (!XII_TEST_BOOL(pin != nullptr))
     return;
   const auto* settings = manager->GetPinPropertyObject(*pin);
@@ -244,6 +260,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   xiiResourceLock<xiiRenderPipelineResource> resource(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(resource && resource->GetPipeline()))
     return;
+  XII_TEST_BOOL(resource->GetPipeline()->GetDescriptor().m_Settings.m_OutputFormat == xiiGALResourceFormat::RGBA8UNormalized);
+  XII_TEST_INT(resource->GetPipeline()->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
   bool found = false;
   for (xiiUInt32 i = 0; i < resource->GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
     for (const auto& compiledPin : resource->GetPipeline()->GetPins(i))
@@ -272,6 +290,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     const auto* loadedRequirements = loadedAccessor->GetChildObjectByName(loadedSettings, "Requirements", {});
     loadedAccessor->StartTransaction("Change loaded pin contract");
     XII_TEST_STATUS(loadedAccessor->SetValueByName(loadedRequirements, "Width", 24U));
+    XII_TEST_STATUS(loadedAccessor->SetValueByName(loaded.GetSettingsObject(), "OutputFormat", static_cast<xiiInt64>(xiiGALResourceFormat::BGRA8UNormalized)));
     loadedAccessor->FinishTransaction();
     PinCompiler replacement;
     XII_TEST_RESULT(replacement.Import(loaded));
@@ -284,6 +303,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     XII_TEST_RESULT(first.Synchronize(handle, &changed));
     XII_TEST_BOOL(changed && first.GetPipeline() != original);
     XII_TEST_INT(width(*first.GetPipeline()), 24);
+    XII_TEST_BOOL(first.GetPipeline()->GetDescriptor().m_Settings.m_OutputFormat == xiiGALResourceFormat::BGRA8UNormalized);
+    XII_TEST_BOOL(second.GetPipeline()->GetDescriptor().m_Settings.m_OutputFormat == xiiGALResourceFormat::RGBA8UNormalized);
     XII_TEST_INT(width(*second.GetPipeline()), 16);
     XII_TEST_RESULT(second.Synchronize(handle));
     XII_TEST_BOOL(first.GetPipeline() == second.GetPipeline());
@@ -299,6 +320,16 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
       auto* node = entry.Value();
       if (node->GetType() == "xiiEditorPinTestPass")
         node->RemoveProperty("PinConfigurations");
+      if (auto* children = node->FindProperty("Children"); children && children->m_Value.IsA<xiiVariantArray>())
+      {
+        auto entries = children->m_Value.Get<xiiVariantArray>();
+        for (xiiUInt32 i = entries.GetCount(); i > 0; --i)
+          if (entries[i - 1] == xiiVariant(pipelineSettings->GetGuid()))
+            entries.RemoveAtAndCopy(i - 1);
+        node->ChangeProperty("Children", entries);
+      }
+      if (node->GetType() == "xiiRenderPipelineSettings")
+        obsolete.PushBack(node->GetGuid());
       if (node->GetType() == "xiiRenderPipelinePinConfiguration" || node->GetType() == "xiiRenderPipelinePinMetadata" || node->GetType() == "xiiRenderPipelinePinConstraints")
         obsolete.PushBack(node->GetGuid());
     }
@@ -313,6 +344,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     }
     PinDocument legacy(legacyPath);
     XII_TEST_STATUS(legacy.LoadDocument());
+    XII_TEST_BOOL(legacy.GetSettingsObject() && legacy.GetSettingsObject()->GetGuid() == pipelineSettings->GetGuid());
     auto*       legacyManager = static_cast<xiiRenderPipelineNodeManager*>(legacy.GetObjectManager());
     const auto* legacyPin     = legacyManager->GetInputPinByName(legacyManager->GetObject(nodes[1]), "Input");
     if (!XII_TEST_BOOL(legacyPin != nullptr))

@@ -22,6 +22,18 @@ Game, scene editor, asset preview, texture preview and cube preview policies sel
 ordinary resources. Packaged editable sources and compiled SDK snapshots live in
 `Data/Base/RenderPipelines`; project assets use ordinary asset GUID/cache loading.
 
+Pipeline assets have a reflected `xiiRenderPipelineSettings` document object.
+Clearing graph selection shows its properties in the existing inspector. Authored
+required device features and output format/sample contracts constrain execution;
+they never construct topology or substitute a pipeline. Referenced definitions'
+device requirements accumulate in their containing resource. A definition's final
+output contract applies when it is the root; subgraph boundaries use typed pin
+contracts. The compiler validates settings without a GPU, and each runtime build
+checks the selected device and output before constructing algorithm work. These
+runtime checks use compiled values without reflection. Older resources lacking the
+additive settings field retain unconstrained defaults, and older source documents
+initialize a persistent settings object for their next save.
+
 `SetPipelineParameter` and `RemovePipelineParameter` provide view overrides.
 Overrides replace values with the same top-level key; nested dictionaries are
 replaced as a unit. The built-in `DisplayOutput` dictionary accepts the reflected

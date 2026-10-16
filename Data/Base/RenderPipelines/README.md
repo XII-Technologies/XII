@@ -33,3 +33,8 @@ compiled snapshots preserve source pin identities and resource constraints; thes
 settings are lowered into immutable execution metadata rather than document
 objects in each runtime pass. The production library regression checks every
 pin's backing document identity and reproduces the packaged bytes.
+
+Each source also owns reflected pipeline settings. These SDK pipelines declare
+single-sample outputs; Deferred and EditorScene require compute support. Output
+format remains unconstrained so compatible view targets can choose their format.
+These contracts are validated before pass construction and do not choose topology.

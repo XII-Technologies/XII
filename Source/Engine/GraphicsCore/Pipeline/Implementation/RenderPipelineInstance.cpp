@@ -2,8 +2,14 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Device/SwapChain.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/TextureView.h>
 
 xiiRenderPipelineInstance::~xiiRenderPipelineInstance() { Clear(); }
 void xiiRenderPipelineInstance::Clear()
@@ -82,6 +88,31 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
 {
   if (!m_pPipeline)
     return XII_FAILURE;
+  const auto&                      settings = m_pPipeline->m_Descriptor.m_Settings;
+  const auto                       device   = settings.m_RequiredDeviceFeatures.IsAnyFlagSet() && xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : xiiSharedPtr<xiiGALDevice>();
+  xiiGALTextureCreationDescription output;
+  const bool                       checkOutput = settings.m_OutputFormat != xiiGALResourceFormat::Unknown || settings.m_uiOutputSamples;
+  const auto*                      target      = view && checkOutput ? view->GetRenderTargetView() : nullptr;
+  bool                             hasOutput   = target != nullptr;
+  if (target)
+  {
+    output = target->GetTexture()->GetDescription();
+    if (target->GetDescription().m_Format != xiiGALResourceFormat::Unknown)
+      output.m_Format = target->GetDescription().m_Format;
+  }
+  else if (view && checkOutput && view->GetSwapChain() && view->GetSwapChain()->GetBackBufferTexture())
+  {
+    output    = view->GetSwapChain()->GetBackBufferTexture()->GetDescription();
+    hasOutput = true;
+  }
+  xiiStringBuilder error;
+  if (settings.ValidateDevice(device ? &device->GetFeatures() : nullptr, &error).Failed() || settings.ValidateOutput(hasOutput ? &output : nullptr, &error).Failed())
+  {
+    xiiStringBuilder identity;
+    xiiConversionUtils::ToString(m_pPipeline->m_Descriptor.m_Id, identity);
+    xiiLog::Error("Render pipeline '{}' configuration: {}", identity, error);
+    return XII_FAILURE;
+  }
   const xiiString previousScope = graph.GetResourceNamespace();
   XII_SCOPE_EXIT(graph.SetResourceNamespace(previousScope));
   auto* previousBlackboard = graph.GetSetupBlackboard();

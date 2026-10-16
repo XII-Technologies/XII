@@ -20,7 +20,7 @@
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 #include <ToolsFoundation/Serialization/ToolsSerializationUtils.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAssetDocument, 6, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAssetDocument, 7, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
@@ -513,11 +513,43 @@ void xiiRenderPipelineAssetDocument::RestoreMetaDataAfterLoading(const xiiAbstra
   pManager->RestoreMetaDataAfterLoading(graph, bUndoable);
   // Upgrade documents authored before persistent pin objects. Normal commands make
   // the addition visible and undoable; no mutation occurs in the const pin getter.
-  GetCommandHistory()->StartTransaction("Initialize Render Pin Properties");
-  xiiStatus result(XII_SUCCESS);
-  for (const auto* object : GetObjectManager()->GetRootObject()->GetChildren())
-    if (pManager->IsNode(object) && (result = pManager->SynchronizePinConfigurations(object)).Failed())
+  GetCommandHistory()->StartTransaction("Initialize Render Pipeline Properties");
+  xiiStatus  result  = EnsureSettingsObject();
+  const auto objects = GetObjectManager()->GetRootObject()->GetChildren();
+  for (const auto* object : objects)
+    if (result.Failed() || (pManager->IsNode(object) && (result = pManager->SynchronizePinConfigurations(object)).Failed()))
       break;
+  if (result.Succeeded())
+    GetCommandHistory()->FinishTransaction();
+  else
+  {
+    GetCommandHistory()->CancelTransaction();
+    result.LogFailure();
+  }
+}
+
+const xiiDocumentObject* xiiRenderPipelineAssetDocument::GetSettingsObject() const
+{
+  for (const auto* object : GetObjectManager()->GetRootObject()->GetChildren())
+    if (object->GetType()->IsDerivedFrom<xiiRenderPipelineSettings>())
+      return object;
+  return nullptr;
+}
+
+xiiStatus xiiRenderPipelineAssetDocument::EnsureSettingsObject()
+{
+  if (GetSettingsObject())
+    return XII_SUCCESS;
+  auto id = xiiUuid::MakeStableUuidFromString("RenderPipeline/Settings");
+  id.HashCombine(GetGuid());
+  return GetObjectAccessor()->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineSettings>(), id);
+}
+
+void xiiRenderPipelineAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
+{
+  SUPER::InitializeAfterLoading(bFirstTimeCreation);
+  GetCommandHistory()->StartTransaction("Initialize Render Pipeline Settings");
+  auto result = EnsureSettingsObject();
   if (result.Succeeded())
     GetCommandHistory()->FinishTransaction();
   else

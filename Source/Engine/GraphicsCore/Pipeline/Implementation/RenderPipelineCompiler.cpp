@@ -38,6 +38,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   };
   if (out_error)
     out_error->Clear();
+  XII_SUCCEED_OR_RETURN(authored.m_Settings.Validate(out_error));
   if (authored.m_Passes.GetCount() > 4096 || authored.m_Connections.GetCount() > 65536 || authored.m_Definitions.GetCount() > 4096)
     return fail("Pipeline exceeds definition limits.");
   xiiGraphDefinition root;
@@ -64,6 +65,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   XII_SUCCEED_OR_RETURN(xiiGraphComposition::Expand(root, resolver, limits, expanded, out_error));
   descriptor.m_Id         = authored.m_Id;
   descriptor.m_Parameters = authored.m_Parameters;
+  descriptor.m_Settings   = authored.m_Settings;
   for (const auto& node : expanded.m_Nodes)
   {
     xiiStringBuilder name, id;

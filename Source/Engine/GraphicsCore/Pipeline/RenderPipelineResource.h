@@ -9,6 +9,7 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/RenderPipelineSettings.h>
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassDescriptor
 {
@@ -54,6 +55,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
   xiiDynamicArray<xiiRenderPipelinePassDescriptor> m_Passes;
   xiiDynamicArray<xiiRenderPipelineConnection>     m_Connections;
   xiiVariantDictionary                             m_Parameters;
+  xiiRenderPipelineSettings                        m_Settings;
   xiiUuid                                          m_Id = xiiUuid::MakeUuid();
   xiiDynamicArray<xiiGraphBoundaryMapping>         m_Interface;
   /// Shared definitions are stored once per document/library, regardless of instance count.
