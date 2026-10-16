@@ -17,12 +17,50 @@
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 namespace
 {
+  template <typename T>
+  bool ReadNativeRecord(xiiGALDevice& device, xiiGALBuffer* source, T& value)
+  {
+    if (!XII_TEST_BOOL(source != nullptr))
+      return false;
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize         = sizeof(T);
+    description.m_Usage          = xiiGALResourceUsage::Staging;
+    description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+    auto staging                 = device.CreateBuffer(description);
+    auto commands                = device.CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    if (!XII_TEST_BOOL(staging && commands))
+      return false;
+    commands->Begin();
+    const auto previous = source->GetResourceState();
+    commands->CopyBufferRegion(source, 0, staging.Borrow(), 0, sizeof(T));
+    xiiGALStateTransitionDescription transition;
+    transition.m_pResource       = source;
+    transition.m_NewState        = previous;
+    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+    commands->TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
+    commands->End();
+    auto* queue = device.GetCommandQueue();
+    queue->WaitForFenceValue(queue->Submit(commands));
+    commands->Begin();
+    void*      mapped = nullptr;
+    const auto result = commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, mapped);
+    if (result.Succeeded() && mapped)
+      xiiMemoryUtils::Copy(&value, static_cast<const T*>(mapped), 1);
+    if (result.Succeeded())
+      commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read).AssertSuccess();
+    commands->End();
+    return XII_TEST_RESULT(result) && XII_TEST_BOOL(mapped != nullptr);
+  }
+
   class WorldReloadLoader : public xiiResourceLoaderFromMemory
   {
   public:
@@ -157,6 +195,25 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two cameras share sparse uploads; warmed unchanged frames upload zero bytes")
   {
+    xiiRenderPipelineResourceDescriptor uploadDefinition;
+    uploadDefinition.AddPass("World data", "xiiWorldInstancesUploadPass");
+    uploadDefinition.AddPass("Repeated world data", "xiiWorldInstancesUploadPass");
+    uploadDefinition.AddPass("Device geometry", "xiiGeometryUploadPass");
+    uploadDefinition.AddPass("Device materials", "xiiMaterialUploadPass");
+    xiiVariantDictionary cullingProperties;
+    cullingProperties.Insert("UseViewSelection", false);
+    cullingProperties.Insert("VisibilityMask", 0x42U);
+    uploadDefinition.AddPass("Camera culling inputs", "xiiVisibilityViewPass", cullingProperties);
+    xiiCamera cullingCamera;
+    cullingCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+
+    xiiSharedPtr<const xiiRenderPipeline> compiledUpload;
+    if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(uploadDefinition, compiledUpload)))
+      return;
+    xiiRenderPipelineInstance uploadInstances[2];
+    for (auto& instance : uploadInstances)
+      if (!XII_TEST_RESULT(instance.Initialize(compiledUpload)))
+        return;
     xiiRenderGraphContext graphs[2];
     XII_TEST_RESULT(graphs[0].Initialize("World upload camera A"));
     XII_TEST_RESULT(graphs[1].Initialize("World upload camera B"));
@@ -166,20 +223,49 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
       XII_SCOPE_EXIT(cache.EndFrame());
       graph.BeginSetup(gpuFrame.GetFrameIndex());
-      const auto uploaded = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
-      const auto repeated = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
-      XII_TEST_BOOL(uploaded.m_Instances == repeated.m_Instances && uploaded.m_Skinning == repeated.m_Skinning);
+      xiiView*   view   = nullptr;
+      const auto handle = module->CreateView("Native world upload", view);
+      XII_SCOPE_EXIT(module->DestroyView(handle));
+      view->SetCamera(&cullingCamera);
+      view->SetViewport({0, 0, 16, 16});
+      if (!XII_TEST_RESULT(uploadInstances[camera].Build(view, graph, graphs[camera].GetBlackboard())))
+        return nullptr;
+      xiiGpuInstanceData::UploadHandles uploaded;
+      uploaded.m_Instances = uploadInstances[camera].GetOutputBinding(0, "SceneInstances")->m_hBuffer;
+      uploaded.m_Skinning  = uploadInstances[camera].GetOutputBinding(0, "SkinningMatrices")->m_hBuffer;
+      XII_TEST_BOOL(uploaded.m_Instances == uploadInstances[camera].GetOutputBinding(1, "SceneInstances")->m_hBuffer);
+      XII_TEST_BOOL(uploaded.m_Skinning == uploadInstances[camera].GetOutputBinding(1, "SkinningMatrices")->m_hBuffer);
       struct Export
       {
         XII_DECLARE_POD_TYPE();
       };
       graph.AddPass<Export>("World inputs", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
         builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(2, "GeometryMetadata")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(2, "MeshletMetadata")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(3, "SurfaceMaterials")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "Candidates")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
       graph.EndSetup();
       if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphs[camera].GetBlackboard(), &cache)))
         return nullptr;
-      return graph.GetExportedBuffer(uploaded.m_Instances);
+
+      xiiGpuVisibilityView snapshot;
+      const auto           parameters = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer);
+      if (!ReadNativeRecord(*environment.GetDevice(), parameters.Borrow(), snapshot))
+        return nullptr;
+      XII_TEST_INT(snapshot.m_uiInstanceCount, 1);
+      XII_TEST_INT(snapshot.m_uiVisibilityMask, 0x42);
+      XII_TEST_INT(snapshot.m_uiUseCandidates, 0);
+      XII_TEST_FLOAT(snapshot.m_ViewportAndHiZ.x, 16, 0);
+      xiiGpuSceneInstance record;
+      const auto          result = graph.GetExportedBuffer(uploaded.m_Instances);
+      if (!ReadNativeRecord(*environment.GetDevice(), result.Borrow(), record))
+        return nullptr;
+      XII_TEST_INT(record.m_uiObjectId, identity);
+      XII_TEST_FLOAT(record.m_GlobalTransform.GetTranslationVector().x, instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 0);
+      return result;
     };
     for (xiiUInt32 i = 0; i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight + 1; ++i)
     {
