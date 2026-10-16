@@ -103,6 +103,21 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
       input.EndStream();
       XII_TEST_BOOL(invalid.GetResourceReference(xiiRenderPipelineUsage::Game).IsEmpty());
       XII_TEST_BOOL(invalid.GetResourceReference(xiiRenderPipelineUsage::AssetPreview).IsEmpty());
+      // Re-saving a rejected runtime policy must not revive retained authored defaults.
+      xiiDefaultMemoryStreamStorage saved;
+      xiiMemoryStreamWriter         savedWriter(&saved);
+      xiiChunkStreamWriter          savedChunks(savedWriter);
+      savedChunks.BeginStream(1);
+      invalid.SaveRuntimeData(savedChunks);
+      savedChunks.EndStream();
+      xiiMemoryStreamReader savedReader(&saved);
+      xiiChunkStreamReader  savedInput(savedReader);
+      savedInput.BeginStream();
+      xiiRenderPipelineProfileConfig restored;
+      restored.LoadRuntimeData(savedInput);
+      savedInput.EndStream();
+      for (const auto usage : {xiiRenderPipelineUsage::Game, xiiRenderPipelineUsage::EditorScene, xiiRenderPipelineUsage::AssetPreview, xiiRenderPipelineUsage::TexturePreview, xiiRenderPipelineUsage::CubeTexturePreview})
+        XII_TEST_BOOL(restored.GetResourceReference(usage).IsEmpty());
     }
   }
 }

@@ -25,7 +25,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& stream) const
 {
   stream.BeginChunk("RenderPipelineReferences", 1);
-  stream << m_sGamePipeline << m_sEditorScenePipeline << m_sAssetPreviewPipeline << m_sTexturePreviewPipeline << m_sCubeTexturePreviewPipeline;
+  for (const auto usage : {xiiRenderPipelineUsage::Game, xiiRenderPipelineUsage::EditorScene, xiiRenderPipelineUsage::AssetPreview, xiiRenderPipelineUsage::TexturePreview, xiiRenderPipelineUsage::CubeTexturePreview})
+    stream << GetResourceReference(usage);
   stream.EndChunk();
 }
 
