@@ -237,3 +237,86 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
     XII_TEST_INT(texture->GetRefCount(), 1);
   }
 }
+
+class xiiTransparencyTestHDR : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiTransparencyTestHDR, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::RGBA16Float};
+  xiiResult                         Build(xiiRenderPipelinePassContext& context) override
+  {
+    const auto emitted = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [](auto& data, xiiRenderGraphBuilder& builder) {
+      xiiGALTextureCreationDescription description;
+      description.m_Type = xiiGALResourceDimension::Texture2D;
+      description.m_Size = {9, 11};
+      description.m_Format = xiiGALResourceFormat::RGBA16Float;
+      description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+      data = builder.WriteTexture("HDR target", description, xiiGALResourceStateFlags::CopyDestination); }, [](const auto& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::RenderTarget), {2, 4, 6, 0.5f}); });
+    return context.SetOutput(m_Output, *emitted.first);
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparencyTestHDR, 1, xiiRTTIDefaultAllocator<xiiTransparencyTestHDR>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Texture", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentWeightedTransparencyResolve)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor descriptor;
+  const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format) {
+    xiiClearTexturePass pass;
+    pass.m_uiWidth  = 9;
+    pass.m_uiHeight = 11;
+    pass.m_Color    = color;
+    pass.m_Format   = format;
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(pass.GetProperties(properties));
+    return descriptor.AddPass(name, "xiiClearTexturePass", properties);
+  };
+  const auto accumulation = clear("Weighted color", {1, 2, 3, 2}, xiiGALResourceFormat::RGBA16Float);
+  const auto revealage    = clear("Coverage", {0.25f, 0, 0, 0}, xiiGALResourceFormat::R8UNormalized);
+  const auto hdr          = descriptor.AddPass("Opaque radiance", "xiiTransparencyTestHDR");
+  const auto resolve      = descriptor.AddPass("Resolve", "xiiWeightedBlendedOITResolvePass");
+  const auto output       = descriptor.AddPass("Read color", "xiiOpaqueTestExport");
+  XII_TEST_RESULT(descriptor.Connect(accumulation, "Texture", resolve, "OITAccumulate"));
+  XII_TEST_RESULT(descriptor.Connect(revealage, "Texture", resolve, "OITReveal"));
+  XII_TEST_RESULT(descriptor.Connect(hdr, "Texture", resolve, "HDRSceneColor"));
+  XII_TEST_RESULT(descriptor.Connect(resolve, "HDRSceneColor", output, "Input"));
+  const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Weighted transparency supplied targets", std::move(descriptor));
+  xiiWorldDescription description("Resolve without scene extraction");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView*   view       = nullptr;
+  const auto viewHandle = module->CreateView("Transparency resolve", view);
+  view->SetCamera(&camera);
+  view->SetViewport({0, 0, 9, 11}); // Non-divisible dispatch dimensions exercise bounds checks.
+  view->SetRenderPipelineResource(resource);
+  world.Update();
+  environment.GetDevice()->WaitIdle();
+  const auto& instance = view->GetRenderPipelineInstance();
+  if (!XII_TEST_BOOL(instance.GetPipeline() != nullptr))
+    return;
+  XII_TEST_BOOL(instance.GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
+  XII_TEST_BOOL(instance.GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+  const auto* binding = instance.GetOutputBinding(output, "Output");
+  const auto  texture = binding ? view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture) : xiiSharedPtr<xiiGALTexture>();
+  if (!XII_TEST_BOOL(texture != nullptr))
+    return;
+  const float reveal = 64.0f / 255.0f;
+  CheckOpaquePixels(environment, texture, {0.5f * (1 - reveal) + 2 * reveal, 1 * (1 - reveal) + 4 * reveal, 1.5f * (1 - reveal) + 6 * reveal, 0.5f});
+  module->DestroyView(viewHandle);
+}
