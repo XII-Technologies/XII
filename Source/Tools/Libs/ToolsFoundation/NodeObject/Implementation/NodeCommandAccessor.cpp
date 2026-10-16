@@ -24,14 +24,12 @@ xiiStatus xiiNodeCommandAccessor::SetValue(const xiiDocumentObject* pObject, con
     auto pNodeObject         = pObject;
     auto pDynamicPinProperty = pProp;
 
-    if (IsNode(pObject) == false)
+    while (pNodeObject && !IsNode(pNodeObject))
     {
-      auto pParent = pObject->GetParent();
-      if (pParent != nullptr && IsNode(pParent))
-      {
-        pNodeObject         = pParent;
-        pDynamicPinProperty = pParent->GetType()->FindPropertyByName(pObject->GetParentProperty());
-      }
+      const auto* child = pNodeObject;
+      pNodeObject       = child->GetParent();
+      if (pNodeObject)
+        pDynamicPinProperty = pNodeObject->GetType()->FindPropertyByName(child->GetParentProperty());
     }
 
     if (IsDynamicPinProperty(pNodeObject, pDynamicPinProperty))

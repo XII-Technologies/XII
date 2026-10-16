@@ -54,11 +54,11 @@ void xiiQtPin::SetPin(const xiiPin& pin)
 
   if (m_bTranslatePinName)
   {
-    m_pLabel->setPlainText(xiiMakeQString(xiiTranslate(pin.GetName())));
+    m_pLabel->setPlainText(xiiMakeQString(xiiTranslate(pin.GetDisplayName())));
   }
   else
   {
-    m_pLabel->setPlainText(xiiMakeQString(pin.GetName()));
+    m_pLabel->setPlainText(xiiMakeQString(pin.GetDisplayName()));
   }
 
   auto rectLabel = m_pLabel->boundingRect();

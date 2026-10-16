@@ -13,6 +13,7 @@
 #include <QMenu>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
+#include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiRttiMappedObjectFactory<xiiQtNode>       xiiQtNodeScene::s_NodeFactory;
 xiiRttiMappedObjectFactory<xiiQtPin>        xiiQtNodeScene::s_PinFactory;
@@ -537,7 +538,8 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
     cmd.m_NewObjectGuid = xiiUuid::MakeUuid();
     cmd.m_Index         = -1;
 
-    res = history->AddCommand(cmd);
+    auto* accessor = m_pManager->GetDocument()->GetObjectAccessor();
+    res            = accessor->AddObject(nullptr, nullptr, cmd.m_Index, cmd.m_pType, cmd.m_NewObjectGuid);
     if (res.Succeeded())
     {
       xiiMoveNodeCommand move;
@@ -551,11 +553,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
       if (res.Failed())
         break;
 
-      xiiSetObjectPropertyCommand setCmd;
-      setCmd.m_Object    = cmd.m_NewObjectGuid;
-      setCmd.m_sProperty = propValue.m_sPropertyName.GetString();
-      setCmd.m_NewValue  = propValue.m_Value;
-      res                = history->AddCommand(setCmd);
+      res = accessor->SetValueByName(accessor->GetObject(cmd.m_NewObjectGuid), propValue.m_sPropertyName.GetString(), propValue.m_Value);
     }
   }
 

@@ -31,6 +31,23 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
 
   const xiiRTTI* pPropType    = pProp->GetSpecificType();
   const bool     bIsValueType = xiiReflectionUtils::IsValueType(pProp);
+  const auto     queueChild   = [&](const xiiUuid& guid) {
+    if (!guid.IsValid())
+      return;
+    const xiiDocumentObject* child = m_pManager->GetObject(guid);
+    if (!child)
+      for (const auto* owned : pObject->GetChildren())
+        if (owned->GetGuid() == guid)
+        {
+          child = owned;
+          break;
+        }
+    // BeforeObjectAdded exposes a complete detached subtree before its GUIDs are
+    // registered with the manager. Its owned children remain valid document data.
+    XII_ASSERT_DEV(child != nullptr, "Reflected owned document child is missing.");
+    if (child)
+      m_QueuedObjects.Insert(child);
+  };
 
   switch (pProp->GetCategory())
   {
@@ -44,7 +61,7 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
 
           pNode->AddProperty(pProp->GetPropertyName(), guid);
           if (guid.IsValid())
-            m_QueuedObjects.Insert(m_pManager->GetObject(guid));
+            queueChild(guid);
         }
         else
         {
@@ -68,7 +85,7 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
           const xiiUuid guid = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName()).Get<xiiUuid>();
           XII_ASSERT_DEV(guid.IsValid(), "Embedded class cannot be null.");
           pNode->AddProperty(pProp->GetPropertyName(), guid);
-          m_QueuedObjects.Insert(m_pManager->GetObject(guid));
+          queueChild(guid);
         }
       }
     }
@@ -89,7 +106,7 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
         values[i] = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName(), i);
         if (!bIsValueType)
         {
-          m_QueuedObjects.Insert(m_pManager->GetObject(values[i].Get<xiiUuid>()));
+          queueChild(values[i].Get<xiiUuid>());
         }
       }
       pNode->AddProperty(pProp->GetPropertyName(), values);
@@ -111,7 +128,7 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
         values.Insert(key.Get<xiiString>(), value);
         if (!bIsValueType)
         {
-          m_QueuedObjects.Insert(m_pManager->GetObject(value.Get<xiiUuid>()));
+          queueChild(value.Get<xiiUuid>());
         }
       }
       pNode->AddProperty(pProp->GetPropertyName(), values);
