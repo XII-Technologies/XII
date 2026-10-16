@@ -9,6 +9,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -292,7 +293,15 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentWeightedTransparencyResolve
   XII_TEST_RESULT(descriptor.Connect(accumulation, "Texture", resolve, "OITAccumulate"));
   XII_TEST_RESULT(descriptor.Connect(revealage, "Texture", resolve, "OITReveal"));
   XII_TEST_RESULT(descriptor.Connect(hdr, "Texture", resolve, "HDRSceneColor"));
-  XII_TEST_RESULT(descriptor.Connect(resolve, "HDRSceneColor", output, "Input"));
+  const auto                                 authoredResource = xiiLoadPipelineLibraryResource("TransparencyResolve");
+  xiiResourceLock<xiiRenderPipelineResource> authored(authoredResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(authored.IsValid() && authored->GetAuthoring()))
+    return;
+  const auto definitionId = authored->GetAuthoring()->m_Descriptor.m_Id;
+  descriptor.m_References.PushBack({definitionId, authoredResource.GetResourceID()});
+  const auto subgraph = descriptor.AddSubgraph("Authored transparency", definitionId);
+  XII_TEST_RESULT(descriptor.Connect(resolve, "HDRSceneColor", subgraph, "HDRSceneColor"));
+  XII_TEST_RESULT(descriptor.Connect(subgraph, "HDRSceneColor", output, "Input"));
   const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Weighted transparency supplied targets", std::move(descriptor));
   xiiWorldDescription description("Resolve without scene extraction");
   xiiWorld            world(description);

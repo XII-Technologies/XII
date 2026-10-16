@@ -7,75 +7,6 @@ using namespace xiiBuiltinPipelineUtils;
 
 
 
-////////// GPU Particle Simulate Data //////////
-//
-// Collects all GPU resources related to the particle simulation pass.
-
-static_assert((sizeof(xiiGPUParticleSimulateConstants) % 16U) == 0U);
-
-void xiiBuiltinRenderPipelineRuntime::SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRenderGraphBuilder& builder)
-{
-  constexpr xiiUInt32 uiDefaultParticleCapacity = xiiParticleSystemConstants::s_uiDefaultMaxParticles;
-
-  if (!m_Resources.m_TransparencyPasses.m_pParticleStateBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(xiiParticleGPUState);
-    description.m_uiSize              = description.m_uiElementByteStride * uiDefaultParticleCapacity;
-    description.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Default;
-
-    m_Resources.m_TransparencyPasses.m_pParticleStateBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
-    m_Resources.m_TransparencyPasses.m_uiParticleCapacity   = uiDefaultParticleCapacity;
-  }
-
-  data.m_hParticleState  = builder.ImportBuffer("ParticleState", m_Resources.m_TransparencyPasses.m_pParticleStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hParticleState  = builder.WriteBuffer(data.m_hParticleState, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_uiParticleCount = xiiMath::Max(1U, m_Resources.m_TransparencyPasses.m_uiParticleCapacity);
-
-  xiiGALBufferCreationDescription constantsDescription;
-  constantsDescription.m_uiSize         = sizeof(xiiGPUParticleSimulateConstants);
-  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
-  constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
-  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
-
-  data.m_hParticleConstants = builder.WriteBuffer("ParticleSimConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_TransparencyPasses.m_pParticleSimulatePipeline, "Shaders/Pipeline/GPUParticleSimulate.xiiShader");
-
-  builder.SetPassSideEffects(true);
-  builder.SetPassAllowMerge(false);
-}
-
-void xiiBuiltinRenderPipelineRuntime::ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data, xiiRenderGraphPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("GPUParticleSimulate");
-  {
-    {
-      xiiGALMapHelper<xiiGPUParticleSimulateConstants> pConstants(cmd, context.GetBuffer(data.m_hParticleConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->m_fDeltaTimeS      = xiiMath::Clamp(static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()), 0.0f, 1.0f / 15.0f);
-      pConstants->m_fGravityScale    = 1.0f;
-      pConstants->m_fDragCoefficient = 0.05f;
-      pConstants->m_fTurbulenceScale = 0.0f;
-      pConstants->m_vWindVelocity    = xiiVec3::MakeZero();
-      pConstants->m_uiActiveCount    = data.m_uiParticleCount;
-    }
-
-    cmd.SetPipelineState(m_Resources.m_TransparencyPasses.m_pParticleSimulatePipeline);
-
-    BindFrameResources(cmd);
-    cmd.ResolveAndSetConstantBuffer("ParticleSimConstants", context.GetBuffer(data.m_hParticleConstants), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessBufferView("g_Particles", context.GetBuffer(data.m_hParticleState)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(data.m_uiParticleCount + 63U) / 64U, 1U, 1U});
-  }
-  cmd.EndDebugGroup();
-}
-
 ////////// GPU Decal Upload Data //////////
 //
 // Uploads extracted projected and mesh decal instances into a GPU-visible structured buffer and imports the active atlas set.
@@ -114,27 +45,27 @@ void xiiBuiltinRenderPipelineRuntime::SetupDecalUpload(xiiDecalUploadData& data,
   };
 
   auto EnsureFallbackAtlases = [&]() {
-    EnsureFallbackTexture(m_Resources.m_TransparencyPasses.m_pFallbackDecalAlbedoAtlasTexture, 0xFFFFFFFFU, "FallbackDecalAtlas::Albedo");
-    EnsureFallbackTexture(m_Resources.m_TransparencyPasses.m_pFallbackDecalNormalAtlasTexture, 0xFFFF8080U, "FallbackDecalAtlas::Normal");
-    EnsureFallbackTexture(m_Resources.m_TransparencyPasses.m_pFallbackDecalMaterialAtlasTexture, 0x00FF0080U, "FallbackDecalAtlas::Material");
-    EnsureFallbackTexture(m_Resources.m_TransparencyPasses.m_pFallbackDecalEmissiveAtlasTexture, 0x00000000U, "FallbackDecalAtlas::Emissive");
+    EnsureFallbackTexture(m_Resources.m_DecalPasses.m_pFallbackDecalAlbedoAtlasTexture, 0xFFFFFFFFU, "FallbackDecalAtlas::Albedo");
+    EnsureFallbackTexture(m_Resources.m_DecalPasses.m_pFallbackDecalNormalAtlasTexture, 0xFFFF8080U, "FallbackDecalAtlas::Normal");
+    EnsureFallbackTexture(m_Resources.m_DecalPasses.m_pFallbackDecalMaterialAtlasTexture, 0x00FF0080U, "FallbackDecalAtlas::Material");
+    EnsureFallbackTexture(m_Resources.m_DecalPasses.m_pFallbackDecalEmissiveAtlasTexture, 0x00000000U, "FallbackDecalAtlas::Emissive");
 
-    if (m_Resources.m_TransparencyPasses.m_pFallbackDecalAtlasSampler == nullptr)
+    if (m_Resources.m_DecalPasses.m_pFallbackDecalAtlasSampler == nullptr)
     {
-      xiiGALSamplerCreationDescription samplerDescription           = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
-      samplerDescription.m_AddressU                                 = xiiGALTextureAddressMode::Clamp;
-      samplerDescription.m_AddressV                                 = xiiGALTextureAddressMode::Clamp;
-      samplerDescription.m_AddressW                                 = xiiGALTextureAddressMode::Clamp;
-      m_Resources.m_TransparencyPasses.m_pFallbackDecalAtlasSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(samplerDescription);
+      xiiGALSamplerCreationDescription samplerDescription    = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+      samplerDescription.m_AddressU                          = xiiGALTextureAddressMode::Clamp;
+      samplerDescription.m_AddressV                          = xiiGALTextureAddressMode::Clamp;
+      samplerDescription.m_AddressW                          = xiiGALTextureAddressMode::Clamp;
+      m_Resources.m_DecalPasses.m_pFallbackDecalAtlasSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(samplerDescription);
     }
   };
 
   EnsureFallbackAtlases();
 
-  xiiSharedPtr<xiiGALTexture> pAtlasAlbedo   = m_Resources.m_TransparencyPasses.m_pFallbackDecalAlbedoAtlasTexture;
-  xiiSharedPtr<xiiGALTexture> pAtlasNormal   = m_Resources.m_TransparencyPasses.m_pFallbackDecalNormalAtlasTexture;
-  xiiSharedPtr<xiiGALTexture> pAtlasMaterial = m_Resources.m_TransparencyPasses.m_pFallbackDecalMaterialAtlasTexture;
-  xiiSharedPtr<xiiGALTexture> pAtlasEmissive = m_Resources.m_TransparencyPasses.m_pFallbackDecalEmissiveAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> pAtlasAlbedo   = m_Resources.m_DecalPasses.m_pFallbackDecalAlbedoAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> pAtlasNormal   = m_Resources.m_DecalPasses.m_pFallbackDecalNormalAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> pAtlasMaterial = m_Resources.m_DecalPasses.m_pFallbackDecalMaterialAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> pAtlasEmissive = m_Resources.m_DecalPasses.m_pFallbackDecalEmissiveAtlasTexture;
 
   xiiDecalAtlasResourceHandle hSelectedAtlas;
 
@@ -264,7 +195,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupDecalCullBatch(xiiDecalCullBatchData&
 
   data.m_hMeshDrawCommands = builder.WriteBuffer(xiiRGBlackboardKeys::k_DecalDrawCommands, meshCommandDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_TransparencyPasses.m_pDecalCullBatchPipeline, "Shaders/Pipeline/DecalClassification.xiiShader");
+  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_DecalPasses.m_pDecalCullBatchPipeline, "Shaders/Pipeline/DecalClassification.xiiShader");
 
   builder.SetPassAllowMerge(false);
 }
@@ -299,7 +230,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDecalCullBatch(const xiiDecalCullBa
     ClearStructuredUIntBuffer(pProjectedTiles);
     ClearStructuredUIntBuffer(pMeshDrawCommand);
 
-    cmd.SetPipelineState(m_Resources.m_TransparencyPasses.m_pDecalCullBatchPipeline);
+    cmd.SetPipelineState(m_Resources.m_DecalPasses.m_pDecalCullBatchPipeline);
 
     BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
@@ -337,7 +268,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupProjectedDecalResolve(xiiProjectedDec
   const bool bHasProjectedDecalCount = m_View.GetBlackboard().TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
   XII_IGNORE_UNUSED(bHasProjectedDecalCount);
 
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_TransparencyPasses.m_pSSDecalResolvePipeline, "Shaders/Pipeline/DecalResolve.xiiShader");
+  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_DecalPasses.m_pSSDecalResolvePipeline, "Shaders/Pipeline/DecalResolve.xiiShader");
 
   builder.SetPassAllowMerge(false);
 }
@@ -351,7 +282,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteProjectedDecalResolve(const xiiProj
 
   cmd.BeginDebugGroup("ProjectedDecalResolve");
   {
-    cmd.SetPipelineState(m_Resources.m_TransparencyPasses.m_pSSDecalResolvePipeline);
+    cmd.SetPipelineState(m_Resources.m_DecalPasses.m_pSSDecalResolvePipeline);
     BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
 
@@ -394,7 +325,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupMeshDecalDraw(xiiMeshDecalDrawData& d
   const bool bHasMeshDecalCount = m_View.GetBlackboard().TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
   XII_IGNORE_UNUSED(bHasMeshDecalCount);
 
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_TransparencyPasses.m_pMeshDecalResolvePipeline, "Shaders/Pipeline/MeshDecalResolve.xiiShader");
+  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_DecalPasses.m_pMeshDecalResolvePipeline, "Shaders/Pipeline/MeshDecalResolve.xiiShader");
 
   builder.SetPassAllowMerge(false);
 }
@@ -408,7 +339,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteMeshDecalDraw(const xiiMeshDecalDra
 
   cmd.BeginDebugGroup("MeshDecalDraw");
   {
-    cmd.SetPipelineState(m_Resources.m_TransparencyPasses.m_pMeshDecalResolvePipeline);
+    cmd.SetPipelineState(m_Resources.m_DecalPasses.m_pMeshDecalResolvePipeline);
     BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
 
@@ -433,73 +364,6 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteMeshDecalDraw(const xiiMeshDecalDra
 //
 // Collects all GPU resources related to weighted blended transparency accumulation and resolve.
 
-void xiiBuiltinRenderPipelineRuntime::SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRenderGraphBuilder& builder)
-{
-  const xiiUInt32 uiRenderWidth  = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiRenderHeight = m_View.GetRenderResolutionHeight();
-
-  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hSceneDepth           = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthRead);
-  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
-
-  xiiGALTextureCreationDescription accumulateDescription;
-  accumulateDescription.m_Type        = xiiGALResourceDimension::Texture2D;
-  accumulateDescription.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  accumulateDescription.m_Size.width  = uiRenderWidth;
-  accumulateDescription.m_Size.height = uiRenderHeight;
-  accumulateDescription.m_uiMipLevels = 1U;
-  accumulateDescription.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-  accumulateDescription.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hOITAccumulate               = builder.WriteTexture(xiiRGBlackboardKeys::k_OITAccumulateBuffer, accumulateDescription, xiiGALResourceStateFlags::RenderTarget);
-
-  xiiGALTextureCreationDescription revealDescription;
-  revealDescription.m_Type        = xiiGALResourceDimension::Texture2D;
-  revealDescription.m_Format      = xiiGALResourceFormat::R8UNormalized;
-  revealDescription.m_Size.width  = uiRenderWidth;
-  revealDescription.m_Size.height = uiRenderHeight;
-  revealDescription.m_uiMipLevels = 1U;
-  revealDescription.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-  revealDescription.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hOITReveal               = builder.WriteTexture(xiiRGBlackboardKeys::k_OITRevealBuffer, revealDescription, xiiGALResourceStateFlags::RenderTarget);
-
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_TransparencyPasses.m_pOITResolvePipeline, "Shaders/Pipeline/OITResolve.xiiShader");
-
-  builder.SetPassAllowMerge(false);
-}
-
-void xiiBuiltinRenderPipelineRuntime::ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRenderGraphPassContext& context)
-{
-  xiiGALCommandList& cmd            = context.GetCommandList();
-  const xiiUInt32    uiRenderWidth  = m_View.GetRenderResolutionWidth();
-  const xiiUInt32    uiRenderHeight = m_View.GetRenderResolutionHeight();
-
-  cmd.BeginDebugGroup("WeightedBlendedOIT");
-  {
-    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hOITAccumulate)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
-    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hOITReveal)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(1.0f, 1.0f, 1.0f, 1.0f));
-    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(uiRenderWidth), static_cast<float>(uiRenderHeight), 0.0f, 1.0f});
-
-    if (m_Resources.m_TransparencyPasses.m_pTranslucentPipeline && data.m_hDrawIndirectCommands.IsValid())
-    {
-      cmd.SetPipelineState(m_Resources.m_TransparencyPasses.m_pTranslucentPipeline);
-      BindFrameResources(cmd);
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(m_View.GetBlackboard())});
-    }
-
-    if (m_Resources.m_TransparencyPasses.m_pOITResolvePipeline)
-    {
-      cmd.SetPipelineState(m_Resources.m_TransparencyPasses.m_pOITResolvePipeline);
-      BindFrameResources(cmd);
-      cmd.ResolveAndSetShaderResourceTextureView("g_OITAccum", context.GetTexture(data.m_hOITAccumulate)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-      cmd.ResolveAndSetShaderResourceTextureView("g_OITReveal", context.GetTexture(data.m_hOITReveal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-      cmd.ResolveAndSetUnorderedAccessTextureView("g_HDROut", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
-    }
-  }
-  cmd.EndDebugGroup();
-}
 
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_BuiltinRenderPipelineSurfaces);

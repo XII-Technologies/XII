@@ -131,6 +131,46 @@ namespace
     return changed;
   }
 
+  constexpr xiiStringView s_TransparencyResource = "RenderPipelines/TransparencyResolve.xiiBinRenderPipeline"_xiisv;
+
+  template <typename Nodes>
+  bool ConvertTransparency(Nodes& nodes)
+  {
+    bool changed = false;
+    for (auto& node : nodes)
+    {
+      if (!IsLegacyStage(node.m_sType, node.m_Properties, "Transparency"))
+        continue;
+      xiiVariant pins;
+      const bool hasPins = node.m_Properties.TryGetValue("PinConfigurations", pins);
+      node.m_Properties.Clear();
+      if (hasPins)
+        node.m_Properties.Insert("PinConfigurations", pins);
+      node.m_sType.Clear();
+      node.m_Definition = xiiTransparencyResolveDefinitionId();
+      changed           = true;
+    }
+    return changed;
+  }
+
+  class TransparencyResolveSourcePatch : public xiiGraphPatch
+  {
+  public:
+    TransparencyResolveSourcePatch() : xiiGraphPatch("xiiBuiltinRenderPipelinePass", 7) {}
+    void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph*, xiiAbstractObjectNode* node) const override
+    {
+      const auto* stage = node->FindProperty("Stage");
+      if (!stage || stage->m_Value != xiiVariant("Transparency"))
+        return;
+      if (const auto* parameters = node->FindProperty("ParameterOverrides"))
+        node->AddProperty("Parameters", parameters->m_Value);
+      node->RemoveProperty("Stage");
+      node->AddProperty("Resource", xiiString(s_TransparencyResource));
+      context.RenameClass("xiiRenderPipelineSubgraphPass", 1);
+    }
+  };
+  static TransparencyResolveSourcePatch s_TransparencySourcePatch;
+
   class DebugVisualizationSourcePatch : public xiiGraphPatch
   {
   public:
@@ -378,9 +418,10 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
     if (descriptor.Connect(source, port, target, port).Succeeded())
       descriptor.m_Connections.PeekBack().m_Id = ConnectionId(descriptor.m_Passes[source].m_Id, descriptor.m_Passes[target].m_Id, port);
   };
-  bool opaqueChanged = ConvertOpaque(descriptor.m_Passes, addRoot);
-  bool debugChanged  = ConvertDebug(descriptor.m_Passes, addRoot);
-  bool changed       = Convert(descriptor.m_Passes, addRoot);
+  bool transparencyChanged = ConvertTransparency(descriptor.m_Passes);
+  bool opaqueChanged       = ConvertOpaque(descriptor.m_Passes, addRoot);
+  bool debugChanged        = ConvertDebug(descriptor.m_Passes, addRoot);
+  bool changed             = Convert(descriptor.m_Passes, addRoot);
   for (auto& definition : descriptor.m_Definitions)
   {
     const auto add = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView port) {
@@ -395,9 +436,18 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
       definition.m_Topology.m_EdgeTargets.PushBack(target);
       definition.m_Edges.PushBack(std::move(edge));
     };
+    transparencyChanged |= ConvertTransparency(definition.m_Nodes);
     opaqueChanged |= ConvertOpaque(definition.m_Nodes, add);
     debugChanged |= ConvertDebug(definition.m_Nodes, add);
     changed |= Convert(definition.m_Nodes, add);
+  }
+  if (transparencyChanged)
+  {
+    bool found = false;
+    for (const auto& reference : descriptor.m_References)
+      found |= reference.m_Id == xiiTransparencyResolveDefinitionId();
+    if (!found)
+      descriptor.m_References.PushBack({xiiTransparencyResolveDefinitionId(), s_TransparencyResource});
   }
   if (opaqueChanged)
   {

@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 6, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 7, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -26,14 +26,12 @@ xiiBitflags<xiiRenderExtractionCategory> xiiBuiltinRenderPipelinePass::GetExtrac
     return xiiRenderExtractionCategory::Geometry;
   if (m_sStage == "LightingPreparation" || m_sStage == "Lighting")
     return xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Geometry;
-  if (m_sStage == "Transparency")
-    return xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Particles | xiiRenderExtractionCategory::Decals;
   return {};
 }
 
 xiiBitflags<xiiRenderPipelineFeature> xiiBuiltinRenderPipelinePass::GetRuntimeFeatures() const
 {
-  if (m_sStage == "Visibility" || m_sStage == "DepthAndGeometry" || m_sStage == "Transparency")
+  if (m_sStage == "Visibility" || m_sStage == "DepthAndGeometry")
     return xiiRenderPipelineFeature::GpuScene;
   if (m_sStage == "Shadows")
     return xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::VirtualShadows | xiiRenderPipelineFeature::Lighting | xiiRenderPipelineFeature::RayTracing;
@@ -317,19 +315,6 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"FroxelScattering", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"FroxelMetadata", xiiRenderPipelinePin::Buffer, false, true});
   }
-
-  if (m_sStage == "Transparency")
-  {
-    pins.PushBack({"ParticleSimConstants", xiiRenderPipelinePin::Buffer, false, true});
-    pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"DrawIndirectCommands", xiiRenderPipelinePin::Buffer, true, true});
-    pins.PushBack({"OITAccumulate", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"OITReveal", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"DrawIndirectCommands", xiiRenderPipelinePin::Buffer, false, true});
-  }
 }
 xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -364,8 +349,8 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
   {
     const auto& pin = context.m_Pins[i];
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture)
-      context.m_Bindings[i].m_hTexture = pin.m_sName == "HDRSceneColor" && runtime->m_Frame.hTransparencyColor.IsValid() ? runtime->m_Frame.hTransparencyColor : pin.m_sName == "HardwareGI" ? (runtime->m_Resources.m_LightingPasses.m_bRTGIAvailableThisFrame ? context.m_Graph.FindTexture("RTRawGI") : xiiRenderGraphTextureHandle()) :
-                                                                                                                                                                                               context.m_Graph.FindTexture(pin.m_sName);
+      context.m_Bindings[i].m_hTexture = pin.m_sName == "HardwareGI" ? (runtime->m_Resources.m_LightingPasses.m_bRTGIAvailableThisFrame ? context.m_Graph.FindTexture("RTRawGI") : xiiRenderGraphTextureHandle()) :
+                                                                       context.m_Graph.FindTexture(pin.m_sName);
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer)
       context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
   }

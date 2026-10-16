@@ -19,4 +19,9 @@ inline xiiUuid xiiOpaqueCompositionDefinitionId()
   return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.OpaqueComposition");
 }
 
+inline xiiUuid xiiTransparencyResolveDefinitionId()
+{
+  return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.TransparencyResolve");
+}
+
 void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor);

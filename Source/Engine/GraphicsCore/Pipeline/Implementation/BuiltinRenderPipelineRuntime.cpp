@@ -465,16 +465,6 @@ void xiiBuiltinRenderPipelineRuntime::BuildLighting(xiiRenderGraph& graph, xiiRe
 
 
 
-void xiiBuiltinRenderPipelineRuntime::BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
-{
-  // Transparency and special material passes.
-  graph.AddPass<xiiGPUParticleSimulateData>("GPUParticleSimulate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupGPUParticleSimulate, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteGPUParticleSimulate, this));
-  const auto resolved        = graph.AddPass<xiiWeightedBlendedOITData>("WeightedBlendedOIT", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupWeightedBlendedOIT, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteWeightedBlendedOIT, this));
-  m_Frame.hTransparencyColor = resolved.first->m_hHDRSceneColor;
-}
-
-
-
 void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows)
 {
   m_Frame                      = {};
@@ -518,11 +508,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stag
     return XII_SUCCESS;
   }
 
-  if (stage == "Transparency")
-  {
-    BuildTransparency(graph, blackboard);
-    return XII_SUCCESS;
-  }
+
 
   return XII_FAILURE;
 }

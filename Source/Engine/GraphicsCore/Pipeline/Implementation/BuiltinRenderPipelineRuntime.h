@@ -96,12 +96,10 @@ struct xiiVolumetricFogResolveData;
 struct xiiVolumetricFogTemporalReprojectionData;
 
 
-struct xiiGPUParticleSimulateData;
 struct xiiDecalUploadData;
 struct xiiDecalCullBatchData;
 struct xiiProjectedDecalResolveData;
 struct xiiMeshDecalDrawData;
-struct xiiWeightedBlendedOITData;
 
 
 /// Built-in rendering implementation and isolated per-view history, owned by the existing
@@ -124,7 +122,6 @@ public:
   void                                                                   BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                                                              BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                                                                   BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
   void                                                                   InvalidateTemporalHistory();
   void                                                                   BindFrameResources(xiiGALCommandList& commandList) const;
@@ -313,30 +310,19 @@ public:
 
 
 
-    //  Stage 8 - Transparency & Special
-    struct TransparencyPasses
+    // Decal classification and surface resolve resources.
+    struct DecalPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pParticleSimulatePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pParticleRenderPipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pDecalRenderPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pDecalCullBatchPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSDecalClassifyPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSDecalResolvePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pMeshDecalResolvePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pTranslucentPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pOITResolvePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pRTTransparencyPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSTranslucencyPipeline;
-      // Persistent particle simulation state
-      xiiSharedPtr<xiiGALBuffer> m_pParticleStateBuffer;
-      xiiUInt32                  m_uiParticleCapacity = 0U;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pDecalCullBatchPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSSDecalResolvePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pMeshDecalResolvePipeline;
 
       xiiSharedPtr<xiiGALTexture> m_pFallbackDecalAlbedoAtlasTexture;
       xiiSharedPtr<xiiGALTexture> m_pFallbackDecalNormalAtlasTexture;
       xiiSharedPtr<xiiGALTexture> m_pFallbackDecalMaterialAtlasTexture;
       xiiSharedPtr<xiiGALTexture> m_pFallbackDecalEmissiveAtlasTexture;
       xiiSharedPtr<xiiGALSampler> m_pFallbackDecalAtlasSampler;
-    } m_TransparencyPasses;
+    } m_DecalPasses;
   };
   Resources m_Resources;
 
@@ -361,7 +347,6 @@ private:
     std::pair<xiiShadowCascadeSetupData*, xiiRenderGraphPassHandle> shadowCascadePass;
     std::pair<xiiContactShadowData*, xiiRenderGraphPassHandle>      contactShadowPass;
     xiiRenderGraphTextureHandle                                     hSceneDepth;
-    xiiRenderGraphTextureHandle                                     hTransparencyColor;
     xiiGpuSceneGBufferRasterDescription                             gpuRasterDescription;
   } m_Frame;
   void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRenderGraphBuilder& builder);
@@ -537,9 +522,6 @@ private:
 
 
 
-  void SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data, xiiRenderGraphPassContext& context);
-
   void SetupDecalUpload(xiiDecalUploadData& data, xiiRenderGraphBuilder& builder);
   void ExecuteDecalUpload(const xiiDecalUploadData& data, xiiRenderGraphPassContext& context);
 
@@ -552,8 +534,6 @@ private:
   void SetupMeshDecalDraw(xiiMeshDecalDrawData& data, xiiRenderGraphBuilder& builder);
   void ExecuteMeshDecalDraw(const xiiMeshDecalDrawData& data, xiiRenderGraphPassContext& context);
 
-  void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRenderGraphPassContext& context);
 
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.

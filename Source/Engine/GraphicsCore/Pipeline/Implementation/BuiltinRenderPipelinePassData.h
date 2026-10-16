@@ -815,27 +815,6 @@ struct xiiVolumetricFogTemporalReprojectionData
 
 
 
-struct xiiGPUParticleSimulateData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphBufferHandle m_hParticleState;          ///< UnorderedAccess in/out (persistent particle state buffer).
-  xiiRenderGraphBufferHandle m_hParticleConstants;      ///< ConstantBuffer in (simulation time step and live count).
-  xiiUInt32                  m_uiParticleCount = 65536; ///< Number of particles to simulate.
-};
-
-struct alignas(16) xiiGPUParticleSimulateConstants
-{
-  XII_DECLARE_POD_TYPE();
-
-  float     m_fDeltaTimeS      = 0.0f;
-  float     m_fGravityScale    = 1.0f;
-  float     m_fDragCoefficient = 0.05f;
-  float     m_fTurbulenceScale = 0.0f;
-  xiiVec3   m_vWindVelocity    = xiiVec3::MakeZero();
-  xiiUInt32 m_uiActiveCount    = 0U;
-};
-
 struct alignas(16) xiiGPUDecalInstance
 {
   XII_DECLARE_POD_TYPE();
@@ -915,15 +894,4 @@ struct xiiMeshDecalDrawData
   xiiRenderGraphTextureHandle m_hGBufferEmissive;
 
   xiiUInt32 m_uiDecalCount = 0U;
-};
-
-struct xiiWeightedBlendedOITData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< UnorderedAccess in/out (HDR scene color target).
-  xiiRenderGraphTextureHandle m_hSceneDepth;           ///< DepthRead in (scene depth for translucent geometry).
-  xiiRenderGraphTextureHandle m_hOITAccumulate;        ///< RenderTarget out / ShaderResource in (weighted accumulation target).
-  xiiRenderGraphTextureHandle m_hOITReveal;            ///< RenderTarget out / ShaderResource in (reveal target).
-  xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
 };
