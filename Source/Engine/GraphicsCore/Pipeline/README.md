@@ -62,9 +62,31 @@ the same pair of passes through different pins. Resource inputs have one produce
 order inputs allow multiple predecessors. Required inputs must be connected. Declared
 texture formats must agree; `Unknown` permits format resolution at runtime. Input
 handles and resolved formats are checked before consumer construction, and required
-outputs are checked after producer construction. Additional requirements such as
-buffer layout, dimensions, access patterns, and domain policies belong to the pass's
-validation or build implementation.
+outputs are checked after producer construction. Reflected pin requirements can
+narrow format, dimension, sample count, width/height and required GAL binding flags.
+Zero/Undefined requirements accept the producer's description; these constraints
+validate resources rather than silently resizing an algorithm's output. Native
+requiredness, direction, resource kind, access metadata, cardinality and temporal
+semantics remain owned by the pass. Buffer layout and algorithm-specific policies
+still belong to its validation/build implementation.
+
+Pin settings are persistent owned document objects selected through the generic
+Qt pin inspector. Their schema metadata is read-only, with editable display names,
+format requirements and structured resource requirements. Connections continue to
+use stable schema names. Commands preserve connected edges, pin/property selection
+and authored connection IDs through edits; nested settings, copy/paste, dynamic
+pin changes and undo/redo use the normal document infrastructure. Older pipeline
+documents initialize missing pin objects on load, and packaged source assets have
+been migrated through the production serializer/compiler.
+
+Compilation lowers authored pin objects into immutable contracts. Each contract
+retains its source document identity and derives an occurrence identity from the
+pipeline/node path. Subgraph interface constraints narrow the mapped internal pins
+for that occurrence, including nested definitions and input fan-out. Conflicting
+constraints fail rather than alter shared definitions. Explicit editor expansion
+uses the same boundary map and reflected object-graph diff commands to preserve
+settings. Runtime pass instances do not allocate authoring pin objects; frame
+bindings validate the compiled descriptions, including directly published bindings.
 
 `Build` obtains input handles from its context, emits specialized render-graph work,
 and publishes outputs with `SetOutput`. Execution delegates must retain owned pass

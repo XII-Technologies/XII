@@ -238,3 +238,73 @@ connected-pin authoring, but render-specific persistent pin objects and constrai
 still need to be connected to that infrastructure. All other open gates remain in
 scope, including typed overrides, focused operation passes, authored subgraphs and
 the final compiler/runtime audit. D3D12 remains excluded.
+
+## Persistent render-pin contracts checkpoint
+
+Render pipeline pins now have owned reflected document configuration objects with
+persistent UUIDs, display names, required resource formats and texture dimension,
+sample, extent and binding requirements. Native pass schemas remain authoritative
+for resource kind, direction, access, cardinality, requiredness and temporal history;
+their reflected metadata is read-only in the inspector. Requirements narrow a
+contract rather than silently changing allocations. Invalid or conflicting
+requirements fail compilation or runtime binding validation.
+
+The production node manager initializes configurations during normal node creation,
+dynamic schema changes and loading of older documents. Matching pins retain their
+identities and settings; removed pins and incompatible edges use document commands
+and undo. Clipboard duplication remaps owned objects and their persistent IDs.
+The generic node editor routes creation through the document accessor, supports
+authored display labels, and tracks changes in nested settings. The existing
+document serializer now handles complete detached owned subtrees during paste.
+There is no additional object registry or per-frame reflection path.
+
+Subgraph instance interface configurations are serialized alongside definition
+references. The existing Core expansion boundary mappings lower them onto each
+occurrence's internal contracts. Nested and repeated instances remain independent,
+and fan-out accumulates requirements from every consumer, including consumers after
+an unconstrained first mapping. Unknown pins and conflicting contracts report the
+responsible instance path. The compiled schema retains source identities and
+deterministic occurrence identities; runtime pass objects omit authoring pin objects.
+Expanding a subgraph in the editor applies a structured object-graph diff through
+the existing accessor, preserving leaf arrays/maps/settings and interface contracts.
+
+All four SDK pipeline source assets and compiled binaries have been regenerated
+with the production serializer/compiler. Document, node, connection and layout
+identities are retained. Loading older sources without configurations initializes
+stable settings objects; normal save persists the conversion. Deterministic export
+and packaged-byte equality remain tested. Authoring metadata increases packaged
+binary sizes: Deferred 25,454 to 176,611 bytes, EditorScene 29,342 to 190,058 bytes,
+and each texture preview 556 to 971 bytes. This footprint is not a GPU allocation
+or submission increase. No controlled performance benchmark was run.
+
+Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest,
+EditorEngineProcessFrameworkTest, EditorFrameworkTest, ToolsFoundationTest and
+EditorPluginVisualScript with their affected consumers. Current regressions cover
+native/reflected contracts, direct-binding validation, nested shared definitions,
+fan-out conflicts, deterministic serialization, actual Qt pin selection/property
+widgets, compatible/incompatible connection edits, dynamic pins, copy/paste,
+save/load, older documents, subgraph expansion/undo and production asset hot reload.
+The hot-reload test retains an old immutable snapshot while independently
+synchronizing two runtime instances to the replacement.
+
+All 27 GraphicsCore, 28 ToolsFoundation, 47 Vulkan GraphicsFoundation, 73 Vulkan
+editor-engine and 15 Qt editor subtests pass. Evidence is in ignored local
+`Workspace/pipeline-pin-final-build.log`, `pipeline-pin-final-editor-build.log`,
+`pipeline-pin-final-core-tests.log`, `pipeline-pin-final-tools-tests.log`,
+`pipeline-pin-final-qt-recheck.log`, `pipeline-pin-verified-gal-tests.log` and
+`pipeline-pin-verified-editor-gpu-tests.log`.
+
+One full Qt run failed the native viewport's expected sphere-picking assertion;
+the repeat passed picking, captures, resize and play-mode teardown. Its cause has
+not been established, so this remains an intermittent verification issue rather
+than a claimed fix. Earlier fixture setup and detached-subtree failures were
+corrected before these final runs. Existing Vulkan unused shader-output warnings
+remain. D3D12 is excluded; other platforms/configurations are not newly verified.
+
+This closes the persistent render-pin integration gap described in earlier
+checkpoints, not the complete objective. Pipeline-level settings, explicitly
+permitted typed overrides and effective configuration inspection remain open.
+Focused operation passes, authored operation subgraphs and specialized sample
+migration must still replace `BuiltinRenderPipelineRuntime.cpp` stage orchestration.
+Capability validation, the final compiler/runtime audit and performance evidence
+also remain required.

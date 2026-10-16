@@ -27,3 +27,9 @@ ResourceManager, and checks byte-for-byte reproduction and repeated export.
 The scene assets currently contain the existing reflected composite stages. The
 ongoing migration replaces those stages with focused passes and reusable subgraph
 assets; this library checkpoint does not claim that decomposition is complete.
+
+The source documents now own persistent reflected pin configurations. Their
+compiled snapshots preserve source pin identities and resource constraints; these
+settings are lowered into immutable execution metadata rather than document
+objects in each runtime pass. The production library regression checks every
+pin's backing document identity and reproduces the packaged bytes.
