@@ -88,6 +88,20 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     {
       passCount += nodes->IsNode(object) ? 1U : 0U;
       connectionCount += nodes->IsConnection(object) ? 1U : 0U;
+      if (nodes->IsNode(object))
+      {
+        const auto inspect = [&](const auto& pins) {
+          for (const auto& pin : pins)
+          {
+            const auto* properties = nodes->GetPinPropertyObject(*pin);
+            XII_TEST_BOOL(properties != nullptr);
+            if (properties)
+              XII_TEST_BOOL(properties->GetTypeAccessor().GetValue("Id").Get<xiiUuid>() == properties->GetGuid());
+          }
+        };
+        inspect(nodes->GetInputPins(object));
+        inspect(nodes->GetOutputPins(object));
+      }
     }
     XII_TEST_BOOL(passCount > 0);
     {

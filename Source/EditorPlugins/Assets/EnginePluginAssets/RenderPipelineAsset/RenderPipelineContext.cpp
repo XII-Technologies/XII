@@ -94,6 +94,14 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
       node.m_Id         = passUuids[i];
       node.m_Parameters = instance->m_Parameters;
       node.m_Overrides  = instance->m_Overrides;
+      if (!instance->m_PinConfigurations.IsEmpty())
+      {
+        xiiVariantDictionary properties;
+        if (instance->GetProperties(properties).Failed())
+          return xiiStatus("Cannot serialize subgraph interface pin settings.");
+        if (const auto* pins = properties.GetValue("PinConfigurations"))
+          node.m_Properties.Insert("PinConfigurations", *pins);
+      }
       passUuidToIndex.Insert(passUuids[i], index);
       continue;
     }

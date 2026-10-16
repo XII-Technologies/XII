@@ -9,6 +9,9 @@
 class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineNodeManager : public xiiDocumentNodeManager
 {
 public:
+  const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const override;
+  /// Creates/removes owned pin settings using the document's current undo transaction.
+  xiiStatus    SynchronizePinConfigurations(const xiiDocumentObject* node);
   void         GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
   virtual bool InternalIsNode(const xiiDocumentObject* pObject) const override;
   bool         InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const override;
