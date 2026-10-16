@@ -96,6 +96,7 @@ public:
   xiiArrayPtr<const xiiGraphProvenance>           GetProvenance() const { return m_Provenance; }
   xiiArrayPtr<const xiiGraphDefinitionDependency> GetDependencies() const { return m_Dependencies; }
   const xiiVariantDictionary&                     GetPassParameters(xiiUInt32 index) const { return m_PassParameters[index]; }
+  xiiArrayPtr<const xiiRenderPipelinePin>         GetPins(xiiUInt32 index) const { return m_Passes[index].m_Pins; }
   xiiBitflags<xiiRenderExtractionCategory>        GetExtractionRequirements() const { return m_ExtractionRequirements; }
   xiiBitflags<xiiRenderPipelineFeature>           GetRuntimeFeatures() const { return m_RuntimeFeatures; }
   xiiBitflags<xiiRenderPipelineFeature>           GetRootRuntimeFeatures() const

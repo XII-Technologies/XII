@@ -85,7 +85,7 @@ xiiUInt64 xiiRenderPipeline::GetHeapMemoryUsage() const
   {
     size += pass.m_Pins.GetHeapMemoryUsage();
     for (const auto& pin : pass.m_Pins)
-      size += pin.m_sName.GetHeapMemoryUsage();
+      size += pin.m_sName.GetHeapMemoryUsage() + pin.m_sDisplayName.GetHeapMemoryUsage();
   }
   return size;
 }

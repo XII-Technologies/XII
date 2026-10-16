@@ -32,7 +32,9 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
   {
     xiiRenderPipelinePass* pass = m_pPipeline->m_Passes[i].m_pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     m_Passes.PushBack(pass);
-    if (pass->Configure(m_pPipeline->m_Descriptor.m_Passes[i].m_Properties).Failed())
+    auto properties = m_pPipeline->m_Descriptor.m_Passes[i].m_Properties;
+    properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
+    if (pass->Configure(properties).Failed())
     {
       Clear();
       return XII_FAILURE;
@@ -122,11 +124,15 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
       if (pin.m_Type == xiiRenderPipelinePin::Texture)
       {
         const auto* description = graph.GetTextureDescription(binding.m_hTexture);
-        if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || (pin.m_Format != xiiGALResourceFormat::Unknown && description->m_Format != pin.m_Format)))
+        if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || !pin.Accepts(*description)))
           return XII_FAILURE;
       }
-      else if ((binding.m_hBuffer.IsValid() || !pin.m_bOptional) && !graph.GetBufferDescription(binding.m_hBuffer))
-        return XII_FAILURE;
+      else if (binding.m_hBuffer.IsValid() || !pin.m_bOptional)
+      {
+        const auto* description = graph.GetBufferDescription(binding.m_hBuffer);
+        if (!description || !pin.Accepts(*description))
+          return XII_FAILURE;
+      }
       m_HistoryBindings[pass.m_uiBindingOffset + i] = binding;
     }
   }
@@ -155,11 +161,15 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         if (pin.m_Type == xiiRenderPipelinePin::Texture)
         {
           const auto* description = graph.GetTextureDescription(binding.m_hTexture);
-          if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || (pin.m_Format != xiiGALResourceFormat::Unknown && description->m_Format != pin.m_Format)))
+          if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || !pin.Accepts(*description)))
             return XII_FAILURE;
         }
-        else if (pin.m_Type == xiiRenderPipelinePin::Buffer && (binding.m_hBuffer.IsValid() || !pin.m_bOptional) && !graph.GetBufferDescription(binding.m_hBuffer))
-          return XII_FAILURE;
+        else if (pin.m_Type == xiiRenderPipelinePin::Buffer && (binding.m_hBuffer.IsValid() || !pin.m_bOptional))
+        {
+          const auto* description = graph.GetBufferDescription(binding.m_hBuffer);
+          if (!description || !pin.Accepts(*description))
+            return XII_FAILURE;
+        }
       }
       return XII_SUCCESS;
     };

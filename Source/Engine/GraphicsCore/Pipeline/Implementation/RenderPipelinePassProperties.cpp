@@ -79,6 +79,9 @@ namespace
           continue;
         xiiVariant value;
         XII_SUCCEED_OR_RETURN(ReadProperty(object, property, value, depth + 1));
+        // Older assets have no authored pin overrides. Preserve their byte representation.
+        if (pass && property->GetPropertyName() == "PinConfigurations" && value.IsA<xiiVariantArray>() && value.Get<xiiVariantArray>().IsEmpty())
+          continue;
         out_values.Insert(property->GetPropertyName(), std::move(value));
       }
       return XII_SUCCESS;

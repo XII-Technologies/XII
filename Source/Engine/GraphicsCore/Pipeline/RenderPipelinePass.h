@@ -6,30 +6,11 @@
 #include <Foundation/Types/Variant.h>
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Pipeline/RenderPipelinePin.h>
 
 class xiiView;
 struct xiiRenderPipelinePassContext;
 struct xiiRenderPipelineResourceDescriptor;
-
-/// Pin schemas are supplied by the reflected pass type, rather than trusted asset data.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
-{
-  enum Type : xiiUInt8
-  {
-    Texture,
-    Buffer,
-    Order ///< Orders CPU graph construction. GPU dependencies use render-graph resource reads/writes.
-  };
-  xiiString m_sName;
-  Type      m_Type      = Texture;
-  bool      m_bInput    = true;
-  bool      m_bOptional = false;
-  /// Unknown accepts the producer's format; concrete formats must match.
-  xiiGALResourceFormat::Enum m_Format = xiiGALResourceFormat::Unknown;
-  /// Pass-owned previous-frame resource, imported before current-frame Build. It creates no
-  /// intra-frame ordering edge. Valid only on typed resource outputs.
-  bool m_bTemporalHistoryOutput = false;
-};
 
 struct xiiRenderPipelineBinding
 {
@@ -46,14 +27,17 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePass, xiiReflectedClass);
 
 public:
-  virtual ~xiiRenderPipelinePass() = default;
+  virtual ~xiiRenderPipelinePass();
   /// Authored, occurrence-local parameter overrides. Kept separate from compile-time pass properties.
   xiiVariantDictionary m_ParameterOverrides;
-  virtual xiiResult    Configure(const xiiVariantDictionary& properties);
+  /// Authoring-only owned objects. Runtime pass instances consume compiled pins instead.
+  xiiDynamicArray<xiiRenderPipelinePinConfiguration*> m_PinConfigurations;
+  virtual xiiResult                                   Configure(const xiiVariantDictionary& properties);
   /// Capture authored reflected properties, including arrays, value maps and owned settings objects.
   /// Occurrence-local ParameterOverrides remain in the descriptor's parameter scope.
   xiiResult                                        GetProperties(xiiVariantDictionary& out_properties) const;
   virtual void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
+  xiiResult                                        GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
   virtual xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return {}; }
   virtual xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const { return {}; }
   virtual xiiResult                                Build(xiiRenderPipelinePassContext& context) = 0;
