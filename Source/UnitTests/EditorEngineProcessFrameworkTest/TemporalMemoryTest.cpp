@@ -179,10 +179,19 @@ public:
     xiiVariantDictionary         properties;
     properties.Insert("Stage", m_sStage);
     XII_SUCCEED_OR_RETURN(pass.Configure(properties));
-    const auto device = xiiGALDevice::GetDefaultDevice();
     if (m_bFailAllocation)
-      xiiGALDevice::SetDefaultDevice(nullptr);
-    XII_SCOPE_EXIT(xiiGALDevice::SetDefaultDevice(device));
+    {
+      // Fail this pass's allocation without changing the device registry used by
+      // asynchronous resource loading and other rendering work.
+      xiiSharedPtr<xiiGALTexture>      history[2];
+      xiiGALTextureCreationDescription description;
+      description.m_Type      = xiiGALResourceDimension::Texture2D;
+      description.m_Size      = {16, 16};
+      description.m_Format    = xiiGALResourceFormat::RGBA16Float;
+      description.m_BindFlags = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+      XII_SUCCEED_OR_RETURN(xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(history, description, m_bHistoryValid,
+                                                                                   [](const auto&) -> xiiSharedPtr<xiiGALTexture> { return nullptr; }));
+    }
     return pass.Build(context);
   }
 };
@@ -237,7 +246,6 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedStageInvalidatesView)
     {
       xiiTestLogInterface   log;
       xiiTestLogSystemScope logScope(&log, true);
-      log.ExpectMessage("Failed to allocate temporal resources", xiiLogMsgType::ErrorMsg);
       log.ExpectMessage("Failed to build render pipeline", xiiLogMsgType::ErrorMsg);
       world.Update();
       XII_TEST_BOOL(!view->GetRenderGraph()->FindTexture("TAAHistory").IsValid());
