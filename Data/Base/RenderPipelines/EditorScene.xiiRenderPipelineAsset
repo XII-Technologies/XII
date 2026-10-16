@@ -205,10 +205,11 @@ o
 o
 {
 	Uuid %id{u4{3210868167076654172,157386594501197287}}
-	s %t{"xiiBuiltinRenderPipelinePass"}
+	s %t{"xiiUpscalePass"}
 	u3 %v{1}
 	p
 	{
+		u3 %Height{0}
 		Vec2 %Node::Pos{f{0,0x00007044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -218,7 +219,7 @@ o
 			Uuid{u4{4695920836568672912,3780219543425655694}}
 			Uuid{u4{12842160346602461523,3540037297624538034}}
 		}
-		s %Stage{"Upscale"}
+		u3 %Width{0}
 	}
 }
 o
@@ -703,7 +704,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
-		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{0}
 		s %Name{"DisplayLinearColor"}
 		b %Optional{0}
@@ -2174,7 +2175,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
-		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{0}
 		s %Name{"BloomTexture"}
 		b %Optional{0}
@@ -2363,7 +2364,7 @@ o
 {
 	Uuid %id{u4{17282471267611088448,2299836498949776161}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x00006644,0}}
@@ -2844,7 +2845,7 @@ o
 {
 	Uuid %id{u4{3094782963385043180,2824406971250058542}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x00C00F45,0}}
@@ -4260,7 +4261,7 @@ o
 {
 	Uuid %id{u4{5522749529032984217,3865740101620447699}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x0080AC44,0x00007044}}
@@ -4291,7 +4292,7 @@ o
 {
 	Uuid %id{u4{9207936607721496749,3886379147220973615}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0,0x0000F043}}
@@ -5532,7 +5533,7 @@ o
 {
 	Uuid %id{u4{9831080987432695220,4846129308559880398}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x00C00F45,0x0000F043}}
@@ -7941,7 +7942,7 @@ o
 {
 	Uuid %id{u4{8031150832131385739,6042580064797568937}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x00C00F45,0x00007044}}
@@ -8944,7 +8945,7 @@ o
 o
 {
 	Uuid %id{u4{15462311147390685758,6814038549207923433}}
-	s %t{"xiiBuiltinRenderPipelinePass"}
+	s %t{"xiiColorGradingPass"}
 	u3 %v{1}
 	p
 	{
@@ -8959,7 +8960,8 @@ o
 			Uuid{u4{2504728831943825304,13467019286551131277}}
 			Uuid{u4{8888152188486769248,9520943255111976138}}
 		}
-		s %Stage{"ColorGrading"}
+		Uuid %Settings{u4{15024233229547066592,17189194120974681311}}
+		b %UseViewDefaults{1}
 	}
 }
 o
@@ -10908,7 +10910,7 @@ o
 	u3 %v{1}
 	p
 	{
-		s %Access{"xiiRenderPipelinePinAccess::Write"}
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
@@ -11154,10 +11156,11 @@ o
 o
 {
 	Uuid %id{u4{3917916290908824229,9193980856582265709}}
-	s %t{"xiiBuiltinRenderPipelinePass"}
+	s %t{"xiiBloomPass"}
 	u3 %v{1}
 	p
 	{
+		f %Knee{0x0000003F}
 		Vec2 %Node::Pos{f{0x0000E643,0x00007044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -11167,7 +11170,9 @@ o
 			Uuid{u4{5085203645438071536,13543572591521609903}}
 			Uuid{u4{16578218114924665199,12602377645585808342}}
 		}
-		s %Stage{"Bloom"}
+		f %Radius{0x0000803F}
+		f %Threshold{0x0000803F}
+		b %UseViewDefaults{1}
 	}
 }
 o
@@ -11281,7 +11286,7 @@ o
 {
 	Uuid %id{u4{18306915346437498022,9309284035583063865}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x0080AC44,0}}
@@ -13033,10 +13038,10 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
-		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{0}
 		s %Name{"GradedColor"}
-		b %Optional{1}
+		b %Optional{0}
 		s %ResourceType{"xiiRenderPipelinePinType::Texture"}
 		b %TemporalHistory{0}
 	}
@@ -13946,7 +13951,7 @@ o
 {
 	Uuid %id{u4{9103777811720271829,11831090753880792510}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0,0}}
@@ -14110,7 +14115,7 @@ o
 {
 	Uuid %id{u4{7271038080363231794,12015299646081299617}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x0000E643,0}}
@@ -14812,7 +14817,7 @@ o
 {
 	Uuid %id{u4{12446509256780206272,12766003369809087949}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x0080AC44,0x0000F043}}
@@ -16195,7 +16200,7 @@ o
 {
 	Uuid %id{u4{7992469333793339284,14290933845381298542}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x0000E644,0}}
@@ -16536,7 +16541,7 @@ o
 {
 	Uuid %id{u4{11671515496379915160,14583762954194484591}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x00006644,0x0000F043}}
@@ -16813,11 +16818,16 @@ o
 o
 {
 	Uuid %id{u4{17751466286663026031,14748776446238415861}}
-	s %t{"xiiBuiltinRenderPipelinePass"}
+	s %t{"xiiToneMappingPass"}
 	u3 %v{1}
 	p
 	{
+		f %BloomStrength{0xCDCC4C3D}
+		f %MaximumDisplayNits{0x00007A44}
 		Vec2 %Node::Pos{f{0x00006644,0x00007044}}
+		s %Operator{"xiiToneMappingOperator::ACES"}
+		s %OutputMode{"xiiDisplayOutputMode::SDRsRGB"}
+		f %PaperWhiteNits{0x00004B43}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -16828,7 +16838,7 @@ o
 			Uuid{u4{14090458065616164327,11253258962681133536}}
 			Uuid{u4{8910776601366694959,16793580589024380774}}
 		}
-		s %Stage{"ToneMapping"}
+		b %UseViewDefaults{1}
 	}
 }
 o
@@ -17808,7 +17818,7 @@ o
 {
 	Uuid %id{u4{11776752914435020350,15682191100436788704}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x0000E643,0x0000F043}}
@@ -19275,6 +19285,20 @@ o
 }
 o
 {
+	Uuid %id{u4{15024233229547066592,17189194120974681311}}
+	s %t{"xiiColorGradingSettings"}
+	u3 %v{1}
+	p
+	{
+		f %Contrast{0x0000803F}
+		f %FilmGrainStrength{0}
+		f %Saturation{0x0000803F}
+		f %VignetteRoundness{0x0000803F}
+		f %VignetteStrength{0}
+	}
+}
+o
+{
 	Uuid %id{u4{13154305811912102434,17202430913428701201}}
 	s %t{"xiiRenderPipelinePinMetadata"}
 	u3 %v{1}
@@ -20220,7 +20244,7 @@ o
 {
 	Uuid %id{u4{6190465470311458614,18280970855620828646}}
 	s %t{"xiiBuiltinRenderPipelinePass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Vec2 %Node::Pos{f{0x0000E644,0x0000F043}}
@@ -20244,7 +20268,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
-		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{0}
 		s %Name{"UpscaledColor"}
 		b %Optional{0}
@@ -20513,6 +20537,23 @@ Types
 {
 o
 {
+	Uuid %id{u4{13125385320886343745,199221983418504614}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiColorGradingPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{1806006595755264957,1330264583885842403}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -20564,6 +20605,40 @@ o
 }
 o
 {
+	Uuid %id{u4{5958550388801889192,2611625803177159391}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDisplayOutputMode"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{11722301072241239539,2623964291530752821}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiUpscalePass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{7042283399902377553,2965490508835995309}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -20576,6 +20651,74 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelinePinConstraints"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{3872371818277191128,3070678839353488616}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiBloomPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{18334910300196656160,3472175156521515821}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiColorGradingSettings"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{12994736052897564455,3737983181253015883}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiToneMappingPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16531145568626605552,4457094835024808881}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiCategoryAttribute"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -20768,6 +20911,40 @@ o
 }
 o
 {
+	Uuid %id{u4{8425327503915406266,13353872395401440826}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiPropertyAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{11111298332990749816,14884946627690687781}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiToneMappingOperator"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{11757360558073105519,15956676577570765383}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -20848,7 +21025,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiBuiltinRenderPipelinePass"}
-		u3 %TypeVersion{1}
+		u3 %TypeVersion{2}
 	}
 }
 o

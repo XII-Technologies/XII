@@ -108,6 +108,7 @@ public:
   /// Applies validated, view-local exposure, tone-mapping and display calibration.
   [[nodiscard]] xiiResult                       SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
   [[nodiscard]] const xiiDisplayOutputSettings& GetDisplayOutputSettings() const;
+  xiiUInt64                                     GetDisplayOutputSettingsRevision() const { return m_uiDisplayOutputSettingsRevision; }
 
   /// Invalidates all per-view temporal lighting and reconstruction history after a camera cut or teleport.
   void InvalidateTemporalHistory();
@@ -293,6 +294,7 @@ private:
   xiiBuiltinRenderPipelineRuntime*         GetBuiltinRuntime() const;
 
   xiiDisplayOutputSettings m_DisplayOutputSettings;
+  xiiUInt64                m_uiDisplayOutputSettingsRevision = 1;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

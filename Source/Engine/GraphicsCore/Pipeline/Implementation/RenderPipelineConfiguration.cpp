@@ -2,7 +2,7 @@
 
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
-#include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
+#include <GraphicsCore/Pipeline/RenderPipelineConfiguration.h>
 
 namespace
 {
@@ -58,3 +58,5 @@ xiiResult xiiResolvePipelineDisplaySettings(const xiiVariantDictionary& paramete
   inout_settings = replacement;
   return XII_SUCCESS;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelineConfiguration);

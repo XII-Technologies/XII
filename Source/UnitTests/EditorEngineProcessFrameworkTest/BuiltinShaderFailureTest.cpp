@@ -9,7 +9,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -45,19 +45,20 @@ namespace
     return shader;
   }
 
-  void AddBloomInput(xiiRenderGraph& graph)
+  xiiRenderGraphTextureHandle AddBloomInput(xiiRenderGraph& graph)
   {
     struct Input
     {
       xiiRenderGraphTextureHandle m_Color;
     };
-    graph.AddPass<Input>("Bloom input", xiiGALCommandQueueFlags::Compute, [](Input& data, xiiRenderGraphBuilder& builder) {
+    const auto emitted = graph.AddPass<Input>("Bloom input", xiiGALCommandQueueFlags::Compute, [](Input& data, xiiRenderGraphBuilder& builder) {
       xiiGALTextureCreationDescription description;
       description.m_Type = xiiGALResourceDimension::Texture2D;
       description.m_Size = {16, 16};
       description.m_Format = xiiGALResourceFormat::RGBA16Float;
       description.m_BindFlags = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
       data.m_Color = builder.WriteTexture(xiiRGBlackboardKeys::k_UpscaledColor, description, xiiGALResourceStateFlags::UnorderedAccess); }, [](const Input&, xiiRenderGraphPassContext&) {});
+    return emitted.first->m_Color;
   }
 
   xiiResult RestoreShader(const xiiShaderResourceHandle& shader)
@@ -86,25 +87,30 @@ XII_CREATE_SIMPLE_TEST(BuiltinShaderFailure, StageFailureAndRecovery)
   xiiView* view = nullptr;
   world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Shader setup failure", view);
   view->SetViewport({0, 0, 16, 16});
-  xiiBuiltinRenderPipelinePass pass;
-  xiiVariantDictionary         properties;
-  properties.Insert("Stage", "Bloom");
+  xiiBloomPass         pass;
+  xiiVariantDictionary properties;
   if (!XII_TEST_RESULT(pass.Configure(properties)))
     return;
 
   const auto                                           shader = CreateMissingShader(sBloomShader);
   const xiiHashTable<xiiHashedString, xiiHashedString> permutations;
   for (bool allowFallback : {false, true})
+  {
     XII_TEST_BOOL(!xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, permutations, allowFallback).IsValid());
-  xiiRenderGraph               graph("Shader setup failure");
-  xiiRenderGraphBlackboard     blackboard;
-  xiiRenderPipelinePassContext context{view, graph, blackboard, properties, {}, {}, "Shader setup failure"};
+  }
+  xiiRenderGraph                        graph("Shader setup failure");
+  xiiRenderGraphBlackboard              blackboard;
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass.GetPins(pins);
+  xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+  bindings.SetCount(pins.GetCount());
+  xiiRenderPipelinePassContext context{view, graph, blackboard, properties, pins, bindings, "Shader setup failure"};
   graph.BeginSetup(1);
-  AddBloomInput(graph);
+  bindings[context.FindPin("UpscaledColor", true)].m_hTexture = AddBloomInput(graph);
   {
     xiiTestLogInterface   log;
     xiiTestLogSystemScope logScope(&log, true);
-    log.ExpectMessage("Failed to create built-in compute pipeline", xiiLogMsgType::ErrorMsg);
+    log.ExpectMessage("Failed to create reflected compute operation pipeline", xiiLogMsgType::ErrorMsg);
     XII_TEST_BOOL(pass.Build(context).Failed());
   }
   graph.EndSetup();
@@ -112,10 +118,10 @@ XII_CREATE_SIMPLE_TEST(BuiltinShaderFailure, StageFailureAndRecovery)
   if (!XII_TEST_RESULT(RestoreShader(shader)))
     return;
   graph.BeginSetup(2);
-  AddBloomInput(graph);
+  bindings[context.FindPin("UpscaledColor", true)].m_hTexture = AddBloomInput(graph);
   XII_TEST_RESULT(pass.Build(context));
   graph.EndSetup();
-  XII_TEST_BOOL(graph.FindTexture(xiiRGBlackboardKeys::k_BloomTexture).IsValid());
+  XII_TEST_BOOL(bindings[context.FindPin("BloomTexture", false)].m_hTexture.IsValid());
 }
 
 static void TestViewShaderFailure(xiiStringView shaderPath)
@@ -154,18 +160,18 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
   {
     xiiTestLogInterface   log;
     xiiTestLogSystemScope logScope(&log, true);
-    log.ExpectMessage("Failed to create built-in compute pipeline", xiiLogMsgType::ErrorMsg);
+    log.ExpectMessage(shaderPath == sBloomShader ? "Failed to create reflected compute operation pipeline" : "Failed to create built-in compute pipeline", xiiLogMsgType::ErrorMsg);
     log.ExpectMessage("Failed to build render pipeline", xiiLogMsgType::ErrorMsg);
     world.Update();
     XII_TEST_BOOL(view->GetRenderGraph()->GetQueueSubmissions().IsEmpty());
-    XII_TEST_BOOL(!view->GetRenderGraph()->FindTexture(xiiRGBlackboardKeys::k_DisplayLinearColor).IsValid());
+    XII_TEST_BOOL(!view->GetRenderGraph()->FindTexture("ViewOutput").IsValid());
   }
   if (!XII_TEST_RESULT(RestoreShader(shader)))
     return;
   world.Update();
   environment.GetDevice()->WaitIdle();
   XII_TEST_BOOL(!view->GetRenderGraph()->GetQueueSubmissions().IsEmpty());
-  XII_TEST_BOOL(view->GetRenderGraph()->FindTexture(xiiRGBlackboardKeys::k_DisplayLinearColor).IsValid());
+  XII_TEST_BOOL(view->GetRenderGraph()->FindTexture("ViewOutput").IsValid());
   xiiImage capture;
   if (XII_TEST_RESULT(xiiCaptureThumbnail(target, {16, 16}, capture)))
     XII_TEST_INT(capture.GetPixelPointer<xiiUInt8>()[3], 255);

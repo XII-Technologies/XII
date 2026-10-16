@@ -251,12 +251,14 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Succeeded())
       commands.DrawIndexed({data.m_uiIndexCount, data.m_IndexType});
   };
-  graph.AddPass<PreviewData>("Inspect texture", xiiGALCommandQueueFlags::Graphics, setupInspection, executeInspection);
-  xiiDebugRenderer::AddRenderGraphPasses(graph);
+  const auto inspection = graph.AddPass<PreviewData>("Inspect texture", xiiGALCommandQueueFlags::Graphics, setupInspection, executeInspection);
+  color                 = inspection.first->m_Color;
+  depth                 = inspection.first->m_Depth;
+  XII_SUCCEED_OR_RETURN(xiiDebugRenderer::AddRenderGraphPasses(graph, color, depth));
   xiiRenderGraphTextureHandle result;
   const bool                  swapChain    = view->GetSwapChain() != nullptr;
   const auto                  setupPublish = [&](PreviewData& data, xiiRenderGraphBuilder& builder) {
-    result = data.m_Color = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::RenderTarget);
+    result = data.m_Color = builder.ReadTexture(color, xiiGALResourceStateFlags::RenderTarget);
     builder.ExportTexture(result, swapChain ? xiiGALResourceStateFlags::Present : xiiGALResourceStateFlags::ShaderResource);
   };
   // Export-only root: the graph performs the final transition after all drawing and overlays.

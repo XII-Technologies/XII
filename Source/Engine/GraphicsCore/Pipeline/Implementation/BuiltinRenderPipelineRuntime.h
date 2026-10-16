@@ -30,6 +30,7 @@
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Pipeline/RenderPipelineConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
 
@@ -121,18 +122,13 @@ struct xiiPlanarReflectionsData;
 struct xiiLuminanceHistogramData;
 struct xiiAutoExposureData;
 struct xiiTemporalAntiAliasingData;
-struct xiiUpscaleData;
 
-struct xiiBloomData;
-struct xiiColorGradingData;
-struct xiiToneMappingData;
 
 struct xiiFinalBlitData;
 
 
 /// Built-in rendering implementation and isolated per-view history, owned by the existing
 /// high-level resource manager so GAL state is released before device/allocator shutdown.
-xiiResult xiiResolvePipelineDisplaySettings(const xiiVariantDictionary& parameters, xiiDisplayOutputSettings& inout_settings);
 
 class xiiBuiltinRenderPipelineRuntime
 {
@@ -154,9 +150,8 @@ public:
   void                                                                   BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                                                              BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                                                              BuildViewRenderMode(xiiRenderGraph& graph);
-  void                                                                   BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                                                              BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth);
+  xiiResult                                                              BuildViewRenderMode(xiiRenderGraph& graph, xiiRenderGraphTextureHandle& color);
   void                                                                   BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
   void                                                                   InvalidateTemporalHistory();
@@ -405,7 +400,6 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState> m_pLuminanceHistogramPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pAutoExposurePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pTAAPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pUpscalePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSharpenPipeline;
       xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffers[2]; // ping-pong resolved color history
       xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer;       // persistent exposure multiplier + average luminance
@@ -417,13 +411,10 @@ public:
     //  Stage 11 - Post-Processing
     struct PostProcessPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState> m_pBloomPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLensDirtPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLensFlarePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pChromaticAberrPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pVignettePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pColorGradingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pToneMappingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pViewRenderModePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pFilmGrainPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDepthOfFieldPipeline;
@@ -710,17 +701,7 @@ private:
   void SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRenderGraphBuilder& builder);
   void ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupUpscale(xiiUpscaleData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteUpscale(const xiiUpscaleData& data, xiiRenderGraphPassContext& context);
 
-  void SetupBloom(xiiBloomData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteBloom(const xiiBloomData& data, xiiRenderGraphPassContext& context);
-
-  void SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteColorGrading(const xiiColorGradingData& data, xiiRenderGraphPassContext& context);
-
-  void SetupToneMapping(xiiToneMappingData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteToneMapping(const xiiToneMappingData& data, xiiRenderGraphPassContext& context);
 
   void SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& builder);
   void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassContext& context);

@@ -10,7 +10,7 @@ class XII_GRAPHICSCORE_DLL xiiBuiltinRenderPipelinePass : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiBuiltinRenderPipelinePass, xiiRenderPipelinePass);
 
 public:
-  xiiString                                m_sStage = "Bloom";
+  xiiString                                m_sStage = "PrepareFrame";
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override;
   xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override;
   static xiiArrayPtr<const xiiStringView>  GetStages();

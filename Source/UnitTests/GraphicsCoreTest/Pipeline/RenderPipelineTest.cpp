@@ -657,7 +657,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
       xiiRenderPipelineResourceDescriptor ordered;
       XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(ordered));
       auto descriptor = ordered;
-      XII_TEST_RESULT(descriptor.RemovePass(15)); // Debug is a removable independent stage.
+      XII_TEST_RESULT(descriptor.RemovePass(15)); // Debug is removable through its resource connections.
       XII_TEST_RESULT(descriptor.Connect(14, "DisplayLinearColor", 15, "DisplayLinearColor"));
       xiiSharedPtr<const xiiRenderPipeline> edited;
       XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
@@ -665,11 +665,10 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
       auto incomplete = ordered;
       XII_TEST_RESULT(incomplete.RemovePass(0));
       xiiStringBuilder error;
-      XII_TEST_BOOL(xiiRenderPipeline::Compile(incomplete, edited, &error).Failed());
-      XII_TEST_BOOL(!error.IsEmpty());
+      XII_TEST_RESULT(xiiRenderPipeline::Compile(incomplete, edited, &error));
       auto duplicate = ordered;
       duplicate.AddPass("Duplicate preparation", "xiiBuiltinRenderPipelinePass", duplicate.m_Passes[0].m_Properties);
-      XII_TEST_BOOL(xiiRenderPipeline::Compile(duplicate, edited).Failed());
+      XII_TEST_RESULT(xiiRenderPipeline::Compile(duplicate, edited));
       auto                 configured = ordered;
       xiiVariantDictionary display;
       display.Insert("BloomStrength", 0.2f);

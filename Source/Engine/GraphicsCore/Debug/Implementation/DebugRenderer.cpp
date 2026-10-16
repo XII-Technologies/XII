@@ -2557,8 +2557,8 @@ void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRen
 // static
 void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hSyncToken  = builder.ReadBuffer("DebugUploadSyncToken", xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneColor = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSyncToken  = builder.ReadBuffer(data.m_hSyncToken, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneColor = builder.WriteTexture(builder.ReadTexture(data.m_hSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
   data.m_hSceneDepth = builder.ReadWriteTexture(data.m_hSceneDepth, xiiGALResourceStateFlags::DepthWrite);
   builder.SetPassRenderPassManaged();
 
@@ -2614,18 +2614,24 @@ void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData
 }
 
 // static
-void xiiDebugRenderer::AddRenderGraphPasses(xiiRenderGraph& graph)
+xiiResult xiiDebugRenderer::AddRenderGraphPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& sceneDepth)
 {
-  const auto depth = xiiDebugRendererInternal::PrepareDepth(graph);
+  const auto depth = xiiDebugRendererInternal::PrepareDepth(graph, sceneDepth, color);
   if (!depth.IsValid())
   {
     xiiLog::Error("Could not prepare scene depth for display-resolution debug drawing.");
-    return;
+    return XII_FAILURE;
   }
-  graph.AddPass<xiiDebugUploadData>("DebugUpload", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugUpload), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugUpload));
-  graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, [depth](xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder) {
+  const auto upload  = graph.AddPass<xiiDebugUploadData>("DebugUpload", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugUpload), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugUpload));
+  const auto drawing = graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, [depth, color, token = upload.first->m_hSyncToken](xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder) {
+    data.m_hSceneColor = color;
+    data.m_hSyncToken = token;
     data.m_hSceneDepth = depth;
     SetupDebugVisualization(data, builder); }, xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugVisualization));
+  color              = drawing.first->m_hSceneColor;
+  if (depth == sceneDepth)
+    sceneDepth = drawing.first->m_hSceneDepth;
+  return XII_SUCCESS;
 }
 
 void xiiDebugRenderer::ClearContext(const xiiDebugRendererContext& context)

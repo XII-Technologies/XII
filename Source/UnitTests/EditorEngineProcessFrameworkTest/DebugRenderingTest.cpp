@@ -85,7 +85,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
           transitions[1].m_NewState = xiiGALResourceStateFlags::DepthWrite;
           transitions[1].m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
           commandList.TransitionResourceStates(xiiMakeArrayPtr(transitions)); }, true);
-      xiiDebugRenderer::AddRenderGraphPasses(graph);
+      auto debugColor = graph.FindTexture(xiiRGBlackboardKeys::k_DisplayLinearColor);
+      auto debugDepth = graph.FindTexture(xiiRGBlackboardKeys::k_SceneDepthTexture);
+      XII_TEST_RESULT(xiiDebugRenderer::AddRenderGraphPasses(graph, debugColor, debugDepth));
       graph.AddPass<ClearData>("Debug test capture", xiiGALCommandQueueFlags::Graphics, [&](ClearData& data, xiiRenderGraphBuilder& builder) {
           data.m_Color = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::CopySource);
           data.m_Depth = builder.WriteTexture(builder.ImportTexture("Captured debug output", capturedColor, capturedColor->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);

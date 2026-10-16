@@ -66,7 +66,8 @@ namespace
     context.RegisterObject(root->GetGuid(), type, pass);
     xiiRttiConverterReader reader(&graph, &context);
     reader.ApplyPropertiesToObject(root, type, pass);
-    XII_SUCCEED_OR_RETURN(pass->Configure({}));
+    // Preserve pins and connections while an authored property is temporarily invalid.
+    // Configuration validation belongs to asset compilation, not editor pin discovery.
     if (configured && pass->GetConfiguredPins(pins).Succeeded())
       return XII_SUCCESS;
     // Keep invalid contracts visible so the inspector can repair them. The compiler
@@ -178,6 +179,8 @@ void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiN
     auto& entry       = out_templates.ExpandAndGetRef();
     entry.m_pType     = type;
     entry.m_sTypeName = type->GetTypeName();
+    if (const auto* category = type->GetAttributeByType<xiiCategoryAttribute>())
+      entry.m_sCategory.Assign(category->GetCategory());
   }
   const auto stages = xiiBuiltinRenderPipelinePass::GetStages();
   m_BuiltinProperties.Clear();

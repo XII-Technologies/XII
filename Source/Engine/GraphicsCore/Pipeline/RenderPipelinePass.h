@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePin.h>
+#include <GraphicsCore/Pipeline/RenderPipelineSettings.h>
 
 class xiiView;
 struct xiiRenderPipelinePassContext;
@@ -35,12 +36,13 @@ public:
   virtual xiiResult                                   Configure(const xiiVariantDictionary& properties);
   /// Capture authored reflected properties, including arrays, value maps and owned settings objects.
   /// Occurrence-local ParameterOverrides remain in the descriptor's parameter scope.
-  xiiResult                                        GetProperties(xiiVariantDictionary& out_properties) const;
-  virtual void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
-  xiiResult                                        GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
-  virtual xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return {}; }
-  virtual xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const { return {}; }
-  virtual xiiResult                                Build(xiiRenderPipelinePassContext& context) = 0;
+  xiiResult                                           GetProperties(xiiVariantDictionary& out_properties) const;
+  virtual void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
+  xiiResult                                           GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
+  virtual xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const { return {}; }
+  virtual xiiBitflags<xiiRenderExtractionCategory>    GetExtractionRequirements() const { return {}; }
+  virtual xiiBitflags<xiiRenderPipelineFeature>       GetRuntimeFeatures() const { return {}; }
+  virtual xiiResult                                   Build(xiiRenderPipelinePassContext& context) = 0;
   /// Publish only previous-frame temporal outputs, without reading current-frame inputs.
   /// Optional history may be absent on the first frame. Promote it only after successful
   /// execution, and discard it in InvalidateTemporalHistory after a failed frame or camera cut.

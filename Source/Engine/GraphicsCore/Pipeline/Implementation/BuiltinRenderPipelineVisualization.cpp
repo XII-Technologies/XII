@@ -22,7 +22,7 @@ namespace
   };
 } // namespace
 
-xiiResult xiiBuiltinRenderPipelineRuntime::BuildViewRenderMode(xiiRenderGraph& graph)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildViewRenderMode(xiiRenderGraph& graph, xiiRenderGraphTextureHandle& color)
 {
   const auto mode = static_cast<xiiViewRenderMode::Enum>(m_View.GetViewRenderMode().GetValue());
   if (mode == xiiViewRenderMode::Default)
@@ -80,12 +80,12 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildViewRenderMode(xiiRenderGraph& g
     description.m_uiHeight = static_cast<xiiUInt32>(m_View.GetViewport().height);
     XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(graph, "Wireframe surface", m_Frame.mainVisibility, m_Frame.geometry, m_Frame.materials, description, wireframeSurface, true, xiiGALFillMode::Wireframe));
   }
-  auto setup = [source, wireframeSurface](ViewRenderModeData& data, xiiRenderGraphBuilder& builder) {
+  auto setup = [source, wireframeSurface, color](ViewRenderModeData& data, xiiRenderGraphBuilder& builder) {
     data.m_hSource    = builder.ReadTexture(source, xiiGALResourceStateFlags::ShaderResource);
     data.m_hDepth     = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
     data.m_hObjectIds = wireframeSurface.IsValid() ? builder.ReadTexture(wireframeSurface, xiiGALResourceStateFlags::ShaderResource) :
                                                      builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferObjectId, xiiGALResourceStateFlags::ShaderResource);
-    data.m_hOutput    = builder.ReadWriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+    data.m_hOutput    = builder.ReadWriteTexture(builder.ReadTexture(color, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
     xiiGALBufferCreationDescription constants;
     constants.m_uiSize         = sizeof(xiiViewRenderModeConstants);
     constants.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
@@ -111,9 +111,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildViewRenderMode(xiiRenderGraph& g
     if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Succeeded())
       cmd.DispatchCompute({(static_cast<xiiUInt32>(m_View.GetViewport().width) + 7) / 8, (static_cast<xiiUInt32>(m_View.GetViewport().height) + 7) / 8, 1});
   };
-  graph.AddPass<ViewRenderModeData>("ViewRenderMode", xiiGALCommandQueueFlags::Compute, setup, execute);
-  // The rest of this built-in stage must consume the visualization, rather than
-  // the original pin binding supplied by ToneMapping.
-  graph.SetSetupBinding(xiiRGBlackboardKeys::k_DisplayLinearColor, graph.FindTexture(xiiRGBlackboardKeys::k_DisplayLinearColor));
+  const auto visualization = graph.AddPass<ViewRenderModeData>("ViewRenderMode", xiiGALCommandQueueFlags::Compute, setup, execute);
+  color                    = visualization.first->m_hOutput;
   return XII_SUCCESS;
 }

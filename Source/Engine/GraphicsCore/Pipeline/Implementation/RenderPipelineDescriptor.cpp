@@ -177,7 +177,7 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
     return XII_FAILURE;
   xiiRawMemoryStreamReader reader(bytes.GetData(), size);
   xiiAbstractObjectGraph   graph;
-  xiiAbstractGraphBinarySerializer::Read(reader, &graph);
+  xiiAbstractGraphBinarySerializer::Read(reader, &graph, nullptr, true);
   const auto* root = graph.GetNodeByName("root");
   if (!root || root->GetType() != xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>()->GetTypeName() || reader.GetReadPosition() != size)
     return XII_FAILURE;

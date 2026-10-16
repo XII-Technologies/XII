@@ -1142,42 +1142,7 @@ struct xiiTemporalAntiAliasingData
   bool                        m_bHistoryValid       = false;
 };
 
-struct xiiUpscaleData
-{
-  XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hTAAIn;    ///< ShaderResource in (TAA resolved color).
-  xiiRenderGraphTextureHandle m_hUpscaled; ///< UnorderedAccess out (upscaled HDR color).
-};
-
-struct xiiBloomData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRIn; ///< ShaderResource in (upscaled HDR input).
-  xiiRenderGraphTextureHandle m_hBloom; ///< UnorderedAccess out (bloom result).
-  xiiRenderGraphBufferHandle  m_hConstants;
-};
-
-struct xiiColorGradingData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hDisplayLinear; ///< ShaderResource in (tone-mapped display-linear input).
-  xiiRenderGraphTextureHandle m_hGraded;        ///< UnorderedAccess out (graded display-linear output).
-  xiiRenderGraphBufferHandle  m_hConstants;
-};
-
-struct xiiToneMappingData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRInput;
-  xiiRenderGraphTextureHandle m_hBloom;
-  xiiRenderGraphBufferHandle  m_hExposure;
-  xiiRenderGraphTextureHandle m_hDisplayLinear;
-  xiiRenderGraphBufferHandle  m_hConstants;
-};
 
 struct xiiFinalBlitData
 {

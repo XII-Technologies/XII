@@ -6,18 +6,18 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 1, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 2, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("Stage", m_sStage)->AddAttributes(new xiiDefaultValueAttribute("Bloom")),
+      XII_MEMBER_PROPERTY("Stage", m_sStage)->AddAttributes(new xiiDefaultValueAttribute("PrepareFrame")),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiArrayPtr<const xiiStringView> xiiBuiltinRenderPipelinePass::GetStages()
 {
-  static constexpr xiiStringView stages[] = {"PrepareFrame", "Visibility", "Shadows", "DepthAndGeometry", "LightingPreparation", "Lighting", "OpaqueComposition", "Transparency", "ScreenEffects", "Debug", "ColorGrading", "Present", "LuminanceHistogram", "AutoExposure", "TemporalAntiAliasing", "Upscale", "Bloom", "ToneMapping"};
+  static constexpr xiiStringView stages[] = {"PrepareFrame", "Visibility", "Shadows", "DepthAndGeometry", "LightingPreparation", "Lighting", "OpaqueComposition", "Transparency", "ScreenEffects", "Debug", "Present", "LuminanceHistogram", "AutoExposure", "TemporalAntiAliasing"};
   return xiiMakeArrayPtr(stages);
 }
 
@@ -70,52 +70,6 @@ xiiResult xiiBuiltinRenderPipelinePass::ValidatePipeline(const xiiRenderPipeline
       return XII_FAILURE;
     }
   }
-  xiiHashSet<xiiString> precedingStages;
-  bool                  foundSelf = false;
-  for (auto passIndex : order)
-  {
-    const auto& definition = descriptor.m_Passes[passIndex];
-    if (definition.m_sInstanceScope != descriptor.m_Passes[index].m_sInstanceScope)
-      continue;
-    if (definition.m_sType != "xiiBuiltinRenderPipelinePass")
-      continue;
-    xiiString  stage = "Bloom";
-    xiiVariant value;
-    if (definition.m_Properties.TryGetValue("Stage", value))
-      stage = value.ConvertTo<xiiString>();
-    if (passIndex == index)
-    {
-      foundSelf = true;
-      continue;
-    }
-    if (stage == m_sStage)
-    {
-      if (error)
-        error->SetFormat("Built-in stage '{}' occurs more than once; use independent custom pass instances for branched effects.", m_sStage);
-      return XII_FAILURE;
-    }
-    if (!foundSelf)
-      precedingStages.Insert(stage);
-  }
-  const auto require = [&](xiiStringView prerequisite) -> xiiResult {
-    if (precedingStages.Contains(xiiString(prerequisite)))
-      return XII_SUCCESS;
-    if (error)
-      error->SetFormat("Built-in stage '{}' requires an earlier '{}' stage.", m_sStage, prerequisite);
-    return XII_FAILURE;
-  };
-  if (m_sStage != "PrepareFrame")
-    XII_SUCCEED_OR_RETURN(require("PrepareFrame"));
-  if (m_sStage == "Shadows" || m_sStage == "DepthAndGeometry" || m_sStage == "Lighting")
-    XII_SUCCEED_OR_RETURN(require("Visibility"));
-  if (m_sStage == "DepthAndGeometry" || m_sStage == "Lighting")
-    XII_SUCCEED_OR_RETURN(require("Shadows"));
-  if (m_sStage == "LightingPreparation" || m_sStage == "Lighting")
-    XII_SUCCEED_OR_RETURN(require("DepthAndGeometry"));
-  if (m_sStage == "Lighting")
-    XII_SUCCEED_OR_RETURN(require("LightingPreparation"));
-  if (m_sStage == "OpaqueComposition")
-    XII_SUCCEED_OR_RETURN(require("Lighting"));
   return XII_SUCCESS;
 }
 void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
@@ -463,13 +417,7 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, true});
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
   }
-  if (m_sStage == "ColorGrading")
-  {
-    pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"GradedColor", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"Color Grading Constants", xiiRenderPipelinePin::Buffer, false, true});
-    pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, false, true});
-  }
+
   if (m_sStage == "Present")
   {
     pins.PushBack({"GradedColor", xiiRenderPipelinePin::Texture, true, true});
@@ -496,26 +444,9 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"TAAResolved", xiiRenderPipelinePin::Texture, false, false});
   }
 
-  if (m_sStage == "Upscale")
-  {
-    pins.PushBack({"TAAResolved", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"UpscaledColor", xiiRenderPipelinePin::Texture, false, false});
-  }
 
-  if (m_sStage == "Bloom")
-  {
-    pins.PushBack({"UpscaledColor", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"BloomTexture", xiiRenderPipelinePin::Texture, false, false});
-  }
 
-  if (m_sStage == "ToneMapping")
-  {
-    pins.PushBack({"UpscaledColor", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"BloomTexture", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"CurrentExposure", xiiRenderPipelinePin::Buffer, true, false});
-    pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, false, false});
-  }
-  if (m_sStage == "ColorGrading" || m_sStage == "Present")
+  if (m_sStage == "Present")
     for (auto& pin : pins)
       if (pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_bInput)
         pin.m_bOptional = false;
@@ -546,6 +477,16 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
     if (pin.m_bInput && binding.m_hBuffer.IsValid())
       context.m_Graph.SetSetupBinding(pin.m_sName, binding.m_hBuffer);
   }
+  if (m_sStage == "Debug")
+  {
+    auto       color  = context.GetInputTexture("DisplayLinearColor");
+    auto       depth  = context.GetInputTexture("SceneDepth");
+    const auto result = runtime->BuildDebug(context.m_Graph, context.m_Blackboard, color, depth);
+    context.m_Graph.ClearSetupBindings();
+    XII_SUCCEED_OR_RETURN(result);
+    XII_SUCCEED_OR_RETURN(context.SetOutput("DisplayLinearColor", color));
+    return context.SetOutput("SceneDepth", depth);
+  }
   const auto result = runtime->BuildStage(m_sStage, context.m_Graph, context.m_Blackboard);
   context.m_Graph.ClearSetupBindings();
   for (xiiUInt32 i = 0; i < context.m_Pins.GetCount(); ++i)
@@ -553,6 +494,8 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
     const auto& pin = context.m_Pins[i];
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture)
       context.m_Bindings[i].m_hTexture = context.m_Graph.FindTexture(pin.m_sName);
+    if (m_sStage == "Present" && !pin.m_bInput && pin.m_sName == "GradedColor")
+      context.m_Bindings[i].m_hTexture = context.GetInputTexture("GradedColor");
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer)
       context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
   }

@@ -148,6 +148,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       return fail(pinError.IsEmpty() ? "Invalid authored pin configuration."_xiisv : pinError.GetView());
     result->m_ExtractionRequirements |= prototype->GetExtractionRequirements();
     result->m_RuntimeFeatures |= prototype->GetRuntimeFeatures();
+    result->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.Add(prototype->GetRequiredDeviceFeatures());
     if (pass.m_Pins.GetCount() > 256)
       return fail("Pass exceeds pin limit.");
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)

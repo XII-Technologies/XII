@@ -1,0 +1,156 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <Core/ResourceManager/ResourceManager.h>
+#include <Core/World/World.h>
+#include <Foundation/Math/Float16.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Tools/TextureReadback.h>
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+class xiiOutputOperationSource : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiOutputOperationSource, xiiRenderPipelinePass);
+
+public:
+  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  {
+    pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
+  }
+  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphTextureHandle m_Color;
+    };
+    auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [](Data& data, xiiRenderGraphBuilder& builder) {
+      xiiGALTextureCreationDescription description;
+      description.m_Type = xiiGALResourceDimension::Texture2D;
+      description.m_Size = {8, 8};
+      description.m_Format = xiiGALResourceFormat::RGBA16Float;
+      description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+      data.m_Color = builder.WriteTexture("Operation source", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(4, 4, 4, 1)); });
+    return context.SetOutput("Color", emitted.first->m_Color);
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiOutputOperationSource, 1, xiiRTTIDefaultAllocator<xiiOutputOperationSource>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+class xiiOutputOperationExport : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiOutputOperationExport, xiiRenderPipelinePass);
+
+public:
+  xiiRenderGraphTextureHandle m_Outputs[2];
+  void                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  {
+    pins.PushBack({"Left", xiiRenderPipelinePin::Texture, true});
+    pins.PushBack({"Right", xiiRenderPipelinePin::Texture, true});
+  }
+  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphTextureHandle m_Inputs[2];
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_Inputs[0] = builder.ReadTexture(context.GetInputTexture("Left"), xiiGALResourceStateFlags::CopySource);
+      data.m_Inputs[1] = builder.ReadTexture(context.GetInputTexture("Right"), xiiGALResourceStateFlags::CopySource);
+      for (const auto input : data.m_Inputs) builder.ExportTexture(input, xiiGALResourceStateFlags::CopySource); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
+    m_Outputs[0]       = emitted.first->m_Inputs[0];
+    m_Outputs[1]       = emitted.first->m_Inputs[1];
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiOutputOperationExport, 1, xiiRTTIDefaultAllocator<xiiOutputOperationExport>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown(););
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.AddPass("HDR source", "xiiOutputOperationSource");
+  for (xiiUInt32 branch = 0; branch < 2; ++branch)
+  {
+    xiiVariantDictionary upscale, bloom;
+    upscale.Insert("Width", branch ? 16U : 8U);
+    upscale.Insert("Height", branch ? 16U : 8U);
+    const auto scale = descriptor.AddPass(branch ? "Large upscale" : "Small upscale", "xiiUpscalePass", upscale);
+    bloom.Insert("UseViewDefaults", false);
+    bloom.Insert("Threshold", branch ? 100.0f : 0.0f);
+    const auto effect = descriptor.AddPass(branch ? "High threshold" : "Low threshold", "xiiBloomPass", bloom);
+    XII_TEST_RESULT(descriptor.Connect(0, "Color", scale, "TAAResolved"));
+    XII_TEST_RESULT(descriptor.Connect(scale, "UpscaledColor", effect, "UpscaledColor"));
+  }
+  const auto sink = descriptor.AddPass("Read branches", "xiiOutputOperationExport");
+  XII_TEST_RESULT(descriptor.Connect(2, "BloomTexture", sink, "Left"));
+  XII_TEST_RESULT(descriptor.Connect(4, "BloomTexture", sink, "Right"));
+  const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Independent output algorithms", std::move(descriptor));
+  xiiWorldDescription worldDescription("Output operations");
+  xiiWorld            world(worldDescription);
+  XII_LOCK(world.GetWriteMarker());
+  auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView*   view       = nullptr;
+  const auto viewHandle = module->CreateView("Output branches", view);
+  view->SetCamera(&camera);
+  view->SetViewport({0, 0, 16, 16});
+  view->SetRenderPipelineResource(resource);
+  for (xiiUInt32 frame = 0; frame < 2; ++frame)
+  {
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    const auto& instance = view->GetRenderPipelineInstance();
+    const auto* exported = xiiDynamicCast<const xiiOutputOperationExport*>(instance.GetPass(sink));
+    if (!XII_TEST_BOOL(exported != nullptr))
+      return;
+    auto* graph = view->GetRenderGraph();
+    auto  left  = graph->GetExportedTexture(exported->m_Outputs[0]);
+    auto  right = graph->GetExportedTexture(exported->m_Outputs[1]);
+    if (!XII_TEST_BOOL(left && right && left != right))
+      return;
+    XII_TEST_BOOL(instance.GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
+    XII_TEST_BOOL(instance.GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+    for (xiiUInt32 branch = 0; branch < 2; ++branch)
+    {
+      const auto texture = branch ? right : left;
+      // Bloom keeps the input extent; the two authored upscalers have independent allocations.
+      XII_TEST_INT(texture->GetDescription().m_Size.width, branch ? 16 : 8);
+      xiiGALTextureReadback readback(environment.GetDevice());
+      const auto            commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      commands->Begin();
+      XII_TEST_RESULT(readback.Enqueue(commands.Borrow(), {.m_pTexture = texture.Borrow()}));
+      commands->End();
+      const auto queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+      queue->WaitForFenceValue(queue->Submit(commands.Borrow()));
+      readback.WaitForNextCompleted();
+      const auto capture = readback.GetCompleted();
+      if (!XII_TEST_BOOL(static_cast<bool>(capture)))
+        return;
+      commands->Begin();
+      xiiGALMappedTextureSubresource mapped;
+      xiiGALTextureMipLevelData      mip;
+      if (XII_TEST_RESULT(commands->MapTextureSubresource(capture.m_pStagingTexture, mip, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped)))
+      {
+        const auto* pixels = static_cast<const xiiFloat16*>(mapped.m_pData);
+        XII_TEST_FLOAT(static_cast<float>(pixels[0]), branch ? 0.0f : 4.0f, 0.02f);
+        XII_TEST_FLOAT(static_cast<float>(pixels[3]), 1.0f, 0.001f);
+        XII_TEST_RESULT(commands->UnmapTextureSubresource(capture.m_pStagingTexture, mip));
+      }
+      commands->End();
+      readback.RecycleStagingTexture(capture.m_pStagingTexture);
+    }
+  }
+  module->DestroyView(viewHandle);
+}

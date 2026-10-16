@@ -12,10 +12,8 @@
 
 namespace xiiDebugRendererInternal
 {
-  xiiRenderGraphTextureHandle PrepareDepth(xiiRenderGraph& graph)
+  xiiRenderGraphTextureHandle PrepareDepth(xiiRenderGraph& graph, xiiRenderGraphTextureHandle depth, xiiRenderGraphTextureHandle color)
   {
-    const auto  depth  = graph.FindTexture(xiiRGBlackboardKeys::k_SceneDepthTexture);
-    const auto  color  = graph.FindTexture(xiiRGBlackboardKeys::k_DisplayLinearColor);
     const auto* source = graph.GetTextureDescription(depth);
     const auto* target = graph.GetTextureDescription(color);
     if (!source || !target)

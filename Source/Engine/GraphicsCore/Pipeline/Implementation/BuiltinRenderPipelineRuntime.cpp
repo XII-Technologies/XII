@@ -519,19 +519,14 @@ void xiiBuiltinRenderPipelineRuntime::BuildScreenEffects(xiiRenderGraph& graph, 
   }
 }
 
-xiiResult xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth)
 {
   // Debug and visualization passes.
-  XII_SUCCEED_OR_RETURN(BuildViewRenderMode(graph));
-  xiiDebugRenderer::AddRenderGraphPasses(graph);
-  return XII_SUCCESS;
+  XII_SUCCEED_OR_RETURN(BuildViewRenderMode(graph, color));
+  return xiiDebugRenderer::AddRenderGraphPasses(graph, color, depth);
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
-{
-  // Display-linear grading follows debug composition so overlays remain visible at presentation.
-  graph.AddPass<xiiColorGradingData>("ColorGrading", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupColorGrading, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteColorGrading, this));
-}
+
 
 void xiiBuiltinRenderPipelineRuntime::BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
@@ -598,15 +593,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stag
     BuildScreenEffects(graph, blackboard);
     return XII_SUCCESS;
   }
-  if (stage == "Debug")
-  {
-    return BuildDebug(graph, blackboard);
-  }
-  if (stage == "ColorGrading")
-  {
-    BuildColorGrading(graph, blackboard);
-    return XII_SUCCESS;
-  }
+
   if (stage == "Present")
   {
     BuildPresent(graph, blackboard);
@@ -627,21 +614,9 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stag
     graph.AddPass<xiiTemporalAntiAliasingData>(stage, xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupTemporalAntiAliasing, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteTemporalAntiAliasing, this));
     return XII_SUCCESS;
   }
-  if (stage == "Upscale")
-  {
-    graph.AddPass<xiiUpscaleData>(stage, xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupUpscale, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteUpscale, this));
-    return XII_SUCCESS;
-  }
-  if (stage == "Bloom")
-  {
-    graph.AddPass<xiiBloomData>(stage, xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupBloom, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteBloom, this));
-    return XII_SUCCESS;
-  }
-  if (stage == "ToneMapping")
-  {
-    graph.AddPass<xiiToneMappingData>(stage, xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupToneMapping, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteToneMapping, this));
-    return XII_SUCCESS;
-  }
+
+
+
   return XII_FAILURE;
 }
 

@@ -337,3 +337,36 @@ conversion of the entire rendering stack into small reflected operations the nex
 implementation priority. Selecting a node must expose its authored pin properties
 through the existing property grid, respecting reflection attributes. Configuration
 work above does not close that migration or the remaining complete-objective gates.
+
+## Independent output operations checkpoint
+
+Upscale, Bloom, ToneMapping and ColorGrading now have concrete reflected pass
+classes, individual member properties, explicit resource pins and instance-owned
+GAL caches. Their algorithms and mutable configuration have been removed from the
+stage implementation. Branches use occurrence-local allocation names and compiled
+bindings; the algorithms do not query a global resource-name registry. Compute
+requirements are collected from each operation during compilation.
+
+Stage prerequisite and duplicate-stage rejection have been removed. Graph
+connectivity determines ordering. Debug rendering accepts explicit color/depth
+handles, including editor texture and scene-camera previews. Native pin discovery
+preserves connections while authored properties are invalid; compilation reports
+configuration errors. Reflected display-setting defaults now match native defaults.
+Versioned source and descriptor conversions preserve node/pin identities. SDK
+source assets reproduce their packaged resources through the production compiler.
+
+Debug builds of GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and
+EditorEngineProcessFrameworkTest pass. All 29 Core, 48 Vulkan GAL, 73 Vulkan
+editor-engine and 15 Qt editor subtests pass. A real GPU readback verifies two
+independently configured branches with 8x8/16x16 allocations and distinct bloom
+thresholds over two frames. Nested shared-definition occurrences, reflected
+configuration validation, legacy descriptor conversion, deterministic compilation,
+shader failure/recovery and SDK export are covered. Evidence: ignored
+Workspace/output-pass-*-final.log and output-operation-checkpoint-build.log.
+The initial fixture barrier mismatch and editor default/pin-discovery failures were
+fixed before these runs. D3D12 is excluded; no performance benchmark was run.
+
+The remaining stage dispatcher and Builtin files are still migration work. This
+checkpoint does not satisfy the request to remove the entire family or decompose
+all rendering algorithms. Temporal reconstruction, exposure and presentation are
+next; their state must belong to each independent pass occurrence.

@@ -85,7 +85,8 @@ xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& sett
   if (!xiiDisplayOutputManager::IsValid(settings))
     return XII_FAILURE;
 
-  m_DisplayOutputSettings                                                   = settings;
+  m_DisplayOutputSettings = settings;
+  ++m_uiDisplayOutputSettingsRevision;
   GetBuiltinRuntime()->m_Resources.m_TemporalPasses.m_bExposureHistoryValid = false;
   return XII_SUCCESS;
 }
