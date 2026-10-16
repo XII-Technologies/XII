@@ -20,6 +20,10 @@ public:
   bool                                     m_bUseViewSelection    = true;
   xiiResult                                Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
+  void                                     InvalidateTemporalHistory() override { m_uiLastLodToken = 65534U; }
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Geometry; }
   xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override { return xiiRenderPipelineFeature::GpuScene; }
+
+private:
+  xiiUInt32 m_uiLastLodToken = 65534U;
 };

@@ -187,7 +187,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     xiiRenderGraphContext graphs[2];
     XII_TEST_RESULT(graphs[0].Initialize("World upload camera A"));
     XII_TEST_RESULT(graphs[1].Initialize("World upload camera B"));
-    auto render = [&](xiiUInt32 camera, const xiiRenderGraphFrame& gpuFrame) -> xiiSharedPtr<xiiGALBuffer> {
+    xiiUInt32 viewTokens[2] = {0, 0};
+    auto      render        = [&](xiiUInt32 camera, const xiiRenderGraphFrame& gpuFrame) -> xiiSharedPtr<xiiGALBuffer> {
       auto& graph = graphs[camera].GetGraph();
       auto& cache = graphs[camera].GetResourceCache();
       cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
@@ -242,6 +243,9 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       XII_TEST_INT(snapshot.m_uiVisibilityMask, 0x42);
       XII_TEST_INT(snapshot.m_uiUseCandidates, 0);
       XII_TEST_FLOAT(snapshot.m_ViewportAndHiZ.x, 16, 0);
+      XII_TEST_FLOAT(snapshot.m_LodParameters.y, float(viewTokens[camera] % 65535U), 0);
+      XII_TEST_FLOAT(snapshot.m_LodParameters.z, float((viewTokens[camera] + 65534U) % 65535U), 0);
+      ++viewTokens[camera];
       xiiGpuSceneInstance record;
       const auto          result = graph.GetExportedBuffer(uploaded.m_Instances);
       if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), result.Borrow(), 0, record))
@@ -265,6 +269,14 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       gpuFrame.End();
       environment.GetDevice()->WaitIdle();
     }
+    // An unrelated world advances the device clock; only one camera is cut.
+    {
+      xiiRenderGraphFrame unrelated;
+      XII_TEST_RESULT(unrelated.Begin());
+      unrelated.End();
+    }
+    uploadInstances[0].InvalidateTemporalHistory();
+    viewTokens[0] = 0;
     parent->SetLocalPosition(xiiVec3(7, 0, 0));
     world.Update();
     XII_TEST_RESULT(extract());

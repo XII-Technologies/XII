@@ -49,8 +49,10 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   snapshot.m_uiGeometryBaseIndex  = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   snapshot.m_uiMaxVisibleMeshlets = m_uiMaxVisibleMeshlets;
   snapshot.m_ViewportAndHiZ.y *= m_fLodScreenScale;
-  const auto token            = static_cast<xiiUInt32>(context.m_Graph.GetFrameIndex() % 65535U);
-  snapshot.m_LodParameters    = xiiVec4(m_fLodHysteresis, float(token), float((token + 65534U) % 65535U), 0);
+  // Other worlds and views may advance the device frame clock between executions.
+  // LOD validity follows this occurrence's published snapshots instead.
+  const auto token            = (m_uiLastLodToken + 1U) % 65535U;
+  snapshot.m_LodParameters    = xiiVec4(m_fLodHysteresis, float(token), float(m_uiLastLodToken), 0);
   snapshot.m_uiUseCandidates  = m_bUseViewSelection ? 1 : 0;
   snapshot.m_uiCandidateCount = m_bUseViewSelection ? view.GetGpuInstanceSelection().GetCount() : 0;
   xiiRenderPassResourceScope scope(context);
@@ -72,9 +74,10 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
       data.m_View = builder.WriteBuffer("Camera Culling Parameters", description, xiiGALResourceStateFlags::CopyDestination);
       description.m_uiSize = data.m_Selection.GetCount() * sizeof(xiiUInt32);
       description.m_uiElementByteStride = sizeof(xiiUInt32);
-      data.m_Candidates = builder.WriteBuffer("Camera Component Selection", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Candidates = builder.WriteBuffer("Camera Component Selection", description, xiiGALResourceStateFlags::CopyDestination); }, [this](const Data& data, xiiRenderGraphPassContext& execute) {
       execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_View), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Snapshot), sizeof(data.m_Snapshot)));
-      execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Candidates), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Selection.GetData()), data.m_Selection.GetCount() * sizeof(xiiUInt32))); });
+      execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Candidates), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Selection.GetData()), data.m_Selection.GetCount() * sizeof(xiiUInt32)));
+      m_uiLastLodToken = static_cast<xiiUInt32>(data.m_Snapshot.m_LodParameters.y); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_View, emitted.first->m_View));
   return context.SetOutput(m_Candidates, emitted.first->m_Candidates);
 }
