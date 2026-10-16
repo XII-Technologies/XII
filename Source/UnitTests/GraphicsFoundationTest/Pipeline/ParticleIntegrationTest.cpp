@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
@@ -208,4 +209,72 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SuppliedParticleStateIntegration)
   XII_TEST_INT(distinctState.GetCount(), 4);
   for (const auto handle : handles)
     module->DestroyView(handle);
+}
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, ParticleIntegrationWithoutFrameConsumer)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.AddPass("Initialized state", "xiiParticleIntegrationTestSource");
+  xiiParticleIntegrationConstantsPass authored;
+  authored.m_fDeltaTimeS      = 0.05f;
+  authored.m_fGravityScale    = 0;
+  authored.m_fDragCoefficient = 0;
+  authored.m_uiActiveCount    = 2;
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(authored.GetProperties(properties));
+  descriptor.AddPass("Parameters", "xiiParticleIntegrationConstantsPass", properties);
+  descriptor.AddPass("Simulate", "xiiParticleIntegratePass");
+  XII_TEST_RESULT(descriptor.Connect(0, "Particles", 2, "Particles"));
+  XII_TEST_RESULT(descriptor.Connect(1, "ParticleSimConstants", 2, "ParticleSimConstants"));
+  // No exports or rendering consumers: the update of externally owned state is observable later.
+  const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Particle simulation without output consumers", std::move(descriptor));
+  xiiWorldDescription description("Standalone simulation operation");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView*   view   = nullptr;
+  const auto handle = module->CreateView("Simulation only", view);
+  view->SetCamera(&camera);
+  view->SetViewport({0, 0, 8, 8});
+  view->SetRenderPipelineResource(resource);
+  world.Update();
+  environment.GetDevice()->WaitIdle();
+  const auto* source = xiiDynamicCast<const xiiParticleIntegrationTestSource*>(view->GetRenderPipelineInstance().GetPass(0));
+  if (!XII_TEST_BOOL(source && source->m_Buffer))
+    return;
+  xiiGALBufferCreationDescription stagingDescription;
+  stagingDescription.m_uiSize         = source->m_Buffer->GetDescription().m_uiSize;
+  stagingDescription.m_Usage          = xiiGALResourceUsage::Staging;
+  stagingDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+  const auto staging                  = environment.GetDevice()->CreateBuffer(stagingDescription);
+  if (!XII_TEST_BOOL(staging != nullptr))
+    return;
+  auto commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  commands->Begin();
+  commands->CopyBuffer(source->m_Buffer.Borrow(), staging.Borrow());
+  commands->End();
+  auto* queue = environment.GetDevice()->GetCommandQueue();
+  queue->WaitForFenceValue(queue->Submit(commands));
+  commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  commands->Begin();
+  void* mapped = nullptr;
+  if (XII_TEST_RESULT(commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, mapped)))
+  {
+    const auto* particles = static_cast<const xiiParticleGPUState*>(mapped);
+    XII_TEST_FLOAT(particles[0].m_vPositionAge.x, 0.1f, 0.0001f);
+    XII_TEST_FLOAT(particles[0].m_vPositionAge.w, 0.15f, 0.0001f);
+    XII_TEST_FLOAT(particles[1].m_vVelocityLifetime.w, 0, 0);
+    XII_TEST_FLOAT(particles[130].m_vPositionAge.w, 0.1f, 0.0001f);
+    XII_TEST_RESULT(commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read));
+  }
+  commands->End();
+  module->DestroyView(handle);
 }

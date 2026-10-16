@@ -71,6 +71,8 @@ xiiResult xiiParticleIntegratePass::Build(xiiRenderPipelinePassContext& context)
     xiiUInt32                               m_uiGroupsY;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
+    // Simulation changes state owned outside this frame, even when it is not rendered now.
+    builder.SetPassSideEffects(true);
     data.m_Particles = builder.WriteBuffer(builder.ReadBuffer(particles, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
     data.m_Constants = builder.ReadBuffer(constants, xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Dispatch = xiiRenderPassUtils::Constants(builder, "ParticleIntegrationDispatch", sizeof(data.m_Parameters));
