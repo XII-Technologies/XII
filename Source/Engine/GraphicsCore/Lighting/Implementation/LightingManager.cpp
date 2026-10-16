@@ -6,6 +6,7 @@
 #include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 class xiiLightingManagerState
@@ -13,6 +14,7 @@ class xiiLightingManagerState
 public:
   xiiIdTable<xiiLightingContextId, xiiUniquePtr<xiiLightingSystem>> m_Contexts;
   xiiSharedPtr<xiiGALTexture>                                       m_pBRDFLUT;
+  xiiSharedPtr<xiiGALFence>                                         m_pBRDFReadyFence;
   bool                                                              m_bBRDFLUTGenerated = false;
   bool                                                              m_bEngineStarted    = false;
 };
@@ -126,9 +128,15 @@ xiiResult xiiLightingManager::EnsureBRDFLUTResources()
   xiiSharedPtr<xiiGALTexture> pBRDFLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   if (pBRDFLUT == nullptr)
     return XII_FAILURE;
+  xiiGALFenceCreationDescription fenceDescription;
+  fenceDescription.m_Type = xiiGALFenceType::General;
+  auto ready              = xiiGALDevice::GetDefaultDevice()->CreateFence(fenceDescription);
+  if (!ready)
+    return XII_FAILURE;
 
   pBRDFLUT->SetDebugName("Split-Sum BRDF LUT");
   s_pState->m_pBRDFLUT          = std::move(pBRDFLUT);
+  s_pState->m_pBRDFReadyFence   = std::move(ready);
   s_pState->m_bBRDFLUTGenerated = false;
   return XII_SUCCESS;
 }
@@ -136,6 +144,11 @@ xiiResult xiiLightingManager::EnsureBRDFLUTResources()
 xiiSharedPtr<xiiGALTexture> xiiLightingManager::GetBRDFLUT()
 {
   return s_pState != nullptr ? s_pState->m_pBRDFLUT : nullptr;
+}
+
+xiiSharedPtr<xiiGALFence> xiiLightingManager::GetBRDFLUTReadyFence()
+{
+  return s_pState != nullptr ? s_pState->m_pBRDFReadyFence : nullptr;
 }
 
 bool xiiLightingManager::IsBRDFLUTGenerationPending()
@@ -161,7 +174,7 @@ void xiiLightingManager::EngineStartup()
   if (s_pState != nullptr)
   {
     s_pState->m_bEngineStarted = true;
-    EnsureBRDFLUTResources().IgnoreResult();
+    // Lookup allocation is demand-driven by the reflected generation pass.
   }
 }
 
@@ -171,6 +184,7 @@ void xiiLightingManager::EngineShutdown()
     return;
 
   s_pState->m_pBRDFLUT.Clear();
+  s_pState->m_pBRDFReadyFence.Clear();
   s_pState->m_bBRDFLUTGenerated = false;
 
   for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)

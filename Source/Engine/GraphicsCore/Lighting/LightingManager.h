@@ -11,6 +11,7 @@
 
 class xiiLightingManagerState;
 class xiiGALTexture;
+class xiiGALFence;
 
 /// Generation-checked reference to one view's lighting data and GPU resources.
 ///
@@ -54,8 +55,11 @@ public:
   /// device that created it.
   [[nodiscard]] static xiiResult                   EnsureBRDFLUTResources();
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetBRDFLUT();
-  [[nodiscard]] static bool                        IsBRDFLUTGenerationPending();
-  static void                                      MarkBRDFLUTGenerated();
+  /// Completion of the immutable lookup's generation (value 1). Consumers must
+  /// declare a device-side wait before using a previously published lookup.
+  [[nodiscard]] static xiiSharedPtr<xiiGALFence> GetBRDFLUTReadyFence();
+  [[nodiscard]] static bool                      IsBRDFLUTGenerationPending();
+  static void                                    MarkBRDFLUTGenerated();
 
 private:
   static void Startup();
