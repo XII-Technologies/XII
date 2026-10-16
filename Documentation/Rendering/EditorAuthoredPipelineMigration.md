@@ -621,3 +621,77 @@ The remaining Builtin selector and its eight composite branches still have
 procedural schemas and shared orchestration. They remain part of the unfinished
 whole-stack decomposition documented above; this member-pin change does not claim
 their removal or completion of the broader migration.
+
+
+## Authored opaque composition and reflection operations
+
+OpaqueLightingComposite, ScreenSpaceReflections, ScreenSpaceReflectionsTemporal
+and HybridReflectionComposite are independent reflected pass types with typed
+XII_MEMBER_PROPERTY pin members. They own their actual setup/execute algorithms,
+shader state and sampler state, consume explicit handles, and snapshot dimensions
+and settings for execution. SSR traversal and temporal quality are native reflected
+member properties with validated ranges. No new stage prerequisite or centralized
+pass configuration table is introduced. BufferForward and ClearTexture are generic
+resource operations used by the authored interface; neither owns scene objects.
+
+The ordinary OpaqueComposition resource contains ten nodes: the four algorithms,
+explicit optional-signal selection, an interface buffer forward, and an empty
+half-resolution planar image. Deferred and EditorScene reference this definition.
+The empty planar image preserves the former output behavior; secondary-view planar
+reflection rendering was not implemented in the deleted path and is not claimed.
+The production source document and binary snapshots were authored/exported using
+normal document commands, reflection, interface connections and the asset compiler.
+The temporary authoring fixture was removed. The read-only library test now checks
+all seven packaged assets against production re-export byte for byte.
+
+The OpaqueComposition selector branch, five old operation implementations and data
+structures, shared SSR pipeline/history fields, the ForwardPasses state group and
+the remaining unused ScreenSpacePasses group are deleted. Four additional inert
+hair, water, subsurface and eye operations/data/state fields are also deleted after
+an entire-source search confirmed their pipelines were never initialized. They
+issued no draws or dispatches. The remaining transparency operation now publishes
+the HDR resource version returned by its OIT setup directly; its old global-name
+lookup could not resolve a handle produced by a scoped native operation.
+
+Versioned source conversion preserves node IDs, layout and instance parameters.
+Descriptor conversion covers root and embedded Core definitions, preserves pin
+contracts and adds deterministic explicit dependencies for camera/frame constants,
+final GI, final ray reflections and integrated volume light. Source migration also
+materializes these five former implicit connections. Runtime binding failures now
+retain the pass identity, reflected type, instance scope and pin in a view-local
+build diagnostic, reported by the existing render world path.
+
+SSR radiance and integer identity use four pass-owned images. Resize allocates all
+four replacements before publishing them, camera cuts/configuration invalidate
+history, and optional declared previous-image outputs are published separately
+from current-frame work. Each pass occurrence and view has independent writable
+state. No world hierarchy, component storage, geometry/material registry or device
+allocation ownership has been duplicated.
+
+AuthoredOpaqueComposition tests legacy source and root/nested descriptor conversion,
+deterministic serialization, quality validation, resource interfaces, and twenty
+expanded operations from two instances of the shared ten-node definition. The GPU
+regression executes actual opaque and hybrid composition, SSR and temporal shaders,
+reads expected pixels, checks two instances' separate current/previous images,
+resizes and invalidates them, and verifies retirement of retained old allocations.
+That specialized graph requests no scene extraction or scene runtime features and
+leaves geometry/material services uninitialized. The existing interleaved-view
+history fixture was migrated to reflected SSR current/previous pins without
+reducing its history-ownership checks.
+
+All four affected Debug targets build. Final results are 33 GraphicsCore, 54 Vulkan
+GAL, 73 Vulkan editor-engine and 15 Qt subtests, all passing. Evidence:
+Workspace/opaque-final-build.log, Workspace/opaque-final-{core,gal,qt}.log and
+Workspace/opaque-verified-editor-gpu.log. Initial failures exposed the legacy HDR
+name lookup and the history fixture's obsolete global lookup; both consumers were
+fixed. Temporary authoring API/mount errors and test include/borrowing API errors
+were corrected before final verification. Vulkan is the only configured renderer
+DLL in this build; D3D12 is excluded. No controlled frame-time, upload-throughput or
+GPU submission benchmark ran, so no measured speedup is claimed. Removing inert
+operations and the unconditional persistent planar target should reduce unused
+work/allocations; that expectation remains unbenchmarked.
+
+Seven composite branches, 61 original operation-data structures and thirteen
+Builtin implementation files remain. The whole-stack migration, final removal of
+those files and remaining configuration/compiler/editor gates are still active;
+this checkpoint does not claim completion of the full goal.
