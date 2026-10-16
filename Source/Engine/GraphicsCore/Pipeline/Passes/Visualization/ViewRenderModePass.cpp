@@ -21,6 +21,21 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRenderModePass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("DisplayLinearColorInput", m_InputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("DisplayLinearColor")),
+    XII_MEMBER_PROPERTY("DisplayLinearColorOutput", m_OutputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("DisplayLinearColor")),
+    XII_MEMBER_PROPERTY("SceneDepth", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferAlbedo", m_InputGBufferAlbedo)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferNormal", m_InputGBufferNormal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferMaterial", m_InputGBufferMaterial)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferEmissive", m_InputGBufferEmissive)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("GBufferObjectId", m_InputGBufferObjectId)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("WireframeSurface", m_InputWireframeSurface)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DilatedVelocityBuffer", m_InputDilatedVelocityBuffer)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("StableAO", m_InputStableAO)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("IndirectLighting", m_InputIndirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("EnvironmentSpecular", m_InputEnvironmentSpecular)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("BloomTexture", m_InputBloomTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewMode", m_bUseViewMode)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_ENUM_MEMBER_PROPERTY("Mode", xiiViewRenderMode, m_Mode)->AddAttributes(new xiiDefaultValueAttribute(xiiViewRenderMode::Default)),
   } XII_END_PROPERTIES;
@@ -32,74 +47,55 @@ xiiResult xiiViewRenderModePass::Configure(const xiiVariantDictionary& propertie
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   return xiiViewRenderMode::IsSupportedVisualizationMode(m_Mode) ? XII_SUCCESS : XII_FAILURE;
 }
-void xiiViewRenderModePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, true, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UnorderedAccess;
-  pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  for (xiiStringView name : {"SceneDepth", "GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "WireframeSurface", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "EnvironmentSpecular", "BloomTexture"})
-  {
-    pins.PushBack({name, xiiRenderPipelinePin::Texture, true, true});
-    pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  }
-  pins.PushBack({"PerFrameCamera", xiiRenderPipelinePin::Buffer, true, true});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-    }
-}
+
 xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto mode  = static_cast<xiiViewRenderMode::Enum>(m_bUseViewMode && context.m_pView ? context.m_pView->GetViewRenderMode().GetValue() : m_Mode.GetValue());
-  const auto input = context.GetInputTexture("DisplayLinearColor");
+  const auto input = context.GetInputTexture(m_InputDisplayLinearColor);
   if (mode == xiiViewRenderMode::Default)
-    return context.SetOutput("DisplayLinearColor", input);
+    return context.SetOutput(m_OutputDisplayLinearColor, input);
   if (!xiiViewRenderMode::IsSupportedVisualizationMode(mode))
     return XII_FAILURE;
-  xiiRenderPassResourceScope scope(context);
-  xiiStringView              source = "SceneDepth";
+  xiiRenderPassResourceScope              scope(context);
+  const xiiRenderPipelineTextureInputPin* source = &m_InputSceneDepth;
   switch (mode)
   {
     case xiiViewRenderMode::BaseColor:
-      source = "GBufferAlbedo";
+      source = &m_InputGBufferAlbedo;
       break;
     case xiiViewRenderMode::NormalMap:
-      source = "GBufferNormal";
+      source = &m_InputGBufferNormal;
       break;
     case xiiViewRenderMode::Metallic:
     case xiiViewRenderMode::Roughness:
     case xiiViewRenderMode::Specular:
-      source = "GBufferMaterial";
+      source = &m_InputGBufferMaterial;
       break;
     case xiiViewRenderMode::Emissive:
-      source = "GBufferEmissive";
+      source = &m_InputGBufferEmissive;
       break;
     case xiiViewRenderMode::AmbientOcclusion:
-      source = "StableAO";
+      source = &m_InputStableAO;
       break;
     case xiiViewRenderMode::MotionVectors:
-      source = "DilatedVelocityBuffer";
+      source = &m_InputDilatedVelocityBuffer;
       break;
     case xiiViewRenderMode::IndirectLighting:
-      source = "IndirectLighting";
+      source = &m_InputIndirectLighting;
       break;
     case xiiViewRenderMode::ReflectionContribution:
-      source = "EnvironmentSpecular";
+      source = &m_InputEnvironmentSpecular;
       break;
     case xiiViewRenderMode::Bloom:
-      source = "BloomTexture";
+      source = &m_InputBloomTexture;
       break;
     default:
       break;
   }
-  auto       selected = context.GetInputTexture(source);
-  auto       depth    = context.GetInputTexture("SceneDepth");
-  auto       objects  = context.GetInputTexture(mode == xiiViewRenderMode::Wireframe ? "WireframeSurface" : "GBufferObjectId");
-  const auto camera   = context.GetInputBuffer("PerFrameCamera");
+  auto       selected = context.GetInputTexture(*source);
+  auto       depth    = context.GetInputTexture(m_InputSceneDepth);
+  auto       objects  = context.GetInputTexture(mode == xiiViewRenderMode::Wireframe ? m_InputWireframeSurface : m_InputGBufferObjectId);
+  const auto camera   = context.GetInputBuffer(m_InputPerFrameCamera);
   if (!selected.IsValid() || !depth.IsValid() || !camera.IsValid() || ((mode == xiiViewRenderMode::Wireframe || mode == xiiViewRenderMode::InstanceID) && !objects.IsValid()))
   {
     xiiLog::Error("Visualization '{}' requires its selected channel, depth, camera, and identity/surface inputs.", context.m_sPassName);
@@ -157,6 +153,6 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
     commands.ResolveAndSetUnorderedAccessTextureView("g_Output", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Succeeded())
       commands.DispatchCompute({(data.m_Size.width + 7) / 8, (data.m_Size.height + 7) / 8, 1}); });
-  return context.SetOutput("DisplayLinearColor", emitted.first->m_Output);
+  return context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_Output);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Visualization_ViewRenderModePass);

@@ -14,6 +14,16 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceQueryPass, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("SceneInstances", m_InputSceneInstances)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
+    XII_MEMBER_PROPERTY("SkinningMatrices", m_InputSkinningMatrices)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
+    XII_MEMBER_PROPERTY("VisibleMeshlets", m_InputVisibleMeshlets)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
+    XII_MEMBER_PROPERTY("VisibleMeshletCount", m_InputVisibleMeshletCount)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
+    XII_MEMBER_PROPERTY("GeometryMetadata", m_InputGeometryMetadata)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
+    XII_MEMBER_PROPERTY("MeshletMetadata", m_InputMeshletMetadata)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
+    XII_MEMBER_PROPERTY("SurfaceMaterials", m_InputSurfaceMaterials)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
+    XII_MEMBER_PROPERTY("MeshIndirectCommands", m_InputMeshIndirectCommands)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("MeshIndirectCommandCount", m_InputMeshIndirectCommandCount)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("Surface", m_OutputSurface)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
     XII_MEMBER_PROPERTY("OnlyViewWireframe", m_bOnlyViewWireframe)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("UseMeshShaders", m_bUseMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("FillMode", xiiGALFillMode, m_FillMode)->AddAttributes(new xiiDefaultValueAttribute(xiiGALFillMode::Solid)),
@@ -26,20 +36,7 @@ xiiResult xiiSurfaceQueryPass::Configure(const xiiVariantDictionary& properties)
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   return m_FillMode == xiiGALFillMode::Solid || m_FillMode == xiiGALFillMode::Wireframe ? XII_SUCCESS : XII_FAILURE;
 }
-void xiiSurfaceQueryPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  for (xiiStringView name : {"SceneInstances", "SkinningMatrices", "VisibleMeshlets", "VisibleMeshletCount", "GeometryMetadata", "MeshletMetadata", "SurfaceMaterials"})
-  {
-    pins.PushBack({name, xiiRenderPipelinePin::Buffer, true, m_bOnlyViewWireframe});
-    pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  }
-  for (xiiStringView name : {"MeshIndirectCommands", "MeshIndirectCommandCount"})
-    pins.PushBack({name, xiiRenderPipelinePin::Buffer, true, true});
-  pins.PushBack({"Surface", xiiRenderPipelinePin::Texture, false, m_bOnlyViewWireframe, xiiGALResourceFormat::RGBA32UInt});
-  pins.PeekBack().m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples = 1;
-}
+
 xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
 {
   if (!context.m_pView)
@@ -48,24 +45,24 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
     return XII_SUCCESS;
   xiiRenderPassResourceScope scope(context);
   xiiGpuVisibilityOutputs    visibility;
-  visibility.m_hSceneInstances       = context.GetInputBuffer("SceneInstances");
-  visibility.m_hSkinningMatrices     = context.GetInputBuffer("SkinningMatrices");
-  visibility.m_hVisibleMeshlets      = context.GetInputBuffer("VisibleMeshlets");
-  visibility.m_hVisibleMeshletCount  = context.GetInputBuffer("VisibleMeshletCount");
-  visibility.m_hIndirectCommands     = context.GetInputBuffer("MeshIndirectCommands");
-  visibility.m_hIndirectCommandCount = context.GetInputBuffer("MeshIndirectCommandCount");
+  visibility.m_hSceneInstances       = context.GetInputBuffer(m_InputSceneInstances);
+  visibility.m_hSkinningMatrices     = context.GetInputBuffer(m_InputSkinningMatrices);
+  visibility.m_hVisibleMeshlets      = context.GetInputBuffer(m_InputVisibleMeshlets);
+  visibility.m_hVisibleMeshletCount  = context.GetInputBuffer(m_InputVisibleMeshletCount);
+  visibility.m_hIndirectCommands     = context.GetInputBuffer(m_InputMeshIndirectCommands);
+  visibility.m_hIndirectCommandCount = context.GetInputBuffer(m_InputMeshIndirectCommandCount);
   const auto* meshlets               = context.m_Graph.GetBufferDescription(visibility.m_hVisibleMeshlets);
   if (!meshlets || meshlets->m_uiElementByteStride == 0 || meshlets->m_uiSize / meshlets->m_uiElementByteStride > xiiMath::MaxValue<xiiUInt32>())
     return XII_FAILURE;
   visibility.m_uiMaxVisibleMeshlets = static_cast<xiiUInt32>(meshlets->m_uiSize / meshlets->m_uiElementByteStride);
   xiiGeometryResidencyManager::UploadHandles geometry;
-  geometry.m_hGeometryMetadata   = context.GetInputBuffer("GeometryMetadata");
-  geometry.m_hMeshletMetadata    = context.GetInputBuffer("MeshletMetadata");
+  geometry.m_hGeometryMetadata   = context.GetInputBuffer(m_InputGeometryMetadata);
+  geometry.m_hMeshletMetadata    = context.GetInputBuffer(m_InputMeshletMetadata);
   geometry.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   if (!xiiMaterialManager::IsInitialized() || !xiiGeometryResidencyManager::IsInitialized())
     return XII_FAILURE;
   xiiMaterialGpuStorage::UploadHandles materials;
-  materials.m_hSurfaceData       = context.GetInputBuffer("SurfaceMaterials");
+  materials.m_hSurfaceData       = context.GetInputBuffer(m_InputSurfaceMaterials);
   materials.m_uiSurfaceBaseIndex = xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(context.m_Graph.GetFrameIndex());
   xiiGpuSceneGBufferRasterDescription description;
   description.m_ViewProjectionMatrix = context.m_pView->GetViewProjectionMatrix(xiiCameraEye::Left);
@@ -82,6 +79,6 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   }
   xiiRenderGraphTextureHandle surface;
   XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(context.m_Graph, context.m_sPassName, visibility, geometry, materials, description, surface, m_bUseMeshShaders, m_FillMode));
-  return context.SetOutput("Surface", surface);
+  return context.SetOutput(m_OutputSurface, surface);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Visualization_SurfaceQueryPass);

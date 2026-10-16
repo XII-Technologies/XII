@@ -87,9 +87,9 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
   XII_SUCCEED_OR_RETURN(PointClampSampler(m_pState->m_PointSampler));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), 0, 0, size));
-  for (const auto name : {"DilatedVelocityBuffer", "SceneDepth"})
+  for (const auto* pin : {&m_InputDilatedVelocityBuffer, &m_InputSceneDepth})
   {
-    const auto* input = context.m_Graph.GetTextureDescription(context.GetInputTexture(name));
+    const auto* input = context.m_Graph.GetTextureDescription(context.GetInputTexture(*pin));
     if (!input || input->m_Size != size)
       return XII_FAILURE;
   }

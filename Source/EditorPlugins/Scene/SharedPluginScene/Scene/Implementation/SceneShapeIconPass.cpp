@@ -18,6 +18,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneShapeIconPass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("ColorInput", m_InputColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Color")),
+    XII_MEMBER_PROPERTY("SceneDepth", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("ColorOutput", m_OutputColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Color")),
+    XII_MEMBER_PROPERTY("Picking", m_OutputPicking)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Size", m_fSize)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(1.0f), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("MaxScreenSize", m_fMaxScreenSize)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(64.0f), new xiiSuffixAttribute(" px")),
   }
@@ -59,15 +63,7 @@ namespace
   };
 } // namespace
 
-void xiiSceneShapeIconPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
-  pins.PushBack({"Color", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false});
-  pins.PushBack({"Picking", xiiRenderPipelinePin::Texture, false, true, xiiGALResourceFormat::R32UInt});
-  pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
-}
+
 
 xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -90,11 +86,11 @@ xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
     enabled          = parameter->ConvertTo<bool>(&result);
     XII_SUCCEED_OR_RETURN(result);
   }
-  auto color = context.GetInputTexture("Color");
+  auto color = context.GetInputTexture(m_InputColor);
   if (!enabled || context.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
-    return context.SetOutput("Color", color);
+    return context.SetOutput(m_OutputColor, color);
   XII_SUCCEED_OR_RETURN(Collect(*context.m_pView));
-  auto        depth      = context.GetInputTexture("SceneDepth");
+  auto        depth      = context.GetInputTexture(m_InputSceneDepth);
   auto&       graph      = context.m_Graph;
   const auto* output     = graph.GetTextureDescription(color);
   const auto* sceneDepth = graph.GetTextureDescription(depth);
@@ -225,8 +221,8 @@ xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
           commands.Draw({6, batch.m_uiCount, 0, batch.m_uiFirst});
       } });
   }
-  XII_SUCCEED_OR_RETURN(context.SetOutput("Color", color));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("Picking", picking));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputColor, color));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputPicking, picking));
   if (capture)
   {
     if (!m_pPicking)

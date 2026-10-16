@@ -20,6 +20,11 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneMeshPickingPass : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneMeshPickingPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineBufferInputPin   m_InputGPUGeometryMetadata;
+  xiiRenderPipelineBufferInputPin   m_InputGPUMeshletMetadata;
+  xiiRenderPipelineBufferInputPin   m_InputSurfaceMaterialGPUStorage;
+  xiiRenderPipelineTextureOutputPin m_OutputSurface{xiiGALResourceFormat::RGBA32UInt, true};
+
   xiiSceneMeshPickingPass();
   ~xiiSceneMeshPickingPass() override;
 
@@ -33,9 +38,9 @@ public:
 
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Geometry; }
   xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override { return xiiRenderPipelineFeature::GpuScene; }
-  void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
-  xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
-  void                                     InvalidateTemporalHistory() override;
+
+  xiiResult Build(xiiRenderPipelinePassContext& context) override;
+  void      InvalidateTemporalHistory() override;
 
   /// Window pixels, including the viewport origin. Outputs are cleared first. Success with an
   /// invalid owner means background; failure means unavailable/stale capture or invalid input.

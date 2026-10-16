@@ -16,6 +16,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneMeshPickingPass, 2, xiiRTTIDefaultAlloc
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("GPUGeometryMetadata", m_InputGPUGeometryMetadata)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GPU Geometry Metadata")),
+    XII_MEMBER_PROPERTY("GPUMeshletMetadata", m_InputGPUMeshletMetadata)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GPU Meshlet Metadata")),
+    XII_MEMBER_PROPERTY("SurfaceMaterialGPUStorage", m_InputSurfaceMaterialGPUStorage)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Surface Material GPU Storage")),
+    XII_MEMBER_PROPERTY("Surface", m_OutputSurface)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("SelectionOnly", m_bSelectionOnly)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("UseMeshShaders", m_bUseMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
@@ -27,15 +31,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiSceneMeshPickingPass::xiiSceneMeshPickingPass()  = default;
 xiiSceneMeshPickingPass::~xiiSceneMeshPickingPass() = default;
 
-void xiiSceneMeshPickingPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
-  pins.PushBack({"GPU Geometry Metadata", xiiRenderPipelinePin::Buffer, true, false});
-  pins.PushBack({"GPU Meshlet Metadata", xiiRenderPipelinePin::Buffer, true, false});
-  pins.PushBack({"Surface Material GPU Storage", xiiRenderPipelinePin::Buffer, true, false});
-  pins.PushBack({"Surface", xiiRenderPipelinePin::Texture, false, true, xiiGALResourceFormat::RGBA32UInt});
-  pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
-}
+
 
 void xiiSceneMeshPickingPass::InvalidateTemporalHistory()
 {
@@ -132,10 +128,10 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
     return XII_SUCCESS;
 
   xiiGeometryResidencyManager::UploadHandles geometry;
-  geometry.m_hGeometryMetadata = context.GetInputBuffer("GPU Geometry Metadata");
-  geometry.m_hMeshletMetadata  = context.GetInputBuffer("GPU Meshlet Metadata");
+  geometry.m_hGeometryMetadata = context.GetInputBuffer(m_InputGPUGeometryMetadata);
+  geometry.m_hMeshletMetadata  = context.GetInputBuffer(m_InputGPUMeshletMetadata);
   xiiMaterialGpuStorage::UploadHandles materials;
-  materials.m_hSurfaceData = context.GetInputBuffer("Surface Material GPU Storage");
+  materials.m_hSurfaceData = context.GetInputBuffer(m_InputSurfaceMaterialGPUStorage);
   if (!geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuGeometryBaseIndex, geometry.m_uiGeometryBaseIndex) || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuMaximumResidentMeshlets, geometry.m_uiMaximumResidentMeshletCount) || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuSurfaceMaterialBaseIndex, materials.m_uiSurfaceBaseIndex))
     return XII_FAILURE;
 
@@ -174,7 +170,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   raster.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(state.m_hVisibility);
   xiiRenderGraphTextureHandle surface;
   XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(context.m_Graph, context.m_sPassName, visibility, geometry, materials, raster, surface, m_bUseMeshShaders));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("Surface", surface));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputSurface, surface));
   if (!m_bSelectionOnly)
     XII_SUCCEED_OR_RETURN(state.Capture(context, surface));
   valid = true;

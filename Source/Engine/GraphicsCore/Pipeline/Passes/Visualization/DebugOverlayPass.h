@@ -8,8 +8,13 @@ class XII_GRAPHICSCORE_DLL xiiDebugOverlayPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiDebugOverlayPass, xiiRenderPipelinePass);
 
 public:
-  bool                                     m_bEnabled = true;
-  void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  xiiRenderPipelineTextureInputPin  m_InputDisplayLinearColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget};
+  xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
+  xiiRenderPipelineTextureOutputPin m_OutputDisplayLinearColor;
+  xiiRenderPipelineTextureOutputPin m_OutputSceneDepth;
+
+  bool m_bEnabled = true;
+
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return m_bEnabled ? xiiRenderExtractionCategory::Custom : xiiRenderExtractionCategory::None; }
 };

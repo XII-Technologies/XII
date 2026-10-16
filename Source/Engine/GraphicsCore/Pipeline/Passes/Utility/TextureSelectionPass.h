@@ -8,7 +8,11 @@ class XII_GRAPHICSCORE_DLL xiiTextureSelectionPass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiTextureSelectionPass, xiiRenderPipelinePass);
 
 public:
-  bool      m_bPreferPrimary = true;
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  xiiRenderPipelineTextureInputPin  m_InputPrimary{xiiGALResourceFormat::Unknown, true};
+  xiiRenderPipelineTextureInputPin  m_InputFallback;
+  xiiRenderPipelineTextureOutputPin m_OutputTexture{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read};
+
+  bool m_bPreferPrimary = true;
+
   xiiResult Build(xiiRenderPipelinePassContext& context) override;
 };

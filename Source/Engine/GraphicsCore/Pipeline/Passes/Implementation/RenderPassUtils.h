@@ -36,7 +36,6 @@ namespace xiiRenderPassUtils
   xiiResult                                 LinearClampSampler(xiiSharedPtr<xiiGALSampler>& sampler);
   xiiRenderGraphBufferHandle                Constants(xiiRenderGraphBuilder& builder, xiiStringView name, xiiUInt32 size);
   xiiResult                                 OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiUInt32 width, xiiUInt32 height, xiiSizeU32& out_size, bool useViewport = false);
-  void                                      ResourcePins(xiiDynamicArray<xiiRenderPipelinePin>& pins);
   /// Per-pass cache, invalidated by authored configuration, view defaults or parameter changes.
   struct DisplayConfiguration
   {

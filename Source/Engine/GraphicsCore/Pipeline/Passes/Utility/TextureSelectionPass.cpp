@@ -8,6 +8,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureSelectionPass, 1, xiiRTTIDefaultAlloc
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Primary", m_InputPrimary)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("Fallback", m_InputFallback)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("Texture", m_OutputTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PreferPrimary", m_bPreferPrimary)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
@@ -19,17 +22,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureSelectionPass, 1, xiiRTTIDefaultAlloc
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-void xiiTextureSelectionPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  pins.PushBack({"Primary", xiiRenderPipelinePin::Texture, true, true});
-  pins.PushBack({"Fallback", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, false, false});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-}
+
 xiiResult xiiTextureSelectionPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto primary = context.GetInputTexture("Primary");
-  return context.SetOutput("Texture", m_bPreferPrimary && primary.IsValid() ? primary : context.GetInputTexture("Fallback"));
+  const auto primary = context.GetInputTexture(m_InputPrimary);
+  return context.SetOutput(m_OutputTexture, m_bPreferPrimary && primary.IsValid() ? primary : context.GetInputTexture(m_InputFallback));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Utility_TextureSelectionPass);

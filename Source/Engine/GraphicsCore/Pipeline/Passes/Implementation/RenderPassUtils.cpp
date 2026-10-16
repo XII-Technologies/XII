@@ -74,11 +74,7 @@ xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& con
   return out_size.width && out_size.height ? XII_SUCCESS : XII_FAILURE;
 }
 
-void xiiRenderPassUtils::ResourcePins(xiiDynamicArray<xiiRenderPipelinePin>& pins)
-{
-  pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
-  pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
-}
+
 
 xiiResult xiiRenderPassUtils::DisplayConfiguration::Resolve(const xiiRenderPipelinePassContext& context, const xiiDisplayOutputSettings& authored, bool useViewDefaults)
 {
