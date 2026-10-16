@@ -851,3 +851,66 @@ workaround was introduced; this follows the existing GAL initialization contract
 No controlled frame-time, CPU lookup or GPU submission benchmark was performed.
 The removed readback pass was a forced live no-op; avoiding its scheduling and
 legacy resolution lookups is a source-derived effect, not a measured speedup.
+
+
+## Independent ambient occlusion and explicit GPU readiness - 2026-10-16
+
+AmbientOcclusionPass and AmbientOcclusionTemporalPass are independent reflected
+operations. Their static schemas consist entirely of typed XII_MEMBER_PROPERTY
+members; neither overrides GetPins or contains a manual pin-type array. AO exposes
+its radius, sampling counts, screen-space tuning and ray bias through reflected
+members. Ray tracing consumes an explicit TLAS/build-dependency binding and
+material/geometry buffers. Unconnected optional ray inputs permit the authored
+screen-space policy; an explicitly connected ray path must prepare successfully.
+Both algorithms consume frame constants and textures through compiled bindings,
+without requesting world extraction or creating scene ownership.
+
+AmbientOcclusion is an ordinary two-node reusable SDK asset. Deferred and
+EditorScene now reference it. Versioned source and binary conversion preserves
+existing node/connection identities, moves the authored RawAO output contract to
+the new instance, remaps interface outputs and supports embedded definitions.
+Descriptor format 3 prevents applying the old extraction to already-flattened
+current graphs; version 2 remains readable. All nine packaged assets were
+re-exported through the production asset compiler and the permanent library test
+checks exact deterministic bytes. The temporary authoring helper is not retained
+in production source.
+
+Temporal AO owns mask and reprojection-surface images per pass occurrence and view.
+The filtering dispatch captures its own previous-frame surface; it does not depend
+on ReSTIR DI history. History slots are reusable only after the existing shared
+frame tracker reports completion across every queue. The graph builder accepts
+external device-side readiness fences, merged into submission waits before barriers.
+A previous-history publication establishes a graph version so arbitrary consumer
+queues depend on readiness. Images are retained through resize and active frames;
+camera cuts invalidate accumulation, and successful recording alone promotes
+current history. Ray shader binding tables are graph-owned transient writes rather
+than one shared mutable persistent allocation.
+
+Deleted the old AO generation/denoising setup and execute functions, two operation
+payloads, ray pipeline/SBT helper, associated runtime resources/history fields and
+old GTAO/RTAO shader files. Remaining lighting consumers receive the new outputs.
+The existing frame-preparation composite temporarily publishes its already-built
+TLAS and hit records through reflected members, without a duplicate scene build.
+The new AO operations contain no stage checks. Six legacy selector branches,
+56 original operation payloads and thirteen Builtin implementation files still
+remain; full migration and deletion are unfinished.
+
+Debug builds passed for GraphicsCoreTest, GraphicsFoundationTest,
+EditorEngineProcessFrameworkTest, EditorFrameworkTest and GpuDrivenScene. Final
+CPU, Vulkan GAL, Vulkan editor-engine and full Qt suites pass. Evidence:
+Workspace/ambient-occlusion-{core,gal,editor-gpu,qt}.log and
+ambient-occlusion-{validation,final,ray-binding,mutation}-build.log. Regression
+coverage includes typed pin discovery, presence/optionality attributes, invalid
+properties, repeated nested definitions, deterministic serialization, old binary
+migration, malformed connections, two independent AO occurrences in two views,
+GPU mask readback, resize, camera cuts, previous-output identity and submission
+readiness waits. The editor GPU run found an AllRayTracing uniform-stage mismatch;
+AO now binds uniforms to their reflected RayGeneration stage, and the full suite
+passes afterward. D3D12 remains excluded.
+
+The existing two-camera extraction regression reports one changed instance uploaded
+once (288 bytes) and zero bytes for a warmed static frame. Its uncontrolled Debug
+packing sample measured 6.375 ms/update for 1024 unchanged components. No controlled
+AO frame-time, GPU submission or allocation benchmark was run. The extra surface
+history and fence pool preserve instance isolation and completion safety; no
+performance improvement is claimed without controlled measurements.
