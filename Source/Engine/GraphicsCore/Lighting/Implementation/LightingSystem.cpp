@@ -301,13 +301,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   const xiiCamera* pCamera = view.GetCamera();
   if (pCamera != nullptr)
   {
-    const xiiVec3 vCameraPosition = pCamera->GetPosition();
-    const xiiVec3 vCameraForward  = NormalizeOrFallback(pCamera->GetDirForwards(), xiiVec3(1.0f, 0.0f, 0.0f));
-
-    m_CameraConstants.m_ViewProjectionMatrix        = view.GetViewProjectionMatrix(xiiCameraEye::Left);
-    m_CameraConstants.m_InverseViewProjectionMatrix = view.GetInverseViewProjectionMatrix(xiiCameraEye::Left);
-    m_CameraConstants.m_CameraPositionAndNearPlane  = xiiVec4(vCameraPosition, pCamera->GetNearPlane());
-    m_CameraConstants.m_CameraForwardAndFarPlane    = xiiVec4(vCameraForward, pCamera->GetFarPlane());
+    m_CameraConstants = xiiSnapshotCameraConstants(view);
 
     m_LightConstants.m_fClusterNearPlane      = xiiMath::Max(pCamera->GetNearPlane(), 0.001f);
     m_LightConstants.m_fClusterLogFarOverNear = GetClusterLogFarOverNear(m_LightConstants.m_fClusterNearPlane, pCamera->GetFarPlane());
@@ -331,14 +325,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   m_LightConstants.m_uiDirectionalShadowBlockerSamples = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowBlockerSamples, 1U, 32U);
   m_LightConstants.m_uiDirectionalShadowFilterSamples  = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowFilterSamples, 1U, 32U);
 
-  m_GlobalConstants.m_uiFrameIndex = uiFrameIndex;
-  if (xiiClock* pClock = xiiClock::GetGlobalClock())
-  {
-    m_GlobalConstants.m_fDeltaTimeMs = static_cast<float>(pClock->GetTimeDiff().GetMilliseconds());
-    m_GlobalConstants.m_fGlobalTime  = static_cast<float>(pClock->GetAccumulatedTime().GetSeconds());
-    m_GlobalConstants.m_fWorldTime   = m_GlobalConstants.m_fGlobalTime;
-  }
-  m_GlobalConstants.m_RenderScaleJitter         = xiiVec4(view.GetRenderResolutionScale(), 0.0f, 0.0f, 0.0f);
+  m_GlobalConstants = xiiSnapshotGlobalConstants(view, uiFrameIndex);
   m_GlobalConstants.m_ReSTIRDISettings          = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples, 1U, 8U), xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod, 1U, 8U), 0U, 0U);
   m_GlobalConstants.m_ReSTIRDIReuseSettings     = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiReSTIRDIFreshCandidateCount, 1U, 32U), xiiMath::Clamp(m_Settings.m_uiReSTIRDITemporalHistoryM, 1U, 32U), xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialNeighborCount, 1U, 8U), xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialRadius, 1U, 8U));
   m_GlobalConstants.m_ReSTIRDIStabilitySettings = xiiVec4(xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight, 0.0f, 0.99f), xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold, 0.05f, 1.0f), 0.0f, 0.0f);

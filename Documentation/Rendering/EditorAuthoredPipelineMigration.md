@@ -420,3 +420,23 @@ header still present. The complete requested deletion is not finished. The remai
 visibility, geometry, shadow, lighting, material, screen-effect and visualization
 algorithms must be moved into real independent passes and authored compositions;
 renaming the remaining runtime would not satisfy that work.
+
+## Shared frame constants and independent camera upload
+
+Camera/light/global shader layouts are extracted from private LightingSystem structs
+into Pipeline/FrameConstants.h, preserving their ABI. Lighting and the new reflected
+ViewConstants pass use the same camera/time snapshot functions. ViewConstants uploads
+only camera and frame-time uniform buffers and declares no extraction or renderer
+feature requirements. It provides explicit buffer pins for specialized effects
+without initializing a lighting context.
+
+Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest and
+EditorEngineProcessFrameworkTest. All 29 Core, 50 Vulkan GAL and 73 Vulkan
+editor-engine subtests pass. ViewConstantSnapshots performs actual GPU copies and
+readback for two views in one graph, changes the live camera after Build, and checks
+that execution retained the earlier position, near plane and frame index.
+Evidence: Workspace/frame-constants-core.log, frame-constants-verified-gal.log and
+frame-constants-editor-gpu.log. The fixture's initial command-list reuse error was
+fixed before the verified run. D3D12 is excluded. No performance benchmark was run.
+This supplies a missing explicit dependency for remaining pass extraction; it does
+not close the composite-runtime deletion work.
