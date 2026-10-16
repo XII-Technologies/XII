@@ -7,6 +7,7 @@
 #include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <GraphicsCore/Pipeline/Implementation/LegacyRenderPipelineMigration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 // clang-format off
@@ -186,6 +187,7 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
   context.RegisterObject(root->GetGuid(), xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
   xiiRttiConverterReader converter(&graph, &context);
   converter.ApplyPropertiesToObject(root, xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
+  xiiMigrateLegacyScreenEffects(replacement);
   *this = std::move(replacement);
   return XII_SUCCESS;
 }

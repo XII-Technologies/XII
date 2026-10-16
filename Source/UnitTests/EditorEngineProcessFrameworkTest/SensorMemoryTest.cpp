@@ -9,7 +9,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
-#include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -202,11 +202,9 @@ public:
   void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>&) const override {}
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
-    xiiBuiltinRenderPipelinePass pass;
-    xiiVariantDictionary         properties;
-    properties.Insert("Stage", "ScreenEffects");
-    XII_SUCCEED_OR_RETURN(pass.Configure(properties));
-    const auto device = xiiGALDevice::GetDefaultDevice();
+    xiiSensorOutputPass pass;
+    pass.m_bUseViewProfile = true;
+    const auto device      = xiiGALDevice::GetDefaultDevice();
     xiiGALDevice::SetDefaultDevice(nullptr);
     XII_SCOPE_EXIT(xiiGALDevice::SetDefaultDevice(device));
     return pass.Build(context);

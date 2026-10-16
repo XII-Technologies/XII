@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-#include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelinePassData.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/AtmospherePassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 
 namespace xiiBuiltinPipelineUtils
 {
@@ -69,23 +70,6 @@ namespace xiiBuiltinPipelineUtils
     return pBest;
   }
 
-  inline const xiiSkyAtmosphereRenderData* SelectSkyAtmosphere(const xiiArrayPtr<xiiRenderData* const>& renderData)
-  {
-    const xiiSkyAtmosphereRenderData* pBest = nullptr;
-    for (const xiiRenderData* pRenderData : renderData)
-    {
-      const xiiSkyAtmosphereRenderData* pAtmosphere = xiiDynamicCast<const xiiSkyAtmosphereRenderData*>(pRenderData);
-      if (pAtmosphere == nullptr)
-        continue;
-
-      if (pBest == nullptr || pAtmosphere->m_iPriority > pBest->m_iPriority || (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
-      {
-        pBest = pAtmosphere;
-      }
-    }
-    return pBest;
-  }
-
   inline const xiiVolumetricCloudRenderData* SelectVolumetricCloudLayer(const xiiArrayPtr<xiiRenderData* const>& renderData)
   {
     const xiiVolumetricCloudRenderData* pBest = nullptr;
@@ -103,8 +87,6 @@ namespace xiiBuiltinPipelineUtils
     return pBest;
   }
 
-
-
   inline xiiRenderGraphBufferHandle CreateTemporalDenoiseConstants(xiiRenderGraphBuilder& builder, xiiStringView sName)
   {
     xiiGALBufferCreationDescription description;
@@ -116,20 +98,9 @@ namespace xiiBuiltinPipelineUtils
   }
 
 
-  inline xiiAtmosphereConstants MakeAtmosphereConstants(xiiAtmosphereLUTHandle hCache)
+  inline xiiAtmosphereConstants MakeAtmosphereConstants(xiiAtmosphereLUTHandle cache)
   {
-    const xiiAtmosphereSettings& settings = xiiAtmosphereManager::GetConfiguration(hCache);
-
-    xiiAtmosphereConstants constants            = {};
-    constants.PlanetAtmosphereRadiiScaleHeights = xiiVec4(settings.m_fPlanetRadiusKm, settings.m_fAtmosphereRadiusKm, settings.m_fRayleighScaleHeightKm, settings.m_fMieScaleHeightKm);
-    constants.RayleighScattering                = xiiVec4(settings.m_vRayleighScattering, 0.0f);
-    constants.MieScatteringAndPhase             = xiiVec4(settings.m_vMieScattering, settings.m_fMiePhaseG);
-    constants.MieAbsorption                     = xiiVec4(settings.m_vMieAbsorption, 0.0f);
-    constants.OzoneAbsorption                   = xiiVec4(settings.m_vOzoneAbsorption, 0.0f);
-    constants.PlanetUpAndGroundAltitudeMeters   = xiiVec4(settings.m_vPlanetUpDirection.GetNormalized(), settings.m_fGroundAltitudeMeters);
-    constants.SunDiskParameters                 = xiiVec4(settings.m_fSunLimbDarkening, 0.0f, 0.0f, 0.0f);
-    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples, settings.m_uiSkyViewIntegrationSteps, settings.m_uiAerialPerspectiveSteps);
-    return constants;
+    return xiiRenderPassUtils::MakeAtmosphereConstants(xiiAtmosphereManager::GetConfiguration(cache));
   }
 
   inline xiiRenderGraphBufferHandle CreateAtmosphereConstantsBuffer(xiiRenderGraphBuilder& builder, xiiStringView sName)

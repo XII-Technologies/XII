@@ -11,6 +11,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
@@ -72,7 +73,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
       !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
-  for (const xiiStringView name : {"Deferred", "EditorScene", "TexturePreview", "TextureCubePreview"})
+  for (const xiiStringView name : {"ScreenEffects", "Deferred", "EditorScene", "TexturePreview", "TextureCubePreview"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     PipelineLibraryDocument storage(source);
@@ -84,11 +85,18 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     XII_TEST_BOOL(storage.GetSettingsObject() != nullptr);
     XII_TEST_BOOL(document->IsInstanceOf<xiiRenderPipelineAssetDocument>());
     auto*     nodes     = static_cast<const xiiDocumentNodeManager*>(document->GetObjectManager());
-    xiiUInt32 passCount = 0, connectionCount = 0;
+    xiiUInt32 nodeCount = 0, passCount = 0, connectionCount = 0, internalConnectionCount = 0;
     for (const auto* object : nodes->GetRootObject()->GetChildren())
     {
-      passCount += nodes->IsNode(object) ? 1U : 0U;
+      nodeCount += nodes->IsNode(object) ? 1U : 0U;
+      passCount += nodes->IsNode(object) && !object->GetType()->IsDerivedFrom<xiiRenderPipelineInterfacePass>() ? 1U : 0U;
       connectionCount += nodes->IsConnection(object) ? 1U : 0U;
+      if (nodes->IsConnection(object))
+      {
+        const auto* sourceNode = nodes->GetObject(object->GetTypeAccessor().GetValue("Source").Get<xiiUuid>());
+        const auto* targetNode = nodes->GetObject(object->GetTypeAccessor().GetValue("Target").Get<xiiUuid>());
+        internalConnectionCount += sourceNode && targetNode && !sourceNode->GetType()->IsDerivedFrom<xiiRenderPipelineInterfacePass>() && !targetNode->GetType()->IsDerivedFrom<xiiRenderPipelineInterfacePass>() ? 1U : 0U;
+      }
       if (nodes->IsNode(object))
       {
         const auto inspect = [&](const auto& pins) {
@@ -114,7 +122,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
         visibleNodes += item->type() == xiiQtNodeScene::Node ? 1U : 0U;
         visibleConnections += item->type() == xiiQtNodeScene::Connection ? 1U : 0U;
       }
-      XII_TEST_INT(visibleNodes, passCount);
+      XII_TEST_INT(visibleNodes, nodeCount);
       XII_TEST_INT(visibleConnections, connectionCount);
     }
     PipelineLibraryContext context;
@@ -133,11 +141,11 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
       return;
     const auto authoring = loaded->GetAuthoring();
-    XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, 1);
-    XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute) == (name == "Deferred" || name == "EditorScene"));
+    XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, name == "ScreenEffects" ? 0 : 1);
+    XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute) == (name == "Deferred" || name == "EditorScene" || name == "ScreenEffects"));
     XII_TEST_BOOL(authoring->m_Descriptor.m_Id == document->GetGuid());
     XII_TEST_INT(authoring->m_Descriptor.m_Passes.GetCount(), passCount);
-    XII_TEST_INT(authoring->m_Descriptor.m_Connections.GetCount(), connectionCount);
+    XII_TEST_INT(authoring->m_Descriptor.m_Connections.GetCount(), internalConnectionCount);
     for (const auto& pass : authoring->m_Descriptor.m_Passes)
       XII_TEST_BOOL(nodes->GetObject(pass.m_Id) != nullptr);
     xiiContiguousMemoryStreamStorage packaged, rebuilt, repeated;

@@ -174,3 +174,20 @@ void xiiSkyAtmosphereComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& 
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_SkyAtmosphereComponent);
+
+const xiiSkyAtmosphereRenderData* xiiSelectSkyAtmosphere(const xiiArrayPtr<xiiRenderData* const>& renderData)
+{
+  const xiiSkyAtmosphereRenderData* pBest = nullptr;
+  for (const xiiRenderData* pRenderData : renderData)
+  {
+    const xiiSkyAtmosphereRenderData* pAtmosphere = xiiDynamicCast<const xiiSkyAtmosphereRenderData*>(pRenderData);
+    if (pAtmosphere == nullptr)
+      continue;
+
+    if (pBest == nullptr || pAtmosphere->m_iPriority > pBest->m_iPriority || (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
+    {
+      pBest = pAtmosphere;
+    }
+  }
+  return pBest;
+}

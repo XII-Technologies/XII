@@ -97,8 +97,6 @@ struct xiiVolumetricLightInjectionData;
 struct xiiVolumetricFogIntegrationData;
 struct xiiVolumetricFogResolveData;
 struct xiiVolumetricFogTemporalReprojectionData;
-struct xiiAtmosphereCompositeData;
-struct xiiSensorOutputData;
 
 struct xiiOpaqueLightingCompositeData;
 struct xiiHairRenderingData;
@@ -113,15 +111,7 @@ struct xiiProjectedDecalResolveData;
 struct xiiMeshDecalDrawData;
 struct xiiWeightedBlendedOITData;
 
-struct xiiScreenSpaceGlobalIlluminationData;
-struct xiiScreenSpaceGlobalIlluminationCompositeData;
-struct xiiScreenSpaceRefractionSnapshotData;
-struct xiiScreenSpaceRefractionData;
 struct xiiPlanarReflectionsData;
-
-
-
-
 
 /// Built-in rendering implementation and isolated per-view history, owned by the existing
 /// high-level resource manager so GAL state is released before device/allocator shutdown.
@@ -145,7 +135,6 @@ public:
   void                                                                   BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                                                                   BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                                                              BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth);
   xiiResult                                                              BuildViewRenderMode(xiiRenderGraph& graph, xiiRenderGraphTextureHandle& color);
   void                                                                   BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
@@ -155,7 +144,6 @@ public:
   xiiResult                                                              BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                                                              PrepareTemporalResources(xiiStringView stage);
   xiiResult                                                              PrepareShadowResources();
-  xiiResult                                                              PrepareSensorOutput();
   xiiUniquePtr<xiiRayTracingFrameResources>                              m_RayTracingResources;
   xiiRenderPipelineInstance                                              m_Instance;
   xiiHashTable<xiiString, xiiUniquePtr<xiiBuiltinRenderPipelineRuntime>> m_Subgraphs;
@@ -290,7 +278,6 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricIntegratePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricResolvePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricTemporalPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>    m_pAtmosphereCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTGIPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTGIShaderBindingTable;
@@ -381,9 +368,6 @@ public:
     //  Stage 9 - Screen-Space Effects
     struct ScreenSpacePasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSSGIPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSSGICompositePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSSRefractionPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSSSPipeline; // screen-space SSS
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSCausticsPipeline;
       xiiSharedPtr<xiiGALTexture>              m_pPlanarReflectionTarget;
@@ -402,16 +386,6 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState> m_pMotionBlurPipeline;
       xiiTexture2DResourceHandle               m_hLensDirtTexture;
     } m_PostProcessPasses;
-
-    //  Stage 12 - Final Output
-    struct OutputPasses
-    {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pHDRtoSDRPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pFinalResolvePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSensorOutputPipeline;
-      xiiSharedPtr<xiiGALTexture>               m_pSensorOutputTexture;
-      xiiSensorProfileHandle                    m_hSensorProfile;
-    } m_OutputPasses;
   };
   Resources m_Resources;
 
@@ -616,13 +590,6 @@ private:
   void SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data, xiiRenderGraphPassContext& context);
-
-  void SetupSensorOutput(xiiSensorOutputData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context);
-
-
   void SetupOpaqueLightingComposite(xiiOpaqueLightingCompositeData& data, xiiRenderGraphBuilder& builder);
   void ExecuteOpaqueLightingComposite(const xiiOpaqueLightingCompositeData& data, xiiRenderGraphPassContext& context);
 
@@ -657,26 +624,8 @@ private:
   void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRenderGraphBuilder& builder);
   void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRenderGraphPassContext& context);
 
-
-  void SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminationData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIlluminationData& data, xiiRenderGraphPassContext& context);
-  void SetupScreenSpaceGlobalIlluminationComposite(xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteScreenSpaceGlobalIlluminationComposite(const xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphPassContext& context);
-
-  void SetupScreenSpaceRefractionSnapshot(xiiScreenSpaceRefractionSnapshotData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteScreenSpaceRefractionSnapshot(const xiiScreenSpaceRefractionSnapshotData& data, xiiRenderGraphPassContext& context);
-  void SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRenderGraphPassContext& context);
-
   void SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRenderGraphBuilder& builder);
   void ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRenderGraphPassContext& context);
-
-
-
-
-
-
-
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

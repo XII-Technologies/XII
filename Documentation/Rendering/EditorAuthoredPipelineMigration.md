@@ -440,3 +440,50 @@ frame-constants-editor-gpu.log. The fixture's initial command-list reuse error w
 fixed before the verified run. D3D12 is excluded. No performance benchmark was run.
 This supplies a missing explicit dependency for remaining pass extraction; it does
 not close the composite-runtime deletion work.
+
+
+## Independent screen effects and authored composition
+
+The screen-effects branch and its six old operation implementations, data structures,
+prototypes, pipeline caches and sensor allocation path are deleted. SSGI tracing,
+SSGI compositing, refraction snapshots, refraction, atmosphere compositing and
+calibrated sensor output now execute in independent reflected passes. Their tuning
+comes from native reflected members; each operation consumes explicit resource pins
+and owns only its own algorithm state. Atmosphere constants and texture selection
+are separate reusable operations with no scene-service initialization.
+
+ScreenEffects is an ordinary editor-authored asset containing nine leaf occurrences
+(including two texture selectors). Deferred and EditorScene reference the same
+shared definition. The production editor converted and exported their source and
+binary assets. Versioned conversion preserves existing node and pin identities,
+external connections and instance parameters, including descriptors with embedded
+Core definitions. Formerly implicit camera/light/global buffers and hardware-GI
+availability now cross the subgraph interface through explicit connections.
+
+The view owns sensor profile configuration; native sensor pass occurrences own
+persistent output textures and publish completed output. View readback resolves a
+view-profile sensor occurrence and retains GAL shared ownership. Changing profiles,
+disabling output and failed builds cannot expose stale completed output. Separate
+instances and views do not share writable sensor storage. Atmosphere selection uses
+the existing extracted world component data and the same deterministic priority rule
+as LUT preparation. No scene registry, hierarchy or duplicate transforms were added.
+
+Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest,
+EditorEngineProcessFrameworkTest and EditorFrameworkTest. All 30 Core, 51 Vulkan
+GAL, 73 Vulkan editor-engine and 15 Qt subtests pass. Evidence is in
+Workspace/screen-verified-core.log, screen-verified-gal3.log,
+screen-verified-editor-gpu.log and screen-verified-qt.log. New coverage checks
+versioned root/nested descriptor conversion, deterministic reserialization, shared
+asset expansion and independent sensor allocations and GPU readback across three
+frames, including invalidation. The specialized screen-operation pipeline declares
+no extraction categories or scene-service requirements. Existing sensor tests also
+pass 64 profile resizes, per-view separation and allocation failure/recovery.
+The synthetic GPU fixture initially aliased immutable material inputs with mutable
+HDR storage and was correctly rejected for a dependency cycle; its texture inputs
+were separated before the verified run. D3D12 remains excluded.
+
+No controlled performance benchmark was run. Resource forwarding and selection
+emit no GPU work; operation separation does not request a GPU submission per pass.
+Fourteen Builtin implementation files and the public selector still remain, with
+nine composite branches and 70 old operation-data structures. This checkpoint does
+not complete the requested entire-stack decomposition or Builtin-file deletion.

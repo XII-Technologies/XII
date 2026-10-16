@@ -651,14 +651,31 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_BOOL(pipeline != nullptr);
     if (pipeline)
     {
-      XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), 18);
-      XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > 17);
-      XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), 18);
+      XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), pipeline->GetDescriptor().m_Passes.GetCount());
+      XII_TEST_BOOL(pipeline->GetTopology().GetVertexCount() > resource->GetAuthoring()->m_Descriptor.m_Passes.GetCount());
+      XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > pipeline->GetTopology().GetVertexCount() - 1);
+      XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), pipeline->GetTopology().GetVertexCount());
       xiiRenderPipelineResourceDescriptor ordered;
       XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(ordered));
-      auto descriptor = ordered;
-      XII_TEST_RESULT(descriptor.RemovePass(15)); // Debug is removable through its resource connections.
-      XII_TEST_RESULT(descriptor.Connect(14, "DisplayLinearColor", 15, "DisplayLinearColor"));
+      auto      descriptor = ordered;
+      xiiUInt32 debug      = xiiInvalidIndex;
+      for (xiiUInt32 index = 0; index < descriptor.m_Passes.GetCount(); ++index)
+        if (const auto* selected = descriptor.m_Passes[index].m_Properties.GetValue("Stage"))
+          if (*selected == xiiVariant("Debug"))
+            debug = index;
+      XII_TEST_BOOL(debug != xiiInvalidIndex);
+      if (debug == xiiInvalidIndex)
+        return;
+      XII_TEST_RESULT(descriptor.RemovePass(debug));
+      xiiUInt32 tone = xiiInvalidIndex, grading = xiiInvalidIndex;
+      for (xiiUInt32 index = 0; index < descriptor.m_Passes.GetCount(); ++index)
+      {
+        if (descriptor.m_Passes[index].m_sType == "xiiToneMappingPass")
+          tone = index;
+        if (descriptor.m_Passes[index].m_sType == "xiiColorGradingPass")
+          grading = index;
+      }
+      XII_TEST_RESULT(descriptor.Connect(tone, "DisplayLinearColor", grading, "DisplayLinearColor"));
       xiiSharedPtr<const xiiRenderPipeline> edited;
       XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
       XII_TEST_BOOL(edited->GetHeapMemoryUsage() > descriptor.m_Passes.GetHeapMemoryUsage() + descriptor.m_Connections.GetHeapMemoryUsage());
@@ -667,7 +684,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
       xiiStringBuilder error;
       XII_TEST_RESULT(xiiRenderPipeline::Compile(incomplete, edited, &error));
       auto duplicate = ordered;
-      duplicate.AddPass("Duplicate preparation", "xiiBuiltinRenderPipelinePass", duplicate.m_Passes[0].m_Properties);
+      duplicate.AddPass("Extra camera constants", "xiiViewConstantsPass");
+      duplicate.AddPass("Independent camera constants", "xiiViewConstantsPass");
       XII_TEST_RESULT(xiiRenderPipeline::Compile(duplicate, edited));
       auto                 configured = ordered;
       xiiVariantDictionary display;

@@ -74,6 +74,7 @@ class XII_GRAPHICSCORE_DLL xiiAtmosphereManager
 public:
   xiiAtmosphereManager() = delete;
 
+  [[nodiscard]] static bool                         IsValidSettings(const xiiAtmosphereSettings& settings);
   [[nodiscard]] static xiiResult                    Configure(const xiiAtmosphereSettings& settings);
   [[nodiscard]] static bool                         IsSubsystemInitialized();
   [[nodiscard]] static bool                         IsInitialized();

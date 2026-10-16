@@ -6,6 +6,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -134,23 +136,24 @@ xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
       return XII_FAILURE;
   }
 
-  auto& outputPasses = GetBuiltinRuntime()->m_Resources.m_OutputPasses;
-  if (outputPasses.m_hSensorProfile == hProfile)
-    return XII_SUCCESS;
-
-  outputPasses.m_hSensorProfile       = hProfile;
-  outputPasses.m_pSensorOutputTexture = nullptr;
+  m_hSensorProfile = hProfile;
   return XII_SUCCESS;
 }
 
 xiiSensorProfileHandle xiiView::GetSensorProfile() const
 {
-  return GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_hSensorProfile;
+  return m_hSensorProfile;
 }
 
 xiiSharedPtr<xiiGALTexture> xiiView::GetSensorOutputTexture() const
 {
-  return GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_pSensorOutputTexture;
+  const auto& instance = GetRenderPipelineInstance();
+  if (const auto* pipeline = instance.GetPipeline())
+    for (xiiUInt32 index = 0; index < pipeline->GetDescriptor().m_Passes.GetCount(); ++index)
+      if (const auto* sensor = xiiDynamicCast<const xiiSensorOutputPass*>(instance.GetPass(index)))
+        if (auto output = sensor->GetViewOutput(m_hSensorProfile))
+          return output;
+  return {};
 }
 
 void xiiView::SetRenderScale(float fRenderScale)
@@ -322,7 +325,7 @@ void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
 {
   m_Data.m_CameraUsageHint = hint;
 
-  if (GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_hSensorProfile.IsInvalidated())
+  if (m_hSensorProfile.IsInvalidated())
   {
     xiiSensorType::Enum sensorType = xiiSensorType::ENUM_COUNT;
     switch (hint.GetValue())
@@ -344,7 +347,7 @@ void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
     }
 
     if (sensorType != xiiSensorType::ENUM_COUNT)
-      GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_hSensorProfile = xiiSensorRenderingManager::GetDefaultProfileHandle(sensorType);
+      m_hSensorProfile = xiiSensorRenderingManager::GetDefaultProfileHandle(sensorType);
   }
 }
 

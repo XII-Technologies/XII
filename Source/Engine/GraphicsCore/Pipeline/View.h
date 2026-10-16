@@ -293,6 +293,7 @@ private:
   xiiBitflags<xiiRenderPipelineFeature>    m_CustomRuntimeFeatures = xiiRenderPipelineFeature::All;
   xiiBuiltinRenderPipelineRuntime*         GetBuiltinRuntime() const;
 
+  xiiSensorProfileHandle   m_hSensorProfile;
   xiiDisplayOutputSettings m_DisplayOutputSettings;
   xiiUInt64                m_uiDisplayOutputSettingsRevision = 1;
 };

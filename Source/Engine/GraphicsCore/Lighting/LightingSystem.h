@@ -179,6 +179,10 @@ public:
 
   xiiGALBuffer* GetLightDataBuffer() const;
 
+  const xiiSharedPtr<xiiGALBuffer>& GetCameraConstantsBuffer() const { return m_pCameraConstantsBuffer; }
+  const xiiSharedPtr<xiiGALBuffer>& GetLightConstantsBuffer() const { return m_pLightConstantsBuffer; }
+  const xiiSharedPtr<xiiGALBuffer>& GetGlobalConstantsBuffer() const { return m_pGlobalConstantsBuffer; }
+
   xiiDDGIContext&                      GetDDGIContext() { return m_DDGI; }
   const xiiDDGIContext&                GetDDGIContext() const { return m_DDGI; }
   xiiSparseVoxelRadianceContext&       GetSparseVoxelRadianceContext() { return m_SparseVoxelRadiance; }

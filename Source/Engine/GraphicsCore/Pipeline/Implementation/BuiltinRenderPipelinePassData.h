@@ -46,7 +46,6 @@
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
 #include <Shaders/Pipeline/Passes/Denoising/TemporalDenoiseConstants.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/ReSTIRGIConstants.h>
-#include <Shaders/Pipeline/Passes/GlobalIllumination/SSGIConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZOcclusionConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
@@ -55,8 +54,6 @@
 #include <Shaders/Pipeline/Passes/Reflections/RTReflectionDenoiseConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRTemporalConstants.h>
-#include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
-#include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
@@ -72,6 +69,8 @@
 
 struct xiiLightingDataUploadData
 {
+  xiiRenderGraphBufferHandle m_hCamera, m_hLight, m_hGlobal;
+
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphBufferHandle m_hLightingDataReady; ///< UAV out token written after persistent lighting buffers have been uploaded.
@@ -861,33 +860,6 @@ struct xiiVolumetricFogTemporalReprojectionData
   bool                        m_bHistoryValid          = false;
 };
 
-struct xiiAtmosphereCompositeData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hSceneDepth;                 ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hAtmosphereTransmittanceLUT; ///< ShaderResource in (atmosphere transmittance LUT).
-  xiiRenderGraphTextureHandle m_hAtmosphereMultiScatterLUT;  ///< ShaderResource in (atmosphere multi-scatter LUT).
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;              ///< UnorderedAccess in/out (sky and aerial perspective composite).
-  xiiRenderGraphBufferHandle  m_hConstants;                  ///< Physical atmosphere parameters.
-  xiiAtmosphereConstants      m_Constants;
-};
-
-struct xiiSensorOutputData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hSceneRadiance;
-  xiiRenderGraphTextureHandle m_hSceneDepth;
-  xiiRenderGraphTextureHandle m_hSceneNormal;
-  xiiRenderGraphTextureHandle m_hBaseColor;
-  xiiRenderGraphTextureHandle m_hVelocity;
-  xiiRenderGraphTextureHandle m_hSensorOutput;
-  xiiRenderGraphBufferHandle  m_hConstants;
-  xiiSensorProfile            m_Profile;
-  xiiUInt32                   m_uiFrameIndex = 0U;
-};
-
 struct xiiOpaqueLightingCompositeData
 {
   XII_DECLARE_POD_TYPE();
@@ -1048,50 +1020,6 @@ struct xiiWeightedBlendedOITData
   xiiRenderGraphTextureHandle m_hOITAccumulate;        ///< RenderTarget out / ShaderResource in (weighted accumulation target).
   xiiRenderGraphTextureHandle m_hOITReveal;            ///< RenderTarget out / ShaderResource in (reveal target).
   xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
-};
-
-struct xiiScreenSpaceGlobalIlluminationData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;   ///< ShaderResource in (G-Buffer normal texture).
-  xiiRenderGraphTextureHandle m_hGBufferAlbedo;   ///< ShaderResource in (surface albedo and material AO).
-  xiiRenderGraphTextureHandle m_hGBufferMaterial; ///< ShaderResource in (surface metallic response).
-  xiiRenderGraphTextureHandle m_hHDRIn;           ///< ShaderResource in (current HDR scene color).
-  xiiRenderGraphTextureHandle m_hSSGIOut;         ///< UnorderedAccess out (screen-space diffuse GI contribution).
-  xiiRenderGraphBufferHandle  m_hConstants;
-  xiiSSGIConstants            m_Constants;
-};
-
-struct xiiScreenSpaceGlobalIlluminationCompositeData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hSSGI;
-  xiiRenderGraphTextureHandle m_hHDRScene;
-};
-
-struct xiiScreenSpaceRefractionSnapshotData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRSource; ///< CopySource in (completed scene color before refraction).
-  xiiRenderGraphTextureHandle m_hSnapshot;  ///< CopyDestination out (immutable source for neighborhood sampling).
-};
-
-struct xiiScreenSpaceRefractionData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;   ///< ShaderResource in (G-Buffer normal texture).
-  xiiRenderGraphTextureHandle m_hGBufferMaterial; ///< ShaderResource in (material feature flags).
-  xiiRenderGraphTextureHandle m_hGBufferEmissive; ///< ShaderResource in (RGB emissive, A transmission factor).
-  xiiRenderGraphTextureHandle m_hHDRIn;           ///< ShaderResource in (immutable pre-refraction HDR snapshot).
-  xiiRenderGraphTextureHandle m_hHDROut;          ///< UnorderedAccess out (authoritative HDR scene color target).
-  xiiRenderGraphBufferHandle  m_hConstants;       ///< ConstantBuffer in (refraction tuning parameters).
-  xiiSSRefractionConstants    m_Constants;
 };
 
 struct xiiPlanarReflectionsData

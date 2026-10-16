@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 3, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 4, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -25,8 +25,6 @@ xiiBitflags<xiiRenderExtractionCategory> xiiBuiltinRenderPipelinePass::GetExtrac
     return xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Geometry;
   if (m_sStage == "Transparency")
     return xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Particles | xiiRenderExtractionCategory::Decals;
-  if (m_sStage == "ScreenEffects")
-    return xiiRenderExtractionCategory::Atmosphere;
   if (m_sStage == "Debug")
     return xiiRenderExtractionCategory::Custom;
   return {};
@@ -69,6 +67,10 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
   }
   if (m_sStage == "Visibility")
   {
+    pins.PushBack({"PerFrameCamera", xiiRenderPipelinePin::Buffer, false, true});
+    pins.PushBack({"PerFrameLight", xiiRenderPipelinePin::Buffer, false, true});
+    pins.PushBack({"PerFrameGlobal", xiiRenderPipelinePin::Buffer, false, true});
+
     pins.PushBack({"LightingDataReady", xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"VisibleCandidates", xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"xiiFrustumCullingConstants", xiiRenderPipelinePin::Buffer, false, true});
@@ -201,6 +203,8 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
   }
   if (m_sStage == "Lighting")
   {
+    pins.PushBack({"HardwareGI", xiiRenderPipelinePin::Texture, false, true});
+
     pins.PushBack({"CloudShadowConstants", xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"VirtualShadowSamplingConstants", xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, true});
@@ -365,34 +369,7 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"DrawIndirectCommands", xiiRenderPipelinePin::Buffer, false, true});
   }
-  if (m_sStage == "ScreenEffects")
-  {
-    pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"GBufferNormal", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"GBufferAlbedo", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"GBufferMaterial", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"SSGITerm", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"xiiSSGIConstants", xiiRenderPipelinePin::Buffer, false, true});
-    pins.PushBack({"SSGITerm", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"RefractionSceneColorInput", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"GBufferEmissive", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"RefractionSceneColorInput", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"xiiSSRefractionConstants", xiiRenderPipelinePin::Buffer, false, true});
-    pins.PushBack({"AtmTransmittance", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"AtmMultiScatter", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"DilatedVelocityBuffer", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"Sensor Output Constants", xiiRenderPipelinePin::Buffer, false, true});
-    pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"GBufferNormal", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"GBufferAlbedo", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"GBufferMaterial", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"GBufferEmissive", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"AtmTransmittance", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"AtmMultiScatter", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"DilatedVelocityBuffer", xiiRenderPipelinePin::Texture, false, true});
-  }
+
   if (m_sStage == "Debug")
   {
     for (xiiStringView name : {"GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "EnvironmentSpecular", "BloomTexture"})
@@ -402,17 +379,6 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, true});
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
   }
-
-
-
-
-
-
-
-
-
-
-
 }
 xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -456,7 +422,7 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
   {
     const auto& pin = context.m_Pins[i];
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture)
-      context.m_Bindings[i].m_hTexture = context.m_Graph.FindTexture(pin.m_sName);
+      context.m_Bindings[i].m_hTexture = pin.m_sName == "HardwareGI" ? (runtime->m_Resources.m_LightingPasses.m_bRTGIAvailableThisFrame ? context.m_Graph.FindTexture("RTRawGI") : xiiRenderGraphTextureHandle()) : context.m_Graph.FindTexture(pin.m_sName);
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer)
       context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
   }

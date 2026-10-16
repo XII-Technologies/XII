@@ -39,16 +39,7 @@ xiiGpuVisibilityContextHandle xiiBuiltinRenderPipelineRuntime::GetVisibilityCont
 
 xiiResult xiiBuiltinRenderPipelineRuntime::PrepareInstanceResources()
 {
-  if (m_bSubgraphInstance)
-  {
-    const auto sensorProfile = m_View.GetSensorProfile();
-    auto&      output        = m_Resources.m_OutputPasses;
-    if (output.m_hSensorProfile != sensorProfile)
-    {
-      output.m_hSensorProfile       = sensorProfile;
-      output.m_pSensorOutputTexture = nullptr;
-    }
-  }
+
   if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && m_bSubgraphInstance && m_hInstanceVisibility.IsInvalidated())
   {
     m_hInstanceVisibility = xiiGpuVisibilityManager::CreateContext();
@@ -200,7 +191,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
   hAtmosphereLUT                         = m_ExtractionRequirements.IsSet(xiiRenderExtractionCategory::Atmosphere) ? xiiAtmosphereManager::GetDefaultLUTHandle() : xiiAtmosphereLUTHandle{};
   if (m_ExtractionRequirements.IsSet(xiiRenderExtractionCategory::Atmosphere) && m_View.m_pExtractedData != nullptr)
   {
-    if (const xiiSkyAtmosphereRenderData* pAtmosphere = SelectSkyAtmosphere(m_View.m_pExtractedData->GetAllRenderData()))
+    if (const xiiSkyAtmosphereRenderData* pAtmosphere = xiiSelectSkyAtmosphere(m_View.m_pExtractedData->GetAllRenderData()))
     {
       if (xiiAtmosphereManager::AcquireLUTs(pAtmosphere->m_AtmosphereSettings, hAtmosphereLUT).Failed())
       {
@@ -497,38 +488,12 @@ void xiiBuiltinRenderPipelineRuntime::BuildTransparency(xiiRenderGraph& graph, x
   graph.AddPass<xiiWeightedBlendedOITData>("WeightedBlendedOIT", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupWeightedBlendedOIT, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteWeightedBlendedOIT, this));
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
-{
-  // Screen-space effects.
-  const xiiLightingSystemSettings& lightingSettings = m_Resources.m_LightingSystem.GetSettings();
-  if (!m_Resources.m_LightingPasses.m_bRTGIAvailableThisFrame && lightingSettings.m_fSSGIIntensity > 0.0f && lightingSettings.m_fSSGIRayLength > 0.0f)
-  {
-    graph.AddPass<xiiScreenSpaceGlobalIlluminationData>("SSGI", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceGlobalIllumination, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceGlobalIllumination, this));
-    graph.AddPass<xiiScreenSpaceGlobalIlluminationCompositeData>("SSGIComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceGlobalIlluminationComposite, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceGlobalIlluminationComposite, this));
-  }
-  if (lightingSettings.m_fSSRefractionScale > 0.0f && lightingSettings.m_fSSRefractionMaxDistance > 0.0f)
-  {
-    graph.AddPass<xiiScreenSpaceRefractionSnapshotData>("SSRefractionSnapshot", xiiGALCommandQueueFlags::Transfer, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceRefractionSnapshot, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceRefractionSnapshot, this));
-    graph.AddPass<xiiScreenSpaceRefractionData>("SSRefraction", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceRefraction, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceRefraction, this));
-  }
-  graph.AddPass<xiiAtmosphereCompositeData>("AtmosphereComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteAtmosphereComposite, this));
-
-  if (!m_Resources.m_OutputPasses.m_hSensorProfile.IsInvalidated())
-  {
-    graph.AddPass<xiiSensorOutputData>("CalibratedSensorOutput", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSensorOutput, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSensorOutput, this));
-  }
-}
-
 xiiResult xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth)
 {
   // Debug and visualization passes.
   XII_SUCCEED_OR_RETURN(BuildViewRenderMode(graph, color));
   return xiiDebugRenderer::AddRenderGraphPasses(graph, color, depth);
 }
-
-
-
-
 
 void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows)
 {
@@ -546,8 +511,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
 xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   XII_SUCCEED_OR_RETURN(PrepareTemporalResources(stage));
-  if (stage == "ScreenEffects")
-    XII_SUCCEED_OR_RETURN(PrepareSensorOutput());
   if (stage == "PrepareFrame")
   {
     BuildPrepareFrame(graph, blackboard);
@@ -584,18 +547,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stag
     BuildTransparency(graph, blackboard);
     return XII_SUCCESS;
   }
-  if (stage == "ScreenEffects")
-  {
-    BuildScreenEffects(graph, blackboard);
-    return XII_SUCCESS;
-  }
-
-
-
-
-
-
-
 
   return XII_FAILURE;
 }

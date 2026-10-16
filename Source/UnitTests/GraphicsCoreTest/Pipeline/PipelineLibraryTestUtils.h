@@ -18,14 +18,14 @@ inline xiiRenderPipelineResourceHandle xiiLoadPipelineLibraryResource(xiiStringV
 }
 
 /// Give mutation fixtures a readable topological order. This is an explicit remapping of
-/// loaded document indices, not a reconstruction of the rendering stack.
+/// flattened document occurrence indices, not a reconstruction of the rendering stack.
 inline xiiResult xiiLoadPipelineLibraryDescriptor(xiiRenderPipelineResourceDescriptor& out_definition, xiiStringView name = "Deferred")
 {
   const auto                                 resource = xiiLoadPipelineLibraryResource(name);
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return XII_FAILURE;
-  auto       definition = loaded->GetAuthoring()->m_Descriptor;
+  auto       definition = loaded->GetPipeline()->GetDescriptor();
   const auto order      = loaded->GetPipeline()->GetExecutionOrder();
   if (!XII_TEST_INT(order.GetCount(), definition.m_Passes.GetCount()))
     return XII_FAILURE;

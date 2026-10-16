@@ -16,6 +16,14 @@ void xiiBuiltinRenderPipelineRuntime::SetupLightingDataUpload(xiiLightingDataUpl
 
   data.m_hLightingDataReady = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightingDataReady, description, xiiGALResourceStateFlags::UnorderedAccess);
 
+  const auto* lighting = m_Resources.m_LightingSystem.BorrowSystem();
+  const auto& camera   = lighting->GetCameraConstantsBuffer();
+  const auto& light    = lighting->GetLightConstantsBuffer();
+  const auto& global   = lighting->GetGlobalConstantsBuffer();
+  data.m_hCamera       = builder.WriteBuffer(builder.ImportBuffer("PerFrameCamera", camera, camera->GetResourceState()), xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hLight        = builder.WriteBuffer(builder.ImportBuffer("PerFrameLight", light, light->GetResourceState()), xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hGlobal       = builder.WriteBuffer(builder.ImportBuffer("PerFrameGlobal", global, global->GetResourceState()), xiiGALResourceStateFlags::ConstantBuffer);
+
   builder.SetPassSideEffects(true);
   builder.SetPassAllowMerge(false);
 }
