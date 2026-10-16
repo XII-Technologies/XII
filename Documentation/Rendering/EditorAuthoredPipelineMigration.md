@@ -695,3 +695,72 @@ Seven composite branches, 61 original operation-data structures and thirteen
 Builtin implementation files remain. The whole-stack migration, final removal of
 those files and remaining configuration/compiler/editor gates are still active;
 this checkpoint does not claim completion of the full goal.
+
+
+## Transparency composition and supplied particle integration — 2026-10-16
+
+Three independent algorithms now use typed reflected member pins exclusively:
+ParticleIntegrationConstants snapshots authored parameters (optionally the owning
+world's clock) into a uniform buffer; ParticleIntegrate updates a supplied
+128-byte-stride structured state buffer; WeightedBlendedOITResolve composites
+explicit accumulation/revealage inputs over explicit HDR radiance. Properties use
+normal reflection, validation and instance overrides. These passes have no stage
+prerequisites, manually authored pin-kind arrays or global resource-name discovery.
+Constants are frame snapshots and execute delegates do not access component
+storage or clocks. Integration validates buffer capacity, stride, dispatch limits
+and the authored count, and bounds the shader by capacity, dispatch and active
+ranges. The particle state layout and working integration kernel are preserved.
+
+TransparencyResolve is an ordinary eight-node source/binary asset. Clear and
+selection nodes allow either empty targets or externally produced weighted
+signals; resolve, constants upload and interface forwarding remain independently
+authorable. Deferred and EditorScene now reference this resource. Versioned source
+and root/nested Core descriptor conversion preserves node identity, local
+parameters and existing pin configurations. The temporary authoring fixture used
+production document transactions and export, then was removed. The permanent
+read-only Qt regression reproduces all eight packaged assets byte for byte.
+
+The Transparency selector, BuildTransparency orchestration, particle/OIT setup and
+execute functions, two operation data structures, old constants struct, old
+GPUParticleSimulate shader and per-view particle buffer/capacity fields are deleted.
+The copied working kernel lives in ParticleIntegrate. Five unreferenced graphics
+or compute pipeline fields and the inactive translucent draw branch are removed.
+Only decal-specific state remains in the renamed legacy decal resource group.
+Searches find no production references to the removed operations/shader or an
+active Transparency stage. Six other composite branches, 59 original operation
+data structures and thirteen Builtin implementation files still require migration.
+The final removal of Builtin files is not complete.
+
+The duplicate particle buffer was never initialized or consumed by a renderer.
+Its default capacity was 1,048,576 elements at 128 bytes each: removal avoids
+128 MiB per legacy view and its unconditional full-capacity dispatch. This is a
+source-derived allocation/work reduction, not a measured frame-time benchmark.
+Existing component particle runtimes and their buffers remain the state owners;
+this phase does not claim that their separate particle-graph default node executor
+is complete, or that a transparent geometry algorithm has been implemented. No
+scene objects, transform hierarchy or replacement scene database were introduced.
+
+GPU regressions read actual particle positions, previous positions, ages,
+lifetime expiry, IDs and untouched tail elements across two frames, two repeated
+subgraphs and two views. Four state buffers remain distinct. Weighted resolve is
+checked against its expected coverage equation on non-divisible image dimensions,
+then routed through the authored subgraph's default targets to verify preservation.
+Both specialized paths request no scene extraction or scene runtime services.
+A simulation-only regression, with no exports or rendering consumers, first failed
+with unchanged positions/ages/lifetime (Workspace/particle-culling-before.log).
+ParticleIntegrate now declares its external state update as a side effect, preserving
+it through otherwise valid unused-operation culling.
+
+Verification before the final culling fix: all four affected Debug targets built;
+34 GraphicsCore, 56 Vulkan GAL, 73 Vulkan editor-engine and 15 Qt subtests passed
+(Workspace/transparency-final-build.log and transparency-final-{core,gal,qt,editor-gpu}.log).
+The final culling change rebuilds all four consumers and adds a GPU regression.
+All 57 Vulkan GAL subtests pass with the culling fix, including the demonstrated
+regression (Workspace/particle-culling-final-{build,gal}.log). The source change
+affects only the independently authored particle operation; the earlier Core/Qt
+and editor-engine runs cover the unchanged SDK compositions. Initial test-only
+failures involved the graph-builder import API, HDR UAV requirements, image sizing
+and clear-state declarations; the corrected fixtures pass Vulkan validation.
+Temporary authoring include/API/mount errors were also corrected before packaging.
+D3D12 remains excluded. No controlled upload-throughput, frame-time or GPU
+submission benchmark ran. The whole-stack architecture goal remains active.

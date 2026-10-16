@@ -9,6 +9,7 @@ by the existing `xiiRenderPipelineContext` asset compiler.
 | --- | --- |
 | Deferred | Existing complete scene rendering stack. |
 | EditorScene | Scene rendering with mesh picking, selection and shape icons. |
+| TransparencyResolve | Weighted accumulation/revealage composition over supplied HDR radiance; optional cleared targets. |
 | OpaqueComposition | Opaque lighting, screen-space reflection trace and temporal reuse, and hybrid reflection composition. |
 | ScreenEffects | Diffuse screen-space GI, refraction, atmosphere composition and sensor output. |
 | DebugVisualization | Surface queries, channel visualization and debug overlays. |
@@ -40,7 +41,7 @@ pin's backing document identity and reproduces the packaged bytes.
 Each source also owns reflected pipeline settings. Scene and texture preview assets
 declare single-sample view outputs; reusable subgraphs leave the view-output contract
 unconstrained and specify requirements on individual resource pins. Scene assets and
-the three operation subgraphs require compute support. Output format remains
+the four operation subgraphs require compute support. Output format remains
 unconstrained so compatible view targets can choose their format.
 These contracts are validated before pass construction and do not choose topology.
 
@@ -52,3 +53,15 @@ pass occurrence and view. The optional PlanarReflectionMap output is an empty
 half-resolution image from a generic clear operation; this is not an implemented
 secondary-view planar reflection renderer. Four former hair/water/SSS/eye
 placeholders had no initialized pipelines or executable work and are removed.
+
+TransparencyResolve is an eight-node authored composition: accumulation and
+revealage clears, optional supplied-target selection, weighted resolve, optional
+texture/buffer forwarding and a particle integration-parameter upload. Its default
+cleared targets preserve HDR radiance. Actual transparent geometry must produce
+accumulation/revealage through other operations; the removed translucent draw
+branch never initialized a graphics pipeline and was not a functioning renderer.
+The resource requests no scene extraction or GPU scene services. It does not
+allocate particle state. ParticleIntegrate is a separate reflected operation over
+explicitly supplied structured state and constants; particle components/runtimes
+retain their existing ownership. Integration changes external state and therefore
+remains live even without a same-frame rendering consumer.
