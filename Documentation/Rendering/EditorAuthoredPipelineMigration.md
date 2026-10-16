@@ -169,3 +169,36 @@ migration, reusable operation subgraphs, the specialized low-level sample,
 capability/contract validation and final optimization/workflow verification remain
 required. This checkpoint closes the removed view factories, not those remaining
 architecture gates.
+
+## Structured reflected configuration checkpoint
+
+The production asset compiler now calls `xiiRenderPipelinePass::GetProperties`
+instead of capturing only writable member properties. The existing descriptor
+property dictionary supports reflected arrays, value maps, embedded structures
+and owned settings objects, including registered derived settings types and null
+optional owners. `Configure` restores those shapes through the same reflection
+metadata. Borrowed object pointers, unknown/read-only properties, malformed
+containers and invalid enum names fail validation. Traversal and allocation are
+bounded; invalid owned-array replacements release partial allocations while
+retaining the previous owners. No additional settings registry, resource system,
+scene ownership or per-frame reflection path was introduced.
+
+`Pipeline/ReflectedPassProperties` verifies native nested settings, arrays/maps,
+embedded structures, polymorphic/null ownership, malformed replacements, excessive
+nesting, empty-container replacement, serialized resource compilation and isolated
+settings in two runtime instances. The production native asset compiler regression
+also verifies arrays/maps survive export and repeated shared-definition instances.
+All four packaged source assets still reproduce their existing compiled bytes.
+
+Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest,
+EditorEngineProcessFrameworkTest, EditorFrameworkTest and EditorPluginVisualScript
+and their transitive consumers. All 26 GraphicsCore, 47 Vulkan GraphicsFoundation,
+73 Vulkan editor-engine and 14 Qt editor subtests pass. Local evidence is in
+`Workspace/pipeline-properties-*.log`. Initial fixture compilation issues involved
+engine arrays without initializer-list construction and const dictionary lookup;
+both are corrected in these final results. Existing Vulkan unused shader-output
+warnings remain, and D3D12 is excluded.
+
+This removes the serialization/configuration gap needed by authored pin settings;
+it does not yet close render-pin configuration or the other outstanding architecture
+gates above. No new performance benchmark was run for this authoring/loading change.
