@@ -914,3 +914,45 @@ packing sample measured 6.375 ms/update for 1024 unchanged components. No contro
 AO frame-time, GPU submission or allocation benchmark was run. The extra surface
 history and fence pool preserve instance isolation and completion safety; no
 performance improvement is claimed without controlled measurements.
+
+
+## Reflected DDGI and sparse-voxel gathers - 2026-10-16
+
+DDGIProbeGatherPass and SparseVoxelGatherPass replace the two gather operations
+inside LightingPreparation. Their resource inputs and outputs are concrete typed
+XII_MEMBER_PROPERTY fields, discovered through base RTTI. Each exposes a reflected
+Intensity member, captured in immutable per-frame constants. Both consume supplied
+resources, validate buffer layouts and texture extents, and request no world
+extraction, geometry residency, material residency or lighting context. No new
+scene ownership, manager or stage check was introduced.
+
+Deferred and EditorScene contain the native gather nodes and explicit camera,
+light, atlas, probe, page-table, level and radiance-pool connections. Source graph
+conversion preserves connection and pin configuration identities. Descriptor format
+4 reads formats 2 and 3 and applies the relevant extraction once; embedded Core
+definitions receive the same migration and boundary remapping. A shared source
+conversion helper replaces duplicated document traversal. All nine SDK pipelines
+were exported through the production compiler; their reflected source types were
+resaved and the permanent read-only library regression verifies deterministic bytes.
+The old gather setup/execute methods, two payload types, two runtime pipelines,
+hardcoded orchestration entries and superseded shader files are physically removed.
+
+Debug builds of GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and
+EditorEngineProcessFrameworkTest pass. Full CPU, Vulkan GAL, Vulkan editor-engine
+and Qt suites pass, followed by focused deterministic library verification after
+final packaging. Evidence: Workspace/irradiance-gathers-{core,gal,editor-gpu,qt,library}.log,
+irradiance-gathers-{validation,final}-build.log and irradiance-gathers-authoring.log.
+GPU readback checks both algorithms in repeated nested occurrences with independent
+Intensity overrides, non-divisible dispatch sizes and explicit initialized resources,
+without scene features. CPU tests cover reflection, invalid properties, old binary
+and source conversion, persistent settings/connection identity, repeated conversion,
+embedded definitions and malformed edges. Initial CPU fixture failures came from
+conversion-order expectations and missing historical editor base-type metadata;
+they were corrected and the complete CPU suite passes afterward.
+
+Six legacy selector branches and thirteen Builtin implementation files remain;
+54 original operation payloads remain after this phase. GI update scheduling/storage
+still belongs to the existing lighting contexts pending their own pass migration.
+This phase removes the gather operations only. No controlled gather performance
+benchmark was run, and D3D12 remains excluded. The full architecture objective is
+still active.
