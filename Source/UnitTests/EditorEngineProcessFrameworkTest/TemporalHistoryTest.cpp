@@ -172,6 +172,8 @@ class xiiPipelineHistoryCheck : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiPipelineHistoryCheck, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin m_PreviousAO{xiiGALResourceFormat::Unknown, true};
+  xiiRenderPipelineTextureInputPin m_CurrentAO;
   xiiRenderPipelineTextureInputPin m_PreviousTAA{xiiGALResourceFormat::Unknown, true};
   xiiRenderPipelineTextureInputPin m_CurrentTAA;
   xiiRenderPipelineTextureInputPin m_PreviousSSR{xiiGALResourceFormat::Unknown, true};
@@ -188,7 +190,7 @@ public:
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
     static constexpr xiiStringView names[s_uiHistoryCount][2] = {
-      {"AO Previous History", "StableAO"},
+      {"", ""},
       {"RT Shadow Previous History", "RTFinalShadows"},
       {"ReSTIRDIReservoirPrevious", "DirectLightReservoir"},
       {"ReSTIR GI Previous Sample", "ReSTIR GI Current Sample"},
@@ -209,8 +211,10 @@ public:
     };
     // All names must exist. An absent producer is a test failure, not skipped coverage.
     for (xiiUInt32 index = 0; index + 1 < s_uiHistoryCount; ++index)
-      if (index != 6 && (!context.m_Graph.FindTexture(names[index][0]).IsValid() || !context.m_Graph.FindTexture(names[index][1]).IsValid()))
+      if (index != 0 && index != 6 && (!context.m_Graph.FindTexture(names[index][0]).IsValid() || !context.m_Graph.FindTexture(names[index][1]).IsValid()))
         return XII_FAILURE;
+    if (!context.GetInputTexture(m_CurrentAO).IsValid() || (m_uiExecutions && !context.GetInputTexture(m_PreviousAO).IsValid()))
+      return XII_FAILURE;
     if (!context.GetInputTexture(m_CurrentTAA).IsValid() || (m_uiExecutions && !context.GetInputTexture(m_PreviousTAA).IsValid()))
       return XII_FAILURE;
     if (!context.GetInputTexture(m_CurrentSSR).IsValid() || (m_uiExecutions && !context.GetInputTexture(m_PreviousSSR).IsValid()))
@@ -225,8 +229,8 @@ public:
         data.m_RadiancePool = builder.ReadBuffer(context.m_Graph.FindBuffer("SparseVoxelRadiancePool"), xiiGALResourceStateFlags::ShaderResource);
         for (xiiUInt32 i = 0; i < s_uiHistoryCount; ++i)
         {
-          const auto previous = i + 1 == s_uiHistoryCount ? context.GetInputTexture(m_PreviousTAA) : i == 6 ? context.GetInputTexture(m_PreviousSSR) : context.m_Graph.FindTexture(names[i][0]);
-          const auto current = i + 1 == s_uiHistoryCount ? context.GetInputTexture(m_CurrentTAA) : i == 6 ? context.GetInputTexture(m_CurrentSSR) : context.m_Graph.FindTexture(names[i][1]);
+          const auto previous = i == 0 ? context.GetInputTexture(m_PreviousAO) : i + 1 == s_uiHistoryCount ? context.GetInputTexture(m_PreviousTAA) : i == 6 ? context.GetInputTexture(m_PreviousSSR) : context.m_Graph.FindTexture(names[i][0]);
+          const auto current = i == 0 ? context.GetInputTexture(m_CurrentAO) : i + 1 == s_uiHistoryCount ? context.GetInputTexture(m_CurrentTAA) : i == 6 ? context.GetInputTexture(m_CurrentSSR) : context.m_Graph.FindTexture(names[i][1]);
           if (previous.IsValid()) data.m_Previous[i] = builder.ReadTexture(previous, xiiGALResourceStateFlags::ShaderResource);
           data.m_Current[i] = builder.ReadTexture(current, xiiGALResourceStateFlags::ShaderResource);
         } }, [this](const Bindings& data, xiiRenderGraphPassContext& execute) {
@@ -264,6 +268,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineHistoryCheck, 1, xiiRTTIDefaultAlloc
   {
     XII_BEGIN_PROPERTIES
     {
+      XII_MEMBER_PROPERTY("PreviousAO", m_PreviousAO)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("CurrentAO", m_CurrentAO)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("PreviousTAA", m_PreviousTAA)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("CurrentTAA", m_CurrentTAA)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("PreviousSSR", m_PreviousSSR)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -303,7 +309,12 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
   if (!XII_TEST_RESULT(definition.Connect(inspect - 1, "After", inspect, "Before")))
     return;
   for (xiiUInt32 index = 0; index < inspect; ++index)
-    if (definition.m_Passes[index].m_sType == "xiiTemporalAntiAliasingPass")
+    if (definition.m_Passes[index].m_sType == "xiiAmbientOcclusionTemporalPass")
+    {
+      XII_TEST_RESULT(definition.Connect(index, "PreviousAO", inspect, "PreviousAO"));
+      XII_TEST_RESULT(definition.Connect(index, "StableAO", inspect, "CurrentAO"));
+    }
+    else if (definition.m_Passes[index].m_sType == "xiiTemporalAntiAliasingPass")
     {
       XII_TEST_RESULT(definition.Connect(index, "PreviousColor", inspect, "PreviousTAA"));
       XII_TEST_RESULT(definition.Connect(index, "TAAResolved", inspect, "CurrentTAA"));

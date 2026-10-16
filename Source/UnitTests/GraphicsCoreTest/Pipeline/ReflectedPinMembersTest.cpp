@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
+#include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
@@ -8,6 +10,7 @@
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 class xiiMemberPinSource : public xiiRenderPipelinePass
 {
@@ -141,4 +144,172 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
     XII_TEST_BOOL(compiled->GetDescriptor().m_Passes[0].m_Id == repeated->GetDescriptor().m_Passes[0].m_Id);
     XII_TEST_BOOL(compiled->GetPins(0)[2].m_Id == repeated->GetPins(0)[2].m_Id);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionMemberPins)
+{
+  xiiAmbientOcclusionPass generation;
+  xiiVariantDictionary    properties;
+  XII_TEST_RESULT(generation.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("SceneDepth") && !properties.Contains("RayTracingScene"));
+  xiiAmbientOcclusionPass copy;
+  XII_TEST_RESULT(copy.Configure(properties));
+  XII_TEST_FLOAT(copy.m_fRadius, 2.0f, 0);
+  properties.Insert("DirectionCount", 0U);
+  XII_TEST_BOOL(copy.Configure(properties).Failed());
+  properties.Clear();
+  properties.Insert("Radius", 0.001f);
+  XII_TEST_BOOL(copy.Configure(properties).Failed());
+  properties.Clear();
+  properties.Insert("UseRayTracing", false);
+  properties.Insert("AllowScreenSpace", false);
+  XII_TEST_BOOL(copy.Configure(properties).Failed());
+  properties.Insert("AllowScreenSpace", true);
+  XII_TEST_RESULT(generation.Configure(properties));
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  generation.GetPins(pins);
+  XII_TEST_RESULT(generation.InitializePinBindings(pins));
+  XII_TEST_INT(generation.m_Scene.GetBindingIndex(), xiiInvalidIndex);
+  XII_TEST_INT(generation.m_Materials.GetBindingIndex(), xiiInvalidIndex);
+  XII_TEST_INT(generation.m_Geometry.GetBindingIndex(), xiiInvalidIndex);
+  XII_TEST_BOOL(pins[generation.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::R8UNormalized);
+  generation.m_bUseRayTracing    = true;
+  generation.m_bAllowScreenSpace = false;
+  pins.Clear();
+  generation.GetPins(pins);
+  XII_TEST_RESULT(generation.InitializePinBindings(pins));
+  XII_TEST_BOOL(!pins[generation.m_Scene.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(generation.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::RayTracing));
+  xiiAmbientOcclusionTemporalPass temporal;
+  pins.Clear();
+  temporal.GetPins(pins);
+  XII_TEST_RESULT(temporal.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[temporal.m_Previous.GetBindingIndex()].m_bTemporalHistoryOutput);
+  properties.Clear();
+  properties.Insert("HistoryWeight", 1.1f);
+  XII_TEST_BOOL(temporal.Configure(properties).Failed());
+
+  xiiRenderPipelineResourceDescriptor leaf;
+  properties.Clear();
+  properties.Insert("UseRayTracing", false);
+  leaf.AddPass("Visibility", "xiiAmbientOcclusionPass", properties);
+  leaf.AddPass("Filter", "xiiAmbientOcclusionTemporalPass");
+  XII_TEST_RESULT(leaf.Connect(0, "RawAO", 1, "RawAO"));
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    xiiAmbientOcclusionPass         generationSchema;
+    xiiAmbientOcclusionTemporalPass temporalSchema;
+    xiiRenderPipelinePass*          pass = index == 0 ? static_cast<xiiRenderPipelinePass*>(&generationSchema) : static_cast<xiiRenderPipelinePass*>(&temporalSchema);
+    XII_TEST_RESULT(pass->Configure(leaf.m_Passes[index].m_Properties));
+    pins.Clear();
+    pass->GetPins(pins);
+    for (const auto& pin : pins)
+      if (pin.m_bInput && pin.m_sName != "RawAO")
+        leaf.m_Interface.PushBack({pin.m_sName, true, leaf.m_Passes[index].m_Id, pin.m_sName});
+  }
+  leaf.m_Interface.PushBack({"StableAO", false, leaf.m_Passes[1].m_Id, "StableAO"});
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  root.AddSubgraph("First", definition.m_Id);
+  root.AddSubgraph("Second", definition.m_Id);
+  for (xiiUInt32 index = 0; index < 2; ++index)
+    for (const auto& mapping : leaf.m_Interface)
+      if (mapping.m_bInput)
+      {
+        bool exists = false;
+        for (const auto& previous : root.m_Interface)
+          exists |= previous.m_sName == mapping.m_sName && previous.m_Node == root.m_Passes[index].m_Id;
+        if (!exists)
+          root.m_Interface.PushBack({mapping.m_sName, true, root.m_Passes[index].m_Id, mapping.m_sName});
+      }
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
+  if (compiled)
+  {
+    XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 4);
+    XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet() && compiled->GetExtractionRequirements().IsNoFlagSet());
+    XII_TEST_BOOL(compiled->GetProvenance()[0].m_InstancePath != compiled->GetProvenance()[2].m_InstancePath);
+  }
+  xiiContiguousMemoryStreamStorage first, second;
+  xiiMemoryStreamWriter            writer(&first), repeatedWriter(&second);
+  XII_TEST_RESULT(root.Serialize(writer));
+  xiiMemoryStreamReader               reader(&first);
+  xiiRenderPipelineResourceDescriptor loaded;
+  XII_TEST_RESULT(loaded.Deserialize(reader));
+  XII_TEST_RESULT(loaded.Serialize(repeatedWriter));
+  XII_TEST_BOOL(xiiMakeArrayPtr(first.GetData(), first.GetStorageSize32()) == xiiMakeArrayPtr(second.GetData(), second.GetStorageSize32()));
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionAssetMigration)
+{
+  xiiRenderPipelineResourceDescriptor legacy;
+  for (auto stage : {"PrepareFrame", "Visibility", "DepthAndGeometry", "LightingPreparation", "Lighting"})
+  {
+    xiiVariantDictionary properties;
+    properties.Insert("Stage", xiiString(stage));
+    legacy.AddPass(stage, "xiiBuiltinRenderPipelinePass", properties);
+  }
+  XII_TEST_RESULT(legacy.Connect(3, "RawAO", 4, "RawAO"));
+  const auto edgeId = legacy.m_Connections[0].m_Id;
+  legacy.m_Interface.PushBack({"Raw", false, legacy.m_Passes[3].m_Id, "RawAO"});
+  xiiVariantDictionary metadata, configuration;
+  metadata.Insert("Name", "RawAO");
+  metadata.Insert("Input", false);
+  configuration.Insert("Metadata", metadata);
+  const auto configurationId = xiiUuid::MakeStableUuidFromString("Authored AO output contract");
+  configuration.Insert("Id", configurationId);
+  configuration.Insert("DisplayName", "Ambient Visibility");
+  xiiVariantArray configurations;
+  configurations.PushBack(configuration);
+  legacy.m_Passes[3].m_Properties.Insert("PinConfigurations", configurations);
+  xiiGraphDefinition nested;
+  XII_TEST_RESULT(legacy.MakeGraphDefinition(nested));
+  legacy.m_Definitions.PushBack(nested);
+  xiiContiguousMemoryStreamStorage original;
+  xiiMemoryStreamWriter            writer(&original);
+  XII_TEST_RESULT(legacy.Serialize(writer));
+  // Version 2 authoring documents predate independently authored AO operations.
+  writer.SetWritePosition(0);
+  const xiiUInt32 oldVersion = 2;
+  XII_TEST_RESULT(writer.WriteDWordValue(&oldVersion));
+  xiiMemoryStreamReader               reader(&original);
+  xiiRenderPipelineResourceDescriptor migrated;
+  XII_TEST_RESULT(migrated.Deserialize(reader));
+  XII_TEST_INT(migrated.m_Passes.GetCount(), 6);
+  XII_TEST_BOOL(migrated.m_Passes[5].m_Definition.IsValid());
+  XII_TEST_BOOL(migrated.m_Connections[0].m_Id == edgeId && migrated.m_Connections[0].m_uiSource == 5);
+  XII_TEST_BOOL(migrated.m_Interface[0].m_Node == migrated.m_Passes[5].m_Id);
+  XII_TEST_BOOL(migrated.m_Passes[5].m_Properties.GetValue("PinConfigurations") != nullptr);
+  XII_TEST_BOOL(migrated.m_Passes[5].m_Properties["PinConfigurations"].Get<xiiVariantArray>()[0].Get<xiiVariantDictionary>().GetValue("Id")->Get<xiiUuid>() == configurationId);
+  XII_TEST_RESULT(migrated.m_Definitions[0].Validate());
+  XII_TEST_INT(migrated.m_Definitions[0].m_Nodes.GetCount(), 6);
+  XII_TEST_BOOL(migrated.m_Definitions[0].m_Boundary[0].m_Node == migrated.m_Definitions[0].m_Nodes[5].m_Id);
+  xiiContiguousMemoryStreamStorage first, second;
+  xiiMemoryStreamWriter            firstWriter(&first), secondWriter(&second);
+  XII_TEST_RESULT(migrated.Serialize(firstWriter));
+  xiiMemoryStreamReader               firstReader(&first);
+  xiiRenderPipelineResourceDescriptor repeated;
+  XII_TEST_RESULT(repeated.Deserialize(firstReader));
+  XII_TEST_RESULT(repeated.Serialize(secondWriter));
+  XII_TEST_BOOL(xiiMakeArrayPtr(first.GetData(), first.GetStorageSize32()) == xiiMakeArrayPtr(second.GetData(), second.GetStorageSize32()));
+  auto malformed                        = legacy;
+  malformed.m_Connections[0].m_uiTarget = xiiInvalidIndex;
+  xiiContiguousMemoryStreamStorage invalidBytes;
+  xiiMemoryStreamWriter            invalidWriter(&invalidBytes);
+  XII_TEST_RESULT(malformed.Serialize(invalidWriter));
+  invalidWriter.SetWritePosition(0);
+  XII_TEST_RESULT(invalidWriter.WriteDWordValue(&oldVersion));
+  xiiMemoryStreamReader               invalidReader(&invalidBytes);
+  xiiRenderPipelineResourceDescriptor rejected;
+  XII_TEST_RESULT(rejected.Deserialize(invalidReader));
+  xiiSharedPtr<const xiiRenderPipeline> invalidPipeline;
+  XII_TEST_BOOL(xiiRenderPipeline::Compile(rejected, invalidPipeline).Failed());
+  const auto                                 resource = xiiLoadPipelineLibraryResource("AmbientOcclusion");
+  xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetPipeline() && loaded->GetAuthoring()))
+    return;
+  XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
+  XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet() && loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
 }

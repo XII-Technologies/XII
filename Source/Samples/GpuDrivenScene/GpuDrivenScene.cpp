@@ -666,7 +666,7 @@ private:
       return;
 
     XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTShadow.xiiShader", sizeof(xiiUInt32)), "Failed to validate the production ray-traced shadow pipeline.");
-    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTAO.xiiShader", sizeof(xiiUInt32)), "Failed to validate the production ray-traced ambient-occlusion pipeline.");
+    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RayTracedAmbientOcclusion.xiiShader", sizeof(xiiUInt32)), "Failed to validate the production ray-traced ambient-occlusion pipeline.");
     XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTGIFinalGather.xiiShader", 16U), "Failed to validate the production ray-traced GI pipeline.");
     XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTReflection.xiiShader", 16U), "Failed to validate the production ray-traced reflection pipeline.");
 

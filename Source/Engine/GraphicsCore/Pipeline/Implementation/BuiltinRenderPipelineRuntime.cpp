@@ -409,7 +409,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGra
   if (!ddgi.m_hIrradianceAtlas.IsValid() || !ddgi.m_hDistanceAtlas.IsValid() || !ddgi.m_hProbeStates.IsValid() || !ddgi.m_hProbeConstants.IsValid())
     return XII_FAILURE;
   graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteDDGIProbeSampling, this));
-  graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusion, this));
   return XII_SUCCESS;
 }
 
@@ -430,12 +429,11 @@ void xiiBuiltinRenderPipelineRuntime::BuildLighting(xiiRenderGraph& graph, xiiRe
   graph.AddPass<xiiReSTIRDIVisibilityData>("ReSTIRDIVisibility", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupReSTIRDIVisibility, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRDIVisibility, this));
   auto restirDIEmissiveVisibilityPass = graph.AddPass<xiiReSTIRDIEmissiveVisibilityData>("ReSTIRDIEmissiveVisibility", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupReSTIRDIEmissiveVisibility, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRDIEmissiveVisibility, this));
   graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedShadowData, this));
-  auto shadowDenoisePass           = graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteShadowDenoiseData, this));
-  auto ambientOcclusionDenoisePass = graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusionDenoise, this));
-  bool bForwardPlusDirectLighting  = false;
+  auto shadowDenoisePass          = graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteShadowDenoiseData, this));
+  bool bForwardPlusDirectLighting = false;
   if (m_View.m_Data.m_RenderPath == xiiRenderPath::ForwardPlus && xiiGpuSceneRasterManager::IsForwardPlusSupported())
   {
-    const xiiRenderGraphTextureHandle hAmbientOcclusion = ambientOcclusionDenoisePass.first->m_hStableAmbientOcclusion;
+    const xiiRenderGraphTextureHandle hAmbientOcclusion = graph.FindTexture(xiiRGBlackboardKeys::k_StableAOTexture);
     const xiiRenderGraphTextureHandle hRayTracedShadow  = shadowDenoisePass.first->m_hRTFinalShadowMask;
     const xiiRenderGraphTextureHandle hContactShadow    = contactShadowPass.first->m_hContactShadow;
     const xiiRenderGraphTextureHandle hDirectReservoir  = restirDIEmissiveVisibilityPass.first->m_hReservoir;
@@ -519,14 +517,13 @@ void xiiBuiltinRenderPipelineRuntime::InvalidateTemporalHistory()
     it.Value()->InvalidateTemporalHistory();
   if (m_Resources.m_LightingSystem.IsInitialized())
     m_Resources.m_LightingSystem.BorrowSystem()->InvalidateGlobalIlluminationHistory();
-  m_Resources.m_DepthPasses.m_bMotionHistoryValid                  = false;
-  m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid        = false;
-  m_Resources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = false;
-  m_Resources.m_LightingPasses.m_bRTGIReservoirHistoryValid        = false;
-  m_Resources.m_LightingPasses.m_bRTGIHistoryValid                 = false;
-  m_Resources.m_LightingPasses.m_bRTReflectionHistoryValid         = false;
-  m_Resources.m_LightingPasses.m_bDirectReservoirHistoryValid      = false;
-  m_Resources.m_LightingPasses.m_bVolumetricHistoryValid           = false;
+  m_Resources.m_DepthPasses.m_bMotionHistoryValid             = false;
+  m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid   = false;
+  m_Resources.m_LightingPasses.m_bRTGIReservoirHistoryValid   = false;
+  m_Resources.m_LightingPasses.m_bRTGIHistoryValid            = false;
+  m_Resources.m_LightingPasses.m_bRTReflectionHistoryValid    = false;
+  m_Resources.m_LightingPasses.m_bDirectReservoirHistoryValid = false;
+  m_Resources.m_LightingPasses.m_bVolumetricHistoryValid      = false;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BindFrameResources(xiiGALCommandList& commandList) const

@@ -24,4 +24,9 @@ inline xiiUuid xiiTransparencyResolveDefinitionId()
   return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.TransparencyResolve");
 }
 
-void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor);
+inline xiiUuid xiiAmbientOcclusionDefinitionId()
+{
+  return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.AmbientOcclusion");
+}
+
+void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor, bool extractAmbientOcclusion);

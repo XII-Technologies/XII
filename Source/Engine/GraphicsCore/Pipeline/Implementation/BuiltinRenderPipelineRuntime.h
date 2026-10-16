@@ -73,8 +73,6 @@ struct xiiSkyIrradianceConvolutionData;
 struct xiiVolumetricFogInitializationData;
 struct xiiDDGIProbeSamplingData;
 struct xiiSparseVoxelRadianceGatherData;
-struct xiiGroundTruthAmbientOcclusionData;
-struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
 struct xiiReSTIRDITemporalData;
 struct xiiReSTIRDISpatialData;
@@ -210,14 +208,6 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState>         m_pFroxelFogInitPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>         m_pDDGIProbePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>         m_pSparseVoxelGatherPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>         m_pGTAOFallbackPipeline;
-      xiiSharedPtr<xiiGALRayTracingPipelineState>      m_pRTAOPipeline;
-      xiiSharedPtr<xiiGALBuffer>                       m_pRTAOShaderBindingTable;
-      xiiSharedPtr<xiiGALComputePipelineState>         m_pAOTemporalDenoisePipeline;
-      xiiUInt32                                        m_uiRTAOShaderRecordStride = 0U;
-      xiiSharedPtr<xiiGALTexture>                      m_pAmbientOcclusionHistory[2];
-      xiiUInt32                                        m_uiAmbientOcclusionHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
-      bool                                             m_bAmbientOcclusionHistoryValid       = false;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
       xiiSharedPtr<xiiGALTexture>                      m_pFallbackReflectionProbeTexture;
     } m_LightingPrepPasses;
@@ -444,11 +434,7 @@ private:
   void SetupSparseVoxelRadianceGather(xiiSparseVoxelRadianceGatherData& data, xiiRenderGraphBuilder& builder);
   void ExecuteSparseVoxelRadianceGather(const xiiSparseVoxelRadianceGatherData& data, xiiRenderGraphPassContext& context);
 
-  void SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphPassContext& context);
 
   void SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGraphBuilder& builder);
   void ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRenderGraphPassContext& context);
@@ -525,7 +511,6 @@ private:
   static xiiSharedPtr<xiiGALGraphicsPipelineState> EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex);
   bool                                             EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
   bool                                             EnsureRayTracingShadowResources();
-  bool                                             EnsureRayTracingAmbientOcclusionResources();
   bool                                             EnsureRayTracingGlobalIlluminationResources();
   bool                                             EnsureRayTracingReflectionResources();
 };

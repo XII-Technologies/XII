@@ -6,13 +6,16 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 7, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 8, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("RTFinalGI", m_OutputRTFinalGI)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
       XII_MEMBER_PROPERTY("RTFinalReflections", m_OutputRTFinalReflections)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
       XII_MEMBER_PROPERTY("VolumetricScattering", m_OutputVolumetricScattering)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("RayTracingScene", m_OutputRayScene)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("RayTracingMaterialData", m_OutputRayMaterials)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("RayTracingGeometryData", m_OutputRayGeometry)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
       XII_MEMBER_PROPERTY("Stage", m_sStage)->AddAttributes(new xiiDefaultValueAttribute("PrepareFrame")),
     } XII_END_PROPERTIES;
   }
@@ -60,6 +63,11 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
   pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
   if (m_sStage == "PrepareFrame")
   {
+    xiiDynamicArray<xiiRenderPipelinePin> reflected;
+    xiiRenderPipelinePass::GetPins(reflected);
+    for (auto& pin : reflected)
+      if (pin.m_sName == "RayTracingScene" || pin.m_sName == "RayTracingMaterialData" || pin.m_sName == "RayTracingGeometryData")
+        pins.PushBack(std::move(pin));
     for (xiiStringView name : {"SceneInstances", "SkinningMatrices", "VisibleMeshlets", "VisibleMeshletCount", "MeshIndirectCommands", "MeshIndirectCommandCount", "GeometryMetadata", "MeshletMetadata", "SurfaceMaterials"})
       pins.PushBack({name, xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"GPU Geometry Metadata", xiiRenderPipelinePin::Buffer, false, true});
@@ -185,7 +193,6 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"DDGIProbeConstants", xiiRenderPipelinePin::Buffer, true, true});
     pins.PushBack({"DDGIIrradiance", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"NormalRoughness", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"RawAO", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"AtmTransmittance", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"AtmMultiScatter", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"FroxelMetadata", xiiRenderPipelinePin::Buffer, false, true});
@@ -207,7 +214,7 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     xiiDynamicArray<xiiRenderPipelinePin> reflected;
     xiiRenderPipelinePass::GetPins(reflected);
     for (auto& pin : reflected)
-      if (pin.m_Type != xiiRenderPipelinePin::Order)
+      if (pin.m_sName == "RTFinalGI" || pin.m_sName == "RTFinalReflections" || pin.m_sName == "VolumetricScattering")
         pins.PushBack(std::move(pin));
 
     pins.PushBack({"HardwareGI", xiiRenderPipelinePin::Texture, false, true});
@@ -293,6 +300,7 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"DirectLightReservoir", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"ReSTIRDISurfacePrevious", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"RawAO", xiiRenderPipelinePin::Texture, false, true});
+    pins.PushBack({"StableAO", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"RTFinalShadows", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"ContactShadows", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"ShadowCascadeMatrices", xiiRenderPipelinePin::Buffer, false, true});
@@ -300,7 +308,6 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"DirectLightReservoirSurface", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"VirtualShadowPageTable", xiiRenderPipelinePin::Buffer, false, true});
     pins.PushBack({"VirtualShadowAtlas", xiiRenderPipelinePin::Texture, false, true});
-    pins.PushBack({"StableAO", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"BRDFLut", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"DDGIIrradiance", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"SparseVoxelIrradiance", xiiRenderPipelinePin::Texture, false, true});
@@ -353,6 +360,8 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
                                                                        context.m_Graph.FindTexture(pin.m_sName);
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer)
       context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
+    if (!pin.m_bInput && (pin.m_sName == "RawAO" || pin.m_sName == "StableAO"))
+      context.m_Bindings[i].m_hTexture = context.GetInputTexture(pin.m_sName);
   }
   if (m_sStage == "PrepareFrame")
   {
@@ -387,6 +396,13 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
         buffer = context.m_Graph.FindBuffer(pin.m_sName);
     }
     context.m_Graph.SetResourceNamespace(previousScope);
+    const auto& lighting = runtime->m_Resources.m_LightingPasses;
+    if (lighting.m_pRayTracingScene && lighting.m_hRayTracingSceneDependency.IsValid())
+    {
+      XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputRayScene, {lighting.m_pRayTracingScene, lighting.m_hRayTracingSceneDependency}));
+      XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputRayMaterials, lighting.m_hRayTracingMaterialData));
+      XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputRayGeometry, lighting.m_hRayTracingGeometryData));
+    }
   }
 
   return result;

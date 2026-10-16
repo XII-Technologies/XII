@@ -153,6 +153,207 @@ namespace
     return changed;
   }
 
+  constexpr xiiStringView s_AmbientOcclusionResource = "RenderPipelines/AmbientOcclusion.xiiBinRenderPipeline"_xiisv;
+
+  template <typename Nodes, typename VisitEdges, typename AddEdge, typename Boundaries>
+  bool ConvertAmbientOcclusion(Nodes& nodes, VisitEdges visit, AddEdge add, Boundaries& boundaries)
+  {
+    bool            changed       = false;
+    const xiiUInt32 originalCount = nodes.GetCount();
+    const auto      findStage     = [&](xiiStringView stage) {
+      for (xiiUInt32 i = 0; i < originalCount; ++i)
+        if (IsLegacyStage(nodes[i].m_sType, nodes[i].m_Properties, stage))
+          return i;
+      return xiiInvalidIndex;
+    };
+    for (xiiUInt32 preparation = 0; preparation < originalCount; ++preparation)
+    {
+      if (!IsLegacyStage(nodes[preparation].m_sType, nodes[preparation].m_Properties, "LightingPreparation"))
+        continue;
+      auto id = nodes[preparation].m_Id;
+      id.HashCombine(xiiAmbientOcclusionDefinitionId());
+      bool exists = false;
+      for (const auto& node : nodes)
+        exists |= node.m_Id == id;
+      if (exists)
+        continue;
+      xiiUInt32 lighting = findStage("Lighting"), geometry = findStage("DepthAndGeometry");
+      visit([&](auto& source, auto& target, auto& output, auto& input) {
+        if (source >= originalCount || target >= originalCount)
+          return;
+        if (source == preparation && IsLegacyStage(nodes[target].m_sType, nodes[target].m_Properties, "Lighting"))
+          lighting = target;
+        if (target == preparation && input == "SceneDepth")
+          geometry = source;
+      });
+      const xiiUInt32 ao   = nodes.GetCount();
+      auto&           node = nodes.ExpandAndGetRef();
+      node.m_Id            = id;
+      node.m_sName         = "AmbientOcclusion";
+      node.m_Definition    = xiiAmbientOcclusionDefinitionId();
+      visit([&](auto& source, auto&, auto& output, auto&) {
+        if (source == preparation && output == "RawAO")
+          source = ao;
+      });
+      for (auto& mapping : boundaries)
+        if (!mapping.m_bInput && mapping.m_Node == nodes[preparation].m_Id && mapping.m_sPort == "RawAO")
+          mapping.m_Node = id;
+      // Keep authored output contracts on the new subgraph interface.
+      if (const auto* value = nodes[preparation].m_Properties.GetValue("PinConfigurations"); value && value->IsA<xiiVariantArray>())
+      {
+        xiiVariantArray retained, moved;
+        for (const auto& configuration : value->Get<xiiVariantArray>())
+        {
+          const auto* metadata = configuration.IsA<xiiVariantDictionary>() ? configuration.Get<xiiVariantDictionary>().GetValue("Metadata") : nullptr;
+          const auto* name     = metadata && metadata->IsA<xiiVariantDictionary>() ? metadata->Get<xiiVariantDictionary>().GetValue("Name") : nullptr;
+          const auto* input    = metadata && metadata->IsA<xiiVariantDictionary>() ? metadata->Get<xiiVariantDictionary>().GetValue("Input") : nullptr;
+          if (name && input && *name == xiiVariant("RawAO") && *input == xiiVariant(false))
+            moved.PushBack(configuration);
+          else
+            retained.PushBack(configuration);
+        }
+        nodes[preparation].m_Properties.Insert("PinConfigurations", retained);
+        if (!moved.IsEmpty())
+          nodes[ao].m_Properties.Insert("PinConfigurations", moved);
+      }
+      if (geometry != xiiInvalidIndex)
+        for (xiiStringView port : {"SceneDepth", "GBufferNormal", "NormalRoughness", "DilatedVelocityBuffer"})
+          add(geometry, port, ao, port);
+      const auto visibility = findStage("Visibility"), frame = findStage("PrepareFrame");
+      if (visibility != xiiInvalidIndex)
+        for (xiiStringView port : {"PerFrameCamera", "PerFrameGlobal"})
+          add(visibility, port, ao, port);
+      if (frame != xiiInvalidIndex)
+        for (xiiStringView port : {"RayTracingScene", "RayTracingMaterialData", "RayTracingGeometryData"})
+          add(frame, port, ao, port);
+      add(preparation, "After", ao, "Before");
+      if (lighting != xiiInvalidIndex)
+      {
+        add(ao, "StableAO", lighting, "StableAO");
+        add(ao, "After", lighting, "Before");
+      }
+      changed = true;
+    }
+    return changed;
+  }
+
+  bool ConvertAmbientOcclusion(xiiRenderPipelineResourceDescriptor& descriptor)
+  {
+    const auto visit = [&](auto callback) {
+      for (auto& edge : descriptor.m_Connections)
+        callback(edge.m_uiSource, edge.m_uiTarget, edge.m_sOutput, edge.m_sInput);
+    };
+    const auto add = [&](xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input) {
+      for (const auto& edge : descriptor.m_Connections)
+        if (edge.m_uiSource == source && edge.m_uiTarget == target && edge.m_sOutput == output && edge.m_sInput == input)
+          return;
+      if (descriptor.Connect(source, output, target, input).Succeeded())
+        descriptor.m_Connections.PeekBack().m_Id = ConnectionId(descriptor.m_Passes[source].m_Id, descriptor.m_Passes[target].m_Id, xiiStringBuilder("AO/", output, "/", input));
+    };
+    return ConvertAmbientOcclusion(descriptor.m_Passes, visit, add, descriptor.m_Interface);
+  }
+
+  /// Extract the formerly implicit AO operations without changing existing node or edge identities.
+  class AmbientOcclusionSourcePatch : public xiiGraphPatch
+  {
+  public:
+    AmbientOcclusionSourcePatch() : xiiGraphPatch({}, 5, PatchType::GraphPatch) {}
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph* graph, xiiAbstractObjectNode*) const override
+    {
+      auto*       root     = graph->GetNodeByName("ObjectTree");
+      const auto* property = root ? root->FindProperty("Children") : nullptr;
+      if (!property || !property->m_Value.IsA<xiiVariantArray>())
+        return;
+      auto                                children = property->m_Value.Get<xiiVariantArray>();
+      xiiRenderPipelineResourceDescriptor descriptor;
+      xiiMap<xiiUuid, xiiUInt32>          indices;
+      for (const auto& child : children)
+      {
+        auto* node = child.IsA<xiiUuid>() ? graph->GetNode(child.Get<xiiUuid>()) : nullptr;
+        if (!node || node->FindProperty("Source"))
+          continue;
+        auto& pass   = descriptor.m_Passes.ExpandAndGetRef();
+        pass.m_Id    = node->GetGuid();
+        pass.m_sType = node->GetType();
+        if (const auto* stage = node->FindProperty("Stage"))
+          pass.m_Properties.Insert("Stage", stage->m_Value);
+        indices.Insert(pass.m_Id, descriptor.m_Passes.GetCount() - 1);
+      }
+      for (const auto& child : children)
+      {
+        auto*       node   = child.IsA<xiiUuid>() ? graph->GetNode(child.Get<xiiUuid>()) : nullptr;
+        const auto* source = node ? node->FindProperty("Source") : nullptr;
+        const auto* target = node ? node->FindProperty("Target") : nullptr;
+        const auto* output = node ? node->FindProperty("SourcePin") : nullptr;
+        const auto* input  = node ? node->FindProperty("TargetPin") : nullptr;
+        xiiUInt32   sourceIndex, targetIndex;
+        if (!source || !target || !output || !input || !source->m_Value.IsA<xiiUuid>() || !target->m_Value.IsA<xiiUuid>() ||
+            !output->m_Value.IsA<xiiString>() || !input->m_Value.IsA<xiiString>() ||
+            !indices.TryGetValue(source->m_Value.Get<xiiUuid>(), sourceIndex) || !indices.TryGetValue(target->m_Value.Get<xiiUuid>(), targetIndex))
+          continue;
+        descriptor.m_Connections.PushBack({sourceIndex, targetIndex, output->m_Value.Get<xiiString>(), input->m_Value.Get<xiiString>(), node->GetGuid()});
+      }
+      const auto originalCount = descriptor.m_Passes.GetCount();
+      if (!ConvertAmbientOcclusion(descriptor))
+        return;
+      for (xiiUInt32 i = originalCount; i < descriptor.m_Passes.GetCount(); ++i)
+      {
+        const auto& pass = descriptor.m_Passes[i];
+        auto*       node = graph->AddNode(pass.m_Id, "xiiRenderPipelineSubgraphPass", 1);
+        node->AddProperty("Resource", xiiString(s_AmbientOcclusionResource));
+        for (xiiUInt32 source = 0; source < originalCount; ++source)
+        {
+          auto expected = descriptor.m_Passes[source].m_Id;
+          expected.HashCombine(xiiAmbientOcclusionDefinitionId());
+          if (expected != pass.m_Id)
+            continue;
+          auto*       original = graph->GetNode(descriptor.m_Passes[source].m_Id);
+          const auto* pins     = original ? original->FindProperty("PinConfigurations") : nullptr;
+          if (!pins || !pins->m_Value.IsA<xiiVariantArray>())
+            continue;
+          xiiVariantArray retained, moved;
+          for (const auto& configuration : pins->m_Value.Get<xiiVariantArray>())
+          {
+            const auto* config     = configuration.IsA<xiiUuid>() ? graph->GetNode(configuration.Get<xiiUuid>()) : nullptr;
+            const auto* metadataId = config ? config->FindProperty("Metadata") : nullptr;
+            const auto* metadata   = metadataId && metadataId->m_Value.IsA<xiiUuid>() ? graph->GetNode(metadataId->m_Value.Get<xiiUuid>()) : nullptr;
+            const auto* name       = metadata ? metadata->FindProperty("Name") : nullptr;
+            const auto* input      = metadata ? metadata->FindProperty("Input") : nullptr;
+            if (name && input && name->m_Value == xiiVariant("RawAO") && input->m_Value == xiiVariant(false))
+              moved.PushBack(configuration);
+            else
+              retained.PushBack(configuration);
+          }
+          original->ChangeProperty("PinConfigurations", retained);
+          if (!moved.IsEmpty())
+            node->AddProperty("PinConfigurations", moved);
+        }
+        children.PushBack(pass.m_Id);
+      }
+      for (const auto& edge : descriptor.m_Connections)
+      {
+        auto* node = graph->GetNode(edge.m_Id);
+        if (!node)
+        {
+          node = graph->AddNode(edge.m_Id, "xiiDocumentObject_ConnectionBase", 1);
+          children.PushBack(edge.m_Id);
+        }
+        const auto set = [&](const char* name, const xiiVariant& value) {
+          if (node->FindProperty(name))
+            node->ChangeProperty(name, value);
+          else
+            node->AddProperty(name, value);
+        };
+        set("Source", descriptor.m_Passes[edge.m_uiSource].m_Id);
+        set("Target", descriptor.m_Passes[edge.m_uiTarget].m_Id);
+        set("SourcePin", edge.m_sOutput);
+        set("TargetPin", edge.m_sInput);
+      }
+      root->ChangeProperty("Children", children);
+    }
+  };
+  static AmbientOcclusionSourcePatch s_AmbientOcclusionSourcePatch;
+
   class TransparencyResolveSourcePatch : public xiiGraphPatch
   {
   public:
@@ -409,7 +610,7 @@ namespace
   static ScreenEffectsSourceConnectionsPatch s_ConnectionsPatch;
 } // namespace
 
-void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor)
+void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor, bool extractAmbientOcclusion)
 {
   const auto addRoot = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView port) {
     for (const auto& edge : descriptor.m_Connections)
@@ -418,10 +619,11 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
     if (descriptor.Connect(source, port, target, port).Succeeded())
       descriptor.m_Connections.PeekBack().m_Id = ConnectionId(descriptor.m_Passes[source].m_Id, descriptor.m_Passes[target].m_Id, port);
   };
-  bool transparencyChanged = ConvertTransparency(descriptor.m_Passes);
-  bool opaqueChanged       = ConvertOpaque(descriptor.m_Passes, addRoot);
-  bool debugChanged        = ConvertDebug(descriptor.m_Passes, addRoot);
-  bool changed             = Convert(descriptor.m_Passes, addRoot);
+  bool ambientOcclusionChanged = extractAmbientOcclusion && ConvertAmbientOcclusion(descriptor);
+  bool transparencyChanged     = ConvertTransparency(descriptor.m_Passes);
+  bool opaqueChanged           = ConvertOpaque(descriptor.m_Passes, addRoot);
+  bool debugChanged            = ConvertDebug(descriptor.m_Passes, addRoot);
+  bool changed                 = Convert(descriptor.m_Passes, addRoot);
   for (auto& definition : descriptor.m_Definitions)
   {
     const auto add = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView port) {
@@ -436,10 +638,39 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
       definition.m_Topology.m_EdgeTargets.PushBack(target);
       definition.m_Edges.PushBack(std::move(edge));
     };
+    const auto visitAO = [&](auto callback) {
+      for (xiiUInt32 i = 0; i < definition.m_Edges.GetCount(); ++i)
+        callback(definition.m_Topology.m_EdgeSources[i], definition.m_Topology.m_EdgeTargets[i], definition.m_Edges[i].m_sSourcePort, definition.m_Edges[i].m_sTargetPort);
+    };
+    const auto addAO = [&](xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input) {
+      for (xiiUInt32 i = 0; i < definition.m_Edges.GetCount(); ++i)
+        if (definition.m_Topology.m_EdgeSources[i] == source && definition.m_Topology.m_EdgeTargets[i] == target && definition.m_Edges[i].m_sSourcePort == output && definition.m_Edges[i].m_sTargetPort == input)
+          return;
+      xiiGraphDefinitionEdge edge;
+      edge.m_Id          = ConnectionId(definition.m_Nodes[source].m_Id, definition.m_Nodes[target].m_Id, xiiStringBuilder("AO/", output, "/", input));
+      edge.m_sSourcePort = output;
+      edge.m_sTargetPort = input;
+      definition.m_Topology.m_EdgeSources.PushBack(source);
+      definition.m_Topology.m_EdgeTargets.PushBack(target);
+      definition.m_Edges.PushBack(std::move(edge));
+    };
+    if (extractAmbientOcclusion && ConvertAmbientOcclusion(definition.m_Nodes, visitAO, addAO, definition.m_Boundary))
+    {
+      definition.m_Topology.m_uiVertexCount = definition.m_Nodes.GetCount();
+      ambientOcclusionChanged               = true;
+    }
     transparencyChanged |= ConvertTransparency(definition.m_Nodes);
     opaqueChanged |= ConvertOpaque(definition.m_Nodes, add);
     debugChanged |= ConvertDebug(definition.m_Nodes, add);
     changed |= Convert(definition.m_Nodes, add);
+  }
+  if (ambientOcclusionChanged)
+  {
+    bool found = false;
+    for (const auto& reference : descriptor.m_References)
+      found |= reference.m_Id == xiiAmbientOcclusionDefinitionId();
+    if (!found)
+      descriptor.m_References.PushBack({xiiAmbientOcclusionDefinitionId(), s_AmbientOcclusionResource});
   }
   if (transparencyChanged)
   {

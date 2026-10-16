@@ -97,9 +97,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareLightingHistory()
   auto& lighting = m_Resources.m_LightingPasses;
   {
     auto& shadows     = m_Resources.m_ShadowPasses;
-    auto& preparation = m_Resources.m_LightingPrepPasses;
     XII_SUCCEED_OR_RETURN(ensure(shadows.m_pRayTracedShadowHistory, xiiGALResourceFormat::R8UNormalized, shadows.m_bRayTracedShadowHistoryValid, "Ray-traced shadow"));
-    XII_SUCCEED_OR_RETURN(ensure(preparation.m_pAmbientOcclusionHistory, xiiGALResourceFormat::R8UNormalized, preparation.m_bAmbientOcclusionHistoryValid, "Ambient occlusion"));
     XII_SUCCEED_OR_RETURN(ensure(lighting.m_pDirectReservoirHistory, xiiGALResourceFormat::RGBA32UInt, lighting.m_bDirectReservoirHistoryValid, "Direct-light reservoir"));
     XII_SUCCEED_OR_RETURN(ensure(lighting.m_pDirectSurfaceHistory, xiiGALResourceFormat::RGBA16Float, lighting.m_bDirectReservoirHistoryValid, "Direct-light surface"));
     XII_SUCCEED_OR_RETURN(ensure(lighting.m_pRTGIReservoirSampleHistory, xiiGALResourceFormat::RGBA16Float, lighting.m_bRTGIReservoirHistoryValid, "GI reservoir sample"));

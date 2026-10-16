@@ -460,35 +460,6 @@ struct xiiSparseVoxelRadianceGatherData
   xiiRenderGraphTextureHandle m_hIrradiance;
 };
 
-struct xiiGroundTruthAmbientOcclusionData
-{
-  xiiRenderGraphTextureHandle                 m_hSceneDepth;          ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle                 m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
-  xiiRenderGraphTextureHandle                 m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
-  xiiRenderGraphBufferHandle                  m_hSceneDependency;
-  xiiRenderGraphBufferHandle                  m_hMaterialData;
-  xiiRenderGraphBufferHandle                  m_hGeometryData;
-  xiiRenderGraphBufferHandle                  m_hShaderBindingTable;
-  xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
-  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
-  xiiUInt32                                   m_uiShaderRecordStride   = 0U;
-  bool                                        m_bUseHardwareRayTracing = false;
-};
-
-struct xiiGroundTruthAmbientOcclusionDenoiseData
-{
-  xiiUInt32                   m_uiHistoryWriteIndex = 0U;
-  xiiRenderGraphTextureHandle m_hRawAmbientOcclusion;      ///< ShaderResource in (raw ambient visibility).
-  xiiRenderGraphTextureHandle m_hPreviousAmbientOcclusion; ///< ShaderResource in (previous temporally accumulated visibility).
-  xiiRenderGraphTextureHandle m_hSceneDepth;               ///< ShaderResource in (current reversed-Z depth).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;            ///< ShaderResource in (current octahedral normal).
-  xiiRenderGraphTextureHandle m_hVelocity;                 ///< ShaderResource in (current-to-previous NDC velocity).
-  xiiRenderGraphTextureHandle m_hPreviousSurface;          ///< ShaderResource in (previous normal and linear depth).
-  xiiRenderGraphTextureHandle m_hStableAmbientOcclusion;   ///< UnorderedAccess out (persistent denoised visibility).
-  xiiRenderGraphBufferHandle  m_hConstants;
-  bool                        m_bHistoryValid = false;
-};
-
 struct xiiReSTIRDITemporalData
 {
   XII_DECLARE_POD_TYPE();
