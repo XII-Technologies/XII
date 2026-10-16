@@ -7,6 +7,8 @@
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Reflection/Implementation/Casts.h>
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
@@ -63,12 +65,44 @@ namespace
   }
 } // namespace
 
+namespace
+{
+  // These settings used to affect an implicit composite. The independently authored
+  // passes own their properties now; retained custom serialized values need authoring.
+  class LightingScreenSettingsPatch : public xiiGraphPatch
+  {
+  public:
+    LightingScreenSettingsPatch() : xiiGraphPatch("xiiLightingSystemSettings", 14) {}
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* node) const override
+    {
+      const auto remove = [&](xiiStringView name, float previousDefault, xiiStringView passProperty) {
+        if (const auto* property = node->FindProperty(name))
+        {
+          xiiResult   converted = XII_FAILURE;
+          const float value     = property->m_Value.ConvertTo<float>(&converted);
+          if (converted.Failed() || value != previousDefault)
+            xiiLog::Warning("Legacy lighting property '{}' no longer configures screen effects. Author '{}' on the corresponding render pipeline pass to preserve this custom value.", name, passProperty);
+          node->RemoveProperty(name);
+        }
+      };
+      remove("SSGIRayLength", 2.0f, "ScreenSpaceGlobalIllumination.RayLength");
+      remove("SSGISampleCount", 8.0f, "ScreenSpaceGlobalIllumination.SampleCount");
+      remove("SSGIThickness", 0.15f, "ScreenSpaceGlobalIllumination.Thickness");
+      remove("SSGIIntensity", 1.0f, "ScreenSpaceGlobalIllumination.Intensity");
+      remove("SSRefractionScale", 0.05f, "ScreenSpaceRefraction.PerturbScale");
+      remove("SSRefractionMaxDistance", 0.1f, "ScreenSpaceRefraction.MaximumDistance");
+      remove("SSRefractionChromatic", 0.002f, "ScreenSpaceRefraction.Chromatic");
+    }
+  };
+  static LightingScreenSettingsPatch s_LightingScreenSettingsPatch;
+} // namespace
+
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiReSTIRDIQualityPreset, 1)
   XII_ENUM_CONSTANTS(xiiReSTIRDIQualityPreset::Integrated, xiiReSTIRDIQualityPreset::Balanced, xiiReSTIRDIQualityPreset::High, xiiReSTIRDIQualityPreset::Ultra, xiiReSTIRDIQualityPreset::Custom)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 13, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 14, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -81,13 +115,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 13, xiiRTT
     XII_MEMBER_PROPERTY("ContactShadowLength", m_fContactShadowLength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("ContactShadowThickness", m_fContactShadowThickness)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("ContactShadowSteps", m_uiContactShadowSteps)->AddAttributes(new xiiClampValueAttribute(1U, 128U)),
-    XII_MEMBER_PROPERTY("SSGIRayLength", m_fSSGIRayLength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("SSGISampleCount", m_uiSSGISampleCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
-    XII_MEMBER_PROPERTY("SSGIThickness", m_fSSGIThickness)->AddAttributes(new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("SSGIIntensity", m_fSSGIIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("SSRefractionScale", m_fSSRefractionScale)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
-    XII_MEMBER_PROPERTY("SSRefractionMaxDistance", m_fSSRefractionMaxDistance)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
-    XII_MEMBER_PROPERTY("SSRefractionChromatic", m_fSSRefractionChromatic)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.1f)),
     XII_MEMBER_PROPERTY("LocalShadowAtlasSize", m_uiLocalShadowAtlasSize)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
     XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
     XII_MEMBER_PROPERTY("MaxLocalShadowFacesPerFrame", m_uiMaxLocalShadowFacesPerFrame)->AddAttributes(new xiiClampValueAttribute(1U, 1024U), new xiiDefaultValueAttribute(64U)),
@@ -325,7 +352,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   m_LightConstants.m_uiDirectionalShadowBlockerSamples = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowBlockerSamples, 1U, 32U);
   m_LightConstants.m_uiDirectionalShadowFilterSamples  = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowFilterSamples, 1U, 32U);
 
-  m_GlobalConstants = xiiSnapshotGlobalConstants(view, uiFrameIndex);
+  m_GlobalConstants                             = xiiSnapshotGlobalConstants(view, uiFrameIndex);
   m_GlobalConstants.m_ReSTIRDISettings          = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples, 1U, 8U), xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod, 1U, 8U), 0U, 0U);
   m_GlobalConstants.m_ReSTIRDIReuseSettings     = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiReSTIRDIFreshCandidateCount, 1U, 32U), xiiMath::Clamp(m_Settings.m_uiReSTIRDITemporalHistoryM, 1U, 32U), xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialNeighborCount, 1U, 8U), xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialRadius, 1U, 8U));
   m_GlobalConstants.m_ReSTIRDIStabilitySettings = xiiVec4(xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight, 0.0f, 0.99f), xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold, 0.05f, 1.0f), 0.0f, 0.0f);

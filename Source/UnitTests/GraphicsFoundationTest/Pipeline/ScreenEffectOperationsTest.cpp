@@ -112,6 +112,10 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   override.m_Path.PushBack(leaf.m_Passes[output].m_Id);
   sensor.m_Profile.m_uiResolutionX = 12;
   XII_TEST_RESULT(sensor.GetProperties(override.m_Properties));
+  auto& disabledGI = root.m_Passes[0].m_Overrides.ExpandAndGetRef();
+  disabledGI.m_Path.PushBack(leaf.m_Passes[trace].m_Id);
+  gi.m_fIntensity = 0;
+  XII_TEST_RESULT(gi.GetProperties(disabledGI.m_Properties));
   const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Independent screen operations", std::move(root));
   xiiWorldDescription worldDescription("Screen operations only");
   xiiWorld            world(worldDescription);

@@ -1,15 +1,42 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphVersioning.h>
+#include <GraphicsCore/Lighting/LightingSystem.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/ScreenSpaceGlobalIlluminationPass.h>
 #include <GraphicsCore/Pipeline/Passes/Refraction/ScreenSpaceRefractionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
 
 XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceMigration)
 {
+  {
+    xiiAbstractObjectGraph oldSettings;
+    auto*                  node = oldSettings.AddNode(xiiUuid::MakeUuid(), "xiiLightingSystemSettings", 13);
+    node->AddProperty("MaxActiveLights", 111U);
+    node->AddProperty("SSGIRayLength", 2.0f);
+    node->AddProperty("SSGIIntensity", 3.0f);
+    node->AddProperty("SSRefractionScale", 0.05f);
+    xiiTestLogInterface   log;
+    xiiTestLogSystemScope scope(&log, true);
+    log.ExpectMessage("Legacy lighting property 'SSGIIntensity'", xiiLogMsgType::WarningMsg);
+    xiiAbstractObjectGraph types;
+    auto*                  oldType = types.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
+    oldType->AddProperty("TypeName", "xiiLightingSystemSettings");
+    oldType->AddProperty("ParentTypeName", "");
+    oldType->AddProperty("TypeVersion", 13U);
+    xiiGraphVersioning::GetSingleton()->PatchGraph(&oldSettings, &types);
+    XII_TEST_INT(node->GetTypeVersion(), 14);
+    XII_TEST_BOOL(node->FindProperty("SSGIRayLength") == nullptr);
+    XII_TEST_BOOL(node->FindProperty("SSGIIntensity") == nullptr);
+    XII_TEST_BOOL(node->FindProperty("SSRefractionScale") == nullptr);
+    XII_TEST_INT(node->FindProperty("MaxActiveLights")->m_Value.Get<xiiUInt32>(), 111);
+    XII_TEST_BOOL(xiiGetStaticRTTI<xiiLightingSystemSettings>()->FindPropertyByName("SSGIIntensity") == nullptr);
+  }
   xiiRenderPipelineResourceDescriptor legacy;
   for (xiiStringView name : {"Visibility", "Lighting", "ScreenEffects"})
   {

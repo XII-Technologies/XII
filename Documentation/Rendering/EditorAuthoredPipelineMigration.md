@@ -487,3 +487,21 @@ emit no GPU work; operation separation does not request a GPU submission per pas
 Fourteen Builtin implementation files and the public selector still remain, with
 nine composite branches and 70 old operation-data structures. This checkpoint does
 not complete the requested entire-stack decomposition or Builtin-file deletion.
+
+
+## Remove unused central screen settings
+
+Seven unused SSGI/refraction members and their reflection registrations are removed
+from LightingSystemSettings. Native pass members are the sole configuration source.
+A version-14 source settings patch reports non-default legacy values with the target
+pass/property that must be authored, rather than silently claiming to preserve
+custom values. Existing SDK pipelines do not serialize these removed fields.
+Disabled SSGI skips shader/sampler creation and uses a graphics-capable queue for
+its zero-output clear. GPU coverage now includes disabled and active occurrences of
+one shared definition. The initial disabled-path regression caught a compute-only
+clear; queue selection was corrected before final validation.
+
+All affected Debug targets build. Final verification passes 30 Core, 52 Vulkan GAL,
+73 Vulkan editor-engine and 15 Qt subtests, in Workspace/screen-final-*.log. The
+additional GPU test covers concurrent geometry initialization, described below.
+D3D12 remains excluded. No controlled performance benchmark was run.

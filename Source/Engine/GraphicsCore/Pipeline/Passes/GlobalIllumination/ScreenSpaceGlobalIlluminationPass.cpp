@@ -104,12 +104,17 @@ xiiResult xiiScreenSpaceGlobalIlluminationPass::Build(xiiRenderPipelinePassConte
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/SSGI.xiiShader"));
-  XII_SUCCEED_OR_RETURN(PointClampSampler(m_pState->m_Point));
-  XII_SUCCEED_OR_RETURN(LinearClampSampler(m_pState->m_Linear));
+  const float intensity = m_fRayLength == 0 || (m_bSkipWithHardwareGI && context.GetInputTexture("HardwareGI").IsValid()) ? 0.0f : m_fIntensity;
+  if (intensity > 0)
+  {
+    XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/SSGI.xiiShader"));
+    XII_SUCCEED_OR_RETURN(PointClampSampler(m_pState->m_Point));
+    XII_SUCCEED_OR_RETURN(LinearClampSampler(m_pState->m_Linear));
+  }
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("SceneDepth"), 0, 0, size));
-  const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
+  const auto queue   = intensity > 0 ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
+  const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, queue, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
     data.m_hSceneDepth = context.GetInputTexture("SceneDepth");
     data.m_hGBufferNormal = context.GetInputTexture("GBufferNormal");
@@ -121,8 +126,7 @@ xiiResult xiiScreenSpaceGlobalIlluminationPass::Build(xiiRenderPipelinePassConte
     data.m_Constants.RayLength = m_fRayLength;
     data.m_Constants.SampleCount = m_uiSampleCount;
     data.m_Constants.Thickness = m_fThickness;
-    data.m_Constants.Intensity = m_bSkipWithHardwareGI && context.GetInputTexture("HardwareGI").IsValid() ? 0.0f : m_fIntensity;
-    if (m_fRayLength == 0) data.m_Constants.Intensity = 0;
+    data.m_Constants.Intensity = intensity;
     Setup(data, builder); }, xiiMakeDelegate(&xiiScreenSpaceGlobalIlluminationPass::Execute, this));
   XII_SUCCEED_OR_RETURN(context.SetOutput("SSGITerm", emitted.first->m_hSSGIOut));
   XII_SUCCEED_OR_RETURN(context.SetOutput("xiiSSGIConstants", emitted.first->m_hConstants));
