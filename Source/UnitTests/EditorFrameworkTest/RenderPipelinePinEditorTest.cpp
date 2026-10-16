@@ -158,6 +158,13 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   XII_TEST_STATUS(document.GetCommandHistory()->Undo());
   XII_TEST_INT(pipelineSettings->GetTypeAccessor().GetValue("OutputSamples").Get<xiiUInt32>(), 0);
   XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  document.GetSelectionManager()->SetSelection(target);
+  bool nodePinProperties = false;
+  for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+    nodePinProperties |= widget->GetProperty() && widget->GetProperty()->GetPropertyName() == "PinConfigurations";
+  XII_TEST_BOOL(nodePinProperties);
+  const auto* pinProperty = target->GetType()->FindPropertyByName("PinConfigurations");
+  XII_TEST_BOOL(pinProperty && !pinProperty->GetAttributeByType<xiiHiddenAttribute>());
   const auto* pin = manager->GetInputPinByName(target, "Input");
   if (!XII_TEST_BOOL(pin != nullptr))
     return;

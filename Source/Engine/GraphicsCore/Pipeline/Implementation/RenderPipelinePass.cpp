@@ -9,7 +9,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 3, xiiRTTINoAllocator)
     XII_BEGIN_PROPERTIES
     {
       XII_MAP_MEMBER_PROPERTY("ParameterOverrides", m_ParameterOverrides),
-      XII_ARRAY_MEMBER_PROPERTY("PinConfigurations", m_PinConfigurations)->AddFlags(xiiPropertyFlags::PointerOwner)->AddAttributes(new xiiHiddenAttribute()),
+      XII_ARRAY_MEMBER_PROPERTY("PinConfigurations", m_PinConfigurations)->AddFlags(xiiPropertyFlags::PointerOwner)->AddAttributes(new xiiContainerAttribute(false, false, false)),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
