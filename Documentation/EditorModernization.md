@@ -1665,8 +1665,9 @@ migration progresses; no requirement is waived because a subsystem is difficult.
 
 ## Native scene picking and selection composition
 
-- Scene view composition now belongs to `xiiSceneRenderPipeline`, using the native
-  pipeline resource descriptor. Interactive mesh queries, selected-only surfaces,
+- Scene view composition is authored in `Data/Base/RenderPipelines/EditorScene`,
+  selected through the reflected project pipeline policy. The earlier C++ scene
+  factory has been deleted. Interactive mesh queries, selected-only surfaces,
   selection color composition, shape icons and debug rendering remain separate
   reflected passes. Query passes share native frame geometry/material tables and
   own independent scene membership and visibility state. Selected-only surfaces

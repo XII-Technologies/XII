@@ -18,6 +18,7 @@ ray geometry work do not establish completion of this objective.
 | Render pipeline pin schema | Texture/buffer/order, direction, optionality, format and temporal output exist. Schemas are unreflected POD-style descriptions; mutable per-pin settings, persistent pin identity and richer contracts are missing. Keep immutable type metadata separate from authored configuration. |
 | Core `xiiPlatformProfile` / Editor asset profiles | Existing reflected project/platform settings and runtime chunk persistence are the integration point for pipeline references and policy. Do not add a renderer settings registry. |
 | World extraction / GAL / Core graph composition | Preserve authoritative world state, demand aggregation, derived GPU buffers, explicit graph hazards, shared definitions and provenance. No new scene database or graph framework. |
+| `Source/Samples/GpuDrivenScene/GpuDrivenScene.cpp` | Specialized low-level GAL/render-graph sample builds its demonstration graph directly. Its drawing/shadow/presentation operations also need review during focused-pass migration; passing this sample does not establish resource-only authored rendering. |
 
 ## Operation inventory
 
@@ -86,8 +87,8 @@ loading and deterministic packaged bytes. All 13 EditorDocuments subtests pass
 after this addition. The temporary one-time exporter and its build reference are
 removed.
 
-The resource-selection factories, composite stage implementation and render-pin
-configuration integration remain migration targets; these checkpoints do not
+At that checkpoint, the resource-selection factories, composite stage implementation
+and render-pin configuration integration remained migration targets; these checkpoints do not
 close the complete objective. Local evidence is in ignored
 `Workspace/pipeline-pin-*.log` and `Workspace/pipeline-assets-*.log` files.
 
@@ -100,3 +101,71 @@ view creation now selects the configured resource. All 25 GraphicsCore subtests
 and 49 Vulkan EditorViews subtests pass, including both wireframe raster paths
 using the packaged deferred asset. Evidence: `Workspace/pipeline-profile-*.log`.
 Other entry points and constructor fallback deletion remain in progress.
+
+## Resource-only view selection checkpoint
+
+The view constructor no longer selects a pipeline. Game-state main views resolve
+the Game policy; scene views resolve EditorScene; remote views resolve Game; mesh,
+animated mesh, animation, skeleton, material and decal views resolve AssetPreview;
+texture and cube views resolve their respective preview policies. The editor
+context takes its profile from the existing application and permits an explicit
+resource reference or externally owned profile. Explicit references precede
+profile policy, and camera updates refresh the configured selection.
+
+The C++ default descriptor/resource factories, texture preview factory and both
+`SharedPluginScene/Scene/SceneRenderPipeline` source/header files are deleted.
+Tests load the packaged authored resources; mutation fixtures explicitly remap
+loaded descriptor indices into execution order rather than reconstructing a
+pipeline in C++. Missing selections leave no executable pipeline or extraction
+demand. A view diagnoses failed selection/loading once until its resource changes
+or synchronization succeeds. Clearing a selected resource clears execution state;
+selecting a valid resource restores rendering without a fallback.
+
+Rejected runtime profile chunks also remain rejected when saved again: runtime
+serialization writes the effective empty references rather than retained authored
+defaults. No scene ownership, component storage, graph-handle semantics or GPU
+algorithms were changed by this checkpoint.
+
+Debug validation uses `Workspace/vs2026x64` with `/m:1 /p:CL_MPcount=1`:
+
+| Check | Result |
+| --- | --- |
+| GraphicsCoreTest | All 25 subtests pass. |
+| GraphicsFoundationTest, `-renderer Vulkan` | All 47 subtests pass. |
+| EditorEngineProcessFrameworkTest, `-renderer Vulkan` | All 73 subtests pass. |
+| EditorFrameworkTest | All 14 subtests pass, including production source-document/compiler round trips and actual engine-process startup. |
+| Affected builds | GraphicsCoreTest, GraphicsFoundationTest, EditorEngineProcessFrameworkTest, EditorFrameworkTest and EditorPluginVisualScript build; transitive game/editor-engine/processor and asset/scene plugin targets also build. |
+| Source search | No matches for removed default/preview factories, scene pipeline helper, scene database or scene database manager in C++ headers/sources and CMake files. |
+
+The new frame regression covers empty selection, suppressed repeated diagnostics,
+explicit-over-project precedence, project policy changes, clearing selection and
+recovery. Existing GPU suites continue to cover multi-view ownership, scene
+picking, shadows, skinning, resource reload and temporal history. A full run exposed
+an unsafe test fixture that temporarily removed the global device during allocation
+failure injection. It now uses the existing temporal texture factory callback,
+preserving failure/history-recovery coverage without racing resource-loading
+threads. An incorrect duplicate expected-log registration in the new fixture was
+also corrected. A rebuild attempted while Qt tests held loaded plugin files failed
+to copy a Qt plugin; sequencing build and Qt execution resolved that file lock.
+
+Final evidence: `Workspace/pipeline-resource-only-build.log`,
+`pipeline-resource-only-editor-rebuild.log`, `pipeline-resource-only-core-tests.log`,
+`pipeline-resource-only-gal-tests.log`, `pipeline-resource-only-editor-gpu-tests.log`
+and `pipeline-resource-only-qt-tests.log`. These ignored local logs are not packaged
+runtime data. Vulkan still reports existing unused shader-output warnings. D3D12
+is excluded; other platforms/configurations are not newly verified here.
+
+No new performance benchmark was run for resource selection. Immutable compiled
+graphs and per-view execution instances remain shared/isolated through the existing
+resource implementation; this checkpoint does not change GPU operation or submission
+counts. It does not establish the later compiler optimization gates.
+
+The complete objective remains open. Render pins still need reflected persistent
+configuration objects integrated with the generic pin inspector and compilation;
+pipeline settings and explicitly permitted typed instance overrides remain open.
+`BuiltinRenderPipelineRuntime.cpp` still selects composite stage operations in C++,
+and authored scene assets still use those composite nodes. Focused pass/state
+migration, reusable operation subgraphs, the specialized low-level sample,
+capability/contract validation and final optimization/workflow verification remain
+required. This checkpoint closes the removed view factories, not those remaining
+architecture gates.
