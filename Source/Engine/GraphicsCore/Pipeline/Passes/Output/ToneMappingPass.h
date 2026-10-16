@@ -8,6 +8,11 @@ class XII_GRAPHICSCORE_DLL xiiToneMappingPass final : public xiiRenderPipelinePa
   XII_ADD_DYNAMIC_REFLECTION(xiiToneMappingPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputUpscaledColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputBloomTexture{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineBufferInputPin   m_InputCurrentExposure;
+  xiiRenderPipelineTextureOutputPin m_OutputDisplayLinearColor{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+
   xiiToneMappingPass();
   ~xiiToneMappingPass();
   bool                            m_bUseViewDefaults = false;
@@ -17,8 +22,8 @@ public:
   float                           m_fPaperWhiteNits     = 203.0f;
   float                           m_fMaximumDisplayNits = 1000.0f;
 
-  xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
-  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  xiiResult Configure(const xiiVariantDictionary& properties) override;
+
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
 

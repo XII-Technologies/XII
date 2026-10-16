@@ -34,6 +34,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiColorGradingPass, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("DisplayLinearColorInput", m_InputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("DisplayLinearColor")),
+    XII_MEMBER_PROPERTY("GradedColor", m_OutputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("ColorGradingConstants", m_OutputColorGradingConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Color Grading Constants")),
+    XII_MEMBER_PROPERTY("DisplayLinearColorOutput", m_OutputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("DisplayLinearColor")),
     XII_MEMBER_PROPERTY("UseViewDefaults", m_bUseViewDefaults)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Settings", m_Settings),
   }
@@ -47,20 +51,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiColorGradingPass, 1, xiiRTTIDefaultAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiColorGradingPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_Dimension         = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples         = 1;
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"GradedColor", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples = 1;
-  pins.PushBack({"Color Grading Constants", xiiRenderPipelinePin::Buffer, false, true});
-  pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, false, true});
-  pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
-}
+
 xiiResult xiiColorGradingPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
@@ -82,16 +73,16 @@ xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
   settings.m_ColorGrading = m_Settings;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture("DisplayLinearColor"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture(m_InputDisplayLinearColor), 0, 0, size));
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
     data.m_bDefaultViewMode=!context.m_pView || context.m_pView->GetViewRenderMode()==xiiViewRenderMode::Default;
-    data.m_hDisplayLinear=context.GetInputTexture("DisplayLinearColor");
+    data.m_hDisplayLinear=context.GetInputTexture(m_InputDisplayLinearColor);
     Setup(data,builder); }, xiiMakeDelegate(&xiiColorGradingPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("GradedColor", emitted.first->m_hGraded));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("Color Grading Constants", emitted.first->m_hConstants));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("DisplayLinearColor", emitted.first->m_hDisplayLinear));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGradedColor, emitted.first->m_hGraded));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputColorGradingConstants, emitted.first->m_hConstants));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hDisplayLinear));
   return XII_SUCCESS;
 }
 

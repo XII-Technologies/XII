@@ -35,6 +35,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLuminanceHistogramPass, 1, xiiRTTIDefaultAll
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("HDRSceneColor", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("LuminanceHistogram", m_OutputLuminanceHistogram)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewDefaults", m_bUseViewDefaults)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("MinimumLogLuminance", m_fMinimumLogLuminance)->AddAttributes(new xiiDefaultValueAttribute(-12.0f)),
     XII_MEMBER_PROPERTY("MaximumLogLuminance", m_fMaximumLogLuminance)->AddAttributes(new xiiDefaultValueAttribute(20.0f)),
@@ -58,20 +60,7 @@ xiiResult xiiLuminanceHistogramPass::Configure(const xiiVariantDictionary& prope
     m_pState->m_Display.m_bValid = false;
   return XII_SUCCESS;
 }
-void xiiLuminanceHistogramPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"LuminanceHistogram", xiiRenderPipelinePin::Buffer, false, false});
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-      if (pin.m_bInput)
-        pin.m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-    }
-}
+
 xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
@@ -83,13 +72,13 @@ xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context
   authored.m_Exposure.m_fMaximumLogLuminance = m_fMaximumLogLuminance;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("HDRSceneColor"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), 0, 0, size));
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;
-    data.m_hHDRIn = context.GetInputTexture("HDRSceneColor");
+    data.m_hHDRIn = context.GetInputTexture(m_InputHDRSceneColor);
     Setup(data, builder); }, xiiMakeDelegate(&xiiLuminanceHistogramPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("LuminanceHistogram", emitted.first->m_hHistogram));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputLuminanceHistogram, emitted.first->m_hHistogram));
   return XII_SUCCESS;
 }
 

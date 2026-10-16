@@ -40,6 +40,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAutoExposurePass, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("LuminanceHistogram", m_InputLuminanceHistogram)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("CurrentExposure", m_OutputCurrentExposure)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewDefaults", m_bUseViewDefaults)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Settings", m_Settings),
   }
@@ -68,12 +70,7 @@ xiiResult xiiAutoExposurePass::Configure(const xiiVariantDictionary& properties)
   InvalidateTemporalHistory();
   return XII_SUCCESS;
 }
-void xiiAutoExposurePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"LuminanceHistogram", xiiRenderPipelinePin::Buffer, true, false});
-  pins.PushBack({"CurrentExposure", xiiRenderPipelinePin::Buffer, false, false});
-}
+
 xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
@@ -99,15 +96,15 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
     if (!m_pState->m_Exposure)
       return XII_FAILURE;
   }
-  if (!context.GetInputBuffer("LuminanceHistogram").IsValid())
+  if (!context.GetInputBuffer(m_InputLuminanceHistogram).IsValid())
     return XII_FAILURE;
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_hHistogram = context.GetInputBuffer("LuminanceHistogram");
+    data.m_hHistogram = context.GetInputBuffer(m_InputLuminanceHistogram);
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;
     data.m_fDeltaTime = xiiMath::Clamp(static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()), 0.0f, 0.25f);
     data.m_fManualExposure = context.m_pView && context.m_pView->GetCamera() ? context.m_pView->GetCamera()->GetExposure() : 1.0f;
     Setup(data, builder); }, xiiMakeDelegate(&xiiAutoExposurePass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("CurrentExposure", emitted.first->m_hExposure));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputCurrentExposure, emitted.first->m_hExposure));
   return XII_SUCCESS;
 }
 

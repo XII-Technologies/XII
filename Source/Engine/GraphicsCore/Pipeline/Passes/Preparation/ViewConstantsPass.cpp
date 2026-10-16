@@ -10,6 +10,11 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewConstantsPass, 1, xiiRTTIDefaultAllocator<xiiViewConstantsPass>)
 {
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("PerFrameCamera", m_OutputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("PerFrameGlobal", m_OutputPerFrameGlobal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+  } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Rendering/Preparation")
@@ -19,14 +24,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewConstantsPass, 1, xiiRTTIDefaultAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiViewConstantsPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  pins.PushBack({"PerFrameCamera", xiiRenderPipelinePin::Buffer, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-  pins.PushBack({"PerFrameGlobal", xiiRenderPipelinePin::Buffer, false});
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::UniformBuffer;
-}
+
 xiiResult xiiViewConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
   if (!context.m_pView || !context.m_pView->GetCamera())
@@ -60,7 +58,7 @@ xiiResult xiiViewConstantsPass::Build(xiiRenderPipelinePassContext& context)
       global.m_pResource = execute.GetBuffer(data.m_GlobalBuffer);
       commands.TransitionResourceStates(xiiMakeArrayPtr(&camera, 1));
       commands.TransitionResourceStates(xiiMakeArrayPtr(&global, 1)); });
-  XII_SUCCEED_OR_RETURN(context.SetOutput("PerFrameCamera", emitted.first->m_CameraBuffer));
-  return context.SetOutput("PerFrameGlobal", emitted.first->m_GlobalBuffer);
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputPerFrameCamera, emitted.first->m_CameraBuffer));
+  return context.SetOutput(m_OutputPerFrameGlobal, emitted.first->m_GlobalBuffer);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Preparation_ViewConstantsPass);

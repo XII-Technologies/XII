@@ -8,6 +8,9 @@ class XII_GRAPHICSCORE_DLL xiiBloomPass final : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiBloomPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputUpscaledColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputBloomTexture{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+
   xiiBloomPass();
   ~xiiBloomPass();
   bool  m_bUseViewDefaults = false;
@@ -15,8 +18,8 @@ public:
   float m_fKnee            = 0.5f;
   float m_fRadius          = 1.0f;
 
-  xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
-  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  xiiResult Configure(const xiiVariantDictionary& properties) override;
+
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
 

@@ -37,6 +37,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPresentPass, 1, xiiRTTIDefaultAllocator<xiiP
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("GradedColorInput", m_InputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GradedColor")),
+    XII_MEMBER_PROPERTY("FinalBlitConstants", m_OutputFinalBlitConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Final Blit Constants")),
+    XII_MEMBER_PROPERTY("GradedColorOutput", m_OutputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GradedColor")),
+    XII_MEMBER_PROPERTY("ViewOutput", m_OutputViewOutput)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewDefaults", m_bUseViewDefaults)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_ENUM_MEMBER_PROPERTY("OutputMode", xiiDisplayOutputMode, m_OutputMode),
     XII_MEMBER_PROPERTY("PaperWhiteNits", m_fPaperWhiteNits)->AddAttributes(new xiiDefaultValueAttribute(203.0f)),
@@ -65,22 +69,7 @@ xiiResult xiiPresentPass::Configure(const xiiVariantDictionary& properties)
     m_pState->m_Display.m_bValid = false;
   return XII_SUCCESS;
 }
-void xiiPresentPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"GradedColor", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"Final Blit Constants", xiiRenderPipelinePin::Buffer, false, true});
-  pins.PushBack({"GradedColor", xiiRenderPipelinePin::Texture, false, true});
-  pins.PushBack({"ViewOutput", xiiRenderPipelinePin::Texture, false, true});
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-      if (pin.m_bInput)
-        pin.m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-    }
-}
+
 xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
@@ -94,7 +83,7 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   authored.m_fPaperWhiteNits     = m_fPaperWhiteNits;
   authored.m_fMaximumDisplayNits = m_fMaximumDisplayNits;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
-  if (!context.m_Graph.GetTextureDescription(context.GetInputTexture("GradedColor")))
+  if (!context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputGradedColor)))
     return XII_FAILURE;
   const auto                        target    = context.m_pView->GetRenderTargetView();
   const auto                        swapchain = context.m_pView->GetSwapChain();
@@ -103,7 +92,7 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   if (!texture)
     return XII_FAILURE;
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_hDisplayLinear = context.GetInputTexture("GradedColor");
+    data.m_hDisplayLinear = context.GetInputTexture(m_InputGradedColor);
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;
     data.m_Size = texture->GetDescription().m_Size;
     data.m_hBackbuffer = builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState());
@@ -111,9 +100,9 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
     data.m_bApplySRGBTransfer = !xiiGALResourceFormat::IsSrgb(texture->GetDescription().m_Format);
     if (!swapchain) builder.ExportTexture(data.m_hBackbuffer, texture->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::RenderTarget);
     Setup(data, builder); }, xiiMakeDelegate(&xiiPresentPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("Final Blit Constants", emitted.first->m_hConstants));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("GradedColor", context.GetInputTexture("GradedColor")));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("ViewOutput", emitted.first->m_hBackbuffer));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputFinalBlitConstants, emitted.first->m_hConstants));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGradedColor, context.GetInputTexture(m_InputGradedColor)));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputViewOutput, emitted.first->m_hBackbuffer));
   return XII_SUCCESS;
 }
 

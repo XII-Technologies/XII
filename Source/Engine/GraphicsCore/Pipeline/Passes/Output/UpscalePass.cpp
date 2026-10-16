@@ -29,6 +29,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiUpscalePass, 1, xiiRTTIDefaultAllocator<xiiU
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("TAAResolved", m_InputTAAResolved)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("UpscaledColor", m_OutputUpscaledColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Width", m_uiWidth)->AddAttributes(new xiiDefaultValueAttribute(0U)),
     XII_MEMBER_PROPERTY("Height", m_uiHeight)->AddAttributes(new xiiDefaultValueAttribute(0U)),
   }
@@ -42,17 +44,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiUpscalePass, 1, xiiRTTIDefaultAllocator<xiiU
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiUpscalePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  pins.PushBack({"TAAResolved", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_Dimension         = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples         = 1;
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"UpscaledColor", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples = 1;
-}
+
 xiiResult xiiUpscalePass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
@@ -68,12 +60,12 @@ xiiResult xiiUpscalePass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/CASUpscale.xiiShader"));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_pState->m_Sampler));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture("TAAResolved"), m_uiWidth, m_uiHeight, size, true));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture(m_InputTAAResolved), m_uiWidth, m_uiHeight, size, true));
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
-    data.m_hTAAIn=context.GetInputTexture("TAAResolved");
+    data.m_hTAAIn=context.GetInputTexture(m_InputTAAResolved);
     Setup(data,builder); }, xiiMakeDelegate(&xiiUpscalePass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("UpscaledColor", emitted.first->m_hUpscaled));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputUpscaledColor, emitted.first->m_hUpscaled));
   return XII_SUCCESS;
 }
 

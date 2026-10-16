@@ -8,6 +8,9 @@ class XII_GRAPHICSCORE_DLL xiiViewConstantsPass final : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiViewConstantsPass, xiiRenderPipelinePass);
 
 public:
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  xiiRenderPipelineBufferOutputPin m_OutputPerFrameCamera{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferOutputPin m_OutputPerFrameGlobal{false, xiiGALBindFlags::UniformBuffer};
+
+
   xiiResult Build(xiiRenderPipelinePassContext& context) override;
 };

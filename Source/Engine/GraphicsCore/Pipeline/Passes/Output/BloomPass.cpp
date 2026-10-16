@@ -33,6 +33,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 1, xiiRTTIDefaultAllocator<xiiBlo
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("UpscaledColor", m_InputUpscaledColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("BloomTexture", m_OutputBloomTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewDefaults", m_bUseViewDefaults)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Threshold", m_fThreshold)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_MEMBER_PROPERTY("Knee", m_fKnee)->AddAttributes(new xiiDefaultValueAttribute(0.5f)),
@@ -48,17 +50,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 1, xiiRTTIDefaultAllocator<xiiBlo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiBloomPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  pins.PushBack({"UpscaledColor", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_Dimension         = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples         = 1;
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"BloomTexture", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples = 1;
-}
+
 xiiResult xiiBloomPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
@@ -85,13 +77,13 @@ xiiResult xiiBloomPass::Build(xiiRenderPipelinePassContext& context)
   settings.m_fBloomRadius    = m_fRadius;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture("UpscaledColor"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture(m_InputUpscaledColor), 0, 0, size));
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
-    data.m_hHDRIn=context.GetInputTexture("UpscaledColor");
+    data.m_hHDRIn=context.GetInputTexture(m_InputUpscaledColor);
     Setup(data,builder); }, xiiMakeDelegate(&xiiBloomPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("BloomTexture", emitted.first->m_hBloom));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputBloomTexture, emitted.first->m_hBloom));
   return XII_SUCCESS;
 }
 

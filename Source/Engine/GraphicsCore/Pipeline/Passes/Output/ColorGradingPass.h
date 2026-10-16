@@ -8,13 +8,18 @@ class XII_GRAPHICSCORE_DLL xiiColorGradingPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiColorGradingPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputDisplayLinearColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputGradedColor{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineBufferOutputPin  m_OutputColorGradingConstants{true};
+  xiiRenderPipelineTextureOutputPin m_OutputDisplayLinearColor{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read};
+
   xiiColorGradingPass();
   ~xiiColorGradingPass();
   bool                    m_bUseViewDefaults = false;
   xiiColorGradingSettings m_Settings;
 
-  xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
-  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
+  xiiResult Configure(const xiiVariantDictionary& properties) override;
+
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
 

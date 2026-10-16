@@ -35,6 +35,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiToneMappingPass, 1, xiiRTTIDefaultAllocator<
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("UpscaledColor", m_InputUpscaledColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("BloomTexture", m_InputBloomTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("CurrentExposure", m_InputCurrentExposure)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DisplayLinearColor", m_OutputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewDefaults", m_bUseViewDefaults)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_ENUM_MEMBER_PROPERTY("Operator", xiiToneMappingOperator, m_Operator),
     XII_ENUM_MEMBER_PROPERTY("OutputMode", xiiDisplayOutputMode, m_OutputMode),
@@ -52,22 +56,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiToneMappingPass, 1, xiiRTTIDefaultAllocator<
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiToneMappingPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  xiiRenderPassUtils::ResourcePins(pins);
-  pins.PushBack({"UpscaledColor", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_Dimension         = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples         = 1;
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"BloomTexture", xiiRenderPipelinePin::Texture, true, false});
-  pins.PeekBack().m_Constraints.m_Dimension         = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples         = 1;
-  pins.PeekBack().m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-  pins.PushBack({"CurrentExposure", xiiRenderPipelinePin::Buffer, true, false});
-  pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-  pins.PeekBack().m_Constraints.m_uiSamples = 1;
-}
+
 xiiResult xiiToneMappingPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
@@ -97,15 +86,15 @@ xiiResult xiiToneMappingPass::Build(xiiRenderPipelinePassContext& context)
   settings.m_fMaximumDisplayNits = m_fMaximumDisplayNits;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture("UpscaledColor"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture(m_InputUpscaledColor), 0, 0, size));
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
-    data.m_hHDRInput=context.GetInputTexture("UpscaledColor");
-    data.m_hBloom=context.GetInputTexture("BloomTexture");
-    data.m_hExposure=context.GetInputBuffer("CurrentExposure");
+    data.m_hHDRInput=context.GetInputTexture(m_InputUpscaledColor);
+    data.m_hBloom=context.GetInputTexture(m_InputBloomTexture);
+    data.m_hExposure=context.GetInputBuffer(m_InputCurrentExposure);
     Setup(data,builder); }, xiiMakeDelegate(&xiiToneMappingPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("DisplayLinearColor", emitted.first->m_hDisplayLinear));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hDisplayLinear));
   return XII_SUCCESS;
 }
 

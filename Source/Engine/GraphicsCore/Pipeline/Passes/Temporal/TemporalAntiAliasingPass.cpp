@@ -45,6 +45,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporalAntiAliasingPass, 1, xiiRTTIDefaultA
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("HDRSceneColor", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DilatedVelocityBuffer", m_InputDilatedVelocityBuffer)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("SceneDepth", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("TAAResolved", m_OutputTAAResolved)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("PreviousColor", m_OutputPreviousColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("BaseBlendAlpha", m_fBaseBlendAlpha)->AddAttributes(new xiiDefaultValueAttribute(0.08f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("MotionBlendScale", m_fMotionBlendScale)->AddAttributes(new xiiDefaultValueAttribute(12.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
   }
@@ -71,24 +76,7 @@ xiiResult xiiTemporalAntiAliasingPass::Configure(const xiiVariantDictionary& pro
   InvalidateTemporalHistory();
   return XII_SUCCESS;
 }
-void xiiTemporalAntiAliasingPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  ResourcePins(pins);
-  pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"DilatedVelocityBuffer", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"TAAResolved", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-  pins.PushBack({"PreviousColor", xiiRenderPipelinePin::Texture, false, true, xiiGALResourceFormat::RGBA16Float});
-  pins.PeekBack().m_bTemporalHistoryOutput = true;
-  for (auto& pin : pins)
-    if (pin.m_Type == xiiRenderPipelinePin::Texture)
-    {
-      pin.m_Constraints.m_Dimension = xiiGALResourceDimension::Texture2D;
-      pin.m_Constraints.m_uiSamples = 1;
-      if (pin.m_bInput)
-        pin.m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
-    }
-}
+
 xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
@@ -98,7 +86,7 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
   XII_SUCCEED_OR_RETURN(LinearClampSampler(m_pState->m_LinearSampler));
   XII_SUCCEED_OR_RETURN(PointClampSampler(m_pState->m_PointSampler));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture("HDRSceneColor"), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), 0, 0, size));
   for (const auto name : {"DilatedVelocityBuffer", "SceneDepth"})
   {
     const auto* input = context.m_Graph.GetTextureDescription(context.GetInputTexture(name));
@@ -116,13 +104,13 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     m_pState->m_uiWriteIndex = 0;
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_hHDRIn = context.GetInputTexture("HDRSceneColor");
-    data.m_hVelocity = context.GetInputTexture("DilatedVelocityBuffer");
-    data.m_hDepth = context.GetInputTexture("SceneDepth");
+    data.m_hHDRIn = context.GetInputTexture(m_InputHDRSceneColor);
+    data.m_hVelocity = context.GetInputTexture(m_InputDilatedVelocityBuffer);
+    data.m_hDepth = context.GetInputTexture(m_InputSceneDepth);
     data.m_Constants.BaseBlendAlpha = m_fBaseBlendAlpha;
     data.m_Constants.MotionBlendScale = m_fMotionBlendScale;
     Setup(data, builder); }, xiiMakeDelegate(&xiiTemporalAntiAliasingPass::Execute, this));
-  XII_SUCCEED_OR_RETURN(context.SetOutput("TAAResolved", emitted.first->m_hTAAOut));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputTAAResolved, emitted.first->m_hTAAOut));
   return XII_SUCCESS;
 }
 
@@ -197,5 +185,5 @@ xiiResult xiiTemporalAntiAliasingPass::BuildTemporalHistory(xiiRenderPipelinePas
   if (!previous)
     return XII_SUCCESS;
   const auto imported = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>("TAA previous color", xiiGALCommandQueueFlags::Compute, [&](xiiRenderGraphTextureHandle& data, xiiRenderGraphBuilder& builder) { data = builder.ImportTexture("PreviousColor", previous, previous->GetResourceState()); }, [](const xiiRenderGraphTextureHandle&, xiiRenderGraphPassContext&) {});
-  return context.SetOutput("PreviousColor", *imported.first);
+  return context.SetOutput(m_OutputPreviousColor, *imported.first);
 }
