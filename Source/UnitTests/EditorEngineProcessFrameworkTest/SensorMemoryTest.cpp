@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -133,7 +134,8 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor definition;
-  xiiRenderPipelineResource::GetDefaultDescriptor(definition);
+  if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(definition)))
+    return;
   const auto          pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Sensor retention default pipeline", std::move(definition));
   xiiWorldDescription description("Sensor retention");
   xiiWorld            world(description);
@@ -243,7 +245,8 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, AllocationFailureAndRecovery)
   }
   XII_TEST_BOOL(view->GetSensorOutputTexture() == nullptr);
   xiiRenderPipelineResourceDescriptor recovered;
-  xiiRenderPipelineResource::GetDefaultDescriptor(recovered);
+  if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(recovered)))
+    return;
   const auto restored = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Sensor allocation restored", std::move(recovered));
   view->SetRenderPipelineResource(restored);
   world.Update();

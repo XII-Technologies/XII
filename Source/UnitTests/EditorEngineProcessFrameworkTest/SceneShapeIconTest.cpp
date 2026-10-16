@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -13,7 +14,6 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
-#include <SharedPluginScene/Scene/SceneRenderPipeline.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 namespace
@@ -553,13 +553,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default scene pipeline is a valid serializable native definition")
   {
     xiiRenderPipelineResourceDescriptor native;
-    XII_TEST_RESULT(xiiSceneRenderPipeline::GetDefaultDescriptor(native));
+    XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(native, "EditorScene"));
     xiiSharedPtr<const xiiRenderPipeline> compiled;
     xiiStringBuilder                      error;
     XII_TEST_RESULT(xiiRenderPipeline::Compile(native, compiled, &error));
     XII_TEST_BOOL_MSG(compiled != nullptr, "%s", error.GetData());
-    XII_TEST_BOOL(xiiSceneRenderPipeline::GetDefaultResource().IsValid());
-    XII_TEST_BOOL(xiiSceneRenderPipeline::GetDefaultResource() == xiiSceneRenderPipeline::GetDefaultResource());
+    XII_TEST_BOOL(xiiLoadPipelineLibraryResource("EditorScene").IsValid());
+    XII_TEST_BOOL(xiiLoadPipelineLibraryResource("EditorScene") == xiiLoadPipelineLibraryResource("EditorScene"));
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         writer(&storage);
     XII_TEST_RESULT(native.Serialize(writer));

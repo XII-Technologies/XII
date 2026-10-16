@@ -283,6 +283,7 @@ private:
 
   xiiViewRenderResourceContextHandle       m_hPipelineRuntime;
   xiiRenderPipelineResourceHandle          m_hRenderPipeline;
+  bool                                     m_bPipelineSynchronizationFailed = false;
   xiiVariantDictionary                     m_PipelineParameters;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderExtractionCategory> m_CustomExtractionRequirements = xiiRenderExtractionCategory::All;

@@ -20,9 +20,8 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiTexturePreviewPass : public xiiRen
   XII_ADD_DYNAMIC_REFLECTION(xiiTexturePreviewPass, xiiRenderPipelinePass);
 
 public:
-  static xiiRenderPipelineResourceHandle GetPipeline(bool bCube);
-  void                                   GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
-  xiiResult                              Build(xiiRenderPipelinePassContext& context) override;
+  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
+  xiiResult Build(xiiRenderPipelinePassContext& context) override;
 
   bool m_bCube = false;
 

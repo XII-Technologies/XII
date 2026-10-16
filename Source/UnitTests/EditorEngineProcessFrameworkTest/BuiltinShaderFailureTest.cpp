@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
@@ -137,7 +138,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
   view->SetCamera(&camera);
   view->SetViewport({0, 0, 16, 16});
   view->SetRenderPath(xiiRenderPath::Deferred);
-  view->SetRenderPipelineResource(xiiRenderPipelineResource::GetDefaultPipeline());
+  view->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("Deferred"));
   xiiGALTextureCreationDescription targetDescription;
   targetDescription.m_Type      = xiiGALResourceDimension::Texture2D;
   targetDescription.m_Size      = {16, 16};

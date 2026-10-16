@@ -6,7 +6,6 @@
 #include <EnginePluginAssets/TextureCubeAsset/TextureCubeView.h>
 
 #include <Core/World/World.h>
-#include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
@@ -20,10 +19,13 @@ xiiTextureCubeViewContext::~xiiTextureCubeViewContext() = default;
 
 xiiViewHandle xiiTextureCubeViewContext::CreateView()
 {
+  xiiRenderPipelineResourceHandle pipeline;
+  if (ResolveRenderPipeline(xiiRenderPipelineUsage::CubeTexturePreview, pipeline).Failed())
+    return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("TextureCube Editor - View", pView);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
-  pView->SetRenderPipelineResource(xiiTexturePreviewPass::GetPipeline(true));
+  pView->SetRenderPipelineResource(pipeline);
   pView->SetCamera(&m_Camera);
   return pView->GetHandle();
 }
@@ -38,6 +40,7 @@ void xiiTextureCubeViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 
   if (xiiView* view = GetView())
   {
+    UpdateRenderPipeline(*view);
     view->SetPipelineParameter("Texture", m_pTextureContext->GetTexture().GetResourceID());
     view->SetPipelineParameter("Channel", m_pTextureContext->GetChannelMode());
     view->SetPipelineParameter("Mip", m_pTextureContext->GetLodLevel());

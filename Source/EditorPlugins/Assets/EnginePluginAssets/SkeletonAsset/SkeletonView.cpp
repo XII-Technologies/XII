@@ -30,8 +30,12 @@ bool xiiSkeletonViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& b
 
 xiiViewHandle xiiSkeletonViewContext::CreateView()
 {
+  xiiRenderPipelineResourceHandle pipeline;
+  if (ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, pipeline).Failed())
+    return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Skeleton Editor - View", pView);
+  pView->SetRenderPipelineResource(pipeline);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
   pView->SetCamera(&m_Camera);

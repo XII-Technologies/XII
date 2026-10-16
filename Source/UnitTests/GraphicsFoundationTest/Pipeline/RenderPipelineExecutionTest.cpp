@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
@@ -367,7 +368,8 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow());
     const float                         viewBloomStrength = view->GetDisplayOutputSettings().m_fBloomStrength;
     xiiRenderPipelineResourceDescriptor definition;
-    xiiRenderPipelineResource::GetDefaultDescriptor(definition);
+    if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(definition)))
+      return;
     xiiVariantDictionary display;
     display.Insert("BloomStrength", 0.2f);
     definition.m_Parameters.Insert("DisplayOutput", display);

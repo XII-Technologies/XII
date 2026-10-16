@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 #include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -32,7 +33,6 @@
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
-#include <SharedPluginScene/Scene/SceneRenderPipeline.h>
 #include <SharedPluginScene/Scene/SceneSelectionPass.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
@@ -179,7 +179,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
   XII_TEST_BOOL(instance.GetPipeline() == other.GetPipeline());
   xiiRenderPipelineResourceDescriptor   editorDefinition;
   xiiSharedPtr<const xiiRenderPipeline> editorPipeline;
-  XII_TEST_RESULT(xiiSceneRenderPipeline::GetDefaultDescriptor(editorDefinition));
+  XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(editorDefinition, "EditorScene"));
   XII_TEST_RESULT(xiiRenderPipeline::Compile(editorDefinition, editorPipeline));
 
   xiiGeometry box;

@@ -147,10 +147,6 @@ public:
   /// Resolve only definitions reachable from the root. Each independently authored resource is
   /// acquired once, before compilation, so definition recursion cannot deadlock resource loading.
   static xiiResult ResolveDefinitions(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderPipelineResourceDescriptor& out_resolved, xiiDynamicArray<DefinitionDependency>* out_dependencies = nullptr, xiiStringBuilder* out_error = nullptr);
-  /// Built-in reusable definition, cached by ResourceManager. Does not hold a static resource handle.
-  static xiiRenderPipelineResourceHandle GetDefaultPipeline();
-  /// Creates an editable default definition without loading a resource or accessing GAL.
-  static void GetDefaultDescriptor(xiiRenderPipelineResourceDescriptor& out_descriptor);
 
 private:
   xiiResourceLoadDescription                     UnloadData(Unload whatToUnload) override;

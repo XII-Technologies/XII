@@ -7,6 +7,7 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <type_traits>
 
 namespace PipelineResourceTest
@@ -641,8 +642,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default definition is a shared reusable resource with pin-level topology")
   {
-    auto a = xiiRenderPipelineResource::GetDefaultPipeline();
-    auto b = xiiRenderPipelineResource::GetDefaultPipeline();
+    auto a = xiiLoadPipelineLibraryResource("Deferred");
+    auto b = xiiLoadPipelineLibraryResource("Deferred");
     XII_TEST_BOOL(a == b);
     xiiResourceLock<xiiRenderPipelineResource> resource(a, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     XII_TEST_BOOL(resource.IsValid());
@@ -653,21 +654,23 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
       XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), 18);
       XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > 17);
       XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), 18);
-      auto descriptor = pipeline->GetDescriptor();
+      xiiRenderPipelineResourceDescriptor ordered;
+      XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(ordered));
+      auto descriptor = ordered;
       XII_TEST_RESULT(descriptor.RemovePass(15)); // Debug is a removable independent stage.
       XII_TEST_RESULT(descriptor.Connect(14, "DisplayLinearColor", 15, "DisplayLinearColor"));
       xiiSharedPtr<const xiiRenderPipeline> edited;
       XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
       XII_TEST_BOOL(edited->GetHeapMemoryUsage() > descriptor.m_Passes.GetHeapMemoryUsage() + descriptor.m_Connections.GetHeapMemoryUsage());
-      auto incomplete = pipeline->GetDescriptor();
+      auto incomplete = ordered;
       XII_TEST_RESULT(incomplete.RemovePass(0));
       xiiStringBuilder error;
       XII_TEST_BOOL(xiiRenderPipeline::Compile(incomplete, edited, &error).Failed());
       XII_TEST_BOOL(!error.IsEmpty());
-      auto duplicate = pipeline->GetDescriptor();
+      auto duplicate = ordered;
       duplicate.AddPass("Duplicate preparation", "xiiBuiltinRenderPipelinePass", duplicate.m_Passes[0].m_Properties);
       XII_TEST_BOOL(xiiRenderPipeline::Compile(duplicate, edited).Failed());
-      auto                 configured = pipeline->GetDescriptor();
+      auto                 configured = ordered;
       xiiVariantDictionary display;
       display.Insert("BloomStrength", 0.2f);
       xiiVariantDictionary exposure;

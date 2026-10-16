@@ -8,6 +8,7 @@
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 #include <EditorEngineProcessFramework/Rendering/EditorGrid.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
@@ -78,10 +79,17 @@ public:
 
   xiiViewHandle GetViewHandle() const { return m_hView; }
 
+  /// The profile is application-owned and must outlive the context. An explicit resource
+  /// reference overrides its policy without modifying the shared resource definition.
+  void SetRenderPipelineProfile(const xiiPlatformProfile* profile) { m_pPipelineProfile = profile; }
+  void SetRenderPipelineResourceReference(xiiStringView resource) { m_sPipelineReference = resource; }
+
 protected:
   /// Resolves the view through its owning document world. The caller must hold the world's access marker
   /// for the entire use of the returned non-owning pointer.
-  xiiView* GetView() const;
+  xiiView*  GetView() const;
+  xiiResult ResolveRenderPipeline(xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_pipeline);
+  void      UpdateRenderPipeline(xiiView& view);
   /// Submits reusable grid geometry to this view's regular debug-render passes.
   xiiResult DrawGrid(float fSpacing, const xiiTransform& transform = xiiTransform::MakeIdentity(), bool bGlobal = true);
   /// Picks synchronized handles at a window pixel center, accounting for viewport offsets.
@@ -106,4 +114,8 @@ protected:
 private:
   xiiEngineProcessDocumentContext* m_pDocumentContext;
   xiiEditorGrid                    m_Grid;
+  const xiiPlatformProfile*        m_pPipelineProfile = nullptr;
+  xiiString                        m_sPipelineReference;
+  xiiRenderPipelineUsage::Enum     m_PipelineUsage           = xiiRenderPipelineUsage::AssetPreview;
+  bool                             m_bPipelinePolicySelected = false;
 };

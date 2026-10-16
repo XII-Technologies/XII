@@ -13,11 +13,14 @@
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <Texture/Image/Image.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
@@ -190,6 +193,8 @@ namespace
   public:
     using xiiEngineProcessViewContext::xiiEngineProcessViewContext;
     using xiiEngineProcessViewContext::SetCamera;
+    using xiiEngineProcessViewContext::ResolveRenderPipeline;
+    using xiiEngineProcessViewContext::UpdateRenderPipeline;
     xiiView* BorrowView() const { return GetView(); }
     void     SetWindowHandle(xiiRegisteredWindowHandle window) { m_hEditorWindow = window; }
 
@@ -337,6 +342,50 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
     XII_TEST_BOOL(firstView->GetCamera()->GetCameraMode() == xiiCameraMode::OrthoFixedHeight);
     XII_TEST_VEC3(firstView->GetCamera()->GetCenterPosition(), camera.m_vPosition, 0.001f);
     XII_TEST_BOOL(firstView->GetViewRenderMode() == xiiViewRenderMode::Wireframe);
+
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Views require a selected resource and recover without a fallback")
+    {
+      world.SetWorldSimulationEnabled(false);
+      first.Redraw(false);
+      XII_TEST_BOOL(!firstView->GetRenderPipelineResource().IsValid());
+      xiiTestLogInterface   log;
+      xiiTestLogSystemScope scope(&log, true);
+      log.ExpectMessage("has no selected render pipeline resource", xiiLogMsgType::ErrorMsg, 2);
+      world.Update();
+      world.Update(); // Diagnose once until selection changes.
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() == nullptr);
+      XII_TEST_BOOL(firstView->GetExtractionRequirements().IsNoFlagSet());
+      XII_TEST_BOOL(firstView->GetRuntimeFeatures().IsNoFlagSet());
+      xiiPlatformProfile profile;
+      profile.AddMissingConfigs();
+      auto* policy = profile.GetTypeConfig<xiiRenderPipelineProfileConfig>();
+      if (!XII_TEST_BOOL(policy != nullptr))
+        return;
+      TestViewContext configured(&document);
+      configured.SetRenderPipelineProfile(&profile);
+      xiiRenderPipelineResourceHandle selected;
+      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, selected));
+      XII_TEST_STRING(selected.GetResourceID(), policy->m_sAssetPreviewPipeline);
+      configured.SetRenderPipelineResourceReference(xiiLoadPipelineLibraryResource("Deferred").GetResourceID());
+      configured.UpdateRenderPipeline(*firstView);
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
+      policy->m_sAssetPreviewPipeline.Clear();
+      configured.UpdateRenderPipeline(*firstView); // Explicit selection survives project changes.
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
+      configured.SetRenderPipelineResourceReference({});
+      log.ExpectMessage("Cannot select the editor view pipeline", xiiLogMsgType::ErrorMsg);
+      configured.UpdateRenderPipeline(*firstView);
+      XII_TEST_BOOL(!firstView->GetRenderPipelineResource().IsValid());
+      firstView->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("Deferred"));
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
+      firstView->SetRenderPipelineResource({});
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() == nullptr);
+      first.SuspendRendering();
+    }
 
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Paused worlds execute only enabled views and retain their configuration")
     {

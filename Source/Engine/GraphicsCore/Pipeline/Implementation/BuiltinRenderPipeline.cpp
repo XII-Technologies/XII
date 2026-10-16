@@ -1,6 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
@@ -567,51 +566,6 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
     context.m_Graph.SetResourceNamespace(previousScope);
   }
   return result;
-}
-
-void xiiRenderPipelineResource::GetDefaultDescriptor(xiiRenderPipelineResourceDescriptor& descriptor)
-{
-  descriptor                                  = {};
-  static constexpr xiiStringView     stages[] = {"PrepareFrame", "Visibility", "Shadows", "DepthAndGeometry", "LightingPreparation", "Lighting", "OpaqueComposition", "Transparency", "ScreenEffects", "LuminanceHistogram", "AutoExposure", "TemporalAntiAliasing", "Upscale", "Bloom", "ToneMapping", "Debug", "ColorGrading", "Present"};
-  xiiHashTable<xiiString, xiiUInt32> textures, buffers;
-  for (xiiUInt32 index = 0; index < XII_ARRAY_SIZE(stages); ++index)
-  {
-    xiiVariantDictionary properties;
-    properties.Insert("Stage", stages[index]);
-    descriptor.AddPass(stages[index], "xiiBuiltinRenderPipelinePass", properties);
-    if (index > 0)
-      descriptor.Connect(index - 1, "After", index, "Before").IgnoreResult();
-    xiiBuiltinRenderPipelinePass prototype;
-    prototype.m_sStage = stages[index];
-    xiiDynamicArray<xiiRenderPipelinePin> pins;
-    prototype.GetPins(pins);
-    for (const auto& pin : pins)
-    {
-      if (!pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
-        continue;
-      const auto& producers = pin.m_Type == xiiRenderPipelinePin::Texture ? textures : buffers;
-      xiiUInt32   source;
-      if (producers.TryGetValue(pin.m_sName, source))
-        descriptor.Connect(source, pin.m_sName, index, pin.m_sName).IgnoreResult();
-    }
-    for (const auto& pin : pins)
-    {
-      if (pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
-        continue;
-      auto& producers = pin.m_Type == xiiRenderPipelinePin::Texture ? textures : buffers;
-      producers.Insert(pin.m_sName, index);
-    }
-  }
-}
-
-xiiRenderPipelineResourceHandle xiiRenderPipelineResource::GetDefaultPipeline()
-{
-  auto existing = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>("{ XII Default Render Pipeline }");
-  if (existing.IsValid())
-    return existing;
-  xiiRenderPipelineResourceDescriptor descriptor;
-  GetDefaultDescriptor(descriptor);
-  return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("{ XII Default Render Pipeline }", std::move(descriptor));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_BuiltinRenderPipeline);

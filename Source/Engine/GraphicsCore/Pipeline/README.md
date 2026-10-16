@@ -6,23 +6,22 @@ pass objects and frame bindings for one view. `xiiRenderGraph` remains the GPU
 execution system: it resolves resources, schedules work, inserts synchronization,
 and executes command lists. Core's graph contains only structural dependencies.
 
-## Construction and selection
+## Asset selection
 
 ```cpp
-xiiRenderPipelineResourceDescriptor definition;
-xiiRenderPipelineResource::GetDefaultDescriptor(definition);
-
-xiiVariantDictionary display;
-display.Insert("BloomStrength", 0.1f);
-definition.m_Parameters.Insert("DisplayOutput", display);
-
-auto resource = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(
-  "My pipeline", std::move(definition));
+auto resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(assetId);
 view.SetRenderPipelineResource(resource);
 ```
 
-An asset can instead be selected with
-`xiiResourceManager::LoadResource<xiiRenderPipelineResource>(assetId)`.
+Views start without a pipeline. Normal game and editor entry points resolve an
+explicit resource reference or the corresponding reflected
+`xiiRenderPipelineProfileConfig` policy in the application platform profile.
+An explicit view reference takes precedence. Empty policy, unavailable resources
+and invalid graphs fail with diagnostics; no fallback graph is constructed.
+Game, scene editor, asset preview, texture preview and cube preview policies select
+ordinary resources. Packaged editable sources and compiled SDK snapshots live in
+`Data/Base/RenderPipelines`; project assets use ordinary asset GUID/cache loading.
+
 `SetPipelineParameter` and `RemovePipelineParameter` provide view overrides.
 Overrides replace values with the same top-level key; nested dictionaries are
 replaced as a unit. The built-in `DisplayOutput` dictionary accepts the reflected
@@ -69,7 +68,7 @@ choices and frame services. They use one shared built-in cache within each view;
 duplicate instances of a built-in stage are rejected. Independent branched effects
 use concrete pass types with their own state. The generic pipeline permits repeated
 types and arbitrary acyclic topology. Built-in prerequisites are validated during
-compilation; the default resource explicitly supplies both ordering and pin edges.
+compilation; the authored Deferred resource explicitly supplies both ordering and pin edges.
 
 ## Lifetime, reload, and threads
 
@@ -137,10 +136,10 @@ GPU tests. The final Vulkan suite emitted no warnings or errors. Tests used
 `-nosave -nogui -all`; no renderer filter was applied, so every compiled backend
 was selected (this workspace enables Vulkan and disables D3D12).
 
-Two integration checks remain unresolved. `GpuDrivenScene -frames 3` loses the
-Vulkan device after its first submitted frame; the sampler and descriptor conflicts
-found while investigating it have been repaired, but the device loss remains.
-Editor target builds stop in existing EngineProcessFramework code using obsolete
-render-target types and the missing `GraphicsCore/Textures/TextureUtils.h`, before
-the updated pipeline asset translation units compile. Editor execution, D3D12,
-static linking, non-Windows builds, and non-Debug configurations are unverified.
+That historical checkpoint preceded subsequent editor and Vulkan runtime repairs.
+Current migration validation and remaining gates are tracked in
+`Documentation/Rendering/EditorAuthoredPipelineMigration.md`,
+`Documentation/Rendering/WorldRenderingMigration.md` and
+`Documentation/Rendering/HierarchicalGraphComposition.md`; the historical results
+above are not evidence for the current editor or runtime state. D3D12 is excluded
+from the ongoing migration validation at the user's request.

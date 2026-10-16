@@ -54,19 +54,6 @@ namespace
   }
 } // namespace
 
-xiiRenderPipelineResourceHandle xiiTexturePreviewPass::GetPipeline(bool bCube)
-{
-  const xiiStringView id       = bCube ? "{ XII Editor Cube Texture Preview }" : "{ XII Editor Texture Preview }";
-  auto                existing = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(id);
-  if (existing.IsValid())
-    return existing;
-  xiiRenderPipelineResourceDescriptor descriptor;
-  xiiVariantDictionary                properties;
-  properties.Insert("Cube", bCube);
-  descriptor.AddPass("Texture inspection", "xiiTexturePreviewPass", properties);
-  return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(id, std::move(descriptor));
-}
-
 void xiiTexturePreviewPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
   out_pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false});

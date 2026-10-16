@@ -4,6 +4,7 @@
 #include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -278,7 +279,8 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   xiiRenderPipelineResourceDescriptor definition;
-  xiiRenderPipelineResource::GetDefaultDescriptor(definition);
+  if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(definition)))
+    return;
   const auto inspect = definition.AddPass("Temporal history check", "xiiPipelineHistoryCheck");
   if (!XII_TEST_RESULT(definition.Connect(inspect - 1, "After", inspect, "Before")))
     return;

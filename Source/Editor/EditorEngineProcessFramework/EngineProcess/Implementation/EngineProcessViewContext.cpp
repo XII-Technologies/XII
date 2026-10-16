@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <Core/GameApplication/GameApplicationBase.h>
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
@@ -17,6 +18,28 @@
 xiiEngineProcessViewContext::xiiEngineProcessViewContext(xiiEngineProcessDocumentContext* pContext) :
   m_pDocumentContext(pContext), m_uiViewID(0xFFFFFFFFU)
 {
+  if (auto* application = xiiGameApplicationBase::GetGameApplicationBaseInstance())
+    m_pPipelineProfile = &application->GetPlatformProfile();
+}
+
+xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_pipeline)
+{
+  m_PipelineUsage           = usage;
+  m_bPipelinePolicySelected = true;
+  xiiStringBuilder error;
+  const auto       result = xiiRenderPipelineProfileConfig::ResolveResource(m_sPipelineReference, m_pPipelineProfile, usage, out_pipeline, &error);
+  if (result.Failed())
+    xiiLog::Error("Cannot select the editor view pipeline: {}", error);
+  return result;
+}
+
+void xiiEngineProcessViewContext::UpdateRenderPipeline(xiiView& view)
+{
+  if (!m_bPipelinePolicySelected)
+    return;
+  xiiRenderPipelineResourceHandle pipeline;
+  ResolveRenderPipeline(m_PipelineUsage, pipeline).IgnoreResult();
+  view.SetRenderPipelineResource(pipeline);
 }
 
 xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
@@ -318,6 +341,8 @@ void xiiEngineProcessViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg
         xiiView* pView = nullptr;
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
+
+        UpdateRenderPipeline(*pView);
 
         pView->SetViewRenderMode(pMsg->m_RenderMode);
 

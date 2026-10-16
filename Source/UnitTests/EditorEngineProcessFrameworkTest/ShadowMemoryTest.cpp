@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -143,7 +144,8 @@ XII_CREATE_SIMPLE_TEST(ShadowMemory, AtlasesFollowShadowDemand)
     return;
   view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   xiiRenderPipelineResourceDescriptor descriptor;
-  xiiRenderPipelineResource::GetDefaultDescriptor(descriptor);
+  if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(descriptor)))
+    return;
   const xiiUInt32 last  = descriptor.m_Passes.GetCount() - 1;
   const xiiUInt32 probe = descriptor.AddPass("Shadow allocations", "xiiShadowMemoryProbePass");
   if (!XII_TEST_RESULT(descriptor.Connect(last, "After", probe, "Before")))
@@ -259,7 +261,8 @@ XII_CREATE_SIMPLE_TEST(ShadowMemory, AllocationFailureAndRecovery)
   if (!XII_TEST_BOOL(target != nullptr))
     return;
   view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  xiiRenderPipelineResource::GetDefaultDescriptor(descriptor);
+  if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(descriptor)))
+    return;
   const auto restored = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Shadow allocation restored", std::move(descriptor));
   view->SetRenderPipelineResource(restored);
   world.Update();

@@ -69,7 +69,6 @@ xiiView::xiiView(xiiWorld* pWorld) :
   m_pWorld(pWorld)
 {
   m_DisplayOutputSettings = xiiDisplayOutputManager::GetDefaults();
-  m_hRenderPipeline       = xiiRenderPipelineResource::GetDefaultPipeline();
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
@@ -353,7 +352,8 @@ void xiiView::SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& p
 {
   if (m_hRenderPipeline == pipeline)
     return;
-  m_hRenderPipeline = pipeline;
+  m_hRenderPipeline                = pipeline;
+  m_bPipelineSynchronizationFailed = false;
   InvalidateTemporalHistory();
 }
 
@@ -362,18 +362,28 @@ xiiResult xiiView::SynchronizeRenderPipeline()
   auto* runtime = GetBuiltinRuntime();
   if (m_RenderGraphBuilder.IsValid())
   {
-    m_ExtractionRequirements = m_CustomExtractionRequirements;
-    m_RuntimeFeatures        = m_CustomRuntimeFeatures;
+    m_bPipelineSynchronizationFailed = false;
+    m_ExtractionRequirements         = m_CustomExtractionRequirements;
+    m_RuntimeFeatures                = m_CustomRuntimeFeatures;
     return XII_SUCCESS;
   }
   bool changed = false;
   if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed())
   {
-    m_ExtractionRequirements = {};
-    m_RuntimeFeatures        = {};
+    if (!m_bPipelineSynchronizationFailed)
+    {
+      if (m_hRenderPipeline.IsValid())
+        xiiLog::Error("View '{}' cannot load or compile render pipeline resource '{}'.", GetName(), m_hRenderPipeline.GetResourceID());
+      else
+        xiiLog::Error("View '{}' has no selected render pipeline resource.", GetName());
+    }
+    m_bPipelineSynchronizationFailed = true;
+    m_ExtractionRequirements         = {};
+    m_RuntimeFeatures                = {};
     InvalidateTemporalHistory();
     return XII_FAILURE;
   }
+  m_bPipelineSynchronizationFailed = false;
   if (changed)
   {
     runtime->ClearSubgraphs();
