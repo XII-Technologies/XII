@@ -20,35 +20,50 @@ class xiiParticleIntegrationTestSource : public xiiRenderPipelinePass
 public:
   xiiRenderPipelineBufferOutputPin m_Output{false, xiiGALBindFlags::UnorderedAccess};
   xiiSharedPtr<xiiGALBuffer>       m_Buffer;
+  bool                             m_bInitialized = false;
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override
   {
     if (!m_Buffer)
     {
-      xiiHybridArray<xiiParticleGPUState, 131> particles;
-      particles.SetCount(131);
-      xiiMemoryUtils::ZeroFill(particles.GetData(), particles.GetCount());
-      for (xiiUInt32 i = 0; i < particles.GetCount(); ++i)
-      {
-        particles[i].m_vPositionAge            = xiiVec4(static_cast<float>(i), 3, 0, i == 1 ? 9.99f : 0.1f);
-        particles[i].m_vPreviousPositionRadius = xiiVec4(-1, -2, -3, 0.25f);
-        particles[i].m_vVelocityLifetime       = xiiVec4(2, 0, 0, 10);
-        particles[i].m_vColor                  = xiiVec4(1, 0.5f, 0.25f, 1);
-        particles[i].m_uiId                    = 1000 + i;
-      }
       xiiGALBufferCreationDescription description;
-      description.m_uiSize              = particles.GetCount() * sizeof(xiiParticleGPUState);
+      description.m_uiSize              = 131 * sizeof(xiiParticleGPUState);
       description.m_uiElementByteStride = sizeof(xiiParticleGPUState);
       description.m_Mode                = xiiGALBufferMode::Structured;
       description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-      xiiGALBufferData initial;
-      initial.m_pData      = particles.GetData();
-      initial.m_uiDataSize = description.m_uiSize;
-      m_Buffer             = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description, &initial);
+      m_Buffer                          = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
       if (!m_Buffer)
         return XII_FAILURE;
     }
-    const auto emitted = context.m_Graph.AddPass<xiiRenderGraphBufferHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](auto& data, xiiRenderGraphBuilder& builder) { data = builder.ImportBuffer(context.m_sInstanceScope, m_Buffer, m_Buffer->GetResourceState()); }, [](const auto&, xiiRenderGraphPassContext&) {});
-    return context.SetOutput(m_Output, *emitted.first);
+    struct Data
+    {
+      xiiRenderGraphBufferHandle                                       m_Buffer;
+      xiiDynamicArray<xiiParticleGPUState, xiiAlignedAllocatorWrapper> m_Initial;
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_Buffer = builder.ImportBuffer(context.m_sInstanceScope, m_Buffer, m_Buffer->GetResourceState());
+      if (!m_bInitialized)
+      {
+        // The graph owns this upload and its cross-queue dependency. Implicit
+        // CreateBuffer initial data on another queue would require an explicit fence.
+        data.m_Buffer = builder.WriteBuffer(data.m_Buffer, xiiGALResourceStateFlags::CopyDestination);
+        data.m_Initial.SetCount(131);
+        xiiMemoryUtils::ZeroFill(data.m_Initial.GetData(), data.m_Initial.GetCount());
+        for (xiiUInt32 i = 0; i < data.m_Initial.GetCount(); ++i)
+        {
+          auto& particle = data.m_Initial[i];
+          particle.m_vPositionAge = xiiVec4(static_cast<float>(i), 3, 0, i == 1 ? 9.99f : 0.1f);
+          particle.m_vPreviousPositionRadius = xiiVec4(-1, -2, -3, 0.25f);
+          particle.m_vVelocityLifetime = xiiVec4(2, 0, 0, 10);
+          particle.m_vColor = xiiVec4(1, 0.5f, 0.25f, 1);
+          particle.m_uiId = 1000 + i;
+        }
+      } }, [this](const Data& data, xiiRenderGraphPassContext& execute) {
+      if (!data.m_Initial.IsEmpty())
+      {
+        execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Buffer), 0, xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Initial.GetData()), data.m_Initial.GetCount() * sizeof(xiiParticleGPUState)));
+        m_bInitialized = true;
+      } });
+    return context.SetOutput(m_Output, emitted.first->m_Buffer);
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleIntegrationTestSource, 1, xiiRTTIDefaultAllocator<xiiParticleIntegrationTestSource>)
