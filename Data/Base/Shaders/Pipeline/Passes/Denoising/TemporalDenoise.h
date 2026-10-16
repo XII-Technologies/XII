@@ -17,6 +17,10 @@ Texture2D<float2> g_Velocity : register(t8);
 Texture2D<float4> g_PreviousSurface : register(t9);
 XII_STORAGE_IMAGE_FORMAT(XII_DENOISE_FORMAT)
 RWTexture2D<float4> g_DenoisedOutput : register(u10);
+#if defined(XII_DENOISE_CAPTURE_SURFACE)
+XII_STORAGE_IMAGE_FORMAT("rgba16f")
+RWTexture2D<float4> g_CurrentSurface : register(u11);
+#endif
 
 float4 LoadSignal(int2 pixel, uint2 dimensions)
 {
@@ -34,6 +38,11 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
   const uint2 pixel   = dispatchThreadId.xy;
   const float depth   = g_SceneDepth.Load(int3(pixel, 0));
   float4      current = LoadSignal(int2(pixel), dimensions);
+#if defined(XII_DENOISE_CAPTURE_SURFACE)
+  // Keep the reprojection surface in this pass instance's own history. Capturing
+  // it here avoids a dependency on a lighting algorithm's unrelated history.
+  g_CurrentSurface[pixel] = depth > 0.0f ? float4(g_GBufferNormal.Load(int3(pixel, 0)), LinearizeDepth(depth), 1.0f) : 0.0f.xxxx;
+#endif
   if (depth <= 0.0f)
   {
     g_DenoisedOutput[pixel] = SignalMode == 0U ? 1.0f.xxxx : current;

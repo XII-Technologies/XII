@@ -5,6 +5,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -328,4 +329,169 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentWeightedTransparencyResolve
   const float reveal = 64.0f / 255.0f;
   CheckOpaquePixels(environment, texture, {0.5f * (1 - reveal) + 2 * reveal, 1 * (1 - reveal) + 4 * reveal, 1.5f * (1 - reveal) + 6 * reveal, 0.5f});
   module->DestroyView(viewHandle);
+}
+
+namespace
+{
+  void CheckAmbientMask(xiiGPUTestingEnvironment& environment, const xiiSharedPtr<xiiGALTexture>& texture, float expected)
+  {
+    xiiGALTextureReadback readback(environment.GetDevice());
+    auto                  commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    commands->Begin();
+    const auto enqueued = readback.Enqueue(commands, {.m_pTexture = texture.Borrow()});
+    commands->End();
+    if (!XII_TEST_RESULT(enqueued))
+      return;
+    auto* queue = environment.GetDevice()->GetCommandQueue();
+    queue->WaitForFenceValue(queue->Submit(commands));
+    readback.WaitForNextCompleted();
+    const auto capture = readback.GetCompleted();
+    if (!XII_TEST_BOOL(static_cast<bool>(capture)))
+      return;
+    commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    commands->Begin();
+    xiiGALMappedTextureSubresource mapped;
+    if (XII_TEST_RESULT(commands->MapTextureSubresource(capture.m_pStagingTexture, {}, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped)))
+    {
+      for (xiiUInt32 y = 0; y < capture.m_uiHeight; ++y)
+      {
+        const auto* row = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
+        for (xiiUInt32 x = 0; x < capture.m_uiWidth; ++x)
+          XII_TEST_FLOAT(row[x] / 255.0f, expected, 1.1f / 255.0f);
+      }
+      XII_TEST_RESULT(commands->UnmapTextureSubresource(capture.m_pStagingTexture, {}));
+    }
+    commands->End();
+    readback.RecycleStagingTexture(capture.m_pStagingTexture);
+  }
+} // namespace
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor leaf;
+  const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format) {
+    xiiClearTexturePass pass;
+    pass.m_Color  = color;
+    pass.m_Format = format;
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(pass.GetProperties(properties));
+    return leaf.AddPass(name, "xiiClearTexturePass", properties);
+  };
+  const auto           emptyDepth = clear("Empty depth", xiiColor::MakeZero(), xiiGALResourceFormat::R32Float);
+  const auto           depth      = clear("Surface depth", {0.5f, 0, 0, 0}, xiiGALResourceFormat::R32Float);
+  const auto           normal     = clear("Normals", {0.5f, 0.5f, 0, 0}, xiiGALResourceFormat::RGBA16Float);
+  const auto           velocity   = clear("Velocity", xiiColor::MakeZero(), xiiGALResourceFormat::RG16Float);
+  const auto           signal     = clear("Test signal", {0.25f, 0, 0, 0}, xiiGALResourceFormat::R8UNormalized);
+  const auto           camera     = leaf.AddPass("Camera", "xiiViewConstantsPass");
+  xiiVariantDictionary screenProperties;
+  screenProperties.Insert("UseRayTracing", false);
+  const auto generate = leaf.AddPass("Generate", "xiiAmbientOcclusionPass", screenProperties);
+  const auto temporal = leaf.AddPass("Filter", "xiiAmbientOcclusionTemporalPass");
+  XII_TEST_RESULT(leaf.Connect(emptyDepth, "Texture", generate, "SceneDepth"));
+  XII_TEST_RESULT(leaf.Connect(normal, "Texture", generate, "NormalRoughness"));
+  XII_TEST_RESULT(leaf.Connect(signal, "Texture", temporal, "RawAO"));
+  XII_TEST_RESULT(leaf.Connect(depth, "Texture", temporal, "SceneDepth"));
+  XII_TEST_RESULT(leaf.Connect(normal, "Texture", temporal, "GBufferNormal"));
+  XII_TEST_RESULT(leaf.Connect(velocity, "Texture", temporal, "DilatedVelocityBuffer"));
+  for (auto operation : {generate, temporal})
+    for (auto pin : {"PerFrameCamera", "PerFrameGlobal"})
+      XII_TEST_RESULT(leaf.Connect(camera, pin, operation, pin));
+  const auto output = [&](xiiStringView name, xiiUInt32 source, xiiStringView pin) {
+    const auto node = leaf.AddPass(name, "xiiOpaqueTestExport");
+    XII_TEST_RESULT(leaf.Connect(source, pin, node, "Input"));
+    return leaf.m_Passes[node].m_Id;
+  };
+  const auto         generated = output("Generated AO", generate, "RawAO");
+  const auto         current   = output("Filtered AO", temporal, "StableAO");
+  const auto         previous  = output("Previous AO", temporal, "PreviousAO");
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  root.AddSubgraph("First AO instance", definition.m_Id);
+  root.AddSubgraph("Second AO instance", definition.m_Id);
+  const auto secondId = root.m_Passes[1].m_Id;
+  auto&      override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  override.m_Path.PushBack(leaf.m_Passes[signal].m_Id);
+  xiiClearTexturePass changed;
+  changed.m_Format = xiiGALResourceFormat::R8UNormalized;
+  changed.m_Color  = {0.75f, 0, 0, 0};
+  XII_TEST_RESULT(changed.GetProperties(override.m_Properties));
+  const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("AO instance histories", std::move(root));
+  xiiWorldDescription description("AO without world extraction");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera viewCamera;
+  viewCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView* views[2] = {};
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    module->CreateView("Independent AO view", views[i]);
+    views[i]->SetCamera(&viewCamera);
+    views[i]->SetViewport(i == 0 ? xiiRectFloat(0, 0, 10, 12) : xiiRectFloat(0, 0, 14, 8));
+    views[i]->SetRenderPipelineResource(resource);
+  }
+  xiiSharedPtr<xiiGALTexture> last[2][2];
+  for (xiiUInt32 frame = 0; frame < 6; ++frame)
+  {
+    if (frame == 2)
+    {
+      views[0]->SetViewport({0, 0, 16, 10});
+      views[0]->InvalidateTemporalHistory();
+    }
+    world.Update();
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      const auto& instance = views[view]->GetRenderPipelineInstance();
+      const auto* compiled = instance.GetPipeline();
+      if (!XII_TEST_BOOL(compiled != nullptr))
+        return;
+      XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet() && compiled->GetRuntimeFeatures().IsNoFlagSet());
+      XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+      bool waitsForHistory = false;
+      for (const auto& submission : views[view]->GetRenderGraph()->GetQueueSubmissions())
+        waitsForHistory |= !submission.m_WaitFences.IsEmpty();
+      XII_TEST_BOOL(waitsForHistory == (frame != 0 && !(view == 0 && frame == 2)));
+      xiiSharedPtr<xiiGALTexture> next[2];
+      for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
+      {
+        const auto& provenance = compiled->GetProvenance()[i];
+        if (provenance.m_Element != generated && provenance.m_Element != current && provenance.m_Element != previous)
+          continue;
+        const auto  occurrence  = provenance.m_InstancePath[0] == secondId ? 1U : 0U;
+        const auto* binding     = instance.GetOutputBinding(i, "Output");
+        const bool  hasPrevious = frame != 0 && !(view == 0 && frame == 2);
+        if (provenance.m_Element == previous && !hasPrevious)
+        {
+          XII_TEST_BOOL(binding && !binding->m_hTexture.IsValid());
+          continue;
+        }
+        const auto texture = binding ? views[view]->GetRenderGraph()->GetExportedTexture(binding->m_hTexture) : xiiSharedPtr<xiiGALTexture>();
+        if (!XII_TEST_BOOL(texture != nullptr))
+          return;
+        if (provenance.m_Element == current)
+        {
+          XII_TEST_BOOL(texture != last[view][occurrence]);
+          next[occurrence] = texture;
+        }
+        if (provenance.m_Element == previous)
+          XII_TEST_BOOL(texture == last[view][occurrence]);
+        CheckAmbientMask(environment, texture, provenance.m_Element == generated ? 1.0f : occurrence == 0 ? 0.25f :
+                                                                                                            0.75f);
+      }
+      XII_TEST_BOOL(next[0] && next[1] && next[0] != next[1]);
+      last[view][0] = next[0];
+      last[view][1] = next[1];
+    }
+    XII_TEST_BOOL(last[0][0] != last[1][0] && last[0][1] != last[1][1]);
+  }
+  for (auto* view : views)
+    module->DestroyView(view->GetHandle());
 }
