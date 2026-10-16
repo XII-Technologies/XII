@@ -202,3 +202,39 @@ warnings remain, and D3D12 is excluded.
 This removes the serialization/configuration gap needed by authored pin settings;
 it does not yet close render-pin configuration or the other outstanding architecture
 gates above. No new performance benchmark was run for this authoring/loading change.
+
+## Connected-pin editing checkpoint
+
+`xiiNodeCommandAccessor` now disconnects native edges while retaining their document
+objects during pin edits. Compatible connections reconnect using their original
+object, UUID, reflected type and custom authored properties. Connections whose pins
+disappear or become incompatible are removed through the same undo transaction;
+undo restores the original objects before reconnecting. Adjacency lists are
+snapshotted before disconnecting, so fan-out edits do not iterate compacted storage.
+The generic Qt scene preserves document selection while connection visuals are
+temporarily removed and restores it when the connection is rebuilt.
+
+The Qt regression uses a reflected connection with custom weight/label properties,
+two outgoing edges, connected pin-setting edits, undo/redo, dynamic input removal,
+deletion and restoration. Original connection IDs and authored values survive.
+All 28 ToolsFoundation and 14 EditorFramework subtests pass; the affected libraries,
+test targets and EditorPluginVisualScript build. VisualScript continues to receive
+its existing disconnect/connect node events for type inference. Evidence is in
+`Workspace/pipeline-connection-identity-*.log` and `pipeline-editor-race-build.log`.
+
+The first full Qt run exposed a screenshot synchronization gap: both the grid-on
+and grid-off captures contained grid lines. Captures now queue the document redraw
+(including scene settings) before view and screenshot messages, replacing timed
+grid delays with IPC ordering. The original image assertions remain unchanged;
+the final grid-off capture has no grid and the complete viewport test passes.
+The same run encountered the curator's file/document association assertion.
+Asset metadata now rejects invalid persistent IDs and retires derived dependencies
+and transform state when publication cannot associate the watched file. Normal
+asset replacement, removal, dependency and processor workflows pass in the full
+Qt suite; the particular read/publication race was not forced deterministically.
+
+No new performance benchmark was run. These changes prepare correct generic
+connected-pin authoring, but render-specific persistent pin objects and constraints
+still need to be connected to that infrastructure. All other open gates remain in
+scope, including typed overrides, focused operation passes, authored subgraphs and
+the final compiler/runtime audit. D3D12 remains excluded.
