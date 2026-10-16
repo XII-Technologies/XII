@@ -204,6 +204,10 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     cullingProperties.Insert("UseViewSelection", false);
     cullingProperties.Insert("VisibilityMask", 0x42U);
     uploadDefinition.AddPass("Camera culling inputs", "xiiVisibilityViewPass", cullingProperties);
+    uploadDefinition.AddPass("Empty work", "xiiCounterResetPass");
+    xiiVariantDictionary counterProperties;
+    counterProperties.Insert("Value", 17U);
+    uploadDefinition.AddPass("Seeded work", "xiiCounterResetPass", counterProperties);
     xiiCamera cullingCamera;
     cullingCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
 
@@ -246,11 +250,24 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
         builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(2, "MeshletMetadata")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(3, "SurfaceMaterials")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "Candidates")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "Candidates")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(5, "Counter")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(6, "Counter")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
       graph.EndSetup();
       if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphs[camera].GetBlackboard(), &cache)))
         return nullptr;
 
+
+      const auto empty  = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(5, "Counter")->m_hBuffer);
+      const auto seeded = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(6, "Counter")->m_hBuffer);
+      XII_TEST_BOOL(empty && seeded && empty != seeded);
+      xiiUInt32 count = xiiInvalidIndex;
+      if (!ReadNativeRecord(*environment.GetDevice(), empty.Borrow(), count))
+        return nullptr;
+      XII_TEST_INT(count, 0);
+      if (!ReadNativeRecord(*environment.GetDevice(), seeded.Borrow(), count))
+        return nullptr;
+      XII_TEST_INT(count, 17);
       xiiGpuVisibilityView snapshot;
       const auto           parameters = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer);
       if (!ReadNativeRecord(*environment.GetDevice(), parameters.Borrow(), snapshot))
