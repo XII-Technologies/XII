@@ -23,44 +23,10 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 
 namespace
 {
-  template <typename T>
-  bool ReadNativeRecord(xiiGALDevice& device, xiiGALBuffer* source, T& value)
-  {
-    if (!XII_TEST_BOOL(source != nullptr))
-      return false;
-    xiiGALBufferCreationDescription description;
-    description.m_uiSize         = sizeof(T);
-    description.m_Usage          = xiiGALResourceUsage::Staging;
-    description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
-    auto staging                 = device.CreateBuffer(description);
-    auto commands                = device.CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-    if (!XII_TEST_BOOL(staging && commands))
-      return false;
-    commands->Begin();
-    const auto previous = source->GetResourceState();
-    commands->CopyBufferRegion(source, 0, staging.Borrow(), 0, sizeof(T));
-    xiiGALStateTransitionDescription transition;
-    transition.m_pResource       = source;
-    transition.m_NewState        = previous;
-    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
-    commands->TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
-    commands->End();
-    auto* queue = device.GetCommandQueue();
-    queue->WaitForFenceValue(queue->Submit(commands));
-    commands->Begin();
-    void*      mapped = nullptr;
-    const auto result = commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, mapped);
-    if (result.Succeeded() && mapped)
-      xiiMemoryUtils::Copy(&value, static_cast<const T*>(mapped), 1);
-    if (result.Succeeded())
-      commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read).AssertSuccess();
-    commands->End();
-    return XII_TEST_RESULT(result) && XII_TEST_BOOL(mapped != nullptr);
-  }
-
   class WorldReloadLoader : public xiiResourceLoaderFromMemory
   {
   public:
@@ -262,15 +228,15 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       const auto seeded = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(6, "Counter")->m_hBuffer);
       XII_TEST_BOOL(empty && seeded && empty != seeded);
       xiiUInt32 count = xiiInvalidIndex;
-      if (!ReadNativeRecord(*environment.GetDevice(), empty.Borrow(), count))
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), empty.Borrow(), 0, count))
         return nullptr;
       XII_TEST_INT(count, 0);
-      if (!ReadNativeRecord(*environment.GetDevice(), seeded.Borrow(), count))
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), seeded.Borrow(), 0, count))
         return nullptr;
       XII_TEST_INT(count, 17);
       xiiGpuVisibilityView snapshot;
       const auto           parameters = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer);
-      if (!ReadNativeRecord(*environment.GetDevice(), parameters.Borrow(), snapshot))
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), parameters.Borrow(), 0, snapshot))
         return nullptr;
       XII_TEST_INT(snapshot.m_uiInstanceCount, 1);
       XII_TEST_INT(snapshot.m_uiVisibilityMask, 0x42);
@@ -278,7 +244,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       XII_TEST_FLOAT(snapshot.m_ViewportAndHiZ.x, 16, 0);
       xiiGpuSceneInstance record;
       const auto          result = graph.GetExportedBuffer(uploaded.m_Instances);
-      if (!ReadNativeRecord(*environment.GetDevice(), result.Borrow(), record))
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), result.Borrow(), 0, record))
         return nullptr;
       XII_TEST_INT(record.m_uiObjectId, identity);
       XII_TEST_FLOAT(record.m_GlobalTransform.GetTranslationVector().x, instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 0);

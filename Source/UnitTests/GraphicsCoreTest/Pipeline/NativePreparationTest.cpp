@@ -3,7 +3,10 @@
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/BufferHistoryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/LodHistoryResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
@@ -86,4 +89,38 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentCounterConfiguration)
   const auto& pin = pins[copy.m_Counter.GetBindingIndex()];
   XII_TEST_BOOL(!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer);
   XII_TEST_BOOL(pin.m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitLodHistoryTopology)
+{
+  xiiInstanceCullPass    cull;
+  xiiLodHistoryResetPass reset;
+  xiiBufferHistoryPass   history;
+  for (xiiRenderPipelinePass* pass : {static_cast<xiiRenderPipelinePass*>(&cull), static_cast<xiiRenderPipelinePass*>(&reset), static_cast<xiiRenderPipelinePass*>(&history)})
+  {
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    pass->GetPins(pins);
+    XII_TEST_RESULT(pass->InitializePinBindings(pins));
+    XII_TEST_BOOL(pass->GetExtractionRequirements().IsNoFlagSet() && pass->GetRuntimeFeatures().IsNoFlagSet());
+    XII_TEST_BOOL(pass->GetDynamicRTTI()->FindPropertyByName("Stage") == nullptr);
+  }
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Cull supplied instances", "xiiInstanceCullPass");
+  definition.AddPass("Retain LOD choices", "xiiBufferHistoryPass");
+  XII_TEST_RESULT(definition.Connect(0, "LodHistory", 1, "Buffer"));
+  XII_TEST_RESULT(definition.Connect(1, "PreviousBuffer", 0, "PreviousLodHistory"));
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  cull.GetPins(pins);
+  for (const auto& pin : pins)
+    if (pin.m_bInput && pin.m_sName != "PreviousLodHistory" && pin.m_Type == xiiRenderPipelinePin::Buffer)
+      definition.m_Interface.PushBack({pin.m_sName, true, definition.m_Passes[0].m_Id, pin.m_sName});
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, compiled));
+  if (!compiled)
+    return;
+  XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 2);
+  auto intraFrame                        = definition;
+  intraFrame.m_Connections[1].m_uiSource = 0;
+  intraFrame.m_Connections[1].m_sOutput  = "LodHistory";
+  XII_TEST_BOOL(xiiRenderPipeline::Compile(intraFrame, compiled).Failed());
 }
