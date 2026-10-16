@@ -74,12 +74,6 @@ struct xiiLightingDataUploadData
   xiiRenderGraphBufferHandle m_hLightingDataReady; ///< UAV out token written after persistent lighting buffers have been uploaded.
 };
 
-struct xiiOcclusionReadbackData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt32 m_uiReadSlot = 0; ///< Index into the 3-frame ring of staging buffers to read from this frame (the one written by the GPU 2 frames ago).
-};
 
 struct xiiFrustumCullInstanceBounds
 {

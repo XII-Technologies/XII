@@ -40,11 +40,12 @@ namespace
   }
 } // namespace
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 2, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 3, xiiRTTINoAllocator)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_ENUM_ACCESSOR_PROPERTY("RenderPath", xiiRenderPath, GetRenderPath, SetRenderPath),
+      XII_ACCESSOR_PROPERTY("RenderScale", GetRenderScale, SetRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -158,21 +159,21 @@ xiiSharedPtr<xiiGALTexture> xiiView::GetSensorOutputTexture() const
 
 void xiiView::SetRenderScale(float fRenderScale)
 {
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+  m_DynamicResolution.m_fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
 
   float fDynamicMin = 0.1f;
   float fDynamicMax = 1.0f;
-  ComputeDynamicScaleBounds(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale, fDynamicMin, fDynamicMax);
+  ComputeDynamicScaleBounds(m_DynamicResolution.m_fRenderScale, fDynamicMin, fDynamicMax);
 
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale, fDynamicMin, fDynamicMax);
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale, fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   UpdateRenderResolutionState();
 }
 
 float xiiView::GetRenderScale() const
 {
-  return GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale;
+  return m_DynamicResolution.m_fRenderScale;
 }
 
 void xiiView::UpdateCachedMatrices() const
@@ -241,13 +242,13 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
 
 void xiiView::UpdateRenderResolutionState() const
 {
-  const float fRenderScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
+  const float fRenderScale = xiiMath::Clamp(m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
 
   float fDynamicMin = 0.1f;
   float fDynamicMax = 1.0f;
   ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
 
-  const float fDynamicScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
+  const float fDynamicScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   m_Data.m_fRenderResolutionScale = xiiMath::Clamp(fDynamicScale * fRenderScale, 0.1f, 1.0f);
 
@@ -268,10 +269,9 @@ void xiiView::RunDynamicResolutionPID()
     fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
   }
 
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fLastGpuFrameTimeMs = fGpuTimeMs;
 
   // PID controller.
-  const float fRenderScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
+  const float fRenderScale = xiiMath::Clamp(m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
   float       fDynamicMin  = 0.1f;
   float       fDynamicMax  = 1.0f;
   ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
@@ -282,18 +282,18 @@ void xiiView::RunDynamicResolutionPID()
   const float fError = (fTarget - fGpuTimeMs) / fTarget;
 
   // Anti-windup clamp on integral.
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fErrorIntegral = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fErrorIntegral + fError * fDeltaTime, -1.0f, 1.0f);
+  m_DynamicResolution.m_fErrorIntegral = xiiMath::Clamp(m_DynamicResolution.m_fErrorIntegral + fError * fDeltaTime, -1.0f, 1.0f);
 
-  const float fDerivative = (fError - GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fPreviousError) / xiiMath::Max(fDeltaTime, 0.001f);
-  const float fPID        = 0.35f * fError + 0.05f * GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fErrorIntegral + 0.15f * fDerivative;
+  const float fDerivative = (fError - m_DynamicResolution.m_fPreviousError) / xiiMath::Max(fDeltaTime, 0.001f);
+  const float fPID        = 0.35f * fError + 0.05f * m_DynamicResolution.m_fErrorIntegral + 0.15f * fDerivative;
 
   // Clamp per-frame delta to avoid oscillation.
-  const float fDesired = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale + fPID, fDynamicMin, fDynamicMax);
-  const float fDelta   = xiiMath::Clamp(fDesired - GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale, -0.10f, 0.10f);
+  const float fDesired = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale + fPID, fDynamicMin, fDynamicMax);
+  const float fDelta   = xiiMath::Clamp(fDesired - m_DynamicResolution.m_fCurrentScale, -0.10f, 0.10f);
 
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale + fDelta, fDynamicMin, fDynamicMax);
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(xiiMath::Lerp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale, GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale, 0.20f), fDynamicMin, fDynamicMax);
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fPreviousError = fError;
+  m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale + fDelta, fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(xiiMath::Lerp(m_DynamicResolution.m_fSmoothedScale, m_DynamicResolution.m_fCurrentScale, 0.20f), fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fPreviousError = fError;
 
   UpdateRenderResolutionState();
 }

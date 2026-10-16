@@ -35,7 +35,6 @@
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
 
 class xiiView;
-struct xiiOcclusionReadbackData;
 struct xiiFrustumCullData;
 struct xiiLODSelectData;
 struct xiiInstanceUpdateData;
@@ -138,23 +137,9 @@ public:
   xiiDisplayOutputSettings                                               m_DisplayOutputSettings;
   struct Resources
   {
-    //  CPU PID state for dynamic resolution
-    struct DynamicResolution
-    {
-      float m_fCurrentScale       = 1.0f;
-      float m_fErrorIntegral      = 0.0f;
-      float m_fPreviousError      = 0.0f;
-      float m_fSmoothedScale      = 1.0f;
-      float m_fLastGpuFrameTimeMs = 0.0f; // resolved GPU time from profiler (2 frames ago)
-      float m_fRenderScale        = 1.0f; // camera/view scale baseline (1.0 = native).
-    } m_DynamicResolution;
-
     //  Stage 1 - Visibility & Setup
     struct VisibilityPasses
     {
-      static constexpr xiiUInt32 s_uiReadbackRingSize = 3U;
-      xiiSharedPtr<xiiGALBuffer> m_pOcclusionReadbackRing[s_uiReadbackRingSize];
-      xiiUInt32                  m_uiReadbackWriteSlot = 0U;
 
       xiiSharedPtr<xiiGALBuffer> m_pInstanceBoundsBuffer; // StructuredBuffer<InstanceBounds>
       xiiSharedPtr<xiiGALBuffer> m_pInstanceMatrixBuffer; // StructuredBuffer<float4x3>
@@ -349,8 +334,6 @@ private:
     xiiRenderGraphTextureHandle                                     hSceneDepth;
     xiiGpuSceneGBufferRasterDescription                             gpuRasterDescription;
   } m_Frame;
-  void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xiiRenderGraphPassContext& context);
 
   void SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& builder);
   void ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRenderGraphPassContext& context);

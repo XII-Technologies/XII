@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Core/World/World.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
@@ -34,6 +35,12 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ViewConstantSnapshots)
     cameras[index].LookAt({1.0f + index * 10.0f, 2, 3}, {2.0f + index * 10.0f, 2, 3}, {0, 0, 1});
     views[index]->SetCamera(&cameras[index]);
     views[index]->SetViewport({0, 0, 16, 16});
+    const auto* property = xiiGetStaticRTTI<xiiView>()->FindPropertyByName("RenderScale");
+    if (!XII_TEST_BOOL(property && property->GetCategory() == xiiPropertyCategory::Member))
+      return;
+    xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), views[index], index ? 0.75f : 0.5f);
+    XII_TEST_FLOAT(views[index]->GetRenderScale(), index ? 0.75f : 0.5f, 0.0001f);
+    XII_TEST_INT(views[index]->GetRenderResolutionWidth(), index ? 12 : 8);
   }
   xiiRenderGraphFrame frame;
   if (!XII_TEST_RESULT(frame.Begin(2)))
@@ -104,7 +111,11 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ViewConstantSnapshots)
         XII_TEST_FLOAT(camera.m_CameraPositionAndNearPlane.w, 0.25f, 0.0001f);
       }
       else
-        XII_TEST_INT(static_cast<const xiiFrameGlobalConstants*>(mapped)->m_uiFrameIndex, frame.GetFrameIndex());
+      {
+        const auto& global = *static_cast<const xiiFrameGlobalConstants*>(mapped);
+        XII_TEST_INT(global.m_uiFrameIndex, frame.GetFrameIndex());
+        XII_TEST_FLOAT(global.m_RenderScaleJitter.x, index == 2 ? 0.5f : 0.75f, 0.0001f);
+      }
       XII_TEST_RESULT(commands->UnmapBuffer(buffer.Borrow(), xiiGALMapType::Read));
     }
     commands->End();

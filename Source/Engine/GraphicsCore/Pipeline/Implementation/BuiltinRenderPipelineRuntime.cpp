@@ -228,7 +228,6 @@ void xiiBuiltinRenderPipelineRuntime::BuildVisibility(xiiRenderGraph& graph, xii
   graph.AddPass<xiiLightingDataUploadData>("LightingDataUpload", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupLightingDataUpload, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteLightingDataUpload, this));
 
   // Visibility preparation passes, which produce data consumed by the main render passes in later stages.
-  graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteOcclusionReadback, this));
   graph.AddPass<xiiFrustumCullData>("FrustumCulling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupFrustumCull, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteFrustumCull, this));
   graph.AddPass<xiiLODSelectData>("LODSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupLODSelect, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteLODSelect, this));
   graph.AddPass<xiiInstanceUpdateData>("InstanceUpdate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupInstanceUpdate, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteInstanceUpdate, this));

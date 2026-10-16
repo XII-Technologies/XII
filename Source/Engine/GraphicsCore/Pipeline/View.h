@@ -270,6 +270,16 @@ private:
 
   mutable xiiViewData m_Data;
 
+  /// Camera-dependent resolution policy and feedback belong to this view, not a graph occurrence.
+  struct DynamicResolution
+  {
+    float m_fCurrentScale  = 1.0f;
+    float m_fErrorIntegral = 0.0f;
+    float m_fPreviousError = 0.0f;
+    float m_fSmoothedScale = 1.0f;
+    float m_fRenderScale   = 1.0f;
+  } m_DynamicResolution;
+
   xiiRenderGraphContext         m_RenderGraphContext;
   xiiDynamicArray<xiiUInt32>    m_GpuInstanceSelection;
   xiiGpuVisibilityContextHandle m_hGpuVisibilityContext;

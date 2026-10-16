@@ -42,47 +42,6 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLightingDataUpload(const xiiLightin
   cmd.EndDebugGroup();
 }
 
-////////// GPU occlusion readback //////////
-//
-// Reads the oldest staging buffer in the 3-frame ring (from 2 frames ago).
-// This provides the GPU frame time used by the PID (the result has already been applied by RunDynamicResolutionPID before BeginSetup, so this pass simply keeps the readback ring rotating).
-
-void xiiBuiltinRenderPipelineRuntime::SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRenderGraphBuilder& builder)
-{
-  data.m_uiReadSlot = (m_Resources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1U) % Resources::VisibilityPasses::s_uiReadbackRingSize;
-
-  builder.SetPassSideEffects(true);
-  builder.SetPassAllowMerge(false);
-}
-
-void xiiBuiltinRenderPipelineRuntime::ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xiiRenderGraphPassContext& context)
-{
-  xiiSharedPtr<xiiGALBuffer>& pStaging = m_Resources.m_VisibilityPasses.m_pOcclusionReadbackRing[data.m_uiReadSlot];
-
-  if (pStaging == nullptr)
-  {
-    // Buffer not yet populated - skip.
-    // Advance the write slot so the next stage can write into it next frame.
-    m_Resources.m_VisibilityPasses.m_uiReadbackWriteSlot = (m_Resources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1U) % Resources::VisibilityPasses::s_uiReadbackRingSize;
-    return;
-  }
-
-  // Map the staging buffer (CPU readable, GPU wrote 2 frames ago).
-  xiiGALCommandList& cmd   = context.GetCommandList();
-  void*              pData = nullptr;
-  if (cmd.MapBuffer(pStaging, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pData).Succeeded())
-  {
-    // The staging buffer holds a single float: total GPU frame time in nanoseconds.
-    // (Written by the previous frame's FrameTotal sentinel query readback.)
-    // We don't store it here, the profiler's GetPassDurationMs("FrameTotal") path already does it.
-    xiiLog::Debug("Occlusion readback: GPU frame time from 2 frames ago = {0} ms", *static_cast<float*>(pData) / 1'000'000.0f);
-    cmd.UnmapBuffer(pStaging, xiiGALMapType::Read).AssertSuccess("Failed to unmap occlusion readback buffer.");
-  }
-
-  // Advance ring.
-  m_Resources.m_VisibilityPasses.m_uiReadbackWriteSlot = (m_Resources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1U) % Resources::VisibilityPasses::s_uiReadbackRingSize;
-}
-
 ////////// GPU Frustum Culling //////////
 //
 // Culls the current frame's extracted mesh packets against the view frustum on the GPU.
