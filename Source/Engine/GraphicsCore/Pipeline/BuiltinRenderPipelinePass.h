@@ -10,6 +10,9 @@ class XII_GRAPHICSCORE_DLL xiiBuiltinRenderPipelinePass : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiBuiltinRenderPipelinePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureOutputPin        m_OutputRTFinalGI{xiiGALResourceFormat::RGBA16Float, true};
+  xiiRenderPipelineTextureOutputPin        m_OutputRTFinalReflections{xiiGALResourceFormat::RGBA16Float, true};
+  xiiRenderPipelineTextureOutputPin        m_OutputVolumetricScattering{xiiGALResourceFormat::RGBA16Float, true};
   xiiString                                m_sStage = "PrepareFrame";
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override;
   xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override;

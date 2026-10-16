@@ -62,15 +62,13 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareShadowResources()
   return ensure(shadows.m_pLocalShadowAtlas, xiiGALResourceDimension::Texture2D, localSize, localSize, 1U, "Local Shadow Atlas");
 }
 
-xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringView stage)
+xiiResult xiiBuiltinRenderPipelineRuntime::PrepareLightingHistory()
 {
-  if (stage != "Lighting" && stage != "OpaqueComposition")
-    return XII_SUCCESS;
   const xiiUInt32 width  = m_View.GetRenderResolutionWidth();
   const xiiUInt32 height = m_View.GetRenderResolutionHeight();
   if (!xiiGALDevice::HasDefaultDevice())
   {
-    xiiLog::Error("Failed to allocate temporal resources for '{}' without a graphics device.", stage);
+    xiiLog::Error("Failed to allocate lighting history without a graphics device.");
     return XII_FAILURE;
   }
   const auto device = xiiGALDevice::GetDefaultDevice();
@@ -97,7 +95,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringVie
     return XII_SUCCESS;
   };
   auto& lighting = m_Resources.m_LightingPasses;
-  if (stage == "Lighting")
   {
     auto& shadows     = m_Resources.m_ShadowPasses;
     auto& preparation = m_Resources.m_LightingPrepPasses;
@@ -115,10 +112,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringVie
     XII_SUCCEED_OR_RETURN(ensure(lighting.m_pRTReflectionIdentityHistory, xiiGALResourceFormat::RG32UInt, lighting.m_bRTReflectionHistoryValid, "Reflection identity"));
     XII_SUCCEED_OR_RETURN(ensure(lighting.m_pVolumetricHistory, xiiGALResourceFormat::RGBA16Float, lighting.m_bVolumetricHistoryValid, "Volumetric scattering"));
   }
-  else if (stage == "OpaqueComposition")
-  {
-    XII_SUCCEED_OR_RETURN(ensure(lighting.m_pSSRHistory, xiiGALResourceFormat::RGBA16Float, lighting.m_bSSRHistoryValid, "Screen-space reflection"));
-    XII_SUCCEED_OR_RETURN(ensure(lighting.m_pSSRIdentityHistory, xiiGALResourceFormat::RG32UInt, lighting.m_bSSRHistoryValid, "Screen-space reflection identity"));
-  }
+
   return XII_SUCCESS;
 }

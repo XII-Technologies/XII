@@ -14,4 +14,9 @@ inline xiiUuid xiiDebugVisualizationDefinitionId()
   return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.DebugVisualization");
 }
 
+inline xiiUuid xiiOpaqueCompositionDefinitionId()
+{
+  return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.OpaqueComposition");
+}
+
 void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor);

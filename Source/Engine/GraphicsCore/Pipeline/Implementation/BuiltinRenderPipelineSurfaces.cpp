@@ -5,48 +5,6 @@
 
 using namespace xiiBuiltinPipelineUtils;
 
-void xiiBuiltinRenderPipelineRuntime::SetupOpaqueLightingComposite(xiiOpaqueLightingCompositeData& data, xiiRenderGraphBuilder& builder)
-{
-  data.m_hDirectLighting       = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hIndirectLighting     = builder.ReadTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferEmissive      = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferEmissive, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hRayTracedFinalGI     = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalGI, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVolumetricScattering = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScattering, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALTextureCreationDescription description;
-  description.m_Type        = xiiGALResourceDimension::Texture2D;
-  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = m_View.GetRenderResolutionWidth();
-  description.m_Size.height = m_View.GetRenderResolutionHeight();
-  description.m_uiMipLevels = 1U;
-  description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-  description.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hHDRSceneColor     = builder.WriteTexture(xiiRGBlackboardKeys::k_HDRSceneColor, description, xiiGALResourceStateFlags::UnorderedAccess);
-
-  builder.SetPassAllowMerge(false);
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(m_Resources.m_ForwardPasses.m_pOpaqueLightingCompositePipeline, "Shaders/Pipeline/OpaqueComposite.xiiShader");
-}
-
-void xiiBuiltinRenderPipelineRuntime::ExecuteOpaqueLightingComposite(const xiiOpaqueLightingCompositeData& data, xiiRenderGraphPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("OpaqueLightingComposite");
-  {
-    cmd.SetPipelineState(m_Resources.m_ForwardPasses.m_pOpaqueLightingCompositePipeline);
-    BindFrameResources(cmd);
-    cmd.ResolveAndSetShaderResourceTextureView("g_DirectLight", context.GetTexture(data.m_hDirectLighting)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_IndirectLight", context.GetTexture(data.m_hIndirectLighting)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_Emissive", context.GetTexture(data.m_hGBufferEmissive)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_Volumetric", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_RayTracedGI", context.GetTexture(data.m_hRayTracedFinalGI)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_HDROut", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-  }
-  cmd.EndDebugGroup();
-}
-
 
 
 ////////// GPU Particle Simulate Data //////////
@@ -543,46 +501,5 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteWeightedBlendedOIT(const xiiWeighte
   cmd.EndDebugGroup();
 }
 
-////////// GPU Screen-Space Global Illumination Data //////////
-//
-void xiiBuiltinRenderPipelineRuntime::SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRenderGraphBuilder& builder)
-{
-  const xiiUInt32 uiRenderWidth  = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiRenderHeight = m_View.GetRenderResolutionHeight();
 
-  if (!m_Resources.m_ScreenSpacePasses.m_pPlanarReflectionTarget)
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size.width  = xiiMath::Max(1U, uiRenderWidth / 2U);
-    description.m_Size.height = xiiMath::Max(1U, uiRenderHeight / 2U);
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    m_Resources.m_ScreenSpacePasses.m_pPlanarReflectionTarget = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-  }
-
-  data.m_hPlanarTarget = builder.ImportTexture(xiiRGBlackboardKeys::k_PlanarReflectionMap, m_Resources.m_ScreenSpacePasses.m_pPlanarReflectionTarget, m_Resources.m_ScreenSpacePasses.m_pPlanarReflectionTarget->GetResourceState());
-  data.m_hPlanarTarget = builder.WriteTexture(data.m_hPlanarTarget, xiiGALResourceStateFlags::RenderTarget);
-
-  builder.SetPassSideEffects(true);
-  builder.SetPassAllowMerge(false);
-}
-
-void xiiBuiltinRenderPipelineRuntime::ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRenderGraphPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("PlanarReflections");
-  {
-    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hPlanarTarget)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
-    // Secondary view reflection rendering is scheduled by the render world module.
-  }
-  cmd.EndDebugGroup();
-}
-
-////////// GPU Luminance Histogram Data //////////
-//
-// Collects all GPU resources related to luminance histogram generation.
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_BuiltinRenderPipelineSurfaces);

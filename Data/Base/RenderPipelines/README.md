@@ -9,6 +9,9 @@ by the existing `xiiRenderPipelineContext` asset compiler.
 | --- | --- |
 | Deferred | Existing complete scene rendering stack. |
 | EditorScene | Scene rendering with mesh picking, selection and shape icons. |
+| OpaqueComposition | Opaque lighting, screen-space reflection trace and temporal reuse, and hybrid reflection composition. |
+| ScreenEffects | Diffuse screen-space GI, refraction, atmosphere composition and sensor output. |
+| DebugVisualization | Surface queries, channel visualization and debug overlays. |
 | TexturePreview | Texture inspection through the existing reflected preview pass. |
 | TextureCubePreview | Cube texture inspection with independently authored pass configuration. |
 
@@ -34,7 +37,18 @@ settings are lowered into immutable execution metadata rather than document
 objects in each runtime pass. The production library regression checks every
 pin's backing document identity and reproduces the packaged bytes.
 
-Each source also owns reflected pipeline settings. These SDK pipelines declare
-single-sample outputs; Deferred and EditorScene require compute support. Output
-format remains unconstrained so compatible view targets can choose their format.
+Each source also owns reflected pipeline settings. Scene and texture preview assets
+declare single-sample view outputs; reusable subgraphs leave the view-output contract
+unconstrained and specify requirements on individual resource pins. Scene assets and
+the three operation subgraphs require compute support. Output format remains
+unconstrained so compatible view targets can choose their format.
 These contracts are validated before pass construction and do not choose topology.
+
+OpaqueComposition is authored from independent typed-member-pin operations. It
+preserves the former interface, including optional supplied reflection signals,
+through explicit selection nodes. Camera/frame and lighting-result connections are
+ordinary graph edges. SSR radiance and identity history belong to each temporal
+pass occurrence and view. The optional PlanarReflectionMap output is an empty
+half-resolution image from a generic clear operation; this is not an implemented
+secondary-view planar reflection renderer. Four former hair/water/SSS/eye
+placeholders had no initialized pipelines or executable work and are removed.

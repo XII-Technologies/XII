@@ -172,21 +172,19 @@ class xiiPipelineHistoryCheck : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiPipelineHistoryCheck, xiiRenderPipelinePass);
 
 public:
-  static constexpr xiiUInt32 s_uiHistoryCount               = 9;
-  xiiGALTexture*             m_LastOutput[s_uiHistoryCount] = {}; ///< Borrowed from the live view; this test never resizes it.
-  xiiGALTexture*             m_GIAtlases[2]                 = {};
-  xiiGALBuffer*              m_pRadiancePool                = nullptr;
-  xiiGALBuffer*              m_pProbeStates                 = nullptr;
-  xiiGALBuffer*              m_pClipmapLevels               = nullptr;
-  xiiUInt32                  m_uiExecutions                 = 0;
-  xiiUInt64                  m_uiLastFrame                  = 0;
+  xiiRenderPipelineTextureInputPin m_PreviousTAA{xiiGALResourceFormat::Unknown, true};
+  xiiRenderPipelineTextureInputPin m_CurrentTAA;
+  xiiRenderPipelineTextureInputPin m_PreviousSSR{xiiGALResourceFormat::Unknown, true};
+  xiiRenderPipelineTextureInputPin m_CurrentSSR;
+  static constexpr xiiUInt32       s_uiHistoryCount               = 9;
+  xiiGALTexture*                   m_LastOutput[s_uiHistoryCount] = {}; ///< Borrowed from the live view; this test never resizes it.
+  xiiGALTexture*                   m_GIAtlases[2]                 = {};
+  xiiGALBuffer*                    m_pRadiancePool                = nullptr;
+  xiiGALBuffer*                    m_pProbeStates                 = nullptr;
+  xiiGALBuffer*                    m_pClipmapLevels               = nullptr;
+  xiiUInt32                        m_uiExecutions                 = 0;
+  xiiUInt64                        m_uiLastFrame                  = 0;
 
-  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
-  {
-    pins.PushBack({"Before", xiiRenderPipelinePin::Order, true});
-    pins.PushBack({"PreviousTAA", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"CurrentTAA", xiiRenderPipelinePin::Texture, true});
-  }
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
     static constexpr xiiStringView names[s_uiHistoryCount][2] = {
@@ -196,9 +194,9 @@ public:
       {"ReSTIR GI Previous Sample", "ReSTIR GI Current Sample"},
       {"RTGI Previous History", "RTFinalGI"},
       {"RT Reflection Previous History", "RTFinalReflections"},
-      {"SSR Previous History", "SSRTerm"},
+      {"", ""},
       {"Volumetric Scattering Previous", "VolumetricScattering"},
-      {"TAAHistory", "TAAResolved"},
+      {"", ""},
     };
     struct Bindings
     {
@@ -211,9 +209,11 @@ public:
     };
     // All names must exist. An absent producer is a test failure, not skipped coverage.
     for (xiiUInt32 index = 0; index + 1 < s_uiHistoryCount; ++index)
-      if (!context.m_Graph.FindTexture(names[index][0]).IsValid() || !context.m_Graph.FindTexture(names[index][1]).IsValid())
+      if (index != 6 && (!context.m_Graph.FindTexture(names[index][0]).IsValid() || !context.m_Graph.FindTexture(names[index][1]).IsValid()))
         return XII_FAILURE;
-    if (!context.GetInputTexture("CurrentTAA").IsValid() || (m_uiExecutions && !context.GetInputTexture("PreviousTAA").IsValid()))
+    if (!context.GetInputTexture(m_CurrentTAA).IsValid() || (m_uiExecutions && !context.GetInputTexture(m_PreviousTAA).IsValid()))
+      return XII_FAILURE;
+    if (!context.GetInputTexture(m_CurrentSSR).IsValid() || (m_uiExecutions && !context.GetInputTexture(m_PreviousSSR).IsValid()))
       return XII_FAILURE;
     if (!context.m_Graph.FindTexture("DDGIProbeIrradianceAtlas").IsValid() || !context.m_Graph.FindTexture("DDGIProbeDistanceAtlas").IsValid() || !context.m_Graph.FindBuffer("SparseVoxelRadiancePool").IsValid())
       return XII_FAILURE;
@@ -225,8 +225,8 @@ public:
         data.m_RadiancePool = builder.ReadBuffer(context.m_Graph.FindBuffer("SparseVoxelRadiancePool"), xiiGALResourceStateFlags::ShaderResource);
         for (xiiUInt32 i = 0; i < s_uiHistoryCount; ++i)
         {
-          const auto previous = i + 1 == s_uiHistoryCount ? context.GetInputTexture("PreviousTAA") : context.m_Graph.FindTexture(names[i][0]);
-          const auto current = i + 1 == s_uiHistoryCount ? context.GetInputTexture("CurrentTAA") : context.m_Graph.FindTexture(names[i][1]);
+          const auto previous = i + 1 == s_uiHistoryCount ? context.GetInputTexture(m_PreviousTAA) : i == 6 ? context.GetInputTexture(m_PreviousSSR) : context.m_Graph.FindTexture(names[i][0]);
+          const auto current = i + 1 == s_uiHistoryCount ? context.GetInputTexture(m_CurrentTAA) : i == 6 ? context.GetInputTexture(m_CurrentSSR) : context.m_Graph.FindTexture(names[i][1]);
           if (previous.IsValid()) data.m_Previous[i] = builder.ReadTexture(previous, xiiGALResourceStateFlags::ShaderResource);
           data.m_Current[i] = builder.ReadTexture(current, xiiGALResourceStateFlags::ShaderResource);
         } }, [this](const Bindings& data, xiiRenderGraphPassContext& execute) {
@@ -261,6 +261,15 @@ public:
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineHistoryCheck, 1, xiiRTTIDefaultAllocator<xiiPipelineHistoryCheck>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("PreviousTAA", m_PreviousTAA)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("CurrentTAA", m_CurrentTAA)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("PreviousSSR", m_PreviousSSR)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("CurrentSSR", m_CurrentSSR)->AddFlags(xiiPropertyFlags::ReadOnly),
+    } XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
@@ -298,6 +307,11 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
     {
       XII_TEST_RESULT(definition.Connect(index, "PreviousColor", inspect, "PreviousTAA"));
       XII_TEST_RESULT(definition.Connect(index, "TAAResolved", inspect, "CurrentTAA"));
+    }
+    else if (definition.m_Passes[index].m_sType == "xiiScreenSpaceReflectionsTemporalPass")
+    {
+      XII_TEST_RESULT(definition.Connect(index, "PreviousReflection", inspect, "PreviousSSR"));
+      XII_TEST_RESULT(definition.Connect(index, "SSRTerm", inspect, "CurrentSSR"));
     }
   const auto             pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Interleaved default pipeline history", std::move(definition));
   xiiCamera              cameras[2];

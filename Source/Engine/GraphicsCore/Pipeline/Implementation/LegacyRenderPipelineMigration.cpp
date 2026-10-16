@@ -92,6 +92,45 @@ namespace
     return changed;
   }
 
+  constexpr xiiStringView s_OpaqueResource = "RenderPipelines/OpaqueComposition.xiiBinRenderPipeline"_xiisv;
+
+  template <typename Nodes, typename AddEdge>
+  bool ConvertOpaque(Nodes& nodes, AddEdge add)
+  {
+    xiiUInt32 lighting = xiiInvalidIndex, visibility = xiiInvalidIndex;
+    for (xiiUInt32 index = 0; index < nodes.GetCount(); ++index)
+    {
+      if (IsLegacyStage(nodes[index].m_sType, nodes[index].m_Properties, "Lighting"))
+        lighting = index;
+      if (IsLegacyStage(nodes[index].m_sType, nodes[index].m_Properties, "Visibility"))
+        visibility = index;
+    }
+    bool changed = false;
+    for (xiiUInt32 index = 0; index < nodes.GetCount(); ++index)
+    {
+      auto& node = nodes[index];
+      if (!IsLegacyStage(node.m_sType, node.m_Properties, "OpaqueComposition"))
+        continue;
+      xiiVariant pins;
+      const bool hasPins = node.m_Properties.TryGetValue("PinConfigurations", pins);
+      node.m_Properties.Clear();
+      if (hasPins)
+        node.m_Properties.Insert("PinConfigurations", pins);
+      node.m_sType.Clear();
+      node.m_Definition = xiiOpaqueCompositionDefinitionId();
+      changed           = true;
+      if (lighting != xiiInvalidIndex)
+        for (xiiStringView port : {"RTFinalGI", "RTFinalReflections", "VolumetricScattering"})
+          add(lighting, index, port);
+      if (visibility != xiiInvalidIndex)
+      {
+        add(visibility, index, "PerFrameCamera");
+        add(visibility, index, "PerFrameGlobal");
+      }
+    }
+    return changed;
+  }
+
   class DebugVisualizationSourcePatch : public xiiGraphPatch
   {
   public:
@@ -169,6 +208,85 @@ namespace
     }
   };
   static DebugVisualizationConnectionsPatch s_DebugConnectionsPatch;
+
+  class OpaqueCompositionSourcePatch : public xiiGraphPatch
+  {
+  public:
+    OpaqueCompositionSourcePatch() : xiiGraphPatch("xiiBuiltinRenderPipelinePass", 6) {}
+    void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph*, xiiAbstractObjectNode* node) const override
+    {
+      const auto* stage = node->FindProperty("Stage");
+      if (!stage || stage->m_Value != xiiVariant("OpaqueComposition"))
+        return;
+      if (const auto* parameters = node->FindProperty("ParameterOverrides"))
+        node->AddProperty("Parameters", parameters->m_Value);
+      node->RemoveProperty("Stage");
+      node->AddProperty("Resource", xiiString(s_OpaqueResource));
+      context.RenameClass("xiiRenderPipelineSubgraphPass", 1);
+    }
+  };
+  static OpaqueCompositionSourcePatch s_OpaqueSourcePatch;
+
+  class OpaqueCompositionConnectionsPatch : public xiiGraphPatch
+  {
+  public:
+    OpaqueCompositionConnectionsPatch() : xiiGraphPatch({}, 4, PatchType::GraphPatch) {}
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph* graph, xiiAbstractObjectNode*) const override
+    {
+      auto* root = graph->GetNodeByName("ObjectTree");
+      if (!root)
+        return;
+      const auto* childrenProperty = root->FindProperty("Children");
+      if (!childrenProperty || !childrenProperty->m_Value.IsA<xiiVariantArray>())
+        return;
+      auto                     children = childrenProperty->m_Value.Get<xiiVariantArray>();
+      xiiDynamicArray<xiiUuid> opaqueNodes;
+      xiiUuid                  lighting, visibility;
+      for (auto entry : graph->GetAllNodes())
+      {
+        const auto* node  = entry.Value();
+        const auto* stage = node->FindProperty("Stage");
+        if (node->GetType() != "xiiBuiltinRenderPipelinePass" || !stage)
+          continue;
+        if (stage->m_Value == xiiVariant("Lighting"))
+          lighting = node->GetGuid();
+        if (stage->m_Value == xiiVariant("Visibility"))
+          visibility = node->GetGuid();
+        if (stage->m_Value == xiiVariant("OpaqueComposition"))
+          opaqueNodes.PushBack(node->GetGuid());
+      }
+      const auto add = [&](xiiUuid source, xiiUuid target, xiiStringView port) {
+        if (!source.IsValid())
+          return;
+        for (auto entry : graph->GetAllNodes())
+        {
+          const auto* edge        = entry.Value();
+          const auto* destination = edge->FindProperty("Target");
+          const auto* input       = edge->FindProperty("TargetPin");
+          if (destination && input && destination->m_Value == xiiVariant(target) && input->m_Value == xiiVariant(port))
+            return;
+        }
+        const auto id = ConnectionId(source, target, port);
+        if (graph->GetNode(id))
+          return;
+        auto* edge = graph->AddNode(id, "xiiDocumentObject_ConnectionBase", 1);
+        edge->AddProperty("Source", source);
+        edge->AddProperty("Target", target);
+        edge->AddProperty("SourcePin", xiiString(port));
+        edge->AddProperty("TargetPin", xiiString(port));
+        children.PushBack(id);
+      };
+      for (auto debug : opaqueNodes)
+      {
+        for (xiiStringView port : {"RTFinalGI", "RTFinalReflections", "VolumetricScattering"})
+          add(lighting, debug, port);
+        add(visibility, debug, "PerFrameCamera");
+        add(visibility, debug, "PerFrameGlobal");
+      }
+      root->ChangeProperty("Children", children);
+    }
+  };
+  static OpaqueCompositionConnectionsPatch s_OpaqueConnectionsPatch;
 
   class ScreenEffectsSourcePatch : public xiiGraphPatch
   {
@@ -260,8 +378,9 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
     if (descriptor.Connect(source, port, target, port).Succeeded())
       descriptor.m_Connections.PeekBack().m_Id = ConnectionId(descriptor.m_Passes[source].m_Id, descriptor.m_Passes[target].m_Id, port);
   };
-  bool debugChanged = ConvertDebug(descriptor.m_Passes, addRoot);
-  bool changed      = Convert(descriptor.m_Passes, addRoot);
+  bool opaqueChanged = ConvertOpaque(descriptor.m_Passes, addRoot);
+  bool debugChanged  = ConvertDebug(descriptor.m_Passes, addRoot);
+  bool changed       = Convert(descriptor.m_Passes, addRoot);
   for (auto& definition : descriptor.m_Definitions)
   {
     const auto add = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView port) {
@@ -276,8 +395,17 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
       definition.m_Topology.m_EdgeTargets.PushBack(target);
       definition.m_Edges.PushBack(std::move(edge));
     };
+    opaqueChanged |= ConvertOpaque(definition.m_Nodes, add);
     debugChanged |= ConvertDebug(definition.m_Nodes, add);
     changed |= Convert(definition.m_Nodes, add);
+  }
+  if (opaqueChanged)
+  {
+    bool found = false;
+    for (const auto& reference : descriptor.m_References)
+      found |= reference.m_Id == xiiOpaqueCompositionDefinitionId();
+    if (!found)
+      descriptor.m_References.PushBack({xiiOpaqueCompositionDefinitionId(), s_OpaqueResource});
   }
   if (debugChanged)
   {

@@ -73,7 +73,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
       !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
-  for (const xiiStringView name : {"DebugVisualization", "ScreenEffects", "Deferred", "EditorScene", "TexturePreview", "TextureCubePreview"})
+  for (const xiiStringView name : {"OpaqueComposition", "DebugVisualization", "ScreenEffects", "Deferred", "EditorScene", "TexturePreview", "TextureCubePreview"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     PipelineLibraryDocument storage(source);
@@ -141,8 +141,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
       return;
     const auto authoring = loaded->GetAuthoring();
-    XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, (name == "ScreenEffects" || name == "DebugVisualization") ? 0 : 1);
-    XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute) == (name == "Deferred" || name == "EditorScene" || name == "ScreenEffects" || name == "DebugVisualization"));
+    XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, (name == "ScreenEffects" || name == "DebugVisualization" || name == "OpaqueComposition") ? 0 : 1);
+    XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute) == (name == "Deferred" || name == "EditorScene" || name == "ScreenEffects" || name == "DebugVisualization" || name == "OpaqueComposition"));
     XII_TEST_BOOL(authoring->m_Descriptor.m_Id == document->GetGuid());
     XII_TEST_INT(authoring->m_Descriptor.m_Passes.GetCount(), passCount);
     XII_TEST_INT(authoring->m_Descriptor.m_Connections.GetCount(), internalConnectionCount);

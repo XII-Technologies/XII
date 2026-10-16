@@ -463,25 +463,14 @@ void xiiBuiltinRenderPipelineRuntime::BuildLighting(xiiRenderGraph& graph, xiiRe
   graph.AddPass<xiiVolumetricFogTemporalReprojectionData>("VolumetricFogTemporalRep", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupVolumetricFogTemporalReprojection, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteVolumetricFogTemporalReprojection, this));
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
-{
-  // Composite the selected opaque lighting path with indirect, emissive, near-field GI, and volumetrics.
-  graph.AddPass<xiiOpaqueLightingCompositeData>("OpaqueLightingComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupOpaqueLightingComposite, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteOpaqueLightingComposite, this));
-  graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupPlanarReflections, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecutePlanarReflections, this));
 
-  // Resolve screen-space rays against complete opaque scene radiance, then
-  // replace Tier 2 environment specular with the best valid Tier 3 / Tier 1
-  // result. This ordering avoids the previous HDR read-before-create cycle.
-  graph.AddPass<xiiScreenSpaceReflectionsData>("SSR", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceReflections, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceReflections, this));
-  graph.AddPass<xiiScreenSpaceReflectionsTemporalData>("SSRTemporal", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceReflectionsTemporal, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceReflectionsTemporal, this));
-  graph.AddPass<xiiHybridReflectionCompositeData>("HybridReflectionComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupHybridReflectionComposite, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteHybridReflectionComposite, this));
-}
 
 void xiiBuiltinRenderPipelineRuntime::BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // Transparency and special material passes.
   graph.AddPass<xiiGPUParticleSimulateData>("GPUParticleSimulate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupGPUParticleSimulate, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteGPUParticleSimulate, this));
-  graph.AddPass<xiiWeightedBlendedOITData>("WeightedBlendedOIT", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupWeightedBlendedOIT, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteWeightedBlendedOIT, this));
+  const auto resolved        = graph.AddPass<xiiWeightedBlendedOITData>("WeightedBlendedOIT", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupWeightedBlendedOIT, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteWeightedBlendedOIT, this));
+  m_Frame.hTransparencyColor = resolved.first->m_hHDRSceneColor;
 }
 
 
@@ -501,7 +490,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
 
 xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  XII_SUCCEED_OR_RETURN(PrepareTemporalResources(stage));
   if (stage == "PrepareFrame")
   {
     BuildPrepareFrame(graph, blackboard);
@@ -525,14 +513,11 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stag
     return BuildLightingPreparation(graph, blackboard);
   if (stage == "Lighting")
   {
+    XII_SUCCEED_OR_RETURN(PrepareLightingHistory());
     BuildLighting(graph, blackboard);
     return XII_SUCCESS;
   }
-  if (stage == "OpaqueComposition")
-  {
-    BuildOpaqueComposition(graph, blackboard);
-    return XII_SUCCESS;
-  }
+
   if (stage == "Transparency")
   {
     BuildTransparency(graph, blackboard);
@@ -555,7 +540,6 @@ void xiiBuiltinRenderPipelineRuntime::InvalidateTemporalHistory()
   m_Resources.m_LightingPasses.m_bRTGIReservoirHistoryValid        = false;
   m_Resources.m_LightingPasses.m_bRTGIHistoryValid                 = false;
   m_Resources.m_LightingPasses.m_bRTReflectionHistoryValid         = false;
-  m_Resources.m_LightingPasses.m_bSSRHistoryValid                  = false;
   m_Resources.m_LightingPasses.m_bDirectReservoirHistoryValid      = false;
   m_Resources.m_LightingPasses.m_bVolumetricHistoryValid           = false;
 }

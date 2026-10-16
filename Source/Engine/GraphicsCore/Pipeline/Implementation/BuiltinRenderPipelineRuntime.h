@@ -90,15 +90,11 @@ struct xiiReSTIRGISpatialData;
 struct xiiRayTracedGlobalIlluminationDenoiseData;
 struct xiiRayTracedReflectionsData;
 struct xiiRayTracedReflectionsDenoiseData;
-struct xiiScreenSpaceReflectionsData;
-struct xiiScreenSpaceReflectionsTemporalData;
-struct xiiHybridReflectionCompositeData;
 struct xiiVolumetricLightInjectionData;
 struct xiiVolumetricFogIntegrationData;
 struct xiiVolumetricFogResolveData;
 struct xiiVolumetricFogTemporalReprojectionData;
 
-struct xiiOpaqueLightingCompositeData;
 
 struct xiiGPUParticleSimulateData;
 struct xiiDecalUploadData;
@@ -107,7 +103,6 @@ struct xiiProjectedDecalResolveData;
 struct xiiMeshDecalDrawData;
 struct xiiWeightedBlendedOITData;
 
-struct xiiPlanarReflectionsData;
 
 /// Built-in rendering implementation and isolated per-view history, owned by the existing
 /// high-level resource manager so GAL state is released before device/allocator shutdown.
@@ -129,14 +124,13 @@ public:
   void                                                                   BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                                                              BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                                                                   BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
   void                                                                   InvalidateTemporalHistory();
   void                                                                   BindFrameResources(xiiGALCommandList& commandList) const;
   xiiSharedPtr<xiiGALSampler>                                            m_CommonSamplers[5];
   xiiResult                                                              BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult                                                              PrepareTemporalResources(xiiStringView stage);
+  xiiResult                                                              PrepareLightingHistory();
   xiiResult                                                              PrepareShadowResources();
   xiiUniquePtr<xiiRayTracingFrameResources>                              m_RayTracingResources;
   xiiRenderPipelineInstance                                              m_Instance;
@@ -265,9 +259,6 @@ public:
       xiiSharedPtr<xiiGALBuffer>                  m_pReSTIRDIEmissiveVisibilityShaderBindingTable;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pDirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pIndirectLightingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRTemporalPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>    m_pReflectionCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricLightInjectionPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricIntegratePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricResolvePipeline;
@@ -310,10 +301,6 @@ public:
       xiiUInt32                                   m_uiRTReflectionHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
-      xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];              ///< RGBA16_FLOAT temporally resolved radiance and confidence.
-      xiiSharedPtr<xiiGALTexture>                 m_pSSRIdentityHistory[2];      ///< RG32_UINT packed material signature and stable object identity.
-      xiiUInt32                                   m_uiSSRHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
-      bool                                        m_bSSRHistoryValid       = false;
       xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2];              ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
       xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];                ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
       xiiUInt32                                   m_uiDirectReservoirHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
@@ -324,11 +311,7 @@ public:
       xiiUInt32                                   m_uiFrameIndex                  = 0U;
     } m_LightingPasses;
 
-    //  Stage 7 - Forward Passes
-    struct ForwardPasses
-    {
-      xiiSharedPtr<xiiGALComputePipelineState> m_pOpaqueLightingCompositePipeline;
-    } m_ForwardPasses;
+
 
     //  Stage 8 - Transparency & Special
     struct TransparencyPasses
@@ -354,14 +337,6 @@ public:
       xiiSharedPtr<xiiGALTexture> m_pFallbackDecalEmissiveAtlasTexture;
       xiiSharedPtr<xiiGALSampler> m_pFallbackDecalAtlasSampler;
     } m_TransparencyPasses;
-
-    //  Stage 9 - Screen-Space Effects
-    struct ScreenSpacePasses
-    {
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSSSSPipeline; // screen-space SSS
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSSCausticsPipeline;
-      xiiSharedPtr<xiiGALTexture>              m_pPlanarReflectionTarget;
-    } m_ScreenSpacePasses;
   };
   Resources m_Resources;
 
@@ -386,6 +361,7 @@ private:
     std::pair<xiiShadowCascadeSetupData*, xiiRenderGraphPassHandle> shadowCascadePass;
     std::pair<xiiContactShadowData*, xiiRenderGraphPassHandle>      contactShadowPass;
     xiiRenderGraphTextureHandle                                     hSceneDepth;
+    xiiRenderGraphTextureHandle                                     hTransparencyColor;
     xiiGpuSceneGBufferRasterDescription                             gpuRasterDescription;
   } m_Frame;
   void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRenderGraphBuilder& builder);
@@ -545,14 +521,7 @@ private:
   void SetupRayTracedReflectionsDenoise(xiiRayTracedReflectionsDenoiseData& data, xiiRenderGraphBuilder& builder);
   void ExecuteRayTracedReflectionsDenoise(const xiiRayTracedReflectionsDenoiseData& data, xiiRenderGraphPassContext& context);
 
-  void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRenderGraphPassContext& context);
 
-  void SetupScreenSpaceReflectionsTemporal(xiiScreenSpaceReflectionsTemporalData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteScreenSpaceReflectionsTemporal(const xiiScreenSpaceReflectionsTemporalData& data, xiiRenderGraphPassContext& context);
-
-  void SetupHybridReflectionComposite(xiiHybridReflectionCompositeData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteHybridReflectionComposite(const xiiHybridReflectionCompositeData& data, xiiRenderGraphPassContext& context);
 
   void SetupVolumetricLightInjection(xiiVolumetricLightInjectionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricLightInjection(const xiiVolumetricLightInjectionData& data, xiiRenderGraphPassContext& context);
@@ -565,9 +534,6 @@ private:
 
   void SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphPassContext& context);
-
-  void SetupOpaqueLightingComposite(xiiOpaqueLightingCompositeData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteOpaqueLightingComposite(const xiiOpaqueLightingCompositeData& data, xiiRenderGraphPassContext& context);
 
 
 
@@ -589,8 +555,6 @@ private:
   void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRenderGraphBuilder& builder);
   void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRenderGraphPassContext& context);
 
-  void SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRenderGraphBuilder& builder);
-  void ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRenderGraphPassContext& context);
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

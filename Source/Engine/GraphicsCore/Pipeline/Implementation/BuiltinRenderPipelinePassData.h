@@ -52,8 +52,6 @@
 #include <Shaders/Pipeline/Passes/MotionVectors/MotionVectorConstants.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/RTReflectionDenoiseConstants.h>
-#include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
-#include <Shaders/Pipeline/Passes/Reflections/SSRTemporalConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
@@ -764,52 +762,7 @@ struct xiiRayTracedReflectionsDenoiseData
   bool                        m_bSignalValid  = false;
 };
 
-struct xiiScreenSpaceReflectionsData
-{
-  XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hSceneDepth;             ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;          ///< ShaderResource in (G-Buffer normal).
-  xiiRenderGraphTextureHandle m_hGBufferMaterial;        ///< ShaderResource in (G-Buffer material).
-  xiiRenderGraphTextureHandle m_hGBufferAlbedo;          ///< ShaderResource in (base color and metallic F0 source).
-  xiiRenderGraphTextureHandle m_hBRDFLut;                ///< ShaderResource in (split-sum material response).
-  xiiRenderGraphTextureHandle m_hHiZClosestPyramid;      ///< ShaderResource in (reversed-Z maximum hierarchy used for near depth bounds).
-  xiiRenderGraphTextureHandle m_hHiZFarthestPyramid;     ///< ShaderResource in (reversed-Z minimum hierarchy used for far depth bounds).
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;          ///< ShaderResource in (current HDR scene color).
-  xiiRenderGraphTextureHandle m_hScreenSpaceReflections; ///< UnorderedAccess out (screen-space reflections texture).
-  xiiRenderGraphBufferHandle  m_hConstants;              ///< ConstantBuffer in (SSR quality and traversal settings).
-  xiiSSRConstants             m_Constants;
-};
-
-struct xiiScreenSpaceReflectionsTemporalData
-{
-  xiiUInt32 m_uiHistoryWriteIndex = 0U;
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hCurrentReflection;
-  xiiRenderGraphTextureHandle m_hPreviousReflection;
-  xiiRenderGraphTextureHandle m_hSceneDepth;
-  xiiRenderGraphTextureHandle m_hGBufferNormal;
-  xiiRenderGraphTextureHandle m_hGBufferMaterial;
-  xiiRenderGraphTextureHandle m_hGBufferObjectId;
-  xiiRenderGraphTextureHandle m_hVelocity;
-  xiiRenderGraphTextureHandle m_hPreviousSurface;
-  xiiRenderGraphTextureHandle m_hPreviousIdentitySignature;
-  xiiRenderGraphTextureHandle m_hResolvedReflection;
-  xiiRenderGraphTextureHandle m_hCurrentIdentitySignature;
-  xiiRenderGraphBufferHandle  m_hConstants;
-  bool                        m_bHistoryValid = false;
-};
-
-struct xiiHybridReflectionCompositeData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hEnvironmentSpecular;    ///< ShaderResource in (Tier 2 local probe / sky BRDF response).
-  xiiRenderGraphTextureHandle m_hScreenSpaceReflections; ///< ShaderResource in (Tier 1 screen-space response + confidence).
-  xiiRenderGraphTextureHandle m_hRayTracedReflections;   ///< ShaderResource in (Tier 3 traced response + validity).
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;          ///< UnorderedAccess in/out (authoritative scene radiance).
-};
 
 struct xiiVolumetricLightInjectionData
 {
@@ -858,18 +811,6 @@ struct xiiVolumetricFogTemporalReprojectionData
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiMat4                     m_PreviousViewProjection = xiiMat4::MakeIdentity();
   bool                        m_bHistoryValid          = false;
-};
-
-struct xiiOpaqueLightingCompositeData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hDirectLighting;       ///< ShaderResource in (direct lighting texture).
-  xiiRenderGraphTextureHandle m_hIndirectLighting;     ///< ShaderResource in (indirect lighting including probe/sky specular).
-  xiiRenderGraphTextureHandle m_hGBufferEmissive;      ///< ShaderResource in (surface emissive radiance).
-  xiiRenderGraphTextureHandle m_hRayTracedFinalGI;     ///< ShaderResource in (optional near-field traced GI).
-  xiiRenderGraphTextureHandle m_hVolumetricScattering; ///< ShaderResource in (integrated scattering and transmittance).
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< UnorderedAccess out (base scene radiance before reflection tier replacement).
 };
 
 
@@ -985,11 +926,4 @@ struct xiiWeightedBlendedOITData
   xiiRenderGraphTextureHandle m_hOITAccumulate;        ///< RenderTarget out / ShaderResource in (weighted accumulation target).
   xiiRenderGraphTextureHandle m_hOITReveal;            ///< RenderTarget out / ShaderResource in (reveal target).
   xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
-};
-
-struct xiiPlanarReflectionsData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hPlanarTarget; ///< RenderTarget out (planar reflection render target).
 };
