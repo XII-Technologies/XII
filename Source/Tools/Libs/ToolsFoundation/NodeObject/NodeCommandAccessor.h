@@ -26,6 +26,7 @@ private:
 
   struct ConnectionInfo
   {
+    xiiUuid                  m_ConnectionObject;
     const xiiDocumentObject* m_pSource = nullptr;
     const xiiDocumentObject* m_pTarget = nullptr;
     xiiString                m_sSourcePin;

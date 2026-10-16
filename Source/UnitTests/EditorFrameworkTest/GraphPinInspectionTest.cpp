@@ -14,6 +14,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
 #include <QLineEdit>
+#include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
@@ -34,6 +35,24 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInspectorPinSettings, 1, xiiRTTIDefaultAlloc
       XII_MEMBER_PROPERTY("Value", m_fValue)->AddAttributes(new xiiDefaultValueAttribute(0.25f), new xiiClampValueAttribute(0.0f, 1.0f)),
       XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
       XII_MEMBER_PROPERTY("Contract", m_sContract)->AddAttributes(new xiiReadOnlyAttribute()),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+class xiiInspectorGraphConnection : public xiiDocumentObject_ConnectionBase
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiInspectorGraphConnection, xiiDocumentObject_ConnectionBase);
+
+public:
+  float     m_fWeight = 1.0f;
+  xiiString m_sLabel;
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInspectorGraphConnection, 1, xiiRTTIDefaultAllocator<xiiInspectorGraphConnection>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Weight", m_fWeight),
+      XII_MEMBER_PROPERTY("Label", m_sLabel),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -63,6 +82,7 @@ namespace
   class InspectorNodeManager : public xiiDocumentNodeManager
   {
   public:
+    const xiiRTTI*           GetConnectionType() const override { return xiiGetStaticRTTI<xiiInspectorGraphConnection>(); }
     const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const override
     {
       if (pin.GetType() != xiiPin::Type::Input)
@@ -229,6 +249,43 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     scene.Drag(scene.FindPin(accessor->GetObject(nodes[0]), false), scene.FindPin(owner, true));
     const auto* input = manager->GetInputPinByName(owner, "Value");
     XII_TEST_INT(manager->GetConnections(*input).GetCount(), 1);
+    const auto* authoredConnection = manager->GetConnections(*input)[0]->GetParent();
+    const auto  connectionId       = authoredConnection->GetGuid();
+    accessor->StartTransaction("Configure connection and fan out");
+    XII_TEST_STATUS(accessor->SetValueByName(authoredConnection, "Weight", 0.625f));
+    XII_TEST_STATUS(accessor->SetValueByName(authoredConnection, "Label", "Authored connection"));
+    xiiUuid thirdNode;
+    XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiInspectorGraphNode>(), thirdNode));
+    const auto* output     = manager->GetOutputPinByName(accessor->GetObject(nodes[0]), "Value");
+    const auto* thirdInput = manager->GetInputPinByName(accessor->GetObject(thirdNode), "Value");
+    XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *output, *thirdInput));
+    accessor->FinishTransaction();
+    const auto otherConnectionId = manager->GetConnections(*thirdInput)[0]->GetParent()->GetGuid();
+    document.GetSelectionManager()->SetSelection(authoredConnection);
+    accessor->StartTransaction("Rebuild a source with multiple connected outputs");
+    XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(nodes[0]), "Label", "Rebuilt source"));
+    accessor->FinishTransaction();
+    input      = manager->GetInputPinByName(owner, "Value");
+    thirdInput = manager->GetInputPinByName(accessor->GetObject(thirdNode), "Value");
+    XII_TEST_INT(manager->GetConnections(*manager->GetOutputPinByName(accessor->GetObject(nodes[0]), "Value")).GetCount(), 2);
+    XII_TEST_BOOL(manager->GetConnections(*input)[0]->GetParent() == authoredConnection);
+    XII_TEST_BOOL(manager->GetConnections(*thirdInput)[0]->GetParent()->GetGuid() == otherConnectionId);
+    XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == authoredConnection);
+    if (XII_TEST_INT(scene.selectedItems().size(), 1))
+      XII_TEST_INT(scene.selectedItems()[0]->type(), xiiQtNodeScene::Connection);
+    XII_TEST_FLOAT(authoredConnection->GetTypeAccessor().GetValue("Weight").Get<float>(), 0.625f, 0);
+    XII_TEST_STRING(authoredConnection->GetTypeAccessor().GetValue("Label").Get<xiiString>(), "Authored connection");
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+    input = manager->GetInputPinByName(owner, "Value");
+    XII_TEST_BOOL(manager->GetConnections(*input)[0]->GetParent()->GetGuid() == connectionId);
+    accessor->StartTransaction("Edit connected pin settings");
+    XII_TEST_STATUS(accessor->SetValueByName(properties, "Value", 0.5f));
+    accessor->FinishTransaction();
+    input = manager->GetInputPinByName(owner, "Value");
+    XII_TEST_BOOL(manager->GetConnections(*input)[0]->GetParent() == authoredConnection);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    input = manager->GetInputPinByName(owner, "Value");
     scene.Click(scene.FindPin(owner, true));
     accessor->StartTransaction("Remove dynamic input");
     XII_TEST_STATUS(accessor->SetValueByName(owner, "HasInput", false));
@@ -241,6 +298,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
       return;
     XII_TEST_INT(manager->GetConnections(*input).GetCount(), 1);
     const auto* connection = manager->GetConnections(*input)[0]->GetParent();
+    XII_TEST_BOOL(connection->GetGuid() == connectionId);
+    XII_TEST_FLOAT(connection->GetTypeAccessor().GetValue("Weight").Get<float>(), 0.625f, 0);
     document.GetSelectionManager()->SetSelection(connection);
     if (!XII_TEST_INT(scene.selectedItems().size(), 1))
       return;

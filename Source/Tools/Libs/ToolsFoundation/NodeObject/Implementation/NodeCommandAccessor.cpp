@@ -3,6 +3,7 @@
 #include <ToolsFoundation/ToolsFoundationPCH.h>
 
 #include <ToolsFoundation/Command/NodeCommands.h>
+#include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 #include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
 
@@ -174,15 +175,21 @@ xiiStatus xiiNodeCommandAccessor::DisconnectAllPins(const xiiDocumentObject* pOb
   auto pManager = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
 
   auto Disconnect = [&](xiiArrayPtr<const xiiConnection* const> connections) -> xiiStatus {
-    for (const xiiConnection* pConnection : connections)
+    // Disconnect compacts the adjacency array returned by the manager.
+    xiiHybridArray<const xiiConnection*, 16> snapshot;
+    snapshot = connections;
+    for (const xiiConnection* pConnection : snapshot)
     {
-      auto& connectionInfo        = out_oldConnections.ExpandAndGetRef();
-      connectionInfo.m_pSource    = pConnection->GetSourcePin().GetParent();
-      connectionInfo.m_pTarget    = pConnection->GetTargetPin().GetParent();
-      connectionInfo.m_sSourcePin = pConnection->GetSourcePin().GetName();
-      connectionInfo.m_sTargetPin = pConnection->GetTargetPin().GetName();
+      auto& connectionInfo              = out_oldConnections.ExpandAndGetRef();
+      connectionInfo.m_ConnectionObject = pConnection->GetParent()->GetGuid();
+      connectionInfo.m_pSource          = pConnection->GetSourcePin().GetParent();
+      connectionInfo.m_pTarget          = pConnection->GetTargetPin().GetParent();
+      connectionInfo.m_sSourcePin       = pConnection->GetSourcePin().GetName();
+      connectionInfo.m_sTargetPin       = pConnection->GetTargetPin().GetName();
 
-      XII_SUCCEED_OR_RETURN(xiiNodeCommands::DisconnectAndRemoveCommand(m_pHistory, pConnection->GetParent()->GetGuid()));
+      xiiDisconnectNodePinsCommand disconnect;
+      disconnect.m_ConnectionObject = connectionInfo.m_ConnectionObject;
+      XII_SUCCEED_OR_RETURN(m_pHistory->AddCommand(disconnect));
     }
 
     return XII_SUCCESS;
@@ -205,24 +212,33 @@ xiiStatus xiiNodeCommandAccessor::DisconnectAllPins(const xiiDocumentObject* pOb
 
 xiiStatus xiiNodeCommandAccessor::TryReconnectAllPins(const xiiDocumentObject* pObject, const xiiDynamicArray<ConnectionInfo>& oldConnections)
 {
-  auto           pManager        = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
-  const xiiRTTI* pConnectionType = pManager->GetConnectionType();
+  auto pManager = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
 
   for (auto& connectionInfo : oldConnections)
   {
     const xiiPin* pSourcePin = pManager->GetOutputPinByName(connectionInfo.m_pSource, connectionInfo.m_sSourcePin);
     const xiiPin* pTargetPin = pManager->GetInputPinByName(connectionInfo.m_pTarget, connectionInfo.m_sTargetPin);
 
-    // This connection can't be restored because a pin doesn't exist anymore, which is ok in this case.
-    if (pSourcePin == nullptr || pTargetPin == nullptr)
-      continue;
-
-    // This connection is not valid anymore after pins have changed.
+    const auto* object = pManager->GetObject(connectionInfo.m_ConnectionObject);
+    if (!object)
+      return xiiStatus("The disconnected connection object disappeared during a pin edit.");
     xiiDocumentNodeManager::CanConnectResult res;
-    if (pManager->CanConnect(pConnectionType, *pSourcePin, *pTargetPin, res).Failed())
+    if (!pSourcePin || !pTargetPin || pManager->CanConnect(object->GetType(), *pSourcePin, *pTargetPin, res).Failed())
+    {
+      // Remove only connections made invalid by the edit. Undo restores their
+      // original object, identity and authored properties before reconnecting.
+      xiiRemoveObjectCommand remove;
+      remove.m_Object = connectionInfo.m_ConnectionObject;
+      XII_SUCCEED_OR_RETURN(m_pHistory->AddCommand(remove));
       continue;
-
-    XII_SUCCEED_OR_RETURN(xiiNodeCommands::AddAndConnectCommand(m_pHistory, pConnectionType, *pSourcePin, *pTargetPin));
+    }
+    xiiConnectNodePinsCommand connect;
+    connect.m_ConnectionObject = connectionInfo.m_ConnectionObject;
+    connect.m_ObjectSource     = connectionInfo.m_pSource->GetGuid();
+    connect.m_ObjectTarget     = connectionInfo.m_pTarget->GetGuid();
+    connect.m_sSourcePin       = connectionInfo.m_sSourcePin;
+    connect.m_sTargetPin       = connectionInfo.m_sTargetPin;
+    XII_SUCCEED_OR_RETURN(m_pHistory->AddCommand(connect));
   }
 
   return XII_SUCCESS;

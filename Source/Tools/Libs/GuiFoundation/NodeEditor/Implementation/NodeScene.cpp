@@ -478,6 +478,7 @@ void xiiQtNodeScene::CreateQtConnection(const xiiDocumentObject* pObject)
   // Reset flags to update the node's title to reflect connection changes
   pSource->ResetFlags();
   pTarget->ResetFlags();
+  UpdateSelection();
 }
 
 void xiiQtNodeScene::DeleteQtConnection(const xiiDocumentObject* pObject)
@@ -500,8 +501,13 @@ void xiiQtNodeScene::DeleteQtConnection(const xiiDocumentObject* pObject)
   pOutput->RemoveConnection(pQtConnection);
   pInput->RemoveConnection(pQtConnection);
 
+  // The document object can remain alive during an undoable pin rebuild. Its
+  // selection follows document lifetime, rather than temporary visual removal.
+  const bool ignored       = m_bIgnoreSelectionChange;
+  m_bIgnoreSelectionChange = true;
   removeItem(pQtConnection);
   delete pQtConnection;
+  m_bIgnoreSelectionChange = ignored;
 
   // reset flags to update the node's title to reflect connection changes
   pSource->ResetFlags();
