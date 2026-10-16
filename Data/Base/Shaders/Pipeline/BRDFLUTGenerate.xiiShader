@@ -33,8 +33,11 @@ float3 ImportanceSampleGGX(float2 xi, float roughness, float3 N)
 {
     float a    = roughness * roughness;
     float phi  = 2.0f * 3.14159265f * xi.x;
-    float cosT = sqrt((1.0f - xi.y) / (1.0f + (a*a - 1.0f) * xi.y));
-    float sinT = sqrt(1.0f - cosT * cosT);
+    // Keep near-mirror samples on the unit hemisphere. Cancellation/reciprocal
+    // rounding in 1 + (a*a - 1)*xi.y can otherwise produce cosT > 1 and NaN
+    // sinT, silently dropping samples from the normalized integral.
+    float cosT = sqrt(saturate((1.0f - xi.y) / ((1.0f - xi.y) + a * a * xi.y)));
+    float sinT = sqrt(max(1.0f - cosT * cosT, 0.0f));
 
     float3 H = float3(sinT * cos(phi), sinT * sin(phi), cosT);
 
