@@ -114,6 +114,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinContracts)
       xiiRenderGraphBlackboard blackboard;
       graph.BeginSetup(0);
       XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+      XII_TEST_BOOL(instance.GetLastBuildError().IsEmpty());
       graph.EndSetup();
       local.m_Passes[0].m_Properties.Insert("Width", 32U);
       XII_TEST_RESULT(xiiRenderPipeline::Compile(local, repeated));
@@ -121,6 +122,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinContracts)
       xiiRenderGraph mismatch("Pin contract mismatch");
       mismatch.BeginSetup(0);
       XII_TEST_BOOL(instance.Build(nullptr, mismatch, blackboard).Failed());
+      XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("Producer") != nullptr);
+      if (direct)
+        XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("Texture") != nullptr);
       mismatch.EndSetup();
     }
     xiiGALTextureCreationDescription texture;

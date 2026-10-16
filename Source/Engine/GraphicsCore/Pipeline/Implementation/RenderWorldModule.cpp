@@ -23,6 +23,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
@@ -917,7 +918,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       {
         pGraph->EndSetup();
         resourceCache.EndFrame();
-        xiiLog::Error("Failed to build render pipeline for view '{}'.", viewDetail.m_pView->GetName());
+        xiiLog::Error("Failed to build render pipeline for view '{}': {}", viewDetail.m_pView->GetName(), viewDetail.m_pView->GetRenderPipelineInstance().GetLastBuildError());
         continue;
       }
     }

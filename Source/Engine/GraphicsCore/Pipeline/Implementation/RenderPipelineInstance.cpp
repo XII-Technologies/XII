@@ -14,6 +14,7 @@
 xiiRenderPipelineInstance::~xiiRenderPipelineInstance() { Clear(); }
 void xiiRenderPipelineInstance::Clear()
 {
+  m_sBuildError.Clear();
   for (auto* pass : m_Passes)
     pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass);
   m_Passes.Clear();
@@ -86,6 +87,7 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
 }
 xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides)
 {
+  m_sBuildError.Clear();
   if (!m_pPipeline)
     return XII_FAILURE;
   const auto&                      settings = m_pPipeline->m_Descriptor.m_Settings;
@@ -193,19 +195,32 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         {
           const auto* description = graph.GetTextureDescription(binding.m_hTexture);
           if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || !pin.Accepts(*description)))
+          {
+            error.SetFormat("Pass '{}' (type '{}', instance '{}'), {} texture pin '{}': resource is missing or violates its compiled contract.", context.m_sPassName, pass.m_pType->GetTypeName(), context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
+            m_sBuildError = error;
             return XII_FAILURE;
+          }
         }
         else if (pin.m_Type == xiiRenderPipelinePin::Buffer && (binding.m_hBuffer.IsValid() || !pin.m_bOptional))
         {
           const auto* description = graph.GetBufferDescription(binding.m_hBuffer);
           if (!description || !pin.Accepts(*description))
+          {
+            error.SetFormat("Pass '{}' (instance '{}'), {} buffer pin '{}': resource is missing or violates its compiled contract.", context.m_sPassName, context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
+            m_sBuildError = error;
             return XII_FAILURE;
+          }
         }
       }
       return XII_SUCCESS;
     };
     XII_SUCCEED_OR_RETURN(validateBindings(true));
-    XII_SUCCEED_OR_RETURN(m_Passes[index]->Build(context));
+    if (m_Passes[index]->Build(context).Failed())
+    {
+      error.SetFormat("Pass '{}' (instance '{}', type '{}') failed to build its operation.", context.m_sPassName, context.m_sInstanceScope, pass.m_pType->GetTypeName());
+      m_sBuildError = error;
+      return XII_FAILURE;
+    }
     if (pass.m_bHasTemporalHistory)
       for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
       {
