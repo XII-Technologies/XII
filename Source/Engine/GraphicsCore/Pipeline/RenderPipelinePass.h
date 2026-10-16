@@ -8,15 +8,27 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePin.h>
 #include <GraphicsCore/Pipeline/RenderPipelineSettings.h>
+#include <GraphicsFoundation/Resources/TopLevelAS.h>
 
 class xiiView;
 struct xiiRenderPipelinePassContext;
 struct xiiRenderPipelineResourceDescriptor;
 
+/// Frame-local TLAS ownership and its graph version establishing build readiness.
+/// Consumers must read m_Dependency in BuildASRead state before tracing.
+struct xiiRenderPipelineAccelerationStructureBinding
+{
+  xiiSharedPtr<xiiGALTopLevelAS> m_pStructure;
+  xiiRenderGraphBufferHandle     m_Dependency;
+  bool                           IsValid() const { return m_pStructure != nullptr && m_Dependency.IsValid(); }
+  bool                           IsEmpty() const { return m_pStructure == nullptr && !m_Dependency.IsValid(); }
+};
+
 struct xiiRenderPipelineBinding
 {
-  xiiRenderGraphTextureHandle m_hTexture;
-  xiiRenderGraphBufferHandle  m_hBuffer;
+  xiiRenderGraphTextureHandle                   m_hTexture;
+  xiiRenderGraphBufferHandle                    m_hBuffer;
+  xiiRenderPipelineAccelerationStructureBinding m_AccelerationStructure;
 };
 
 /// One mutable instance per pass per view. Constructors/Configure/GetPins must not access GAL.
@@ -75,14 +87,19 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
   bool                                     m_bTemporalHistoryPhase = false;
+  /// Build-only diagnostic sink; execute delegates must not retain this context.
+  xiiStringBuilder* m_pBuildError = nullptr;
+  xiiResult         ReportFailure(xiiStringView reason) const;
 
-  xiiUInt32                   FindPin(xiiStringView name, bool input) const;
-  xiiRenderGraphTextureHandle GetInputTexture(xiiStringView name) const;
-  xiiRenderGraphBufferHandle  GetInputBuffer(xiiStringView name) const;
-  xiiResult                   SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture);
-  xiiResult                   SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer);
-  xiiRenderGraphTextureHandle GetInputTexture(const xiiRenderPipelineTextureInputPin& pin) const;
-  xiiRenderGraphBufferHandle  GetInputBuffer(const xiiRenderPipelineBufferInputPin& pin) const;
-  xiiResult                   SetOutput(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle texture);
-  xiiResult                   SetOutput(const xiiRenderPipelineBufferOutputPin& pin, xiiRenderGraphBufferHandle buffer);
+  xiiUInt32                                     FindPin(xiiStringView name, bool input) const;
+  xiiRenderGraphTextureHandle                   GetInputTexture(xiiStringView name) const;
+  xiiRenderGraphBufferHandle                    GetInputBuffer(xiiStringView name) const;
+  xiiResult                                     SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture);
+  xiiResult                                     SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  xiiRenderGraphTextureHandle                   GetInputTexture(const xiiRenderPipelineTextureInputPin& pin) const;
+  xiiRenderGraphBufferHandle                    GetInputBuffer(const xiiRenderPipelineBufferInputPin& pin) const;
+  xiiResult                                     SetOutput(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle texture);
+  xiiResult                                     SetOutput(const xiiRenderPipelineBufferOutputPin& pin, xiiRenderGraphBufferHandle buffer);
+  xiiRenderPipelineAccelerationStructureBinding GetInputAccelerationStructure(const xiiRenderPipelineAccelerationStructureInputPin& pin) const;
+  xiiResult                                     SetOutput(const xiiRenderPipelineAccelerationStructureOutputPin& pin, const xiiRenderPipelineAccelerationStructureBinding& structure);
 };

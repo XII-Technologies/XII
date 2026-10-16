@@ -186,6 +186,29 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineBufferO
   m_Bindings[i].m_hBuffer = buffer;
   return XII_SUCCESS;
 }
+xiiRenderPipelineAccelerationStructureBinding xiiRenderPipelinePassContext::GetInputAccelerationStructure(const xiiRenderPipelineAccelerationStructureInputPin& pin) const
+{
+  const auto i = pin.GetBindingIndex();
+  return i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || !m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::AccelerationStructure ? xiiRenderPipelineAccelerationStructureBinding() : m_Bindings[i].m_AccelerationStructure;
+}
+xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineAccelerationStructureOutputPin& pin, const xiiRenderPipelineAccelerationStructureBinding& structure)
+{
+  const auto i = pin.GetBindingIndex();
+  if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::AccelerationStructure || m_bTemporalHistoryPhase)
+    return ReportFailure("Cannot publish an acceleration structure through this pin or temporal phase.");
+  if (!structure.IsValid())
+    return ReportFailure("Acceleration-structure output requires both a TLAS and its graph build dependency.");
+  if (!m_Graph.GetBufferDescription(structure.m_Dependency))
+    return ReportFailure("Acceleration-structure output references a missing or stale graph build dependency.");
+  m_Bindings[i].m_AccelerationStructure = structure;
+  return XII_SUCCESS;
+}
+xiiResult xiiRenderPipelinePassContext::ReportFailure(xiiStringView reason) const
+{
+  if (m_pBuildError)
+    m_pBuildError->Set(reason);
+  return XII_FAILURE;
+}
 xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture)
 {
   const auto i = FindPin(name, false);

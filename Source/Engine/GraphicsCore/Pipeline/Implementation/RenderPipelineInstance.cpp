@@ -160,7 +160,7 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || !pin.Accepts(*description)))
           return XII_FAILURE;
       }
-      else if (binding.m_hBuffer.IsValid() || !pin.m_bOptional)
+      else if (pin.m_Type == xiiRenderPipelinePin::Buffer && (binding.m_hBuffer.IsValid() || !pin.m_bOptional))
       {
         const auto* description = graph.GetBufferDescription(binding.m_hBuffer);
         if (!description || !pin.Accepts(*description))
@@ -211,13 +211,26 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
             return XII_FAILURE;
           }
         }
+        else if (pin.m_Type == xiiRenderPipelinePin::AccelerationStructure)
+        {
+          const auto& structure = binding.m_AccelerationStructure;
+          if ((!structure.IsEmpty() || !pin.m_bOptional) && (!structure.IsValid() || !graph.GetBufferDescription(structure.m_Dependency)))
+          {
+            error.SetFormat("Pass '{}' (type '{}', instance '{}'), {} acceleration-structure pin '{}': TLAS or graph build dependency is missing or stale.", context.m_sPassName, pass.m_pType->GetTypeName(), context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
+            m_sBuildError = error;
+            return XII_FAILURE;
+          }
+        }
       }
       return XII_SUCCESS;
     };
     XII_SUCCEED_OR_RETURN(validateBindings(true));
+    error.Clear();
+    context.m_pBuildError = &error;
     if (m_Passes[index]->Build(context).Failed())
     {
-      error.SetFormat("Pass '{}' (instance '{}', type '{}') failed to build its operation.", context.m_sPassName, context.m_sInstanceScope, pass.m_pType->GetTypeName());
+      const xiiString detail(error);
+      error.SetFormat("Pass '{}' (instance '{}', type '{}') failed to build its operation. {}", context.m_sPassName, context.m_sInstanceScope, pass.m_pType->GetTypeName(), detail);
       m_sBuildError = error;
       return XII_FAILURE;
     }

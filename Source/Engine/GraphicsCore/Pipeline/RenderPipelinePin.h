@@ -15,6 +15,7 @@ struct xiiRenderPipelinePinType
     Texture,
     Buffer,
     Order,
+    AccelerationStructure,
     Default = Texture
   };
 };
@@ -90,10 +91,11 @@ struct xiiGALBufferCreationDescription;
 /// Supplied by the reflected pass type, then narrowed by authored requirements.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
 {
-  using Type                                  = xiiRenderPipelinePinType::Enum;
-  static constexpr Type               Texture = xiiRenderPipelinePinType::Texture;
-  static constexpr Type               Buffer  = xiiRenderPipelinePinType::Buffer;
-  static constexpr Type               Order   = xiiRenderPipelinePinType::Order;
+  using Type                                                = xiiRenderPipelinePinType::Enum;
+  static constexpr Type               Texture               = xiiRenderPipelinePinType::Texture;
+  static constexpr Type               Buffer                = xiiRenderPipelinePinType::Buffer;
+  static constexpr Type               Order                 = xiiRenderPipelinePinType::Order;
+  static constexpr Type               AccelerationStructure = xiiRenderPipelinePinType::AccelerationStructure;
   xiiString                           m_sName;
   Type                                m_Type                   = Texture;
   bool                                m_bInput                 = true;
@@ -170,6 +172,22 @@ public:
   explicit xiiRenderPipelineBufferOutputPin(bool optional = false, xiiBitflags<xiiGALBindFlags> bindings = {},
                                             xiiRenderPipelinePinAccess::Enum access = xiiRenderPipelinePinAccess::Automatic, bool temporal = false);
 };
+/// A TLAS plus its explicit render-graph build dependency. Neither is authoring state.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineAccelerationStructureInputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineAccelerationStructureInputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineAccelerationStructureInputPin(bool optional = false);
+};
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineAccelerationStructureOutputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineAccelerationStructureOutputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineAccelerationStructureOutputPin(bool optional = false, xiiRenderPipelinePinAccess::Enum access = xiiRenderPipelinePinAccess::Automatic);
+};
+
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineOrderInputPin : public xiiRenderPipelinePinHandle
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineOrderInputPin, xiiRenderPipelinePinHandle);

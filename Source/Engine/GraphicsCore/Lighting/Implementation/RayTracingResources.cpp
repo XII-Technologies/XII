@@ -723,8 +723,13 @@ bool xiiRayTracingResources::PrepareFrameResources(xiiRayTracingFrameResources& 
 xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRayTracingFrameResources& worldResources, const xiiGpuInstanceData& instances, const xiiArrayPtr<const xiiUInt32>* selection, xiiRayTracingFrameResources* sharedGeometry)
 {
   BuildHandles result;
-  if (!IsInitialized() || !IsHardwareRayTracingSupported() || instances.GetInstanceCount() == 0U)
+  if (!IsInitialized() || !IsHardwareRayTracingSupported())
     return result;
+  if (instances.GetInstanceCount() == 0U)
+  {
+    result.m_Result = XII_SUCCESS;
+    return result;
+  }
 
   s_pState->m_uiLastFrameIndex = uiFrameIndex;
   auto& world                  = *worldResources.m_pState;
@@ -791,7 +796,12 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
   for (const auto& lease : world.m_Leases)
     ReleaseGeometry(lease);
   world.m_Leases = std::move(leases);
-  if (inputs.IsEmpty() || inputs.GetCount() > s_pState->m_Configuration.m_uiMaxInstances)
+  if (inputs.IsEmpty())
+  {
+    result.m_Result = XII_SUCCESS;
+    return result;
+  }
+  if (inputs.GetCount() > s_pState->m_Configuration.m_uiMaxInstances)
     return result;
 
 
@@ -1082,10 +1092,16 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
       data.m_pMaterialBuffer = frame.m_pMaterialBuffer;
       data.m_pGeometryBuffer = frame.m_pGeometryBuffer;
 
-      if (result.m_hSceneDependency.IsValid())
-        data.m_hSceneDependency = builder.ReadBuffer(result.m_hSceneDependency, xiiGALResourceStateFlags::BuildASRead);
-
       xiiStringBuilder name;
+      if (!result.m_hSceneDependency.IsValid())
+      {
+        // An unchanged frame slot still publishes explicit readiness. Its TLAS
+        // was built in an earlier completed frame; no rebuild is necessary.
+        name.SetFormat("World {} Ray Tracing Instance Data [{}]", world.m_Id, uiFrameSlot);
+        result.m_hSceneDependency = builder.ImportBuffer(name, frame.m_pInstanceBuffer, frame.m_pInstanceBuffer->GetResourceState());
+      }
+      data.m_hSceneDependency = builder.ReadBuffer(result.m_hSceneDependency, xiiGALResourceStateFlags::BuildASRead);
+
       for (auto* deformed : deformedDependencies)
       {
         auto& dependency     = data.m_GeometryDependencies.ExpandAndGetRef();
@@ -1137,6 +1153,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
 
   result.m_hMaterialData = hitDataUploadPass.first->m_hMaterialBuffer;
   result.m_hGeometryData = hitDataUploadPass.first->m_hGeometryBuffer;
+  result.m_Result        = XII_SUCCESS;
   return result;
 }
 

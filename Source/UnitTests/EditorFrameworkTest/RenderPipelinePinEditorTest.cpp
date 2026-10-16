@@ -13,6 +13,7 @@
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
@@ -415,4 +416,139 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     XII_TEST_STATUS(composition.GetCommandHistory()->Redo());
     XII_TEST_BOOL(!objects->GetObject(instanceId));
   }
+}
+
+class xiiEditorRayPinConsumer : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiEditorRayPinConsumer, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineAccelerationStructureInputPin m_Scene{true};
+  xiiRenderPipelineTextureInputPin               m_Texture{xiiGALResourceFormat::Unknown, true};
+  xiiResult                                      Build(xiiRenderPipelinePassContext&) override { return XII_SUCCESS; }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorRayPinConsumer, 1, xiiRTTIDefaultAllocator<xiiEditorRayPinConsumer>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Scene", m_Scene)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("Texture", m_Texture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, AccelerationStructurePinProperties)
+{
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "RayPinEditorTest", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("RayPinEditorTest"));
+  xiiStringBuilder path(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/RayPins.xiiRenderPipelineAsset");
+  PinDocument      document(path);
+  auto*            manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  auto*            accessor = document.GetObjectAccessor();
+  accessor->StartTransaction("Create reflected ray scene nodes");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  xiiUuid sourceId, targetId;
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRayTracingScenePass>(), sourceId));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiEditorRayPinConsumer>(), targetId));
+  accessor->FinishTransaction();
+  const auto* source = accessor->GetObject(sourceId);
+  const auto* target = accessor->GetObject(targetId);
+  PinScene    scene;
+  scene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  document.GetSelectionManager()->SetSelection(source);
+  bool selectionProperty = false, pinProperties = false;
+  for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+    if (const auto* property = widget->GetProperty())
+    {
+      selectionProperty |= property->GetPropertyName() == "UseViewSelection";
+      pinProperties |= property->GetPropertyName() == "PinConfigurations";
+    }
+  XII_TEST_BOOL(selectionProperty && pinProperties);
+  const auto* output  = manager->GetOutputPinByName(source, "Scene");
+  const auto* input   = manager->GetInputPinByName(target, "Scene");
+  const auto* texture = manager->GetInputPinByName(target, "Texture");
+  if (!XII_TEST_BOOL(output && input && texture))
+    return;
+  const auto* settings = manager->GetPinPropertyObject(*output);
+  if (!XII_TEST_BOOL(settings != nullptr))
+    return;
+  const auto* metadata = accessor->GetChildObjectByName(settings, "Metadata", {});
+  if (!XII_TEST_BOOL(metadata != nullptr))
+    return;
+  XII_TEST_INT(metadata->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>(), xiiRenderPipelinePin::AccelerationStructure);
+  const auto settingsId = settings->GetGuid();
+  scene.Click(*output);
+  XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == settings);
+  accessor->StartTransaction("Name acceleration structure pin");
+  XII_TEST_STATUS(accessor->SetValueByName(settings, "DisplayName", "World ray structure"));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_BOOL(settings->GetTypeAccessor().GetValue("DisplayName").Get<xiiString>().IsEmpty());
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  XII_TEST_STRING(settings->GetTypeAccessor().GetValue("DisplayName").Get<xiiString>(), "World ray structure");
+  output  = manager->GetOutputPinByName(source, "Scene");
+  input   = manager->GetInputPinByName(target, "Scene");
+  texture = manager->GetInputPinByName(target, "Texture");
+  if (!XII_TEST_BOOL(output && input && texture))
+    return;
+  xiiDocumentNodeManager::CanConnectResult canConnect;
+  XII_TEST_STATUS(manager->CanConnect(manager->GetConnectionType(), *output, *input, canConnect));
+  XII_TEST_BOOL(manager->CanConnect(manager->GetConnectionType(), *output, *texture, canConnect).Failed());
+  const auto childCount = manager->GetRootObject()->GetChildren().GetCount();
+  accessor->StartTransaction("Reject incompatible typed connection");
+  XII_TEST_BOOL(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *output, *texture).Failed());
+  accessor->FinishTransaction();
+  XII_TEST_INT(manager->GetRootObject()->GetChildren().GetCount(), childCount);
+  accessor->StartTransaction("Connect typed ray scene");
+  const auto connected = xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *output, *input);
+  XII_TEST_STATUS(connected);
+  if (connected.Failed())
+  {
+    accessor->CancelTransaction();
+    return;
+  }
+  accessor->FinishTransaction();
+  const auto saved = document.SaveDocument(true);
+  XII_TEST_STATUS(saved);
+  if (saved.Failed())
+    return;
+  PinDocument restored(path);
+  const auto  loaded = restored.LoadDocument();
+  XII_TEST_STATUS(loaded);
+  if (loaded.Failed())
+    return;
+  auto*       objects     = static_cast<xiiRenderPipelineNodeManager*>(restored.GetObjectManager());
+  const auto* restoredPin = objects->GetOutputPinByName(objects->GetObject(sourceId), "Scene");
+  if (!XII_TEST_BOOL(restoredPin != nullptr))
+    return;
+  const auto* restoredSettings = objects->GetPinPropertyObject(*restoredPin);
+  XII_TEST_BOOL(restoredSettings && restoredSettings->GetGuid() == settingsId);
+  XII_TEST_STRING(restoredPin->GetDisplayName(), "World ray structure");
+  PinCompiler compiler;
+  if (!XII_TEST_RESULT(compiler.Import(restored)))
+    return;
+  xiiExportDocumentMsgToEngine message;
+  message.m_sOutputFile = xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/RayPins.xiiBinRenderPipeline");
+  message.m_uiAssetHash = 1;
+  message.m_uiVersion   = 7;
+  const auto exported   = compiler.ExportDocument(&message);
+  XII_TEST_STATUS(exported);
+  if (exported.Failed())
+    return;
+  const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+  xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(acquired.IsValid() && acquired->GetPipeline()))
+    return;
+  bool preserved = false;
+  for (xiiUInt32 i = 0; i < acquired->GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+    for (const auto& pin : acquired->GetPipeline()->GetPins(i))
+      if (pin.m_SourceId == settingsId)
+      {
+        preserved = true;
+        XII_TEST_BOOL(pin.m_Type == xiiRenderPipelinePin::AccelerationStructure);
+        XII_TEST_STRING(pin.m_sDisplayName, "World ray structure");
+      }
+  XII_TEST_BOOL(preserved);
 }

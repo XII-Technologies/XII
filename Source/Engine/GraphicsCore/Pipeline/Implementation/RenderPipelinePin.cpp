@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinType, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::Order)
+  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::Order, xiiRenderPipelinePinType::AccelerationStructure)
 XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinAccess, 1)
   XII_ENUM_CONSTANTS(xiiRenderPipelinePinAccess::Automatic, xiiRenderPipelinePinAccess::Read, xiiRenderPipelinePinAccess::Write, xiiRenderPipelinePinAccess::ReadWrite, xiiRenderPipelinePinAccess::Ordering)
@@ -69,6 +69,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineBufferInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineBufferInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineBufferOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineBufferOutputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAccelerationStructureInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineAccelerationStructureInputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAccelerationStructureOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineAccelerationStructureOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -136,6 +140,10 @@ xiiRenderPipelineBufferInputPin::xiiRenderPipelineBufferInputPin(bool optional, 
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Buffer, true, optional, xiiGALResourceFormat::Unknown, bindings, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
 xiiRenderPipelineBufferOutputPin::xiiRenderPipelineBufferOutputPin(bool optional, xiiBitflags<xiiGALBindFlags> bindings, xiiRenderPipelinePinAccess::Enum access, bool temporal) :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Buffer, false, optional, xiiGALResourceFormat::Unknown, bindings, xiiGALResourceDimension::Undefined, 0, access, temporal) {}
+xiiRenderPipelineAccelerationStructureInputPin::xiiRenderPipelineAccelerationStructureInputPin(bool optional) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::AccelerationStructure, true, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) {}
+xiiRenderPipelineAccelerationStructureOutputPin::xiiRenderPipelineAccelerationStructureOutputPin(bool optional, xiiRenderPipelinePinAccess::Enum access) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::AccelerationStructure, false, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, access, false) {}
 xiiRenderPipelineOrderInputPin::xiiRenderPipelineOrderInputPin() :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, true, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
 xiiRenderPipelineOrderOutputPin::xiiRenderPipelineOrderOutputPin() :
@@ -173,8 +181,8 @@ xiiResult xiiRenderPipelinePin::Apply(const xiiRenderPipelinePinConfiguration& c
     return fail("invalid format, dimension or sample count.");
   if (m_Type != Texture && (configuration.m_Format != xiiGALResourceFormat::Unknown || limits.m_Dimension != xiiGALResourceDimension::Undefined || limits.m_uiSamples || limits.m_uiWidth || limits.m_uiHeight))
     return fail("texture requirements are not valid on this resource kind.");
-  if (m_Type == Order && limits.m_RequiredBindFlags.IsAnyFlagSet())
-    return fail("ordering pins cannot require GPU resource bindings.");
+  if ((m_Type == Order || m_Type == AccelerationStructure) && limits.m_RequiredBindFlags.IsAnyFlagSet())
+    return fail("ordering and acceleration-structure pins cannot require texture/buffer binding flags.");
   if (m_Type == Texture && limits.m_Dimension == xiiGALResourceDimension::Buffer)
     return fail("a texture pin cannot require a buffer dimension.");
   if (xiiReflectionUtils::MakeEnumerationValid(xiiGetStaticRTTI<xiiGALBindFlags>(), limits.m_RequiredBindFlags.GetValue()) != limits.m_RequiredBindFlags.GetValue())

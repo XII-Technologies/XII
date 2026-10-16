@@ -158,11 +158,11 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
         return fail("Pin names must be nonempty.");
       if (pin.m_bTemporalHistoryOutput)
       {
-        if (pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
-          return fail("Temporal history must be a typed resource output pin.");
+        if (pin.m_bInput || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Type != xiiRenderPipelinePin::Buffer))
+          return fail("Temporal history must be a texture or buffer output pin.");
         pass.m_bHasTemporalHistory = true;
       }
-      if (pin.m_Type > xiiRenderPipelinePin::Order || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
+      if (pin.m_Type > xiiRenderPipelinePin::AccelerationStructure || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
         return fail("Invalid pin resource schema.");
       for (xiiUInt32 j = 0; j < i; ++j)
         if (pass.m_Pins[j].m_bInput == pin.m_bInput && pass.m_Pins[j].m_sName == pin.m_sName)

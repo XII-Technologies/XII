@@ -30,7 +30,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineInterfacePass, 1, xiiRTTIDefau
 
 void xiiRenderPipelineInterfacePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
-  if (m_uiResourceType <= xiiRenderPipelinePin::Order && !m_sName.IsEmpty())
+  if (m_uiResourceType <= xiiRenderPipelinePin::AccelerationStructure && !m_sName.IsEmpty())
     out_pins.PushBack({"Value", static_cast<xiiRenderPipelinePin::Type>(m_uiResourceType), !m_bInput, false, m_Format});
 }
 

@@ -81,6 +81,7 @@ namespace
   public:
     xiiPipelineEditorPin(const xiiRenderPipelinePin& pin, const xiiDocumentObject* object) :
       xiiPin(pin.m_bInput ? Type::Input : Type::Output, pin.m_sName, xiiColorScheme::DarkUI(pin.m_Type == xiiRenderPipelinePin::Texture ? xiiColorScheme::Blue : pin.m_Type == xiiRenderPipelinePin::Buffer ? xiiColorScheme::Green :
+                                                                                              pin.m_Type == xiiRenderPipelinePin::AccelerationStructure                                                     ? xiiColorScheme::Violet :
                                                                                                                                                                                                               xiiColorScheme::Gray),
              object),
       m_Schema(pin)
@@ -182,7 +183,6 @@ void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiN
     if (const auto* category = type->GetAttributeByType<xiiCategoryAttribute>())
       entry.m_sCategory.Assign(category->GetCategory());
   }
-
 }
 
 bool xiiRenderPipelineNodeManager::InternalIsNode(const xiiDocumentObject* pObject) const
