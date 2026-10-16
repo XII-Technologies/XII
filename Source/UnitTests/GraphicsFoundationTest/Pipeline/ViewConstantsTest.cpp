@@ -54,6 +54,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ViewConstantSnapshots)
     XII_TEST_BOOL(operations[index].GetRuntimeFeatures().IsNoFlagSet());
     xiiDynamicArray<xiiRenderPipelinePin> pins;
     operations[index].GetPins(pins);
+    XII_TEST_RESULT(operations[index].InitializePinBindings(pins));
     xiiDynamicArray<xiiRenderPipelineBinding> bindings;
     bindings.SetCount(pins.GetCount());
     xiiRenderPipelinePassContext context{views[index], graph, blackboard, parameters, pins, bindings, index ? "B" : "A"};
@@ -89,7 +90,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ViewConstantSnapshots)
   for (xiiUInt32 index = 0; index < 4; ++index)
   {
     auto commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-    auto buffer = graph.GetExportedBuffer(copied.first->m_Target[index]);
+    auto buffer   = graph.GetExportedBuffer(copied.first->m_Target[index]);
     if (!XII_TEST_BOOL(buffer != nullptr))
       return;
     commands->Begin();

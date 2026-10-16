@@ -525,6 +525,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
     xiiSceneShapeIconPass                 invalid;
     xiiDynamicArray<xiiRenderPipelinePin> pins;
     invalid.GetPins(pins);
+    XII_TEST_RESULT(invalid.InitializePinBindings(pins));
     xiiDynamicArray<xiiRenderPipelineBinding> bindings;
     bindings.SetCount(pins.GetCount());
     xiiVariantDictionary         parameters;

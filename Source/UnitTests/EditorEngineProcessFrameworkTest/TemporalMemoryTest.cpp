@@ -126,6 +126,8 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, TAAResizeReleasesOldHistory)
     AddTAAInputs(*view, graph);
     xiiDynamicArray<xiiRenderPipelinePin> pins;
     pass.GetPins(pins);
+    XII_TEST_RESULT(pass.InitializePinBindings(pins));
+    XII_TEST_RESULT(sibling.InitializePinBindings(pins));
     xiiDynamicArray<xiiRenderPipelineBinding> bindings;
     bindings.SetCount(pins.GetCount());
     xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, pins, bindings, "TAA retention"};
@@ -200,6 +202,7 @@ public:
     AddTAAInputs(*context.m_pView, context.m_Graph);
     xiiDynamicArray<xiiRenderPipelinePin> pins;
     m_TAA.GetPins(pins);
+    XII_SUCCEED_OR_RETURN(m_TAA.InitializePinBindings(pins));
     xiiDynamicArray<xiiRenderPipelineBinding> bindings;
     bindings.SetCount(pins.GetCount());
     xiiRenderPipelinePassContext operation{context.m_pView, context.m_Graph, context.m_Blackboard, context.m_Parameters, pins, bindings, context.m_sPassName};

@@ -29,19 +29,15 @@ class xiiEditorPinTestPass : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiEditorPinTestPass, xiiRenderPipelinePass);
 
 public:
-  bool m_bExtra = false;
-  bool m_bValid = true;
-  xiiResult Configure(const xiiVariantDictionary& properties) override
+  bool                              m_bExtra = false;
+  bool                              m_bValid = true;
+  xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::Unknown, true};
+  xiiRenderPipelineTextureOutputPin m_Output;
+  xiiRenderPipelineTextureInputPin  m_Extra{xiiGALResourceFormat::Unknown, true};
+  xiiResult                         Configure(const xiiVariantDictionary& properties) override
   {
     XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
     return m_bValid ? XII_SUCCESS : XII_FAILURE;
-  }
-  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
-  {
-    pins.PushBack({"Input", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"Output", xiiRenderPipelinePin::Texture, false});
-    if (m_bExtra)
-      pins.PushBack({"Extra", xiiRenderPipelinePin::Texture, true, true});
   }
   xiiResult Build(xiiRenderPipelinePassContext&) override { return XII_SUCCESS; }
 };
@@ -51,6 +47,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPinTestPass, 1, xiiRTTIDefaultAllocato
     {
       XII_MEMBER_PROPERTY("Extra", m_bExtra),
       XII_MEMBER_PROPERTY("Valid", m_bValid)->AddAttributes(new xiiDefaultValueAttribute(true)),
+      XII_MEMBER_PROPERTY("Input", m_Input)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("Output", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("ExtraPin", m_Extra)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Extra"), new xiiRenderPipelinePinEnabledAttribute("Extra")),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;

@@ -103,6 +103,7 @@ XII_CREATE_SIMPLE_TEST(RenderOperationFailure, PassFailureAndRecovery)
   xiiRenderGraphBlackboard              blackboard;
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   pass.GetPins(pins);
+  XII_TEST_RESULT(pass.InitializePinBindings(pins));
   xiiDynamicArray<xiiRenderPipelineBinding> bindings;
   bindings.SetCount(pins.GetCount());
   xiiRenderPipelinePassContext context{view, graph, blackboard, properties, pins, bindings, "Shader setup failure"};

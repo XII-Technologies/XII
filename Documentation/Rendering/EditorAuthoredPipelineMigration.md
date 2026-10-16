@@ -571,3 +571,53 @@ Thirteen Builtin implementation files and the public selector remain. Eight comp
 branches and 70 original operation-data structures still need migration. This is
 concrete progress toward complete removal, not completion of the entire rendering
 stack decomposition or the broader final audit.
+
+
+## Reflected native pin members
+
+The 23 independent GraphicsCore and SharedPluginScene pass types now declare their
+122 resource pins as typed native members registered with XII_MEMBER_PROPERTY.
+The pass base supplies reflected Before/After ordering members. Their procedural
+GetPins overrides and the ResourcePins array-filling helper have been removed.
+RTTI discovers the schema; there is no parallel native leaf pin-kind table.
+Texture/buffer input/output types fix direction and resource kind. Native member
+initializers preserve resource formats, dimensions, samples, binding requirements,
+read-through access and explicit temporal outputs. Reflected attributes preserve
+existing external names where an input/output pair needs unique RTTI identifiers,
+and express boolean-controlled optionality or genuinely dynamic pin presence.
+
+Leaf Build methods consume the typed members. Each view-local runtime pass binds
+its members to the immutable compiled contract once during initialization, with
+schema validation. Fixed resource access then uses checked indices rather than
+string searches. Schema inspection is read-only and cannot disturb execution
+bindings. Failed binding initialization invalidates the member indices. No runtime
+binding index is serialized or used as a persistent graph/document identity.
+
+Existing persistent PinConfigurations objects remain authored contract overrides,
+automatically maintained by the editor; they are not manually populated native
+pin-type declarations. Keeping that existing document representation preserves
+pin identities, connection names, overrides, subgraph boundaries and SDK binary
+exports. Native handle properties are read-only/hidden by reflection attributes;
+their authored requirements remain visible when selecting the parent node or pin.
+The Qt editing fixture now uses typed member pins, including attribute-controlled
+presence, and verifies editing, undo/redo, copy, serialization and expansion through
+the same production document and compiler paths.
+
+ReflectedPinMembers adds a producer/consumer topology with no GetPins overrides,
+checks typed execution bindings, native constraints, uneditable/nonserialized
+runtime handles, read-only schema queries, stale-schema rejection, conditional
+requirements, temporal metadata and deterministic serialized pin identities.
+Direct pass test harnesses explicitly initialize bindings, just like runtime
+instances. The final four Debug targets build; all 32 Core, 53 Vulkan GAL,
+73 Vulkan editor-engine and 15 Qt subtests pass. Evidence is in
+Workspace/reflected-pins-final-build.log and Workspace/reflected-pins-final-{core,
+gal,editor-gpu,qt}.log. An initial RTTI assertion exposed external names containing
+spaces; valid property identifiers plus external-name attributes fixed it without
+changing assets. An anonymous-namespace RTTI test declaration was also corrected
+before final verification. D3D12 is excluded. No controlled throughput benchmark
+ran; the measured tests establish correctness, not a frame-time improvement.
+
+The remaining Builtin selector and its eight composite branches still have
+procedural schemas and shared orchestration. They remain part of the unfinished
+whole-stack decomposition documented above; this member-pin change does not claim
+their removal or completion of the broader migration.
