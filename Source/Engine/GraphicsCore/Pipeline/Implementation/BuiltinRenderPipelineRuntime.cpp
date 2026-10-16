@@ -467,11 +467,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildOpaqueComposition(xiiRenderGraph& gra
 {
   // Composite the selected opaque lighting path with indirect, emissive, near-field GI, and volumetrics.
   graph.AddPass<xiiOpaqueLightingCompositeData>("OpaqueLightingComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupOpaqueLightingComposite, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteOpaqueLightingComposite, this));
-  graph.AddPass<xiiHairRenderingData>("HairRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupHairRendering, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteHairRendering, this));
   graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupPlanarReflections, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecutePlanarReflections, this));
-  graph.AddPass<xiiWaterRenderingData>("WaterRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupWaterRendering, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteWaterRendering, this));
-  graph.AddPass<xiiSubsurfaceScatteringData>("SubsurfaceScattering", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSubsurfaceScattering, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSubsurfaceScattering, this));
-  graph.AddPass<xiiEyeShaderData>("EyeShader", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupEyeShader, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteEyeShader, this));
 
   // Resolve screen-space rays against complete opaque scene radiance, then
   // replace Tier 2 environment specular with the best valid Tier 3 / Tier 1

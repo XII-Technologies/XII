@@ -872,42 +872,7 @@ struct xiiOpaqueLightingCompositeData
   xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< UnorderedAccess out (base scene radiance before reflection tier replacement).
 };
 
-struct xiiHairRenderingData
-{
-  XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
-  xiiRenderGraphTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
-  xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
-};
-
-struct xiiWaterRenderingData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
-  xiiRenderGraphTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
-  xiiRenderGraphTextureHandle m_hPlanarReflectionMap;  ///< ShaderResource in (planar reflection map).
-  xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
-};
-
-struct xiiSubsurfaceScatteringData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;   ///< UnorderedAccess in/out (HDR scene color).
-  xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferMaterial; ///< ShaderResource in (material G-Buffer).
-};
-
-struct xiiEyeShaderData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
-  xiiRenderGraphTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
-  xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
-};
 
 struct xiiGPUParticleSimulateData
 {

@@ -99,10 +99,6 @@ struct xiiVolumetricFogResolveData;
 struct xiiVolumetricFogTemporalReprojectionData;
 
 struct xiiOpaqueLightingCompositeData;
-struct xiiHairRenderingData;
-struct xiiWaterRenderingData;
-struct xiiSubsurfaceScatteringData;
-struct xiiEyeShaderData;
 
 struct xiiGPUParticleSimulateData;
 struct xiiDecalUploadData;
@@ -331,11 +327,7 @@ public:
     //  Stage 7 - Forward Passes
     struct ForwardPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pOpaqueLightingCompositePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pHairPipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pWaterPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSSComputePipeline; // screen-space SSS blur
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pEyePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pOpaqueLightingCompositePipeline;
     } m_ForwardPasses;
 
     //  Stage 8 - Transparency & Special
@@ -577,17 +569,6 @@ private:
   void SetupOpaqueLightingComposite(xiiOpaqueLightingCompositeData& data, xiiRenderGraphBuilder& builder);
   void ExecuteOpaqueLightingComposite(const xiiOpaqueLightingCompositeData& data, xiiRenderGraphPassContext& context);
 
-  void SetupHairRendering(xiiHairRenderingData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteHairRendering(const xiiHairRenderingData& data, xiiRenderGraphPassContext& context);
-
-  void SetupWaterRendering(xiiWaterRenderingData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRenderGraphPassContext& context);
-
-  void SetupSubsurfaceScattering(xiiSubsurfaceScatteringData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& data, xiiRenderGraphPassContext& context);
-
-  void SetupEyeShader(xiiEyeShaderData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteEyeShader(const xiiEyeShaderData& data, xiiRenderGraphPassContext& context);
 
 
   void SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRenderGraphBuilder& builder);
