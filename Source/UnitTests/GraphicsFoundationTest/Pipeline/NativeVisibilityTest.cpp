@@ -1,14 +1,23 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+#include <Core/Graphics/Camera.h>
+#include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/World/World.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 
@@ -276,4 +285,139 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
     environment.GetDevice()->WaitIdle();
     XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
   }
+}
+
+XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  const auto                                 asset = xiiLoadPipelineLibraryResource("InstanceVisibility");
+  xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
+    return;
+  const auto authoring = loaded->GetAuthoring();
+  xiiUuid    cullId, viewId, uploadId;
+  for (const auto& pass : authoring->m_Descriptor.m_Passes)
+  {
+    if (pass.m_sType == "xiiInstanceCullPass")
+      cullId = pass.m_Id;
+    if (pass.m_sType == "xiiVisibilityViewPass")
+      viewId = pass.m_Id;
+    if (pass.m_sType == "xiiWorldInstancesUploadPass")
+      uploadId = pass.m_Id;
+  }
+  if (!XII_TEST_BOOL(cullId.IsValid() && viewId.IsValid() && uploadId.IsValid()))
+    return;
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_References.PushBack({authoring->m_Descriptor.m_Id, asset.GetResourceID()});
+  root.AddSubgraph("Visible world", authoring->m_Descriptor.m_Id);
+  root.AddSubgraph("Filtered world", authoring->m_Descriptor.m_Id);
+  const auto filteredId = root.m_Passes[1].m_Id;
+  auto&      override   = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  override.m_Path.PushBack(viewId);
+  override.m_Properties.Insert("VisibilityMask", 0U);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", "xiiNativeCullExport");
+    XII_TEST_RESULT(root.Connect(i, "VisibleInstances", sink, "Visible"));
+    XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
+    XII_TEST_RESULT(root.Connect(i, "LodHistory", sink, "Lod"));
+  }
+  const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Authored world visibility instances", std::move(root));
+  xiiGeometry box;
+  box.AddBox(xiiVec3(1), true);
+  xiiMeshResourceDescriptor meshDescription;
+  meshDescription.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, false);
+  meshDescription.AddSection(12, 0, 0);
+  meshDescription.ComputeBounds();
+  const auto          mesh = xiiResourceManager::CreateResource<xiiMeshResource>("NativeVisibility.WorldMesh", std::move(meshDescription));
+  xiiWorldDescription description("Authored world visibility");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  world.SetWorldSimulationEnabled(false);
+  xiiGameObject*          object       = nullptr;
+  const auto              objectHandle = world.CreateObject({}, object);
+  xiiStaticMeshComponent* component    = nullptr;
+  xiiStaticMeshComponent::CreateComponent(object, component);
+  component->SetMesh(mesh);
+  auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  camera.LookAt({-5, 0, 0}, {0, 0, 0}, {0, 0, 1});
+  xiiView* views[2];
+  for (auto& view : views)
+  {
+    module->CreateView("Authored native visibility", view);
+    view->SetCamera(&camera);
+    view->SetViewport({0, 0, 64, 64});
+    view->SetRenderPipelineResource(pipeline);
+  }
+  bool      sawResident = false;
+  xiiUInt32 identity    = 0;
+  for (xiiUInt32 phase = 0; phase < 5; ++phase)
+  {
+    if (phase == 4)
+      world.DeleteObjectNow(objectHandle);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    const auto* instances = module->GetGpuInstanceData();
+    if (!XII_TEST_BOOL(instances != nullptr))
+      return;
+    XII_TEST_INT(instances->GetInstanceCount(), phase == 4 ? 0 : 1);
+    if (phase != 4)
+    {
+      identity = instances->GetInstances()[0].m_uiObjectId;
+      xiiGpuInstanceSource source;
+      XII_TEST_RESULT(instances->Resolve(identity, source));
+      XII_TEST_BOOL(source.m_hOwnerObject == objectHandle);
+    }
+    else
+    {
+      xiiGpuInstanceSource source;
+      XII_TEST_BOOL(instances->Resolve(identity, source).Failed());
+    }
+    const bool resident = phase != 4 && xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount > 0;
+    sawResident |= resident;
+    xiiUInt32 checked = 0;
+    for (auto* view : views)
+    {
+      const auto& execution = view->GetRenderPipelineInstance();
+      const auto* compiled  = execution.GetPipeline();
+      if (!XII_TEST_BOOL(compiled != nullptr))
+        return;
+      XII_TEST_BOOL(view->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
+      xiiRenderGraphBufferHandle sharedUpload;
+      xiiSharedPtr<xiiGALBuffer> history[2];
+      xiiUInt32                  histories = 0;
+      for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
+      {
+        const auto& provenance = compiled->GetProvenance()[i];
+        if (provenance.m_Element == uploadId)
+        {
+          const auto buffer = execution.GetOutputBinding(i, "SceneInstances")->m_hBuffer;
+          if (!sharedUpload.IsValid())
+            sharedUpload = buffer;
+          XII_TEST_BOOL(buffer == sharedUpload);
+        }
+        if (provenance.m_Element != cullId)
+          continue;
+        const bool filtered = provenance.m_InstancePath[0] == filteredId;
+        const auto count    = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "VisibleInstanceCount")->m_hBuffer);
+        xiiUInt32  visible  = xiiInvalidIndex;
+        if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), count.Borrow(), 0, visible))
+          return;
+        XII_TEST_INT(visible, resident && !filtered ? 1 : 0);
+        history[histories++] = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "LodHistory")->m_hBuffer);
+        ++checked;
+      }
+      XII_TEST_INT(histories, 2);
+      XII_TEST_BOOL(history[0] && history[1] && history[0] != history[1]);
+    }
+    XII_TEST_INT(checked, 4);
+  }
+  XII_TEST_BOOL(sawResident);
 }
