@@ -2,6 +2,7 @@
 
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Serialization/GraphPatch.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Implementation/LegacyRenderPipelineMigration.h>
 
@@ -253,103 +254,213 @@ namespace
     return ConvertAmbientOcclusion(descriptor.m_Passes, visit, add, descriptor.m_Interface);
   }
 
-  /// Extract the formerly implicit AO operations without changing existing node or edge identities.
+  template <typename Nodes, typename VisitEdges, typename AddEdge, typename Boundaries>
+  void ConvertIrradiance(Nodes& nodes, VisitEdges visit, AddEdge add, Boundaries& boundaries)
+  {
+    const xiiUInt32 originalCount = nodes.GetCount();
+    for (xiiUInt32 preparation = 0; preparation < originalCount; ++preparation)
+    {
+      if (!IsLegacyStage(nodes[preparation].m_sType, nodes[preparation].m_Properties, "LightingPreparation"))
+        continue;
+      xiiUInt32 visibility = xiiInvalidIndex;
+      for (xiiUInt32 i = 0; i < originalCount; ++i)
+        if (IsLegacyStage(nodes[i].m_sType, nodes[i].m_Properties, "Visibility"))
+          visibility = i;
+      const auto extract = [&](xiiStringView type, xiiStringView output) {
+        auto id = nodes[preparation].m_Id;
+        id.HashCombine(xiiUuid::MakeStableUuidFromString(type));
+        for (const auto& node : nodes)
+          if (node.m_Id == id)
+            return;
+        const xiiUInt32 gather = nodes.GetCount();
+        auto&           node   = nodes.ExpandAndGetRef();
+        node.m_Id              = id;
+        node.m_sName           = output;
+        node.m_sType           = type;
+        visit([&](auto& source, auto&, auto& port, auto&) {
+          if (source == preparation && port == output)
+            source = gather;
+        });
+        for (auto& boundary : boundaries)
+          if (!boundary.m_bInput && boundary.m_Node == nodes[preparation].m_Id && boundary.m_sPort == output)
+            boundary.m_Node = id;
+        if (const auto* value = nodes[preparation].m_Properties.GetValue("PinConfigurations"); value && value->IsA<xiiVariantArray>())
+        {
+          xiiVariantArray retained, moved;
+          for (const auto& config : value->Get<xiiVariantArray>())
+          {
+            const auto* metadata = config.IsA<xiiVariantDictionary>() ? config.Get<xiiVariantDictionary>().GetValue("Metadata") : nullptr;
+            const auto* name     = metadata && metadata->IsA<xiiVariantDictionary>() ? metadata->Get<xiiVariantDictionary>().GetValue("Name") : nullptr;
+            const auto* input    = metadata && metadata->IsA<xiiVariantDictionary>() ? metadata->Get<xiiVariantDictionary>().GetValue("Input") : nullptr;
+            if (name && input && *name == xiiVariant(output) && *input == xiiVariant(false))
+              moved.PushBack(config);
+            else
+              retained.PushBack(config);
+          }
+          nodes[preparation].m_Properties.Insert("PinConfigurations", retained);
+          if (!moved.IsEmpty())
+            nodes[gather].m_Properties.Insert("PinConfigurations", moved);
+        }
+        // Native member RTTI defines input kinds and contracts, even in migration.
+        const auto* rtti = xiiRTTI::FindTypeByName(type);
+        if (!rtti || !rtti->GetAllocator()->CanAllocate())
+          return;
+        xiiRenderPipelinePass* operation = rtti->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+        XII_SCOPE_EXIT(rtti->GetAllocator()->Deallocate(operation));
+        xiiDynamicArray<xiiRenderPipelinePin> pins;
+        operation->GetPins(pins);
+        for (const auto& pin : pins)
+        {
+          if (!pin.m_bInput)
+            continue;
+          if (pin.m_sName == "Before")
+            add(preparation, "After", gather, "Before");
+          else if (pin.m_sName == "PerFrameCamera" || pin.m_sName == "PerFrameLight")
+          {
+            if (visibility != xiiInvalidIndex)
+              add(visibility, pin.m_sName, gather, pin.m_sName);
+          }
+          else
+            add(preparation, pin.m_sName, gather, pin.m_sName);
+        }
+      };
+      extract("xiiDDGIProbeGatherPass", "DDGIIrradiance");
+      extract("xiiSparseVoxelGatherPass", "SparseVoxelIrradiance");
+    }
+  }
+
+  void ConvertIrradiance(xiiRenderPipelineResourceDescriptor& descriptor)
+  {
+    const auto visit = [&](auto callback) {
+      for (auto& edge : descriptor.m_Connections)
+        callback(edge.m_uiSource, edge.m_uiTarget, edge.m_sOutput, edge.m_sInput);
+    };
+    const auto add = [&](xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input) {
+      for (const auto& edge : descriptor.m_Connections)
+        if (edge.m_uiSource == source && edge.m_uiTarget == target && edge.m_sOutput == output && edge.m_sInput == input)
+          return;
+      if (descriptor.Connect(source, output, target, input).Succeeded())
+        descriptor.m_Connections.PeekBack().m_Id = ConnectionId(descriptor.m_Passes[source].m_Id, descriptor.m_Passes[target].m_Id, xiiStringBuilder("Gather/", output, "/", input));
+    };
+    ConvertIrradiance(descriptor.m_Passes, visit, add, descriptor.m_Interface);
+  }
+
+  /// The existing object graph owns persistent identities and reflected pin settings.
+  /// Apply an operation extraction to that graph without recreating editor objects.
+  template <typename ConvertDescriptor>
+  void ExtractSourceOperations(xiiAbstractObjectGraph* graph, ConvertDescriptor convert)
+  {
+    auto*       root     = graph->GetNodeByName("ObjectTree");
+    const auto* property = root ? root->FindProperty("Children") : nullptr;
+    if (!property || !property->m_Value.IsA<xiiVariantArray>())
+      return;
+    auto                                children = property->m_Value.Get<xiiVariantArray>();
+    xiiRenderPipelineResourceDescriptor descriptor;
+    xiiMap<xiiUuid, xiiUInt32>          indices;
+    for (const auto& child : children)
+    {
+      auto* node = child.IsA<xiiUuid>() ? graph->GetNode(child.Get<xiiUuid>()) : nullptr;
+      if (!node || node->FindProperty("Source"))
+        continue;
+      auto& pass   = descriptor.m_Passes.ExpandAndGetRef();
+      pass.m_Id    = node->GetGuid();
+      pass.m_sType = node->GetType();
+      if (const auto* stage = node->FindProperty("Stage"))
+        pass.m_Properties.Insert("Stage", stage->m_Value);
+      indices.Insert(pass.m_Id, descriptor.m_Passes.GetCount() - 1);
+    }
+    for (const auto& child : children)
+    {
+      auto*       node   = child.IsA<xiiUuid>() ? graph->GetNode(child.Get<xiiUuid>()) : nullptr;
+      const auto* source = node ? node->FindProperty("Source") : nullptr;
+      const auto* target = node ? node->FindProperty("Target") : nullptr;
+      const auto* output = node ? node->FindProperty("SourcePin") : nullptr;
+      const auto* input  = node ? node->FindProperty("TargetPin") : nullptr;
+      xiiUInt32   sourceIndex, targetIndex;
+      if (!source || !target || !output || !input || !source->m_Value.IsA<xiiUuid>() || !target->m_Value.IsA<xiiUuid>() ||
+          !output->m_Value.IsA<xiiString>() || !input->m_Value.IsA<xiiString>() ||
+          !indices.TryGetValue(source->m_Value.Get<xiiUuid>(), sourceIndex) || !indices.TryGetValue(target->m_Value.Get<xiiUuid>(), targetIndex))
+        continue;
+      descriptor.m_Connections.PushBack({sourceIndex, targetIndex, output->m_Value.Get<xiiString>(), input->m_Value.Get<xiiString>(), node->GetGuid()});
+    }
+    const auto originalCount = descriptor.m_Passes.GetCount();
+    convert(descriptor);
+    if (descriptor.m_Passes.GetCount() == originalCount)
+      return;
+    for (xiiUInt32 i = originalCount; i < descriptor.m_Passes.GetCount(); ++i)
+    {
+      const auto& pass     = descriptor.m_Passes[i];
+      const bool  subgraph = pass.m_Definition.IsValid();
+      auto*       node     = graph->AddNode(pass.m_Id, subgraph ? "xiiRenderPipelineSubgraphPass" : pass.m_sType.GetView(), 1);
+      if (subgraph)
+        node->AddProperty("Resource", xiiString(s_AmbientOcclusionResource));
+      for (xiiUInt32 source = 0; source < originalCount; ++source)
+      {
+        auto expected = descriptor.m_Passes[source].m_Id;
+        expected.HashCombine(subgraph ? pass.m_Definition : xiiUuid::MakeStableUuidFromString(pass.m_sType));
+        if (expected != pass.m_Id)
+          continue;
+        auto*       original = graph->GetNode(descriptor.m_Passes[source].m_Id);
+        const auto* pins     = original ? original->FindProperty("PinConfigurations") : nullptr;
+        if (!pins || !pins->m_Value.IsA<xiiVariantArray>())
+          continue;
+        xiiVariantArray retained, moved;
+        for (const auto& configuration : pins->m_Value.Get<xiiVariantArray>())
+        {
+          const auto* config     = configuration.IsA<xiiUuid>() ? graph->GetNode(configuration.Get<xiiUuid>()) : nullptr;
+          const auto* metadataId = config ? config->FindProperty("Metadata") : nullptr;
+          const auto* metadata   = metadataId && metadataId->m_Value.IsA<xiiUuid>() ? graph->GetNode(metadataId->m_Value.Get<xiiUuid>()) : nullptr;
+          const auto* name       = metadata ? metadata->FindProperty("Name") : nullptr;
+          const auto* input      = metadata ? metadata->FindProperty("Input") : nullptr;
+          if (name && input && name->m_Value == xiiVariant(subgraph ? "RawAO"_xiisv : pass.m_sName.GetView()) && input->m_Value == xiiVariant(false))
+            moved.PushBack(configuration);
+          else
+            retained.PushBack(configuration);
+        }
+        original->ChangeProperty("PinConfigurations", retained);
+        if (!moved.IsEmpty())
+          node->AddProperty("PinConfigurations", moved);
+      }
+      children.PushBack(pass.m_Id);
+    }
+    for (const auto& edge : descriptor.m_Connections)
+    {
+      auto* node = graph->GetNode(edge.m_Id);
+      if (!node)
+      {
+        node = graph->AddNode(edge.m_Id, "xiiDocumentObject_ConnectionBase", 1);
+        children.PushBack(edge.m_Id);
+      }
+      const auto set = [&](const char* name, const xiiVariant& value) {
+        if (node->FindProperty(name))
+          node->ChangeProperty(name, value);
+        else
+          node->AddProperty(name, value);
+      };
+      set("Source", descriptor.m_Passes[edge.m_uiSource].m_Id);
+      set("Target", descriptor.m_Passes[edge.m_uiTarget].m_Id);
+      set("SourcePin", edge.m_sOutput);
+      set("TargetPin", edge.m_sInput);
+    }
+    root->ChangeProperty("Children", children);
+  }
+  class IrradianceSourcePatch : public xiiGraphPatch
+  {
+  public:
+    IrradianceSourcePatch() : xiiGraphPatch({}, 6, PatchType::GraphPatch) {}
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph* graph, xiiAbstractObjectNode*) const override
+    {
+      ExtractSourceOperations(graph, [](auto& descriptor) { ConvertIrradiance(descriptor); });
+    }
+  };
+  static IrradianceSourcePatch s_IrradianceSourcePatch;
   class AmbientOcclusionSourcePatch : public xiiGraphPatch
   {
   public:
     AmbientOcclusionSourcePatch() : xiiGraphPatch({}, 5, PatchType::GraphPatch) {}
     void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph* graph, xiiAbstractObjectNode*) const override
     {
-      auto*       root     = graph->GetNodeByName("ObjectTree");
-      const auto* property = root ? root->FindProperty("Children") : nullptr;
-      if (!property || !property->m_Value.IsA<xiiVariantArray>())
-        return;
-      auto                                children = property->m_Value.Get<xiiVariantArray>();
-      xiiRenderPipelineResourceDescriptor descriptor;
-      xiiMap<xiiUuid, xiiUInt32>          indices;
-      for (const auto& child : children)
-      {
-        auto* node = child.IsA<xiiUuid>() ? graph->GetNode(child.Get<xiiUuid>()) : nullptr;
-        if (!node || node->FindProperty("Source"))
-          continue;
-        auto& pass   = descriptor.m_Passes.ExpandAndGetRef();
-        pass.m_Id    = node->GetGuid();
-        pass.m_sType = node->GetType();
-        if (const auto* stage = node->FindProperty("Stage"))
-          pass.m_Properties.Insert("Stage", stage->m_Value);
-        indices.Insert(pass.m_Id, descriptor.m_Passes.GetCount() - 1);
-      }
-      for (const auto& child : children)
-      {
-        auto*       node   = child.IsA<xiiUuid>() ? graph->GetNode(child.Get<xiiUuid>()) : nullptr;
-        const auto* source = node ? node->FindProperty("Source") : nullptr;
-        const auto* target = node ? node->FindProperty("Target") : nullptr;
-        const auto* output = node ? node->FindProperty("SourcePin") : nullptr;
-        const auto* input  = node ? node->FindProperty("TargetPin") : nullptr;
-        xiiUInt32   sourceIndex, targetIndex;
-        if (!source || !target || !output || !input || !source->m_Value.IsA<xiiUuid>() || !target->m_Value.IsA<xiiUuid>() ||
-            !output->m_Value.IsA<xiiString>() || !input->m_Value.IsA<xiiString>() ||
-            !indices.TryGetValue(source->m_Value.Get<xiiUuid>(), sourceIndex) || !indices.TryGetValue(target->m_Value.Get<xiiUuid>(), targetIndex))
-          continue;
-        descriptor.m_Connections.PushBack({sourceIndex, targetIndex, output->m_Value.Get<xiiString>(), input->m_Value.Get<xiiString>(), node->GetGuid()});
-      }
-      const auto originalCount = descriptor.m_Passes.GetCount();
-      if (!ConvertAmbientOcclusion(descriptor))
-        return;
-      for (xiiUInt32 i = originalCount; i < descriptor.m_Passes.GetCount(); ++i)
-      {
-        const auto& pass = descriptor.m_Passes[i];
-        auto*       node = graph->AddNode(pass.m_Id, "xiiRenderPipelineSubgraphPass", 1);
-        node->AddProperty("Resource", xiiString(s_AmbientOcclusionResource));
-        for (xiiUInt32 source = 0; source < originalCount; ++source)
-        {
-          auto expected = descriptor.m_Passes[source].m_Id;
-          expected.HashCombine(xiiAmbientOcclusionDefinitionId());
-          if (expected != pass.m_Id)
-            continue;
-          auto*       original = graph->GetNode(descriptor.m_Passes[source].m_Id);
-          const auto* pins     = original ? original->FindProperty("PinConfigurations") : nullptr;
-          if (!pins || !pins->m_Value.IsA<xiiVariantArray>())
-            continue;
-          xiiVariantArray retained, moved;
-          for (const auto& configuration : pins->m_Value.Get<xiiVariantArray>())
-          {
-            const auto* config     = configuration.IsA<xiiUuid>() ? graph->GetNode(configuration.Get<xiiUuid>()) : nullptr;
-            const auto* metadataId = config ? config->FindProperty("Metadata") : nullptr;
-            const auto* metadata   = metadataId && metadataId->m_Value.IsA<xiiUuid>() ? graph->GetNode(metadataId->m_Value.Get<xiiUuid>()) : nullptr;
-            const auto* name       = metadata ? metadata->FindProperty("Name") : nullptr;
-            const auto* input      = metadata ? metadata->FindProperty("Input") : nullptr;
-            if (name && input && name->m_Value == xiiVariant("RawAO") && input->m_Value == xiiVariant(false))
-              moved.PushBack(configuration);
-            else
-              retained.PushBack(configuration);
-          }
-          original->ChangeProperty("PinConfigurations", retained);
-          if (!moved.IsEmpty())
-            node->AddProperty("PinConfigurations", moved);
-        }
-        children.PushBack(pass.m_Id);
-      }
-      for (const auto& edge : descriptor.m_Connections)
-      {
-        auto* node = graph->GetNode(edge.m_Id);
-        if (!node)
-        {
-          node = graph->AddNode(edge.m_Id, "xiiDocumentObject_ConnectionBase", 1);
-          children.PushBack(edge.m_Id);
-        }
-        const auto set = [&](const char* name, const xiiVariant& value) {
-          if (node->FindProperty(name))
-            node->ChangeProperty(name, value);
-          else
-            node->AddProperty(name, value);
-        };
-        set("Source", descriptor.m_Passes[edge.m_uiSource].m_Id);
-        set("Target", descriptor.m_Passes[edge.m_uiTarget].m_Id);
-        set("SourcePin", edge.m_sOutput);
-        set("TargetPin", edge.m_sInput);
-      }
-      root->ChangeProperty("Children", children);
+      ExtractSourceOperations(graph, [](auto& descriptor) { ConvertAmbientOcclusion(descriptor); });
     }
   };
   static AmbientOcclusionSourcePatch s_AmbientOcclusionSourcePatch;
@@ -610,7 +721,7 @@ namespace
   static ScreenEffectsSourceConnectionsPatch s_ConnectionsPatch;
 } // namespace
 
-void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor, bool extractAmbientOcclusion)
+void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor, bool extractAmbientOcclusion, bool extractIrradiance)
 {
   const auto addRoot = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView port) {
     for (const auto& edge : descriptor.m_Connections)
@@ -620,10 +731,12 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
       descriptor.m_Connections.PeekBack().m_Id = ConnectionId(descriptor.m_Passes[source].m_Id, descriptor.m_Passes[target].m_Id, port);
   };
   bool ambientOcclusionChanged = extractAmbientOcclusion && ConvertAmbientOcclusion(descriptor);
-  bool transparencyChanged     = ConvertTransparency(descriptor.m_Passes);
-  bool opaqueChanged           = ConvertOpaque(descriptor.m_Passes, addRoot);
-  bool debugChanged            = ConvertDebug(descriptor.m_Passes, addRoot);
-  bool changed                 = Convert(descriptor.m_Passes, addRoot);
+  if (extractIrradiance)
+    ConvertIrradiance(descriptor);
+  bool transparencyChanged = ConvertTransparency(descriptor.m_Passes);
+  bool opaqueChanged       = ConvertOpaque(descriptor.m_Passes, addRoot);
+  bool debugChanged        = ConvertDebug(descriptor.m_Passes, addRoot);
+  bool changed             = Convert(descriptor.m_Passes, addRoot);
   for (auto& definition : descriptor.m_Definitions)
   {
     const auto add = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView port) {
@@ -658,6 +771,11 @@ void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescript
     {
       definition.m_Topology.m_uiVertexCount = definition.m_Nodes.GetCount();
       ambientOcclusionChanged               = true;
+    }
+    if (extractIrradiance)
+    {
+      ConvertIrradiance(definition.m_Nodes, visitAO, addAO, definition.m_Boundary);
+      definition.m_Topology.m_uiVertexCount = definition.m_Nodes.GetCount();
     }
     transparencyChanged |= ConvertTransparency(definition.m_Nodes);
     opaqueChanged |= ConvertOpaque(definition.m_Nodes, add);

@@ -29,4 +29,4 @@ inline xiiUuid xiiAmbientOcclusionDefinitionId()
   return xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.AmbientOcclusion");
 }
 
-void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor, bool extractAmbientOcclusion);
+void xiiMigrateLegacyRenderPipelineDefinitions(xiiRenderPipelineResourceDescriptor& descriptor, bool extractAmbientOcclusion, bool extractIrradiance);

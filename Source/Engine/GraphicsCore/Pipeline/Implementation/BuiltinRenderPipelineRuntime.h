@@ -71,8 +71,6 @@ struct xiiAtmosphereTransmittanceData;
 struct xiiAtmosphereMultiScatterData;
 struct xiiSkyIrradianceConvolutionData;
 struct xiiVolumetricFogInitializationData;
-struct xiiDDGIProbeSamplingData;
-struct xiiSparseVoxelRadianceGatherData;
 
 struct xiiReSTIRDITemporalData;
 struct xiiReSTIRDISpatialData;
@@ -206,8 +204,6 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState>         m_pAtmMultiScatterPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>         m_pSkyIrradiancePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>         m_pFroxelFogInitPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>         m_pDDGIProbePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>         m_pSparseVoxelGatherPipeline;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
       xiiSharedPtr<xiiGALTexture>                      m_pFallbackReflectionProbeTexture;
     } m_LightingPrepPasses;
@@ -427,12 +423,6 @@ private:
 
   void SetupVolumetricFogInitialization(xiiVolumetricFogInitializationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializationData& data, xiiRenderGraphPassContext& context);
-
-  void SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRenderGraphPassContext& context);
-
-  void SetupSparseVoxelRadianceGather(xiiSparseVoxelRadianceGatherData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteSparseVoxelRadianceGather(const xiiSparseVoxelRadianceGatherData& data, xiiRenderGraphPassContext& context);
 
 
 

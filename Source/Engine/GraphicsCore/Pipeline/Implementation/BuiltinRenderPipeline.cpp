@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 8, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 9, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -186,12 +186,10 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"SparseVoxelPageTable", xiiRenderPipelinePin::Buffer, true, true});
     pins.PushBack({"SparseVoxelLevelData", xiiRenderPipelinePin::Buffer, true, true});
     pins.PushBack({"SparseVoxelConstants", xiiRenderPipelinePin::Buffer, true, true});
-    pins.PushBack({"SparseVoxelIrradiance", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"DDGIProbeIrradianceAtlas", xiiRenderPipelinePin::Texture, true, true});
     pins.PushBack({"DDGIProbeDistanceAtlas", xiiRenderPipelinePin::Texture, true, true});
     pins.PushBack({"DDGIProbeStates", xiiRenderPipelinePin::Buffer, true, true});
     pins.PushBack({"DDGIProbeConstants", xiiRenderPipelinePin::Buffer, true, true});
-    pins.PushBack({"DDGIIrradiance", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"NormalRoughness", xiiRenderPipelinePin::Texture, true, true});
     pins.PushBack({"AtmTransmittance", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"AtmMultiScatter", xiiRenderPipelinePin::Texture, false, true});

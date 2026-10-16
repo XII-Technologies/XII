@@ -434,32 +434,6 @@ struct xiiVolumetricFogInitializationData
   xiiRenderGraphTextureHandle m_hFroxelScattering; ///< UnorderedAccess inout (froxel scattering texture).
 };
 
-struct xiiDDGIProbeSamplingData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hDDGIIrradiance; ///< UnorderedAccess out (DDGI irradiance result texture).
-  xiiRenderGraphTextureHandle m_hSceneDepth;     ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;  ///< ShaderResource in (GBuffer normal texture).
-  xiiRenderGraphTextureHandle m_hProbeIrradianceAtlas;
-  xiiRenderGraphTextureHandle m_hProbeDistanceAtlas;
-  xiiRenderGraphBufferHandle  m_hProbeStates;
-  xiiRenderGraphBufferHandle  m_hProbeConstants;
-};
-
-struct xiiSparseVoxelRadianceGatherData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hSceneDepth;
-  xiiRenderGraphTextureHandle m_hGBufferNormal;
-  xiiRenderGraphBufferHandle  m_hRadiancePool;
-  xiiRenderGraphBufferHandle  m_hPageTable;
-  xiiRenderGraphBufferHandle  m_hLevelData;
-  xiiRenderGraphBufferHandle  m_hConstants;
-  xiiRenderGraphTextureHandle m_hIrradiance;
-};
-
 struct xiiReSTIRDITemporalData
 {
   XII_DECLARE_POD_TYPE();

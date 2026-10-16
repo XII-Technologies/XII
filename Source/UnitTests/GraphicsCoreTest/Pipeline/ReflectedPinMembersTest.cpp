@@ -1,8 +1,12 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphVersioning.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
@@ -277,14 +281,14 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionAssetMigration)
   xiiMemoryStreamReader               reader(&original);
   xiiRenderPipelineResourceDescriptor migrated;
   XII_TEST_RESULT(migrated.Deserialize(reader));
-  XII_TEST_INT(migrated.m_Passes.GetCount(), 6);
+  XII_TEST_INT(migrated.m_Passes.GetCount(), 8);
   XII_TEST_BOOL(migrated.m_Passes[5].m_Definition.IsValid());
   XII_TEST_BOOL(migrated.m_Connections[0].m_Id == edgeId && migrated.m_Connections[0].m_uiSource == 5);
   XII_TEST_BOOL(migrated.m_Interface[0].m_Node == migrated.m_Passes[5].m_Id);
   XII_TEST_BOOL(migrated.m_Passes[5].m_Properties.GetValue("PinConfigurations") != nullptr);
   XII_TEST_BOOL(migrated.m_Passes[5].m_Properties["PinConfigurations"].Get<xiiVariantArray>()[0].Get<xiiVariantDictionary>().GetValue("Id")->Get<xiiUuid>() == configurationId);
   XII_TEST_RESULT(migrated.m_Definitions[0].Validate());
-  XII_TEST_INT(migrated.m_Definitions[0].m_Nodes.GetCount(), 6);
+  XII_TEST_INT(migrated.m_Definitions[0].m_Nodes.GetCount(), 8);
   XII_TEST_BOOL(migrated.m_Definitions[0].m_Boundary[0].m_Node == migrated.m_Definitions[0].m_Nodes[5].m_Id);
   xiiContiguousMemoryStreamStorage first, second;
   xiiMemoryStreamWriter            firstWriter(&first), secondWriter(&second);
@@ -312,4 +316,86 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionAssetMigration)
     return;
   XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
   XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet() && loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, IrradianceGatherMemberPinsAndMigration)
+{
+  xiiDDGIProbeGatherPass   probe;
+  xiiSparseVoxelGatherPass sparse;
+  xiiVariantDictionary     properties;
+  properties.Insert("Intensity", 2.0f);
+  XII_TEST_RESULT(probe.Configure(properties));
+  properties.Clear();
+  XII_TEST_RESULT(probe.GetProperties(properties));
+  XII_TEST_FLOAT(properties["Intensity"].Get<float>(), 2, 0);
+  XII_TEST_BOOL(!properties.Contains("PerFrameLight") && !properties.Contains("DDGIProbeStates"));
+  xiiDDGIProbeGatherPass copy;
+  XII_TEST_RESULT(copy.Configure(properties));
+  properties.Insert("Intensity", -0.01f);
+  XII_TEST_BOOL(copy.Configure(properties).Failed());
+  XII_TEST_BOOL(sparse.Configure(properties).Failed());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  probe.GetPins(pins);
+  XII_TEST_RESULT(probe.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[probe.m_Light.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer));
+  XII_TEST_BOOL(pins[probe.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA16Float);
+  pins.Clear();
+  sparse.GetPins(pins);
+  XII_TEST_RESULT(sparse.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[sparse.m_PageTable.GetBindingIndex()].m_Type == xiiRenderPipelinePin::Buffer);
+  XII_TEST_BOOL(sparse.GetExtractionRequirements().IsNoFlagSet() && sparse.GetRuntimeFeatures().IsNoFlagSet());
+
+  // Source conversion moves the existing pin configuration object and connections.
+  xiiAbstractObjectGraph graph;
+  const auto             preparationId = xiiUuid::MakeStableUuidFromString("Legacy GI Preparation");
+  const auto             lightingId    = xiiUuid::MakeStableUuidFromString("Legacy GI Consumer");
+  const auto             pinId         = xiiUuid::MakeStableUuidFromString("Legacy GI Pin");
+  const auto             metadataId    = xiiUuid::MakeStableUuidFromString("Legacy GI Pin Metadata");
+  const auto             edgeId        = xiiUuid::MakeStableUuidFromString("Legacy GI Edge");
+  auto*                  root          = graph.AddNode(xiiUuid::MakeUuid(), "xiiDocumentRoot", 1, "ObjectTree");
+  xiiVariantArray        children, configurations;
+  children.PushBack(preparationId);
+  children.PushBack(lightingId);
+  children.PushBack(edgeId);
+  root->AddProperty("Children", children);
+  auto* preparation = graph.AddNode(preparationId, "xiiBuiltinRenderPipelinePass", 8);
+  preparation->AddProperty("Stage", "LightingPreparation");
+  configurations.PushBack(pinId);
+  preparation->AddProperty("PinConfigurations", configurations);
+  auto* config = graph.AddNode(pinId, "xiiRenderPipelinePinConfiguration", 1);
+  config->AddProperty("Id", pinId);
+  config->AddProperty("DisplayName", "Probe Illumination");
+  config->AddProperty("Metadata", metadataId);
+  auto* metadata = graph.AddNode(metadataId, "xiiRenderPipelinePinMetadata", 1);
+  metadata->AddProperty("Name", "DDGIIrradiance");
+  metadata->AddProperty("Input", false);
+  auto* lighting = graph.AddNode(lightingId, "xiiBuiltinRenderPipelinePass", 8);
+  lighting->AddProperty("Stage", "Lighting");
+  auto* edge = graph.AddNode(edgeId, "xiiDocumentObject_ConnectionBase", 1);
+  edge->AddProperty("Source", preparationId);
+  edge->AddProperty("Target", lightingId);
+  edge->AddProperty("SourcePin", "DDGIIrradiance");
+  edge->AddProperty("TargetPin", "DDGIIrradiance");
+  xiiAbstractObjectGraph types;
+  for (xiiStringView name : {"xiiDocumentRoot", "xiiDocumentObject_ConnectionBase"})
+  {
+    auto* type = types.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
+    type->AddProperty("TypeName", xiiString(name));
+    type->AddProperty("ParentTypeName", "");
+    type->AddProperty("TypeVersion", 1U);
+  }
+  xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
+  auto gatherId = preparationId;
+  gatherId.HashCombine(xiiUuid::MakeStableUuidFromString("xiiDDGIProbeGatherPass"));
+  const auto* gather = graph.GetNode(gatherId);
+  if (!XII_TEST_BOOL(gather != nullptr))
+    return;
+  XII_TEST_STRING(gather->GetType(), "xiiDDGIProbeGatherPass");
+  XII_TEST_BOOL(edge->FindProperty("Source")->m_Value == xiiVariant(gatherId));
+  XII_TEST_INT(preparation->FindProperty("PinConfigurations")->m_Value.Get<xiiVariantArray>().GetCount(), 0);
+  XII_TEST_BOOL(gather->FindProperty("PinConfigurations")->m_Value.Get<xiiVariantArray>()[0] == xiiVariant(pinId));
+  XII_TEST_BOOL(config->FindProperty("DisplayName")->m_Value == xiiVariant("Probe Illumination"));
+  const auto count = graph.GetAllNodes().GetCount();
+  xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
+  XII_TEST_INT(graph.GetAllNodes().GetCount(), count);
 }

@@ -404,11 +404,9 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGra
   const auto sparse = lighting->GetSparseVoxelRadianceContext().AddUpdatePass(graph, lighting);
   if (!sparse.m_hRadiancePool.IsValid() || !sparse.m_hPageTable.IsValid() || !sparse.m_hLevelData.IsValid() || !sparse.m_hConstants.IsValid())
     return XII_FAILURE;
-  graph.AddPass<xiiSparseVoxelRadianceGatherData>("SparseVoxelRadianceGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSparseVoxelRadianceGather, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSparseVoxelRadianceGather, this));
   const auto ddgi = lighting->GetDDGIContext().AddUpdatePass(graph, lighting);
   if (!ddgi.m_hIrradianceAtlas.IsValid() || !ddgi.m_hDistanceAtlas.IsValid() || !ddgi.m_hProbeStates.IsValid() || !ddgi.m_hProbeConstants.IsValid())
     return XII_FAILURE;
-  graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteDDGIProbeSampling, this));
   return XII_SUCCESS;
 }
 
