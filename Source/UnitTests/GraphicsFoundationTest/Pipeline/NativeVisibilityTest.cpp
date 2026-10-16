@@ -29,8 +29,9 @@ public:
     const auto          phase     = parameter ? parameter->Get<xiiUInt32>() : 0U;
     const float         distance  = phase == 0 ? 4.5f : phase == 3 ? 4.1f :
                                                                      3.9f;
-    xiiGpuSceneInstance records[67];
-    for (xiiUInt32 i = 0; i < 67; ++i)
+    const xiiUInt32     capacity  = phase >= 6 ? 129 : 67;
+    xiiGpuSceneInstance records[129];
+    for (xiiUInt32 i = 0; i < capacity; ++i)
     {
       records[i].m_uiGeometryIndex    = 0;
       records[i].m_uiObjectId         = m_uiBaseId + i + (phase >= 3 ? 100 : 0);
@@ -54,13 +55,13 @@ public:
     view.m_ViewportAndHiZ   = xiiVec4(64, 64, 0, 0);
     const auto token        = xiiUInt32(context.m_Graph.GetFrameIndex() % 65535U);
     view.m_LodParameters    = xiiVec4(0.1f, float(token), float((token + 65534U) % 65535U), 0);
-    view.m_uiInstanceCount  = phase == 5 ? 0 : 67;
+    view.m_uiInstanceCount  = phase == 5 ? 0 : capacity;
     view.m_uiVisibilityMask = 1;
     view.m_uiUseCandidates  = m_bSelectOne ? 1 : 0;
     view.m_uiCandidateCount = phase == 5 ? 0 : m_bSelectOne ? 1 :
-                                                              67;
-    xiiUInt32 selection[67];
-    for (xiiUInt32 i = 0; i < 67; ++i)
+                                                              capacity;
+    xiiUInt32 selection[129];
+    for (xiiUInt32 i = 0; i < capacity; ++i)
       selection[i] = i;
     xiiRenderPassResourceScope scope(context);
     const auto                 upload = [&](xiiStringView name, xiiUInt32 stride, xiiArrayPtr<const xiiUInt8> bytes) {
@@ -79,10 +80,10 @@ public:
           data.m_Bytes = bytes; }, [](const Data& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Output), 0, data.m_Bytes); });
       return emitted.first->m_Output;
     };
-    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Scene, upload("Synthetic Instances", sizeof(xiiGpuSceneInstance), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(records), sizeof(records)))));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Scene, upload("Synthetic Instances", sizeof(xiiGpuSceneInstance), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(records), capacity * sizeof(xiiGpuSceneInstance)))));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Geometry, upload("Synthetic Residency", sizeof(geometry), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&geometry), sizeof(geometry)))));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_View, upload("Synthetic Culling View", sizeof(view), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&view), sizeof(view)))));
-    return context.SetOutput(m_Candidates, upload("Synthetic Candidates", sizeof(xiiUInt32), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(selection), (m_bSelectOne ? 1 : 67) * sizeof(xiiUInt32))));
+    return context.SetOutput(m_Candidates, upload("Synthetic Candidates", sizeof(xiiUInt32), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(selection), (m_bSelectOne ? 1 : capacity) * sizeof(xiiUInt32))));
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeCullSource, 1, xiiRTTIDefaultAllocator<xiiNativeCullSource>)
@@ -182,7 +183,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
     if (!XII_TEST_RESULT(instances[i].Initialize(compiled)) || !XII_TEST_RESULT(contexts[i].Initialize("Native culling view")))
       return;
   }
-  for (xiiUInt32 phase = 0; phase < 7; ++phase)
+  for (xiiUInt32 phase = 0; phase < 8; ++phase)
   {
     if (phase == 4)
       instances[0].InvalidateTemporalHistory();
@@ -191,7 +192,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
       return;
     xiiSharedPtr<xiiGALBuffer> histories[4];
     xiiUInt32                  retained = 0;
-    xiiUInt32                  checked = 0;
+    xiiUInt32                  checked  = 0;
     for (xiiUInt32 view = 0; view < 2; ++view)
     {
       auto& graph = contexts[view].GetGraph();
@@ -219,8 +220,11 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           xiiUInt32 visibleCount = xiiInvalidIndex;
           if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), count.Borrow(), 0, visibleCount))
             return;
-          XII_TEST_INT(visibleCount, phase == 5 ? 0 : selected ? 1 :
-                                                                 64);
+          const xiiUInt32 expectedCount = phase == 5 ? 0 : selected ? 1 :
+            phase >= 6                                              ? 126 :
+                                                                      64;
+          XII_TEST_INT(visibleCount, expectedCount);
+          XII_TEST_INT(lod->GetDescription().m_uiSize, (phase >= 6 ? 129 : 67) * sizeof(xiiVec4U32));
           xiiVec4U32 choice;
           if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), lod.Borrow(), 0, choice))
             return;
@@ -239,6 +243,13 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
               return;
             XII_TEST_INT(choice.x, xiiInvalidIndex);
           }
+          else if (phase >= 6)
+          {
+            if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), lod.Borrow(), 128 * sizeof(xiiVec4U32), choice))
+              return;
+            XII_TEST_INT(choice.x, 0);
+            XII_TEST_INT(choice.z, 41 + 128 + 100);
+          }
         }
         if (source.m_Element == historyId)
         {
@@ -250,6 +261,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           histories[retained] = graph.GetExportedBuffer(binding->m_hBuffer);
           if (!XII_TEST_BOOL(histories[retained] != nullptr))
             return;
+          XII_TEST_INT(histories[retained]->GetDescription().m_uiSize, (phase >= 7 ? 129 : 67) * sizeof(xiiVec4U32));
           ++retained;
         }
       }
