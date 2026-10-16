@@ -505,3 +505,22 @@ All affected Debug targets build. Final verification passes 30 Core, 52 Vulkan G
 73 Vulkan editor-engine and 15 Qt subtests, in Workspace/screen-final-*.log. The
 additional GPU test covers concurrent geometry initialization, described below.
 D3D12 remains excluded. No controlled performance benchmark was run.
+
+
+## Synchronize shared geometry initialization
+
+The concurrent-world test exposed a 72,351,744-byte leaked geometry slot allocation.
+World modules request device residency before entering the shared render-frame scope;
+two callers could both clear and initialize the same geometry service. The existing
+service now serializes initialization, initialized-state publication, configuration
+and lifecycle changes with a mutex. Subsequent residency mutations retain their
+existing render-frame ownership. No new service, registry or scene storage was added.
+
+ConcurrentGeometryInitialization starts four engine threads together, each requesting
+initialization 32 times. Every caller must receive the same metadata/meshlet buffers,
+retain those allocations, and leave zero registered geometry objects. This test and
+the previously failing multi-world test pass. The complete final test results are
+30 Core, 52 Vulkan GAL, 73 Vulkan editor-engine and 15 Qt subtests, all successful.
+Evidence: Workspace/geometry-init-build.log and Workspace/screen-final-*.log. The
+race failure is retained in Workspace/screen-settings-verified-editor-gpu.log.
+D3D12 is excluded; no contention or throughput benchmark was run.

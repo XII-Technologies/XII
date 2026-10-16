@@ -5,6 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -63,6 +64,7 @@ public:
   xiiUInt64                                                        m_uiLastUploadedBytes   = 0U;
   xiiUInt64                                                        m_uiNextMeshletUploadId = 1U;
   xiiGeometryResidencyDescription                                  m_Configuration;
+  xiiMutex                                                         m_InitializationMutex;
   bool                                                             m_bEngineStarted = false;
   bool                                                             m_bInitialized   = false;
 };
@@ -269,6 +271,7 @@ xiiResult xiiGeometryResidencyManager::Configure(const xiiGeometryResidencyDescr
   if (s_pState == nullptr || description.m_uiMaxGeometries == 0U || description.m_uiFramesInFlight == 0U || description.m_uiFramesInFlight > 64U || description.m_uiMaxMeshlets == 0U)
     return XII_FAILURE;
 
+  XII_LOCK(s_pState->m_InitializationMutex);
   if (s_pState->m_bInitialized && GetStats().m_uiGeometryCount != 0U)
   {
     XII_ASSERT_DEV(false, "Geometry residency cannot be reconfigured while geometry handles are active.");
@@ -306,15 +309,23 @@ bool xiiGeometryResidencyManager::IsSubsystemInitialized()
 
 bool xiiGeometryResidencyManager::IsInitialized()
 {
-  return s_pState != nullptr && s_pState->m_bInitialized;
+  if (!s_pState)
+    return false;
+  XII_LOCK(s_pState->m_InitializationMutex);
+  return s_pState->m_bInitialized;
 }
 
 xiiResult xiiGeometryResidencyManager::EnsureInitialized()
 {
-  if (IsInitialized())
-    return XII_SUCCESS;
-  if (!s_pState || !s_pState->m_bEngineStarted)
+  if (!s_pState)
     return XII_FAILURE;
+  // Different worlds can request residency before acquiring their render-frame scope.
+  // Publish one complete allocation and prevent concurrent ClearGpuState/SetCount calls.
+  XII_LOCK(s_pState->m_InitializationMutex);
+  if (!s_pState->m_bEngineStarted)
+    return XII_FAILURE;
+  if (s_pState->m_bInitialized)
+    return XII_SUCCESS;
   const auto device = xiiGALDevice::GetDefaultDevice();
   return device ? Initialize(device.Borrow(), s_pState->m_Configuration) : XII_FAILURE;
 }
@@ -380,6 +391,7 @@ void xiiGeometryResidencyManager::EngineStartup()
   if (s_pState == nullptr)
     return;
 
+  XII_LOCK(s_pState->m_InitializationMutex);
   s_pState->m_bEngineStarted = true;
 }
 
@@ -388,6 +400,7 @@ void xiiGeometryResidencyManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
+  XII_LOCK(s_pState->m_InitializationMutex);
   s_pState->ClearGpuState();
   s_pState->m_bEngineStarted = false;
 }
