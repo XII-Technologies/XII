@@ -956,3 +956,56 @@ still belongs to the existing lighting contexts pending their own pass migration
 This phase removes the gather operations only. No controlled gather performance
 benchmark was run, and D3D12 remains excluded. The full architecture objective is
 still active.
+
+
+## Source rebuild and removal of legacy rendering - 2026-10-16
+
+The requested direction is now deletion and native rebuilding. The earlier asset
+migration/conversion descriptions are historical; those converters are no longer
+maintained or present in production source.
+
+All fourteen rendering Builtin source/header files are physically deleted, including
+the selector, runtime, state containers, payloads, helpers and technique setup/execute
+files. LegacyRenderPipelineMigration.cpp/.h, OutputPassMigration.cpp and the lighting
+settings compatibility patch are deleted. The Deferred and EditorScene source and
+binary assets are deleted entirely. Their game/editor/asset-preview profile defaults
+are empty, so no hidden fallback or broken built-in reference is selected. Previously
+authored references to the deleted resources need genuinely rebuilt native graphs.
+
+Views now use xiiRenderPipelineInstance directly through their existing shutdown-safe
+resource owner. There is no replacement monolithic runtime, automatic lighting
+context, second scene registry or rendering transform hierarchy. Native resources
+remain descriptor format 4; legacy formats 2 and 3 and their patching are removed.
+The Qt creation menu no longer contains a special case for the removed type.
+Composite-specific migration fixtures and the old ShadowMemory fixture are deleted;
+functional shadow coverage must return with native shadow resource/raster operations.
+
+Six native classes were added in this phase: BRDFLutPass, WorldInstancesUploadPass,
+GeometryUploadPass, MaterialUploadPass, VisibilityViewPass and CounterResetPass.
+All use typed reflected member pins. Counters and camera snapshots are graph-owned;
+world instances/poses use the existing incremental world cache; geometry/material
+residency and the immutable lookup remain device-owned. BRDF readiness is explicit
+GPU fence data. A GPU readback regression also exposed and corrected a near-mirror
+GGX sampling precision error. XII's static-link generator now retains all 41 native
+reflected operation classes, without a separate registration framework.
+
+Debug builds of all four affected test targets pass. The full GraphicsCore CPU suite
+(40 subtests), focused Vulkan native preparation and hybrid world extraction groups,
+and all 15 Qt EditorDocuments tests pass after the final changes. The seven retained
+native SDK assets still export deterministically. Shader readback, world transform/ID
+readback, per-occurrence counter values, shared upload identities, generation safety,
+compaction, multiple views/worlds and ray deformation are covered by these checks.
+Logs and limitations are recorded in NativePassInventory.md.
+
+The world upload test still reports 288 bytes once for one changed instance across
+two cameras and zero warmed static upload bytes. Its latest uncontrolled Debug
+packing sample is 2.574 ms/update for 1024 unchanged components. There is no controlled
+performance comparison, GPU-frame/submission benchmark or static-library build.
+D3D12 remains excluded.
+
+This is not a completed renderer. Native visibility kernels, geometry raster,
+lighting, shadows, atmosphere LUTs, volumes, decals and remaining advanced paths
+still need rebuilding and finer decomposition; full game/editor graphs and several
+integration fixtures remain absent. NativePassInventory.md is the current class
+count, ownership map, deletion report, consumer list and outstanding-work inventory.
+The full architecture goal remains active.
