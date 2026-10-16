@@ -45,6 +45,18 @@ compilation may run on a resource loading thread. A separate object is construct
 for every pass in every runtime instance. Consumers can retain arbitrary typed state
 without placing it in the resource definition.
 
+`GetProperties` captures writable reflected members, arrays, value maps, embedded
+settings and owned settings objects for the asset compiler. `Configure` restores
+the same representation when compiling or initializing an instance. Nested objects
+retain their reflected property names; polymorphic owned objects also retain their
+registered type. Borrowed object pointers and unsupported property shapes fail
+instead of silently disappearing from the asset. Computed read-only properties
+are excluded, and `ParameterOverrides` stays in the descriptor's separate
+occurrence-local parameter scope. Owned settings follow their native type's normal
+destruction rules and are recreated separately for each runtime instance.
+Traversal is bounded to 32 nested object levels and 65536 properties/elements.
+This reflection work occurs during export/configuration, not frame execution.
+
 Pins describe textures, buffers, or construction ordering. Several edges may connect
 the same pair of passes through different pins. Resource inputs have one producer;
 order inputs allow multiple predecessors. Required inputs must be connected. Declared

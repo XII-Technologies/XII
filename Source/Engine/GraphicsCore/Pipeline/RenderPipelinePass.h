@@ -48,8 +48,11 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiReflectedClass
 public:
   virtual ~xiiRenderPipelinePass() = default;
   /// Authored, occurrence-local parameter overrides. Kept separate from compile-time pass properties.
-  xiiVariantDictionary                             m_ParameterOverrides;
-  virtual xiiResult                                Configure(const xiiVariantDictionary& properties);
+  xiiVariantDictionary m_ParameterOverrides;
+  virtual xiiResult    Configure(const xiiVariantDictionary& properties);
+  /// Capture authored reflected properties, including arrays, value maps and owned settings objects.
+  /// Occurrence-local ParameterOverrides remain in the descriptor's parameter scope.
+  xiiResult                                        GetProperties(xiiVariantDictionary& out_properties) const;
   virtual void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
   virtual xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return {}; }
   virtual xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const { return {}; }

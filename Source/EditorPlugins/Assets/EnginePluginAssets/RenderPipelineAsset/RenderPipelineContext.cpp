@@ -8,7 +8,6 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/StringDeduplicationContext.h>
 #include <Foundation/IO/TypeVersionContext.h>
-#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
@@ -98,14 +97,9 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
       passUuidToIndex.Insert(passUuids[i], index);
       continue;
     }
-    xiiVariantDictionary                           settings;
-    xiiHybridArray<const xiiAbstractProperty*, 32> properties;
-    passes[i]->GetDynamicRTTI()->GetAllProperties(properties);
-    for (const auto* property : properties)
-    {
-      if (property->GetCategory() == xiiPropertyCategory::Member && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
-        settings.Insert(property->GetPropertyName(), xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), passes[i]));
-    }
+    xiiVariantDictionary settings;
+    if (passes[i]->GetProperties(settings).Failed())
+      return xiiStatus(xiiFmt("Cannot serialize reflected configuration for pass '{}'.", name));
     const auto index                        = descriptor.AddPass(name, passes[i]->GetDynamicRTTI()->GetTypeName(), settings);
     descriptor.m_Passes[index].m_Id         = passUuids[i];
     descriptor.m_Passes[index].m_Parameters = passes[i]->m_ParameterOverrides;
