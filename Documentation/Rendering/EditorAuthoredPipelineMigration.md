@@ -697,7 +697,7 @@ those files and remaining configuration/compiler/editor gates are still active;
 this checkpoint does not claim completion of the full goal.
 
 
-## Transparency composition and supplied particle integration — 2026-10-16
+## Transparency composition and supplied particle integration - 2026-10-16
 
 Three independent algorithms now use typed reflected member pins exclusively:
 ParticleIntegrationConstants snapshots authored parameters (optionally the owning
