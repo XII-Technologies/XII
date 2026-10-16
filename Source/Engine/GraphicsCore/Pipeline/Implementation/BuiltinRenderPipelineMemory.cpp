@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineHelpers.h>
-#include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineMemory.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/TemporalHistory.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
@@ -96,7 +96,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareSensorOutput()
 
 xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringView stage)
 {
-  if (stage != "Lighting" && stage != "OpaqueComposition" && stage != "TemporalAntiAliasing" && stage != "AutoExposure")
+  if (stage != "Lighting" && stage != "OpaqueComposition")
     return XII_SUCCESS;
   const xiiUInt32 width  = m_View.GetRenderResolutionWidth();
   const xiiUInt32 height = m_View.GetRenderResolutionHeight();
@@ -114,7 +114,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringVie
     description.m_uiMipLevels = 1;
     description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
     description.m_Usage       = xiiGALResourceUsage::Default;
-    if (xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(textures, description, valid, [pDevice = device.Borrow()](const auto& desc) {
+    if (xiiRenderPassUtils::EnsureTemporalHistoryTextures(textures, description, valid, [pDevice = device.Borrow()](const auto& desc) {
           return pDevice->CreateTexture(desc);
         }).Failed())
     {
@@ -151,31 +151,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringVie
   {
     XII_SUCCEED_OR_RETURN(ensure(lighting.m_pSSRHistory, xiiGALResourceFormat::RGBA16Float, lighting.m_bSSRHistoryValid, "Screen-space reflection"));
     XII_SUCCEED_OR_RETURN(ensure(lighting.m_pSSRIdentityHistory, xiiGALResourceFormat::RG32UInt, lighting.m_bSSRHistoryValid, "Screen-space reflection identity"));
-  }
-  else if (stage == "TemporalAntiAliasing")
-  {
-    auto&       temporal = m_Resources.m_TemporalPasses;
-    const auto* previous = temporal.m_pTAAHistoryBuffers[0].Borrow();
-    XII_SUCCEED_OR_RETURN(ensure(temporal.m_pTAAHistoryBuffers, xiiGALResourceFormat::RGBA16Float, temporal.m_bTAAHistoryValid, "Temporal anti-aliasing"));
-    if (previous != temporal.m_pTAAHistoryBuffers[0].Borrow())
-      temporal.m_uiTAAHistoryWriteIndex = 0;
-  }
-  else if (stage == "AutoExposure" && !m_Resources.m_TemporalPasses.m_pExposureBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = 4;
-    description.m_uiSize              = sizeof(float) * 2;
-    description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Default;
-    auto buffer                       = device->CreateBuffer(description);
-    if (buffer == nullptr)
-    {
-      xiiLog::Error("Failed to allocate temporal exposure buffer ({} bytes).", description.m_uiSize);
-      return XII_FAILURE;
-    }
-    m_Resources.m_TemporalPasses.m_pExposureBuffer       = std::move(buffer);
-    m_Resources.m_TemporalPasses.m_bExposureHistoryValid = false;
   }
   return XII_SUCCESS;
 }

@@ -528,11 +528,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xii
 
 
 
-void xiiBuiltinRenderPipelineRuntime::BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
-{
-  // Final output pass.
-  graph.AddPass<xiiFinalBlitData>("BackbufferPresent", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupFinalBlit, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteFinalBlit, this));
-}
+
 
 void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows)
 {
@@ -594,26 +590,10 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stag
     return XII_SUCCESS;
   }
 
-  if (stage == "Present")
-  {
-    BuildPresent(graph, blackboard);
-    return XII_SUCCESS;
-  }
-  if (stage == "LuminanceHistogram")
-  {
-    graph.AddPass<xiiLuminanceHistogramData>(stage, xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupLuminanceHistogram, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteLuminanceHistogram, this));
-    return XII_SUCCESS;
-  }
-  if (stage == "AutoExposure")
-  {
-    graph.AddPass<xiiAutoExposureData>(stage, xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupAutoExposure, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteAutoExposure, this));
-    return XII_SUCCESS;
-  }
-  if (stage == "TemporalAntiAliasing")
-  {
-    graph.AddPass<xiiTemporalAntiAliasingData>(stage, xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupTemporalAntiAliasing, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteTemporalAntiAliasing, this));
-    return XII_SUCCESS;
-  }
+
+
+
+
 
 
 
@@ -636,9 +616,6 @@ void xiiBuiltinRenderPipelineRuntime::InvalidateTemporalHistory()
   m_Resources.m_LightingPasses.m_bSSRHistoryValid                  = false;
   m_Resources.m_LightingPasses.m_bDirectReservoirHistoryValid      = false;
   m_Resources.m_LightingPasses.m_bVolumetricHistoryValid           = false;
-  m_Resources.m_TemporalPasses.m_uiTAAHistoryWriteIndex            = 0U;
-  m_Resources.m_TemporalPasses.m_bTAAHistoryValid                  = false;
-  m_Resources.m_TemporalPasses.m_bExposureHistoryValid             = false;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BindFrameResources(xiiGALCommandList& commandList) const

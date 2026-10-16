@@ -11,6 +11,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
@@ -70,9 +71,9 @@ namespace
   }
 } // namespace
 
-XII_CREATE_SIMPLE_TEST_GROUP(BuiltinShaderFailure);
+XII_CREATE_SIMPLE_TEST_GROUP(RenderOperationFailure);
 
-XII_CREATE_SIMPLE_TEST(BuiltinShaderFailure, StageFailureAndRecovery)
+XII_CREATE_SIMPLE_TEST(RenderOperationFailure, PassFailureAndRecovery)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -154,7 +155,18 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
   if (!XII_TEST_BOOL(target != nullptr))
     return;
   view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  const auto shader = CreateMissingShader(shaderPath);
+  const auto shader        = CreateMissingShader(shaderPath);
+  const auto outputBinding = [&]() -> const xiiRenderPipelineBinding* {
+    const auto& instance = view->GetRenderPipelineInstance();
+    const auto* pipeline = instance.GetPipeline();
+    if (!pipeline)
+      return nullptr;
+    const auto& passes = pipeline->GetDescriptor().m_Passes;
+    for (xiiUInt32 index = 0; index < passes.GetCount(); ++index)
+      if (passes[index].m_sType == "xiiPresentPass")
+        return instance.GetOutputBinding(index, "ViewOutput");
+    return nullptr;
+  };
 
   for (xiiUInt32 attempt = 0; attempt < 2; ++attempt)
   {
@@ -164,25 +176,27 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
     log.ExpectMessage("Failed to build render pipeline", xiiLogMsgType::ErrorMsg);
     world.Update();
     XII_TEST_BOOL(view->GetRenderGraph()->GetQueueSubmissions().IsEmpty());
-    XII_TEST_BOOL(!view->GetRenderGraph()->FindTexture("ViewOutput").IsValid());
+    const auto* output = outputBinding();
+    XII_TEST_BOOL(output && !output->m_hTexture.IsValid());
   }
   if (!XII_TEST_RESULT(RestoreShader(shader)))
     return;
   world.Update();
   environment.GetDevice()->WaitIdle();
   XII_TEST_BOOL(!view->GetRenderGraph()->GetQueueSubmissions().IsEmpty());
-  XII_TEST_BOOL(view->GetRenderGraph()->FindTexture("ViewOutput").IsValid());
+  const auto* output = outputBinding();
+  XII_TEST_BOOL(output && output->m_hTexture.IsValid());
   xiiImage capture;
   if (XII_TEST_RESULT(xiiCaptureThumbnail(target, {16, 16}, capture)))
     XII_TEST_INT(capture.GetPixelPointer<xiiUInt8>()[3], 255);
 }
 
-XII_CREATE_SIMPLE_TEST(BuiltinShaderFailure, ViewRejectsExecutionAndRecovers)
+XII_CREATE_SIMPLE_TEST(RenderOperationFailure, ViewRejectsExecutionAndRecovers)
 {
   TestViewShaderFailure(sBloomShader);
 }
 
-XII_CREATE_SIMPLE_TEST(BuiltinShaderFailure, DeferredLightingFailureAndRecovery)
+XII_CREATE_SIMPLE_TEST(RenderOperationFailure, DeferredLightingFailureAndRecovery)
 {
   TestViewShaderFailure("Shaders/Pipeline/DirectLighting.xiiShader");
 }

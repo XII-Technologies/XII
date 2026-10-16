@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 2, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 3, xiiRTTIDefaultAllocator<xiiBuiltinRenderPipelinePass>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -14,21 +14,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBuiltinRenderPipelinePass, 2, xiiRTTIDefault
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-xiiArrayPtr<const xiiStringView> xiiBuiltinRenderPipelinePass::GetStages()
-{
-  static constexpr xiiStringView stages[] = {"PrepareFrame", "Visibility", "Shadows", "DepthAndGeometry", "LightingPreparation", "Lighting", "OpaqueComposition", "Transparency", "ScreenEffects", "Debug", "Present", "LuminanceHistogram", "AutoExposure", "TemporalAntiAliasing"};
-  return xiiMakeArrayPtr(stages);
-}
-
-xiiResult xiiBuiltinRenderPipelinePass::Configure(const xiiVariantDictionary& properties)
-{
-  XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  for (const auto stage : GetStages())
-    if (m_sStage == stage)
-      return XII_SUCCESS;
-  return XII_FAILURE;
-}
 
 xiiBitflags<xiiRenderExtractionCategory> xiiBuiltinRenderPipelinePass::GetExtractionRequirements() const
 {
@@ -418,38 +403,16 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, true});
   }
 
-  if (m_sStage == "Present")
-  {
-    pins.PushBack({"GradedColor", xiiRenderPipelinePin::Texture, true, true});
-    pins.PushBack({"Final Blit Constants", xiiRenderPipelinePin::Buffer, false, true});
-    pins.PushBack({"GradedColor", xiiRenderPipelinePin::Texture, false, true});
-  }
-  if (m_sStage == "LuminanceHistogram")
-  {
-    pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"LuminanceHistogram", xiiRenderPipelinePin::Buffer, false, false});
-  }
-
-  if (m_sStage == "AutoExposure")
-  {
-    pins.PushBack({"LuminanceHistogram", xiiRenderPipelinePin::Buffer, true, false});
-    pins.PushBack({"CurrentExposure", xiiRenderPipelinePin::Buffer, false, false});
-  }
-
-  if (m_sStage == "TemporalAntiAliasing")
-  {
-    pins.PushBack({"HDRSceneColor", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"DilatedVelocityBuffer", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, false});
-    pins.PushBack({"TAAResolved", xiiRenderPipelinePin::Texture, false, false});
-  }
 
 
 
-  if (m_sStage == "Present")
-    for (auto& pin : pins)
-      if (pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_bInput)
-        pin.m_bOptional = false;
+
+
+
+
+
+
+
 }
 xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -494,8 +457,6 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
     const auto& pin = context.m_Pins[i];
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture)
       context.m_Bindings[i].m_hTexture = context.m_Graph.FindTexture(pin.m_sName);
-    if (m_sStage == "Present" && !pin.m_bInput && pin.m_sName == "GradedColor")
-      context.m_Bindings[i].m_hTexture = context.GetInputTexture("GradedColor");
     if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer)
       context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
   }

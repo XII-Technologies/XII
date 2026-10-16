@@ -467,41 +467,7 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiBuiltinRenderPipelineRuntime::Ensure
 }
 
 // static
-xiiSharedPtr<xiiGALGraphicsPipelineState> xiiBuiltinRenderPipelineRuntime::EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex)
+xiiSharedPtr<xiiGALGraphicsPipelineState> xiiBuiltinRenderPipelineRuntime::EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& pipeline, xiiStringView shader, const xiiSharedPtr<xiiGALRenderPass>& renderPass, xiiUInt32 subpass)
 {
-  XII_ASSERT_DEV(pRenderPass != nullptr, "A graphics pipeline requires a compatible render pass.");
-
-  if (inout_pPipeline != nullptr)
-  {
-    const xiiGALGraphicsPipelineDescription& pipelineDescription = inout_pPipeline->GetDescription().m_GraphicsPipeline;
-    if (pipelineDescription.m_pRenderPass == pRenderPass && pipelineDescription.m_uiSubpassIndex == uiSubpassIndex)
-      return inout_pPipeline;
-  }
-
-  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
-
-  xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
-  if (!hPermutation.IsValid())
-    return {};
-
-  xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-  if (!pPermutation.IsValid() || !pPermutation->IsShaderValid())
-    return nullptr;
-
-  xiiGALGraphicsPipelineStateCreationDescription description;
-  description.m_pPipelineResourceSignature            = pPermutation->GetPipelineResourceSignature();
-  description.m_pVertexShader                         = pPermutation->GetGALShader(xiiGALShaderType::Vertex);
-  description.m_pPixelShader                          = pPermutation->GetGALShader(xiiGALShaderType::Pixel);
-  description.m_GraphicsPipeline.m_pBlendState        = pPermutation->GetBlendState();
-  description.m_GraphicsPipeline.m_pRasterizerState   = pPermutation->GetRasterizerState();
-  description.m_GraphicsPipeline.m_pDepthStencilState = pPermutation->GetDepthStencilState();
-  description.m_GraphicsPipeline.m_pRenderPass        = pRenderPass;
-  description.m_GraphicsPipeline.m_uiSubpassIndex     = static_cast<xiiUInt8>(uiSubpassIndex);
-  description.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
-
-  inout_pPipeline = xiiGALPipelineCache::GetPipeline(description);
-  XII_ASSERT_DEV(inout_pPipeline != nullptr, "Failed to create graphics pipeline: '{}'.", sShaderPath);
-
-  return inout_pPipeline;
+  return xiiRenderPassUtils::LoadGraphicsPipeline(pipeline, shader, renderPass, subpass);
 }

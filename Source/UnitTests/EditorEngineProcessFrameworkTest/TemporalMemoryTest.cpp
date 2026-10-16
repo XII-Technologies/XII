@@ -6,8 +6,8 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
-#include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineMemory.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/TemporalHistory.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TemporalAntiAliasingPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -57,12 +57,12 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, PairAllocationFailure)
   auto create             = [&](const auto& desc) {
     return environment.GetDevice()->CreateTexture(desc);
   };
-  if (!XII_TEST_RESULT(xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(textures, description, valid, create)))
+  if (!XII_TEST_RESULT(xiiRenderPassUtils::EnsureTemporalHistoryTextures(textures, description, valid, create)))
     return;
   XII_TEST_BOOL(!valid);
   valid           = true;
   xiiUInt32 calls = 0;
-  XII_TEST_RESULT(xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(textures, description, valid, [&](const auto&) -> xiiSharedPtr<xiiGALTexture> { ++calls; return nullptr; }));
+  XII_TEST_RESULT(xiiRenderPassUtils::EnsureTemporalHistoryTextures(textures, description, valid, [&](const auto&) -> xiiSharedPtr<xiiGALTexture> { ++calls; return nullptr; }));
   XII_TEST_INT(calls, 0);
   XII_TEST_BOOL(valid);
   const auto first   = textures[0];
@@ -78,18 +78,18 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, PairAllocationFailure)
       partial = create(desc);
       return partial;
     };
-    XII_TEST_BOOL(xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(textures, description, valid, fail).Failed());
+    XII_TEST_BOOL(xiiRenderPassUtils::EnsureTemporalHistoryTextures(textures, description, valid, fail).Failed());
     XII_TEST_INT(calls, failAt);
     XII_TEST_BOOL(textures[0] == first && textures[1] == second && valid);
     if (partial != nullptr)
       XII_TEST_INT(partial->GetRefCount(), 1);
   }
-  XII_TEST_RESULT(xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(textures, description, valid, create));
+  XII_TEST_RESULT(xiiRenderPassUtils::EnsureTemporalHistoryTextures(textures, description, valid, create));
   XII_TEST_BOOL(!valid && textures[0] != first && textures[1] != second);
   const auto resized   = textures[0];
   valid                = true;
   description.m_Format = xiiGALResourceFormat::RGBA32UInt;
-  XII_TEST_RESULT(xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(textures, description, valid, create));
+  XII_TEST_RESULT(xiiRenderPassUtils::EnsureTemporalHistoryTextures(textures, description, valid, create));
   XII_TEST_BOOL(!valid && textures[0] != resized);
   XII_TEST_BOOL(textures[0]->GetDescription() == description && textures[1]->GetDescription() == description);
 }
@@ -107,11 +107,7 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, TAAResizeReleasesOldHistory)
   XII_LOCK(world.GetWriteMarker());
   xiiView* view = nullptr;
   world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Resizing TAA", view);
-  xiiBuiltinRenderPipelinePass pass;
-  xiiVariantDictionary         properties;
-  properties.Insert("Stage", "TemporalAntiAliasing");
-  if (!XII_TEST_RESULT(pass.Configure(properties)))
-    return;
+  xiiTemporalAntiAliasingPass pass, sibling;
   xiiRenderGraph              graph("TAA retention");
   xiiRenderGraphBlackboard    blackboard;
   xiiVariantDictionary        parameters;
@@ -128,15 +124,27 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, TAAResizeReleasesOldHistory)
     view->SetViewport({0, 0, static_cast<float>(32 + iteration * 2), 32});
     graph.BeginSetup(frame.GetFrameIndex());
     AddTAAInputs(*view, graph);
-    xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, {}, {}, "TAA retention"};
-    const auto                   result = pass.Build(context);
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    pass.GetPins(pins);
+    xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+    bindings.SetCount(pins.GetCount());
+    xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, pins, bindings, "TAA retention"};
+    for (xiiUInt32 index = 0; index < pins.GetCount(); ++index)
+      if (pins[index].m_bInput && pins[index].m_Type == xiiRenderPipelinePin::Texture)
+        bindings[index].m_hTexture = graph.FindTexture(pins[index].m_sName);
+    const auto                   result          = pass.Build(context);
+    auto                         siblingBindings = bindings;
+    xiiRenderPipelinePassContext siblingContext{view, graph, blackboard, parameters, pins, siblingBindings, "Sibling TAA"};
+    XII_TEST_RESULT(sibling.Build(siblingContext));
     struct Probe
     {
-      xiiRenderGraphTextureHandle m_History;
+      xiiRenderGraphTextureHandle m_History, m_Sibling;
     };
-    auto       probe   = graph.AddPass<Probe>("Export prior TAA allocation", xiiGALCommandQueueFlags::Compute, [](Probe& data, xiiRenderGraphBuilder& builder) {
-      data.m_History = builder.ReadTexture("TAAHistory", xiiGALResourceStateFlags::ShaderResource);
-      builder.ExportTexture(data.m_History, xiiGALResourceStateFlags::ShaderResource); }, [](const Probe&, xiiRenderGraphPassContext&) {}, true);
+    auto       probe   = graph.AddPass<Probe>("Export prior TAA allocation", xiiGALCommandQueueFlags::Compute, [&](Probe& data, xiiRenderGraphBuilder& builder) {
+      data.m_History = builder.ReadTexture(bindings[context.FindPin("TAAResolved", false)].m_hTexture, xiiGALResourceStateFlags::ShaderResource);
+      builder.ExportTexture(data.m_History, xiiGALResourceStateFlags::ShaderResource);
+      data.m_Sibling = builder.ReadTexture(siblingBindings[siblingContext.FindPin("TAAResolved", false)].m_hTexture, xiiGALResourceStateFlags::ShaderResource);
+      builder.ExportTexture(data.m_Sibling, xiiGALResourceStateFlags::ShaderResource); }, [](const Probe&, xiiRenderGraphPassContext&) {}, true);
     const auto history = probe.first->m_History;
     graph.EndSetup();
     if (!XII_TEST_RESULT(result))
@@ -146,6 +154,7 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, TAAResizeReleasesOldHistory)
     const auto current = graph.GetExportedTexture(history);
     if (!XII_TEST_BOOL(current != nullptr))
       return;
+    XII_TEST_BOOL(current != graph.GetExportedTexture(probe.first->m_Sibling));
     XII_TEST_INT(current->GetDescription().m_Size.width, view->GetRenderResolutionWidth());
     if (iteration == 0)
       original = current;
@@ -159,26 +168,22 @@ class xiiTemporalAllocationTestPass : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiTemporalAllocationTestPass, xiiRenderPipelinePass);
 
 public:
-  xiiString m_sStage;
-  xiiUInt32 m_uiInvalidations = 0;
-  bool      m_bHistoryValid   = false;
-  bool      m_bFailAllocation = true;
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>&) const override {}
-  void      InvalidateTemporalHistory() override
+  xiiTemporalAntiAliasingPass m_TAA;
+  xiiRenderGraphTextureHandle m_Output;
+  xiiUInt32                   m_uiInvalidations = 0;
+  bool                        m_bHistoryValid   = false;
+  bool                        m_bFailAllocation = true;
+  void                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>&) const override {}
+  void                        InvalidateTemporalHistory() override
   {
     if (m_bHistoryValid)
       ++m_uiInvalidations;
     m_bHistoryValid = false;
+    m_TAA.InvalidateTemporalHistory();
   }
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
     m_bHistoryValid = true;
-    if (m_sStage == "TemporalAntiAliasing")
-      AddTAAInputs(*context.m_pView, context.m_Graph);
-    xiiBuiltinRenderPipelinePass pass;
-    xiiVariantDictionary         properties;
-    properties.Insert("Stage", m_sStage);
-    XII_SUCCEED_OR_RETURN(pass.Configure(properties));
     if (m_bFailAllocation)
     {
       // Fail this pass's allocation without changing the device registry used by
@@ -189,25 +194,37 @@ public:
       description.m_Size      = {16, 16};
       description.m_Format    = xiiGALResourceFormat::RGBA16Float;
       description.m_BindFlags = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-      XII_SUCCEED_OR_RETURN(xiiBuiltinPipelineUtils::EnsureTemporalHistoryTextures(history, description, m_bHistoryValid,
-                                                                                   [](const auto&) -> xiiSharedPtr<xiiGALTexture> { return nullptr; }));
+      XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::EnsureTemporalHistoryTextures(history, description, m_bHistoryValid,
+                                                                              [](const auto&) -> xiiSharedPtr<xiiGALTexture> { return nullptr; }));
     }
-    return pass.Build(context);
+    AddTAAInputs(*context.m_pView, context.m_Graph);
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    m_TAA.GetPins(pins);
+    xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+    bindings.SetCount(pins.GetCount());
+    xiiRenderPipelinePassContext operation{context.m_pView, context.m_Graph, context.m_Blackboard, context.m_Parameters, pins, bindings, context.m_sPassName};
+    for (xiiUInt32 index = 0; index < pins.GetCount(); ++index)
+      if (pins[index].m_bInput && pins[index].m_Type == xiiRenderPipelinePin::Texture)
+        bindings[index].m_hTexture = context.m_Graph.FindTexture(pins[index].m_sName);
+    XII_SUCCEED_OR_RETURN(m_TAA.Build(operation));
+    m_Output = bindings[operation.FindPin("TAAResolved", false)].m_hTexture;
+    struct Export
+    {
+      xiiRenderGraphTextureHandle m_Texture;
+    };
+    context.m_Graph.AddPass<Export>("Export TAA test result", xiiGALCommandQueueFlags::Compute, [&](Export& data, xiiRenderGraphBuilder& builder) {
+      data.m_Texture = builder.ReadTexture(m_Output, xiiGALResourceStateFlags::ShaderResource);
+      builder.ExportTexture(data.m_Texture, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {}, true);
+    return XII_SUCCESS;
   }
 };
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporalAllocationTestPass, 1, xiiRTTIDefaultAllocator<xiiTemporalAllocationTestPass>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Stage", m_sStage),
-  }
-  XII_END_PROPERTIES;
-}
+
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedStageInvalidatesView)
+XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedAllocationInvalidatesView)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -219,7 +236,7 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedStageInvalidatesView)
   xiiWorld            world(worldDescription);
   XII_LOCK(world.GetWriteMarker());
   xiiView* view = nullptr;
-  world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Failing temporal stage", view);
+  world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Failing temporal operation", view);
   view->SetViewport({0, 0, 16, 16});
   world.SetWorldSimulationEnabled(false);
   xiiCamera camera;
@@ -234,14 +251,10 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedStageInvalidatesView)
     return;
   view->SetCamera(&camera);
   view->SetRenderTargetView(texture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  for (xiiStringView stage : {"Lighting", "OpaqueComposition", "AutoExposure", "TemporalAntiAliasing"})
   {
-    xiiVariantDictionary properties;
-    properties.Insert("Stage", xiiString(stage));
     xiiRenderPipelineResourceDescriptor definition;
-    definition.AddPass("Allocation failure", "xiiTemporalAllocationTestPass", properties);
-    xiiStringBuilder name("Temporal allocation failure ", stage);
-    auto             pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(definition));
+    definition.AddPass("Allocation failure", "xiiTemporalAllocationTestPass");
+    auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Temporal allocation failure", std::move(definition));
     view->SetRenderPipelineResource(pipeline);
     {
       xiiTestLogInterface   log;
@@ -260,6 +273,6 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedStageInvalidatesView)
   pass->m_bFailAllocation = false;
   world.Update();
   environment.GetDevice()->WaitIdle();
-  XII_TEST_BOOL(view->GetRenderGraph()->FindTexture("TAAHistory").IsValid());
+  XII_TEST_BOOL(view->GetRenderGraph()->GetTextureDescription(pass->m_Output) != nullptr);
   XII_TEST_BOOL(pass != nullptr && pass->m_bHistoryValid && pass->m_uiInvalidations == 1);
 }

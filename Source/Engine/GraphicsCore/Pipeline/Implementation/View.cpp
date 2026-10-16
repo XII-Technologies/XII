@@ -87,7 +87,6 @@ xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& sett
 
   m_DisplayOutputSettings = settings;
   ++m_uiDisplayOutputSettingsRevision;
-  GetBuiltinRuntime()->m_Resources.m_TemporalPasses.m_bExposureHistoryValid = false;
   return XII_SUCCESS;
 }
 

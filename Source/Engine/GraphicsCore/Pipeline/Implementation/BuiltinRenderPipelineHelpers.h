@@ -1,45 +1,14 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+#include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelinePassData.h>
 
 namespace xiiBuiltinPipelineUtils
 {
-  // A pass may temporarily use transfer commands, but subsequent graph barriers still expect
-  // the resource state declared by that pass. Restore it before returning from the callback.
-  inline void UpdateBufferPreservingState(xiiGALCommandList& commandList, xiiGALBuffer* buffer, xiiUInt32 offset, xiiArrayPtr<const xiiUInt8> data)
-  {
-    const auto state = buffer->GetResourceState();
-    commandList.UpdateBuffer(buffer, offset, data);
-    xiiGALStateTransitionDescription transition;
-    transition.m_pResource       = buffer;
-    transition.m_NewState        = state;
-    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
-    commandList.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
-  }
-  inline void RestoreTextureState(xiiGALCommandList& commandList, xiiGALTexture* texture, xiiBitflags<xiiGALResourceStateFlags> state)
-  {
-    if (texture->GetResourceState() == state)
-      return;
-    xiiGALStateTransitionDescription transition;
-    transition.m_pResource       = texture;
-    transition.m_NewState        = state;
-    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
-    commandList.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
-  }
-  inline void ClearRenderTargetPreservingState(xiiGALCommandList& commandList, xiiGALTextureView* view, const xiiColor& color)
-  {
-    const auto state = view->GetTexture()->GetResourceState();
-    commandList.ClearRenderTargetView(view, color);
-    RestoreTextureState(commandList, view->GetTexture(), state);
-  }
-  inline void ClearDepthPreservingState(xiiGALCommandList& commandList, xiiGALTextureView* view, bool depth, bool stencil, float value, xiiUInt8 stencilValue)
-  {
-    const auto state = view->GetTexture()->GetResourceState();
-    commandList.ClearDepthStencilView(view, depth, stencil, value, stencilValue);
-    RestoreTextureState(commandList, view->GetTexture(), state);
-  }
-
+  using xiiRenderPassUtils::UpdateBufferPreservingState;
+  using xiiRenderPassUtils::ClearRenderTargetPreservingState;
+  using xiiRenderPassUtils::ClearDepthPreservingState;
 
   // Shared constants (sizes of persistent GPU buffers, aligned to typical instance budgets)
   static constexpr xiiUInt32 k_uiMaxInstances = 65536U; ///< The maximum number of drawable objects in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.

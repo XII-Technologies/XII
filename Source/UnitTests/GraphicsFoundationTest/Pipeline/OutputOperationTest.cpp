@@ -4,11 +4,13 @@
 #include <Core/World/World.h>
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/Passes/Exposure/AutoExposurePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
@@ -69,6 +71,123 @@ public:
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiOutputOperationExport, 1, xiiRTTIDefaultAllocator<xiiOutputOperationExport>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+class xiiExposureOperationReadback : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiExposureOperationReadback, xiiRenderPipelinePass);
+
+public:
+  xiiRenderGraphBufferHandle m_Exposure, m_Readback;
+  void                       GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override { pins.PushBack({"Exposure", xiiRenderPipelinePin::Buffer, true}); }
+  xiiResult                  Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphBufferHandle m_Source, m_Target;
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
+        data.m_Source = builder.ReadBuffer(context.GetInputBuffer("Exposure"), xiiGALResourceStateFlags::CopySource);
+        xiiGALBufferCreationDescription description;
+        description.m_uiSize = sizeof(float) * 2;
+        description.m_Usage = xiiGALResourceUsage::Staging;
+        description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+        data.m_Target = builder.WriteBuffer("Exposure readback", description, xiiGALResourceStateFlags::CopyDestination);
+        builder.ExportBuffer(data.m_Source, xiiGALResourceStateFlags::CopySource);
+        builder.ExportBuffer(data.m_Target, xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().CopyBuffer(execution.GetBuffer(data.m_Source), execution.GetBuffer(data.m_Target)); }, true);
+    m_Exposure         = emitted.first->m_Source;
+    m_Readback         = emitted.first->m_Target;
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExposureOperationReadback, 1, xiiRTTIDefaultAllocator<xiiExposureOperationReadback>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableExposureOperations)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor leaf;
+  leaf.AddPass("HDR", "xiiOutputOperationSource");
+  leaf.AddPass("Meter", "xiiLuminanceHistogramPass");
+  xiiAutoExposurePass authored;
+  authored.m_Settings.m_Mode = xiiExposureMode::Manual;
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(authored.GetProperties(properties));
+  leaf.AddPass("Adapt", "xiiAutoExposurePass", properties);
+  leaf.AddPass("Read exposure", "xiiExposureOperationReadback");
+  XII_TEST_RESULT(leaf.Connect(0, "Color", 1, "HDRSceneColor"));
+  XII_TEST_RESULT(leaf.Connect(1, "LuminanceHistogram", 2, "LuminanceHistogram"));
+  XII_TEST_RESULT(leaf.Connect(2, "CurrentExposure", 3, "Exposure"));
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  root.AddSubgraph("Neutral", definition.m_Id);
+  root.AddSubgraph("Brighter", definition.m_Id);
+  const xiiUuid brighter = root.m_Passes[1].m_Id;
+  auto&         override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  override.m_Path.PushBack(leaf.m_Passes[2].m_Id);
+  authored.m_Settings.m_fExposureCompensation = 2.0f;
+  XII_TEST_RESULT(authored.GetProperties(override.m_Properties));
+  const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Reusable exposure", std::move(root));
+  xiiWorldDescription worldDescription("Exposure occurrences");
+  xiiWorld            world(worldDescription);
+  XII_LOCK(world.GetWriteMarker());
+  auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView*   view   = nullptr;
+  const auto handle = module->CreateView("Exposure only", view);
+  view->SetCamera(&camera);
+  view->SetViewport({0, 0, 8, 8});
+  view->SetRenderPipelineResource(resource);
+  xiiSharedPtr<xiiGALBuffer> histories[2];
+  for (xiiUInt32 frame = 0; frame < 3; ++frame)
+  {
+    if (frame == 2)
+      view->InvalidateTemporalHistory();
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    const auto& instance = view->GetRenderPipelineInstance();
+    const auto* compiled = instance.GetPipeline();
+    if (!XII_TEST_BOOL(compiled != nullptr))
+      return;
+    XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet());
+    XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet());
+    xiiUInt32 inspected = 0;
+    for (xiiUInt32 index = 0; index < compiled->GetDescriptor().m_Passes.GetCount(); ++index)
+    {
+      const auto* readback = xiiDynamicCast<const xiiExposureOperationReadback*>(instance.GetPass(index));
+      if (!readback)
+        continue;
+      ++inspected;
+      const auto branch   = compiled->GetProvenance()[index].m_InstancePath[0] == brighter ? 1U : 0U;
+      auto       exposure = view->GetRenderGraph()->GetExportedBuffer(readback->m_Exposure);
+      if (frame == 0)
+        histories[branch] = exposure;
+      XII_TEST_BOOL(exposure && exposure == histories[branch]);
+      auto staging = view->GetRenderGraph()->GetExportedBuffer(readback->m_Readback);
+      if (!XII_TEST_BOOL(staging != nullptr))
+        return;
+      auto commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      commands->Begin();
+      void* mapped = nullptr;
+      if (XII_TEST_RESULT(commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, mapped)))
+      {
+        XII_TEST_FLOAT(static_cast<const float*>(mapped)[0], branch ? 4.0f : 1.0f, 0.001f);
+        XII_TEST_RESULT(commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read));
+      }
+      commands->End();
+    }
+    XII_TEST_INT(inspected, 2);
+    XII_TEST_BOOL(histories[0] && histories[1] && histories[0] != histories[1]);
+  }
+  module->DestroyView(handle);
+}
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
 {

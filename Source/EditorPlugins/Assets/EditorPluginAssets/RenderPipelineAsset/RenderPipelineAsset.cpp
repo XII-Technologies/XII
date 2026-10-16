@@ -182,20 +182,7 @@ void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiN
     if (const auto* category = type->GetAttributeByType<xiiCategoryAttribute>())
       entry.m_sCategory.Assign(category->GetCategory());
   }
-  const auto stages = xiiBuiltinRenderPipelinePass::GetStages();
-  m_BuiltinProperties.Clear();
-  m_BuiltinProperties.Reserve(stages.GetCount());
-  for (const auto stage : stages)
-  {
-    auto& setting = m_BuiltinProperties.ExpandAndGetRef();
-    setting.m_sPropertyName.Assign("Stage");
-    setting.m_Value   = stage;
-    auto& entry       = out_templates.ExpandAndGetRef();
-    entry.m_pType     = xiiGetStaticRTTI<xiiBuiltinRenderPipelinePass>();
-    entry.m_sTypeName = stage;
-    entry.m_sCategory.Assign("Built-in Rendering");
-    entry.m_PropertyValues = xiiArrayPtr<const xiiNodePropertyValue>(&setting, 1);
-  }
+
 }
 
 bool xiiRenderPipelineNodeManager::InternalIsNode(const xiiDocumentObject* pObject) const

@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/Resources/Texture.h>
 
-namespace xiiBuiltinPipelineUtils
+namespace xiiRenderPassUtils
 {
   // Replace a history pair only after both allocations succeed. A factory parameter keeps
   // failure handling independently verifiable without exhausting physical GPU memory.
@@ -26,4 +26,4 @@ namespace xiiBuiltinPipelineUtils
     inout_bHistoryValid = false;
     return XII_SUCCESS;
   }
-} // namespace xiiBuiltinPipelineUtils
+} // namespace xiiRenderPassUtils

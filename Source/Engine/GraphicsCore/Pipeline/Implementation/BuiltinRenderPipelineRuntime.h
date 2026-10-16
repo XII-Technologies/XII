@@ -119,12 +119,8 @@ struct xiiScreenSpaceRefractionSnapshotData;
 struct xiiScreenSpaceRefractionData;
 struct xiiPlanarReflectionsData;
 
-struct xiiLuminanceHistogramData;
-struct xiiAutoExposureData;
-struct xiiTemporalAntiAliasingData;
 
 
-struct xiiFinalBlitData;
 
 
 /// Built-in rendering implementation and isolated per-view history, owned by the existing
@@ -152,7 +148,6 @@ public:
   void                                                                   BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                                                              BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth);
   xiiResult                                                              BuildViewRenderMode(xiiRenderGraph& graph, xiiRenderGraphTextureHandle& color);
-  void                                                                   BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                                                                   BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
   void                                                                   InvalidateTemporalHistory();
   void                                                                   BindFrameResources(xiiGALCommandList& commandList) const;
@@ -394,20 +389,6 @@ public:
       xiiSharedPtr<xiiGALTexture>              m_pPlanarReflectionTarget;
     } m_ScreenSpacePasses;
 
-    //  Stage 10 - Temporal Reconstruction
-    struct TemporalPasses
-    {
-      xiiSharedPtr<xiiGALComputePipelineState> m_pLuminanceHistogramPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pAutoExposurePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pTAAPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSharpenPipeline;
-      xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffers[2]; // ping-pong resolved color history
-      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer;       // persistent exposure multiplier + average luminance
-      xiiUInt32                                m_uiTAAHistoryWriteIndex = 0U;
-      bool                                     m_bTAAHistoryValid       = false;
-      bool                                     m_bExposureHistoryValid  = false;
-    } m_TemporalPasses;
-
     //  Stage 11 - Post-Processing
     struct PostProcessPasses
     {
@@ -427,7 +408,6 @@ public:
     {
       xiiSharedPtr<xiiGALComputePipelineState>  m_pHDRtoSDRPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pFinalResolvePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pFinalBlitPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pSensorOutputPipeline;
       xiiSharedPtr<xiiGALTexture>               m_pSensorOutputTexture;
       xiiSensorProfileHandle                    m_hSensorProfile;
@@ -692,19 +672,11 @@ private:
   void ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupLuminanceHistogram(xiiLuminanceHistogramData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteLuminanceHistogram(const xiiLuminanceHistogramData& data, xiiRenderGraphPassContext& context);
-
-  void SetupAutoExposure(xiiAutoExposureData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteAutoExposure(const xiiAutoExposureData& data, xiiRenderGraphPassContext& context);
-
-  void SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& data, xiiRenderGraphPassContext& context);
 
 
 
-  void SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassContext& context);
+
+
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

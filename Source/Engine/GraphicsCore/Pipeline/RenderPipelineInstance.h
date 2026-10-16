@@ -13,13 +13,15 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineInstance
 public:
   xiiRenderPipelineInstance() = default;
   ~xiiRenderPipelineInstance();
-  xiiResult                    Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr);
-  xiiResult                    Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
-  xiiResult                    Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides = {});
-  void                         Clear();
-  void                         InvalidateTemporalHistory();
-  const xiiRenderPipeline*     GetPipeline() const { return m_pPipeline.Borrow(); }
-  const xiiRenderPipelinePass* GetPass(xiiUInt32 index) const { return index < m_Passes.GetCount() ? m_Passes[index] : nullptr; }
+  xiiResult Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr);
+  xiiResult Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
+  xiiResult Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides = {});
+  void      Clear();
+  void      InvalidateTemporalHistory();
+  /// Frame-local binding inspection. Handles expire when the graph starts its next setup.
+  const xiiRenderPipelineBinding* GetOutputBinding(xiiUInt32 passIndex, xiiStringView pin) const;
+  const xiiRenderPipeline*        GetPipeline() const { return m_pPipeline.Borrow(); }
+  const xiiRenderPipelinePass*    GetPass(xiiUInt32 index) const { return index < m_Passes.GetCount() ? m_Passes[index] : nullptr; }
 
 private:
   xiiDynamicArray<xiiRenderPipelineBinding>                       m_HistoryBindings;

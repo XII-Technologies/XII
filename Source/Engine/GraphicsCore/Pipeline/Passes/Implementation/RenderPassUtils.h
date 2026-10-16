@@ -27,11 +27,16 @@ private:
 
 namespace xiiRenderPassUtils
 {
-  xiiResult                  LoadComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& pipeline, xiiStringView shader);
-  xiiResult                  LinearClampSampler(xiiSharedPtr<xiiGALSampler>& sampler);
-  xiiRenderGraphBufferHandle Constants(xiiRenderGraphBuilder& builder, xiiStringView name, xiiUInt32 size);
-  xiiResult                  OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiUInt32 width, xiiUInt32 height, xiiSizeU32& out_size, bool useViewport = false);
-  void                       ResourcePins(xiiDynamicArray<xiiRenderPipelinePin>& pins);
+  xiiResult                                 LoadComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& pipeline, xiiStringView shader);
+  xiiSharedPtr<xiiGALGraphicsPipelineState> LoadGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& pipeline, xiiStringView shader, const xiiSharedPtr<xiiGALRenderPass>& renderPass, xiiUInt32 subpass);
+  xiiResult                                 PointClampSampler(xiiSharedPtr<xiiGALSampler>& sampler);
+  void                                      UpdateBufferPreservingState(xiiGALCommandList& commands, xiiGALBuffer* buffer, xiiUInt32 offset, xiiArrayPtr<const xiiUInt8> data);
+  void                                      ClearRenderTargetPreservingState(xiiGALCommandList& commands, xiiGALTextureView* view, const xiiColor& color);
+  void                                      ClearDepthPreservingState(xiiGALCommandList& commands, xiiGALTextureView* view, bool depth, bool stencil, float value, xiiUInt8 stencilValue);
+  xiiResult                                 LinearClampSampler(xiiSharedPtr<xiiGALSampler>& sampler);
+  xiiRenderGraphBufferHandle                Constants(xiiRenderGraphBuilder& builder, xiiStringView name, xiiUInt32 size);
+  xiiResult                                 OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiUInt32 width, xiiUInt32 height, xiiSizeU32& out_size, bool useViewport = false);
+  void                                      ResourcePins(xiiDynamicArray<xiiRenderPipelinePin>& pins);
   /// Per-pass cache, invalidated by authored configuration, view defaults or parameter changes.
   struct DisplayConfiguration
   {

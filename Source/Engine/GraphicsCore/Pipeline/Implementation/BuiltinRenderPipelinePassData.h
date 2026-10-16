@@ -45,18 +45,12 @@
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
 #include <Shaders/Pipeline/Passes/Denoising/TemporalDenoiseConstants.h>
-#include <Shaders/Pipeline/Passes/Exposure/ExposureAdaptationConstants.h>
-#include <Shaders/Pipeline/Passes/Exposure/ExposureHistogramConstants.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/ReSTIRGIConstants.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/SSGIConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZOcclusionConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/MotionVectors/MotionVectorConstants.h>
-#include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
-#include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
-#include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
-#include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/RTReflectionDenoiseConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
@@ -64,7 +58,6 @@
 #include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
-#include <Shaders/Pipeline/Passes/Temporal/TAAConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
@@ -1106,50 +1099,4 @@ struct xiiPlanarReflectionsData
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hPlanarTarget; ///< RenderTarget out (planar reflection render target).
-};
-
-struct xiiLuminanceHistogramData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRIn;     ///< ShaderResource in (current HDR scene color).
-  xiiRenderGraphBufferHandle  m_hHistogram; ///< UnorderedAccess out (256-bin luminance histogram).
-  xiiRenderGraphBufferHandle  m_hConstants;
-};
-
-struct xiiAutoExposureData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphBufferHandle m_hHistogram; ///< ShaderResource in (luminance histogram).
-  xiiRenderGraphBufferHandle m_hExposure;  ///< UnorderedAccess in/out (persistent exposure value).
-  xiiRenderGraphBufferHandle m_hConstants;
-  bool                       m_bHistoryValid = false;
-};
-
-struct xiiTemporalAntiAliasingData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRIn;    ///< ShaderResource in (current HDR scene color).
-  xiiRenderGraphTextureHandle m_hVelocity; ///< ShaderResource in (motion vectors).
-  xiiRenderGraphTextureHandle m_hDepth;    ///< ShaderResource in (reversed-Z scene depth).
-  xiiRenderGraphTextureHandle m_hHistory;  ///< ShaderResource in (history color).
-  xiiRenderGraphTextureHandle m_hTAAOut;   ///< UnorderedAccess out (TAA resolved color).
-  xiiRenderGraphBufferHandle  m_hConstants;
-  xiiTAAConstants             m_Constants           = {};
-  xiiUInt32                   m_uiHistoryWriteIndex = 0U;
-  bool                        m_bHistoryValid       = false;
-};
-
-
-
-struct xiiFinalBlitData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hDisplayLinear; ///< ShaderResource in (tone-mapped scene-linear display signal).
-  xiiRenderGraphTextureHandle m_hBackbuffer;    ///< RenderTarget out (swapchain backbuffer).
-  xiiRenderGraphBufferHandle  m_hConstants;
-  bool                        m_bApplySRGBTransfer = false;
 };

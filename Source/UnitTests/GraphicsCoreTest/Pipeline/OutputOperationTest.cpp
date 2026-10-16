@@ -1,7 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
-#include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/ColorGradingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/ToneMappingPass.h>
@@ -11,8 +10,8 @@
 
 XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
 {
-  const char* operations[] = {"Upscale", "Bloom", "ToneMapping", "ColorGrading"};
-  const char* types[]      = {"xiiUpscalePass", "xiiBloomPass", "xiiToneMappingPass", "xiiColorGradingPass"};
+  const char* operations[] = {"Upscale", "Bloom", "ToneMapping", "ColorGrading", "LuminanceHistogram", "AutoExposure", "TemporalAntiAliasing", "Present"};
+  const char* types[]      = {"xiiUpscalePass", "xiiBloomPass", "xiiToneMappingPass", "xiiColorGradingPass", "xiiLuminanceHistogramPass", "xiiAutoExposurePass", "xiiTemporalAntiAliasingPass", "xiiPresentPass"};
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(operations); ++i)
   {
     xiiRenderPipelineResourceDescriptor legacy;
@@ -29,8 +28,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
     XII_TEST_BOOL(migrated.m_Passes[index].m_sType == types[i]);
     XII_TEST_BOOL(migrated.m_Passes[index].m_Id == id);
     XII_TEST_BOOL(!migrated.m_Passes[index].m_Properties.Contains("Stage"));
-    xiiBuiltinRenderPipelinePass removed;
-    XII_TEST_BOOL(removed.Configure(properties).Failed());
   }
   xiiUpscalePass authored;
   authored.m_uiWidth  = 128;
@@ -74,5 +71,5 @@ XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
   for (const auto& pass : sdk.m_Passes)
     for (const auto* type : types)
       migrated += pass.m_sType == type ? 1 : 0;
-  XII_TEST_INT(migrated, 4);
+  XII_TEST_INT(migrated, 8);
 }

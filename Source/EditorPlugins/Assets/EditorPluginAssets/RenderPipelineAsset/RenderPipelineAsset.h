@@ -22,7 +22,6 @@ public:
   bool              InternalCanConnectToSelf(const xiiPin& source, const xiiPin& target) const override;
 
 private:
-  mutable xiiDynamicArray<xiiNodePropertyValue> m_BuiltinProperties;
 };
 
 class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineAssetDocument : public xiiAssetDocument

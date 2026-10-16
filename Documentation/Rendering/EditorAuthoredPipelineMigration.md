@@ -370,3 +370,53 @@ The remaining stage dispatcher and Builtin files are still migration work. This
 checkpoint does not satisfy the request to remove the entire family or decompose
 all rendering algorithms. Temporal reconstruction, exposure and presentation are
 next; their state must belong to each independent pass occurrence.
+
+## Independent exposure, temporal reconstruction and presentation
+
+LuminanceHistogram, AutoExposure, TemporalAntiAliasing and Present are now ordinary
+reflected pass types with member properties and explicit input/output bindings.
+The former post-processing implementation file is deleted. Its four remaining
+algorithms, pipeline caches, exposure buffer and TAA history pair have been removed
+from the composite runtime. Temporal allocation is a small shared utility, with
+failure-injection tests, rather than a stage-owned subsystem. The old memory utility
+header and its includes are removed. Shader-failure coverage now lives in
+RenderOperationFailureTest.cpp.
+
+Each exposure/TAA occurrence owns its writable history. Frame constants snapshot
+camera exposure, timing, dimensions and effective settings during Build. TAA exposes
+previous color through an optional temporal pin, separate from current-frame input
+dependencies. Native texture requirements describe dimensions, samples, format where
+fixed, and shader-resource access. Presentation consumes its explicit graded-color
+binding and publishes its target binding. Frame-local binding inspection replaces
+test dependence on globally discovered output names.
+
+The editor no longer fills stage-template/property arrays. The GetStages API and
+stage configuration validator are deleted; available nodes come from reflected pass
+types and category attributes. A regression verifies that invalid pass configuration
+does not delete connected pins or their persistent property objects. Versioned source
+conversion now also handles prior version-2 stage nodes. SDK documents and binaries
+were regenerated through the production compiler; the temporary packaging code was
+removed from the test fixture.
+
+Debug builds of GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and
+EditorEngineProcessFrameworkTest pass. All 29 Core, 49 Vulkan GAL, 73 Vulkan
+editor-engine and 15 Qt subtests pass in Workspace/temporal-verified-*.log.
+GPU readback verifies two instances of one shared exposure definition produce 1x
+and 4x exposure, retain different buffers across three frames, and reuse those
+allocations after explicit invalidation. Two independent TAA instances retain
+separate histories through 64 resizes. Existing interleaved-view history checks,
+shader failure/recovery, asset reload, editor inspection and deterministic SDK
+export also pass. Initial test binding-index and history-import compilation errors
+were corrected before final verification. One earlier full Qt run failed deleting
+an asset-processor output at AssetProcessorProfileTest.cpp:62; two subsequent full
+runs passed. That intermittent cause is unresolved. D3D12 remains excluded.
+No controlled performance benchmark was run. Logical history publication adds an
+import-only graph node that can be culled; no separate GPU submission is requested.
+
+This is eight independently reflected operations from the original 84-operation
+inventory. Ten composite branches and 76 operation-data structures remain in the
+old runtime, with fourteen Builtin implementation files and the public selector
+header still present. The complete requested deletion is not finished. The remaining
+visibility, geometry, shadow, lighting, material, screen-effect and visualization
+algorithms must be moved into real independent passes and authored compositions;
+renaming the remaining runtime would not satisfy that work.

@@ -30,6 +30,12 @@ class xiiEditorPinTestPass : public xiiRenderPipelinePass
 
 public:
   bool m_bExtra = false;
+  bool m_bValid = true;
+  xiiResult Configure(const xiiVariantDictionary& properties) override
+  {
+    XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
+    return m_bValid ? XII_SUCCESS : XII_FAILURE;
+  }
   void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
   {
     pins.PushBack({"Input", xiiRenderPipelinePin::Texture, true, true});
@@ -44,6 +50,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPinTestPass, 1, xiiRTTIDefaultAllocato
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("Extra", m_bExtra),
+      XII_MEMBER_PROPERTY("Valid", m_bValid)->AddAttributes(new xiiDefaultValueAttribute(true)),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -195,6 +202,12 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
                                                         *manager->GetOutputPinByName(source, "Output"), *manager->GetInputPinByName(target, "Input")));
   accessor->FinishTransaction();
   const auto connectionId = manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid();
+  accessor->StartTransaction("Temporarily invalidate pass configuration");
+  XII_TEST_STATUS(accessor->SetValueByName(target, "Valid", false));
+  accessor->FinishTransaction();
+  XII_TEST_BOOL(manager->GetPinPropertyObject(*manager->GetInputPinByName(target, "Input"))->GetGuid() == settingsId);
+  XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
   accessor->StartTransaction("Edit connected nested requirements");
   XII_TEST_STATUS(accessor->SetValueByName(requirements, "Samples", 1U));
   accessor->FinishTransaction();

@@ -5,6 +5,7 @@
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -97,3 +98,98 @@ xiiResult xiiRenderPassUtils::DisplayConfiguration::Resolve(const xiiRenderPipel
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Implementation_RenderPassUtils);
+
+namespace xiiRenderPassUtils
+{
+  // A pass may temporarily use transfer commands, but subsequent graph barriers still expect
+  // the resource state declared by that pass. Restore it before returning from the callback.
+  void UpdateBufferPreservingState(xiiGALCommandList& commandList, xiiGALBuffer* buffer, xiiUInt32 offset, xiiArrayPtr<const xiiUInt8> data)
+  {
+    const auto state = buffer->GetResourceState();
+    commandList.UpdateBuffer(buffer, offset, data);
+    xiiGALStateTransitionDescription transition;
+    transition.m_pResource       = buffer;
+    transition.m_NewState        = state;
+    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+    commandList.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
+  }
+  static void RestoreTextureState(xiiGALCommandList& commandList, xiiGALTexture* texture, xiiBitflags<xiiGALResourceStateFlags> state)
+  {
+    if (texture->GetResourceState() == state)
+      return;
+    xiiGALStateTransitionDescription transition;
+    transition.m_pResource       = texture;
+    transition.m_NewState        = state;
+    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+    commandList.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
+  }
+  void ClearRenderTargetPreservingState(xiiGALCommandList& commandList, xiiGALTextureView* view, const xiiColor& color)
+  {
+    const auto state = view->GetTexture()->GetResourceState();
+    commandList.ClearRenderTargetView(view, color);
+    RestoreTextureState(commandList, view->GetTexture(), state);
+  }
+  void ClearDepthPreservingState(xiiGALCommandList& commandList, xiiGALTextureView* view, bool depth, bool stencil, float value, xiiUInt8 stencilValue)
+  {
+    const auto state = view->GetTexture()->GetResourceState();
+    commandList.ClearDepthStencilView(view, depth, stencil, value, stencilValue);
+    RestoreTextureState(commandList, view->GetTexture(), state);
+  }
+
+
+} // namespace xiiRenderPassUtils
+
+xiiResult xiiRenderPassUtils::PointClampSampler(xiiSharedPtr<xiiGALSampler>& sampler)
+{
+  if (!sampler)
+  {
+    if (!xiiGALDevice::HasDefaultDevice())
+      return XII_FAILURE;
+    xiiGALSamplerCreationDescription description;
+    description.m_MinFilter = xiiGALFilterType::Point;
+    description.m_MagFilter = xiiGALFilterType::Point;
+    description.m_MipFilter = xiiGALFilterType::Point;
+    sampler                 = xiiGALDevice::GetDefaultDevice()->CreateSampler(description);
+  }
+  return sampler ? XII_SUCCESS : XII_FAILURE;
+}
+
+xiiSharedPtr<xiiGALGraphicsPipelineState> xiiRenderPassUtils::LoadGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex)
+{
+  XII_ASSERT_DEV(pRenderPass != nullptr, "A graphics pipeline requires a compatible render pass.");
+
+  if (inout_pPipeline != nullptr)
+  {
+    const xiiGALGraphicsPipelineDescription& pipelineDescription = inout_pPipeline->GetDescription().m_GraphicsPipeline;
+    if (pipelineDescription.m_pRenderPass == pRenderPass && pipelineDescription.m_uiSubpassIndex == uiSubpassIndex)
+      return inout_pPipeline;
+  }
+
+  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
+
+  xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return {};
+
+  xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  if (!pPermutation.IsValid() || !pPermutation->IsShaderValid())
+    return nullptr;
+
+  xiiGALGraphicsPipelineStateCreationDescription description;
+  description.m_pPipelineResourceSignature            = pPermutation->GetPipelineResourceSignature();
+  description.m_pVertexShader                         = pPermutation->GetGALShader(xiiGALShaderType::Vertex);
+  description.m_pPixelShader                          = pPermutation->GetGALShader(xiiGALShaderType::Pixel);
+  description.m_GraphicsPipeline.m_pBlendState        = pPermutation->GetBlendState();
+  description.m_GraphicsPipeline.m_pRasterizerState   = pPermutation->GetRasterizerState();
+  description.m_GraphicsPipeline.m_pDepthStencilState = pPermutation->GetDepthStencilState();
+  description.m_GraphicsPipeline.m_pRenderPass        = pRenderPass;
+  description.m_GraphicsPipeline.m_uiSubpassIndex     = static_cast<xiiUInt8>(uiSubpassIndex);
+  description.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
+
+  inout_pPipeline = xiiGALPipelineCache::GetPipeline(description);
+  if (!inout_pPipeline)
+    xiiLog::Error("Failed to create reflected graphics operation pipeline '{}'.", sShaderPath);
+
+  return inout_pPipeline;
+}

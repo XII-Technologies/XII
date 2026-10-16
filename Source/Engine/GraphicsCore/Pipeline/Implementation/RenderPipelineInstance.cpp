@@ -226,3 +226,14 @@ void xiiRenderPipelineInstance::InvalidateTemporalHistory()
   for (auto* pass : m_Passes)
     pass->InvalidateTemporalHistory();
 }
+
+const xiiRenderPipelineBinding* xiiRenderPipelineInstance::GetOutputBinding(xiiUInt32 passIndex, xiiStringView name) const
+{
+  if (!m_pPipeline || passIndex >= m_pPipeline->m_Passes.GetCount())
+    return nullptr;
+  const auto& pass = m_pPipeline->m_Passes[passIndex];
+  for (xiiUInt32 index = 0; index < pass.m_Pins.GetCount(); ++index)
+    if (!pass.m_Pins[index].m_bInput && pass.m_Pins[index].m_sName == name)
+      return &m_Bindings[pass.m_uiBindingOffset + index];
+  return nullptr;
+}

@@ -373,6 +373,7 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     xiiVariantDictionary display;
     display.Insert("BloomStrength", 0.2f);
     definition.m_Parameters.Insert("DisplayOutput", display);
+    const auto outputIndex = definition.m_Passes.GetCount() - 1;
     view->SetRenderPipelineResource(xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("Configured default pipeline", std::move(definition)));
     xiiGALTextureReadback readback(environment.GetDevice());
     for (xiiUInt32 frame = 0; frame < 2; ++frame)
@@ -386,7 +387,8 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
       XII_TEST_FLOAT(view->GetDisplayOutputSettings().m_fBloomStrength, viewBloomStrength, 0.0001f);
       environment.GetDevice()->WaitIdle();
       XII_TEST_BOOL(view->GetRenderGraph()->GetStatistics().m_uiCompiledPassCount > 10);
-      XII_TEST_BOOL(view->GetRenderGraph()->GetExportedTexture(view->GetRenderGraph()->FindTexture("ViewOutput")) == target);
+      const auto* output = view->GetRenderPipelineInstance().GetOutputBinding(outputIndex, "ViewOutput");
+      XII_TEST_BOOL(output && view->GetRenderGraph()->GetExportedTexture(output->m_hTexture) == target);
       xiiGALCommandListCreationDescription commands;
       commands.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
       auto commandList      = environment.GetDevice()->CreateCommandList(commands);

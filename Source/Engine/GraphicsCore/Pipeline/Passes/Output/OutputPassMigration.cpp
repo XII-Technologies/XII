@@ -16,6 +16,14 @@ namespace
       return "xiiToneMappingPass";
     if (stage == "ColorGrading")
       return "xiiColorGradingPass";
+    if (stage == "Present")
+      return "xiiPresentPass";
+    if (stage == "LuminanceHistogram")
+      return "xiiLuminanceHistogramPass";
+    if (stage == "AutoExposure")
+      return "xiiAutoExposurePass";
+    if (stage == "TemporalAntiAliasing")
+      return "xiiTemporalAntiAliasingPass";
     return {};
   }
 
@@ -23,7 +31,7 @@ namespace
   class OutputOperationSourcePatch : public xiiGraphPatch
   {
   public:
-    OutputOperationSourcePatch() : xiiGraphPatch("xiiBuiltinRenderPipelinePass", 2) {}
+    OutputOperationSourcePatch() : xiiGraphPatch("xiiBuiltinRenderPipelinePass", 3) {}
     void Patch(xiiGraphPatchContext& context, xiiAbstractObjectGraph*, xiiAbstractObjectNode* node) const override
     {
       const auto* stage = node->FindProperty("Stage");
@@ -33,7 +41,7 @@ namespace
       if (type.IsEmpty())
         return;
       node->RemoveProperty("Stage");
-      if (type != "xiiUpscalePass")
+      if (type != "xiiUpscalePass" && type != "xiiTemporalAntiAliasingPass")
         node->AddProperty("UseViewDefaults", true);
       context.RenameClass(type, 1);
     }
@@ -65,7 +73,7 @@ namespace
         if (operation.IsEmpty())
           continue;
         dictionary.Remove("Stage");
-        if (operation != "xiiUpscalePass")
+        if (operation != "xiiUpscalePass" && operation != "xiiTemporalAntiAliasingPass")
           dictionary.Insert("UseViewDefaults", true);
         node->ChangeProperty("Type", xiiString(operation));
         node->ChangeProperty("Properties", dictionary);
