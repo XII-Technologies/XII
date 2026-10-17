@@ -355,3 +355,72 @@ also caught the input-default mismatch described above. Final results pass after
 correction. No controlled raster benchmark, complete game/editor renderer test or
 D3D12 validation was run. The pending legacy helper/editor migrations above remain
 required work.
+
+## Legacy picking orchestrator deletion - 2026-10-16
+
+Deleted `Visibility/Implementation/GpuScenePicking.cpp`, the public AddPickingPass
+and IsPickingSupported APIs, their eager shader registrations, and the obsolete
+GpuSceneIndexedCommandBuild shader. Repository source searches find no remaining
+references to these APIs or shader. Surface rasterization and vertex-pull command
+preparation remain separate reflected operations. Native geometry fixtures bind
+their inputs through member RTTI and explicit handles rather than rediscovering
+an orchestrator's internal buffer names.
+
+SceneMeshPickingPass now captures a supplied RGBA32UInt Surface pin and forwards
+it for other consumers. It no longer owns visibility contexts, geometry/material
+table lookup, extraction packet lists, selected-object rendering or rasterization.
+The old visibility resize path, capacities, candidate arrays and context destruction
+have been removed from its private state. Its remaining completion-checked image
+slots and validated world-owner metadata serve only asynchronous picking. Enabled
+is reflected; Editor.Picking can disable capture without changing the supplied graph.
+
+The existing world-derived GPU data now exposes a runtime data revision incremented
+only when packed records, membership or pose bytes change. This reuses existing
+change/version tracking, with no new scene registry or CPU record scan. Capture
+invalidates previous images on that revision, view candidate selection and relevant
+selection-policy changes. Resource events retain their loader-thread atomic epoch;
+authoritative owner/component and transform validation still guards resolved pixels.
+
+The old editor orchestration fixture has been rebuilt around the actual SurfaceQuery
+resource and two capture occurrences in each of two views. It verifies occluding
+world objects, tag filtering, moving/removing/recreating components, background,
+nonzero viewport origins, independent camera invalidation, capture disable/re-enable
+and rectangle queries, including a device configuration with mesh shaders disabled.
+Selected-object and transparency filtering must be supplied by independently wired
+preparation nodes; their former embedded implementation is removed. The full editor
+pipeline and selection-overlay composition still need authored replacements.
+
+Builds pass for GraphicsCoreTest, GraphicsFoundationTest,
+EditorEngineProcessFrameworkTest and EditorFrameworkTest, including their dependent
+engine/editor targets (`Workspace/native-capture-build.log`, final-build.log,
+mesh-grid-build.log and fixture-final-build.log; the first log contains intermediate
+fixture compilation failures, the later logs contain the corrected builds).
+
+Final validation:
+
+- All 45 GraphicsCore CPU subtests pass (`Workspace/native-capture-final-core.log`).
+- Vulkan PipelineExtraction (3 subtests) and NativeVisibility (2) pass. Transform
+  revisions settle on unchanged frames; pose-only revisions are checked by raster
+  tests. Two-camera uploads remain 288 bytes once for one changed instance and zero
+  bytes for a warmed static frame. The uncontrolled Debug packing sample measured
+  2.622 ms/update for 1024 unchanged components; no speedup is claimed.
+- NativeMeshCapture (2), NativeSceneIdentity (1), NativeSceneLod (4), MeshletRaster
+  (1) and SkinningRaster (3) pass on Vulkan (`Workspace/native-capture-<group>.log`).
+  These execute real mesh and indexed surface shaders, masked/translucent coverage,
+  dense meshlets, independent LOD sections, deformation and reload isolation.
+- All 15 Qt EditorDocuments tests pass, including deterministic exports of eleven
+  SDK assets (`Workspace/native-capture-final-qt.log`).
+
+Migration testing caught a fixture lookup of a deleted buffer name and replaced
+it with explicit command/count outputs. Native mesh tests also exposed an arbitrary
+65535 mesh-grid clamp in SurfaceRasterConstants; it now supports valid wider mesh
+grids while rejecting uint linearization overflow, with CPU regression coverage.
+An early capture assertion incorrectly required a completed new image to remain
+unavailable; it now accepts unavailable or the correct new owner, never the old owner.
+The last verification call initially could not execute because automatic approval
+review reached its usage limit; it was retried through approval, without bypassing it.
+
+No rendering Builtin files or scene-database classes were restored. The legacy
+visibility service, depth/G-buffer/forward raster orchestration and incomplete full
+game/editor pipelines remain migration targets. D3D12 is excluded; no controlled
+end-to-end rendering benchmark or complete application-renderer validation is claimed.
