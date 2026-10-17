@@ -28,9 +28,9 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-#include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -44,7 +44,6 @@
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
 #include <Shaders/GpuDrivenSceneConstants.h>
-#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 
 xiiCommandLineOptionInt    opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
@@ -58,6 +57,7 @@ xiiCommandLineOptionString opt_GpuDrivenVisibilityPipeline("GpuDrivenScene", "-v
 xiiCommandLineOptionString opt_GpuDrivenShadowPipeline("GpuDrivenScene", "-shadow-pipeline", "Authored shadow target/raster resource.", "RenderPipelines/ShadowMap.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowPagePipeline("GpuDrivenScene", "-shadow-page-pipeline", "Authored raster resource for supplied virtual page targets.", "RenderPipelines/ShadowMeshDepth.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowFeedbackPipeline("GpuDrivenScene", "-shadow-feedback-pipeline", "Authored virtual shadow demand/readback resource.", "RenderPipelines/VirtualShadowFeedback.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenCascadePipeline("GpuDrivenScene", "-shadow-cascade-pipeline", "Authored stabilized directional cascade resource.", "RenderPipelines/ShadowCascades.xiiBinRenderPipeline");
 
 namespace
 {
@@ -142,15 +142,6 @@ namespace
     xiiUInt32                          m_uiVirtualShadowPhysicalAtlasHeight = 0U;
     xiiUInt32                          m_uiVirtualShadowDirectionalLightId  = 0U;
     xiiUInt32                          m_uiVirtualShadowEnabled             = 0U;
-  };
-
-  struct VirtualShadowCascadePassData
-  {
-    xiiRenderGraphBufferHandle m_hConstants;
-    xiiMat4                    m_CascadeViewProjection[4];
-    xiiVec4                    m_vCascadeSplitDepths  = xiiVec4::MakeZero();
-    xiiVec4                    m_vCascadeWorldRadii   = xiiVec4::MakeZero();
-    xiiUInt32                  m_uiActiveCascadeCount = 0U;
   };
 
   struct PresentPassData
@@ -379,6 +370,13 @@ public:
       RequestQuit();
       return;
     }
+    m_hCascadePipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenCascadePipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeCascadePipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     m_hShadowFeedbackPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenShadowFeedbackPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
     if (SynchronizeShadowFeedbackPipeline().Failed())
     {
@@ -415,6 +413,8 @@ public:
     m_VirtualPageRuntimes.Clear();
     m_ShadowPageDefinition = nullptr;
     m_hShadowPagePipeline.Invalidate();
+    m_Cascades.Clear();
+    m_hCascadePipeline.Invalidate();
     m_ShadowFeedback.Clear();
     m_hShadowFeedbackPipeline.Invalidate();
     m_SunShadow.Clear();
@@ -681,6 +681,69 @@ private:
     return XII_SUCCESS;
   }
 
+  xiiResult SynchronizeCascadePipeline()
+  {
+    bool changed = false;
+    if (m_Cascades.Synchronize(m_hCascadePipeline, &changed).Failed())
+    {
+      xiiLog::Error("Selected cascade resource '{}' is missing or invalid.", m_hCascadePipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    if (changed)
+    {
+      const auto* pipeline = m_Cascades.GetPipeline();
+      m_uiCascadeOutput    = pipeline->FindInterface("CascadeConstants", false);
+      if (m_uiCascadeOutput == xiiInvalidIndex ||
+          pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Type != xiiRenderPipelinePin::Buffer ||
+          !pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+      {
+        xiiLog::Error("Cascade resource '{}' requires a native directional snapshot and uniform CascadeConstants output.", m_hCascadePipeline.GetResourceID());
+        return XII_FAILURE;
+      }
+    }
+    return XII_SUCCESS;
+  }
+
+  xiiResult BuildCascades(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
+                          xiiArrayPtr<const xiiShadowCascadeDescription>& snapshot, xiiRenderGraphBufferHandle& constants, xiiUInt32& resolution)
+  {
+    XII_SUCCEED_OR_RETURN(SynchronizeCascadePipeline());
+    auto* view = m_World.GetRenderView();
+    if (!view)
+      return XII_FAILURE;
+    xiiVariantDictionary parameters;
+    parameters.Insert("ShadowLightDirection", m_World.GetSunLight().m_vDirection);
+    XII_LOCK(view->GetWorld()->GetReadMarker());
+    view->SetCamera(&m_Camera);
+    view->SetViewport({0, 0, float(m_TargetSize.width), float(m_TargetSize.height)});
+    if (m_Cascades.Build(view, graph, blackboard, parameters).Failed())
+    {
+      xiiLog::Error("Authored cascades failed: {}", m_Cascades.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    constants = m_Cascades.GetInterfaceBinding(m_uiCascadeOutput)->m_hBuffer;
+    // Select the producer of this explicit boundary, allowing other cascade occurrences.
+    for (xiiUInt32 i = 0; i < m_Cascades.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+      if (m_Cascades.GetPass(i)->GetDynamicRTTI()->IsDerivedFrom<xiiShadowCascadePass>())
+      {
+        const auto* binding = m_Cascades.GetOutputBinding(i, "CascadeConstants");
+        if (binding && binding->m_hBuffer == constants)
+        {
+          const auto* pass = static_cast<const xiiShadowCascadePass*>(m_Cascades.GetPass(i));
+          snapshot         = pass->GetCascadeSnapshot(graph);
+          if (snapshot.GetCount() != 1)
+          {
+            xiiLog::Error("Cascade resource '{}' supplies {} cascades, but this sample's remaining main shading consumes one shadow projection. Select a single-cascade resource until that consumer is rebuilt.", m_hCascadePipeline.GetResourceID(), snapshot.GetCount());
+            return XII_FAILURE;
+          }
+          resolution = pass->m_Settings.m_uiShadowMapResolution;
+          return !snapshot.IsEmpty() && constants.IsValid() ? XII_SUCCESS : XII_FAILURE;
+        }
+      }
+    xiiLog::Error("Cascade resource '{}' must map CascadeConstants to a native directional snapshot for this client's CPU page queries.", m_hCascadePipeline.GetResourceID());
+    return XII_FAILURE;
+  }
+
   xiiResult SynchronizeShadowFeedbackPipeline()
   {
     bool changed = false;
@@ -821,17 +884,17 @@ private:
       return;
     }
 
-    constexpr xiiUInt32      uiShadowResolution = 2048U;
-    xiiShadowCascadeSettings shadowSettings;
-    shadowSettings.m_uiCascadeCount         = 1U;
-    shadowSettings.m_fMaximumShadowDistance = 120.0f;
-    shadowSettings.m_fDepthPadding          = 30.0f;
-    shadowSettings.m_uiShadowMapResolution  = uiShadowResolution;
-    xiiStaticArray<xiiShadowCascadeDescription, 4U> shadowCascades;
-    const xiiGpuDrivenSceneLight&                   sun                  = m_World.GetSunLight();
-    const float                                     shadowAspect         = static_cast<float>(m_TargetSize.width) / static_cast<float>(xiiMath::Max(m_TargetSize.height, 1U));
-    const bool                                      bHasShadowCascade    = xiiShadowCascadeUtils::Build(m_Camera, shadowAspect, sun.m_vDirection, shadowSettings, shadowCascades).Succeeded() && !shadowCascades.IsEmpty();
-    const xiiMat4                                   shadowViewProjection = bHasShadowCascade ? shadowCascades[0].m_mViewProjection : m_ViewProjection;
+    xiiUInt32                                      uiShadowResolution = 0;
+    xiiArrayPtr<const xiiShadowCascadeDescription> shadowCascades;
+    xiiRenderGraphBufferHandle                     hCascadeConstants;
+    if (BuildCascades(graph, blackboard, shadowCascades, hCascadeConstants, uiShadowResolution).Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
+    const bool    bHasShadowCascade    = !shadowCascades.IsEmpty();
+    const xiiMat4 shadowViewProjection = shadowCascades[0].m_mViewProjection;
 
     xiiGpuVisibilityOutputs shadowVisibility;
     if (BuildVisibility(m_ShadowVisibility, graph, blackboard, shadowViewProjection, uiShadowResolution, uiShadowResolution,
@@ -841,31 +904,6 @@ private:
       SetReturnCode(1);
       RequestQuit();
       return;
-    }
-
-    auto virtualShadowCascadePass                          = graph.AddPass<VirtualShadowCascadePassData>("GPU Scene Virtual Shadow Cascades", xiiGALCommandQueueFlags::Graphics, [](VirtualShadowCascadePassData& data, xiiRenderGraphBuilder& builder) {
-        xiiGALBufferCreationDescription description;
-        description.m_uiSize         = sizeof(xiiShadowCascadeConstants);
-        description.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
-        description.m_Usage          = xiiGALResourceUsage::Dynamic;
-        description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-        data.m_hConstants            = builder.WriteBuffer("GPU Scene Virtual Shadow Cascade Constants", description, xiiGALResourceStateFlags::ConstantBuffer);
-        builder.SetPassAllowMerge(false); }, [](const VirtualShadowCascadePassData& data, xiiRenderGraphPassContext& context) {
-        xiiGALMapHelper<xiiShadowCascadeConstants> constants(context.GetCommandList(), context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-        for (xiiUInt32 uiCascade = 0U; uiCascade < 4U; ++uiCascade)
-          constants->CascadeViewProjection[uiCascade] = data.m_CascadeViewProjection[uiCascade];
-        constants->CascadeSplitDepths = data.m_vCascadeSplitDepths;
-        constants->CascadeWorldRadii  = data.m_vCascadeWorldRadii;
-        constants->ActiveCascadeCount = data.m_uiActiveCascadeCount;
-        constants->_Pad               = xiiVec3::MakeZero(); });
-    virtualShadowCascadePass.first->m_uiActiveCascadeCount = bHasShadowCascade ? 1U : 0U;
-    for (xiiUInt32 uiCascade = 0U; uiCascade < 4U; ++uiCascade)
-      virtualShadowCascadePass.first->m_CascadeViewProjection[uiCascade] = xiiMat4::MakeIdentity();
-    if (bHasShadowCascade)
-    {
-      virtualShadowCascadePass.first->m_CascadeViewProjection[0] = shadowCascades[0].m_mViewProjection;
-      virtualShadowCascadePass.first->m_vCascadeSplitDepths.x    = shadowCascades[0].m_fSplitFar;
-      virtualShadowCascadePass.first->m_vCascadeWorldRadii.x     = shadowCascades[0].m_fWorldRadius;
     }
 
     if (bHasShadowCascade)
@@ -959,7 +997,7 @@ private:
       RequestQuit();
       return;
     }
-    if (BuildShadowFeedback(graph, blackboard, drawPass.first->m_hDepth, virtualShadowCascadePass.first->m_hConstants).Failed())
+    if (BuildShadowFeedback(graph, blackboard, drawPass.first->m_hDepth, hCascadeConstants).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
@@ -1196,8 +1234,8 @@ private:
       const xiiGpuDrivenSceneLight& sun     = m_World.GetSunLight();
       constants->SunDirectionIntensity      = xiiVec4(sun.m_vDirection.x, sun.m_vDirection.y, sun.m_vDirection.z, sun.m_fIntensity);
       constants->AmbientColor               = xiiVec4(0.12f, 0.15f, 0.22f, 1.0f);
-      constexpr float fShadowResolution     = 2048.0f;
-      constants->ShadowTexelSize            = xiiVec4(1.0f / fShadowResolution, 1.0f / fShadowResolution, data.m_fShadowWorldUnitsPerTexel, 0.0f);
+      const auto& shadowSize                = context.GetTexture(data.m_hShadowMap)->GetDescription().m_Size;
+      constants->ShadowTexelSize            = xiiVec4(1.0f / shadowSize.width, 1.0f / shadowSize.height, data.m_fShadowWorldUnitsPerTexel, 0.0f);
     }
     {
       xiiGALMapHelper<xiiVirtualShadowSamplingConstants> constants(commandList, context.GetBuffer(data.m_hVirtualShadowConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -1247,6 +1285,9 @@ private:
   xiiUInt32                                         m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
   xiiRenderPipelineResourceHandle                   m_hVisibilityPipeline;
   xiiRenderPipelineResourceHandle                   m_hShadowPagePipeline;
+  xiiRenderPipelineResourceHandle                   m_hCascadePipeline;
+  xiiRenderPipelineInstance                         m_Cascades;
+  xiiUInt32                                         m_uiCascadeOutput = xiiInvalidIndex;
   xiiRenderPipelineResourceHandle                   m_hShadowFeedbackPipeline;
   xiiRenderPipelineInstance                         m_ShadowFeedback;
   xiiUInt32                                         m_uiShadowFeedbackDepth = xiiInvalidIndex, m_uiShadowFeedbackCascades = xiiInvalidIndex;

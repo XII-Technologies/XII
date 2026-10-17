@@ -9,6 +9,7 @@
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackReadbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackResetPass.h>
@@ -691,4 +692,62 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowFeedback)
     return;
   XII_TEST_INT(compiled->GetDescriptor().m_Passes.GetCount(), 6);
   XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet() && compiled->GetRuntimeFeatures().IsNoFlagSet());
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDirectionalCascades)
+{
+  xiiShadowCascadePass                  pass;
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass.GetPins(pins);
+  XII_TEST_RESULT(pass.InitializePinBindings(pins));
+  XII_TEST_BOOL(pass.GetExtractionRequirements().IsNoFlagSet() && pass.GetRuntimeFeatures().IsNoFlagSet());
+  XII_TEST_BOOL(pass.GetRequiredDeviceFeatures().IsNoFlagSet());
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  XII_TEST_BOOL(properties.Contains("Settings") && properties.GetValue("Settings")->IsA<xiiVariantDictionary>());
+  auto settings = properties.GetValue("Settings")->Get<xiiVariantDictionary>();
+  settings.Insert("CascadeCount", 0U);
+  properties.Insert("Settings", settings);
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  settings.Insert("CascadeCount", 4U);
+  settings.Insert("SplitLambda", xiiMath::NaN<float>());
+  properties.Insert("Settings", settings);
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  settings.Insert("SplitLambda", 0.5f);
+  settings.Insert("ShadowMapResolution", 16385U);
+  properties.Insert("Settings", settings);
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  settings.Insert("ShadowMapResolution", 2048U);
+  properties.Insert("Settings", settings);
+  properties.Insert("LightDirection", xiiVec3::MakeZero());
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  properties.Insert("LightDirection", xiiVec3(1, 0, -1));
+  XII_TEST_RESULT(pass.Configure(properties));
+  xiiRenderPipelineResourceDescriptor leaf;
+  leaf.AddPass("Stabilized cascades", "xiiShadowCascadePass", properties);
+  leaf.m_Interface.PushBack({"CascadeConstants", false, leaf.m_Passes[0].m_Id, "CascadeConstants"});
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  root.AddSubgraph("First light", definition.m_Id);
+  root.AddSubgraph("Second light", definition.m_Id);
+  auto& override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  override.m_Path.PushBack(leaf.m_Passes[0].m_Id);
+  settings.Insert("CascadeCount", 2U);
+  override.m_Properties.Insert("Settings", settings);
+  override.m_Properties.Insert("LightDirection", xiiVec3(0, 1, -1));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  XII_TEST_INT(static_cast<const xiiShadowCascadePass*>(instance.GetPass(0))->m_Settings.m_uiCascadeCount, 4);
+  XII_TEST_INT(static_cast<const xiiShadowCascadePass*>(instance.GetPass(1))->m_Settings.m_uiCascadeCount, 2);
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  graph.BeginSetup(1);
+  XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard).Failed());
+  XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("explicit view camera") != nullptr);
+  XII_TEST_BOOL(static_cast<const xiiShadowCascadePass*>(instance.GetPass(0))->GetCascadeSnapshot(graph).IsEmpty());
+  graph.EndSetup();
 }
