@@ -4,7 +4,8 @@
 #include <Core/World/World.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/ScreenSpaceGlobalIlluminationPass.h>
-#include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/RgbSensorPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -20,15 +21,12 @@ class xiiScreenEffectTestSource : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiScreenEffectTestSource, xiiRenderPipelinePass);
 
 public:
-  float    m_fDepth     = 0;
-  xiiColor m_Attributes = xiiColor::Black;
-  void     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
-  {
-    pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-    pins.PushBack({"Attributes", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::RGBA16Float});
-    pins.PushBack({"Depth", xiiRenderPipelinePin::Texture, false, false, xiiGALResourceFormat::R32Float});
-  }
-  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  float                             m_fDepth     = 0;
+  xiiColor                          m_Attributes = xiiColor::Black;
+  xiiRenderPipelineTextureOutputPin m_ColorOutput{xiiGALResourceFormat::RGBA16Float};
+  xiiRenderPipelineTextureOutputPin m_AttributesOutput{xiiGALResourceFormat::RGBA16Float};
+  xiiRenderPipelineTextureOutputPin m_DepthOutput{xiiGALResourceFormat::R32Float};
+  xiiResult                         Build(xiiRenderPipelinePassContext& context) override
   {
     struct Data
     {
@@ -51,15 +49,18 @@ public:
       execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(4, 4, 4, 1));
       execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Attributes)->GetDefaultView(xiiGALTextureViewType::RenderTarget), data.m_AttributeColor);
       execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(data.m_fDepth, 0, 0, 1)); });
-    XII_SUCCEED_OR_RETURN(context.SetOutput("Color", emitted.first->m_Color));
-    XII_SUCCEED_OR_RETURN(context.SetOutput("Attributes", emitted.first->m_Attributes));
-    return context.SetOutput("Depth", emitted.first->m_Depth);
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_ColorOutput, emitted.first->m_Color));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_AttributesOutput, emitted.first->m_Attributes));
+    return context.SetOutput(m_DepthOutput, emitted.first->m_Depth);
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenEffectTestSource, 1, xiiRTTIDefaultAllocator<xiiScreenEffectTestSource>)
   {
     XII_BEGIN_PROPERTIES
     {
+      XII_MEMBER_PROPERTY("ColorOutput", m_ColorOutput)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Color")),
+      XII_MEMBER_PROPERTY("AttributesOutput", m_AttributesOutput)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Attributes")),
+      XII_MEMBER_PROPERTY("DepthOutput", m_DepthOutput)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Depth")),
       XII_MEMBER_PROPERTY("Depth", m_fDepth),
       XII_MEMBER_PROPERTY("Attributes", m_Attributes),
     } XII_END_PROPERTIES;
@@ -82,23 +83,22 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   gi.m_fIntensity = 0.25f;
   xiiVariantDictionary properties;
   XII_TEST_RESULT(gi.GetProperties(properties));
-  const auto          trace      = leaf.AddPass("Diffuse screen rays", "xiiScreenSpaceGlobalIlluminationPass", properties);
-  const auto          composite  = leaf.AddPass("Add diffuse rays", "xiiScreenSpaceGlobalIlluminationCompositePass");
-  const auto          snapshot   = leaf.AddPass("Snapshot radiance", "xiiScreenSpaceRefractionSnapshotPass");
-  const auto          refraction = leaf.AddPass("Refract", "xiiScreenSpaceRefractionPass");
-  xiiSensorOutputPass sensor;
-  sensor.m_Profile.m_Type          = xiiSensorType::DepthCamera;
-  sensor.m_Profile.m_NoiseModel    = xiiSensorNoiseModel::None;
-  sensor.m_Profile.m_uiResolutionX = sensor.m_Profile.m_uiResolutionY = 8;
+  const auto         trace      = leaf.AddPass("Diffuse screen rays", "xiiScreenSpaceGlobalIlluminationPass", properties);
+  const auto         composite  = leaf.AddPass("Add diffuse rays", "xiiScreenSpaceGlobalIlluminationCompositePass");
+  const auto         snapshot   = leaf.AddPass("Snapshot radiance", "xiiScreenSpaceRefractionSnapshotPass");
+  const auto         refraction = leaf.AddPass("Refract", "xiiScreenSpaceRefractionPass");
+  xiiDepthSensorPass sensor;
+  sensor.m_Calibration.m_NoiseModel    = xiiSensorNoiseModel::None;
+  sensor.m_Calibration.m_uiResolutionX = sensor.m_Calibration.m_uiResolutionY = 8;
   XII_TEST_RESULT(sensor.GetProperties(properties));
-  const auto output = leaf.AddPass("Calibrated output", "xiiSensorOutputPass", properties);
-  for (const auto operation : {trace, refraction, output})
+  const auto output = leaf.AddPass("Calibrated output", "xiiDepthSensorPass", properties);
+  for (const auto operation : {trace, refraction})
   {
     XII_TEST_RESULT(leaf.Connect(source, "Depth", operation, "SceneDepth"));
     XII_TEST_RESULT(leaf.Connect(source, "Attributes", operation, "GBufferNormal"));
     XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", operation, "PerFrameCamera"));
   }
-  for (const auto operation : {trace, output})
+  for (const auto operation : {trace})
   {
     XII_TEST_RESULT(leaf.Connect(source, "Attributes", operation, "GBufferAlbedo"));
     XII_TEST_RESULT(leaf.Connect(camera, "PerFrameGlobal", operation, "PerFrameGlobal"));
@@ -112,8 +112,18 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   XII_TEST_RESULT(leaf.Connect(snapshot, "RefractionSceneColorInput", refraction, "RefractionSceneColorInput"));
   XII_TEST_RESULT(leaf.Connect(source, "Attributes", refraction, "GBufferMaterial"));
   XII_TEST_RESULT(leaf.Connect(source, "Attributes", refraction, "GBufferEmissive"));
-  XII_TEST_RESULT(leaf.Connect(refraction, "HDRSceneColor", output, "HDRSceneColor"));
-  XII_TEST_RESULT(leaf.Connect(source, "Attributes", output, "DilatedVelocityBuffer"));
+  XII_TEST_RESULT(leaf.Connect(source, "Depth", output, "SceneDepth"));
+  XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", output, "PerFrameCamera"));
+  // RGB legitimately consumes scene radiance; depth does not. Keep the screen
+  // operations live through the appropriate independent consumer.
+  xiiRgbSensorPass rgb;
+  rgb.m_Calibration.m_uiResolutionX = rgb.m_Calibration.m_uiResolutionY = 8;
+  rgb.m_Calibration.m_NoiseModel                                        = xiiSensorNoiseModel::None;
+  XII_TEST_RESULT(rgb.GetProperties(properties));
+  const auto colorOutput = leaf.AddPass("Calibrated RGB output", "xiiRgbSensorPass", properties);
+  XII_TEST_RESULT(leaf.Connect(source, "Depth", colorOutput, "SceneDepth"));
+  XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", colorOutput, "PerFrameCamera"));
+  XII_TEST_RESULT(leaf.Connect(refraction, "HDRSceneColor", colorOutput, "Radiance"));
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
   xiiRenderPipelineResourceDescriptor root;
@@ -123,7 +133,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   const auto wide     = root.m_Passes[1].m_Id;
   auto&      override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
   override.m_Path.PushBack(leaf.m_Passes[output].m_Id);
-  sensor.m_Profile.m_uiResolutionX = 12;
+  sensor.m_Calibration.m_uiResolutionX = 12;
   XII_TEST_RESULT(sensor.GetProperties(override.m_Properties));
   auto& disabledGI = root.m_Passes[0].m_Overrides.ExpandAndGetRef();
   disabledGI.m_Path.PushBack(leaf.m_Passes[trace].m_Id);
@@ -157,7 +167,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
     xiiUInt32 inspected = 0;
     for (xiiUInt32 index = 0; index < compiled->GetDescriptor().m_Passes.GetCount(); ++index)
     {
-      if (!xiiDynamicCast<const xiiSensorOutputPass*>(instance.GetPass(index)))
+      if (!xiiDynamicCast<const xiiDepthSensorPass*>(instance.GetPass(index)))
         continue;
       const auto  branch  = compiled->GetProvenance()[index].m_InstancePath[0] == wide ? 1U : 0U;
       const auto* binding = instance.GetOutputBinding(index, "SensorOutput");

@@ -1,0 +1,24 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+SENSOR_ROLLING_SHUTTER
+[COMPUTE_SHADER]
+#include "SensorCaptureCommon.h"
+Texture2D<float4> g_SceneRadiance;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint2 pixel = dispatchThreadId.xy;
+  uint2 dimensions;
+  g_SensorOutput.GetDimensions(dimensions.x, dimensions.y);
+  if (any(pixel >= dimensions)) return;
+  uint2 sourcePixel;
+  float2 sourceUV;
+  float3 ray;
+  float axial, range;
+  if (!ResolveSensorSample(pixel, sourcePixel, sourceUV, ray, axial, range)) { g_SensorOutput[pixel] = 0; return; }
+  const float response = dot(max(g_SceneRadiance.Load(int3(sourcePixel, 0)).rgb, 0.0f), SpectralSensitivityAndQE.xyz);
+  g_SensorOutput[pixel] = float4(ConvertRadianceToDigital(response.xxx, pixel).x, SignalConversion.w, AddRangeNoise(range, pixel), 1.0f);
+}

@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/ScreenSpaceGlobalIlluminationPass.h>
 #include <GraphicsCore/Pipeline/Passes/Refraction/ScreenSpaceRefractionPass.h>
-#include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
@@ -23,12 +23,12 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceComposition)
   properties.Clear();
   properties.Insert("MaximumDistance", -1.0f);
   XII_TEST_BOOL(refraction.Configure(properties).Failed());
-  xiiSensorOutputPass sensor;
-  sensor.m_Profile.m_uiResolutionX = 23;
+  xiiDepthSensorPass sensor;
+  sensor.m_Calibration.m_uiResolutionX = 23;
   XII_TEST_RESULT(sensor.GetProperties(properties));
-  xiiSensorOutputPass sensorCopy;
+  xiiDepthSensorPass sensorCopy;
   XII_TEST_RESULT(sensorCopy.Configure(properties));
-  XII_TEST_INT(sensorCopy.m_Profile.m_uiResolutionX, 23);
+  XII_TEST_INT(sensorCopy.m_Calibration.m_uiResolutionX, 23);
   XII_TEST_BOOL(sensorCopy.GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(sensorCopy.GetRuntimeFeatures().IsNoFlagSet());
   xiiAtmosphereConstantsPass atmosphere;

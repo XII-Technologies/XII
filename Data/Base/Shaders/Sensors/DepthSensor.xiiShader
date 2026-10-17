@@ -1,0 +1,24 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+SENSOR_ROLLING_SHUTTER
+[COMPUTE_SHADER]
+#include "SensorCaptureCommon.h"
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint2 pixel = dispatchThreadId.xy;
+  uint2 dimensions;
+  g_SensorOutput.GetDimensions(dimensions.x, dimensions.y);
+  if (any(pixel >= dimensions)) return;
+  uint2 sourcePixel;
+  float2 sourceUV;
+  float3 ray;
+  float axial, range;
+  if (!ResolveSensorSample(pixel, sourcePixel, sourceUV, ray, axial, range)) { g_SensorOutput[pixel] = 0; return; }
+  const float noisyRange = AddRangeNoise(range, pixel);
+  const float sigma = NoiseParameters.z + NoiseParameters.w * range;
+  g_SensorOutput[pixel] = float4(noisyRange / length(ray), noisyRange, saturate(1.0f - sigma / max(range, 1e-4f)), 1.0f);
+}

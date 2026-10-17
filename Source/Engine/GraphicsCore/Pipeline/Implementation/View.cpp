@@ -6,7 +6,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
-#include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -141,7 +141,7 @@ xiiSharedPtr<xiiGALTexture> xiiView::GetSensorOutputTexture() const
   const auto& instance = GetRenderPipelineInstance();
   if (const auto* pipeline = instance.GetPipeline())
     for (xiiUInt32 index = 0; index < pipeline->GetDescriptor().m_Passes.GetCount(); ++index)
-      if (const auto* sensor = xiiDynamicCast<const xiiSensorOutputPass*>(instance.GetPass(index)))
+      if (const auto* sensor = xiiDynamicCast<const xiiSensorCapture*>(instance.GetPass(index)))
         if (auto output = sensor->GetViewOutput(m_hSensorProfile))
           return output;
   return {};

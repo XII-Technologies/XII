@@ -7,7 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
-#include <GraphicsCore/Pipeline/Passes/Sensors/SensorOutputPass.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/TemporalAntiAliasingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -114,7 +114,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   XII_TEST_RESULT(temporal.InitializePinBindings(pins));
   const auto& history = pins[temporal.m_OutputPreviousColor.GetBindingIndex()];
   XII_TEST_BOOL(!history.m_bInput && history.m_bTemporalHistoryOutput && history.m_bOptional);
-  xiiSensorOutputPass sensor;
+  xiiDepthSensorPass sensor;
   pins.Clear();
   sensor.GetPins(pins);
   XII_TEST_RESULT(sensor.InitializePinBindings(pins));

@@ -1,0 +1,30 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+SENSOR_ROLLING_SHUTTER
+[COMPUTE_SHADER]
+#include "SensorCaptureCommon.h"
+Texture2D<float2> g_SceneNormal;
+Texture2D<float4> g_BaseColor;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint2 pixel = dispatchThreadId.xy;
+  uint2 dimensions;
+  g_SensorOutput.GetDimensions(dimensions.x, dimensions.y);
+  if (any(pixel >= dimensions)) return;
+  uint2 sourcePixel;
+  float2 sourceUV;
+  float3 ray;
+  float axial, range;
+  if (!ResolveSensorSample(pixel, sourcePixel, sourceUV, ray, axial, range)) { g_SensorOutput[pixel] = 0; return; }
+  const float depth = g_SceneDepth.Load(int3(sourcePixel, 0));
+  const float3 worldPosition = ReconstructWorldPos(sourceUV, depth);
+  const float3 toSensor = normalize(g_CameraPositionAndNearPlane.xyz - worldPosition);
+  const float incidence = saturate(dot(DecodeOctNormal(g_SceneNormal.Load(int3(sourcePixel, 0))), toSensor));
+  const float reflectance = dot(max(g_BaseColor.Load(int3(sourcePixel, 0)).rgb, 0.0f), SpectralSensitivityAndQE.xyz);
+  const float response = reflectance * incidence / max(range * range, 1e-4f);
+  g_SensorOutput[pixel] = float4(AddRangeNoise(range, pixel), ConvertRadianceToDigital(response.xxx, pixel).x, incidence, 1.0f);
+}

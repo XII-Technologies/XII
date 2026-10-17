@@ -654,7 +654,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     if (!XII_TEST_BOOL(pipeline != nullptr))
       return;
     XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), pipeline->GetDescriptor().m_Passes.GetCount());
-    XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > pipeline->GetTopology().GetVertexCount() - 1);
+    // Independent interface aliases are valid islands; pin connections, not graph
+    // density or connectedness, determine this asset's intra-frame edge count.
+    XII_TEST_INT(pipeline->GetTopology().GetEdgeCount(), pipeline->GetDescriptor().m_Connections.GetCount());
     XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), pipeline->GetTopology().GetVertexCount());
     XII_TEST_BOOL(pipeline->GetHeapMemoryUsage() > pipeline->GetDescriptor().m_Passes.GetHeapMemoryUsage());
     auto descriptor = resource->GetAuthoring()->m_Descriptor;

@@ -1502,14 +1502,14 @@ namespace
     return XII_SUCCESS;
   }
 
-  xiiStatus AuthorShadowDataLeaf(xiiStringView outputDirectory, xiiStringView name, xiiStringView typeName)
+  xiiStatus AuthorNativeLeaf(xiiStringView outputDirectory, xiiStringView name, xiiStringView typeName, xiiBitflags<xiiRenderPipelineFeature> features = xiiRenderPipelineFeature::VirtualShadows, bool viewProfile = false)
   {
     xiiStringBuilder path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     NativeVisibilityAuthorDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
-    accessor->StartTransaction("Author an independent shadow data operation");
+    accessor->StartTransaction("Author an independent native operation");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
     XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
@@ -1526,7 +1526,7 @@ namespace
     };
     const auto* tables = add("Native Shadow Operation", typeName, {600, 0});
     if (!tables)
-      return xiiStatus("Could not create native shadow operation.");
+      return xiiStatus("Could not create native operation.");
     const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
       const auto* out = manager->GetOutputPinByName(source, output);
       const auto* in  = manager->GetInputPinByName(target, input);
@@ -1534,10 +1534,22 @@ namespace
         return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
       return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
+    if (viewProfile)
+    {
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(tables, "UseViewProfile", true));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(tables));
+    }
     const auto*            type      = xiiRTTI::FindTypeByName(typeName);
     xiiRenderPipelinePass* prototype = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(prototype));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(prototype->GetRequiredDeviceFeatures().GetValue())));
     xiiDynamicArray<xiiRenderPipelinePin> pins;
+    if (viewProfile)
+    {
+      xiiVariantDictionary configuration;
+      configuration.Insert("UseViewProfile", true);
+      XII_SUCCEED_OR_RETURN(prototype->Configure(configuration));
+    }
     prototype->GetPins(pins);
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
@@ -1546,7 +1558,7 @@ namespace
         continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150 + 300)});
       if (!boundary)
-        return xiiStatus("Could not create virtual shadow tables boundary.");
+        return xiiStatus("Could not create native operation boundary.");
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", pin.m_sName));
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", pin.m_bInput));
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(pin.m_Type)));
@@ -1561,7 +1573,7 @@ namespace
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
     NativeVisibilityAuthorContext context;
     if (context.Import(document).Failed())
-      return xiiStatus("Could not import virtual shadow tables asset.");
+      return xiiStatus("Could not import native operation asset.");
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/", name, ".xiiBinRenderPipeline");
     message.m_uiAssetHash = 1;
@@ -1570,10 +1582,10 @@ namespace
     const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
     xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
-      return xiiStatus("Virtual shadow table asset did not compile.");
+      return xiiStatus("Native operation asset did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 1);
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), pins.GetCount() - 2);
-    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::VirtualShadows);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures() == features);
     return XII_SUCCESS;
   }
 
@@ -1655,6 +1667,67 @@ namespace
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("View boundary asset did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), name == "SceneTargets" ? 2 : 1);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+    return XII_SUCCESS;
+  }
+
+  xiiStatus AuthorDepthSensorDiagnostic(xiiStringView directory)
+  {
+    const xiiStringView            name = "DepthSensorDiagnostic";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author an empty-depth sensor diagnostic");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* depth  = add("Empty Reversed Depth", "xiiDepthTargetPass", {0, 0});
+    const auto* camera = add("Camera Snapshot", "xiiViewConstantsPass", {0, 300});
+    const auto* sensor = add("Calibrated Depth", "xiiDepthSensorPass", {600, 0});
+    const auto* output = add("SensorOutput", "xiiRenderPipelineInterfacePass", {1200, 0});
+    if (!depth || !camera || !sensor || !output)
+      return xiiStatus("Missing depth diagnostic node.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(sensor, "UseViewProfile", true));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Name", "SensorOutput"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Input", false));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Format", xiiInt64(xiiGALResourceFormat::RGBA32Float)));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(output));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView outName, const xiiDocumentObject* target, xiiStringView inName) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, outName);
+      const auto* in  = manager->GetInputPinByName(target, inName);
+      if (!out || !in)
+        return xiiStatus("Missing diagnostic pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    XII_SUCCEED_OR_RETURN(connect(depth, "DepthTarget", sensor, "SceneDepth"));
+    XII_SUCCEED_OR_RETURN(connect(camera, "PerFrameCamera", sensor, "PerFrameCamera"));
+    XII_SUCCEED_OR_RETURN(connect(sensor, "SensorOutput", output, "Value"));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline())
+      return xiiStatus("Depth diagnostic failed compilation.");
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
     return XII_SUCCESS;
   }
@@ -1862,7 +1935,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VirtualShadowRasterWork)
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeShadowWorkAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeShadowWorkAuthoring"));
-  XII_TEST_STATUS(AuthorShadowDataLeaf(path, "VirtualShadowRasterWork", "xiiVirtualShadowRasterWorkPass"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "VirtualShadowRasterWork", "xiiVirtualShadowRasterWorkPass"));
 }
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VirtualShadowPagePublish)
 {
@@ -1870,7 +1943,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VirtualShadowPagePublish)
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeShadowPublishAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeShadowPublishAuthoring"));
-  XII_TEST_STATUS(AuthorShadowDataLeaf(path, "VirtualShadowPagePublish", "xiiVirtualShadowPagePublishPass"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "VirtualShadowPagePublish", "xiiVirtualShadowPagePublishPass"));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SceneTargets)
@@ -1898,4 +1971,49 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, BufferExport)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ViewBoundaryAuthoring"));
   XII_TEST_STATUS(AuthorViewBoundaryAsset(path, "BufferExport"));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthSensor)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSensorAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSensorAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "DepthSensor", "xiiDepthSensorPass", {}, true));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, RgbSensor)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSensorAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSensorAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "RgbSensor", "xiiRgbSensorPass", {}, true));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, InfraredSensor)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSensorAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSensorAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "InfraredSensor", "xiiInfraredSensorPass", {}, true));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, LidarSensor)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSensorAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSensorAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "LidarSensor", "xiiLidarSensorPass", {}, true));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthSensorDiagnostic)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSensorDiagnosticAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSensorDiagnosticAuthoring"));
+  XII_TEST_STATUS(AuthorDepthSensorDiagnostic(path));
 }
