@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **56 concrete reflected operation classes** in
+Current source inventory: **59 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -31,6 +31,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 1 | `xiiSensorOutputPass` |
+| Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 5 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
@@ -88,7 +89,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming feedback still needs independent operations. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are now independent native operations; production consumer wiring remains. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
@@ -930,3 +931,77 @@ D3D12 remains excluded. Full renderer/editor-engine suites are not claimed to pa
 Remaining work includes independent streaming feedback, old visibility/shadow/lighting
 orchestration deletion, production graph wiring with deliberate temporal validity,
 complete editor/game/lighting/shadow assets and controlled large-scene GPU benchmarks.
+
+
+## Native geometry LOD streaming feedback - 2026-10-17
+
+Three coherent operations in Streaming bring the inventory to 59: table initialization,
+missing-LOD demand generation and completion-checked asynchronous readback. The ordinary
+GeometryLodFeedback resource wires those three nodes and exposes four RTTI-derived query
+inputs plus its request table output. The SDK now contains eighteen source/binary assets.
+All pins are typed reflected members. Capacity, PriorityTier, PurposeMask, AsyncCompute
+and MaxPendingReadbacks are reflected properties. These operations declare no automatic
+world extraction demand or rendering feature initialization.
+
+Demand is generated from query candidates before resident draw selection. It applies
+supplied masks/flags/frustum and geometry-level LOD ownership, and can request a forced
+LOD even when no draw is currently resident. A bounded GPU hash table merges each full
+geometry identity toward the finest requested LOD and strongest priority. Its key retains
+the existing 24 index bits and 8 generation bits, with compile-time ABI checks; unlike the
+older feedback implementation it does not truncate geometry indices to twenty bits.
+Requests, priorities and purpose masks are frame-derived values, never serialized object
+identities. Duplicate candidates collapse without creating another geometry registry.
+The table reports raw, unique and overflow counts, including bounded-probe exhaustion.
+
+Readback slots contain staging buffers and fences only. They belong to each pass occurrence,
+are bounded by an authored limit, and are reused after frame completion and consumption.
+CPU mapping uses DoNotWait after the copy fence completes. Backpressure is reported as
+dropped captures; demand can be regenerated in a later frame. A failed recording whose
+unsignaled copy has retired is discarded rather than permanently occupying its slot.
+Execute captures retain their slot ownership independently of the runtime pass pointer.
+Decoded requests are validated against the existing geometry residency handles and LODs;
+retiring/stale records are rejected. Accepted requests call RequestResidency. Actual asset
+loading/allocation remains in the existing device streaming tick, with no copied resource
+manager, scene registry or component storage.
+
+Verification:
+
+- Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and
+  EditorEngineProcessFrameworkTest, with dependent engine/editor plugins/processes
+  (`Workspace/native-feedback-verified-build.log`, `native-feedback-final-gpu-build.log`,
+  `native-feedback-dependent-build.log`). The GPU fixture's Core provenance field name
+  was corrected after an initial compile error.
+- All 53 GraphicsCore CPU subtests pass (`Workspace/native-feedback-cpu-final.log`).
+  Tests cover independent reflected contracts, invalid table/staging/priority properties,
+  full high-index/high-generation key decoding, nested overrides, serialization and compilation.
+- Vulkan NativeGeometryFeedback passes (`Workspace/native-feedback-final-gpu.log`). Two
+  graph instances in each of two runtime view contexts verify request content,
+  distinct writable tables, different capacities/priorities/purposes, duplicate merging,
+  empty and oversized query counts, forced missing/resident/invalid LODs, section-owner
+  selection, flags/masks/frustum rejection and zero-resident geometry. A two-entry table
+  reports overflow while an eight-entry table retains all four geometry identities.
+  Generation-stale captures are rejected; valid asynchronous captures cause real fine-LOD
+  residency through the existing service. An abandoned compiled graph never publishes a
+  readback. A retired geometry's later feedback is rejected while its newly registered
+  replacement remains at its explicitly requested coarse LOD. Immediate index reuse is
+  not assumed: the existing ID table uses its own free-slot order.
+- Initial GPU fixture failures used an unaligned canonical-record array and omitted the
+  device streaming tick when executing a graph directly. The fixture now uses the aligned
+  allocator, valid meshlet source data, explicit initial coarse residency requests and the
+  existing streaming tick. Incorrect assumptions about immediate ID reuse and automatic
+  coarse requests were removed; the final test above passes without compatibility code.
+- All twelve native authoring fixtures and all fifteen Qt EditorDocuments tests pass;
+  deterministic source/repeated/binary export matches all eighteen packaged resources
+  (`Workspace/native-feedback-authoring.log`, `native-feedback-qt.log`).
+- Vulkan PipelineExtraction's three subtests pass (`Workspace/native-feedback-world.log`),
+  including specialized demand and shared sparse uploads. No rendering Builtin files or
+  legacy visibility system dependencies occur in the new operations.
+
+No controlled GPU timing or large-scene collision/readback-bandwidth benchmark was run.
+The test waits for device completion to inspect results, so it does not establish sustained
+queue overlap performance. Failed-recording retirement and staging backpressure are
+implemented but not covered by a deliberate GPU submission-failure/overload injection.
+D3D12 is excluded. The old visibility service's embedded feedback remains only with its
+unmigrated consumers; these new nodes are not a claim that the service has been deleted.
+Next work remains production resource graph wiring, legacy orchestration deletion and
+complete lighting/shadow/editor/game graphs. The overall migration is incomplete.
