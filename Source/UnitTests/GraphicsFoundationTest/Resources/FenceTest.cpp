@@ -43,25 +43,27 @@ XII_CREATE_SIMPLE_TEST_GROUP(FenceSynchronization);
 XII_CREATE_SIMPLE_TEST(FenceSynchronization, IndependentCallerAndQueueValues)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize()))
-    return;
-  auto fence = environment.GetDevice()->CreateFence({});
-  if (!XII_TEST_BOOL(fence != nullptr))
-    return;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
+  auto pFence = environment.GetDevice()->CreateFence({});
+  XII_TEST_BOOL(pFence != nullptr);
+
   for (xiiUInt32 i = 0; i < 3; ++i)
   {
     const auto flags    = (i & 1U) ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics;
     auto*      queue    = environment.GetDevice()->GetCommandQueue(flags);
     auto       commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = flags});
+
     if (!XII_TEST_BOOL(queue && commands))
       return;
+
     // Private values exceed both queues' unrelated submission clocks.
     const xiiUInt64 value = 10000 + i;
     commands->Begin();
-    commands->EnqueueSignal(fence.Borrow(), value);
+    commands->EnqueueSignal(pFence.Borrow(), value);
     commands->End();
     queue->Submit(commands);
-    fence->Wait(value);
-    XII_TEST_INT(fence->GetCompletedValue(), value);
+    pFence->Wait(value);
+    XII_TEST_INT(pFence->GetCompletedValue(), value);
   }
 }
