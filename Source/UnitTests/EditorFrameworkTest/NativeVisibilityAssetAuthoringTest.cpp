@@ -1577,6 +1577,88 @@ namespace
     return XII_SUCCESS;
   }
 
+  xiiStatus AuthorViewBoundaryAsset(xiiStringView outputDirectory, xiiStringView name)
+  {
+    xiiStringBuilder               path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
+    NativeVisibilityAuthorDocument document(path, name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author independent view boundary operations");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto boundary = [&](const xiiDocumentObject* operation, xiiStringView pin, xiiStringView label, bool input, xiiRenderPipelinePin::Type kind, xiiGALResourceFormat::Enum format, float row) -> xiiStatus {
+      const auto* node = add(label, "xiiRenderPipelineInterfacePass", {input ? 0.0f : 1200.0f, row});
+      if (!operation || !node)
+        return xiiStatus("Missing view boundary operation.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Name", label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Input", input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(kind)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Format", xiiInt64(format)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
+      const auto* out = manager->GetOutputPinByName(input ? node : operation, input ? "Value" : pin);
+      const auto* in  = manager->GetInputPinByName(input ? operation : node, input ? pin : "Value");
+      if (!out || !in)
+        return xiiStatus("Missing view boundary pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    if (name == "SceneTargets")
+    {
+      const auto* color = add("Clear Color", "xiiClearTexturePass", {600, 0});
+      const auto* depth = add("Clear Depth", "xiiDepthTargetPass", {600, 300});
+      if (!color || !depth)
+        return xiiStatus("Missing target initialization nodes.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(color, "Format", xiiInt64(xiiGALResourceFormat::RGBA8UNormalizedSRGB)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(color, "Color", xiiColor(0.008f, 0.012f, 0.025f)));
+      XII_SUCCEED_OR_RETURN(boundary(color, "Texture", "Color", false, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::RGBA8UNormalizedSRGB, 0));
+      XII_SUCCEED_OR_RETURN(boundary(depth, "DepthTarget", "Depth", false, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::D32Float, 300));
+    }
+    else if (name == "ViewPresentation")
+    {
+      const auto* present = add("Present Display Signal", "xiiPresentPass", {600, 0});
+      XII_SUCCEED_OR_RETURN(boundary(present, "GradedColor", "Color", true, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::Unknown, 0));
+      XII_SUCCEED_OR_RETURN(boundary(present, "ViewOutput", "ViewOutput", false, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::Unknown, 0));
+      XII_SUCCEED_OR_RETURN(boundary(present, "Final Blit Constants", "Constants", false, xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 300));
+    }
+    else if (name == "BufferExport")
+    {
+      const auto* operation = add("External Buffer Consumer", "xiiBufferExportPass", {600, 0});
+      XII_SUCCEED_OR_RETURN(boundary(operation, "Input", "Input", true, xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 0));
+      XII_SUCCEED_OR_RETURN(boundary(operation, "Output", "Output", false, xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 0));
+    }
+    else
+      return xiiStatus("Unknown test fixture.");
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import view boundary asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("View boundary asset did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), name == "SceneTargets" ? 2 : 1);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+    return XII_SUCCESS;
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -1789,4 +1871,31 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VirtualShadowPagePublish)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeShadowPublishAuthoring"));
   XII_TEST_STATUS(AuthorShadowDataLeaf(path, "VirtualShadowPagePublish", "xiiVirtualShadowPagePublishPass"));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SceneTargets)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ViewBoundaryAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ViewBoundaryAuthoring"));
+  XII_TEST_STATUS(AuthorViewBoundaryAsset(path, "SceneTargets"));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ViewPresentation)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ViewBoundaryAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ViewBoundaryAuthoring"));
+  XII_TEST_STATUS(AuthorViewBoundaryAsset(path, "ViewPresentation"));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, BufferExport)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ViewBoundaryAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ViewBoundaryAuthoring"));
+  XII_TEST_STATUS(AuthorViewBoundaryAsset(path, "BufferExport"));
 }
