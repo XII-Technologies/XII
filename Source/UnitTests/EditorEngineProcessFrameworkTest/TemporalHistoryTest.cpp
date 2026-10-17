@@ -15,7 +15,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
@@ -76,7 +75,8 @@ namespace
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(TemporalHistory);
-XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
+XII_CREATE_SIMPLE_TEST_GROUP(NativeDepthBoundary);
+XII_CREATE_SIMPLE_TEST(NativeDepthBoundary, InterleavedAuthoredHiZ)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -85,20 +85,23 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  xiiGpuHiZPyramid      histories[2];
-  xiiRenderGraphContext contexts[2];
+  const auto                resource = xiiLoadPipelineLibraryResource("DepthPyramid");
+  xiiRenderPipelineInstance histories[2];
+  xiiRenderGraphContext     contexts[2];
+  xiiUInt32                 depthInterface[2], historyInterface[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
-    xiiGpuHiZPyramidDescription description;
-    description.m_uiFramesInFlight = i + 2;
-    if (!XII_TEST_RESULT(histories[i].Initialize(environment.GetDevice(), description)) || !XII_TEST_RESULT(histories[i].Resize(8, 8)) || !XII_TEST_RESULT(contexts[i].Initialize("Interleaved Hi-Z")))
+    if (!XII_TEST_RESULT(histories[i].Synchronize(resource)) || !XII_TEST_RESULT(contexts[i].Initialize("Interleaved authored Hi-Z")))
+      return;
+    depthInterface[i]   = histories[i].GetPipeline()->FindInterface("SceneDepth", true);
+    historyInterface[i] = histories[i].GetPipeline()->FindInterface("PreviousDepthPyramid", false);
+    if (!XII_TEST_BOOL(depthInterface[i] != xiiInvalidIndex && historyInterface[i] != xiiInvalidIndex))
       return;
   }
 
-  float     previous[2]  = {};
-  bool      valid[2]     = {};
-  xiiUInt64 lastBuild[2] = {};
-  auto      render       = [&](xiiUInt32 view, float depth, bool execute = true) {
+  float previous[2] = {};
+  bool  valid[2]    = {};
+  auto  render      = [&](xiiUInt32 view, float depth, bool execute = true) {
     xiiRenderGraphFrame frame;
     if (!XII_TEST_RESULT(frame.Begin(1)))
       return;
@@ -108,14 +111,17 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
     XII_SCOPE_EXIT(cache.EndFrame());
     graph.BeginSetup(frame.GetFrameIndex());
     auto& history = histories[view];
-    XII_TEST_BOOL(!history.ImportPrevious(graph, lastBuild[view]).IsValid());
-    const auto imported = history.ImportPrevious(graph, frame.GetFrameIndex());
+    if (!XII_TEST_RESULT(history.BeginFrame(nullptr, graph, contexts[view].GetBlackboard())))
+      return;
+    const auto imported = history.GetInterfaceBinding(historyInterface[view])->m_hTexture;
+    XII_TEST_RESULT(history.BeginFrame(nullptr, graph, contexts[view].GetBlackboard()));
+    XII_TEST_BOOL(history.GetInterfaceBinding(historyInterface[view])->m_hTexture == imported);
     XII_TEST_BOOL(imported.IsValid() == valid[view]);
     struct Depth
     {
       xiiRenderGraphTextureHandle m_Depth;
     };
-    const auto source = graph.AddPass<Depth>("Hi-Z source depth", xiiGALCommandQueueFlags::Graphics, [](Depth& data, xiiRenderGraphBuilder& builder) {
+    const auto                          source = graph.AddPass<Depth>("Hi-Z source depth", xiiGALCommandQueueFlags::Graphics, [](Depth& data, xiiRenderGraphBuilder& builder) {
         xiiGALTextureCreationDescription texture;
         texture.m_Type = xiiGALResourceDimension::Texture2D;
         texture.m_Size = {8, 8};
@@ -123,7 +129,9 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
         texture.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
         data.m_Depth = builder.WriteTexture("Hi-Z depth", texture, xiiGALResourceStateFlags::DepthWrite);
         builder.SetPassRenderPassManaged(); }, [depth](const Depth& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, depth, 0); });
-    history.AddBuildPass(graph, frame.GetFrameIndex(), source.first->m_Depth, true);
+    const xiiRenderPipelineInputBinding depthInput(graph, depthInterface[view], source.first->m_Depth);
+    if (!XII_TEST_RESULT(history.Build(nullptr, graph, contexts[view].GetBlackboard(), {}, xiiMakeArrayPtr(&depthInput, 1))))
+      return;
     struct Export
     {
       XII_DECLARE_POD_TYPE();
@@ -134,17 +142,15 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
     if (!XII_TEST_RESULT(graph.Compile()))
       return;
     // Merely compiling an abandoned frame must not rotate or promote temporal history.
-    XII_TEST_BOOL(history.HasValidHistory() == valid[view]);
+    XII_TEST_BOOL(history.GetInterfaceBinding(historyInterface[view])->m_hTexture.IsValid() == valid[view]);
     if (!execute)
       return;
     if (!XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &contexts[view].GetBlackboard(), &cache)))
       return;
-    lastBuild[view] = frame.GetFrameIndex();
     frame.End();
     environment.GetDevice()->WaitIdle();
     if (imported.IsValid())
       CheckDepthHistory(*environment.GetDevice(), graph.GetExportedTexture(imported).Borrow(), previous[view]);
-    XII_TEST_BOOL(history.HasValidHistory());
     previous[view] = depth;
     valid[view]    = true;
   };
@@ -155,14 +161,54 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
     render(1, 0.9f - iteration * 0.1f);
     render(0, 0.99f, false);
   }
-  histories[0].Invalidate();
+  histories[0].InvalidateTemporalHistory();
   valid[0] = false;
   render(0, 0.25f, false);
   render(0, 0.35f);
   render(1, 0.75f);
   render(0, 0.45f);
-  XII_TEST_RESULT(histories[0].Resize(4, 4));
-  XII_TEST_BOOL(!histories[0].HasValidHistory());
+  histories[0].InvalidateTemporalHistory();
+  XII_TEST_BOOL(histories[0].GetInterfaceBinding(historyInterface[0]) == nullptr);
+  // Independently instantiated roots must also isolate writes when embedded in the same algorithmic graph.
+  for (xiiUInt32 iteration = 0; iteration < 2; ++iteration)
+  {
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    auto& graph = contexts[0].GetGraph();
+    auto& cache = contexts[0].GetResourceCache();
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame());
+    graph.BeginSetup(frame.GetFrameIndex());
+    xiiRenderGraphTextureHandle previousTextures[2];
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      XII_TEST_RESULT(histories[i].BeginFrame(nullptr, graph, contexts[0].GetBlackboard()));
+      previousTextures[i]                        = histories[i].GetInterfaceBinding(historyInterface[i])->m_hTexture;
+      const auto                          source = graph.AddPass<xiiRenderGraphTextureHandle>(i ? "Second root depth" : "First root depth", xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription description;
+        description.m_Type = xiiGALResourceDimension::Texture2D; description.m_Size = {8, 8}; description.m_Format = xiiGALResourceFormat::D32Float;
+        description.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+        data = builder.WriteTexture(i ? "Second caller depth" : "First caller depth", description, xiiGALResourceStateFlags::DepthWrite);
+        builder.SetPassRenderPassManaged(); }, [depth = i ? 0.8f : 0.2f](const auto& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().ClearDepthStencilView(execute.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, depth, 0); });
+      const xiiRenderPipelineInputBinding binding(graph, depthInterface[i], *source.first);
+      XII_TEST_RESULT(histories[i].Build(nullptr, graph, contexts[0].GetBlackboard(), {}, xiiMakeArrayPtr(&binding, 1)));
+      if (previousTextures[i].IsValid())
+        graph.AddPass<xiiUInt32>(i ? "Export second root history" : "Export first root history", xiiGALCommandQueueFlags::Graphics, [texture = previousTextures[i]](auto&, xiiRenderGraphBuilder& builder) { builder.ExportTexture(builder.ReadTexture(texture, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+    }
+    graph.EndSetup();
+    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &contexts[0].GetBlackboard(), &cache)))
+      return;
+    frame.End();
+    environment.GetDevice()->WaitIdle();
+    if (iteration)
+    {
+      auto first = graph.GetExportedTexture(previousTextures[0]), second = graph.GetExportedTexture(previousTextures[1]);
+      XII_TEST_BOOL(first != second);
+      CheckDepthHistory(*environment.GetDevice(), first.Borrow(), 0.2f);
+      CheckDepthHistory(*environment.GetDevice(), second.Borrow(), 0.8f);
+    }
+  }
 }
 
 /// Test-only resource pass observes actual GAL bindings after every default pipeline stage.
