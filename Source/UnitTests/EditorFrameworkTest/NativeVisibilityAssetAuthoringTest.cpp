@@ -13,6 +13,7 @@
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
@@ -818,20 +819,21 @@ namespace
     return XII_SUCCESS;
   }
 
-  xiiStatus AuthorInstanceOcclusion(xiiStringView outputDirectory)
+  xiiStatus AuthorDepthOcclusion(xiiStringView outputDirectory, bool meshlets = false)
   {
-    xiiStringBuilder path(outputDirectory, "/InstanceOcclusion.xiiRenderPipelineAsset");
+    const xiiStringView name = meshlets ? "MeshletOcclusion" : "InstanceOcclusion";
+    xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "InstanceOcclusion");
+    NativeVisibilityAuthorDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
-    accessor->StartTransaction("Author independent instance occlusion");
+    accessor->StartTransaction("Author independent depth occlusion");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
     XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>(xiiRenderPipelineDeviceFeature::Compute)));
     const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
-      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.InstanceOcclusion/", label));
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
       if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
         return nullptr;
       xiiMoveNodeCommand move;
@@ -841,7 +843,7 @@ namespace
         return nullptr;
       return accessor->GetObject(id);
     };
-    const auto* filter = add("Filter Candidates", "xiiInstanceOcclusionPass", {1200, 0});
+    const auto* filter = add("Filter Candidates", meshlets ? "xiiMeshletOcclusionPass" : "xiiInstanceOcclusionPass", {1200, 0});
     const auto* reset  = add("Reset Visible Count", "xiiCounterResetPass", {600, -200});
     if (!filter || !reset)
       return xiiStatus("Could not create native occlusion nodes.");
@@ -853,9 +855,10 @@ namespace
       return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
     XII_SUCCEED_OR_RETURN(connect(reset, "Counter", filter, "InitialCount"));
-    xiiInstanceOcclusionPass              prototype;
+    xiiInstanceOcclusionPass              instancePrototype;
+    xiiMeshletOcclusionPass               meshletPrototype;
     xiiDynamicArray<xiiRenderPipelinePin> pins;
-    prototype.GetPins(pins);
+    (meshlets ? static_cast<xiiRenderPipelinePass*>(&meshletPrototype) : static_cast<xiiRenderPipelinePass*>(&instancePrototype))->GetPins(pins);
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
@@ -878,7 +881,7 @@ namespace
     if (context.Import(document).Failed())
       return xiiStatus("Could not import occlusion asset.");
     xiiExportDocumentMsgToEngine message;
-    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/InstanceOcclusion.xiiBinRenderPipeline");
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/", name, ".xiiBinRenderPipeline");
     message.m_uiAssetHash = 1;
     message.m_uiVersion   = 7;
     XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
@@ -887,7 +890,7 @@ namespace
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Occlusion asset did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 7);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), meshlets ? 8 : 7);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
     return XII_SUCCESS;
   }
@@ -988,5 +991,14 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, InstanceOcclusion)
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeOcclusionAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeOcclusionAuthoring"));
-  XII_TEST_STATUS(AuthorInstanceOcclusion(path));
+  XII_TEST_STATUS(AuthorDepthOcclusion(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, MeshletOcclusion)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeMeshletOcclusionAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeMeshletOcclusionAuthoring"));
+  XII_TEST_STATUS(AuthorDepthOcclusion(path, true));
 }

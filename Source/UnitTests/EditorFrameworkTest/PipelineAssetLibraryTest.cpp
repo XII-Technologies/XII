@@ -73,7 +73,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
       !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
-  for (const xiiStringView name : {"AmbientOcclusion", "TransparencyResolve", "OpaqueComposition", "DebugVisualization", "ScreenEffects", "InstanceVisibility", "MeshletVisibility", "VertexPullDraws", "SurfaceQuery", "EditorMeshPicking", "DepthOnly", "GBuffer", "DepthPyramid", "InstanceOcclusion", "TexturePreview", "TextureCubePreview"})
+  for (const xiiStringView name : {"AmbientOcclusion", "TransparencyResolve", "OpaqueComposition", "DebugVisualization", "ScreenEffects", "InstanceVisibility", "MeshletVisibility", "VertexPullDraws", "SurfaceQuery", "EditorMeshPicking", "DepthOnly", "GBuffer", "DepthPyramid", "InstanceOcclusion", "MeshletOcclusion", "TexturePreview", "TextureCubePreview"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     PipelineLibraryDocument storage(source);
