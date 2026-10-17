@@ -43,6 +43,12 @@
 #  define XII_SOURCE_LINE     __LINE__
 #  define XII_SOURCE_FILE     __FILE__
 
+#  if defined(__COUNTER__) && (__COUNTER__ + 1 == __COUNTER__ + 0)
+#    define XII_SOURCE_COUNTER __COUNTER__
+#  else
+#    define XII_SOURCE_COUNTER __LINE__
+#  endif
+
 #  ifdef BUILDSYSTEM_BUILDTYPE_Debug
 #    undef XII_COMPILE_FOR_DEBUG
 #    define XII_COMPILE_FOR_DEBUG XII_ON

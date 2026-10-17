@@ -56,6 +56,12 @@
 #  define XII_SOURCE_LINE __LINE__
 #  define XII_SOURCE_FILE __FILE__
 
+#  if defined(__COUNTER__) && (__COUNTER__ + 1 == __COUNTER__ + 0)
+#    define XII_SOURCE_COUNTER __COUNTER__
+#  else
+#    define XII_SOURCE_COUNTER __LINE__
+#  endif
+
 // XII_VA_NUM_ARGS() is a very nifty macro to retrieve the number of arguments handed to a variable-argument macro.
 // Unfortunately, VS 2010 still has this compiler bug which treats a __VA_ARGS__ argument as being one single parameter:
 // https://connect.microsoft.com/VisualStudio/feedback/details/521844/variadic-macro-treating-va-args-as-a-single-parameter-for-other-macros#details
