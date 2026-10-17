@@ -17,7 +17,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
     XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask)->AddAttributes(new xiiDefaultValueAttribute(0xFFFFFFFFU)),
     XII_MEMBER_PROPERTY("RequiredFlags", m_uiRequiredFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(xiiGpuInstanceFlags::Enabled))),
     XII_MEMBER_PROPERTY("ExcludedFlags", m_uiExcludedFlags)->AddAttributes(new xiiDefaultValueAttribute(0U)),
-    XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(1024U * 1024U), new xiiClampValueAttribute(1U, 16777216U)),
     XII_MEMBER_PROPERTY("LodHysteresis", m_fLodHysteresis)->AddAttributes(new xiiDefaultValueAttribute(0.1f), new xiiClampValueAttribute(0.0f, 0.49f)),
     XII_MEMBER_PROPERTY("LodScreenScale", m_fLodScreenScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.001f, 1000.0f)),
     XII_MEMBER_PROPERTY("UseViewSelection", m_bUseViewSelection)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -28,8 +27,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
 xiiResult xiiVisibilityViewPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  if (m_uiMaxVisibleMeshlets == 0 || m_uiMaxVisibleMeshlets > 16777216U ||
-      !xiiMath::IsFinite(m_fLodHysteresis) || m_fLodHysteresis < 0 || m_fLodHysteresis > 0.49f ||
+  if (!xiiMath::IsFinite(m_fLodHysteresis) || m_fLodHysteresis < 0 || m_fLodHysteresis > 0.49f ||
       !xiiMath::IsFinite(m_fLodScreenScale) || m_fLodScreenScale < 0.001f || m_fLodScreenScale > 1000)
     return XII_FAILURE;
   return XII_SUCCESS;
@@ -41,13 +39,12 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   const auto& view = *context.m_pView;
   xiiFrustum  frustum;
   view.ComputeCullingFrustum(frustum);
-  auto snapshot                   = xiiGpuVisibilitySystem::BuildView(view.GetViewProjectionMatrix(xiiCameraEye::Left), frustum,
-                                                                      view.GetCamera()->GetCenterPosition(), view.GetRenderResolutionWidth(), view.GetRenderResolutionHeight(), 0,
-                                                                      view.GetGpuInstanceData()->GetInstances().GetCount(), m_uiVisibilityMask);
-  snapshot.m_uiRequiredFlags      = m_uiRequiredFlags;
-  snapshot.m_uiExcludedFlags      = m_uiExcludedFlags;
-  snapshot.m_uiGeometryBaseIndex  = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
-  snapshot.m_uiMaxVisibleMeshlets = m_uiMaxVisibleMeshlets;
+  auto snapshot                  = xiiGpuVisibilitySystem::BuildView(view.GetViewProjectionMatrix(xiiCameraEye::Left), frustum,
+                                                                     view.GetCamera()->GetCenterPosition(), view.GetRenderResolutionWidth(), view.GetRenderResolutionHeight(), 0,
+                                                                     view.GetGpuInstanceData()->GetInstances().GetCount(), m_uiVisibilityMask);
+  snapshot.m_uiRequiredFlags     = m_uiRequiredFlags;
+  snapshot.m_uiExcludedFlags     = m_uiExcludedFlags;
+  snapshot.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   snapshot.m_ViewportAndHiZ.y *= m_fLodScreenScale;
   // Other worlds and views may advance the device frame clock between executions.
   // LOD validity follows this occurrence's published snapshots instead.

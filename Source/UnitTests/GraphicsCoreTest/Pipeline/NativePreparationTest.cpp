@@ -42,7 +42,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedDataProducers)
   XII_TEST_RESULT(copy.Configure(properties));
   XII_TEST_INT(copy.m_uiVisibilityMask, 0x42);
   XII_TEST_FLOAT(copy.m_fLodScreenScale, 2, 0);
-  properties.Insert("MaxVisibleMeshlets", 0U);
+  properties.Insert("LodHysteresis", 1.0f);
   XII_TEST_BOOL(copy.Configure(properties).Failed());
   xiiRenderPipelineResourceDescriptor leaf;
   leaf.AddPass("Instances", "xiiWorldInstancesUploadPass");

@@ -11,13 +11,12 @@ class XII_GRAPHICSCORE_DLL xiiVisibilityViewPass final : public xiiRenderPipelin
 public:
   xiiRenderPipelineBufferOutputPin         m_View{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_Candidates{false, xiiGALBindFlags::ShaderResource};
-  xiiUInt32                                m_uiVisibilityMask     = 0xFFFFFFFFU;
-  xiiUInt32                                m_uiRequiredFlags      = xiiGpuInstanceFlags::Enabled;
-  xiiUInt32                                m_uiExcludedFlags      = 0;
-  xiiUInt32                                m_uiMaxVisibleMeshlets = 1024U * 1024U;
-  float                                    m_fLodHysteresis       = 0.1f;
-  float                                    m_fLodScreenScale      = 1.0f;
-  bool                                     m_bUseViewSelection    = true;
+  xiiUInt32                                m_uiVisibilityMask  = 0xFFFFFFFFU;
+  xiiUInt32                                m_uiRequiredFlags   = xiiGpuInstanceFlags::Enabled;
+  xiiUInt32                                m_uiExcludedFlags   = 0;
+  float                                    m_fLodHysteresis    = 0.1f;
+  float                                    m_fLodScreenScale   = 1.0f;
+  bool                                     m_bUseViewSelection = true;
   xiiResult                                Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
   void                                     InvalidateTemporalHistory() override { m_uiLastLodToken = 65534U; }
