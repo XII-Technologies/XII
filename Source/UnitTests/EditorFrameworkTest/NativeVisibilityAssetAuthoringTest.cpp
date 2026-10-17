@@ -25,10 +25,10 @@ namespace
   class NativeVisibilityAuthorDocument : public xiiRenderPipelineAssetDocument
   {
   public:
-    explicit NativeVisibilityAuthorDocument(xiiStringView path) : xiiRenderPipelineAssetDocument(path, xiiAssetDocEngineConnection::None)
+    explicit NativeVisibilityAuthorDocument(xiiStringView path, xiiStringView name = "InstanceVisibility") : xiiRenderPipelineAssetDocument(path, xiiAssetDocEngineConnection::None)
     {
       m_pDocumentInfo               = CreateDocumentInfo();
-      m_pDocumentInfo->m_DocumentID = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.InstanceVisibility");
+      m_pDocumentInfo->m_DocumentID = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name));
       static xiiAssetDocumentTypeDescriptor descriptor;
       descriptor.m_sDocumentTypeName  = "RenderPipeline";
       descriptor.m_AssetDocumentFlags = xiiAssetDocumentFlags::DisableTransform;
@@ -159,6 +159,103 @@ namespace
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
     return XII_SUCCESS;
   }
+
+  xiiStatus AuthorMeshletVisibility(xiiStringView outputDirectory)
+  {
+    const xiiStringBuilder library(outputDirectory, "/RenderPipelines");
+    XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
+    XII_SUCCEED_OR_RETURN(AuthorInstanceVisibility(library));
+    xiiStringBuilder path(outputDirectory, "/MeshletVisibility.xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, "MeshletVisibility");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author native meshlet visibility");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.MeshletVisibility/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* instances = add("Instance Visibility", "xiiRenderPipelineSubgraphPass", {0, 0});
+    const auto* maximum   = add("Maximum Reset", "xiiCounterResetPass", {600, 600});
+    const auto* bounds    = add("Dispatch Bounds", "xiiMeshletDispatchBoundsPass", {1200, 600});
+    const auto* dispatch  = add("Indirect Dispatch", "xiiMeshletDispatchPass", {1800, 600});
+    const auto* count     = add("Meshlet Count Reset", "xiiCounterResetPass", {1800, 1000});
+    const auto* overflow  = add("Overflow Reset", "xiiCounterResetPass", {1800, 1400});
+    const auto* cull      = add("Meshlet Culling", "xiiMeshletCullPass", {2400, 0});
+    if (!instances || !maximum || !bounds || !dispatch || !count || !overflow || !cull)
+      return xiiStatus("Could not create native meshlet visibility nodes.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/InstanceVisibility.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView", "VisibleInstances", "VisibleInstanceCount", "LodHistory"})
+    {
+      XII_SUCCEED_OR_RETURN(connect(instances, pin, bounds, pin));
+      XII_SUCCEED_OR_RETURN(connect(instances, pin, cull, pin));
+    }
+    XII_SUCCEED_OR_RETURN(connect(maximum, "Counter", bounds, "InitializedMaximum"));
+    XII_SUCCEED_OR_RETURN(connect(bounds, "MaximumMeshletGroups", dispatch, "MaximumMeshletGroups"));
+    XII_SUCCEED_OR_RETURN(connect(instances, "MeshletMetadata", dispatch, "MeshletMetadata"));
+    XII_SUCCEED_OR_RETURN(connect(instances, "VisibleInstances", dispatch, "VisibleInstances"));
+    XII_SUCCEED_OR_RETURN(connect(instances, "VisibleInstanceCount", dispatch, "VisibleInstanceCount"));
+    XII_SUCCEED_OR_RETURN(connect(dispatch, "DispatchArguments", cull, "DispatchArguments"));
+    XII_SUCCEED_OR_RETURN(connect(count, "Counter", cull, "InitialCount"));
+    XII_SUCCEED_OR_RETURN(connect(overflow, "Counter", cull, "InitialOverflow"));
+    xiiUInt32  row    = 0;
+    const auto expose = [&](const xiiDocumentObject* source, xiiStringView name) -> xiiStatus {
+      const auto* boundary = add(xiiStringBuilder("Output/", name), "xiiRenderPipelineInterfacePass", {3000, float(row++ * 150)});
+      if (!boundary)
+        return xiiStatus("Could not create a visibility interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", name));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", false));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Buffer)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      return connect(source, name, boundary, "Value");
+    };
+    for (auto pin : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibilityView", "VisibleInstances", "VisibleInstanceCount", "LodHistory"})
+      XII_SUCCEED_OR_RETURN(expose(instances, pin));
+    XII_SUCCEED_OR_RETURN(expose(dispatch, "DispatchArguments"));
+    XII_SUCCEED_OR_RETURN(expose(cull, "VisibleMeshlets"));
+    XII_SUCCEED_OR_RETURN(expose(cull, "VisibleMeshletCount"));
+    XII_SUCCEED_OR_RETURN(expose(cull, "VisibleMeshletOverflow"));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import visibility asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/MeshletVisibility.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Authored visibility did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 7);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 12);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 13);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
+    return XII_SUCCESS;
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -169,4 +266,14 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, InstanceVisibility)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeVisibilityAuthoring"));
   XII_TEST_STATUS(AuthorInstanceVisibility(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, MeshletVisibility)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeMeshletAuthoring", "NativeMeshletBase", xiiDataDirUsage::ReadOnly)) ||
+      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeMeshletAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeMeshletAuthoring"));
+  XII_TEST_STATUS(AuthorMeshletVisibility(path));
 }
