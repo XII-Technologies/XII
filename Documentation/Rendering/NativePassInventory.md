@@ -846,7 +846,7 @@ Verification:
   movement, skinning, near-plane crossing and outside-image bounds are exercised.
   Writable graph handles are distinct between the two instances. Expected index
   multisets are specified independently of the shader's projection/mip calculations.
-- All nine NativeAssetAuthoring fixtures pass; all fifteen Qt EditorDocuments tests
+- All ten NativeAssetAuthoring fixtures pass; all fifteen Qt EditorDocuments tests
   pass, including source/binary byte equality and repeated deterministic export of all
   sixteen resources (`Workspace/native-occlusion-authoring.log`, `native-occlusion-qt.log`).
 - Vulkan NativeVisibility's four subtests pass. GpuDrivenScene -renderer Vulkan -frames 3
