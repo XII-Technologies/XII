@@ -424,3 +424,62 @@ No rendering Builtin files or scene-database classes were restored. The legacy
 visibility service, depth/G-buffer/forward raster orchestration and incomplete full
 game/editor pipelines remain migration targets. D3D12 is excluded; no controlled
 end-to-end rendering benchmark or complete application-renderer validation is claimed.
+
+## Explicit editor candidate selection - 2026-10-16
+
+SceneInstanceSelectionPass in SharedPluginScene is a separate reflected preparation
+operation. It filters the current view's world-derived candidate indices using
+validated world identities, selection membership and material classification flags.
+Enabled, SelectionOnly, PickSelected and PickTransparent are member properties;
+the existing editor parameters supply runtime choices. Execute uploads owned index
+bytes and never reads mutable world/component storage. Empty selections publish one
+invalid-index sentinel. The pass owns no scene registry, geometry residency, temporal
+images, visibility dispatch or rasterization. GraphicsCore still has 49 operation
+classes; this additional editor operation belongs to its editor plugin.
+
+VisibilityView accepts an optional typed InputCandidates buffer and forwards it
+through an explicit graph read. It derives the exact candidate count from the buffer
+description and rejects malformed layouts or lists exceeding the world-backed
+dispatch range. With no supplied buffer, ordinary view selection remains available.
+InstanceVisibility, MeshletVisibility, VertexPullDraws and SurfaceQuery now expose
+this optional input through their authored nested boundaries. Their output counts
+are unchanged; total interface counts are 9, 13, 15 and 17 respectively.
+
+The new ordinary EditorMeshPicking resource wires selection into SurfaceQuery and
+capture after surface rasterization. Three authored nodes expand to nineteen native
+operations; outputs expose Surface, SceneDepth and VisibleMeshletOverflow. The editor
+capture regression now loads this resource rather than reconstructing its rendering
+stack in C++. A second capture of the same surface verifies independent writable
+capture state. A nested SelectionOnly override exercises a distinct configuration
+of the same definition. This graph supplies mesh picking, not the unfinished complete
+editor lighting/selection-overlay pipeline, and no implicit default is installed.
+
+All source assets are generated with document/node commands and production export
+inside test output, then their task-owned SDK packages are updated deliberately.
+Authoring tests generate their nested dependencies in test output as well, so a new
+optional interface does not depend on an old packaged child asset. Twelve SDK assets
+now have deterministic source-to-binary and repeat-export coverage. The unrelated
+AmbientOcclusion asset hash edit in the worktree is excluded from this phase.
+
+Verification for candidate selection:
+
+- All four affected Debug test targets and their dependent editor/engine targets
+  build (`Workspace/native-selection-verification-build.log`).
+- All 45 GraphicsCore CPU subtests pass (`Workspace/native-selection-final-core.log`).
+- Vulkan PipelineExtraction (3) and NativeVisibility (2) pass after the optional
+  input change. The latest uncontrolled static packing sample is 2.709 ms/update;
+  sparse upload behavior remains one changed 288-byte instance once across cameras
+  and zero warmed static upload bytes (`Workspace/native-selection-<group>.log`).
+- NativeMeshCapture's three Vulkan subtests pass (`Workspace/native-selection-final-capture.log`),
+  including empty and selected-only lists, selected-owner exclusion, transparent
+  material exclusion/re-enable, independent view policies and component lifecycle.
+  One subtest disables mesh shaders on the device; rendering still uses the explicitly
+  authored vertex-pull path.
+- All six NativeAssetAuthoring subtests pass (`Workspace/native-selection-author.log`).
+  All 15 Qt EditorDocuments subtests pass, comparing all twelve SDK packages against
+  production exports and repeat exports (`Workspace/native-selection-final-qt.log`).
+
+No full game/editor lighting pipeline, selection-overlay presentation or controlled
+frame-performance benchmark is claimed. D3D12 remains excluded. Native depth/G-buffer
+raster, remaining visibility/feedback orchestration and the complete resource-authored
+rendering techniques remain required work before the architecture migration is complete.
