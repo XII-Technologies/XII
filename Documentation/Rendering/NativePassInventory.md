@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **55 concrete reflected operation classes** in
+Current source inventory: **56 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -34,7 +34,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 5 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
-| Visibility | 8 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
+| Visibility | 9 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletOcclusionPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
 Every operation above declares concrete typed pin members through
@@ -88,7 +88,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion and LOD streaming feedback still need independent nodes. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming feedback still needs independent operations. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
@@ -861,3 +861,72 @@ No controlled GPU timing, bandwidth comparison or long-duration sample run was m
 The algorithm favors conservative visibility when supplied data is uncertain. D3D12
 remains excluded. Meshlet occlusion, streaming feedback, legacy service deletion and
 complete lighting/shadow/editor/game graph rebuilding remain incomplete.
+
+
+## Independent meshlet occlusion and native visibility separation - 2026-10-17
+
+MeshletOcclusionPass is the 56th concrete reflected operation, in Visibility. It
+filters supplied absolute (instance, meshlet) pairs without owning frustum/LOD
+selection, residency, temporal history or draw preparation. Nine typed member pins
+include explicit scene/view/meshlet metadata, candidate pairs/count, independently
+initialized output count and matching reversed-Z depth. DepthBias and AsyncCompute
+remain reflected member properties. Output capacity derives from the candidate
+allocation, so the filter cannot emit more pairs than its bounded input stream.
+
+The ordinary MeshletOcclusion asset contains the filter and CounterReset, with six
+root inputs and two outputs derived from native RTTI. The library now has seventeen
+source/binary assets. Multiple instances reference one definition and configure their
+own bias/queue properties. No Builtin file, stage check, manual pin-type table,
+compatibility adapter or global scene/resource lookup is introduced.
+
+Instance and meshlet occlusion share only a conservative depth projection/coverage
+shader helper and a neutral DepthOcclusionConstants layout. The instance-specific
+constants include is removed. Meshlet spheres use a Gram row-sum stretch bound,
+covering nonuniform scale, reflection and shear. The depth projection also keeps
+unknown coverage, posed/moving/always-visible candidates and insufficient mip chains.
+A graph supplying temporal depth remains responsible for matching projection/image
+and invalidating stale occluders. Production temporal occlusion is not implicitly
+wired by these operations.
+
+The canonical immutable xiiGpuVisibilityView record and unchanged version-3 reflection
+move out of GpuVisibilitySystem into GpuVisibilityTypes, with ABI size/offset checks.
+VisibilityViewPass now captures the existing view/camera/frustum directly. Every
+native pass and both native visibility GPU fixtures are free of the legacy visibility
+system header/API. An unused private compatibility AddPasses overload is deleted.
+The older visibility service still has real unmigrated consumers and is not claimed
+as removed; these type/snapshot changes prepare its deletion without a wrapper.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build, including dependent
+  engine/editor plugins/processes (`Workspace/native-meshlet-occlusion-consumer-build.log`,
+  `native-meshlet-occlusion-editor-engine-build.log`). An explicit frustum include and
+  fixture prototype declarations were corrected after initial compile failures.
+- All 52 GraphicsCore CPU subtests pass (`Workspace/native-meshlet-occlusion-cpu.log`).
+  Meshlet configuration tests reject nonfinite/out-of-range bias and compile two
+  independently overridden nested occurrences using RTTI-derived required boundaries.
+- Vulkan NativeOcclusion's two subtests pass (`Workspace/native-meshlet-occlusion-gpu.log`).
+  The instance scenarios still pass after sharing the shader calculation. Nine meshlet
+  scenarios read lists/counts from biased and strict occurrences of one authored graph:
+  solid/hole/incomplete pyramids, empty/oversized/truncated candidate counts, invalid
+  projection, nonuniform scaling, shear and reflected scaling. Invalid scene/meshlet
+  indices are skipped, disabled candidates are excluded, duplicates preserved, and
+  absolute metadata indices offset by sixteen survive compaction exactly. Bias,
+  movement, skinning, always-visible, equal-depth and clip/image crossings are checked.
+- All eleven native authoring fixtures and all fifteen Qt EditorDocuments subtests pass;
+  deterministic exports match packaged binaries for all seventeen resources
+  (`Workspace/native-meshlet-occlusion-authoring.log`, `native-meshlet-occlusion-qt.log`).
+- Vulkan NativeVisibility (4), PipelineExtraction (3) and NativeMeshCapture (3) pass
+  (`Workspace/native-meshlet-occlusion-visibility.log`, `native-meshlet-occlusion-world.log`,
+  `native-meshlet-occlusion-capture.log`). World extraction still uploads one changed
+  288-byte record once across cameras and zero bytes for a warmed static frame.
+  Uncontrolled Debug packing measured 2.522 ms/update for 1024 unchanged components;
+  this is not a controlled comparison or GPU bandwidth benchmark.
+- Source searches find no legacy visibility system/manager dependencies in native pass
+  sources, no old InstanceOcclusionConstants includes, and no rendering Builtin files.
+
+D3D12 remains excluded. Full renderer/editor-engine suites are not claimed to pass.
+Remaining work includes independent streaming feedback, old visibility/shadow/lighting
+orchestration deletion, production graph wiring with deliberate temporal validity,
+complete editor/game/lighting/shadow assets and controlled large-scene GPU benchmarks.
