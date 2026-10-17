@@ -703,3 +703,100 @@ per-mip view-creation costs have not been benchmarked against the combined legac
 path; no frame-performance improvement is claimed. Production code adds no device-idle
 wait. The unrelated AmbientOcclusion asset hash edit remains outside these commits.
 The overall architecture migration is incomplete.
+
+
+## Compiled root boundaries and legacy Hi-Z deletion - 2026-10-16
+
+Reusable pipeline resources now lower their root document interfaces to immutable
+compiled binding slots. FindInterface resolves a name/direction once per compilation;
+frame execution uses cached indices. Root input fan-out shares the caller's supplied
+graph version. Required inputs, formats/bind flags, wrong resource kinds, duplicate
+inputs, output-as-input indices and stale setup bindings are rejected before algorithm
+work. Interface indices belong to their compilation, and frame values are not serialized
+identities. Boundary metadata is included in compiled CPU memory accounting.
+
+RenderPipelineInstance::BeginFrame publishes explicit previous-frame resources before
+current inputs exist. Repeating it within one setup is idempotent; context/parameter
+changes require another setup. Build accepts typed texture/buffer or complete resource
+bindings stamped with the existing render-graph setup serial, then executes the normal
+compiled operation order. Ordinary view callers still use Build directly. This is frame
+resource publication, not a rendering stage selector. Every reflected pass remains an
+independent operation governed by its resource dependencies.
+
+Separate runtime root instances also receive private resource namespaces when embedded
+in the same graph. Cached namespace strings include the original Core occurrence path
+for diagnostics. Their runtime discriminator is never an authored/document/graph handle
+identity. Compilation/serialization stays deterministic and shared; no world state or
+writable pass state is shared between these runtime roots. Native reflected member pins
+and normal editor property/attribute behavior remain unchanged.
+
+GpuDrivenScene now explicitly references the ordinary DepthPyramid resource, configurable
+with -depth-pipeline. It resolves interface indices again when synchronization replaces
+its compilation, reads PreviousDepthPyramid early, and supplies rendered SceneDepth later.
+The authored depth pass controls its own compute-queue property. Resize invalidates its
+actual pipeline instance instead of replacing a private Hi-Z ring. The temporal fixture
+uses the same resource and boundary API, including independent roots in one graph.
+
+The combined xiiGpuHiZPyramid and xiiGpuHiZPyramidDescription are physically deleted,
+along with their header/implementation, old GpuHiZBuild shader and static-link retention.
+The small native reduction constant layout now lives in DepthPyramidConstants.h. No
+old Hi-Z object, description, API or compatibility wrapper remains in source/assets.
+Depth reduction and general texture-history ownership remain separate native operations.
+
+The sample exposed its older D24/forward-Z scene convention when binding the canonical
+depth resource. It now uses D32Float, reversed projection, zero depth clear and GreaterEqual
+comparison, matching native visibility/history and engine views. Both the small raster-only
+and full default Vulkan configurations complete three frames successfully. This does not
+mean the sample's remaining C++ visibility/shadow/presentation orchestration is migrated.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorEngineProcessFrameworkTest,
+  EditorFrameworkTest and GpuDrivenScene build with dependent engine/editor targets
+  (`Workspace/native-boundary-build-complete.log`). The last sample-only build also
+  verifies graceful selected-resource failure handling.
+- All 50 GraphicsCore CPU subtests pass (`Workspace/native-boundary-core-verified.log`).
+  CompiledRootBoundaryBindings checks input fan-out, forwarded output identity,
+  required/duplicate/unknown inputs, output indices used as inputs, format rejection,
+  stale bindings across fresh setups using the same frame number, idempotent begin,
+  context/parameter consistency and serialization/recompilation. An initial existing
+  output-contract diagnostic test caught an early-return ordering regression; output
+  settings are again diagnosed before the missing-setup guard, and the full suite passes.
+- Vulkan NativeDepthBoundary passes (`Workspace/native-boundary-NativeDepthBoundary-final.log`).
+  The migrated fixture reads every retained mip across interleaved contexts and skipped
+  frames, then embeds two standalone instances of the same resource in one graph and
+  verifies distinct physical images containing 0.2 and 0.8 depth. NativeDepthPyramid's
+  nested/odd-edge/frame-burst regression also passes (`Workspace/native-boundary-pyramid.log`).
+- All fifteen Qt EditorDocuments subtests pass, including deterministic export of
+  the fifteen SDK resources (`Workspace/native-boundary-qt.log`).
+- Vulkan NativeVisibility (4), PipelineExtraction (3), NativePreparation (1),
+  NativeMeshCapture (3) and SkinningRaster (3) pass (`Workspace/native-boundary-<group>.log`
+  or corresponding -final logs). Sparse world upload remains one changed 288-byte
+  instance once across cameras and zero warmed static upload bytes. The uncontrolled
+  Debug packing sample is 2.414 ms/update; it is not a controlled performance comparison.
+- GpuDrivenScene -renderer Vulkan -frames 3 -grid-width 2 -grid-height 2 -ray-tracing false
+  exits 0 (`Workspace/native-boundary-sample-final.log`). The default GpuDrivenScene
+  -frames 3 also exits 0 with 384 world-derived TLAS instances, 42 registered/41 compiled
+  logical operations, one queue submission and 147 barriers
+  (`Workspace/native-boundary-sample-default-verified.log`). No errors/warnings or device
+  loss are reported in these successful runs. Frame completion is verified; a pixel
+  correctness assertion or long-duration application benchmark is not claimed.
+- An explicitly missing -depth-pipeline resource exits 1 with its path and a clear error,
+  without selecting a fallback or raising an assertion
+  (`Workspace/native-boundary-sample-missing.log`). The initial sample run rejected its
+  old D24 input; the canonical D32/reversed-Z migration above resolves that failure.
+- Source/asset searches find no old Hi-Z class/description/header/shader/constants
+  references, compatibility wrappers or rendering Builtin files.
+
+The inventory stays at 54 native operation classes; this phase adds reusable runtime
+boundary support and removes a subsystem rather than inflating that count. There is
+no controlled depth/history bandwidth benchmark and D3D12 remains excluded. The sample
+still contains legacy C++ visibility/shadow/presentation orchestration; GraphicsCore's
+remaining visibility, lighting and shadow services, camera motion history and complete
+forward/deferred/editor assets remain migration targets. TemporalHistory's older full
+pipeline test also awaits those rebuilt assets; the full editor-engine suite is not
+claimed to pass. The overall architecture migration is incomplete.
+
+No AmbientOcclusion source change is included in this phase. Its initially observed
+unrelated hash edit no longer appears in the current worktree; this implementation does
+not intentionally edit or stage that asset.
