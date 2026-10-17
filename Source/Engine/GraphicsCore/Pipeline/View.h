@@ -15,7 +15,6 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
-#include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -25,7 +24,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 
 class xiiRenderPipelineInstance;
@@ -237,11 +235,10 @@ private:
   void      UpdateCachedMatrices() const;
   void      UpdateRenderResolutionState() const;
   xiiResult SynchronizeRenderPipeline();
-  xiiResult PrepareRenderResources();
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
-  xiiResult BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& virtualShadowHandles);
+  xiiResult BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   // CPU PID dynamic resolution (runs before BeginSetup)
   void RunDynamicResolutionPID();
@@ -278,9 +275,8 @@ private:
     float m_fRenderScale   = 1.0f;
   } m_DynamicResolution;
 
-  xiiRenderGraphContext         m_RenderGraphContext;
-  xiiDynamicArray<xiiUInt32>    m_GpuInstanceSelection;
-  xiiGpuVisibilityContextHandle m_hGpuVisibilityContext;
+  xiiRenderGraphContext      m_RenderGraphContext;
+  xiiDynamicArray<xiiUInt32> m_GpuInstanceSelection;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.
   xiiExtractedRenderData* m_pExtractedData = nullptr;

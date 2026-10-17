@@ -100,7 +100,6 @@ const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
 
 void xiiView::InvalidateTemporalHistory()
 {
-  xiiGpuVisibilityManager::InvalidateHiZHistory(m_hGpuVisibilityContext);
   GetPipelineInstance()->InvalidateTemporalHistory();
 }
 
@@ -108,8 +107,6 @@ xiiView::~xiiView()
 {
   m_InternalId.Invalidate();
 
-  xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
-  m_hGpuVisibilityContext = {};
   m_RenderGraphContext.Shutdown();
   xiiViewRenderResourceManager::DestroyContext(m_hPipelineRuntime);
   m_hPipelineRuntime = {};
@@ -389,25 +386,7 @@ xiiResult xiiView::SynchronizeRenderPipeline()
   return XII_SUCCESS;
 }
 
-xiiResult xiiView::PrepareRenderResources()
-{
-  const auto rootFeatures = m_RenderGraphBuilder.IsValid() ? m_CustomRuntimeFeatures : xiiBitflags<xiiRenderPipelineFeature>{};
-  if (rootFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
-  {
-    if (m_hGpuVisibilityContext.IsInvalidated())
-      m_hGpuVisibilityContext = xiiGpuVisibilityManager::CreateContext();
-    if (m_hGpuVisibilityContext.IsInvalidated())
-      return XII_FAILURE;
-  }
-  else
-  {
-    xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
-    m_hGpuVisibilityContext = {};
-  }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles&)
+xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   auto* runtime = GetPipelineInstance();
   RunDynamicResolutionPID();

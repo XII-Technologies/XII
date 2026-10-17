@@ -267,15 +267,11 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
   m_pMeshletHiZCullPipeline       = LoadComputePipeline("Shaders/Visibility/GpuSceneMeshletHiZCull.xiiShader");
   m_pLodFeedbackClearPipeline     = LoadComputePipeline("Shaders/Visibility/GpuSceneLodFeedbackClear.xiiShader");
   m_pCommandBuildPipeline         = LoadComputePipeline("Shaders/Visibility/GpuSceneCommandBuild.xiiShader");
-  xiiGpuHiZPyramidDescription hiZDescription;
-  hiZDescription.m_uiFramesInFlight = description.m_uiFramesInFlight;
-  const bool bHiZInitialized        = m_HiZHistory.Initialize(pDevice, hiZDescription).Succeeded();
-  return m_pInstanceCullPipeline != nullptr && m_pHiZOcclusionPipeline != nullptr && m_pMeshletDispatchBuildPipeline != nullptr && m_pMeshletCullPipeline != nullptr && m_pMeshletHiZCullPipeline != nullptr && m_pLodFeedbackClearPipeline != nullptr && m_pCommandBuildPipeline != nullptr && bHiZInitialized ? XII_SUCCESS : XII_FAILURE;
+  return m_pInstanceCullPipeline != nullptr && m_pHiZOcclusionPipeline != nullptr && m_pMeshletDispatchBuildPipeline != nullptr && m_pMeshletCullPipeline != nullptr && m_pMeshletHiZCullPipeline != nullptr && m_pLodFeedbackClearPipeline != nullptr && m_pCommandBuildPipeline != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
 void xiiGpuVisibilitySystem::Shutdown()
 {
-  m_HiZHistory.Shutdown();
   m_pInstanceCullPipeline.Clear();
   m_pHiZOcclusionPipeline.Clear();
   m_pMeshletDispatchBuildPipeline.Clear();

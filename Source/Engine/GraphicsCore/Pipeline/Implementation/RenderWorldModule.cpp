@@ -26,7 +26,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
@@ -833,21 +832,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
   // Convert extracted engine meshes into persistent, subsystem-owned GPU scene records before
   // residency streaming runs. Stable render IDs retain previous transforms across frames.
-  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
-  {
-    ViewDetail& viewDetail = it.Value();
-    if (viewDetail.m_bPrepared && viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
-    {
-      if (viewDetail.m_pView->PrepareRenderResources().Failed())
-      {
-        viewDetail.m_bPrepared = false;
-        viewDetail.m_pView->InvalidateTemporalHistory();
-        xiiLog::Error("Failed to synchronize render resources for view '{}'.", viewDetail.m_pView->GetName());
-        continue;
-      }
-    }
-  }
-
   if (m_RuntimeFeatures.IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing))
   {
     xiiDynamicArray<xiiRenderData*> packets;
@@ -914,7 +898,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     else
     {
       // Standard full-featured pipeline.
-      if (viewDetail.m_pView->BuildRenderPipeline(*pGraph, blackboard, virtualShadowHandles).Failed())
+      if (viewDetail.m_pView->BuildRenderPipeline(*pGraph, blackboard).Failed())
       {
         pGraph->EndSetup();
         resourceCache.EndFrame();

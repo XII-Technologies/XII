@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
+#include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>

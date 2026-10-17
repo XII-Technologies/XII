@@ -7,7 +7,6 @@
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
-#include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 
 class xiiGpuVisibilityManager;
 struct xiiGALMeshShaderProperties;
@@ -203,7 +202,6 @@ private:
   xiiSharedPtr<xiiGALComputePipelineState>    m_pMeshletHiZCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>    m_pLodFeedbackClearPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>    m_pCommandBuildPipeline;
-  xiiGpuHiZPyramid                            m_HiZHistory;
   xiiUInt32                                   m_uiLargestReportedInstanceCount = 0U;
   xiiUInt32                                   m_uiLargestReportedMeshletCount  = 0U;
   xiiUInt32                                   m_uiMeshDispatchGroupCountX      = 0U;

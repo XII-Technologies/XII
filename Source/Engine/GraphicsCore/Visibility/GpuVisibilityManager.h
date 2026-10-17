@@ -54,14 +54,6 @@ public:
 
   [[nodiscard]] static xiiGpuVisibilityOutputs AddPasses(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiGpuInstanceData& instances, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
 
-  /// Prepares subsystem-owned temporal Hi-Z storage for this context. A resolution change
-  /// recreates and invalidates the history, so the next visibility pass remains conservative.
-  [[nodiscard]] static xiiResult                   PrepareHiZHistory(xiiGpuVisibilityContextHandle handle, xiiUInt32 uiWidth, xiiUInt32 uiHeight);
-  static void                                      InvalidateHiZHistory(xiiGpuVisibilityContextHandle handle);
-  [[nodiscard]] static xiiRenderGraphTextureHandle ImportPreviousHiZ(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
-  static void                                      AddHiZBuildPass(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute = true);
-  [[nodiscard]] static xiiUInt32                   GetHiZMipLevelCount(xiiGpuVisibilityContextHandle handle);
-
   [[nodiscard]] static xiiUInt32                      GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static xiiUInt32                      GetMeshDispatchGroupCountY(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static xiiGpuVisibilityStreamingStats GetStreamingStats(xiiGpuVisibilityContextHandle handle);
