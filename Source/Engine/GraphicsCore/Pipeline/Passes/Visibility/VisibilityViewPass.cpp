@@ -12,6 +12,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("InputCandidates", m_InputCandidates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibilityView", m_View)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Candidates", m_Candidates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask)->AddAttributes(new xiiDefaultValueAttribute(0xFFFFFFFFU)),
@@ -52,6 +53,17 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   snapshot.m_LodParameters    = xiiVec4(m_fLodHysteresis, float(token), float(m_uiLastLodToken), 0);
   snapshot.m_uiUseCandidates  = m_bUseViewSelection ? 1 : 0;
   snapshot.m_uiCandidateCount = m_bUseViewSelection ? view.GetGpuInstanceSelection().GetCount() : 0;
+  const auto supplied         = context.GetInputBuffer(m_InputCandidates);
+  if (supplied.IsValid())
+  {
+    const auto* description = context.m_Graph.GetBufferDescription(supplied);
+    if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiUInt32) ||
+        description->m_uiSize < sizeof(xiiUInt32) || description->m_uiSize % sizeof(xiiUInt32) != 0 ||
+        description->m_uiSize / sizeof(xiiUInt32) > xiiMath::Max(view.GetGpuInstanceData()->GetInstanceCount(), 1U))
+      return context.ReportFailure("Supplied candidates require an exact structured uint stream within the world instance capacity; use an invalid-index sentinel for an empty selection.");
+    snapshot.m_uiUseCandidates  = 1;
+    snapshot.m_uiCandidateCount = static_cast<xiiUInt32>(description->m_uiSize / sizeof(xiiUInt32));
+  }
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
@@ -61,8 +73,8 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Snapshot = snapshot;
-      if (m_bUseViewSelection) data.m_Selection = view.GetGpuInstanceSelection();
-      if (data.m_Selection.IsEmpty()) data.m_Selection.PushBack(0);
+      if (!supplied.IsValid() && m_bUseViewSelection) data.m_Selection = view.GetGpuInstanceSelection();
+      if (!supplied.IsValid() && data.m_Selection.IsEmpty()) data.m_Selection.PushBack(xiiInvalidIndex);
       xiiGALBufferCreationDescription description;
       description.m_Mode = xiiGALBufferMode::Structured;
       description.m_BindFlags = xiiGALBindFlags::ShaderResource;
@@ -71,9 +83,9 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
       data.m_View = builder.WriteBuffer("Camera Culling Parameters", description, xiiGALResourceStateFlags::CopyDestination);
       description.m_uiSize = data.m_Selection.GetCount() * sizeof(xiiUInt32);
       description.m_uiElementByteStride = sizeof(xiiUInt32);
-      data.m_Candidates = builder.WriteBuffer("Camera Component Selection", description, xiiGALResourceStateFlags::CopyDestination); }, [this](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Candidates = supplied.IsValid() ? builder.ReadBuffer(supplied, xiiGALResourceStateFlags::ShaderResource) : builder.WriteBuffer("Camera Component Selection", description, xiiGALResourceStateFlags::CopyDestination); }, [this, supplied](const Data& data, xiiRenderGraphPassContext& execute) {
       execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_View), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Snapshot), sizeof(data.m_Snapshot)));
-      execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Candidates), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Selection.GetData()), data.m_Selection.GetCount() * sizeof(xiiUInt32)));
+      if (!supplied.IsValid()) execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Candidates), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Selection.GetData()), data.m_Selection.GetCount() * sizeof(xiiUInt32)));
       m_uiLastLodToken = static_cast<xiiUInt32>(data.m_Snapshot.m_LodParameters.y); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_View, emitted.first->m_View));
   return context.SetOutput(m_Candidates, emitted.first->m_Candidates);

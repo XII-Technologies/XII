@@ -9,6 +9,8 @@ class XII_GRAPHICSCORE_DLL xiiVisibilityViewPass final : public xiiRenderPipelin
   XII_ADD_DYNAMIC_REFLECTION(xiiVisibilityViewPass, xiiRenderPipelinePass);
 
 public:
+  /// Optional exact candidate stream. Empty selections use one invalid-index sentinel.
+  xiiRenderPipelineBufferInputPin          m_InputCandidates{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_View{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_Candidates{false, xiiGALBindFlags::ShaderResource};
   xiiUInt32                                m_uiVisibilityMask  = 0xFFFFFFFFU;
