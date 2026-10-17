@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **54 concrete reflected operation classes** in
+Current source inventory: **55 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -34,7 +34,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 5 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
-| Visibility | 7 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
+| Visibility | 8 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
 Every operation above declares concrete typed pin members through
@@ -88,7 +88,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance/meshlet occlusion and LOD streaming feedback still need independent nodes. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion and LOD streaming feedback still need independent nodes. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
@@ -800,3 +800,64 @@ claimed to pass. The overall architecture migration is incomplete.
 No AmbientOcclusion source change is included in this phase. Its initially observed
 unrelated hash edit no longer appears in the current worktree; this implementation does
 not intentionally edit or stage that asset.
+
+
+## Independent instance occlusion - 2026-10-17
+
+InstanceOcclusionPass is the 55th concrete reflected operation. Its eight typed
+member pins consume canonical instance/view records, a candidate list/count, a
+separately initialized counter and an explicitly matching reversed-Z depth image.
+It publishes a compact instance list/count. DepthBias and AsyncCompute are reflected
+member properties; no stage selector, pin-type table, scene owner or implicit history
+is introduced. The ordinary InstanceOcclusion resource contains this operation and
+CounterReset, with five root inputs and two outputs inferred from native RTTI. The SDK
+library now contains sixteen independently authored source/binary resources.
+
+The shader projects all eight world bounds corners, conservatively keeps moving,
+posed, always-visible, invalid or clip-crossing candidates, bounds candidate reads
+and output reservations, and coarsens until four samples cover the entire projected
+texel rectangle. An incomplete mip chain retains candidates whose full footprint
+cannot be tested. This prevents a floor-log footprint selection from skipping an
+interior depth hole. A temporal consumer must provide matching projection/image
+inputs and invalidate stale occluders; this operation does not invent a history
+validity policy or implicitly enable temporal occlusion in existing consumers.
+
+The unused GpuShadowRasterManager::AddLocalLightPasses orchestration API and its
+implementation are deleted, along with its header dependencies. The remaining shadow
+raster entry point still has real sample/virtual-shadow consumers and requires native
+replacement. Legacy instance/meshlet visibility orchestration is also still a migration
+target; adding the native operation does not count those consumers as converted.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and GpuDrivenScene
+  build, including dependent editor plugins/processes. Initial fixture compilation
+  errors (ambiguous string conversion and plain enum access) were corrected before
+  successful final builds (`Workspace/native-occlusion-build-final.log`,
+  `native-occlusion-editor-build.log`, `native-occlusion-library-build.log`).
+- All 51 GraphicsCore CPU subtests pass (`Workspace/native-occlusion-core-all.log`).
+  NativePreparation verifies reflected configuration, invalid/nonfinite bias rejection,
+  required typed inputs and nested occurrences with independent property overrides.
+- Vulkan NativeOcclusion passes (`Workspace/native-occlusion-gpu.log`). Six scenarios
+  read actual GPU lists/counts from two instances sharing an authored definition:
+  solid depth, an interior hole, insufficient mips, empty input, invalid projection,
+  and a shorter explicit count. Oversized counts are bounded to a 67-entry candidate
+  allocation; invalid indices, disabled records, duplicates, equal-depth/bias behavior,
+  movement, skinning, near-plane crossing and outside-image bounds are exercised.
+  Writable graph handles are distinct between the two instances. Expected index
+  multisets are specified independently of the shader's projection/mip calculations.
+- All nine NativeAssetAuthoring fixtures pass; all fifteen Qt EditorDocuments tests
+  pass, including source/binary byte equality and repeated deterministic export of all
+  sixteen resources (`Workspace/native-occlusion-authoring.log`, `native-occlusion-qt.log`).
+- Vulkan NativeVisibility's four subtests pass. GpuDrivenScene -renderer Vulkan -frames 3
+  exits 0 with 384 world-derived TLAS instances, 41 compiled logical operations and one
+  queue submission (`Workspace/native-occlusion-visibility.log`, `native-occlusion-sample.log`).
+  This sample validates the shadow API deletion; it still uses its older visibility
+  orchestration and is not evidence of production adoption of the new occlusion asset.
+- Searches find no AddLocalLightPasses references in source/assets and no rendering
+  Builtin source files. No compatibility adapter or second scene lifecycle is added.
+
+No controlled GPU timing, bandwidth comparison or long-duration sample run was made.
+The algorithm favors conservative visibility when supplied data is uncertain. D3D12
+remains excluded. Meshlet occlusion, streaming feedback, legacy service deletion and
+complete lighting/shadow/editor/game graph rebuilding remain incomplete.
