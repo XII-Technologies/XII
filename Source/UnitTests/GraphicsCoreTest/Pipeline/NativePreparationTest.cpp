@@ -8,6 +8,9 @@
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackReadbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/BufferHistoryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/TextureHistoryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
@@ -414,5 +417,83 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshletOcclusion)
   if (compiled)
   {
     XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 4);
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentGeometryStreamingFeedback)
+{
+  xiiGeometryLodFeedbackResetPass    reset;
+  xiiGeometryLodFeedbackPass         generate;
+  xiiGeometryLodFeedbackReadbackPass readback;
+  for (xiiRenderPipelinePass* pass : {static_cast<xiiRenderPipelinePass*>(&reset), static_cast<xiiRenderPipelinePass*>(&generate), static_cast<xiiRenderPipelinePass*>(&readback)})
+  {
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    pass->GetPins(pins);
+    XII_TEST_RESULT(pass->InitializePinBindings(pins));
+    XII_TEST_BOOL(pass->GetExtractionRequirements().IsNoFlagSet() && pass->GetRuntimeFeatures().IsNoFlagSet());
+    XII_TEST_BOOL(pass->GetDynamicRTTI()->FindPropertyByName("Stage") == nullptr);
+  }
+  xiiVariantDictionary properties;
+  properties.Insert("Capacity", 3U);
+  XII_TEST_BOOL(reset.Configure(properties).Failed());
+  properties.Insert("Capacity", 0U);
+  XII_TEST_BOOL(reset.Configure(properties).Failed());
+  properties.Insert("Capacity", 65537U);
+  XII_TEST_BOOL(reset.Configure(properties).Failed());
+  properties.Insert("Capacity", 2U);
+  XII_TEST_RESULT(reset.Configure(properties));
+  properties.Clear();
+  properties.Insert("PriorityTier", 4U);
+  XII_TEST_BOOL(generate.Configure(properties).Failed());
+  properties.Clear();
+  properties.Insert("MaxPendingReadbacks", 0U);
+  XII_TEST_BOOL(readback.Configure(properties).Failed());
+  properties.Insert("MaxPendingReadbacks", 17U);
+  XII_TEST_BOOL(readback.Configure(properties).Failed());
+  properties.Insert("MaxPendingReadbacks", 1U);
+  XII_TEST_RESULT(readback.Configure(properties));
+  for (const xiiGeometryId id : {xiiGeometryId(0U, 0U), xiiGeometryId(0x100001U, 7U), xiiGeometryId(0xFFFFFEU, 255U)})
+  {
+    xiiGpuGeometryLodRequest request;
+    request.m_uiKey = id.m_Data + 1;
+    XII_TEST_BOOL(request.GetGeometry().GetInternalID() == id);
+  }
+  XII_TEST_BOOL(xiiGpuGeometryLodRequest().GetGeometry().IsInvalidated());
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Initialize", "xiiGeometryLodFeedbackResetPass");
+  definition.AddPass("Generate", "xiiGeometryLodFeedbackPass");
+  definition.AddPass("Readback", "xiiGeometryLodFeedbackReadbackPass");
+  XII_TEST_RESULT(definition.Connect(0, "Requests", 1, "InitializedRequests"));
+  XII_TEST_RESULT(definition.Connect(1, "Requests", 2, "Requests"));
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  generate.GetPins(pins);
+  for (const auto& pin : pins)
+    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitializedRequests")
+      definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[1].m_Id, pin.m_sName});
+  xiiGraphDefinition reusable;
+  XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(reusable);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    const auto node     = root.AddSubgraph(i ? "Camera" : "Shadow", reusable.m_Id);
+    auto&      override = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
+    override.m_Path.PushBack(definition.m_Passes[1].m_Id);
+    override.m_Properties.Insert("PriorityTier", i ? 3U : 1U);
+    for (const auto& pin : pins)
+      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitializedRequests")
+        root.m_Interface.PushBack({pin.m_sName, true, root.m_Passes[node].m_Id, pin.m_sName});
+  }
+  xiiContiguousMemoryStreamStorage storage;
+  xiiMemoryStreamWriter            writer(&storage);
+  XII_TEST_RESULT(root.Serialize(writer));
+  xiiRenderPipelineResourceDescriptor restored;
+  xiiMemoryStreamReader               reader(&storage);
+  XII_TEST_RESULT(restored.Deserialize(reader));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, compiled));
+  if (compiled)
+  {
+    XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 6);
   }
 }
