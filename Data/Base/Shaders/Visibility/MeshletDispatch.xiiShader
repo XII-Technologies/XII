@@ -1,0 +1,30 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+[COMPUTE_SHADER]
+#include "GpuSceneCommon.h"
+StructuredBuffer<uint> g_VisibleInstances;
+StructuredBuffer<uint> g_VisibleInstanceCount;
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<uint> g_MaximumMeshletGroups;
+RWStructuredBuffer<uint> g_MeshletDispatchArguments;
+[numthreads(1, 1, 1)]
+void main()
+{
+  uint capacity, stride, meshlets;
+  g_VisibleInstances.GetDimensions(capacity, stride);
+  g_Meshlets.GetDimensions(meshlets, stride);
+  uint count = min(g_VisibleInstanceCount[0], capacity);
+  uint groups = min(g_MaximumMeshletGroups[0], (meshlets / 64u + (meshlets % 64u != 0u ? 1u : 0u)));
+  if (count == 0u || groups == 0u)
+  {
+    g_MeshletDispatchArguments[0] = 0u;
+    g_MeshletDispatchArguments[1] = 0u;
+    g_MeshletDispatchArguments[2] = 0u;
+    return;
+  }
+  g_MeshletDispatchArguments[0] = groups;
+  g_MeshletDispatchArguments[1] = min(count, 65535u);
+  g_MeshletDispatchArguments[2] = (count + 65534u) / 65535u;
+}

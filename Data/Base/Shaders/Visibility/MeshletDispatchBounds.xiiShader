@@ -1,0 +1,50 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+[COMPUTE_SHADER]
+#include "GpuSceneCommon.h"
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_VisibilityView;
+StructuredBuffer<GpuGeometryRecord> g_Geometry;
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<uint> g_VisibleInstances;
+StructuredBuffer<uint> g_VisibleInstanceCount;
+StructuredBuffer<uint4> g_CurrentLodHistory;
+RWStructuredBuffer<uint> g_MaximumMeshletGroups;
+groupshared uint s_Maximum;
+uint GroupsForCandidate(uint candidate)
+{
+  uint count, stride, capacity, sceneCount, geometryCount, historyCount, meshletCount, views;
+  g_VisibleInstanceCount.GetDimensions(count, stride);
+  g_VisibleInstances.GetDimensions(capacity, stride);
+  g_SceneInstances.GetDimensions(sceneCount, stride);
+  g_Geometry.GetDimensions(geometryCount, stride);
+  g_CurrentLodHistory.GetDimensions(historyCount, stride);
+  g_Meshlets.GetDimensions(meshletCount, stride);
+  g_VisibilityView.GetDimensions(views, stride);
+  if (count == 0u || views == 0u || candidate >= min(g_VisibleInstanceCount[0], capacity)) return 0u;
+  uint index = g_VisibleInstances[candidate];
+  if (index >= sceneCount || index >= historyCount) return 0u;
+  GpuSceneInstance instance = g_SceneInstances[index];
+  uint base = g_VisibilityView[0].GeometryBaseIndex;
+  if (base >= geometryCount || instance.GeometryIndex >= geometryCount - base) return 0u;
+  GpuGeometryRecord geometry = g_Geometry[base + instance.GeometryIndex];
+  uint4 history = g_CurrentLodHistory[index];
+  if (history.x >= min(geometry.LodCount, 8u) || history.y != geometry.Generation || history.z != instance.ObjectId ||
+      (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x)) return 0u;
+  GpuGeometryLod lod = geometry.Lods[history.x];
+  if (lod.MeshletMetadataOffset >= meshletCount) return 0u;
+  uint available = min(lod.MeshletCount, meshletCount - lod.MeshletMetadataOffset);
+  return available / 64u + (available % 64u != 0u ? 1u : 0u);
+}
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID, uint lane : SV_GroupIndex)
+{
+  if (lane == 0u) s_Maximum = 0u;
+  GroupMemoryBarrierWithGroupSync();
+  uint groups = GroupsForCandidate(tid.x);
+  InterlockedMax(s_Maximum, groups);
+  GroupMemoryBarrierWithGroupSync();
+  if (lane == 0u && s_Maximum != 0u) InterlockedMax(g_MaximumMeshletGroups[0], s_Maximum);
+}
