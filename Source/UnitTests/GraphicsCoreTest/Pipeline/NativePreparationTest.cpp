@@ -9,7 +9,9 @@
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/BufferHistoryPass.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TextureHistoryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/DepthPyramidPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/LodHistoryResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
@@ -284,4 +286,27 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMaterialRaster)
   XII_TEST_BOOL(pins[pass.m_OutputObjectId.GetBindingIndex()].m_Format == xiiGALResourceFormat::R32UInt);
   properties.Insert("FillMode", xiiInt64(xiiGALFillMode::Undefined));
   XII_TEST_BOOL(pass.Configure(properties).Failed());
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDepthPyramidAndTextureHistory)
+{
+  xiiDepthPyramidPass   pyramid;
+  xiiTextureHistoryPass history;
+  xiiVariantDictionary  properties;
+  properties.Insert("AsyncCompute", false);
+  XII_TEST_RESULT(pyramid.Configure(properties));
+  XII_TEST_BOOL(!pyramid.m_bAsyncCompute && pyramid.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::Compute));
+  XII_TEST_BOOL(pyramid.GetExtractionRequirements().IsNoFlagSet() && pyramid.GetRuntimeFeatures().IsNoFlagSet());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pyramid.GetPins(pins);
+  XII_TEST_RESULT(pyramid.InitializePinBindings(pins));
+  XII_TEST_BOOL(!pins[pyramid.m_Pyramid.GetBindingIndex()].m_bTemporalHistoryOutput);
+  pins.Clear();
+  history.GetPins(pins);
+  if (!XII_TEST_RESULT(history.InitializePinBindings(pins)))
+    return;
+  XII_TEST_BOOL(pins[history.m_Previous.GetBindingIndex()].m_bTemporalHistoryOutput && pins[history.m_Previous.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[history.m_Previous.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::Read);
+  XII_TEST_RESULT(history.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("Texture") && !properties.Contains("PreviousTexture"));
 }

@@ -1,0 +1,34 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuHiZBuildConstants.h"
+
+Texture2D<float>   g_HiZSource;
+RWTexture2D<float> g_HiZDestination;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (any(dispatchThreadId.xy >= DstSize))
+    return;
+
+  if (Reduce == 0u)
+  {
+    g_HiZDestination[dispatchThreadId.xy] = g_HiZSource.Load(int3(dispatchThreadId.xy, 0));
+    return;
+  }
+
+  // Cover every fine-depth texel, including odd edge rows and columns. Overlap is
+  // conservative; dropping an odd edge could incorrectly reject a visible bound.
+  const uint2 first = dispatchThreadId.xy * 2u;
+  const uint2 last = min(first + 2u + (SrcSize & 1u), SrcSize);
+  float depth = 1.0f;
+  [loop] for (uint y = first.y; y < last.y; ++y)
+    [loop] for (uint x = first.x; x < last.x; ++x)
+      depth = min(depth, g_HiZSource.Load(int3(x, y, 0)));
+  g_HiZDestination[dispatchThreadId.xy] = depth;
+}
