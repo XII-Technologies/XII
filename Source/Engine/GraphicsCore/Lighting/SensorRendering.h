@@ -74,9 +74,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorNoiseModel);
 /// be transferred without conversion. Distances are metres, exposure is seconds and
 /// wavelength is nanometres. Spectral sensitivity converts scene RGB radiance into a
 /// scalar detector response for infrared, depth-return and LiDAR modes.
-struct XII_GRAPHICSCORE_DLL xiiSensorProfile
+struct XII_GRAPHICSCORE_DLL xiiSensorCalibration
 {
-  xiiEnum<xiiSensorType>        m_Type;
   xiiEnum<xiiSensorShutterType> m_Shutter;
   xiiEnum<xiiSensorNoiseModel>  m_NoiseModel;
 
@@ -112,6 +111,13 @@ struct XII_GRAPHICSCORE_DLL xiiSensorProfile
   xiiUInt32 m_uiNoiseSeed                        = 0U;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorCalibration);
+
+/// A calibration assigned to a concrete physical sensor category.
+struct XII_GRAPHICSCORE_DLL xiiSensorProfile : xiiSensorCalibration
+{
+  xiiEnum<xiiSensorType> m_Type;
+};
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorProfile);
 
 /// Stable process-local identity of an immutable sensor calibration profile.

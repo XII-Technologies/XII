@@ -69,39 +69,46 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSensorNoiseModel, 1)
   XII_ENUM_CONSTANTS(xiiSensorNoiseModel::None, xiiSensorNoiseModel::Gaussian, xiiSensorNoiseModel::PhotonShotAndRead)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfile, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSensorProfile>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorCalibration, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSensorCalibration>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ENUM_MEMBER_PROPERTY("Shutter", xiiSensorShutterType, m_Shutter),
+    XII_ENUM_MEMBER_PROPERTY("NoiseModel", xiiSensorNoiseModel, m_NoiseModel),
+    XII_MEMBER_PROPERTY("ResolutionX", m_uiResolutionX)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_uiResolutionX), new xiiClampValueAttribute(1U, 32768U)),
+    XII_MEMBER_PROPERTY("ResolutionY", m_uiResolutionY)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_uiResolutionY), new xiiClampValueAttribute(1U, 32768U)),
+    XII_MEMBER_PROPERTY("FocalLengthXPixels", m_fFocalLengthXPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fFocalLengthXPixels), new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("FocalLengthYPixels", m_fFocalLengthYPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fFocalLengthYPixels), new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("PrincipalPointXPixels", m_fPrincipalPointXPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fPrincipalPointXPixels), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("PrincipalPointYPixels", m_fPrincipalPointYPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fPrincipalPointYPixels), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("RadialDistortion", m_vRadialDistortion)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_vRadialDistortion)),
+    XII_MEMBER_PROPERTY("TangentialDistortion", m_vTangentialDistortion)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_vTangentialDistortion)),
+    XII_MEMBER_PROPERTY("NearPlaneMeters", m_fNearPlaneMeters)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fNearPlaneMeters), new xiiClampValueAttribute(0.0001f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("FarPlaneMeters", m_fFarPlaneMeters)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fFarPlaneMeters), new xiiClampValueAttribute(0.0001f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ExposureSeconds", m_fExposureSeconds)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fExposureSeconds), new xiiClampValueAttribute(0.000001f, xiiVariant()), new xiiSuffixAttribute(" s")),
+    XII_MEMBER_PROPERTY("RollingShutterSeconds", m_fRollingShutterSeconds)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fRollingShutterSeconds), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" s")),
+    XII_MEMBER_PROPERTY("WavelengthNanometers", m_fWavelengthNanometers)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fWavelengthNanometers), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nm")),
+    XII_MEMBER_PROPERTY("SpectralSensitivity", m_vSpectralSensitivity)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_vSpectralSensitivity)),
+    XII_MEMBER_PROPERTY("QuantumEfficiency", m_fQuantumEfficiency)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fQuantumEfficiency), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("RadianceToElectrons", m_fRadianceToElectrons)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fRadianceToElectrons), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("AnalogGain", m_fAnalogGain)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fAnalogGain), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("ReadNoiseElectrons", m_fReadNoiseElectrons)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fReadNoiseElectrons), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("ShotNoiseScale", m_fShotNoiseScale)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fShotNoiseScale), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("SaturationElectrons", m_fSaturationElectrons)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fSaturationElectrons), new xiiClampValueAttribute(1.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("DepthNoiseStandardDeviationMeters", m_fDepthNoiseStandardDeviationMeters)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fDepthNoiseStandardDeviationMeters), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("DepthNoiseScalePerMeter", m_fDepthNoiseScalePerMeter)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_fDepthNoiseScalePerMeter), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("OutputBitDepth", m_uiOutputBitDepth)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_uiOutputBitDepth), new xiiClampValueAttribute(1U, 32U)),
+    XII_MEMBER_PROPERTY("NoiseSeed", m_uiNoiseSeed)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorCalibration{}.m_uiNoiseSeed)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfile, xiiSensorCalibration, 3, xiiRTTIDefaultAllocator<xiiSensorProfile>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ENUM_MEMBER_PROPERTY("Type", xiiSensorType, m_Type),
-    XII_ENUM_MEMBER_PROPERTY("Shutter", xiiSensorShutterType, m_Shutter),
-    XII_ENUM_MEMBER_PROPERTY("NoiseModel", xiiSensorNoiseModel, m_NoiseModel),
-    XII_MEMBER_PROPERTY("ResolutionX", m_uiResolutionX)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_uiResolutionX), new xiiClampValueAttribute(1U, 32768U)),
-    XII_MEMBER_PROPERTY("ResolutionY", m_uiResolutionY)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_uiResolutionY), new xiiClampValueAttribute(1U, 32768U)),
-    XII_MEMBER_PROPERTY("FocalLengthXPixels", m_fFocalLengthXPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fFocalLengthXPixels), new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" px")),
-    XII_MEMBER_PROPERTY("FocalLengthYPixels", m_fFocalLengthYPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fFocalLengthYPixels), new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" px")),
-    XII_MEMBER_PROPERTY("PrincipalPointXPixels", m_fPrincipalPointXPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fPrincipalPointXPixels), new xiiSuffixAttribute(" px")),
-    XII_MEMBER_PROPERTY("PrincipalPointYPixels", m_fPrincipalPointYPixels)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fPrincipalPointYPixels), new xiiSuffixAttribute(" px")),
-    XII_MEMBER_PROPERTY("RadialDistortion", m_vRadialDistortion)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_vRadialDistortion)),
-    XII_MEMBER_PROPERTY("TangentialDistortion", m_vTangentialDistortion)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_vTangentialDistortion)),
-    XII_MEMBER_PROPERTY("NearPlaneMeters", m_fNearPlaneMeters)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fNearPlaneMeters), new xiiClampValueAttribute(0.0001f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("FarPlaneMeters", m_fFarPlaneMeters)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fFarPlaneMeters), new xiiClampValueAttribute(0.0001f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("ExposureSeconds", m_fExposureSeconds)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fExposureSeconds), new xiiClampValueAttribute(0.000001f, xiiVariant()), new xiiSuffixAttribute(" s")),
-    XII_MEMBER_PROPERTY("RollingShutterSeconds", m_fRollingShutterSeconds)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fRollingShutterSeconds), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" s")),
-    XII_MEMBER_PROPERTY("WavelengthNanometers", m_fWavelengthNanometers)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fWavelengthNanometers), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nm")),
-    XII_MEMBER_PROPERTY("SpectralSensitivity", m_vSpectralSensitivity)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_vSpectralSensitivity)),
-    XII_MEMBER_PROPERTY("QuantumEfficiency", m_fQuantumEfficiency)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fQuantumEfficiency), new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_MEMBER_PROPERTY("RadianceToElectrons", m_fRadianceToElectrons)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fRadianceToElectrons), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("AnalogGain", m_fAnalogGain)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fAnalogGain), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("ReadNoiseElectrons", m_fReadNoiseElectrons)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fReadNoiseElectrons), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("ShotNoiseScale", m_fShotNoiseScale)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fShotNoiseScale), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("SaturationElectrons", m_fSaturationElectrons)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fSaturationElectrons), new xiiClampValueAttribute(1.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("DepthNoiseStandardDeviationMeters", m_fDepthNoiseStandardDeviationMeters)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fDepthNoiseStandardDeviationMeters), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("DepthNoiseScalePerMeter", m_fDepthNoiseScalePerMeter)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_fDepthNoiseScalePerMeter), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("OutputBitDepth", m_uiOutputBitDepth)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_uiOutputBitDepth), new xiiClampValueAttribute(1U, 32U)),
-    XII_MEMBER_PROPERTY("NoiseSeed", m_uiNoiseSeed)->AddAttributes(new xiiDefaultValueAttribute(xiiSensorProfile{}.m_uiNoiseSeed)),
-  }
-  XII_END_PROPERTIES;
+  } XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
