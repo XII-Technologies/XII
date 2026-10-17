@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **62 concrete reflected operation classes** in
+Current source inventory: **63 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -35,7 +35,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 7 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
-| Visibility | 9 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletOcclusionPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
+| Visibility | 10 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMatrixVisibilityViewPass`, `xiiMeshletCullPass`, `xiiMeshletOcclusionPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
 Every operation above declares concrete typed pin members through
@@ -1080,3 +1080,84 @@ preparation, atlas allocation/residency, virtual-page scheduling and production 
 consumer migration still need work. GpuShadowRasterManager, virtual-shadow orchestration
 and the sample's old rendering paths are not claimed to be deleted or migrated by this
 phase. Full game/editor lighting graphs and the complete migration remain incomplete.
+
+
+## Authored world visibility consumer migration
+
+The library now contains 63 native reflected operations and 22 ordinary source/binary
+assets. MatrixInstanceVisibility (7 expanded operations), MatrixMeshletVisibility (13)
+and WorldMeshDraws (17) are independently authored resources with persistent document
+identities. WorldMeshDraws combines nested visibility, native mesh command preparation
+and the existing three-operation LOD feedback subgraph. Source export and repeated binary
+compilation are deterministic in the editor resource tests.
+
+MatrixVisibilityView owns reflected matrix, position, dimensions, flags and LOD settings
+and concrete member pins. Typed instance parameters can supply changing query inputs
+without mutating authored defaults or recompiling the definition. It snapshots the
+existing world's instance count and component selection during setup under world read
+access; execution reads immutable graph data. Each occurrence retains its own published
+LOD token. StreamingPriorityTier similarly updates request urgency without replacing the
+compiled graph. No rendering stage selector or manually enumerated pin-type schema is
+introduced.
+
+GpuDrivenScene no longer creates, destroys or submits work through a legacy visibility
+context. Main, sensor and shadow queries use three runtime instances referencing the
+selected WorldMeshDraws resource, with different required component flags and priority.
+The sample resolves typed compiled outputs during setup and uses reflected native mesh
+command strides. Its existing conservative GetMaximumMeshletCount bound rejects a graph
+budget that cannot cover the world. Its existing world/module-owned view is disabled for
+automatic execution because the registered sample graph owns frame submission. Native
+Build calls hold the world's read marker. The redundant sample AsyncCompute setting and
+cached CPU frustum were removed; individual reflected passes own scheduling preferences.
+
+Repeated device geometry/material upload requests now return the same graph-local buffer
+versions for a setup serial. Caches contain only handles, clear on a new device frame and
+shutdown, and do not retain scene data or cross-graph handles. This prevents repeated
+subgraph instances from overwriting shared device tables between consumers, which the
+compiler correctly rejects as a physical-resource dependency cycle. Existing world
+instance uploads already deduplicate similarly. RenderWorldModule skips execution when
+no prepared enabled view exists, avoiding nested frame ownership for disabled query views.
+
+Verification completed before the approval service became unavailable:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest, GpuDrivenScene and
+  EditorEngineProcessFrameworkTest built, including affected dependencies. Logs:
+  native-world-draw-final-build.log and native-shared-residency-final-build.log in Workspace.
+- All 55 GraphicsCore CPU tests, 16 NativeAssetAuthoring fixtures and 15 EditorDocuments
+  tests passed. The latter checked all 22 packaged resources against deterministic source
+  export (native-world-draw-cpu.log, native-world-draw-authoring.log, native-world-draw-qt.log).
+- Vulkan PipelineExtraction (3), NativeGeometryFeedback (1) and NativeVisibility (4)
+  passed. The extended extraction fixture reads back two distinct matrix-query snapshots
+  from one shared compilation, checks independent LOD publication/camera-cut behavior,
+  and asserts repeated geometry/material/world uploads return identical graph bindings.
+- Two cameras share one changed-instance upload of 288 bytes; warmed unchanged frames
+  upload zero bytes. The existing Debug CPU packing fixture measured 48.377 ms for 20
+  updates of 1024 unchanged components, or 2.419 ms/update in this run. This is not a
+  Release benchmark or a measured speedup (native-shared-residency-extraction.log).
+- Actual Vulkan GpuDrivenScene completed small-grid 3-frame, default-grid 3-frame and
+  default-grid 30-frame runs. Missing -visibility-pipeline exits 1 with the selected path
+  and no fallback (native-world-draw-sample-*-final.log; small run is *-small-shared.log).
+- Broad EditorViews ran and failed: 22 assertions across SceneShapeIcons, ViewLifecycle,
+  WireframeRendering and WireframeRenderingWithoutMeshShaders. DisabledViewsDoNotRecordFrames
+  and existing WorldRenderFrames passed. Failures exposed references to deleted Deferred/
+  EditorScene defaults and icon tests using unscoped resource names instead of bindings.
+  Source corrections now use explicit native resources, reflected fixture member pins and
+  actual wireframe surface identities. Their first build found an incorrect connection
+  field name, now corrected to m_sInput. Rebuilding/rerunning these final fixture edits
+  remains pending: automatic approval review could not complete because its usage limit
+  was reached. These unverified edits are not claimed to pass.
+
+Four implementation commits are local through 54e3effef. Publishing and committing the
+remaining fixture/report edits require the approval service to become available; existing
+user authorization to push this branch remains in effect.
+
+Remaining migration: GpuVisibilityManager/System still have legacy test consumers and
+RenderGraphManager hooks; their implementations have not yet been deleted. GpuDrivenScene
+still contains shadow/VSM, custom raster, ray-dispatch and presentation orchestration.
+The frame-local visibility output aggregate remains an input to those consumers; it is
+not a new lifecycle facade. Native explicit instance/meshlet occlusion remains available,
+but the sample no longer implicitly applies old previous-frame Hi-Z. Wiring temporal
+occlusion requires explicit matching projections and invalidation for changed/deleted
+occluders, materials and residency. Full lighting/game/editor graphs, removal of remaining
+oversized services and further fine-grained decomposition remain incomplete. D3D12 is
+excluded. No complete-renderer or full GPU performance claim is made by this phase.

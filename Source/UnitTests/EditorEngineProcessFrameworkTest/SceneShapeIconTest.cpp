@@ -70,12 +70,9 @@ namespace
     XII_ADD_DYNAMIC_REFLECTION(IconTestSource, xiiRenderPipelinePass);
 
   public:
-    void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
-    {
-      pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false});
-      pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, false});
-    }
-    xiiResult Build(xiiRenderPipelinePassContext& context) override
+    xiiRenderPipelineTextureOutputPin m_Color;
+    xiiRenderPipelineTextureOutputPin m_Depth{xiiGALResourceFormat::D32Float};
+    xiiResult                         Build(xiiRenderPipelinePassContext& context) override
     {
       struct Data
       {
@@ -95,11 +92,18 @@ namespace
         depth = data.m_Depth = builder.WriteTexture("Icon test depth", description, xiiGALResourceStateFlags::DepthWrite);
         builder.SetPassRenderPassManaged();
         if (const auto* value = context.m_Parameters.GetValue("Test.Depth")) data.m_fDepth = value->Get<float>(); }, [](const Data& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearDepthStencilView(execution.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, data.m_fDepth, 0); });
-      XII_SUCCEED_OR_RETURN(context.SetOutput("Color", color));
-      return context.SetOutput("SceneDepth", depth);
+      XII_SUCCEED_OR_RETURN(context.SetOutput(m_Color, color));
+      return context.SetOutput(m_Depth, depth);
     }
   };
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(IconTestSource, 1, xiiRTTIDefaultAllocator<IconTestSource>)
+    {
+      XII_BEGIN_PROPERTIES
+      {
+        XII_MEMBER_PROPERTY("Color", m_Color)->AddFlags(xiiPropertyFlags::ReadOnly),
+        XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
+      } XII_END_PROPERTIES;
+    }
   XII_END_DYNAMIC_REFLECTED_TYPE;
 
   class IconTestPublish : public xiiRenderPipelinePass
@@ -107,25 +111,29 @@ namespace
     XII_ADD_DYNAMIC_REFLECTION(IconTestPublish, xiiRenderPipelinePass);
 
   public:
-    void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
-    {
-      pins.PushBack({"Color", xiiRenderPipelinePin::Texture, true, false});
-      pins.PushBack({"Picking", xiiRenderPipelinePin::Texture, true, true});
-    }
-    xiiResult Build(xiiRenderPipelinePassContext& context) override
+    xiiRenderPipelineTextureInputPin m_Color;
+    xiiRenderPipelineTextureInputPin m_Picking{xiiGALResourceFormat::Unknown, true};
+    xiiResult                        Build(xiiRenderPipelinePassContext& context) override
     {
       struct Data
       {
         XII_DECLARE_POD_TYPE();
       };
       context.m_Graph.AddPass<Data>("Icon test publish", xiiGALCommandQueueFlags::Graphics, [&](Data&, xiiRenderGraphBuilder& builder) {
-        builder.ExportTexture(builder.ReadTexture(context.GetInputTexture("Color"), xiiGALResourceStateFlags::CopySource), xiiGALResourceStateFlags::CopySource);
-        if (context.GetInputTexture("Picking").IsValid())
-          builder.ExportTexture(builder.ReadTexture(context.GetInputTexture("Picking"), xiiGALResourceStateFlags::CopySource), xiiGALResourceStateFlags::CopySource); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
+        builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Color), xiiGALResourceStateFlags::CopySource), xiiGALResourceStateFlags::CopySource);
+        if (context.GetInputTexture(m_Picking).IsValid())
+          builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Picking), xiiGALResourceStateFlags::CopySource), xiiGALResourceStateFlags::CopySource); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
       return XII_SUCCESS;
     }
   };
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(IconTestPublish, 1, xiiRTTIDefaultAllocator<IconTestPublish>)
+    {
+      XII_BEGIN_PROPERTIES
+      {
+        XII_MEMBER_PROPERTY("Color", m_Color)->AddFlags(xiiPropertyFlags::ReadOnly),
+        XII_MEMBER_PROPERTY("Picking", m_Picking)->AddFlags(xiiPropertyFlags::ReadOnly),
+      } XII_END_PROPERTIES;
+    }
   XII_END_DYNAMIC_REFLECTED_TYPE;
 
   bool Capture(xiiGALDevice& device, xiiGALTexture* texture, xiiDynamicArray<xiiUInt32>& pixels)
@@ -244,8 +252,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
   auto                       capture = [&]() {
     if (!Capture(*environment.GetDevice(), output.Borrow(), colors))
       return false;
-    auto* graph   = view->GetRenderGraph();
-    auto  texture = graph->GetExportedTexture(graph->FindTexture("Icons: Picking"));
+    auto*       graph   = view->GetRenderGraph();
+    const auto* binding = view->GetRenderPipelineInstance().GetOutputBinding(1, "Picking");
+    auto        texture = binding ? graph->GetExportedTexture(binding->m_hTexture) : nullptr;
     return Capture(*environment.GetDevice(), texture.Borrow(), picking);
   };
   auto channel = [&](xiiUInt32 x, xiiUInt32 y, xiiUInt32 c) {
@@ -545,22 +554,22 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
     view->SetPipelineParameter("Editor.ShapeIcons", false);
     world.Update();
     XII_TEST_INT(pass()->GetIcons().GetCount(), 0);
-    XII_TEST_BOOL(!view->GetRenderGraph()->FindTexture("Icons: Picking").IsValid());
+    XII_TEST_BOOL(!view->GetRenderPipelineInstance().GetOutputBinding(1, "Picking")->m_hTexture.IsValid());
     view->SetPipelineParameter("Editor.ShapeIcons", true);
     view->SetCameraUsageHint(xiiCameraUsageHint::RenderTarget);
     world.Update();
-    XII_TEST_BOOL(!view->GetRenderGraph()->FindTexture("Icons: Picking").IsValid());
+    XII_TEST_BOOL(!view->GetRenderPipelineInstance().GetOutputBinding(1, "Picking")->m_hTexture.IsValid());
   }
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default scene pipeline is a valid serializable native definition")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Explicit icon pipeline is a valid serializable native definition")
   {
-    xiiRenderPipelineResourceDescriptor native;
-    XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(native, "EditorScene"));
+    xiiResourceLock<xiiRenderPipelineResource> loaded(pipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring()))
+      return;
+    auto                                  native = loaded->GetAuthoring()->m_Descriptor;
     xiiSharedPtr<const xiiRenderPipeline> compiled;
     xiiStringBuilder                      error;
     XII_TEST_RESULT(xiiRenderPipeline::Compile(native, compiled, &error));
     XII_TEST_BOOL_MSG(compiled != nullptr, "%s", error.GetData());
-    XII_TEST_BOOL(xiiLoadPipelineLibraryResource("EditorScene").IsValid());
-    XII_TEST_BOOL(xiiLoadPipelineLibraryResource("EditorScene") == xiiLoadPipelineLibraryResource("EditorScene"));
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         writer(&storage);
     XII_TEST_RESULT(native.Serialize(writer));
