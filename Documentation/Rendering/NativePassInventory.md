@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **49 concrete reflected operation classes** in
+Current source inventory: **51 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -20,7 +20,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
-| Geometry | 2 | `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
+| Geometry | 4 | `xiiDepthRasterPass`, `xiiMeshDrawCommandsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
 | Lighting | 1 | `xiiBRDFLutPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
@@ -88,8 +88,8 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z, LOD streaming feedback and mesh-shader indirect draw preparation still need independent nodes. Vertex-pull indirect commands are now a separate native operation. The remaining low-level visibility service/sample needs decomposition and deletion. |
-| Geometry | Vertex-pull indirect draw preparation is native. Depth raster and indexed fallback, GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z and LOD streaming feedback still need independent nodes. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
+| Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
@@ -483,3 +483,68 @@ No full game/editor lighting pipeline, selection-overlay presentation or control
 frame-performance benchmark is claimed. D3D12 remains excluded. Native depth/G-buffer
 raster, remaining visibility/feedback orchestration and the complete resource-authored
 rendering techniques remain required work before the architecture migration is complete.
+
+
+## Native depth and mesh draw preparation - 2026-10-16
+
+DepthRasterPass is a standalone reflected raster operation in Geometry. It consumes
+canonical scene, pose, material and meshlet buffers plus separately supplied raster
+constants and indirect draw/count buffers. It publishes only a shader-readable D32
+nearest-depth target. UseMeshShaders explicitly selects mesh or vertex-pull shaders;
+unsupported features fail rather than substituting a different path. Material alpha
+coverage and skinning use the same canonical shader implementation as surface queries.
+Depth-only shader interfaces omit normals, tangents, identity and motion varyings.
+
+The obsolete AddDepthPrepass API, xiiGpuSceneDepthRasterDescription and reflection,
+its embedded constants/raster graph construction, eager depth-shader registration,
+GpuSceneDepth shader and GpuSceneRasterConstants header have been physically removed.
+Both old depth consumers in the native identity/pose fixture now bind DepthRasterPass.
+The legacy raster manager still owns G-buffer and Forward+ orchestration; those
+remain deletion targets rather than new APIs behind the depth pass.
+
+DepthOnly is an ordinary authored resource containing a VertexPullDraws reference,
+MaterialUpload, SurfaceRasterConstants and DepthRaster. Its four authoring nodes
+expand to seventeen native operations. Sixteen boundary mappings include the optional
+candidate input, fourteen GPU data outputs and SceneDepth. The asset advertises only
+Geometry extraction/GpuScene runtime demand, with no light/atmosphere initialization.
+The Vulkan world fixture checks the predicted reversed-Z box depth directly across
+two views and repeated nested instances, including filtering and component removal.
+
+MeshDrawCommandsPass independently emits a portable uint3 mesh indirect command and
+uint command count from supplied compact meshlet work. Reflected MeshGroupCountX/Y
+are the row strides and must agree with raster constants. Build validates physical
+capacity, padded dispatch dimensions and device limits before adding work. GPU count
+is bounded by actual backing capacity, zero work writes deterministic zero arguments
+and count, and integer division/remainder avoids overflow. It has no scene ownership,
+history, residency, CPU count readback or implicit raster execution. Tests use a 4 x 2
+row layout to cover all three dispatch dimensions. Authoring a mesh-specific reusable
+visibility/depth resource and migrating remaining legacy mesh-command consumers are
+still required; DepthOnly currently authors the explicit vertex-pull path.
+
+
+Verification for depth and mesh commands:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorEngineProcessFrameworkTest
+  and EditorFrameworkTest build, including dependent editor/engine targets
+  (`Workspace/native-depth-mesh-draw-build.log`).
+- All 47 GraphicsCore CPU subtests pass (`Workspace/native-depth-core.log`), including
+  independent depth pins/capabilities and mesh-command stride/overflow configuration.
+- Vulkan NativeVisibility passes three subtests (`Workspace/native-depth-gpu.log`).
+  AuthoredDepthOnlyInstances reads the analytical reversed-Z depth for real world
+  meshes across two views/two occurrences, then verifies filtered/removed background.
+  Synthetic GPU readback verifies 4 x 2 mesh row strides, z tiling, zero commands for
+  empty work and bounded counts after instance-specific meshlet overflow.
+- NativeSceneIdentity, MeshletRaster and SkinningRaster pass their five Vulkan
+  subtests after migrating depth consumers (`Workspace/native-depth-<group>.log`).
+  Mesh/indexed depth, dense primitive coverage, pose updates and context isolation
+  execute real native shaders. These fixtures still use legacy visibility/G-buffer
+  helpers for their unmigrated responsibilities; no complete-renderer claim follows.
+- All seven NativeAssetAuthoring subtests pass (`Workspace/native-depth-author.log`).
+  All 15 Qt EditorDocuments subtests pass, including deterministic export and repeat
+  export of thirteen SDK assets (`Workspace/native-depth-qt.log`).
+- Searches find no remaining AddDepthPrepass API, xiiGpuSceneDepthRasterDescription,
+  old depth shader/constants references or rendering Builtin files in source/assets.
+
+No controlled depth/mesh-command performance benchmark or complete game/editor
+pipeline test was run. D3D12 remains excluded. The unrelated AmbientOcclusion asset
+hash edit remains outside these commits. The architecture migration is incomplete.
