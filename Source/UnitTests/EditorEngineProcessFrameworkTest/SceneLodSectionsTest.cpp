@@ -25,7 +25,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
@@ -259,7 +258,7 @@ static void TestLodSections(bool enableMeshShaders)
     // command allocation as well as the normal retained visibility capacity.
     if (!enableMeshShaders && expectedCandidates == 1)
       visibility.m_uiMaxVisibleMeshlets = 1;
-    xiiGpuSceneGBufferRasterDescription raster;
+    xiiTestSurfaceLayout raster;
     raster.m_ViewProjectionMatrix = projection;
     raster.m_uiWidth = raster.m_uiHeight = 64;
     raster.m_uiVertexStride              = sizeof(xiiMeshPackedVertex);

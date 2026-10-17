@@ -23,7 +23,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
@@ -196,7 +195,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native mesh shader G-buffer writes the generation identity rather than user data")
   {
-    if (xiiGpuSceneRasterManager::IsSupported())
+    if (environment.GetDevice()->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled)
     {
       xiiRenderGraphContext graphContext;
       if (!XII_TEST_RESULT(graphContext.Initialize("Mesh identity raster")))
@@ -233,10 +232,10 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       const auto                      frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
       const auto                      visibilityView = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetInstanceCount());
       xiiGpuVisibilityPassDescription visibilityDescription;
-      visibilityDescription.m_bAsyncCompute          = false;
-      visibilityDescription.m_bEnableLodFeedback     = false;
-      const auto                          visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, 1, context, visibilityView, uploadedGeometry, visibilityDescription);
-      xiiGpuSceneGBufferRasterDescription raster;
+      visibilityDescription.m_bAsyncCompute      = false;
+      visibilityDescription.m_bEnableLodFeedback = false;
+      const auto           visibility            = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, 1, context, visibilityView, uploadedGeometry, visibilityDescription);
+      xiiTestSurfaceLayout raster;
       raster.m_ViewProjectionMatrix = raster.m_PreviousViewProjectionMatrix = viewProjection;
       raster.m_uiWidth = raster.m_uiHeight = 32;
       raster.m_uiVertexStride              = sizeof(xiiMeshPackedVertex);
@@ -248,19 +247,10 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       xiiRenderGraphTextureHandle depth;
       if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Identity depth", visibility, uploadedGeometry, materials, raster, depth, meshPicking, xiiGALFillMode::Solid, nullptr, nullptr, true)))
         return;
-      struct Velocity
-      {
-        xiiRenderGraphTextureHandle m_Target;
-      };
-      auto       velocity = graph.AddPass<Velocity>("Identity velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
-        xiiGALTextureCreationDescription target;
-        target.m_Type = xiiGALResourceDimension::Texture2D;
-        target.m_Size = {32, 32};
-        target.m_Format = xiiGALResourceFormat::RG16Float;
-        target.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-        data.m_Target = builder.WriteTexture("Identity velocity", target, xiiGALResourceStateFlags::RenderTarget);
-        builder.SetPassRenderPassManaged(); }, [](const Velocity& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); });
-      const auto outputs  = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Identity G-buffer", depth, velocity.first->m_Target, visibility, uploadedGeometry, materials, raster);
+      xiiTestMaterialTargets      outputs;
+      xiiRenderGraphTextureHandle unusedMaterialOutput;
+      if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Identity G-buffer", visibility, uploadedGeometry, materials, raster, unusedMaterialOutput, meshPicking, xiiGALFillMode::Solid, nullptr, nullptr, false, &outputs, depth)))
+        return;
       if (!XII_TEST_BOOL(outputs.IsValid()))
         return;
       xiiRenderGraphTextureHandle query;
@@ -412,15 +402,9 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           xiiRenderGraphTextureHandle poseDepth;
           if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Posed depth", poseVisibility, poseGeometry, poseMaterials, raster, poseDepth, meshPicking, xiiGALFillMode::Solid, nullptr, nullptr, true)))
             return;
-          auto       poseVelocity = graph.AddPass<Velocity>("Posed velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
-            xiiGALTextureCreationDescription target;
-            target.m_Type = xiiGALResourceDimension::Texture2D;
-            target.m_Size = {32, 32};
-            target.m_Format = xiiGALResourceFormat::RG16Float;
-            target.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-            data.m_Target = builder.WriteTexture("Posed velocity", target, xiiGALResourceStateFlags::RenderTarget);
-            builder.SetPassRenderPassManaged(); }, [](const Velocity& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); });
-          const auto poseSurface  = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Posed surface", poseDepth, poseVelocity.first->m_Target, poseVisibility, poseGeometry, poseMaterials, raster);
+          xiiTestMaterialTargets poseSurface;
+          if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Posed surface", poseVisibility, poseGeometry, poseMaterials, raster, unusedMaterialOutput, meshPicking, xiiGALFillMode::Solid, nullptr, nullptr, false, &poseSurface, poseDepth)))
+            return;
           if (!XII_TEST_BOOL(poseSurface.IsValid()))
             return;
           xiiRenderGraphTextureHandle poseQuery;
@@ -473,7 +457,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
   xiiUInt64 nextFrame = 2;
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native surface queries respect authored opacity and transparent visibility")
   {
-    if (xiiGpuSceneRasterManager::IsSupported())
+    if (environment.GetDevice()->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled)
     {
       xiiRenderGraphContext graphContext;
       if (!XII_TEST_RESULT(graphContext.Initialize("Material coverage queries")))
@@ -483,10 +467,10 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       xiiCamera camera;
       camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
       camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
-      const auto                          projection     = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(60), 1, 100, 0.1f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
-      const auto                          viewProjection = projection * camera.GetViewMatrix();
-      const auto                          frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
-      xiiGpuSceneGBufferRasterDescription raster;
+      const auto           projection     = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(60), 1, 100, 0.1f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      const auto           viewProjection = projection * camera.GetViewMatrix();
+      const auto           frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+      xiiTestSurfaceLayout raster;
       raster.m_ViewProjectionMatrix = viewProjection;
       raster.m_uiWidth = raster.m_uiHeight = 32;
       raster.m_uiVertexStride              = sizeof(xiiMeshPackedVertex);

@@ -23,7 +23,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
@@ -39,7 +38,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  if (!xiiGpuSceneRasterManager::IsSupported())
+  if (environment.GetDevice()->GetFeatures().m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
   {
     xiiTestFramework::Output(xiiTestOutput::Message, "Native LOD visibility and surface tests require mesh shaders.");
     return;
@@ -160,8 +159,8 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
         hiZ = data.m_Depth = builder.WriteTexture("LOD Hi-Z input", texture, xiiGALResourceStateFlags::DepthWrite);
         builder.SetPassRenderPassManaged(); }, [](const Depth& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0); });
     }
-    const auto                          visible = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, sceneContext, visibilityView, uploaded, description, hiZ);
-    xiiGpuSceneGBufferRasterDescription raster;
+    const auto           visible = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, sceneContext, visibilityView, uploaded, description, hiZ);
+    xiiTestSurfaceLayout raster;
     raster.m_ViewProjectionMatrix = projection;
     raster.m_uiWidth = raster.m_uiHeight = 64;
     raster.m_uiVertexStride              = sizeof(xiiMeshPackedVertex);
