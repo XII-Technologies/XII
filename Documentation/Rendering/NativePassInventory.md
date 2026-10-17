@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **68 concrete reflected operation classes** in
+Current source inventory: **70 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -31,7 +31,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 1 | `xiiSensorOutputPass` |
-| Shadows | 5 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowTablesPass` |
+| Shadows | 7 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowTablesPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowPagePublishPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
@@ -1745,3 +1745,108 @@ required to protect older GPU readers. The tiny two-view regression demonstrates
 in the next completed frame, not cache-churn throughput. No Release extraction/upload
 benchmark or application performance improvement is claimed. The remaining publication,
 light, main-shading, presentation and world/view identity work above is still outstanding.
+
+## Typed frame data and independently authored page publication
+
+Current source inventory is **70 native reflected operations / 29 ordinary SDK assets**.
+VirtualShadowRasterWork selects one bounded immutable batch from explicit cascade and
+residency snapshots. LightId and MaxPages are reflected member properties, with typed
+occurrence overrides. VirtualShadowPagePublish consumes that batch, the final raster
+atlas and both page tables. These are separate operations with concrete XII_MEMBER_PROPERTY
+pin members. Neither constructs another pass or controls a complete rendering stack.
+
+The existing reflected pin/binding architecture now supports FrameData alongside texture,
+buffer, order and acceleration-structure pins. Existing resource-kind ordinals retain
+their values. A native RTTI contract determines each data pin's type; assets cannot
+redefine it. Immutable ref-counted snapshots belong to one graph setup. External bindings
+cannot retag an older snapshot, and runtime validation rejects incorrect types, mixed
+resource kinds and stale data. No GPU operation, allocation or submission is created merely
+to forward a CPU snapshot. Core graph topology, handles and mutation guarantees are unchanged.
+
+The Qt editor uses the existing property inspector for these pins. Their read-only DataType
+metadata identifies the native contract, and orange distinguishes them from GPU resource
+and ordering pins. Normal document commands preserve pin identities, display names,
+connections, undo/redo and serialization. The asset compiler infers typed boundaries through
+the same native schemas and Core composition expansion; no second node or property framework
+has been added. Runtime snapshot values and graph handles are never serialized into assets.
+
+ShadowCascade and VirtualShadowTables now publish explicit CascadeSnapshot and Residency
+data outputs. Their pass-specific CPU query methods have been deleted. GpuDrivenScene no
+longer searches concrete pass objects to locate those results, and no longer gathers page
+work or invokes service-owned graph publication. It selects ordinary -shadow-work-pipeline
+and -shadow-publish-pipeline resources and binds their interfaces. Its remaining per-page
+ShadowMeshDepth instantiation loop is still a client-side composition target, not a complete
+native shadow pipeline.
+
+VirtualShadowMapManager's AddPageCompletionPass implementation/API is deleted. Its header
+and implementation no longer depend on RenderGraph or command-list construction. The
+remaining capture/retirement helpers validate immutable allocation provenance, page tickets,
+frame/epoch, duplicate slots and byte bounds. Compact retirement tickets omit raster matrices
+and viewports. Device allocation, CPU residency and completion bookkeeping remain with the
+existing focused device service; no scene owner, object registry or hierarchy is introduced.
+
+Publication uses a CPU-wait-only completion fence and signals it only after recording the
+clean table writes. CPU dirty state retires after actual GPU completion; invalidated tickets
+are skipped and abandoned recordings remain retryable. Both physical and virtual records
+are updated coherently. Sparse updates use ReadWriteBuffer to preserve untouched records and
+parent upload/reader dependencies; treating them as discard writes would misdescribe their
+semantics. Final atlas/table resources remain explicit typed GPU pins, independently of the
+CPU snapshot connection. Empty batches forward the supplied resources without GPU work.
+
+The two new source/binary assets and updated ShadowCascades/VirtualShadowTables interfaces
+were authored through real editor document commands. All 29 packaged binaries were refreshed
+through the normal exporter for the added reflected DataType metadata. No runtime snapshot
+payload or transient GPU identity is part of that serialization. Existing source assets with
+no data pins retain their topology and authored configuration.
+
+Verification for this phase:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build with dependencies
+  (native-shadow-publication-consumer-build.log). New test compilation errors involving
+  dictionary construction, RTTI NewInstance conversion and borrowed compilation pointers
+  were corrected before this successful build.
+- All 64 CPU tests pass (native-shadow-publication-cpu.log), including nested/repeated
+  frame-data definitions, independent instances, serialization, reference lifetime after
+  instance teardown, incorrect types, bypassed setters and stale external snapshots.
+- All 23 NativeAssetAuthoring fixtures pass (native-shadow-publication-authoring.log).
+  All 16 EditorDocuments tests pass after package refresh (native-shadow-publication-editor-
+  verified.log), including all 29 deterministic packaged/rebuilt/repeated exports.
+  The first new inspector test incorrectly retained raw pin pointers across undo/redo;
+  it now reacquires pins through persistent document identities. The intervening package
+  equality failures exposed the expected added metadata and were fixed by normal export,
+  not by weakening the verifier.
+- Vulkan NativeVirtualShadowPages passes actual atlas pixel and physical/virtual table
+  readbacks using two independently configured work instances and the selected publication
+  asset. Incorrect allocation bindings and duplicate tickets are rejected without changing
+  CPU dirty state. Invalidation after setup, abandoned setup and recycled raster tickets
+  remain covered. Populated phases still use 17 / 6 / 5, 13 / 1 / 2 and 16 / 1 / 4 logical
+  operations / submissions / render-pass groups (native-shadow-publication-
+  NativeVirtualShadowPages.log).
+- Vulkan NativeShadowCascades and NativeShadowTables pass after replacing the old query
+  methods with typed bindings. Existing coalesced upload byte/range counts and cross-queue
+  submission counts remain unchanged (native-shadow-publication-NativeShadowCascades.log
+  and native-shadow-publication-NativeShadowTables.log).
+- All 74 subtests in 14 selected Vulkan regression groups pass: native shadow tables/pages,
+  visibility, depth atlas, extraction, geometry/shadow feedback, cascades, graph allocation,
+  fence synchronization, scene LOD, skinning raster, mesh capture and editor views
+  (native-shadow-publication-regression-results.json and its per-group logs).
+  FenceSynchronization was built and run with the user's separate FenceTest.cpp changes;
+  those changes are intentionally excluded from this implementation's commits.
+- Missing and incompatible work/publication resources each exit 1 with an interface or
+  resource diagnostic (native-shadow-publication-sample-results.json). Source searches
+  find no active scene database types, old shadow snapshot query methods, service-owned
+  page-completion graph API, or rendering Builtin filenames. git diff --check passes.
+
+The full 30-frame Vulkan sample still fails in device frame 3 after producing 16 pages:
+118 registered / 110 compiled / 8 culled operations, one submission and 186 barriers.
+CpuWaitOnlyFenceVulkan.cpp:123 reports fence 46 / request 47 / ErrorDeviceLost. This run
+did not exit within its 30-second bound and its own process was stopped (exit -1), rather
+than completing the requested frames. Evidence is in native-shadow-publication-sample.log,
+native-shadow-publication-sample-assertion.txt and native-shadow-publication-sample-results.json.
+The focused passes and GPU readbacks do not establish whole-application correctness.
+
+The full renderer conversion is still incomplete. Native light/cluster preparation,
+complete game/editor/advanced lighting graphs, sample main shading/presentation and
+world/view-scoped virtual page identity remain required. D3D12 is excluded; no Release
+benchmark or whole-renderer success is inferred from the focused tests above.
