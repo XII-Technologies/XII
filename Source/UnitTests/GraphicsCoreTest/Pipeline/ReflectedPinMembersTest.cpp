@@ -281,3 +281,101 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IrradianceGatherMemberPins)
   XII_TEST_BOOL(pins[sparse.m_PageTable.GetBindingIndex()].m_Type == xiiRenderPipelinePin::Buffer);
   XII_TEST_BOOL(sparse.GetExtractionRequirements().IsNoFlagSet() && sparse.GetRuntimeFeatures().IsNoFlagSet());
 }
+
+
+class xiiMemberPinForward : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiMemberPinForward, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read};
+  xiiResult                         Build(xiiRenderPipelinePassContext& context) override { return context.SetOutput(m_Output, context.GetInputTexture(m_Input)); }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMemberPinForward, 1, xiiRTTIDefaultAllocator<xiiMemberPinForward>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Input", m_Input)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Output", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(Pipeline, CompiledRootBoundaryBindings)
+{
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.AddPass("Forward", "xiiMemberPinForward");
+  descriptor.AddPass("Sink", "xiiMemberPinSink");
+  descriptor.m_Interface.PushBack({"Color", true, descriptor.m_Passes[0].m_Id, "Input"});
+  descriptor.m_Interface.PushBack({"Color", true, descriptor.m_Passes[1].m_Id, "Color"});
+  descriptor.m_Interface.PushBack({"Result", false, descriptor.m_Passes[0].m_Id, "Output"});
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled)))
+    return;
+  const auto inputIndex = compiled->FindInterface("Color", true), outputIndex = compiled->FindInterface("Result", false);
+  XII_TEST_BOOL(inputIndex != xiiInvalidIndex && outputIndex != xiiInvalidIndex);
+  XII_TEST_INT(compiled->GetInterface()[inputIndex].m_Bindings.GetCount(), 2);
+  XII_TEST_INT(compiled->GetInterface()[outputIndex].m_Bindings.GetCount(), 1);
+  XII_TEST_BOOL(!compiled->GetInterface()[inputIndex].m_Pin.m_bOptional);
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph("Explicit resource input");
+  xiiRenderGraphBlackboard blackboard;
+  const auto               emit = [&](xiiGALResourceFormat::Enum format = xiiGALResourceFormat::RGBA16Float) {
+    const auto pass = graph.AddPass<xiiRenderGraphTextureHandle>("Caller image", xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
+      xiiGALTextureCreationDescription description; description.m_Type = xiiGALResourceDimension::Texture2D; description.m_Size = {8, 8};
+      description.m_Format = format; description.m_BindFlags = xiiGALBindFlags::ShaderResource;
+      data = builder.WriteTexture("Caller color", description, xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {});
+    return *pass.first;
+  };
+  graph.BeginSetup(7);
+  XII_TEST_RESULT(instance.BeginFrame(nullptr, graph, blackboard));
+  XII_TEST_RESULT(instance.BeginFrame(nullptr, graph, blackboard));
+  const auto                          image = emit();
+  const xiiRenderPipelineInputBinding binding(graph, inputIndex, image);
+  XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(&binding, 1)));
+  XII_TEST_BOOL(instance.GetInterfaceBinding(outputIndex)->m_hTexture == image);
+  XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(&binding, 1)).Failed());
+  graph.EndSetup();
+  // The same frame number and allocation names do not authorize reuse of bindings from an old setup.
+  graph.BeginSetup(7);
+  emit();
+  XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(&binding, 1)).Failed());
+  XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("another setup") != nullptr);
+  graph.EndSetup();
+  for (xiiUInt32 failure = 0; failure < 5; ++failure)
+  {
+    graph.BeginSetup(7);
+    const auto                          current = emit(failure == 3 ? xiiGALResourceFormat::RGBA8UNormalized : xiiGALResourceFormat::RGBA16Float);
+    const xiiRenderPipelineInputBinding input(graph, failure == 2 ? outputIndex : failure == 4 ? xiiInvalidIndex :
+                                                                                                 inputIndex,
+                                              current);
+    const xiiRenderPipelineInputBinding duplicate[2] = {input, input};
+    const auto                          inputs       = failure == 0 ? xiiArrayPtr<const xiiRenderPipelineInputBinding>{} : failure == 1 ? xiiMakeArrayPtr(duplicate) :
+                                                                                                                                          xiiMakeArrayPtr(&input, 1);
+    XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard, {}, inputs).Failed());
+    XII_TEST_BOOL(!instance.GetLastBuildError().IsEmpty());
+    graph.EndSetup();
+  }
+  graph.BeginSetup(7);
+  XII_TEST_RESULT(instance.BeginFrame(nullptr, graph, blackboard));
+  xiiVariantDictionary changed;
+  changed.Insert("Changed", true);
+  XII_TEST_BOOL(instance.BeginFrame(nullptr, graph, blackboard, changed).Failed());
+  graph.EndSetup();
+  graph.BeginSetup(7);
+  const xiiRenderPipelineInputBinding current(graph, inputIndex, emit());
+  XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard, changed, xiiMakeArrayPtr(&current, 1)));
+  graph.EndSetup();
+  xiiDefaultMemoryStreamStorage bytes;
+  xiiMemoryStreamWriter         writer(&bytes);
+  XII_TEST_RESULT(descriptor.Serialize(writer));
+  xiiMemoryStreamReader               reader(&bytes);
+  xiiRenderPipelineResourceDescriptor restored;
+  XII_TEST_RESULT(restored.Deserialize(reader));
+  xiiSharedPtr<const xiiRenderPipeline> recompiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, recompiled));
+  XII_TEST_INT(recompiled->GetInterface().GetCount(), compiled->GetInterface().GetCount());
+  XII_TEST_INT(recompiled->GetInterface()[recompiled->FindInterface("Color", true)].m_Bindings.GetCount(), 2);
+}

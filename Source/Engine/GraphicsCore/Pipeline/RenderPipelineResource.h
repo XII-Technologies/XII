@@ -90,6 +90,14 @@ public:
     xiiUInt32 m_uiSourceBinding;
     xiiUInt32 m_uiTargetBinding;
   };
+  /// Root document boundary lowered to direct frame-binding slots. Indices belong to this compilation only.
+  struct Interface
+  {
+    xiiRenderPipelinePin       m_Pin;
+    xiiDynamicArray<xiiUInt32> m_Bindings;
+  };
+  xiiArrayPtr<const Interface>                    GetInterface() const { return m_Interface; }
+  xiiUInt32                                       FindInterface(xiiStringView name, bool input) const;
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   const xiiGraph&                                 GetTopology() const { return m_Topology; }
@@ -118,6 +126,7 @@ private:
   xiiRenderPipelineResourceDescriptor                                                         m_Descriptor;
   xiiDynamicArray<Pass>                                                                       m_Passes;
   xiiDynamicArray<Connection>                                                                 m_Connections;
+  xiiDynamicArray<Interface>                                                                  m_Interface;
   xiiDynamicArray<xiiUInt32>                                                                  m_Order;
   xiiDynamicArray<xiiGraphProvenance>                                                         m_Provenance;
   xiiDynamicArray<xiiGraphDefinitionDependency>                                               m_Dependencies;

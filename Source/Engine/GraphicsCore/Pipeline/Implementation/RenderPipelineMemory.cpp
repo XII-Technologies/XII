@@ -87,5 +87,17 @@ xiiUInt64 xiiRenderPipeline::GetHeapMemoryUsage() const
     for (const auto& pin : pass.m_Pins)
       size += pin.m_sName.GetHeapMemoryUsage() + pin.m_sDisplayName.GetHeapMemoryUsage();
   }
+  size += m_Interface.GetHeapMemoryUsage();
+  for (const auto& external : m_Interface)
+    size += external.m_Bindings.GetHeapMemoryUsage() + external.m_Pin.m_sName.GetHeapMemoryUsage() + external.m_Pin.m_sDisplayName.GetHeapMemoryUsage();
+
   return size;
+}
+
+xiiUInt32 xiiRenderPipeline::FindInterface(xiiStringView name, bool input) const
+{
+  for (xiiUInt32 i = 0; i < m_Interface.GetCount(); ++i)
+    if (m_Interface[i].m_Pin.m_sName == name && m_Interface[i].m_Pin.m_bInput == input)
+      return i;
+  return xiiInvalidIndex;
 }

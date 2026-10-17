@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
@@ -11,10 +13,18 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
+xiiRenderPipelineInstance::xiiRenderPipelineInstance()
+{
+  static xiiAtomicInteger64 scope;
+  m_uiInstanceScope = static_cast<xiiUInt64>(scope.Increment());
+}
 xiiRenderPipelineInstance::~xiiRenderPipelineInstance() { Clear(); }
 void xiiRenderPipelineInstance::Clear()
 {
   m_sBuildError.Clear();
+  m_uiPreparedSetup = m_uiBuiltSetup = 0;
+  m_pPreparedView                    = nullptr;
+  m_pPreparedBlackboard              = nullptr;
   for (auto* pass : m_Passes)
     pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass);
   m_Passes.Clear();
@@ -26,6 +36,8 @@ void xiiRenderPipelineInstance::Clear()
   m_Blackboards.Clear();
   m_PassBlackboards.Clear();
   m_HistoryBindings.Clear();
+  m_ExecutionScopes.Clear();
+  m_sScopeParent.Clear();
 }
 xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline)
 {
@@ -85,11 +97,21 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     *out_changed = pipeline != m_pPipeline;
   return Initialize(std::move(pipeline));
 }
-xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides)
+xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides)
 {
-  m_sBuildError.Clear();
   if (!m_pPipeline)
     return XII_FAILURE;
+  if (m_uiPreparedSetup != 0 && m_uiPreparedSetup == graph.GetSetupSerial())
+  {
+    if (m_pPreparedView != view || m_pPreparedBlackboard != &blackboard || m_Overrides != overrides)
+    {
+      m_sBuildError = "A prepared pipeline frame cannot change its view, blackboard or parameters within the same graph setup.";
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+  m_uiPreparedSetup = 0;
+  m_sBuildError.Clear();
   const auto&                      settings = m_pPipeline->m_Descriptor.m_Settings;
   const auto                       device   = settings.m_RequiredDeviceFeatures.IsAnyFlagSet() && xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : xiiSharedPtr<xiiGALDevice>();
   xiiGALTextureCreationDescription output;
@@ -113,7 +135,26 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
     xiiStringBuilder identity;
     xiiConversionUtils::ToString(m_pPipeline->m_Descriptor.m_Id, identity);
     xiiLog::Error("Render pipeline '{}' configuration: {}", identity, error);
+    m_sBuildError = error;
     return XII_FAILURE;
+  }
+  if (graph.GetSetupSerial() == 0)
+  {
+    m_sBuildError = "A pipeline frame requires an active render graph setup.";
+    return XII_FAILURE;
+  }
+  if (m_ExecutionScopes.IsEmpty() || m_sScopeParent != graph.GetResourceNamespace())
+  {
+    m_sScopeParent = graph.GetResourceNamespace();
+    m_ExecutionScopes.SetCount(m_pPipeline->m_ResourceScopes.GetCount());
+    for (xiiUInt32 i = 0; i < m_ExecutionScopes.GetCount(); ++i)
+    {
+      xiiStringBuilder scope;
+      scope.SetFormat("PipelineInstance/{}/{}", m_uiInstanceScope, m_pPipeline->m_ResourceScopes[i]);
+      if (!m_sScopeParent.IsEmpty())
+        scope.Prepend(m_sScopeParent, "/");
+      m_ExecutionScopes[i] = scope;
+    }
   }
   const xiiString previousScope = graph.GetResourceNamespace();
   XII_SCOPE_EXIT(graph.SetResourceNamespace(previousScope));
@@ -139,11 +180,11 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
     const auto& pass = m_pPipeline->m_Passes[index];
     if (!pass.m_bHasTemporalHistory)
       continue;
-    graph.SetResourceNamespace(m_pPipeline->m_ResourceScopes[index]);
+    graph.SetResourceNamespace(m_ExecutionScopes[index]);
     auto& localBlackboard = m_PassBlackboards[index] ? *m_PassBlackboards[index] : blackboard;
     graph.SetSetupBlackboard(&localBlackboard);
     xiiRenderPipelinePassContext history{view, graph, localBlackboard, m_PassParameters[index], pass.m_Pins, m_Bindings.GetArrayPtr().GetSubArray(pass.m_uiBindingOffset, pass.m_Pins.GetCount()), m_pPipeline->m_Descriptor.m_Passes[index].m_sName};
-    history.m_sInstanceScope         = m_pPipeline->m_ResourceScopes[index];
+    history.m_sInstanceScope         = m_ExecutionScopes[index];
     history.m_ExtractionRequirements = m_pPipeline->m_GroupRequirements[index];
     history.m_RuntimeFeatures        = m_pPipeline->m_GroupFeatures[index];
     history.m_bTemporalHistoryPhase  = true;
@@ -169,9 +210,80 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
       m_HistoryBindings[pass.m_uiBindingOffset + i] = binding;
     }
   }
+  m_uiPreparedSetup     = graph.GetSetupSerial();
+  m_pPreparedView       = view;
+  m_pPreparedBlackboard = &blackboard;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides, xiiArrayPtr<const xiiRenderPipelineInputBinding> inputs)
+{
+  XII_SUCCEED_OR_RETURN(BeginFrame(view, graph, blackboard, overrides));
+  if (m_uiBuiltSetup == graph.GetSetupSerial())
+  {
+    m_sBuildError = "A pipeline instance can build only once per graph setup; start a new setup after a failed or completed build.";
+    return XII_FAILURE;
+  }
+  m_uiBuiltSetup = graph.GetSetupSerial();
+  xiiHybridArray<xiiUInt8, 32> supplied;
+  supplied.SetCount(m_pPipeline->m_Interface.GetCount(), 0);
+  for (const auto& input : inputs)
+  {
+    if (input.m_uiSetupSerial != graph.GetSetupSerial() || input.m_uiInterface >= supplied.GetCount() || supplied[input.m_uiInterface] || !m_pPipeline->m_Interface[input.m_uiInterface].m_Pin.m_bInput)
+    {
+      m_sBuildError = "An external pipeline input belongs to another setup, is unknown, duplicated or refers to an output interface.";
+      return XII_FAILURE;
+    }
+    supplied[input.m_uiInterface] = 1;
+    const auto& external          = m_pPipeline->m_Interface[input.m_uiInterface];
+    const auto& binding           = input.m_Binding;
+    const auto* texture           = graph.GetTextureDescription(binding.m_hTexture);
+    const auto* buffer            = graph.GetBufferDescription(binding.m_hBuffer);
+    bool        valid             = false;
+    switch (external.m_Pin.m_Type)
+    {
+      case xiiRenderPipelinePin::Texture:
+        valid = !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
+          (texture ? external.m_Pin.Accepts(*texture) : external.m_Pin.m_bOptional && !binding.m_hTexture.IsValid());
+        break;
+      case xiiRenderPipelinePin::Buffer:
+        valid = !binding.m_hTexture.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
+          (buffer ? external.m_Pin.Accepts(*buffer) : external.m_Pin.m_bOptional && !binding.m_hBuffer.IsValid());
+        break;
+      case xiiRenderPipelinePin::AccelerationStructure:
+        valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() &&
+          (binding.m_AccelerationStructure.IsValid() ? graph.GetBufferDescription(binding.m_AccelerationStructure.m_Dependency) != nullptr : external.m_Pin.m_bOptional && binding.m_AccelerationStructure.IsEmpty());
+        break;
+      case xiiRenderPipelinePin::Order:
+        valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty();
+        break;
+    }
+    if (!valid)
+    {
+      xiiStringBuilder message;
+      message.SetFormat("External pipeline input '{}' is stale or violates its compiled resource contract.", external.m_Pin.m_sName);
+      m_sBuildError = message;
+      return XII_FAILURE;
+    }
+    for (auto slot : external.m_Bindings)
+      m_Bindings[slot] = binding;
+  }
+  for (xiiUInt32 i = 0; i < supplied.GetCount(); ++i)
+    if (m_pPipeline->m_Interface[i].m_Pin.m_bInput && !m_pPipeline->m_Interface[i].m_Pin.m_bOptional && !supplied[i])
+    {
+      xiiStringBuilder message;
+      message.SetFormat("Required external pipeline input '{}' was not supplied.", m_pPipeline->m_Interface[i].m_Pin.m_sName);
+      m_sBuildError = message;
+      return XII_FAILURE;
+    }
+  const xiiString previousScope = graph.GetResourceNamespace();
+  XII_SCOPE_EXIT(graph.SetResourceNamespace(previousScope));
+  auto* previousBlackboard = graph.GetSetupBlackboard();
+  XII_SCOPE_EXIT(graph.SetSetupBlackboard(previousBlackboard));
+  xiiStringBuilder error;
   for (auto index : m_pPipeline->m_Order)
   {
-    graph.SetResourceNamespace(m_pPipeline->m_ResourceScopes[index]);
+    graph.SetResourceNamespace(m_ExecutionScopes[index]);
     auto& localBlackboard = m_PassBlackboards[index] ? *m_PassBlackboards[index] : blackboard;
     graph.SetSetupBlackboard(&localBlackboard);
     const auto& pass = m_pPipeline->m_Passes[index];
@@ -181,7 +293,7 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
       m_Bindings[connection.m_uiTargetBinding] = m_Bindings[connection.m_uiSourceBinding];
     }
     xiiRenderPipelinePassContext context{view, graph, localBlackboard, m_PassParameters[index], pass.m_Pins, m_Bindings.GetArrayPtr().GetSubArray(pass.m_uiBindingOffset, pass.m_Pins.GetCount()), m_pPipeline->m_Descriptor.m_Passes[index].m_sName};
-    context.m_sInstanceScope         = m_pPipeline->m_ResourceScopes[index];
+    context.m_sInstanceScope         = m_ExecutionScopes[index];
     context.m_ExtractionRequirements = m_pPipeline->m_GroupRequirements[index];
     context.m_RuntimeFeatures        = m_pPipeline->m_GroupFeatures[index];
     auto validateBindings            = [&](bool inputs) -> xiiResult {
@@ -253,6 +365,7 @@ void xiiRenderPipelineInstance::InvalidateTemporalHistory()
 {
   for (auto* pass : m_Passes)
     pass->InvalidateTemporalHistory();
+  m_uiPreparedSetup = 0;
 }
 
 const xiiRenderPipelineBinding* xiiRenderPipelineInstance::GetOutputBinding(xiiUInt32 passIndex, xiiStringView name) const
@@ -264,4 +377,11 @@ const xiiRenderPipelineBinding* xiiRenderPipelineInstance::GetOutputBinding(xiiU
     if (!pass.m_Pins[index].m_bInput && pass.m_Pins[index].m_sName == name)
       return &m_Bindings[pass.m_uiBindingOffset + index];
   return nullptr;
+}
+
+const xiiRenderPipelineBinding* xiiRenderPipelineInstance::GetInterfaceBinding(xiiUInt32 index) const
+{
+  if (!m_pPipeline || !m_uiPreparedSetup || index >= m_pPipeline->m_Interface.GetCount() || m_pPipeline->m_Interface[index].m_Bindings.IsEmpty())
+    return nullptr;
+  return &m_Bindings[m_pPipeline->m_Interface[index].m_Bindings[0]];
 }
