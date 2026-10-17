@@ -1257,3 +1257,75 @@ rendering migration. GpuShadowRasterManager, VSM raster orchestration, oversized
 services and sample/game/editor full-stack composition still require conversion/removal.
 D3D12 remains excluded. Existing explicit temporal occlusion policies still require valid
 client depth/projection/invalidation; no implicit unsafe history fallback is restored.
+
+
+## Resource-driven standalone shadow consumer
+
+The SDK now contains 23 ordinary source/binary pipeline assets and 63 concrete native
+operations. ShadowMap is a two-node authored definition: DepthTarget and a reference to
+ShadowDepth. The reference contains an ordinary reflected property override selecting
+mesh rasterization. Expansion produces four native operations; no new pass wrapper or
+raster backend was introduced. Input resource types/formats are inferred from the editor's
+reflected PinConfiguration.Metadata objects, and ordinary persistent boundary nodes define
+nine GPU buffer inputs and the D32 ShadowDepth output. Source export preserves nested
+reference/override identities and is deterministic against the packaged binary.
+
+GpuDrivenScene selects the resource with -shadow-pipeline. Its hardcoded sun-shadow target
+allocation and GpuShadowRasterManager call are removed, along with ShadowTargetPassData
+and the old raster-description construction. The sample supplies already extracted world
+instances, poses, compact visibility, indirect commands and existing device residency
+through the compiled resource interface. Runtime raster matrix, dimensions and mesh
+command strides are scoped to its own pipeline instance. Missing or incompatible resources
+fail explicitly, identify the selected asset and do not choose another pipeline.
+
+MatrixRasterConstants, DepthTarget, DepthRegionClear and DepthRaster accept explicitly typed
+occurrence parameters for changing raster inputs while retaining their reflected member
+defaults. A small inline ReadParameter utility checks the existing variant dictionary;
+it owns no configuration, registry, state or graph construction. Matrix/size/stride/bounds
+validation remains with each operation. The compiler's normal resource descriptions and
+lifetime cache handle an actual target size change; the immutable definition is reused.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and GpuDrivenScene
+  build with dependent engine/editor targets (native-shadow-consumer-build.log,
+  native-shadow-query-dual-build.log, native-shadow-parameter-cpu-build.log and
+  native-shadow-pin-metadata-build.log).
+- All 55 GraphicsCore CPU tests pass. Extended depth contracts reject wrong runtime types
+  and malformed rectangles, accept explicit runtime target dimensions and check that the
+  authored Width remains zero (native-shadow-parameter-cpu.log).
+- All 17 NativeAssetAuthoring fixtures pass. The new document authors the nested property
+  override through ordinary object commands. The first attempt to read ResourceType from
+  the pin configuration itself failed; the corrected fixture reads its existing nested
+  Metadata object (native-shadow-pin-metadata-authoring.log).
+- All 15 Qt EditorDocuments tests pass, including deterministic source/binary equality
+  for all 23 resources (native-shadow-map-final-editor.log).
+- Vulkan NativeDepthAtlas now runs both mesh-shader and explicitly mesh-disabled vertex-pull
+  paths. It reads actual cube depth through two instances of one definition and two runtime
+  contexts across six frames per path. Later runtime parameters change both region projection
+  and viewport and resize the target from 32x16 to 48x16. Readback verifies new coverage,
+  distinct clear values, untouched neighboring pixels, unchanged reflected Width and the
+  same compiled definition (native-shadow-query-dual-atlas.log).
+- The mesh fixture compiles 15 logical operations; vertex-pull compiles 16. Each uses six
+  async submissions or one submission with async queues disabled, with 25/26 barriers
+  respectively and identical depth semantics. These are scheduling counts, not GPU timings.
+- Actual Vulkan sample runs complete for a small-grid three-frame case and the default
+  thirty-frame case, with no error/assertion. Final packaged asset verification also ran
+  thirty frames successfully (native-shadow-map-sample-small.log,
+  native-shadow-map-final-sample.log). Missing and incompatible selected assets exit 1
+  with precise path/interface diagnostics (native-shadow-map-sample-missing.log and
+  native-shadow-map-sample-incompatible.log).
+- The default sample moves from 66 registered/59 compiled logical operations to 67/60,
+  with seven culled operations in both runs. It retains one submission and 165 barriers,
+  with no split barriers. The added independent clear operation does not add a submission
+  in this configuration. No Release CPU or GPU timing improvement is claimed.
+- Source searches find no old standalone sample shadow call/target payload and no rendering
+  Builtin file. git diff --check passes. D3D12 remains excluded.
+
+GpuShadowRasterManager still serves virtual-page rasterization through
+VirtualShadowMap.cpp: that consumer and backend have not been deleted in this phase.
+Virtual-shadow residency/planning must be separated from raster resource execution before
+that deletion. The sample's cascade/VSM preparation, main shading and presentation also
+remain C++ orchestration; full native game/editor/light composition is still incomplete.
+This resource conversion is a concrete consumer migration, not a claim of full renderer
+completion.
