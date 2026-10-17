@@ -35,9 +35,9 @@ class xiiPipelineGPUUpload : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiPipelineGPUUpload, xiiRenderPipelinePass);
 
 public:
-  xiiUInt32 m_uiBuildCount = 0;
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override { pins.PushBack({"Data", xiiRenderPipelinePin::Buffer, false}); }
-  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  xiiUInt32                        m_uiBuildCount = 0;
+  xiiRenderPipelineBufferOutputPin m_OutputData;
+  xiiResult                        Build(xiiRenderPipelinePassContext& context) override
   {
     const xiiVariant* seed = context.m_Parameters.GetValue("Seed");
     if (!seed)
@@ -51,10 +51,14 @@ public:
         description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
         data.m_hBuffer = builder.WriteBuffer("PipelineUpload", description, xiiGALResourceStateFlags::CopyDestination);
         data.m_uiValue = value; }, [](const auto& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_hBuffer), 0, xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_uiValue), sizeof(data.m_uiValue))); });
-    return context.SetOutput("Data", emitted.first->m_hBuffer);
+    return context.SetOutput(m_OutputData, emitted.first->m_hBuffer);
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineGPUUpload, 1, xiiRTTIDefaultAllocator<xiiPipelineGPUUpload>)
+  {
+    XII_BEGIN_PROPERTIES
+    {XII_MEMBER_PROPERTY("Data", m_OutputData)->AddFlags(xiiPropertyFlags::ReadOnly)} XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 class xiiPipelineGPUReadback : public xiiRenderPipelinePass
@@ -62,11 +66,11 @@ class xiiPipelineGPUReadback : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiPipelineGPUReadback, xiiRenderPipelinePass);
 
 public:
-  xiiSharedPtr<xiiGALBuffer> m_pReadback;
-  xiiUInt32                  m_uiObservedSeed = xiiInvalidIndex;
-  xiiUInt32                  m_uiExecutedSeed = xiiInvalidIndex;
-  void                       GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override { pins.PushBack({"Data", xiiRenderPipelinePin::Buffer, true}); }
-  xiiResult                  Build(xiiRenderPipelinePassContext& context) override
+  xiiSharedPtr<xiiGALBuffer>      m_pReadback;
+  xiiUInt32                       m_uiObservedSeed = xiiInvalidIndex;
+  xiiUInt32                       m_uiExecutedSeed = xiiInvalidIndex;
+  xiiRenderPipelineBufferInputPin m_InputData;
+  xiiResult                       Build(xiiRenderPipelinePassContext& context) override
   {
     XII_IGNORE_UNUSED(context.m_Blackboard.TryGet("ScopedSeed", m_uiObservedSeed));
     if (!m_pReadback)
@@ -79,7 +83,7 @@ public:
       if (!m_pReadback)
         return XII_FAILURE;
     }
-    const auto input = context.GetInputBuffer("Data");
+    const auto input = context.GetInputBuffer(m_InputData);
     context.m_Graph.AddPass<PipelineExecutionTest::CopyData>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](auto& data, xiiRenderGraphBuilder& builder) {
         data.m_hSource = builder.ReadBuffer(input, xiiGALResourceStateFlags::CopySource);
         data.m_hTarget = builder.WriteBuffer(builder.ImportBuffer("PipelineReadback", m_pReadback, m_pReadback->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
@@ -90,6 +94,10 @@ public:
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineGPUReadback, 1, xiiRTTIDefaultAllocator<xiiPipelineGPUReadback>)
+  {
+    XII_BEGIN_PROPERTIES
+    {XII_MEMBER_PROPERTY("Data", m_InputData)->AddFlags(xiiPropertyFlags::ReadOnly)} XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST_GROUP(PipelineResources);
@@ -136,8 +144,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ResourceExecution)
       environment.GetDevice()->WaitIdle();
       for (xiiUInt32 i = 0; i < 2; ++i)
       {
-        auto* graph    = views[i]->GetRenderGraph();
-        auto  readback = graph->GetExportedBuffer(graph->FindBuffer("PipelineReadback"));
+        const auto* owner    = static_cast<const xiiPipelineGPUReadback*>(views[i]->GetRenderPipelineInstance().GetPass(0));
+        auto        readback = owner ? owner->m_pReadback : xiiSharedPtr<xiiGALBuffer>();
         if (!XII_TEST_BOOL(readback != nullptr))
           continue;
         xiiGALCommandListCreationDescription commands;
