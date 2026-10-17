@@ -49,6 +49,16 @@ public:
       records[i].m_uiVisibilityMask   = i == 64 ? 0 : 1;
       records[i].m_BoundsCenterRadius = xiiVec4(i == 66 ? 102.0f : distance, 0, 0, 1);
     }
+    if (phase == 2)
+    {
+      records[0].m_uiFirstPrimitive = 5;
+      records[0].m_uiPrimitiveCount = 3;
+    }
+    if (phase == 6)
+      records[0].m_GlobalTransform = xiiMat4::MakeScaling(xiiVec3(2, 1, 1));
+    if (phase == 7)
+      for (xiiUInt32 i = 0; i < capacity; ++i)
+        records[i].m_uiSkinningCount = 1;
     xiiGpuGeometryRecord geometry;
     geometry.m_uiGeneration                     = phase >= 2 ? 8 : 7;
     geometry.m_uiLodCount                       = 2;
@@ -57,7 +67,17 @@ public:
     geometry.m_Lods[1].m_fMinimumScreenCoverage = 0;
     geometry.m_Lods[0].m_uiMeshletCount         = 129;
     geometry.m_Lods[1].m_uiMeshletCount         = 65;
-    xiiMeshlet           metadata[129]          = {};
+    xiiMeshlet metadata[129]                    = {};
+    for (xiiUInt32 i = 0; i < 129; ++i)
+    {
+      metadata[i].m_uiFirstPrimitive = i;
+      metadata[i].m_uiPrimitiveCount = 1;
+      metadata[i].m_uiVertexCount    = 3;
+    }
+    metadata[0].m_Bounds      = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(102, 0, 0), 0.1f);
+    metadata[1].m_Bounds      = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(1, 0, 0), 0.1f);
+    metadata[1].m_vConeAxis   = xiiVec3(1, 0, 0);
+    metadata[1].m_fConeCutoff = 1;
     xiiGpuVisibilityView view;
     view.m_ViewProjectionMatrix          = xiiMat4::MakeIdentity();
     view.m_OcclusionViewProjectionMatrix = xiiMat4::MakeIdentity();
@@ -147,12 +167,12 @@ class xiiNativeMeshletWorkExport : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiNativeMeshletWorkExport, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineBufferInputPin m_Arguments, m_Maximum;
+  xiiRenderPipelineBufferInputPin m_Arguments, m_Maximum, m_Meshlets, m_Count, m_Overflow;
   xiiResult                       Build(xiiRenderPipelinePassContext& context) override
   {
     context.m_Graph.AddPass<xiiUInt32>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) {
-        builder.ExportBuffer(builder.ReadBuffer(context.GetInputBuffer(m_Arguments), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-        builder.ExportBuffer(builder.ReadBuffer(context.GetInputBuffer(m_Maximum), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+        for (auto handle : {context.GetInputBuffer(m_Arguments), context.GetInputBuffer(m_Maximum), context.GetInputBuffer(m_Meshlets), context.GetInputBuffer(m_Count), context.GetInputBuffer(m_Overflow)})
+          builder.ExportBuffer(builder.ReadBuffer(handle, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     return XII_SUCCESS;
   }
 };
@@ -162,13 +182,20 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeMeshletWorkExport, 1, xiiRTTIDefaultAl
     {
       XII_MEMBER_PROPERTY("Arguments", m_Arguments)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Maximum", m_Maximum)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Meshlets", m_Meshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Count", m_Count)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Overflow", m_Overflow)->AddFlags(xiiPropertyFlags::ReadOnly),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
-  xiiUInt32 AddMeshletWork(xiiRenderPipelineResourceDescriptor& definition, xiiStringView label, xiiUInt32 prepared, xiiUInt32 culled)
+  struct MeshletWork
+  {
+    xiiUInt32 m_uiDispatch, m_uiCull;
+  };
+  MeshletWork AddMeshletWork(xiiRenderPipelineResourceDescriptor& definition, xiiStringView label, xiiUInt32 prepared, xiiUInt32 culled)
   {
     const auto reset    = definition.AddPass(xiiStringBuilder(label, " Reset"), "xiiCounterResetPass");
     const auto bounds   = definition.AddPass(xiiStringBuilder(label, " Bound"), "xiiMeshletDispatchBoundsPass");
@@ -185,7 +212,21 @@ namespace
     XII_TEST_RESULT(definition.Connect(culled, "VisibleInstanceCount", dispatch, "VisibleInstanceCount"));
     XII_TEST_RESULT(definition.Connect(dispatch, "DispatchArguments", output, "Arguments"));
     XII_TEST_RESULT(definition.Connect(bounds, "MaximumMeshletGroups", output, "Maximum"));
-    return dispatch;
+    const auto countReset    = definition.AddPass(xiiStringBuilder(label, " Count Reset"), "xiiCounterResetPass");
+    const auto overflowReset = definition.AddPass(xiiStringBuilder(label, " Overflow Reset"), "xiiCounterResetPass");
+    const auto meshlet       = definition.AddPass(xiiStringBuilder(label, " Cull"), "xiiMeshletCullPass");
+    definition.m_Passes[meshlet].m_Properties.Insert("MaxVisibleMeshlets", 16384U);
+    for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
+      XII_TEST_RESULT(definition.Connect(prepared, pin, meshlet, pin));
+    for (auto pin : {"VisibleInstances", "VisibleInstanceCount", "LodHistory"})
+      XII_TEST_RESULT(definition.Connect(culled, pin, meshlet, pin));
+    XII_TEST_RESULT(definition.Connect(dispatch, "DispatchArguments", meshlet, "DispatchArguments"));
+    XII_TEST_RESULT(definition.Connect(countReset, "Counter", meshlet, "InitialCount"));
+    XII_TEST_RESULT(definition.Connect(overflowReset, "Counter", meshlet, "InitialOverflow"));
+    XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", output, "Meshlets"));
+    XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", output, "Count"));
+    XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletOverflow", output, "Overflow"));
+    return {dispatch, meshlet};
   }
 } // namespace
 
@@ -217,7 +258,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
   XII_TEST_RESULT(leaf.Connect(3, "LodHistory", 5, "Lod"));
   XII_TEST_RESULT(leaf.Connect(4, "PreviousBuffer", 5, "Previous"));
   const auto         work       = AddMeshletWork(leaf, "Selected LOD Work", 0, 3);
-  const auto         dispatchId = leaf.m_Passes[work].m_Id;
+  const auto         dispatchId = leaf.m_Passes[work.m_uiDispatch].m_Id;
   const auto         cullId = leaf.m_Passes[3].m_Id, historyId = leaf.m_Passes[4].m_Id;
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
@@ -230,6 +271,9 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
   override.m_Path.PushBack(leaf.m_Passes[0].m_Id);
   override.m_Properties.Insert("BaseId", 1001U);
   override.m_Properties.Insert("SelectOne", true);
+  auto& budget = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  budget.m_Path.PushBack(leaf.m_Passes[work.m_uiCull].m_Id);
+  budget.m_Properties.Insert("MaxVisibleMeshlets", 16U);
   xiiContiguousMemoryStreamStorage bytes;
   xiiMemoryStreamWriter            writer(&bytes);
   XII_TEST_RESULT(root.Serialize(writer));
@@ -290,6 +334,29 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
                                                               3);
           XII_TEST_INT(arguments.y, count);
           XII_TEST_INT(arguments.z, count == 0 ? 0 : 1);
+        }
+        if (source.m_Element == leaf.m_Passes[work.m_uiCull].m_Id)
+        {
+          auto      countBuffer    = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "VisibleMeshletCount")->m_hBuffer);
+          auto      overflowBuffer = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "VisibleMeshletOverflow")->m_hBuffer);
+          xiiUInt32 count, overflow;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), countBuffer.Borrow(), 0, count) ||
+              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), overflowBuffer.Borrow(), 0, overflow))
+            return;
+          const bool      coarse   = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
+          const xiiUInt32 visible  = phase == 5 ? 0 : selected ? 1 :
+             phase >= 6                                        ? 126 :
+                                                                 64;
+          xiiUInt32       expected = visible * (coarse ? 63 : 127);
+          if (phase == 2)
+            expected = (visible - 1) * 127 + 3;
+          if (phase == 6)
+            ++expected;
+          if (phase == 7)
+            expected = visible * 129;
+          const xiiUInt32 capacity = selected ? 16 : 16384;
+          XII_TEST_INT(count, xiiMath::Min(expected, capacity));
+          XII_TEST_INT(overflow, expected > capacity ? 1 : 0);
         }
         if (source.m_Element == cullId)
         {
@@ -390,11 +457,12 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   auto&      override   = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
   override.m_Path.PushBack(viewId);
   override.m_Properties.Insert("VisibilityMask", 0U);
-  xiiUuid dispatchIds[2];
+  xiiUuid dispatchIds[2], meshletIds[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     const auto work = AddMeshletWork(root, i == 0 ? "Visible" : "Filtered", i, i);
-    dispatchIds[i]  = root.m_Passes[work].m_Id;
+    dispatchIds[i]  = root.m_Passes[work.m_uiDispatch].m_Id;
+    meshletIds[i]   = root.m_Passes[work.m_uiCull].m_Id;
     const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", "xiiNativeCullExport");
     XII_TEST_RESULT(root.Connect(i, "VisibleInstances", sink, "Visible"));
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
@@ -480,6 +548,18 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
           XII_TEST_INT(arguments.x, count);
           XII_TEST_INT(arguments.y, count);
           XII_TEST_INT(arguments.z, count);
+        }
+        if (provenance.m_Element == meshletIds[0] || provenance.m_Element == meshletIds[1])
+        {
+          const bool filtered       = provenance.m_Element == meshletIds[1];
+          auto       countBuffer    = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "VisibleMeshletCount")->m_hBuffer);
+          auto       overflowBuffer = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "VisibleMeshletOverflow")->m_hBuffer);
+          xiiUInt32  count, overflow;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), countBuffer.Borrow(), 0, count) ||
+              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), overflowBuffer.Borrow(), 0, overflow))
+            return;
+          XII_TEST_INT(count, resident && !filtered ? 1 : 0);
+          XII_TEST_INT(overflow, 0);
         }
         if (provenance.m_Element == uploadId)
         {

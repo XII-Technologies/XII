@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/LodHistoryResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchBoundsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
@@ -161,4 +162,22 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedMeshletWorkPreparation)
   XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, compiled));
   if (compiled)
     XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 2);
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedMeshletCullingBudget)
+{
+  xiiMeshletCullPass   cull;
+  xiiVariantDictionary properties;
+  properties.Insert("MaxVisibleMeshlets", 16U);
+  properties.Insert("AsyncCompute", false);
+  XII_TEST_RESULT(cull.Configure(properties));
+  XII_TEST_INT(cull.m_uiMaxVisibleMeshlets, 16);
+  XII_TEST_BOOL(!cull.m_bAsyncCompute && cull.GetExtractionRequirements().IsNoFlagSet() && cull.GetRuntimeFeatures().IsNoFlagSet());
+  properties.Insert("MaxVisibleMeshlets", 0U);
+  XII_TEST_BOOL(cull.Configure(properties).Failed());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  cull.GetPins(pins);
+  XII_TEST_RESULT(cull.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[cull.m_Arguments.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
+  XII_TEST_BOOL(!pins[cull.m_Overflow.GetBindingIndex()].m_bInput && !pins[cull.m_Overflow.GetBindingIndex()].m_bOptional);
 }
