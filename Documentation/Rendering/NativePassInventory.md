@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **59 concrete reflected operation classes** in
+Current source inventory: **62 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -20,7 +20,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
-| Geometry | 5 | `xiiDepthRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
+| Geometry | 6 | `xiiDepthRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
 | Lighting | 1 | `xiiBRDFLutPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
@@ -34,7 +34,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
-| Utility | 5 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
+| Utility | 7 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
 | Visibility | 9 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletOcclusionPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
@@ -1005,3 +1005,78 @@ D3D12 is excluded. The old visibility service's embedded feedback remains only w
 unmigrated consumers; these new nodes are not a claim that the service has been deleted.
 Next work remains production resource graph wiring, legacy orchestration deletion and
 complete lighting/shadow/editor/game graphs. The overall migration is incomplete.
+
+
+## Explicit depth ownership and reusable shadow depth - 2026-10-17
+
+Three operations bring the inventory to 62: MatrixRasterConstantsPass, DepthTargetPass
+and DepthRegionClearPass. The existing DepthRasterPass is reused for shadow drawing;
+there is no duplicated shadow raster backend or wrapper around the legacy manager.
+DepthRaster version 2 consumes a required supplied D32 target, returns its written
+version, and exposes an optional atlas viewport as a reflected member. Its implicit
+image allocation, whole-image clear and live-view requirement are removed. Both mesh
+and vertex-pull paths use viewport/scissor bounds. Immutable shader/signature/state
+references are captured during setup rather than rediscovered during execution.
+
+DepthTarget creates and initializes one graph-owned image. DepthRegionClear clears a
+scissored supplied region to a reflected depth value, preserving neighboring texels.
+Its immutable parameter buffer is private to the occurrence and retained by graph
+imports; changes replace that allocation safely. MatrixRasterConstants captures authored
+current/previous matrices and layout/dimensions into the canonical raster ABI without
+a camera/world pointer. Shared geometry/material table ownership remains with the
+existing device services. No scene objects, transform hierarchy or temporal state are
+owned by these operations.
+
+The ordinary ShadowDepth asset contains region clear, matrix constants and the same
+DepthRaster operation, with ten external inputs and one depth output inferred from
+native RTTI. It consumes prepared visibility/draw resources and does not perform light
+selection, visibility orchestration or atlas residency. Two occurrences can draw into
+explicitly chained regions of the same atlas with independently overridden matrices,
+viewports and clear values. No render-stage checks, pin-type arrays or Builtin file is
+introduced. The SDK has nineteen independently authored source/binary resources.
+
+DepthOnly and GBuffer source/binary assets are rebuilt with explicit DepthTarget nodes;
+their persistent document identities remain unchanged. Their flat occurrence counts
+are now eighteen and nineteen. The native direct raster fixture also supplies a target
+explicitly. Old DepthRaster authoring without this required connection fails validation;
+there is no compatibility fallback or hidden target construction.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and
+  EditorEngineProcessFrameworkTest build with their dependent engine/editor targets
+  (`Workspace/native-shadow-final-build.log`, `native-shadow-queue-build.log`,
+  `native-shadow-batching-build.log`). Initial fixture string/binding scope compilation
+  errors were corrected. A Qt plugin copy was temporarily denied while its authoring
+  process was active; the build passed after that process finished and released it.
+- All 54 GraphicsCore CPU subtests pass (`Workspace/native-shadow-cpu-final.log`),
+  including reflected typed inputs, read/write outputs, finite clear/matrix properties,
+  viewport configuration and an actual out-of-bounds supplied-target failure diagnostic.
+- Vulkan NativeDepthAtlas passes (`Workspace/native-shadow-batching-gpu.log`). Real cube
+  geometry is rasterized through two instances of one ShadowDepth definition and two
+  runtime contexts, with no live camera or world. Readback checks 0.7 reversed-Z surface
+  depth, distinct projection coverage, independent 0.0/0.1 clear values, region corners
+  and untouched 0.9 neighboring/background texels across six device frames.
+- The initial region-clear implementation mapped a dynamic uniform inside an active
+  Vulkan render pass, which validation rejected. Parameters are now immutable and
+  prepared before execution. The fixture's initial forward-Z matrix was also replaced
+  by an explicit reversed-Z orthographic matrix. Final validation/readback above passes.
+- The warmed test compiles sixteen logical operations. Async scheduling produces six
+  queue submissions and 26 barriers; disabling async queues through the existing compiler
+  setting batches the same graph into one submission with the same 26 barriers and
+  identical readback. Choosing graphics preparation for the small matrix uniform alone
+  did not reduce the async submission count. These are graph scheduling counts, excluding
+  external readback and one-time asset initialization; no GPU timing speedup is claimed.
+- Vulkan NativeVisibility (4), NativeMeshCapture (3), SkinningRaster (3) and NativeSceneLod
+  (3) pass (`Workspace/native-shadow-<group>.log`). All thirteen native authoring fixtures
+  and all fifteen Qt EditorDocuments tests pass, including deterministic source/repeated/
+  packaged binary equality for all nineteen resources (`native-shadow-authoring.log`,
+  `native-shadow-qt.log`).
+- Source searches find no rendering Builtin file and no legacy shadow/visibility system
+  dependency in the new operations. No permanent compatibility adapter is added.
+
+D3D12 remains excluded. Large-scene shadow timing, cascade/light-driven projection
+preparation, atlas allocation/residency, virtual-page scheduling and production shadow
+consumer migration still need work. GpuShadowRasterManager, virtual-shadow orchestration
+and the sample's old rendering paths are not claimed to be deleted or migrated by this
+phase. Full game/editor lighting graphs and the complete migration remain incomplete.
