@@ -1001,6 +1001,7 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
     xiiUInt32 m_uiResourceCount   = 0U;
     xiiUInt8  m_uiQueueMask       = 0U;
     bool      m_bIsTexture        = true;
+    bool      m_bExported         = false;
   };
 
   xiiHybridArray<AliasSlot, 16> aliasSlots;
@@ -1014,7 +1015,7 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
     for (xiiUInt32 i = 0U; i < aliasSlots.GetCount(); ++i)
     {
       AliasSlot& slot                = aliasSlots[i];
-      const bool bSingleOrderedQueue = resource.m_ExportFinalState == xiiGALResourceStateFlags::Unknown && resource.m_uiQueueMask != 0U && (resource.m_uiQueueMask & (resource.m_uiQueueMask - 1U)) == 0U && resource.m_uiQueueMask == slot.m_uiQueueMask;
+      const bool bSingleOrderedQueue = !slot.m_bExported && resource.m_ExportFinalState == xiiGALResourceStateFlags::Unknown && resource.m_uiQueueMask != 0U && (resource.m_uiQueueMask & (resource.m_uiQueueMask - 1U)) == 0U && resource.m_uiQueueMask == slot.m_uiQueueMask;
       if (bSingleOrderedQueue && xiiRenderGraphSkills::Aliasing::CanReuse(slot.m_bIsTexture == resource.m_bIsTexture, uiDescriptionHash, slot.m_uiDescriptionHash, slot.m_uiLastUse, resource.m_uiFirstUsePassIdx))
       {
         uiAliasGroup = i;
@@ -1029,6 +1030,7 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
       slot.m_bIsTexture        = resource.m_bIsTexture;
       slot.m_uiDescriptionHash = uiDescriptionHash;
       slot.m_uiQueueMask       = resource.m_uiQueueMask;
+      slot.m_bExported         = resource.m_ExportFinalState != xiiGALResourceStateFlags::Unknown;
     }
 
     AliasSlot& slot  = aliasSlots[uiAliasGroup];
