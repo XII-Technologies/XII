@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **67 concrete reflected operation classes** in
+Current source inventory: **68 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -31,7 +31,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 1 | `xiiSensorOutputPass` |
-| Shadows | 4 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass` |
+| Shadows | 5 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowTablesPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
@@ -1602,3 +1602,146 @@ construction, native world light/cluster preparation, the sample's main shading 
 presentation, and complete game/editor/advanced lighting compositions. Virtual page
 identity still needs explicit world/view scoping. The full renderer migration remains
 incomplete; the cascade upload deletion is a verified incremental step.
+
+## Virtual shadow table uploads authored
+
+Current source inventory is **68 native reflected operations / 27 ordinary SDK assets**.
+VirtualShadowTables is an independent upload/readiness operation with three concrete
+reflected output members: PhysicalPageTable, VirtualPageTable and PhysicalAtlas.
+The ordinary VirtualShadowTables source asset was authored through document commands;
+the packaged binary is produced by the normal asset compiler. It requires virtual-shadow
+device residency, no compute capability and no scene extraction, geometry or materials.
+
+The residency service's AddUploadPass implementation and UploadHandles type have been
+deleted. RenderWorldModule no longer silently inserts that operation or publishes its
+scalar blackboard fields. The eight unused virtual-shadow blackboard keys are gone.
+GpuDrivenScene explicitly selects -shadow-tables-pipeline, builds the resource and
+consumes its compiled interface and setup-scoped layout. The native page raster fixture
+uses the same resource. Missing or incompatible resources have no fallback.
+
+The existing device service retains page allocation, demand and retirement metadata;
+it has no scene-object, transform or component hierarchy. It captures immutable compact
+table deltas and strong allocation references. The native pass records coalesced
+physical ranges and changed virtual-table slices. The first capture freezes that device
+frame: demand arriving after it is deferred to the next frame, so another view cannot
+rewrite tables beneath an earlier view. Repeated instances and views reference the same
+physical residency allocations; they do not share pass-local mutable configuration.
+Canonical setup names deduplicate uploads within a graph. Execution uses typed captured
+handles. Graphics-queue readiness orders earlier graph uploads before consumers on
+other queues without another CPU scene copy.
+
+Dirty slice bits are acknowledged only after a private GPU completion fence signals
+and the capture's allocation epoch and per-slot revisions still match. Recorded but
+abandoned work remains retryable after shared-frame retirement. Initial allocation
+initializes free physical records too. Failed reconfiguration preserves the previous
+settings, allocation epoch, frozen capture and pending retirements. Successful replacement
+gets a new epoch; old captures retain their allocations for existing recordings.
+
+Focused verification before the subsequent compiler-counter refinement:
+
+- Debug FoundationTest, GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest
+  and GpuDrivenScene build with dependencies (native-shadow-tables-final-build.log and
+  native-shadow-tables-retirement-build.log).
+- Foundation Configuration (4), all GraphicsCore CPU tests (61), NativeAssetAuthoring
+  (21) and EditorDocuments (15) pass. The library fixture checks deterministic rebuilds
+  and repeated serialization of all 27 packaged assets (native-shadow-tables-foundation,
+  -cpu, -authoring and -editor.log).
+- Vulkan NativeShadowTables verifies two nested references in each of two independently
+  initialized views, actual physical/virtual buffer readbacks, immutable shared-frame
+  capture, sparse edits, unchanged frames, abandoned recordings, allocation rollback and
+  safe replacement epochs. Both view graphs submit before host readback waits. The first
+  frame plans 384 bytes in two upload ranges; a later sparse slice plans 272 bytes in
+  two ranges; an unchanged slice transfers zero bytes; noncontiguous pin edits plan
+  288 bytes in three ranges. The second view plans zero duplicate transfer bytes.
+  Each fixture graph uses one submission (native-shadow-tables-gpu.log). These are
+  small deterministic regression measurements, not Release throughput benchmarks.
+- Vulkan NativeVirtualShadowPages passes actual raster/table readbacks and content
+  revision checks after the consumer migration. Its populated phases use 17 operations /
+  6 submissions / 5 render-pass groups, 13 / 1 / 2 and 16 / 1 / 4 respectively
+  (native-shadow-tables-pages.log).
+
+The initial build also exposed two subsystem declarations ending at source line 87
+inside one unity translation unit. A Foundation regression deliberately declares two
+subsystems on the same physical line and verifies unique registrations. The subsystem
+instance macro now uses the compiler's translation-unit counter abstraction. Validation
+of the subsequently refined compiler wrappers is recorded separately below.
+
+This phase does not complete the renderer rebuild. VirtualShadowMapManager still
+constructs AddPageCompletionPass; that publication algorithm must become independently
+authored. Device page identity still needs explicit world/view scoping. Native world
+light/cluster preparation, sample main shading/presentation and complete game/editor/
+advanced lighting graphs remain unfinished. The previously reproduced full-sample
+Vulkan ErrorDeviceLost is unresolved; focused table tests do not prove application
+correctness. D3D12 remains excluded.
+
+### Table ownership audit follow-up
+
+The obsolete xiiVirtualShadowPageUpdate/xiiVirtualShadowPageUpdateType reflection types,
+GetPageTableUpdates API, CPU edit array, append operations and frame clears are deleted.
+Repository search found no production consumer. The eviction regression now checks the
+old mapping's removal, pinned mapping's survival and actual residency counts instead of
+an unused journal length. Immutable upload deltas remain the single table transfer path.
+
+An additional lifetime audit found that old feedback age alone did not prove an atlas
+page reusable: a more recent frozen table could still reference it. Each physical slot
+now records its last captured GPU frame. Eviction unmaps it from future captures, then
+retains the physical page until every graph in that frame has retired. A small private
+retirement list tracks only these physical allocations, not scene objects. Retired pages
+count against the existing per-frame allocation-work budget across feedback submissions.
+Demand can retry once the allocation is safe; no atlas storage is overwritten early.
+RetiredPageCount distinguishes withheld physical capacity from free or resident pages.
+Device restart releases that old allocation bookkeeping because it creates a distinct atlas.
+
+The GPU regression now copies actual table contents on alternating graphics/compute
+queues and checks compiler-generated queue waits. A second two-view fixture requests
+replacement after the first view freezes a full table. Both views must still read the
+old mapping, while CPU lookup has unmapped it and physical reuse is withheld. The next
+retired frame permits reuse with a new content revision, rejecting the old raster ticket.
+Final build/test outcomes for these follow-up changes are recorded below.
+
+Final verification:
+
+- The fresh Foundation-counter build succeeds for FoundationTest, GraphicsCoreTest,
+  GraphicsFoundationTest, EditorFrameworkTest, EditorEngineProcessFrameworkTest and
+  GpuDrivenScene with all dependencies (native-shadow-tables-counter-build.log).
+  Foundation Configuration (4) passes (native-shadow-tables-counter-foundation.log).
+  The three compiler wrappers are included with the user's approval; this is an MSVC
+  build, not verification of GCC/Clang toolchains.
+- The subsequent journal/retirement build succeeds for all five affected graphics,
+  editor and sample targets (native-shadow-tables-retired-pages-final-build.log).
+  Its first attempt exposed a missing XII_DECLARE_POD_TYPE annotation on the small
+  retirement record; that compile error was fixed before the successful build.
+- All 61 CPU tests, 21 NativeAssetAuthoring fixtures and 15 EditorDocuments tests pass
+  again. The asset library checks all 27 source/binary resources, including deterministic
+  recompilation and repeated-instance serialization (native-shadow-tables-verified-cpu,
+  -authoring and -editor.log).
+- Vulkan NativeShadowTables (2), NativeVirtualShadowPages (1), NativeVisibility (4),
+  NativeDepthAtlas (2), PipelineExtraction (3), NativeGeometryFeedback (1),
+  NativeShadowFeedback (1), NativeShadowCascades (1), RenderGraphAllocations (1),
+  FenceSynchronization (1), NativeSceneLod (4), SkinningRaster (3), NativeMeshCapture (3)
+  and EditorViews (47) all pass (native-shadow-tables-verified-<group>.log).
+  FenceSynchronization was built and run with the user's concurrent FenceTest.cpp
+  refinement, which is deliberately left out of these commits.
+- The final actual-copy table fixture reports 384 bytes / 2 upload ranges / 1 submission
+  initially, 272 / 2 / 1 for a sparse slice, 0 / 0 / 2 for an unchanged slice with a
+  compute-queue copy consumer, and 288 / 3 / 2 for noncontiguous edits with that consumer.
+  Both views submit before host readback waits. The second view plans no duplicate table
+  transfer. These extra copy submissions belong to the regression's explicit cross-queue
+  consumer; they are not one submission per reflected node.
+- Missing and incompatible -shadow-tables-pipeline resources both exit 1 with the selected
+  path and a specific interface diagnostic (native-shadow-tables-missing.log and
+  native-shadow-tables-incompatible.log). Searches find no old shadow upload API, edit
+  journal API/types, shadow blackboard keys, scene database classes or rendering Builtin
+  filenames in the relevant production sources/assets. git diff --check passes.
+
+The full Vulkan sample still fails: the 30-frame request exits 3 in device frame 3 after
+producing 16 virtual pages and recording 118 registered / 110 compiled operations,
+one submission and 186 barriers. The assertion is again CpuWaitOnlyFenceVulkan.cpp:123,
+fence 46 / request 47 / ErrorDeviceLost (native-shadow-tables-sample.log and
+native-shadow-tables-sample-assertion.txt). It did not complete the requested frames.
+
+Retirement can delay new page admission until the last captured frame retires; this is
+required to protect older GPU readers. The tiny two-view regression demonstrates reuse
+in the next completed frame, not cache-churn throughput. No Release extraction/upload
+benchmark or application performance improvement is claimed. The remaining publication,
+light, main-shading, presentation and world/view identity work above is still outstanding.
