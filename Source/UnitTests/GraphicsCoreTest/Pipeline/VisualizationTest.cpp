@@ -1,10 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/DebugOverlayPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
@@ -34,20 +34,14 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentVisualizationComposition)
   XII_TEST_RESULT(surfaceCopy.Configure(properties));
   XII_TEST_BOOL(!surfaceCopy.m_bUseMeshShaders && surfaceCopy.m_FillMode == xiiGALFillMode::Wireframe);
 
-  xiiGALMeshShaderProperties limits;
-  limits.m_uiMaxThreadGroupCountX     = 5;
-  limits.m_uiMaxThreadGroupCountY     = 3;
-  limits.m_uiMaxThreadGroupCountZ     = 1;
-  limits.m_uiMaxThreadGroupTotalCount = 8;
-  xiiUInt32 width = 99, height = 99;
-  XII_TEST_RESULT(xiiGpuVisibilitySystem::ComputeMeshDispatchShape(limits, 7, width, height));
-  XII_TEST_INT(width, 4);
-  XII_TEST_INT(height, 2);
-  XII_TEST_BOOL(xiiGpuVisibilitySystem::ComputeMeshDispatchShape(limits, 9, width, height).Failed());
-  XII_TEST_INT(width, 0);
-  XII_TEST_INT(height, 0);
-  limits.m_uiMaxThreadGroupCountY = 1;
-  XII_TEST_BOOL(xiiGpuVisibilitySystem::ComputeMeshDispatchShape(limits, 7, width, height).Failed());
+  xiiMeshDrawCommandsPass commands;
+  commands.m_uiMeshGroupCountX = 4;
+  commands.m_uiMeshGroupCountY = 2;
+  XII_TEST_RESULT(commands.Configure({}));
+  commands.m_uiMeshGroupCountX = 0;
+  XII_TEST_BOOL(commands.Configure({}).Failed());
+  commands.m_uiMeshGroupCountX = xiiMath::MaxValue<xiiUInt32>();
+  XII_TEST_BOOL(commands.Configure({}).Failed());
 
   const auto                                 resource = xiiLoadPipelineLibraryResource("DebugVisualization");
   xiiResourceLock<xiiRenderPipelineResource> child(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);

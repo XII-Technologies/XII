@@ -88,17 +88,6 @@ struct GpuMeshlet
   float4 Cone;
 };
 
-struct GpuLodFeedback
-{
-  uint Key;
-  uint GeometryGeneration;
-  uint DesiredLod;
-  uint SelectedLod;
-  uint PurposeMask;
-  uint ObjectUserData;
-  uint Priority;
-  uint Padding;
-};
 
 uint SelectDesiredLod(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight)
 {

@@ -157,7 +157,5 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_Implementation_Texture3DResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_Implementation_TextureCubeResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_Implementation_TextureLoader);
-  XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuVisibilityManager);
-  XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuVisibilitySystem);
   XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuVisibilityTypes);
 }

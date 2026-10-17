@@ -17,14 +17,12 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 #include <type_traits>
 
 static_assert(!std::is_default_constructible_v<xiiRenderGraphManager>, "Render graphs must be owned by the render graph subsystem.");
 static_assert(!std::is_default_constructible_v<xiiMaterialManager>, "Material storage must be owned by the material subsystem.");
 static_assert(!std::is_default_constructible_v<xiiGeometryResidencyManager>, "Geometry residency must be owned by its subsystem.");
-static_assert(!std::is_default_constructible_v<xiiGpuVisibilityManager>, "Visibility contexts must be owned by the visibility subsystem.");
 static_assert(!std::is_default_constructible_v<xiiLightingManager>, "Lighting contexts must be owned by the lighting subsystem.");
 static_assert(!std::is_default_constructible_v<xiiGpuShadowRasterManager>, "GPU shadow raster state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiVirtualShadowMapManager>, "Virtual shadow residency must be owned by its subsystem.");
@@ -46,7 +44,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Graphics services are subsystem owned")
   {
     XII_TEST_BOOL(xiiGeometryResidencyManager::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiGpuVisibilityManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiLightingManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiGpuShadowRasterManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiVirtualShadowMapManager::IsSubsystemInitialized());
@@ -67,18 +64,15 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
   {
     const xiiLightingContextHandle           lightingHandle;
     const xiiRenderGraphContextHandle        renderGraphHandle;
-    const xiiGpuVisibilityContextHandle      visibilityHandle;
     const xiiParticleSystemRuntimeHandle     particleHandle;
     const xiiViewRenderResourceContextHandle viewResourceHandle;
 
     XII_TEST_BOOL(lightingHandle.IsInvalidated());
     XII_TEST_BOOL(renderGraphHandle.IsInvalidated());
-    XII_TEST_BOOL(visibilityHandle.IsInvalidated());
     XII_TEST_BOOL(particleHandle.IsInvalidated());
     XII_TEST_BOOL(viewResourceHandle.IsInvalidated());
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiLightingContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
-    XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuVisibilityContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiParticleSystemRuntimeHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiViewRenderResourceContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuShadowRasterDescription>() != nullptr);

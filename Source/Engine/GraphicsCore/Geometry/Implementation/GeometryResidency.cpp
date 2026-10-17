@@ -903,7 +903,7 @@ xiiResult xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometr
       return XII_FAILURE;
     for (const auto& meshlet : meshlets.GetSubArray(source.m_uiFirstMeshlet, count))
     {
-      // Use the same overlap test as GpuSceneMeshletCull, including boundary meshlets.
+      // Use the same overlap test as native MeshletCull, including boundary meshlets.
       const xiiUInt64 end = static_cast<xiiUInt64>(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
       if (uiPrimitiveCount == 0 || (meshlet.m_uiFirstPrimitive < uiFirstPrimitive + uiPrimitiveCount && end > uiFirstPrimitive))
         ++counts[lod];

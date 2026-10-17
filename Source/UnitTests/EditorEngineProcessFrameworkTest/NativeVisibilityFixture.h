@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 /// Isolated test composition around the ordinary matrix meshlet asset. No scene state,
@@ -19,8 +19,8 @@ struct xiiTestNativeVisibility
 
   xiiResult Initialize(xiiUInt32 capacity = 1024)
   {
-    m_uiCapacity = capacity;
-    const auto resource = xiiLoadPipelineLibraryResource("MatrixMeshletVisibility");
+    m_uiCapacity                                        = capacity;
+    const auto                                 resource = xiiLoadPipelineLibraryResource("MatrixMeshletVisibility");
     xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!loaded.IsValid() || !loaded->GetAuthoring())
       return XII_FAILURE;

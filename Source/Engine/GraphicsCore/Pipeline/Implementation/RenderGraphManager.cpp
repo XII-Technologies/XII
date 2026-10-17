@@ -13,7 +13,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 class xiiRenderGraphManagerState
@@ -332,9 +331,6 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiRayTracingResources::GetConfiguration().m_uiFramesInFlight);
   if (xiiVirtualShadowMapManager::IsInitialized())
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiVirtualShadowMapManager::GetConfiguration().m_uiFramesInFlight);
-  const xiiUInt32 uiVisibilityFrames = xiiGpuVisibilityManager::GetMinimumFramesInFlight();
-  if (uiVisibilityFrames != 0U)
-    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, uiVisibilityFrames);
 
   s_pState->m_bFrameActive     = true;
   const xiiUInt64 uiFrameIndex = ++s_pState->m_uiFrameIndex;
@@ -346,8 +342,6 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   if (xiiMaterialManager::IsInitialized())
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
-  if (xiiGpuVisibilityManager::IsInitialized())
-    xiiGpuVisibilityManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   if (xiiVirtualShadowMapManager::IsInitialized())
     xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   frame.m_uiFrameIndex     = uiFrameIndex;

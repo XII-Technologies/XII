@@ -10,7 +10,7 @@
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 
 /// Describes one independently culled shadow view rasterized into a depth atlas region.
 struct XII_GRAPHICSCORE_DLL xiiGpuShadowRasterDescription

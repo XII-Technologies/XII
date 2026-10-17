@@ -16,7 +16,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
@@ -64,18 +63,6 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
           ++executions[i]; }, true);
     });
   }
-  xiiGpuVisibilityDescription visibility;
-  visibility.m_uiMaxInstances           = 4;
-  visibility.m_uiMaxVisibleMeshlets     = 4;
-  visibility.m_uiMaxMeshletsPerGeometry = 1;
-  visibility.m_uiMaxVisibilitySets      = 1;
-  visibility.m_uiLodFeedbackCapacity    = 4;
-  visibility.m_uiFramesInFlight         = 2;
-  const auto shortRing                  = xiiGpuVisibilityManager::CreateContext(visibility);
-  if (!XII_TEST_BOOL(xiiGpuVisibilityManager::IsValid(shortRing)))
-    return;
-  XII_SCOPE_EXIT(xiiGpuVisibilityManager::DestroyContext(shortRing));
-  XII_TEST_INT(xiiGpuVisibilityManager::GetMinimumFramesInFlight(), 2);
   xiiUInt64                             registeredFrame = 0;
   xiiRenderGraphRegistrationDescription registration;
   registration.m_sName  = "Interleaved registered frame";
@@ -116,7 +103,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     previousFrame = xiiMath::Max(frames[0], frames[1]);
     {
       xiiRenderGraphFrame frame;
-      if (!XII_TEST_RESULT(frame.Begin(64)))
+      if (!XII_TEST_RESULT(frame.Begin(2)))
         return;
       XII_TEST_INT(frame.GetFrameIndex(), previousFrame + 1);
       XII_TEST_BOOL(frame.GetCompletedFrame() >= frame.GetFrameIndex() - 2);
@@ -176,8 +163,6 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     XII_TEST_RESULT(xiiRenderGraphManager::ExecuteFrame(recovery, nullptr));
     previousFrame = registeredFrame;
   }
-  xiiGpuVisibilityManager::DestroyContext(shortRing);
-  XII_TEST_BOOL(xiiGpuVisibilityManager::GetMinimumFramesInFlight() != 2);
   worlds[0].Clear();
   {
     XII_LOCK(worlds[1]->GetWriteMarker());

@@ -11,7 +11,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 
 /// CPU-side residency configuration for the virtual shadow-map physical cache.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapSettings

@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
@@ -8,7 +9,7 @@
 #include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 
