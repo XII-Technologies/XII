@@ -56,30 +56,6 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageRequest
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowPageRequest);
 
-struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageUpdateType
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    Map,
-    Unmap,
-    Default = Map
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowPageUpdateType);
-
-/// Incremental page-table edit consumed by the GPU page-table update pass.
-struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageUpdate
-{
-  xiiVirtualShadowPageId                  m_Page;
-  xiiUInt32                               m_uiPhysicalPage = xiiInvalidIndex;
-  xiiEnum<xiiVirtualShadowPageUpdateType> m_Type;
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowPageUpdate);
-
 /// Tool-facing resident mapping and dirty state.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageMapping
 {
@@ -115,6 +91,7 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
 
   xiiUInt32 m_uiResidentPageCount        = 0U;
   xiiUInt32 m_uiFreePageCount            = 0U;
+  xiiUInt32 m_uiRetiredPageCount         = 0U;
   xiiUInt32 m_uiFeedbackRequestCount     = 0U;
   xiiUInt32 m_uiUniqueRequestCount       = 0U;
   xiiUInt32 m_uiAllocationCount          = 0U;
@@ -195,7 +172,6 @@ public:
   static void SubmitFeedback(xiiArrayPtr<const xiiVirtualShadowPageRequest> requests);
 
   [[nodiscard]] static bool                                           TryGetMapping(const xiiVirtualShadowPageId& page, xiiVirtualShadowPageMapping& out_mapping);
-  [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageUpdate>  GetPageTableUpdates();
   [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageMapping> GetDirtyPages();
   /// Marks one resident page dirty after an occluder, light, or projection change.
   /// Call before graph setup; the page remains sampleable in the same frame once

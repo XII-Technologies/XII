@@ -127,7 +127,11 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   XII_TEST_BOOL(!xiiVirtualShadowMapManager::MarkPageRendered(oldWork));
   XII_TEST_BOOL(mapping.m_bNeedsRendering);
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiEvictionCount, 1U);
-  XII_TEST_INT(xiiVirtualShadowMapManager::GetPageTableUpdates().GetCount(), 2U);
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::TryGetMapping(initial[0].m_Page, mapping));
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(initial[2].m_Page, mapping));
+  XII_TEST_BOOL(mapping.m_bPinned);
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiResidentPageCount, 2U);
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiRetiredPageCount, 0U);
 
   // Restore production defaults for any tests executing after this one.
   XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(xiiVirtualShadowMapSettings()).Succeeded());

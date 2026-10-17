@@ -59,6 +59,7 @@ public:
     bool                        m_bAllocated           = false;
     xiiUInt64                   m_uiDirtyFrameMask     = 0U;
     xiiUInt64                   m_uiUploadRevision     = 0U;
+    xiiUInt64                   m_uiLastCapturedFrame  = 0U;
     xiiUInt32                   m_uiVirtualTableBucket = xiiInvalidIndex;
     xiiUInt64                   m_uiContentRevision    = 0;
     xiiUInt64                   m_uiPendingRevision    = 0;
@@ -75,6 +76,13 @@ public:
     xiiSharedPtr<const xiiVirtualShadowTableUpload> m_Upload;
     xiiSharedPtr<xiiGALFence>                       m_Completion;
   };
+  struct RetiredPage
+  {
+    XII_DECLARE_POD_TYPE();
+    xiiUInt32 m_uiPhysicalPage;
+    xiiUInt64 m_uiLastCapturedFrame;
+  };
+  xiiDynamicArray<RetiredPage>                    m_RetiredPages;
   xiiDynamicArray<PendingUpload>                  m_PendingUploads;
   xiiDynamicArray<PendingRaster>                  m_PendingRasters;
   xiiSharedPtr<const xiiVirtualShadowTableUpload> m_PreparedUpload;
@@ -89,7 +97,6 @@ public:
   xiiDynamicArray<Slot>                        m_Slots;
   xiiDynamicArray<xiiUInt32>                   m_FreePages;
   xiiHashTable<xiiUInt64, xiiUInt32>           m_PageLookup;
-  xiiDynamicArray<xiiVirtualShadowPageUpdate>  m_PageTableUpdates;
   xiiDynamicArray<xiiVirtualShadowPageMapping> m_DirtyPages;
   xiiVirtualShadowMapStats                     m_Stats;
   xiiSharedPtr<xiiGALBuffer>                   m_pPhysicalPageTable;
@@ -99,6 +106,7 @@ public:
   xiiUInt64                                    m_uiCompletedFrame           = 0U;
   xiiUInt64                                    m_uiAllFrameMask             = 0U;
   xiiUInt32                                    m_uiRasterizationsThisFrame  = 0U;
+  xiiUInt32                                    m_uiRetirementsThisFrame     = 0U;
   xiiUInt32                                    m_uiPhysicalPagesPerRow      = 0U;
   xiiUInt32                                    m_uiPhysicalPageRows         = 0U;
   xiiUInt32                                    m_uiVirtualPageTableCapacity = 0U;
@@ -223,22 +231,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVirtualShadowPageRequest, xiiNoBase, 1, xiiRT
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVirtualShadowPageUpdateType, 1)
-  XII_ENUM_CONSTANTS(xiiVirtualShadowPageUpdateType::Map, xiiVirtualShadowPageUpdateType::Unmap)
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVirtualShadowPageUpdate, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiVirtualShadowPageUpdate>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Page", m_Page),
-    XII_MEMBER_PROPERTY("PhysicalPage", m_uiPhysicalPage),
-    XII_ENUM_MEMBER_PROPERTY("Type", xiiVirtualShadowPageUpdateType, m_Type),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVirtualShadowPageMapping, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiVirtualShadowPageMapping>)
 {
   XII_BEGIN_PROPERTIES
@@ -260,6 +252,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVirtualShadowMapStats, xiiNoBase, 1, xiiRTTID
   {
     XII_MEMBER_PROPERTY("ResidentPageCount", m_uiResidentPageCount),
     XII_MEMBER_PROPERTY("FreePageCount", m_uiFreePageCount),
+    XII_MEMBER_PROPERTY("RetiredPageCount", m_uiRetiredPageCount),
     XII_MEMBER_PROPERTY("FeedbackRequestCount", m_uiFeedbackRequestCount),
     XII_MEMBER_PROPERTY("UniqueRequestCount", m_uiUniqueRequestCount),
     XII_MEMBER_PROPERTY("AllocationCount", m_uiAllocationCount),
@@ -324,6 +317,14 @@ void xiiVirtualShadowMapManager::EngineShutdown()
     s_pState->m_pPhysicalAtlas.Clear();
     s_pState->m_pVirtualPageTable.Clear();
     s_pState->m_pPhysicalPageTable.Clear();
+    // Captures retain old allocations; a restarted device gets a distinct atlas.
+    for (const auto& retired : s_pState->m_RetiredPages)
+      s_pState->m_FreePages.PushBack(retired.m_uiPhysicalPage);
+    s_pState->m_RetiredPages.Clear();
+    s_pState->m_Stats.m_uiRetiredPageCount = 0;
+    s_pState->m_Stats.m_uiFreePageCount    = s_pState->m_FreePages.GetCount();
+    for (auto& slot : s_pState->m_Slots)
+      slot.m_uiLastCapturedFrame = 0;
     s_pState->m_bEngineStarted = false;
   }
 }
@@ -434,7 +435,6 @@ xiiResult xiiVirtualShadowMapManager::Configure(const xiiVirtualShadowMapSetting
 
   s_pState->m_PageLookup.Clear();
   s_pState->m_PageLookup.Reserve(settings.m_uiPhysicalPageCount);
-  s_pState->m_PageTableUpdates.Clear();
   s_pState->m_DirtyPages.Clear();
   s_pState->m_Stats                              = {};
   s_pState->m_Stats.m_uiFreePageCount            = settings.m_uiPhysicalPageCount;
@@ -480,7 +480,14 @@ void xiiVirtualShadowMapManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 ui
   s_pState->m_PreparedUpload.Clear();
   s_pState->m_uiFrameIndex     = uiFrameIndex;
   s_pState->m_uiCompletedFrame = xiiMath::Min(uiCompletedFrame, uiFrameIndex);
-  s_pState->m_PageTableUpdates.Clear();
+  for (xiiUInt32 i = s_pState->m_RetiredPages.GetCount(); i-- > 0;)
+    if (s_pState->m_RetiredPages[i].m_uiLastCapturedFrame <= s_pState->m_uiCompletedFrame)
+    {
+      s_pState->m_FreePages.PushBack(s_pState->m_RetiredPages[i].m_uiPhysicalPage);
+      s_pState->m_RetiredPages.RemoveAtAndSwap(i);
+    }
+  s_pState->m_Stats.m_uiFreePageCount        = s_pState->m_FreePages.GetCount();
+  s_pState->m_Stats.m_uiRetiredPageCount     = s_pState->m_RetiredPages.GetCount();
   s_pState->m_Stats.m_uiFeedbackRequestCount = 0U;
   s_pState->m_Stats.m_uiUniqueRequestCount   = 0U;
   s_pState->m_Stats.m_uiAllocationCount      = 0U;
@@ -489,6 +496,7 @@ void xiiVirtualShadowMapManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 ui
   s_pState->m_Stats.m_uiInvalidationCount    = 0U;
   s_pState->m_Stats.m_uiRasterizedPageCount  = 0U;
   s_pState->m_uiRasterizationsThisFrame      = 0U;
+  s_pState->m_uiRetirementsThisFrame         = 0U;
   for (xiiUInt32 i = s_pState->m_PendingUploads.GetCount(); i-- > 0;)
   {
     const auto& pending   = s_pState->m_PendingUploads[i];
@@ -536,8 +544,9 @@ void xiiVirtualShadowMapManager::SubmitFeedback(xiiArrayPtr<const xiiVirtualShad
 
   xiiHashTable<xiiUInt64, xiiUInt8> uniqueRequests;
   uniqueRequests.Reserve(uiRequestCount);
-  xiiUInt32       uiAllocationsRemaining = s_pState->m_Settings.m_uiMaxPageAllocations - xiiMath::Min(s_pState->m_Settings.m_uiMaxPageAllocations, s_pState->m_Stats.m_uiAllocationCount);
-  const xiiUInt32 uiBasePagesPerAxis     = s_pState->m_Settings.m_uiVirtualResolution / s_pState->m_Settings.m_uiPageSize;
+  xiiUInt32 uiAllocationsRemaining = s_pState->m_Settings.m_uiMaxPageAllocations - xiiMath::Min(s_pState->m_Settings.m_uiMaxPageAllocations, s_pState->m_Stats.m_uiAllocationCount);
+  uiAllocationsRemaining -= xiiMath::Min(uiAllocationsRemaining, s_pState->m_uiRetirementsThisFrame);
+  const xiiUInt32 uiBasePagesPerAxis = s_pState->m_Settings.m_uiVirtualResolution / s_pState->m_Settings.m_uiPageSize;
 
   for (const xiiVirtualShadowPageRequest& request : sortedRequests)
   {
@@ -608,8 +617,23 @@ void xiiVirtualShadowMapManager::SubmitFeedback(xiiArrayPtr<const xiiVirtualShad
           break;
         }
       }
-      s_pState->m_PageTableUpdates.PushBack({evicted.m_Page, uiPhysicalPage, xiiVirtualShadowPageUpdateType::Unmap});
       ++s_pState->m_Stats.m_uiEvictionCount;
+      auto& slot = s_pState->m_Slots[uiPhysicalPage];
+      // A newer immutable table may still reference this atlas page even when
+      // its demand is old. Unmap it now, but retain the physical page until all
+      // graphs in its last captured GPU frame have retired.
+      if (slot.m_uiLastCapturedFrame > s_pState->m_uiCompletedFrame)
+      {
+        slot.m_bAllocated        = false;
+        slot.m_uiContentRevision = NextRasterRevision();
+        slot.m_uiPendingRevision = 0;
+        DirtyTableSlot(*s_pState, uiPhysicalPage);
+        s_pState->m_RetiredPages.PushBack({uiPhysicalPage, slot.m_uiLastCapturedFrame});
+        ++s_pState->m_uiRetirementsThisFrame;
+        --uiAllocationsRemaining;
+        ++s_pState->m_Stats.m_uiDroppedRequestCount;
+        continue;
+      }
     }
 
     auto& slot                       = s_pState->m_Slots[uiPhysicalPage];
@@ -622,12 +646,12 @@ void xiiVirtualShadowMapManager::SubmitFeedback(xiiArrayPtr<const xiiVirtualShad
     slot.m_Mapping.m_bNeedsRendering = true;
     DirtyTableSlot(*s_pState, uiPhysicalPage);
     slot.m_uiContentRevision    = NextRasterRevision();
+    slot.m_uiLastCapturedFrame  = 0;
     slot.m_uiVirtualTableBucket = xiiInvalidIndex;
     slot.m_uiPendingRevision    = 0;
     slot.m_uiPlannedFrame       = xiiMath::MaxValue<xiiUInt64>();
     s_pState->m_PageLookup.Insert(uiKey, uiPhysicalPage);
     s_pState->m_DirtyPages.PushBack(slot.m_Mapping);
-    s_pState->m_PageTableUpdates.PushBack({request.m_Page, uiPhysicalPage, xiiVirtualShadowPageUpdateType::Map});
     --uiAllocationsRemaining;
     ++s_pState->m_Stats.m_uiAllocationCount;
   }
@@ -635,6 +659,7 @@ void xiiVirtualShadowMapManager::SubmitFeedback(xiiArrayPtr<const xiiVirtualShad
   s_pState->m_Stats.m_uiResidentPageCount = s_pState->m_PageLookup.GetCount();
   s_pState->m_Stats.m_uiFreePageCount     = s_pState->m_FreePages.GetCount();
   s_pState->m_Stats.m_uiDirtyPageCount    = s_pState->m_DirtyPages.GetCount();
+  s_pState->m_Stats.m_uiRetiredPageCount  = s_pState->m_RetiredPages.GetCount();
 }
 
 bool xiiVirtualShadowMapManager::TryGetMapping(const xiiVirtualShadowPageId& page, xiiVirtualShadowPageMapping& out_mapping)
@@ -648,14 +673,6 @@ bool xiiVirtualShadowMapManager::TryGetMapping(const xiiVirtualShadowPageId& pag
 
   out_mapping = s_pState->m_Slots[uiPhysicalPage].m_Mapping;
   return true;
-}
-
-xiiArrayPtr<const xiiVirtualShadowPageUpdate> xiiVirtualShadowMapManager::GetPageTableUpdates()
-{
-  if (!IsInitialized())
-    return {};
-
-  return xiiArrayPtr<const xiiVirtualShadowPageUpdate>(s_pState->m_PageTableUpdates.GetData(), s_pState->m_PageTableUpdates.GetCount());
 }
 
 xiiArrayPtr<const xiiVirtualShadowPageMapping> xiiVirtualShadowMapManager::GetDirtyPages()
@@ -968,6 +985,9 @@ xiiSharedPtr<const xiiVirtualShadowTableUpload> xiiVirtualShadowMapManager::Capt
   if ((!s_pState->m_pPhysicalPageTable || !s_pState->m_pVirtualPageTable || !s_pState->m_pPhysicalAtlas) && CreateGpuResources().Failed())
     return nullptr;
   auto& state = *s_pState;
+  for (auto& slot : state.m_Slots)
+    if (slot.m_bAllocated)
+      slot.m_uiLastCapturedFrame = frame;
   if (state.m_uiCpuTableRevision != state.m_uiResidencyRevision)
   {
     state.m_VirtualRecords.SetCount(state.m_uiVirtualPageTableCapacity);

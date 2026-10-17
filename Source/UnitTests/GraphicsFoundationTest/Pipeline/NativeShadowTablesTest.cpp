@@ -152,13 +152,20 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
       }
       struct Outputs
       {
-        xiiRenderGraphBufferHandle m_Physical, m_Virtual;
+        xiiRenderGraphBufferHandle m_SourcePhysical, m_SourceVirtual, m_Physical, m_Virtual;
       };
-      const auto exported = graph.AddPass<Outputs>("Read explicit residency outputs", xiiGALCommandQueueFlags::Graphics, [&](Outputs& data, xiiRenderGraphBuilder& builder) {
-        data.m_Physical = builder.ReadBuffer(snapshot->m_hPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
-        data.m_Virtual = builder.ReadBuffer(snapshot->m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
+      const auto consumerQueue = (phase & 1U) ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
+      const auto exported      = graph.AddPass<Outputs>("Capture explicit residency outputs", consumerQueue, [&](Outputs& data, xiiRenderGraphBuilder& builder) {
+        data.m_SourcePhysical = builder.ReadBuffer(snapshot->m_hPhysicalPageTable, xiiGALResourceStateFlags::CopySource);
+        data.m_SourceVirtual = builder.ReadBuffer(snapshot->m_hVirtualPageTable, xiiGALResourceStateFlags::CopySource);
+        data.m_Physical = builder.WriteBuffer("Physical table capture", *graph.GetBufferDescription(data.m_SourcePhysical), xiiGALResourceStateFlags::CopyDestination);
+        data.m_Virtual = builder.WriteBuffer("Virtual table capture", *graph.GetBufferDescription(data.m_SourceVirtual), xiiGALResourceStateFlags::CopyDestination);
         builder.ExportBuffer(data.m_Physical, xiiGALResourceStateFlags::ShaderResource);
-        builder.ExportBuffer(data.m_Virtual, xiiGALResourceStateFlags::ShaderResource); }, [](const Outputs&, xiiRenderGraphPassContext&) {}, true);
+        builder.ExportBuffer(data.m_Virtual, xiiGALResourceStateFlags::ShaderResource); }, [](const Outputs& data, xiiRenderGraphPassContext& execute) {
+        auto* physicalSource = execute.GetBuffer(data.m_SourcePhysical);
+        auto* virtualSource = execute.GetBuffer(data.m_SourceVirtual);
+        execute.GetCommandList().CopyBufferRegion(physicalSource, 0, execute.GetBuffer(data.m_Physical), 0, physicalSource->GetDescription().m_uiSize);
+        execute.GetCommandList().CopyBufferRegion(virtualSource, 0, execute.GetBuffer(data.m_Virtual), 0, virtualSource->GetDescription().m_uiSize); }, true);
       const auto physical = exported.first->m_Physical, table = exported.first->m_Virtual;
       const auto layout = static_cast<const xiiVirtualShadowGpuLayout&>(*snapshot);
       graph.EndSetup();
@@ -174,6 +181,13 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
       if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) ||
           !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
         return;
+      if (phase & 1U)
+      {
+        bool crossQueueWait = false;
+        for (const auto& submission : graph.GetQueueSubmissions())
+          crossQueueWait |= !submission.m_WaitSubmissionIndices.IsEmpty();
+        XII_TEST_BOOL(crossQueueWait);
+      }
       if (v == 0 && (phase == 0 || phase == 2 || phase == 3 || phase == 5))
         xiiTestFramework::Output(xiiTestOutput::Details, "Table phase %u: %llu upload bytes, %u upload ranges, %u submissions.", phase, producer->GetUploadBytes(), producer->GetUploadRanges(), graph.GetStatistics().m_uiQueueSubmissionCount);
       if (v == 1)
@@ -212,6 +226,133 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
       XII_TEST_INT(resident, phase == 9 ? 0 : phase == 0 ? 2 :
                                                            3);
       XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+    }
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenPageMappingsRetireBeforePhysicalReuse)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiVirtualShadowMapSettings settings;
+  settings.m_uiVirtualResolution = 64;
+  settings.m_uiPageSize          = 16;
+  settings.m_uiPhysicalPageCount = settings.m_uiMaxPageAllocations = 2;
+  settings.m_uiFramesInFlight                                      = 2;
+  if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)))
+    return;
+  const auto                                 asset = xiiLoadPipelineLibraryResource("VirtualShadowTables");
+  xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetPipeline()))
+    return;
+  xiiRenderPipelineInstance pipelines[2];
+  xiiRenderGraphContext     contexts[2];
+  for (xiiUInt32 i = 0; i < 2; ++i)
+    if (!XII_TEST_RESULT(pipelines[i].Initialize(loaded->GetPipeline())) || !XII_TEST_RESULT(contexts[i].Initialize("Frozen page lifetime view")))
+      return;
+  const auto request = [](xiiUInt32 light) {
+    xiiVirtualShadowPageRequest page;
+    page.m_Page.m_uiLightId = light;
+    xiiVirtualShadowMapManager::SubmitFeedback(xiiMakeArrayPtr(&page, 1));
+  };
+  xiiVirtualShadowPageId first, replacement;
+  first.m_uiLightId                        = 1;
+  replacement.m_uiLightId                  = 3;
+  xiiUInt32                  firstPhysical = xiiInvalidIndex;
+  xiiVirtualShadowRasterPage staleWork;
+  for (xiiUInt32 phase = 0; phase < 3; ++phase)
+  {
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    if (phase == 0)
+    {
+      request(1);
+      request(2);
+      xiiVirtualShadowPageMapping mapping;
+      if (!XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(first, mapping)))
+        return;
+      firstPhysical                                          = mapping.m_uiPhysicalPage;
+      const auto                                  projection = xiiMat4::MakeIdentity();
+      xiiDynamicArray<xiiVirtualShadowRasterPage> work;
+      xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 1, work);
+      if (!XII_TEST_INT(work.GetCount(), 1))
+        return;
+      staleWork = work[0];
+    }
+    if (phase == 2)
+    {
+      XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiRetiredPageCount, 0);
+      request(3);
+      xiiVirtualShadowPageMapping mapping;
+      XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(replacement, mapping));
+      XII_TEST_INT(mapping.m_uiPhysicalPage, firstPhysical);
+      XII_TEST_BOOL(!xiiVirtualShadowMapManager::MarkPageRendered(staleWork));
+    }
+    xiiRenderGraphBufferHandle tables[2];
+    xiiVirtualShadowGpuLayout  layouts[2];
+    for (xiiUInt32 v = 0; v < 2; ++v)
+    {
+      auto& graph = contexts[v].GetGraph();
+      auto& cache = contexts[v].GetResourceCache();
+      cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+      XII_SCOPE_EXIT(cache.EndFrame());
+      graph.BeginSetup(frame.GetFrameIndex());
+      if (!XII_TEST_RESULT(pipelines[v].Build(nullptr, graph, contexts[v].GetBlackboard())))
+        return;
+      const auto* snapshot = static_cast<const xiiVirtualShadowTablesPass*>(pipelines[v].GetPass(0))->GetSnapshot(graph);
+      if (!XII_TEST_BOOL(snapshot != nullptr))
+        return;
+      layouts[v] = *snapshot;
+      if (phase == 1 && v == 0)
+      {
+        // Old demand is retired, but this frame's immutable table still maps it.
+        XII_TEST_BOOL(frame.GetCompletedFrame() >= staleWork.m_uiFrame);
+        const auto frozen = xiiVirtualShadowMapManager::CaptureTableUpload(frame.GetFrameIndex());
+        request(3);
+        xiiVirtualShadowPageMapping mapping;
+        XII_TEST_BOOL(!xiiVirtualShadowMapManager::TryGetMapping(first, mapping));
+        XII_TEST_BOOL(!xiiVirtualShadowMapManager::TryGetMapping(replacement, mapping));
+        XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiRetiredPageCount, 1);
+        XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiFreePageCount, 0);
+        XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiResidentPageCount, 1);
+        XII_TEST_BOOL(xiiVirtualShadowMapManager::CaptureTableUpload(frame.GetFrameIndex()) == frozen);
+      }
+      const auto exported = graph.AddPass<xiiRenderGraphBufferHandle>("Read frozen virtual mappings", xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
+        data = builder.ReadBuffer(snapshot->m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(data, xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+      tables[v]           = *exported.first;
+      graph.EndSetup();
+      xiiStringBuilder error;
+      if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) ||
+          !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+        return;
+    }
+    // Neither view waits for the host before both have submitted their graph.
+    for (xiiUInt32 v = 0; v < 2; ++v)
+    {
+      const auto table    = contexts[v].GetGraph().GetExportedBuffer(tables[v]);
+      xiiUInt32  count    = 0;
+      bool       hasFirst = false, hasReplacement = false;
+      for (xiiUInt32 i = 0; i < layouts[v].m_uiVirtualTableCapacity; ++i)
+      {
+        xiiGpuVirtualShadowPage record;
+        if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), table.Borrow(), (layouts[v].m_uiVirtualTableBaseIndex + i) * sizeof(record), record))
+          return;
+        if (!(record.m_uiFlags & 1U))
+          continue;
+        ++count;
+        const auto page = xiiVirtualShadowPageId::FromPackedValue(xiiUInt64(record.m_uiVirtualKeyLow) | (xiiUInt64(record.m_uiVirtualKeyHigh) << 32));
+        hasFirst |= page.m_uiLightId == 1;
+        hasReplacement |= page.m_uiLightId == 3;
+      }
+      XII_TEST_INT(count, 2);
+      XII_TEST_BOOL(hasFirst == (phase < 2));
+      XII_TEST_BOOL(hasReplacement == (phase == 2));
     }
   }
 }
