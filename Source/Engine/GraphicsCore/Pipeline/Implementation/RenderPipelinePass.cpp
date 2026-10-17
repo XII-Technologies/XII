@@ -5,6 +5,9 @@
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineFrameData, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 3, xiiRTTINoAllocator)
   {
     XII_BEGIN_PROPERTIES
@@ -81,7 +84,7 @@ xiiResult xiiRenderPipelinePass::InitializePinBindings(xiiArrayPtr<const xiiRend
     const auto*         alias  = property->GetAttributeByType<xiiRenderPipelinePinNameAttribute>();
     const xiiStringView name   = alias ? alias->m_sName.GetView() : property->GetPropertyName();
     for (xiiUInt32 i = 0; i < pins.GetCount(); ++i)
-      if (pins[i].m_sName == name && pins[i].m_bInput == handle->m_Declaration.m_bInput && pins[i].m_Type == handle->m_Declaration.m_Type)
+      if (pins[i].m_sName == name && pins[i].m_bInput == handle->m_Declaration.m_bInput && pins[i].m_Type == handle->m_Declaration.m_Type && pins[i].m_pDataType == handle->m_Declaration.m_pDataType)
       {
         handle->m_uiBindingIndex = i;
         break;
@@ -201,6 +204,25 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineAcceler
   if (!m_Graph.GetBufferDescription(structure.m_Dependency))
     return ReportFailure("Acceleration-structure output references a missing or stale graph build dependency.");
   m_Bindings[i].m_AccelerationStructure = structure;
+  return XII_SUCCESS;
+}
+xiiSharedPtr<const xiiRenderPipelineFrameData> xiiRenderPipelinePassContext::GetInputData(const xiiRenderPipelineDataInputPin& pin) const
+{
+  const auto i = pin.GetBindingIndex();
+  if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || !m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::FrameData)
+    return nullptr;
+  const auto& value = m_Bindings[i].m_pFrameData;
+  return value && value->GetSetupSerial() && !m_Bindings[i].m_hTexture.IsValid() && !m_Bindings[i].m_hBuffer.IsValid() && m_Bindings[i].m_AccelerationStructure.IsEmpty() && m_Pins[i].m_pDataType && value->GetSetupSerial() == m_Graph.GetSetupSerial() && value->GetDynamicRTTI()->IsDerivedFrom(m_Pins[i].m_pDataType) ? value : xiiSharedPtr<const xiiRenderPipelineFrameData>();
+}
+xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineDataOutputPin& pin, xiiSharedPtr<const xiiRenderPipelineFrameData> data)
+{
+  const auto i = pin.GetBindingIndex();
+  if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::FrameData || m_bTemporalHistoryPhase)
+    return ReportFailure("Cannot publish frame data through this pin or temporal phase.");
+  if (!data || !data->GetSetupSerial() || !m_Pins[i].m_pDataType || data->GetSetupSerial() != m_Graph.GetSetupSerial() || !data->GetDynamicRTTI()->IsDerivedFrom(m_Pins[i].m_pDataType))
+    return ReportFailure("Frame data is missing, belongs to another setup or violates the native RTTI contract.");
+  m_Bindings[i]              = {};
+  m_Bindings[i].m_pFrameData = std::move(data);
   return XII_SUCCESS;
 }
 xiiResult xiiRenderPipelinePassContext::ReportFailure(xiiStringView reason) const

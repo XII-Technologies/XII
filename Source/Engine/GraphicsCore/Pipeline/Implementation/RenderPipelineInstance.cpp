@@ -243,19 +243,23 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
     switch (external.m_Pin.m_Type)
     {
       case xiiRenderPipelinePin::Texture:
-        valid = !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
+        valid = !binding.m_pFrameData && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
           (texture ? external.m_Pin.Accepts(*texture) : external.m_Pin.m_bOptional && !binding.m_hTexture.IsValid());
         break;
       case xiiRenderPipelinePin::Buffer:
-        valid = !binding.m_hTexture.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
+        valid = !binding.m_pFrameData && !binding.m_hTexture.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
           (buffer ? external.m_Pin.Accepts(*buffer) : external.m_Pin.m_bOptional && !binding.m_hBuffer.IsValid());
         break;
       case xiiRenderPipelinePin::AccelerationStructure:
-        valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() &&
+        valid = !binding.m_pFrameData && !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() &&
           (binding.m_AccelerationStructure.IsValid() ? graph.GetBufferDescription(binding.m_AccelerationStructure.m_Dependency) != nullptr : external.m_Pin.m_bOptional && binding.m_AccelerationStructure.IsEmpty());
         break;
       case xiiRenderPipelinePin::Order:
-        valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty();
+        valid = !binding.m_pFrameData && !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty();
+        break;
+      case xiiRenderPipelinePin::FrameData:
+        valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
+          (binding.m_pFrameData ? external.m_Pin.m_pDataType && binding.m_pFrameData->GetSetupSerial() == graph.GetSetupSerial() && binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(external.m_Pin.m_pDataType) : external.m_Pin.m_bOptional);
         break;
     }
     if (!valid)
@@ -303,6 +307,8 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         if (pin.m_bInput != inputs)
           continue;
         const auto& binding = context.m_Bindings[i];
+        if (binding.m_pFrameData && pin.m_Type != xiiRenderPipelinePin::FrameData)
+          return context.ReportFailure("A non-data pin contains a frame-data binding.");
         if (pin.m_Type == xiiRenderPipelinePin::Texture)
         {
           const auto* description = graph.GetTextureDescription(binding.m_hTexture);
@@ -319,6 +325,16 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
           if (!description || !pin.Accepts(*description))
           {
             error.SetFormat("Pass '{}' (instance '{}'), {} buffer pin '{}': resource is missing or violates its compiled contract.", context.m_sPassName, context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
+            m_sBuildError = error;
+            return XII_FAILURE;
+          }
+        }
+        else if (pin.m_Type == xiiRenderPipelinePin::FrameData)
+        {
+          if (binding.m_hTexture.IsValid() || binding.m_hBuffer.IsValid() || !binding.m_AccelerationStructure.IsEmpty() ||
+              (binding.m_pFrameData ? !pin.m_pDataType || binding.m_pFrameData->GetSetupSerial() != graph.GetSetupSerial() || !binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(pin.m_pDataType) : !pin.m_bOptional))
+          {
+            error.SetFormat("Pass '{}' (type '{}', instance '{}'), {} frame-data pin '{}': snapshot is missing, stale or violates its native RTTI contract.", context.m_sPassName, pass.m_pType->GetTypeName(), context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
             m_sBuildError = error;
             return XII_FAILURE;
           }

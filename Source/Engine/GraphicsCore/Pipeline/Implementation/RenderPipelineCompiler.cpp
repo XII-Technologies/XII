@@ -162,8 +162,11 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
           return fail("Temporal history must be a texture or buffer output pin.");
         pass.m_bHasTemporalHistory = true;
       }
-      if (pin.m_Type > xiiRenderPipelinePin::AccelerationStructure || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
+      if (pin.m_Type > xiiRenderPipelinePin::FrameData || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
         return fail("Invalid pin resource schema.");
+      if ((pin.m_Type == xiiRenderPipelinePin::FrameData) != (pin.m_pDataType != nullptr) ||
+          (pin.m_pDataType && !pin.m_pDataType->IsDerivedFrom<xiiRenderPipelineFrameData>()))
+        return fail("Frame-data pins require a native reflected snapshot type.");
       for (xiiUInt32 j = 0; j < i; ++j)
         if (pass.m_Pins[j].m_bInput == pin.m_bInput && pass.m_Pins[j].m_sName == pin.m_sName)
           return fail("Duplicate pin name.");

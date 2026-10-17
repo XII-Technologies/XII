@@ -3,12 +3,13 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Reflection/ReflectionUtils.h>
+#include <GraphicsCore/Pipeline/RenderPipelineFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePin.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinType, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::Order, xiiRenderPipelinePinType::AccelerationStructure)
+  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::Order, xiiRenderPipelinePinType::AccelerationStructure, xiiRenderPipelinePinType::FrameData)
 XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinAccess, 1)
   XII_ENUM_CONSTANTS(xiiRenderPipelinePinAccess::Automatic, xiiRenderPipelinePinAccess::Read, xiiRenderPipelinePinAccess::Write, xiiRenderPipelinePinAccess::ReadWrite, xiiRenderPipelinePinAccess::Ordering)
@@ -41,6 +42,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelinePinMetadata, xiiNoBase, 1, xiiR
       XII_MEMBER_PROPERTY("Optional", m_bOptional)->AddAttributes(new xiiReadOnlyAttribute()),
       XII_MEMBER_PROPERTY("TemporalHistory", m_bTemporalHistory)->AddAttributes(new xiiReadOnlyAttribute()),
       XII_ENUM_MEMBER_PROPERTY("DeclaredFormat", xiiGALResourceFormat, m_DeclaredFormat)->AddAttributes(new xiiReadOnlyAttribute()),
+      XII_MEMBER_PROPERTY("DataType", m_sDataType)->AddAttributes(new xiiReadOnlyAttribute()),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -75,6 +77,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAccelerationStructureOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineAccelerationStructureOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderInputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineDataInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineDataInputPin>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineDataOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineDataOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -144,6 +150,10 @@ xiiRenderPipelineAccelerationStructureInputPin::xiiRenderPipelineAccelerationStr
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::AccelerationStructure, true, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) {}
 xiiRenderPipelineAccelerationStructureOutputPin::xiiRenderPipelineAccelerationStructureOutputPin(bool optional, xiiRenderPipelinePinAccess::Enum access) :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::AccelerationStructure, false, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, access, false) {}
+xiiRenderPipelineDataInputPin::xiiRenderPipelineDataInputPin(const xiiRTTI* type, bool optional) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::FrameData, true, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) { SetDataType(type); }
+xiiRenderPipelineDataOutputPin::xiiRenderPipelineDataOutputPin(const xiiRTTI* type, bool optional) :
+  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::FrameData, false, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) { SetDataType(type); }
 xiiRenderPipelineOrderInputPin::xiiRenderPipelineOrderInputPin() :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, true, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
 xiiRenderPipelineOrderOutputPin::xiiRenderPipelineOrderOutputPin() :
@@ -163,6 +173,7 @@ xiiRenderPipelinePinMetadata xiiRenderPipelinePin::GetMetadata() const
   metadata.m_bOptional        = m_bOptional;
   metadata.m_bTemporalHistory = m_bTemporalHistoryOutput;
   metadata.m_DeclaredFormat   = m_Format;
+  metadata.m_sDataType        = m_pDataType ? m_pDataType->GetTypeName() : "";
   return metadata;
 }
 
@@ -181,8 +192,8 @@ xiiResult xiiRenderPipelinePin::Apply(const xiiRenderPipelinePinConfiguration& c
     return fail("invalid format, dimension or sample count.");
   if (m_Type != Texture && (configuration.m_Format != xiiGALResourceFormat::Unknown || limits.m_Dimension != xiiGALResourceDimension::Undefined || limits.m_uiSamples || limits.m_uiWidth || limits.m_uiHeight))
     return fail("texture requirements are not valid on this resource kind.");
-  if ((m_Type == Order || m_Type == AccelerationStructure) && limits.m_RequiredBindFlags.IsAnyFlagSet())
-    return fail("ordering and acceleration-structure pins cannot require texture/buffer binding flags.");
+  if ((m_Type == Order || m_Type == AccelerationStructure || m_Type == FrameData) && limits.m_RequiredBindFlags.IsAnyFlagSet())
+    return fail("ordering, acceleration-structure and frame-data pins cannot require texture/buffer binding flags.");
   if (m_Type == Texture && limits.m_Dimension == xiiGALResourceDimension::Buffer)
     return fail("a texture pin cannot require a buffer dimension.");
   if (xiiReflectionUtils::MakeEnumerationValid(xiiGetStaticRTTI<xiiGALBindFlags>(), limits.m_RequiredBindFlags.GetValue()) != limits.m_RequiredBindFlags.GetValue())
@@ -238,7 +249,7 @@ bool xiiRenderPipelinePin::IsCompatibleWith(const xiiRenderPipelinePin& other) c
   const auto compatible = [](auto a, auto b, auto unknown) {
     return a == unknown || b == unknown || a == b;
   };
-  return m_Type == other.m_Type && compatible(m_Format, other.m_Format, xiiGALResourceFormat::Unknown) &&
+  return m_Type == other.m_Type && (m_Type != FrameData || (m_pDataType && m_pDataType == other.m_pDataType)) && compatible(m_Format, other.m_Format, xiiGALResourceFormat::Unknown) &&
     compatible(m_Constraints.m_Dimension.GetValue(), other.m_Constraints.m_Dimension.GetValue(), xiiGALResourceDimension::Undefined) &&
     compatible(m_Constraints.m_uiSamples, other.m_Constraints.m_uiSamples, 0U) &&
     compatible(m_Constraints.m_uiWidth, other.m_Constraints.m_uiWidth, 0U) &&

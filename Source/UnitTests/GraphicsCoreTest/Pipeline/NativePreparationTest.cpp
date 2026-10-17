@@ -13,6 +13,8 @@
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackReadbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowPagePublishPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowRasterWorkPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackReadbackPass.h>
@@ -749,7 +751,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDirectionalCascades)
   graph.BeginSetup(1);
   XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard).Failed());
   XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("explicit view camera") != nullptr);
-  XII_TEST_BOOL(static_cast<const xiiShadowCascadePass*>(instance.GetPass(0))->GetCascadeSnapshot(graph).IsEmpty());
+  XII_TEST_BOOL(!instance.GetOutputBinding(0, "CascadeSnapshot")->m_pFrameData);
   graph.EndSetup();
 }
 
@@ -772,11 +774,51 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowTables)
   graph.BeginSetup(1);
   XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard).Failed());
   XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("active shared GPU frame") != nullptr);
-  XII_TEST_BOOL(pass.GetSnapshot(graph) == nullptr);
+  XII_TEST_BOOL(!instance.GetOutputBinding(0, "Residency")->m_pFrameData);
   graph.EndSetup();
   const auto settings        = xiiVirtualShadowMapManager::GetConfiguration();
   auto       invalid         = settings;
   invalid.m_uiFramesInFlight = 65;
   XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(invalid).Failed());
   XII_TEST_INT(xiiVirtualShadowMapManager::GetConfiguration().m_uiFramesInFlight, settings.m_uiFramesInFlight);
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowWorkAndPublication)
+{
+  xiiVirtualShadowRasterWorkPass  work;
+  xiiVirtualShadowPagePublishPass publish;
+  XII_TEST_BOOL(work.GetExtractionRequirements().IsNoFlagSet() && publish.GetExtractionRequirements().IsNoFlagSet());
+  XII_TEST_BOOL(work.GetRequiredDeviceFeatures().IsNoFlagSet() && publish.GetRequiredDeviceFeatures().IsNoFlagSet());
+  xiiVariantDictionary properties;
+  properties.Insert("LightId", 0x1000000U);
+  XII_TEST_BOOL(work.Configure(properties).Failed());
+  properties.Insert("LightId", 7U);
+  properties.Insert("MaxPages", 1048577U);
+  XII_TEST_BOOL(work.Configure(properties).Failed());
+  properties.Insert("MaxPages", 0U);
+  XII_TEST_RESULT(work.Configure(properties));
+  properties.Clear();
+  XII_TEST_RESULT(work.GetProperties(properties));
+  xiiVirtualShadowRasterWorkPass copy;
+  XII_TEST_RESULT(copy.Configure(properties));
+  XII_TEST_INT(copy.m_uiLightId, 7);
+  XII_TEST_INT(copy.m_uiMaxPages, 0);
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  copy.GetPins(pins);
+  XII_TEST_RESULT(copy.InitializePinBindings(pins));
+  xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+  bindings.SetCount(pins.GetCount());
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  xiiVariantDictionary     parameters;
+  xiiStringBuilder         error;
+  graph.BeginSetup(1);
+  xiiRenderPipelinePassContext context{nullptr, graph, blackboard, parameters, pins, bindings, "Independent work"};
+  context.m_pBuildError = &error;
+  XII_TEST_BOOL(copy.Build(context).Failed());
+  XII_TEST_BOOL(error.FindSubString("current GPU frame") != nullptr);
+  for (const auto& pin : pins)
+    if (pin.m_Type != xiiRenderPipelinePin::Order)
+      XII_TEST_BOOL(pin.m_Type == xiiRenderPipelinePin::FrameData && pin.m_pDataType != nullptr);
+  graph.EndSetup();
 }

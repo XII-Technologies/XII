@@ -59,6 +59,8 @@ xiiCommandLineOptionString opt_GpuDrivenShadowPipeline("GpuDrivenScene", "-shado
 xiiCommandLineOptionString opt_GpuDrivenShadowPagePipeline("GpuDrivenScene", "-shadow-page-pipeline", "Authored raster resource for supplied virtual page targets.", "RenderPipelines/ShadowMeshDepth.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowFeedbackPipeline("GpuDrivenScene", "-shadow-feedback-pipeline", "Authored virtual shadow demand/readback resource.", "RenderPipelines/VirtualShadowFeedback.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenCascadePipeline("GpuDrivenScene", "-shadow-cascade-pipeline", "Authored stabilized directional cascade resource.", "RenderPipelines/ShadowCascades.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenShadowWorkPipeline("GpuDrivenScene", "-shadow-work-pipeline", "Authored virtual shadow raster work selection resource.", "RenderPipelines/VirtualShadowRasterWork.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenShadowPublishPipeline("GpuDrivenScene", "-shadow-publish-pipeline", "Authored virtual shadow page publication resource.", "RenderPipelines/VirtualShadowPagePublish.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowTablesPipeline("GpuDrivenScene", "-shadow-tables-pipeline", "Authored virtual-shadow residency table upload resource.", "RenderPipelines/VirtualShadowTables.xiiBinRenderPipeline");
 
 namespace
@@ -379,6 +381,14 @@ public:
       RequestQuit();
       return;
     }
+    m_hShadowWorkPipeline    = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenShadowWorkPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    m_hShadowPublishPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenShadowPublishPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeShadowDataPipelines().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     m_hCascadePipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenCascadePipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
     if (SynchronizeCascadePipeline().Failed())
     {
@@ -422,6 +432,10 @@ public:
     m_VirtualPageRuntimes.Clear();
     m_ShadowPageDefinition = nullptr;
     m_hShadowPagePipeline.Invalidate();
+    m_ShadowWork.Clear();
+    m_ShadowPublish.Clear();
+    m_hShadowWorkPipeline.Invalidate();
+    m_hShadowPublishPipeline.Invalidate();
     m_ShadowTables.Clear();
     m_hShadowTablesPipeline.Invalidate();
     m_Cascades.Clear();
@@ -655,17 +669,31 @@ private:
   };
 
   xiiResult BuildVirtualShadowPages(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
-                                    xiiVirtualShadowTableBindings& upload, const xiiMat4& projection,
+                                    xiiVirtualShadowTableBindings& upload, const xiiSharedPtr<const xiiShadowCascadeSnapshot>& cascades, const xiiSharedPtr<const xiiVirtualShadowResidencySnapshot>& residency,
                                     const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
                                     const xiiMaterialGpuStorage::UploadHandles& materials)
   {
     XII_SUCCEED_OR_RETURN(SynchronizeShadowPagePipeline());
     const auto count = xiiVirtualShadowMapManager::GetConfiguration().m_uiPhysicalPageCount;
     m_VirtualPageRuntimes.SetCount(count);
-    xiiDynamicArray<xiiVirtualShadowRasterPage> pages;
-    xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), g_uiDirectionalLightId, pages);
-    m_uiVirtualPagesThisFrame = pages.GetCount();
-    for (const auto& page : pages)
+    XII_SUCCEED_OR_RETURN(SynchronizeShadowDataPipelines());
+    xiiRenderPipelineBinding cascadeInput, residencyInput;
+    cascadeInput.m_pFrameData                          = cascades;
+    residencyInput.m_pFrameData                        = residency;
+    const auto*                         workDefinition = m_ShadowWork.GetPipeline();
+    const xiiRenderPipelineInputBinding workInputs[]   = {
+      {graph, workDefinition->FindInterface("Cascades", true), cascadeInput},
+      {graph, workDefinition->FindInterface("Residency", true), residencyInput}};
+    xiiVariantDictionary parameters;
+    parameters.Insert("ShadowRasterLightId", g_uiDirectionalLightId);
+    if (m_ShadowWork.Build(nullptr, graph, blackboard, parameters, xiiMakeArrayPtr(workInputs)).Failed())
+    {
+      xiiLog::Error("Shadow work resource '{}': {}", m_hShadowWorkPipeline.GetResourceID(), m_ShadowWork.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    const auto batch          = m_ShadowWork.GetInterfaceBinding(workDefinition->FindInterface("RasterPages", false))->m_pFrameData.Downcast<const xiiVirtualShadowRasterBatch>();
+    m_uiVirtualPagesThisFrame = batch->m_Pages.GetCount();
+    for (const auto& page : batch->m_Pages)
     {
       auto& runtime = m_VirtualPageRuntimes[page.m_uiPhysicalPage];
       if (!runtime)
@@ -686,7 +714,55 @@ private:
         return XII_FAILURE;
       }
     }
-    XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::AddPageCompletionPass(graph, upload, upload.m_hPhysicalAtlas, upload.m_hVirtualPageTable, pages));
+    const auto*              publish = m_ShadowPublish.GetPipeline();
+    xiiRenderPipelineBinding batchInput;
+    batchInput.m_pFrameData                             = batch;
+    const xiiRenderPipelineInputBinding publishInputs[] = {
+      {graph, publish->FindInterface("RasterPages", true), batchInput},
+      {graph, publish->FindInterface("RasterAtlas", true), upload.m_hPhysicalAtlas},
+      {graph, publish->FindInterface("PhysicalPageTable", true), upload.m_hPhysicalPageTable},
+      {graph, publish->FindInterface("VirtualPageTable", true), upload.m_hVirtualPageTable}};
+    if (m_ShadowPublish.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(publishInputs)).Failed())
+    {
+      xiiLog::Error("Shadow publication resource '{}': {}", m_hShadowPublishPipeline.GetResourceID(), m_ShadowPublish.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    upload.m_hPhysicalAtlas     = m_ShadowPublish.GetInterfaceBinding(publish->FindInterface("ReadyAtlas", false))->m_hTexture;
+    upload.m_hPhysicalPageTable = m_ShadowPublish.GetInterfaceBinding(publish->FindInterface("ReadyPhysicalPageTable", false))->m_hBuffer;
+    upload.m_hVirtualPageTable  = m_ShadowPublish.GetInterfaceBinding(publish->FindInterface("ReadyVirtualPageTable", false))->m_hBuffer;
+    return XII_SUCCESS;
+  }
+
+  xiiResult SynchronizeShadowDataPipelines()
+  {
+    if (m_ShadowWork.Synchronize(m_hShadowWorkPipeline).Failed() || m_ShadowPublish.Synchronize(m_hShadowPublishPipeline).Failed())
+    {
+      xiiLog::Error("Selected shadow work/publication resources '{}' and '{}' must both be valid.", m_hShadowWorkPipeline.GetResourceID(), m_hShadowPublishPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    const auto data = [&](const xiiRenderPipeline* pipeline, xiiStringView name, bool input, const xiiRTTI* type) {
+      const auto index = pipeline->FindInterface(name, input);
+      return index != xiiInvalidIndex && pipeline->GetInterface()[index].m_Pin.m_Type == xiiRenderPipelinePin::FrameData && pipeline->GetInterface()[index].m_Pin.m_pDataType == type;
+    };
+    const auto* work    = m_ShadowWork.GetPipeline();
+    const auto* publish = m_ShadowPublish.GetPipeline();
+    if (!data(work, "Cascades", true, xiiGetStaticRTTI<xiiShadowCascadeSnapshot>()) || !data(work, "Residency", true, xiiGetStaticRTTI<xiiVirtualShadowResidencySnapshot>()) ||
+        !data(work, "RasterPages", false, xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()) || !data(publish, "RasterPages", true, xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()))
+    {
+      xiiLog::Error("Selected shadow work/publication resources require typed Cascades, Residency and RasterPages interfaces.");
+      return XII_FAILURE;
+    }
+    for (const xiiStringView name : {"PhysicalPageTable", "VirtualPageTable", "ReadyPhysicalPageTable", "ReadyVirtualPageTable", "RasterAtlas", "ReadyAtlas"})
+    {
+      const bool input = !name.StartsWith("Ready");
+      const auto index = publish->FindInterface(name, input);
+      const auto kind  = name.EndsWith("Atlas") ? xiiRenderPipelinePin::Texture : xiiRenderPipelinePin::Buffer;
+      if (index == xiiInvalidIndex || publish->GetInterface()[index].m_Pin.m_Type != kind || (kind == xiiRenderPipelinePin::Texture && publish->GetInterface()[index].m_Pin.m_Format != xiiGALResourceFormat::D32Float))
+      {
+        xiiLog::Error("Shadow publication resource '{}' has an incompatible '{}' interface.", m_hShadowPublishPipeline.GetResourceID(), name);
+        return XII_FAILURE;
+      }
+    }
     return XII_SUCCESS;
   }
 
@@ -710,6 +786,12 @@ private:
           return XII_FAILURE;
         }
       }
+      const auto residency = pipeline->FindInterface("Residency", false);
+      if (residency == xiiInvalidIndex || pipeline->GetInterface()[residency].m_Pin.m_Type != xiiRenderPipelinePin::FrameData || pipeline->GetInterface()[residency].m_Pin.m_pDataType != xiiGetStaticRTTI<xiiVirtualShadowResidencySnapshot>())
+      {
+        xiiLog::Error("Shadow-table resource '{}' requires a typed Residency output.", m_hShadowTablesPipeline.GetResourceID());
+        return XII_FAILURE;
+      }
       const auto atlas = pipeline->FindInterface("PhysicalAtlas", false);
       if (atlas == xiiInvalidIndex || pipeline->GetInterface()[atlas].m_Pin.m_Type != xiiRenderPipelinePin::Texture || pipeline->GetInterface()[atlas].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
       {
@@ -720,7 +802,7 @@ private:
     return XII_SUCCESS;
   }
 
-  xiiResult BuildShadowTables(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiVirtualShadowTableBindings& output)
+  xiiResult BuildShadowTables(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiVirtualShadowTableBindings& output, xiiSharedPtr<const xiiVirtualShadowResidencySnapshot>& residency)
   {
     XII_SUCCEED_OR_RETURN(SynchronizeShadowTablesPipeline());
     if (m_ShadowTables.Build(nullptr, graph, blackboard).Failed())
@@ -732,16 +814,19 @@ private:
     const auto  atlas    = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("PhysicalAtlas", false))->m_hTexture;
     const auto  physical = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("PhysicalPageTable", false))->m_hBuffer;
     const auto  table    = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("VirtualPageTable", false))->m_hBuffer;
-    for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
-      if (m_ShadowTables.GetPass(i)->GetDynamicRTTI()->IsDerivedFrom<xiiVirtualShadowTablesPass>())
-        if (const auto* captured = static_cast<const xiiVirtualShadowTablesPass*>(m_ShadowTables.GetPass(i))->GetSnapshot(graph))
-          if (captured->m_hPhysicalAtlas == atlas && captured->m_hPhysicalPageTable == physical && captured->m_hVirtualPageTable == table)
-          {
-            output = *captured;
-            return XII_SUCCESS;
-          }
-    xiiLog::Error("Shadow-table resource '{}' must expose one native layout capture through its explicit table/atlas outputs.", m_hShadowTablesPipeline.GetResourceID());
-    return XII_FAILURE;
+    const auto* metadata = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("Residency", false));
+    residency            = metadata ? metadata->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>() : xiiSharedPtr<const xiiVirtualShadowResidencySnapshot>();
+    if (!residency || residency->GetSetupSerial() != graph.GetSetupSerial() || residency->m_Bindings.m_hPhysicalAtlas.m_Id != atlas.m_Id ||
+        residency->m_Bindings.m_hPhysicalPageTable.m_Id != physical.m_Id || residency->m_Bindings.m_hVirtualPageTable.m_Id != table.m_Id)
+    {
+      xiiLog::Error("Shadow-table resource '{}' must expose matching typed Residency and explicit GPU outputs.", m_hShadowTablesPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    output                      = residency->m_Bindings;
+    output.m_hPhysicalAtlas     = atlas;
+    output.m_hPhysicalPageTable = physical;
+    output.m_hVirtualPageTable  = table;
+    return XII_SUCCESS;
   }
 
   xiiResult SynchronizeCascadePipeline()
@@ -755,7 +840,13 @@ private:
     if (changed)
     {
       const auto* pipeline = m_Cascades.GetPipeline();
-      m_uiCascadeOutput    = pipeline->FindInterface("CascadeConstants", false);
+      const auto  snapshot = pipeline->FindInterface("CascadeSnapshot", false);
+      if (snapshot == xiiInvalidIndex || pipeline->GetInterface()[snapshot].m_Pin.m_Type != xiiRenderPipelinePin::FrameData || pipeline->GetInterface()[snapshot].m_Pin.m_pDataType != xiiGetStaticRTTI<xiiShadowCascadeSnapshot>())
+      {
+        xiiLog::Error("Cascade resource '{}' requires a typed CascadeSnapshot output.", m_hCascadePipeline.GetResourceID());
+        return XII_FAILURE;
+      }
+      m_uiCascadeOutput = pipeline->FindInterface("CascadeConstants", false);
       if (m_uiCascadeOutput == xiiInvalidIndex ||
           pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Type != xiiRenderPipelinePin::Buffer ||
           !pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
@@ -768,7 +859,7 @@ private:
   }
 
   xiiResult BuildCascades(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
-                          xiiArrayPtr<const xiiShadowCascadeDescription>& snapshot, xiiRenderGraphBufferHandle& constants, xiiUInt32& resolution)
+                          xiiSharedPtr<const xiiShadowCascadeSnapshot>& snapshot, xiiRenderGraphBufferHandle& constants, xiiUInt32& resolution)
   {
     XII_SUCCEED_OR_RETURN(SynchronizeCascadePipeline());
     auto* view = m_World.GetRenderView();
@@ -784,27 +875,16 @@ private:
       xiiLog::Error("Authored cascades failed: {}", m_Cascades.GetLastBuildError());
       return XII_FAILURE;
     }
-    constants = m_Cascades.GetInterfaceBinding(m_uiCascadeOutput)->m_hBuffer;
-    // Select the producer of this explicit boundary, allowing other cascade occurrences.
-    for (xiiUInt32 i = 0; i < m_Cascades.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
-      if (m_Cascades.GetPass(i)->GetDynamicRTTI()->IsDerivedFrom<xiiShadowCascadePass>())
-      {
-        const auto* binding = m_Cascades.GetOutputBinding(i, "CascadeConstants");
-        if (binding && binding->m_hBuffer == constants)
-        {
-          const auto* pass = static_cast<const xiiShadowCascadePass*>(m_Cascades.GetPass(i));
-          snapshot         = pass->GetCascadeSnapshot(graph);
-          if (snapshot.GetCount() != 1)
-          {
-            xiiLog::Error("Cascade resource '{}' supplies {} cascades, but this sample's remaining main shading consumes one shadow projection. Select a single-cascade resource until that consumer is rebuilt.", m_hCascadePipeline.GetResourceID(), snapshot.GetCount());
-            return XII_FAILURE;
-          }
-          resolution = pass->m_Settings.m_uiShadowMapResolution;
-          return !snapshot.IsEmpty() && constants.IsValid() ? XII_SUCCESS : XII_FAILURE;
-        }
-      }
-    xiiLog::Error("Cascade resource '{}' must map CascadeConstants to a native directional snapshot for this client's CPU page queries.", m_hCascadePipeline.GetResourceID());
-    return XII_FAILURE;
+    constants            = m_Cascades.GetInterfaceBinding(m_uiCascadeOutput)->m_hBuffer;
+    const auto* metadata = m_Cascades.GetInterfaceBinding(m_Cascades.GetPipeline()->FindInterface("CascadeSnapshot", false));
+    snapshot             = metadata ? metadata->m_pFrameData.Downcast<const xiiShadowCascadeSnapshot>() : xiiSharedPtr<const xiiShadowCascadeSnapshot>();
+    if (!snapshot || snapshot->GetSetupSerial() != graph.GetSetupSerial() || snapshot->m_hConstants != constants || snapshot->m_Cascades.GetCount() != 1)
+    {
+      xiiLog::Error("Cascade resource '{}' must expose a matching CascadeSnapshot and one projection for this sample's remaining main shading.", m_hCascadePipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    resolution = snapshot->m_uiResolution;
+    return XII_SUCCESS;
   }
 
   xiiResult SynchronizeShadowFeedbackPipeline()
@@ -901,8 +981,9 @@ private:
       RequestQuit();
       return;
     }
-    xiiVirtualShadowTableBindings virtualShadowUpload;
-    if (BuildShadowTables(graph, blackboard, virtualShadowUpload).Failed())
+    xiiVirtualShadowTableBindings                         virtualShadowUpload;
+    xiiSharedPtr<const xiiVirtualShadowResidencySnapshot> shadowResidency;
+    if (BuildShadowTables(graph, blackboard, virtualShadowUpload, shadowResidency).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
@@ -949,17 +1030,17 @@ private:
       return;
     }
 
-    xiiUInt32                                      uiShadowResolution = 0;
-    xiiArrayPtr<const xiiShadowCascadeDescription> shadowCascades;
-    xiiRenderGraphBufferHandle                     hCascadeConstants;
-    if (BuildCascades(graph, blackboard, shadowCascades, hCascadeConstants, uiShadowResolution).Failed())
+    xiiUInt32                                    uiShadowResolution = 0;
+    xiiSharedPtr<const xiiShadowCascadeSnapshot> shadowSnapshot;
+    xiiRenderGraphBufferHandle                   hCascadeConstants;
+    if (BuildCascades(graph, blackboard, shadowSnapshot, hCascadeConstants, uiShadowResolution).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
       return;
     }
-    const bool    bHasShadowCascade    = !shadowCascades.IsEmpty();
-    const xiiMat4 shadowViewProjection = shadowCascades[0].m_mViewProjection;
+    const bool    bHasShadowCascade    = !shadowSnapshot->m_Cascades.IsEmpty();
+    const xiiMat4 shadowViewProjection = shadowSnapshot->m_Cascades[0].m_mViewProjection;
 
     xiiGpuVisibilityOutputs shadowVisibility;
     if (BuildVisibility(m_ShadowVisibility, graph, blackboard, shadowViewProjection, uiShadowResolution, uiShadowResolution,
@@ -975,12 +1056,12 @@ private:
     {
       const xiiVirtualShadowMapSettings& settings = xiiVirtualShadowMapManager::GetConfiguration();
       xiiRectU32                         animatedPageRegion;
-      if (BuildVirtualShadowPageRegion(shadowCascades[0].m_mViewProjection, m_World.GetAnimatedShadowBounds(), settings.m_uiVirtualResolution, settings.m_uiPageSize, 0U, animatedPageRegion))
+      if (BuildVirtualShadowPageRegion(shadowSnapshot->m_Cascades[0].m_mViewProjection, m_World.GetAnimatedShadowBounds(), settings.m_uiVirtualResolution, settings.m_uiPageSize, 0U, animatedPageRegion))
       {
         XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::InvalidateRegion(g_uiDirectionalLightId, 0U, animatedPageRegion));
       }
 
-      if (BuildVirtualShadowPages(graph, blackboard, virtualShadowUpload, shadowCascades[0].m_mViewProjection, shadowVisibility, geometry, materials).Failed())
+      if (BuildVirtualShadowPages(graph, blackboard, virtualShadowUpload, shadowSnapshot, shadowResidency, shadowVisibility, geometry, materials).Failed())
       {
         SetReturnCode(1);
         RequestQuit();
@@ -1038,7 +1119,7 @@ private:
     drawPass.first->m_pRenderPass               = m_pSceneRenderPass;
     drawPass.first->m_ViewProjection            = m_ViewProjection;
     drawPass.first->m_ShadowViewProjection      = shadowViewProjection;
-    drawPass.first->m_fShadowWorldUnitsPerTexel = bHasShadowCascade ? (2.0f * shadowCascades[0].m_fWorldRadius) / static_cast<float>(uiShadowResolution) : 0.0f;
+    drawPass.first->m_fShadowWorldUnitsPerTexel = bHasShadowCascade ? (2.0f * shadowSnapshot->m_Cascades[0].m_fWorldRadius) / static_cast<float>(uiShadowResolution) : 0.0f;
     drawPass.first->m_uiGeometryBase            = geometry.m_uiGeometryBaseIndex;
     drawPass.first->m_uiMaterialFrameBase       = materials.m_uiSurfaceBaseIndex;
     drawPass.first->m_uiMaterialStride          = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
@@ -1350,6 +1431,8 @@ private:
   xiiUInt32                                         m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
   xiiRenderPipelineResourceHandle                   m_hVisibilityPipeline;
   xiiRenderPipelineResourceHandle                   m_hShadowPagePipeline;
+  xiiRenderPipelineResourceHandle                   m_hShadowWorkPipeline, m_hShadowPublishPipeline;
+  xiiRenderPipelineInstance                         m_ShadowWork, m_ShadowPublish;
   xiiRenderPipelineResourceHandle                   m_hShadowTablesPipeline;
   xiiRenderPipelineInstance                         m_ShadowTables;
   xiiRenderPipelineResourceHandle                   m_hCascadePipeline;

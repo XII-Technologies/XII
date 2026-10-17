@@ -81,6 +81,7 @@ namespace
     xiiPipelineEditorPin(const xiiRenderPipelinePin& pin, const xiiDocumentObject* object) :
       xiiPin(pin.m_bInput ? Type::Input : Type::Output, pin.m_sName, xiiColorScheme::DarkUI(pin.m_Type == xiiRenderPipelinePin::Texture ? xiiColorScheme::Blue : pin.m_Type == xiiRenderPipelinePin::Buffer ? xiiColorScheme::Green :
                                                                                               pin.m_Type == xiiRenderPipelinePin::AccelerationStructure                                                     ? xiiColorScheme::Violet :
+                                                                                              pin.m_Type == xiiRenderPipelinePin::FrameData                                                                 ? xiiColorScheme::Orange :
                                                                                                                                                                                                               xiiColorScheme::Gray),
              object),
       m_Schema(pin)
@@ -157,6 +158,7 @@ xiiStatus xiiRenderPipelineNodeManager::SynchronizePinConfigurations(const xiiDo
     XII_SUCCEED_OR_RETURN(set(object, "Optional", metadata.m_bOptional));
     XII_SUCCEED_OR_RETURN(set(object, "TemporalHistory", metadata.m_bTemporalHistory));
     XII_SUCCEED_OR_RETURN(set(object, "DeclaredFormat", static_cast<xiiInt64>(metadata.m_DeclaredFormat.GetValue())));
+    XII_SUCCEED_OR_RETURN(set(object, "DataType", metadata.m_sDataType));
   }
   xiiDynamicArray<const xiiDocumentObject*> obsolete;
   for (const auto* child : node->GetChildren())

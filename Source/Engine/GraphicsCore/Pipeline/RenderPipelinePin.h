@@ -16,6 +16,7 @@ struct xiiRenderPipelinePinType
     Buffer,
     Order,
     AccelerationStructure,
+    FrameData,
     Default = Texture
   };
 };
@@ -70,6 +71,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePinMetadata
   bool                                     m_bOptional        = false;
   bool                                     m_bTemporalHistory = false;
   xiiEnum<xiiGALResourceFormat>            m_DeclaredFormat   = xiiGALResourceFormat::Unknown;
+  xiiString                                m_sDataType;
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinMetadata);
 
@@ -96,6 +98,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   static constexpr Type               Buffer                = xiiRenderPipelinePinType::Buffer;
   static constexpr Type               Order                 = xiiRenderPipelinePinType::Order;
   static constexpr Type               AccelerationStructure = xiiRenderPipelinePinType::AccelerationStructure;
+  static constexpr Type               FrameData             = xiiRenderPipelinePinType::FrameData;
   xiiString                           m_sName;
   Type                                m_Type                   = Texture;
   bool                                m_bInput                 = true;
@@ -107,6 +110,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   xiiUuid                             m_SourceId;
   xiiUuid                             m_Id; ///< Compiled occurrence identity, scoped by its pipeline definition.
   xiiString                           m_sDisplayName;
+  const xiiRTTI*                      m_pDataType = nullptr; ///< Immutable native schema, never an authored runtime value.
 
   xiiRenderPipelinePinMetadata GetMetadata() const;
   xiiResult                    Apply(const xiiRenderPipelinePinConfiguration& configuration, xiiStringBuilder* out_error = nullptr);
@@ -131,6 +135,7 @@ protected:
                              xiiGALResourceFormat::Enum format, xiiBitflags<xiiGALBindFlags> bindings,
                              xiiGALResourceDimension::Enum dimension, xiiUInt32 samples,
                              xiiRenderPipelinePinAccess::Enum access, bool temporal);
+  void SetDataType(const xiiRTTI* type) { m_Declaration.m_pDataType = type; }
 
 private:
   friend class xiiRenderPipelinePass;
@@ -186,6 +191,22 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineAccelerationStructureOutputPin : pub
 
 public:
   explicit xiiRenderPipelineAccelerationStructureOutputPin(bool optional = false, xiiRenderPipelinePinAccess::Enum access = xiiRenderPipelinePinAccess::Automatic);
+};
+
+/// Immutable reflected CPU snapshots with a native RTTI contract.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineDataInputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineDataInputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineDataInputPin(const xiiRTTI* type = nullptr, bool optional = false);
+};
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineDataOutputPin : public xiiRenderPipelinePinHandle
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineDataOutputPin, xiiRenderPipelinePinHandle);
+
+public:
+  explicit xiiRenderPipelineDataOutputPin(const xiiRTTI* type = nullptr, bool optional = false);
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineOrderInputPin : public xiiRenderPipelinePinHandle

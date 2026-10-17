@@ -29,6 +29,7 @@ public:
   bool                          m_bInput         = true;
   xiiUInt32                     m_uiResourceType = xiiRenderPipelinePin::Texture;
   xiiEnum<xiiGALResourceFormat> m_Format         = xiiGALResourceFormat::Unknown;
+  xiiString                     m_sDataType;
   void                          GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                     Build(xiiRenderPipelinePassContext&) override { return XII_FAILURE; }
 };

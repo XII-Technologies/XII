@@ -85,7 +85,8 @@ XII_CREATE_SIMPLE_TEST(NativeShadowCascades, SharedDefinitionPrivateCameraSnapsh
       cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
       XII_SCOPE_EXIT(cache.EndFrame());
       graph.BeginSetup(frame.GetFrameIndex());
-      XII_TEST_BOOL(static_cast<const xiiShadowCascadePass*>(pipelines[v].GetPass(0))->GetCascadeSnapshot(graph).IsEmpty());
+      const auto* oldSnapshot = pipelines[v].GetOutputBinding(0, "CascadeSnapshot");
+      XII_TEST_BOOL(!oldSnapshot->m_pFrameData || oldSnapshot->m_pFrameData->GetSetupSerial() != graph.GetSetupSerial());
       cameras[v].LookAt(xiiVec3(float(phase * 2), float(v * 3), 4), xiiVec3(4, 0, 0), xiiVec3(0, 0, 1));
       xiiVariantDictionary parameters;
       if (phase == 2)
@@ -96,8 +97,11 @@ XII_CREATE_SIMPLE_TEST(NativeShadowCascades, SharedDefinitionPrivateCameraSnapsh
       xiiRenderGraphBufferHandle                     buffers[2];
       for (xiiUInt32 i = 0; i < 2; ++i)
       {
-        const auto* pass     = static_cast<const xiiShadowCascadePass*>(pipelines[v].GetPass(i));
-        const auto  snapshot = pass->GetCascadeSnapshot(graph);
+        const auto* pass      = static_cast<const xiiShadowCascadePass*>(pipelines[v].GetPass(i));
+        const auto  frameData = pipelines[v].GetOutputBinding(i, "CascadeSnapshot")->m_pFrameData.Downcast<const xiiShadowCascadeSnapshot>();
+        if (!XII_TEST_BOOL(frameData && frameData->GetSetupSerial() == graph.GetSetupSerial()))
+          return;
+        const auto snapshot = frameData->m_Cascades.GetArrayPtr();
         XII_TEST_INT(snapshot.GetCount(), i ? 3 : 1);
         XII_TEST_FLOAT(snapshot[snapshot.GetCount() - 1].m_fSplitFar, i ? 90.0f : 120.0f, 0.001f);
         XII_TEST_BOOL(!snapshot[0].m_mViewProjection.IsIdentity());
@@ -149,6 +153,6 @@ XII_CREATE_SIMPLE_TEST(NativeShadowCascades, SharedDefinitionPrivateCameraSnapsh
   graph.BeginSetup(100);
   views[0]->SetCamera(nullptr);
   XII_TEST_BOOL(pipelines[0].Build(views[0], graph, contexts[0].GetBlackboard()).Failed());
-  XII_TEST_BOOL(static_cast<const xiiShadowCascadePass*>(pipelines[0].GetPass(0))->GetCascadeSnapshot(graph).IsEmpty());
+  XII_TEST_BOOL(!pipelines[0].GetOutputBinding(0, "CascadeSnapshot")->m_pFrameData);
   graph.EndSetup();
 }

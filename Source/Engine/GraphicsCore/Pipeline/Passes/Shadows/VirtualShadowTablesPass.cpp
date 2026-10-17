@@ -11,20 +11,18 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualShadowTablesPass, 1, xiiRTTIDefaultAl
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("PhysicalPageTable", m_Physical)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("Residency", m_Residency)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VirtualPageTable", m_Virtual)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PhysicalAtlas", m_Atlas)->AddFlags(xiiPropertyFlags::ReadOnly),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Shadows") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-const xiiVirtualShadowTableBindings* xiiVirtualShadowTablesPass::GetSnapshot(const xiiRenderGraph& graph) const
-{
-  return m_uiSetupSerial && m_uiSetupSerial == graph.GetSetupSerial() && m_uiConfigurationRevision == xiiVirtualShadowMapManager::GetConfigurationRevision() ? &m_Snapshot : nullptr;
-}
 xiiResult xiiVirtualShadowTablesPass::Build(xiiRenderPipelinePassContext& context)
 {
-  m_uiSetupSerial = m_uiUploadBytes = m_uiUploadRanges = 0;
-  xiiUInt64 completed                                  = 0;
+  m_uiUploadBytes = m_uiUploadRanges = 0;
+  xiiVirtualShadowTableBindings snapshot;
+  xiiUInt64                     completed = 0;
   if (xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
     return context.ReportFailure("Virtual shadow table uploads require an active shared GPU frame.");
   const auto capture = xiiVirtualShadowMapManager::CaptureTableUpload(context.m_Graph.GetFrameIndex());
@@ -37,10 +35,10 @@ xiiResult xiiVirtualShadowTablesPass::Build(xiiRenderPipelinePassContext& contex
   canonical.SetFormat("Device/VirtualShadowTables/{}/{}", capture->m_uiConfigurationRevision, capture->m_uiResidencyRevision);
   context.m_Graph.SetResourceNamespace(canonical);
   XII_SCOPE_EXIT(context.m_Graph.SetResourceNamespace(previous));
-  m_Snapshot.m_hPhysicalPageTable = context.m_Graph.FindBuffer("Physical");
-  m_Snapshot.m_hVirtualPageTable  = context.m_Graph.FindBuffer("Virtual");
-  m_Snapshot.m_hPhysicalAtlas     = context.m_Graph.FindTexture("Atlas");
-  if (!m_Snapshot.m_hPhysicalPageTable.IsValid() || !m_Snapshot.m_hVirtualPageTable.IsValid() || !m_Snapshot.m_hPhysicalAtlas.IsValid())
+  snapshot.m_hPhysicalPageTable = context.m_Graph.FindBuffer("Physical");
+  snapshot.m_hVirtualPageTable  = context.m_Graph.FindBuffer("Virtual");
+  snapshot.m_hPhysicalAtlas     = context.m_Graph.FindTexture("Atlas");
+  if (!snapshot.m_hPhysicalPageTable.IsValid() || !snapshot.m_hVirtualPageTable.IsValid() || !snapshot.m_hPhysicalAtlas.IsValid())
   {
     struct Data
     {
@@ -84,16 +82,14 @@ xiiResult xiiVirtualShadowTablesPass::Build(xiiRenderPipelinePassContext& contex
           xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(captured.m_VirtualRecords.GetData()), captured.m_VirtualRecords.GetCount() * sizeof(xiiGpuVirtualShadowPage)));
       execute.GetCommandList().EnqueueSignal(data.m_Completion.Borrow(), 1);
       xiiVirtualShadowMapManager::RecordTableUpload(data.m_Capture, data.m_Completion); }, changes);
-    m_Snapshot         = emitted.first->m_Bindings;
+    snapshot           = emitted.first->m_Bindings;
     m_uiUploadBytes    = changes ? xiiUInt64(capture->m_PhysicalRecords.GetCount() + capture->m_VirtualRecords.GetCount()) * sizeof(xiiGpuVirtualShadowPage) : 0;
     m_uiUploadRanges   = changes ? capture->m_PhysicalRanges.GetCount() + (capture->m_VirtualRecords.IsEmpty() ? 0U : 1U) : 0;
   }
-  static_cast<xiiVirtualShadowGpuLayout&>(m_Snapshot) = capture->m_Layout;
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_Physical, m_Snapshot.m_hPhysicalPageTable));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_Virtual, m_Snapshot.m_hVirtualPageTable));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_Atlas, m_Snapshot.m_hPhysicalAtlas));
-  m_uiSetupSerial           = context.m_Graph.GetSetupSerial();
-  m_uiConfigurationRevision = capture->m_uiConfigurationRevision;
-  return XII_SUCCESS;
+  static_cast<xiiVirtualShadowGpuLayout&>(snapshot) = capture->m_Layout;
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_Physical, snapshot.m_hPhysicalPageTable));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_Virtual, snapshot.m_hVirtualPageTable));
+  XII_SUCCEED_OR_RETURN(context.SetOutput(m_Atlas, snapshot.m_hPhysicalAtlas));
+  return context.SetOutput(m_Residency, XII_DEFAULT_NEW(xiiVirtualShadowResidencySnapshot, context.m_Graph.GetSetupSerial(), snapshot, capture));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Shadows_VirtualShadowTablesPass);

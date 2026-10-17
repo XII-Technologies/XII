@@ -3,13 +3,16 @@
 #pragma once
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Fence.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 /// CPU-side residency configuration for the virtual shadow-map physical cache.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapSettings
@@ -109,14 +112,18 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowMapStats);
 
 /// Immutable frame-local raster request for one physical residency page. The revision
 /// validates its contents across invalidation/reuse; it is never a serialized identity.
-struct XII_GRAPHICSCORE_DLL xiiVirtualShadowRasterPage
+struct XII_GRAPHICSCORE_DLL xiiVirtualShadowRasterTicket
 {
   xiiVirtualShadowPageId m_Page;
   xiiUInt32              m_uiPhysicalPage    = xiiInvalidIndex;
   xiiUInt64              m_uiContentRevision = 0;
   xiiUInt64              m_uiFrame           = 0;
-  xiiMat4                m_ViewProjection    = xiiMat4::MakeIdentity();
-  xiiRectU32             m_Viewport;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiVirtualShadowRasterPage : xiiVirtualShadowRasterTicket
+{
+  xiiMat4    m_ViewProjection = xiiMat4::MakeIdentity();
+  xiiRectU32 m_Viewport;
 };
 
 /// Device table addressing for one retired-frame-safe slice. Derived residency
@@ -145,6 +152,19 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowTableUpload : xiiRefCounted
 };
 
 class xiiVirtualShadowMapManagerState;
+
+/// Immutable clean-record edits and validated retirement tickets, with allocation provenance.
+struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPagePublication : xiiRefCounted
+{
+  struct Record
+  {
+    xiiVirtualShadowRasterTicket m_Ticket;
+    xiiGpuVirtualShadowPage      m_CleanRecord;
+    xiiUInt32                    m_uiPhysicalByteOffset = 0, m_uiVirtualByteOffset = 0;
+  };
+  xiiSharedPtr<const xiiVirtualShadowTableUpload> m_Upload;
+  xiiDynamicArray<Record>                         m_Records;
+};
 
 /// Process-wide virtual-shadow-map page residency service.
 ///
@@ -184,7 +204,7 @@ public:
   /// Invalidates all resident pages, for example after a scene-wide origin shift.
   [[nodiscard]] static xiiUInt32 InvalidateAll();
   /// Reports proven GPU completion, rejecting invalidated/recycled content revisions.
-  [[nodiscard]] static bool MarkPageRendered(const xiiVirtualShadowRasterPage& page);
+  [[nodiscard]] static bool MarkPageRendered(const xiiVirtualShadowRasterTicket& page);
 
   [[nodiscard]] static xiiVirtualShadowMapStats           GetStats();
   [[nodiscard]] static const xiiVirtualShadowMapSettings& GetConfiguration();
@@ -215,13 +235,11 @@ public:
   /// Select a deterministic bounded batch without constructing any raster operations.
   /// Selected pages are touched for GPU retirement and claimed once per device frame.
   static void               GatherRasterPages(xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiLightId,
-                                              xiiDynamicArray<xiiVirtualShadowRasterPage>& out_pages);
-  [[nodiscard]] static bool IsRasterWorkCurrent(const xiiVirtualShadowRasterPage& page);
-  /// Publish clean GPU table records after the supplied final atlas version. CPU dirty
-  /// state is retired only after the completion fence signals, and abandoned work retries.
-  [[nodiscard]] static xiiResult AddPageCompletionPass(xiiRenderGraph& graph, const xiiVirtualShadowGpuLayout& layout,
-                                                       xiiRenderGraphTextureHandle& atlas, xiiRenderGraphBufferHandle& table,
-                                                       xiiArrayPtr<const xiiVirtualShadowRasterPage> pages);
+                                              xiiDynamicArray<xiiVirtualShadowRasterPage>& out_pages, xiiUInt32 maxPages = xiiInvalidIndex);
+  [[nodiscard]] static bool IsRasterWorkCurrent(const xiiVirtualShadowRasterTicket& page);
+  /// Pure capture/retirement operations; this device service constructs no render graph.
+  [[nodiscard]] static xiiSharedPtr<const xiiVirtualShadowPagePublication> CapturePagePublication(xiiSharedPtr<const xiiVirtualShadowTableUpload> upload, xiiArrayPtr<const xiiVirtualShadowRasterPage> pages);
+  static void                                                              RecordPagePublication(const xiiVirtualShadowPagePublication& publication, xiiSharedPtr<xiiGALFence> completion);
 
 
 private:

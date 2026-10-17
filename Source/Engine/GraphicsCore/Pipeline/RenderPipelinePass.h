@@ -6,6 +6,7 @@
 #include <Foundation/Types/Variant.h>
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Pipeline/RenderPipelineFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePin.h>
 #include <GraphicsCore/Pipeline/RenderPipelineSettings.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
@@ -26,9 +27,10 @@ struct xiiRenderPipelineAccelerationStructureBinding
 
 struct xiiRenderPipelineBinding
 {
-  xiiRenderGraphTextureHandle                   m_hTexture;
-  xiiRenderGraphBufferHandle                    m_hBuffer;
-  xiiRenderPipelineAccelerationStructureBinding m_AccelerationStructure;
+  xiiRenderGraphTextureHandle                    m_hTexture;
+  xiiRenderGraphBufferHandle                     m_hBuffer;
+  xiiRenderPipelineAccelerationStructureBinding  m_AccelerationStructure;
+  xiiSharedPtr<const xiiRenderPipelineFrameData> m_pFrameData;
 };
 
 /// One mutable instance per pass per view. Constructors/Configure/GetPins must not access GAL.
@@ -91,15 +93,17 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   xiiStringBuilder* m_pBuildError = nullptr;
   xiiResult         ReportFailure(xiiStringView reason) const;
 
-  xiiUInt32                                     FindPin(xiiStringView name, bool input) const;
-  xiiRenderGraphTextureHandle                   GetInputTexture(xiiStringView name) const;
-  xiiRenderGraphBufferHandle                    GetInputBuffer(xiiStringView name) const;
-  xiiResult                                     SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture);
-  xiiResult                                     SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer);
-  xiiRenderGraphTextureHandle                   GetInputTexture(const xiiRenderPipelineTextureInputPin& pin) const;
-  xiiRenderGraphBufferHandle                    GetInputBuffer(const xiiRenderPipelineBufferInputPin& pin) const;
-  xiiResult                                     SetOutput(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle texture);
-  xiiResult                                     SetOutput(const xiiRenderPipelineBufferOutputPin& pin, xiiRenderGraphBufferHandle buffer);
-  xiiRenderPipelineAccelerationStructureBinding GetInputAccelerationStructure(const xiiRenderPipelineAccelerationStructureInputPin& pin) const;
-  xiiResult                                     SetOutput(const xiiRenderPipelineAccelerationStructureOutputPin& pin, const xiiRenderPipelineAccelerationStructureBinding& structure);
+  xiiUInt32                                      FindPin(xiiStringView name, bool input) const;
+  xiiRenderGraphTextureHandle                    GetInputTexture(xiiStringView name) const;
+  xiiRenderGraphBufferHandle                     GetInputBuffer(xiiStringView name) const;
+  xiiResult                                      SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture);
+  xiiResult                                      SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  xiiRenderGraphTextureHandle                    GetInputTexture(const xiiRenderPipelineTextureInputPin& pin) const;
+  xiiRenderGraphBufferHandle                     GetInputBuffer(const xiiRenderPipelineBufferInputPin& pin) const;
+  xiiResult                                      SetOutput(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle texture);
+  xiiResult                                      SetOutput(const xiiRenderPipelineBufferOutputPin& pin, xiiRenderGraphBufferHandle buffer);
+  xiiRenderPipelineAccelerationStructureBinding  GetInputAccelerationStructure(const xiiRenderPipelineAccelerationStructureInputPin& pin) const;
+  xiiResult                                      SetOutput(const xiiRenderPipelineAccelerationStructureOutputPin& pin, const xiiRenderPipelineAccelerationStructureBinding& structure);
+  xiiSharedPtr<const xiiRenderPipelineFrameData> GetInputData(const xiiRenderPipelineDataInputPin& pin) const;
+  xiiResult                                      SetOutput(const xiiRenderPipelineDataOutputPin& pin, xiiSharedPtr<const xiiRenderPipelineFrameData> data);
 };

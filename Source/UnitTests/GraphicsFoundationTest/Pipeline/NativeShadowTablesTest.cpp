@@ -97,17 +97,19 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
       cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
       XII_SCOPE_EXIT(cache.EndFrame());
       graph.BeginSetup(frame.GetFrameIndex());
-      const auto* producer = static_cast<const xiiVirtualShadowTablesPass*>(pipelines[v].GetPass(0));
-      XII_TEST_BOOL(producer->GetSnapshot(graph) == nullptr);
+      const auto* producer   = static_cast<const xiiVirtualShadowTablesPass*>(pipelines[v].GetPass(0));
+      const auto* oldBinding = pipelines[v].GetOutputBinding(0, "Residency");
+      XII_TEST_BOOL(!oldBinding->m_pFrameData || oldBinding->m_pFrameData->GetSetupSerial() != graph.GetSetupSerial());
       if (!XII_TEST_RESULT(pipelines[v].Build(nullptr, graph, contexts[v].GetBlackboard())))
         return;
-      const auto* snapshot = producer->GetSnapshot(graph);
+      const auto  residency = pipelines[v].GetOutputBinding(0, "Residency")->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>();
+      const auto* snapshot  = residency ? &residency->m_Bindings : nullptr;
       if (!XII_TEST_BOOL(snapshot != nullptr))
         return;
       const auto repeated = static_cast<const xiiVirtualShadowTablesPass*>(pipelines[v].GetPass(1));
       XII_TEST_BOOL(producer != repeated);
-      XII_TEST_BOOL(repeated->GetSnapshot(graph)->m_hPhysicalPageTable == snapshot->m_hPhysicalPageTable);
-      XII_TEST_BOOL(repeated->GetSnapshot(graph)->m_hVirtualPageTable == snapshot->m_hVirtualPageTable);
+      XII_TEST_BOOL(pipelines[v].GetOutputBinding(1, "Residency")->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>()->m_Bindings.m_hPhysicalPageTable == snapshot->m_hPhysicalPageTable);
+      XII_TEST_BOOL(pipelines[v].GetOutputBinding(1, "Residency")->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>()->m_Bindings.m_hVirtualPageTable == snapshot->m_hVirtualPageTable);
       XII_TEST_INT(repeated->GetUploadBytes(), 0);
       const auto capture = xiiVirtualShadowMapManager::CaptureTableUpload(frame.GetFrameIndex());
       if (phase == 4 && v == 0)
@@ -119,7 +121,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
         XII_TEST_INT(xiiVirtualShadowMapManager::GetConfigurationRevision(), epoch);
         XII_TEST_INT(xiiVirtualShadowMapManager::GetConfiguration().m_uiPageSize, settings.m_uiPageSize);
         XII_TEST_BOOL(xiiVirtualShadowMapManager::CaptureTableUpload(frame.GetFrameIndex()) == capture);
-        XII_TEST_BOOL(producer->GetSnapshot(graph) != nullptr);
+        XII_TEST_BOOL(residency->m_Upload->m_uiConfigurationRevision == xiiVirtualShadowMapManager::GetConfigurationRevision());
       }
 
       if (phase == 0 && v == 0)
@@ -304,7 +306,8 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenPageMappingsRetireBeforePhysica
       graph.BeginSetup(frame.GetFrameIndex());
       if (!XII_TEST_RESULT(pipelines[v].Build(nullptr, graph, contexts[v].GetBlackboard())))
         return;
-      const auto* snapshot = static_cast<const xiiVirtualShadowTablesPass*>(pipelines[v].GetPass(0))->GetSnapshot(graph);
+      const auto  residency = pipelines[v].GetOutputBinding(0, "Residency")->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>();
+      const auto* snapshot  = residency ? &residency->m_Bindings : nullptr;
       if (!XII_TEST_BOOL(snapshot != nullptr))
         return;
       layouts[v] = *snapshot;

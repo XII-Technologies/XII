@@ -25,6 +25,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadePass, 1, xiiRTTIDefaultAllocato
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("CascadeConstants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("CascadeSnapshot", m_Snapshot)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Settings", m_Settings),
     XII_MEMBER_PROPERTY("LightDirection", m_LightDirection)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(0, 0, -1))),
   } XII_END_PROPERTIES;
@@ -34,20 +35,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadePass, 1, xiiRTTIDefaultAllocato
 
 xiiResult xiiShadowCascadePass::Configure(const xiiVariantDictionary& properties)
 {
-  m_Cascades.Clear();
-  m_uiSetupSerial = 0;
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   return ValidCascadeProperties(m_Settings, m_LightDirection) ? XII_SUCCESS : XII_FAILURE;
 }
-xiiArrayPtr<const xiiShadowCascadeDescription> xiiShadowCascadePass::GetCascadeSnapshot(const xiiRenderGraph& graph) const
-{
-  return m_uiSetupSerial != 0 && m_uiSetupSerial == graph.GetSetupSerial() ? m_Cascades.GetArrayPtr() : xiiArrayPtr<const xiiShadowCascadeDescription>();
-}
 xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
 {
-  m_Cascades.Clear();
-  m_uiSetupSerial = 0;
-  auto direction  = m_LightDirection;
+  auto direction = m_LightDirection;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ShadowLightDirection", direction));
   if (!ValidCascadeProperties(m_Settings, direction))
     return context.ReportFailure("Invalid directional cascade settings or light direction.");
@@ -89,8 +82,6 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
     xiiGALMapHelper<xiiShadowCascadeConstants> mapped(execute.GetCommandList(), execute.GetBuffer(data.m_Buffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
     *mapped = data.m_Snapshot; });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Constants, emitted.first->m_Buffer));
-  m_Cascades      = cascades;
-  m_uiSetupSerial = context.m_Graph.GetSetupSerial();
-  return XII_SUCCESS;
+  return context.SetOutput(m_Snapshot, XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, context.m_Graph.GetSetupSerial(), cascades, m_Settings.m_uiShadowMapResolution, emitted.first->m_Buffer));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Shadows_ShadowCascadePass);

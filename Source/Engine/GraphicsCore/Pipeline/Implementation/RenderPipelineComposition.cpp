@@ -24,14 +24,22 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineInterfacePass, 1, xiiRTTIDefau
     XII_MEMBER_PROPERTY("Input", m_bInput)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ResourceType", m_uiResourceType),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiGALResourceFormat, m_Format),
+    XII_MEMBER_PROPERTY("DataType", m_sDataType),
   } XII_END_PROPERTIES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 void xiiRenderPipelineInterfacePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
-  if (m_uiResourceType <= xiiRenderPipelinePin::AccelerationStructure && !m_sName.IsEmpty())
-    out_pins.PushBack({"Value", static_cast<xiiRenderPipelinePin::Type>(m_uiResourceType), !m_bInput, false, m_Format});
+  if (m_uiResourceType <= xiiRenderPipelinePin::FrameData && !m_sName.IsEmpty())
+  {
+    auto& pin       = out_pins.ExpandAndGetRef();
+    pin.m_sName     = "Value";
+    pin.m_Type      = static_cast<xiiRenderPipelinePin::Type>(m_uiResourceType);
+    pin.m_bInput    = !m_bInput;
+    pin.m_Format    = m_Format;
+    pin.m_pDataType = pin.m_Type == xiiRenderPipelinePin::FrameData ? xiiRTTI::FindTypeByName(m_sDataType) : nullptr;
+  }
 }
 
 void xiiRenderPipelineSubgraphPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const

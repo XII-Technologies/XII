@@ -88,6 +88,12 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
   xiiRenderPipelineInstance tables;
   if (!XII_TEST_RESULT(tables.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowTables"))))
     return;
+  xiiRenderPipelineInstance workPipelines[2], publisher;
+  for (auto& work : workPipelines)
+    if (!XII_TEST_RESULT(work.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowRasterWork"))))
+      return;
+  if (!XII_TEST_RESULT(publisher.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowPagePublish"))))
+    return;
   xiiVirtualShadowRasterPage staleRecycled;
   for (xiiUInt32 phase = 0; phase < 5; ++phase)
   {
@@ -118,18 +124,6 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
       XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiRasterizedPageCount, 2);
       break;
     }
-    xiiDynamicArray<xiiVirtualShadowRasterPage> pages, selected;
-    for (const xiiUInt32 light : {1U, phase == 3 ? 3U : 2U})
-    {
-      auto projection = xiiMat4::MakeScaling(xiiVec3(light == 2 ? 2.0f : 1.0f, light == 2 ? 2.0f : 1.0f, -1));
-      projection.SetTranslationVector(xiiVec3(0, 0, 1));
-      xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), light, selected);
-      pages.PushBackRange(selected);
-    }
-    if (!XII_TEST_INT(pages.GetCount(), phase == 0 || phase == 3 ? 2 : 1))
-      return;
-    if (phase == 0)
-      staleRecycled = pages[1];
     auto& graph = context.GetGraph();
     auto& cache = context.GetResourceCache();
     cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
@@ -140,10 +134,37 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
     const auto materials = xiiMaterialManager::AddUploadPasses(graph);
     if (!XII_TEST_RESULT(tables.Build(nullptr, graph, context.GetBlackboard())))
       return;
-    const auto* captured = static_cast<const xiiVirtualShadowTablesPass*>(tables.GetPass(0))->GetSnapshot(graph);
-    if (!XII_TEST_BOOL(captured != nullptr))
+    const auto residency = tables.GetInterfaceBinding(tables.GetPipeline()->FindInterface("Residency", false))->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>();
+    if (!XII_TEST_BOOL(residency != nullptr))
       return;
-    auto upload = *captured;
+    auto                                        upload = residency->m_Bindings;
+    xiiDynamicArray<xiiVirtualShadowRasterPage> pages;
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      const auto light      = i ? (phase == 3 ? 3U : 2U) : 1U;
+      auto       projection = xiiMat4::MakeScaling(xiiVec3(light == 2 ? 2.0f : 1.0f, light == 2 ? 2.0f : 1.0f, -1));
+      projection.SetTranslationVector(xiiVec3(0, 0, 1));
+      xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
+      cascades.ExpandAndGetRef().m_mViewProjection = projection;
+      xiiRenderPipelineBinding projectionInput, residencyInput;
+      projectionInput.m_pFrameData                   = XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, graph.GetSetupSerial(), cascades, 16U, xiiRenderGraphBufferHandle());
+      residencyInput.m_pFrameData                    = residency;
+      const auto*                         definition = workPipelines[i].GetPipeline();
+      const xiiRenderPipelineInputBinding inputs[]   = {{graph, definition->FindInterface("Cascades", true), projectionInput}, {graph, definition->FindInterface("Residency", true), residencyInput}};
+      xiiVariantDictionary                parameters;
+      parameters.Insert("ShadowRasterLightId", light);
+      parameters.Insert("ShadowRasterMaxPages", 1U);
+      if (!XII_TEST_RESULT(workPipelines[i].Build(nullptr, graph, context.GetBlackboard(), parameters, xiiMakeArrayPtr(inputs))))
+        return;
+      const auto batch = workPipelines[i].GetInterfaceBinding(definition->FindInterface("RasterPages", false))->m_pFrameData.Downcast<const xiiVirtualShadowRasterBatch>();
+      if (!XII_TEST_BOOL(batch && batch->m_Pages.GetCount() <= 1))
+        return;
+      pages.PushBackRange(batch->m_Pages);
+    }
+    if (!XII_TEST_INT(pages.GetCount(), phase == 0 || phase == 3 ? 2 : 1))
+      return;
+    if (phase == 0)
+      staleRecycled = pages[1];
     if (phase == 0)
     {
       struct Initial
@@ -212,9 +233,39 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
         return;
       upload.m_hPhysicalAtlas = pipeline.GetInterfaceBinding(compiled->FindInterface("ShadowDepth", false))->m_hTexture;
     }
-    auto published = upload;
-    if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::AddPageCompletionPass(graph, published, published.m_hPhysicalAtlas, published.m_hVirtualPageTable, pages)))
+    auto                     published   = upload;
+    const auto*              publication = publisher.GetPipeline();
+    xiiRenderPipelineBinding batchInput;
+    batchInput.m_pFrameData                                 = XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, graph.GetSetupSerial(), residency, xiiDynamicArray<xiiVirtualShadowRasterPage>(pages));
+    const xiiRenderPipelineInputBinding publicationInputs[] = {
+      {graph, publication->FindInterface("RasterPages", true), batchInput},
+      {graph, publication->FindInterface("RasterAtlas", true), upload.m_hPhysicalAtlas},
+      {graph, publication->FindInterface("PhysicalPageTable", true), upload.m_hPhysicalPageTable},
+      {graph, publication->FindInterface("VirtualPageTable", true), upload.m_hVirtualPageTable}};
+    if (phase == 0)
+    {
+      xiiHybridArray<xiiRenderPipelineInputBinding, 4> invalidInputs;
+      invalidInputs.PushBackRange(xiiMakeArrayPtr(publicationInputs));
+      invalidInputs[2].m_Binding.m_hBuffer = upload.m_hVirtualPageTable;
+      xiiRenderPipelineInstance invalid;
+      XII_TEST_RESULT(invalid.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowPagePublish")));
+      XII_TEST_BOOL(invalid.Build(nullptr, graph, context.GetBlackboard(), {}, invalidInputs).Failed());
+      XII_TEST_BOOL(invalid.GetLastBuildError().FindSubString("captured device allocations") != nullptr);
+      invalid.Clear();
+      invalidInputs[2] = publicationInputs[2];
+      auto duplicate   = pages;
+      duplicate.PushBack(pages[0]);
+      invalidInputs[0].m_Binding.m_pFrameData = XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, graph.GetSetupSerial(), residency, std::move(duplicate));
+      XII_TEST_RESULT(invalid.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowPagePublish")));
+      XII_TEST_BOOL(invalid.Build(nullptr, graph, context.GetBlackboard(), {}, invalidInputs).Failed());
+      XII_TEST_BOOL(invalid.GetLastBuildError().FindSubString("stale, duplicate") != nullptr);
+      XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 2);
+    }
+    if (!XII_TEST_RESULT(publisher.Build(nullptr, graph, context.GetBlackboard(), {}, xiiMakeArrayPtr(publicationInputs))))
       return;
+    published.m_hPhysicalAtlas     = publisher.GetInterfaceBinding(publication->FindInterface("ReadyAtlas", false))->m_hTexture;
+    published.m_hPhysicalPageTable = publisher.GetInterfaceBinding(publication->FindInterface("ReadyPhysicalPageTable", false))->m_hBuffer;
+    published.m_hVirtualPageTable  = publisher.GetInterfaceBinding(publication->FindInterface("ReadyVirtualPageTable", false))->m_hBuffer;
     if (phase == 0)
     {
       XII_TEST_BOOL(xiiVirtualShadowMapManager::InvalidatePage(pages[0].m_Page));
@@ -255,8 +306,9 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
         XII_TEST_FLOAT(value, page.m_Page.m_uiLightId == 2 ? 0.7f : 0.0f, 0.001f);
       }
     }
-    const auto table   = graph.GetExportedBuffer(published.m_hVirtualPageTable);
-    xiiUInt32  matched = 0;
+    const auto table         = graph.GetExportedBuffer(published.m_hVirtualPageTable);
+    const auto physicalTable = graph.GetExportedBuffer(published.m_hPhysicalPageTable);
+    xiiUInt32  matched       = 0;
     for (xiiUInt32 bucket = 0; bucket < published.m_uiVirtualTableCapacity; ++bucket)
     {
       xiiGpuVirtualShadowPage entry;
@@ -267,6 +319,12 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
         {
           ++matched;
           XII_TEST_INT(entry.m_uiFlags & 2U, phase == 0 && page.m_Page.m_uiLightId == 1 ? 2 : 0);
+          xiiGpuVirtualShadowPage physicalEntry;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), physicalTable.Borrow(), (published.m_uiFrameBaseIndex + page.m_uiPhysicalPage) * sizeof(physicalEntry), physicalEntry))
+            return;
+          XII_TEST_INT(physicalEntry.m_uiVirtualKeyLow, entry.m_uiVirtualKeyLow);
+          XII_TEST_INT(physicalEntry.m_uiVirtualKeyHigh, entry.m_uiVirtualKeyHigh);
+          XII_TEST_INT(physicalEntry.m_uiFlags, entry.m_uiFlags);
         }
     }
     XII_TEST_INT(matched, pages.GetCount());
