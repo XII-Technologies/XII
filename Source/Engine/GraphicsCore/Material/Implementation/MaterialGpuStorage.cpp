@@ -197,6 +197,8 @@ xiiResult xiiMaterialGpuStorage::Initialize(xiiGALDevice* pDevice, const xiiMate
 void xiiMaterialGpuStorage::Shutdown()
 {
   XII_LOCK(m_Mutex);
+  m_SetupUploads.Clear();
+  m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
   m_pBuffer.Clear();
   m_pSurfaceBuffer.Clear();
   m_MaterialIds.Clear();
@@ -367,6 +369,14 @@ void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpu
 
 xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
 {
+  if (m_uiUploadFrame != uiFrameIndex)
+  {
+    m_SetupUploads.Clear();
+    m_uiUploadFrame = uiFrameIndex;
+  }
+  UploadHandles existing;
+  if (m_SetupUploads.TryGetValue(graph.GetSetupSerial(), existing))
+    return existing;
   xiiMaterialGpuUploadBatch batch;
   GatherUploads(uiFrameIndex, batch);
 
@@ -395,6 +405,7 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
   result.m_hParameterData     = pass.first->m_hBuffer;
   result.m_hSurfaceData       = pass.first->m_hSurfaceBuffer;
   result.m_uiSurfaceBaseIndex = GetSurfaceBaseIndex(uiFrameIndex);
+  m_SetupUploads.Insert(graph.GetSetupSerial(), result);
   return result;
 }
 

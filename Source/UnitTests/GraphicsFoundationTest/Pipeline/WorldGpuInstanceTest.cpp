@@ -179,6 +179,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     counterProperties.Insert("Value", 17U);
     uploadDefinition.AddPass("Seeded work", "xiiCounterResetPass", counterProperties);
     uploadDefinition.AddPass("Matrix query", "xiiMatrixVisibilityViewPass");
+    uploadDefinition.AddPass("Repeated geometry", "xiiGeometryUploadPass");
+    uploadDefinition.AddPass("Repeated materials", "xiiMaterialUploadPass");
     xiiCamera cullingCamera;
     cullingCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
 
@@ -213,6 +215,9 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       query.Insert("CullingRequiredFlags", camera + 1U);
       if (!XII_TEST_RESULT(uploadInstances[camera].Build(view, graph, graphs[camera].GetBlackboard(), query)))
         return nullptr;
+      XII_TEST_BOOL(uploadInstances[camera].GetOutputBinding(2, "GeometryMetadata")->m_hBuffer == uploadInstances[camera].GetOutputBinding(8, "GeometryMetadata")->m_hBuffer);
+      XII_TEST_BOOL(uploadInstances[camera].GetOutputBinding(2, "MeshletMetadata")->m_hBuffer == uploadInstances[camera].GetOutputBinding(8, "MeshletMetadata")->m_hBuffer);
+      XII_TEST_BOOL(uploadInstances[camera].GetOutputBinding(3, "SurfaceMaterials")->m_hBuffer == uploadInstances[camera].GetOutputBinding(9, "SurfaceMaterials")->m_hBuffer);
       xiiGpuInstanceData::UploadHandles uploaded;
       uploaded.m_Instances = uploadInstances[camera].GetOutputBinding(0, "SceneInstances")->m_hBuffer;
       uploaded.m_Skinning  = uploadInstances[camera].GetOutputBinding(0, "SkinningMatrices")->m_hBuffer;

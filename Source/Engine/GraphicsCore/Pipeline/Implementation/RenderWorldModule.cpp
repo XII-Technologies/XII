@@ -808,7 +808,10 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (!pDevice)
     return;
 
-  if (m_ViewIdTable.IsEmpty())
+  bool active = false;
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    active |= it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled();
+  if (!active)
     return;
 
   // Honor compiled demand before choosing the frame's retirement/ring limits.

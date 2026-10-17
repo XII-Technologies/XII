@@ -132,6 +132,9 @@ private:
   void MarkUploadsRecorded(const xiiMaterialGpuUploadBatch& batch);
   bool IsValidHandleLocked(xiiMaterialGpuHandle handle) const;
 
+  // Device uploads are shared by every occurrence in one graph setup.
+  xiiHashTable<xiiUInt64, UploadHandles>  m_SetupUploads;
+  xiiUInt64                               m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
   mutable xiiMutex                        m_Mutex;
   xiiMaterialGpuStorageDescription        m_Description;
   xiiIdTable<xiiMaterialGpuId, xiiUInt32> m_MaterialIds;

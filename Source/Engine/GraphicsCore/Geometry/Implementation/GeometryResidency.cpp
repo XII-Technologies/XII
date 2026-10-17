@@ -32,6 +32,8 @@ public:
     for (Slot& slot : m_Slots)
       xiiGeometryResidencyManager::ReleaseBindlessResources(slot, xiiMath::Max(slot.m_uiLastUsedFrame, slot.m_uiRetireFrame));
 
+    m_SetupUploads.Clear();
+    m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
     m_pMetadataBuffer.Clear();
     m_pMeshletMetadataBuffer.Clear();
     m_GeometryIds.Clear();
@@ -57,10 +59,12 @@ public:
   xiiDynamicArray<UploadPassData::MeshletUpload>                   m_PendingMeshletUploads;
   xiiHashTable<xiiGeometryHandle, MeshGeometryEntry, GeometryHash> m_MeshGeometries;
   xiiHashTable<xiiMeshResourceHandle, xiiGeometryHandle>           m_CurrentMeshGeometries;
-  xiiUInt32                                                        m_uiFramesInFlight      = 0U;
-  xiiUInt64                                                        m_uiAllFrameMask        = 0U;
-  xiiUInt64                                                        m_uiBudgetBytes         = 0U;
-  xiiUInt64                                                        m_uiResidentBytes       = 0U;
+  xiiUInt32                                                        m_uiFramesInFlight = 0U;
+  xiiUInt64                                                        m_uiAllFrameMask   = 0U;
+  xiiUInt64                                                        m_uiBudgetBytes    = 0U;
+  xiiUInt64                                                        m_uiResidentBytes  = 0U;
+  xiiHashTable<xiiUInt64, UploadHandles>                           m_SetupUploads;
+  xiiUInt64                                                        m_uiUploadFrame         = xiiMath::MaxValue<xiiUInt64>();
   xiiUInt64                                                        m_uiLastUploadedBytes   = 0U;
   xiiUInt64                                                        m_uiNextMeshletUploadId = 1U;
   xiiGeometryResidencyDescription                                  m_Configuration;
@@ -952,7 +956,15 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
     return {};
 
   State* pState = s_pState.Borrow();
-  auto   pass   = graph.AddPass<UploadPassData>("Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer, [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+  if (pState->m_uiUploadFrame != uiFrameIndex)
+  {
+    pState->m_SetupUploads.Clear();
+    pState->m_uiUploadFrame = uiFrameIndex;
+  }
+  UploadHandles existing;
+  if (pState->m_SetupUploads.TryGetValue(graph.GetSetupSerial(), existing))
+    return existing;
+  auto pass = graph.AddPass<UploadPassData>("Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer, [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", pState->m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometryBuffer = builder.WriteBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::ShaderResource);
@@ -1025,6 +1037,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
   result.m_hMeshletMetadata              = pass.first->m_hMeshletBuffer;
   result.m_uiGeometryBaseIndex           = GetMetadataBaseIndex(uiFrameIndex);
   result.m_uiMaximumResidentMeshletCount = uiMaximumResidentMeshletCount;
+  pState->m_SetupUploads.Insert(graph.GetSetupSerial(), result);
   return result;
 }
 

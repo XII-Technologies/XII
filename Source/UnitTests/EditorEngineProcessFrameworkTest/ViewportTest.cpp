@@ -186,6 +186,31 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
   XII_TEST_BOOL(frames[1] > previousFrame);
 }
 
+XII_CREATE_SIMPLE_TEST(EditorViews, DisabledViewsDoNotRecordFrames)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiWorldDescription description("Disabled query view");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*    renderer = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiView* view     = nullptr;
+  renderer->CreateView("Externally executed query", view);
+  view->SetRenderEnabled(false);
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  // A disabled query view can be used during setup by another graph owner. World
+  // updates must not start a second frame or initialize unrequested rendering data.
+  world.Update();
+  XII_TEST_BOOL(frame.IsActive());
+  XII_TEST_BOOL(renderer->GetGpuInstanceData() == nullptr);
+}
+
 namespace
 {
   class TestViewContext : public xiiEngineProcessViewContext
