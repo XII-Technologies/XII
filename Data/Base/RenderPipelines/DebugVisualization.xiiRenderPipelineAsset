@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{6063896203113337820,16122221436934967066}}
-		u4 %Hash{0}
+		u4 %Hash{15812638947769335943}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -31,6 +31,7 @@ o
 	{
 		Uuid %After{u4{13078590904193905100,6875450577941759531}}
 		Uuid %Before{u4{4487814486234662581,543839385189598017}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferEmissive"}
@@ -66,6 +67,7 @@ o
 	{
 		Uuid %After{u4{16516755243656661561,9680868095190679381}}
 		Uuid %Before{u4{3589818412179305305,3914260372990487401}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferAlbedo"}
@@ -213,6 +215,7 @@ o
 	{
 		Uuid %After{u4{6876014709807921119,5672938698540693968}}
 		Uuid %Before{u4{2227297128443244179,13665211366557373863}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"PerFrameCamera"}
@@ -234,6 +237,7 @@ o
 	{
 		Uuid %After{u4{16362316364926605406,12003499961846767776}}
 		Uuid %Before{u4{17862064398874336557,7128707956308606664}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"WireframeSurface"}
@@ -290,6 +294,7 @@ o
 	{
 		Uuid %After{u4{12625568934289788594,1256525669595432192}}
 		Uuid %Before{u4{14190326636570749336,3323793998307142676}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"StableAO"}
@@ -339,6 +344,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"IndirectLighting"}
@@ -370,6 +376,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Value"}
@@ -387,6 +394,7 @@ o
 	{
 		Uuid %After{u4{13678159486816466795,14087098448386826822}}
 		Uuid %Before{u4{18249020480981975483,15783560222637566374}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DisplayLinearColor"}
@@ -408,6 +416,7 @@ o
 	{
 		Uuid %After{u4{17644814513905289847,15823150375892957352}}
 		Uuid %Before{u4{17913262209641250539,10471562389291711051}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"BloomTexture"}
@@ -443,6 +452,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneDepth"}
@@ -460,6 +470,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -484,6 +495,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -564,6 +576,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{0}
 		s %Name{"DisplayLinearColor"}
@@ -581,6 +594,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"WireframeSurface"}
@@ -598,6 +612,7 @@ o
 	{
 		Uuid %After{u4{7687608445660930453,14935406698126380447}}
 		Uuid %Before{u4{13719528032197459767,14899884225148668916}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferObjectId"}
@@ -654,6 +669,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -699,6 +715,7 @@ o
 	{
 		Uuid %After{u4{9200113444979166412,4539716699874714780}}
 		Uuid %Before{u4{4849989961020386395,11790201927539331532}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneDepth"}
@@ -720,6 +737,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferAlbedo"}
@@ -744,6 +762,7 @@ o
 	{
 		Uuid %After{u4{5038758149583716742,10566740230393608088}}
 		Uuid %Before{u4{5037485988738300549,16435370852453787927}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"EnvironmentSpecular"}
@@ -857,6 +876,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DilatedVelocityBuffer"}
@@ -874,6 +894,7 @@ o
 	{
 		Uuid %After{u4{1197341380312181694,317429571697479639}}
 		Uuid %Before{u4{7504482544804925611,11231355502263973599}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"IndirectLighting"}
@@ -895,6 +916,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{1}
 		s %Name{"DisplayLinearColor"}
@@ -912,6 +934,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1002,6 +1025,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1172,6 +1196,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1281,6 +1306,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"SceneDepth"}
@@ -1305,6 +1331,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"PerFrameCamera"}
@@ -1322,6 +1349,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferObjectId"}
@@ -1402,6 +1430,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1419,6 +1448,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"StableAO"}
@@ -1436,6 +1466,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1453,6 +1484,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1526,6 +1558,7 @@ o
 	{
 		Uuid %After{u4{8809115043294775878,13264114962888515858}}
 		Uuid %Before{u4{17143209251705157237,16801269715526911019}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferMaterial"}
@@ -1547,6 +1580,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferNormal"}
@@ -1578,6 +1612,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DisplayLinearColor"}
@@ -1595,6 +1630,7 @@ o
 	{
 		Uuid %After{u4{6711618769746346397,8326117656801406501}}
 		Uuid %Before{u4{15182624613308129738,4573213743800381091}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"SceneDepth"}
@@ -1616,6 +1652,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"EnvironmentSpecular"}
@@ -1633,6 +1670,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Value"}
@@ -1683,6 +1721,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneDepth"}
@@ -1714,6 +1753,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferMaterial"}
@@ -1822,6 +1862,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1881,6 +1922,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"DisplayLinearColor"}
@@ -1905,6 +1947,7 @@ o
 	{
 		Uuid %After{u4{16909321589883063665,12340391589309186566}}
 		Uuid %Before{u4{4734180840432434599,6672334141595952760}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DilatedVelocityBuffer"}
@@ -1990,6 +2033,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -2034,6 +2078,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Ordering"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Before"}
@@ -2149,6 +2194,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Ordering"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"After"}
@@ -2187,6 +2233,7 @@ o
 	{
 		Uuid %After{u4{5320142892023130120,5301838551086301649}}
 		Uuid %Before{u4{6717676517219597480,3053634411289499984}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferNormal"}
@@ -2215,6 +2262,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"BloomTexture"}
@@ -2239,6 +2287,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -2263,6 +2312,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -2441,6 +2491,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -2458,6 +2509,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Ordering"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Before"}
@@ -2489,6 +2541,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Ordering"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"After"}
@@ -2618,6 +2671,7 @@ o
 	{
 		Uuid %After{u4{15873707450210867996,17348812230911417062}}
 		Uuid %Before{u4{12832061026560217757,11400290654618871052}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"DisplayLinearColor"}
@@ -2723,6 +2777,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GBufferEmissive"}

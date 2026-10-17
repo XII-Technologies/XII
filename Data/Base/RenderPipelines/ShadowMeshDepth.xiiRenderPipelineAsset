@@ -9,12 +9,18 @@ o
 	p
 	{
 		s %AssetType{"RenderPipeline"}
-		VarArray %Dependencies{}
+		VarArray %Dependencies
+		{
+			s{"RenderPipelines/ShadowDepth.xiiBinRenderPipeline"}
+		}
 		Uuid %DocumentID{u4{898886094910907332,11543773326575457922}}
-		u4 %Hash{0}
+		u4 %Hash{4034195480107844530}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
-		VarArray %PackageDeps{}
+		VarArray %PackageDeps
+		{
+			s{"RenderPipelines/ShadowDepth.xiiBinRenderPipeline"}
+		}
 		VarArray %References{}
 		s %Tags{""}
 	}
@@ -45,6 +51,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DrawCommandCount"}
@@ -90,6 +97,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
@@ -233,6 +241,7 @@ o
 	{
 		Uuid %After{u4{3809507057152657676,14177063855129341007}}
 		Uuid %Before{u4{3099158058908705743,8563467785634720271}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::D32Float"}
 		b %Input{1}
 		s %Name{"DepthTarget"}
@@ -261,6 +270,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::D32Float"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -292,6 +302,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SkinningMatrices"}
@@ -309,6 +320,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::D32Float"}
 		b %Input{1}
 		s %Name{"Value"}
@@ -368,6 +380,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -420,6 +433,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -437,6 +451,7 @@ o
 	{
 		Uuid %After{u4{17666134622806791987,14684323614298706231}}
 		Uuid %Before{u4{3397173774614536464,5004943485899972885}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
@@ -519,6 +534,7 @@ o
 	{
 		Uuid %After{u4{15237125515815940753,2582517849360335823}}
 		Uuid %Before{u4{4982945737706395069,5725820377879496266}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"VisibleMeshletCount"}
@@ -692,6 +708,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GeometryMetadata"}
@@ -716,6 +733,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
@@ -862,6 +880,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::ReadWrite"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::D32Float"}
 		b %Input{0}
 		s %Name{"ShadowDepth"}
@@ -886,6 +905,7 @@ o
 	{
 		Uuid %After{u4{5966700245562207449,14693716121579297797}}
 		Uuid %Before{u4{5957808634801603014,7509381546643870946}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SkinningMatrices"}
@@ -907,6 +927,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -980,6 +1001,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DrawCommands"}
@@ -997,6 +1019,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1077,6 +1100,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1094,6 +1118,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::D32Float"}
 		b %Input{1}
 		s %Name{"DepthTarget"}
@@ -1111,6 +1136,7 @@ o
 	{
 		Uuid %After{u4{16217361424641396124,6714663198167763439}}
 		Uuid %Before{u4{7562528543939628142,10638620086924950771}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DrawCommandCount"}
@@ -1193,6 +1219,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneInstances"}
@@ -1238,6 +1265,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1255,6 +1283,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"VisibleMeshlets"}
@@ -1321,6 +1350,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1380,6 +1410,7 @@ o
 	{
 		Uuid %After{u4{18418565500415022563,3989496736836020676}}
 		Uuid %Before{u4{11946659807535501398,8073835284700646881}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::D32Float"}
 		b %Input{0}
 		s %Name{"ShadowDepth"}
@@ -1401,6 +1432,7 @@ o
 	{
 		Uuid %After{u4{7477118961989327401,17644180436241687213}}
 		Uuid %Before{u4{14581773603653411833,13130441069399433051}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DrawCommands"}
@@ -1457,6 +1489,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1474,6 +1507,7 @@ o
 	{
 		Uuid %After{u4{11994989580646333420,1588468014789527417}}
 		Uuid %Before{u4{17980407628170400441,18317477882814747231}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"VisibleMeshlets"}
@@ -1509,6 +1543,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"VisibleMeshletCount"}
@@ -1554,6 +1589,7 @@ o
 	{
 		Uuid %After{u4{693187997687672614,4772362159492192474}}
 		Uuid %Before{u4{5111435009165327624,14738524773313751512}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
@@ -1575,6 +1611,7 @@ o
 	{
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
@@ -1599,6 +1636,7 @@ o
 	{
 		Uuid %After{u4{15649393000951849627,5335453030795377144}}
 		Uuid %Before{u4{18351200634450623524,1933964454316364841}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneInstances"}
@@ -1620,6 +1658,7 @@ o
 	{
 		Uuid %After{u4{11675399766538826553,6359725428240927889}}
 		Uuid %Before{u4{11653802599769285064,14338021959786646431}}
+		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GeometryMetadata"}

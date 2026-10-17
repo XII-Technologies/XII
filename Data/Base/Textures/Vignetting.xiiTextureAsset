@@ -14,7 +14,7 @@ o
 			s{"Textures/Vignetting.tga"}
 		}
 		Uuid %DocumentID{u4{9132907039025431446,4850155600327151795}}
-		u4 %Hash{13979324070368867466}
+		u4 %Hash{7470250715951362368}
 		VarArray %MetaInfo{}
 		VarArray %Outputs
 		{
@@ -35,16 +35,15 @@ o
 {
 	Uuid %id{u4{5887559413610401680,4928357936092764478}}
 	s %t{"xiiTextureAssetProperties"}
-	u3 %v{5}
+	u3 %v{8}
 	p
 	{
-		s %AddressModeU{"xiiImageAddressMode::Repeat"}
-		s %AddressModeV{"xiiImageAddressMode::Repeat"}
-		s %AddressModeW{"xiiImageAddressMode::Repeat"}
+		s %AddressModeU{"xiiGALTextureAddressMode::Wrap"}
+		s %AddressModeV{"xiiGALTextureAddressMode::Wrap"}
+		s %AddressModeW{"xiiGALTextureAddressMode::Wrap"}
 		f %AlphaThreshold{0x0000003F}
-		f %CVarResScale{0x0000803F}
 		s %ChannelMapping{"xiiTexture2DChannelMappingEnum::RGBA1"}
-		s %CompressionMode{"xiiTexConvCompressionMode::None"}
+		s %CompressionMode{"xiiTextureConverterCompressionMode::None"}
 		b %DilateColor{0}
 		b %FlipHorizontal{0}
 		s %Format{"xiiRenderTargetFormat::RGBA8sRgb"}
@@ -54,12 +53,21 @@ o
 		s %Input3{""}
 		s %Input4{""}
 		b %IsRenderTarget{0}
-		s %MipmapMode{"xiiTexConvMipmapMode::None"}
+		s %MagFilter{"xiiGALFilterType::Linear"}
+		u3 %MaxAnisotropy{0}
+		f %MaxLOD{0xFFFF7F7F}
+		s %MinFilter{"xiiGALFilterType::Linear"}
+		f %MinLOD{0}
+		s %MipFilter{"xiiGALFilterType::Linear"}
+		f %MipLODBias{0}
+		s %MipmapMode{"xiiTextureConverterMipmapMode::None"}
 		b %PremultipliedAlpha{0}
 		b %PreserveAlphaCoverage{0}
 		s %Resolution{"xiiTexture2DResolution::Fixed256x256"}
-		s %TextureFilter{"xiiTextureFilterSetting::DefaultQuality"}
-		s %Usage{"xiiTexConvUsage::Linear"}
+		f %ResolutionScale{0x0000803F}
+		s %SamplerPreset{"xiiTextureConverterSamplerPreset::Trilinear"}
+		s %Usage{"xiiTextureConverterUsage::Auto"}
+		b %UseCustomFiltering{0}
 	}
 }
 o
@@ -81,23 +89,6 @@ Types
 {
 o
 {
-	Uuid %id{u4{14401336355448921679,186601688904500280}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiTexConvCompressionMode"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
 	Uuid %id{u4{1806006595755264957,1330264583885842403}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -115,6 +106,23 @@ o
 }
 o
 {
+	Uuid %id{u4{12587879129388361343,1574348018721874575}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiTextureConverterUsage"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{18229743452078533094,1794026526830352400}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -127,7 +135,7 @@ o
 		s %PluginName{"xiiEditorPluginAssets"}
 		VarArray %Properties{}
 		s %TypeName{"xiiTexture2DResolution"}
-		u3 %TypeVersion{1}
+		u3 %TypeVersion{2}
 	}
 }
 o
@@ -144,6 +152,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiDocumentRoot"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{6680476159681239248,2871500319687432315}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiTextureConverterSamplerPreset"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -166,7 +191,7 @@ o
 }
 o
 {
-	Uuid %id{u4{7325167800920757310,5858831931662395341}}
+	Uuid %id{u4{369964446334001571,6038691659598375876}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -177,13 +202,13 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiImageAddressMode"}
+		s %TypeName{"xiiGALFilterType"}
 		u3 %TypeVersion{1}
 	}
 }
 o
 {
-	Uuid %id{u4{1050159404913888229,7471248537256125413}}
+	Uuid %id{u4{1094208467723292842,8564730781915758938}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -194,13 +219,13 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiTexConvUsage"}
+		s %TypeName{"xiiTextureConverterMipmapMode"}
 		u3 %TypeVersion{1}
 	}
 }
 o
 {
-	Uuid %id{u4{3662224580269866687,11559763291728086400}}
+	Uuid %id{u4{596060528468966686,10926331545135626071}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -211,13 +236,13 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiTextureFilterSetting"}
+		s %TypeName{"xiiTextureConverterCompressionMode"}
 		u3 %TypeVersion{1}
 	}
 }
 o
 {
-	Uuid %id{u4{572750813925508327,15759880857058095386}}
+	Uuid %id{u4{2853027423170278209,12583847731503192344}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -228,7 +253,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiTexConvMipmapMode"}
+		s %TypeName{"xiiGALTextureAddressMode"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -280,7 +305,7 @@ o
 		s %PluginName{"xiiEditorPluginAssets"}
 		VarArray %Properties{}
 		s %TypeName{"xiiTextureAssetProperties"}
-		u3 %TypeVersion{5}
+		u3 %TypeVersion{8}
 	}
 }
 }

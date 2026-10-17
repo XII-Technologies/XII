@@ -14,7 +14,7 @@ o
 			s{"Textures/MissingCubeMap.dds"}
 		}
 		Uuid %DocumentID{u4{1338951568161559681,5334970008066883333}}
-		u4 %Hash{14302822630145914301}
+		u4 %Hash{10747752983358593485}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -32,11 +32,11 @@ o
 {
 	Uuid %id{u4{6104545307651961776,4838518853319501983}}
 	s %t{"xiiTextureCubeAssetProperties"}
-	u3 %v{3}
+	u3 %v{4}
 	p
 	{
 		s %ChannelMapping{"xiiTextureCubeChannelMappingEnum::RGB1"}
-		s %CompressionMode{"xiiTexConvCompressionMode::Medium"}
+		s %CompressionMode{"xiiTextureConverterCompressionMode::None"}
 		f %HdrExposureBias{0}
 		s %Input1{"Textures/MissingCubeMap.dds"}
 		s %Input2{""}
@@ -44,9 +44,9 @@ o
 		s %Input4{""}
 		s %Input5{""}
 		s %Input6{""}
-		s %MipmapMode{"xiiTexConvMipmapMode::Linear"}
-		s %TextureFilter{"xiiTextureFilterSetting::DefaultQuality"}
-		s %Usage{"xiiTexConvUsage::Color"}
+		s %MipmapMode{"xiiTextureConverterMipmapMode::None"}
+		s %SamplerPreset{"xiiTextureConverterSamplerPreset::Trilinear"}
+		s %Usage{"xiiTextureConverterUsage::Auto"}
 	}
 }
 o
@@ -66,23 +66,6 @@ o
 }
 Types
 {
-o
-{
-	Uuid %id{u4{14401336355448921679,186601688904500280}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiTexConvCompressionMode"}
-		u3 %TypeVersion{1}
-	}
-}
 o
 {
 	Uuid %id{u4{13333842974928191815,1282287665079283675}}
@@ -119,6 +102,23 @@ o
 }
 o
 {
+	Uuid %id{u4{12587879129388361343,1574348018721874575}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiTextureConverterUsage"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{8224268647907297484,2300230217040154700}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -136,7 +136,7 @@ o
 }
 o
 {
-	Uuid %id{u4{1050159404913888229,7471248537256125413}}
+	Uuid %id{u4{6680476159681239248,2871500319687432315}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -147,7 +147,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiTexConvUsage"}
+		s %TypeName{"xiiTextureConverterSamplerPreset"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -165,12 +165,12 @@ o
 		s %PluginName{"xiiEditorPluginAssets"}
 		VarArray %Properties{}
 		s %TypeName{"xiiTextureCubeAssetProperties"}
-		u3 %TypeVersion{3}
+		u3 %TypeVersion{4}
 	}
 }
 o
 {
-	Uuid %id{u4{3662224580269866687,11559763291728086400}}
+	Uuid %id{u4{1094208467723292842,8564730781915758938}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -181,13 +181,13 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiTextureFilterSetting"}
+		s %TypeName{"xiiTextureConverterMipmapMode"}
 		u3 %TypeVersion{1}
 	}
 }
 o
 {
-	Uuid %id{u4{572750813925508327,15759880857058095386}}
+	Uuid %id{u4{596060528468966686,10926331545135626071}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
@@ -198,7 +198,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiTexConvMipmapMode"}
+		s %TypeName{"xiiTextureConverterCompressionMode"}
 		u3 %TypeVersion{1}
 	}
 }
