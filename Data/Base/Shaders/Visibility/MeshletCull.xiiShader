@@ -69,14 +69,22 @@ void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID)
     }
     else if (instance.FirstPrimitive - meshlet.Header.x >= primitives) return;
   }
-  float3 scale = float3(length(instance.GlobalTransform[0].xyz), length(instance.GlobalTransform[1].xyz), length(instance.GlobalTransform[2].xyz));
-  float maximumScale = max(scale.x, max(scale.y, scale.z));
+  float3 c0 = float3(instance.GlobalTransform[0][0], instance.GlobalTransform[1][0], instance.GlobalTransform[2][0]);
+  float3 c1 = float3(instance.GlobalTransform[0][1], instance.GlobalTransform[1][1], instance.GlobalTransform[2][1]);
+  float3 c2 = float3(instance.GlobalTransform[0][2], instance.GlobalTransform[1][2], instance.GlobalTransform[2][2]);
+  float3 diagonal = float3(dot(c0, c0), dot(c1, c1), dot(c2, c2));
+  float3 offDiagonal = abs(float3(dot(c0, c1), dot(c0, c2), dot(c1, c2)));
+  // The largest Gram-matrix row sum bounds the squared stretch, including shear.
+  float3 stretch = diagonal + float3(offDiagonal.x + offDiagonal.y, offDiagonal.x + offDiagonal.z, offDiagonal.y + offDiagonal.z);
+  float maximumScale = sqrt(max(stretch.x, max(stretch.y, stretch.z)));
   bool posed = instance.SkinningCount != 0u;
   float3 center = posed ? instance.BoundsCenterRadius.xyz : mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
   float radius = posed ? instance.BoundsCenterRadius.w : meshlet.Bounds.w * maximumScale;
   if (!SphereInsideFrustum(center, radius, view)) return;
-  float minimumScale = min(scale.x, min(scale.y, scale.z));
-  if (!posed && meshlet.Cone.w >= 0.0f && maximumScale - minimumScale <= max(maximumScale, 0.0001f) * 0.001f)
+  float tolerance = max(max(diagonal.x, max(diagonal.y, diagonal.z)), 0.00000001f) * 0.001f;
+  bool uniformScale = max(diagonal.x, max(diagonal.y, diagonal.z)) - min(diagonal.x, min(diagonal.y, diagonal.z)) <= tolerance &&
+                 max(offDiagonal.x, max(offDiagonal.y, offDiagonal.z)) <= tolerance;
+  if (!posed && meshlet.Cone.w >= 0.0f && uniformScale && dot(c0, cross(c1, c2)) > 0.0f)
   {
     float3 axis = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
     float3 toCamera = normalize(view.CameraPosition.xyz - center);
