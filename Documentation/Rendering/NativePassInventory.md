@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **71 concrete reflected operation classes** in
+Current source inventory: **74 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -30,7 +30,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Reflections | 3 | `xiiHybridReflectionCompositePass`, `xiiScreenSpaceReflectionsPass`, `xiiScreenSpaceReflectionsTemporalPass` |
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
-| Sensors | 1 | `xiiSensorOutputPass` |
+| Sensors | 4 | `xiiDepthSensorPass`, `xiiRgbSensorPass`, `xiiInfraredSensorPass`, `xiiLidarSensorPass` |
 | Shadows | 7 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowTablesPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowPagePublishPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
@@ -1944,3 +1944,94 @@ EditorEngineProcessFrameworkTest/SensorMemoryTest.cpp, TemporalHistoryTest.cpp a
 GraphicsFoundationTest/Pipeline/RenderPipelineExecutionTest.cpp. These registered tests
 still need replacement compositions and migration; the passing EditorViews group does not
 cover them. The deleted Deferred asset must not be restored as a fallback for these callers.
+
+
+## Independent calibrated sensor operations
+
+Current inventory: **74 concrete native reflected operations / 37 SDK assets**.
+The combined SensorOutputPass header/implementation and Pipeline/SensorOutput shader
+are physically deleted. Four independent Depth, RGB, Infrared and LiDAR operations
+replace them in the Sensors directory, with separate shader programs. There is no
+runtime sensor-type switch. Every pin uses XII_MEMBER_PROPERTY and an owned typed
+handle; calibration and view-profile selection are reflected member properties.
+
+The existing physical calibration fields now belong to reflected SensorCalibration.
+SensorProfile version 3 derives from it and retains its physical Type. Native nodes
+expose Calibration without a selectable algorithm Type: creating a Depth node in the
+editor therefore cannot accidentally instantiate an RGB calibration. A binary RTTI
+roundtrip covers both inherited calibration values and the profile's Type. Existing
+immutable profile registration remains the owner of explicitly selected view profiles;
+no additional world module, registry or scene representation is introduced.
+
+Depth consumes only depth and canonical camera constants. RGB and Infrared additionally
+consume radiance; LiDAR consumes octahedral normals and reflectance. Rolling shutter
+requires explicit matching velocity and frame-time inputs; a shader permutation removes
+those bindings for global shutter. Input dimensions, resource shapes, calibration and
+physical algorithm mismatches fail during setup. Depth is reconstructed with the
+supplied inverse projection, including a finite far plane, rather than assuming an
+infinite-far near/depth relationship. Existing distortion, quantization and noise
+functions remain shared shader math, not a combined executable algorithm.
+
+SensorCapture is a non-allocatable reflected helper, excluded from the operation count.
+It owns calibration validation and each occurrence's output image/result. Recorded work
+captures its pipeline, immutable constants and refcounted result; it retains no mutable
+pass/view/world pointer. A destroyed pass remains safe after graph setup. Output images
+and retirement use existing GAL/graph facilities. Independent instances and views never
+share a writable image merely because they reference the same authored definition.
+
+Five ordinary source/binary pairs were authored/exported through editor document commands:
+DepthSensor, RgbSensor, InfraredSensor, LidarSensor and DepthSensorDiagnostic. The diagnostic
+combines existing depth-target and view-constant producers with the depth sensor. Its
+empty reversed-depth image deliberately tests invalid/background measurements; it is not
+a scene-geometry capture pipeline. ScreenEffects no longer embeds an unrelated sensor.
+Its remaining node identities/connections were preserved; the optional motion interface
+uses the existing zero-work texture-forward operation. No one-time asset editing code or
+compatibility wrapper remains. Native sensor leaf interfaces come from reflected pins,
+not manually duplicated pin-type arrays. Source assets declare Compute explicitly.
+
+SensorMemory now selects DepthSensorDiagnostic explicitly; both old default-Deferred
+loads and its wrapper allocation-failure pass are removed. It exercises the native
+pass's allocation precondition directly, then verifies recovery through the authored
+resource. The screen-effect GPU fixture consumes radiance through RGB as well as depth
+through Depth, keeping its refraction/GI work live. PipelineResources' two-view fixture
+now reads its private readback through the owning pass occurrence, replacing a broken
+lookup by the former global buffer name; its test passes also use reflected typed pins.
+
+Verification, Debug/Vulkan (D3D12 excluded):
+
+- GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build with dependencies:
+  native-sensor-verified-build.log. Earlier overlapping builds/tests caused PDB and Qt
+  deployment contention; final verification runs builds and tests sequentially.
+- All 66 CPU subtests pass (native-sensor-final-verified-cpu.log), including inherited
+  calibration binary serialization, native pin schemas and pipeline roundtrips.
+- All 31 NativeAssetAuthoring fixtures pass (native-sensor-final-authoring.log).
+  All 16 EditorDocuments tests pass with 37 packaged/source/repeated deterministic
+  exports (native-sensor-verified-editor.log).
+- NativeSensors passes actual GPU readbacks for four nested referenced definitions,
+  with both global and rolling shutter (native-sensor-final-native-gpu.log). Analytic
+  finite-projection depth/range, RGB response, infrared wavelength/response and
+  unsaturated LiDAR incidence/return values match. Instances are destroyed before
+  recording. Geometry/material services remain uninitialized. Initial fixture errors
+  in texture slice pitch, legal shutter configuration and octahedral normal encoding
+  were corrected before this successful run. GPU noise variants are not reference-tested.
+- All 14 PipelineResources GPU tests pass (native-sensor-final-pipeline-resources.log),
+  including live reusable screen effects and independent view/subgraph state.
+- Both SensorMemory tests pass (native-sensor-final-memory.log): two views, 64 profile
+  switches with frames in flight, output invalidation/recovery, readback and safe
+  retirement after completion. Every retained retired image has only the test reference.
+  Extraction requirements are empty; instance data and geometry/material services remain
+  uninitialized. This establishes demand isolation, not an extraction throughput benchmark.
+- All 47 EditorViews tests pass (native-sensor-final-editor-views.log).
+- Source/data searches find no active SensorOutputPass references, and no GraphicsCore
+  Builtin or SceneDatabase source files. Historical phase notes above are retained as history.
+
+The full renderer conversion remains incomplete. TemporalHistoryTest.cpp and the
+PipelineDefault/OffscreenRendering fixture in RenderPipelineExecutionTest.cpp still
+load the removed Deferred asset through PipelineLibraryTestUtils.h's default argument.
+Their real native compositions must be rebuilt; neither fixture was counted as passing
+above. Native light/cluster preparation, complete game/editor/advanced lighting graphs,
+the sample's remaining mesh/ray orchestration and world/view virtual page identities
+also remain outstanding. The last full Vulkan sample run still failed with
+ErrorDeviceLost as documented in the preceding phase; this sensor-only phase did not
+rerun or resolve it. No Release benchmark or complete-renderer success is claimed.
