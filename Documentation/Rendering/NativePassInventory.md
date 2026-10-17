@@ -1846,6 +1846,19 @@ than completing the requested frames. Evidence is in native-shadow-publication-s
 native-shadow-publication-sample-assertion.txt and native-shadow-publication-sample-results.json.
 The focused passes and GPU readbacks do not establish whole-application correctness.
 
+Additional isolation runs reproduce the device loss with one grid object and ray tracing
+disabled (-grid-width 1 -grid-height 1 -ray-tracing false). The minimal graph records
+73 registered / 65 compiled / 8 culled operations, one submission and 151 barriers,
+with two virtual pages in device frame 3. Its assertion reports fence 32 / request 33 /
+ErrorDeviceLost. The normal and synchronization-validation runs were bounded to 30 seconds;
+GPU-assisted safe-mode validation was bounded to 45 seconds. All three required stopping
+their own process. The installed SDK's synchronization validation reported no resource
+hazard. GPU-assisted validation confirmed activation through its device-feature warnings,
+but reported no shader access violation before the device loss. These runs rule out ray
+tracing and the large grid as prerequisites; they do not establish a root cause. Logs and
+assertion captures use native-shadow-publication-one-object, -sync-validation and
+-gpu-validation prefixes in Workspace.
+
 The full renderer conversion is still incomplete. Native light/cluster preparation,
 complete game/editor/advanced lighting graphs, sample main shading/presentation and
 world/view-scoped virtual page identity remain required. D3D12 is excluded; no Release
