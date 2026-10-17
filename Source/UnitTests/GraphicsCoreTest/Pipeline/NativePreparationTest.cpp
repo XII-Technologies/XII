@@ -13,6 +13,7 @@
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackReadbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackReadbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackResetPass.h>
@@ -750,4 +751,32 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDirectionalCascades)
   XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("explicit view camera") != nullptr);
   XII_TEST_BOOL(static_cast<const xiiShadowCascadePass*>(instance.GetPass(0))->GetCascadeSnapshot(graph).IsEmpty());
   graph.EndSetup();
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowTables)
+{
+  xiiVirtualShadowTablesPass            pass;
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass.GetPins(pins);
+  XII_TEST_RESULT(pass.InitializePinBindings(pins));
+  XII_TEST_BOOL(pass.GetExtractionRequirements().IsNoFlagSet());
+  XII_TEST_BOOL(pass.GetRuntimeFeatures() == xiiRenderPipelineFeature::VirtualShadows);
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Device page residency", "xiiVirtualShadowTablesPass");
+  xiiSharedPtr<const xiiRenderPipeline> pipeline;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, pipeline));
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(pipeline));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  graph.BeginSetup(1);
+  XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard).Failed());
+  XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("active shared GPU frame") != nullptr);
+  XII_TEST_BOOL(pass.GetSnapshot(graph) == nullptr);
+  graph.EndSetup();
+  const auto settings        = xiiVirtualShadowMapManager::GetConfiguration();
+  auto       invalid         = settings;
+  invalid.m_uiFramesInFlight = 65;
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(invalid).Failed());
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetConfiguration().m_uiFramesInFlight, settings.m_uiFramesInFlight);
 }

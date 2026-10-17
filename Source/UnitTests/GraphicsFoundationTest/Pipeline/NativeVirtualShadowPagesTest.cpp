@@ -8,6 +8,7 @@
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
@@ -84,6 +85,9 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
   xiiDynamicArray<xiiRenderPipelinePin> commandPins;
   commands.GetPins(commandPins);
   XII_TEST_RESULT(commands.InitializePinBindings(commandPins));
+  xiiRenderPipelineInstance tables;
+  if (!XII_TEST_RESULT(tables.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowTables"))))
+    return;
   xiiVirtualShadowRasterPage staleRecycled;
   for (xiiUInt32 phase = 0; phase < 5; ++phase)
   {
@@ -134,7 +138,12 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
     xiiGeometryResidencyManager::ProcessStreaming(frame.GetFrameIndex(), frame.GetCompletedFrame(), xiiMath::MaxValue<xiiUInt64>());
     const auto geometry  = xiiGeometryResidencyManager::AddUploadPass(graph, frame.GetFrameIndex());
     const auto materials = xiiMaterialManager::AddUploadPasses(graph);
-    auto       upload    = xiiVirtualShadowMapManager::AddUploadPass(graph, frame.GetFrameIndex());
+    if (!XII_TEST_RESULT(tables.Build(nullptr, graph, context.GetBlackboard())))
+      return;
+    const auto* captured = static_cast<const xiiVirtualShadowTablesPass*>(tables.GetPass(0))->GetSnapshot(graph);
+    if (!XII_TEST_BOOL(captured != nullptr))
+      return;
+    auto upload = *captured;
     if (phase == 0)
     {
       struct Initial
@@ -203,8 +212,8 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
         return;
       upload.m_hPhysicalAtlas = pipeline.GetInterfaceBinding(compiled->FindInterface("ShadowDepth", false))->m_hTexture;
     }
-    xiiVirtualShadowMapManager::UploadHandles published;
-    if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::AddPageCompletionPass(graph, upload, pages, published)))
+    auto published = upload;
+    if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::AddPageCompletionPass(graph, published, published.m_hPhysicalAtlas, published.m_hVirtualPageTable, pages)))
       return;
     if (phase == 0)
     {

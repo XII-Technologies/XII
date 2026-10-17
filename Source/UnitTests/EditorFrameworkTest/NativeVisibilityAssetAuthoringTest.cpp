@@ -15,6 +15,7 @@
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
@@ -1425,6 +1426,78 @@ namespace
     return XII_SUCCESS;
   }
 
+  xiiStatus AuthorVirtualShadowTables(xiiStringView outputDirectory)
+  {
+    const xiiStringView name = "VirtualShadowTables";
+    xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author device residency table uploads");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* tables = add("Publish Device Page Tables", "xiiVirtualShadowTablesPass", {600, 0});
+    if (!tables)
+      return xiiStatus("Could not create native table upload node.");
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    xiiVirtualShadowTablesPass            prototype;
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    prototype.GetPins(pins);
+    xiiUInt32 inputRow = 0, outputRow = 0;
+    for (const auto& pin : pins)
+    {
+      if (pin.m_Type == xiiRenderPipelinePin::Order)
+        continue;
+      const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150 + 300)});
+      if (!boundary)
+        return xiiStatus("Could not create virtual shadow tables boundary.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", pin.m_sName));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", pin.m_bInput));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(pin.m_Type)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Format", static_cast<xiiInt64>(pin.m_Format)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      XII_SUCCEED_OR_RETURN(pin.m_bInput ? connect(boundary, "Value", tables, pin.m_sName) : connect(tables, pin.m_sName, boundary, "Value"));
+    }
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import virtual shadow tables asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Virtual shadow table asset did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 1);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 3);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::VirtualShadows);
+    return XII_SUCCESS;
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -1611,4 +1684,13 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ShadowCascades)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeCascadeAuthoring"));
   XII_TEST_STATUS(AuthorShadowCascades(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VirtualShadowTables)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeShadowTablesAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeShadowTablesAuthoring"));
+  XII_TEST_STATUS(AuthorVirtualShadowTables(path));
 }

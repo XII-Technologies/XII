@@ -31,6 +31,7 @@
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -58,6 +59,7 @@ xiiCommandLineOptionString opt_GpuDrivenShadowPipeline("GpuDrivenScene", "-shado
 xiiCommandLineOptionString opt_GpuDrivenShadowPagePipeline("GpuDrivenScene", "-shadow-page-pipeline", "Authored raster resource for supplied virtual page targets.", "RenderPipelines/ShadowMeshDepth.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowFeedbackPipeline("GpuDrivenScene", "-shadow-feedback-pipeline", "Authored virtual shadow demand/readback resource.", "RenderPipelines/VirtualShadowFeedback.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenCascadePipeline("GpuDrivenScene", "-shadow-cascade-pipeline", "Authored stabilized directional cascade resource.", "RenderPipelines/ShadowCascades.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenShadowTablesPipeline("GpuDrivenScene", "-shadow-tables-pipeline", "Authored virtual-shadow residency table upload resource.", "RenderPipelines/VirtualShadowTables.xiiBinRenderPipeline");
 
 namespace
 {
@@ -370,6 +372,13 @@ public:
       RequestQuit();
       return;
     }
+    m_hShadowTablesPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenShadowTablesPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeShadowTablesPipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     m_hCascadePipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenCascadePipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
     if (SynchronizeCascadePipeline().Failed())
     {
@@ -413,6 +422,8 @@ public:
     m_VirtualPageRuntimes.Clear();
     m_ShadowPageDefinition = nullptr;
     m_hShadowPagePipeline.Invalidate();
+    m_ShadowTables.Clear();
+    m_hShadowTablesPipeline.Invalidate();
     m_Cascades.Clear();
     m_hCascadePipeline.Invalidate();
     m_ShadowFeedback.Clear();
@@ -644,7 +655,7 @@ private:
   };
 
   xiiResult BuildVirtualShadowPages(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
-                                    xiiVirtualShadowMapManager::UploadHandles& upload, const xiiMat4& projection,
+                                    xiiVirtualShadowTableBindings& upload, const xiiMat4& projection,
                                     const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
                                     const xiiMaterialGpuStorage::UploadHandles& materials)
   {
@@ -675,10 +686,62 @@ private:
         return XII_FAILURE;
       }
     }
-    xiiVirtualShadowMapManager::UploadHandles completed;
-    XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::AddPageCompletionPass(graph, upload, pages, completed));
-    upload = completed;
+    XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::AddPageCompletionPass(graph, upload, upload.m_hPhysicalAtlas, upload.m_hVirtualPageTable, pages));
     return XII_SUCCESS;
+  }
+
+  xiiResult SynchronizeShadowTablesPipeline()
+  {
+    bool changed = false;
+    if (m_ShadowTables.Synchronize(m_hShadowTablesPipeline, &changed).Failed())
+    {
+      xiiLog::Error("Selected shadow-table resource '{}' is missing or invalid.", m_hShadowTablesPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    if (changed)
+    {
+      const auto* pipeline = m_ShadowTables.GetPipeline();
+      for (const xiiStringView name : {"PhysicalPageTable", "VirtualPageTable"})
+      {
+        const auto output = pipeline->FindInterface(name, false);
+        if (output == xiiInvalidIndex || pipeline->GetInterface()[output].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+        {
+          xiiLog::Error("Shadow-table resource '{}' requires buffer output '{}'.", m_hShadowTablesPipeline.GetResourceID(), name);
+          return XII_FAILURE;
+        }
+      }
+      const auto atlas = pipeline->FindInterface("PhysicalAtlas", false);
+      if (atlas == xiiInvalidIndex || pipeline->GetInterface()[atlas].m_Pin.m_Type != xiiRenderPipelinePin::Texture || pipeline->GetInterface()[atlas].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
+      {
+        xiiLog::Error("Shadow-table resource '{}' requires a D32 PhysicalAtlas output.", m_hShadowTablesPipeline.GetResourceID());
+        return XII_FAILURE;
+      }
+    }
+    return XII_SUCCESS;
+  }
+
+  xiiResult BuildShadowTables(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiVirtualShadowTableBindings& output)
+  {
+    XII_SUCCEED_OR_RETURN(SynchronizeShadowTablesPipeline());
+    if (m_ShadowTables.Build(nullptr, graph, blackboard).Failed())
+    {
+      xiiLog::Error("Authored shadow-table upload failed: {}", m_ShadowTables.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    const auto* compiled = m_ShadowTables.GetPipeline();
+    const auto  atlas    = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("PhysicalAtlas", false))->m_hTexture;
+    const auto  physical = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("PhysicalPageTable", false))->m_hBuffer;
+    const auto  table    = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("VirtualPageTable", false))->m_hBuffer;
+    for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
+      if (m_ShadowTables.GetPass(i)->GetDynamicRTTI()->IsDerivedFrom<xiiVirtualShadowTablesPass>())
+        if (const auto* captured = static_cast<const xiiVirtualShadowTablesPass*>(m_ShadowTables.GetPass(i))->GetSnapshot(graph))
+          if (captured->m_hPhysicalAtlas == atlas && captured->m_hPhysicalPageTable == physical && captured->m_hVirtualPageTable == table)
+          {
+            output = *captured;
+            return XII_SUCCESS;
+          }
+    xiiLog::Error("Shadow-table resource '{}' must expose one native layout capture through its explicit table/atlas outputs.", m_hShadowTablesPipeline.GetResourceID());
+    return XII_FAILURE;
   }
 
   xiiResult SynchronizeCascadePipeline()
@@ -838,11 +901,13 @@ private:
       RequestQuit();
       return;
     }
-    xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex);
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowUpload.m_uiPhysicalPageCount);
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowUpload.m_uiVirtualTableBaseIndex);
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, virtualShadowUpload.m_uiVirtualTableCapacity);
+    xiiVirtualShadowTableBindings virtualShadowUpload;
+    if (BuildShadowTables(graph, blackboard, virtualShadowUpload).Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
 
     if (rayTracingScene.m_pTopLevelAS != nullptr && m_pRayTracingValidationSBT != nullptr && m_hRayTracingValidationPermutation.IsValid())
     {
@@ -1285,6 +1350,8 @@ private:
   xiiUInt32                                         m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
   xiiRenderPipelineResourceHandle                   m_hVisibilityPipeline;
   xiiRenderPipelineResourceHandle                   m_hShadowPagePipeline;
+  xiiRenderPipelineResourceHandle                   m_hShadowTablesPipeline;
+  xiiRenderPipelineInstance                         m_ShadowTables;
   xiiRenderPipelineResourceHandle                   m_hCascadePipeline;
   xiiRenderPipelineInstance                         m_Cascades;
   xiiUInt32                                         m_uiCascadeOutput = xiiInvalidIndex;

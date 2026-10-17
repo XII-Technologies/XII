@@ -6,6 +6,7 @@
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -141,6 +142,31 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowRasterPage
   xiiRectU32             m_Viewport;
 };
 
+/// Device table addressing for one retired-frame-safe slice. Derived residency
+/// metadata only; these indices are never public scene identities or serialized handles.
+struct XII_GRAPHICSCORE_DLL xiiVirtualShadowGpuLayout
+{
+  xiiUInt32 m_uiFrameBaseIndex = 0, m_uiPhysicalPageCount = 0;
+  xiiUInt32 m_uiVirtualTableBaseIndex = 0, m_uiVirtualTableCapacity = 0;
+};
+
+/// Immutable upload capture. Owns the referenced GPU allocations across reconfiguration.
+/// Table transfers are recorded by the consuming pipeline operation.
+struct XII_GRAPHICSCORE_DLL xiiVirtualShadowTableUpload : xiiRefCounted
+{
+  struct Range
+  {
+    xiiUInt32 m_uiFirstPhysicalPage = 0, m_uiFirstRecord = 0, m_uiRecordCount = 0;
+  };
+  xiiSharedPtr<xiiGALBuffer>               m_PhysicalBuffer, m_VirtualBuffer;
+  xiiSharedPtr<xiiGALTexture>              m_Atlas;
+  xiiVirtualShadowGpuLayout                m_Layout;
+  xiiDynamicArray<Range>                   m_PhysicalRanges;
+  xiiDynamicArray<xiiGpuVirtualShadowPage> m_PhysicalRecords, m_VirtualRecords;
+  xiiDynamicArray<xiiUInt64>               m_PhysicalRevisions;
+  xiiUInt64                                m_uiFrame = 0, m_uiConfigurationRevision = 0, m_uiResidencyRevision = 0;
+};
+
 class xiiVirtualShadowMapManagerState;
 
 /// Process-wide virtual-shadow-map page residency service.
@@ -201,20 +227,14 @@ public:
   /// reversed-Z depth. Exposed for tooling and deterministic validation.
   [[nodiscard]] static bool BuildPageViewProjection(const xiiMat4& cascadeViewProjection, const xiiVirtualShadowPageId& page, xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiMat4& out_pageViewProjection);
 
-  struct UploadHandles
-  {
-    xiiRenderGraphBufferHandle  m_hPhysicalPageTable;
-    xiiRenderGraphBufferHandle  m_hVirtualPageTable;
-    xiiRenderGraphTextureHandle m_hPhysicalAtlas;
-    xiiUInt32                   m_uiFrameBaseIndex        = 0U;
-    xiiUInt32                   m_uiPhysicalPageCount     = 0U;
-    xiiUInt32                   m_uiVirtualTableBaseIndex = 0U;
-    xiiUInt32                   m_uiVirtualTableCapacity  = 0U;
-  };
-
-  /// Adds a transfer pass that publishes changed residency records to the
-  /// current frame slice. Updates remain retryable if graph execution fails.
-  [[nodiscard]] static UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  /// Captures coalesced physical edits and a changed virtual table for the current
+  /// frame slice. The first capture freezes this device frame; later residency changes are
+  /// queued for the next frame rather than rewriting tables under active views.
+  [[nodiscard]] static xiiSharedPtr<const xiiVirtualShadowTableUpload> CaptureTableUpload(xiiUInt64 uiFrameIndex);
+  /// Register a recorded transfer. Dirty edits retire only after its fence signals;
+  /// abandoned/failed recordings remain retryable after shared frame retirement.
+  static void               RecordTableUpload(xiiSharedPtr<const xiiVirtualShadowTableUpload> upload, xiiSharedPtr<xiiGALFence> completion);
+  [[nodiscard]] static bool IsTableUploadRecorded(const xiiVirtualShadowTableUpload& upload);
 
   /// Select a deterministic bounded batch without constructing any raster operations.
   /// Selected pages are touched for GPU retirement and claimed once per device frame.
@@ -223,11 +243,13 @@ public:
   [[nodiscard]] static bool IsRasterWorkCurrent(const xiiVirtualShadowRasterPage& page);
   /// Publish clean GPU table records after the supplied final atlas version. CPU dirty
   /// state is retired only after the completion fence signals, and abandoned work retries.
-  [[nodiscard]] static xiiResult AddPageCompletionPass(xiiRenderGraph& graph, const UploadHandles& upload,
-                                                       xiiArrayPtr<const xiiVirtualShadowRasterPage> pages, UploadHandles& out_upload);
+  [[nodiscard]] static xiiResult AddPageCompletionPass(xiiRenderGraph& graph, const xiiVirtualShadowGpuLayout& layout,
+                                                       xiiRenderGraphTextureHandle& atlas, xiiRenderGraphBufferHandle& table,
+                                                       xiiArrayPtr<const xiiVirtualShadowRasterPage> pages);
 
 
 private:
+  static void                                          AcknowledgeTableUpload(const xiiVirtualShadowTableUpload& upload);
   static void                                          Startup();
   static void                                          EngineStartup();
   static void                                          EngineShutdown();
