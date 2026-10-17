@@ -89,7 +89,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are now independent native operations; production consumer wiring remains. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are independent native operations, consumed by the authored sample graph. Both vertex-pull and mesh-shader indirect command preparation are native. The old visibility manager/system and their shaders are deleted; remaining sample shadow/VSM/raster orchestration needs conversion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
@@ -1160,8 +1160,8 @@ native-editor-fixtures-complete-views.log). NativeVisibility (4),
 NativeGeometryFeedback (1), NativeSceneLod (3) and SkinningRaster (3) also pass after the
 shared upload changes (native-shared-residency-visibility/feedback/lod/skinning.log).
 
-Remaining migration: GpuVisibilityManager/System still have legacy test consumers and
-RenderGraphManager hooks; their implementations have not yet been deleted. GpuDrivenScene
+At that phase, GpuVisibilityManager/System still had legacy test consumers and
+RenderGraphManager hooks; the following phase deletes those implementations. GpuDrivenScene
 still contains shadow/VSM, custom raster, ray-dispatch and presentation orchestration.
 The frame-local visibility output aggregate remains an input to those consumers; it is
 not a new lifecycle facade. Native explicit instance/meshlet occlusion remains available,
@@ -1170,3 +1170,90 @@ occlusion requires explicit matching projections and invalidation for changed/de
 occluders, materials and residency. Full lighting/game/editor graphs, removal of remaining
 oversized services and further fine-grained decomposition remain incomplete. D3D12 is
 excluded. No complete-renderer or full GPU performance claim is made by this phase.
+
+
+## Legacy visibility subsystem deletion
+
+The legacy visibility execution subsystem is physically removed. Deleted files:
+
+- Visibility/GpuVisibilityManager.h and Implementation/GpuVisibilityManager.cpp.
+- Visibility/GpuVisibilitySystem.h and Implementation/GpuVisibilitySystem.cpp.
+- Shaders/Visibility/GpuSceneHiZOcclusion.xiiShader, GpuSceneMeshletDispatchBuild.xiiShader,
+  GpuSceneMeshletCull.xiiShader, GpuSceneMeshletHiZCull.xiiShader,
+  GpuSceneLodFeedbackClear.xiiShader and GpuSceneCommandBuild.xiiShader.
+- Shaders/Visibility/GpuSceneMeshletCull.h and GpuMeshletDispatchConstants.h.
+
+This removes the global context ID table, named visibility-set registry, frame-sliced
+view/LOD/feedback buffers, shader orchestration, synchronous manager frame maintenance,
+old feedback hash implementation, context configuration/purpose reflection and streaming
+statistics. RenderGraphManager no longer scans visibility contexts for a minimum ring or
+calls their BeginFrame. Static-link references and generated build inputs are removed.
+No compatibility wrapper or replacement context registry is added.
+
+Ownership after removal:
+
+| Removed responsibility | Native/current owner |
+| --- | --- |
+| View and flags snapshot | VisibilityView or MatrixVisibilityView reflected occurrence |
+| World instance and skinning data | Existing RenderWorldModule/GpuInstanceData sparse extraction and upload |
+| Instance culling and LOD selection | InstanceCull; generation/token-validated BufferHistory belongs to the occurrence |
+| Work bounds and meshlet compaction | MeshletDispatchBounds, MeshletDispatch and MeshletCull |
+| Depth culling | Explicit InstanceOcclusion/MeshletOcclusion with supplied matching depth and projection |
+| Draw commands | MeshDrawCommands or VertexPullDrawCommands with reflected layout |
+| Missing LOD requests/readback | Native Streaming operations and existing device geometry residency |
+| Queue synchronization and transient allocations | Existing render graph, GAL fences and shared GPU frame owner |
+
+GpuVisibilityResources.h retains only the frame-local xiiGpuVisibilityOutputs aggregate
+needed by remaining shadow/emissive/VSM consumers. It contains graph handles and a capacity,
+with no object identity registry, scene storage, callbacks, mutation API or lifecycle.
+The shader-view ABI remains unchanged in GpuVisibilityTypes. The old GpuLodFeedback shader
+record is deleted; native streaming owns its distinct generation-safe request ABI.
+
+SceneLodSelection, SceneLodSections and SceneMeshIdentity now update the existing world
+module's GPU extraction and consume the authored MatrixMeshletVisibility definition.
+Their test-only fixture changes a reflected meshlet budget and binds concrete native
+occlusion/reset/command members using schemas discovered from RTTI. It stores no scene
+state and exposes no production API. Manual fixture frame numbers/private trackers were
+replaced by the actual shared xiiRenderGraphFrame timeline required by BufferHistory.
+Viewport ring coverage now supplies an explicit two-frame limit to that same frame API.
+Obsolete assertions about deleted manager/handle construction were removed; mesh command
+property bounds are checked on the actual native operation.
+
+The migrated multi-section fixture exposed a native correctness bug: InstanceCull writes
+the geometry group's representative ObjectId into each section's LOD entry, while the two
+meshlet consumers compared that entry against each individual section ObjectId. The
+consumers now resolve and validate the same bounded representative as InstanceCull. This
+retains generation safety and shared hysteresis without dropping other sections or
+changing authoritative GPU identities. The full material-routing/filtered-section suite
+passes on both mesh and vertex-pull raster configurations. No expected results were relaxed.
+
+Verification after physical deletion:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorEngineProcessFrameworkTest,
+  GpuDrivenScene and EditorFrameworkTest build with engine/editor dependencies, including
+  EditorEngineProcess and EditorProcessor. Logs: native-visibility-deletion-final-build.log
+  and native-visibility-deletion-editor-build.log. Removing a transitive legacy include
+  exposed the raster fixture's missing GeometryResidency include, now explicit.
+- All 55 GraphicsCore CPU tests pass (native-visibility-deletion-cpu.log).
+- Vulkan NativeVisibility (4), PipelineExtraction (3), NativeGeometryFeedback (1),
+  NativeOcclusion (2), NativeDepthAtlas (1), NativeSceneLod (4), SkinningRaster (3),
+  NativeMeshCapture (3) and EditorViews (47) pass. Logs use
+  Workspace/native-visibility-deletion-<group>.log.
+- All 15 Qt EditorDocuments tests pass, including deterministic compilation of all
+  22 ordinary source/binary resources and pin/property document behavior
+  (native-visibility-deletion-editor-documents.log).
+- Actual default Vulkan GpuDrivenScene runs 30 frames, exits 0 and logs no error/assertion
+  (native-visibility-deletion-sample.log). No GPU timing speedup or Release benchmark is
+  claimed. Removing global context/set maintenance and duplicate shader paths reduces
+  overlapping CPU infrastructure; world/GPU upload ownership remains unchanged.
+- Searches of Source and Data/Base/Shaders find no removed visibility class, context,
+  configuration, purpose, statistics, include or shader path. Regenerated GraphicsCore
+  project inputs contain no deleted files. Rendering Builtin searches remain empty.
+  git diff --check passes.
+
+The inventory remains 63 native operations and 22 resources: deletion is not counted as
+new pass conversion. This phase completes visibility subsystem removal, not the overall
+rendering migration. GpuShadowRasterManager, VSM raster orchestration, oversized lighting
+services and sample/game/editor full-stack composition still require conversion/removal.
+D3D12 remains excluded. Existing explicit temporal occlusion policies still require valid
+client depth/projection/invalidation; no implicit unsafe history fallback is restored.
