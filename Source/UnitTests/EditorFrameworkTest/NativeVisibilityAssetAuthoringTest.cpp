@@ -12,6 +12,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
@@ -332,6 +333,175 @@ namespace
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
     return XII_SUCCESS;
   }
+
+  xiiStatus AuthorSurfaceQuery(xiiStringView outputDirectory)
+  {
+    xiiStringBuilder path(outputDirectory, "/SurfaceQuery.xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, "SurfaceQuery");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author native surface raster graph");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>((xiiRenderPipelineDeviceFeature::Compute | xiiRenderPipelineDeviceFeature::BindlessResources).GetValue())));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.SurfaceQuery/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* instances = add("Vertex-pull Draws", "xiiRenderPipelineSubgraphPass", {0, 0});
+    const auto* materials = add("Material Residency", "xiiMaterialUploadPass", {0, 1200});
+    const auto* constants = add("Raster Constants", "xiiSurfaceRasterConstantsPass", {600, 1200});
+    const auto* surface   = add("Surface Raster", "xiiSurfaceQueryPass", {1200, 0});
+    if (!instances || !materials || !constants || !surface)
+      return xiiStatus("Could not create native surface nodes.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/VertexPullDraws.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    for (auto pin : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibleMeshlets", "VisibleMeshletCount", "DrawCommands", "DrawCommandCount"})
+      XII_SUCCEED_OR_RETURN(connect(instances, pin, surface, pin));
+    XII_SUCCEED_OR_RETURN(connect(materials, "SurfaceMaterials", surface, "SurfaceMaterials"));
+    XII_SUCCEED_OR_RETURN(connect(constants, "RasterConstants", surface, "RasterConstants"));
+    xiiUInt32  row    = 0;
+    const auto expose = [&](const xiiDocumentObject* source, xiiStringView name, xiiUInt32 resourceType = xiiRenderPipelinePin::Buffer) -> xiiStatus {
+      const auto* boundary = add(xiiStringBuilder("Output/", name), "xiiRenderPipelineInterfacePass", {3000, float(row++ * 150)});
+      if (!boundary)
+        return xiiStatus("Could not create a visibility interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", name));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", false));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", resourceType));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      return connect(source, name, boundary, "Value");
+    };
+    for (auto pin : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibilityView", "VisibleInstances", "VisibleInstanceCount", "LodHistory", "DispatchArguments", "VisibleMeshlets", "VisibleMeshletCount", "VisibleMeshletOverflow", "DrawCommands", "DrawCommandCount"})
+      XII_SUCCEED_OR_RETURN(expose(instances, pin));
+    XII_SUCCEED_OR_RETURN(expose(surface, "Surface", xiiRenderPipelinePin::Texture));
+    XII_SUCCEED_OR_RETURN(expose(surface, "SceneDepth", xiiRenderPipelinePin::Texture));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import visibility asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/SurfaceQuery.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Authored visibility did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 4);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 16);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 17);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
+    return XII_SUCCESS;
+  }
+
+  xiiStatus AuthorDebugVisualization(xiiStringView outputDirectory)
+  {
+    xiiStringBuilder path(outputDirectory, "/DebugVisualization.xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, "DebugVisualization");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author explicit debug composition");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.DebugVisualization/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* mode    = add("View Render Mode", "xiiViewRenderModePass", {600, 0});
+    const auto* overlay = add("Debug Overlay", "xiiDebugOverlayPass", {1200, 0});
+    if (!mode || !overlay)
+      return xiiStatus("Could not create debug nodes.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(mode, "UseViewMode", true));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    xiiViewRenderModePass prototype;
+    prototype.m_bUseViewMode = true;
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    prototype.GetPins(pins);
+    xiiUInt32 row = 0;
+    for (const auto& pin : pins)
+    {
+      if (!pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
+        continue;
+      const auto* boundary = add(xiiStringBuilder("Input/", pin.m_sName), "xiiRenderPipelineInterfacePass", {0, float(row++ * 150)});
+      if (!boundary)
+        return xiiStatus("Could not create debug interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", pin.m_sName));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", true));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(pin.m_Type)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      XII_SUCCEED_OR_RETURN(connect(boundary, "Value", mode, pin.m_sName));
+      if (pin.m_sName == "SceneDepth")
+        XII_SUCCEED_OR_RETURN(connect(boundary, "Value", overlay, "SceneDepth"));
+    }
+    XII_SUCCEED_OR_RETURN(connect(mode, "DisplayLinearColor", overlay, "DisplayLinearColor"));
+    for (auto name : {"DisplayLinearColor", "SceneDepth"})
+    {
+      const auto* boundary = add(xiiStringBuilder("Output/", name), "xiiRenderPipelineInterfacePass", {1800, 0});
+      if (!boundary)
+        return xiiStatus("Could not create debug output.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", name));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", false));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      XII_SUCCEED_OR_RETURN(connect(overlay, name, boundary, "Value"));
+    }
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import visibility asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/DebugVisualization.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Authored visibility did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
+
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 2);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Custom);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+    return XII_SUCCESS;
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -362,4 +532,23 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VertexPullDraws)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDrawAuthoring"));
   XII_TEST_STATUS(AuthorVertexPullDraws(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SurfaceQuery)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeSurfaceAuthoring", "NativeSurfaceBase", xiiDataDirUsage::ReadOnly)) ||
+      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSurfaceAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSurfaceAuthoring"));
+  XII_TEST_STATUS(AuthorSurfaceQuery(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DebugVisualization)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDebugAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDebugAuthoring"));
+  XII_TEST_STATUS(AuthorDebugVisualization(path));
 }

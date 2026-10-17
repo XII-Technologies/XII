@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+#include <bit>
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -20,6 +21,7 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 class xiiNativeCullSource : public xiiRenderPipelinePass
 {
@@ -206,6 +208,30 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeMeshletWorkExport, 1, xiiRTTIDefaultAl
       XII_MEMBER_PROPERTY("Meshlets", m_Meshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Count", m_Count)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Overflow", m_Overflow)->AddFlags(xiiPropertyFlags::ReadOnly),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+class xiiNativeSurfaceExport : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiNativeSurfaceExport, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineTextureInputPin m_Surface{xiiGALResourceFormat::RGBA32UInt}, m_Depth{xiiGALResourceFormat::D32Float};
+  xiiResult                        Build(xiiRenderPipelinePassContext& context) override
+  {
+    context.m_Graph.AddPass<xiiUInt32>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) {
+      builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Surface), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Depth), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeSurfaceExport, 1, xiiRTTIDefaultAllocator<xiiNativeSurfaceExport>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Surface", m_Surface)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -519,12 +545,12 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("VertexPullDraws");
+  const auto                                 asset = xiiLoadPipelineLibraryResource("SurfaceQuery");
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
   const auto               authoring = loaded->GetAuthoring();
-  xiiUuid                  cullId, uploadId, dispatchId, meshletId, drawId;
+  xiiUuid                  cullId, uploadId, dispatchId, meshletId, drawId, surfaceId;
   xiiDynamicArray<xiiUuid> viewPath;
   const auto               nested = loaded->GetPipeline();
   for (xiiUInt32 i = 0; i < nested->GetDescriptor().m_Passes.GetCount(); ++i)
@@ -541,13 +567,15 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
       meshletId = source.m_Element;
     if (pass.m_sType == "xiiVertexPullDrawCommandsPass")
       drawId = source.m_Element;
+    if (pass.m_sType == "xiiSurfaceQueryPass")
+      surfaceId = source.m_Element;
     if (pass.m_sType == "xiiVisibilityViewPass")
     {
       viewPath = source.m_InstancePath;
       viewPath.PushBack(source.m_Element);
     }
   }
-  if (!XII_TEST_BOOL(cullId.IsValid() && uploadId.IsValid() && dispatchId.IsValid() && meshletId.IsValid() && drawId.IsValid() && viewPath.GetCount() == 3))
+  if (!XII_TEST_BOOL(cullId.IsValid() && uploadId.IsValid() && dispatchId.IsValid() && meshletId.IsValid() && drawId.IsValid() && surfaceId.IsValid() && viewPath.GetCount() == 4))
     return;
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authoring->m_Descriptor.m_Id, asset.GetResourceID()});
@@ -559,6 +587,9 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   override.m_Properties.Insert("VisibilityMask", 0U);
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
+    const auto pixels = root.AddPass(i == 0 ? "Visible surface readback" : "Filtered surface readback", "xiiNativeSurfaceExport");
+    XII_TEST_RESULT(root.Connect(i, "Surface", pixels, "Surface"));
+    XII_TEST_RESULT(root.Connect(i, "SceneDepth", pixels, "SceneDepth"));
     const auto work = root.AddPass(i == 0 ? "Visible meshlet readback" : "Filtered meshlet readback", "xiiNativeMeshletWorkExport");
     XII_TEST_RESULT(root.Connect(i, "DispatchArguments", work, "Arguments"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshlets", work, "Meshlets"));
@@ -679,6 +710,26 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
           XII_TEST_INT(command.y, count ? 1 : 0);
           XII_TEST_INT(command.z, 0);
           XII_TEST_INT(command.w, 0);
+        }
+        if (provenance.m_Element == surfaceId)
+        {
+          const bool filtered = provenance.m_InstancePath[0] == filteredId;
+          auto       surface  = view->GetRenderGraph()->GetExportedTexture(execution.GetOutputBinding(i, "Surface")->m_hTexture);
+          auto       depth    = view->GetRenderGraph()->GetExportedTexture(execution.GetOutputBinding(i, "SceneDepth")->m_hTexture);
+          xiiVec4U32 pixel;
+          float      depthPixel;
+          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), surface.Borrow(), 32, 32, pixel) ||
+              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), depth.Borrow(), 32, 32, depthPixel))
+            return;
+          XII_TEST_INT(pixel.x, resident && !filtered ? identity : 0);
+          if (pixel.x != 0)
+          {
+            XII_TEST_FLOAT(depthPixel, std::bit_cast<float>(pixel.y), 0.00001f);
+            XII_TEST_BOOL(depthPixel > 0 && depthPixel < 1);
+            XII_TEST_BOOL(xiiMath::IsFinite(std::bit_cast<float>(pixel.z)) && xiiMath::IsFinite(std::bit_cast<float>(pixel.w)));
+          }
+          else
+            XII_TEST_FLOAT(depthPixel, 0, 0);
         }
         if (provenance.m_Element == uploadId)
         {

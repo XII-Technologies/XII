@@ -53,7 +53,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentVisualizationComposition)
   xiiResourceLock<xiiRenderPipelineResource> child(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(child.IsValid() && child->GetPipeline()))
     return;
-  XII_TEST_INT(child->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 3);
+  XII_TEST_INT(child->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 2);
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({child->GetAuthoring()->m_Descriptor.m_Id, resource.GetResourceID()});
   root.AddSubgraph("First", child->GetAuthoring()->m_Descriptor.m_Id);
@@ -72,8 +72,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentVisualizationComposition)
   XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
   if (!XII_TEST_BOOL(compiled != nullptr))
     return;
-  XII_TEST_INT(compiled->GetDescriptor().m_Passes.GetCount(), 6);
+  XII_TEST_INT(compiled->GetDescriptor().m_Passes.GetCount(), 4);
   XII_TEST_BOOL(compiled->GetExtractionRequirements() == xiiRenderExtractionCategory::Custom);
   XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet());
-  XII_TEST_BOOL(compiled->GetProvenance()[0].m_InstancePath[0] != compiled->GetProvenance()[3].m_InstancePath[0]);
+  XII_TEST_BOOL(compiled->GetProvenance()[0].m_InstancePath[0] != compiled->GetProvenance()[2].m_InstancePath[0]);
 }
