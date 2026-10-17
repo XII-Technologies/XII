@@ -63,6 +63,10 @@ xiiCommandLineOptionString opt_GpuDrivenShadowWorkPipeline("GpuDrivenScene", "-s
 xiiCommandLineOptionString opt_GpuDrivenShadowPublishPipeline("GpuDrivenScene", "-shadow-publish-pipeline", "Authored virtual shadow page publication resource.", "RenderPipelines/VirtualShadowPagePublish.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowTablesPipeline("GpuDrivenScene", "-shadow-tables-pipeline", "Authored virtual-shadow residency table upload resource.", "RenderPipelines/VirtualShadowTables.xiiBinRenderPipeline");
 
+xiiCommandLineOptionString opt_GpuDrivenTargetsPipeline("GpuDrivenScene", "-targets-pipeline", "Authored scene color/depth initialization resource.", "RenderPipelines/SceneTargets.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenPresentationPipeline("GpuDrivenScene", "-presentation-pipeline", "Authored final view output resource.", "RenderPipelines/ViewPresentation.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenSensorExportPipeline("GpuDrivenScene", "-sensor-export-pipeline", "Authored external sensor counter lifetime resource.", "RenderPipelines/BufferExport.xiiBinRenderPipeline");
+
 namespace
 {
   bool                g_bWindowResized       = false;
@@ -104,14 +108,6 @@ namespace
     return true;
   }
 
-  struct SceneTargetsPassData
-  {
-    xiiRenderGraphTextureHandle m_hColor;
-    xiiRenderGraphTextureHandle m_hDepth;
-  };
-
-
-
   struct GpuDrivenDrawPassData
   {
     xiiRenderGraphTextureHandle        m_hColor;
@@ -146,12 +142,6 @@ namespace
     xiiUInt32                          m_uiVirtualShadowPhysicalAtlasHeight = 0U;
     xiiUInt32                          m_uiVirtualShadowDirectionalLightId  = 0U;
     xiiUInt32                          m_uiVirtualShadowEnabled             = 0U;
-  };
-
-  struct PresentPassData
-  {
-    xiiRenderGraphTextureHandle m_hColor;
-    xiiRenderGraphTextureHandle m_hBackBuffer;
   };
 
   struct RayTracingValidationPassData
@@ -411,6 +401,16 @@ public:
       return;
     }
 
+    m_hTargetsPipeline      = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenTargetsPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    m_hPresentationPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenPresentationPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    m_hSensorExportPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenSensorExportPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeViewBoundaryPipelines().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
+
     const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
     m_hShaderPermutation                 = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
     CreateRayTracingValidationResources();
@@ -429,6 +429,12 @@ public:
     if (m_pDevice)
       m_pDevice->WaitIdle();
     xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
+    m_Targets.Clear();
+    m_Presentation.Clear();
+    m_SensorExport.Clear();
+    m_hTargetsPipeline.Invalidate();
+    m_hPresentationPipeline.Invalidate();
+    m_hSensorExportPipeline.Invalidate();
     m_VirtualPageRuntimes.Clear();
     m_ShadowPageDefinition = nullptr;
     m_hShadowPagePipeline.Invalidate();
@@ -960,6 +966,76 @@ private:
     return XII_SUCCESS;
   }
 
+  xiiResult SynchronizeViewBoundaryPipelines()
+  {
+    const auto synchronize = [&](xiiRenderPipelineInstance& instance, const xiiRenderPipelineResourceHandle& resource) -> xiiResult {
+      if (instance.Synchronize(resource).Succeeded())
+        return XII_SUCCESS;
+      xiiLog::Error("View boundary resource '{}' failed: {}", resource.GetResourceID(), instance.GetLastBuildError());
+      return XII_FAILURE;
+    };
+    XII_SUCCEED_OR_RETURN(synchronize(m_Targets, m_hTargetsPipeline));
+    XII_SUCCEED_OR_RETURN(synchronize(m_Presentation, m_hPresentationPipeline));
+    XII_SUCCEED_OR_RETURN(synchronize(m_SensorExport, m_hSensorExportPipeline));
+    const auto check = [&](const xiiRenderPipelineInstance& instance, xiiStringView name, bool input, xiiRenderPipelinePin::Type kind, xiiStringView resource) -> xiiResult {
+      const auto* pipeline = instance.GetPipeline();
+      const auto  index    = pipeline->FindInterface(name, input);
+      if (index != xiiInvalidIndex && pipeline->GetInterface()[index].m_Pin.m_Type == kind)
+        return XII_SUCCESS;
+      xiiLog::Error("View boundary resource '{}' requires {} interface '{}', resource kind {}.", resource, input ? "input" : "output", name, xiiUInt32(kind));
+      return XII_FAILURE;
+    };
+    XII_SUCCEED_OR_RETURN(check(m_Targets, "Color", false, xiiRenderPipelinePin::Texture, m_hTargetsPipeline.GetResourceID()));
+    XII_SUCCEED_OR_RETURN(check(m_Targets, "Depth", false, xiiRenderPipelinePin::Texture, m_hTargetsPipeline.GetResourceID()));
+    XII_SUCCEED_OR_RETURN(check(m_Presentation, "Color", true, xiiRenderPipelinePin::Texture, m_hPresentationPipeline.GetResourceID()));
+    XII_SUCCEED_OR_RETURN(check(m_Presentation, "ViewOutput", false, xiiRenderPipelinePin::Texture, m_hPresentationPipeline.GetResourceID()));
+    return check(m_SensorExport, "Input", true, xiiRenderPipelinePin::Buffer, m_hSensorExportPipeline.GetResourceID());
+  }
+
+  xiiResult BuildViewTargets(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& depth)
+  {
+    XII_SUCCEED_OR_RETURN(SynchronizeViewBoundaryPipelines());
+    auto* view = m_World.GetRenderView();
+    if (!view)
+      return XII_FAILURE;
+    view->SetViewport({0, 0, float(m_TargetSize.width), float(m_TargetSize.height)});
+    view->SetSwapChain(m_pSwapChain.Borrow());
+    if (m_Targets.Build(view, graph, blackboard).Failed())
+    {
+      xiiLog::Error("Target resource '{}' failed: {}", m_hTargetsPipeline.GetResourceID(), m_Targets.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    color                        = m_Targets.GetInterfaceBinding(m_Targets.GetPipeline()->FindInterface("Color", false))->m_hTexture;
+    depth                        = m_Targets.GetInterfaceBinding(m_Targets.GetPipeline()->FindInterface("Depth", false))->m_hTexture;
+    const auto* colorDescription = graph.GetTextureDescription(color);
+    const auto* depthDescription = graph.GetTextureDescription(depth);
+    if (!colorDescription || !depthDescription || colorDescription->m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB || depthDescription->m_Format != xiiGALResourceFormat::D32Float ||
+        colorDescription->m_Size != m_TargetSize || depthDescription->m_Size != m_TargetSize || colorDescription->m_uiSampleCount != 1 || depthDescription->m_uiSampleCount != 1 ||
+        !colorDescription->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+    {
+      xiiLog::Error("Target resource '{}' does not provide this sample's matching RGBA8 sRGB / D32 attachments.", m_hTargetsPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+
+  xiiResult BuildViewOutput(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle color, xiiRenderGraphBufferHandle sensorCount)
+  {
+    const xiiRenderPipelineInputBinding sensorInput(graph, m_SensorExport.GetPipeline()->FindInterface("Input", true), sensorCount);
+    if (m_SensorExport.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(&sensorInput, 1)).Failed())
+    {
+      xiiLog::Error("Sensor export resource '{}' failed: {}", m_hSensorExportPipeline.GetResourceID(), m_SensorExport.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    const xiiRenderPipelineInputBinding input(graph, m_Presentation.GetPipeline()->FindInterface("Color", true), color);
+    if (m_Presentation.Build(m_World.GetRenderView(), graph, blackboard, {}, xiiMakeArrayPtr(&input, 1)).Failed())
+    {
+      xiiLog::Error("Presentation resource '{}' failed: {}", m_hPresentationPipeline.GetResourceID(), m_Presentation.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+
   void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
   {
     m_uiVirtualPagesThisFrame                        = 0;
@@ -1077,23 +1153,17 @@ private:
       return;
     }
 
-    graph.AddPass<SceneTargetsPassData>("Create Scene Targets", xiiGALCommandQueueFlags::Graphics, [targetSize = m_TargetSize](SceneTargetsPassData& data, xiiRenderGraphBuilder& builder) {
-        xiiGALTextureCreationDescription description;
-        description.m_Type      = xiiGALResourceDimension::Texture2D;
-        description.m_Size      = targetSize;
-        description.m_Format    = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-        description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-        data.m_hColor           = builder.WriteTexture("GPU Scene Color", description, xiiGALResourceStateFlags::CopyDestination);
-        description.m_Format    = xiiGALResourceFormat::D32Float;
-        description.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-        data.m_hDepth           = builder.WriteTexture("GPU Scene Depth", description, xiiGALResourceStateFlags::CopyDestination); }, [](const SceneTargetsPassData& data, xiiRenderGraphPassContext& context) {
-        xiiGALCommandList& commandList = context.GetCommandList();
-        commandList.ClearRenderTargetView(context.GetTexture(data.m_hColor)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.008f, 0.012f, 0.025f));
-        commandList.ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U); });
+    xiiRenderGraphTextureHandle sceneColor, sceneDepth;
+    if (BuildViewTargets(graph, blackboard, sceneColor, sceneDepth).Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
 
-    auto drawPass                               = graph.AddPass<GpuDrivenDrawPassData>("GPU Driven Mesh Dispatch", xiiGALCommandQueueFlags::Graphics, [geometry, visibility, hMaterials, hShadowMap, virtualShadowUpload](GpuDrivenDrawPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hColor                  = builder.WriteTexture(builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-        data.m_hDepth                  = builder.WriteTexture(builder.ReadTexture("GPU Scene Depth", xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+    auto drawPass                               = graph.AddPass<GpuDrivenDrawPassData>("GPU Driven Mesh Dispatch", xiiGALCommandQueueFlags::Graphics, [sceneColor, sceneDepth, geometry, visibility, hMaterials, hShadowMap, virtualShadowUpload](GpuDrivenDrawPassData& data, xiiRenderGraphBuilder& builder) {
+        data.m_hColor                  = builder.ReadWriteTexture(sceneColor, xiiGALResourceStateFlags::RenderTarget);
+        data.m_hDepth                  = builder.ReadWriteTexture(sceneDepth, xiiGALResourceStateFlags::DepthWrite);
         data.m_hShadowMap              = builder.ReadTexture(hShadowMap, xiiGALResourceStateFlags::ShaderResource);
         data.m_hVirtualShadowAtlas     = builder.ReadTexture(virtualShadowUpload.m_hPhysicalAtlas, xiiGALResourceStateFlags::ShaderResource);
         data.m_hVirtualShadowPageTable = builder.ReadBuffer(virtualShadowUpload.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
@@ -1150,13 +1220,12 @@ private:
       return;
     }
 
-    graph.AddPass<PresentPassData>("Present GPU Scene", xiiGALCommandQueueFlags::Graphics, [this, sensorVisibility](PresentPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hColor                                 = builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::CopySource);
-        const xiiSharedPtr<xiiGALTexture> pBackBuffer = m_pSwapChain->GetBackBufferTexture();
-        data.m_hBackBuffer                            = builder.WriteTexture(builder.ImportTexture("BackBuffer", pBackBuffer, pBackBuffer->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
-        builder.ExportTexture(data.m_hBackBuffer, xiiGALResourceStateFlags::Present);
-        builder.ExportBuffer(sensorVisibility.m_hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
-        builder.SetPassSideEffects(true); }, [](const PresentPassData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().CopyTexture(context.GetTexture(data.m_hColor), context.GetTexture(data.m_hBackBuffer)); }, true);
+    if (BuildViewOutput(graph, blackboard, drawPass.first->m_hColor, sensorVisibility.m_hVisibleInstanceCount).Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
   }
 
   void UpdateSwapChain()
@@ -1426,6 +1495,8 @@ private:
   xiiUInt32                                         m_uiRayTracingValidationShaderRecordStride = 0U;
   xiiGpuDrivenSceneConfiguration                    m_Configuration;
   xiiGpuDrivenSceneWorld                            m_World;
+  xiiRenderPipelineResourceHandle                   m_hTargetsPipeline, m_hPresentationPipeline, m_hSensorExportPipeline;
+  xiiRenderPipelineInstance                         m_Targets, m_Presentation, m_SensorExport;
   xiiRenderPipelineResourceHandle                   m_hDepthPipeline;
   xiiRenderPipelineInstance                         m_DepthPipeline;
   xiiUInt32                                         m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
