@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **48 concrete reflected operation classes** in
+Current source inventory: **49 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -20,7 +20,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
-| Geometry | 1 | `xiiVertexPullDrawCommandsPass` |
+| Geometry | 2 | `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
 | Lighting | 1 | `xiiBRDFLutPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
@@ -60,6 +60,11 @@ Properties remain reflected members and retain normal editor attribute handling.
   DrawIndirect arguments and an explicitly bounded indirect count. Residency metadata
   and primitive ranges are validated before a candidate emits work. It owns
   no rasterization, shader asset residency, scene lifecycle or CPU count readback.
+- SurfaceRasterConstants captures an immutable current-view snapshot and device table
+  bases. SurfaceQuery consumes that uniform buffer and explicit draw/count buffers,
+  emits one managed raster operation, and publishes surface identity/depth/normal
+  data plus the nearest depth texture. Shader selection is an explicit reflected
+  property; unsupported mesh shading fails rather than changing the authored path.
 - BufferHistory retains structured GPU buffers in completion-checked private
   slots, publishes explicit previous-frame pins and declares GPU readiness waits.
 - VisibilityView captures camera/frustum and selected component indices during
@@ -84,7 +89,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Responsibility | Work still required |
 | --- | --- |
 | Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z, LOD streaming feedback and mesh-shader indirect draw preparation still need independent nodes. Vertex-pull indirect commands are now a separate native operation. The remaining low-level visibility service/sample needs decomposition and deletion. |
-| Geometry | Vertex-pull indirect draw preparation is native. Depth raster and indexed fallback, GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery already provides nearest-surface queries. |
+| Geometry | Vertex-pull indirect draw preparation is native. Depth raster and indexed fallback, GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
@@ -285,3 +290,68 @@ must become an explicitly wired consumer of a native surface output. Existing
 SceneMeshIdentity, SceneLodSelection and SceneLodSections tests still call the old
 helper and need native resource fixtures before it is removed. The complete game,
 editor, lighting, shadow and remaining specialized pipelines are still unfinished.
+
+
+## Explicit surface rasterization - 2026-10-16
+
+SurfaceQueryPass has been rebuilt as raster execution only. Its calls into
+GpuSceneRasterManager::AddPickingPass, implicit vertex-pull command generation,
+residency lookup, hidden constants production and automatic mesh-to-vertex fallback
+are removed. RasterConstants, DrawCommands and DrawCommandCount are required typed
+member inputs. The existing reflected UseMeshShaders property explicitly selects a
+supported shader path, with vertex pulling the default. Unsupported mesh/wireframe
+features and malformed canonical layouts fail during Build with occurrence diagnostics.
+The pass publishes both RGBA32UInt surface data and a shader-readable D32 depth image.
+It permits compatible hardware render-pass scheduling rather than disabling merging.
+Shader/sampler references are retained in frame-owned execution data.
+
+SurfaceRasterConstantsPass captures the current view and device residency bases,
+with reflected vertex-layout properties and checked offsets. It produces the shared
+uniform layout without temporal history, scene ownership or a new service manager.
+Motion rasterization must receive a separate explicit history contract.
+
+The ordinary SurfaceQuery asset composes VertexPullDraws, MaterialUpload,
+SurfaceRasterConstants and SurfaceQuery. Four authored nodes expand to seventeen
+native operations and expose sixteen interfaces. DebugVisualization is rebuilt from
+scratch around two visualization/overlay nodes; wireframe surfaces are explicit
+external inputs, with no nested rasterization hidden inside debug composition.
+
+The world regression now consumes the SurfaceQuery asset across two independent
+views and two nested occurrences, with a mask override four levels down. It reads
+actual surface IDs, encoded normals and depth, including the filtered and removed-
+component cases. Test texture readback restores the source state after copying.
+This is surface raster verification, not a complete lighting or editor pipeline.
+
+Pending deletion remains explicit: GpuScenePicking.cpp and its AddPickingPass API
+are still consumed by the old editor capture pass and direct native identity/LOD
+fixtures. SceneMeshPickingPass still embeds visibility/raster orchestration and
+must become a surface-input capture/query consumer with separate filtering nodes.
+The complete renderer migration remains incomplete; no compatibility fallback or
+rendering Builtin file has been added.
+
+
+Validation for the surface phase:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest and EditorFrameworkTest builds
+  pass, including dependent engine/editor targets (`Workspace/native-surface-final-build.log`,
+  native-surface-library-build.log).
+- All 45 GraphicsCore CPU subtests pass (`Workspace/native-surface-core.log`).
+- Both Vulkan NativeVisibility tests pass with actual vertex-pull surface/depth
+  readback (`Workspace/native-surface-final-gpu.log`). Query-only varyings omit
+  tangents and previous clip positions; the final Vulkan run has no unused-output
+  interface warning. The native mesh-shader raster path has not been executed by
+  this focused regression.
+- All five NativeAssetAuthoring subtests pass (`Workspace/native-surface-author.log`).
+  All 15 Qt EditorDocuments subtests pass, including deterministic production and
+  repeat exports of eleven SDK packages (`Workspace/native-surface-qt.log`).
+- Interface authoring now declares reflected Name/Input defaults consistently with
+  the C++ definition; fresh inputs are explicitly authored as inputs. No legacy
+  converter was introduced. Raster constants reject unaligned or out-of-range
+  vertex layouts and a missing/disabled camera.
+
+Intermediate builds caught a default-device shared-pointer declaration, a missing
+standard-library include and an incorrect Order-pin enum in the fixture. Authoring
+also caught the input-default mismatch described above. Final results pass after
+correction. No controlled raster benchmark, complete game/editor renderer test or
+D3D12 validation was run. The pending legacy helper/editor migrations above remain
+required work.
