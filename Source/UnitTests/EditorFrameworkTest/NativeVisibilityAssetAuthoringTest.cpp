@@ -739,6 +739,84 @@ namespace
     return XII_SUCCESS;
   }
 
+  xiiStatus AuthorDepthPyramid(xiiStringView outputDirectory)
+  {
+    xiiStringBuilder path(outputDirectory, "/DepthPyramid.xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, "DepthPyramid");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author separate depth reduction and texture history");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.DepthPyramid/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* reduce  = add("Depth Reduction", "xiiDepthPyramidPass", {600, 0});
+    const auto* history = add("Previous Depth", "xiiTextureHistoryPass", {1200, 0});
+    if (!reduce || !history)
+      return xiiStatus("Could not create native depth/history nodes.");
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    const auto expose = [&](xiiStringView name, bool input, const xiiDocumentObject* target, xiiStringView pin, xiiVec2 position) -> xiiStatus {
+      const auto* boundary = add(name, "xiiRenderPipelineInterfacePass", position);
+      if (!boundary)
+        return xiiStatus("Could not create depth/history boundary.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", name));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", input));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      return input ? connect(boundary, "Value", target, pin) : connect(target, pin, boundary, "Value");
+    };
+    XII_SUCCEED_OR_RETURN(connect(reduce, "DepthPyramid", history, "Texture"));
+    XII_SUCCEED_OR_RETURN(expose("SceneDepth", true, reduce, "SceneDepth", {0, 0}));
+    XII_SUCCEED_OR_RETURN(expose("DepthPyramid", false, reduce, "DepthPyramid", {1800, 0}));
+    XII_SUCCEED_OR_RETURN(expose("PreviousDepthPyramid", false, history, "PreviousTexture", {1800, 400}));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import depth/history asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/DepthPyramid.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Depth/history asset did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 3);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 2);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+    xiiRenderPipelineSubgraphPass prototype;
+    prototype.m_sResource = message.m_sOutputFile;
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    prototype.GetPins(pins);
+    bool temporal = false;
+    for (const auto& pin : pins)
+      if (pin.m_sName == "PreviousDepthPyramid")
+        temporal = pin.m_bTemporalHistoryOutput && pin.m_bOptional;
+    XII_TEST_BOOL(temporal);
+    return XII_SUCCESS;
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -818,4 +896,13 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, GBuffer)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeGBufferAuthoring"));
   XII_TEST_STATUS(AuthorDepthOnly(path, true));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthPyramid)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativePyramidAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativePyramidAuthoring"));
+  XII_TEST_STATUS(AuthorDepthPyramid(path));
 }
