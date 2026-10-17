@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **70 concrete reflected operation classes** in
+Current source inventory: **71 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -35,7 +35,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
-| Utility | 7 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
+| Utility | 8 | `xiiBufferExportPass`, `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
 | Visibility | 10 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMatrixVisibilityViewPass`, `xiiMeshletCullPass`, `xiiMeshletOcclusionPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
@@ -1863,3 +1863,84 @@ The full renderer conversion is still incomplete. Native light/cluster preparati
 complete game/editor/advanced lighting graphs, sample main shading/presentation and
 world/view-scoped virtual page identity remain required. D3D12 is excluded; no Release
 benchmark or whole-renderer success is inferred from the focused tests above.
+
+
+## Authored view targets, presentation and external buffer lifetime
+
+The current inventory is **71 native reflected operations / 32 ordinary SDK assets**.
+SceneTargets composes the existing ClearTexture and DepthTarget operations; its color,
+format and reversed depth clear remain ordinary reflected member properties. ViewPresentation
+uses the existing Present operation. BufferExport contains the new narrow buffer-export
+operation. All three source/binary pairs were authored and exported with normal document
+commands. These are editable resources, not runtime C++ graph factories or Builtin files.
+No extra clear or presentation class was added to increase the operation count.
+
+GpuDrivenScene now selects -targets-pipeline, -presentation-pipeline and
+-sensor-export-pipeline resources. Its SceneTargetsPassData, PresentPassData, combined target
+initialization callback and final copy/export callback are deleted. The remaining raster
+callback consumes explicit color/depth handles and declares read/write preservation;
+string lookup of "GPU Scene Color" and "GPU Scene Depth" is gone. The second view's counter
+is retained by the independently selected BufferExport resource, rather than an unrelated
+presentation callback. Selected resources synchronize every frame; missing or incompatible
+interfaces produce a path-specific failure with no fallback graph.
+
+Present's preparation and execution now depend on owned setup captures, including shader
+objects, sampler, display constants and output dimensions. The recorded callbacks retain no
+pass, world, camera or mutable view pointer. Shader resource lookup happens during setup;
+execution uses the captured pipeline description and existing GAL pipeline cache. Fullscreen
+coverage replaces a redundant clear. Explicit scissor/viewport state covers the entire output.
+Both offscreen outputs and swapchain images receive a declared final state; swapchain images
+are explicitly exported in Present state. An explicit texture target takes precedence over
+an attached swapchain and is treated as offscreen. Unsupported subview/mip targets, depth
+inputs and missing output targets fail rather than silently using a different image.
+
+BufferExport has native XII_MEMBER_PROPERTY input/output pins. It roots one supplied SRV
+buffer and declares its final shader-readable state through the existing graph compiler.
+It creates no scene registry, upload, copy, dispatch, GPU allocation, specialized pipeline
+manager or new lifetime service. Physical retirement stays with the graph/resource cache.
+World/component extraction and Core graph handle semantics are unchanged.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build with dependencies
+  (native-view-boundary-final-consumer-build.log). The initial new fixture incorrectly named the
+  existing frame scope and omitted the POD trait needed for constant-record readback;
+  these fixture errors were corrected before the successful build.
+- All 64 CPU subtests pass (native-view-boundary-cpu.log).
+- All 26 NativeAssetAuthoring fixtures pass (native-view-boundary-authoring.log).
+  All 16 EditorDocuments tests pass, including all 32 packaged/source/repeated deterministic
+  exports (native-view-boundary-editor.log).
+- Vulkan NativeViewBoundary passes three device frames with two independently configured
+  views, landscape/portrait sizes, different clear colors and different paper-white values.
+  Both graphs submit before host readback. Actual source/output pixels, reversed depth,
+  uniform constants and exported counter values match. Every pass instance is destroyed
+  after setup and before command recording. Each graph uses one submission. Missing targets,
+  depth-as-color input and shader-resource views supplied as output targets are rejected,
+  with no previous output exposed. Geometry and material residency remain uninitialized
+  throughout (native-view-boundary-final-gpu.log).
+- All 47 Vulkan EditorViews tests pass, including output capture and world/view lifecycle
+  (native-view-boundary-editor-views.log).
+- All six missing/incompatible target, presentation and sensor-export selections exit 1
+  with a specific resource/interface diagnostic (native-view-boundary-sample-results.json).
+
+The full Vulkan sample still exits 3 during the 30-frame request: device frame 3 produces
+16 virtual pages and records 120 registered / 112 compiled / 8 culled operations, one
+submission and 186 barriers. CpuWaitOnlyFenceVulkan.cpp:123 reports fence 46 / request 47 /
+ErrorDeviceLost (native-view-boundary-sample.log and -sample-assertion.txt). This phase adds
+two live logical operations while retaining the previous one submission and barrier count;
+it is not a rendering throughput benchmark or proof of application correctness. D3D12 was
+excluded. No Release performance or whole-renderer success is claimed.
+
+The complete native renderer remains unfinished. The sample's main mesh shading/constants,
+per-page graph instantiation and ray validation orchestration remain C++ migration targets.
+World light/cluster preparation, complete game/editor/advanced lighting graphs and
+world/view-scoped virtual shadow page identity remain outstanding. The latest authoritative
+limitations supersede older phase notes about target creation and final presentation.
+
+A final caller audit also found obsolete default-Deferred fixture loads in
+GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h, called without an explicit asset by
+EditorEngineProcessFrameworkTest/SensorMemoryTest.cpp, TemporalHistoryTest.cpp and
+GraphicsFoundationTest/Pipeline/RenderPipelineExecutionTest.cpp. These registered tests
+still need replacement compositions and migration; the passing EditorViews group does not
+cover them. The deleted Deferred asset must not be restored as a fallback for these callers.
