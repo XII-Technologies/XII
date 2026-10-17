@@ -35,20 +35,21 @@
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
-#include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 #include <Shaders/GpuDrivenSceneConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 
-xiiCommandLineOptionInt  opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
-xiiCommandLineOptionInt  opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
-xiiCommandLineOptionBool opt_GpuDrivenRayTracing("GpuDrivenScene", "-ray-tracing", "Enable optional hardware ray tracing scene builds and validation dispatch.", true);
-xiiCommandLineOptionInt  opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
-xiiCommandLineOptionInt  opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
+xiiCommandLineOptionInt    opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
+xiiCommandLineOptionInt    opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
+xiiCommandLineOptionBool   opt_GpuDrivenRayTracing("GpuDrivenScene", "-ray-tracing", "Enable optional hardware ray tracing scene builds and validation dispatch.", true);
+xiiCommandLineOptionInt    opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
+xiiCommandLineOptionInt    opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
+xiiCommandLineOptionString opt_GpuDrivenDepthPipeline("GpuDrivenScene", "-depth-pipeline", "Authored depth-pyramid/history pipeline resource.", "RenderPipelines/DepthPyramid.xiiBinRenderPipeline");
 
 namespace
 {
@@ -232,6 +233,8 @@ public:
       const float aspect = static_cast<float>(m_TargetSize.width) / static_cast<float>(m_TargetSize.height);
       xiiMat4     projection;
       m_Camera.GetProjectionMatrix(aspect, projection, xiiCameraEye::Left, xiiClipSpaceDepthRange::ZeroToOne);
+      // Canonical scene depth is reversed-Z, matching native depth/history and visibility consumers.
+      projection.SetRow(2, projection.GetRow(3) - projection.GetRow(2));
       m_ViewProjection = projection * m_Camera.GetViewMatrix();
       m_ViewFrustum    = xiiFrustum::MakeFromMVP(m_ViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
@@ -254,6 +257,12 @@ public:
       {
         xiiLog::Error("GPU-driven render graph execution failed: {0}", error);
         SetReturnCode(1);
+        frame.End();
+        m_pDevice->EndFrame();
+        return Execution::Quit;
+      }
+      if (WasQuitRequested())
+      {
         frame.End();
         m_pDevice->EndFrame();
         return Execution::Quit;
@@ -348,11 +357,13 @@ public:
     visibilityDescription.m_uiMaxVisibilitySets  = 3U;
     m_hVisibility                                = xiiGpuVisibilityManager::CreateContext(visibilityDescription);
     XII_ASSERT_ALWAYS(!m_hVisibility.IsInvalidated(), "Failed to create the GPU visibility context.");
-    xiiGpuHiZPyramidDescription hiZDescription;
-    hiZDescription.m_uiFramesInFlight = visibilityDescription.m_uiFramesInFlight;
-    m_HiZPyramid.Initialize(m_pDevice.Borrow(), hiZDescription).AssertSuccess();
-    const xiiSizeU32 initialSize = m_pWindow->GetClientAreaSize();
-    m_HiZPyramid.Resize(initialSize.width, initialSize.height).AssertSuccess();
+    m_hDepthPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenDepthPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeDepthPipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
 
     const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
     m_hShaderPermutation                 = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
@@ -372,7 +383,8 @@ public:
     if (m_pDevice)
       m_pDevice->WaitIdle();
     xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
-    m_HiZPyramid.Shutdown();
+    m_DepthPipeline.Clear();
+    m_hDepthPipeline.Invalidate();
     xiiGpuVisibilityManager::DestroyContext(m_hVisibility);
     m_hVisibility = {};
     xiiFrameAllocator::Reset();
@@ -397,6 +409,32 @@ public:
   }
 
 private:
+  xiiResult SynchronizeDepthPipeline()
+  {
+    bool changed = false;
+    if (m_DepthPipeline.Synchronize(m_hDepthPipeline, &changed).Failed())
+    {
+      xiiLog::Error("Selected depth/history resource '{}' is missing or invalid.", m_hDepthPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    if (changed)
+    {
+      const auto* pipeline = m_DepthPipeline.GetPipeline();
+      if (!pipeline)
+        return XII_FAILURE;
+      m_uiDepthInterface         = pipeline->FindInterface("SceneDepth", true);
+      m_uiPreviousDepthInterface = pipeline->FindInterface("PreviousDepthPyramid", false);
+      if (m_uiDepthInterface == xiiInvalidIndex || m_uiPreviousDepthInterface == xiiInvalidIndex ||
+          !pipeline->GetInterface()[m_uiPreviousDepthInterface].m_Pin.m_bTemporalHistoryOutput)
+      {
+        xiiLog::Error("Selected depth/history resource '{}' must expose SceneDepth and an explicit PreviousDepthPyramid output.", m_hDepthPipeline.GetResourceID());
+        m_DepthPipeline.Clear();
+        return XII_FAILURE;
+      }
+    }
+    return XII_SUCCESS;
+  }
+
   void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
   {
     const auto                       geometry        = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
@@ -410,8 +448,17 @@ private:
       else
         xiiLog::Info("Hardware ray tracing is unavailable on this configured device; raster validation remains active.");
     }
-    const xiiRenderGraphTextureHandle         hPreviousHiZ        = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
-    xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
+    if (SynchronizeDepthPipeline().Failed() || m_DepthPipeline.BeginFrame(nullptr, graph, blackboard).Failed())
+    {
+      xiiLog::Error("Could not prepare the selected depth/history resource: {}", m_DepthPipeline.GetLastBuildError());
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
+    const auto*                               previousDepth            = m_DepthPipeline.GetInterfaceBinding(m_uiPreviousDepthInterface);
+    const xiiRenderGraphTextureHandle         hPreviousHiZ             = previousDepth ? previousDepth->m_hTexture : xiiRenderGraphTextureHandle{};
+    const auto*                               previousDepthDescription = graph.GetTextureDescription(hPreviousHiZ);
+    xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload      = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowUpload.m_uiPhysicalPageCount);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowUpload.m_uiVirtualTableBaseIndex);
@@ -441,7 +488,7 @@ private:
       XII_IGNORE_UNUSED(validationPass);
     }
 
-    xiiGpuVisibilityView            visibilityView = xiiGpuVisibilitySystem::BuildView(m_ViewProjection, m_ViewFrustum, m_Camera.GetPosition(), m_TargetSize.width, m_TargetSize.height, hPreviousHiZ.IsValid() ? m_HiZPyramid.GetMipLevelCount() : 0U, m_World.GetGpuInstances().GetInstanceCount());
+    xiiGpuVisibilityView            visibilityView = xiiGpuVisibilitySystem::BuildView(m_ViewProjection, m_ViewFrustum, m_Camera.GetPosition(), m_TargetSize.width, m_TargetSize.height, previousDepthDescription ? previousDepthDescription->m_uiMipLevels : 0U, m_World.GetGpuInstances().GetInstanceCount());
     xiiGpuVisibilityPassDescription visibilityPass;
     visibilityPass.m_sName                   = "Main View";
     visibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::MainView;
@@ -544,12 +591,12 @@ private:
         description.m_Format    = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
         description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
         data.m_hColor           = builder.WriteTexture("GPU Scene Color", description, xiiGALResourceStateFlags::CopyDestination);
-        description.m_Format    = xiiGALResourceFormat::D24UNormalizedS8UInt;
+        description.m_Format    = xiiGALResourceFormat::D32Float;
         description.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
         data.m_hDepth           = builder.WriteTexture("GPU Scene Depth", description, xiiGALResourceStateFlags::CopyDestination); }, [](const SceneTargetsPassData& data, xiiRenderGraphPassContext& context) {
         xiiGALCommandList& commandList = context.GetCommandList();
         commandList.ClearRenderTargetView(context.GetTexture(data.m_hColor)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.008f, 0.012f, 0.025f));
-        commandList.ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U); });
+        commandList.ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U); });
 
     auto drawPass                               = graph.AddPass<GpuDrivenDrawPassData>("GPU Driven Mesh Dispatch", xiiGALCommandQueueFlags::Graphics, [geometry, visibility, hMaterials, hShadowMap, virtualShadowUpload](GpuDrivenDrawPassData& data, xiiRenderGraphBuilder& builder) {
         data.m_hColor                  = builder.WriteTexture(builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
@@ -595,7 +642,14 @@ private:
     drawPass.first->m_uiVirtualShadowDirectionalLightId      = g_uiDirectionalLightId;
     drawPass.first->m_uiVirtualShadowEnabled                 = bHasShadowCascade ? 1U : 0U;
 
-    m_HiZPyramid.AddBuildPass(graph, m_uiFrameIndex, drawPass.first->m_hDepth, m_Configuration.m_bAsyncCompute);
+    const xiiRenderPipelineInputBinding depthInput(graph, m_uiDepthInterface, drawPass.first->m_hDepth);
+    if (m_DepthPipeline.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(&depthInput, 1)).Failed())
+    {
+      xiiLog::Error("Authored depth/history pipeline failed: {}", m_DepthPipeline.GetLastBuildError());
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     xiiVirtualShadowMapManager::AddFeedbackPasses(graph, drawPass.first->m_hDepth, virtualShadowCascadePass.first->m_hConstants, m_TargetSize.width, m_TargetSize.height, m_ViewProjection.GetInverse(), m_Camera.GetNearPlane(), g_uiDirectionalLightId, m_uiFrameIndex);
 
     graph.AddPass<PresentPassData>("Present GPU Scene", xiiGALCommandQueueFlags::Graphics, [this, sensorVisibility](PresentPassData& data, xiiRenderGraphBuilder& builder) {
@@ -625,9 +679,7 @@ private:
       // acquired images and satisfies VUID-vkDestroySwapchainKHR-swapchain-01282.
       m_pDevice->WaitIdle();
       m_pSwapChain->Resize(m_pWindow->GetClientAreaSize()).AssertSuccess();
-      const xiiSizeU32 size = m_pWindow->GetClientAreaSize();
-      if (m_HiZPyramid.GetMipLevelCount() != 0U && size.HasNonZeroArea())
-        m_HiZPyramid.Resize(size.width, size.height).AssertSuccess();
+      m_DepthPipeline.InvalidateTemporalHistory();
     }
   }
 
@@ -642,7 +694,7 @@ private:
     color.m_InitialStateFlags                 = xiiGALResourceStateFlags::RenderTarget;
     color.m_FinalStateFlags                   = xiiGALResourceStateFlags::RenderTarget;
     auto& depth                               = description.m_Attachments.ExpandAndGetRef();
-    depth.m_Format                            = xiiGALResourceFormat::D24UNormalizedS8UInt;
+    depth.m_Format                            = xiiGALResourceFormat::D32Float;
     depth.m_uiSampleCount                     = 1U;
     depth.m_LoadOperation                     = xiiGALAttachmentLoadOperation::Load;
     depth.m_StoreOperation                    = xiiGALAttachmentStoreOperation::Store;
@@ -873,7 +925,9 @@ private:
   xiiUInt32                          m_uiRayTracingValidationShaderRecordStride = 0U;
   xiiGpuDrivenSceneConfiguration     m_Configuration;
   xiiGpuDrivenSceneWorld             m_World;
-  xiiGpuHiZPyramid                   m_HiZPyramid;
+  xiiRenderPipelineResourceHandle    m_hDepthPipeline;
+  xiiRenderPipelineInstance          m_DepthPipeline;
+  xiiUInt32                          m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
   xiiGpuVisibilityContextHandle      m_hVisibility;
   xiiCamera                          m_Camera;
   xiiRenderGraphGraphId              m_hRenderGraph;

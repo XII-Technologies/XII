@@ -5,7 +5,7 @@ ALL
 
 DepthEnable = true
 DepthWriteEnable = true
-ComparisonDepthFunction = ComparisonFunction_LessEqual
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 CullMode    = CullMode_Back
 
 [MESH_SHADER]
