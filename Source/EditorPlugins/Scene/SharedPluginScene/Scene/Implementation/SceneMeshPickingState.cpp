@@ -20,7 +20,6 @@ xiiSceneMeshPickingState::xiiSceneMeshPickingState()
 xiiSceneMeshPickingState::~xiiSceneMeshPickingState()
 {
   xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&xiiSceneMeshPickingState::OnResourceEvent, this));
-  xiiGpuVisibilityManager::DestroyContext(m_hVisibility);
 }
 
 void xiiSceneMeshPickingState::OnResourceEvent(const xiiResourceEvent& event)
@@ -71,35 +70,6 @@ xiiResult xiiSceneMeshPickingState::Poll()
   XII_SUCCEED_OR_RETURN(m_Readback.Poll(slot));
   if (slot != xiiInvalidIndex)
     m_Owners.Swap(m_SlotOwners[slot]);
-  return XII_SUCCESS;
-}
-
-xiiResult xiiSceneMeshPickingState::ResizeVisibility(xiiUInt32 instances, xiiUInt64 meshletCount)
-{
-  // Every instance can select any of its resident LODs. Never truncate work to the native
-  // visibility service's default fixed capacity. Check before rounding to avoid UInt64 wrap.
-  // Capacity grows geometrically and is retained until this per-view pass is destroyed.
-  if (meshletCount > xiiMath::MaxValue<xiiUInt32>())
-    return XII_FAILURE;
-  const xiiUInt64 meshlets = xiiMath::PowerOfTwo_Ceil(xiiMath::Max<xiiUInt64>(256, meshletCount));
-  const xiiUInt64 objects  = xiiMath::PowerOfTwo_Ceil(xiiMath::Max<xiiUInt64>(64, instances));
-  if (meshlets > xiiMath::MaxValue<xiiUInt32>() || objects > xiiMath::MaxValue<xiiUInt32>())
-    return XII_FAILURE;
-  if (xiiGpuVisibilityManager::IsValid(m_hVisibility) && objects <= m_uiInstanceCapacity && meshlets <= m_uiMeshletCapacity)
-    return XII_SUCCESS;
-  xiiGpuVisibilityDescription description;
-  description.m_uiMaxInstances        = static_cast<xiiUInt32>(xiiMath::Max<xiiUInt64>(objects, m_uiInstanceCapacity));
-  description.m_uiMaxVisibleMeshlets  = static_cast<xiiUInt32>(xiiMath::Max<xiiUInt64>(meshlets, m_uiMeshletCapacity));
-  description.m_uiMaxVisibilitySets   = 1;
-  description.m_uiLodFeedbackCapacity = 1;
-  const auto replacement              = xiiGpuVisibilityManager::CreateContext(description);
-  if (replacement.IsInvalidated())
-    return XII_FAILURE;
-  Invalidate();
-  xiiGpuVisibilityManager::DestroyContext(m_hVisibility);
-  m_hVisibility        = replacement;
-  m_uiInstanceCapacity = description.m_uiMaxInstances;
-  m_uiMeshletCapacity  = description.m_uiMaxVisibleMeshlets;
   return XII_SUCCESS;
 }
 

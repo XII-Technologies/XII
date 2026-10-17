@@ -10,11 +10,6 @@ class xiiGpuSceneRasterManagerState
 public:
   xiiShaderPermutationResourceHandle m_hDepthShaderPermutation;
   xiiShaderPermutationResourceHandle m_hGBufferShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hPickingShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hIndexedPickingShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hWireframePickingShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hIndexedWireframePickingShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hIndexedPickingCommandsShaderPermutation;
   xiiShaderPermutationResourceHandle m_hForwardPlusShaderPermutation;
   xiiSharedPtr<xiiGALSampler>        m_pMaterialSampler;
   bool                               m_bEngineStarted        = false;

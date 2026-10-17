@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 #include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
+#include <EditorEngineProcessFrameworkTest/NativeSurfaceRasterFixture.h>
 
 #include <bit>
 
@@ -58,7 +59,7 @@ static void TestLodSections(bool enableMeshShaders)
   VisibilityDispatchLog log;
   log.SetLogLevel(xiiLogMsgType::All);
   xiiTestLogSystemScope logScope(&log, true);
-  if (!xiiGpuSceneRasterManager::IsPickingSupported())
+  if (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled)
   {
     xiiTestFramework::Output(xiiTestOutput::Message, "Native LOD section query shaders are unavailable.");
     return;
@@ -266,17 +267,18 @@ static void TestLodSections(bool enableMeshShaders)
     raster.m_uiMeshDispatchGroupCountX   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
     raster.m_uiMeshDispatchGroupCountY   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
     xiiRenderGraphTextureHandle surface;
-    if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "LOD section surface", visibility, geometryUpload, materialUpload, raster, surface)))
+    xiiRenderGraphBufferHandle  queryCommands, queryCommandCount;
+    if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "LOD section surface", visibility, geometryUpload, materialUpload, raster, surface, environment.GetDevice()->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, xiiGALFillMode::Solid, &queryCommands, &queryCommandCount)))
       return;
     auto invalidRaster      = raster;
     invalidRaster.m_uiWidth = 0;
     auto rejectedSurface    = surface;
-    XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid query", visibility, geometryUpload, materialUpload, invalidRaster, rejectedSurface).Failed());
+    XII_TEST_BOOL(xiiTestNativeSurfaceQuery(graph, view, "Invalid query", visibility, geometryUpload, materialUpload, invalidRaster, rejectedSurface).Failed());
     XII_TEST_BOOL(!rejectedSurface.IsValid());
-    auto invalidVisibility                   = visibility;
-    invalidVisibility.m_uiMaxVisibleMeshlets = 0;
-    rejectedSurface                          = surface;
-    XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid indexed query", invalidVisibility, geometryUpload, materialUpload, raster, rejectedSurface, false).Failed());
+    auto invalidVisibility               = visibility;
+    invalidVisibility.m_hVisibleMeshlets = {};
+    rejectedSurface                      = surface;
+    XII_TEST_BOOL(xiiTestNativeSurfaceQuery(graph, view, "Invalid indexed query", invalidVisibility, geometryUpload, materialUpload, raster, rejectedSurface, false).Failed());
     XII_TEST_BOOL(!rejectedSurface.IsValid());
     xiiEmissiveLightManager::BuildDescription emissiveDescription;
     emissiveDescription.m_Visibility       = visibility;
@@ -301,9 +303,8 @@ static void TestLodSections(bool enableMeshShaders)
       }
       if (!enableMeshShaders)
       {
-        const auto commands = graph.FindBuffer("LOD section surface Indexed commands buffer");
-        builder.ExportBuffer(builder.ReadBuffer(commands, xiiGALResourceStateFlags::IndirectArgument), xiiGALResourceStateFlags::IndirectArgument);
-        builder.ExportBuffer(builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::IndirectArgument), xiiGALResourceStateFlags::IndirectArgument);
+        builder.ExportBuffer(builder.ReadBuffer(queryCommands, xiiGALResourceStateFlags::IndirectArgument), xiiGALResourceStateFlags::IndirectArgument);
+        builder.ExportBuffer(builder.ReadBuffer(queryCommandCount, xiiGALResourceStateFlags::IndirectArgument), xiiGALResourceStateFlags::IndirectArgument);
       } }, [](const Export&, xiiRenderGraphPassContext&) {}, true);
     xiiScenePickingReadback readback;
     xiiUInt32               slot;
@@ -331,12 +332,11 @@ static void TestLodSections(bool enableMeshShaders)
     if (!enableMeshShaders)
     {
       xiiUInt32 count = 0;
-      xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(visibility.m_hVisibleMeshletCount).Borrow(), 0, count);
+      xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(queryCommandCount).Borrow(), 0, count);
       if (count != 0)
       {
         xiiVec4U32 command;
-        const auto commands = graph.FindBuffer("LOD section surface Indexed commands buffer");
-        xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(commands).Borrow(), 0, command);
+        xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(queryCommands).Borrow(), 0, command);
         XII_TEST_INT(command.x, 36);
         XII_TEST_INT(command.y, 1);
         XII_TEST_INT(command.z, 0);

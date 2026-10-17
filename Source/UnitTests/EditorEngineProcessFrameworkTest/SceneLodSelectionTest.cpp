@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 #include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
+#include <EditorEngineProcessFrameworkTest/NativeSurfaceRasterFixture.h>
 
 #include <bit>
 
@@ -168,7 +169,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     raster.m_uiMeshDispatchGroupCountX   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
     raster.m_uiMeshDispatchGroupCountY   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
     xiiRenderGraphTextureHandle surface;
-    if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "LOD surface", visible, uploaded, materials, raster, surface)))
+    if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "LOD surface", visible, uploaded, materials, raster, surface)))
       return;
     struct Export
     {

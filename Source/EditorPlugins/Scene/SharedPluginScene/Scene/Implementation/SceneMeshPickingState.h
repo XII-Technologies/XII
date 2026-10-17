@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include <Foundation/Containers/HashSet.h>
+#include <Foundation/Containers/HashTable.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
+
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
 
@@ -31,16 +31,14 @@ public:
   static xiiUInt64 ConfigurationSignature(const xiiMeshComponentBase& component);
   void             Invalidate();
   xiiResult        Poll();
-  xiiResult        ResizeVisibility(xiiUInt32 instances, xiiUInt64 meshletCount);
   xiiResult        Capture(xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle surface);
   xiiResult        Pick(const xiiView& view, xiiUInt32 x, xiiUInt32 y, xiiSceneMeshPickingPass::PickingResult& out_hit);
   xiiResult        Marquee(const xiiView& view, const xiiRectU32& rectangle, xiiDynamicArray<xiiGameObjectHandle>& out_objects);
 
-  xiiDynamicArray<xiiUInt32>      m_Candidates;
-  xiiGpuVisibilityContextHandle   m_hVisibility;
-  xiiDynamicArray<xiiRenderData*> m_Packets;
-  xiiHashSet<xiiGameObjectHandle> m_Selected;
-  xiiUInt64                       m_uiFingerprint = 0;
+
+  xiiUInt64  m_uiObservedDataRevision = xiiMath::MaxValue<xiiUInt64>();
+  xiiUInt64  m_uiViewSelection        = 0;
+  xiiVariant m_SelectionPolicy, m_PickSelectedPolicy, m_TransparentPolicy;
 
 private:
   void OnResourceEvent(const xiiResourceEvent& event);
@@ -50,8 +48,6 @@ private:
   xiiScenePickingReadback        m_Readback;
   xiiHashTable<xiiUInt32, Owner> m_SlotOwners[xiiScenePickingReadback::SlotCount];
   xiiHashTable<xiiUInt32, Owner> m_Owners;
-  xiiAtomicInteger32             m_ResourceEpoch      = 0;
-  xiiInt32                       m_iObservedEpoch     = 0;
-  xiiUInt32                      m_uiInstanceCapacity = 0;
-  xiiUInt32                      m_uiMeshletCapacity  = 0;
+  xiiAtomicInteger32             m_ResourceEpoch  = 0;
+  xiiInt32                       m_iObservedEpoch = 0;
 };

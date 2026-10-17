@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+#include <EditorEngineProcessFrameworkTest/NativeSurfaceRasterFixture.h>
 
 #include <bit>
 
@@ -268,21 +269,21 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       if (!XII_TEST_BOOL(outputs.IsValid()))
         return;
       xiiRenderGraphTextureHandle query;
-      if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Identity query", visibility, uploadedGeometry, materials, raster, query, meshPicking)))
+      if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Identity query", visibility, uploadedGeometry, materials, raster, query, meshPicking)))
         return;
       xiiRenderGraphTextureHandle wireframe;
       const bool                  wireframeSupported = environment.GetDevice()->GetFeatures().m_WireframeFill == xiiGALDeviceFeatureState::Enabled;
       if (!denseMeshlet && wireframeSupported)
       {
-        if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Wireframe identity query", visibility, uploadedGeometry, materials, raster, wireframe, meshPicking, xiiGALFillMode::Wireframe)))
+        if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Wireframe identity query", visibility, uploadedGeometry, materials, raster, wireframe, meshPicking, xiiGALFillMode::Wireframe)))
           return;
       }
       xiiRenderGraphTextureHandle invalidFill = query;
-      XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid query fill", visibility, uploadedGeometry, materials, raster, invalidFill, meshPicking, xiiGALFillMode::Undefined).Failed());
+      XII_TEST_BOOL(xiiTestNativeSurfaceQuery(graph, view, "Invalid query fill", visibility, uploadedGeometry, materials, raster, invalidFill, meshPicking, xiiGALFillMode::Undefined).Failed());
       XII_TEST_BOOL(!invalidFill.IsValid());
       if (!wireframeSupported)
       {
-        XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Unsupported wireframe", visibility, uploadedGeometry, materials, raster, invalidFill, meshPicking, xiiGALFillMode::Wireframe).Failed());
+        XII_TEST_BOOL(xiiTestNativeSurfaceQuery(graph, view, "Unsupported wireframe", visibility, uploadedGeometry, materials, raster, invalidFill, meshPicking, xiiGALFillMode::Wireframe).Failed());
         XII_TEST_BOOL(!invalidFill.IsValid());
       }
       struct Export
@@ -388,6 +389,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         // the query. Both native raster routes must follow updates and clearing.
         for (xiiUInt64 poseFrame = 2; poseFrame <= 6; ++poseFrame)
         {
+          const auto poseRevision = context.GetDataRevision();
           if (poseFrame == 4)
             first.m_SkinningMatrices.Clear();
           else
@@ -402,6 +404,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           }
           const xiiUInt32 expectedId = poseFrame == 2 || poseFrame == 4 ? 0 : firstId;
           XII_TEST_RESULT(context.UpdateFromExtraction(extracted, poseFrame));
+          XII_TEST_BOOL(context.GetDataRevision() != poseRevision);
           xiiGpuVisibilityManager::BeginFrame(poseFrame, poseFrame - 1);
           xiiMaterialManager::BeginFrame(poseFrame, poseFrame - 1);
           xiiGeometryResidencyManager::ProcessStreaming(poseFrame, poseFrame - 1, xiiMath::MaxValue<xiiUInt64>());
@@ -424,7 +427,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           if (!XII_TEST_BOOL(poseSurface.IsValid()))
             return;
           xiiRenderGraphTextureHandle poseQuery;
-          XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Posed query", poseVisibility, poseGeometry, poseMaterials, raster, poseQuery, meshPicking));
+          XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Posed query", poseVisibility, poseGeometry, poseMaterials, raster, poseQuery, meshPicking));
           graph.AddPass<Export>("Posed query export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
             XII_IGNORE_UNUSED(builder.ReadTexture(poseQuery, xiiGALResourceStateFlags::ShaderResource));
             builder.ExportTexture(poseQuery, xiiGALResourceStateFlags::ShaderResource);
@@ -496,6 +499,12 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       raster.m_uiMeshDispatchGroupCountX   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
       raster.m_uiMeshDispatchGroupCountY   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
 
+      auto*      coverageRenderer = world.GetOrCreateModule<xiiRenderWorldModule>();
+      xiiView*   view             = nullptr;
+      const auto coverageView     = coverageRenderer->CreateView("Coverage surface fixture", view);
+      XII_SCOPE_EXIT(coverageRenderer->DestroyView(coverageView));
+      view->SetCamera(&camera);
+      view->SetViewport({0, 0, 32, 32});
       const auto renderCoverage = [&](xiiMaterialAlphaMode::Enum alphaMode, float opacity, bool pickTransparent, xiiUInt32 expectedId) {
         const auto frame = nextFrame++;
         if (frame > 3)
@@ -538,13 +547,13 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         xiiRenderGraphTextureHandle query;
         auto                        invalidRaster = raster;
         invalidRaster.m_uiWidth                   = 0;
-        XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid coverage query", visibility, uploadedGeometry, materials, invalidRaster, query).Failed());
+        XII_TEST_BOOL(xiiTestNativeSurfaceQuery(graph, view, "Invalid coverage query", visibility, uploadedGeometry, materials, invalidRaster, query).Failed());
         XII_TEST_BOOL(!query.IsValid());
-        if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Coverage query", visibility, uploadedGeometry, materials, raster, query)))
+        if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Coverage query", visibility, uploadedGeometry, materials, raster, query)))
           return;
-        XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Missing visibility query", {}, uploadedGeometry, materials, raster, query).Failed());
+        XII_TEST_BOOL(xiiTestNativeSurfaceQuery(graph, view, "Missing visibility query", {}, uploadedGeometry, materials, raster, query).Failed());
         XII_TEST_BOOL(!query.IsValid());
-        if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Coverage final query", visibility, uploadedGeometry, materials, raster, query)))
+        if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Coverage final query", visibility, uploadedGeometry, materials, raster, query)))
           return;
         struct Export
         {
@@ -646,7 +655,8 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
   }
 }
 
-XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
+XII_CREATE_SIMPLE_TEST_GROUP(NativeSceneIdentity);
+XII_CREATE_SIMPLE_TEST(NativeSceneIdentity, SceneMeshIdentity)
 {
   RunSceneMeshIdentity(false);
 }
