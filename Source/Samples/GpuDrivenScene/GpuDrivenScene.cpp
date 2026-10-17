@@ -28,7 +28,6 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-#include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
@@ -41,6 +40,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
 #include <Shaders/GpuDrivenSceneConstants.h>
@@ -55,6 +55,7 @@ xiiCommandLineOptionInt    opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-heig
 xiiCommandLineOptionString opt_GpuDrivenDepthPipeline("GpuDrivenScene", "-depth-pipeline", "Authored depth-pyramid/history pipeline resource.", "RenderPipelines/DepthPyramid.xiiBinRenderPipeline");
 
 xiiCommandLineOptionString opt_GpuDrivenVisibilityPipeline("GpuDrivenScene", "-visibility-pipeline", "Authored world mesh visibility/draw resource.", "RenderPipelines/WorldMeshDraws.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenShadowPipeline("GpuDrivenScene", "-shadow-pipeline", "Authored shadow target/raster resource.", "RenderPipelines/ShadowMap.xiiBinRenderPipeline");
 
 namespace
 {
@@ -103,10 +104,7 @@ namespace
     xiiRenderGraphTextureHandle m_hDepth;
   };
 
-  struct ShadowTargetPassData
-  {
-    xiiRenderGraphTextureHandle m_hDepth;
-  };
+
 
   struct GpuDrivenDrawPassData
   {
@@ -360,6 +358,13 @@ public:
       RequestQuit();
       return;
     }
+    m_hShadowPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenShadowPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeShadowPipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     m_hDepthPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenDepthPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
     if (SynchronizeDepthPipeline().Failed())
     {
@@ -386,6 +391,8 @@ public:
     if (m_pDevice)
       m_pDevice->WaitIdle();
     xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
+    m_SunShadow.Clear();
+    m_hShadowPipeline.Invalidate();
     m_DepthPipeline.Clear();
     m_hDepthPipeline.Invalidate();
     m_MainVisibility.Clear();
@@ -498,6 +505,71 @@ private:
     outputs.m_hIndirectCommandCount = buffer("DrawCommandCount");
     outputs.m_uiMaxVisibleMeshlets  = m_uiVisibilityCapacity;
     return XII_SUCCESS;
+  }
+
+  xiiResult SynchronizeShadowPipeline()
+  {
+    bool changed = false;
+    if (m_SunShadow.Synchronize(m_hShadowPipeline, &changed).Failed())
+    {
+      xiiLog::Error("Selected shadow resource '{}' is missing or invalid.", m_hShadowPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    if (changed)
+    {
+      const auto* pipeline = m_SunShadow.GetPipeline();
+      for (const xiiStringView name : {"SceneInstances", "SkinningMatrices", "VisibleMeshlets", "VisibleMeshletCount", "GeometryMetadata", "MeshletMetadata", "SurfaceMaterials", "DrawCommands", "DrawCommandCount"})
+      {
+        const auto input = pipeline->FindInterface(name, true);
+        if (input == xiiInvalidIndex || pipeline->GetInterface()[input].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+        {
+          xiiLog::Error("Selected shadow resource '{}' requires buffer input '{}'.", m_hShadowPipeline.GetResourceID(), name);
+          return XII_FAILURE;
+        }
+      }
+      m_uiShadowOutput = pipeline->FindInterface("ShadowDepth", false);
+      if (m_uiShadowOutput == xiiInvalidIndex || pipeline->GetInterface()[m_uiShadowOutput].m_Pin.m_Type != xiiRenderPipelinePin::Texture ||
+          pipeline->GetInterface()[m_uiShadowOutput].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
+      {
+        xiiLog::Error("Selected shadow resource '{}' requires a D32 ShadowDepth output.", m_hShadowPipeline.GetResourceID());
+        return XII_FAILURE;
+      }
+    }
+    return XII_SUCCESS;
+  }
+
+  xiiResult BuildShadowMap(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiMat4& projection, xiiUInt32 resolution,
+                           const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
+                           const xiiMaterialGpuStorage::UploadHandles& materials, xiiRenderGraphTextureHandle& output)
+  {
+    XII_SUCCEED_OR_RETURN(SynchronizeShadowPipeline());
+    xiiVariantDictionary parameters;
+    parameters.Insert("RasterViewProjection", projection);
+    parameters.Insert("RasterPreviousViewProjection", projection);
+    parameters.Insert("RasterWidth", resolution);
+    parameters.Insert("RasterHeight", resolution);
+    parameters.Insert("RasterMeshGroupCountX", m_uiMeshGroupX);
+    parameters.Insert("RasterMeshGroupCountY", m_uiMeshGroupY);
+    xiiHybridArray<xiiRenderPipelineInputBinding, 9> inputs;
+    const auto                                       bind = [&](xiiStringView name, xiiRenderGraphBufferHandle buffer) {
+      inputs.PushBack(xiiRenderPipelineInputBinding(graph, m_SunShadow.GetPipeline()->FindInterface(name, true), buffer));
+    };
+    bind("SceneInstances", visibility.m_hSceneInstances);
+    bind("SkinningMatrices", visibility.m_hSkinningMatrices);
+    bind("VisibleMeshlets", visibility.m_hVisibleMeshlets);
+    bind("VisibleMeshletCount", visibility.m_hVisibleMeshletCount);
+    bind("GeometryMetadata", geometry.m_hGeometryMetadata);
+    bind("MeshletMetadata", geometry.m_hMeshletMetadata);
+    bind("SurfaceMaterials", materials.m_hSurfaceData);
+    bind("DrawCommands", visibility.m_hIndirectCommands);
+    bind("DrawCommandCount", visibility.m_hIndirectCommandCount);
+    if (m_SunShadow.Build(nullptr, graph, blackboard, parameters, inputs).Failed())
+    {
+      xiiLog::Error("Authored shadow build failed: {}", m_SunShadow.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    output = m_SunShadow.GetInterfaceBinding(m_uiShadowOutput)->m_hTexture;
+    return output.IsValid() ? XII_SUCCESS : XII_FAILURE;
   }
 
   xiiResult SynchronizeDepthPipeline()
@@ -652,23 +724,13 @@ private:
       virtualShadowUpload                   = xiiVirtualShadowMapManager::AddRasterPasses(graph, virtualShadowUpload, shadowVisibility, geometry, materials, cascadeViewProjection, g_uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), m_uiMeshGroupX, m_uiMeshGroupY);
     }
 
-    auto shadowTarget = graph.AddPass<ShadowTargetPassData>("Create GPU Shadow Target", xiiGALCommandQueueFlags::Graphics, [](ShadowTargetPassData& data, xiiRenderGraphBuilder& builder) {
-        xiiGALTextureCreationDescription description;
-        description.m_Type        = xiiGALResourceDimension::Texture2D;
-        description.m_Size.width  = uiShadowResolution;
-        description.m_Size.height = uiShadowResolution;
-        description.m_Format      = xiiGALResourceFormat::D32Float;
-        description.m_BindFlags   = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-        data.m_hDepth             = builder.WriteTexture("GPU Scene Sun Shadow", description, xiiGALResourceStateFlags::CopyDestination);
-        builder.SetPassAllowMerge(false); }, [](const ShadowTargetPassData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U); });
-
-    xiiGpuShadowRasterDescription shadowRasterDescription;
-    shadowRasterDescription.m_ViewProjectionMatrix      = shadowViewProjection;
-    shadowRasterDescription.m_Viewport                  = xiiVec4U32(0U, 0U, uiShadowResolution, uiShadowResolution);
-    shadowRasterDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
-    shadowRasterDescription.m_uiMeshDispatchGroupCountX = m_uiMeshGroupX;
-    shadowRasterDescription.m_uiMeshDispatchGroupCountY = m_uiMeshGroupY;
-    const xiiRenderGraphTextureHandle hShadowMap        = xiiGpuShadowRasterManager::AddPass(graph, "GPU Scene Sun Shadow Raster", shadowTarget.first->m_hDepth, shadowVisibility, geometry, materials, shadowRasterDescription);
+    xiiRenderGraphTextureHandle hShadowMap;
+    if (BuildShadowMap(graph, blackboard, shadowViewProjection, uiShadowResolution, shadowVisibility, geometry, materials, hShadowMap).Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
 
     graph.AddPass<SceneTargetsPassData>("Create Scene Targets", xiiGALCommandQueueFlags::Graphics, [targetSize = m_TargetSize](SceneTargetsPassData& data, xiiRenderGraphBuilder& builder) {
         xiiGALTextureCreationDescription description;
@@ -1018,6 +1080,9 @@ private:
   xiiRenderPipelineInstance          m_DepthPipeline;
   xiiUInt32                          m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
   xiiRenderPipelineResourceHandle    m_hVisibilityPipeline;
+  xiiRenderPipelineInstance          m_SunShadow;
+  xiiRenderPipelineResourceHandle    m_hShadowPipeline;
+  xiiUInt32                          m_uiShadowOutput = xiiInvalidIndex;
   xiiRenderPipelineInstance          m_MainVisibility, m_SensorVisibility, m_ShadowVisibility;
   xiiUInt32                          m_uiMeshGroupX = 0, m_uiMeshGroupY = 0, m_uiVisibilityCapacity = 0;
   xiiCamera                          m_Camera;
