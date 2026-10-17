@@ -161,7 +161,9 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
 {
   if (xiiGeometryResidencyManager::EnsureInitialized().Failed())
     return XII_FAILURE;
-  auto& state = *m_pState;
+  auto&      state           = *m_pState;
+  const auto previousVersion = state.m_Version, previousPoseVersion = state.m_PoseVersion;
+  const auto previousCount = m_Instances.GetCount();
   // Validate before changing membership or leases. Stale authoritative owners are omitted.
   for (const auto* data : packets)
     if (const auto* mesh = xiiDynamicCast<const xiiMeshRenderData*>(data); mesh && mesh->m_hMesh.IsValid())
@@ -409,6 +411,8 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
   for (auto& entry : state.m_Entries)
     if (entry.m_Changed)
       entry.m_Version = ++state.m_Version;
+  if (previousVersion != state.m_Version || previousPoseVersion != state.m_PoseVersion || previousCount != m_Instances.GetCount())
+    ++m_uiDataRevision;
   m_UploadRanges.Clear();
   for (xiiUInt32 i = 0; i < state.m_Entries.GetCount();)
   {

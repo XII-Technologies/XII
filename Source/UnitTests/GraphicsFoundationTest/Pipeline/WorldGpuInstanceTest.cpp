@@ -147,17 +147,21 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   {
     XII_TEST_RESULT(extract());
     XII_TEST_BOOL(instances->GetUploadRanges().IsEmpty());
+    const auto revision = instances->GetDataRevision();
     parent->SetLocalPosition(xiiVec3(4, 0, 0));
     world.Update();
     XII_TEST_RESULT(extract());
+    XII_TEST_BOOL(instances->GetDataRevision() != revision);
     XII_TEST_FLOAT(instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 6, 0);
     XII_TEST_FLOAT(instances->GetInstances()[0].m_PreviousGlobalTransform.GetTranslationVector().x, 3, 0);
     XII_TEST_INT(instances->GetUploadRanges().GetCount(), 1);
     XII_TEST_RESULT(extract());
     XII_TEST_FLOAT(instances->GetInstances()[0].m_PreviousGlobalTransform.GetTranslationVector().x, 6, 0);
     XII_TEST_INT(instances->GetUploadRanges().GetCount(), 1);
+    const auto settled = instances->GetDataRevision();
     XII_TEST_RESULT(extract());
     XII_TEST_BOOL(instances->GetUploadRanges().IsEmpty());
+    XII_TEST_INT(instances->GetDataRevision(), settled);
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two cameras share sparse uploads; warmed unchanged frames upload zero bytes")
   {
