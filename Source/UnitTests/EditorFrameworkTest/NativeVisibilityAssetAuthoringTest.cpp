@@ -111,6 +111,15 @@ namespace
         return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
       return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
+
+    const auto* candidates = add("Input/Filtered Candidates", "xiiRenderPipelineInterfacePass", {-600, 600});
+    if (!candidates)
+      return xiiStatus("Could not create candidate interface.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Name", "InputCandidates"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Input", true));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Buffer)));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(candidates));
+    XII_SUCCEED_OR_RETURN(connect(candidates, "Value", view, "InputCandidates"));
     XII_SUCCEED_OR_RETURN(connect(world, "SceneInstances", reset, "SceneInstances"));
     XII_SUCCEED_OR_RETURN(connect(world, "SceneInstances", cull, "SceneInstances"));
     XII_SUCCEED_OR_RETURN(connect(geometry, "GeometryMetadata", cull, "GeometryMetadata"));
@@ -155,7 +164,7 @@ namespace
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Authored visibility did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 7);
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 8);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 9);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
     return XII_SUCCESS;
@@ -205,6 +214,15 @@ namespace
         return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
       return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
+
+    const auto* candidates = add("Input/Filtered Candidates", "xiiRenderPipelineInterfacePass", {-600, 600});
+    if (!candidates)
+      return xiiStatus("Could not create candidate interface.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Name", "InputCandidates"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Input", true));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Buffer)));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(candidates));
+    XII_SUCCEED_OR_RETURN(connect(candidates, "Value", instances, "InputCandidates"));
     for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView", "VisibleInstances", "VisibleInstanceCount", "LodHistory"})
     {
       XII_SUCCEED_OR_RETURN(connect(instances, pin, bounds, pin));
@@ -251,7 +269,7 @@ namespace
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Authored visibility did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 7);
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 12);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 13);
     XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 13);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
@@ -260,6 +278,10 @@ namespace
 
   xiiStatus AuthorVertexPullDraws(xiiStringView outputDirectory)
   {
+    const xiiStringBuilder library(outputDirectory, "/RenderPipelines");
+    XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
+    XII_SUCCEED_OR_RETURN(AuthorInstanceVisibility(library));
+    XII_SUCCEED_OR_RETURN(AuthorMeshletVisibility(library));
     xiiStringBuilder path(outputDirectory, "/VertexPullDraws.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     NativeVisibilityAuthorDocument document(path, "VertexPullDraws");
@@ -294,6 +316,15 @@ namespace
         return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
       return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
+
+    const auto* candidates = add("Input/Filtered Candidates", "xiiRenderPipelineInterfacePass", {-600, 600});
+    if (!candidates)
+      return xiiStatus("Could not create candidate interface.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Name", "InputCandidates"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Input", true));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Buffer)));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(candidates));
+    XII_SUCCEED_OR_RETURN(connect(candidates, "Value", instances, "InputCandidates"));
     for (auto pin : {"SceneInstances", "VisibilityView", "GeometryMetadata", "MeshletMetadata", "VisibleMeshlets", "VisibleMeshletCount"})
       XII_SUCCEED_OR_RETURN(connect(instances, pin, draw, pin));
     xiiUInt32  row    = 0;
@@ -327,7 +358,7 @@ namespace
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Authored visibility did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 14);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 15);
     XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 14);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
@@ -336,6 +367,11 @@ namespace
 
   xiiStatus AuthorSurfaceQuery(xiiStringView outputDirectory)
   {
+    const xiiStringBuilder library(outputDirectory, "/RenderPipelines");
+    XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
+    XII_SUCCEED_OR_RETURN(AuthorInstanceVisibility(library));
+    XII_SUCCEED_OR_RETURN(AuthorMeshletVisibility(library));
+    XII_SUCCEED_OR_RETURN(AuthorVertexPullDraws(library));
     xiiStringBuilder path(outputDirectory, "/SurfaceQuery.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     NativeVisibilityAuthorDocument document(path, "SurfaceQuery");
@@ -372,6 +408,15 @@ namespace
         return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
       return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
+
+    const auto* candidates = add("Input/Filtered Candidates", "xiiRenderPipelineInterfacePass", {-600, 600});
+    if (!candidates)
+      return xiiStatus("Could not create candidate interface.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Name", "InputCandidates"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "Input", true));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(candidates, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Buffer)));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(candidates));
+    XII_SUCCEED_OR_RETURN(connect(candidates, "Value", instances, "InputCandidates"));
     for (auto pin : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibleMeshlets", "VisibleMeshletCount", "DrawCommands", "DrawCommandCount"})
       XII_SUCCEED_OR_RETURN(connect(instances, pin, surface, pin));
     XII_SUCCEED_OR_RETURN(connect(materials, "SurfaceMaterials", surface, "SurfaceMaterials"));
@@ -407,7 +452,7 @@ namespace
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Authored visibility did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 4);
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 16);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 17);
     XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 17);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
@@ -502,6 +547,89 @@ namespace
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
     return XII_SUCCESS;
   }
+  xiiStatus AuthorEditorMeshPicking(xiiStringView outputDirectory)
+  {
+    const xiiStringBuilder library(outputDirectory, "/RenderPipelines");
+    XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
+    XII_SUCCEED_OR_RETURN(AuthorInstanceVisibility(library));
+    XII_SUCCEED_OR_RETURN(AuthorMeshletVisibility(library));
+    XII_SUCCEED_OR_RETURN(AuthorVertexPullDraws(library));
+    XII_SUCCEED_OR_RETURN(AuthorSurfaceQuery(library));
+    xiiStringBuilder path(outputDirectory, "/EditorMeshPicking.xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, "EditorMeshPicking");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author explicit editor mesh picking");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>((xiiRenderPipelineDeviceFeature::Compute | xiiRenderPipelineDeviceFeature::BindlessResources).GetValue())));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.EditorMeshPicking/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* instances = add("Authored Surface", "xiiRenderPipelineSubgraphPass", {600, 0});
+    const auto* selection = add("World Candidate Selection", "xiiSceneInstanceSelectionPass", {0, 0});
+    const auto* capture   = add("Surface Capture", "xiiSceneMeshPickingPass", {1200, 0});
+    if (!instances || !selection || !capture)
+      return xiiStatus("Could not create editor picking nodes.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/SurfaceQuery.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+
+    XII_SUCCEED_OR_RETURN(connect(selection, "Candidates", instances, "InputCandidates"));
+    XII_SUCCEED_OR_RETURN(connect(instances, "Surface", capture, "Surface"));
+    xiiUInt32  row    = 0;
+    const auto expose = [&](const xiiDocumentObject* source, xiiStringView name, xiiUInt32 resourceType = xiiRenderPipelinePin::Buffer) -> xiiStatus {
+      const auto* boundary = add(xiiStringBuilder("Output/", name), "xiiRenderPipelineInterfacePass", {3000, float(row++ * 150)});
+      if (!boundary)
+        return xiiStatus("Could not create a visibility interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", name));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", false));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", resourceType));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      return connect(source, name, boundary, "Value");
+    };
+    XII_SUCCEED_OR_RETURN(expose(capture, "Surface", xiiRenderPipelinePin::Texture));
+    XII_SUCCEED_OR_RETURN(expose(instances, "SceneDepth", xiiRenderPipelinePin::Texture));
+    XII_SUCCEED_OR_RETURN(expose(instances, "VisibleMeshletOverflow"));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import visibility asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/EditorMeshPicking.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Authored visibility did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 3);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 3);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 19);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
+    return XII_SUCCESS;
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -551,4 +679,14 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DebugVisualization)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDebugAuthoring"));
   XII_TEST_STATUS(AuthorDebugVisualization(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, EditorMeshPicking)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeEditorPickingAuthoring", "NativeEditorPickingBase", xiiDataDirUsage::ReadOnly)) ||
+      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeEditorPickingAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeEditorPickingAuthoring"));
+  XII_TEST_STATUS(AuthorEditorMeshPicking(path));
 }
