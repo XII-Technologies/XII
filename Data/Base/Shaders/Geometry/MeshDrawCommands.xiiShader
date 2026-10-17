@@ -1,0 +1,24 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Visibility/GpuSceneCommandBuildConstants.h>
+StructuredBuffer<uint2> g_VisibleMeshlets;
+StructuredBuffer<uint> g_VisibleMeshletCount;
+RWStructuredBuffer<uint3> g_DrawCommands;
+RWStructuredBuffer<uint> g_DrawCommandCount;
+[numthreads(1, 1, 1)]
+void main()
+{
+  uint capacity, stride;
+  g_VisibleMeshlets.GetDimensions(capacity, stride);
+  uint count = min(g_VisibleMeshletCount[0], min(capacity, MaxMeshGroupTotalCount));
+  g_DrawCommands[0] = 0u;
+  g_DrawCommandCount[0] = 0u;
+  if (count == 0u) return;
+  // Division/remainder avoids overflow at uint limits. Raster uses the same row strides.
+  uint rows = count / MaxMeshGroupCountX + (count % MaxMeshGroupCountX != 0u);
+  uint depth = rows / MaxMeshGroupCountY + (rows % MaxMeshGroupCountY != 0u);
+  g_DrawCommands[0] = uint3(min(count, MaxMeshGroupCountX), min(rows, MaxMeshGroupCountY), depth);
+  g_DrawCommandCount[0] = 1u;
+}

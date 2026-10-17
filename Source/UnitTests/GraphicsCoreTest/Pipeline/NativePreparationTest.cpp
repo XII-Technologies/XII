@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
@@ -223,4 +225,42 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitSurfaceRasterConstants)
   properties.Insert("NormalOffset", xiiUInt32(offsetof(xiiMeshPackedVertex, m_vNormal)));
   properties.Insert("VertexStride", xiiUInt32(sizeof(xiiMeshPackedVertex)) + 1U);
   XII_TEST_BOOL(constants.Configure(properties).Failed());
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDepthRaster)
+{
+  xiiDepthRasterPass   depth;
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(depth.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("SceneDepth") && properties.Contains("UseMeshShaders"));
+  XII_TEST_BOOL(depth.GetExtractionRequirements().IsNoFlagSet() && depth.GetRuntimeFeatures().IsNoFlagSet());
+  XII_TEST_BOOL(!depth.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::MeshShaders));
+  depth.m_bUseMeshShaders = true;
+  XII_TEST_BOOL(depth.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::MeshShaders));
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  depth.GetPins(pins);
+  XII_TEST_RESULT(depth.InitializePinBindings(pins));
+  XII_TEST_BOOL(!pins[depth.m_OutputDepth.GetBindingIndex()].m_bOptional && pins[depth.m_OutputDepth.GetBindingIndex()].m_Format == xiiGALResourceFormat::D32Float);
+  properties.Insert("FillMode", xiiInt64(xiiGALFillMode::Undefined));
+  XII_TEST_BOOL(depth.Configure(properties).Failed());
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshDrawCommands)
+{
+  xiiMeshDrawCommandsPass commands;
+  xiiVariantDictionary    properties;
+  properties.Insert("MeshGroupCountX", 4U);
+  properties.Insert("MeshGroupCountY", 2U);
+  XII_TEST_RESULT(commands.Configure(properties));
+  XII_TEST_RESULT(commands.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("DrawCommands"));
+  XII_TEST_BOOL(commands.GetExtractionRequirements().IsNoFlagSet() && commands.GetRuntimeFeatures().IsNoFlagSet());
+  properties.Insert("MeshGroupCountX", 0U);
+  XII_TEST_BOOL(commands.Configure(properties).Failed());
+  properties.Insert("MeshGroupCountX", xiiMath::MaxValue<xiiUInt32>());
+  XII_TEST_BOOL(commands.Configure(properties).Failed());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  commands.GetPins(pins);
+  XII_TEST_RESULT(commands.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[commands.m_Commands.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
 }
