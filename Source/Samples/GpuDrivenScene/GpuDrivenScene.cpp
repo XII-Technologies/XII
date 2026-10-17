@@ -56,6 +56,7 @@ xiiCommandLineOptionString opt_GpuDrivenDepthPipeline("GpuDrivenScene", "-depth-
 
 xiiCommandLineOptionString opt_GpuDrivenVisibilityPipeline("GpuDrivenScene", "-visibility-pipeline", "Authored world mesh visibility/draw resource.", "RenderPipelines/WorldMeshDraws.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowPipeline("GpuDrivenScene", "-shadow-pipeline", "Authored shadow target/raster resource.", "RenderPipelines/ShadowMap.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenShadowPagePipeline("GpuDrivenScene", "-shadow-page-pipeline", "Authored raster resource for supplied virtual page targets.", "RenderPipelines/ShadowMeshDepth.xiiBinRenderPipeline");
 
 namespace
 {
@@ -249,10 +250,15 @@ public:
       settings.m_bEnableGPUProfiling  = true;
       if (xiiRenderGraphManager::ExecuteFrame(frame, nullptr, settings, &error).Succeeded())
       {
-        if (m_uiFrameIndex == 1U)
+        if (m_uiFrameIndex == 1U || (m_uiVirtualPagesThisFrame != 0 && !m_bReportedVirtualBatch))
         {
           const xiiRenderGraphStatistics& statistics = xiiRenderGraphManager::GetGraph(m_hRenderGraph)->GetStatistics();
           xiiLog::Info("GPU-driven render graph: {} registered, {} compiled, {} culled passes; {} queue submissions, {} barriers ({} split).", statistics.m_uiRegisteredPassCount, statistics.m_uiCompiledPassCount, statistics.m_uiCulledPassCount, statistics.m_uiQueueSubmissionCount, statistics.m_uiTotalBarrierCount, statistics.m_uiSplitBarrierCount);
+          if (m_uiVirtualPagesThisFrame != 0)
+          {
+            xiiLog::Info("Authored virtual shadow batch: {} physical pages in device frame {}.", m_uiVirtualPagesThisFrame, m_uiFrameIndex);
+            m_bReportedVirtualBatch = true;
+          }
         }
       }
       else
@@ -365,6 +371,13 @@ public:
       RequestQuit();
       return;
     }
+    m_hShadowPagePipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenShadowPagePipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeShadowPagePipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     m_hDepthPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenDepthPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
     if (SynchronizeDepthPipeline().Failed())
     {
@@ -391,6 +404,9 @@ public:
     if (m_pDevice)
       m_pDevice->WaitIdle();
     xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
+    m_VirtualPageRuntimes.Clear();
+    m_ShadowPageDefinition = nullptr;
+    m_hShadowPagePipeline.Invalidate();
     m_SunShadow.Clear();
     m_hShadowPipeline.Invalidate();
     m_DepthPipeline.Clear();
@@ -538,21 +554,22 @@ private:
     return XII_SUCCESS;
   }
 
-  xiiResult BuildShadowMap(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiMat4& projection, xiiUInt32 resolution,
-                           const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
-                           const xiiMaterialGpuStorage::UploadHandles& materials, xiiRenderGraphTextureHandle& output)
+  xiiResult BuildShadowResource(xiiRenderPipelineInstance& instance, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
+                                const xiiMat4& projection, xiiSizeU32 size, const xiiVec4U32& viewport,
+                                const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                const xiiMaterialGpuStorage::UploadHandles& materials, xiiRenderGraphTextureHandle& output, xiiRenderGraphTextureHandle target = {})
   {
-    XII_SUCCEED_OR_RETURN(SynchronizeShadowPipeline());
     xiiVariantDictionary parameters;
     parameters.Insert("RasterViewProjection", projection);
     parameters.Insert("RasterPreviousViewProjection", projection);
-    parameters.Insert("RasterWidth", resolution);
-    parameters.Insert("RasterHeight", resolution);
+    parameters.Insert("RasterWidth", size.width);
+    parameters.Insert("RasterHeight", size.height);
+    parameters.Insert("RasterViewport", viewport);
     parameters.Insert("RasterMeshGroupCountX", m_uiMeshGroupX);
     parameters.Insert("RasterMeshGroupCountY", m_uiMeshGroupY);
-    xiiHybridArray<xiiRenderPipelineInputBinding, 9> inputs;
-    const auto                                       bind = [&](xiiStringView name, xiiRenderGraphBufferHandle buffer) {
-      inputs.PushBack(xiiRenderPipelineInputBinding(graph, m_SunShadow.GetPipeline()->FindInterface(name, true), buffer));
+    xiiHybridArray<xiiRenderPipelineInputBinding, 10> inputs;
+    const auto                                        bind = [&](xiiStringView name, xiiRenderGraphBufferHandle buffer) {
+      inputs.PushBack(xiiRenderPipelineInputBinding(graph, instance.GetPipeline()->FindInterface(name, true), buffer));
     };
     bind("SceneInstances", visibility.m_hSceneInstances);
     bind("SkinningMatrices", visibility.m_hSkinningMatrices);
@@ -563,13 +580,95 @@ private:
     bind("SurfaceMaterials", materials.m_hSurfaceData);
     bind("DrawCommands", visibility.m_hIndirectCommands);
     bind("DrawCommandCount", visibility.m_hIndirectCommandCount);
-    if (m_SunShadow.Build(nullptr, graph, blackboard, parameters, inputs).Failed())
+    if (target.IsValid())
+      inputs.PushBack(xiiRenderPipelineInputBinding(graph, instance.GetPipeline()->FindInterface("DepthTarget", true), target));
+    if (instance.Build(nullptr, graph, blackboard, parameters, inputs).Failed())
     {
-      xiiLog::Error("Authored shadow build failed: {}", m_SunShadow.GetLastBuildError());
+      xiiLog::Error("Authored shadow build failed: {}", instance.GetLastBuildError());
       return XII_FAILURE;
     }
-    output = m_SunShadow.GetInterfaceBinding(m_uiShadowOutput)->m_hTexture;
+    output = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("ShadowDepth", false))->m_hTexture;
     return output.IsValid() ? XII_SUCCESS : XII_FAILURE;
+  }
+
+  xiiResult SynchronizeShadowPagePipeline()
+  {
+    xiiResourceLock<xiiRenderPipelineResource> loaded(m_hShadowPagePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    const auto                                 compiled = loaded.IsValid() ? loaded->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
+    if (!compiled)
+    {
+      m_ShadowPageDefinition = nullptr;
+      xiiLog::Error("Selected virtual-page resource '{}' is missing or invalid.", m_hShadowPagePipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    if (compiled != m_ShadowPageDefinition)
+    {
+      for (const xiiStringView name : {"SceneInstances", "SkinningMatrices", "VisibleMeshlets", "VisibleMeshletCount", "GeometryMetadata", "MeshletMetadata", "SurfaceMaterials", "DrawCommands", "DrawCommandCount"})
+      {
+        const auto index = compiled->FindInterface(name, true);
+        if (index == xiiInvalidIndex || compiled->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+        {
+          xiiLog::Error("Virtual-page resource '{}' requires buffer input '{}'.", m_hShadowPagePipeline.GetResourceID(), name);
+          return XII_FAILURE;
+        }
+      }
+      for (const bool input : {true, false})
+      {
+        const auto index = compiled->FindInterface(input ? "DepthTarget" : "ShadowDepth", input);
+        if (index == xiiInvalidIndex || compiled->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Texture ||
+            compiled->GetInterface()[index].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
+        {
+          xiiLog::Error("Virtual-page resource '{}' requires a D32 target input and depth output.", m_hShadowPagePipeline.GetResourceID());
+          return XII_FAILURE;
+        }
+      }
+      m_ShadowPageDefinition = compiled;
+    }
+    return XII_SUCCESS;
+  }
+
+  struct VirtualPageRuntime
+  {
+    xiiRenderPipelineInstance m_Pipeline;
+    xiiUInt64                 m_uiContentRevision = 0;
+  };
+
+  xiiResult BuildVirtualShadowPages(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
+                                    xiiVirtualShadowMapManager::UploadHandles& upload, const xiiMat4& projection,
+                                    const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                    const xiiMaterialGpuStorage::UploadHandles& materials)
+  {
+    XII_SUCCEED_OR_RETURN(SynchronizeShadowPagePipeline());
+    const auto count = xiiVirtualShadowMapManager::GetConfiguration().m_uiPhysicalPageCount;
+    m_VirtualPageRuntimes.SetCount(count);
+    xiiDynamicArray<xiiVirtualShadowRasterPage> pages;
+    xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), g_uiDirectionalLightId, pages);
+    m_uiVirtualPagesThisFrame = pages.GetCount();
+    for (const auto& page : pages)
+    {
+      auto& runtime = m_VirtualPageRuntimes[page.m_uiPhysicalPage];
+      if (!runtime)
+        runtime = XII_DEFAULT_NEW(VirtualPageRuntime);
+      XII_SUCCEED_OR_RETURN(runtime->m_Pipeline.Initialize(m_ShadowPageDefinition));
+      if (runtime->m_uiContentRevision != page.m_uiContentRevision)
+      {
+        runtime->m_Pipeline.InvalidateTemporalHistory();
+        runtime->m_uiContentRevision = page.m_uiContentRevision;
+      }
+      const auto& region = page.m_Viewport;
+      if (BuildShadowResource(runtime->m_Pipeline, graph, blackboard, page.m_ViewProjection, {region.width, region.height},
+                              xiiVec4U32(region.x, region.y, region.width, region.height), visibility, geometry, materials,
+                              upload.m_hPhysicalAtlas, upload.m_hPhysicalAtlas)
+            .Failed())
+      {
+        xiiLog::Error("Virtual shadow page {} in physical slot {} failed native resource execution.", page.m_Page.GetPackedValue(), page.m_uiPhysicalPage);
+        return XII_FAILURE;
+      }
+    }
+    xiiVirtualShadowMapManager::UploadHandles completed;
+    XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::AddPageCompletionPass(graph, upload, pages, completed));
+    upload = completed;
+    return XII_SUCCESS;
   }
 
   xiiResult SynchronizeDepthPipeline()
@@ -600,6 +699,7 @@ private:
 
   void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
   {
+    m_uiVirtualPagesThisFrame                        = 0;
     const auto                       geometry        = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
     const auto                       materials       = xiiMaterialManager::AddUploadPasses(graph);
     const xiiRenderGraphBufferHandle hMaterials      = materials.m_hSurfaceData;
@@ -720,12 +820,16 @@ private:
         XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::InvalidateRegion(g_uiDirectionalLightId, 0U, animatedPageRegion));
       }
 
-      const xiiMat4 cascadeViewProjection[] = {shadowCascades[0].m_mViewProjection};
-      virtualShadowUpload                   = xiiVirtualShadowMapManager::AddRasterPasses(graph, virtualShadowUpload, shadowVisibility, geometry, materials, cascadeViewProjection, g_uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), m_uiMeshGroupX, m_uiMeshGroupY);
+      if (BuildVirtualShadowPages(graph, blackboard, virtualShadowUpload, shadowCascades[0].m_mViewProjection, shadowVisibility, geometry, materials).Failed())
+      {
+        SetReturnCode(1);
+        RequestQuit();
+        return;
+      }
     }
 
     xiiRenderGraphTextureHandle hShadowMap;
-    if (BuildShadowMap(graph, blackboard, shadowViewProjection, uiShadowResolution, shadowVisibility, geometry, materials, hShadowMap).Failed())
+    if (SynchronizeShadowPipeline().Failed() || BuildShadowResource(m_SunShadow, graph, blackboard, shadowViewProjection, {uiShadowResolution, uiShadowResolution}, xiiVec4U32::MakeZero(), shadowVisibility, geometry, materials, hShadowMap).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
@@ -1066,30 +1170,35 @@ private:
     commandList.EndRenderPass();
   }
 
-  xiiSharedPtr<xiiGALDevice>         m_pDevice;
-  xiiSharedPtr<xiiGALSwapChain>      m_pSwapChain;
-  xiiUniquePtr<xiiWindow>            m_pWindow;
-  xiiSharedPtr<xiiGALRenderPass>     m_pSceneRenderPass;
-  xiiShaderPermutationResourceHandle m_hShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hRayTracingValidationPermutation;
-  xiiSharedPtr<xiiGALBuffer>         m_pRayTracingValidationSBT;
-  xiiUInt32                          m_uiRayTracingValidationShaderRecordStride = 0U;
-  xiiGpuDrivenSceneConfiguration     m_Configuration;
-  xiiGpuDrivenSceneWorld             m_World;
-  xiiRenderPipelineResourceHandle    m_hDepthPipeline;
-  xiiRenderPipelineInstance          m_DepthPipeline;
-  xiiUInt32                          m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
-  xiiRenderPipelineResourceHandle    m_hVisibilityPipeline;
-  xiiRenderPipelineInstance          m_SunShadow;
-  xiiRenderPipelineResourceHandle    m_hShadowPipeline;
-  xiiUInt32                          m_uiShadowOutput = xiiInvalidIndex;
-  xiiRenderPipelineInstance          m_MainVisibility, m_SensorVisibility, m_ShadowVisibility;
-  xiiUInt32                          m_uiMeshGroupX = 0, m_uiMeshGroupY = 0, m_uiVisibilityCapacity = 0;
-  xiiCamera                          m_Camera;
-  xiiRenderGraphGraphId              m_hRenderGraph;
-  xiiSizeU32                         m_TargetSize;
-  xiiMat4                            m_ViewProjection = xiiMat4::MakeIdentity();
-  xiiUInt64                          m_uiFrameIndex   = 0U;
+  xiiSharedPtr<xiiGALDevice>                        m_pDevice;
+  xiiSharedPtr<xiiGALSwapChain>                     m_pSwapChain;
+  xiiUniquePtr<xiiWindow>                           m_pWindow;
+  xiiSharedPtr<xiiGALRenderPass>                    m_pSceneRenderPass;
+  xiiShaderPermutationResourceHandle                m_hShaderPermutation;
+  xiiShaderPermutationResourceHandle                m_hRayTracingValidationPermutation;
+  xiiSharedPtr<xiiGALBuffer>                        m_pRayTracingValidationSBT;
+  xiiUInt32                                         m_uiRayTracingValidationShaderRecordStride = 0U;
+  xiiGpuDrivenSceneConfiguration                    m_Configuration;
+  xiiGpuDrivenSceneWorld                            m_World;
+  xiiRenderPipelineResourceHandle                   m_hDepthPipeline;
+  xiiRenderPipelineInstance                         m_DepthPipeline;
+  xiiUInt32                                         m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
+  xiiRenderPipelineResourceHandle                   m_hVisibilityPipeline;
+  xiiRenderPipelineResourceHandle                   m_hShadowPagePipeline;
+  xiiSharedPtr<const xiiRenderPipeline>             m_ShadowPageDefinition;
+  xiiDynamicArray<xiiUniquePtr<VirtualPageRuntime>> m_VirtualPageRuntimes;
+  xiiRenderPipelineInstance                         m_SunShadow;
+  xiiRenderPipelineResourceHandle                   m_hShadowPipeline;
+  xiiUInt32                                         m_uiShadowOutput = xiiInvalidIndex;
+  xiiRenderPipelineInstance                         m_MainVisibility, m_SensorVisibility, m_ShadowVisibility;
+  xiiUInt32                                         m_uiMeshGroupX = 0, m_uiMeshGroupY = 0, m_uiVisibilityCapacity = 0;
+  xiiUInt32                                         m_uiVirtualPagesThisFrame = 0;
+  bool                                              m_bReportedVirtualBatch   = false;
+  xiiCamera                                         m_Camera;
+  xiiRenderGraphGraphId                             m_hRenderGraph;
+  xiiSizeU32                                        m_TargetSize;
+  xiiMat4                                           m_ViewProjection = xiiMat4::MakeIdentity();
+  xiiUInt64                                         m_uiFrameIndex   = 0U;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGpuDrivenSceneApp);

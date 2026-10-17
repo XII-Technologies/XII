@@ -1,4 +1,4 @@
-// Stage one: compact scene instances that pass flags, residency, mask, and frustum tests.
+// Compact world-derived instances that pass flags, residency, mask and frustum tests.
 [PLATFORMS]
 ALL
 

@@ -5,7 +5,6 @@
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
-#include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
@@ -24,7 +23,6 @@ static_assert(!std::is_default_constructible_v<xiiRenderGraphManager>, "Render g
 static_assert(!std::is_default_constructible_v<xiiMaterialManager>, "Material storage must be owned by the material subsystem.");
 static_assert(!std::is_default_constructible_v<xiiGeometryResidencyManager>, "Geometry residency must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiLightingManager>, "Lighting contexts must be owned by the lighting subsystem.");
-static_assert(!std::is_default_constructible_v<xiiGpuShadowRasterManager>, "GPU shadow raster state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiVirtualShadowMapManager>, "Virtual shadow residency must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiAtmosphereManager>, "Atmosphere LUT state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiRayTracingResources>, "Ray tracing scene state must be owned by its subsystem.");
@@ -45,7 +43,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
   {
     XII_TEST_BOOL(xiiGeometryResidencyManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiLightingManager::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiGpuShadowRasterManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiVirtualShadowMapManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiAtmosphereManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiRayTracingResources::IsSubsystemInitialized());
@@ -75,7 +72,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiParticleSystemRuntimeHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiViewRenderResourceContextHandle>() != nullptr);
-    XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuShadowRasterDescription>() != nullptr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Render graph passes publish explicit resource handles")

@@ -7,11 +7,8 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 
 /// CPU-side residency configuration for the virtual shadow-map physical cache.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapSettings
@@ -148,13 +145,26 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowMapStats);
 
+/// Immutable frame-local raster request for one physical residency page. The revision
+/// validates its contents across invalidation/reuse; it is never a serialized identity.
+struct XII_GRAPHICSCORE_DLL xiiVirtualShadowRasterPage
+{
+  xiiVirtualShadowPageId m_Page;
+  xiiUInt32              m_uiPhysicalPage    = xiiInvalidIndex;
+  xiiUInt64              m_uiContentRevision = 0;
+  xiiUInt64              m_uiFrame           = 0;
+  xiiMat4                m_ViewProjection    = xiiMat4::MakeIdentity();
+  xiiRectU32             m_Viewport;
+};
+
 class xiiVirtualShadowMapManagerState;
 
 /// Process-wide virtual-shadow-map page residency service.
 ///
 /// State is allocated by the GraphicsCore subsystem after Foundation startup,
-/// avoiding allocator use from global constructors. The manager is CPU-only;
-/// render-graph passes upload GetPageTableUpdates() and render GetDirtyPages().
+/// avoiding allocator use from global constructors. Owns device page allocations,
+/// feedback and residency metadata. Raster algorithms belong to selected pipeline
+/// resources. Access is serialized by the existing GPU frame owner.
 class XII_GRAPHICSCORE_DLL xiiVirtualShadowMapManager
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiVirtualShadowMapManager);
@@ -179,7 +189,7 @@ public:
   [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageMapping> GetDirtyPages();
   /// Marks one resident page dirty after an occluder, light, or projection change.
   /// Call before graph setup; the page remains sampleable in the same frame once
-  /// AddRasterPasses has completed its atlas and page-table writes.
+  /// the selected raster graph and page completion have written the atlas/table.
   [[nodiscard]] static bool InvalidatePage(const xiiVirtualShadowPageId& page);
   /// Invalidates resident pages inside a virtual page-space rectangle.
   [[nodiscard]] static xiiUInt32 InvalidateRegion(xiiUInt32 uiLightId, xiiUInt32 uiMipLevel, const xiiRectU32& pageRegion);
@@ -187,7 +197,8 @@ public:
   [[nodiscard]] static xiiUInt32 InvalidateLight(xiiUInt32 uiLightId);
   /// Invalidates all resident pages, for example after a scene-wide origin shift.
   [[nodiscard]] static xiiUInt32 InvalidateAll();
-  static void                    MarkPageRendered(xiiUInt32 uiPhysicalPage);
+  /// Reports proven GPU completion, rejecting invalidated/recycled content revisions.
+  [[nodiscard]] static bool MarkPageRendered(const xiiVirtualShadowRasterPage& page);
 
   [[nodiscard]] static xiiVirtualShadowMapStats           GetStats();
   [[nodiscard]] static const xiiVirtualShadowMapSettings& GetConfiguration();
@@ -219,11 +230,15 @@ public:
   /// current frame slice. Updates remain retryable if graph execution fails.
   [[nodiscard]] static UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
 
-  /// Rasterizes every dirty page for one directional light through the shared
-  /// GPU visibility and mesh-shader geometry path. A completion pass clears
-  /// residency dirty bits and patches the current frame's hashed table only
-  /// after all scheduled atlas writes execute.
-  [[nodiscard]] static UploadHandles AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset, xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY);
+  /// Select a deterministic bounded batch without constructing any raster operations.
+  /// Selected pages are touched for GPU retirement and claimed once per device frame.
+  static void               GatherRasterPages(xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiLightId,
+                                              xiiDynamicArray<xiiVirtualShadowRasterPage>& out_pages);
+  [[nodiscard]] static bool IsRasterWorkCurrent(const xiiVirtualShadowRasterPage& page);
+  /// Publish clean GPU table records after the supplied final atlas version. CPU dirty
+  /// state is retired only after the completion fence signals, and abandoned work retries.
+  [[nodiscard]] static xiiResult AddPageCompletionPass(xiiRenderGraph& graph, const UploadHandles& upload,
+                                                       xiiArrayPtr<const xiiVirtualShadowRasterPage> pages, UploadHandles& out_upload);
 
   /// Appends screen-derived directional shadow requests and copies the cumulative
   /// feedback stream into the completed-frame readback ring.

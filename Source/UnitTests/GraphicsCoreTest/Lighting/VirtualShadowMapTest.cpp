@@ -2,6 +2,7 @@
 
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 
 namespace
@@ -88,8 +89,13 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
 
   xiiVirtualShadowPageMapping mapping;
   XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(initial[0].m_Page, mapping));
-  const xiiUInt32 uiFirstPhysicalPage = mapping.m_uiPhysicalPage;
-  xiiVirtualShadowMapManager::MarkPageRendered(uiFirstPhysicalPage);
+  const xiiUInt32                             uiFirstPhysicalPage = mapping.m_uiPhysicalPage;
+  const auto                                  projection          = xiiMat4::MakeIdentity();
+  xiiDynamicArray<xiiVirtualShadowRasterPage> work;
+  xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 1, work);
+  if (!XII_TEST_INT(work.GetCount(), 1))
+    return;
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::MarkPageRendered(work[0]));
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 1U);
 
   XII_TEST_INT(xiiVirtualShadowMapManager::InvalidateLight(1U), 1U);
@@ -97,7 +103,12 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiInvalidationCount, 1U);
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 2U);
   XII_TEST_BOOL(xiiVirtualShadowMapManager::InvalidatePage(initial[0].m_Page));
-  xiiVirtualShadowMapManager::MarkPageRendered(uiFirstPhysicalPage);
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::MarkPageRendered(work[0]));
+  xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 1, work);
+  if (!XII_TEST_INT(work.GetCount(), 1))
+    return;
+  const auto oldWork = work[0];
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::MarkPageRendered(work[0]));
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 1U);
 
   // Frame 1 is still in flight, so neither page can be reused.
@@ -113,9 +124,63 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   xiiVirtualShadowMapManager::SubmitFeedback(xiiMakeArrayPtr(&blocked, 1U));
   XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(blocked.m_Page, mapping));
   XII_TEST_INT(mapping.m_uiPhysicalPage, uiFirstPhysicalPage);
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::MarkPageRendered(oldWork));
+  XII_TEST_BOOL(mapping.m_bNeedsRendering);
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiEvictionCount, 1U);
   XII_TEST_INT(xiiVirtualShadowMapManager::GetPageTableUpdates().GetCount(), 2U);
 
   // Restore production defaults for any tests executing after this one.
   XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(xiiVirtualShadowMapSettings()).Succeeded());
+}
+
+XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowRasterPlanning)
+{
+  xiiVirtualShadowMapSettings settings;
+  settings.m_uiVirtualResolution = 64;
+  settings.m_uiPageSize          = 16;
+  settings.m_uiPhysicalPageCount = settings.m_uiMaxPageAllocations = 3;
+  settings.m_uiMaxPageRasterizations                               = 2;
+  settings.m_uiMaxFeedbackRequests                                 = 8;
+  if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)))
+    return;
+  XII_SCOPE_EXIT(xiiVirtualShadowMapManager::Configure(xiiVirtualShadowMapSettings()).IgnoreResult());
+  xiiVirtualShadowMapManager::BeginFrame(1, 0);
+  xiiVirtualShadowPageRequest requests[] = {MakeRequest(7, 0, 10), MakeRequest(7, 1, 1, true), MakeRequest(7, 2, 20)};
+  xiiVirtualShadowMapManager::SubmitFeedback(requests);
+  const auto                                  projection = xiiMat4::MakeIdentity();
+  xiiDynamicArray<xiiVirtualShadowRasterPage> planned, repeated;
+  xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 7, planned);
+  if (!XII_TEST_INT(planned.GetCount(), 2))
+    return;
+  XII_TEST_INT(planned[0].m_Page.m_uiPageX, 1); // Pinned content precedes higher priority unpinned work.
+  XII_TEST_INT(planned[1].m_Page.m_uiPageX, 2);
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::IsRasterWorkCurrent(planned[0]));
+  xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 7, repeated);
+  XII_TEST_BOOL(repeated.IsEmpty());
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::MarkPageRendered(planned[0]));
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::InvalidatePage(planned[1].m_Page)); // Already dirty, but its captured content changed.
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::IsRasterWorkCurrent(planned[1]));
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::MarkPageRendered(planned[1]));
+  xiiVirtualShadowMapManager::BeginFrame(2, 0);
+  xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 7, repeated);
+  if (!XII_TEST_INT(repeated.GetCount(), 2))
+    return;
+  XII_TEST_INT(repeated[0].m_Page.m_uiPageX, 2);
+  XII_TEST_BOOL(repeated[0].m_uiContentRevision != planned[1].m_uiContentRevision);
+  const auto abandoned = repeated[0];
+  xiiVirtualShadowMapManager::BeginFrame(3, 1);
+  xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 7, repeated);
+  if (!XII_TEST_INT(repeated.GetCount(), 2))
+    return;
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::IsRasterWorkCurrent(abandoned));
+  XII_TEST_BOOL(repeated[0].m_uiContentRevision == abandoned.m_uiContentRevision);
+  const auto beforeReset = repeated[0];
+  XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings));
+  xiiVirtualShadowMapManager::BeginFrame(1, 0);
+  xiiVirtualShadowMapManager::SubmitFeedback(requests);
+  xiiVirtualShadowMapManager::GatherRasterPages(xiiMakeArrayPtr(&projection, 1), 7, repeated);
+  if (!XII_TEST_INT(repeated.GetCount(), 2))
+    return;
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::MarkPageRendered(beforeReset));
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 3);
 }
