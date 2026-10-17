@@ -30,6 +30,7 @@ public:
   xiiRenderPipelineBufferOutputPin m_Geometry{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin m_View{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin m_Candidates{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_Meshlets{false, xiiGALBindFlags::ShaderResource};
   xiiUInt32                        m_uiBaseId   = 41;
   bool                             m_bSelectOne = false;
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override
@@ -54,6 +55,9 @@ public:
     geometry.m_uiResidentLodMask                = 3;
     geometry.m_Lods[0].m_fMinimumScreenCoverage = 16;
     geometry.m_Lods[1].m_fMinimumScreenCoverage = 0;
+    geometry.m_Lods[0].m_uiMeshletCount         = 129;
+    geometry.m_Lods[1].m_uiMeshletCount         = 65;
+    xiiMeshlet           metadata[129]          = {};
     xiiGpuVisibilityView view;
     view.m_ViewProjectionMatrix          = xiiMat4::MakeIdentity();
     view.m_OcclusionViewProjectionMatrix = xiiMat4::MakeIdentity();
@@ -92,6 +96,7 @@ public:
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Scene, upload("Synthetic Instances", sizeof(xiiGpuSceneInstance), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(records), capacity * sizeof(xiiGpuSceneInstance)))));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Geometry, upload("Synthetic Residency", sizeof(geometry), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&geometry), sizeof(geometry)))));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_View, upload("Synthetic Culling View", sizeof(view), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&view), sizeof(view)))));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Meshlets, upload("Synthetic Meshlets", sizeof(xiiMeshlet), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(metadata), sizeof(metadata)))));
     return context.SetOutput(m_Candidates, upload("Synthetic Candidates", sizeof(xiiUInt32), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(selection), (m_bSelectOne ? 1 : capacity) * sizeof(xiiUInt32))));
   }
 };
@@ -103,6 +108,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeCullSource, 1, xiiRTTIDefaultAllocator
       XII_MEMBER_PROPERTY("GeometryMetadata", m_Geometry)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("VisibilityView", m_View)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Candidates", m_Candidates)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("MeshletMetadata", m_Meshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("BaseId", m_uiBaseId),
       XII_MEMBER_PROPERTY("SelectOne", m_bSelectOne),
     } XII_END_PROPERTIES;
@@ -136,6 +142,53 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeCullExport, 1, xiiRTTIDefaultAllocator
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+class xiiNativeMeshletWorkExport : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiNativeMeshletWorkExport, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineBufferInputPin m_Arguments, m_Maximum;
+  xiiResult                       Build(xiiRenderPipelinePassContext& context) override
+  {
+    context.m_Graph.AddPass<xiiUInt32>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) {
+        builder.ExportBuffer(builder.ReadBuffer(context.GetInputBuffer(m_Arguments), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(context.GetInputBuffer(m_Maximum), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeMeshletWorkExport, 1, xiiRTTIDefaultAllocator<xiiNativeMeshletWorkExport>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Arguments", m_Arguments)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Maximum", m_Maximum)->AddFlags(xiiPropertyFlags::ReadOnly),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+namespace
+{
+  xiiUInt32 AddMeshletWork(xiiRenderPipelineResourceDescriptor& definition, xiiStringView label, xiiUInt32 prepared, xiiUInt32 culled)
+  {
+    const auto reset    = definition.AddPass(xiiStringBuilder(label, " Reset"), "xiiCounterResetPass");
+    const auto bounds   = definition.AddPass(xiiStringBuilder(label, " Bound"), "xiiMeshletDispatchBoundsPass");
+    const auto dispatch = definition.AddPass(xiiStringBuilder(label, " Dispatch"), "xiiMeshletDispatchPass");
+    const auto output   = definition.AddPass(xiiStringBuilder(label, " Export"), "xiiNativeMeshletWorkExport");
+    for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
+      XII_TEST_RESULT(definition.Connect(prepared, pin, bounds, pin));
+    for (auto pin : {"VisibleInstances", "VisibleInstanceCount", "LodHistory"})
+      XII_TEST_RESULT(definition.Connect(culled, pin, bounds, pin));
+    XII_TEST_RESULT(definition.Connect(reset, "Counter", bounds, "InitializedMaximum"));
+    XII_TEST_RESULT(definition.Connect(bounds, "MaximumMeshletGroups", dispatch, "MaximumMeshletGroups"));
+    XII_TEST_RESULT(definition.Connect(prepared, "MeshletMetadata", dispatch, "MeshletMetadata"));
+    XII_TEST_RESULT(definition.Connect(culled, "VisibleInstances", dispatch, "VisibleInstances"));
+    XII_TEST_RESULT(definition.Connect(culled, "VisibleInstanceCount", dispatch, "VisibleInstanceCount"));
+    XII_TEST_RESULT(definition.Connect(dispatch, "DispatchArguments", output, "Arguments"));
+    XII_TEST_RESULT(definition.Connect(bounds, "MaximumMeshletGroups", output, "Maximum"));
+    return dispatch;
+  }
+} // namespace
+
 XII_CREATE_SIMPLE_TEST_GROUP(NativeVisibility);
 XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
 {
@@ -163,6 +216,8 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
   XII_TEST_RESULT(leaf.Connect(3, "VisibleInstanceCount", 5, "Count"));
   XII_TEST_RESULT(leaf.Connect(3, "LodHistory", 5, "Lod"));
   XII_TEST_RESULT(leaf.Connect(4, "PreviousBuffer", 5, "Previous"));
+  const auto         work       = AddMeshletWork(leaf, "Selected LOD Work", 0, 3);
+  const auto         dispatchId = leaf.m_Passes[work].m_Id;
   const auto         cullId = leaf.m_Passes[3].m_Id, historyId = leaf.m_Passes[4].m_Id;
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
@@ -221,6 +276,21 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
       {
         const auto& source   = compiled->GetProvenance()[i];
         const bool  selected = source.m_InstancePath[0] == selectedId;
+        if (source.m_Element == dispatchId)
+        {
+          const auto buffer = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "DispatchArguments")->m_hBuffer);
+          xiiVec3U32 arguments;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer.Borrow(), 0, arguments))
+            return;
+          const bool      coarse = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
+          const xiiUInt32 count  = phase == 5 ? 0 : selected ? 1 :
+             phase >= 6                                      ? 126 :
+                                                               64;
+          XII_TEST_INT(arguments.x, count == 0 ? 0 : coarse ? 2 :
+                                                              3);
+          XII_TEST_INT(arguments.y, count);
+          XII_TEST_INT(arguments.z, count == 0 ? 0 : 1);
+        }
         if (source.m_Element == cullId)
         {
           ++checked;
@@ -320,8 +390,11 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   auto&      override   = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
   override.m_Path.PushBack(viewId);
   override.m_Properties.Insert("VisibilityMask", 0U);
+  xiiUuid dispatchIds[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
+    const auto work = AddMeshletWork(root, i == 0 ? "Visible" : "Filtered", i, i);
+    dispatchIds[i]  = root.m_Passes[work].m_Id;
     const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", "xiiNativeCullExport");
     XII_TEST_RESULT(root.Connect(i, "VisibleInstances", sink, "Visible"));
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
@@ -396,6 +469,18 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
       for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
       {
         const auto& provenance = compiled->GetProvenance()[i];
+        if (provenance.m_Element == dispatchIds[0] || provenance.m_Element == dispatchIds[1])
+        {
+          const bool filtered = provenance.m_Element == dispatchIds[1];
+          const auto buffer   = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "DispatchArguments")->m_hBuffer);
+          xiiVec3U32 arguments;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer.Borrow(), 0, arguments))
+            return;
+          const xiiUInt32 count = resident && !filtered ? 1 : 0;
+          XII_TEST_INT(arguments.x, count);
+          XII_TEST_INT(arguments.y, count);
+          XII_TEST_INT(arguments.z, count);
+        }
         if (provenance.m_Element == uploadId)
         {
           const auto buffer = execution.GetOutputBinding(i, "SceneInstances")->m_hBuffer;

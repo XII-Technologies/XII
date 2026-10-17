@@ -7,6 +7,8 @@
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/LodHistoryResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchBoundsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
@@ -123,4 +125,40 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitLodHistoryTopology)
   intraFrame.m_Connections[1].m_uiSource = 0;
   intraFrame.m_Connections[1].m_sOutput  = "LodHistory";
   XII_TEST_BOOL(xiiRenderPipeline::Compile(intraFrame, compiled).Failed());
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedMeshletWorkPreparation)
+{
+  xiiMeshletDispatchBoundsPass bounds;
+  xiiMeshletDispatchPass       dispatch;
+  for (xiiRenderPipelinePass* pass : {static_cast<xiiRenderPipelinePass*>(&bounds), static_cast<xiiRenderPipelinePass*>(&dispatch)})
+  {
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    pass->GetPins(pins);
+    XII_TEST_RESULT(pass->InitializePinBindings(pins));
+    XII_TEST_BOOL(pass->GetExtractionRequirements().IsNoFlagSet() && pass->GetRuntimeFeatures().IsNoFlagSet());
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(pass->GetProperties(properties));
+    XII_TEST_BOOL(properties.Contains("AsyncCompute") && !properties.Contains("VisibleInstances"));
+  }
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  dispatch.GetPins(pins);
+  XII_TEST_RESULT(dispatch.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[dispatch.m_Arguments.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Reduce selected LODs", "xiiMeshletDispatchBoundsPass");
+  definition.AddPass("Prepare indirect work", "xiiMeshletDispatchPass");
+  XII_TEST_RESULT(definition.Connect(0, "MaximumMeshletGroups", 1, "MaximumMeshletGroups"));
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    pins.Clear();
+    (index == 0 ? static_cast<xiiRenderPipelinePass*>(&bounds) : static_cast<xiiRenderPipelinePass*>(&dispatch))->GetPins(pins);
+    for (const auto& pin : pins)
+      if (pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer && !(index == 1 && pin.m_sName == "MaximumMeshletGroups"))
+        definition.m_Interface.PushBack({pin.m_sName, true, definition.m_Passes[index].m_Id, pin.m_sName});
+  }
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, compiled));
+  if (compiled)
+    XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 2);
 }
