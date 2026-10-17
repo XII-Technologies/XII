@@ -32,11 +32,16 @@ namespace
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeDepthAtlas);
-XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
+static void TestReusableShadowRegions(bool meshShaders)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize()))
+  if (!XII_TEST_RESULT(environment.Initialize(meshShaders)))
     return;
+  if (meshShaders && environment.GetDevice()->GetFeatures().m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
+  {
+    xiiTestFramework::Output(xiiTestOutput::Message, "Mesh shadow regions require mesh shader support.");
+    return;
+  }
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
@@ -75,14 +80,25 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
   targetProperties.Insert("Width", 32U);
   targetProperties.Insert("Height", 16U);
   targetProperties.Insert("Depth", 0.9f);
-  const auto target    = root.AddPass("Atlas allocation", "xiiDepthTargetPass", targetProperties);
-  const auto geometry  = root.AddPass("Shared geometry", "xiiGeometryUploadPass");
-  const auto materials = root.AddPass("Shared materials", "xiiMaterialUploadPass");
-  const auto commands  = root.AddPass("Explicit vertex-pull commands", "xiiVertexPullDrawCommandsPass");
-  for (const xiiStringView name : {"SceneInstances", "VisibilityView", "VisibleMeshlets", "VisibleMeshletCount"})
+  const auto           target    = root.AddPass("Atlas allocation", "xiiDepthTargetPass", targetProperties);
+  const auto           geometry  = root.AddPass("Shared geometry", "xiiGeometryUploadPass");
+  const auto           materials = root.AddPass("Shared materials", "xiiMaterialUploadPass");
+  xiiVariantDictionary commandProperties;
+  if (meshShaders)
+  {
+    commandProperties.Insert("MeshGroupCountX", 1U);
+    commandProperties.Insert("MeshGroupCountY", 1U);
+  }
+  const auto commands = root.AddPass("Explicit draw commands", meshShaders ? "xiiMeshDrawCommandsPass" : "xiiVertexPullDrawCommandsPass", commandProperties);
+  for (const xiiStringView name : {"VisibleMeshlets", "VisibleMeshletCount"})
     root.m_Interface.PushBack({name, true, root.m_Passes[commands].m_Id, name});
-  XII_TEST_RESULT(root.Connect(geometry, "GeometryMetadata", commands, "GeometryMetadata"));
-  XII_TEST_RESULT(root.Connect(geometry, "MeshletMetadata", commands, "MeshletMetadata"));
+  if (!meshShaders)
+  {
+    for (const xiiStringView name : {"SceneInstances", "VisibilityView"})
+      root.m_Interface.PushBack({name, true, root.m_Passes[commands].m_Id, name});
+    XII_TEST_RESULT(root.Connect(geometry, "GeometryMetadata", commands, "GeometryMetadata"));
+    XII_TEST_RESULT(root.Connect(geometry, "MeshletMetadata", commands, "MeshletMetadata"));
+  }
   xiiUInt32     previous    = target;
   xiiStringView previousPin = "DepthTarget";
   for (xiiUInt32 i = 0; i < 2; ++i)
@@ -94,6 +110,8 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
       auto& override = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
       override.m_Path.PushBack(id);
       override.m_Properties.Insert("Viewport", viewport);
+      if (id == rasterId)
+        override.m_Properties.Insert("UseMeshShaders", meshShaders);
       if (id == clearId)
         override.m_Properties.Insert("ClearDepth", i ? 0.1f : 0.0f);
     }
@@ -131,7 +149,7 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
     previousPin = "ShadowDepth";
   }
   root.m_Interface.PushBack({"Atlas", false, root.m_Passes[previous].m_Id, "ShadowDepth"});
-  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Native shadow atlas regions", std::move(root));
+  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(meshShaders ? "Native mesh shadow atlas regions" : "Native vertex-pull shadow atlas regions", std::move(root));
   xiiRenderPipelineInstance pipelines[2];
   xiiRenderGraphContext     contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
@@ -178,10 +196,24 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
     xiiHybridArray<xiiRenderPipelineInputBinding, 5> inputs;
     inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("SceneInstances", true), instances));
     inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("SkinningMatrices", true), skinning));
-    inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("VisibilityView", true), snapshot));
+    if (!meshShaders)
+      inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("VisibilityView", true), snapshot));
     inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("VisibleMeshlets", true), visible));
     inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("VisibleMeshletCount", true), visibleCount));
-    if (!XII_TEST_RESULT(pipeline.Build(nullptr, graph, context.GetBlackboard(), {}, inputs)))
+    xiiVariantDictionary runtime;
+    if (frameNumber >= 4)
+    {
+      auto projection = xiiMat4::MakeScaling(xiiVec3(2, 2, -1));
+      projection.SetTranslationVector(xiiVec3(0, 0, 1));
+      runtime.Insert("RasterViewProjection", projection);
+      runtime.Insert("RasterPreviousViewProjection", projection);
+      runtime.Insert("RasterWidth", 48U);
+      runtime.Insert("RasterHeight", 16U);
+      runtime.Insert("RasterViewport", xiiVec4U32(2, 2, 12, 12));
+      runtime.Insert("RasterMeshGroupCountX", 1U);
+      runtime.Insert("RasterMeshGroupCountY", 1U);
+    }
+    if (!XII_TEST_RESULT(pipeline.Build(nullptr, graph, context.GetBlackboard(), runtime, inputs)))
       return;
     const auto atlas = pipeline.GetInterfaceBinding(compiled->FindInterface("Atlas", false))->m_hTexture;
     graph.AddPass<xiiUInt32>("Export shadow atlas", xiiGALCommandQueueFlags::Graphics, [atlas](auto&, xiiRenderGraphBuilder& builder) { builder.ExportTexture(builder.ReadTexture(atlas, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
@@ -200,6 +232,16 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
     }
     frame.End();
     const auto image = graph.GetExportedTexture(atlas);
+    XII_TEST_INT(image->GetDescription().m_Size.width, frameNumber >= 4 ? 48 : 32);
+    XII_TEST_BOOL(pipeline.GetPipeline() == compiled);
+    for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
+      if (compiled->GetDescriptor().m_Passes[i].m_sType == "xiiMatrixRasterConstantsPass")
+      {
+        xiiVariantDictionary authored;
+        XII_TEST_RESULT(pipeline.GetPass(i)->GetProperties(authored));
+        XII_TEST_INT(authored["Width"].Get<xiiUInt32>(), 12);
+      }
+
     for (const xiiVec2U32 pixel : {xiiVec2U32(0, 0), xiiVec2U32(16, 8), xiiVec2U32(31, 15)})
     {
       float value = 0;
@@ -213,7 +255,7 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
       float value = 1;
       if (xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), pixel.x, pixel.y, value))
       {
-        XII_TEST_FLOAT(value, pixel.x == 18 ? 0.1f : 0.0f, 0.00001f);
+        XII_TEST_FLOAT(value, frameNumber >= 4 ? (pixel.x == 18 ? 0.9f : 0.1f) : (pixel.x == 18 ? 0.1f : 0.0f), 0.00001f);
       }
     }
     for (const xiiVec2U32 pixel : {xiiVec2U32(6, 8), xiiVec2U32(22, 8)})
@@ -221,7 +263,7 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
       float value = 0;
       if (xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), pixel.x, pixel.y, value))
       {
-        XII_TEST_FLOAT(value, pixel.x == 6 ? 0.0f : 0.7f, 0.001f);
+        XII_TEST_FLOAT(value, frameNumber >= 4 ? (pixel.x == 6 ? 0.7f : 0.9f) : (pixel.x == 6 ? 0.0f : 0.7f), 0.001f);
       }
     }
     for (const xiiVec2U32 pixel : {xiiVec2U32(8, 8), xiiVec2U32(24, 8)})
@@ -229,8 +271,17 @@ XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
       float value = 0;
       if (xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), pixel.x, pixel.y, value))
       {
-        XII_TEST_FLOAT(value, 0.7f, 0.001f);
+        XII_TEST_FLOAT(value, frameNumber >= 4 && pixel.x == 24 ? 0.9f : 0.7f, 0.001f);
       }
     }
   }
+}
+
+XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableShadowRegions)
+{
+  TestReusableShadowRegions(false);
+}
+XII_CREATE_SIMPLE_TEST(NativeDepthAtlas, ReusableMeshShadowRegions)
+{
+  TestReusableShadowRegions(true);
 }

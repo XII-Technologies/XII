@@ -567,6 +567,35 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitDepthTargetAndProjection)
   clear.m_Viewport      = xiiVec4U32(31, 0, 4, 4);
   XII_TEST_BOOL(clear.Build(context).Failed());
   XII_TEST_BOOL(error.FindSubString("outside") != nullptr);
+  parameters.Insert("RasterViewport", 1.0f);
+  error.Clear();
+  XII_TEST_BOOL(clear.Build(context).Failed());
+  XII_TEST_BOOL(error.FindSubString("RasterViewport") != nullptr);
+  parameters.Insert("RasterViewport", xiiVec4U32(1, 0, 0, 0));
+  error.Clear();
+  XII_TEST_BOOL(clear.Build(context).Failed());
+  XII_TEST_BOOL(error.FindSubString("nonempty rectangle") != nullptr);
+
+  xiiDepthTargetPass dynamicTarget;
+  pins.Clear();
+  dynamicTarget.GetPins(pins);
+  XII_TEST_RESULT(dynamicTarget.InitializePinBindings(pins));
+  bindings.Clear();
+  bindings.SetCount(pins.GetCount());
+  parameters.Clear();
+  parameters.Insert("RasterWidth", 64.0f);
+  parameters.Insert("RasterHeight", 16U);
+  xiiRenderPipelinePassContext targetContext{nullptr, graph, blackboard, parameters, pins, bindings, "Runtime depth target"};
+  targetContext.m_pBuildError = &error;
+  error.Clear();
+  XII_TEST_BOOL(dynamicTarget.Build(targetContext).Failed());
+  XII_TEST_BOOL(error.FindSubString("RasterWidth") != nullptr);
+  parameters.Insert("RasterWidth", 64U);
+  XII_TEST_RESULT(dynamicTarget.Build(targetContext));
+  const auto* allocated = graph.GetTextureDescription(bindings[dynamicTarget.m_Depth.GetBindingIndex()].m_hTexture);
+  if (XII_TEST_BOOL(allocated != nullptr))
+    XII_TEST_INT(allocated->m_Size.width, 64);
+  XII_TEST_INT(dynamicTarget.m_uiWidth, 0); // Runtime dimensions do not change authored properties.
   graph.EndSetup();
 }
 

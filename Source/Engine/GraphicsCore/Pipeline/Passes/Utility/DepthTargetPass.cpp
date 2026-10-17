@@ -24,13 +24,15 @@ xiiResult xiiDepthTargetPass::Configure(const xiiVariantDictionary& properties)
 }
 xiiResult xiiDepthTargetPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto*      reference = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_Reference));
-  const xiiSizeU32 size{m_uiWidth ? m_uiWidth : reference ? reference->m_Size.width :
-                          context.m_pView                 ? context.m_pView->GetRenderResolutionWidth() :
-                                                            0,
-                        m_uiHeight ? m_uiHeight : reference ? reference->m_Size.height :
-                          context.m_pView                   ? context.m_pView->GetRenderResolutionHeight() :
-                                                              0};
+  const auto* reference = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_Reference));
+  xiiSizeU32  size{m_uiWidth ? m_uiWidth : reference ? reference->m_Size.width :
+                     context.m_pView                 ? context.m_pView->GetRenderResolutionWidth() :
+                                                       0,
+                  m_uiHeight ? m_uiHeight : reference ? reference->m_Size.height :
+                     context.m_pView                   ? context.m_pView->GetRenderResolutionHeight() :
+                                                         0};
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterWidth", size.width));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterHeight", size.height));
   if (!size.width || !size.height || size.width > 65536 || size.height > 65536)
     return context.ReportFailure("Depth target requires a nonempty explicit, reference or view size.");
   xiiRenderPassResourceScope scope(context);

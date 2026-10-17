@@ -42,7 +42,17 @@ xiiResult xiiMatrixRasterConstantsPass::Build(xiiRenderPipelinePassContext& cont
 {
   if (!xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Matrix raster constants require initialized device residency producers.");
-  const auto                 width = m_uiWidth, height = m_uiHeight;
+  auto width = m_uiWidth, height = m_uiHeight, groupsX = m_uiMeshGroupCountX, groupsY = m_uiMeshGroupCountY;
+  auto projection = m_ViewProjection, previous = m_PreviousViewProjection;
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterViewProjection", projection));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterPreviousViewProjection", previous));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterWidth", width));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterHeight", height));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterMeshGroupCountX", groupsX));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterMeshGroupCountY", groupsY));
+  if (!projection.IsValid() || !previous.IsValid() || !width || !height || width > 65536 || height > 65536 ||
+      !groupsX || !groupsY || xiiUInt64(groupsX) * groupsY > xiiMath::MaxValue<xiiUInt32>())
+    return context.ReportFailure("Invalid matrix raster projection, dimensions or mesh command strides.");
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
@@ -51,8 +61,8 @@ xiiResult xiiMatrixRasterConstantsPass::Build(xiiRenderPipelinePassContext& cont
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Buffer = xiiRenderPassUtils::Constants(builder, "Surface Raster Constants", sizeof(data.m_Snapshot));
-      data.m_Snapshot.ViewProjectionMatrix = m_ViewProjection;
-      data.m_Snapshot.PreviousViewProjectionMatrix = m_PreviousViewProjection;
+      data.m_Snapshot.ViewProjectionMatrix = projection;
+      data.m_Snapshot.PreviousViewProjectionMatrix = previous;
       data.m_Snapshot.InvRenderSize = xiiVec2(1.0f / width, 1.0f / height);
       data.m_Snapshot.CurrentJitter = data.m_Snapshot.PreviousJitter = xiiVec2::MakeZero();
       data.m_Snapshot.GeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
@@ -61,8 +71,8 @@ xiiResult xiiMatrixRasterConstantsPass::Build(xiiRenderPipelinePassContext& cont
       data.m_Snapshot.NormalOffset = m_uiNormalOffset;
       data.m_Snapshot.TangentOffset = m_uiTangentOffset;
       data.m_Snapshot.TexCoordOffset = m_uiTexCoordOffset;
-      data.m_Snapshot.MeshDispatchGroupCountX = m_uiMeshGroupCountX;
-      data.m_Snapshot.MeshDispatchGroupCountY = m_uiMeshGroupCountY; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Snapshot.MeshDispatchGroupCountX = groupsX;
+      data.m_Snapshot.MeshDispatchGroupCountY = groupsY; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       {
         xiiGALMapHelper<xiiGpuSceneGBufferConstants> mapped(commands, execute.GetBuffer(data.m_Buffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);

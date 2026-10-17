@@ -79,7 +79,12 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
   const auto* image  = context.m_Graph.GetTextureDescription(target);
   if (!image || image->m_Format != xiiGALResourceFormat::D32Float || image->m_Type != xiiGALResourceDimension::Texture2D || image->m_uiSampleCount != 1 || image->m_uiArraySizeOrDepth != 1)
     return context.ReportFailure("Depth rasterization requires an explicit single-sample D32 target.");
-  const xiiVec4U32 viewport = m_Viewport.z ? m_Viewport : xiiVec4U32(0, 0, image->m_Size.width, image->m_Size.height);
+  auto viewport = m_Viewport;
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterViewport", viewport));
+  if (!(viewport.z && viewport.w) && viewport != xiiVec4U32::MakeZero())
+    return context.ReportFailure("RasterViewport must be an explicit nonempty rectangle or all zero for the full image.");
+  if (viewport == xiiVec4U32::MakeZero())
+    viewport = xiiVec4U32(0, 0, image->m_Size.width, image->m_Size.height);
   if (!viewport.z || !viewport.w || viewport.x > image->m_Size.width || viewport.y > image->m_Size.height || viewport.z > image->m_Size.width - viewport.x || viewport.w > image->m_Size.height - viewport.y)
     return context.ReportFailure("Depth raster viewport is outside its supplied image.");
   if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != m_FillMode)

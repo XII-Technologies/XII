@@ -27,6 +27,19 @@ private:
 
 namespace xiiRenderPassUtils
 {
+  /// Read an explicitly typed occurrence parameter without mutating reflected defaults.
+  template <typename T>
+  xiiResult ReadParameter(const xiiRenderPipelinePassContext& context, xiiStringView name, T& value)
+  {
+    if (const auto* supplied = context.m_Parameters.GetValue(name))
+    {
+      if (!supplied->IsA<T>())
+        return context.ReportFailure(xiiStringBuilder("Invalid typed operation parameter: ", name));
+      value = supplied->Get<T>();
+    }
+    return XII_SUCCESS;
+  }
+
   xiiResult                                 LoadComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& pipeline, xiiStringView shader);
   xiiSharedPtr<xiiGALGraphicsPipelineState> LoadGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& pipeline, xiiStringView shader, const xiiSharedPtr<xiiGALRenderPass>& renderPass, xiiUInt32 subpass);
   xiiResult                                 PointClampSampler(xiiSharedPtr<xiiGALSampler>& sampler);
