@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **44 concrete reflected operation classes** in
+Current source inventory: **47 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -33,7 +33,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Temporal | 2 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 5 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
-| Visibility | 3 | `xiiInstanceCullPass`, `xiiLodHistoryResetPass`, `xiiVisibilityViewPass` |
+| Visibility | 6 | `xiiInstanceCullPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
 Every operation above declares concrete typed pin members through
@@ -48,6 +48,13 @@ Properties remain reflected members and retain normal editor attribute handling.
 - InstanceCull applies supplied flags, masks, frustum and residency tests and writes
   generation-validated LOD selections. LodHistoryReset initializes every entry on
   the GPU, including unselected/empty candidates. Neither consumes live world state.
+- MeshletDispatchBounds reduces the selected, generation-validated LODs on the GPU;
+  MeshletDispatch creates indirect compute dimensions without a CPU count readback.
+  MeshletCull compacts supplied work into graph-owned pairs, using primitive ranges,
+  conservative transformed/posed bounds and eligible normal cones. Its own reflected
+  budget controls physical allocation. The count saturates at capacity and a required
+  overflow output reports dropped work; consumers must provide an explicit overflow
+  policy. No renderer silently treats an overflowed list as complete.
 - BufferHistory retains structured GPU buffers in completion-checked private
   slots, publishes explicit previous-frame pins and declares GPU readiness waits.
 - VisibilityView captures camera/frustum and selected component indices during
@@ -71,7 +78,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling, temporal Hi-Z, LOD streaming feedback, indirect dispatch and draw preparation still need independent nodes. Current low-level visibility service/sample still needs decomposition, followed by authored world visibility assets. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z, LOD streaming feedback and indirect draw preparation still need independent nodes. The remaining low-level visibility service/sample needs decomposition and deletion. |
 | Geometry | Depth raster and indexed fallback, GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery already provides nearest-surface queries. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
@@ -182,3 +189,50 @@ nodes and the missing complete renderer graphs still need implementation. Histor
 copy bandwidth, deep GPU queue overlap and large-scene dispatch limits have not been
 benchmarked. The full renderer suites remain unverified while their old complete
 pipeline assets are absent. D3D12 remains excluded.
+
+
+## Authored meshlet visibility verification - 2026-10-16
+
+The ordinary InstanceVisibility asset contains seven native operations, explicit
+previous-frame LOD wiring and eight boundary outputs. MeshletVisibility references
+that independently authored definition and adds six operations: three independently
+wired CounterReset occurrences, dispatch bounds reduction, indirect dispatch
+preparation and meshlet culling. Its seven authoring nodes expand to thirteen
+executable occurrences, with twelve output mappings. The interface exposes the
+meshlet overflow flag. No default pipeline selector or rendering Builtin file was
+introduced. The unused meshlet budget has been removed from VisibilityView: that
+property belongs to MeshletCull, which owns the output allocation.
+
+Both source assets are authored with actual Qt document/node commands, reflected
+member properties, persistent document identities and the production exporter.
+The permanent authoring tests write only test output. Nine SDK assets now have
+binary packages checked against deterministic production export. The world GPU
+regression consumes two references to the nested MeshletVisibility asset, with an
+override reaching the second instance's nested VisibilityView. Two cameras share
+the canonical world upload and retain separate temporal state.
+
+Validation:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest and EditorFrameworkTest builds
+  pass, including their dependent engine/editor targets
+  (`Workspace/native-meshlet-author-build.log`, `native-meshlet-final-build.log`).
+- Full GraphicsCore CPU suite passes (`Workspace/native-meshlet-final-core.log`).
+  This includes reflected pin/property budgets, temporal cycles, composition,
+  provenance, serialization and selective invalidation tests.
+- Vulkan NativeVisibility passes both tests (`Workspace/native-meshlet-final-gpu.log`).
+  Readback covers real component/residency/removal, two views and repeated nested
+  instances, LOD history/generation changes, primitive ranges, posed bounds, rotated
+  nonuniform and mirrored transforms, empty work, growing buffers and a deliberately
+  undersized instance-specific meshlet budget. Counts saturate safely, overflow is
+  reported, and sampled compacted pairs identify eligible instances and meshlets.
+- NativeAssetAuthoring passes both source/export tests
+  (`Workspace/native-meshlet-author.log`). Qt EditorDocuments checks all nine SDK
+  assets and pin-property integration (`Workspace/native-meshlet-final-qt.log`).
+
+Intermediate verification caught an incorrect dependency path in the new authoring
+fixture, a shared-pointer declaration in its GPU test and an HLSL reserved identifier.
+They were corrected; the final build and focused results above pass. No controlled
+meshlet performance benchmark or complete application-rendering test has been run.
+D3D12 remains excluded. A meshlet overflow fallback, the remaining legacy visibility
+service consumers, native raster/lighting/shadow operations and complete game/editor
+pipeline assets remain work in progress. The architecture migration is incomplete.
