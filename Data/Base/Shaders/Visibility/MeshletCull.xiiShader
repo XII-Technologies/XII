@@ -58,6 +58,7 @@ void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID)
   if (localMeshlet >= lod.MeshletCount || lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset) return;
   uint meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
   GpuMeshlet meshlet = g_Meshlets[meshletIndex];
+  if ((meshlet.PackedLodSection & 0xFFFFu) != history.x) return;
   uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   if (primitives == 0u || (meshlet.PackedPrimitiveVertexCount >> 16u) == 0u) return;
   if (instance.PrimitiveCount != 0u)

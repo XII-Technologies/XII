@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
@@ -180,4 +181,21 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedMeshletCullingBudget)
   XII_TEST_RESULT(cull.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[cull.m_Arguments.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
   XII_TEST_BOOL(!pins[cull.m_Overflow.GetBindingIndex()].m_bInput && !pins[cull.m_Overflow.GetBindingIndex()].m_bOptional);
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVertexPullCommands)
+{
+  xiiVertexPullDrawCommandsPass pass;
+  xiiVariantDictionary          properties;
+  properties.Insert("AsyncCompute", false);
+  XII_TEST_RESULT(pass.Configure(properties));
+  XII_TEST_BOOL(!pass.m_bAsyncCompute && pass.GetExtractionRequirements().IsNoFlagSet() && pass.GetRuntimeFeatures().IsNoFlagSet());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass.GetPins(pins);
+  XII_TEST_RESULT(pass.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[pass.m_Visible.GetBindingIndex()].m_bInput && !pins[pass.m_Visible.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[pass.m_Commands.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
+  XII_TEST_BOOL(pins[pass.m_CommandCount.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  XII_TEST_BOOL(properties.Contains("AsyncCompute") && !properties.Contains("DrawCommands"));
 }

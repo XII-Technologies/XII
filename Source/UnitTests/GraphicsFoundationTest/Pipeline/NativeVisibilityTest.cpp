@@ -51,8 +51,8 @@ public:
     }
     if (phase == 2)
     {
-      records[0].m_uiFirstPrimitive = 5;
-      records[0].m_uiPrimitiveCount = 3;
+      records[0].m_uiFirstPrimitive = 6;
+      records[0].m_uiPrimitiveCount = 2;
     }
     if (phase == 6)
     {
@@ -65,24 +65,37 @@ public:
       for (xiiUInt32 i = 0; i < capacity; ++i)
         records[i].m_uiSkinningCount = 1;
     xiiGpuGeometryRecord geometry;
-    geometry.m_uiGeneration                     = phase >= 2 ? 8 : 7;
-    geometry.m_uiLodCount                       = 2;
-    geometry.m_uiResidentLodMask                = 3;
-    geometry.m_Lods[0].m_fMinimumScreenCoverage = 16;
-    geometry.m_Lods[1].m_fMinimumScreenCoverage = 0;
-    geometry.m_Lods[0].m_uiMeshletCount         = 129;
-    geometry.m_Lods[1].m_uiMeshletCount         = 65;
-    xiiMeshlet metadata[129]                    = {};
-    for (xiiUInt32 i = 0; i < 129; ++i)
+    geometry.m_uiGeneration                      = phase >= 2 ? 8 : 7;
+    geometry.m_uiLodCount                        = 2;
+    geometry.m_uiResidentLodMask                 = 3;
+    geometry.m_Lods[0].m_fMinimumScreenCoverage  = 16;
+    geometry.m_Lods[1].m_fMinimumScreenCoverage  = 0;
+    geometry.m_Lods[0].m_uiMeshletCount          = 129;
+    geometry.m_Lods[1].m_uiMeshletCount          = 65;
+    geometry.m_Lods[1].m_uiMeshletMetadataOffset = 129;
+    for (xiiUInt32 i = 0; i < 2; ++i)
     {
-      metadata[i].m_uiFirstPrimitive = i;
-      metadata[i].m_uiPrimitiveCount = 1;
-      metadata[i].m_uiVertexCount    = 3;
+      geometry.m_Lods[i].m_uiVertexBufferIndex           = 1;
+      geometry.m_Lods[i].m_uiMeshletRemapBufferIndex     = 1;
+      geometry.m_Lods[i].m_uiMeshletPrimitiveBufferIndex = 1;
+      geometry.m_Lods[i].m_uiIndexCount                  = geometry.m_Lods[i].m_uiMeshletCount * 3;
     }
-    metadata[0].m_Bounds      = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(102, 0, 0), 0.1f);
-    metadata[1].m_Bounds      = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(1, 0, 0), 0.1f);
-    metadata[1].m_vConeAxis   = xiiVec3(1, 0, 0);
-    metadata[1].m_fConeCutoff = 1;
+    xiiMeshlet metadata[194] = {};
+    for (xiiUInt32 lod = 0; lod < 2; ++lod)
+    {
+      const xiiUInt32 base = lod == 0 ? 0 : 129;
+      for (xiiUInt32 i = 0; i < (lod == 0 ? 129U : 65U); ++i)
+      {
+        metadata[base + i].m_uiFirstPrimitive = i;
+        metadata[base + i].m_uiPrimitiveCount = i == 5 ? 4 : 1;
+        metadata[base + i].m_uiVertexCount    = 3;
+        metadata[base + i].m_uiLodIndex       = static_cast<xiiUInt16>(lod);
+      }
+      metadata[base].m_Bounds          = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(102, 0, 0), 0.1f);
+      metadata[base + 1].m_Bounds      = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(1, 0, 0), 0.1f);
+      metadata[base + 1].m_vConeAxis   = xiiVec3(1, 0, 0);
+      metadata[base + 1].m_fConeCutoff = 1;
+    }
     xiiGpuVisibilityView view;
     view.m_ViewProjectionMatrix          = xiiMat4::MakeIdentity();
     view.m_OcclusionViewProjectionMatrix = xiiMat4::MakeIdentity();
@@ -173,11 +186,11 @@ class xiiNativeMeshletWorkExport : public xiiRenderPipelinePass
 
 public:
   xiiRenderPipelineBufferInputPin m_Arguments, m_Meshlets, m_Count, m_Overflow;
-  xiiRenderPipelineBufferInputPin m_Maximum{true};
+  xiiRenderPipelineBufferInputPin m_Maximum{true}, m_DrawCommands{true}, m_DrawCount{true};
   xiiResult                       Build(xiiRenderPipelinePassContext& context) override
   {
     context.m_Graph.AddPass<xiiUInt32>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) {
-        for (auto handle : {context.GetInputBuffer(m_Arguments), context.GetInputBuffer(m_Maximum), context.GetInputBuffer(m_Meshlets), context.GetInputBuffer(m_Count), context.GetInputBuffer(m_Overflow)})
+        for (auto handle : {context.GetInputBuffer(m_Arguments), context.GetInputBuffer(m_Maximum), context.GetInputBuffer(m_Meshlets), context.GetInputBuffer(m_Count), context.GetInputBuffer(m_Overflow), context.GetInputBuffer(m_DrawCommands), context.GetInputBuffer(m_DrawCount)})
           if (handle.IsValid()) builder.ExportBuffer(builder.ReadBuffer(handle, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     return XII_SUCCESS;
   }
@@ -188,6 +201,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeMeshletWorkExport, 1, xiiRTTIDefaultAl
     {
       XII_MEMBER_PROPERTY("Arguments", m_Arguments)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Maximum", m_Maximum)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("DrawCommands", m_DrawCommands)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("DrawCount", m_DrawCount)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Meshlets", m_Meshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Count", m_Count)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Overflow", m_Overflow)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -199,7 +214,7 @@ namespace
 {
   struct MeshletWork
   {
-    xiiUInt32 m_uiDispatch, m_uiCull;
+    xiiUInt32 m_uiDispatch, m_uiCull, m_uiDraw;
   };
   MeshletWork AddMeshletWork(xiiRenderPipelineResourceDescriptor& definition, xiiStringView label, xiiUInt32 prepared, xiiUInt32 culled)
   {
@@ -232,7 +247,14 @@ namespace
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", output, "Meshlets"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", output, "Count"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletOverflow", output, "Overflow"));
-    return {dispatch, meshlet};
+    const auto draw = definition.AddPass(xiiStringBuilder(label, " Draw Commands"), "xiiVertexPullDrawCommandsPass");
+    for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
+      XII_TEST_RESULT(definition.Connect(prepared, pin, draw, pin));
+    XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", draw, "VisibleMeshlets"));
+    XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", draw, "VisibleMeshletCount"));
+    XII_TEST_RESULT(definition.Connect(draw, "DrawCommands", output, "DrawCommands"));
+    XII_TEST_RESULT(definition.Connect(draw, "DrawCommandCount", output, "DrawCount"));
+    return {dispatch, meshlet, draw};
   }
 } // namespace
 
@@ -366,7 +388,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           if (count != 0)
           {
             auto pairs = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "VisibleMeshlets")->m_hBuffer);
-            for (xiiUInt32 position : {0U, count - 1})
+            for (xiiUInt32 position = 0; position < count; position += selected ? 1 : xiiMath::Max(count - 1, 1U))
             {
               xiiVec2U32 pair;
               if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), pairs.Borrow(), xiiUInt64(position) * sizeof(pair), pair))
@@ -374,15 +396,53 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
               XII_TEST_BOOL(pair.x < (selected ? 1U : phase >= 6 ? 129U :
                                                                    67U));
               XII_TEST_BOOL(pair.x != 64 && pair.x != 65 && pair.x != 66);
-              XII_TEST_BOOL(pair.y < (coarse ? 65U : 129U));
+              const xiiUInt32 local = pair.y - (coarse ? 129 : 0);
+              XII_TEST_BOOL(local < (coarse ? 65U : 129U));
               if (phase != 7)
               {
-                XII_TEST_BOOL(pair.y != 0 || (phase == 6 && pair.x == 3));
-                XII_TEST_BOOL(pair.y != 1 || (phase == 6 && (pair.x == 0 || pair.x == 1 || pair.x == 3)));
+                XII_TEST_BOOL(local != 0 || (phase == 6 && pair.x == 3));
+                XII_TEST_BOOL(local != 1 || (phase == 6 && (pair.x == 0 || pair.x == 1 || pair.x == 3)));
               }
               if (phase == 2 && pair.x == 0)
-                XII_TEST_BOOL(pair.y >= 5 && pair.y < 8);
+                XII_TEST_BOOL(local >= 5 && local < 8);
+              xiiUInt32 drawIndex = xiiInvalidIndex;
+              for (xiiUInt32 j = 0; j < compiled->GetProvenance().GetCount(); ++j)
+                if (compiled->GetProvenance()[j].m_Element == leaf.m_Passes[work.m_uiDraw].m_Id && compiled->GetProvenance()[j].m_InstancePath == source.m_InstancePath)
+                  drawIndex = j;
+              if (!XII_TEST_BOOL(drawIndex != xiiInvalidIndex))
+                return;
+              auto       commandBuffer = graph.GetExportedBuffer(instances[view].GetOutputBinding(drawIndex, "DrawCommands")->m_hBuffer);
+              xiiVec4U32 command;
+              if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), commandBuffer.Borrow(), xiiUInt64(position) * sizeof(command), command))
+                return;
+              const bool clipped = phase == 2 && pair.x == 0 && local == 5;
+              XII_TEST_INT(command.x, clipped ? 6 : local == 5 ? 12 :
+                                                                 3);
+              XII_TEST_INT(command.y, 1);
+              XII_TEST_INT(command.z, clipped ? 3 : 0);
+              XII_TEST_INT(command.w, position);
             }
+          }
+        }
+        if (source.m_Element == leaf.m_Passes[work.m_uiDraw].m_Id)
+        {
+          auto      counter       = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "DrawCommandCount")->m_hBuffer);
+          auto      commandBuffer = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "DrawCommands")->m_hBuffer);
+          xiiUInt32 count;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), counter.Borrow(), 0, count))
+            return;
+          const xiiUInt32 capacity = selected ? 16 : 16384;
+          XII_TEST_BOOL(count <= capacity);
+          if (phase == 5)
+          {
+            XII_TEST_INT(count, 0);
+          }
+          if (count < capacity)
+          {
+            xiiVec4U32 unused;
+            if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), commandBuffer.Borrow(), xiiUInt64(count) * sizeof(unused), unused))
+              return;
+            XII_TEST_BOOL(unused == xiiVec4U32::MakeZero());
           }
         }
         if (source.m_Element == cullId)
@@ -459,12 +519,12 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("MeshletVisibility");
+  const auto                                 asset = xiiLoadPipelineLibraryResource("VertexPullDraws");
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
   const auto               authoring = loaded->GetAuthoring();
-  xiiUuid                  cullId, uploadId, dispatchId, meshletId;
+  xiiUuid                  cullId, uploadId, dispatchId, meshletId, drawId;
   xiiDynamicArray<xiiUuid> viewPath;
   const auto               nested = loaded->GetPipeline();
   for (xiiUInt32 i = 0; i < nested->GetDescriptor().m_Passes.GetCount(); ++i)
@@ -479,13 +539,15 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
       dispatchId = source.m_Element;
     if (pass.m_sType == "xiiMeshletCullPass")
       meshletId = source.m_Element;
+    if (pass.m_sType == "xiiVertexPullDrawCommandsPass")
+      drawId = source.m_Element;
     if (pass.m_sType == "xiiVisibilityViewPass")
     {
       viewPath = source.m_InstancePath;
       viewPath.PushBack(source.m_Element);
     }
   }
-  if (!XII_TEST_BOOL(cullId.IsValid() && uploadId.IsValid() && dispatchId.IsValid() && meshletId.IsValid() && viewPath.GetCount() == 2))
+  if (!XII_TEST_BOOL(cullId.IsValid() && uploadId.IsValid() && dispatchId.IsValid() && meshletId.IsValid() && drawId.IsValid() && viewPath.GetCount() == 3))
     return;
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authoring->m_Descriptor.m_Id, asset.GetResourceID()});
@@ -502,6 +564,8 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshlets", work, "Meshlets"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshletCount", work, "Count"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshletOverflow", work, "Overflow"));
+    XII_TEST_RESULT(root.Connect(i, "DrawCommands", work, "DrawCommands"));
+    XII_TEST_RESULT(root.Connect(i, "DrawCommandCount", work, "DrawCount"));
     const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", "xiiNativeCullExport");
     XII_TEST_RESULT(root.Connect(i, "VisibleInstances", sink, "Visible"));
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
@@ -599,6 +663,22 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
             return;
           XII_TEST_INT(count, resident && !filtered ? 1 : 0);
           XII_TEST_INT(overflow, 0);
+        }
+        if (provenance.m_Element == drawId)
+        {
+          auto       commands = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "DrawCommands")->m_hBuffer);
+          auto       counter  = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "DrawCommandCount")->m_hBuffer);
+          xiiUInt32  count;
+          xiiVec4U32 command;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), counter.Borrow(), 0, count) ||
+              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), commands.Borrow(), 0, command))
+            return;
+          const bool visible = provenance.m_InstancePath[0] != filteredId;
+          XII_TEST_INT(count, resident && visible ? 1 : 0);
+          XII_TEST_INT(command.x, count ? 36 : 0);
+          XII_TEST_INT(command.y, count ? 1 : 0);
+          XII_TEST_INT(command.z, 0);
+          XII_TEST_INT(command.w, 0);
         }
         if (provenance.m_Element == uploadId)
         {
