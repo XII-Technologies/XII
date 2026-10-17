@@ -31,14 +31,17 @@
 #include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
+#include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
 #include <Shaders/GpuDrivenSceneConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
@@ -50,6 +53,8 @@ xiiCommandLineOptionBool   opt_GpuDrivenRayTracing("GpuDrivenScene", "-ray-traci
 xiiCommandLineOptionInt    opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
 xiiCommandLineOptionInt    opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
 xiiCommandLineOptionString opt_GpuDrivenDepthPipeline("GpuDrivenScene", "-depth-pipeline", "Authored depth-pyramid/history pipeline resource.", "RenderPipelines/DepthPyramid.xiiBinRenderPipeline");
+
+xiiCommandLineOptionString opt_GpuDrivenVisibilityPipeline("GpuDrivenScene", "-visibility-pipeline", "Authored world mesh visibility/draw resource.", "RenderPipelines/WorldMeshDraws.xiiBinRenderPipeline");
 
 namespace
 {
@@ -236,7 +241,6 @@ public:
       // Canonical scene depth is reversed-Z, matching native depth/history and visibility consumers.
       projection.SetRow(2, projection.GetRow(3) - projection.GetRow(2));
       m_ViewProjection = projection * m_Camera.GetViewMatrix();
-      m_ViewFrustum    = xiiFrustum::MakeFromMVP(m_ViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
       xiiStringBuilder              error;
       xiiRenderGraphCompileSettings settings;
@@ -349,14 +353,13 @@ public:
     m_Camera.LookAt(xiiVec3(-12.0f, -2.0f, 12.0f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
 
     m_World.Initialize(m_pDevice.Borrow(), m_Configuration).AssertSuccess();
-    xiiGpuVisibilityDescription visibilityDescription;
-    visibilityDescription.m_uiMaxInstances       = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight * 2U + 1U;
-    visibilityDescription.m_uiMaxVisibleMeshlets = m_Configuration.m_uiMaxVisibleMeshlets;
-    visibilityDescription.m_uiMaxDrawCommands    = 1U;
-    visibilityDescription.m_uiFramesInFlight     = m_Configuration.m_uiFramesInFlight;
-    visibilityDescription.m_uiMaxVisibilitySets  = 3U;
-    m_hVisibility                                = xiiGpuVisibilityManager::CreateContext(visibilityDescription);
-    XII_ASSERT_ALWAYS(!m_hVisibility.IsInvalidated(), "Failed to create the GPU visibility context.");
+    m_hVisibilityPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenVisibilityPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeVisibilityPipelines().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     m_hDepthPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenDepthPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
     if (SynchronizeDepthPipeline().Failed())
     {
@@ -385,8 +388,10 @@ public:
     xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
     m_DepthPipeline.Clear();
     m_hDepthPipeline.Invalidate();
-    xiiGpuVisibilityManager::DestroyContext(m_hVisibility);
-    m_hVisibility = {};
+    m_MainVisibility.Clear();
+    m_SensorVisibility.Clear();
+    m_ShadowVisibility.Clear();
+    m_hVisibilityPipeline.Invalidate();
     xiiFrameAllocator::Reset();
     m_World.Shutdown(m_uiFrameIndex);
     m_hShaderPermutation.Invalidate();
@@ -409,6 +414,92 @@ public:
   }
 
 private:
+  xiiResult SynchronizeVisibilityPipelines()
+  {
+    bool changed = false;
+    for (auto* instance : {&m_MainVisibility, &m_SensorVisibility, &m_ShadowVisibility})
+    {
+      bool occurrenceChanged = false;
+      if (instance->Synchronize(m_hVisibilityPipeline, &occurrenceChanged).Failed())
+      {
+        xiiLog::Error("Selected visibility resource '{}' is missing or invalid.", m_hVisibilityPipeline.GetResourceID());
+        return XII_FAILURE;
+      }
+      changed |= occurrenceChanged;
+    }
+    if (!changed)
+      return XII_SUCCESS;
+    const auto* pipeline = m_MainVisibility.GetPipeline();
+    for (const xiiStringView name : {"SceneInstances", "SkinningMatrices", "VisibleInstances", "VisibleInstanceCount", "VisibleMeshlets", "VisibleMeshletCount", "DrawCommands", "DrawCommandCount", "VisibleMeshletOverflow"})
+    {
+      const auto index = pipeline->FindInterface(name, false);
+      if (index == xiiInvalidIndex || pipeline->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+      {
+        xiiLog::Error("Visibility resource '{}' requires buffer output '{}'.", m_hVisibilityPipeline.GetResourceID(), name);
+        return XII_FAILURE;
+      }
+    }
+    xiiUInt32 commands = 0, culling = 0;
+    for (xiiUInt32 i = 0; i < pipeline->GetDescriptor().m_Passes.GetCount(); ++i)
+    {
+      const auto* pass = m_MainVisibility.GetPass(i);
+      if (pass->GetDynamicRTTI()->IsDerivedFrom<xiiMeshDrawCommandsPass>())
+      {
+        const auto* native = static_cast<const xiiMeshDrawCommandsPass*>(pass);
+        m_uiMeshGroupX     = native->m_uiMeshGroupCountX;
+        m_uiMeshGroupY     = native->m_uiMeshGroupCountY;
+        ++commands;
+      }
+      if (pass->GetDynamicRTTI()->IsDerivedFrom<xiiMeshletCullPass>())
+      {
+        m_uiVisibilityCapacity = static_cast<const xiiMeshletCullPass*>(pass)->m_uiMaxVisibleMeshlets;
+        ++culling;
+      }
+    }
+    if (commands != 1 || culling != 1)
+    {
+      xiiLog::Error("This sample requires one native meshlet culler and mesh command producer in the selected visibility resource.");
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+
+  xiiResult BuildVisibility(xiiRenderPipelineInstance& instance, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
+                            const xiiMat4& projection, xiiUInt32 width, xiiUInt32 height, xiiUInt32 flags, xiiUInt32 priority,
+                            xiiGpuVisibilityOutputs& outputs)
+  {
+    xiiVariantDictionary parameters;
+    parameters.Insert("CullingViewProjection", projection);
+    parameters.Insert("CullingCameraPosition", m_Camera.GetPosition());
+    parameters.Insert("CullingWidth", width);
+    parameters.Insert("CullingHeight", height);
+    parameters.Insert("CullingRequiredFlags", flags);
+    parameters.Insert("StreamingPriorityTier", priority);
+    auto* view = m_World.GetRenderView();
+    if (!view)
+      return XII_FAILURE;
+    XII_LOCK(view->GetWorld()->GetReadMarker());
+    view->SetViewport({0, 0, float(width), float(height)});
+    if (instance.Build(view, graph, blackboard, parameters).Failed())
+    {
+      xiiLog::Error("Authored visibility failed: {}", instance.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    const auto buffer = [&](xiiStringView name) {
+      return instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface(name, false))->m_hBuffer;
+    };
+    outputs.m_hSceneInstances       = buffer("SceneInstances");
+    outputs.m_hSkinningMatrices     = buffer("SkinningMatrices");
+    outputs.m_hVisibleInstances     = buffer("VisibleInstances");
+    outputs.m_hVisibleInstanceCount = buffer("VisibleInstanceCount");
+    outputs.m_hVisibleMeshlets      = buffer("VisibleMeshlets");
+    outputs.m_hVisibleMeshletCount  = buffer("VisibleMeshletCount");
+    outputs.m_hIndirectCommands     = buffer("DrawCommands");
+    outputs.m_hIndirectCommandCount = buffer("DrawCommandCount");
+    outputs.m_uiMaxVisibleMeshlets  = m_uiVisibilityCapacity;
+    return XII_SUCCESS;
+  }
+
   xiiResult SynchronizeDepthPipeline()
   {
     bool changed = false;
@@ -455,10 +546,7 @@ private:
       RequestQuit();
       return;
     }
-    const auto*                               previousDepth            = m_DepthPipeline.GetInterfaceBinding(m_uiPreviousDepthInterface);
-    const xiiRenderGraphTextureHandle         hPreviousHiZ             = previousDepth ? previousDepth->m_hTexture : xiiRenderGraphTextureHandle{};
-    const auto*                               previousDepthDescription = graph.GetTextureDescription(hPreviousHiZ);
-    xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload      = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
+    xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowUpload.m_uiPhysicalPageCount);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowUpload.m_uiVirtualTableBaseIndex);
@@ -488,22 +576,21 @@ private:
       XII_IGNORE_UNUSED(validationPass);
     }
 
-    xiiGpuVisibilityView            visibilityView = xiiGpuVisibilitySystem::BuildView(m_ViewProjection, m_ViewFrustum, m_Camera.GetPosition(), m_TargetSize.width, m_TargetSize.height, previousDepthDescription ? previousDepthDescription->m_uiMipLevels : 0U, m_World.GetGpuInstances().GetInstanceCount());
-    xiiGpuVisibilityPassDescription visibilityPass;
-    visibilityPass.m_sName                   = "Main View";
-    visibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::MainView;
-    visibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
-    const xiiGpuVisibilityOutputs visibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetGpuInstances(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
-
-    // A robotics/medical sensor view owns independent frame-sliced constants. Only its instance
-    // count is exported; unused meshlet and command stages are culled by the render graph.
-    xiiGpuVisibilityView sensorView = visibilityView;
-    sensorView.m_uiRequiredFlags    = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::SensorVisible).GetValue();
-    xiiGpuVisibilityPassDescription sensorVisibilityPass;
-    sensorVisibilityPass.m_sName                   = "Sensor View";
-    sensorVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Sensor;
-    sensorVisibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
-    const xiiGpuVisibilityOutputs sensorVisibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetGpuInstances(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
+    if (SynchronizeVisibilityPipelines().Failed() || m_World.GetGpuInstances().GetMaximumMeshletCount() > m_uiVisibilityCapacity)
+    {
+      xiiLog::Error("The selected visibility resource is invalid or its meshlet budget cannot cover this world's conservative bound.");
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
+    xiiGpuVisibilityOutputs visibility, sensorVisibility;
+    if (BuildVisibility(m_MainVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, xiiGpuInstanceFlags::Enabled, 3, visibility).Failed() ||
+        BuildVisibility(m_SensorVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::SensorVisible).GetValue(), 3, sensorVisibility).Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
 
     constexpr xiiUInt32      uiShadowResolution = 2048U;
     xiiShadowCascadeSettings shadowSettings;
@@ -516,17 +603,16 @@ private:
     const float                                     shadowAspect         = static_cast<float>(m_TargetSize.width) / static_cast<float>(xiiMath::Max(m_TargetSize.height, 1U));
     const bool                                      bHasShadowCascade    = xiiShadowCascadeUtils::Build(m_Camera, shadowAspect, sun.m_vDirection, shadowSettings, shadowCascades).Succeeded() && !shadowCascades.IsEmpty();
     const xiiMat4                                   shadowViewProjection = bHasShadowCascade ? shadowCascades[0].m_mViewProjection : m_ViewProjection;
-    const xiiFrustum                                shadowFrustum        = xiiFrustum::MakeFromMVP(shadowViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
-    xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(shadowViewProjection, shadowFrustum, m_Camera.GetPosition(), uiShadowResolution, uiShadowResolution, 0U, m_World.GetGpuInstances().GetInstanceCount());
-    shadowView.m_uiRequiredFlags    = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
-    xiiGpuVisibilityPassDescription shadowVisibilityPass;
-    shadowVisibilityPass.m_sName                   = "Sun Shadow";
-    shadowVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Shadow;
-    shadowVisibilityPass.m_fLodScreenScale         = 1.0f;
-    shadowVisibilityPass.m_uiMaxVisibleMeshlets    = 0U;
-    shadowVisibilityPass.m_bAsyncCompute           = false;
-    const xiiGpuVisibilityOutputs shadowVisibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetGpuInstances(), shadowView, geometry, shadowVisibilityPass);
+    xiiGpuVisibilityOutputs shadowVisibility;
+    if (BuildVisibility(m_ShadowVisibility, graph, blackboard, shadowViewProjection, uiShadowResolution, uiShadowResolution,
+                        (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue(), 1, shadowVisibility)
+          .Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
 
     auto virtualShadowCascadePass                          = graph.AddPass<VirtualShadowCascadePassData>("GPU Scene Virtual Shadow Cascades", xiiGALCommandQueueFlags::Graphics, [](VirtualShadowCascadePassData& data, xiiRenderGraphBuilder& builder) {
         xiiGALBufferCreationDescription description;
@@ -563,7 +649,7 @@ private:
       }
 
       const xiiMat4 cascadeViewProjection[] = {shadowCascades[0].m_mViewProjection};
-      virtualShadowUpload                   = xiiVirtualShadowMapManager::AddRasterPasses(graph, virtualShadowUpload, shadowVisibility, geometry, materials, cascadeViewProjection, g_uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility), xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility));
+      virtualShadowUpload                   = xiiVirtualShadowMapManager::AddRasterPasses(graph, virtualShadowUpload, shadowVisibility, geometry, materials, cascadeViewProjection, g_uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), m_uiMeshGroupX, m_uiMeshGroupY);
     }
 
     auto shadowTarget = graph.AddPass<ShadowTargetPassData>("Create GPU Shadow Target", xiiGALCommandQueueFlags::Graphics, [](ShadowTargetPassData& data, xiiRenderGraphBuilder& builder) {
@@ -580,8 +666,8 @@ private:
     shadowRasterDescription.m_ViewProjectionMatrix      = shadowViewProjection;
     shadowRasterDescription.m_Viewport                  = xiiVec4U32(0U, 0U, uiShadowResolution, uiShadowResolution);
     shadowRasterDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
-    shadowRasterDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility);
-    shadowRasterDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility);
+    shadowRasterDescription.m_uiMeshDispatchGroupCountX = m_uiMeshGroupX;
+    shadowRasterDescription.m_uiMeshDispatchGroupCountY = m_uiMeshGroupY;
     const xiiRenderGraphTextureHandle hShadowMap        = xiiGpuShadowRasterManager::AddPass(graph, "GPU Scene Sun Shadow Raster", shadowTarget.first->m_hDepth, shadowVisibility, geometry, materials, shadowRasterDescription);
 
     graph.AddPass<SceneTargetsPassData>("Create Scene Targets", xiiGALCommandQueueFlags::Graphics, [targetSize = m_TargetSize](SceneTargetsPassData& data, xiiRenderGraphBuilder& builder) {
@@ -680,6 +766,9 @@ private:
       m_pDevice->WaitIdle();
       m_pSwapChain->Resize(m_pWindow->GetClientAreaSize()).AssertSuccess();
       m_DepthPipeline.InvalidateTemporalHistory();
+      m_MainVisibility.InvalidateTemporalHistory();
+      m_SensorVisibility.InvalidateTemporalHistory();
+      m_ShadowVisibility.InvalidateTemporalHistory();
     }
   }
 
@@ -873,8 +962,8 @@ private:
       constants->MaterialFrameBase          = data.m_uiMaterialFrameBase;
       constants->MaterialStride             = data.m_uiMaterialStride;
       constants->VertexStride               = sizeof(xiiMeshPackedVertex);
-      constants->MeshDispatchGroupCountX    = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility);
-      constants->MeshDispatchGroupCountY    = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility);
+      constants->MeshDispatchGroupCountX    = m_uiMeshGroupX;
+      constants->MeshDispatchGroupCountY    = m_uiMeshGroupY;
       constants->Padding                    = xiiVec2U32::MakeZero();
       const xiiGpuDrivenSceneLight& sun     = m_World.GetSunLight();
       constants->SunDirectionIntensity      = xiiVec4(sun.m_vDirection.x, sun.m_vDirection.y, sun.m_vDirection.z, sun.m_fIntensity);
@@ -928,13 +1017,14 @@ private:
   xiiRenderPipelineResourceHandle    m_hDepthPipeline;
   xiiRenderPipelineInstance          m_DepthPipeline;
   xiiUInt32                          m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
-  xiiGpuVisibilityContextHandle      m_hVisibility;
+  xiiRenderPipelineResourceHandle    m_hVisibilityPipeline;
+  xiiRenderPipelineInstance          m_MainVisibility, m_SensorVisibility, m_ShadowVisibility;
+  xiiUInt32                          m_uiMeshGroupX = 0, m_uiMeshGroupY = 0, m_uiVisibilityCapacity = 0;
   xiiCamera                          m_Camera;
   xiiRenderGraphGraphId              m_hRenderGraph;
   xiiSizeU32                         m_TargetSize;
   xiiMat4                            m_ViewProjection = xiiMat4::MakeIdentity();
-  xiiFrustum                         m_ViewFrustum;
-  xiiUInt64                          m_uiFrameIndex = 0U;
+  xiiUInt64                          m_uiFrameIndex   = 0U;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGpuDrivenSceneApp);

@@ -11,6 +11,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneConfiguration>)
   {
@@ -21,7 +22,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xi
       XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
       XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(262144U)),
       XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(2U, 8U)),
-      XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -92,7 +92,11 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   XII_SUCCEED_OR_RETURN(CreateMaterials());
   XII_SUCCEED_OR_RETURN(CreateGeometry());
   XII_SUCCEED_OR_RETURN(CreateSceneObjects());
-  return XII_SUCCESS;
+  xiiView* view = nullptr;
+  m_hRenderView = m_World->GetModule<xiiRenderWorldModule>()->CreateView("GPU-driven authored extraction", view);
+  if (view)
+    view->SetRenderEnabled(false); // The registered sample graph owns frame execution.
+  return view ? XII_SUCCESS : XII_FAILURE;
 }
 
 void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
@@ -101,6 +105,7 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   {
     xiiGeometryResidencyManager::ReleaseMeshGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
   }
+  m_hRenderView.Invalidate();
   m_World.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
@@ -108,6 +113,14 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   m_BasePositions.Clear();
   m_hAssemblyRoot.Invalidate();
   m_hSunLight.Invalidate();
+}
+
+xiiView* xiiGpuDrivenSceneWorld::GetRenderView() const
+{
+  XII_LOCK(m_World->GetReadMarker());
+  xiiView* view = nullptr;
+  static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->TryGetView(m_hRenderView, view);
+  return view;
 }
 
 xiiGpuDrivenSceneLight xiiGpuDrivenSceneWorld::GetSunLight() const
