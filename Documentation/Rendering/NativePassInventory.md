@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **66 concrete reflected operation classes** in
+Current source inventory: **67 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -31,7 +31,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 1 | `xiiSensorOutputPass` |
-| Shadows | 3 | `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass` |
+| Shadows | 4 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
@@ -93,7 +93,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are independent native operations, consumed by the authored sample graph. Both vertex-pull and mesh-shader indirect command preparation are native. The old visibility manager/system and their shaders are deleted; remaining sample shadow/VSM/raster orchestration needs conversion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
-| Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
+| Shadows | Directional cascade construction/snapshot upload is native. Local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
 | Direct illumination | ReSTIR DI temporal/spatial/visibility/emissive visibility and deferred direct lighting. |
 | Indirect illumination | Deferred indirect lighting, DDGI and sparse-voxel updates, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising. The gather nodes already exist. |
@@ -1524,3 +1524,81 @@ constructs upload/publication graph operations, the sample still prepares cascad
 main shading and presentation in C++, and the light/game/editor operation library
 is incomplete. These remaining algorithms must become independent reflected passes;
 restoring the deleted backend is not a migration path.
+
+## Directional cascade preparation authored
+
+Current source inventory is **67 native reflected operations / 26 ordinary SDK assets**.
+ShadowCascade is one coherent stabilized-projection/snapshot operation, using the existing
+ShadowCascadeUtils math. It declares CascadeConstants as a concrete reflected uniform
+buffer output. LightDirection and the existing nested ShadowCascadeSettings are normal
+reflected member properties; there is no pin-type table, stage selector or new manager.
+The ordinary ShadowCascades source asset is authored through document commands and can
+be referenced and overridden like the other pipeline definitions.
+
+The pass snapshots the explicit view camera and viewport during Build, validates finite
+perspective/orthographic inputs, constructs one to four stabilized cascades and uploads
+an immutable uniform snapshot. Stereo requires an explicit eye view instead of silently
+using an arbitrary eye. Unused ABI entries are identity matrices/zero values. Execution
+retains no view, camera, world or component pointer. It requests no scene extraction,
+material/geometry residency or unrelated rendering feature.
+
+CPU sparse-page queries can inspect the derived cascade results only for the graph setup
+that produced them. Configuration, failed construction or another graph setup cannot
+return a previous snapshot. These small derived values belong to the pass occurrence;
+they are not authoritative transforms, a scene hierarchy or serialized graph identities.
+Repeated definitions and separate views own distinct snapshots and graph allocations.
+
+GpuDrivenScene now selects -shadow-cascade-pipeline and consumes the compiled
+CascadeConstants boundary. Its manual cascade settings, direct math invocation,
+VirtualShadowCascadePassData and C++ upload operation have been deleted. Quality values
+live in the asset. The selected resolution drives raster dimensions and the actual shadow
+texture determines sampling texel size. The client locates the native CPU query producer
+through the explicit boundary binding, allowing other cascade occurrences in the graph.
+The remaining main-shading algorithm accepts one shadow projection; this sample reports
+an incompatibility for a multi-cascade result instead of silently ignoring extra cascades.
+The native operation itself supports one to four cascades, including repeated instances.
+Full multi-cascade shading remains work for the native lighting/raster composition.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest and GpuDrivenScene
+  build with their engine/editor dependencies (native-cascade-final-build.log). Earlier
+  compilation errors in the new test/code were corrected before this successful build.
+- All 60 GraphicsCore CPU tests pass, including reflected nested settings, rejected
+  invalid values, independent subgraph overrides and missing-camera diagnostics
+  (native-cascade-cpu.log).
+- All 20 NativeAssetAuthoring fixtures pass (native-cascade-authoring.log). All 15
+  EditorDocuments tests pass, including deterministic packaged/rebuilt/repeated binary
+  equality for all 26 SDK assets (native-cascade-final-editor.log). The first library
+  run exposed an outdated expectation that every non-preview asset except ShadowDepth
+  required compute; ShadowCascades correctly needs no compute capability, and that test
+  expectation was corrected.
+- Vulkan NativeShadowCascades passes actual uniform-buffer readbacks over three shared
+  GPU frames, two perspective/orthographic views and two reused definitions with one
+  and three cascades. It verifies distinct camera projections, authored 120/90 metre
+  far splits, immutable reflected defaults under parameter overrides, inactive ABI
+  entries and camera mutation after setup. Failed frames and later setups reject stale
+  CPU queries. Each graph uses one GPU submission; no geometry/material residency is
+  initialized (native-cascade-final-gpu.log).
+- Vulkan NativeShadowFeedback (1), NativeVirtualShadowPages (1), NativeDepthAtlas (2),
+  NativeVisibility (4) and PipelineExtraction (3) pass
+  (native-cascade-regression-<group>.log).
+- Missing and incompatible selected cascade resources exit 1 with the selected path
+  and an explicit interface diagnostic (native-cascade-missing.log and
+  native-cascade-incompatible.log).
+- Production sample searches find no manual cascade upload data/operation, direct
+  ShadowCascadeUtils invocation or sample cascade quality structure. Rendering Builtin
+  file searches remain empty; git diff --check passes.
+
+The full Vulkan sample still fails with actual visible geometry: it produces 16 virtual
+pages in frame 3, records 118 registered / 110 compiled operations in one submission
+with 186 barriers, then reports ErrorDeviceLost at CpuWaitOnlyFenceVulkan.cpp:123
+(fence 46, request 47). The bounded process was stopped at the assertion after 30 seconds
+(native-cascade-sample.log and native-cascade-assertion.txt). This phase does not claim
+an application runtime fix or Release timing improvement. D3D12 remains excluded.
+
+Remaining source migration includes the residency service's upload/publication graph
+construction, native world light/cluster preparation, the sample's main shading and
+presentation, and complete game/editor/advanced lighting compositions. Virtual page
+identity still needs explicit world/view scoping. The full renderer migration remains
+incomplete; the cascade upload deletion is a verified incremental step.
