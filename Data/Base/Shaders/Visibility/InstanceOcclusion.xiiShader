@@ -1,0 +1,77 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Visibility/GpuSceneCommon.h>
+#include <Shaders/Visibility/InstanceOcclusionConstants.h>
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_OcclusionView;
+StructuredBuffer<uint> g_Candidates;
+StructuredBuffer<uint> g_CandidateCount;
+Texture2D<float> g_DepthPyramid;
+RWStructuredBuffer<uint> g_Visible;
+RWStructuredBuffer<uint> g_Count;
+
+bool Visible(GpuSceneInstance instance, GpuVisibilityView view)
+{
+  // A temporal client must invalidate stale occluders. Moving/posed candidates are also kept conservatively.
+  if ((instance.Flags & 16u) != 0u || !all(isfinite(instance.BoundsCenterRadius.xyz)) ||
+      !all(isfinite(instance.BoundsExtents.xyz)) || any(instance.BoundsExtents.xyz < 0.0f) || instance.SkinningCount != 0u || instance.PreviousSkinningCount != 0u ||
+      any(instance.GlobalTransform[0] != instance.PreviousGlobalTransform[0]) ||
+      any(instance.GlobalTransform[1] != instance.PreviousGlobalTransform[1]) ||
+      any(instance.GlobalTransform[2] != instance.PreviousGlobalTransform[2]) ||
+      any(instance.GlobalTransform[3] != instance.PreviousGlobalTransform[3])) return true;
+  float2 lo = 1.0f, hi = 0.0f;
+  float nearest = 0.0f;
+  [unroll] for (uint corner = 0; corner < 8; ++corner)
+  {
+    const float3 sign = float3((corner & 1u) ? 1 : -1, (corner & 2u) ? 1 : -1, (corner & 4u) ? 1 : -1);
+    const float4 clip = mul(view.OcclusionViewProjectionMatrix, float4(instance.BoundsCenterRadius.xyz + sign * instance.BoundsExtents.xyz, 1));
+    if (!all(isfinite(clip)) || clip.w <= 0.0001f || clip.z < 0.0f || clip.z > clip.w) return true;
+    const float3 ndc = clip.xyz / clip.w;
+    const float2 uv = ndc.xy * float2(0.5f, -0.5f) + 0.5f;
+    lo = min(lo, uv); hi = max(hi, uv); nearest = max(nearest, ndc.z);
+  }
+  // Outside-image coverage is unknown, especially when a graph supplies another camera's image.
+  if (any(lo < 0.0f) || any(hi > 1.0f) || any(hi < lo)) return true;
+  uint width, height, levels;
+  g_DepthPyramid.GetDimensions(0, width, height, levels);
+  if (!width || !height || !levels) return true;
+  const float extent = max((hi.x - lo.x) * width, (hi.y - lo.y) * height);
+  uint mip = min((uint)max(0.0f, ceil(log2(max(extent, 1.0f)))), levels - 1u);
+  int2 first, last;
+  for (;;)
+  {
+    uint ignored;
+    g_DepthPyramid.GetDimensions(mip, width, height, ignored);
+    const int2 maximum = int2(width - 1u, height - 1u);
+    first = clamp(int2(lo * float2(width, height)), int2(0, 0), maximum);
+    last = clamp(int2(hi * float2(width, height)), int2(0, 0), maximum);
+    // Four corners cover the complete rectangle only when it spans at most two texels per axis.
+    if (all(last - first <= 1)) break;
+    if (mip + 1u == levels) return true;
+    ++mip;
+  }
+  const float farthest = min(min(g_DepthPyramid.Load(int3(first, mip)), g_DepthPyramid.Load(int3(last.x, first.y, mip))),
+                             min(g_DepthPyramid.Load(int3(first.x, last.y, mip)), g_DepthPyramid.Load(int3(last, mip))));
+  return !isfinite(farthest) || nearest >= farthest - DepthBias;
+}
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatch : SV_DispatchThreadID)
+{
+  uint candidates, scenes, views, counts, capacity, stride;
+  g_Candidates.GetDimensions(candidates, stride); g_CandidateCount.GetDimensions(counts, stride);
+  g_SceneInstances.GetDimensions(scenes, stride); g_OcclusionView.GetDimensions(views, stride); g_Visible.GetDimensions(capacity, stride);
+  if (!counts || !views || dispatch.x >= min(g_CandidateCount[0], candidates)) return;
+  const uint index = g_Candidates[dispatch.x];
+  if (index >= scenes) return;
+  const GpuSceneInstance instance = g_SceneInstances[index];
+  if ((instance.Flags & 1u) == 0u || !Visible(instance, g_OcclusionView[0])) return;
+  for (;;)
+  {
+    const uint count = g_Count[0]; if (count >= capacity) return;
+    uint observed; InterlockedCompareExchange(g_Count[0], count, count + 1u, observed);
+    if (observed == count) { g_Visible[count] = index; return; }
+  }
+}
