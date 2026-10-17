@@ -50,6 +50,13 @@ xiiResult xiiGeometryLodFeedbackPass::Build(xiiRenderPipelinePassContext& contex
   if (limits.m_uiMaxThreadGroupSizeX < 64 || limits.m_uiMaxThreadGroupInvocations < 64 || groups > limits.m_uiMaxThreadGroupCountX)
     return context.ReportFailure("Geometry feedback exceeds compute dispatch limits.");
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_Pipeline, "Shaders/Streaming/GeometryLodFeedback.xiiShader"));
+  auto tier = m_uiPriorityTier;
+  if (const auto* value = context.m_Parameters.GetValue("StreamingPriorityTier"))
+  {
+    if (!value->IsA<xiiUInt32>() || value->Get<xiiUInt32>() > 3)
+      return context.ReportFailure("StreamingPriorityTier must be a uint within 0..3.");
+    tier = value->Get<xiiUInt32>();
+  }
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
@@ -61,7 +68,7 @@ xiiResult xiiGeometryLodFeedbackPass::Build(xiiRenderPipelinePassContext& contex
     data.m_Geometry = builder.ReadBuffer(geometry, xiiGALResourceStateFlags::ShaderResource); data.m_Candidates = builder.ReadBuffer(candidates, xiiGALResourceStateFlags::ShaderResource);
     data.m_Requests = builder.ReadWriteBuffer(initial, xiiGALResourceStateFlags::UnorderedAccess);
     data.m_Constants = xiiRenderPassUtils::Constants(builder, "Geometry Request Parameters", sizeof(xiiGeometryLodFeedbackConstants));
-    data.m_uiGroups = static_cast<xiiUInt32>(groups); data.m_uiTier = m_uiPriorityTier; data.m_uiPurpose = m_uiPurposeMask; }, [pipeline = m_Pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_uiGroups = static_cast<xiiUInt32>(groups); data.m_uiTier = tier; data.m_uiPurpose = m_uiPurposeMask; }, [pipeline = m_Pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     { xiiGALMapHelper<xiiGeometryLodFeedbackConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard); mapped->PriorityTier = data.m_uiTier; mapped->PurposeMask = data.m_uiPurpose; }
     xiiGALStateTransitionDescription transition; transition.m_pResource = execute.GetBuffer(data.m_Constants); transition.m_NewState = xiiGALResourceStateFlags::ConstantBuffer; transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;

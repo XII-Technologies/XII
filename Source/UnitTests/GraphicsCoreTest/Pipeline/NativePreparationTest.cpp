@@ -21,6 +21,7 @@
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/LodHistoryResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MatrixVisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchBoundsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchPass.h>
@@ -567,4 +568,22 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitDepthTargetAndProjection)
   XII_TEST_BOOL(clear.Build(context).Failed());
   XII_TEST_BOOL(error.FindSubString("outside") != nullptr);
   graph.EndSetup();
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, MatrixQueryReflection)
+{
+  xiiMatrixVisibilityViewPass           pass;
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass.GetPins(pins);
+  XII_TEST_RESULT(pass.InitializePinBindings(pins));
+  XII_TEST_BOOL(pass.GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
+  XII_TEST_BOOL(!pass.m_bUseViewSelection);
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  XII_TEST_BOOL(properties.Contains("ViewProjection") && properties.Contains("CameraPosition") && properties.Contains("RequiredFlags"));
+  properties.Insert("Width", 0U);
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  properties.Insert("Width", 16U);
+  properties.Insert("CameraPosition", xiiVec3(xiiMath::NaN<float>(), 0, 0));
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
 }

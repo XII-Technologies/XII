@@ -140,6 +140,7 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_Visibility_InstanceCullPass);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_Visibility_InstanceOcclusionPass);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_Visibility_LodHistoryResetPass);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_Visibility_MatrixVisibilityViewPass);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_Visibility_MeshletCullPass);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_Visibility_MeshletDispatchBoundsPass);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_Visibility_MeshletDispatchPass);
@@ -160,4 +161,3 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuVisibilitySystem);
   XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuVisibilityTypes);
 }
-

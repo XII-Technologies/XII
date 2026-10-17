@@ -178,6 +178,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     xiiVariantDictionary counterProperties;
     counterProperties.Insert("Value", 17U);
     uploadDefinition.AddPass("Seeded work", "xiiCounterResetPass", counterProperties);
+    uploadDefinition.AddPass("Matrix query", "xiiMatrixVisibilityViewPass");
     xiiCamera cullingCamera;
     cullingCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
 
@@ -203,7 +204,14 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       XII_SCOPE_EXIT(module->DestroyView(handle));
       view->SetCamera(&cullingCamera);
       view->SetViewport({0, 0, 16, 16});
-      if (!XII_TEST_RESULT(uploadInstances[camera].Build(view, graph, graphs[camera].GetBlackboard())))
+      xiiVariantDictionary query;
+      const auto           queryMatrix = xiiMat4::MakeScaling(xiiVec3(float(camera + 1)));
+      query.Insert("CullingViewProjection", queryMatrix);
+      query.Insert("CullingCameraPosition", xiiVec3(float(camera), 2, 3));
+      query.Insert("CullingWidth", 16U);
+      query.Insert("CullingHeight", 32U);
+      query.Insert("CullingRequiredFlags", camera + 1U);
+      if (!XII_TEST_RESULT(uploadInstances[camera].Build(view, graph, graphs[camera].GetBlackboard(), query)))
         return nullptr;
       xiiGpuInstanceData::UploadHandles uploaded;
       uploaded.m_Instances = uploadInstances[camera].GetOutputBinding(0, "SceneInstances")->m_hBuffer;
@@ -223,7 +231,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
         builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "Candidates")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(5, "Counter")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(6, "Counter")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(6, "Counter")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(7, "VisibilityView")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
       graph.EndSetup();
       if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphs[camera].GetBlackboard(), &cache)))
         return nullptr;
@@ -249,6 +258,15 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       XII_TEST_FLOAT(snapshot.m_ViewportAndHiZ.x, 16, 0);
       XII_TEST_FLOAT(snapshot.m_LodParameters.y, float(viewTokens[camera] % 65535U), 0);
       XII_TEST_FLOAT(snapshot.m_LodParameters.z, float((viewTokens[camera] + 65534U) % 65535U), 0);
+      const auto matrixParameters = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(7, "VisibilityView")->m_hBuffer);
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), matrixParameters.Borrow(), 0, snapshot))
+        return nullptr;
+      XII_TEST_BOOL(snapshot.m_ViewProjectionMatrix == queryMatrix);
+      XII_TEST_FLOAT(snapshot.m_CameraPosition.x, float(camera), 0);
+      XII_TEST_FLOAT(snapshot.m_ViewportAndHiZ.y, 32, 0);
+      XII_TEST_INT(snapshot.m_uiRequiredFlags, camera + 1U);
+      XII_TEST_FLOAT(snapshot.m_LodParameters.y, float(viewTokens[camera] % 65535U), 0);
+      XII_TEST_BOOL(uploadInstances[camera].GetPipeline() == compiledUpload.Borrow());
       ++viewTokens[camera];
       xiiGpuSceneInstance record;
       const auto          result = graph.GetExportedBuffer(uploaded.m_Instances);
