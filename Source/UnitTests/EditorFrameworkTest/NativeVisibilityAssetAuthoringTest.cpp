@@ -12,6 +12,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
@@ -817,6 +818,80 @@ namespace
     return XII_SUCCESS;
   }
 
+  xiiStatus AuthorInstanceOcclusion(xiiStringView outputDirectory)
+  {
+    xiiStringBuilder path(outputDirectory, "/InstanceOcclusion.xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, "InstanceOcclusion");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author independent instance occlusion");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.InstanceOcclusion/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* filter = add("Filter Candidates", "xiiInstanceOcclusionPass", {1200, 0});
+    const auto* reset  = add("Reset Visible Count", "xiiCounterResetPass", {600, -200});
+    if (!filter || !reset)
+      return xiiStatus("Could not create native occlusion nodes.");
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    XII_SUCCEED_OR_RETURN(connect(reset, "Counter", filter, "InitialCount"));
+    xiiInstanceOcclusionPass              prototype;
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    prototype.GetPins(pins);
+    xiiUInt32 inputRow = 0, outputRow = 0;
+    for (const auto& pin : pins)
+    {
+      if (pin.m_Type == xiiRenderPipelinePin::Order || pin.m_sName == "InitialCount")
+        continue;
+      const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150)});
+      if (!boundary)
+        return xiiStatus("Could not create occlusion boundary.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", pin.m_sName));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", pin.m_bInput));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(pin.m_Type)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Format", static_cast<xiiInt64>(pin.m_Format)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      XII_SUCCEED_OR_RETURN(pin.m_bInput ? connect(boundary, "Value", filter, pin.m_sName) : connect(filter, pin.m_sName, boundary, "Value"));
+    }
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import occlusion asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/InstanceOcclusion.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Occlusion asset did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 7);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+    return XII_SUCCESS;
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -905,4 +980,13 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthPyramid)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativePyramidAuthoring"));
   XII_TEST_STATUS(AuthorDepthPyramid(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, InstanceOcclusion)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeOcclusionAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeOcclusionAuthoring"));
+  XII_TEST_STATUS(AuthorInstanceOcclusion(path));
 }
