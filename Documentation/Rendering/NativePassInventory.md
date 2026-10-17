@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **47 concrete reflected operation classes** in
+Current source inventory: **48 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -20,6 +20,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
+| Geometry | 1 | `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
 | Lighting | 1 | `xiiBRDFLutPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
@@ -55,6 +56,10 @@ Properties remain reflected members and retain normal editor attribute handling.
   budget controls physical allocation. The count saturates at capacity and a required
   overflow output reports dropped work; consumers must provide an explicit overflow
   policy. No renderer silently treats an overflowed list as complete.
+- VertexPullDrawCommands converts the supplied compact meshlet list into portable
+  DrawIndirect arguments and an explicitly bounded indirect count. Residency metadata
+  and primitive ranges are validated before a candidate emits work. It owns
+  no rasterization, shader asset residency, scene lifecycle or CPU count readback.
 - BufferHistory retains structured GPU buffers in completion-checked private
   slots, publishes explicit previous-frame pins and declares GPU readiness waits.
 - VisibilityView captures camera/frustum and selected component indices during
@@ -78,8 +83,8 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z, LOD streaming feedback and indirect draw preparation still need independent nodes. The remaining low-level visibility service/sample needs decomposition and deletion. |
-| Geometry | Depth raster and indexed fallback, GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery already provides nearest-surface queries. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z, LOD streaming feedback and mesh-shader indirect draw preparation still need independent nodes. Vertex-pull indirect commands are now a separate native operation. The remaining low-level visibility service/sample needs decomposition and deletion. |
+| Geometry | Vertex-pull indirect draw preparation is native. Depth raster and indexed fallback, GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery already provides nearest-surface queries. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
@@ -236,3 +241,47 @@ meshlet performance benchmark or complete application-rendering test has been ru
 D3D12 remains excluded. A meshlet overflow fallback, the remaining legacy visibility
 service consumers, native raster/lighting/shadow operations and complete game/editor
 pipeline assets remain work in progress. The architecture migration is incomplete.
+
+
+## Native vertex-pull command preparation - 2026-10-16
+
+VertexPullDrawCommandsPass is an independent compute operation in the Geometry
+source directory. Its six data inputs and two data outputs are typed member pins;
+AsyncCompute is a reflected member property. Output records match GAL's portable
+DrawIndirect layout (vertex count, instance count, first vertex, first instance).
+First instance resolves the compact meshlet index without a backend-specific draw-ID
+semantic. The output count is bounded by physical input/output capacity. Invalid
+active candidates and unused slots are zeroed. Hardware compute bounds are validated
+before graph emission. The current implementation dispatches over the backed meshlet
+capacity; sparse-work dispatch optimization and its bandwidth cost are not benchmarked.
+
+The VertexPullDraws source asset references MeshletVisibility and one native command
+producer. Its two authoring nodes expand to fourteen operations and expose fourteen
+buffer interfaces, including overflow. Both source and binary are produced with real
+Qt document/node commands and the production exporter. The real-world Vulkan test
+consumes two instances of this resource across two cameras, overrides a VisibilityView
+three levels down, and checks generated draw arguments before and after component
+removal. Synthetic tests use distinct LOD metadata ranges and verify nonzero first-
+vertex offsets for clipped primitive ranges. MeshletCull now rejects metadata whose
+LOD does not match the selected, generation-validated history.
+
+Validation evidence for this phase is recorded in Workspace/native-draw-build.log,
+native-draw-final-build.log, native-draw-final-core.log, native-draw-final-gpu.log,
+native-draw-author.log and native-draw-final-qt.log. Final builds pass for
+GraphicsCoreTest, GraphicsFoundationTest and EditorFrameworkTest, with dependent
+engine/editor targets. All 44 GraphicsCore CPU subtests, both Vulkan visibility
+subtests, all three NativeAssetAuthoring subtests and all 15 Qt EditorDocuments
+subtests pass. The asset-library test compares all ten packaged binaries with
+production exports and repeat exports. The initial CPU fixture assumed
+that only data pins exist; it was corrected to test the required input and indirect
+output contracts while preserving the common ordering pins. D3D12 is excluded.
+
+This prepares draw commands, not a completed raster pipeline. No rendering Builtin
+file or compatibility graph was added. Ten ordinary SDK assets are now packaged.
+The next deletion targets remain GpuScenePicking's hidden constants/command/raster
+orchestration, SurfaceQueryPass's call into that orchestration, and the editor
+SceneMeshPickingPass's embedded visibility/raster stack. Its capture/query state
+must become an explicitly wired consumer of a native surface output. Existing
+SceneMeshIdentity, SceneLodSelection and SceneLodSections tests still call the old
+helper and need native resource fixtures before it is removed. The complete game,
+editor, lighting, shadow and remaining specialized pipelines are still unfinished.
