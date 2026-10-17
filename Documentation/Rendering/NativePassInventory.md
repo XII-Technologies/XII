@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **52 concrete reflected operation classes** in
+Current source inventory: **54 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -31,10 +31,10 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 1 | `xiiSensorOutputPass` |
-| Temporal | 2 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass` |
+| Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 5 | `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
-| Visibility | 6 | `xiiInstanceCullPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
+| Visibility | 7 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiLodHistoryResetPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
 Every operation above declares concrete typed pin members through
@@ -88,7 +88,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 
 | Responsibility | Work still required |
 | --- | --- |
-| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z and LOD streaming feedback still need independent nodes. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
+| Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance/meshlet occlusion and LOD streaming feedback still need independent nodes. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
@@ -612,3 +612,94 @@ lighting/shadow orchestration still require decomposition and deletion; complete
 forward/deferred assets and camera/jitter history remain unfinished. The unrelated
 AmbientOcclusion asset hash edit is excluded from this phase. The overall migration
 is incomplete.
+
+
+## Independent depth pyramids and texture history - 2026-10-16
+
+DepthPyramidPass builds a transient R32Float reversed-Z minimum-depth mip chain from
+an explicit single-sample D32Float or R32Float image. It has typed SceneDepth and
+DepthPyramid members plus reflected AsyncCompute. It performs no history allocation,
+scene extraction, visibility orchestration or frame rotation. Internal mip barriers
+restore the render graph's whole-image state before downstream consumers run. Odd
+source rows/columns are included in overlapping conservative footprints rather than
+being discarded by a fixed 2 x 2 reduction. No unused data categories are requested.
+
+TextureHistoryPass retains an explicitly supplied texture in completion-checked
+storage private to each pass occurrence. PreviousTexture is an optional read-only
+previous-frame output, with GPU readiness waits. All mips and array slices are copied
+explicitly: the Vulkan CopyTexture implementation covers only the base subresource.
+Slots are reused only after their last writer/consumer frame completes, and the last
+published image is excluded from the next write. Recording a copy promotes history;
+an abandoned setup/compile does not. Invalidation drops availability and allocation
+replacement preserves resources still held by recorded work. The operation owns no
+scene, camera, depth reduction or visibility policy.
+
+DepthPyramid is a normal authored resource containing these two operations, with
+SceneDepth input and current/previous depth outputs. Its temporal/optional boundary
+contract survives editor export and hierarchical expansion. It requires Compute,
+with no Geometry, Lights, Atmosphere or world runtime feature initialization.
+
+The unused private view visibility-context handle, creation/destruction gate and
+PrepareRenderResources loop are deleted. Views invalidate their actual pass objects
+through the pipeline instance. Their unused virtual-shadow upload argument and
+transitive visibility/shadow includes are removed. The unused manager APIs
+PrepareHiZHistory, InvalidateHiZHistory, ImportPreviousHiZ, AddHiZBuildPass and
+GetHiZMipLevelCount, plus visibility-system-owned Hi-Z allocation/eager initialization,
+are deleted. Explicit old visibility clients still function while being migrated.
+Tests now include their own material/geometry dependencies directly.
+
+The new Vulkan readback regression exposed an existing image-region copy defect:
+CopyTextureRegionPlatform used the source box maximum as the destination offset.
+It now honors vDestinationPoint. The defect produced invalid out-of-bounds copies
+and device loss before the fix; the validated native pyramid test now passes. No
+D3D12 implementation is modified.
+
+Verification:
+
+- All four Debug test targets and dependent engine/editor targets plus GpuDrivenScene
+  build (`Workspace/native-depth-history-build-complete.log`); subsequent focused
+  builds compile the Vulkan copy fix and final readback regression.
+- All 49 GraphicsCore CPU subtests pass (`Workspace/native-depth-history-core-final.log`).
+  A first version of the new CPU test incorrectly reused an appended pin collection;
+  that test was corrected and the full suite passes. Initial compile failures from
+  const pointer binding, internal helper linkage and removed transitive test includes
+  were also corrected before final validation.
+- All nine NativeAssetAuthoring subtests pass, including temporal/optional interface
+  inference on the new ordinary DepthPyramid resource
+  (`Workspace/native-depth-history-author.log`). All fifteen Qt EditorDocuments
+  subtests pass, deterministically exporting/re-exporting all fifteen SDK assets
+  (`Workspace/native-depth-history-qt.log`).
+- Vulkan NativeDepthPyramid::AuthoredInterleavedHistory reads every texel of every
+  current/previous mip from D32 and R32 inputs. It covers 7 x 5 and 9 x 1 extents,
+  odd-edge minima, two independently configured occurrences in each of two
+  interleaved execution contexts, graphics/compute queues, skipped execution,
+  invalidation, resize and a fourteen-frame submission burst with no per-frame
+  readback/device-idle wait (`Workspace/native-depth-history-gpu-passed.log`).
+- Vulkan NativeVisibility's four existing authored world/depth/material subtests
+  pass (`Workspace/native-depth-history-visibility.log`). PipelineExtraction's
+  three subtests pass, preserving a shared sparse 288-byte instance upload once
+  across two cameras and zero warmed static upload bytes
+  (`Workspace/native-depth-history-PipelineExtraction.log`). Its uncontrolled Debug
+  packing sample is 2.471 ms/update; it is not a depth-pyramid benchmark.
+- NativeSceneLod (4) and NativeMeshCapture (3) Vulkan subtests pass after deleting the
+  unused view contexts (`Workspace/native-depth-history-<group>.log`). An initial
+  extraction filter was attempted against the editor test executable, where it
+  matches no tests; PipelineExtraction is correctly verified in GraphicsFoundationTest.
+- Vulkan Tools passes six subtests, including real copied-pixel readback with distinct
+  nonzero source/destination coordinates (`Workspace/native-depth-history-Tools-final.log`).
+- Searches confirm the removed view field/preparation method and five manager-owned
+  Hi-Z history APIs no longer occur. No rendering Builtin files or active scene
+  database types have been introduced.
+
+The original combined xiiGpuHiZPyramid remains in Visibility for GpuDrivenScene and
+TemporalHistoryTest consumers. Those must migrate to authored native resources before
+its header/implementation and old shader can be deleted. The remaining visibility
+service, independent occlusion/streaming feedback, lighting/shadows and full game/editor
+pipelines remain unfinished. There is no full application/runtime or D3D12 validation.
+
+The generic history operation adds one explicit full-image GPU copy, including mip
+levels, rather than rebuilding depth inside its storage owner. Its bandwidth and
+per-mip view-creation costs have not been benchmarked against the combined legacy
+path; no frame-performance improvement is claimed. Production code adds no device-idle
+wait. The unrelated AmbientOcclusion asset hash edit remains outside these commits.
+The overall architecture migration is incomplete.
