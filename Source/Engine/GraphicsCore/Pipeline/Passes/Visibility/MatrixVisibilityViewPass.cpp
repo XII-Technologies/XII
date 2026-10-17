@@ -45,7 +45,7 @@ xiiResult xiiMatrixVisibilityViewPass::Build(xiiRenderPipelinePassContext& conte
   const auto& view     = *context.m_pView;
   auto        matrix   = m_ViewProjection;
   auto        position = m_CameraPosition;
-  auto        width = m_uiWidth, height = m_uiHeight, required = m_uiRequiredFlags;
+  auto        width = m_uiWidth, height = m_uiHeight, required = m_uiRequiredFlags, excluded = m_uiExcludedFlags;
   const auto  parameter = [&](xiiStringView name, auto& value) -> xiiResult {
     const auto* supplied = context.m_Parameters.GetValue(name);
     if (!supplied)
@@ -61,6 +61,7 @@ xiiResult xiiMatrixVisibilityViewPass::Build(xiiRenderPipelinePassContext& conte
   XII_SUCCEED_OR_RETURN(parameter("CullingWidth", width));
   XII_SUCCEED_OR_RETURN(parameter("CullingHeight", height));
   XII_SUCCEED_OR_RETURN(parameter("CullingRequiredFlags", required));
+  XII_SUCCEED_OR_RETURN(parameter("CullingExcludedFlags", excluded));
   if (!matrix.IsValid() || !position.IsValid() || !width || !height || width > 65536 || height > 65536)
     return context.ReportFailure("Invalid matrix-query projection, position or resolution.");
   const auto           frustum = xiiFrustum::MakeFromMVP(matrix, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
@@ -74,7 +75,7 @@ xiiResult xiiMatrixVisibilityViewPass::Build(xiiRenderPipelinePassContext& conte
   snapshot.m_uiInstanceCount     = view.GetGpuInstanceData()->GetInstances().GetCount();
   snapshot.m_uiVisibilityMask    = m_uiVisibilityMask;
   snapshot.m_uiRequiredFlags     = required;
-  snapshot.m_uiExcludedFlags     = m_uiExcludedFlags;
+  snapshot.m_uiExcludedFlags     = excluded;
   snapshot.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   // Other worlds and views may advance the device frame clock between executions.
   // LOD validity follows this occurrence's published snapshots instead.

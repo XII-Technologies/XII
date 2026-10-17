@@ -50,8 +50,14 @@ void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID)
   GpuVisibilityView view = g_VisibilityView[0];
   if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex) return;
   GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
+  // Section candidates share one geometry-level LOD decision and representative ID.
+  // Validate the same representative that InstanceCull used when publishing history.
+  uint selectionIndex = index;
+  if (instance.LodSelectionIndex < min(view.InstanceCount, sceneCount) &&
+      g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
+    selectionIndex = instance.LodSelectionIndex;
   uint4 history = g_CurrentLodHistory[index];
-  if (history.x >= min(geometry.LodCount, 8u) || history.y != geometry.Generation || history.z != instance.ObjectId ||
+  if (history.x >= min(geometry.LodCount, 8u) || history.y != geometry.Generation || history.z != g_SceneInstances[selectionIndex].ObjectId ||
       (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x)) return;
   GpuGeometryLod lod = geometry.Lods[history.x];
   uint localMeshlet = tid.x;

@@ -10,6 +10,7 @@
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
+#include <EditorEngineProcessFrameworkTest/NativeVisibilityFixture.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <GraphicsCore/Lighting/EmissiveLightManager.h>
@@ -25,7 +26,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
@@ -148,24 +148,24 @@ static void TestLodSections(bool enableMeshShaders)
   XII_SCOPE_EXIT(renderer->DestroyView(viewHandle));
   view->SetCamera(&camera);
   view->SetViewport({0, 0, 64, 64});
-  const auto            projection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
-  const auto            frustum    = xiiFrustum::MakeFromMVP(projection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
-  xiiGpuInstanceData    scene(world);
+  const auto projection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
+  XII_TEST_RESULT(renderer->UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const>(), 0));
+  const auto& scene = *renderer->GetGpuInstanceData();
+  view->SetRenderEnabled(false);
   xiiRenderGraphContext graphContext;
   if (!XII_TEST_RESULT(graphContext.Initialize("LOD section query")))
     return;
-  xiiGpuVisibilityDescription visibilitySettings;
-  visibilitySettings.m_uiMaxInstances       = 16;
-  visibilitySettings.m_uiMaxVisibleMeshlets = 32;
-  const auto visibilityContext              = xiiGpuVisibilityManager::CreateContext(visibilitySettings);
-  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiGpuVisibilityManager::DestroyContext(visibilityContext));
-  xiiGpuFrameCompletionTracker completion;
-  completion.Initialize(environment.GetDevice());
+  xiiTestNativeVisibility visibilityPipeline;
+  if (!XII_TEST_RESULT(visibilityPipeline.Initialize(32)))
+    return;
   xiiUInt64                          frame = 0;
   xiiHashTable<xiiUInt32, xiiUInt32> stableIds;
 
   auto render = [&](float bias, xiiUInt32 expectedLod, xiiUInt32 expectedSections, xiiUInt32 expectedCandidates, xiiUInt32 forcedLod = xiiInvalidIndex, xiiUInt32 section = xiiInvalidIndex, bool excludeTransparent = false, bool onlyTransparent = false) {
-    ++frame;
+    xiiRenderGraphFrame gpuFrame;
+    if (!XII_TEST_RESULT(gpuFrame.Begin()))
+      return;
+    frame = gpuFrame.GetFrameIndex();
     component->SetForcedLOD(forcedLod);
     component->SetLodBias(bias);
     component->SetSectionIndex(section);
@@ -193,7 +193,7 @@ static void TestLodSections(bool enableMeshShaders)
       const auto* packet = xiiDynamicCast<const xiiMeshRenderData*>(extracted.GetAllRenderData()[0]);
       XII_TEST_INT(packet->m_uiPrimitiveCount, 0); // No indexed draw in CPU LOD zero.
     }
-    if (!XII_TEST_RESULT(scene.UpdateFromExtraction(extracted, frame)) || !XII_TEST_INT(scene.GetInstanceCount(), expectedCandidates))
+    if (!XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, frame)) || !XII_TEST_INT(scene.GetInstanceCount(), expectedCandidates))
       return;
     xiiUInt64 meshletCapacity = 0;
     meshletCapacity           = scene.GetMaximumMeshletCount();
@@ -215,10 +215,7 @@ static void TestLodSections(bool enableMeshShaders)
         stableIds.Insert(key, instance.m_uiObjectId);
       }
     }
-    const auto completed = completion.PollCompletedFrames();
-    xiiGALBindlessResourceTable::Collect(completed);
-    xiiMaterialManager::BeginFrame(frame, completed);
-    xiiGpuVisibilityManager::BeginFrame(frame, completed);
+    const auto completed = gpuFrame.GetCompletedFrame();
     xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
     meshletCapacity = scene.GetMaximumMeshletCount();
     XII_TEST_INT(meshletCapacity, expectedCandidates);
@@ -226,16 +223,8 @@ static void TestLodSections(bool enableMeshShaders)
     auto& cache = graphContext.GetResourceCache();
     cache.BeginFrame(frame, completed);
     graph.BeginSetup(frame);
-    const auto geometryUpload = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
-    const auto materialUpload = xiiMaterialManager::AddUploadPasses(graph);
-    auto       visibilityView = xiiGpuVisibilitySystem::BuildView(projection, frustum, camera.GetCenterPosition(), 64, 64, 0, expectedCandidates);
-    if (excludeTransparent)
-      visibilityView.m_uiExcludedFlags = xiiGpuInstanceFlags::Transparent;
-    if (onlyTransparent)
-      visibilityView.m_uiRequiredFlags |= xiiGpuInstanceFlags::Transparent;
-    xiiGpuVisibilityPassDescription visibilityDescription;
-    visibilityDescription.m_bAsyncCompute      = false;
-    visibilityDescription.m_bEnableLodFeedback = false;
+    const auto                  geometryUpload = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
+    const auto                  materialUpload = xiiMaterialManager::AddUploadPasses(graph);
     xiiRenderGraphTextureHandle hiZ;
     if (expectedCandidates == 0)
     {
@@ -253,7 +242,11 @@ static void TestLodSections(bool enableMeshShaders)
         builder.SetPassRenderPassManaged(); }, [](const EmptyHiZ& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Texture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); });
       hiZ               = source.first->m_Texture;
     }
-    auto visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, scene, visibilityView, geometryUpload, visibilityDescription, hiZ);
+    xiiGpuVisibilityOutputs visibility;
+    if (!XII_TEST_RESULT(visibilityPipeline.Build(view, graph, graphContext.GetBlackboard(), projection, camera.GetCenterPosition(), enableMeshShaders, visibility,
+                                                  excludeTransparent ? xiiUInt32(xiiGpuInstanceFlags::Transparent) : 0U,
+                                                  xiiUInt32(xiiGpuInstanceFlags::Enabled) | (onlyTransparent ? xiiUInt32(xiiGpuInstanceFlags::Transparent) : 0U), hiZ)))
+      return;
     // A single-section candidate contains one box meshlet. Exercise an exact 16-byte indirect
     // command allocation as well as the normal retained visibility capacity.
     if (!enableMeshShaders && expectedCandidates == 1)
@@ -263,8 +256,8 @@ static void TestLodSections(bool enableMeshShaders)
     raster.m_uiWidth = raster.m_uiHeight = 64;
     raster.m_uiVertexStride              = sizeof(xiiMeshPackedVertex);
     raster.m_uiTexCoordOffset            = offsetof(xiiMeshPackedVertex, m_vTexCoord0);
-    raster.m_uiMeshDispatchGroupCountX   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
-    raster.m_uiMeshDispatchGroupCountY   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
+    raster.m_uiMeshDispatchGroupCountX   = visibilityPipeline.m_Commands.m_uiMeshGroupCountX;
+    raster.m_uiMeshDispatchGroupCountY   = visibilityPipeline.m_Commands.m_uiMeshGroupCountY;
     xiiRenderGraphTextureHandle surface;
     xiiRenderGraphBufferHandle  queryCommands, queryCommandCount;
     if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "LOD section surface", visibility, geometryUpload, materialUpload, raster, surface, environment.GetDevice()->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, xiiGALFillMode::Solid, &queryCommands, &queryCommandCount)))
@@ -315,8 +308,8 @@ static void TestLodSections(bool enableMeshShaders)
     graph.EndSetup();
     if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), view, &graphContext.GetBlackboard(), &cache)))
       return;
-    completion.CaptureSubmittedFrame(frame);
-    completion.WaitForFrame(frame);
+    gpuFrame.End();
+    environment.GetDevice()->WaitIdle();
     if (expectedCandidates == 0)
     {
       for (const auto counter : {visibility.m_hVisibleInstanceCount, visibility.m_hVisibleMeshletCount, visibility.m_hIndirectCommandCount})
