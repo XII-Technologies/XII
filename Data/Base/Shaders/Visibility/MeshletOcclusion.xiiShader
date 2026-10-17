@@ -1,0 +1,50 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Visibility/GpuSceneCommon.h>
+#include <Shaders/Visibility/DepthOcclusionConstants.h>
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_OcclusionView;
+StructuredBuffer<uint2> g_Candidates;
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<uint> g_CandidateCount;
+Texture2D<float> g_DepthPyramid;
+RWStructuredBuffer<uint2> g_Visible;
+RWStructuredBuffer<uint> g_Count;
+
+#include <Shaders/Visibility/DepthOcclusion.h>
+bool Visible(GpuSceneInstance instance, GpuMeshlet meshlet, GpuVisibilityView view)
+{
+  if (KeepWithoutOcclusion(instance)) return true;
+  float3 c0 = float3(instance.GlobalTransform[0][0], instance.GlobalTransform[1][0], instance.GlobalTransform[2][0]);
+  float3 c1 = float3(instance.GlobalTransform[0][1], instance.GlobalTransform[1][1], instance.GlobalTransform[2][1]);
+  float3 c2 = float3(instance.GlobalTransform[0][2], instance.GlobalTransform[1][2], instance.GlobalTransform[2][2]);
+  float3 diagonal = float3(dot(c0, c0), dot(c1, c1), dot(c2, c2));
+  float3 offDiagonal = abs(float3(dot(c0, c1), dot(c0, c2), dot(c1, c2)));
+  float3 stretch = diagonal + float3(offDiagonal.x + offDiagonal.y, offDiagonal.x + offDiagonal.z, offDiagonal.y + offDiagonal.z);
+  // A Gram row-sum bound covers nonuniform scaling, reflection and shear.
+  float radius = meshlet.Bounds.w * sqrt(max(stretch.x, max(stretch.y, stretch.z)));
+  float3 center = mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
+  return BoundsVisibleInDepth(g_DepthPyramid, center, radius.xxx, view.OcclusionViewProjectionMatrix, DepthBias);
+}
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatch : SV_DispatchThreadID)
+{
+  uint candidates, scenes, meshlets, views, counts, capacity, stride;
+  g_Meshlets.GetDimensions(meshlets, stride);
+  g_Candidates.GetDimensions(candidates, stride); g_CandidateCount.GetDimensions(counts, stride);
+  g_SceneInstances.GetDimensions(scenes, stride); g_OcclusionView.GetDimensions(views, stride); g_Visible.GetDimensions(capacity, stride);
+  if (!counts || !views || dispatch.x >= min(g_CandidateCount[0], candidates)) return;
+  const uint2 pair = g_Candidates[dispatch.x];
+  if (pair.x >= scenes || pair.y >= meshlets) return;
+  const GpuSceneInstance instance = g_SceneInstances[pair.x];
+  if ((instance.Flags & 1u) == 0u || !Visible(instance, g_Meshlets[pair.y], g_OcclusionView[0])) return;
+  for (;;)
+  {
+    const uint count = g_Count[0]; if (count >= capacity) return;
+    uint observed; InterlockedCompareExchange(g_Count[0], count, count + 1u, observed);
+    if (observed == count) { g_Visible[count] = pair; return; }
+  }
+}

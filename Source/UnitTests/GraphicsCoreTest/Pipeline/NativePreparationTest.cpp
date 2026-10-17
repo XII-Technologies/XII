@@ -18,6 +18,7 @@
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchBoundsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
@@ -337,6 +338,58 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentInstanceOcclusion)
   XII_TEST_BOOL(pins[pass.m_Count.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::ReadWrite);
   xiiRenderPipelineResourceDescriptor definition;
   definition.AddPass("Occlusion", "xiiInstanceOcclusionPass");
+  definition.AddPass("Reset", "xiiCounterResetPass");
+  XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
+  for (const auto& pin : pins)
+    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+      definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[0].m_Id, pin.m_sName});
+  xiiGraphDefinition reusable;
+  XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(reusable);
+  for (xiiUInt32 instance = 0; instance < 2; ++instance)
+  {
+    const auto node     = root.AddSubgraph(instance ? "Strict" : "Biased", reusable.m_Id);
+    auto&      override = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
+    override.m_Path.PushBack(definition.m_Passes[0].m_Id);
+    override.m_Properties.Insert("DepthBias", instance ? 0.0f : 0.0005f);
+    for (const auto& pin : pins)
+      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+        root.m_Interface.PushBack({xiiStringBuilder(instance ? "Strict/" : "Biased/", pin.m_sName), true, root.m_Passes[node].m_Id, pin.m_sName});
+  }
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
+  if (compiled)
+  {
+    XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 4);
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshletOcclusion)
+{
+  xiiMeshletOcclusionPass pass;
+  xiiVariantDictionary    properties;
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  XII_TEST_BOOL(properties.Contains("DepthBias") && properties.Contains("AsyncCompute") && !properties.Contains("Candidates"));
+  XII_TEST_BOOL(pass.GetRuntimeFeatures().IsNoFlagSet() && pass.GetExtractionRequirements().IsNoFlagSet());
+  XII_TEST_BOOL(pass.GetDynamicRTTI()->FindPropertyByName("Stage") == nullptr);
+  properties.Insert("DepthBias", -0.01f);
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  properties.Insert("DepthBias", 1.01f);
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  properties.Insert("DepthBias", xiiMath::NaN<float>());
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
+  properties.Insert("DepthBias", 0.0f);
+  XII_TEST_RESULT(pass.Configure(properties));
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass.GetPins(pins);
+  if (!XII_TEST_RESULT(pass.InitializePinBindings(pins)))
+    return;
+  XII_TEST_BOOL(pins[pass.m_Depth.GetBindingIndex()].m_bInput && !pins[pass.m_Depth.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[pass.m_Depth.GetBindingIndex()].m_Format == xiiGALResourceFormat::R32Float);
+  XII_TEST_BOOL(pins[pass.m_Count.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::ReadWrite);
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Occlusion", "xiiMeshletOcclusionPass");
   definition.AddPass("Reset", "xiiCounterResetPass");
   XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
   for (const auto& pin : pins)

@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <Core/Graphics/Camera.h>
+#include <Foundation/Math/Frustum.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
@@ -40,9 +42,16 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   const auto& view = *context.m_pView;
   xiiFrustum  frustum;
   view.ComputeCullingFrustum(frustum);
-  auto snapshot                  = xiiGpuVisibilitySystem::BuildView(view.GetViewProjectionMatrix(xiiCameraEye::Left), frustum,
-                                                                     view.GetCamera()->GetCenterPosition(), view.GetRenderResolutionWidth(), view.GetRenderResolutionHeight(), 0,
-                                                                     view.GetGpuInstanceData()->GetInstances().GetCount(), m_uiVisibilityMask);
+  xiiGpuVisibilityView snapshot;
+  snapshot.m_ViewProjectionMatrix          = view.GetViewProjectionMatrix(xiiCameraEye::Left);
+  snapshot.m_OcclusionViewProjectionMatrix = snapshot.m_ViewProjectionMatrix;
+  for (xiiUInt8 i = 0; i < 6; ++i)
+    snapshot.m_FrustumPlanes[i] = frustum.GetPlane(i).GetAsVec4();
+  const auto position            = view.GetCamera()->GetCenterPosition();
+  snapshot.m_CameraPosition      = xiiVec4(position.x, position.y, position.z, 1);
+  snapshot.m_ViewportAndHiZ      = xiiVec4(float(view.GetRenderResolutionWidth()), float(view.GetRenderResolutionHeight()), 0, 0.0005f);
+  snapshot.m_uiInstanceCount     = view.GetGpuInstanceData()->GetInstances().GetCount();
+  snapshot.m_uiVisibilityMask    = m_uiVisibilityMask;
   snapshot.m_uiRequiredFlags     = m_uiRequiredFlags;
   snapshot.m_uiExcludedFlags     = m_uiExcludedFlags;
   snapshot.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());

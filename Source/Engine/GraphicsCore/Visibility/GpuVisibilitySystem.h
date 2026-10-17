@@ -7,36 +7,10 @@
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
+#include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
 class xiiGpuVisibilityManager;
 struct xiiGALMeshShaderProperties;
-
-struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiMat4 m_ViewProjectionMatrix;
-  /// Matrix that produced the supplied Hi-Z image. This is normally the previous frame's
-  /// view projection while m_ViewProjectionMatrix remains the current culling matrix.
-  xiiMat4   m_OcclusionViewProjectionMatrix;
-  xiiVec4   m_FrustumPlanes[6];
-  xiiVec4   m_CameraPosition;
-  xiiVec4   m_ViewportAndHiZ; // width, height, Hi-Z mip count, occlusion bias
-  xiiVec4   m_LodParameters;  // hysteresis, current history token, previous history token, reserved
-  xiiUInt32 m_uiInstanceCount      = 0U;
-  xiiUInt32 m_uiVisibilityMask     = 0xFFFFFFFFU;
-  xiiUInt32 m_uiRequiredFlags      = xiiGpuInstanceFlags::Enabled;
-  xiiUInt32 m_uiExcludedFlags      = 0U;
-  xiiUInt32 m_uiGeometryBaseIndex  = 0U;
-  xiiUInt32 m_uiMaxVisibleMeshlets = 0U;
-  xiiUInt32 m_uiCandidateCount     = 0U;
-  xiiUInt32 m_uiUseCandidates      = 0U;
-
-  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetFrustumPlaneCount() const { return 6U; }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiVec4   GetFrustumPlane(xiiUInt32 uiIndex) const { return m_FrustumPlanes[uiIndex]; }
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityView);
 
 /// Identifies an independently culled visibility set for profiling and editor tooling.
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPurpose
@@ -169,12 +143,6 @@ private:
   /// Adds upload and async-compute visibility passes. The geometry handles must be returned by
   /// xiiGeometryResidencyManager::AddUploadPass in the same graph setup.
   [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiGpuInstanceData& instances, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
-
-  /// Compatibility overload for the main view.
-  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiGpuInstanceData& instances, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, xiiRenderGraphTextureHandle hHiZ = {})
-  {
-    return AddPasses(graph, uiFrameIndex, instances, view, geometry, xiiGpuVisibilityPassDescription{}, hHiZ);
-  }
 
   [[nodiscard]] xiiUInt32 GetMeshDispatchGroupCountX() const { return m_uiMeshDispatchGroupCountX; }
   [[nodiscard]] xiiUInt32 GetMeshDispatchGroupCountY() const { return m_uiMeshDispatchGroupCountY; }

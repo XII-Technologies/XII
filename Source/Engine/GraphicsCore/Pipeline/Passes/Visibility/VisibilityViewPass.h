@@ -1,7 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
 /// Captures one camera's culling parameters and component selection into immutable graph data.
 class XII_GRAPHICSCORE_DLL xiiVisibilityViewPass final : public xiiRenderPipelinePass

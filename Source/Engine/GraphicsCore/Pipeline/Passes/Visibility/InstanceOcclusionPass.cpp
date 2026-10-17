@@ -2,10 +2,10 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
-#include <Shaders/Visibility/InstanceOcclusionConstants.h>
+#include <Shaders/Visibility/DepthOcclusionConstants.h>
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInstanceOcclusionPass, 1, xiiRTTIDefaultAllocator<xiiInstanceOcclusionPass>)
 {
@@ -68,14 +68,14 @@ xiiResult xiiInstanceOcclusionPass::Build(xiiRenderPipelinePassContext& context)
     auto output = *context.m_Graph.GetBufferDescription(candidates); output.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
     output.m_Usage = xiiGALResourceUsage::Default; output.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
     data.m_Visible = builder.WriteBuffer("Occlusion Visible Instances", output, xiiGALResourceStateFlags::UnorderedAccess);
-    data.m_Constants = xiiRenderPassUtils::Constants(builder, "Occlusion Parameters", sizeof(xiiInstanceOcclusionConstants));
+    data.m_Constants = xiiRenderPassUtils::Constants(builder, "Occlusion Parameters", sizeof(xiiDepthOcclusionConstants));
     data.m_Pipeline = m_Pipeline; data.m_uiGroups = static_cast<xiiUInt32>(groups); data.m_fBias = m_fDepthBias; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
-    { xiiGALMapHelper<xiiInstanceOcclusionConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard); mapped->DepthBias = data.m_fBias; }
+    { xiiGALMapHelper<xiiDepthOcclusionConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard); mapped->DepthBias = data.m_fBias; }
     xiiGALStateTransitionDescription transition; transition.m_pResource = execute.GetBuffer(data.m_Constants); transition.m_NewState = xiiGALResourceStateFlags::ConstantBuffer; transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
     commands.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
     commands.SetPipelineState(data.m_Pipeline.Borrow());
-    commands.ResolveAndSetConstantBuffer("xiiInstanceOcclusionConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
+    commands.ResolveAndSetConstantBuffer("xiiDepthOcclusionConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceBufferView("g_OcclusionView", execute.GetBuffer(data.m_View)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceBufferView("g_Candidates", execute.GetBuffer(data.m_Candidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);

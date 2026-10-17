@@ -4,7 +4,7 @@
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
