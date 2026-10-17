@@ -1085,6 +1085,106 @@ namespace
     return XII_SUCCESS;
   }
 
+  xiiStatus AuthorShadowMap(xiiStringView outputDirectory)
+  {
+    const xiiStringBuilder library(outputDirectory, "/RenderPipelines");
+    XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
+    XII_SUCCEED_OR_RETURN(AuthorShadowDepth(library));
+    xiiStringBuilder               path(outputDirectory, "/ShadowMap.xiiRenderPipelineAsset");
+    NativeVisibilityAuthorDocument document(path, "ShadowMap");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author explicit shadow target and reusable depth subgraph");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>((xiiRenderPipelineDeviceFeature::Compute | xiiRenderPipelineDeviceFeature::MeshShaders).GetValue())));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.ShadowMap/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* target = add("Depth Allocation", "xiiDepthTargetPass", {0, -300});
+    const auto* depth  = add("Authored Depth", "xiiRenderPipelineSubgraphPass", {600, 0});
+    if (!target || !depth)
+      return xiiStatus("Could not author shadow map nodes.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(target, "Width", 2048U));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(target, "Height", 2048U));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(depth, "Resource", "RenderPipelines/ShadowDepth.xiiBinRenderPipeline"));
+    auto overrideId = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ShadowMap/Mesh Shader Override");
+    XII_SUCCEED_OR_RETURN(accessor->AddObject(depth, depth->GetType()->FindPropertyByName("Overrides"), -1, xiiGetStaticRTTI<xiiGraphPropertyOverride>(), overrideId));
+    const auto* overrideObject = accessor->GetObject(overrideId);
+    XII_SUCCEED_OR_RETURN(accessor->InsertValueByName(overrideObject, "Path", xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ShadowDepth/Depth Raster"), -1));
+    XII_SUCCEED_OR_RETURN(accessor->InsertValueByName(overrideObject, "Properties", true, "UseMeshShaders"));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(depth));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* targetNode, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(targetNode, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing shadow map pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    XII_SUCCEED_OR_RETURN(connect(target, "DepthTarget", depth, "DepthTarget"));
+    xiiUInt32 row = 0;
+    for (const auto& pin : manager->GetInputPins(depth))
+    {
+      const auto* configuration = manager->GetPinPropertyObject(*pin);
+      if (!configuration)
+        return xiiStatus("Shadow map input has no reflected pin configuration.");
+      const auto* metadata = accessor->GetChildObjectByName(configuration, "Metadata", {});
+      if (!metadata)
+        return xiiStatus("Shadow map pin configuration has no reflected metadata.");
+      xiiVariant resourceType, format;
+      XII_SUCCEED_OR_RETURN(accessor->GetValueByName(metadata, "ResourceType", resourceType));
+      XII_SUCCEED_OR_RETURN(accessor->GetValueByName(metadata, "DeclaredFormat", format));
+      if (pin->GetName() == "DepthTarget" || resourceType.ConvertTo<xiiUInt32>() == xiiRenderPipelinePin::Order)
+        continue;
+      const auto* boundary = add(xiiStringBuilder("Input/", pin->GetName()), "xiiRenderPipelineInterfacePass", {-600, float(row++ * 150)});
+      if (!boundary)
+        return xiiStatus("Could not author shadow map interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", pin->GetName()));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", true));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", resourceType.ConvertTo<xiiUInt32>()));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Format", format));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      XII_SUCCEED_OR_RETURN(connect(boundary, "Value", depth, pin->GetName()));
+    }
+    const auto* output = add("Output/ShadowDepth", "xiiRenderPipelineInterfacePass", {1800, 0});
+    if (!output)
+      return xiiStatus("Could not author shadow map output.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Name", "ShadowDepth"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Input", false));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Texture)));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Format", static_cast<xiiInt64>(xiiGALResourceFormat::D32Float)));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(output));
+    XII_SUCCEED_OR_RETURN(connect(depth, "ShadowDepth", output, "Value"));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import shadow map asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/ShadowMap.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Shadow map asset did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 10);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 4);
+    return XII_SUCCESS;
+  }
+
   xiiStatus AuthorGeometryLodFeedback(xiiStringView outputDirectory)
   {
     const xiiStringView name = "GeometryLodFeedback";
@@ -1311,4 +1411,13 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldMeshDraws)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("WorldMeshAuthoring"));
   XII_TEST_STATUS(AuthorWorldMeshDraws(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ShadowMap)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeShadowMapAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeShadowMapAuthoring"));
+  XII_TEST_STATUS(AuthorShadowMap(path));
 }
