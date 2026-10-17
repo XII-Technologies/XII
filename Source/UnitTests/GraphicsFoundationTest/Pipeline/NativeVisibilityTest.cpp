@@ -17,7 +17,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
