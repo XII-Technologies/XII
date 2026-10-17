@@ -1,5 +1,4 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
-#include <bit>
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -22,6 +21,7 @@
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
+#include <bit>
 
 class xiiNativeCullSource : public xiiRenderPipelinePass
 {
@@ -188,11 +188,11 @@ class xiiNativeMeshletWorkExport : public xiiRenderPipelinePass
 
 public:
   xiiRenderPipelineBufferInputPin m_Arguments, m_Meshlets, m_Count, m_Overflow;
-  xiiRenderPipelineBufferInputPin m_Maximum{true}, m_DrawCommands{true}, m_DrawCount{true};
+  xiiRenderPipelineBufferInputPin m_Maximum{true}, m_DrawCommands{true}, m_DrawCount{true}, m_MeshCommands{true}, m_MeshCount{true};
   xiiResult                       Build(xiiRenderPipelinePassContext& context) override
   {
     context.m_Graph.AddPass<xiiUInt32>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) {
-        for (auto handle : {context.GetInputBuffer(m_Arguments), context.GetInputBuffer(m_Maximum), context.GetInputBuffer(m_Meshlets), context.GetInputBuffer(m_Count), context.GetInputBuffer(m_Overflow), context.GetInputBuffer(m_DrawCommands), context.GetInputBuffer(m_DrawCount)})
+        for (auto handle : {context.GetInputBuffer(m_Arguments), context.GetInputBuffer(m_Maximum), context.GetInputBuffer(m_Meshlets), context.GetInputBuffer(m_Count), context.GetInputBuffer(m_Overflow), context.GetInputBuffer(m_DrawCommands), context.GetInputBuffer(m_DrawCount), context.GetInputBuffer(m_MeshCommands), context.GetInputBuffer(m_MeshCount)})
           if (handle.IsValid()) builder.ExportBuffer(builder.ReadBuffer(handle, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     return XII_SUCCESS;
   }
@@ -205,6 +205,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeMeshletWorkExport, 1, xiiRTTIDefaultAl
       XII_MEMBER_PROPERTY("Maximum", m_Maximum)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("DrawCommands", m_DrawCommands)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("DrawCount", m_DrawCount)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("MeshCommands", m_MeshCommands)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("MeshCount", m_MeshCount)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Meshlets", m_Meshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Count", m_Count)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Overflow", m_Overflow)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -217,11 +219,11 @@ class xiiNativeSurfaceExport : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiNativeSurfaceExport, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineTextureInputPin m_Surface{xiiGALResourceFormat::RGBA32UInt}, m_Depth{xiiGALResourceFormat::D32Float};
+  xiiRenderPipelineTextureInputPin m_Surface{xiiGALResourceFormat::RGBA32UInt, true}, m_Depth{xiiGALResourceFormat::D32Float};
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override
   {
     context.m_Graph.AddPass<xiiUInt32>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) {
-      builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Surface), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      if (context.GetInputTexture(m_Surface).IsValid()) builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Surface), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
       builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Depth), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     return XII_SUCCESS;
   }
@@ -240,7 +242,7 @@ namespace
 {
   struct MeshletWork
   {
-    xiiUInt32 m_uiDispatch, m_uiCull, m_uiDraw;
+    xiiUInt32 m_uiDispatch, m_uiCull, m_uiDraw, m_uiMeshDraw;
   };
   MeshletWork AddMeshletWork(xiiRenderPipelineResourceDescriptor& definition, xiiStringView label, xiiUInt32 prepared, xiiUInt32 culled)
   {
@@ -280,7 +282,14 @@ namespace
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", draw, "VisibleMeshletCount"));
     XII_TEST_RESULT(definition.Connect(draw, "DrawCommands", output, "DrawCommands"));
     XII_TEST_RESULT(definition.Connect(draw, "DrawCommandCount", output, "DrawCount"));
-    return {dispatch, meshlet, draw};
+    const auto meshDraw = definition.AddPass(xiiStringBuilder(label, " Mesh Draw Commands"), "xiiMeshDrawCommandsPass");
+    definition.m_Passes[meshDraw].m_Properties.Insert("MeshGroupCountX", 4U);
+    definition.m_Passes[meshDraw].m_Properties.Insert("MeshGroupCountY", 2U);
+    XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", meshDraw, "VisibleMeshlets"));
+    XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", meshDraw, "VisibleMeshletCount"));
+    XII_TEST_RESULT(definition.Connect(meshDraw, "DrawCommands", output, "MeshCommands"));
+    XII_TEST_RESULT(definition.Connect(meshDraw, "DrawCommandCount", output, "MeshCount"));
+    return {dispatch, meshlet, draw, meshDraw};
   }
 } // namespace
 
@@ -450,6 +459,30 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
             }
           }
         }
+        if (source.m_Element == leaf.m_Passes[work.m_uiMeshDraw].m_Id)
+        {
+          auto      arguments = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "DrawCommands")->m_hBuffer);
+          auto      counter   = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "DrawCommandCount")->m_hBuffer);
+          xiiUInt32 cullIndex = xiiInvalidIndex;
+          for (xiiUInt32 j = 0; j < compiled->GetProvenance().GetCount(); ++j)
+            if (compiled->GetProvenance()[j].m_Element == leaf.m_Passes[work.m_uiCull].m_Id && compiled->GetProvenance()[j].m_InstancePath == source.m_InstancePath)
+              cullIndex = j;
+          if (!XII_TEST_BOOL(cullIndex != xiiInvalidIndex))
+            return;
+          auto       meshlets = graph.GetExportedBuffer(instances[view].GetOutputBinding(cullIndex, "VisibleMeshletCount")->m_hBuffer);
+          xiiUInt32  count, draws;
+          xiiVec3U32 command;
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), arguments.Borrow(), 0, command) ||
+              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), counter.Borrow(), 0, draws) ||
+              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), meshlets.Borrow(), 0, count))
+            return;
+          const xiiUInt32 rows = (count + 3) / 4;
+          XII_TEST_INT(command.x, xiiMath::Min(count, 4U));
+          XII_TEST_INT(command.y, xiiMath::Min(rows, 2U));
+          XII_TEST_INT(command.z, (rows + 1) / 2);
+          XII_TEST_INT(draws, count ? 1 : 0);
+          XII_TEST_BOOL(xiiUInt64(command.x) * command.y * command.z >= count);
+        }
         if (source.m_Element == leaf.m_Passes[work.m_uiDraw].m_Id)
         {
           auto      counter       = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "DrawCommandCount")->m_hBuffer);
@@ -537,7 +570,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
   }
 }
 
-XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
+static void TestAuthoredWorldVisibility(bool depthOnly)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -545,7 +578,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("SurfaceQuery");
+  const auto                                 asset = xiiLoadPipelineLibraryResource(depthOnly ? "DepthOnly" : "SurfaceQuery");
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
@@ -567,7 +600,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
       meshletId = source.m_Element;
     if (pass.m_sType == "xiiVertexPullDrawCommandsPass")
       drawId = source.m_Element;
-    if (pass.m_sType == "xiiSurfaceQueryPass")
+    if (pass.m_sType == (depthOnly ? "xiiDepthRasterPass" : "xiiSurfaceQueryPass"))
       surfaceId = source.m_Element;
     if (pass.m_sType == "xiiVisibilityViewPass")
     {
@@ -588,7 +621,10 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     const auto pixels = root.AddPass(i == 0 ? "Visible surface readback" : "Filtered surface readback", "xiiNativeSurfaceExport");
-    XII_TEST_RESULT(root.Connect(i, "Surface", pixels, "Surface"));
+    if (!depthOnly)
+    {
+      XII_TEST_RESULT(root.Connect(i, "Surface", pixels, "Surface"));
+    }
     XII_TEST_RESULT(root.Connect(i, "SceneDepth", pixels, "SceneDepth"));
     const auto work = root.AddPass(i == 0 ? "Visible meshlet readback" : "Filtered meshlet readback", "xiiNativeMeshletWorkExport");
     XII_TEST_RESULT(root.Connect(i, "DispatchArguments", work, "Arguments"));
@@ -602,7 +638,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
     XII_TEST_RESULT(root.Connect(i, "LodHistory", sink, "Lod"));
   }
-  const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Authored world visibility instances", std::move(root));
+  const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(depthOnly ? "Authored independent depth instances" : "Authored world visibility instances", std::move(root));
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
   xiiMeshResourceDescriptor meshDescription;
@@ -714,22 +750,33 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
         if (provenance.m_Element == surfaceId)
         {
           const bool filtered = provenance.m_InstancePath[0] == filteredId;
-          auto       surface  = view->GetRenderGraph()->GetExportedTexture(execution.GetOutputBinding(i, "Surface")->m_hTexture);
           auto       depth    = view->GetRenderGraph()->GetExportedTexture(execution.GetOutputBinding(i, "SceneDepth")->m_hTexture);
-          xiiVec4U32 pixel;
           float      depthPixel;
-          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), surface.Borrow(), 32, 32, pixel) ||
-              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), depth.Borrow(), 32, 32, depthPixel))
+          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), depth.Borrow(), 32, 32, depthPixel))
             return;
-          XII_TEST_INT(pixel.x, resident && !filtered ? identity : 0);
-          if (pixel.x != 0)
+          if (depthOnly)
           {
-            XII_TEST_FLOAT(depthPixel, std::bit_cast<float>(pixel.y), 0.00001f);
-            XII_TEST_BOOL(depthPixel > 0 && depthPixel < 1);
-            XII_TEST_BOOL(xiiMath::IsFinite(std::bit_cast<float>(pixel.z)) && xiiMath::IsFinite(std::bit_cast<float>(pixel.w)));
+            const auto projected = view->GetViewProjectionMatrix(xiiCameraEye::Left) * xiiVec4(-0.5f, 0, 0, 1);
+            XII_TEST_FLOAT(depthPixel, resident && !filtered ? projected.z / projected.w : 0.0f, 0.00001f);
           }
           else
-            XII_TEST_FLOAT(depthPixel, 0, 0);
+          {
+            auto       surface = view->GetRenderGraph()->GetExportedTexture(execution.GetOutputBinding(i, "Surface")->m_hTexture);
+            xiiVec4U32 pixel;
+            if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), surface.Borrow(), 32, 32, pixel))
+              return;
+            XII_TEST_INT(pixel.x, resident && !filtered ? identity : 0);
+            if (pixel.x != 0)
+            {
+              XII_TEST_FLOAT(depthPixel, std::bit_cast<float>(pixel.y), 0.00001f);
+              XII_TEST_BOOL(depthPixel > 0 && depthPixel < 1);
+              XII_TEST_BOOL(xiiMath::IsFinite(std::bit_cast<float>(pixel.z)) && xiiMath::IsFinite(std::bit_cast<float>(pixel.w)));
+            }
+            else
+            {
+              XII_TEST_FLOAT(depthPixel, 0, 0);
+            }
+          }
         }
         if (provenance.m_Element == uploadId)
         {
@@ -756,3 +803,6 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances)
   }
   XII_TEST_BOOL(sawResident);
 }
+
+XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances) { TestAuthoredWorldVisibility(false); }
+XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredDepthOnlyInstances) { TestAuthoredWorldVisibility(true); }
