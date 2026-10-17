@@ -130,5 +130,45 @@ XII_CREATE_SIMPLE_TEST(Tools, TextureReadback)
     capture = readback.GetCompleted();
     XII_TEST_BOOL(capture.m_pStagingTexture == pFirstStagingTexture);
     readback.RecycleStagingTexture(capture.m_pStagingTexture);
+
+    // A GPU image copy must honor the requested destination, independently of the source box.
+    auto destination = environment.GetDevice()->CreateTexture(textureDescription);
+    if (!XII_TEST_BOOL(destination != nullptr))
+      return;
+    pCommandList->Begin();
+    xiiGALStateTransitionDescription transitions[2];
+    transitions[0].m_pResource       = pTexture;
+    transitions[0].m_NewState        = xiiGALResourceStateFlags::CopySource;
+    transitions[0].m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+    transitions[1].m_pResource       = destination;
+    transitions[1].m_NewState        = xiiGALResourceStateFlags::CopyDestination;
+    transitions[1].m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+    pCommandList->TransitionResourceStates(transitions);
+    pCommandList->CopyTextureRegion(pTexture, mipLevel, xiiBoundingBoxU32::MakeFromMinMax({2, 1, 0}, {5, 3, 1}), destination, mipLevel, {1, 2, 0});
+    request.m_pTexture  = destination;
+    request.m_uiRegionX = 1;
+    request.m_uiRegionY = 2;
+    request.m_uiRegionW = 3;
+    request.m_uiRegionH = 2;
+    XII_TEST_RESULT(readback.Enqueue(pCommandList, request));
+    pCommandList->End();
+    pQueue->WaitForFenceValue(pQueue->Submit(pCommandList));
+    readback.WaitForNextCompleted();
+    capture = readback.GetCompleted();
+    if (!XII_TEST_BOOL(static_cast<bool>(capture)))
+      return;
+    pMapCommandList->Reset();
+    pMapCommandList->Begin();
+    if (!XII_TEST_RESULT(pMapCommandList->MapTextureSubresource(capture.m_pStagingTexture, {}, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped)))
+      return;
+    for (xiiUInt32 y = 0; y < 2; ++y)
+    {
+      const auto* actual   = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
+      const auto* expected = &pixels[((1 + y) * width + 2) * 4];
+      XII_TEST_BOOL(xiiMemoryUtils::IsEqual(actual, expected, 12));
+    }
+    pMapCommandList->UnmapTextureSubresource(capture.m_pStagingTexture, {}).AssertSuccess();
+    pMapCommandList->End();
+    readback.RecycleStagingTexture(capture.m_pStagingTexture);
   }
 }

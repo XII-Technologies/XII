@@ -3112,9 +3112,9 @@ void xiiGALCommandListVulkan::CopyTextureRegionPlatform(xiiGALTexture* pSourceTe
     vkImageCopyRegion.dstSubresource.layerCount     = 1;
     vkImageCopyRegion.dstSubresource.mipLevel       = destinationMipLevelData.m_uiMipLevel;
     vkImageCopyRegion.dstSubresource.aspectMask     = vkAspectFlags;
-    vkImageCopyRegion.dstOffset.x                   = box.m_vMax.x;
-    vkImageCopyRegion.dstOffset.y                   = box.m_vMax.y;
-    vkImageCopyRegion.dstOffset.z                   = box.m_vMax.z;
+    vkImageCopyRegion.dstOffset.x                   = vDestinationPoint.x;
+    vkImageCopyRegion.dstOffset.y                   = vDestinationPoint.y;
+    vkImageCopyRegion.dstOffset.z                   = vDestinationPoint.z;
 
     CopyTextureRegion(pSourceTextureVulkan, pDestinationTextureVulkan, vkImageCopyRegion);
   }
