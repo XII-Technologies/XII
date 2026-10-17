@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
@@ -198,4 +199,20 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVertexPullCommands)
   XII_TEST_BOOL(pins[pass.m_CommandCount.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
   XII_TEST_RESULT(pass.GetProperties(properties));
   XII_TEST_BOOL(properties.Contains("AsyncCompute") && !properties.Contains("DrawCommands"));
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitSurfaceRasterConstants)
+{
+  xiiSurfaceRasterConstantsPass constants;
+  xiiVariantDictionary          properties;
+  XII_TEST_RESULT(constants.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("RasterConstants"));
+  properties.Insert("VertexStride", 0U);
+  XII_TEST_BOOL(constants.Configure(properties).Failed());
+  properties.Insert("VertexStride", xiiUInt32(sizeof(xiiMeshPackedVertex)));
+  properties.Insert("NormalOffset", xiiMath::MaxValue<xiiUInt32>());
+  XII_TEST_BOOL(constants.Configure(properties).Failed());
+  properties.Insert("NormalOffset", xiiUInt32(offsetof(xiiMeshPackedVertex, m_vNormal)));
+  properties.Insert("VertexStride", xiiUInt32(sizeof(xiiMeshPackedVertex)) + 1U);
+  XII_TEST_BOOL(constants.Configure(properties).Failed());
 }
