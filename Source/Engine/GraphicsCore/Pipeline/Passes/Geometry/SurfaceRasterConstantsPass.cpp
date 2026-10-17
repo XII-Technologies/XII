@@ -19,8 +19,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceRasterConstantsPass, 1, xiiRTTIDefaul
     XII_MEMBER_PROPERTY("NormalOffset", m_uiNormalOffset)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(offsetof(xiiMeshPackedVertex, m_vNormal)))),
     XII_MEMBER_PROPERTY("TangentOffset", m_uiTangentOffset)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(offsetof(xiiMeshPackedVertex, m_vTangent)))),
     XII_MEMBER_PROPERTY("TexCoordOffset", m_uiTexCoordOffset)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(offsetof(xiiMeshPackedVertex, m_vTexCoord0)))),
-    XII_MEMBER_PROPERTY("MeshGroupCountX", m_uiMeshGroupCountX)->AddAttributes(new xiiDefaultValueAttribute(1U), new xiiClampValueAttribute(1U, 65535U)),
-    XII_MEMBER_PROPERTY("MeshGroupCountY", m_uiMeshGroupCountY)->AddAttributes(new xiiDefaultValueAttribute(1U), new xiiClampValueAttribute(1U, 65535U)),
+    XII_MEMBER_PROPERTY("MeshGroupCountX", m_uiMeshGroupCountX)->AddAttributes(new xiiDefaultValueAttribute(1U), new xiiClampValueAttribute(1U, xiiMath::MaxValue<xiiUInt32>())),
+    XII_MEMBER_PROPERTY("MeshGroupCountY", m_uiMeshGroupCountY)->AddAttributes(new xiiDefaultValueAttribute(1U), new xiiClampValueAttribute(1U, xiiMath::MaxValue<xiiUInt32>())),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Geometry") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -31,8 +31,8 @@ xiiResult xiiSurfaceRasterConstantsPass::Configure(const xiiVariantDictionary& p
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   return (m_uiVertexStride | m_uiNormalOffset | m_uiTangentOffset | m_uiTexCoordOffset) % 4 == 0 &&
       m_uiVertexStride >= 16 && m_uiNormalOffset <= m_uiVertexStride - 12 && m_uiTangentOffset <= m_uiVertexStride - 16 &&
-      m_uiTexCoordOffset <= m_uiVertexStride - 8 && m_uiMeshGroupCountX > 0 && m_uiMeshGroupCountX <= 65535 &&
-      m_uiMeshGroupCountY > 0 && m_uiMeshGroupCountY <= 65535 ?
+      m_uiTexCoordOffset <= m_uiVertexStride - 8 && m_uiMeshGroupCountX > 0 && m_uiMeshGroupCountY > 0 &&
+      xiiUInt64(m_uiMeshGroupCountX) * m_uiMeshGroupCountY <= xiiMath::MaxValue<xiiUInt32>() ?
     XII_SUCCESS :
     XII_FAILURE;
 }

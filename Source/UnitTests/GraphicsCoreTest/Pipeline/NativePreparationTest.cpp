@@ -207,6 +207,14 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitSurfaceRasterConstants)
   xiiVariantDictionary          properties;
   XII_TEST_RESULT(constants.GetProperties(properties));
   XII_TEST_BOOL(!properties.Contains("RasterConstants"));
+  properties.Insert("MeshGroupCountX", 1048576U);
+  properties.Insert("MeshGroupCountY", 1U);
+  XII_TEST_RESULT(constants.Configure(properties));
+  properties.Insert("MeshGroupCountX", xiiMath::MaxValue<xiiUInt32>());
+  properties.Insert("MeshGroupCountY", 2U);
+  XII_TEST_BOOL(constants.Configure(properties).Failed());
+  properties.Insert("MeshGroupCountX", 1U);
+  properties.Insert("MeshGroupCountY", 1U);
   properties.Insert("VertexStride", 0U);
   XII_TEST_BOOL(constants.Configure(properties).Failed());
   properties.Insert("VertexStride", xiiUInt32(sizeof(xiiMeshPackedVertex)));
