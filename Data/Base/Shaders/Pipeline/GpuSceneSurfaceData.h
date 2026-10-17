@@ -43,11 +43,15 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   GBufferVertex output;
   output.Position             = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
   output.WorldNormal          = worldNormal;
+#if !defined(XII_SCENE_SURFACE_QUERY)
   output.WorldTangent         = worldTangent;
   output.TangentSign          = localTangent.w;
+#endif
   output.TexCoord             = texCoord;
   output.MaterialIndex        = instance.MaterialIndex;
+#if !defined(XII_SCENE_SURFACE_QUERY)
   output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
+#endif
   output.ObjectId             = instance.ObjectId;
   return output;
 }

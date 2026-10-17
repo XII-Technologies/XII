@@ -13,11 +13,15 @@ struct GBufferVertex
 {
   float4               Position : SV_Position;
   float3               WorldNormal : TEXCOORD0;
+#if !defined(XII_SCENE_SURFACE_QUERY)
   float3               WorldTangent : TEXCOORD1;
   float                TangentSign : TEXCOORD2;
+#endif
   float2               TexCoord : TEXCOORD3;
   nointerpolation uint MaterialIndex : TEXCOORD4;
+#if !defined(XII_SCENE_SURFACE_QUERY)
   float4               PreviousClipPosition : TEXCOORD5;
+#endif
   nointerpolation uint ObjectId : TEXCOORD6;
 };
 
