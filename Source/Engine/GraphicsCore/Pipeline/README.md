@@ -36,7 +36,7 @@ initialize a persistent settings object for their next save.
 
 `SetPipelineParameter` and `RemovePipelineParameter` provide view overrides.
 Overrides replace values with the same top-level key; nested dictionaries are
-replaced as a unit. The built-in `DisplayOutput` dictionary accepts the reflected
+replaced as a unit. The `DisplayOutput` dictionary accepts the reflected
 properties of `xiiDisplayOutputSettings`, including nested `Exposure` and
 `ColorGrading` dictionaries. Values are validated before use and do not modify
 the view's display defaults. Other parameter names belong to consuming passes.
@@ -51,7 +51,9 @@ returns `xiiResult` plus an optional diagnostic; failure leaves its output uncha
 ## Passes and bindings
 
 Derive a reflected concrete type from `xiiRenderPipelinePass`. Declare writable
-configuration properties, return a pin schema from `GetPins`, and implement `Build`.
+configuration properties and concrete typed pin members through `XII_MEMBER_PROPERTY`,
+and implement `Build`. The base `GetPins` discovers the reflected members; operations
+must not maintain a parallel array of pin types.
 Constructors, `Configure`, `GetPins`, and `ValidatePipeline` must be CPU-only because
 compilation may run on a resource loading thread. A separate object is constructed
 for every pass in every runtime instance. Consumers can retain arbitrary typed state
@@ -107,14 +109,13 @@ the render graph remain essential: an order pin alone does not declare GPU resou
 access. `SetPassPreparation` runs uploads after resource resolution and barriers,
 before a managed native render pass begins.
 
-The built-in catalog provides composite geometry, lighting, transparency, and screen
-stages, plus individually connectable histogram, exposure, TAA, upscale, bloom, and
-tone-mapping passes. Composite stages preserve existing internal device-dependent
-choices and frame services. They use one shared built-in cache within each view;
-duplicate instances of a built-in stage are rejected. Independent branched effects
-use concrete pass types with their own state. The generic pipeline permits repeated
-types and arbitrary acyclic topology. Built-in prerequisites are validated during
-compilation; the authored Deferred resource explicitly supplies both ordering and pin edges.
+Independent operation types live in `Pipeline/Passes`, grouped by responsibility.
+There is no built-in rendering catalog, composite stage selector or stage prerequisite
+check. Repeated types and nested reusable definitions are supported. Ordinary authored
+assets select algorithms and supply typed connections; compatible operations can share
+GPU submissions or managed hardware render passes. The operation count does not imply
+the submission count. See `Documentation/Rendering/NativePassInventory.md` for actual
+conversion counts, deleted backends and algorithms still requiring rebuilding.
 
 ## Lifetime, reload, and threads
 
@@ -127,10 +128,11 @@ or invalid resources clear executable state and skip rendering that view.
 
 Instances and views require external synchronization. Synchronize or destroy an
 instance only after its previous CPU execution delegates have finished. GAL objects
-follow the device's deferred destruction rules. Built-in GPU caches belong to the
-view resource context and survive topology changes for reuse; histories are invalidated
-and the context is destroyed before device shutdown. Separate views own separate
-caches and mutable pass objects. Parameters and bindings use retained storage.
+follow the device's deferred destruction rules. Private pass caches, readback rings and
+temporal histories belong to each runtime occurrence. Separate views and repeated
+subgraphs receive separate mutable pass objects. Shared physical asset residency belongs
+to existing device/resource services. Parameters and bindings use retained storage.
+No hidden runtime initializes an unrelated rendering feature for a selected graph.
 
 ## Serialization and tooling
 
@@ -141,9 +143,12 @@ Compiled `.xiiBinRenderPipeline` files contain the normal asset header, format v
 3, and the descriptor envelope. Obsolete compiled versions produce a diagnostic
 requesting re-transformation of the source asset.
 
-The editor node manager obtains schemas from reflected pass prototypes. Built-in
-creation templates configure their stage explicitly. Asset transformation constructs
-the descriptor, validates it through the same compiler, and writes the resource format.
+The editor node manager obtains schemas from reflected pass prototypes and member pins.
+Node selection exposes reflected pass properties; pin selection exposes its persistent
+configuration through the normal property grid and attribute handling. Subgraph references,
+interfaces, overrides and explicit expansion use existing document commands. Asset
+transformation constructs the descriptor, validates it through the same compiler, and
+writes the resource format.
 GraphicsCore and Core have no Qt dependencies. No new resource manager or asset system
 is introduced.
 
@@ -151,7 +156,7 @@ is introduced.
 
 Topology storage is O(V + E); pin schemas and bindings add O(P). Topological ordering
 is O(V + E). Compilation also performs bounded pin searches and sorts connections in
-O(E log E); built-in prerequisite validation can inspect O(V²) stage pairs. Limits are
+O(E log E). Definition expansion is bounded and records source provenance. Limits are
 4096 passes, 65536 connections, and 256 pins per pass. Frame construction follows a
 precomputed flat order and connection intervals in O(V + E + P), excluding work inside
 passes. It does not traverse the Core graph or recompile unchanged definitions.
@@ -159,8 +164,9 @@ The resource reports inclusive CPU memory estimates for topology, schemas, bindi
 and nested configuration; custom typed variant objects may own additional allocations
 that cannot be inferred from reflection alone.
 
-Cycles are rejected because render-pipeline construction requires dependency ordering.
-Feedback uses pass-owned history from earlier frames. GPU scheduling and synchronization
+Intra-frame dependency cycles are rejected by the rendering consumer. Explicit temporal
+pins describe pass-owned history from earlier frames and do not add intra-frame dependency
+edges. The Core graph itself permits cycles. GPU scheduling and synchronization
 are delegated to the render graph. The resource API does not imply thread-safe view
 mutation, arbitrary reflection-plugin unloading, or automatic migration of obsolete
 compiled binaries.
@@ -170,22 +176,14 @@ compiled binaries.
 `GraphicsCoreTest` covers compilation, invalid connectivity and formats, required
 bindings, cycles, deterministic ordering, serialization corruption/truncation,
 ResourceManager loading/reloading, retained snapshots, and isolated pass state.
-`GraphicsFoundationTest` exercises two views sharing one resource with separate GPU
-buffer readbacks, and the default offscreen pipeline over multiple frames with texture
-readback. Validation is performed with the Vulkan backend enabled in the Windows
-Debug workspace. Other backends and configurations require their own validation.
+`GraphicsFoundationTest` exercises native authored resources, explicit inputs, nested
+instances, world extraction, GPU visibility/raster/feedback and private temporal state
+with real GPU readbacks. `EditorFrameworkTest` checks Qt document commands, pin properties,
+authoring and deterministic source/binary resources. `EditorEngineProcessFrameworkTest`
+checks editor views, component lifetimes, LOD and skinning integration.
 
-Validation on 2026-10-10: Debug builds of `GraphicsCoreTest`,
-`GraphicsFoundationTest`, and `GpuDrivenScene` succeeded. All 17 GraphicsCore
-subtests and all 40 GraphicsFoundation subtests passed, including both pipeline
-GPU tests. The final Vulkan suite emitted no warnings or errors. Tests used
-`-nosave -nogui -all`; no renderer filter was applied, so every compiled backend
-was selected (this workspace enables Vulkan and disables D3D12).
-
-That historical checkpoint preceded subsequent editor and Vulkan runtime repairs.
-Current migration validation and remaining gates are tracked in
-`Documentation/Rendering/EditorAuthoredPipelineMigration.md`,
-`Documentation/Rendering/WorldRenderingMigration.md` and
-`Documentation/Rendering/HierarchicalGraphComposition.md`; the historical results
-above are not evidence for the current editor or runtime state. D3D12 is excluded
-from the ongoing migration validation at the user's request.
+Current evidence and incomplete migration responsibilities are tracked in
+`Documentation/Rendering/NativePassInventory.md`. Focused Vulkan suites pass, but the
+full visible-geometry GpuDrivenScene sample still reports ErrorDeviceLost; it is not
+runtime-verified. D3D12 is excluded at the user's request. Historical tests of the
+removed composite rendering path do not establish correctness of the native rebuild.

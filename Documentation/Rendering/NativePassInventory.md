@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **63 concrete reflected operation classes** in
+Current source inventory: **66 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -31,6 +31,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 1 | `xiiSensorOutputPass` |
+| Shadows | 3 | `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
@@ -92,7 +93,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are independent native operations, consumed by the authored sample graph. Both vertex-pull and mesh-shader indirect command preparation are native. The old visibility manager/system and their shaders are deleted; remaining sample shadow/VSM/raster orchestration needs conversion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
-| Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
+| Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
 | Direct illumination | ReSTIR DI temporal/spatial/visibility/emissive visibility and deferred direct lighting. |
 | Indirect illumination | Deferred indirect lighting, DDGI and sparse-voxel updates, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising. The gather nodes already exist. |
@@ -1441,3 +1442,85 @@ C++, and full game/editor/light composition remains unfinished. Virtual-shadow l
 ownership also still needs explicit world/view scoping beyond this single-world client.
 The Vulkan application failure must be diagnosed against actual visible geometry.
 D3D12 remains excluded. No compatibility backend is restored to hide these gaps.
+
+## Shared shadow feedback backend removed
+
+Current inventory is **66 native reflected operations / 25 ordinary SDK assets**.
+VirtualShadowFeedback is an independently authored three-node definition with explicit
+SceneDepth and CascadeConstants inputs and Requests output. Reset, generation and
+readback each use concrete reflected pin members and ordinary reflected settings.
+No rendering Builtin file, stage selector or pin-type configuration table is added.
+
+Deleted from VirtualShadowMap.cpp: AddFeedbackPasses, shared append storage, the
+shared staging/fence ring, feedback pipeline loading, clear-frame bookkeeping and
+BeginFrame readback orchestration. The old Shaders/Pipeline/VirtualShadowFeedback
+path is gone; its algorithm now belongs to Shaders/Shadows/VirtualShadowFeedback.
+The retained 16-byte GPU request ABI lives beside the native passes. Physical page
+residency, lookup, eviction and bounded allocation remain in the existing device
+service; no world objects, transforms, hierarchy or second scene registry are added.
+
+The allocation budget is now shared across feedback consumers in one device frame.
+A private readback occurrence owns bounded staging slots and completion fences.
+It consumes immutable captures only after completion, retries abandoned recordings,
+retains in-flight allocations, and discards captures from an old configuration epoch.
+That epoch is transient validation state, not a persistent document or world identity.
+The generator snapshots occurrence parameters without changing reflected defaults.
+Zero active cascades produce no requests; cascade count and projection validity are
+checked on the GPU. These passes declare no scene extraction or GPU scene features.
+
+GpuDrivenScene selects -shadow-feedback-pipeline, validates its compiled input
+interface and supplies explicit resource bindings. It loads no shader and constructs
+no feedback algorithm itself. Missing or incompatible resources fail with their path.
+Independent view/client instances share immutable compilation, not writable streams,
+staging buffers, completion counters or reflected settings. Page identity still needs
+world/view scoping beyond the current single-world sample; private feedback storage
+alone does not complete that remaining ownership change.
+
+The real GPU fixture exposed a Vulkan fence-domain defect: AddPendingSyncPoint
+validated a queue submission counter against private caller signal values. It now
+validates the caller value under the existing synchronization guard. A dedicated
+real-queue regression uses private values 10000..10002 across graphics and transfer
+submissions. D3D12 is untouched.
+
+Verification for this phase:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build with dependencies after
+  backend deletion (native-shadow-feedback-deletion-build.log and
+  native-shadow-feedback-editor-engine-build.log).
+- All 59 GraphicsCore CPU tests pass, including nested reusable feedback definitions,
+  separate overrides, shared per-frame allocation budget and configuration epochs
+  (native-shadow-feedback-deletion-cpu.log).
+- All 19 NativeAssetAuthoring fixtures and 15 EditorDocuments tests pass, including
+  deterministic source/binary equality for all 25 resources
+  (native-shadow-feedback-authoring.log and native-shadow-feedback-deletion-editor.log).
+- Vulkan NativeShadowFeedback passes actual GPU request readback for two views and
+  two instances per view, overflow, independent projections, configuration changes,
+  abandoned setup and zero active cascades (native-shadow-feedback-final-gpu.log).
+  Nine logical operations use one submission / 15 barriers in the single-queue phase
+  and seven submissions / 15 barriers with async scheduling. These are scheduling
+  counts, not timing measurements.
+- Vulkan FenceSynchronization.IndependentCallerAndQueueValues, NativeGeometryFeedback
+  and NativeVirtualShadowPages pass (native-shadow-feedback-fence.log,
+  native-shadow-feedback-fence-geometry.log and native-shadow-feedback-deletion-pages.log).
+- Vulkan NativeVisibility (4), NativeDepthAtlas (2), RenderGraphAllocations (1),
+  PipelineExtraction (3), NativeSceneLod (4), SkinningRaster (3), NativeMeshCapture (3)
+  and EditorViews (47) pass (native-shadow-feedback-regression-<group>.log).
+- Missing and incompatible selected feedback assets exit 1 with explicit diagnostics
+  (native-shadow-feedback-missing.log and native-shadow-feedback-incompatible.log).
+- Searches find no old AddFeedbackPasses API, shared feedback ring or old shader path
+  in production sources/shaders. Rendering Builtin file searches remain empty.
+
+**The full Vulkan sample still fails.** Native feedback produces a real 16-page
+batch in device frame 3. The sample records 118 registered / 110 compiled operations,
+one submission and 186 barriers, then loses the device at CpuWaitOnlyFenceVulkan.cpp:123
+(fence 46, request 47). The bounded process was stopped after 30 seconds at the
+assertion (native-shadow-feedback-sample.log and native-shadow-feedback-assertion.txt).
+Focused GPU tests do not establish application correctness or resolve this failure.
+No Release extraction/upload timing or GPU benchmark is claimed.
+
+The complete renderer rebuild remains unfinished. The residency service still
+constructs upload/publication graph operations, the sample still prepares cascades,
+main shading and presentation in C++, and the light/game/editor operation library
+is incomplete. These remaining algorithms must become independent reflected passes;
+restoring the deleted backend is not a migration path.
