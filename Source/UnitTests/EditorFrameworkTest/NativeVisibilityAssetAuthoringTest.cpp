@@ -256,6 +256,82 @@ namespace
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
     return XII_SUCCESS;
   }
+
+  xiiStatus AuthorVertexPullDraws(xiiStringView outputDirectory)
+  {
+    xiiStringBuilder path(outputDirectory, "/VertexPullDraws.xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, "VertexPullDraws");
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author native vertex-pull draws");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.VertexPullDraws/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* instances = add("Meshlet Visibility", "xiiRenderPipelineSubgraphPass", {0, 0});
+    const auto* draw      = add("Vertex-pull Draw Commands", "xiiVertexPullDrawCommandsPass", {600, 0});
+    if (!instances || !draw)
+      return xiiStatus("Could not create native vertex-pull nodes.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/MeshletVisibility.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    for (auto pin : {"SceneInstances", "VisibilityView", "GeometryMetadata", "MeshletMetadata", "VisibleMeshlets", "VisibleMeshletCount"})
+      XII_SUCCEED_OR_RETURN(connect(instances, pin, draw, pin));
+    xiiUInt32  row    = 0;
+    const auto expose = [&](const xiiDocumentObject* source, xiiStringView name) -> xiiStatus {
+      const auto* boundary = add(xiiStringBuilder("Output/", name), "xiiRenderPipelineInterfacePass", {3000, float(row++ * 150)});
+      if (!boundary)
+        return xiiStatus("Could not create a visibility interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", name));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", false));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Buffer)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      return connect(source, name, boundary, "Value");
+    };
+    for (auto pin : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibilityView", "VisibleInstances", "VisibleInstanceCount", "LodHistory", "DispatchArguments", "VisibleMeshlets", "VisibleMeshletCount", "VisibleMeshletOverflow"})
+      XII_SUCCEED_OR_RETURN(expose(instances, pin));
+    XII_SUCCEED_OR_RETURN(expose(draw, "DrawCommands"));
+    XII_SUCCEED_OR_RETURN(expose(draw, "DrawCommandCount"));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import visibility asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/VertexPullDraws.xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Authored visibility did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 14);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 14);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
+    return XII_SUCCESS;
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -276,4 +352,14 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, MeshletVisibility)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeMeshletAuthoring"));
   XII_TEST_STATUS(AuthorMeshletVisibility(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VertexPullDraws)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeDrawAuthoring", "NativeDrawBase", xiiDataDirUsage::ReadOnly)) ||
+      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDrawAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDrawAuthoring"));
+  XII_TEST_STATUS(AuthorVertexPullDraws(path));
 }
