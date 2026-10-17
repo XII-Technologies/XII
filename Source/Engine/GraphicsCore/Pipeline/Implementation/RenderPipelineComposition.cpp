@@ -20,8 +20,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineInterfacePass, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Name", m_sName),
-    XII_MEMBER_PROPERTY("Input", m_bInput),
+    XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("Input")),
+    XII_MEMBER_PROPERTY("Input", m_bInput)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ResourceType", m_uiResourceType),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiGALResourceFormat, m_Format),
   } XII_END_PROPERTIES;
