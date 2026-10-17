@@ -1,0 +1,18 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+
+[RENDERSTATE]
+DepthEnable = true
+DepthWriteEnable = false
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+CullMode = CullMode_None
+
+[SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+
+[VERTEX_SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+
+[PIXEL_SHADER]
+#include <Shaders/Geometry/GBufferPixel.h>

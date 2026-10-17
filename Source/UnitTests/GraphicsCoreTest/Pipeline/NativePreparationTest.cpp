@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
@@ -263,4 +264,24 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshDrawCommands)
   commands.GetPins(pins);
   XII_TEST_RESULT(commands.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[commands.m_Commands.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMaterialRaster)
+{
+  xiiGBufferRasterPass pass;
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  XII_TEST_BOOL(properties.Contains("UseMeshShaders") && !properties.Contains("Albedo"));
+  XII_TEST_BOOL(pass.GetExtractionRequirements().IsNoFlagSet() && pass.GetRuntimeFeatures().IsNoFlagSet());
+  XII_TEST_BOOL(!pass.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::MeshShaders));
+  pass.m_bUseMeshShaders = true;
+  XII_TEST_BOOL(pass.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::MeshShaders));
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass.GetPins(pins);
+  XII_TEST_RESULT(pass.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[pass.m_InputDepth.GetBindingIndex()].m_bInput && !pins[pass.m_InputDepth.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(!pins[pass.m_OutputVelocity.GetBindingIndex()].m_bInput && pins[pass.m_OutputVelocity.GetBindingIndex()].m_Format == xiiGALResourceFormat::RG16Float);
+  XII_TEST_BOOL(pins[pass.m_OutputObjectId.GetBindingIndex()].m_Format == xiiGALResourceFormat::R32UInt);
+  properties.Insert("FillMode", xiiInt64(xiiGALFillMode::Undefined));
+  XII_TEST_BOOL(pass.Configure(properties).Failed());
 }
