@@ -1329,3 +1329,115 @@ that deletion. The sample's cascade/VSM preparation, main shading and presentati
 remain C++ orchestration; full native game/editor/light composition is still incomplete.
 This resource conversion is a concrete consumer migration, not a claim of full renderer
 completion.
+
+
+## Virtual shadow raster backend removed
+
+The source library remains **63 native reflected operations**; the SDK now contains
+**24 ordinary source/binary pipeline assets**. ShadowMeshDepth references the existing
+three-operation ShadowDepth definition with a reflected mesh-raster override and an
+external D32 target. Its interface is authored from reflected pin metadata, not a pin-type
+table. The new asset is composition, not another raster class or a built-in pipeline.
+
+Physically deleted:
+
+- GraphicsCore/Lighting/GpuShadowRaster.h and Implementation/GpuShadowRaster.cpp,
+  including xiiGpuShadowRasterManager and its legacy raster description/backend.
+- Shaders/Pipeline/GpuShadowDepth.xiiShader and GpuShadowPageClear.xiiShader.
+- Shaders/Pipeline/Passes/LocalShadow/GpuShadowRasterConstants.h.
+- Their static-link anchor, lifecycle test expectations, includes and consumer APIs.
+
+The ownership split is now explicit:
+
+| Responsibility | Owner after this change |
+| --- | --- |
+| Scene objects, hierarchy, transforms, bounds, meshes, materials and animation | Existing world objects/components and RenderWorldModule extraction |
+| Physical atlas allocation, feedback, page lookup and eviction | Existing VirtualShadowMap residency service |
+| Bounded page selection, content revisions and completion retirement | Residency service; no raster algorithm or shader backend |
+| Region clear, raster constants and depth drawing | Independent reflected DepthRegionClear, MatrixRasterConstants and DepthRaster operations |
+| Reusable algorithm configuration and interfaces | ShadowMeshDepth asset referencing ShadowDepth |
+| Mutable pass caches and temporal state | Separate client pipeline instance per physical page; content reuse invalidates history |
+| Transient allocations, dependencies, barriers and submissions | Existing render graph |
+| Mesh/material storage and immutable asset residency | Existing shared device/resource facilities |
+
+GatherRasterPages ranks a deterministic bounded batch and snapshots projection, viewport,
+logical page, physical slot, device frame and content revision. It touches GPU-use age and
+claims work once per frame. Invalidation increments the revision even for already dirty
+content. Selection never marks a page complete. Abandoned setup remains retryable.
+Completion validates revisions again while recording, patches only current GPU records,
+and signals a fence after the final atlas dependency. CPU dirty state retires only after
+that fence completes and the revision still matches. Reconfiguration and recycled slots
+cannot accept an old token. These are transient validation tokens, not serialized graph
+or world identities. No scene registry, transform propagation or component mirror is added.
+
+GpuDrivenScene selects -shadow-page-pipeline explicitly and binds compiled resource
+interfaces. It caches the shared immutable compilation and creates private runtime
+instances lazily for selected physical pages. Missing resources and incompatible D32
+interfaces fail with the selected resource path; there is no legacy raster fallback.
+
+Two integration defects surfaced during real-demand verification:
+
+- The sample appended LODs after the mesh descriptor's existing first LOD, leaving an
+  empty third LOD that visibility selected. It now edits the authored first LOD through
+  the descriptor's mutable GetLODs overload and appends only the coarse LOD. A CPU test
+  verifies both nonempty meshlet ranges and serialized thresholds. This does not change
+  the immutable runtime mesh resource interface.
+- The alias allocator rejected newly exported resources as reuse candidates but still
+  allowed a later temporary to reuse a previously exported slot. Export slots now stay
+  distinct beyond their last internal use. A GPU test verifies preserved exported bytes
+  while two later ordinary temporaries still alias each other. Native visibility now
+  alternates async and single-queue compilation in its repeated-instance fixture.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build with engine/editor dependencies
+  after the five source/shader deletions (native-virtual-page-final-build.log).
+- All 57 GraphicsCore CPU tests pass, including revision-safe planning/recycling and the
+  two-LOD authoring/serialization regression (native-virtual-page-final-cpu.log).
+- All 18 NativeAssetAuthoring fixtures pass (native-virtual-page-authoring.log). All 15 Qt
+  EditorDocuments tests pass, including deterministic source/binary equality for all 24
+  packaged resources (native-virtual-page-final-editor.log).
+- Vulkan RenderGraphAllocations passes with actual exported buffer readback
+  (native-virtual-page-export-lifetime.log).
+- Vulkan NativeVirtualShadowPages passes with actual cube depth and hashed GPU table
+  readback. It covers two instances sharing one definition, distinct projections/pages,
+  stale publication, abandoned setup retry, invalidation after recording, fence completion
+  and physical-slot reuse (native-virtual-page-final-gpu.log).
+- That fixture executes 17 logical operations / 6 submissions / 5 render-pass groups for
+  its async phase, and 13/1/2 and 16/1/4 for later single-queue phases. Compatible work
+  remains grouped without changing the resource graph's semantics. These are scheduling
+  counts, not GPU-time measurements.
+- Vulkan NativeVisibility (4), NativeDepthAtlas (2), PipelineExtraction (3),
+  NativeGeometryFeedback (1), NativeSceneLod (4), SkinningRaster (3), NativeMeshCapture (3)
+  and EditorViews (47) pass. Logs use native-virtual-page-regression-<group>.log. The first
+  invocation of the LOD/skinning/capture filters used GraphicsFoundationTest and matched
+  no tests; they were rerun successfully in their owning EditorEngineProcessFrameworkTest.
+- Missing and incompatible selected virtual-page resources exit 1 with precise path and
+  interface diagnostics (native-virtual-page-missing-resource.log and
+  native-virtual-page-incompatible-resource.log).
+- Source/shader searches contain no deleted shadow raster type, shader path or old
+  AddRasterPasses API. Regenerated GraphicsCore project inputs omit all deleted files.
+  Rendering Builtin searches remain empty and git diff --check passes.
+
+**Full sample runtime is not passing.** After correcting the empty LOD, real screen depth
+produces a 16-page batch in frame 4. The small-grid sample records 117 registered / 109
+compiled operations in one submission with 182 barriers, then later loses the Vulkan
+device. The default sample also fails. Disabling optional ray tracing still produces a
+16-page batch (106 compiled operations, one submission, 177 barriers) and subsequently
+fails with ErrorDeviceLost in CpuWaitOnlyFenceVulkan.cpp:123 (fence 30, request 31).
+The bounded no-ray-tracing process was stopped after 30 seconds at that assertion.
+Logs: native-virtual-page-clean-small-sample.log, native-virtual-page-lod-diagnostic.log,
+native-virtual-page-no-rt-sample.log and native-virtual-page-assertion.txt. Earlier smoke
+runs rendered no visible geometry because of the empty LOD and cannot be used as evidence
+that the complete sample renderer worked. The dedicated native GPU regressions pass,
+but do not resolve this application-level failure. No Release CPU/GPU timing improvement
+or extraction/upload benchmark is claimed for this phase.
+
+This phase completes deletion of the legacy shadow raster backend. It does not complete
+the renderer rebuild: VirtualShadowMap.cpp still constructs feedback/upload/publication
+operations, the sample still owns cascade preparation, main shading and presentation in
+C++, and full game/editor/light composition remains unfinished. Virtual-shadow light/page
+ownership also still needs explicit world/view scoping beyond this single-world client.
+The Vulkan application failure must be diagnosed against actual visible geometry.
+D3D12 remains excluded. No compatibility backend is restored to hide these gaps.
