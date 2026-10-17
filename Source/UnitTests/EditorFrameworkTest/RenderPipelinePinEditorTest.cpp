@@ -14,6 +14,8 @@
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowRasterWorkPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
@@ -551,4 +553,82 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, AccelerationStructurePinProperties)
         XII_TEST_STRING(pin.m_sDisplayName, "World ray structure");
       }
   XII_TEST_BOOL(preserved);
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, FrameDataPinInspector)
+{
+  const auto directory = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(directory, "FrameDataPinInspector", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("FrameDataPinInspector"));
+  const xiiStringBuilder path(directory, "/FrameDataPins.xiiRenderPipelineAsset");
+  PinDocument            document(path);
+  auto*                  accessor = document.GetObjectAccessor();
+  auto*                  manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid                sourceId, targetId;
+  accessor->StartTransaction("Create typed CPU snapshot nodes");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiShadowCascadePass>(), sourceId));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiVirtualShadowRasterWorkPass>(), targetId));
+  accessor->FinishTransaction();
+  const auto* source = accessor->GetObject(sourceId);
+  const auto* target = accessor->GetObject(targetId);
+  if (!XII_TEST_BOOL(source && target))
+    return;
+  const auto* output = manager->GetOutputPinByName(source, "CascadeSnapshot");
+  const auto* input  = manager->GetInputPinByName(target, "Cascades");
+  const auto* other  = manager->GetInputPinByName(target, "Residency");
+  if (!XII_TEST_BOOL(output && input && other))
+    return;
+  const auto* configuration = manager->GetPinPropertyObject(*output);
+  if (!XII_TEST_BOOL(configuration != nullptr))
+    return;
+  const auto* metadata = accessor->GetChildObjectByName(configuration, "Metadata", {});
+  if (!XII_TEST_BOOL(configuration && metadata))
+    return;
+  XII_TEST_STRING(metadata->GetTypeAccessor().GetValue("DataType").Get<xiiString>(), "xiiShadowCascadeSnapshot");
+  const auto* typeProperty = metadata->GetType()->FindPropertyByName("DataType");
+  XII_TEST_BOOL(typeProperty && typeProperty->GetAttributeByType<xiiReadOnlyAttribute>());
+  PinScene scene;
+  scene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  document.GetSelectionManager()->SetSelection(source);
+  bool pinProperties = false;
+  for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+    pinProperties |= widget->GetProperty() && widget->GetProperty()->GetPropertyName() == "PinConfigurations";
+  XII_TEST_BOOL(pinProperties);
+  scene.Click(*output);
+  XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == configuration);
+  xiiDocumentNodeManager::CanConnectResult result;
+  XII_TEST_BOOL(manager->CanConnect(manager->GetConnectionType(), *output, *other, result).Failed());
+  const auto id = configuration->GetGuid();
+  accessor->StartTransaction("Name a typed snapshot pin");
+  XII_TEST_STATUS(accessor->SetValueByName(configuration, "DisplayName", "Immutable cascade snapshot"));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  // Pin objects are recreated after property edits and undo/redo; document IDs persist.
+  output = manager->GetOutputPinByName(source, "CascadeSnapshot");
+  input  = manager->GetInputPinByName(target, "Cascades");
+  if (!XII_TEST_BOOL(output && input))
+    return;
+  accessor->StartTransaction("Connect typed snapshots");
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *output, *input));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(document.SaveDocument(true));
+  PinDocument restored(path);
+  const auto  loaded = restored.LoadDocument();
+  XII_TEST_STATUS(loaded);
+  if (loaded.Failed())
+    return;
+  auto*       restoredManager = static_cast<xiiRenderPipelineNodeManager*>(restored.GetObjectManager());
+  const auto* restoredOutput  = restoredManager->GetOutputPinByName(restoredManager->GetObject(sourceId), "CascadeSnapshot");
+  if (!XII_TEST_BOOL(restoredOutput != nullptr))
+    return;
+  const auto* restoredConfig = restoredManager->GetPinPropertyObject(*restoredOutput);
+  XII_TEST_BOOL(restoredConfig && restoredConfig->GetGuid() == id);
+  XII_TEST_STRING(restoredOutput->GetDisplayName(), "Immutable cascade snapshot");
+  XII_TEST_INT(restoredManager->GetConnections(*restoredOutput).GetCount(), 1);
+  const auto* restoredMetadata = restored.GetObjectAccessor()->GetChildObjectByName(restoredConfig, "Metadata", {});
+  XII_TEST_STRING(restoredMetadata->GetTypeAccessor().GetValue("DataType").Get<xiiString>(), "xiiShadowCascadeSnapshot");
 }
