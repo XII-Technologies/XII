@@ -630,16 +630,17 @@ namespace
     return XII_SUCCESS;
   }
 
-  xiiStatus AuthorDepthOnly(xiiStringView outputDirectory)
+  xiiStatus AuthorDepthOnly(xiiStringView outputDirectory, bool materialTargets = false)
   {
     const xiiStringBuilder library(outputDirectory, "/RenderPipelines");
     XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
     XII_SUCCEED_OR_RETURN(AuthorInstanceVisibility(library));
     XII_SUCCEED_OR_RETURN(AuthorMeshletVisibility(library));
     XII_SUCCEED_OR_RETURN(AuthorVertexPullDraws(library));
-    xiiStringBuilder path(outputDirectory, "/DepthOnly.xiiRenderPipelineAsset");
+    const xiiStringView assetName = materialTargets ? "GBuffer" : "DepthOnly";
+    xiiStringBuilder    path(outputDirectory, "/", assetName, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "DepthOnly");
+    NativeVisibilityAuthorDocument document(path, assetName);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent depth raster graph");
@@ -648,7 +649,7 @@ namespace
     XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>((xiiRenderPipelineDeviceFeature::Compute | xiiRenderPipelineDeviceFeature::BindlessResources).GetValue())));
     const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
-      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.DepthOnly/", label));
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", assetName, "/", label));
       if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
         return nullptr;
       xiiMoveNodeCommand move;
@@ -686,6 +687,18 @@ namespace
       XII_SUCCEED_OR_RETURN(connect(instances, pin, surface, pin));
     XII_SUCCEED_OR_RETURN(connect(materials, "SurfaceMaterials", surface, "SurfaceMaterials"));
     XII_SUCCEED_OR_RETURN(connect(constants, "RasterConstants", surface, "RasterConstants"));
+    const xiiDocumentObject* gbuffer = nullptr;
+    if (materialTargets)
+    {
+      gbuffer = add("Material Raster", "xiiGBufferRasterPass", {1800, 0});
+      if (!gbuffer)
+        return xiiStatus("Could not create native material raster node.");
+      for (auto pin : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibleMeshlets", "VisibleMeshletCount", "DrawCommands", "DrawCommandCount"})
+        XII_SUCCEED_OR_RETURN(connect(instances, pin, gbuffer, pin));
+      XII_SUCCEED_OR_RETURN(connect(materials, "SurfaceMaterials", gbuffer, "SurfaceMaterials"));
+      XII_SUCCEED_OR_RETURN(connect(constants, "RasterConstants", gbuffer, "RasterConstants"));
+      XII_SUCCEED_OR_RETURN(connect(surface, "SceneDepth", gbuffer, "SceneDepth"));
+    }
     xiiUInt32  row    = 0;
     const auto expose = [&](const xiiDocumentObject* source, xiiStringView name, xiiUInt32 resourceType = xiiRenderPipelinePin::Buffer) -> xiiStatus {
       const auto* boundary = add(xiiStringBuilder("Output/", name), "xiiRenderPipelineInterfacePass", {3000, float(row++ * 150)});
@@ -700,6 +713,9 @@ namespace
     for (auto pin : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibilityView", "VisibleInstances", "VisibleInstanceCount", "LodHistory", "DispatchArguments", "VisibleMeshlets", "VisibleMeshletCount", "VisibleMeshletOverflow", "DrawCommands", "DrawCommandCount"})
       XII_SUCCEED_OR_RETURN(expose(instances, pin));
     XII_SUCCEED_OR_RETURN(expose(surface, "SceneDepth", xiiRenderPipelinePin::Texture));
+    if (gbuffer)
+      for (auto pin : {"Albedo", "Normal", "Material", "Emissive", "NormalRoughness", "Velocity", "ObjectId"})
+        XII_SUCCEED_OR_RETURN(expose(gbuffer, pin, xiiRenderPipelinePin::Texture));
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
@@ -707,7 +723,7 @@ namespace
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
-    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/DepthOnly.xiiBinRenderPipeline");
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/", assetName, ".xiiBinRenderPipeline");
     message.m_uiAssetHash = 1;
     message.m_uiVersion   = 7;
     XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
@@ -715,9 +731,9 @@ namespace
     xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Authored visibility did not compile.");
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 4);
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 16);
-    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), 17);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), materialTargets ? 5 : 4);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), materialTargets ? 23 : 16);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), materialTargets ? 18 : 17);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
     return XII_SUCCESS;
@@ -792,4 +808,14 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthOnly)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDepthAuthoring"));
   XII_TEST_STATUS(AuthorDepthOnly(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, GBuffer)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeGBufferAuthoring", "NativeGBufferBase", xiiDataDirUsage::ReadOnly)) ||
+      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeGBufferAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeGBufferAuthoring"));
+  XII_TEST_STATUS(AuthorDepthOnly(path, true));
 }

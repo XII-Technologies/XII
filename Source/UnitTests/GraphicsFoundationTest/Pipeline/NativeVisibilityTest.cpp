@@ -4,6 +4,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Math/Float16.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
@@ -220,10 +221,18 @@ class xiiNativeSurfaceExport : public xiiRenderPipelinePass
 
 public:
   xiiRenderPipelineTextureInputPin m_Surface{xiiGALResourceFormat::RGBA32UInt, true}, m_Depth{xiiGALResourceFormat::D32Float};
+  xiiRenderPipelineTextureInputPin m_Albedo{xiiGALResourceFormat::RGBA8UNormalized, true}, m_Normal{xiiGALResourceFormat::RG16SNormalized, true};
+  xiiRenderPipelineTextureInputPin m_Material{xiiGALResourceFormat::RGBA8UNormalized, true}, m_Emissive{xiiGALResourceFormat::RGBA16Float, true};
+  xiiRenderPipelineTextureInputPin m_NormalRoughness{xiiGALResourceFormat::RGBA8UNormalized, true}, m_Velocity{xiiGALResourceFormat::RG16Float, true}, m_ObjectId{xiiGALResourceFormat::R32UInt, true};
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override
   {
     context.m_Graph.AddPass<xiiUInt32>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) {
-      if (context.GetInputTexture(m_Surface).IsValid()) builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Surface), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      const auto exportOptional = [&](const xiiRenderPipelineTextureInputPin& pin) {
+        if (context.GetInputTexture(pin).IsValid()) builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(pin), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      };
+      exportOptional(m_Surface);
+      exportOptional(m_Albedo); exportOptional(m_Normal); exportOptional(m_Material); exportOptional(m_Emissive);
+      exportOptional(m_NormalRoughness); exportOptional(m_Velocity); exportOptional(m_ObjectId);
       builder.ExportTexture(builder.ReadTexture(context.GetInputTexture(m_Depth), xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     return XII_SUCCESS;
   }
@@ -233,6 +242,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativeSurfaceExport, 1, xiiRTTIDefaultAlloca
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("Surface", m_Surface)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Albedo", m_Albedo)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Normal", m_Normal)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Material", m_Material)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Emissive", m_Emissive)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("NormalRoughness", m_NormalRoughness)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Velocity", m_Velocity)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("ObjectId", m_ObjectId)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
     } XII_END_PROPERTIES;
   }
@@ -570,7 +586,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
   }
 }
 
-static void TestAuthoredWorldVisibility(bool depthOnly)
+static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = false)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -578,12 +594,13 @@ static void TestAuthoredWorldVisibility(bool depthOnly)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource(depthOnly ? "DepthOnly" : "SurfaceQuery");
+  const auto                                 asset = xiiLoadPipelineLibraryResource(materialTargets ? "GBuffer" : depthOnly ? "DepthOnly" :
+                                                                                                                              "SurfaceQuery");
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
   const auto               authoring = loaded->GetAuthoring();
-  xiiUuid                  cullId, uploadId, dispatchId, meshletId, drawId, surfaceId;
+  xiiUuid                  cullId, uploadId, dispatchId, meshletId, drawId, surfaceId, materialId;
   xiiDynamicArray<xiiUuid> viewPath;
   const auto               nested = loaded->GetPipeline();
   for (xiiUInt32 i = 0; i < nested->GetDescriptor().m_Passes.GetCount(); ++i)
@@ -602,12 +619,16 @@ static void TestAuthoredWorldVisibility(bool depthOnly)
       drawId = source.m_Element;
     if (pass.m_sType == (depthOnly ? "xiiDepthRasterPass" : "xiiSurfaceQueryPass"))
       surfaceId = source.m_Element;
+    if (pass.m_sType == "xiiGBufferRasterPass")
+      materialId = source.m_Element;
     if (pass.m_sType == "xiiVisibilityViewPass")
     {
       viewPath = source.m_InstancePath;
       viewPath.PushBack(source.m_Element);
     }
   }
+  if (materialTargets && !XII_TEST_BOOL(materialId.IsValid()))
+    return;
   if (!XII_TEST_BOOL(cullId.IsValid() && uploadId.IsValid() && dispatchId.IsValid() && meshletId.IsValid() && drawId.IsValid() && surfaceId.IsValid() && viewPath.GetCount() == 4))
     return;
   xiiRenderPipelineResourceDescriptor root;
@@ -626,6 +647,9 @@ static void TestAuthoredWorldVisibility(bool depthOnly)
       XII_TEST_RESULT(root.Connect(i, "Surface", pixels, "Surface"));
     }
     XII_TEST_RESULT(root.Connect(i, "SceneDepth", pixels, "SceneDepth"));
+    if (materialTargets)
+      for (auto pin : {"Albedo", "Normal", "Material", "Emissive", "NormalRoughness", "Velocity", "ObjectId"})
+        XII_TEST_RESULT(root.Connect(i, pin, pixels, pin));
     const auto work = root.AddPass(i == 0 ? "Visible meshlet readback" : "Filtered meshlet readback", "xiiNativeMeshletWorkExport");
     XII_TEST_RESULT(root.Connect(i, "DispatchArguments", work, "Arguments"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshlets", work, "Meshlets"));
@@ -638,7 +662,9 @@ static void TestAuthoredWorldVisibility(bool depthOnly)
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
     XII_TEST_RESULT(root.Connect(i, "LodHistory", sink, "Lod"));
   }
-  const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(depthOnly ? "Authored independent depth instances" : "Authored world visibility instances", std::move(root));
+  const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(materialTargets ? "Authored independent material instances" : depthOnly ? "Authored independent depth instances" :
+                                                                                                                                                                "Authored world visibility instances",
+                                                                                      std::move(root));
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
   xiiMeshResourceDescriptor meshDescription;
@@ -747,6 +773,47 @@ static void TestAuthoredWorldVisibility(bool depthOnly)
           XII_TEST_INT(command.z, 0);
           XII_TEST_INT(command.w, 0);
         }
+        if (materialTargets && provenance.m_Element == materialId)
+        {
+          const bool covered = resident && provenance.m_InstancePath[0] != filteredId;
+          const auto texture = [&](xiiStringView pin) {
+            return view->GetRenderGraph()->GetExportedTexture(execution.GetOutputBinding(i, pin)->m_hTexture);
+          };
+          xiiUInt32 objectId, albedo, normal, material, normalRoughness;
+          struct Half2
+          {
+            XII_DECLARE_POD_TYPE();
+            xiiFloat16 x, y;
+          } velocity;
+          struct Half4
+          {
+            XII_DECLARE_POD_TYPE();
+            xiiFloat16 x, y, z, w;
+          } emissive;
+          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("ObjectId").Borrow(), 32, 32, objectId) ||
+              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Albedo").Borrow(), 32, 32, albedo) ||
+              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Normal").Borrow(), 32, 32, normal) ||
+              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Material").Borrow(), 32, 32, material) ||
+              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("NormalRoughness").Borrow(), 32, 32, normalRoughness) ||
+              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Velocity").Borrow(), 32, 32, velocity) ||
+              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Emissive").Borrow(), 32, 32, emissive))
+            return;
+          XII_TEST_INT(objectId, covered ? identity : 0);
+          XII_TEST_FLOAT(float(velocity.x), 0, 0.0001f);
+          XII_TEST_FLOAT(float(velocity.y), 0, 0.0001f);
+          XII_TEST_BOOL(xiiMath::IsFinite(float(emissive.x)) && xiiMath::IsFinite(float(emissive.y)) && xiiMath::IsFinite(float(emissive.z)) && xiiMath::IsFinite(float(emissive.w)));
+          if (covered)
+          {
+            XII_TEST_BOOL((albedo & 0xFFFFFFU) != 0);
+            XII_TEST_BOOL((material & 0xFFU) >= 2);
+            XII_TEST_BOOL(normal != 0 && normalRoughness != 0);
+          }
+          else
+          {
+            XII_TEST_INT(albedo, 0xFF000000U);
+            XII_TEST_FLOAT(float(emissive.w), 0, 0);
+          }
+        }
         if (provenance.m_Element == surfaceId)
         {
           const bool filtered = provenance.m_InstancePath[0] == filteredId;
@@ -806,3 +873,5 @@ static void TestAuthoredWorldVisibility(bool depthOnly)
 
 XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredWorldVisibilityInstances) { TestAuthoredWorldVisibility(false); }
 XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredDepthOnlyInstances) { TestAuthoredWorldVisibility(true); }
+
+XII_CREATE_SIMPLE_TEST(NativeVisibility, AuthoredGBufferInstances) { TestAuthoredWorldVisibility(true, true); }
