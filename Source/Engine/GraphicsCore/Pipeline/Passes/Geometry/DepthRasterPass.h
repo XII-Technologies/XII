@@ -21,8 +21,11 @@ public:
   xiiRenderPipelineBufferInputPin   m_InputRasterConstants{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin   m_InputDrawCommands{false, xiiGALBindFlags::IndirectDrawArguments};
   xiiRenderPipelineBufferInputPin   m_InputDrawCommandCount{false, xiiGALBindFlags::IndirectDrawArguments};
-  xiiRenderPipelineTextureOutputPin m_OutputDepth{xiiGALResourceFormat::D32Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputDepth{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputDepth{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::ReadWrite};
 
+  /// Zero extent selects the full supplied depth image. Otherwise x/y/width/height are atlas texels.
+  xiiVec4U32              m_Viewport        = xiiVec4U32::MakeZero();
   bool                    m_bUseMeshShaders = false;
   xiiEnum<xiiGALFillMode> m_FillMode        = xiiGALFillMode::Solid;
 

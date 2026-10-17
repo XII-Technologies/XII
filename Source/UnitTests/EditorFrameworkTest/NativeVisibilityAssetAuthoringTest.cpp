@@ -12,6 +12,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
@@ -666,7 +667,8 @@ namespace
     const auto* materials = add("Material Residency", "xiiMaterialUploadPass", {0, 1200});
     const auto* constants = add("Raster Constants", "xiiSurfaceRasterConstantsPass", {600, 1200});
     const auto* surface   = add("Depth Raster", "xiiDepthRasterPass", {1200, 0});
-    if (!instances || !materials || !constants || !surface)
+    const auto* target    = add("Depth Target", "xiiDepthTargetPass", {600, 1500});
+    if (!instances || !materials || !constants || !surface || !target)
       return xiiStatus("Could not create native surface nodes.");
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/VertexPullDraws.xiiBinRenderPipeline"));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
@@ -690,6 +692,7 @@ namespace
       XII_SUCCEED_OR_RETURN(connect(instances, pin, surface, pin));
     XII_SUCCEED_OR_RETURN(connect(materials, "SurfaceMaterials", surface, "SurfaceMaterials"));
     XII_SUCCEED_OR_RETURN(connect(constants, "RasterConstants", surface, "RasterConstants"));
+    XII_SUCCEED_OR_RETURN(connect(target, "DepthTarget", surface, "DepthTarget"));
     const xiiDocumentObject* gbuffer = nullptr;
     if (materialTargets)
     {
@@ -734,9 +737,9 @@ namespace
     xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Authored visibility did not compile.");
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), materialTargets ? 5 : 4);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), materialTargets ? 6 : 5);
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), materialTargets ? 23 : 16);
-    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), materialTargets ? 18 : 17);
+    XII_TEST_INT(loaded->GetPipeline()->GetDescriptor().m_Passes.GetCount(), materialTargets ? 19 : 18);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Geometry);
     XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures() == xiiRenderPipelineFeature::GpuScene);
     return XII_SUCCESS;
@@ -892,6 +895,83 @@ namespace
       return xiiStatus("Occlusion asset did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), meshlets ? 8 : 7);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+    return XII_SUCCESS;
+  }
+
+  xiiStatus AuthorShadowDepth(xiiStringView outputDirectory)
+  {
+    const xiiStringView name = "ShadowDepth";
+    xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
+    path.MakeCleanPath();
+    NativeVisibilityAuthorDocument document(path, name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author independent depth shadow depth");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", static_cast<xiiInt64>(xiiRenderPipelineDeviceFeature::BindlessResources)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* filter    = add("Depth Raster", "xiiDepthRasterPass", {1200, 0});
+    const auto* reset     = add("Atlas Region Clear", "xiiDepthRegionClearPass", {600, -200});
+    const auto* constants = add("Projection Constants", "xiiMatrixRasterConstantsPass", {600, 1000});
+    if (!filter || !reset || !constants)
+      return xiiStatus("Could not create native shadow depth nodes.");
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    XII_SUCCEED_OR_RETURN(connect(reset, "Depth", filter, "DepthTarget"));
+    XII_SUCCEED_OR_RETURN(connect(constants, "RasterConstants", filter, "RasterConstants"));
+    xiiDepthRasterPass                    prototype;
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    prototype.GetPins(pins);
+    xiiUInt32 inputRow = 0, outputRow = 0;
+    for (const auto& pin : pins)
+    {
+      if (pin.m_Type == xiiRenderPipelinePin::Order || pin.m_sName == "RasterConstants")
+        continue;
+      const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150)});
+      if (!boundary)
+        return xiiStatus("Could not create shadow depth boundary.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", pin.m_bInput ? pin.m_sName : xiiString("ShadowDepth")));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", pin.m_bInput));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(pin.m_Type)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Format", static_cast<xiiInt64>(pin.m_Format)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+      XII_SUCCEED_OR_RETURN(pin.m_bInput ? connect(boundary, "Value", pin.m_sName == "DepthTarget" ? reset : filter, pin.m_sName) : connect(filter, pin.m_sName, boundary, "Value"));
+    }
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    if (context.Import(document).Failed())
+      return xiiStatus("Could not import shadow depth asset.");
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(outputDirectory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    XII_SUCCEED_OR_RETURN(context.ExportDocument(&message));
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
+      return xiiStatus("Occlusion asset did not compile.");
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 3);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), 11);
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
     return XII_SUCCESS;
   }
@@ -1088,4 +1168,13 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, GeometryLodFeedback)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeGeometryFeedbackAuthoring"));
   XII_TEST_STATUS(AuthorGeometryLodFeedback(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ShadowDepth)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeShadowAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeShadowAuthoring"));
+  XII_TEST_STATUS(AuthorShadowDepth(path));
 }

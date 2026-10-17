@@ -8,6 +8,7 @@ DepthEnable = true
 DepthWriteEnable = true
 ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 CullMode = CullMode_None
+ScissorEnable = true
 #if RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME
 FillMode = FillMode_Wireframe
 #endif

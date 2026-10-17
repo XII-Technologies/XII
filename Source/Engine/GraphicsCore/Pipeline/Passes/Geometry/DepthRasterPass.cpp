@@ -7,7 +7,6 @@
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
-#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -16,7 +15,7 @@
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 1, xiiRTTIDefaultAllocator<xiiDepthRasterPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 2, xiiRTTIDefaultAllocator<xiiDepthRasterPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -30,7 +29,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("RasterConstants", m_InputRasterConstants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DrawCommands", m_InputDrawCommands)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DrawCommandCount", m_InputDrawCommandCount)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("DepthTarget", m_InputDepth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SceneDepth", m_OutputDepth)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("Viewport", m_Viewport)->AddAttributes(new xiiDefaultValueAttribute(xiiVec4U32::MakeZero())),
     XII_MEMBER_PROPERTY("UseMeshShaders", m_bUseMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_ENUM_MEMBER_PROPERTY("FillMode", xiiGALFillMode, m_FillMode)->AddAttributes(new xiiDefaultValueAttribute(xiiGALFillMode::Solid)),
   } XII_END_PROPERTIES;
@@ -40,12 +41,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 1, xiiRTTIDefaultAllocator<
 xiiResult xiiDepthRasterPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return m_FillMode == xiiGALFillMode::Solid || m_FillMode == xiiGALFillMode::Wireframe ? XII_SUCCESS : XII_FAILURE;
+  return ((m_FillMode == xiiGALFillMode::Solid || m_FillMode == xiiGALFillMode::Wireframe) &&
+          ((m_Viewport.z && m_Viewport.w) || (m_Viewport == xiiVec4U32::MakeZero()))) ?
+    XII_SUCCESS :
+    XII_FAILURE;
 }
 
 xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
 {
-  if (!context.m_pView || !xiiGALDevice::HasDefaultDevice())
+  if (!xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;
   const auto device = xiiGALDevice::GetDefaultDevice();
   if (m_FillMode == xiiGALFillMode::Wireframe && device->GetFeatures().m_WireframeFill != xiiGALDeviceFeatureState::Enabled)
@@ -71,9 +75,13 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
   const auto& draw     = device->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties;
   if (capacity > draw.m_uiMaxDrawIndirectCount || !draw.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer) || (m_bUseMeshShaders && capacity != 1))
     return context.ReportFailure("Depth indirect command capacity or counter capability is unsupported.");
-  const auto width = context.m_pView->GetRenderResolutionWidth(), height = context.m_pView->GetRenderResolutionHeight();
-  if (!width || !height || width > 65536 || height > 65536)
-    return context.ReportFailure("Invalid depth raster resolution.");
+  const auto  target = context.GetInputTexture(m_InputDepth);
+  const auto* image  = context.m_Graph.GetTextureDescription(target);
+  if (!image || image->m_Format != xiiGALResourceFormat::D32Float || image->m_Type != xiiGALResourceDimension::Texture2D || image->m_uiSampleCount != 1 || image->m_uiArraySizeOrDepth != 1)
+    return context.ReportFailure("Depth rasterization requires an explicit single-sample D32 target.");
+  const xiiVec4U32 viewport = m_Viewport.z ? m_Viewport : xiiVec4U32(0, 0, image->m_Size.width, image->m_Size.height);
+  if (!viewport.z || !viewport.w || viewport.x > image->m_Size.width || viewport.y > image->m_Size.height || viewport.z > image->m_Size.width - viewport.x || viewport.w > image->m_Size.height - viewport.y)
+    return context.ReportFailure("Depth raster viewport is outside its supplied image.");
   if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != m_FillMode)
   {
     const auto                                     shader = xiiResourceManager::LoadResource<xiiShaderResource>(m_bUseMeshShaders ? "Shaders/Geometry/DepthMesh.xiiShader" : "Shaders/Geometry/DepthVertexPull.xiiShader");
@@ -106,12 +114,13 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
-    xiiRenderGraphBufferHandle         m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
-    xiiRenderGraphTextureHandle        m_Depth;
-    xiiShaderPermutationResourceHandle m_Shader;
-    xiiSharedPtr<xiiGALSampler>        m_Sampler;
-    xiiUInt32                          m_uiWidth, m_uiHeight, m_uiCapacity;
-    bool                               m_bMesh;
+    xiiRenderGraphBufferHandle                     m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
+    xiiRenderGraphTextureHandle                    m_Depth;
+    xiiGALGraphicsPipelineStateCreationDescription m_Pipeline;
+    xiiSharedPtr<xiiGALSampler>                    m_Sampler;
+    xiiUInt32                                      m_uiCapacity;
+    xiiVec4U32                                     m_Viewport;
+    bool                                           m_bMesh;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Scene = builder.ReadBuffer(scene, xiiGALResourceStateFlags::ShaderResource);
@@ -124,35 +133,29 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Constants = builder.ReadBuffer(constants, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_Arguments = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument);
       data.m_ArgumentCount = builder.ReadBuffer(argumentCount, xiiGALResourceStateFlags::IndirectArgument);
-      xiiGALTextureCreationDescription target;
-      target.m_Type = xiiGALResourceDimension::Texture2D;
-      target.m_Size = {width, height};
-      target.m_Format = xiiGALResourceFormat::D32Float;
-      target.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-      data.m_Depth = builder.WriteTexture("Nearest Depth", target, xiiGALResourceStateFlags::DepthWrite);
-      data.m_Shader = m_hShader; data.m_Sampler = m_Sampler;
-      data.m_uiWidth = width; data.m_uiHeight = height; data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = m_bUseMeshShaders;
+      data.m_Depth = builder.ReadWriteTexture(target, xiiGALResourceStateFlags::DepthWrite);
+      data.m_Sampler = m_Sampler; data.m_Viewport = viewport;
+      data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = m_bUseMeshShaders;
+      data.m_Pipeline.m_PipelineType = m_bUseMeshShaders ? xiiGALPipelineType::Mesh : xiiGALPipelineType::Graphics;
+      data.m_Pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
+      if (m_bUseMeshShaders) data.m_Pipeline.m_pMeshShader = shader->GetGALShader(xiiGALShaderType::Mesh);
+      else data.m_Pipeline.m_pVertexShader = shader->GetGALShader(xiiGALShaderType::Vertex);
+      data.m_Pipeline.m_pPixelShader = shader->GetGALShader(xiiGALShaderType::Pixel);
+      data.m_Pipeline.m_GraphicsPipeline.m_pBlendState = shader->GetBlendState();
+      data.m_Pipeline.m_GraphicsPipeline.m_pRasterizerState = shader->GetRasterizerState();
+      data.m_Pipeline.m_GraphicsPipeline.m_pDepthStencilState = shader->GetDepthStencilState();
+      data.m_Pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
       builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
-      xiiRenderPassUtils::ClearDepthPreservingState(commands, execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0);
-      xiiResourceLock<xiiShaderPermutationResource> shader(data.m_Shader, xiiResourceAcquireMode::BlockTillLoaded);
-      if (!shader.IsValid() || !shader->IsShaderValid()) { xiiLog::Error("Depth raster shader became unavailable."); return; }
-      xiiGALGraphicsPipelineStateCreationDescription pipeline;
-      pipeline.m_PipelineType = data.m_bMesh ? xiiGALPipelineType::Mesh : xiiGALPipelineType::Graphics;
-      pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
-      if (data.m_bMesh) pipeline.m_pMeshShader = shader->GetGALShader(xiiGALShaderType::Mesh);
-      else pipeline.m_pVertexShader = shader->GetGALShader(xiiGALShaderType::Vertex);
-      pipeline.m_pPixelShader = shader->GetGALShader(xiiGALShaderType::Pixel);
-      pipeline.m_GraphicsPipeline.m_pBlendState = shader->GetBlendState();
-      pipeline.m_GraphicsPipeline.m_pRasterizerState = shader->GetRasterizerState();
-      pipeline.m_GraphicsPipeline.m_pDepthStencilState = shader->GetDepthStencilState();
+      auto pipeline = data.m_Pipeline;
       pipeline.m_GraphicsPipeline.m_pRenderPass = execute.GetRenderPass();
       pipeline.m_GraphicsPipeline.m_uiSubpassIndex = static_cast<xiiUInt8>(execute.GetSubpassIndex());
       pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
       auto state = xiiGALPipelineCache::GetPipeline(pipeline);
       if (!state) { xiiLog::Error("Could not create the explicit depth raster pipeline."); return; }
       commands.SetPipelineState(state);
-      commands.SetViewport({0, 0, float(data.m_uiWidth), float(data.m_uiHeight), 0, 1});
+      commands.SetViewport({float(data.m_Viewport.x), float(data.m_Viewport.y), float(data.m_Viewport.z), float(data.m_Viewport.w), 0, 1});
+      commands.SetScissorRect({data.m_Viewport.x, data.m_Viewport.y, data.m_Viewport.z, data.m_Viewport.w});
       const auto stage = data.m_bMesh ? xiiGALShaderType::Mesh : xiiGALShaderType::Vertex;
       commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
       commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", execute.GetBuffer(data.m_Constants), stage | xiiGALShaderType::Pixel);

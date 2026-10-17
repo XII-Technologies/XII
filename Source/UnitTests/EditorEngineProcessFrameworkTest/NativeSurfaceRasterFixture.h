@@ -5,6 +5,7 @@
 #include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
@@ -161,6 +162,21 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
   }
   else if (depthOnly)
   {
+    if (!sceneDepth.IsValid())
+    {
+      xiiDepthTargetPass target;
+      target.m_uiWidth  = raster.m_uiWidth;
+      target.m_uiHeight = raster.m_uiHeight;
+      xiiDynamicArray<xiiRenderPipelinePin> pins;
+      target.GetPins(pins);
+      XII_SUCCEED_OR_RETURN(target.InitializePinBindings(pins));
+      xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+      bindings.SetCount(pins.GetCount());
+      const xiiStringBuilder       label(name, " Initialized Depth");
+      xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, pins, bindings, label};
+      XII_SUCCEED_OR_RETURN(target.Build(context));
+      sceneDepth = bindings[target.m_Depth.GetBindingIndex()].m_hTexture;
+    }
     xiiDepthRasterPass surface;
     surface.m_bUseMeshShaders = mesh;
     surface.m_FillMode        = fill;
@@ -180,6 +196,7 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
     bindings[surface.m_InputRasterConstants.GetBindingIndex()].m_hBuffer     = inputs.first->m_Constants;
     bindings[surface.m_InputDrawCommands.GetBindingIndex()].m_hBuffer        = arguments;
     bindings[surface.m_InputDrawCommandCount.GetBindingIndex()].m_hBuffer    = argumentCount;
+    bindings[surface.m_InputDepth.GetBindingIndex()].m_hTexture              = sceneDepth;
     xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, pins, bindings, name};
     xiiStringBuilder             error;
     context.m_pBuildError = &error;

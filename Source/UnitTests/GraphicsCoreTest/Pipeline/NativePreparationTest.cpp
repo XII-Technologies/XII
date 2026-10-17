@@ -2,6 +2,7 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MatrixRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
@@ -14,6 +15,8 @@
 #include <GraphicsCore/Pipeline/Passes/Temporal/BufferHistoryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/TextureHistoryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthRegionClearPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/DepthPyramidPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
@@ -496,4 +499,72 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentGeometryStreamingFeedback)
   {
     XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 6);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitDepthTargetAndProjection)
+{
+  xiiDepthTargetPass           target;
+  xiiDepthRegionClearPass      clear;
+  xiiMatrixRasterConstantsPass constants;
+  for (xiiRenderPipelinePass* pass : {static_cast<xiiRenderPipelinePass*>(&target), static_cast<xiiRenderPipelinePass*>(&clear), static_cast<xiiRenderPipelinePass*>(&constants)})
+  {
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    pass->GetPins(pins);
+    XII_TEST_RESULT(pass->InitializePinBindings(pins));
+    XII_TEST_BOOL(pass->GetRuntimeFeatures().IsNoFlagSet() && pass->GetExtractionRequirements().IsNoFlagSet());
+    XII_TEST_BOOL(pass->GetDynamicRTTI()->FindPropertyByName("Stage") == nullptr);
+  }
+  xiiVariantDictionary properties;
+  properties.Insert("Depth", -0.1f);
+  XII_TEST_BOOL(target.Configure(properties).Failed());
+  properties.Insert("Depth", xiiMath::NaN<float>());
+  XII_TEST_BOOL(target.Configure(properties).Failed());
+  properties.Clear();
+  properties.Insert("Viewport", xiiVec4U32(1, 0, 0, 0));
+  XII_TEST_BOOL(clear.Configure(properties).Failed());
+  properties.Insert("Viewport", xiiVec4U32(1, 1, 8, 0));
+  XII_TEST_BOOL(clear.Configure(properties).Failed());
+  properties.Insert("Viewport", xiiVec4U32(1, 1, 8, 8));
+  XII_TEST_RESULT(clear.Configure(properties));
+  properties.Clear();
+  properties.Insert("Width", 0U);
+  XII_TEST_BOOL(constants.Configure(properties).Failed());
+  properties.Insert("Width", 16U);
+  properties.Insert("ViewProjection", xiiMat4::MakeZero());
+  XII_TEST_RESULT(constants.Configure(properties));
+  xiiMat4 invalid       = xiiMat4::MakeIdentity();
+  invalid.Element(0, 0) = xiiMath::NaN<float>();
+  properties.Insert("ViewProjection", invalid);
+  XII_TEST_BOOL(constants.Configure(properties).Failed());
+  xiiDepthRasterPass                    raster;
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  raster.GetPins(pins);
+  if (!XII_TEST_RESULT(raster.InitializePinBindings(pins)))
+    return;
+  XII_TEST_BOOL(pins[raster.m_InputDepth.GetBindingIndex()].m_bInput && !pins[raster.m_InputDepth.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[raster.m_OutputDepth.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::ReadWrite);
+  properties.Clear();
+  properties.Insert("Viewport", xiiVec4U32(0, 0, 8, 0));
+  XII_TEST_BOOL(raster.Configure(properties).Failed());
+  xiiRenderGraph graph;
+  graph.BeginSetup(1);
+  const auto image = graph.AddPass<xiiRenderGraphTextureHandle>("CPU atlas contract", xiiGALCommandQueueFlags::Graphics, [](auto& image, xiiRenderGraphBuilder& builder) {
+    xiiGALTextureCreationDescription description; description.m_Type = xiiGALResourceDimension::Texture2D; description.m_Size = {32, 16}; description.m_Format = xiiGALResourceFormat::D32Float; description.m_BindFlags = xiiGALBindFlags::DepthStencil;
+    image = builder.WriteTexture("CPU atlas", description, xiiGALResourceStateFlags::DepthWrite); }, [](const auto&, xiiRenderGraphPassContext&) {});
+  pins.Clear();
+  clear.GetPins(pins);
+  if (!XII_TEST_RESULT(clear.InitializePinBindings(pins)))
+    return;
+  xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+  bindings.SetCount(pins.GetCount());
+  bindings[clear.m_Input.GetBindingIndex()].m_hTexture = *image.first;
+  xiiRenderGraphBlackboard     blackboard;
+  xiiVariantDictionary         parameters;
+  xiiStringBuilder             error;
+  xiiRenderPipelinePassContext context{nullptr, graph, blackboard, parameters, pins, bindings, "Out of bounds clear"};
+  context.m_pBuildError = &error;
+  clear.m_Viewport      = xiiVec4U32(31, 0, 4, 4);
+  XII_TEST_BOOL(clear.Build(context).Failed());
+  XII_TEST_BOOL(error.FindSubString("outside") != nullptr);
+  graph.EndSetup();
 }

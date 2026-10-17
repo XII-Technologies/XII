@@ -1,0 +1,17 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[RENDERSTATE]
+DepthEnable = true
+DepthWriteEnable = true
+ComparisonDepthFunction = ComparisonFunction_Always
+CullMode = CullMode_None
+ScissorEnable = true
+[VERTEX_SHADER]
+float4 main(uint vertex : SV_VertexID) : SV_Position
+{
+  return float4((float)(vertex / 2u) * 4.0f - 1.0f, (float)(vertex % 2u) * 4.0f - 1.0f, 0.0f, 1.0f);
+}
+[PIXEL_SHADER]
+#include <Shaders/Utility/DepthRegionClearConstants.h>
+float main() : SV_Depth { return DepthValue; }
