@@ -1144,12 +1144,21 @@ Verification completed before the approval service became unavailable:
   Source corrections now use explicit native resources, reflected fixture member pins and
   actual wireframe surface identities. Their first build found an incorrect connection
   field name, now corrected to m_sInput. Rebuilding/rerunning these final fixture edits
-  remains pending: automatic approval review could not complete because its usage limit
-  was reached. These unverified edits are not claimed to pass.
+  was initially blocked because automatic approval review reached its usage limit.
+  The service recovered; final verification below supersedes that temporary blocker.
 
-Four implementation commits are local through 54e3effef. Publishing and committing the
-remaining fixture/report edits require the approval service to become available; existing
-user authorization to push this branch remains in effect.
+Five incremental implementation/fixture commits were pushed through 080a2ea0b. The
+approval service resumed accepting requests, allowing the editor fixture rebuild to run.
+Icon readback, explicit pipeline recovery and both native wireframe raster configurations
+now execute successfully. The test log facility requires a single expectation with count
+two for repeated identical diagnostics; its initial duplicate expectations were corrected.
+Final full EditorViews verification passes all 47 subtests on Vulkan, including disabled
+view frame ownership, icon rendering/picking, explicit view resource recovery, and real
+wireframe coverage/validated world identities with both mesh-shader and vertex-pull
+configurations (native-editor-fixtures-complete-build.log,
+native-editor-fixtures-complete-views.log). NativeVisibility (4),
+NativeGeometryFeedback (1), NativeSceneLod (3) and SkinningRaster (3) also pass after the
+shared upload changes (native-shared-residency-visibility/feedback/lod/skinning.log).
 
 Remaining migration: GpuVisibilityManager/System still have legacy test consumers and
 RenderGraphManager hooks; their implementations have not yet been deleted. GpuDrivenScene
