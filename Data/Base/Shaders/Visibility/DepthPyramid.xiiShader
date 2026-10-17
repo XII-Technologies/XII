@@ -5,7 +5,7 @@ ALL
 
 [COMPUTE_SHADER]
 
-#include "GpuHiZBuildConstants.h"
+#include "DepthPyramidConstants.h"
 
 Texture2D<float>   g_HiZSource;
 RWTexture2D<float> g_HiZDestination;

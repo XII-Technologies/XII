@@ -4,7 +4,7 @@
 
 #include <Shaders/Common/ShaderResourceMacros.h>
 
-DECLARE_CONSTANT_BUFFER_AUTO(xiiGpuHiZBuildConstants)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiDepthPyramidConstants)
 {
   UINT2(SrcSize);
   UINT2(DstSize);

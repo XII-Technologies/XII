@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/Passes/Visibility/DepthPyramidPass.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
-#include <Shaders/Visibility/GpuHiZBuildConstants.h>
+#include <Shaders/Visibility/DepthPyramidConstants.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthPyramidPass, 1, xiiRTTIDefaultAllocator<xiiDepthPyramidPass>)
@@ -50,7 +50,7 @@ xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Source = builder.ReadTexture(input, xiiGALResourceStateFlags::ShaderResource);
       data.m_Output = builder.WriteTexture("Reversed Depth Pyramid", target, xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_Constants = xiiRenderPassUtils::Constants(builder, "Depth Reduction Constants", sizeof(xiiGpuHiZBuildConstants));
+      data.m_Constants = xiiRenderPassUtils::Constants(builder, "Depth Reduction Constants", sizeof(xiiDepthPyramidConstants));
       data.m_Description = target; data.m_Pipeline = m_Pipeline; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       auto* output = execute.GetTexture(data.m_Output);
@@ -76,13 +76,13 @@ xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
       }
       output->SetResourceState(xiiGALResourceStateFlags::Unknown);
       commands.SetPipelineState(data.m_Pipeline.Borrow());
-      commands.ResolveAndSetConstantBuffer("xiiGpuHiZBuildConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
+      commands.ResolveAndSetConstantBuffer("xiiDepthPyramidConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
       auto size = data.m_Description.m_Size;
       for (xiiUInt32 mip = 0; mip < reads.GetCount(); ++mip)
       {
         const xiiSizeU32 next = mip ? xiiSizeU32{xiiMath::Max(size.width >> 1U, 1U), xiiMath::Max(size.height >> 1U, 1U)} : size;
         {
-          xiiGALMapHelper<xiiGpuHiZBuildConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+          xiiGALMapHelper<xiiDepthPyramidConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
           mapped->SrcSize = {size.width, size.height}; mapped->DstSize = {next.width, next.height}; mapped->Reduce = mip ? 1 : 0;
         }
         xiiGALStateTransitionDescription uniform;
