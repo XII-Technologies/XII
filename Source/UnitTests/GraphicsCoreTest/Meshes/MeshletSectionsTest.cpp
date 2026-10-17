@@ -59,6 +59,42 @@ namespace
   }
 } // namespace
 
+XII_CREATE_SIMPLE_TEST(Meshes, AuthoredLodThresholds)
+{
+  xiiGeometry fine, coarse;
+  fine.AddStackedSphere(1, 16, 8);
+  coarse.AddStackedSphere(1, 8, 4);
+  fine.TriangulatePolygons();
+  coarse.TriangulatePolygons();
+  const auto firstCount  = fine.GetPolygons().GetCount();
+  const auto secondCount = coarse.GetPolygons().GetCount();
+  fine.Merge(coarse);
+  xiiMeshResourceDescriptor descriptor;
+  descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(fine, xiiGALPrimitiveTopology::TriangleList, true);
+  XII_TEST_INT(descriptor.GetLODs().GetCount(), 1);
+  descriptor.GetLODs()[0].m_fScreenSize = 80;
+  descriptor.AddSection(firstCount, 0, 0, 0);
+  descriptor.AddLOD(0);
+  descriptor.AddSection(secondCount, firstCount, 0, 1);
+  if (!XII_TEST_RESULT(descriptor.BuildMeshlets()))
+    return;
+  XII_TEST_INT(descriptor.GetLODs().GetCount(), 2);
+  for (const auto& lod : descriptor.GetLODs())
+    XII_TEST_BOOL(lod.m_uiMeshletCount != 0);
+  xiiContiguousMemoryStreamStorage bytes;
+  xiiMemoryStreamWriter            writer(&bytes);
+  descriptor.Save(writer);
+  xiiMemoryStreamReader     reader(&bytes);
+  xiiMeshResourceDescriptor decoded;
+  if (!XII_TEST_RESULT(decoded.Load(reader)))
+    return;
+  XII_TEST_INT(decoded.GetLODs().GetCount(), 2);
+  XII_TEST_FLOAT(decoded.GetLODs()[0].m_fScreenSize, 80, 0);
+  XII_TEST_FLOAT(decoded.GetLODs()[1].m_fScreenSize, 0, 0);
+  for (const auto& lod : decoded.GetLODs())
+    XII_TEST_BOOL(lod.m_uiMeshletCount != 0);
+}
+
 XII_CREATE_SIMPLE_TEST(Meshes, MeshletSections)
 {
   xiiGeometry geometry;

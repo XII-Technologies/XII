@@ -274,6 +274,11 @@ xiiMeshLOD& xiiMeshResourceDescriptor::AddLOD(float fScreenSize, float fMaxDista
   return lod;
 }
 
+xiiArrayPtr<xiiMeshLOD> xiiMeshResourceDescriptor::GetLODs()
+{
+  return m_LODs;
+}
+
 xiiArrayPtr<const xiiMeshLOD> xiiMeshResourceDescriptor::GetLODs() const
 {
   return m_LODs;

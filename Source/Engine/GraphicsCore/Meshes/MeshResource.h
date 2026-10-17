@@ -147,6 +147,7 @@ public:
   xiiArrayPtr<const xiiMeshSection> GetSubMeshes() const;
 
   /// Returns a reference to the array of LODs contained within this mesh resource descriptor.
+  xiiArrayPtr<xiiMeshLOD>       GetLODs();
   xiiArrayPtr<const xiiMeshLOD> GetLODs() const;
 
   /// Returns the bounding volume for this mesh resource, used for culling and LOD selection.

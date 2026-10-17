@@ -183,7 +183,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     xiiMeshResourceDescriptor descriptor;
     descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(high, xiiGALPrimitiveTopology::TriangleList, true);
     descriptor.GetMeshBufferDescriptor().m_bAllowGpuDrivenDraw = true;
-    descriptor.AddLOD(80);
+    descriptor.GetLODs()[0].m_fScreenSize                      = 80;
     descriptor.AddSection(fineCount, 0, 0, 0);
     descriptor.AddLOD(0);
     descriptor.AddSection(coarseCount, fineCount, 0, 1);
