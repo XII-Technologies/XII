@@ -9,6 +9,9 @@
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackReadbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackReadbackPass.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackResetPass.h>
@@ -615,4 +618,77 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, MatrixQueryReflection)
   properties.Insert("Width", 16U);
   properties.Insert("CameraPosition", xiiVec3(xiiMath::NaN<float>(), 0, 0));
   XII_TEST_BOOL(pass.Configure(properties).Failed());
+}
+
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowFeedback)
+{
+  xiiVirtualShadowFeedbackResetPass    reset;
+  xiiVirtualShadowFeedbackPass         generate;
+  xiiVirtualShadowFeedbackReadbackPass readback;
+  for (xiiRenderPipelinePass* pass : {static_cast<xiiRenderPipelinePass*>(&reset), static_cast<xiiRenderPipelinePass*>(&generate), static_cast<xiiRenderPipelinePass*>(&readback)})
+  {
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    pass->GetPins(pins);
+    XII_TEST_RESULT(pass->InitializePinBindings(pins));
+    XII_TEST_BOOL(pass->GetExtractionRequirements().IsNoFlagSet() && pass->GetRuntimeFeatures().IsNoFlagSet());
+  }
+  xiiVariantDictionary properties;
+  properties.Insert("Capacity", 0U);
+  XII_TEST_BOOL(reset.Configure(properties).Failed());
+  properties.Insert("Capacity", 1048577U);
+  XII_TEST_BOOL(reset.Configure(properties).Failed());
+  properties.Insert("Capacity", 8U);
+  XII_TEST_RESULT(reset.Configure(properties));
+  properties.Clear();
+  properties.Insert("PageSize", 3U);
+  XII_TEST_BOOL(generate.Configure(properties).Failed());
+  properties.Insert("PageSize", 128U);
+  properties.Insert("LightId", 0U);
+  XII_TEST_RESULT(generate.Configure(properties));
+  properties.Insert("LightId", 0x1000000U);
+  XII_TEST_BOOL(generate.Configure(properties).Failed());
+  properties.Insert("LightId", 2U);
+  XII_TEST_RESULT(generate.Configure(properties));
+  properties.Clear();
+  properties.Insert("MaxPendingReadbacks", 0U);
+  XII_TEST_BOOL(readback.Configure(properties).Failed());
+  properties.Insert("MaxPendingReadbacks", 17U);
+  XII_TEST_BOOL(readback.Configure(properties).Failed());
+  properties.Insert("MaxPendingReadbacks", 1U);
+  XII_TEST_RESULT(readback.Configure(properties));
+  XII_TEST_INT(readback.GetStats().m_uiSourceFrame, 0);
+  xiiRenderPipelineResourceDescriptor leaf;
+  leaf.AddPass("Initialize", "xiiVirtualShadowFeedbackResetPass");
+  leaf.AddPass("Generate", "xiiVirtualShadowFeedbackPass");
+  leaf.AddPass("Readback", "xiiVirtualShadowFeedbackReadbackPass");
+  XII_TEST_RESULT(leaf.Connect(0, "Requests", 1, "InitializedRequests"));
+  XII_TEST_RESULT(leaf.Connect(1, "Requests", 2, "Requests"));
+  leaf.m_Interface.PushBack({"SceneDepth", true, leaf.m_Passes[1].m_Id, "SceneDepth"});
+  leaf.m_Interface.PushBack({"CascadeConstants", true, leaf.m_Passes[1].m_Id, "CascadeConstants"});
+  leaf.m_Interface.PushBack({"Requests", false, leaf.m_Passes[1].m_Id, "Requests"});
+  xiiGraphDefinition definition;
+  XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_Definitions.PushBack(definition);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    const auto node       = root.AddSubgraph(i ? "Sensor" : "Camera", definition.m_Id);
+    auto&      properties = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
+    properties.m_Path.PushBack(leaf.m_Passes[1].m_Id);
+    properties.m_Properties.Insert("LightId", i + 1);
+    for (const auto& pin : leaf.m_Interface)
+      root.m_Interface.PushBack({xiiStringBuilder(i ? "Sensor/" : "Camera/", pin.m_sName), pin.m_bInput, root.m_Passes[node].m_Id, pin.m_sName});
+  }
+  xiiContiguousMemoryStreamStorage storage;
+  xiiMemoryStreamWriter            writer(&storage);
+  XII_TEST_RESULT(root.Serialize(writer));
+  xiiMemoryStreamReader               reader(&storage);
+  xiiRenderPipelineResourceDescriptor decoded;
+  XII_TEST_RESULT(decoded.Deserialize(reader));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(decoded, compiled)))
+    return;
+  XII_TEST_INT(compiled->GetDescriptor().m_Passes.GetCount(), 6);
+  XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet() && compiled->GetRuntimeFeatures().IsNoFlagSet());
 }

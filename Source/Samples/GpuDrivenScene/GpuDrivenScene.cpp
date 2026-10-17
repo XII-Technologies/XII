@@ -57,6 +57,7 @@ xiiCommandLineOptionString opt_GpuDrivenDepthPipeline("GpuDrivenScene", "-depth-
 xiiCommandLineOptionString opt_GpuDrivenVisibilityPipeline("GpuDrivenScene", "-visibility-pipeline", "Authored world mesh visibility/draw resource.", "RenderPipelines/WorldMeshDraws.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowPipeline("GpuDrivenScene", "-shadow-pipeline", "Authored shadow target/raster resource.", "RenderPipelines/ShadowMap.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowPagePipeline("GpuDrivenScene", "-shadow-page-pipeline", "Authored raster resource for supplied virtual page targets.", "RenderPipelines/ShadowMeshDepth.xiiBinRenderPipeline");
+xiiCommandLineOptionString opt_GpuDrivenShadowFeedbackPipeline("GpuDrivenScene", "-shadow-feedback-pipeline", "Authored virtual shadow demand/readback resource.", "RenderPipelines/VirtualShadowFeedback.xiiBinRenderPipeline");
 
 namespace
 {
@@ -378,6 +379,13 @@ public:
       RequestQuit();
       return;
     }
+    m_hShadowFeedbackPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenShadowFeedbackPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeShadowFeedbackPipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     m_hDepthPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenDepthPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
     if (SynchronizeDepthPipeline().Failed())
     {
@@ -407,6 +415,8 @@ public:
     m_VirtualPageRuntimes.Clear();
     m_ShadowPageDefinition = nullptr;
     m_hShadowPagePipeline.Invalidate();
+    m_ShadowFeedback.Clear();
+    m_hShadowFeedbackPipeline.Invalidate();
     m_SunShadow.Clear();
     m_hShadowPipeline.Invalidate();
     m_DepthPipeline.Clear();
@@ -671,6 +681,53 @@ private:
     return XII_SUCCESS;
   }
 
+  xiiResult SynchronizeShadowFeedbackPipeline()
+  {
+    bool changed = false;
+    if (m_ShadowFeedback.Synchronize(m_hShadowFeedbackPipeline, &changed).Failed())
+    {
+      xiiLog::Error("Selected shadow-feedback resource '{}' is missing or invalid.", m_hShadowFeedbackPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    if (changed)
+    {
+      const auto* pipeline       = m_ShadowFeedback.GetPipeline();
+      m_uiShadowFeedbackDepth    = pipeline->FindInterface("SceneDepth", true);
+      m_uiShadowFeedbackCascades = pipeline->FindInterface("CascadeConstants", true);
+      if (m_uiShadowFeedbackDepth == xiiInvalidIndex || m_uiShadowFeedbackCascades == xiiInvalidIndex ||
+          pipeline->GetInterface()[m_uiShadowFeedbackDepth].m_Pin.m_Type != xiiRenderPipelinePin::Texture ||
+          pipeline->GetInterface()[m_uiShadowFeedbackDepth].m_Pin.m_Format != xiiGALResourceFormat::D32Float ||
+          pipeline->GetInterface()[m_uiShadowFeedbackCascades].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+      {
+        xiiLog::Error("Shadow-feedback resource '{}' requires D32 SceneDepth and buffer CascadeConstants inputs.", m_hShadowFeedbackPipeline.GetResourceID());
+        m_ShadowFeedback.Clear();
+        return XII_FAILURE;
+      }
+    }
+    return XII_SUCCESS;
+  }
+
+  xiiResult BuildShadowFeedback(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiRenderGraphTextureHandle depth, xiiRenderGraphBufferHandle cascades)
+  {
+    XII_SUCCEED_OR_RETURN(SynchronizeShadowFeedbackPipeline());
+    const auto&          settings = xiiVirtualShadowMapManager::GetConfiguration();
+    xiiVariantDictionary parameters;
+    parameters.Insert("ShadowFeedbackInverseViewProjection", m_ViewProjection.GetInverse());
+    parameters.Insert("ShadowFeedbackNearPlane", m_Camera.GetNearPlane());
+    parameters.Insert("ShadowFeedbackVirtualResolution", settings.m_uiVirtualResolution);
+    parameters.Insert("ShadowFeedbackPageSize", settings.m_uiPageSize);
+    parameters.Insert("ShadowFeedbackLightId", g_uiDirectionalLightId);
+    const xiiRenderPipelineInputBinding inputs[] = {
+      xiiRenderPipelineInputBinding(graph, m_uiShadowFeedbackDepth, depth),
+      xiiRenderPipelineInputBinding(graph, m_uiShadowFeedbackCascades, cascades)};
+    if (m_ShadowFeedback.Build(nullptr, graph, blackboard, parameters, xiiMakeArrayPtr(inputs)).Failed())
+    {
+      xiiLog::Error("Authored shadow-feedback build failed: {}", m_ShadowFeedback.GetLastBuildError());
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+
   xiiResult SynchronizeDepthPipeline()
   {
     bool changed = false;
@@ -902,7 +959,12 @@ private:
       RequestQuit();
       return;
     }
-    xiiVirtualShadowMapManager::AddFeedbackPasses(graph, drawPass.first->m_hDepth, virtualShadowCascadePass.first->m_hConstants, m_TargetSize.width, m_TargetSize.height, m_ViewProjection.GetInverse(), m_Camera.GetNearPlane(), g_uiDirectionalLightId, m_uiFrameIndex);
+    if (BuildShadowFeedback(graph, blackboard, drawPass.first->m_hDepth, virtualShadowCascadePass.first->m_hConstants).Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
 
     graph.AddPass<PresentPassData>("Present GPU Scene", xiiGALCommandQueueFlags::Graphics, [this, sensorVisibility](PresentPassData& data, xiiRenderGraphBuilder& builder) {
         data.m_hColor                                 = builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::CopySource);
@@ -1185,6 +1247,9 @@ private:
   xiiUInt32                                         m_uiDepthInterface = xiiInvalidIndex, m_uiPreviousDepthInterface = xiiInvalidIndex;
   xiiRenderPipelineResourceHandle                   m_hVisibilityPipeline;
   xiiRenderPipelineResourceHandle                   m_hShadowPagePipeline;
+  xiiRenderPipelineResourceHandle                   m_hShadowFeedbackPipeline;
+  xiiRenderPipelineInstance                         m_ShadowFeedback;
+  xiiUInt32                                         m_uiShadowFeedbackDepth = xiiInvalidIndex, m_uiShadowFeedbackCascades = xiiInvalidIndex;
   xiiSharedPtr<const xiiRenderPipeline>             m_ShadowPageDefinition;
   xiiDynamicArray<xiiUniquePtr<VirtualPageRuntime>> m_VirtualPageRuntimes;
   xiiRenderPipelineInstance                         m_SunShadow;

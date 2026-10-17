@@ -108,22 +108,6 @@ static_assert(alignof(xiiGpuVirtualShadowPage) <= 8U, "Virtual shadow page recor
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVirtualShadowPage);
 
-/// GPU feedback record. Element zero uses VirtualKeyLow as the append counter.
-struct XII_GRAPHICSCORE_DLL xiiGpuVirtualShadowFeedback
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt32 m_uiVirtualKeyLow  = 0U;
-  xiiUInt32 m_uiVirtualKeyHigh = 0U;
-  xiiUInt32 m_uiPriority       = 0U;
-  xiiUInt32 m_uiFlags          = 0U; ///< bit 0 requests pinned residency.
-};
-
-static_assert(sizeof(xiiGpuVirtualShadowFeedback) == 16U, "Virtual shadow feedback records must match the GPU structured-buffer layout.");
-static_assert(alignof(xiiGpuVirtualShadowFeedback) <= 8U, "Virtual shadow feedback records must remain compatible with the default engine allocator.");
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVirtualShadowFeedback);
-
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
 {
   XII_DECLARE_POD_TYPE();
@@ -163,7 +147,7 @@ class xiiVirtualShadowMapManagerState;
 ///
 /// State is allocated by the GraphicsCore subsystem after Foundation startup,
 /// avoiding allocator use from global constructors. Owns device page allocations,
-/// feedback and residency metadata. Raster algorithms belong to selected pipeline
+/// CPU demand and residency metadata. Feedback and raster algorithms belong to selected pipeline
 /// resources. Access is serialized by the existing GPU frame owner.
 class XII_GRAPHICSCORE_DLL xiiVirtualShadowMapManager
 {
@@ -202,6 +186,8 @@ public:
 
   [[nodiscard]] static xiiVirtualShadowMapStats           GetStats();
   [[nodiscard]] static const xiiVirtualShadowMapSettings& GetConfiguration();
+  /// Transient device residency epoch. Rejects feedback captured before reconfiguration.
+  [[nodiscard]] static xiiUInt64 GetConfigurationRevision();
 
   /// Persistent depth atlas owned by the subsystem. Consumers import this
   /// resource into their render graph but never own or destroy it.
@@ -240,9 +226,6 @@ public:
   [[nodiscard]] static xiiResult AddPageCompletionPass(xiiRenderGraph& graph, const UploadHandles& upload,
                                                        xiiArrayPtr<const xiiVirtualShadowRasterPage> pages, UploadHandles& out_upload);
 
-  /// Appends screen-derived directional shadow requests and copies the cumulative
-  /// feedback stream into the completed-frame readback ring.
-  static void AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth, xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight, const xiiMat4& inverseViewProjection, float fNearPlane, xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex);
 
 private:
   static void                                          Startup();

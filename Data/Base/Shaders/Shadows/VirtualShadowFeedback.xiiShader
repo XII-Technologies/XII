@@ -45,7 +45,8 @@ void main(uint3 tid : SV_DispatchThreadID)
         return;
 
     const float depth = g_SceneDepth.Load(int3(pixel, 0));
-    if (depth <= 0.0f || ActiveCascadeCount == 0u)
+    const uint cascadeCount = min(ActiveCascadeCount, 4u);
+    if (!isfinite(depth) || depth <= 0.0f || depth > 1.0f || cascadeCount == 0u)
         return;
 
     const float linearDepth = VirtualShadowLinearizeDepth(depth);
@@ -53,14 +54,14 @@ void main(uint3 tid : SV_DispatchThreadID)
     [unroll]
     for (uint i = 0u; i < 4u; ++i)
     {
-        if (i < ActiveCascadeCount && linearDepth > CascadeSplitDepths[i])
-            cascade = min(i + 1u, ActiveCascadeCount - 1u);
+        if (i < cascadeCount && linearDepth > CascadeSplitDepths[i])
+            cascade = min(i + 1u, cascadeCount - 1u);
     }
 
     const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
     const float3 worldPosition = VirtualShadowReconstructWorldPosition(uv, depth);
     const float4 shadowClip = mul(CascadeViewProjection[cascade], float4(worldPosition, 1.0f));
-    if (shadowClip.w <= 0.0f)
+    if (any(!isfinite(shadowClip)) || shadowClip.w <= 0.0f)
         return;
     const float2 shadowUv = float2(shadowClip.x, -shadowClip.y) / shadowClip.w * 0.5f + 0.5f;
     if (any(shadowUv < 0.0f) || any(shadowUv >= 1.0f))

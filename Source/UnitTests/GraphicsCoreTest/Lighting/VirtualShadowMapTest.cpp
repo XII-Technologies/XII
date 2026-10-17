@@ -184,3 +184,33 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowRasterPlanning)
   XII_TEST_BOOL(!xiiVirtualShadowMapManager::MarkPageRendered(beforeReset));
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 3);
 }
+
+
+XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowSharedFeedbackBudget)
+{
+  xiiVirtualShadowMapSettings settings;
+  settings.m_uiVirtualResolution  = 64;
+  settings.m_uiPageSize           = 16;
+  settings.m_uiPhysicalPageCount  = 8;
+  settings.m_uiMaxPageAllocations = 2;
+  if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)))
+    return;
+  XII_SCOPE_EXIT(xiiVirtualShadowMapManager::Configure(xiiVirtualShadowMapSettings()).IgnoreResult());
+  const auto revision = xiiVirtualShadowMapManager::GetConfigurationRevision();
+  XII_TEST_BOOL(revision != 0);
+  xiiVirtualShadowMapManager::BeginFrame(1, 0);
+  const xiiVirtualShadowPageRequest camera[] = {MakeRequest(1, 0, 10), MakeRequest(1, 1, 9)};
+  const auto                        sensor   = MakeRequest(2, 0, 20);
+  xiiVirtualShadowMapManager::SubmitFeedback(camera);
+  xiiVirtualShadowMapManager::SubmitFeedback(xiiMakeArrayPtr(&sensor, 1));
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiAllocationCount, 2);
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDroppedRequestCount, 1);
+  xiiVirtualShadowPageMapping mapping;
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::TryGetMapping(sensor.m_Page, mapping));
+  xiiVirtualShadowMapManager::BeginFrame(2, 1);
+  xiiVirtualShadowMapManager::SubmitFeedback(xiiMakeArrayPtr(&sensor, 1));
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(sensor.m_Page, mapping));
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiAllocationCount, 1);
+  XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings));
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::GetConfigurationRevision() != revision);
+}
