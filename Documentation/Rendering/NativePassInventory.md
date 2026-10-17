@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **51 concrete reflected operation classes** in
+Current source inventory: **52 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -20,7 +20,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
-| Geometry | 4 | `xiiDepthRasterPass`, `xiiMeshDrawCommandsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
+| Geometry | 5 | `xiiDepthRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
 | Lighting | 1 | `xiiBRDFLutPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
@@ -89,7 +89,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Responsibility | Work still required |
 | --- | --- |
 | Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Temporal Hi-Z and LOD streaming feedback still need independent nodes. Both vertex-pull and mesh-shader indirect command preparation now have native operations. The remaining low-level visibility service/sample needs decomposition and deletion. |
-| Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer raster, motion vectors, velocity dilation, normal/roughness generation. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
+| Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Cascade setup, local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows, explicit virtual residency/feedback/raster operations. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
@@ -100,7 +100,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Decals | Upload, cull/batch, projected resolve and mesh decal draw. |
 | Transparency | Transparent geometry and particle raster. Particle integration and weighted resolve are native. |
 | Post-processing granularity | Split remaining multi-operation implementations, including bloom extraction/downsample/filter/upsample, at meaningful graph resource boundaries. Existing reflected classes are not automatically the final decomposition. |
-| Assets/consumers | Rebuild game, editor, forward/deferred, depth, shadow and specialized graphs using supported native operations. Convert custom sample graph orchestration into authored resources. |
+| Assets/consumers | Rebuild complete game, editor, forward/deferred, shadow and specialized graphs using supported native operations. DepthOnly and GBuffer currently cover their explicit geometry responsibilities. Convert custom sample graph orchestration into authored resources. |
 
 CPU frustum/source-update/draw-list arrays from the deleted runtime are not a new
 scene API to reproduce. World transforms, component/resource identities, geometry
@@ -548,3 +548,67 @@ Verification for depth and mesh commands:
 No controlled depth/mesh-command performance benchmark or complete game/editor
 pipeline test was run. D3D12 remains excluded. The unrelated AmbientOcclusion asset
 hash edit remains outside these commits. The architecture migration is incomplete.
+
+
+## Native G-buffer raster and raster service deletion - 2026-10-16
+
+GBufferRasterPass is a single reflected Geometry operation. Its eleven typed inputs
+supply canonical scene/pose/geometry/material records, compact meshlet work,
+raster constants, indirect arguments/count and a matching read-only D32 attachment.
+Seven typed outputs publish albedo/occlusion, octahedral normal, material parameters,
+emissive/transmission, compact normal/roughness, velocity and generation-validated
+GPU object identity. Mesh and vertex-pull shaders are explicit authored alternatives.
+The operation owns no world lifecycle, visibility, history, upload or pass selection.
+Its frame data retains shader/sampler/rasterizer references; depth is neither cleared
+nor rewritten. It permits normal render-graph merging rather than forcing a submission.
+
+The repository audit found only fixture callers of AddGBufferPass and no callers of
+AddForwardPlusPass. Those fixtures now bind GBufferRasterPass directly, preserving
+object and skinning motion through supplied previous-view constants. The entire
+GpuSceneRasterManager service, private state, startup/shutdown registration, public
+raster description/output facade, embedded constant/raster graph construction and
+old GpuSceneGBuffer/GpuSceneForwardPlus shader files are deleted. No compatibility
+facade survives. The unused Forward+ entry point has been removed; a new independent
+forward-lighting operation and authored graph are still required. Fixture-only layout
+values are confined to the test helper and are not a replacement production API.
+
+GBuffer is an ordinary source/binary resource with five authored nodes expanding to
+eighteen operations. It references VertexPullDraws and explicitly connects material
+upload, raster constants, depth and material raster. Twenty-three boundary mappings
+include optional candidates, fourteen GPU outputs, depth and seven material targets.
+It requests Geometry/GpuScene only. This resource currently uses current-view raster
+constants: camera/jitter history still needs its independent native producer before
+a complete temporal game/editor pipeline is available. Object/pose velocity from
+supplied previous transforms remains supported by the raster operation and fixtures.
+
+Verification:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorEngineProcessFrameworkTest
+  and EditorFrameworkTest plus dependent engine/editor targets build
+  (`Workspace/native-gbuffer-build-final.log`). The first build caught a missing
+  XII POD annotation on a new half-float readback record; it was fixed and the
+  affected targets then compiled successfully.
+- All 48 GraphicsCore CPU subtests pass (`Workspace/native-gbuffer-core.log`).
+- Vulkan NativeVisibility passes all four subtests, including real GPU readback of
+  all seven G-buffer targets across two views/two independently configured nested
+  instances, analytical nearest depth, empty/filtered work and component removal
+  (`Workspace/native-gbuffer-gpu.log`).
+- NativeSceneIdentity, MeshletRaster, SkinningRaster and NativeSceneLod pass nine
+  Vulkan subtests. These verify mesh and vertex-pull material raster, pose velocity,
+  dense primitive coverage, reload, LOD sections and no-mesh-shader queries
+  (`Workspace/native-gbuffer-<group>.log`). An additional attempted filter named
+  NativeSceneLodSections matched no test; its section tests are actually part of
+  the passing NativeSceneLod group, not an unverified separate group.
+- All eight NativeAssetAuthoring subtests pass (`Workspace/native-gbuffer-author.log`).
+  All fifteen Qt EditorDocuments subtests pass, including deterministic production
+  export/repeat export of fourteen SDK resources (`Workspace/native-gbuffer-qt.log`).
+- Source/asset searches find no old raster manager, public facade, G-buffer helper,
+  old Forward+ shader path or rendering Builtin files. Static-link retention removes
+  the old registration and retains the new reflected operation.
+
+No controlled performance benchmark or complete game/editor/lighting pipeline
+validation was run. D3D12 remains excluded. Legacy visibility/Hi-Z/feedback and
+lighting/shadow orchestration still require decomposition and deletion; complete
+forward/deferred assets and camera/jitter history remain unfinished. The unrelated
+AmbientOcclusion asset hash edit is excluded from this phase. The overall migration
+is incomplete.
