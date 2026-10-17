@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
+#include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
@@ -14,7 +15,7 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
                                            const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
                                            const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& raster,
                                            xiiRenderGraphTextureHandle& output, bool mesh = true, xiiGALFillMode::Enum fill = xiiGALFillMode::Solid,
-                                           xiiRenderGraphBufferHandle* out_commands = nullptr, xiiRenderGraphBufferHandle* out_count = nullptr)
+                                           xiiRenderGraphBufferHandle* out_commands = nullptr, xiiRenderGraphBufferHandle* out_count = nullptr, bool depthOnly = false)
 {
   output = {};
   if (!view || !raster.m_ViewProjectionMatrix.IsValid() || !raster.m_uiWidth || !raster.m_uiHeight ||
@@ -100,34 +101,68 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
     arguments     = bindings[prepare.m_Commands.GetBindingIndex()].m_hBuffer;
     argumentCount = bindings[prepare.m_CommandCount.GetBindingIndex()].m_hBuffer;
   }
-  xiiSurfaceQueryPass surface;
-  surface.m_bUseMeshShaders = mesh;
-  surface.m_FillMode        = fill;
-  XII_SUCCEED_OR_RETURN(surface.Configure({}));
-  xiiDynamicArray<xiiRenderPipelinePin> pins;
-  surface.GetPins(pins);
-  XII_SUCCEED_OR_RETURN(surface.InitializePinBindings(pins));
-  xiiDynamicArray<xiiRenderPipelineBinding> bindings;
-  bindings.SetCount(pins.GetCount());
-  bindings[surface.m_InputSceneInstances.GetBindingIndex()].m_hBuffer      = visibility.m_hSceneInstances;
-  bindings[surface.m_InputSkinningMatrices.GetBindingIndex()].m_hBuffer    = visibility.m_hSkinningMatrices;
-  bindings[surface.m_InputGeometryMetadata.GetBindingIndex()].m_hBuffer    = geometry.m_hGeometryMetadata;
-  bindings[surface.m_InputMeshletMetadata.GetBindingIndex()].m_hBuffer     = geometry.m_hMeshletMetadata;
-  bindings[surface.m_InputVisibleMeshlets.GetBindingIndex()].m_hBuffer     = visibility.m_hVisibleMeshlets;
-  bindings[surface.m_InputVisibleMeshletCount.GetBindingIndex()].m_hBuffer = visibility.m_hVisibleMeshletCount;
-  bindings[surface.m_InputSurfaceMaterials.GetBindingIndex()].m_hBuffer    = materials.m_hSurfaceData;
-  bindings[surface.m_InputRasterConstants.GetBindingIndex()].m_hBuffer     = inputs.first->m_Constants;
-  bindings[surface.m_InputDrawCommands.GetBindingIndex()].m_hBuffer        = arguments;
-  bindings[surface.m_InputDrawCommandCount.GetBindingIndex()].m_hBuffer    = argumentCount;
-  xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, pins, bindings, name};
-  xiiStringBuilder             error;
-  context.m_pBuildError = &error;
-  if (surface.Build(context).Failed())
+  if (depthOnly)
   {
-    xiiTestFramework::Output(xiiTestOutput::Details, "Fixture '%s': %s", xiiString(name).GetData(), error.GetData());
-    return XII_FAILURE;
+    xiiDepthRasterPass surface;
+    surface.m_bUseMeshShaders = mesh;
+    surface.m_FillMode        = fill;
+    XII_SUCCEED_OR_RETURN(surface.Configure({}));
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    surface.GetPins(pins);
+    XII_SUCCEED_OR_RETURN(surface.InitializePinBindings(pins));
+    xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+    bindings.SetCount(pins.GetCount());
+    bindings[surface.m_InputSceneInstances.GetBindingIndex()].m_hBuffer      = visibility.m_hSceneInstances;
+    bindings[surface.m_InputSkinningMatrices.GetBindingIndex()].m_hBuffer    = visibility.m_hSkinningMatrices;
+    bindings[surface.m_InputGeometryMetadata.GetBindingIndex()].m_hBuffer    = geometry.m_hGeometryMetadata;
+    bindings[surface.m_InputMeshletMetadata.GetBindingIndex()].m_hBuffer     = geometry.m_hMeshletMetadata;
+    bindings[surface.m_InputVisibleMeshlets.GetBindingIndex()].m_hBuffer     = visibility.m_hVisibleMeshlets;
+    bindings[surface.m_InputVisibleMeshletCount.GetBindingIndex()].m_hBuffer = visibility.m_hVisibleMeshletCount;
+    bindings[surface.m_InputSurfaceMaterials.GetBindingIndex()].m_hBuffer    = materials.m_hSurfaceData;
+    bindings[surface.m_InputRasterConstants.GetBindingIndex()].m_hBuffer     = inputs.first->m_Constants;
+    bindings[surface.m_InputDrawCommands.GetBindingIndex()].m_hBuffer        = arguments;
+    bindings[surface.m_InputDrawCommandCount.GetBindingIndex()].m_hBuffer    = argumentCount;
+    xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, pins, bindings, name};
+    xiiStringBuilder             error;
+    context.m_pBuildError = &error;
+    if (surface.Build(context).Failed())
+    {
+      xiiTestFramework::Output(xiiTestOutput::Details, "Fixture '%s': %s", xiiString(name).GetData(), error.GetData());
+      return XII_FAILURE;
+    }
+    output = bindings[surface.m_OutputDepth.GetBindingIndex()].m_hTexture;
   }
-  output = bindings[surface.m_OutputSurface.GetBindingIndex()].m_hTexture;
+  else
+  {
+    xiiSurfaceQueryPass surface;
+    surface.m_bUseMeshShaders = mesh;
+    surface.m_FillMode        = fill;
+    XII_SUCCEED_OR_RETURN(surface.Configure({}));
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    surface.GetPins(pins);
+    XII_SUCCEED_OR_RETURN(surface.InitializePinBindings(pins));
+    xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+    bindings.SetCount(pins.GetCount());
+    bindings[surface.m_InputSceneInstances.GetBindingIndex()].m_hBuffer      = visibility.m_hSceneInstances;
+    bindings[surface.m_InputSkinningMatrices.GetBindingIndex()].m_hBuffer    = visibility.m_hSkinningMatrices;
+    bindings[surface.m_InputGeometryMetadata.GetBindingIndex()].m_hBuffer    = geometry.m_hGeometryMetadata;
+    bindings[surface.m_InputMeshletMetadata.GetBindingIndex()].m_hBuffer     = geometry.m_hMeshletMetadata;
+    bindings[surface.m_InputVisibleMeshlets.GetBindingIndex()].m_hBuffer     = visibility.m_hVisibleMeshlets;
+    bindings[surface.m_InputVisibleMeshletCount.GetBindingIndex()].m_hBuffer = visibility.m_hVisibleMeshletCount;
+    bindings[surface.m_InputSurfaceMaterials.GetBindingIndex()].m_hBuffer    = materials.m_hSurfaceData;
+    bindings[surface.m_InputRasterConstants.GetBindingIndex()].m_hBuffer     = inputs.first->m_Constants;
+    bindings[surface.m_InputDrawCommands.GetBindingIndex()].m_hBuffer        = arguments;
+    bindings[surface.m_InputDrawCommandCount.GetBindingIndex()].m_hBuffer    = argumentCount;
+    xiiRenderPipelinePassContext context{view, graph, blackboard, parameters, pins, bindings, name};
+    xiiStringBuilder             error;
+    context.m_pBuildError = &error;
+    if (surface.Build(context).Failed())
+    {
+      xiiTestFramework::Output(xiiTestOutput::Details, "Fixture '%s': %s", xiiString(name).GetData(), error.GetData());
+      return XII_FAILURE;
+    }
+    output = bindings[surface.m_OutputSurface.GetBindingIndex()].m_hTexture;
+  }
   if (out_commands)
     *out_commands = arguments;
   if (out_count)

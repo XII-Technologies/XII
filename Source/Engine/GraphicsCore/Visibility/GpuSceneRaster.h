@@ -14,20 +14,6 @@
 
 class xiiLightingSystem;
 
-/// Describes one GPU-scene mesh-shader depth rasterization.
-struct XII_GRAPHICSCORE_DLL xiiGpuSceneDepthRasterDescription
-{
-  xiiMat4   m_ViewProjectionMatrix      = xiiMat4::MakeIdentity();
-  xiiUInt32 m_uiWidth                   = 0U;
-  xiiUInt32 m_uiHeight                  = 0U;
-  xiiUInt32 m_uiVertexStride            = 0U;
-  xiiUInt32 m_uiTexCoordOffset          = 0U;
-  xiiUInt32 m_uiMeshDispatchGroupCountX = 1U;
-  xiiUInt32 m_uiMeshDispatchGroupCountY = 1U;
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneDepthRasterDescription);
-
 /// Describes canonical material G-buffer generation from a compact GPU visibility stream.
 struct XII_GRAPHICSCORE_DLL xiiGpuSceneGBufferRasterDescription
 {
@@ -82,9 +68,6 @@ public:
   [[nodiscard]] static bool IsForwardPlusSupported();
 
 
-  /// Adds a reversed-Z depth prepass and returns the produced depth version. Invalid input or a
-  /// device without mesh shaders returns an invalid handle so callers can select an indexed fallback.
-  [[nodiscard]] static xiiRenderGraphTextureHandle AddDepthPrepass(xiiRenderGraph& graph, xiiStringView sName, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneDepthRasterDescription& description);
 
   /// Rasterizes canonical surface materials into the deferred targets while depth testing against
   /// the scene prepass. Compact normal/roughness and object-aware velocity are emitted as extra

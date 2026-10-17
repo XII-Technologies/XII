@@ -17,7 +17,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
-#include <Shaders/Pipeline/Passes/Geometry/GpuSceneRasterConstants.h>
 
 #include <GraphicsCore/Visibility/Implementation/GpuSceneRasterState.h>
 
@@ -58,22 +57,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GpuSceneRasterManager)
 
 XII_END_SUBSYSTEM_DECLARATION;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneDepthRasterDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuSceneDepthRasterDescription>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("ViewProjectionMatrix", m_ViewProjectionMatrix),
-    XII_MEMBER_PROPERTY("Width", m_uiWidth),
-    XII_MEMBER_PROPERTY("Height", m_uiHeight),
-    XII_MEMBER_PROPERTY("VertexStride", m_uiVertexStride),
-    XII_MEMBER_PROPERTY("TexCoordOffset", m_uiTexCoordOffset),
-    XII_MEMBER_PROPERTY("MeshDispatchGroupCountX", m_uiMeshDispatchGroupCountX),
-    XII_MEMBER_PROPERTY("MeshDispatchGroupCountY", m_uiMeshDispatchGroupCountY),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneGBufferRasterDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuSceneGBufferRasterDescription>)
 {
   XII_BEGIN_PROPERTIES
@@ -98,31 +81,6 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 namespace
 {
-  struct DepthConstantsPassData
-  {
-    xiiRenderGraphBufferHandle        m_hConstants;
-    xiiGpuSceneDepthRasterDescription m_Description;
-    xiiUInt32                         m_uiGeometryBaseIndex = 0U;
-    xiiUInt32                         m_uiMaterialBaseIndex = 0U;
-  };
-
-  struct DepthRasterPassData
-  {
-    xiiRenderGraphTextureHandle        m_hDepth;
-    xiiRenderGraphBufferHandle         m_hConstants;
-    xiiRenderGraphBufferHandle         m_hSceneInstances;
-    xiiRenderGraphBufferHandle         m_hSkinningMatrices;
-    xiiRenderGraphBufferHandle         m_hGeometry;
-    xiiRenderGraphBufferHandle         m_hMeshlets;
-    xiiRenderGraphBufferHandle         m_hVisibleMeshlets;
-    xiiRenderGraphBufferHandle         m_hVisibleMeshletCount;
-    xiiRenderGraphBufferHandle         m_hIndirectCommands;
-    xiiRenderGraphBufferHandle         m_hIndirectCommandCount;
-    xiiRenderGraphBufferHandle         m_hSurfaceMaterials;
-    xiiGpuSceneDepthRasterDescription  m_Description;
-    xiiShaderPermutationResourceHandle m_hShaderPermutation;
-  };
-
   struct GBufferConstantsPassData
   {
     xiiRenderGraphBufferHandle          m_hConstants;
@@ -203,110 +161,12 @@ bool xiiGpuSceneRasterManager::IsInitialized()
 
 bool xiiGpuSceneRasterManager::IsSupported()
 {
-  return IsInitialized() && s_pState->m_bMeshShadersSupported && s_pState->m_hDepthShaderPermutation.IsValid() &&
-    s_pState->m_hGBufferShaderPermutation.IsValid();
+  return IsInitialized() && s_pState->m_bMeshShadersSupported && s_pState->m_hGBufferShaderPermutation.IsValid();
 }
 
 bool xiiGpuSceneRasterManager::IsForwardPlusSupported()
 {
   return IsSupported() && s_pState->m_hForwardPlusShaderPermutation.IsValid();
-}
-
-xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddDepthPrepass(xiiRenderGraph& graph, xiiStringView sName, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneDepthRasterDescription& description)
-{
-  if (!IsSupported() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hSkinningMatrices.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() || !visibility.m_hVisibleMeshletCount.IsValid() || !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || !geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || description.m_uiWidth == 0U || description.m_uiHeight == 0U || description.m_uiVertexStride == 0U)
-    return {};
-
-  xiiStringBuilder constantsPassName(sName, " Constants");
-  xiiStringBuilder constantsResourceName(sName, " Constants Buffer");
-  auto             constantsPass             = graph.AddPass<DepthConstantsPassData>(constantsPassName, xiiGALCommandQueueFlags::Graphics, [constantsResourceName](DepthConstantsPassData& data, xiiRenderGraphBuilder& builder) {
-      xiiGALBufferCreationDescription constantsDescription;
-      constantsDescription.m_uiSize         = sizeof(xiiGpuSceneRasterConstants);
-      constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
-      constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
-      constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-      data.m_hConstants                     = builder.WriteBuffer(constantsResourceName, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-      builder.SetPassAllowMerge(false); }, [](const DepthConstantsPassData& data, xiiRenderGraphPassContext& context) {
-      xiiGALMapHelper<xiiGpuSceneRasterConstants> constants(context.GetCommandList(), context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      constants->ViewProjectionMatrix    = data.m_Description.m_ViewProjectionMatrix;
-      constants->GeometryBaseIndex       = data.m_uiGeometryBaseIndex;
-      constants->MaterialBaseIndex       = data.m_uiMaterialBaseIndex;
-      constants->VertexStride            = data.m_Description.m_uiVertexStride;
-      constants->TexCoordOffset          = data.m_Description.m_uiTexCoordOffset;
-      constants->MeshDispatchGroupCountX = data.m_Description.m_uiMeshDispatchGroupCountX;
-      constants->MeshDispatchGroupCountY = data.m_Description.m_uiMeshDispatchGroupCountY; });
-  constantsPass.first->m_Description         = description;
-  constantsPass.first->m_uiGeometryBaseIndex = geometry.m_uiGeometryBaseIndex;
-  constantsPass.first->m_uiMaterialBaseIndex = materials.m_uiSurfaceBaseIndex;
-
-  auto pass = graph.AddPass<DepthRasterPassData>(sName, xiiGALCommandQueueFlags::Graphics, [visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, width = description.m_uiWidth, height = description.m_uiHeight](DepthRasterPassData& data, xiiRenderGraphBuilder& builder) {
-      xiiGALTextureCreationDescription depthDescription;
-      depthDescription.m_Type        = xiiGALResourceDimension::Texture2D;
-      depthDescription.m_Format      = xiiGALResourceFormat::D32Float;
-      depthDescription.m_Size.width  = width;
-      depthDescription.m_Size.height = height;
-      depthDescription.m_uiMipLevels = 1U;
-      depthDescription.m_BindFlags   = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-      depthDescription.m_Usage       = xiiGALResourceUsage::Default;
-
-      data.m_hDepth                = builder.WriteTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, depthDescription, xiiGALResourceStateFlags::DepthWrite);
-      data.m_hConstants            = builder.ReadBuffer(hConstants, xiiGALResourceStateFlags::ConstantBuffer);
-      data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hSkinningMatrices     = builder.ReadBuffer(visibility.m_hSkinningMatrices, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hGeometry             = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hMeshlets             = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hVisibleMeshlets      = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hVisibleMeshletCount  = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hIndirectCommands     = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
-      data.m_hIndirectCommandCount = builder.ReadBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::IndirectArgument);
-      data.m_hSurfaceMaterials     = builder.ReadBuffer(materials.m_hSurfaceData, xiiGALResourceStateFlags::ShaderResource);
-
-      builder.SetPassAllowMerge(false);
-      builder.SetPassRenderPassManaged(true); }, [](const DepthRasterPassData& data, xiiRenderGraphPassContext& context) {
-      xiiResourceLock<xiiShaderPermutationResource> permutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-      if (!permutation.IsValid() || !permutation->IsShaderValid() || context.GetRenderPass() == nullptr)
-        return;
-
-      xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
-      pipelineDescription.m_PipelineType                          = xiiGALPipelineType::Mesh;
-      pipelineDescription.m_pPipelineResourceSignature            = permutation->GetPipelineResourceSignature();
-      pipelineDescription.m_pMeshShader                           = permutation->GetGALShader(xiiGALShaderType::Mesh);
-      pipelineDescription.m_pPixelShader                          = permutation->GetGALShader(xiiGALShaderType::Pixel);
-      pipelineDescription.m_GraphicsPipeline.m_pBlendState        = permutation->GetBlendState();
-      pipelineDescription.m_GraphicsPipeline.m_pRasterizerState   = permutation->GetRasterizerState();
-      pipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = permutation->GetDepthStencilState();
-      pipelineDescription.m_GraphicsPipeline.m_pRenderPass        = context.GetRenderPass();
-      pipelineDescription.m_GraphicsPipeline.m_uiSubpassIndex     = static_cast<xiiUInt8>(context.GetSubpassIndex());
-      pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
-      const xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline   = xiiGALPipelineCache::GetPipeline(pipelineDescription);
-      if (pPipeline == nullptr)
-        return;
-
-      xiiGALCommandList& cmd = context.GetCommandList();
-      cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
-      cmd.SetViewport({0.0f, 0.0f, static_cast<float>(data.m_Description.m_uiWidth), static_cast<float>(data.m_Description.m_uiHeight), 0.0f, 1.0f});
-      cmd.SetPipelineState(pPipeline.Borrow());
-      cmd.ResolveAndSetSampler("g_sAnisotropicWrap", s_pState->m_pMaterialSampler.Borrow());
-      cmd.ResolveAndSetSampler("g_sLinearWrap", s_pState->m_pMaterialSampler.Borrow());
-      cmd.ResolveAndSetConstantBuffer("xiiGpuSceneRasterConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh | xiiGALShaderType::Pixel);
-      cmd.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-      cmd.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", context.GetBuffer(data.m_hSkinningMatrices)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-      cmd.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-      cmd.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-      cmd.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-      cmd.ResolveAndSetShaderResourceBufferView("g_VisibleMeshletCount", context.GetBuffer(data.m_hVisibleMeshletCount)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-      cmd.ResolveAndSetShaderResourceBufferView("g_SurfaceMaterials", context.GetBuffer(data.m_hSurfaceMaterials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
-      if (xiiGALBindlessResourceTable::IsInitialized())
-      {
-        xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_Buffers", xiiGALShaderType::Mesh);
-        xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_Textures", xiiGALShaderType::Pixel);
-      }
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();
-      cmd.DrawMeshIndirect({context.GetBuffer(data.m_hIndirectCommands), 1U, 0U, xiiGALStateTransitionMode::None, context.GetBuffer(data.m_hIndirectCommandCount)}); });
-
-  pass.first->m_Description        = description;
-  pass.first->m_hShaderPermutation = s_pState->m_hDepthShaderPermutation;
-  return pass.first->m_hDepth;
 }
 
 xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGraph& graph, xiiStringView sName, xiiRenderGraphTextureHandle hSceneDepth, xiiRenderGraphTextureHandle hVelocity, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description)
@@ -597,8 +457,6 @@ void xiiGpuSceneRasterManager::EngineStartup()
   if (!s_pState->m_bMeshShadersSupported)
     return;
 
-  const xiiShaderResourceHandle hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneDepth.xiiShader");
-  s_pState->m_hDepthShaderPermutation              = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, false);
   const xiiShaderResourceHandle hGBufferShader     = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneGBuffer.xiiShader");
   s_pState->m_hGBufferShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hGBufferShader, {}, false);
   const xiiShaderResourceHandle hForwardPlusShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneForwardPlus.xiiShader");
@@ -611,7 +469,6 @@ void xiiGpuSceneRasterManager::EngineShutdown()
     return;
 
   s_pState->m_pMaterialSampler = nullptr;
-  s_pState->m_hDepthShaderPermutation.Invalidate();
   s_pState->m_hGBufferShaderPermutation.Invalidate();
   s_pState->m_hForwardPlusShaderPermutation.Invalidate();
   s_pState->m_bMeshShadersSupported = false;

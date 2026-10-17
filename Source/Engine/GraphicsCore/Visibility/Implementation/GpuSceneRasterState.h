@@ -8,7 +8,6 @@
 class xiiGpuSceneRasterManagerState
 {
 public:
-  xiiShaderPermutationResourceHandle m_hDepthShaderPermutation;
   xiiShaderPermutationResourceHandle m_hGBufferShaderPermutation;
   xiiShaderPermutationResourceHandle m_hForwardPlusShaderPermutation;
   xiiSharedPtr<xiiGALSampler>        m_pMaterialSampler;

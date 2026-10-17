@@ -233,29 +233,9 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       const auto                      frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
       const auto                      visibilityView = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetInstanceCount());
       xiiGpuVisibilityPassDescription visibilityDescription;
-      visibilityDescription.m_bAsyncCompute        = false;
-      visibilityDescription.m_bEnableLodFeedback   = false;
-      const auto                        visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, 1, context, visibilityView, uploadedGeometry, visibilityDescription);
-      xiiGpuSceneDepthRasterDescription depthDescription;
-      depthDescription.m_ViewProjectionMatrix = viewProjection;
-      depthDescription.m_uiWidth = depthDescription.m_uiHeight = 32;
-      depthDescription.m_uiVertexStride                        = sizeof(xiiMeshPackedVertex);
-      depthDescription.m_uiTexCoordOffset                      = offsetof(xiiMeshPackedVertex, m_vTexCoord0);
-      depthDescription.m_uiMeshDispatchGroupCountX             = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
-      depthDescription.m_uiMeshDispatchGroupCountY             = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
-      const auto depth                                         = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "Identity depth", visibility, uploadedGeometry, materials, depthDescription);
-      struct Velocity
-      {
-        xiiRenderGraphTextureHandle m_Target;
-      };
-      auto                                velocity = graph.AddPass<Velocity>("Identity velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
-        xiiGALTextureCreationDescription target;
-        target.m_Type = xiiGALResourceDimension::Texture2D;
-        target.m_Size = {32, 32};
-        target.m_Format = xiiGALResourceFormat::RG16Float;
-        target.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-        data.m_Target = builder.WriteTexture("Identity velocity", target, xiiGALResourceStateFlags::RenderTarget);
-        builder.SetPassRenderPassManaged(); }, [](const Velocity& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); });
+      visibilityDescription.m_bAsyncCompute          = false;
+      visibilityDescription.m_bEnableLodFeedback     = false;
+      const auto                          visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, 1, context, visibilityView, uploadedGeometry, visibilityDescription);
       xiiGpuSceneGBufferRasterDescription raster;
       raster.m_ViewProjectionMatrix = raster.m_PreviousViewProjectionMatrix = viewProjection;
       raster.m_uiWidth = raster.m_uiHeight = 32;
@@ -263,9 +243,24 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       raster.m_uiNormalOffset              = offsetof(xiiMeshPackedVertex, m_vNormal);
       raster.m_uiTangentOffset             = offsetof(xiiMeshPackedVertex, m_vTangent);
       raster.m_uiTexCoordOffset            = offsetof(xiiMeshPackedVertex, m_vTexCoord0);
-      raster.m_uiMeshDispatchGroupCountX   = depthDescription.m_uiMeshDispatchGroupCountX;
-      raster.m_uiMeshDispatchGroupCountY   = depthDescription.m_uiMeshDispatchGroupCountY;
-      const auto outputs                   = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Identity G-buffer", depth, velocity.first->m_Target, visibility, uploadedGeometry, materials, raster);
+      raster.m_uiMeshDispatchGroupCountX   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
+      raster.m_uiMeshDispatchGroupCountY   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
+      xiiRenderGraphTextureHandle depth;
+      if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Identity depth", visibility, uploadedGeometry, materials, raster, depth, meshPicking, xiiGALFillMode::Solid, nullptr, nullptr, true)))
+        return;
+      struct Velocity
+      {
+        xiiRenderGraphTextureHandle m_Target;
+      };
+      auto       velocity = graph.AddPass<Velocity>("Identity velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription target;
+        target.m_Type = xiiGALResourceDimension::Texture2D;
+        target.m_Size = {32, 32};
+        target.m_Format = xiiGALResourceFormat::RG16Float;
+        target.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+        data.m_Target = builder.WriteTexture("Identity velocity", target, xiiGALResourceStateFlags::RenderTarget);
+        builder.SetPassRenderPassManaged(); }, [](const Velocity& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); });
+      const auto outputs  = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Identity G-buffer", depth, velocity.first->m_Target, visibility, uploadedGeometry, materials, raster);
       if (!XII_TEST_BOOL(outputs.IsValid()))
         return;
       xiiRenderGraphTextureHandle query;
@@ -410,12 +405,14 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           xiiGeometryResidencyManager::ProcessStreaming(poseFrame, poseFrame - 1, xiiMath::MaxValue<xiiUInt64>());
           cache.BeginFrame(poseFrame, poseFrame - 1);
           graph.BeginSetup(poseFrame);
-          const auto poseGeometry               = xiiGeometryResidencyManager::AddUploadPass(graph, poseFrame);
-          const auto poseMaterials              = xiiMaterialManager::AddUploadPasses(graph);
-          visibilityDescription.m_bAsyncCompute = true;
-          const auto poseVisibility             = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, poseFrame, context, visibilityView, poseGeometry, visibilityDescription);
-          const auto poseDepth                  = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "Posed depth", poseVisibility, poseGeometry, poseMaterials, depthDescription);
-          auto       poseVelocity               = graph.AddPass<Velocity>("Posed velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
+          const auto poseGeometry                    = xiiGeometryResidencyManager::AddUploadPass(graph, poseFrame);
+          const auto poseMaterials                   = xiiMaterialManager::AddUploadPasses(graph);
+          visibilityDescription.m_bAsyncCompute      = true;
+          const auto                  poseVisibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, poseFrame, context, visibilityView, poseGeometry, visibilityDescription);
+          xiiRenderGraphTextureHandle poseDepth;
+          if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "Posed depth", poseVisibility, poseGeometry, poseMaterials, raster, poseDepth, meshPicking, xiiGALFillMode::Solid, nullptr, nullptr, true)))
+            return;
+          auto       poseVelocity = graph.AddPass<Velocity>("Posed velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
             xiiGALTextureCreationDescription target;
             target.m_Type = xiiGALResourceDimension::Texture2D;
             target.m_Size = {32, 32};
@@ -423,7 +420,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
             target.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
             data.m_Target = builder.WriteTexture("Posed velocity", target, xiiGALResourceStateFlags::RenderTarget);
             builder.SetPassRenderPassManaged(); }, [](const Velocity& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); });
-          const auto poseSurface                = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Posed surface", poseDepth, poseVelocity.first->m_Target, poseVisibility, poseGeometry, poseMaterials, raster);
+          const auto poseSurface  = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Posed surface", poseDepth, poseVelocity.first->m_Target, poseVisibility, poseGeometry, poseMaterials, raster);
           if (!XII_TEST_BOOL(poseSurface.IsValid()))
             return;
           xiiRenderGraphTextureHandle poseQuery;
