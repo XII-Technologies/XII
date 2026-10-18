@@ -59,6 +59,11 @@ float SampleIESProfile(xiiGpuLightData lightData, float3 pointToLightDirection)
   const float horizontalWeight = frac(horizontal);
   const uint  profileBase      = (encodedProfile - 1u) * XII_IES_PROFILE_SAMPLES;
 
+  uint profileValues, profileStride;
+  g_IESProfiles.GetDimensions(profileValues, profileStride);
+  if (encodedProfile > profileValues / XII_IES_PROFILE_SAMPLES)
+    return 0.0f;
+
   const float sample00 = g_IESProfiles[profileBase + horizontal0 * XII_IES_VERTICAL_SAMPLES + vertical0];
   const float sample01 = g_IESProfiles[profileBase + horizontal0 * XII_IES_VERTICAL_SAMPLES + vertical1];
   const float sample10 = g_IESProfiles[profileBase + horizontal1 * XII_IES_VERTICAL_SAMPLES + vertical0];
