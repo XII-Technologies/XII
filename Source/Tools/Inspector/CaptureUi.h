@@ -42,8 +42,8 @@ namespace xiiInspectorUi
     using QTreeWidgetItem::QTreeWidgetItem;
     bool operator<(const QTreeWidgetItem& other) const override
     {
-      const int column = treeWidget()->sortColumn();
-      bool leftNumeric = false, rightNumeric = false;
+      const int    column      = treeWidget()->sortColumn();
+      bool         leftNumeric = false, rightNumeric = false;
       const double left = text(column).toDouble(&leftNumeric), right = other.text(column).toDouble(&rightNumeric);
       return leftNumeric && rightNumeric ? left < right : text(column).localeAwareCompare(other.text(column)) < 0;
     }
@@ -80,6 +80,7 @@ namespace xiiInspectorUi
       setDragMode(QGraphicsView::ScrollHandDrag);
       setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
       setBackgroundBrush(QColor("#20242b"));
+      setAlignment(Qt::AlignLeft | Qt::AlignTop);
       setToolTip("Drag to pan. Ctrl+wheel to zoom. Use Fit to show the whole capture.");
       setMinimumHeight(180);
     }
@@ -88,7 +89,7 @@ namespace xiiInspectorUi
       if (event->modifiers().testFlag(Qt::ControlModifier))
       {
         const double factor = event->angleDelta().y() > 0 ? 1.15 : 1.0 / 1.15;
-        const double next = transform().m11() * factor;
+        const double next   = transform().m11() * factor;
         if (next >= 0.02 && next <= 30)
           scale(factor, factor);
         event->accept();
@@ -97,4 +98,4 @@ namespace xiiInspectorUi
         QGraphicsView::wheelEvent(event);
     }
   };
-}
+} // namespace xiiInspectorUi

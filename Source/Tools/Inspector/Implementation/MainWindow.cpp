@@ -12,12 +12,12 @@
 #include <Inspector/MainWindow.moc.h>
 #include <Inspector/MemoryWidget.moc.h>
 #include <Inspector/PluginsWidget.moc.h>
+#include <Inspector/ProfilingWidget.h>
 #include <Inspector/ReflectionWidget.moc.h>
+#include <Inspector/RenderGraphWidget.h>
 #include <Inspector/ResourceWidget.moc.h>
 #include <Inspector/SubsystemsWidget.moc.h>
 #include <Inspector/TimeWidget.moc.h>
-#include <Inspector/RenderGraphWidget.h>
-#include <Inspector/ProfilingWidget.h>
 
 const int g_iDockingStateVersion = 1;
 
@@ -60,8 +60,8 @@ xiiQtMainWindow::xiiQtMainWindow() :
   xiiQtReflectionWidget*   pReflectionWidget   = new xiiQtReflectionWidget(m_pDockManager);
   xiiQtDataWidget*         pDataWidget         = new xiiQtDataWidget(m_pDockManager);
   xiiQtResourceWidget*     pResourceWidget     = new xiiQtResourceWidget(m_pDockManager);
-  auto* pRenderGraphWidget = new xiiQtRenderGraphWidget(m_pDockManager);
-  auto* pProfilingWidget = new xiiQtProfilingWidget(m_pDockManager);
+  auto*                    pRenderGraphWidget  = new xiiQtRenderGraphWidget(m_pDockManager);
+  auto*                    pProfilingWidget    = new xiiQtProfilingWidget(m_pDockManager);
   menuWindows->addAction(pRenderGraphWidget->toggleViewAction());
   menuWindows->addAction(pProfilingWidget->toggleViewAction());
 

@@ -15,12 +15,12 @@
 #include <Inspector/MainWindow.moc.h>
 #include <Inspector/MemoryWidget.moc.h>
 #include <Inspector/PluginsWidget.moc.h>
+#include <Inspector/ProfilingWidget.h>
 #include <Inspector/ReflectionWidget.moc.h>
+#include <Inspector/RenderGraphWidget.h>
 #include <Inspector/ResourceWidget.moc.h>
 #include <Inspector/SubsystemsWidget.moc.h>
 #include <Inspector/TimeWidget.moc.h>
-#include <Inspector/RenderGraphWidget.h>
-#include <Inspector/ProfilingWidget.h>
 
 #include <QApplication>
 #include <QSettings>

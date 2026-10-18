@@ -13,8 +13,8 @@
 xiiQtRenderingCapture::xiiQtRenderingCapture(ads::CDockManager* manager, const char* title, xiiUInt32 system) :
   ads::CDockWidget(manager, title), m_uiSystem(system)
 {
-  auto* root = new QWidget;
-  m_pLayout = new QVBoxLayout(root);
+  auto* root  = new QWidget;
+  m_pLayout   = new QVBoxLayout(root);
   m_pControls = new QHBoxLayout;
   m_pLayout->addLayout(m_pControls);
   auto* capture = new QPushButton("Capture");
@@ -23,7 +23,7 @@ xiiQtRenderingCapture::xiiQtRenderingCapture(ads::CDockManager* manager, const c
   m_pLive->setToolTip("Request at most one capture per second while this panel is visible.");
   auto* open = new QPushButton("Open…");
   auto* save = new QPushButton("Save…");
-  m_pFilter = new QLineEdit;
+  m_pFilter  = new QLineEdit;
   m_pFilter->setPlaceholderText("Filter by name…");
   m_pFilter->setAccessibleName("Capture name filter");
   for (auto* button : {capture, open, save})
@@ -112,7 +112,7 @@ bool xiiQtRenderingCapture::LoadCapture(const QByteArray& bytes)
     return false;
   }
   QJsonParseError error;
-  const auto doc = QJsonDocument::fromJson(bytes, &error);
+  const auto      doc = QJsonDocument::fromJson(bytes, &error);
   if (error.error != QJsonParseError::NoError || !doc.isObject() || !ApplyCapture(doc.object()))
   {
     m_pStatus->setText("Invalid or unsupported capture. The previous capture is preserved.");
@@ -136,8 +136,13 @@ void xiiQtRenderingCapture::SaveCapture()
   const auto path = QFileDialog::getSaveFileName(this, "Save capture", {}, "JSON capture (*.json)");
   if (path.isEmpty())
     return;
-  QSaveFile file(path);
-  const auto bytes = QJsonDocument(m_Document).toJson();
+  QSaveFile  file(path);
+  const auto bytes = QJsonDocument(m_Document).toJson(QJsonDocument::Compact);
+  if (bytes.size() > 16 * 1024 * 1024)
+  {
+    m_pStatus->setText("Capture exceeds the 16 MiB file limit.");
+    return;
+  }
   if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit())
     m_pStatus->setText("Could not save capture: " + file.errorString());
 }
