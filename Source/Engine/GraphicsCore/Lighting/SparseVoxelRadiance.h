@@ -4,12 +4,12 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Vec3.h>
+#include <Foundation/Math/Vec4.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Bitflags.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsCore/Pipeline/RenderGraph.h>
 
-class xiiGALDevice;
 
 /// Configuration for the camera-centred far-field radiance clipmap.
 struct XII_GRAPHICSCORE_DLL xiiSparseVoxelRadianceSettings
@@ -114,10 +114,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuSparseVoxelLevel
 static_assert(sizeof(xiiGpuSparseVoxelLevel) == 32U);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSparseVoxelLevel);
 
-/// Camera-centred GI algorithm state for one consumer. CPU scheduling can be used without a device.
-/// GPU storage is private to the context; settings and algorithm state are never process global.
-/// This object is not thread-safe. It must outlive graphs capturing it. Before reinitialization,
-/// shutdown or destruction, discard those graphs and wait for their submitted GPU work to finish.
+/// CPU-only sparse clipmap residency and update scheduling for one consumer. No GPU or graph ownership.
 class XII_GRAPHICSCORE_DLL xiiSparseVoxelRadianceContext
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiSparseVoxelRadianceContext);
@@ -126,9 +123,8 @@ public:
   xiiSparseVoxelRadianceContext();
   ~xiiSparseVoxelRadianceContext();
 
-  /// Initialize CPU scheduling and, when a device is supplied, persistent GPU storage.
-  /// Failure preserves an existing configuration. A null device selects CPU-only scheduling.
-  [[nodiscard]] xiiResult Initialize(const xiiSparseVoxelRadianceSettings& settings = {}, xiiSharedPtr<xiiGALDevice> pDevice = nullptr);
+  /// Initialize CPU scheduling. Invalid settings preserve the current configuration.
+  [[nodiscard]] xiiResult Initialize(const xiiSparseVoxelRadianceSettings& settings = {});
   void                    Shutdown();
   [[nodiscard]] bool      IsInitialized() const;
   /// Discard accumulated lighting without reallocating storage or disturbing another view.
@@ -145,24 +141,13 @@ public:
   [[nodiscard]] const xiiSparseVoxelRadianceSettings&        GetConfiguration() const;
   [[nodiscard]] const xiiSparseVoxelBrickState*              FindBrick(xiiUInt64 uiPackedKey) const;
 
-  struct UpdateHandles
-  {
-    xiiRenderGraphBufferHandle m_hRadiancePool;
-    xiiRenderGraphBufferHandle m_hPageTable;
-    xiiRenderGraphBufferHandle m_hLevelData;
-    xiiRenderGraphBufferHandle m_hConstants;
-  };
-
-  /// Adds the sparse radiance injection pass and publishes the page table and
-  /// persistent pool consumed by far-field final gather.
-  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle environmentLight);
+  [[nodiscard]] xiiArrayPtr<const xiiVec3I32> GetClipmapMinimumCells() const;
 
   /// Collision-free key used by CPU residency, GPU page tables, captures, and tools.
   [[nodiscard]] static xiiUInt64 PackBrickKey(xiiUInt32 uiClipmapLevel, const xiiVec3I32& vCell);
   static void                    UnpackBrickKey(xiiUInt64 uiPackedKey, xiiUInt32& out_uiClipmapLevel, xiiVec3I32& out_vCell);
 
 private:
-  [[nodiscard]] xiiResult CreateGpuResources();
   class State;
   xiiUniquePtr<State> m_pState;
 };

@@ -90,10 +90,6 @@ namespace xiiRGBlackboardKeys
   // Stage 5 - Lighting Preparation.
 
   constexpr xiiStringView k_BRDFLut                    = "BRDFLut"_xiisv;                  ///< xiiRenderGraphTextureHandle - 256x256 R16G16F GGX split-sum BRDF LUT (persistent).
-  constexpr xiiStringView k_SparseVoxelRadiancePool    = "SparseVoxelRadiancePool"_xiisv;  ///< xiiRenderGraphBufferHandle - persistent physical voxel radiance pool.
-  constexpr xiiStringView k_SparseVoxelPageTable       = "SparseVoxelPageTable"_xiisv;     ///< xiiRenderGraphBufferHandle - clipmap logical-to-physical brick mapping.
-  constexpr xiiStringView k_SparseVoxelLevelData       = "SparseVoxelLevelData"_xiisv;     ///< xiiRenderGraphBufferHandle - per-level clipmap transforms.
-  constexpr xiiStringView k_SparseVoxelConstants       = "SparseVoxelConstants"_xiisv;     ///< xiiRenderGraphBufferHandle - sparse radiance pool layout.
   constexpr xiiStringView k_SparseVoxelIrradiance      = "SparseVoxelIrradiance"_xiisv;    ///< xiiRenderGraphTextureHandle - far-field irradiance gather.
   constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv;         ///< xiiRenderGraphTextureHandle - 256x64 R16G16B16A16F atmosphere transmittance LUT.
   constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;          ///< xiiRenderGraphTextureHandle - 32x32 R16G16B16A16F multiple-scattering LUT.

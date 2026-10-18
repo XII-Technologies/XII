@@ -1,0 +1,20 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/GlobalIllumination/SparseVoxelPoolConstants.h>
+StructuredBuffer<float4> g_PreviousPool;
+RWStructuredBuffer<float4> g_CurrentPool;
+[numthreads(64,1,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  const uint index=tid.x+tid.y*PoolWork.y;
+  if(index>=PoolWork.x) return;
+  float4 value=0;
+  [branch] if(PoolWork.z!=0)
+  {
+    uint previousCount,stride; g_PreviousPool.GetDimensions(previousCount,stride);
+    if(index<previousCount) value=g_PreviousPool[index];
+  }
+  g_CurrentPool[index]=value;
+}
