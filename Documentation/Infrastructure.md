@@ -41,6 +41,46 @@ not the supported GitHub/local build procedure.
 | `update-precompiled-tools.yml` | Manual | Windows x64 Shipping ArchiveTool candidate and dependencies; review before any external update |
 
 The required aggregate job fails when any native matrix leg fails or is cancelled.
+
+## Pull request labels
+
+[`.github/labels.json`](../.github/labels.json) owns repository label names, colors
+and descriptions, with path rules for `Area:`, `Module:` and `GitHub`.
+Area labels describe cross-cutting concerns; module labels identify the engine,
+tool library, editor or plugin family that owns the changed code. Tests and test
+assets also select their owning module. Standalone tools and samples use area
+labels; `TestFramework` has its own module label. Issue-form area selections are
+report metadata and do not automatically apply GitHub labels.
+
+After adding or renaming a module, update the catalog and regenerate the labeler:
+
+```sh
+python Utilities/CI/manage_labels.py generate
+python Utilities/CI/manage_labels.py check
+```
+
+Repository quality checks reject stale generated rules, obsolete directory paths
+and missing module coverage. Keep issue-form area choices aligned when adding
+areas. To synchronize live labels with an authenticated maintainer's `gh` CLI:
+
+```sh
+python Utilities/CI/manage_labels.py sync --repo XII-Technologies/XII
+python Utilities/CI/manage_labels.py sync --repo XII-Technologies/XII --apply
+```
+
+The first command previews changes. The second creates or updates managed label
+metadata and verifies the result; it never deletes labels or changes issue/PR
+assignments. Existing `Status:`, `Change:` and `Review:` metadata is preserved in
+the catalog; these labels are assigned manually and have no automatic path rules.
+The legacy `.github/create-tags.sh` entry point delegates to the same utility and
+also previews changes unless passed `--apply`.
+The metadata-only labeler runs from the PR base branch and synchronizes configured
+path labels as files change, preserving unrelated labels. Catalog/workflow changes
+take effect for PR automation once merged into the base branch. No PR code is
+checked out or executed by this privileged workflow.
+
+## Hosted environments
+
 Windows jobs explicitly select `windows-2025-vs2026`; all Linux jobs select
 `ubuntu-26.04`, including quality, security, documentation, and release publication.
 These are the latest suitable x64 hosted environments verified on 2026-10-18 in
