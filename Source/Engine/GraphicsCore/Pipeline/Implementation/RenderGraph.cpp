@@ -5,6 +5,7 @@
 
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 #include <GraphicsCore/Pipeline/RenderGraphSkills.h>
@@ -1638,6 +1639,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   }
 
   // Run render-pass merging now that we have a live device.
+  bool bExecutionSucceeded = false;
+  XII_SCOPE_EXIT(xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_uiFrameIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}}));
   PhaseF_RenderPassMerging(pDevice);
 
   // Resolve all transient and imported resources for this frame's execution.
@@ -2081,6 +2084,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     pProfiler->OnFrameEnd(m_uiFrameIndex);
   }
 
+  bExecutionSucceeded = true;
   return XII_SUCCESS;
 }
 

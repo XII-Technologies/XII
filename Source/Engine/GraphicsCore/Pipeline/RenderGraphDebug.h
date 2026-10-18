@@ -6,6 +6,12 @@
 
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Types/ArrayPtr.h>
+#include <Foundation/Communication/Event.h>
+#include <Foundation/Threading/Mutex.h>
+
+class xiiRenderGraph;
+class xiiRenderGraphProfiler;
+class xiiStreamWriter;
 
 struct xiiRenderGraphCompiledPass;
 struct xiiRenderGraphBarrierDescription;
@@ -22,6 +28,23 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphDebug
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphDebug);
 
 public:
+  /// Emitted synchronously on the executing thread. References are valid only during the callback.
+  /// Listeners must copy metadata and never retain graph or GPU resource pointers.
+  struct ExecutionEvent
+  {
+    const xiiRenderGraph& m_Graph;
+    xiiRenderGraphProfiler* m_pProfiler;
+    xiiUInt64 m_uiFrameIndex;
+    bool m_bSucceeded;
+    xiiStringView m_sError;
+  };
+
+  static xiiEvent<const ExecutionEvent&, xiiMutex> s_ExecutionEvents;
+
+  /// Versioned, pointer-free capture; stable IDs are strings to preserve JSON precision.
+  /// The caller supplies a bounded stream. No GPU waits or query creation are performed.
+  [[nodiscard]] static xiiResult WriteSnapshot(const ExecutionEvent& event, xiiStreamWriter& stream);
+
   /// Generates a DOT-language description of the compiled render graph.
   ///
   /// The output contains:

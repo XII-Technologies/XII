@@ -36,6 +36,7 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
   m_ResolvedDurationsMs.Clear();
   m_ResolvedGraphDurationsMs.Clear();
   m_ResolvedQueueDurationsMs.Clear();
+  m_ResolvedPassTimings.Clear();
 }
 
 bool xiiRenderGraphTimestampProfiler::SupportsDurationQueries(const xiiGALCommandList& commandList) const
@@ -50,6 +51,7 @@ bool xiiRenderGraphTimestampProfiler::SupportsDurationQueries(const xiiGALComman
 
 void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
+  m_uiRecordingGraphId = uiGraphId;
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
@@ -120,6 +122,8 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   PassQueries& pass = frame.m_PassQueries[uiPassIndex];
   pass.m_bActive    = SupportsDurationQueries(commandList);
   pass.m_sPassName.Assign(sPassName);
+  pass.m_uiGraphId = m_uiRecordingGraphId;
+  pass.m_uiPassIndex = uiPassIndex;
 
   if (!pass.m_bActive)
     return;
@@ -201,6 +205,7 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
         const float fDurationMs = static_cast<float>(durationData.m_uiDuration) / static_cast<float>(durationData.m_uiFrequency) * 1000.0f;
 
         m_ResolvedDurationsMs.Insert(pass.m_sPassName, fDurationMs);
+        m_ResolvedPassTimings[pass.m_uiGraphId].Insert(pass.m_uiPassIndex, Timing{fDurationMs, frameData.m_uiFrameIndex});
       }
     }
     pass.m_bActive = false;
@@ -263,6 +268,18 @@ float xiiRenderGraphTimestampProfiler::GetPassDurationMs(xiiStringView sPassName
   m_ResolvedDurationsMs.TryGetValue(xiiTempHashedString(sPassName), fResult);
 
   return fResult;
+}
+
+bool xiiRenderGraphTimestampProfiler::GetPassTiming(xiiUInt64 uiGraphId, xiiUInt32 uiPassIndex, float& out_fDurationMs, xiiUInt64& out_uiFrameIndex) const
+{
+  XII_LOCK(m_ResultMutex);
+  const xiiHashTable<xiiUInt32, Timing>* pGraph = nullptr;
+  Timing timing;
+  if (!m_ResolvedPassTimings.TryGetValue(uiGraphId, pGraph) || !pGraph->TryGetValue(uiPassIndex, timing))
+    return false;
+  out_fDurationMs = timing.m_fDurationMs;
+  out_uiFrameIndex = timing.m_uiFrameIndex;
+  return true;
 }
 
 float xiiRenderGraphTimestampProfiler::GetFrameDurationMs() const
