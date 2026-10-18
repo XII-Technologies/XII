@@ -14,6 +14,11 @@ by the existing `xiiRenderPipelineContext` asset compiler.
 | VolumetricComposite | Integrated scattering/opacity applied to supplied scene radiance. |
 | SurfaceRadianceComposition | Editable addition of supplied direct, indirect, emissive and confidence-weighted near GI, followed by explicit fog. |
 | WorldSurfaceLighting | World-derived directional and clustered local lighting contributions over explicit surface inputs. |
+| IrradianceLayer | Confidence-aware layering of coarse and detail incident irradiance. |
+| DiffuseSurfaceLighting | Lambertian material response with explicit ambient constants and optional irradiance/occlusion. |
+| EnvironmentSpecular | Split-sum BRDF response over supplied filtered environment radiance. |
+| LayeredDiffuseLighting | Confidence layering followed by diffuse surface evaluation. |
+| SurfaceIndirectLighting | Nested diffuse and specular evaluation with explicit separate and combined outputs. |
 | ScreenEffects | Diffuse screen-space GI, refraction, atmosphere composition and sensor output. |
 | DebugVisualization | Surface queries, channel visualization and debug overlays. |
 | TexturePreview | Texture inspection through the existing reflected preview pass. |
@@ -68,3 +73,10 @@ allocate particle state. ParticleIntegrate is a separate reflected operation ove
 explicitly supplied structured state and constants; particle components/runtimes
 retain their existing ownership. Integration changes external state and therefore
 remains live even without a same-frame rendering consumer.
+
+The indirect surface operations consume explicit images and uniform buffers. They request
+no world extraction or scene GPU services. DiffuseSurfaceLighting needs neither camera
+nor normal data; EnvironmentSpecular needs no emissive/transmission input. Layered
+irradiance keeps confidence until the ambient baseline is applied once. These assets
+shade supplied data; they do not capture/select probes, convolve skies or trace GI.
+RGBA32Float outputs preserve high incident values before later tone mapping/composition.

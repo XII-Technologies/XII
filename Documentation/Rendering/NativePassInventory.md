@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **98 concrete reflected operation classes** in
+Current source inventory: **101 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -21,8 +21,8 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Composition | 3 | `xiiRadianceAddPass`, `xiiConfidenceRadiancePass`, `xiiVolumetricCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
-| GlobalIllumination | 12 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass`, `xiiSparseVoxelSchedulePass`, `xiiSparseVoxelUploadPass`, `xiiSparseVoxelPoolPreparePass`, `xiiSparseVoxelEnvironmentSeedPass` |
-| Lighting | 11 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass`, `xiiDirectionalSurfaceLightingPass`, `xiiClusteredLocalSurfaceLightingPass` |
+| GlobalIllumination | 13 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass`, `xiiSparseVoxelSchedulePass`, `xiiSparseVoxelUploadPass`, `xiiSparseVoxelPoolPreparePass`, `xiiSparseVoxelEnvironmentSeedPass`, `xiiIrradianceLayerPass` |
+| Lighting | 13 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass`, `xiiDirectionalSurfaceLightingPass`, `xiiClusteredLocalSurfaceLightingPass`, `xiiDiffuseSurfaceLightingPass`, `xiiEnvironmentSpecularPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
 | Preparation | 2 | `xiiViewConstantsPass`, `xiiWorldInstancesUploadPass` |
@@ -96,7 +96,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Shadows | Directional cascade construction/snapshot upload is native. Local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
 | Direct illumination | Directional and clustered analytical local surface evaluation are now independent native operations in WorldSurfaceLighting. ReSTIR DI temporal/spatial/visibility/emissive visibility, local shadows, all-directional evaluation and complete forward/deferred composition remain. |
-| Indirect illumination | DDGI and sparse-voxel scheduling/upload/preparation/environment seeding are independent native operations; their old context GPU orchestration is deleted. Geometry-dependent radiance updates, deferred indirect lighting, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising remain. The gather nodes already exist. |
+| Indirect illumination | DDGI and sparse-voxel scheduling/upload/preparation/environment seeding are independent native operations; their old context GPU orchestration is deleted. Geometry-dependent radiance updates, probe/environment preparation, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising remain. Confidence layering, diffuse material response and environment-specular BRDF response are now native operations; complete scene compositions remain open. |
 | Reflections | Ray-traced reflections and denoising. Screen trace, temporal filter and hybrid composition are native. |
 | Volumes | Froxel allocation, fog initialization, light injection, integration, resolve and temporal reprojection. |
 | Decals | Upload, cull/batch, projected resolve and mesh decal draw. |
@@ -2918,3 +2918,106 @@ The source inventory is 98 concrete reflected operation classes with 68 editable
 source/binary asset pairs. Complete scene graphs, advanced/indirect illumination,
 remaining composite granularity and application/editor rendering integration remain
 unfinished. The complete renderer migration is still active.
+
+
+## Independent indirect surface evaluation
+
+Three native operations replace the mathematical responsibilities of the unused
+IndirectLighting shader entry point, which is physically deleted. IrradianceLayer
+combines coarse and detail incident-irradiance signals with confidence-aware layering.
+DiffuseSurfaceLighting evaluates Lambertian material response. EnvironmentSpecular
+evaluates supplied, already filtered environment radiance through a supplied BRDF lookup.
+Neither surface evaluator performs probe selection, capture, GI scheduling or tracing.
+The existing low-level reflection-probe sampling helper remains used by RTGI and
+reflection shaders; native probe preparation/selection still requires implementation.
+
+IrradianceLayer preserves a straight irradiance/confidence signal. For detail confidence
+d and coarse confidence c, the weighted irradiance is detail*d + coarse*c*(1-d),
+confidence is d + c*(1-d), and the stored RGB is weighted/confidence when confidence is
+nonzero. Both confidences saturate to [0,1]; negative irradiance contributes zero.
+This permits nested layers and applies the ambient baseline exactly once during
+surface evaluation, rather than multiplying confidence repeatedly at each graph edge.
+
+DiffuseSurfaceLighting consumes depth, albedo/authored occlusion, material and emission/
+transmission data, plus explicit 48-byte environment constants. Irradiance and dynamic
+occlusion are optional. It has no camera or normal pin and requests no GI/light/mesh
+service. Its ambient fallback follows the existing indirect-lighting coefficient
+convention: (ambient*(1-confidence) + weighted irradiance) * albedo / pi, modulated by
+nonmetallic fraction, opaque fraction, authored/dynamic occlusion and reflected Scale.
+This operation does not implement physical sky convolution.
+
+EnvironmentSpecular consumes depth, normal, albedo/material, exact camera constants,
+filtered radiance and a two-channel BRDF lookup. It has no emission/transmission or
+environment-constant requirement. Roughness-aware Schlick Fresnel and the split-sum
+lookup reproduce the existing material response. Optional dynamic occlusion combines
+with authored albedo occlusion. Scale and AsyncCompute are reflected member properties.
+All outputs are finite nonnegative RGBA32Float radiance (alpha one), except IrradianceLayer
+whose alpha remains the combined confidence. No new world or device manager is created.
+
+Surface geometry decoding is shared without forcing transmission inputs onto specular
+operations. Queued records retain immutable setup data, pipelines and samplers rather
+than pass objects or component storage. Resource validation checks nonempty compatible
+single-sample 2D images, readable channel layouts and exact uniform layouts. The BRDF
+lookup has its own extent and uses linear clamped sampling.
+
+Five editable source/binary pairs expose IrradianceLayer, DiffuseSurfaceLighting,
+EnvironmentSpecular, LayeredDiffuseLighting and SurfaceIndirectLighting. The layered
+diffuse definition wires confidence layering into diffuse response. SurfaceIndirectLighting
+references that definition and the specular leaf, then combines their outputs using
+RadianceAdd. Its diffuse, specular and combined outputs remain explicit boundaries.
+The editor fixtures reuse the existing offline document/converter helpers, now shared
+in PipelineAuthoringTestUtils.h; there is no production C++ graph factory.
+
+Indirect-surface verification - 2026-10-18:
+
+- Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene after final source-list regeneration
+  (`Workspace/native-indirect-final-configure.log`, `native-indirect-final-build.log`).
+  The subsequent shadow-readback fixture correction also builds
+  (`native-indirect-shadow-readback-build.log`).
+- All 73 GraphicsCore CPU subtests pass. New coverage checks reflected properties,
+  missing camera/normal prerequisites on diffuse, missing emission/environment-constant
+  prerequisites on specular, optional inputs, float output contracts and two nested
+  SurfaceIndirectLighting occurrences expanding to eight native operations with distinct
+  provenance (`native-indirect-cpu-final.log`).
+- NativeIndirectLighting executes two independent camera snapshots in separate graph
+  contexts, each containing two instances with nested diffuse/specular Scale overrides.
+  GPU readback checks every pixel of 9-by-11 outputs, confidence normalization/limits,
+  ambient-only evaluation without irradiance or dynamic occlusion, metallic response,
+  transmission, authored/dynamic occlusion, invalid depth, negative radiance and high
+  irradiance that exceeds half precision. An analytic 4-by-4 BRDF lookup checks UV
+  sampling across the image and camera changes. Invalid extents reject safely and all
+  pass instances retire before queued recording. Each context records 29 logical
+  operations in one submission with 49 barriers (`native-indirect-vulkan-final.log`).
+  Filtered BRDF comparisons allow 5e-4 absolute error for finite texture interpolation
+  precision; nonfiltered comparisons retain 1e-4 with relative tolerance for large values.
+- The first full native batch exposed an existing test readback race in
+  NativeShadowTables/FrozenViewsIncrementalUploadsAndRetirement. Odd phases produce
+  capture buffers on compute, but their staging readback was submitted on graphics
+  without a producer completion dependency. The fixture now waits for the compute
+  queue's submitted fence after both view graphs are submitted. It preserves the
+  concurrent-view test and changes no production retirement behavior. All 34 native
+  Vulkan subtests then pass twice (`native-indirect-native-corrected.log` and
+  `native-indirect-native-repeat.log`). The original failed batch remains in
+  `native-indirect-final-Native.log`.
+- All 14 PipelineResources, three PipelineExtraction, three shader failure/recovery,
+  one temporal-history, three temporal-memory and one native depth-boundary subtest pass.
+  All 16 EditorDocuments subtests pass, including Qt node/pin reconstruction and
+  deterministic packaged/exported/repeated bytes for all 73 asset pairs. The 58 established
+  native-authoring, four radiance-composition-authoring and five indirect-authoring tests
+  pass (`native-indirect-final-*.log`). Initial fixture API-conversion errors and missing
+  setup closure after expected rejection were corrected before final validation.
+- The full Vulkan sample completes 300 frames with exit code zero, retaining its steady
+  124 registered / 116 compiled / eight culled operations, one submission and 190 barriers
+  (`native-indirect-sample.log`, `native-indirect-sample-results.json`). Its existing
+  graph is unchanged; the dedicated fixture exercises the new indirect composition.
+- Repository searches find no active removed indirect-entry-point reference, scene
+  database type or rendering Builtin file. Vulkan is the exercised backend; D3D12 is
+  excluded. No controlled performance benchmark was run. RGBA32Float preserves dynamic
+  range at additional bandwidth/allocation cost; no automatic shader fusion is claimed.
+
+The inventory is now 101 concrete reflected operations and 73 editable source/binary
+asset pairs. Native reflection-probe preparation/selection, geometry-dependent GI
+updates, advanced lighting, complete scene pipelines, remaining composite granularity
+and application/editor integration remain unfinished. This phase does not complete
+or restore the entire rendering stack.
