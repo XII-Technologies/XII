@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **74 concrete reflected operation classes** in
+Current source inventory: **77 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -20,7 +20,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
-| Geometry | 6 | `xiiDepthRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
+| Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
 | Lighting | 1 | `xiiBRDFLutPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
@@ -31,7 +31,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 4 | `xiiDepthSensorPass`, `xiiRgbSensorPass`, `xiiInfraredSensorPass`, `xiiLidarSensorPass` |
-| Shadows | 7 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowTablesPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowPagePublishPass` |
+| Shadows | 8 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowTablesPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowPagePublishPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
@@ -2035,3 +2035,95 @@ the sample's remaining mesh/ray orchestration and world/view virtual page identi
 also remain outstanding. The last full Vulkan sample run still failed with
 ErrorDeviceLost as documented in the preceding phase; this sensor-only phase did not
 rerun or resolve it. No Release benchmark or complete-renderer success is claimed.
+
+
+## Authored directional mesh shading and successful full Vulkan sample
+
+Current inventory: **77 concrete native reflected operations / 40 SDK assets**.
+GpuDrivenScene's GpuDrivenDrawPassData, ExecuteGpuDrivenDraw, CreateSceneRenderPass,
+shader preload/recording guard, framebuffer construction and two inline uniform uploads
+are deleted. Its old Shaders/GpuDrivenScene.xiiShader and GpuDrivenSceneConstants.h
+files are physically removed. Material creation now references the relocated engine
+shader. There is no old shader fallback or compatibility wrapper.
+
+DirectionalMeshConstants captures reflected ambient/sun/selection-pulse properties and
+an explicit shadow image/projection. An optional typed CascadeSnapshot supplies the
+projection and world-units-per-texel. Geometry/camera/layout constants reuse the existing
+MatrixRasterConstants operation; they are not duplicated in a new constants system.
+VirtualShadowSamplingConstants consumes explicit immutable Residency frame data and
+captures page addresses, dimensions and the selected light. The existing device table
+upload snapshot now also records virtual resolution and page size. Recording cannot
+observe a later global configuration through these values. Neither producer initializes
+lighting, owns scene objects or queries a live world during execution.
+
+DirectionalMeshRaster consumes explicit structured streams, canonical raster/shading
+uniforms, mesh indirect arguments, shadow images/tables and matching color/depth targets.
+It preserves the supplied attachments and participates in managed graph render passes.
+Shader objects, signature, states, sampler and target dimensions are retained by the
+recorded graph. No pass, mutable camera, world, window or application pointer is captured.
+Unsupported mesh/bindless capabilities and incompatible resource contracts fail setup.
+Scissor support is declared in the shader; both uniform producers restore their declared
+constant-buffer state after dynamic-map staging, following the existing matrix producer.
+
+The directional shader uses the existing bounded canonical meshlet/primitive-range,
+normal-transform, material-table and current-skinning paths. The shared surface interface
+adds optional world-position/user-data outputs for this consumer; no second vertex or
+meshlet decoder remains. This is the sample's directional Lambert shading with ordinary
+and virtual shadow sampling, not a claim of a complete physically based forward pipeline.
+
+DirectionalMesh, DirectionalMeshConstants and VirtualShadowSamplingConstants are ordinary
+editable source/binary asset pairs, authored and exported through document commands.
+DirectionalMesh composes four independent operations, including existing matrix constants.
+Interfaces are derived from reflected member pins. The sample explicitly selects
+-directional-pipeline, synchronizes that resource each frame, supplies its data interfaces
+and publishes its returned color/depth to the separately selected depth/presentation
+resources. Missing or incompatible selections report resource/interface diagnostics.
+No runtime graph factory reconstructs this asset.
+
+Verification, Debug/Vulkan; D3D12 excluded:
+
+- GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build with dependencies
+  (native-directional-consumer-build.log). Subsequent uniform-state/fixture changes
+  rebuild GraphicsFoundationTest/GpuDrivenScene successfully (native-directional-state-build.log
+  and native-directional-final-readback-build.log). The first build exposed misuse of a
+  shader-layout matrix wrapper; CPU matrices are now resolved before writing GPU records.
+- All 66 CPU tests pass (native-directional-final-cpu.log).
+- All 34 NativeAssetAuthoring fixtures pass (native-directional-authoring.log).
+  All 16 EditorDocuments tests pass with 40 deterministic packaged/source/repeated exports
+  (native-directional-editor.log).
+- All 19 Native Vulkan subtests pass, including visibility/G-buffer/depth, atlas raster,
+  virtual page publication/retirement, shadow tables, sensors, view boundaries and the new
+  directional composition (native-directional-native-regressions.log; zero logged errors).
+- NativeDirectionalMesh references one authored definition twice with different ambient
+  values, light IDs and landscape/portrait dimensions. It renders a registered material
+  through the existing device residency services over four frames and destroys every
+  pipeline pass before final recording. GPU readback verifies exact material-modulated
+  colors, preserved background, analytic culled-face depth, private images and uploaded
+  per-occurrence shading/sampling constants. Its 23 compiled operations use one submission
+  and 41 barriers. Initial fixture errors used a global size override for different targets,
+  assumed an unregistered material slot and expected the wrong face under back-face culling;
+  these were corrected without weakening the production contracts. The test also exposed
+  and verified the explicit scissor/uniform-state corrections above.
+- Missing and incompatible directional selections finish with exit 1; the normal sample
+  completes 30 requested frames with exit 0 (native-directional-sample-results.json).
+  After the final state fixes, the full sample completes 300 requested frames with exit 0
+  (native-directional-endurance-sample-results.json and -sample.log). The log explicitly
+  records 16 virtual pages in device frame 3 and completion of all 300 GPU-driven frames.
+  No ErrorDeviceLost or other logged error occurs. Two benign unused mesh-output interface
+  warnings remain; they are not resource hazards or validation errors.
+
+The sampled steady full graph records 123 registered / 115 compiled / 8 culled operations,
+one queue submission and 187 barriers. Compared with the preceding phase's 120 / 112 / 8,
+one submission and 186 barriers, this adds three logical operations and one barrier while
+preserving submission count. These are actual graph statistics, not a Release throughput
+benchmark. The passing 30/300-frame runs supersede the preceding phase's device-loss
+limitation for this configuration. Several implementation and shader/lifetime changes
+were necessary, so these results do not isolate one proven cause in the removed callback.
+
+The complete renderer migration remains unfinished. Native light/cluster preparation,
+complete game/editor/advanced lighting graphs, ray-validation and per-page sample
+orchestration, and world/view-scoped virtual page identities remain. The two obsolete
+Deferred fixture loads in TemporalHistoryTest.cpp and RenderPipelineExecutionTest.cpp
+and the helper's default argument still need removal/replacement. No claim of full engine
+migration, all-backend correctness or a completed hundred-operation library is made.
