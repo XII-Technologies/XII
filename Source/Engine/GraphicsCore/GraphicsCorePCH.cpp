@@ -42,6 +42,7 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Lighting_Implementation_IESProfileResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lighting_Implementation_LightingManager);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lighting_Implementation_LightingSystem);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Lighting_Implementation_LightingData);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lighting_Implementation_LocalShadow);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lighting_Implementation_PhotometricUnits);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lighting_Implementation_RayTracingResources);

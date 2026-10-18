@@ -119,23 +119,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 14, xiiRTT
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuLightData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuLightData>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("PositionAndInvRange", m_PositionAndInvRange),
-    XII_MEMBER_PROPERTY("DirectionAndType", m_DirectionAndType),
-    XII_MEMBER_PROPERTY("ColorAndIntensity", m_ColorAndIntensity),
-    XII_MEMBER_PROPERTY("AttenuationAndSize", m_AttenuationAndSize),
-    XII_MEMBER_PROPERTY("SpotAnglesAndRectSize", m_SpotAnglesAndRectSize),
-    XII_MEMBER_PROPERTY("ShadowData", m_ShadowData),
-    XII_MEMBER_PROPERTY("BoundsCenterAndRadius", m_BoundsCenterAndRadius),
-    XII_MEMBER_PROPERTY("OrientationRightAndIES", m_OrientationRightAndIES),
-    XII_MEMBER_PROPERTY("Metadata", m_Metadata),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiLightingSystem::xiiLightingSystem() = default;
@@ -342,14 +325,14 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiVec3  vDirection = NormalizeOrFallback(pDirectionalLight->m_vDirection, xiiVec3(0.0f, 0.0f, -1.0f));
 
       lightData.m_PositionAndInvRange   = xiiVec4::MakeZero();
-      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Directional));
+      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Directional));
       lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDirectionalLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(0.0f, pDirectionalLight->m_fRadius, 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pDirectionalLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, pDirectionalLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = xiiVec4::MakeZero();
 
       const xiiUInt32 uiStableLightId = static_cast<xiiUInt32>(pDirectionalLight->m_uiSortingKey);
-      const bool      bAppended       = AppendLight(lightData, LightType::Directional, uiStableLightId);
+      const bool      bAppended       = AppendLight(lightData, xiiGpuLightType::Directional, uiStableLightId);
       const bool      bIsBetter       = pDirectionalLight->m_fPhotometricIntensity > fBestDirectionalIntensity ||
         (pDirectionalLight->m_fPhotometricIntensity == fBestDirectionalIntensity && uiStableLightId < uiBestDirectionalLightId);
       if (bAppended && bIsBetter)
@@ -376,7 +359,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiColor lightColor = EvaluateLightColor(pPointLight->m_LightColor, pPointLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(LightType::Point));
+      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Point));
       lightData.m_ColorAndIntensity      = MakeVec4(lightColor, pPointLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize     = xiiVec4(fRange, pPointLight->m_fRadius, pPointLight->m_fLength, 0.0f);
       lightData.m_SpotAnglesAndRectSize  = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
@@ -384,7 +367,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_BoundsCenterAndRadius  = MakeVec4(vPosition, fRange + pPointLight->m_fLength * 0.5f);
       lightData.m_OrientationRightAndIES = MakeVec4(vRight, static_cast<float>(ResolveIESProfile(pPointLight->m_hIESProfile)));
 
-      AppendLight(lightData, LightType::Point, static_cast<xiiUInt32>(pPointLight->m_uiSortingKey));
+      AppendLight(lightData, xiiGpuLightType::Point, static_cast<xiiUInt32>(pPointLight->m_uiSortingKey));
       continue;
     }
 
@@ -400,7 +383,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiColor lightColor = EvaluateLightColor(pSpotLight->m_LightColor, pSpotLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Spot));
+      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Spot));
       lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSpotLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, pSpotLight->m_fRadius, 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(xiiMath::Cos(pSpotLight->m_InnerSpotAngle * 0.5f), xiiMath::Cos(pSpotLight->m_OuterSpotAngle * 0.5f), 0.0f, 0.0f);
@@ -410,7 +393,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_BoundsCenterAndRadius      = MakeVec4(boundingSphere.m_vCenter, xiiMath::Max(boundingSphere.m_fRadius, fRange));
       lightData.m_OrientationRightAndIES     = MakeVec4(vRight, static_cast<float>(ResolveIESProfile(pSpotLight->m_hIESProfile)));
 
-      AppendLight(lightData, LightType::Spot, static_cast<xiiUInt32>(pSpotLight->m_uiSortingKey));
+      AppendLight(lightData, xiiGpuLightType::Spot, static_cast<xiiUInt32>(pSpotLight->m_uiSortingKey));
       continue;
     }
 
@@ -426,7 +409,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiColor lightColor = EvaluateLightColor(pRectangleLight->m_LightColor, pRectangleLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(LightType::Rectangle));
+      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Rectangle));
       lightData.m_ColorAndIntensity      = MakeVec4(lightColor, pRectangleLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize     = xiiVec4(fRange, 0.0f, 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize  = xiiVec4(1.0f, -1.0f, xiiMath::Max(pRectangleLight->m_vExtents.x, 0.001f), xiiMath::Max(pRectangleLight->m_vExtents.y, 0.001f));
@@ -434,7 +417,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_BoundsCenterAndRadius  = MakeVec4(vPosition, fRange + pRectangleLight->m_vExtents.GetLength() * 0.5f);
       lightData.m_OrientationRightAndIES = MakeVec4(vRight, 0.0f);
 
-      AppendLight(lightData, LightType::Rectangle, static_cast<xiiUInt32>(pRectangleLight->m_uiSortingKey));
+      AppendLight(lightData, xiiGpuLightType::Rectangle, static_cast<xiiUInt32>(pRectangleLight->m_uiSortingKey));
       continue;
     }
 
@@ -450,7 +433,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiColor lightColor = EvaluateLightColor(pDiscLight->m_LightColor, pDiscLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(LightType::Disc));
+      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Disc));
       lightData.m_ColorAndIntensity      = MakeVec4(lightColor, pDiscLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize     = xiiVec4(fRange, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize  = xiiVec4(1.0f, -1.0f, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f);
@@ -458,7 +441,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_BoundsCenterAndRadius  = MakeVec4(vPosition, fRange + pDiscLight->m_fRadius);
       lightData.m_OrientationRightAndIES = MakeVec4(vRight, 0.0f);
 
-      AppendLight(lightData, LightType::Disc, static_cast<xiiUInt32>(pDiscLight->m_uiSortingKey));
+      AppendLight(lightData, xiiGpuLightType::Disc, static_cast<xiiUInt32>(pDiscLight->m_uiSortingKey));
       continue;
     }
 
@@ -472,14 +455,14 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiColor lightColor = EvaluateLightColor(pSphereLight->m_LightColor, pSphereLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(LightType::Sphere));
+      lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(xiiGpuLightType::Sphere));
       lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSphereLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pSphereLight->m_fRadius, 0.001f), 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pSphereLight->m_bCastShadows ? 1.0f : 0.0f, pSphereLight->m_fShadowFadeOutRange, pSphereLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pSphereLight->m_fRadius);
 
-      AppendLight(lightData, LightType::Sphere, static_cast<xiiUInt32>(pSphereLight->m_uiSortingKey));
+      AppendLight(lightData, xiiGpuLightType::Sphere, static_cast<xiiUInt32>(pSphereLight->m_uiSortingKey));
       continue;
     }
 
@@ -494,14 +477,14 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiColor lightColor = EvaluateLightColor(pTubeLight->m_LightColor, pTubeLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Tube));
+      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Tube));
       lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pTubeLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pTubeLight->m_fRadius, 0.001f), xiiMath::Max(pTubeLight->m_fLength, 0.001f), 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pTubeLight->m_bCastShadows ? 1.0f : 0.0f, pTubeLight->m_fShadowFadeOutRange, pTubeLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pTubeLight->m_fLength * 0.5f + pTubeLight->m_fRadius);
 
-      AppendLight(lightData, LightType::Tube, static_cast<xiiUInt32>(pTubeLight->m_uiSortingKey));
+      AppendLight(lightData, xiiGpuLightType::Tube, static_cast<xiiUInt32>(pTubeLight->m_uiSortingKey));
       continue;
     }
   }
@@ -512,8 +495,8 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   // directional is first and remains the sole owner of cascaded/VSM and cloud
   // shadows; stable IDs make ties and local-light ordering reproducible.
   m_LightData.Sort([](const xiiGpuLightData& lhs, const xiiGpuLightData& rhs) {
-    const bool bLeftDirectional  = lhs.m_Metadata.z == static_cast<xiiUInt32>(LightType::Directional);
-    const bool bRightDirectional = rhs.m_Metadata.z == static_cast<xiiUInt32>(LightType::Directional);
+    const bool bLeftDirectional  = lhs.m_Metadata.z == static_cast<xiiUInt32>(xiiGpuLightType::Directional);
+    const bool bRightDirectional = rhs.m_Metadata.z == static_cast<xiiUInt32>(xiiGpuLightType::Directional);
     if (bLeftDirectional != bRightDirectional)
       return bLeftDirectional;
     if (bLeftDirectional && lhs.m_ColorAndIntensity.w != rhs.m_ColorAndIntensity.w)
@@ -700,7 +683,7 @@ void xiiLightingSystem::ResetFrameData()
   m_GlobalConstants = {};
 }
 
-bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type, xiiUInt32 uiStableLightId)
+bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, xiiGpuLightType type, xiiUInt32 uiStableLightId)
 {
   if (m_LightData.GetCount() >= m_Settings.m_uiMaxActiveLights)
   {
@@ -719,7 +702,7 @@ bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type, x
   m_LightData.PushBack(lightData);
   ++m_Stats.m_uiActiveLightCount;
 
-  if (type == LightType::Directional)
+  if (type == xiiGpuLightType::Directional)
   {
     ++m_Stats.m_uiDirectionalLightCount;
   }

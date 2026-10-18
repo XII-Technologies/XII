@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Utilities/GraphicsUtils.h>
-#include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Lighting/LocalShadow.h>
 
 // clang-format off
@@ -61,26 +61,26 @@ namespace
     xiiVec3(0.0f, 0.0f, -1.0f), xiiVec3(0.0f, 0.0f, 1.0f),
     xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f)};
 
-  xiiUInt32 GetFaceCount(xiiLightingSystem::LightType type)
+  xiiUInt32 GetFaceCount(xiiGpuLightType type)
   {
     switch (type)
     {
-      case xiiLightingSystem::LightType::Point:
-      case xiiLightingSystem::LightType::Sphere:
-      case xiiLightingSystem::LightType::Tube:
+      case xiiGpuLightType::Point:
+      case xiiGpuLightType::Sphere:
+      case xiiGpuLightType::Tube:
         return 6U;
-      case xiiLightingSystem::LightType::Spot:
-      case xiiLightingSystem::LightType::Rectangle:
-      case xiiLightingSystem::LightType::Disc:
+      case xiiGpuLightType::Spot:
+      case xiiGpuLightType::Rectangle:
+      case xiiGpuLightType::Disc:
         return 1U;
       default:
         return 0U;
     }
   }
 
-  xiiAngle GetProjectionFieldOfView(const xiiGpuLightData& light, xiiLightingSystem::LightType type)
+  xiiAngle GetProjectionFieldOfView(const xiiGpuLightData& light, xiiGpuLightType type)
   {
-    if (type == xiiLightingSystem::LightType::Spot)
+    if (type == xiiGpuLightType::Spot)
     {
       const xiiAngle outerHalfAngle = xiiMath::ACos(xiiMath::Clamp(light.m_SpotAnglesAndRectSize.y, -1.0f, 1.0f));
       return xiiAngle::MakeFromRadian(xiiMath::Clamp(outerHalfAngle.GetRadian() * 2.0f, xiiAngle::MakeFromDegree(1.0f).GetRadian(), xiiAngle::MakeFromDegree(175.0f).GetRadian()));
@@ -134,7 +134,7 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
     if (light.m_ShadowData.x <= 0.5f)
       continue;
 
-    const xiiUInt32 uiFaceCount = GetFaceCount(static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z));
+    const xiiUInt32 uiFaceCount = GetFaceCount(static_cast<xiiGpuLightType>(light.m_Metadata.z));
     if (uiFaceCount == 0U)
       continue;
 
@@ -165,7 +165,7 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
   {
     const xiiUInt32        uiLight     = candidate.m_uiLightIndex;
     const xiiGpuLightData& light       = lights[uiLight];
-    const auto             type        = static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z);
+    const auto             type        = static_cast<xiiGpuLightType>(light.m_Metadata.z);
     const xiiUInt32        uiFaceCount = candidate.m_uiFaceCount;
 
     if (uiFaceCount > uiFaceBudget - xiiMath::Min(uiNextTile, uiFaceBudget))
