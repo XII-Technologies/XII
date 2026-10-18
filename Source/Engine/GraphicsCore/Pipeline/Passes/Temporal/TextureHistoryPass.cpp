@@ -6,7 +6,7 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-struct xiiTextureHistoryPass::State
+struct xiiTextureHistoryPass::State : public xiiRefCounted
 {
   struct Slot
   {
@@ -108,7 +108,7 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Input = builder.ReadTexture(input, xiiGALResourceStateFlags::CopySource);
       data.m_Output = builder.WriteTexture(builder.ImportTexture("Retained Frame", next.m_Texture, next.m_Texture->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
       builder.ExportTexture(data.m_Output, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Next = next; }, [this](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Next = next; }, [state = m_pState](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       auto* source = execute.GetTexture(data.m_Input);
       auto* destination = execute.GetTexture(data.m_Output);
@@ -125,8 +125,8 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
           commands.CopyTextureRegion(source, subresource, box, destination, subresource, xiiVec3U32::MakeZero());
         }
       commands.EnqueueSignal(data.m_Next.m_Fence.Borrow(), data.m_Next.m_uiValue);
-      m_pState->m_Last = data.m_Next;
-      m_pState->m_bValid = true; }, true);
+      state->m_Last = data.m_Next;
+      state->m_bValid = true; }, true);
   return XII_SUCCESS;
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Temporal_TextureHistoryPass);

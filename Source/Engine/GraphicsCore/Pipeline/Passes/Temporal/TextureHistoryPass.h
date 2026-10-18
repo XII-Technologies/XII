@@ -7,6 +7,7 @@
 class XII_GRAPHICSCORE_DLL xiiTextureHistoryPass final : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTextureHistoryPass, xiiRenderPipelinePass);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureHistoryPass);
 
 public:
   xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Undefined, 1};
@@ -19,5 +20,5 @@ public:
 
 private:
   struct State;
-  xiiUniquePtr<State> m_pState;
+  xiiSharedPtr<State> m_pState;
 };

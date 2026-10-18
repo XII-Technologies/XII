@@ -7,6 +7,7 @@
 class XII_GRAPHICSCORE_DLL xiiBufferHistoryPass final : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiBufferHistoryPass, xiiRenderPipelinePass);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiBufferHistoryPass);
 
 public:
   xiiRenderPipelineBufferInputPin  m_Input{false, xiiGALBindFlags::ShaderResource};
@@ -19,5 +20,5 @@ public:
 
 private:
   struct State;
-  xiiUniquePtr<State> m_pState;
+  xiiSharedPtr<State> m_pState;
 };
