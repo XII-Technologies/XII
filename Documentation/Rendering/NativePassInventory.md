@@ -3021,3 +3021,104 @@ asset pairs. Native reflection-probe preparation/selection, geometry-dependent G
 updates, advanced lighting, complete scene pipelines, remaining composite granularity
 and application/editor integration remain unfinished. This phase does not complete
 or restore the entire rendering stack.
+
+## Authored opaque world and display pipelines
+
+Three ordinary source/binary asset pairs compose the native operations into a usable
+opaque view pipeline. WorldDeferredLighting references GBuffer and WorldSurfaceLighting,
+adds an explicit camera snapshot, ambient DiffuseSurfaceLighting and three RadianceAdd
+nodes. HdrDisplay wires histogram, exposure, bloom, tone mapping, grading and presentation.
+DeferredOpaque references those two independently authored resources. The definitions
+use editor document commands, persistent document/node UUIDs, typed reflected member
+pins and explicit boundary connections. They introduce no production C++ graph factory,
+stage selector, default-stack selection or rendering Builtin file.
+
+WorldDeferredLighting deliberately supplies unshadowed selected directional light,
+clustered local lights, the existing ambient diffuse coefficient and surface emission.
+Its optional InputCandidates boundary forwards to GBuffer. Depth, GBuffer attributes,
+GPU identity, HDR/direct/ambient radiance and overflow counters remain explicit outputs.
+HdrDisplay has no scene extraction or runtime feature demand; its six nodes use each
+view's independently configured display defaults. DeferredOpaque requires geometry and
+light extraction, compute and bindless support, and a single-sample output target.
+Neither new scene resource is assigned as an implicit application/editor default.
+This phase does not implement shadows, reflection probes, transparency or ray effects
+inside DeferredOpaque and does not replace the advanced sample with a reduced graph.
+
+The existing world module, mesh/light component managers, geometry residency and material
+resource services supply the data. No scene registry, object lifecycle, transform/bounds
+hierarchy, new world module or device allocation manager is added. World-scoped packed
+instance uploads remain shared across views and associated with validated component/object
+handles. The normal world extraction boundary supplies immutable pass inputs. Cameras,
+output targets, display configuration and exposure history remain scoped to their views.
+
+Histogram, bloom, tone mapping and grading previously captured the pass object in queued
+execution callbacks. Their recordings now retain the compute pipeline and, for bloom,
+the sampler, along with copied configuration and explicit graph bindings. AutoExposure
+retains only its private reference-counted state and recorded pipeline. Its history epoch
+is captured at setup; an invalidation advances the epoch under a mutex, and an older
+recording cannot mark the new epoch valid. Copy construction/assignment remain disabled
+so shared definitions never imply shared writable exposure state. Presentation already
+retains its recorded GPU resources and requires an explicit live target during setup.
+
+Verification - 2026-10-18:
+
+- Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene (`Workspace/native-scene-final-build.log`).
+  The final direct-resource regression also builds (`native-scene-direct-resource-build.log`).
+- All 74 GraphicsCore CPU subtests pass, including nested scene definition counts,
+  optional root boundary, output contract and extraction/runtime feature aggregation
+  (`native-scene-cpu-final.log`). All 16 EditorDocuments subtests pass, including the
+  Qt property/pin tests and deterministic source/export round trips for all 76 library
+  asset pairs. The 58 established native-authoring, four composition-authoring, five
+  indirect-authoring and new scene-authoring subtest pass (`native-scene-final-*.log`).
+- DisplayRecordingRetirementAndExposureEpoch records the complete HdrDisplay resource in
+  two independent contexts. After metering a four-unit image, a queued recording executes
+  after history invalidation; the next 400-unit image must match a fresh control even
+  with both adaptation speeds zero. Exposure allocations remain distinct between instances.
+  The final manual-exposure recordings execute after both instances, views and their world
+  are destroyed. Readback verifies camera exposure and ACES/sRGB output. No mesh/material
+  service is initialized by this display-only pipeline.
+- OpaqueWorldCompositionAndIndependentViews renders component-owned box meshes with three
+  authored materials, directional and point lights, two worlds and two cameras per world.
+  The mesh asset has one resident geometry allocation across both worlds. Pixel readback
+  checks material assignment, identity, ambient response, additive HDR composition,
+  emission, camera exposure and ACES/sRGB output. View exclusion tags filter the point
+  light without changing shared world ownership. Component deletion/recreation rejects
+  retired identities; foreign-world identities fail validation. One world is destroyed
+  while the other continues. Resize, authoritative transform/previous-transform updates,
+  point-light deactivation and nested WorldDeferredLighting hot reload are exercised.
+  Reloading ambient Scale to one half changes pixels through both reference levels.
+  Warm unchanged slots upload zero instance bytes; a moved object uploads one 288-byte
+  instance record. The fixture accounts for per-frame slot versions rather than assuming
+  every physical frame buffer is current immediately after a property change.
+- All 36 native Vulkan subtests pass in the broad regression batch and again after
+  the final direct-resource assertions (`native-scene-final-Native.log`,
+  `native-scene-native-final.log`). Ordinary views are switched from the capture wrapper
+  to the unchanged DeferredOpaque resource and preserve the final pixels. With the
+  world module's current async-queue policy, these views compile to 37 operations,
+  12 submissions and 119 barriers. The diagnostic capture wrapper records 46-47
+  operations, 17 submissions and 119-123 barriers; its extra capture nodes affect
+  scheduling. These counts are evidence of the current cost, not a claim of completed
+  queue coalescing or a scalable performance benchmark.
+- The existing full Vulkan sample completes 300 frames with exit code zero
+  (`native-scene-sample.log`, `native-scene-sample-results.json`). Its advanced custom
+  graph remains unchanged and retains 124 registered / 116 compiled / eight culled
+  operations, one submission and 190 barriers. This sample run verifies continued
+  operation; the new fixture verifies the authored opaque resource independently.
+- The first Vulkan fixture run exposed a test clear-state mismatch and an incorrect
+  expectation that all frame-ring slots were current immediately after a material swap.
+  The clear now declares CopyDestination, matching the public GAL operation, and the
+  upload assertions inspect warmed slots. Initial fixture construction/POD and private
+  helper linkage errors were corrected before final builds. The failed diagnostics remain
+  in `native-scene-tests-*.log`, `native-scene-corrected-build.log` and
+  `native-scene-vulkan-initial.log`; production pass behavior was not weakened to pass.
+- All 14 PipelineResources, three PipelineExtraction, three shader failure/recovery,
+  one temporal-history, three temporal-memory and one native depth-boundary subtest pass
+  (`native-scene-final-*.log`). D3D12 remains excluded. No controlled performance benchmark
+  or backend comparison was run.
+
+The source inventory remains 101 concrete reflected operations and now includes 76
+editable source/binary asset pairs. Native probe preparation/selection, geometry-dependent
+GI updates, advanced illumination, remaining composite granularity and application/editor
+entry-point migration remain unfinished. No legacy subsystem or compatibility wrapper is
+reintroduced. The complete rendering-stack migration remains active.
