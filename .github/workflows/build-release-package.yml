@@ -1,99 +1,88 @@
-name: Build Release Package
+name: Release validation and source package
 
 on:
-  workflow_dispatch:
-    inputs:
-      full-binaries-artifact:
-        description: 'Create full binaries artifact'
-        required: true
-        default: 'false'
-      release-artifact:
-        description: 'Create release artifact'
-        required: true
-        default: 'true'
-      transform-projects:
-        description: 'Transform Projects'
-        required: true
-        default: 'true'
-      compile-shaders:
-        description: 'Compile Shaders'
-        required: true
-        default: 'true'
+  push:
+    tags: ['v[0-9]*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build:
-    runs-on: windows-2025
-
+  source:
+    name: Validate tag and archive source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
-      - name: Checkout XII Engine repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          path: repo
-          token: ${{ secrets.API_TOKEN_GITHUB }}
-          submodules: 'recursive'
-
-      - name: Read SDK Version
-        id: sdk-version
-        uses: juliangruber/read-file-action@v1
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check release identity
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 Utilities/CI/package_source.py --tag "$RELEASE_TAG" --output Workspace/Release
+          git merge-base --is-ancestor HEAD origin/Development
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          path: repo/version.txt
-
-      - name: Echo SDK Version
-        run: echo "SDK Version is ${{ steps.sdk-version.outputs.content }}"
-
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Run CMake
-        run: |
-          cmake.exe -S repo -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_VERSION:STRING="10.0.18362.0" -DXII_BUILD_VULKAN:BOOL=ON -DXII_ENABLE_QT_SUPPORT:BOOL=ON -DXII_BUILD_SAMPLES:BOOL=ON -DXII_BUILD_UNITTESTS:BOOL=OFF -DXII_SOLUTION_NAME:string="solution"
-
-      - name: Build Full Solution
-        run:  msbuild build/solution.sln /p:Configuration=Dev
-
-      - name: Artifact - Full Binaries
-        if: github.event.inputs.full-binaries-artifact == 'true'
-        uses: actions/upload-artifact@v4
+          name: release-source
+          path: Workspace/Release/*
+          if-no-files-found: error
+          retention-days: 14
+  windows:
+    name: Windows Shipping gate
+    needs: source
+    uses: ./.github/workflows/native-build.yml
+    with:
+      os: windows-2025
+      preset: ci-windows
+      configuration: Shipping
+  linux:
+    name: Linux Shipping gate
+    needs: source
+    uses: ./.github/workflows/native-build.yml
+    with:
+      os: ubuntu-24.04
+      preset: ci-linux-gcc
+      configuration: Shipping
+  quality:
+    needs: source
+    uses: ./.github/workflows/code-quality.yml
+  publish:
+    name: Attest and create draft release
+    needs: [source, windows, linux, quality]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      # Only this run's fixed-name artifact, produced from the validated tag.
+      # No checkout or execution of engine/contributor code in this privileged job.
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: full-binaries
-          path: repo\Output\Bin\WinVs2022Dev64
-          retention-days: 30
-
-      - name: Compile Shaders
-        if: github.event.inputs.compile-shaders == 'true'
-        run: |
-          repo\Output\Bin\WinVs2022Dev64\ShaderCompilerTool.exe -project repo\Data\Base -shader "Shaders" -platform D3D_SM50 -IgnoreErrors
-
-      - name: Transform All Projects
-        if: github.event.inputs.transform-projects == 'true'
-        shell: pwsh
-        run: repo\Utilities\Scripts\transform-all-projects.ps1
-
-      - name: Remove Unwanted Files
-        run: |
-          Get-ChildItem * -Include *.pdb -Recurse | Remove-Item
-          Get-ChildItem repo\Data\Samples\* -Include Build -Recurse | Remove-Item -Recurse -Force
-          rm -r -fo repo\Data\UnitTests
-
-      - name: Generate Package
-        run: |
-          mkdir _package
-          mkdir _package\Output
-          mkdir _package\Data
-          mkdir _package\Source
-          copy repo\version.txt _package
-          copy repo\xiiCMakeConfig.cmake _package
-          xcopy repo\Output _package\Output /s
-          xcopy repo\Data _package\Data /s
-          xcopy repo\Source _package\Source /s
-
-      - name: Create Zip Archive
-        run: |
-          repo\Data\Tools\Precompiled\7z.exe a XII-Engine.Release.${{ steps.sdk-version.outputs.content }}.zip .\_package\* -mx9
-
-      - name: Artifact - Release Package
-        if: github.event.inputs.release-artifact == 'true'
-        uses: actions/upload-artifact@v4
+          name: release-source
+          path: release
+      - name: Verify archive checksums
+        working-directory: release
+        run: sha256sum --check SHA256SUMS
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          name: XII-Engine.Release.${{ steps.sdk-version.outputs.content }}
-          path: XII-Engine.Release.${{ steps.sdk-version.outputs.content }}.zip
-          retention-days: 30
+          subject-path: release/*.tar.gz
+      - name: Create draft with generated release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.source.outputs.tag }}
+        run: |
+          gh release create "$RELEASE_TAG" release/* --verify-tag --draft --generate-notes --title "XII $RELEASE_TAG" --notes 'Source snapshot only. Submodule payloads are excluded; their exact revisions are recorded in the manifest. Clone recursively to build. Hosted gates cover CPU modules only; no editor, graphics runtime, binary SDK, or reproducible-build certification is implied. See Documentation/Infrastructure.md.'

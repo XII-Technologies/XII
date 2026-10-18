@@ -24,4 +24,5 @@ set_property(GLOBAL PROPERTY XII_BUILD_FILTER_HeadlessTests
   CoreTest
   ToolsFoundation
   ToolsFoundationTest
+  ArchiveTool
 )
