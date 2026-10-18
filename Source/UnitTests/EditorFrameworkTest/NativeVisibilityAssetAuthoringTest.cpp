@@ -1960,6 +1960,77 @@ namespace
     return context.ExportDocument(&message);
   }
 
+  xiiStatus AuthorDDGIEnvironmentProbes(xiiStringView directory)
+  {
+    const xiiStringView name="DDGIEnvironmentProbes";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
+    auto* accessor=document.GetObjectAccessor();
+    auto* manager=static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author independently scheduled environment probes");
+    bool finished=false;
+    XII_SCOPE_EXIT(if(!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(),"RequiredDeviceFeatures",xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add=[&](xiiStringView label,xiiStringView type,xiiVec2 position)->const xiiDocumentObject*{
+      auto id=xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.",name,"/",label));
+      if(accessor->AddObject(nullptr,nullptr,-1,xiiRTTI::FindTypeByName(type),id).Failed()) return nullptr;
+      xiiMoveNodeCommand move; move.m_Object=id; move.m_NewPos=position;
+      if(document.GetCommandHistory()->AddCommand(move).Failed()) return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto connect=[&](const xiiDocumentObject* a,xiiStringView output,const xiiDocumentObject* b,xiiStringView input)->xiiStatus{
+      if(!a || !b) return xiiStatus("Missing DDGI operation.");
+      const auto* out=manager->GetOutputPinByName(a,output); const auto* in=manager->GetInputPinByName(b,input);
+      if(!out || !in) return xiiStatus("Missing reflected DDGI pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(),manager->GetConnectionType(),*out,*in);
+    };
+    const auto* schedule=add("Schedule Camera Probes","xiiDDGIProbeSchedulePass",{0,0});
+    const auto* upload=add("Upload Probe Snapshot","xiiDDGIProbeUploadPass",{600,0});
+    const auto* prepare=add("Prepare Current Atlases","xiiDDGIAtlasPreparePass",{600,600});
+    const auto* seed=add("Seed Environment Radiance","xiiDDGIEnvironmentSeedPass",{1200,0});
+    const auto* irradianceHistory=add("Retain Irradiance History","xiiTextureHistoryPass",{1800,400});
+    const auto* distanceHistory=add("Retain Distance History","xiiTextureHistoryPass",{1800,800});
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(irradianceHistory,"AsyncCopy",false));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(distanceHistory,"AsyncCopy",false));
+    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",upload,"Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",prepare,"Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",seed,"Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(upload,"ProbeConstants",seed,"ProbeConstants"));
+    XII_SUCCEED_OR_RETURN(connect(upload,"ProbeUpdates",seed,"ProbeUpdates"));
+    XII_SUCCEED_OR_RETURN(connect(upload,"ProbeStates",seed,"InitialProbeStates"));
+    XII_SUCCEED_OR_RETURN(connect(prepare,"Irradiance",seed,"InitialIrradiance"));
+    XII_SUCCEED_OR_RETURN(connect(prepare,"Distance",seed,"InitialDistance"));
+    XII_SUCCEED_OR_RETURN(connect(seed,"Irradiance",irradianceHistory,"Texture"));
+    XII_SUCCEED_OR_RETURN(connect(seed,"Distance",distanceHistory,"Texture"));
+    for(const auto* consumer:{schedule,prepare})
+    {
+      XII_SUCCEED_OR_RETURN(connect(irradianceHistory,"PreviousTexture",consumer,"PreviousIrradiance"));
+      XII_SUCCEED_OR_RETURN(connect(distanceHistory,"PreviousTexture",consumer,"PreviousDistance"));
+    }
+    const auto boundary=[&](xiiStringView label,bool input,const xiiDocumentObject* operation,xiiStringView pin,xiiRenderPipelinePin::Type kind,xiiGALResourceFormat::Enum format,float row)->xiiStatus{
+      const auto* node=add(label,"xiiRenderPipelineInterfacePass",{input ? -600.0f : 2400.0f,row});
+      if(!node) return xiiStatus("Missing DDGI interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Name",label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Input",input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"ResourceType",xiiUInt32(kind)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Format",xiiInt64(format)));
+      if(kind==xiiRenderPipelinePin::FrameData) XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"DataType","xiiDDGIProbeFrameData"));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
+      return input ? connect(node,"Value",operation,pin) : connect(operation,pin,node,"Value");
+    };
+    XII_SUCCEED_OR_RETURN(boundary("EnvironmentLight",true,seed,"EnvironmentLight",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,1000));
+    XII_SUCCEED_OR_RETURN(boundary("Irradiance",false,seed,"Irradiance",xiiRenderPipelinePin::Texture,xiiGALResourceFormat::RGBA16Float,0));
+    XII_SUCCEED_OR_RETURN(boundary("Distance",false,seed,"Distance",xiiRenderPipelinePin::Texture,xiiGALResourceFormat::RG32Float,200));
+    XII_SUCCEED_OR_RETURN(boundary("ProbeStates",false,seed,"ProbeStates",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,400));
+    XII_SUCCEED_OR_RETURN(boundary("ProbeConstants",false,upload,"ProbeConstants",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,600));
+    XII_SUCCEED_OR_RETURN(boundary("Schedule",false,schedule,"Schedule",xiiRenderPipelinePin::FrameData,xiiGALResourceFormat::Unknown,800));
+    accessor->FinishTransaction(); finished=true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message; message.m_sOutputFile=xiiStringBuilder(directory,"/",name,".xiiBinRenderPipeline"); message.m_uiAssetHash=1; message.m_uiVersion=7;
+    return context.ExportDocument(&message);
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -2370,4 +2441,44 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, EnvironmentLightConstants)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeEnvironmentAuthoring"));
   XII_TEST_STATUS(AuthorNativeLeaf(path, "EnvironmentLightConstants", "xiiEnvironmentLightConstantsPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIProbeSchedule)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIProbeScheduleAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIProbeScheduleAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIProbeSchedule","xiiDDGIProbeSchedulePass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIProbeUpload)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIProbeUploadAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIProbeUploadAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIProbeUpload","xiiDDGIProbeUploadPass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIAtlasPrepare)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIAtlasPrepareAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIAtlasPrepareAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIAtlasPrepare","xiiDDGIAtlasPreparePass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIEnvironmentSeed)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIEnvironmentSeedAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIEnvironmentSeedAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIEnvironmentSeed","xiiDDGIEnvironmentSeedPass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIEnvironmentProbes)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIEnvironmentAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIEnvironmentAuthoring"));
+  XII_TEST_STATUS(AuthorDDGIEnvironmentProbes(path));
 }
