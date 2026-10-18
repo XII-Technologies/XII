@@ -20,6 +20,7 @@ xiiResult xiiWindow::Destroy()
 
 xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 {
+  XII_IGNORE_UNUSED(newWindowSize);
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_FAILURE;
 }

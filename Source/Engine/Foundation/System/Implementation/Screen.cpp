@@ -10,6 +10,7 @@
 
 xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens)
 {
+  XII_IGNORE_UNUSED(out_Screens);
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_FAILURE;
 }
