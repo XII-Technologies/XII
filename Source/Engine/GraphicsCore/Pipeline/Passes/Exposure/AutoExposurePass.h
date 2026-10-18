@@ -13,9 +13,11 @@ public:
 
   xiiAutoExposurePass();
   ~xiiAutoExposurePass();
-  bool                m_bUseViewDefaults = false;
-  xiiExposureSettings m_Settings;
-  xiiResult           Configure(const xiiVariantDictionary& properties) override;
+  xiiAutoExposurePass(const xiiAutoExposurePass&)            = delete;
+  xiiAutoExposurePass& operator=(const xiiAutoExposurePass&) = delete;
+  bool                 m_bUseViewDefaults                    = false;
+  xiiExposureSettings  m_Settings;
+  xiiResult            Configure(const xiiVariantDictionary& properties) override;
 
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   void                                        InvalidateTemporalHistory() override;
@@ -25,6 +27,6 @@ private:
   struct Data;
   struct State;
   void                Setup(Data& data, xiiRenderGraphBuilder& builder);
-  void                Execute(const Data& data, xiiRenderGraphPassContext& context);
-  xiiUniquePtr<State> m_pState;
+  static void         Execute(const Data& data, xiiRenderGraphPassContext& context);
+  xiiSharedPtr<State> m_pState;
 };

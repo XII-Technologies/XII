@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+#include <Foundation/Threading/Mutex.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Passes/Exposure/AutoExposurePass.h>
@@ -14,7 +15,9 @@
 using namespace xiiRenderPassUtils;
 struct xiiAutoExposurePass::Data
 {
-  XII_DECLARE_POD_TYPE();
+  xiiSharedPtr<State>                      m_State;
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+  xiiUInt64                                m_uiHistoryRevision = 0;
 
   xiiRenderGraphBufferHandle m_hHistogram; ///< ShaderResource in (luminance histogram).
   xiiRenderGraphBufferHandle m_hExposure;  ///< UnorderedAccess in/out (persistent exposure value).
@@ -25,11 +28,13 @@ struct xiiAutoExposurePass::Data
   float                      m_fManualExposure = 1.0f;
 };
 
-struct xiiAutoExposurePass::State
+struct xiiAutoExposurePass::State : public xiiRefCounted
 {
+  xiiMutex                                 m_Mutex;
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALBuffer>               m_Exposure;
-  bool                                     m_bHistoryValid = false;
+  bool                                     m_bHistoryValid     = false;
+  xiiUInt64                                m_uiHistoryRevision = 0;
   DisplayConfiguration                     m_Display;
 };
 
@@ -58,7 +63,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 void xiiAutoExposurePass::InvalidateTemporalHistory()
 {
   if (m_pState)
+  {
+    XII_LOCK(m_pState->m_Mutex);
     m_pState->m_bHistoryValid = false;
+    ++m_pState->m_uiHistoryRevision;
+  }
 }
 xiiResult xiiAutoExposurePass::Configure(const xiiVariantDictionary& properties)
 {
@@ -103,18 +112,25 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;
     data.m_fDeltaTime = xiiMath::Clamp(static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()), 0.0f, 0.25f);
     data.m_fManualExposure = context.m_pView && context.m_pView->GetCamera() ? context.m_pView->GetCamera()->GetExposure() : 1.0f;
-    Setup(data, builder); }, xiiMakeDelegate(&xiiAutoExposurePass::Execute, this));
+    Setup(data, builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputCurrentExposure, emitted.first->m_hExposure));
   return XII_SUCCESS;
 }
 
 void xiiAutoExposurePass::Setup(Data& data, xiiRenderGraphBuilder& builder)
 {
+  data.m_State    = m_pState;
+  data.m_Pipeline = m_pState->m_Pipeline;
+  {
+    XII_LOCK(m_pState->m_Mutex);
+    data.m_uiHistoryRevision = m_pState->m_uiHistoryRevision;
+    data.m_bHistoryValid     = m_pState->m_bHistoryValid;
+  }
   data.m_hHistogram = builder.ReadBuffer(data.m_hHistogram, xiiGALResourceStateFlags::ShaderResource);
 
-  data.m_hExposure     = builder.ImportBuffer("CurrentExposure", m_pState->m_Exposure, m_pState->m_Exposure->GetResourceState());
-  data.m_hExposure     = builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_bHistoryValid = m_pState->m_bHistoryValid;
+  data.m_hExposure = builder.ImportBuffer("CurrentExposure", m_pState->m_Exposure, m_pState->m_Exposure->GetResourceState());
+  data.m_hExposure = builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
+
 
   xiiGALBufferCreationDescription constantsDescription;
   constantsDescription.m_uiSize         = sizeof(xiiExposureAdaptationConstants);
@@ -143,14 +159,18 @@ void xiiAutoExposurePass::Execute(const Data& data, xiiRenderGraphPassContext& c
       pConstants->_Padding          = 0.0f;
     }
 
-    cmd.SetPipelineState(m_pState->m_Pipeline);
+    cmd.SetPipelineState(data.m_Pipeline.Borrow());
 
     cmd.ResolveAndSetConstantBuffer("xiiExposureAdaptationConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Histogram", context.GetBuffer(data.m_hHistogram)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_Exposure", context.GetBuffer(data.m_hExposure)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({1U, 1U, 1U});
-    m_pState->m_bHistoryValid = true;
+    {
+      XII_LOCK(data.m_State->m_Mutex);
+      if (data.m_uiHistoryRevision == data.m_State->m_uiHistoryRevision)
+        data.m_State->m_bHistoryValid = true;
+    }
   }
   cmd.EndDebugGroup();
 }
