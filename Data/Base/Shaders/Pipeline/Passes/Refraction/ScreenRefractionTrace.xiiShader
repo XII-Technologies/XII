@@ -1,0 +1,39 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/ScreenSpaceGeometry.h>
+#include <Shaders/Pipeline/Passes/Refraction/ScreenRefractionConstants.h>
+Texture2D<float> g_Depth;
+Texture2D<float2> g_Normal;
+Texture2D<float4> g_Material;
+Texture2D<float4> g_Emissive;
+Texture2D<float4> g_Radiance;
+SamplerState LinearClampSampler;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Refraction;
+[numthreads(8,8,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  uint2 extent;g_Refraction.GetDimensions(extent.x,extent.y);if(any(tid.xy>=extent))return;
+  g_Refraction[tid.xy]=0;
+  const float depth=g_Depth.Load(int3(tid.xy,0));const float flags=g_Material.Load(int3(tid.xy,0)).a,transmission=g_Emissive.Load(int3(tid.xy,0)).a;
+  if(!isfinite(depth) || depth<=0 || depth>1 || !isfinite(flags) || !isfinite(transmission) || (((uint)round(saturate(flags)*255))&64u)==0 || transmission<=0)return;
+  const float factor=saturate(transmission);const float2 uv=(float2(tid.xy)+0.5f)/float2(extent);float3 position;
+  if(!xiiScreenWorldPosition(uv,depth,position))return;
+  const float3 normal=xiiScreenNormal(g_Normal.Load(int3(tid.xy,0)));
+  const float4 surfaceClip=mul(SurfaceViewProjection,float4(position,1)),normalClip=mul(SurfaceViewProjection,float4(position+normal,1));
+  if(!all(isfinite(normal)) || !all(isfinite(surfaceClip)) || !all(isfinite(normalClip)) || abs(surfaceClip.w)<1e-8f || abs(normalClip.w)<1e-8f)return;
+  const float2 surfaceNdc=surfaceClip.xy/surfaceClip.w,normalNdc=normalClip.xy/normalClip.w;
+  const float2 projected=float2(normalNdc.x-surfaceNdc.x,surfaceNdc.y-normalNdc.y);const float lengthSq=dot(projected,projected);
+  const float2 direction=lengthSq>1e-8f?projected*rsqrt(lengthSq):0;
+  const float strength=factor*RefractionOptions.x/(1+xiiScreenLinearDepth(depth)*0.5f);
+  const float2 offset=clamp(direction*strength,-RefractionOptions.y,RefractionOptions.y);
+  float2 refractUv=uv+offset;const float backgroundDepth=g_Depth.SampleLevel(LinearClampSampler,refractUv,0);
+  if(!isfinite(backgroundDepth) || backgroundDepth>depth)refractUv=uv;
+  float3 radiance;
+  radiance.r=g_Radiance.SampleLevel(LinearClampSampler,saturate(refractUv+offset*RefractionOptions.z),0).r;
+  radiance.g=g_Radiance.SampleLevel(LinearClampSampler,saturate(refractUv),0).g;
+  radiance.b=g_Radiance.SampleLevel(LinearClampSampler,saturate(refractUv-offset*RefractionOptions.z),0).b;
+  g_Refraction[tid.xy]=float4(all(isfinite(radiance))?max(radiance,0):0,factor);
+}

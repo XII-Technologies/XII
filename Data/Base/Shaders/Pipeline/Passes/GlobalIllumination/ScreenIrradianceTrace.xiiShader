@@ -1,0 +1,52 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/ScreenSpaceGeometry.h>
+#include <Shaders/Pipeline/Passes/GlobalIllumination/ScreenIrradianceConstants.h>
+Texture2D<float> g_Depth;
+Texture2D<float2> g_Normal;
+Texture2D<float4> g_Radiance;
+SamplerState LinearClampSampler;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Irradiance;
+float Halton(uint index,uint base)
+{
+  float f=1,r=0;while(index>0){f/=float(base);r+=f*float(index%base);index/=base;}return r;
+}
+[numthreads(8,8,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  uint2 extent;g_Irradiance.GetDimensions(extent.x,extent.y);if(any(tid.xy>=extent))return;
+  const float2 uv=(float2(tid.xy)+0.5f)/float2(extent);const float depth=g_Depth.Load(int3(tid.xy,0));float3 position;
+  if(!isfinite(depth) || depth<=0 || depth>1 || !xiiScreenWorldPosition(uv,depth,position)){g_Irradiance[tid.xy]=0;return;}
+  const float3 normal=xiiScreenNormal(g_Normal.Load(int3(tid.xy,0)));
+  if(!all(isfinite(normal))){g_Irradiance[tid.xy]=0;return;}
+  const float3 up=abs(normal.z)<0.999f?float3(0,0,1):float3(1,0,0),tangent=normalize(cross(up,normal)),bitangent=cross(normal,tangent);
+  float3 incident=0;const uint samples=clamp(TraceCounts.x,1u,32u),steps=clamp(TraceCounts.y,1u,64u);
+  if(TraceDistances.x>0)
+  for(uint i=0;i<samples;++i)
+  {
+    const float2 xi=float2(Halton(i+TraceCounts.z,2u),Halton(i+TraceCounts.z,3u));
+    const float phi=6.28318530718f*xi.x,cosine=sqrt(xi.y),sine=sqrt(1-xi.y);
+    const float3 direction=tangent*(sine*cos(phi))+bitangent*(sine*sin(phi))+normal*cosine;
+    for(uint step=1;step<=steps;++step)
+    {
+      const float3 samplePosition=position+direction*(TraceDistances.x*float(step)/float(steps));const float4 clip=mul(SurfaceViewProjection,float4(samplePosition,1));
+      if(!all(isfinite(clip)) || clip.w<=1e-8f)break;
+      const float3 ndc=clip.xyz/clip.w;const float2 sampleUV=ndc.xy*float2(0.5f,-0.5f)+0.5f;
+      if(any(sampleUV<0) || any(sampleUV>1))break;
+      const float hitDepth=g_Depth.SampleLevel(LinearClampSampler,sampleUV,0);
+      if(!isfinite(hitDepth) || hitDepth<=0 || hitDepth>1)continue;
+      const float hitLinear=xiiScreenLinearDepth(hitDepth),rayLinear=xiiScreenLinearDepth(saturate(ndc.z));
+      if(hitLinear<=rayLinear && rayLinear-hitLinear<=TraceDistances.y)
+      {
+        const float3 radiance=g_Radiance.SampleLevel(LinearClampSampler,sampleUV,0).rgb;
+        incident+=all(isfinite(radiance))?max(radiance,0):0;break;
+      }
+    }
+  }
+  // Cosine-weighted sampling estimates E = pi * average incident radiance; misses stay black.
+  const float3 irradiance=incident*(3.14159265359f/float(samples));
+  g_Irradiance[tid.xy]=float4(all(isfinite(irradiance))?max(irradiance,0):0,1);
+}
