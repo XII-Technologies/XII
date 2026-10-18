@@ -2431,7 +2431,8 @@ Writable slots are reused only within the same immutable frame or after their la
 complete. The uploaded version is promoted while recording, not during setup. Every view
 gets a separate explicit candidate stream honoring its extracted tags/activation; consumers
 must apply this stream instead of treating the world's union as that camera's selection.
-The clustered consumer connection and full surface-lighting assets still need migration.
+The clustered consumer connection is implemented in the following phase; full surface-lighting
+assets still need migration.
 
 The cache is cleared when the world drops GPU-light demand, on world teardown and on device
 release. This extends the existing world module and shared extraction lifecycle; no new
@@ -2445,7 +2446,7 @@ Verification for this phase:
 
 - Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
   EditorEngineProcessFrameworkTest and GpuDrivenScene built with serial MSBuild.
-- 66 CPU pipeline tests, 43 native asset-authoring fixtures and 16 editor document tests passed.
+- 66 GraphicsCore CPU tests, 43 native asset-authoring fixtures and 16 editor document tests passed.
 - Vulkan passed 25 native GPU tests, 14 pipeline resource tests, three extraction tests,
   the interleaved depth-boundary test, the failed-recording history test and three temporal
   memory tests. The two new world-light tests cover all seven light types, authoritative
@@ -2462,3 +2463,33 @@ Verification for this phase:
 - Source and asset searches found no remaining lighting-system/context production references.
   The former files and static-link registration are deleted. The full renderer migration
   remains active, including the explicit remaining work listed above.
+
+## Per-view light selection through reusable cluster graphs
+
+ClusterLightAssignment now exposes an optional Candidates member pin through RTTI.
+ClusterLightLists maps that external interface to the independent assignment operation;
+both editable source assets and exported resources were regenerated through editor documents.
+No pass stage selector, manual pin-type array or fixed renderer stack was introduced.
+
+When connected, assignment dispatches the exact structured uint candidate stream and writes
+canonical world-table indices into the cluster lists. The shader checks each selected index
+against the physical light capacity before reading it; the empty-selection sentinel is safe.
+When unconnected, the generic algorithm still accepts the entire explicit light stream. A
+private typed sentinel binding satisfies the shader layout in that mode; it is graph-owned,
+declared through a transfer dependency and never used as a world-light selection.
+The camera-specific lists and downstream sampling tables remain private graph allocations.
+
+The world-light Vulkan regression now composes the ordinary WorldLightsUpload and
+ClusterLightLists definitions, connecting both Lights and Candidates. It reads back the
+actual cluster grid and canonical indices across all ten component/profile phases. The
+excluded point light appears in the all-light camera and never in the tagged camera;
+deactivated/empty selections yield no corresponding entries and no overflow. The existing
+repeated-instance clustering fixtures exercise the unconnected generic input as well.
+
+Validation passed 43 editor authoring fixtures, 16 editor document tests including deterministic
+resource bytes, 66 GraphicsCore CPU tests (including 25 pipeline tests), 14 resource GPU tests,
+three extraction GPU tests and all 25 native Vulkan GPU tests. Only Vulkan is built
+in this checkout; D3D12 remains excluded. The library still has 84 concrete native passes and
+49 asset pairs. Device-shared IES GPU residency, complete surface/advanced lighting graphs,
+remaining legacy algorithm contexts and the other application/editor integration work are
+still outstanding; the full rendering-stack migration is not complete.
