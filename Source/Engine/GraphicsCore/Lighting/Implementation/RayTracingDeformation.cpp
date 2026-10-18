@@ -20,10 +20,11 @@ xiiRayTracingDeformedVertices::~xiiRayTracingDeformedVertices()
 }
 
 xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xiiStringView name,
-                                      xiiRayTracingDeformedVertices& cache, xiiSharedPtr<xiiGALComputePipelineState>& pipeline,
+                                      const xiiSharedPtr<xiiRayTracingDeformedVertices>& capture, xiiSharedPtr<xiiGALComputePipelineState>& pipeline,
                                       const xiiGpuInstanceData& instances, xiiUInt32 drawIndex, bool& dispatched)
 {
-  dispatched = false;
+  auto& cache = *capture;
+  dispatched  = false;
   // Extraction is immutable throughout a graph setup, including repeated sections/views.
   if (cache.m_SetupSerial == graph.GetSetupSerial())
     return XII_SUCCESS;
@@ -151,7 +152,7 @@ xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xi
     description.m_Usage = xiiGALResourceUsage::Dynamic;
     description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
     resourceName.Set(name); resourceName.Append(" Constants");
-    data.m_Constants = builder.WriteBuffer(resourceName, description, xiiGALResourceStateFlags::ConstantBuffer); }, [target = &cache](const Pass& data, xiiRenderGraphPassContext& context) {
+    data.m_Constants = builder.WriteBuffer(resourceName, description, xiiGALResourceStateFlags::ConstantBuffer); }, [target = capture](const Pass& data, xiiRenderGraphPassContext& context) {
     if (!data.m_Dispatch) return;
     auto& commands = context.GetCommandList();
     commands.UpdateBuffer(context.GetBuffer(data.m_Morphs), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Targets.GetData()), data.m_Targets.GetCount() * sizeof(xiiVec4U32)));

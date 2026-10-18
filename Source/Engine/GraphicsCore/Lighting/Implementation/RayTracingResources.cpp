@@ -58,7 +58,7 @@ struct xiiRayTracingInstanceInput
   xiiBitflags<xiiGALRayTracingInstanceFlags> m_Flags;
 };
 
-struct xiiRayTracingDynamicBLAS
+struct xiiRayTracingDynamicBLAS : xiiRefCounted
 {
   xiiSharedPtr<xiiGALBottomLevelAS> m_Blas;
   xiiSharedPtr<xiiGALBuffer>        m_Scratch, m_Vertices;
@@ -69,8 +69,8 @@ struct xiiRayTracingDynamicBLAS
 
 struct xiiRayTracingGeometryFrame
 {
-  xiiHashTable<xiiUInt32, xiiUniquePtr<xiiRayTracingDeformedVertices>> m_Vertices;
-  xiiHashTable<xiiUInt32, xiiUniquePtr<xiiRayTracingDynamicBLAS>>      m_Blas;
+  xiiHashTable<xiiUInt32, xiiSharedPtr<xiiRayTracingDeformedVertices>> m_Vertices;
+  xiiHashTable<xiiUInt32, xiiSharedPtr<xiiRayTracingDynamicBLAS>>      m_Blas;
 };
 
 struct xiiRayTracingResources::FrameResources
@@ -86,9 +86,14 @@ struct xiiRayTracingResources::FrameResources
   bool                           m_bReady               = false;
 };
 
-class xiiRayTracingFrameResourcesState
+class xiiRayTracingFrameResourcesState : public xiiRefCounted
 {
 public:
+  ~xiiRayTracingFrameResourcesState()
+  {
+    for (const auto& lease : m_Leases)
+      xiiRayTracingResources::ReleaseGeometry(lease);
+  }
   xiiDynamicArray<xiiRayTracingResources::FrameResources> m_Frames;
   xiiDynamicArray<xiiRayTracingGeometryHandle>            m_Leases;
   xiiDynamicArray<xiiRayTracingGeometryFrame>             m_GeometryFrames;
@@ -101,11 +106,7 @@ xiiRayTracingFrameResources::xiiRayTracingFrameResources() : m_pState(XII_DEFAUL
   static xiiAtomicInteger64 nextWorld;
   m_pState->m_Id = nextWorld.Increment();
 }
-xiiRayTracingFrameResources::~xiiRayTracingFrameResources()
-{
-  for (const auto& lease : m_pState->m_Leases)
-    xiiRayTracingResources::ReleaseGeometry(lease);
-}
+xiiRayTracingFrameResources::~xiiRayTracingFrameResources() = default;
 
 class xiiRayTracingResources::State
 {
@@ -144,23 +145,23 @@ namespace
 {
   struct RayTracingBLASBuild
   {
-    xiiUInt32                         m_uiGeometryIndex      = xiiInvalidIndex;
-    xiiUInt32                         m_uiGeometryGeneration = 0U;
-    xiiSharedPtr<xiiGALBottomLevelAS> m_pBottomLevelAS;
-    xiiSharedPtr<xiiGALBuffer>        m_pVertexBuffer;
-    xiiSharedPtr<xiiGALBuffer>        m_pIndexBuffer;
-    xiiSharedPtr<xiiGALBuffer>        m_pScratchBuffer;
-    xiiUInt64                         m_uiVertexBufferOffset = 0U;
-    xiiUInt64                         m_uiVertexStride       = 0U;
-    xiiUInt32                         m_uiPrimitiveCount     = 0U;
-    xiiUInt64                         m_uiIndexBufferOffset  = 0;
-    xiiRenderGraphBufferHandle        m_hVertexBuffer;
-    xiiRenderGraphBufferHandle        m_hIndexBuffer;
-    xiiRenderGraphBufferHandle        m_hScratchBuffer;
-    xiiRayTracingDynamicBLAS*         m_Dynamic             = nullptr;
-    xiiUInt64                         m_DeformationRevision = 0;
-    bool                              m_Update              = false;
-    xiiUInt32                         m_DrawId              = 0;
+    xiiUInt32                              m_uiGeometryIndex      = xiiInvalidIndex;
+    xiiUInt32                              m_uiGeometryGeneration = 0U;
+    xiiSharedPtr<xiiGALBottomLevelAS>      m_pBottomLevelAS;
+    xiiSharedPtr<xiiGALBuffer>             m_pVertexBuffer;
+    xiiSharedPtr<xiiGALBuffer>             m_pIndexBuffer;
+    xiiSharedPtr<xiiGALBuffer>             m_pScratchBuffer;
+    xiiUInt64                              m_uiVertexBufferOffset = 0U;
+    xiiUInt64                              m_uiVertexStride       = 0U;
+    xiiUInt32                              m_uiPrimitiveCount     = 0U;
+    xiiUInt64                              m_uiIndexBufferOffset  = 0;
+    xiiRenderGraphBufferHandle             m_hVertexBuffer;
+    xiiRenderGraphBufferHandle             m_hIndexBuffer;
+    xiiRenderGraphBufferHandle             m_hScratchBuffer;
+    xiiSharedPtr<xiiRayTracingDynamicBLAS> m_Dynamic;
+    xiiUInt64                              m_DeformationRevision = 0;
+    bool                                   m_Update              = false;
+    xiiUInt32                              m_DrawId              = 0;
   };
 
   struct RayTracingSceneBuildPassData
@@ -875,7 +876,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
       xiiStringBuilder name;
       name.SetFormat("World {} Deformed Vertices [{}:{}]", geometryOwner.m_Id, geometryFrameIndex, sourceId);
       bool dispatched = false;
-      if (xiiAddRayTracingDeformation(graph, uiFrameIndex, name, *deformed, geometryOwner.m_DeformationPipeline, instances, instance.m_uiDrawIndex, dispatched).Failed())
+      if (xiiAddRayTracingDeformation(graph, uiFrameIndex, name, vertices, geometryOwner.m_DeformationPipeline, instances, instance.m_uiDrawIndex, dispatched).Failed())
       {
         xiiLog::Error("Could not deform ray-tracing GPU draw {} from its extracted mesh revision.", sourceId);
         return {};
@@ -884,11 +885,9 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
       deformedDependencies.PushBack(deformed);
       deformationRevision = xiiHashingUtils::xxHash64(&deformed->m_Revision, sizeof(deformed->m_Revision), deformationRevision);
       auto& dynamic       = dynamicFrame.m_Blas[record.m_uiObjectId];
-      if (!dynamic)
-        dynamic = XII_DEFAULT_NEW(xiiRayTracingDynamicBLAS);
-      if (dynamic->m_Source != instance.m_hGeometry || dynamic->m_Vertices != deformed->m_Buffer || !dynamic->m_Blas || !dynamic->m_Scratch)
+      if (!dynamic || dynamic->m_Source != instance.m_hGeometry || dynamic->m_Vertices != deformed->m_Buffer || !dynamic->m_Blas || !dynamic->m_Scratch)
       {
-        *dynamic                   = {};
+        dynamic                    = XII_DEFAULT_NEW(xiiRayTracingDynamicBLAS);
         dynamic->m_Source          = instance.m_hGeometry;
         dynamic->m_Vertices        = deformed->m_Buffer;
         auto description           = geometry.m_pBottomLevelAS->GetDescription();
@@ -924,7 +923,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
         build.m_uiVertexStride       = geometry.m_uiVertexStride;
         build.m_uiPrimitiveCount     = geometry.m_uiPrimitiveCount;
         build.m_uiIndexBufferOffset  = xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3 * geometry.m_uiIndexStride;
-        build.m_Dynamic              = dynamic.Borrow();
+        build.m_Dynamic              = dynamic;
         build.m_DeformationRevision  = deformed->m_Revision;
         build.m_Update               = dynamic->m_ReadyRevision != 0;
         dynamic->m_SetupSerial       = graph.GetSetupSerial();
@@ -979,7 +978,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
   FrameResources& frame       = world.m_Frames[uiFrameSlot];
   State*          pState      = s_pState.Borrow();
   const auto      fingerprint = xiiHashingUtils::xxHash64(instanceData.GetData(), instanceData.GetCount() * sizeof(xiiGALTLASInstanceData), s_pState->m_uiResourceRevision ^ deformationRevision);
-  auto*           pWorld      = &world;
+  const auto      pWorld      = worldResources.m_pState;
   const bool      bNeedsBuild = !frame.m_bReady || frame.m_uiBuiltRevision != fingerprint || !pendingBLASBuilds.IsEmpty();
   if (bNeedsBuild)
   {

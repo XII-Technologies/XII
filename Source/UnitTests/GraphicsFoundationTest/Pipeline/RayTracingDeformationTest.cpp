@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
       }
     }
   };
-  auto render = [&](xiiUInt32 expectedDispatches, float distance0, float distance1, xiiUInt32 firstRay, bool defer = false) {
+  auto render = [&](xiiUInt32 expectedDispatches, float distance0, float distance1, xiiUInt32 firstRay, bool defer = false, bool releaseOwners = false) {
     xiiRenderGraphFrame frame;
     if (!XII_TEST_RESULT(frame.Begin()))
       return;
@@ -410,6 +410,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
           builder.SetPassSideEffects(true); }, [](const Copy& copy, xiiRenderGraphPassContext& context) { context.GetCommandList().CopyBufferRegion(context.GetBuffer(copy.m_Source), 0, context.GetBuffer(copy.m_Destination), 0, 4 * sizeof(Hit)); });
       }
     }
+    if (releaseOwners)
+      rayScenes.Clear();
     graph.EndSetup();
     if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
       return;
@@ -518,5 +520,17 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
       xiiGpuInstanceSource source;
       XII_TEST_RESULT(module->GetGpuInstanceData()->Resolve(id, source));
     }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Recorded deformation and TLAS work retain destroyed occurrence owners")
+  {
+    xiiSkinnedMeshComponent* component = nullptr;
+    if (!XII_TEST_BOOL(world.TryGetComponent(components[0], component)))
+      return;
+    const auto pose = xiiMat4::MakeTranslation(xiiVec3(-1, 0, 0));
+    XII_TEST_RESULT(component->SetSkinningMatrices(xiiMakeArrayPtr(&pose, 1)));
+    const float weight = 0.25f;
+    component->SetMorphWeights(xiiMakeArrayPtr(&weight, 1));
+    world.Update();
+    render(1, 9.5f, 8.5f, 0, false, true);
   }
 }

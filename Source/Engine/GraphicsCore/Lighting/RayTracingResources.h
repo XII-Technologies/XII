@@ -6,6 +6,7 @@
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Id.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Material/MaterialTypes.h>
@@ -28,7 +29,7 @@ public:
 
 private:
   friend class xiiRayTracingResources;
-  xiiUniquePtr<xiiRayTracingFrameResourcesState> m_pState;
+  xiiSharedPtr<xiiRayTracingFrameResourcesState> m_pState;
 };
 
 /// Generation-checked lease for one device-resident BLAS geometry.
