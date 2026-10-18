@@ -585,6 +585,8 @@ void xiiRenderGraph::EndSetup()
 
 xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
+  m_bIsCompiled = false;
+  XII_SCOPE_EXIT(if (!m_bIsCompiled) xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, nullptr, m_uiFrameIndex, false, out_pError ? out_pError->GetView() : xiiStringView{}}));
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while setup is still open.");
 
   // Cache only frame-independent topology analysis. Every hit rebuilds compiled pass records
@@ -693,6 +695,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
     description.m_uiLastUsePassIndex               = resource.m_uiLastUsePassIdx;
     description.m_uiAliasGroup                     = resource.m_uiAliasGroup;
     description.m_bIsTexture                       = resource.m_bIsTexture;
+    description.m_TextureDescription               = resource.m_TextureDescription;
+    description.m_BufferDescription                = resource.m_BufferDescription;
 
     for (const VersionEntry& version : resource.m_Versions)
     {

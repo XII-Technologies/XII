@@ -197,6 +197,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceDescription
   xiiUInt32                                m_uiLastUsePassIndex  = xiiInvalidIndex;
   xiiUInt32                                m_uiAliasGroup        = xiiInvalidIndex;
   bool                                     m_bIsTexture          = true;
+  xiiGALTextureCreationDescription          m_TextureDescription;
+  xiiGALBufferCreationDescription           m_BufferDescription;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphResourceDescription);

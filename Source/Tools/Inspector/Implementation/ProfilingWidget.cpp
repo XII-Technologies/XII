@@ -141,6 +141,14 @@ bool xiiQtProfilingWidget::ApplyCapture(const QJsonObject& object)
   QVector<Scope> scopes;
   QMap<QString, QString> lanes;
   if (!Decode(object, scopes, lanes)) return false;
+  if (object.contains("xiiGpuPassCosts"))
+  {
+    if (!object["xiiGpuPassCosts"].isArray() || object["xiiGpuPassCosts"].toArray().size() > 64) return false;
+    for (const auto& value : object["xiiGpuPassCosts"].toArray())
+      if (!value.isObject() || !value.toObject()["id"].isString() || !value.toObject()["passes"].isArray() || value.toObject()["passes"].toArray().size() > 4096) return false;
+    m_GpuGraphs.clear();
+    for (const auto& value : object["xiiGpuPassCosts"].toArray()) m_GpuGraphs[value.toObject()["id"].toString()] = value.toObject();
+  }
   m_History.push_back(object);
   qint64 total = 0;
   for (const auto& capture : m_History) total += QJsonDocument(capture).toJson(QJsonDocument::Compact).size();
@@ -158,6 +166,11 @@ void xiiQtProfilingWidget::SelectCapture(int index)
 {
   if (index < 0 || index >= m_History.size()) return;
   SetDocument(m_History[index]);
+  if (m_Document.contains("xiiGpuPassCosts"))
+  {
+    m_GpuGraphs.clear();
+    for (const auto& value : m_Document["xiiGpuPassCosts"].toArray()) m_GpuGraphs[value.toObject()["id"].toString()] = value.toObject();
+  }
   Decode(m_Document, m_Scopes, m_Lanes);
   const QSignalBlocker frameBlocker(m_pFrames), laneBlocker(m_pLanes);
   m_Frames.clear();
@@ -205,7 +218,7 @@ void xiiQtProfilingWidget::Rebuild()
   if (frameIndex >= 0 && frameIndex < m_Frames.size()) { begin = m_Frames[frameIndex].m_fBeginUs; end = m_Frames[frameIndex].m_fEndUs; }
   const double scale = 1200.0 / qMax(1.0, end - begin);
   const QString filter = m_pFilter->text(), selectedLane = m_pLanes->currentData().toString();
-  struct Sample { Scope m_Scope; double m_fSelf; int m_iDepth; };
+  struct Sample { Scope m_Scope; double m_fSelf; int m_iDepth; double m_fCoveredUntil; };
   QVector<Sample> samples;
   QMap<QString, QVector<int>> stacks;
   QMap<QString, int> depths;
@@ -217,10 +230,15 @@ void xiiQtProfilingWidget::Rebuild()
     auto& stack = stacks[scope.m_Lane];
     while (!stack.isEmpty() && (samples[stack.back()].m_Scope.m_fEndUs <= clipped.m_fBeginUs || samples[stack.back()].m_Scope.m_fEndUs < clipped.m_fEndUs)) stack.pop_back();
     const double duration = clipped.m_fEndUs - clipped.m_fBeginUs;
-    if (!stack.isEmpty()) samples[stack.back()].m_fSelf = qMax(0.0, samples[stack.back()].m_fSelf - duration);
+    if (!stack.isEmpty())
+    {
+      auto& parent = samples[stack.back()];
+      parent.m_fSelf = qMax(0.0, parent.m_fSelf - qMax(0.0, clipped.m_fEndUs - qMax(clipped.m_fBeginUs, parent.m_fCoveredUntil)));
+      parent.m_fCoveredUntil = qMax(parent.m_fCoveredUntil, clipped.m_fEndUs);
+    }
     const int depth = stack.size();
     stack.push_back(samples.size());
-    samples.push_back({clipped, duration, depth});
+    samples.push_back({clipped, duration, depth, clipped.m_fBeginUs});
     depths[scope.m_Lane] = qMax(depths.value(scope.m_Lane), depth + 1);
   }
   QMap<QString, double> laneY;
@@ -304,6 +322,14 @@ void xiiQtProfilingWidget::ApplyGraphCapture(const QJsonObject& object)
 
 void xiiQtProfilingWidget::RebuildGpu()
 {
+  if (!m_Document.isEmpty())
+  {
+    QJsonArray costs;
+    for (const auto& graph : m_GpuGraphs) costs.append(graph);
+    m_Document["xiiGpuPassCosts"] = costs;
+    const int index = m_pHistory->currentIndex();
+    if (index >= 0 && index < m_History.size()) m_History[index] = m_Document;
+  }
   m_pGpuPasses->setSortingEnabled(false);
   m_pGpuPasses->clear();
   for (const auto& graph : m_GpuGraphs)

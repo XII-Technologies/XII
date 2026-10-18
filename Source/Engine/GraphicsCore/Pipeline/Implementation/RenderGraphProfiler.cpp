@@ -205,7 +205,7 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
         const float fDurationMs = static_cast<float>(durationData.m_uiDuration) / static_cast<float>(durationData.m_uiFrequency) * 1000.0f;
 
         m_ResolvedDurationsMs.Insert(pass.m_sPassName, fDurationMs);
-        m_ResolvedPassTimings[pass.m_uiGraphId].Insert(pass.m_uiPassIndex, Timing{fDurationMs, frameData.m_uiFrameIndex});
+        m_ResolvedPassTimings[pass.m_uiGraphId].Insert(pass.m_uiPassIndex, Timing{fDurationMs, frameData.m_uiFrameIndex, pass.m_sPassName});
       }
     }
     pass.m_bActive = false;
@@ -270,12 +270,12 @@ float xiiRenderGraphTimestampProfiler::GetPassDurationMs(xiiStringView sPassName
   return fResult;
 }
 
-bool xiiRenderGraphTimestampProfiler::GetPassTiming(xiiUInt64 uiGraphId, xiiUInt32 uiPassIndex, float& out_fDurationMs, xiiUInt64& out_uiFrameIndex) const
+bool xiiRenderGraphTimestampProfiler::GetPassTiming(xiiUInt64 uiGraphId, xiiUInt32 uiPassIndex, xiiStringView sPassName, float& out_fDurationMs, xiiUInt64& out_uiFrameIndex) const
 {
   XII_LOCK(m_ResultMutex);
   const xiiHashTable<xiiUInt32, Timing>* pGraph = nullptr;
   Timing timing;
-  if (!m_ResolvedPassTimings.TryGetValue(uiGraphId, pGraph) || !pGraph->TryGetValue(uiPassIndex, timing))
+  if (!m_ResolvedPassTimings.TryGetValue(uiGraphId, pGraph) || !pGraph->TryGetValue(uiPassIndex, timing) || timing.m_sPassName.GetView() != sPassName)
     return false;
   out_fDurationMs = timing.m_fDurationMs;
   out_uiFrameIndex = timing.m_uiFrameIndex;

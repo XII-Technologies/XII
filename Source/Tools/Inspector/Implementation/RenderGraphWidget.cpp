@@ -39,13 +39,13 @@ xiiQtRenderGraphWidget::xiiQtRenderGraphWidget(ads::CDockManager* manager) : xii
   m_pDetails->setPlaceholderText("Select a pass node or table row for its dependencies, barriers, and stable identity.");
   splitter->addWidget(m_pDetails);
   tabs->addTab(splitter, "Dependencies");
-  m_pPasses = Table({"Order", "Pass", "Queue", "GPU ms", "Timing frame", "Merge group", "Side effects", "Managed scope"}, "Graph passes");
+  m_pPasses = Table({"Order", "Pass", "Queue", "GPU ms", "Timing frame", "Merge group", "Side effects", "Managed scope", "Culled"}, "Graph passes");
   tabs->addTab(m_pPasses, "Passes");
   m_pLifetimeScene = new QGraphicsScene(this);
   auto* lifetimeView = new GraphicsView(m_pLifetimeScene);
   lifetimeView->setAccessibleName("Resource lifetimes in compiled pass order");
   tabs->addTab(lifetimeView, "Lifetimes");
-  m_pResources = Table({"Resource", "Kind", "Lifetime flags", "First pass", "Last pass", "Alias group", "Stable ID"}, "Graph resources");
+  m_pResources = Table({"Resource", "Kind", "Lifetime flags", "First pass", "Last pass", "Alias group", "Stable ID", "Dimensions / bytes", "Format", "Mips"}, "Graph resources");
   tabs->addTab(m_pResources, "Resources");
   m_pBarriers = Table({"Index", "Resource", "Before", "After", "Transition", "Source queue", "Target queue", "Ownership", "Mip range", "Slice range"}, "Graph barriers");
   tabs->addTab(m_pBarriers, "Barriers");
@@ -82,6 +82,7 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
   if (object["passes"].toArray().size() > 4096 || object["resources"].toArray().size() > 16384)
     return false;
   QSet<qint64> indices;
+  QMap<qint64, int> orders;
   for (const auto& value : object["passes"].toArray())
   {
     const auto pass = value.toObject();
@@ -89,6 +90,36 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
     if (!value.isObject() || !pass["name"].isString() || index < 0 || indices.contains(index) || pass["queue"].toInt(-1) < 0 || pass["queue"].toInt() > 2)
       return false;
     indices.insert(index);
+    orders[index] = orders.size();
+  }
+  qint64 edges = 0;
+  const auto passes = object["passes"].toArray();
+  const auto resources = object["resources"].toArray();
+  for (const auto& value : passes)
+  {
+    const auto pass = value.toObject();
+    for (const auto& dependency : pass["dependencies"].toArray())
+      if (!indices.contains(dependency.toInteger(-1)) || orders.value(dependency.toInteger()) >= orders.value(pass["index"].toInteger()) || ++edges > 65536)
+        return false;
+    for (const auto* key : {"preBarriers", "postBarriers", "splitBegins"})
+      for (const auto& barrier : pass[key].toArray())
+        if (barrier.toInteger(-1) < 0 || barrier.toInteger() >= object["barriers"].toArray().size()) return false;
+  }
+  for (const auto& value : resources)
+  {
+    if (!value.isObject()) return false;
+    const auto resource = value.toObject();
+    const auto first = resource["first"].toInteger(-1), last = resource["last"].toInteger(-1);
+    if (first == 4294967295LL && last == 4294967295LL) continue;
+    if (first < 0 || last < first || last >= passes.size()) return false;
+  }
+  for (const auto& value : object["barriers"].toArray())
+    if (!value.isObject() || value.toObject()["resource"].toInteger(-1) < 0 || value.toObject()["resource"].toInteger() >= resources.size()) return false;
+  for (const auto& value : object["submissions"].toArray())
+  {
+    if (!value.isObject()) return false;
+    for (const auto& pass : value.toObject()["passes"].toArray())
+      if (pass.toInteger(-1) < 0 || pass.toInteger() >= passes.size()) return false;
   }
   // Bound cached graphs by count and encoded size, including offline imports.
   const QString id = object["id"].toString();
@@ -147,12 +178,14 @@ void xiiQtRenderGraphWidget::Rebuild()
   const auto passes = graph["passes"].toArray();
   QMap<int, QPointF> positions;
   QMap<int, int> depth;
+  QMap<int, int> queuesByIndex;
   QMap<QPair<int, int>, int> rows;
   for (int order = 0; order < passes.size(); ++order)
   {
     const auto pass = passes[order].toObject();
     const int index = pass["index"].toInt();
     const int queue = pass["queue"].toInt();
+    queuesByIndex[index] = queue;
     int column = 0;
     for (const auto& dependency : pass["dependencies"].toArray())
       column = qMax(column, depth.value(dependency.toInt(), -1) + 1);
@@ -161,12 +194,27 @@ void xiiQtRenderGraphWidget::Rebuild()
     positions[index] = QPointF(180 + column * 260, 40 + queue * 300 + row * 76);
     auto* item = Row(m_pPasses, {QString::number(order), pass["name"].toString(), QueueName(queue), pass["timingAvailable"].toBool() ? QString::number(pass["gpuMs"].toDouble(), 'f', 3) : "Unavailable", pass["timingFrame"].toString(), Index(pass["mergeGroup"]), pass["sideEffects"].toBool() ? "Yes" : "", pass["managed"].toBool() ? "Yes" : ""}, filter);
     item->setData(0, Qt::UserRole, index);
+    item->setText(8, pass["culled"].toBool() ? "Yes" : "");
+  }
+  // Size queue lanes from their busiest dependency column so wide graphs never overlap lanes.
+  double queueY[3] = {40, 40, 40};
+  for (int queue = 1; queue < 3; ++queue)
+  {
+    int maxRows = 1;
+    for (auto it = rows.begin(); it != rows.end(); ++it)
+      if (it.key().second == queue - 1) maxRows = qMax(maxRows, it.value());
+    queueY[queue] = queueY[queue - 1] + 70 + maxRows * 76;
+  }
+  for (auto it = positions.begin(); it != positions.end(); ++it)
+  {
+    const int queue = queuesByIndex.value(it.key());
+    it.value().ry() += queueY[queue] - (40 + queue * 300);
   }
   for (int queue = 0; queue < 3; ++queue)
   {
     auto* label = m_pGraphScene->addSimpleText(QueueName(queue));
     label->setBrush(QueueColor(queue));
-    label->setPos(0, 40 + queue * 300);
+    label->setPos(0, queueY[queue]);
   }
   for (const auto& value : passes)
   {
@@ -189,6 +237,7 @@ void xiiQtRenderGraphWidget::Rebuild()
     node->setFlag(QGraphicsItem::ItemIsSelectable);
     node->setData(0, index);
     node->setOpacity(match ? 1 : 0.25);
+    if (pass["culled"].toBool()) node->setBrush(QColor("#484b50"));
     node->setToolTip(pass["name"].toString() + "\nID: " + pass["id"].toString() + "\nDependencies: " + Indices(pass["dependencies"].toArray()));
     const QString name = QFontMetrics(QApplication::font()).elidedText(pass["name"].toString(), Qt::ElideRight, 200);
     auto* text = new QGraphicsSimpleTextItem(name + "\n" + (pass["timingAvailable"].toBool() ? QString::number(pass["gpuMs"].toDouble(), 'f', 3) + " GPU ms" : "GPU timing unavailable"), node);
@@ -208,7 +257,7 @@ void xiiQtRenderGraphWidget::Rebuild()
     if (flags & 1) flagNames << "Transient";
     if (flags & 2) flagNames << "External";
     if (flags & 4) flagNames << "Persistent";
-    Row(m_pResources, {name, resource["texture"].toBool() ? "Texture" : "Buffer", flagNames.join(" | "), Index(resource["first"]), Index(resource["last"]), Index(resource["alias"]), resource["id"].toString()}, filter);
+    Row(m_pResources, {name, resource["texture"].toBool() ? "Texture" : "Buffer", flagNames.join(" | "), Index(resource["first"]), Index(resource["last"]), Index(resource["alias"]), resource["id"].toString(), resource["texture"].toBool() ? QString("%1 × %2 × %3").arg(resource["width"].toInt()).arg(resource["height"].toInt()).arg(resource["depthOrSlices"].toInt()) : resource["bufferBytes"].toString(), resource["format"].toString(), resource["texture"].toBool() ? Index(resource["mips"]) : QString{}}, filter);
     if ((!filter.isEmpty() && !name.contains(filter, Qt::CaseInsensitive)) || resource["first"].toDouble() == 4294967295.0)
       continue;
     auto* label = m_pLifetimeScene->addSimpleText(QFontMetrics(QApplication::font()).elidedText(name, Qt::ElideRight, 250));
@@ -234,7 +283,7 @@ void xiiQtRenderGraphWidget::Rebuild()
     const int resource = barrier["resource"].toInt(-1);
     const QString name = resource >= 0 && resource < resources.size() ? resources[resource].toObject()["name"].toString() : "Unknown resource";
     const QString type = barrier["type"].toInt() == 0 ? "Immediate" : barrier["type"].toInt() == 1 ? "Split begin" : "Split end";
-    Row(m_pBarriers, {QString::number(index), name, QString("0x%1").arg(barrier["before"].toInteger(), 0, 16), QString("0x%1").arg(barrier["after"].toInteger(), 0, 16), type, QueueName(barrier["sourceQueue"].toInt()), QueueName(barrier["targetQueue"].toInt()), barrier["ownershipTransfer"].toBool() ? "Transfer" : "", Index(barrier["firstMip"]) + " + " + Index(barrier["mips"]), Index(barrier["firstSlice"]) + " + " + Index(barrier["slices"])}, filter);
+    Row(m_pBarriers, {QString::number(index), name, barrier["beforeName"].toString(QString("0x%1").arg(barrier["before"].toInteger(), 0, 16)), barrier["afterName"].toString(QString("0x%1").arg(barrier["after"].toInteger(), 0, 16)), type, QueueName(barrier["sourceQueue"].toInt()), QueueName(barrier["targetQueue"].toInt()), barrier["ownershipTransfer"].toBool() ? "Transfer" : "", Index(barrier["firstMip"]) + " + " + Index(barrier["mips"]), Index(barrier["firstSlice"]) + " + " + Index(barrier["slices"])}, filter);
   }
   for (const auto& value : graph["versions"].toArray())
   {

@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/IO/JSONWriter.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 
@@ -12,7 +13,9 @@ namespace
 {
   void WriteId(xiiJSONWriter& writer, xiiStringView name, xiiUInt64 value)
   {
-    writer.AddVariableString(name, xiiStringBuilder(xiiFmt("{}", value)));
+    xiiStringBuilder text;
+    text.SetFormat("{}", value);
+    writer.AddVariableString(name, text);
   }
 
   template <typename T>
@@ -28,9 +31,6 @@ namespace
 xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStreamWriter& stream)
 {
   const auto& graph = event.m_Graph;
-  if (!graph.IsCompiled())
-    return XII_FAILURE;
-
   xiiStandardJSONWriter writer;
   writer.SetOutputStream(&stream);
   writer.SetWhitespaceMode(xiiJSONWriter::WhitespaceMode::None);
@@ -41,6 +41,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   WriteId(writer, "frame", event.m_uiFrameIndex);
   writer.AddVariableString("name", graph.GetName());
   writer.AddVariableBool("succeeded", event.m_bSucceeded);
+  writer.AddVariableBool("compiled", graph.IsCompiled());
   writer.AddVariableString("error", event.m_sError);
   writer.AddVariableBool("gpuProfiling", event.m_pProfiler != nullptr);
 
@@ -82,7 +83,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     WriteIndices(writer, "release", pass.m_ReleaseResourceIndices);
     float duration = 0;
     xiiUInt64 frame = 0;
-    const bool available = event.m_pProfiler && event.m_pProfiler->GetPassTiming(graph.GetId().m_uiValue, pass.m_uiPassIndex, duration, frame);
+    const bool available = event.m_pProfiler && event.m_pProfiler->GetPassTiming(graph.GetId().m_uiValue, pass.m_uiPassIndex, pass.m_sName.GetView(), duration, frame);
     writer.AddVariableBool("timingAvailable", available);
     if (available)
     {
@@ -104,6 +105,19 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     writer.AddVariableUInt32("first", resource.m_uiFirstUsePassIndex);
     writer.AddVariableUInt32("last", resource.m_uiLastUsePassIndex);
     writer.AddVariableUInt32("alias", resource.m_uiAliasGroup);
+    if (resource.m_bIsTexture)
+    {
+      const auto& texture = resource.m_TextureDescription;
+      writer.AddVariableUInt32("width", texture.m_Size.width);
+      writer.AddVariableUInt32("height", texture.m_Size.height);
+      writer.AddVariableUInt32("depthOrSlices", texture.m_uiArraySizeOrDepth);
+      writer.AddVariableUInt32("mips", texture.m_uiMipLevels);
+      xiiStringBuilder format;
+      xiiReflectionUtils::EnumerationToString(texture.m_Format, format);
+      writer.AddVariableString("format", format);
+    }
+    else
+      WriteId(writer, "bufferBytes", resource.m_BufferDescription.m_uiSize);
     writer.EndObject();
   }
   writer.EndArray();
@@ -133,6 +147,11 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     writer.AddVariableUInt32("resource", barrier.m_uiResourceIndex);
     writer.AddVariableUInt32("before", barrier.m_BeforeState.GetValue());
     writer.AddVariableUInt32("after", barrier.m_AfterState.GetValue());
+    xiiStringBuilder state;
+    xiiReflectionUtils::BitflagsToString(barrier.m_BeforeState, state);
+    writer.AddVariableString("beforeName", state);
+    xiiReflectionUtils::BitflagsToString(barrier.m_AfterState, state);
+    writer.AddVariableString("afterName", state);
     writer.AddVariableUInt32("type", barrier.m_TransitionType.GetValue());
     writer.AddVariableUInt32("flags", barrier.m_TransitionFlags.GetValue());
     writer.AddVariableUInt32("sourceQueue", barrier.m_uiSourceQueue);
@@ -157,7 +176,11 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     WriteIndices(writer, "waits", submission.m_WaitSubmissionIndices);
     writer.BeginArray("waitValues");
     for (auto value : submission.m_WaitValues)
-      writer.WriteString(xiiStringBuilder(xiiFmt("{}", value)));
+    {
+      xiiStringBuilder text;
+      text.SetFormat("{}", value);
+      writer.WriteString(text);
+    }
     writer.EndArray();
     writer.EndObject();
   }
