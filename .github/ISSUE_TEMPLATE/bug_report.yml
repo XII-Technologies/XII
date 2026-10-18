@@ -64,12 +64,23 @@ body:
       label: Affected Area
       multiple: true
       options:
+        - "Area: Foundation"
+        - "Area: Core"
         - "Area: Graphics"
         - "Area: Compute"
-        - "Area: Scripting"
-        - "Area: UI"
         - "Area: I/O"
-        - "Area: Core"
+        - "Area: UI"
+        - "Area: Scripting"
         - "Area: Platform"
+        - "Area: Asset Pipeline"
+        - "Area: Build System"
+        - "Area: Editor"
+        - "Area: Tools"
+        - "Area: Tests"
+        - "Area: Samples"
+        - "Area: Documentation"
+        - "Area: Dependencies"
+        - "Area: Plugins"
+        - "GitHub"
     validations:
       required: true

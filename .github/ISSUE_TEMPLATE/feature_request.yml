@@ -37,13 +37,23 @@ body:
     attributes:
       label: Target Area
       options:
+        - "Area: Foundation"
+        - "Area: Core"
         - "Area: Graphics"
         - "Area: Compute"
+        - "Area: I/O"
         - "Area: UI"
         - "Area: Scripting"
         - "Area: Platform"
-        - "Area: I/O"
         - "Area: Asset Pipeline"
-        - "Area: Core"
+        - "Area: Build System"
+        - "Area: Editor"
+        - "Area: Tools"
+        - "Area: Tests"
+        - "Area: Samples"
+        - "Area: Documentation"
+        - "Area: Dependencies"
+        - "Area: Plugins"
+        - "GitHub"
     validations:
       required: true
