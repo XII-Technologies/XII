@@ -4,7 +4,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-/// Physical parameters used to generate the shared atmosphere lookup tables.
+/// Authored physical parameters consumed by atmosphere rendering passes.
 /// Distances and extinction coefficients are expressed in kilometres because
 /// that keeps the values numerically well-conditioned in the GPU integration.
 struct XII_GRAPHICSCORE_DLL xiiAtmosphereSettings

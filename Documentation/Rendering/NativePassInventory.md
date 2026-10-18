@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **100 concrete reflected operation classes** in
+Current source inventory: **102 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -17,7 +17,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Directory | Count | Reflected operations |
 | --- | ---: | --- |
 | AmbientOcclusion | 2 | `xiiAmbientOcclusionPass`, `xiiAmbientOcclusionTemporalPass` |
-| Atmosphere | 2 | `xiiAtmosphereApplyPass`, `xiiAtmosphereConstantsPass` |
+| Atmosphere | 4 | `xiiAtmosphereApplyPass`, `xiiAtmosphereConstantsPass`, `xiiAtmosphereMultiScatterPass`, `xiiAtmosphereTransmittancePass` |
 | Composition | 5 | `xiiConfidenceBlendPass`, `xiiConfidenceRadiancePass`, `xiiRadianceAddPass`, `xiiRadianceReplacePass`, `xiiVolumetricCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMatrixRasterConstantsPass`, `xiiMeshDrawCommandsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
@@ -94,7 +94,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | Cluster layout/bounds, list clear/assignment, emitted-power CDF preparation, world light snapshot/upload, directional selection and environment constants are independent native operations with authored assets. The old lighting context and registry are deleted. Shared device IES residency and reflection-probe selection remain. |
 | Shadows | Directional cascade construction/snapshot upload is native. Local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
-| Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
+| Atmosphere/environment | Constants, transmittance, approximate multiple scattering and aerial perspective composition are native. The unused atmosphere manager/global LUT cache is deleted. Sky irradiance convolution, environment/probe resources, complete scene consumers and safe LUT content caching remain. |
 | Direct illumination | Directional and clustered analytical local surface evaluation are now independent native operations in WorldSurfaceLighting. ReSTIR DI temporal/spatial/visibility/emissive visibility, local shadows, all-directional evaluation and complete forward/deferred composition remain. |
 | Indirect illumination | DDGI and sparse-voxel scheduling/upload/preparation/environment seeding are independent native operations; their old context GPU orchestration is deleted. Geometry-dependent radiance updates, probe/environment preparation, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising remain. Confidence layering, diffuse material response and environment-specular BRDF response are now native operations; complete scene compositions remain open. |
 | Reflections | Ray-traced reflections and denoising. Screen trace, temporal filter and hybrid composition are native. |
@@ -3347,3 +3347,102 @@ Screen-transport validation - 2026-10-18:
   active source or packaged-asset references, and no scene database or rendering Builtin
   file remains. Existing unrelated state-machine Builtins files are preserved. The full
   migration is still incomplete; these searches do not prove otherwise.
+
+
+## Final phase: graph-owned atmosphere lookup operations
+
+This phase completes the current atmosphere pass refactor. At the user's request,
+the active goal closes after this phase; the full renderer migration remains
+unfinished. [RemainingWork.md](RemainingWork.md) is the single future-work handoff.
+
+### Implementation and ownership
+
+- Added `xiiAtmosphereTransmittancePass` and `xiiAtmosphereMultiScatterPass` under
+  `Passes/Atmosphere`. Each exposes concrete reflected member pins, reflected width,
+  height and async-compute properties, and its actual Compute capability requirement.
+  Parameters arrive through an exact atmosphere uniform-buffer contract. Multiple
+  scattering consumes a separately supplied float-readable RGB transmittance image.
+  Output images are graph-owned RGBA32Float SRV/UAV resources. Non-workgroup-aligned
+  dimensions are supported; each recording retains its pipelines/sampler and uses
+  immutable data with captureless execution callbacks.
+- Moved the formerly unused transmittance/multiple-scattering shader entry points
+  into `Shaders/Pipeline/Passes/Atmosphere`, updated storage-image contracts to
+  RGBA32Float and bounded shader loop counts. Existing spherical optical integration
+  and approximate phase/density multiple-scattering math are preserved. This is not
+  a claim of a new physically complete atmosphere solver.
+- Deleted `xiiAtmosphereManager`, LUT handles/state/statistics, ID table, startup
+  default GPU allocations, Acquire/GetTextures/MarkGenerated and revision/commit
+  machinery. Repository inspection found no production generation/consumption of
+  that manager's LUTs. Its only remaining production caller supplied validation and
+  global fallback parameters to AtmosphereConstantsPass; that pass now validates
+  through `xiiIsValidAtmosphereSettings` and uses its own authored settings when no
+  world atmosphere component is selected. Unused blackboard LUT keys are deleted.
+- Retained the reflected `xiiAtmosphereSettings` schema and the narrowly targeted
+  version-3-to-4 all-zero-record repair. Ordinary authored values and partial records
+  remain preserved. SkyAtmosphere components and existing world extraction remain
+  authoritative; no new object registry, hierarchy, world module or manager is added.
+- Added five ordinary source/binary resource pairs: AtmosphereConstants,
+  AtmosphereTransmittance, AtmosphereMultiScatter, AtmosphereLookup and
+  WorldAtmosphereView. AtmosphereLookup composes three native operations.
+  WorldAtmosphereView nests it with AtmosphereApply and overrides only the nested
+  constants operation's UseWorldAtmosphere property. Its camera, scene radiance,
+  depth and environment light are explicit inputs. Independent occurrences own
+  independent writable images.
+- The editor authoring fixture uses existing document commands to store reflected
+  subgraph overrides. The shared test helper adds no production configuration
+  framework. The library now contains 90 editable source/binary pairs; Constants
+  correctly requires no Compute feature by itself.
+
+### Verification and limits
+
+- Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene, including their dependent
+  engine/editor targets (`Workspace/native-atmosphere-final-build.log`). Initial
+  test-source build errors (integer/vector division overload and a narrowing float
+  assignment) were corrected before that successful final build.
+- All 77 GraphicsCore subtests pass (`native-atmosphere-cpu-final.log`), including
+  atmosphere settings validation, preserved version migration, LUT pin contracts
+  and nested resource extraction/capability requirements.
+- All 39 native Vulkan subtests pass (`native-atmosphere-final-Native.log`). The new
+  atmosphere case uses two worlds with two independent views each.
+  It verifies transmittance and approximate multiple scattering against CPU numeric
+  references at representative texels, odd image extents, world-component mutation,
+  component deletion with authored fallback, world teardown, view resource isolation,
+  and recording execution after the source pass instance/world are destroyed.
+  Atmosphere-only extraction leaves mesh/material residency uninitialized. Each
+  world/view fixture records 12 operations, four submissions and 14 barriers;
+  this is a correctness fixture, not an optimized full scene benchmark.
+- All 14 PipelineResources, three PipelineExtraction, three shader failure/recovery,
+  one temporal-history, three temporal-memory and one native depth-boundary subtest
+  pass (`native-atmosphere-final-*.log`).
+- All 16 EditorDocuments subtests pass, including Qt node/pin inspection and
+  byte-identical packaged/exported/repeated compilation of all 90 asset pairs.
+  All 71 authoring subtests pass: 58 established native, four composition, five
+  indirect, and one each for scene, reflection, screen transport and atmosphere.
+  The new atmosphere fixture authors and exports all five resources through the
+  existing document/accessor commands (`native-atmosphere-final-*Authoring.log`).
+- GpuDrivenScene completes 300 Vulkan frames with exit code zero
+  (`native-atmosphere-sample.log`, `native-atmosphere-sample-results.json`). Its
+  established advanced graph remains at 124 registered / 116 compiled / eight culled
+  operations, one submission and 190 barriers. Its custom C++ graph entry point
+  remains future migration work.
+- Searches of Source and Data find no scene database, atmosphere manager, removed
+  LUT handle/statistics references, or old shader-path consumers. No rendering
+  Builtin file or stage-selector path was restored.
+
+The first focused GPU run failed because the new test connected a uniform buffer
+into a shader-resource-only buffer export sink. It then dereferenced a missing
+binding. The fixture now uses a test-only reflected uniform export and guards all
+bindings; the corrected run passes. The original failure remains in
+`Workspace/native-atmosphere-gpu-focused.log`; it is not counted as a passing run.
+
+The lookup images currently regenerate when their operations execute. Existing
+resource caching reuses physical allocations, not parameter-keyed image contents.
+At default extents the RGBA32Float pair occupies 278,528 bytes (272 KiB) per live
+lookup occurrence before allocator overhead, versus the deleted unused cache's
+RGBA16Float pair at 136 KiB. The higher precision therefore has an explicit image
+footprint cost; unused pipelines now allocate neither image. No controlled
+extraction/upload/LUT benchmark or other-backend comparison was run.
+D3D12 is excluded. Remaining scene integration, environment convolution and safe
+content caching are recorded in RemainingWork.md. Neither the new inventory count
+nor closure of this goal establishes full architectural completion.
