@@ -3,7 +3,9 @@
 #include "GpuDrivenSceneWorld.h"
 
 #include <Foundation/Application/Application.h>
+#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/DirectoryWatcher.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Logging/ConsoleWriter.h>
@@ -38,6 +40,12 @@
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
+
+#if XII_ENABLED(XII_SUPPORTS_DIRECTORY_WATCHER)
+#  define USE_DIRECTORY_WATCHER XII_ON
+#else
+#  define USE_DIRECTORY_WATCHER XII_OFF
+#endif
 
 xiiCommandLineOptionInt    opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
 xiiCommandLineOptionInt    opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
@@ -136,7 +144,22 @@ public:
       return Execution::Quit;
 
     xiiClock::GetGlobalClock()->Update();
+
     xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
+
+    // Reload resources if modified
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    {
+      m_bFileModified = false;
+
+      m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiGpuDrivenSceneApp::OnFileChanged, this));
+
+      if (m_bFileModified)
+      {
+        xiiResourceManager::ReloadAllResources(false);
+      }
+    }
+#endif
 
     m_pDevice->BeginFrame();
     const bool bCanRender = m_pSwapChain != nullptr && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture() != nullptr;
@@ -202,75 +225,128 @@ public:
       m_pSwapChain->Present();
     }
     m_pDevice->EndFrame();
+
+    xiiTelemetry::PerFrameUpdate();
+
     xiiResourceManager::PerFrameUpdate();
+
     xiiTaskSystem::FinishFrameTasks();
+
     xiiFrameAllocator::Swap();
+
     return Execution::Continue;
   }
 
   void AfterCoreSystemsStartup() override
   {
-    xiiStringBuilder projectDirectory = ">sdk/Data/Samples/GpuDrivenScene";
-    xiiStringBuilder resolvedProjectDirectory;
-    xiiFileSystem::ResolveSpecialDirectory(projectDirectory, resolvedProjectDirectory).AssertSuccess();
-    xiiFileSystem::SetSpecialDirectory("project", resolvedProjectDirectory);
+    xiiStringBuilder sProjectDirectory = ">sdk/Data/Samples/GpuDrivenScene";
+
+    xiiStringBuilder sResolvedProjectDirectory;
+    xiiFileSystem::ResolveSpecialDirectory(sProjectDirectory, sResolvedProjectDirectory).AssertSuccess();
+    xiiFileSystem::SetSpecialDirectory("project", sResolvedProjectDirectory);
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
+    m_pDirectoryWatcher->OpenDirectory(sResolvedProjectDirectory, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
+#endif
+
     xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
     xiiFileSystem::AddDataDirectory(">project/", "Project", "project").AssertSuccess();
+
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
-    xiiInputActionConfig closeAction   = xiiInputManager::GetInputActionConfig("Main", "CloseApp");
-    closeAction.m_sInputSlotTrigger[0] = xiiInputSlot_KeyEscape;
-    xiiInputManager::SetInputActionConfig("Main", "CloseApp", closeAction, true);
-
-    xiiWindowCreationDescription windowDescription;
-    windowDescription.m_Resolution       = xiiSizeU32(1440U, 810U);
-    windowDescription.m_Title            = GetApplicationName();
-    windowDescription.m_bShowMouseCursor = true;
-    windowDescription.m_WindowMode       = xiiWindowMode::WindowResizable;
-    windowDescription.m_iMonitor         = opt_GpuDrivenMonitor.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    windowDescription.AdjustWindowSizeAndPosition().IgnoreResult();
-    m_pWindow = XII_DEFAULT_NEW(xiiWindow);
-    m_pWindow->Initialize(windowDescription).AssertSuccess();
-    m_pWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& event) {
-      if (event.m_Type == xiiWindowEvent::Type::CloseButtonClicked)
-        RequestQuit();
-      else if (event.m_Type == xiiWindowEvent::Type::SizeChanged)
-        g_bWindowResized = true;
-    });
-
-    xiiGALDeviceCreationDescription deviceDescription;
-    deviceDescription.m_DeviceFeatures.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
-    deviceDescription.m_DeviceFeatures.m_MeshShaders                   = xiiGALDeviceFeatureState::Enabled;
-    deviceDescription.m_DeviceFeatures.m_BindlessResources             = xiiGALDeviceFeatureState::Enabled;
-    deviceDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray    = xiiGALDeviceFeatureState::Enabled;
-    deviceDescription.m_DeviceFeatures.m_TimestampQueries              = xiiGALDeviceFeatureState::Optional;
-    deviceDescription.m_DeviceFeatures.m_DurationQueries               = xiiGALDeviceFeatureState::Optional;
-    deviceDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Optional;
-    deviceDescription.m_DeviceFeatures.m_RayTracing                    = opt_GpuDrivenRayTracing.GetOptionValue(xiiCommandLineOption::LogMode::Always) ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
-    // Timeline fences are required for GPU-side synchronization between the
-    // graphics, asynchronous-compute, and transfer queues.
-    deviceDescription.m_DeviceFeatures.m_NativeFence = xiiGALDeviceFeatureState::Optional;
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    deviceDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
+    xiiTelemetry::SetServerName("GPU Driven Scene");
+
+    // Activate xiiTelemetry such that the inspector plugin can use the network connection.
+    xiiTelemetry::CreateServer();
+
+    // Load the inspector plugin.
+    // The plugin contains automatic configuration code (through the xiiStartup system), so it will configure itself properly when the engine is initialized by calling xiiStartup::StartupCore().
+    // When you are using xiiApplication, this is done automatically.
+    xiiPlugin::LoadPlugin("xiiInspectorPlugin", xiiPluginLoadFlags::PluginIsOptional).IgnoreResult();
 #endif
-    constexpr const char* szGraphicsApi = "Vulkan";
-    xiiStringView         shaderModel;
-    xiiStringView         shaderCompiler;
-    xiiGALDeviceFactory::GetShaderModelAndCompiler(szGraphicsApi, shaderModel, shaderCompiler);
-    xiiGALShaderManager::Configure(shaderModel, true);
-    xiiPlugin::LoadPlugin(shaderCompiler).AssertSuccess();
-    m_pDevice = xiiGALDeviceFactory::CreateDevice(szGraphicsApi, xiiFoundation::GetDefaultAllocator(), deviceDescription);
-    XII_ASSERT_ALWAYS(m_pDevice != nullptr && m_pDevice->Initialize().Succeeded(), "A Vulkan 1.3 mesh-shader device is required.");
-    XII_ASSERT_ALWAYS(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "The GPU-driven sample requires mesh shader support.");
-    xiiGALDevice::SetDefaultDevice(m_pDevice);
+
+    {
+      xiiInputActionConfig closeAction   = xiiInputManager::GetInputActionConfig("Main", "CloseApp");
+      closeAction.m_sInputSlotTrigger[0] = xiiInputSlot_KeyEscape;
+      xiiInputManager::SetInputActionConfig("Main", "CloseApp", closeAction, true);
+    }
+
+    {
+      xiiWindowCreationDescription windowDescription;
+      windowDescription.m_Resolution       = xiiSizeU32(1440U, 810U);
+      windowDescription.m_Title            = GetApplicationName();
+      windowDescription.m_bShowMouseCursor = true;
+      windowDescription.m_bClipMouseCursor = false;
+      windowDescription.m_WindowMode       = xiiWindowMode::WindowResizable;
+      windowDescription.m_iMonitor         = opt_GpuDrivenMonitor.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+      windowDescription.AdjustWindowSizeAndPosition().IgnoreResult();
+
+      m_pWindow = XII_DEFAULT_NEW(xiiWindow);
+      m_pWindow->Initialize(windowDescription).AssertSuccess();
+      m_pWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& event) -> void {
+        if (event.m_Type == xiiWindowEvent::Type::CloseButtonClicked)
+        {
+          RequestQuit();
+        }
+        else if (event.m_Type == xiiWindowEvent::Type::SizeChanged)
+        {
+          g_bWindowResized = true;
+        }
+      });
+    }
+
+    {
+      xiiGALDeviceCreationDescription deviceDescription;
+      deviceDescription.m_DeviceFeatures.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
+      deviceDescription.m_DeviceFeatures.m_MeshShaders                   = xiiGALDeviceFeatureState::Enabled;
+      deviceDescription.m_DeviceFeatures.m_BindlessResources             = xiiGALDeviceFeatureState::Enabled;
+      deviceDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray    = xiiGALDeviceFeatureState::Enabled;
+      deviceDescription.m_DeviceFeatures.m_TimestampQueries              = xiiGALDeviceFeatureState::Optional;
+      deviceDescription.m_DeviceFeatures.m_DurationQueries               = xiiGALDeviceFeatureState::Optional;
+      deviceDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Optional;
+      deviceDescription.m_DeviceFeatures.m_RayTracing                    = opt_GpuDrivenRayTracing.GetOptionValue(xiiCommandLineOption::LogMode::Always) ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
+      deviceDescription.m_DeviceFeatures.m_NativeFence                   = xiiGALDeviceFeatureState::Optional; //< Timeline fences are required for GPU-side synchronization between the graphics, asynchronous-compute, and transfer queues.
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+      deviceDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
+#endif
+
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "Vulkan";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "D3D12";
+#else
+      constexpr const char* szDefaultGraphicsAPI = "";
+#endif
+
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
+      xiiStringView sShaderModel     = {};
+      xiiStringView sShaderCompiler  = {};
+      xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
+
+      xiiGALShaderManager::Configure(sShaderModel, true);
+      XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found.", sShaderCompiler);
+
+      m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceDescription);
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
+      XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
+
+      m_pDevice->SetDebugName("Master Graphics Device");
+
+      xiiGALDevice::SetDefaultDevice(m_pDevice);
+    }
+
     UpdateSwapChain();
 
     m_Configuration                = {};
     m_Configuration.m_uiGridWidth  = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     m_Configuration.m_uiGridHeight = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     xiiGpuDrivenSceneWorld::ConfigureSubsystems(m_Configuration).AssertSuccess();
+
     xiiStartup::StartupHighLevelSystems();
 
     m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 250.0f);
@@ -373,6 +449,13 @@ public:
 
   void BeforeHighLevelSystemsShutdown() override
   {
+    xiiTelemetry::CloseConnection();
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    m_pDirectoryWatcher->CloseDirectory();
+    m_pDirectoryWatcher.Clear();
+#endif
+
     if (m_pDevice)
       m_pDevice->WaitIdle();
     xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
@@ -421,6 +504,7 @@ public:
   void BeforeCoreSystemsShutdown() override
   {
     xiiPlugin::UnloadAllPlugins();
+
     SUPER::BeforeCoreSystemsShutdown();
   }
 
@@ -1237,6 +1321,18 @@ private:
     }
   }
 
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+  void OnFileChanged(xiiStringView sFileName, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type)
+  {
+    if (action == xiiDirectoryWatcherAction::Modified && type == xiiDirectoryWatcherType::File)
+    {
+      xiiLog::Info("File modified: '{0}'.", sFileName);
+
+      m_bFileModified = true;
+    }
+  }
+#endif
+
   xiiSharedPtr<xiiGALDevice>                        m_pDevice;
   xiiSharedPtr<xiiGALSwapChain>                     m_pSwapChain;
   xiiUniquePtr<xiiWindow>                           m_pWindow;
@@ -1277,6 +1373,11 @@ private:
   xiiSizeU32                                        m_TargetSize;
   xiiMat4                                           m_ViewProjection = xiiMat4::MakeIdentity();
   xiiUInt64                                         m_uiFrameIndex   = 0U;
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+  xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+  bool                              m_bFileModified = false;
+#endif
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGpuDrivenSceneApp);

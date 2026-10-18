@@ -21,7 +21,7 @@ namespace
 {
   QJsonObject MakeGraphCapture()
   {
-    xiiRenderGraph graph("View \"inspector\" — capture");
+    xiiRenderGraph graph("View \"inspector\" - capture");
     graph.BeginSetup(9007199254740993ULL);
     struct Data
     {

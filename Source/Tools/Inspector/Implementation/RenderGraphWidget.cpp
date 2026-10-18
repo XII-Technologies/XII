@@ -296,7 +296,7 @@ void xiiQtRenderGraphWidget::Rebuild()
     bar->setToolTip(name + "\nCompiled pass range: " + Index(resource["first"]) + "–" + Index(resource["last"]) + "\nAlias group: " + Index(resource["alias"]));
     ++lifetimeRow;
   }
-  auto* axis = m_pLifetimeScene->addSimpleText("Compiled pass order →   (bars show logical lifetimes; colors identify alias groups / external resources)");
+  auto* axis = m_pLifetimeScene->addSimpleText("Compiled pass order ->   (bars show logical lifetimes; colors identify alias groups / external resources)");
   axis->setBrush(Qt::white);
   for (int i = 0; i < passes.size(); ++i)
   {
@@ -317,7 +317,7 @@ void xiiQtRenderGraphWidget::Rebuild()
   for (const auto& value : graph["versions"].toArray())
   {
     const auto version = value.toObject();
-    Row(m_pVersions, {resourceNames.value(version["resource"].toString()), Index(version["version"]), version["parent"].toInt() == 65535 ? "—" : Index(version["parent"]), version["producer"].toString(), Index(version["first"]), Index(version["last"]), QString("0x%1").arg(version["requiredState"].toInteger(), 0, 16), QString("0x%1").arg(version["currentState"].toInteger(), 0, 16), version["exported"].toBool() ? "Yes" : "", version["id"].toString()}, filter);
+    Row(m_pVersions, {resourceNames.value(version["resource"].toString()), Index(version["version"]), version["parent"].toInt() == 65535 ? "-" : Index(version["parent"]), version["producer"].toString(), Index(version["first"]), Index(version["last"]), QString("0x%1").arg(version["requiredState"].toInteger(), 0, 16), QString("0x%1").arg(version["currentState"].toInteger(), 0, 16), version["exported"].toBool() ? "Yes" : "", version["id"].toString()}, filter);
   }
   const auto submissions = graph["submissions"].toArray();
   for (int index = 0; index < submissions.size(); ++index)

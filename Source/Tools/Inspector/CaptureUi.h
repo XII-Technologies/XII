@@ -25,7 +25,7 @@ namespace xiiInspectorUi
 
   inline QString Index(const QJsonValue& value)
   {
-    return value.toDouble() == 4294967295.0 ? QString("—") : QString::number(value.toInteger());
+    return value.toDouble() == 4294967295.0 ? QString("-") : QString::number(value.toInteger());
   }
 
   inline QString Indices(const QJsonArray& array)

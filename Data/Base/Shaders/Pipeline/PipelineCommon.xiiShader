@@ -68,7 +68,7 @@ SamplerComparisonState g_sShadowPCF;
 // Math helpers
 // 
 
-// Reversed-Z NDC → linear view-space depth.
+// Reversed-Z NDC -> linear view-space depth.
 float LinearizeDepth(float ndcDepth)
 {
     // Reversed-Z: near=1, far=0.  ndcDepth = near / linearZ  (infinite far plane).
