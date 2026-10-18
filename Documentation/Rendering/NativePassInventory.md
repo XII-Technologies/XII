@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **101 concrete reflected operation classes** in
+Current source inventory: **100 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -17,26 +17,26 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Directory | Count | Reflected operations |
 | --- | ---: | --- |
 | AmbientOcclusion | 2 | `xiiAmbientOcclusionPass`, `xiiAmbientOcclusionTemporalPass` |
-| Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
-| Composition | 3 | `xiiRadianceAddPass`, `xiiConfidenceRadiancePass`, `xiiVolumetricCompositePass` |
+| Atmosphere | 2 | `xiiAtmosphereApplyPass`, `xiiAtmosphereConstantsPass` |
+| Composition | 5 | `xiiConfidenceBlendPass`, `xiiConfidenceRadiancePass`, `xiiRadianceAddPass`, `xiiRadianceReplacePass`, `xiiVolumetricCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
-| Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
-| GlobalIllumination | 13 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass`, `xiiSparseVoxelSchedulePass`, `xiiSparseVoxelUploadPass`, `xiiSparseVoxelPoolPreparePass`, `xiiSparseVoxelEnvironmentSeedPass`, `xiiIrradianceLayerPass` |
-| Lighting | 13 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass`, `xiiDirectionalSurfaceLightingPass`, `xiiClusteredLocalSurfaceLightingPass`, `xiiDiffuseSurfaceLightingPass`, `xiiEnvironmentSpecularPass` |
+| Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMatrixRasterConstantsPass`, `xiiMeshDrawCommandsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
+| GlobalIllumination | 12 | `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiIrradianceLayerPass`, `xiiScreenIrradianceTracePass`, `xiiSparseVoxelEnvironmentSeedPass`, `xiiSparseVoxelGatherPass`, `xiiSparseVoxelPoolPreparePass`, `xiiSparseVoxelSchedulePass`, `xiiSparseVoxelUploadPass` |
+| Lighting | 13 | `xiiBRDFLutPass`, `xiiClusterBoundsPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiClusterListClearPass`, `xiiClusteredLocalSurfaceLightingPass`, `xiiDiffuseSurfaceLightingPass`, `xiiDirectionalSurfaceLightingPass`, `xiiEnvironmentLightConstantsPass`, `xiiEnvironmentSpecularPass`, `xiiLightClusterViewPass`, `xiiWorldDirectionalLightPass`, `xiiWorldLightsUploadPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
 | Preparation | 2 | `xiiViewConstantsPass`, `xiiWorldInstancesUploadPass` |
 | RayTracing | 2 | `xiiRayTracingScenePass`, `xiiSceneRayProbePass` |
-| Reflections | 3 | `xiiHybridReflectionCompositePass`, `xiiScreenSpaceReflectionsPass`, `xiiScreenSpaceReflectionsTemporalPass` |
-| Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
+| Reflections | 2 | `xiiScreenSpaceReflectionsPass`, `xiiScreenSpaceReflectionsTemporalPass` |
+| Refraction | 1 | `xiiScreenRefractionTracePass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
-| Sensors | 4 | `xiiDepthSensorPass`, `xiiRgbSensorPass`, `xiiInfraredSensorPass`, `xiiLidarSensorPass` |
-| Shadows | 8 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowTablesPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowPagePublishPass` |
+| Sensors | 4 | `xiiDepthSensorPass`, `xiiInfraredSensorPass`, `xiiLidarSensorPass`, `xiiRgbSensorPass` |
+| Shadows | 8 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowPagePublishPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowTablesPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 8 | `xiiBufferExportPass`, `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
-| Visibility | 10 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMatrixVisibilityViewPass`, `xiiMeshletCullPass`, `xiiMeshletOcclusionPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiVisibilityViewPass` |
+| Visibility | 10 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMatrixVisibilityViewPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiMeshletOcclusionPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 
 Every operation above declares concrete typed pin members through
@@ -3219,3 +3219,131 @@ composites and application/editor entry points still require work. GPU submissio
 are fixture measurements; no general performance improvement or completed shader fusion
 is claimed. Float32 intermediates retain dynamic range at additional bandwidth/allocation
 cost. D3D12 remains excluded.
+
+## Screen irradiance, refraction and immutable atmospheric application
+
+Three focused operations replace five obsolete screen-effect passes. ScreenIrradianceTrace
+only gathers incident irradiance from supplied depth, normal, radiance and exact camera
+constants. ScreenRefractionTrace only samples background radiance and emits authored
+transmission in alpha. AtmosphereApply applies supplied LUTs and physical parameters to
+an immutable scene image. Every resource pin is a typed reflected member; every algorithm
+setting is an ordinary reflected member property. None has stage/technique selection or
+a hardware-GI presence check, and none requires material, geometry or light extraction
+merely because it exists.
+
+ScreenIrradianceTrace retains the existing cosine-weighted Halton sampling and depth-march
+hit convention, while making sample/step counts, length, thickness, sequence offset and
+queue preference explicit. It emits E = pi * average incident radiance; screen-space misses
+stay black. Material response is independently evaluated by DiffuseSurfaceLighting, whose
+Lambertian division by pi recovers the old diffuse estimator. Transmission, metallic
+fraction, albedo and authored occlusion now consistently belong to that response operation.
+The graph supplies an explicit zero ambient coefficient so incomplete screen-space hits
+cannot accidentally add an ambient baseline. A zero ray length emits zero irradiance for
+valid depth without conditionally constructing another technique. No monolithic per-frame
+global settings buffer is required for gathering.
+
+ScreenRefractionTrace reads immutable depth/normal/material/transmission/background images.
+It preserves projected-normal UV perturbation, depth scaling, maximum offset, chromatic
+spread and foreground rejection. The output is straight sampled radiance with transmission
+alpha, independent of the current foreground scene. ScreenRefraction wires that output
+through ConfidenceRadiance and RadianceAdd. Its foreground and background inputs may be
+different resources. Because the trace never writes its inputs, the old pre-refraction
+snapshot/copy operation is unnecessary and physically deleted. Existing foreground
+specular and emission remain in the foreground graph input.
+
+AtmosphereApply preserves the existing spherical segment integration, Rayleigh/Mie phases,
+LUT sampling, solar disk and finite-distance aerial perspective. It consumes the narrow
+48-byte EnvironmentLight contract, exact camera and atmosphere uniforms, depth and LUTs.
+It allocates a separate RGBA32Float result and preserves scene alpha on geometry, with
+alpha one for sky. LUT extents are independent from view extents. Its queue preference is
+reflected; the algorithm has no world-property lookup during execution. The existing
+AtmosphereConstantsPass remains the optional boundary for component-authored parameters.
+All three recorded operations retain GPU pipelines, samplers, copied options and explicit
+graph bindings, surviving pass retirement without mutable component references.
+
+Five new editable source/binary pairs expose ScreenIrradiance, ScreenDiffuseLighting,
+ScreenRefractionTrace, ScreenRefraction and AtmosphereApply. ScreenEffects is rebuilt with
+its existing persistent document identity. It references the independent diffuse,
+refraction and atmosphere resources, with ordinary texture selection for supplied lighting
+or refraction backgrounds. It no longer exposes HardwareGI, broad per-frame light/global
+buffers, implementation constant-buffer echoes or unrelated input echoes. Its outputs
+are the final radiance and meaningful intermediate irradiance/lighting/refraction signals.
+Specialized graphs may use the leaves directly without world-atmosphere extraction.
+No default application pipeline reference is changed.
+
+Deleted files include both source/header pairs for ScreenSpaceGlobalIlluminationPass,
+ScreenSpaceGlobalIlluminationCompositePass, ScreenSpaceRefractionPass,
+ScreenSpaceRefractionSnapshotPass and AtmosphereCompositePass, their static-link references,
+the four old SSGI/SSGIComposite/SSRefraction/AtmosphereComposite shaders and two obsolete
+SSGI/refraction constants headers. The existing sensor/screen consumer now references
+ScreenDiffuseLighting and ScreenRefraction rather than reconstructing these algorithms
+with legacy classes. No compatibility facade or placeholder conversion pass is added.
+
+All new intermediates use float32 to preserve high radiance and compose with the native
+surface-lighting library. This increases bandwidth relative to half-float intermediates.
+The source inventory drops to 100 concrete reflected operations while the authored library
+increases to 85 editable source/binary pairs. This is responsibility consolidation, not
+an artificial pass-count target. Full renderer migration remains active; probe preparation,
+geometry-dependent GI updates, advanced illumination and application/editor entry points
+remain unfinished. Atmospheric LUT generation still uses existing services and requires
+its own native-operation migration. D3D12 remains excluded.
+
+Screen-transport validation - 2026-10-18:
+
+- The replacement operations and migrated consumers build after source-list regeneration
+  (`native-screen-transport-deletion-configure.log`, `native-screen-transport-tests-build.log`).
+  The final five-target build includes GraphicsCoreTest, GraphicsFoundationTest,
+  EditorFrameworkTest, EditorEngineProcessFrameworkTest and GpuDrivenScene
+  (`native-screen-transport-final-build.log`).
+- All 76 GraphicsCore CPU subtests pass. New schemas verify independent gathering without
+  material/global/GI-policy pins, bounded trace settings, float32 outputs, read-only
+  radiance requirements and scene-service-free leaf demand. The existing ScreenEffects
+  test verifies deterministic nested expansion and world-atmosphere demand.
+- The new Vulkan fixture executes two graph contexts with two independently overridden
+  ScreenEffects occurrences each. GPU comparisons cover deterministic screen-ray hits
+  and misses, zero/invalid depth, metallic and transmissive diffuse response, nested
+  response scales, feature-byte transmission gating, high radiance beyond half precision,
+  negative radiance, projected UV displacement, chromatic sampling, foreground rejection
+  and an analytic homogeneous Rayleigh attenuation/scattering segment. Original radiance
+  remains unchanged and all instances retire before recording. Each ordinary context
+  compiles 36 operations into one submission and 60 barriers with async queues disabled
+  (`native-screen-transport-vulkan-corrected.log`).
+- The initial run found a fixture upload row stride of 36 bytes where GAL requires
+  16-byte alignment. Rows now have 48-byte stride and initialized padding. It also
+  exposed an RGB sensor pin declaring only RGBA16Float despite existing runtime support
+  for RGBA32Float and normalized color images. The pin now accepts the formats already
+  checked by SensorCapture; the RgbSensor asset is regenerated through its existing
+  editor fixture. No sensor algorithm or runtime validation is removed. The migrated
+  screen/sensor pipeline then passes (`native-screen-transport-resources-corrected.log`).
+  A later fixture extension with two synthetic producers exposed unscoped local resource
+  names; each producer now uses the existing pass resource namespace. These diagnostics
+  remain in the initial and first broad-run logs rather than being suppressed.
+
+- The final extended GPU fixture also verifies a separately supplied refraction background,
+  an externally supplied lighting signal and integer-layout rejection. The namespaced
+  fixture build passes (`native-screen-transport-namespaced-fixture-build.log`), its focused
+  run passes (`native-screen-transport-vulkan-final.log`), and all 38 native Vulkan subtests
+  then pass (`native-screen-transport-native-corrected.log`). The first broad-run Native
+  log remains failed because it captured the fixture allocation-name collision; it is
+  not presented as a successful run.
+- All 16 EditorDocuments subtests pass, including Qt node/pin property inspection and
+  deterministic packaged/exported/repeated compilation of all 85 library asset pairs.
+  All 58 established native-authoring, four composition-authoring, five indirect-authoring,
+  one scene-authoring, one reflection-authoring and one new transport-authoring subtest
+  pass. The transport fixture exports the five new resources and rebuilt ScreenEffects
+  (`native-screen-transport-final-*.log`). The source inventory table is refreshed from
+  the current reflected classes rather than retaining deleted class names.
+- All 14 PipelineResources, three PipelineExtraction, three shader failure/recovery,
+  one temporal-history, three temporal-memory and one native depth-boundary subtest pass
+  (`native-screen-transport-final-*.log`). The full CPU result is
+  `native-screen-transport-cpu-final.log`.
+- GpuDrivenScene completes 300 Vulkan frames with exit code zero
+  (`native-screen-transport-sample.log`, `native-screen-transport-sample-results.json`).
+  Its existing advanced custom graph remains at 124 registered / 116 compiled / eight
+  culled operations, one submission and 190 barriers. This verifies continued operation,
+  not completion of the sample's resource-entry-point migration. No controlled benchmark
+  or other-backend comparison was run. D3D12 is excluded.
+- Repository searches confirm the five removed types and shader entry points have no
+  active source or packaged-asset references, and no scene database or rendering Builtin
+  file remains. Existing unrelated state-machine Builtins files are preserved. The full
+  migration is still incomplete; these searches do not prove otherwise.
