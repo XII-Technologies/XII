@@ -1879,6 +1879,86 @@ namespace
     return context.ExportDocument(&message);
   }
 
+  xiiStatus AuthorClusterLightLists(xiiStringView directory)
+  {
+    const xiiStringView            name = "ClusterLightLists";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author independent cluster operations");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView outName, const xiiDocumentObject* target, xiiStringView inName) -> xiiStatus {
+      if (!source || !target)
+        return xiiStatus("Missing cluster operation.");
+      const auto* out = manager->GetOutputPinByName(source, outName);
+      const auto* in  = manager->GetInputPinByName(target, inName);
+      if (!out || !in)
+        return xiiStatus("Missing cluster operation pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    const auto* layout   = add("Camera And Cluster Layout", "xiiLightClusterViewPass", {0, 0});
+    const auto* bounds   = add("Cluster Bounds", "xiiClusterBoundsPass", {600, 0});
+    const auto* clear    = add("Initialize Cluster Lists", "xiiClusterListClearPass", {600, 400});
+    const auto* assign   = add("Assign Local Lights", "xiiClusterLightAssignmentPass", {1200, 0});
+    const auto* sampling = add("Cluster Sampling CDF", "xiiClusterLightSamplingPass", {1500, 400});
+    XII_SUCCEED_OR_RETURN(connect(layout, "Layout", bounds, "Layout"));
+    XII_SUCCEED_OR_RETURN(connect(layout, "Layout", clear, "Layout"));
+    XII_SUCCEED_OR_RETURN(connect(layout, "Layout", assign, "Layout"));
+    XII_SUCCEED_OR_RETURN(connect(bounds, "Clusters", assign, "Clusters"));
+    XII_SUCCEED_OR_RETURN(connect(clear, "LightGrid", assign, "InitializedGrid"));
+    XII_SUCCEED_OR_RETURN(connect(clear, "LightIndices", assign, "InitializedIndices"));
+    XII_SUCCEED_OR_RETURN(connect(clear, "Overflow", assign, "InitializedOverflow"));
+    XII_SUCCEED_OR_RETURN(connect(layout, "Layout", sampling, "Layout"));
+    XII_SUCCEED_OR_RETURN(connect(assign, "LightGrid", sampling, "LightGrid"));
+    XII_SUCCEED_OR_RETURN(connect(assign, "LightIndices", sampling, "LightIndices"));
+    const auto boundary = [&](xiiStringView label, bool input, const xiiDocumentObject* operation, xiiStringView pin, xiiRenderPipelinePin::Type kind, float row) -> xiiStatus {
+      const auto* node = add(label, "xiiRenderPipelineInterfacePass", {input ? 0.0f : 1800.0f, row});
+      if (!node)
+        return xiiStatus("Missing cluster boundary.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Name", label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Input", input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(kind)));
+      if (kind == xiiRenderPipelinePin::FrameData)
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "DataType", "xiiLightClusterFrameData"));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
+      if (input && label == "Lights")
+        XII_SUCCEED_OR_RETURN(connect(node, "Value", sampling, "Lights"));
+      return input ? connect(node, "Value", operation, pin) : connect(operation, pin, node, "Value");
+    };
+    XII_SUCCEED_OR_RETURN(boundary("Lights", true, assign, "Lights", xiiRenderPipelinePin::Buffer, 800));
+    XII_SUCCEED_OR_RETURN(boundary("Layout", false, layout, "Layout", xiiRenderPipelinePin::FrameData, 0));
+    XII_SUCCEED_OR_RETURN(boundary("Clusters", false, bounds, "Clusters", xiiRenderPipelinePin::Buffer, 200));
+    XII_SUCCEED_OR_RETURN(boundary("LightGrid", false, assign, "LightGrid", xiiRenderPipelinePin::Buffer, 400));
+    XII_SUCCEED_OR_RETURN(boundary("LightIndices", false, assign, "LightIndices", xiiRenderPipelinePin::Buffer, 600));
+    XII_SUCCEED_OR_RETURN(boundary("Overflow", false, assign, "Overflow", xiiRenderPipelinePin::Buffer, 800));
+    XII_SUCCEED_OR_RETURN(boundary("PackedIndices", false, sampling, "PackedIndices", xiiRenderPipelinePin::Buffer, 1000));
+    XII_SUCCEED_OR_RETURN(boundary("SamplingTotals", false, sampling, "SamplingTotals", xiiRenderPipelinePin::Buffer, 1200));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    return context.ExportDocument(&message);
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -2208,4 +2288,58 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldRayProbe)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("RayProbeAuthoring"));
   XII_TEST_STATUS(AuthorWorldRayProbe(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, LightClusterView)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ClusterAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ClusterAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "LightClusterView", "xiiLightClusterViewPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ClusterBounds)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ClusterAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ClusterAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "ClusterBounds", "xiiClusterBoundsPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ClusterListClear)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ClusterAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ClusterAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "ClusterListClear", "xiiClusterListClearPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ClusterLightAssignment)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ClusterAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ClusterAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "ClusterLightAssignment", "xiiClusterLightAssignmentPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ClusterLightLists)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ClusterAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ClusterAuthoring"));
+  XII_TEST_STATUS(AuthorClusterLightLists(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ClusterLightSampling)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "ClusterAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ClusterAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "ClusterLightSampling", "xiiClusterLightSamplingPass", {}));
 }
