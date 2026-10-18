@@ -198,16 +198,22 @@ void DirectoryWatcherTest()
 
     CreateFile("index.lock");
     DeleteFile("index");
-    Rename("index.lock", "index");
 
-    ExpectedEvent expectedEvents[] = {
+    // Observe the removed destination before recreating it. Backends such as
+    // ReFS may coalesce intermediate filesystem states between polls.
+    ExpectedEvent beforeRename[] = {
       {"index.lock", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File},
       {"index", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File},
+    };
+    CheckExpectedEvents(watcher, beforeRename);
+
+    Rename("index.lock", "index");
+
+    ExpectedEvent renameEvents[] = {
       {"index.lock", xiiDirectoryWatcherAction::RenamedOldName, xiiDirectoryWatcherType::File},
       {"index", xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::File},
-
     };
-    CheckExpectedEvents(watcher, expectedEvents);
+    CheckExpectedEvents(watcher, renameEvents);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Create File")
