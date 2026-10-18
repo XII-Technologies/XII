@@ -10,6 +10,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -145,8 +146,49 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
   camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
   view->SetCamera(&camera);
   view->SetViewport({0, 0, 16, 16});
-  view->SetRenderPath(xiiRenderPath::Deferred);
-  view->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("Deferred"));
+  xiiRenderPipelineResourceDescriptor definition;
+  const auto                          clear = [&](xiiStringView name, xiiGALResourceFormat::Enum format, xiiColor color) {
+    xiiClearTexturePass pass;
+    pass.m_uiWidth  = 16;
+    pass.m_uiHeight = 16;
+    pass.m_Format   = format;
+    pass.m_Color    = color;
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(pass.GetProperties(properties));
+    return definition.AddPass(name, "xiiClearTexturePass", properties);
+  };
+  xiiUInt32 operation = 0;
+  xiiString outputPin;
+  if (shaderPath == sBloomShader)
+  {
+    const auto source = clear("Authored HDR", xiiGALResourceFormat::RGBA16Float, {2, 1, 0.5f, 1});
+    operation         = definition.AddPass("Bloom operation", "xiiBloomPass");
+    XII_TEST_RESULT(definition.Connect(source, "Texture", operation, "UpscaledColor"));
+    outputPin = "BloomTexture";
+  }
+  else
+  {
+    operation                       = definition.AddPass("Directional surface operation", "xiiDirectionalSurfaceLightingPass");
+    const auto depth                = clear("Depth", xiiGALResourceFormat::R32Float, {0.5f, 0, 0, 0});
+    const auto normal               = clear("Normal", xiiGALResourceFormat::RG16Float, {0.5f, 0.5f, 0, 0});
+    const auto albedo               = clear("Albedo", xiiGALResourceFormat::RGBA16Float, {0.5f, 0.5f, 0.5f, 1});
+    const auto material             = clear("Material", xiiGALResourceFormat::RGBA16Float, {0.5f, 0, 0.5f, 0});
+    const auto emissive             = clear("Emissive", xiiGALResourceFormat::RGBA16Float, xiiColor::MakeZero());
+    const auto cameraConstants      = definition.AddPass("Camera constants", "xiiViewConstantsPass");
+    const auto environmentConstants = definition.AddPass("Environment constants", "xiiEnvironmentLightConstantsPass");
+    definition.m_Passes[environmentConstants].m_Properties.Insert("Illuminance", 100.0f);
+    XII_TEST_RESULT(definition.Connect(depth, "Texture", operation, "Depth"));
+    XII_TEST_RESULT(definition.Connect(normal, "Texture", operation, "Normal"));
+    XII_TEST_RESULT(definition.Connect(albedo, "Texture", operation, "Albedo"));
+    XII_TEST_RESULT(definition.Connect(material, "Texture", operation, "Material"));
+    XII_TEST_RESULT(definition.Connect(emissive, "Texture", operation, "Emissive"));
+    XII_TEST_RESULT(definition.Connect(cameraConstants, "PerFrameCamera", operation, "Camera"));
+    XII_TEST_RESULT(definition.Connect(environmentConstants, "EnvironmentLight", operation, "EnvironmentLight"));
+    outputPin = "Lighting";
+  }
+  const auto present = definition.AddPass("Present result", "xiiPresentPass");
+  XII_TEST_RESULT(definition.Connect(operation, outputPin, present, "GradedColor"));
+  view->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>(xiiStringBuilder("Explicit failure fixture/", shaderPath), std::move(definition)));
   xiiGALTextureCreationDescription targetDescription;
   targetDescription.m_Type      = xiiGALResourceDimension::Texture2D;
   targetDescription.m_Size      = {16, 16};
@@ -173,7 +215,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
   {
     xiiTestLogInterface   log;
     xiiTestLogSystemScope logScope(&log, true);
-    log.ExpectMessage(shaderPath == sBloomShader ? "Failed to create reflected compute operation pipeline" : "Failed to create built-in compute pipeline", xiiLogMsgType::ErrorMsg);
+    log.ExpectMessage("Failed to create reflected compute operation pipeline", xiiLogMsgType::ErrorMsg);
     log.ExpectMessage("Failed to build render pipeline", xiiLogMsgType::ErrorMsg);
     world.Update();
     XII_TEST_BOOL(view->GetRenderGraph()->GetQueueSubmissions().IsEmpty());
@@ -197,7 +239,7 @@ XII_CREATE_SIMPLE_TEST(RenderOperationFailure, ViewRejectsExecutionAndRecovers)
   TestViewShaderFailure(sBloomShader);
 }
 
-XII_CREATE_SIMPLE_TEST(RenderOperationFailure, DeferredLightingFailureAndRecovery)
+XII_CREATE_SIMPLE_TEST(RenderOperationFailure, DirectionalLightingFailureAndRecovery)
 {
-  TestViewShaderFailure("Shaders/Pipeline/DirectLighting.xiiShader");
+  TestViewShaderFailure("Shaders/Pipeline/Passes/Lighting/DirectionalSurfaceLighting.xiiShader");
 }
