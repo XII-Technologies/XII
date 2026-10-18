@@ -145,6 +145,7 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowTableUpload : xiiRefCounted
   xiiSharedPtr<xiiGALBuffer>               m_PhysicalBuffer, m_VirtualBuffer;
   xiiSharedPtr<xiiGALTexture>              m_Atlas;
   xiiVirtualShadowGpuLayout                m_Layout;
+  xiiUInt32                                m_uiVirtualResolution = 0, m_uiPageSize = 0;
   xiiDynamicArray<Range>                   m_PhysicalRanges;
   xiiDynamicArray<xiiGpuVirtualShadowPage> m_PhysicalRecords, m_VirtualRecords;
   xiiDynamicArray<xiiUInt64>               m_PhysicalRevisions;

@@ -1002,6 +1002,8 @@ xiiSharedPtr<const xiiVirtualShadowTableUpload> xiiVirtualShadowMapManager::Capt
   upload->m_VirtualBuffer                          = state.m_pVirtualPageTable;
   upload->m_Atlas                                  = state.m_pPhysicalAtlas;
   upload->m_uiFrame                                = frame;
+  upload->m_uiVirtualResolution                    = state.m_Settings.m_uiVirtualResolution;
+  upload->m_uiPageSize                             = state.m_Settings.m_uiPageSize;
   upload->m_uiConfigurationRevision                = state.m_uiConfigurationRevision;
   upload->m_uiResidencyRevision                    = state.m_uiResidencyRevision;
   const auto slice                                 = static_cast<xiiUInt32>(frame % state.m_Settings.m_uiFramesInFlight);
