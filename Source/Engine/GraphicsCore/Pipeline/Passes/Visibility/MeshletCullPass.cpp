@@ -45,12 +45,7 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
     const auto* description = context.m_Graph.GetBufferDescription(handle);
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride && description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) ||
-      !valid(visible, sizeof(xiiUInt32)) || !valid(count, sizeof(xiiUInt32)) || !valid(lod, sizeof(xiiVec4U32)) || !valid(arguments, sizeof(xiiUInt32)) ||
-      context.m_Graph.GetBufferDescription(arguments)->m_uiSize < 3 * sizeof(xiiUInt32) || !valid(initialCount, sizeof(xiiUInt32)) || !valid(initialOverflow, sizeof(xiiUInt32)) ||
-      initialCount.m_Id == initialOverflow.m_Id || initialCount.m_Id == count.m_Id || initialOverflow.m_Id == count.m_Id ||
-      initialCount.m_Id == visible.m_Id || initialOverflow.m_Id == visible.m_Id ||
-      initialCount.m_Id == arguments.m_Id || initialOverflow.m_Id == arguments.m_Id)
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(visible, sizeof(xiiUInt32)) || !valid(count, sizeof(xiiUInt32)) || !valid(lod, sizeof(xiiVec4U32)) || !valid(arguments, sizeof(xiiUInt32)) || context.m_Graph.GetBufferDescription(arguments)->m_uiSize < 3 * sizeof(xiiUInt32) || !valid(initialCount, sizeof(xiiUInt32)) || !valid(initialOverflow, sizeof(xiiUInt32)) || initialCount.m_Id == initialOverflow.m_Id || initialCount.m_Id == count.m_Id || initialOverflow.m_Id == count.m_Id || initialCount.m_Id == visible.m_Id || initialOverflow.m_Id == visible.m_Id || initialCount.m_Id == arguments.m_Id || initialOverflow.m_Id == arguments.m_Id)
     return context.ReportFailure("Meshlet culling requires canonical inputs and independently reset output counters.");
   if (!xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;

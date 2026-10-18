@@ -196,8 +196,7 @@ public:
       description.m_Size      = {16, 16};
       description.m_Format    = xiiGALResourceFormat::RGBA16Float;
       description.m_BindFlags = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-      XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::EnsureTemporalHistoryTextures(history, description, m_bHistoryValid,
-                                                                              [](const auto&) -> xiiSharedPtr<xiiGALTexture> { return nullptr; }));
+      XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::EnsureTemporalHistoryTextures(history, description, m_bHistoryValid, [](const auto&) -> xiiSharedPtr<xiiGALTexture> { return nullptr; }));
     }
     AddTAAInputs(*context.m_pView, context.m_Graph);
     xiiDynamicArray<xiiRenderPipelinePin> pins;

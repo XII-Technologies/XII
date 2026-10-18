@@ -47,8 +47,7 @@ xiiResult xiiEnvironmentLightConstantsPass::Build(xiiRenderPipelinePassContext& 
   }
   const auto& selectedDirection = snapshot.EnvironmentDirectionAndIlluminance;
   const auto& selectedColor     = snapshot.EnvironmentColorAndAngularRadius;
-  if (!selectedDirection.IsValid() || selectedDirection.GetAsVec3().GetLengthSquared() < 1e-12f || selectedDirection.w < 0 ||
-      !selectedColor.IsValid() || selectedColor.x < 0 || selectedColor.y < 0 || selectedColor.z < 0 || selectedColor.w < 0 || selectedColor.w > 1)
+  if (!selectedDirection.IsValid() || selectedDirection.GetAsVec3().GetLengthSquared() < 1e-12f || selectedDirection.w < 0 || !selectedColor.IsValid() || selectedColor.x < 0 || selectedColor.y < 0 || selectedColor.z < 0 || selectedColor.w < 0 || selectedColor.w > 1)
     return context.ReportFailure("Invalid environment directional illumination snapshot.");
   xiiRenderPassResourceScope scope(context);
   struct Data

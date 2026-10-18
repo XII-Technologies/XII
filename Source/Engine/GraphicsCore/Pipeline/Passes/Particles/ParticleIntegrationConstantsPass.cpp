@@ -30,11 +30,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleIntegrationConstantsPass, 1, xiiRTTI
 xiiResult xiiParticleIntegrationConstantsPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  if (!xiiMath::IsFinite(m_fDeltaTimeS) || m_fDeltaTimeS < 0 || m_fDeltaTimeS > 1.0f / 15.0f ||
-      !xiiMath::IsFinite(m_fGravityScale) || xiiMath::Abs(m_fGravityScale) > 10000 ||
-      !xiiMath::IsFinite(m_fDragCoefficient) || m_fDragCoefficient < 0 || m_fDragCoefficient > 10000 ||
-      !xiiMath::IsFinite(m_fTurbulenceScale) || m_fTurbulenceScale < 0 || m_fTurbulenceScale > 10000 ||
-      !m_WindVelocity.IsValid() || m_uiActiveCount > xiiParticleSystemConstants::s_uiMaxSupportedParticles)
+  if (!xiiMath::IsFinite(m_fDeltaTimeS) || m_fDeltaTimeS < 0 || m_fDeltaTimeS > 1.0f / 15.0f || !xiiMath::IsFinite(m_fGravityScale) || xiiMath::Abs(m_fGravityScale) > 10000 || !xiiMath::IsFinite(m_fDragCoefficient) || m_fDragCoefficient < 0 || m_fDragCoefficient > 10000 || !xiiMath::IsFinite(m_fTurbulenceScale) || m_fTurbulenceScale < 0 || m_fTurbulenceScale > 10000 || !m_WindVelocity.IsValid() || m_uiActiveCount > xiiParticleSystemConstants::s_uiMaxSupportedParticles)
     return XII_FAILURE;
   return XII_SUCCESS;
 }

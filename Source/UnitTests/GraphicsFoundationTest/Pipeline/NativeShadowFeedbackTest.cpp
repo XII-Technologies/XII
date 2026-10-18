@@ -181,8 +181,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
       if (phase == 2)
         continue; // Abandoned setup must not publish or block the next capture.
       xiiStringBuilder error;
-      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) ||
-          !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[view].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[view].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
         return;
       if (view == 0 && phase < 2)
       {

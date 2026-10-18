@@ -125,8 +125,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowCascades, SharedDefinitionPrivateCameraSnapsh
       cameras[v].LookAt(xiiVec3(100, 0, 10), xiiVec3(100, 1, 0), xiiVec3(0, 0, 1));
       graph.EndSetup();
       xiiStringBuilder error;
-      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) ||
-          !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
         return;
       environment.GetDevice()->WaitIdle();
       XII_TEST_INT(graph.GetStatistics().m_uiQueueSubmissionCount, 1);

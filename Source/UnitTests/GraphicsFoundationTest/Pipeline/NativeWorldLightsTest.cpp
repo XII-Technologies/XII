@@ -286,9 +286,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
         xiiUInt32 m_Values[32];
       } indices;
       xiiUInt32 overflow = 1;
-      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("LightGrid").Borrow(), 0, grid) ||
-          !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("LightIndices").Borrow(), 0, indices) ||
-          !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("Overflow").Borrow(), 0, overflow))
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("LightGrid").Borrow(), 0, grid) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("LightIndices").Borrow(), 0, indices) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("Overflow").Borrow(), 0, overflow))
         return;
       XII_TEST_INT(overflow, 0);
       bool       pointAssigned = false;

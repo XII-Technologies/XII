@@ -750,9 +750,7 @@ bool xiiVirtualShadowMapManager::MarkPageRendered(const xiiVirtualShadowRasterTi
   if (!IsInitialized() || page.m_uiPhysicalPage >= s_pState->m_Slots.GetCount())
     return false;
   const auto& slot = s_pState->m_Slots[page.m_uiPhysicalPage];
-  if (!slot.m_bAllocated || !slot.m_Mapping.m_bNeedsRendering ||
-      slot.m_Mapping.m_Page.GetPackedValue() != page.m_Page.GetPackedValue() ||
-      page.m_uiContentRevision == 0 || slot.m_uiContentRevision != page.m_uiContentRevision)
+  if (!slot.m_bAllocated || !slot.m_Mapping.m_bNeedsRendering || slot.m_Mapping.m_Page.GetPackedValue() != page.m_Page.GetPackedValue() || page.m_uiContentRevision == 0 || slot.m_uiContentRevision != page.m_uiContentRevision)
     return false;
   auto& mapping             = s_pState->m_Slots[page.m_uiPhysicalPage].m_Mapping;
   mapping.m_bNeedsRendering = false;
@@ -831,8 +829,7 @@ bool xiiVirtualShadowMapManager::BuildPageViewProjection(const xiiMat4& cascadeV
   return out_pageViewProjection.IsValid();
 }
 
-void xiiVirtualShadowMapManager::GatherRasterPages(xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiLightId,
-                                                   xiiDynamicArray<xiiVirtualShadowRasterPage>& out_pages, xiiUInt32 maxPages)
+void xiiVirtualShadowMapManager::GatherRasterPages(xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiLightId, xiiDynamicArray<xiiVirtualShadowRasterPage>& out_pages, xiiUInt32 maxPages)
 {
   out_pages.Clear();
   if (!IsInitialized() || cascadeViewProjections.IsEmpty())
@@ -846,8 +843,7 @@ void xiiVirtualShadowMapManager::GatherRasterPages(xiiArrayPtr<const xiiMat4> ca
       continue;
 
     const auto& slot = s_pState->m_Slots[dirtyPage.m_uiPhysicalPage];
-    if ((s_pState->m_PreparedUpload && slot.m_uiVirtualTableBucket == xiiInvalidIndex) || !slot.m_bAllocated || !slot.m_Mapping.m_bNeedsRendering || slot.m_Mapping.m_Page.m_uiLightId != (uiLightId & s_uiMaximumLightId) || slot.m_Mapping.m_Page.m_uiMipLevel >= cascadeViewProjections.GetCount() ||
-        slot.m_uiPlannedFrame == s_pState->m_uiFrameIndex || slot.m_uiPendingRevision == slot.m_uiContentRevision)
+    if ((s_pState->m_PreparedUpload && slot.m_uiVirtualTableBucket == xiiInvalidIndex) || !slot.m_bAllocated || !slot.m_Mapping.m_bNeedsRendering || slot.m_Mapping.m_Page.m_uiLightId != (uiLightId & s_uiMaximumLightId) || slot.m_Mapping.m_Page.m_uiMipLevel >= cascadeViewProjections.GetCount() || slot.m_uiPlannedFrame == s_pState->m_uiFrameIndex || slot.m_uiPendingRevision == slot.m_uiContentRevision)
       continue;
 
     rasterCandidates.PushBack(dirtyPage.m_uiPhysicalPage);

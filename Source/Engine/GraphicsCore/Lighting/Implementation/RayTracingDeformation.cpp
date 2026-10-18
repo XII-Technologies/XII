@@ -19,9 +19,7 @@ xiiRayTracingDeformedVertices::~xiiRayTracingDeformedVertices()
     xiiGALBindlessResourceTable::RetireBufferSRV(m_Srv, m_LastUse);
 }
 
-xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xiiStringView name,
-                                      const xiiSharedPtr<xiiRayTracingDeformedVertices>& capture, xiiSharedPtr<xiiGALComputePipelineState>& pipeline,
-                                      const xiiGpuInstanceData& instances, xiiUInt32 drawIndex, bool& dispatched)
+xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xiiStringView name, const xiiSharedPtr<xiiRayTracingDeformedVertices>& capture, xiiSharedPtr<xiiGALComputePipelineState>& pipeline, const xiiGpuInstanceData& instances, xiiUInt32 drawIndex, bool& dispatched)
 {
   auto& cache = *capture;
   dispatched  = false;

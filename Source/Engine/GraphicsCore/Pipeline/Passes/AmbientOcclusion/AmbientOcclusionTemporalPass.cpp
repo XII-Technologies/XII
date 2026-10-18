@@ -53,10 +53,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionTemporalPass, 1, xiiRTTIDefa
 xiiResult xiiAmbientOcclusionTemporalPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  if (!xiiMath::IsFinite(m_fHistoryWeight) || m_fHistoryWeight < 0 || m_fHistoryWeight > 1 ||
-      !xiiMath::IsFinite(m_fDepthThreshold) || m_fDepthThreshold < 0 || m_fDepthThreshold > 1 ||
-      !xiiMath::IsFinite(m_fNormalThreshold) || m_fNormalThreshold < -1 || m_fNormalThreshold > 1 ||
-      !xiiMath::IsFinite(m_fSpatialWeight) || m_fSpatialWeight < 0 || m_fSpatialWeight > 1)
+  if (!xiiMath::IsFinite(m_fHistoryWeight) || m_fHistoryWeight < 0 || m_fHistoryWeight > 1 || !xiiMath::IsFinite(m_fDepthThreshold) || m_fDepthThreshold < 0 || m_fDepthThreshold > 1 || !xiiMath::IsFinite(m_fNormalThreshold) || m_fNormalThreshold < -1 || m_fNormalThreshold > 1 || !xiiMath::IsFinite(m_fSpatialWeight) || m_fSpatialWeight < 0 || m_fSpatialWeight > 1)
     return XII_FAILURE;
   return XII_SUCCESS;
 }

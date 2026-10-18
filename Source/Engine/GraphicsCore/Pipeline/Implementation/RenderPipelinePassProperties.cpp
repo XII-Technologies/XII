@@ -73,9 +73,7 @@ namespace
       type->GetAllProperties(properties);
       for (const auto* property : properties)
       {
-        if (property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) ||
-            (pass && property->GetPropertyName() == "ParameterOverrides") ||
-            property->GetCategory() == xiiPropertyCategory::Constant || property->GetCategory() == xiiPropertyCategory::Function)
+        if (property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) || (pass && property->GetPropertyName() == "ParameterOverrides") || property->GetCategory() == xiiPropertyCategory::Constant || property->GetCategory() == xiiPropertyCategory::Function)
           continue;
         xiiVariant value;
         XII_SUCCEED_OR_RETURN(ReadProperty(object, property, value, depth + 1));

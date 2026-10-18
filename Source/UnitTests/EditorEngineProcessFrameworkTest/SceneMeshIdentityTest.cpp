@@ -521,8 +521,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         const auto materials        = xiiMaterialManager::AddUploadPasses(graph);
         view->SetRenderEnabled(false);
         xiiGpuVisibilityOutputs visibility;
-        if (!XII_TEST_RESULT(visibilityPipeline.Build(view, graph, graphContext.GetBlackboard(), viewProjection, camera.GetCenterPosition(), true, visibility,
-                                                      pickTransparent ? 0U : xiiUInt32(xiiGpuInstanceFlags::Transparent))))
+        if (!XII_TEST_RESULT(visibilityPipeline.Build(view, graph, graphContext.GetBlackboard(), viewProjection, camera.GetCenterPosition(), true, visibility, pickTransparent ? 0U : xiiUInt32(xiiGpuInstanceFlags::Transparent))))
           return;
         xiiRenderGraphTextureHandle query;
         auto                        invalidRaster = raster;

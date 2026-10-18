@@ -419,8 +419,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           auto      countBuffer    = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "VisibleMeshletCount")->m_hBuffer);
           auto      overflowBuffer = graph.GetExportedBuffer(instances[view].GetOutputBinding(i, "VisibleMeshletOverflow")->m_hBuffer);
           xiiUInt32 count, overflow;
-          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), countBuffer.Borrow(), 0, count) ||
-              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), overflowBuffer.Borrow(), 0, overflow))
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), countBuffer.Borrow(), 0, count) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), overflowBuffer.Borrow(), 0, overflow))
             return;
           const bool      coarse   = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
           const xiiUInt32 visible  = phase == 5 ? 0 : selected ? 1 :
@@ -488,9 +487,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           auto       meshlets = graph.GetExportedBuffer(instances[view].GetOutputBinding(cullIndex, "VisibleMeshletCount")->m_hBuffer);
           xiiUInt32  count, draws;
           xiiVec3U32 command;
-          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), arguments.Borrow(), 0, command) ||
-              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), counter.Borrow(), 0, draws) ||
-              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), meshlets.Borrow(), 0, count))
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), arguments.Borrow(), 0, command) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), counter.Borrow(), 0, draws) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), meshlets.Borrow(), 0, count))
             return;
           const xiiUInt32 rows = (count + 3) / 4;
           XII_TEST_INT(command.x, xiiMath::Min(count, 4U));
@@ -751,8 +748,7 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
           auto       countBuffer    = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "VisibleMeshletCount")->m_hBuffer);
           auto       overflowBuffer = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "VisibleMeshletOverflow")->m_hBuffer);
           xiiUInt32  count, overflow;
-          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), countBuffer.Borrow(), 0, count) ||
-              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), overflowBuffer.Borrow(), 0, overflow))
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), countBuffer.Borrow(), 0, count) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), overflowBuffer.Borrow(), 0, overflow))
             return;
           XII_TEST_INT(count, resident && !filtered ? 1 : 0);
           XII_TEST_INT(overflow, 0);
@@ -763,8 +759,7 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
           auto       counter  = view->GetRenderGraph()->GetExportedBuffer(execution.GetOutputBinding(i, "DrawCommandCount")->m_hBuffer);
           xiiUInt32  count;
           xiiVec4U32 command;
-          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), counter.Borrow(), 0, count) ||
-              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), commands.Borrow(), 0, command))
+          if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), counter.Borrow(), 0, count) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), commands.Borrow(), 0, command))
             return;
           const bool visible = provenance.m_InstancePath[0] != filteredId;
           XII_TEST_INT(count, resident && visible ? 1 : 0);
@@ -790,13 +785,7 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
             XII_DECLARE_POD_TYPE();
             xiiFloat16 x, y, z, w;
           } emissive;
-          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("ObjectId").Borrow(), 32, 32, objectId) ||
-              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Albedo").Borrow(), 32, 32, albedo) ||
-              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Normal").Borrow(), 32, 32, normal) ||
-              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Material").Borrow(), 32, 32, material) ||
-              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("NormalRoughness").Borrow(), 32, 32, normalRoughness) ||
-              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Velocity").Borrow(), 32, 32, velocity) ||
-              !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Emissive").Borrow(), 32, 32, emissive))
+          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("ObjectId").Borrow(), 32, 32, objectId) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Albedo").Borrow(), 32, 32, albedo) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Normal").Borrow(), 32, 32, normal) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Material").Borrow(), 32, 32, material) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("NormalRoughness").Borrow(), 32, 32, normalRoughness) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Velocity").Borrow(), 32, 32, velocity) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture("Emissive").Borrow(), 32, 32, emissive))
             return;
           XII_TEST_INT(objectId, covered ? identity : 0);
           XII_TEST_FLOAT(float(velocity.x), 0, 0.0001f);

@@ -58,9 +58,7 @@ xiiResult xiiDDGIProbeGatherPass::Build(xiiRenderPipelinePassContext& context)
   const auto* light      = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_Environment));
   const auto* irradiance = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_IrradianceAtlas));
   const auto* distance   = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_DistanceAtlas));
-  if (!states || states->m_uiElementByteStride != sizeof(xiiGpuDDGIProbeState) || states->m_uiSize < sizeof(xiiGpuDDGIProbeState) ||
-      !constants || constants->m_uiSize < sizeof(xiiDDGIProbeConstants) || !light || light->m_uiSize != sizeof(xiiEnvironmentLightConstants) ||
-      !irradiance || !distance || irradiance->m_Size != distance->m_Size)
+  if (!states || states->m_uiElementByteStride != sizeof(xiiGpuDDGIProbeState) || states->m_uiSize < sizeof(xiiGpuDDGIProbeState) || !constants || constants->m_uiSize < sizeof(xiiDDGIProbeConstants) || !light || light->m_uiSize != sizeof(xiiEnvironmentLightConstants) || !irradiance || !distance || irradiance->m_Size != distance->m_Size)
     return context.ReportFailure("DDGI gather requires compatible probe records, constants and equal atlas extents.");
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);

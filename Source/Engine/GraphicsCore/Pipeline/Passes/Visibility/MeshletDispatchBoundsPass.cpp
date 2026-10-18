@@ -35,9 +35,7 @@ xiiResult xiiMeshletDispatchBoundsPass::Build(xiiRenderPipelinePassContext& cont
     const auto* description = context.m_Graph.GetBufferDescription(handle);
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride && description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) ||
-      !valid(visible, sizeof(xiiUInt32)) || !valid(count, sizeof(xiiUInt32)) || !valid(lod, sizeof(xiiVec4U32)) || !valid(initial, sizeof(xiiUInt32)) ||
-      initial.m_Id == count.m_Id || initial.m_Id == visible.m_Id)
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(visible, sizeof(xiiUInt32)) || !valid(count, sizeof(xiiUInt32)) || !valid(lod, sizeof(xiiVec4U32)) || !valid(initial, sizeof(xiiUInt32)) || initial.m_Id == count.m_Id || initial.m_Id == visible.m_Id)
     return context.ReportFailure("Meshlet dispatch bounds require canonical, independently initialized buffers.");
   if (!xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;

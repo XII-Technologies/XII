@@ -43,9 +43,7 @@ xiiResult xiiMeshletOcclusionPass::Build(xiiRenderPipelinePassContext& context)
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride && description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
   const auto* image = context.m_Graph.GetTextureDescription(depth);
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(candidates, sizeof(xiiVec2U32)) || !valid(meshlets, sizeof(xiiMeshlet)) ||
-      !valid(count, sizeof(xiiUInt32)) || !valid(initial, sizeof(xiiUInt32)) || initial.m_Id == count.m_Id || initial.m_Id == candidates.m_Id ||
-      !image || image->m_Format != xiiGALResourceFormat::R32Float || image->m_Type != xiiGALResourceDimension::Texture2D || image->m_uiSampleCount != 1 || image->m_uiArraySizeOrDepth != 1 || !image->m_Size.width || !image->m_Size.height)
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(candidates, sizeof(xiiVec2U32)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(count, sizeof(xiiUInt32)) || !valid(initial, sizeof(xiiUInt32)) || initial.m_Id == count.m_Id || initial.m_Id == candidates.m_Id || !image || image->m_Format != xiiGALResourceFormat::R32Float || image->m_Type != xiiGALResourceDimension::Texture2D || image->m_uiSampleCount != 1 || image->m_uiArraySizeOrDepth != 1 || !image->m_Size.width || !image->m_Size.height)
     return context.ReportFailure("Meshlet occlusion requires canonical scene/view data, bounded meshlet pairs, an independent zero counter and an R32 depth pyramid.");
   const auto capacity = context.m_Graph.GetBufferDescription(candidates)->m_uiSize / sizeof(xiiVec2U32);
   const auto groups   = (capacity + 63ULL) / 64;

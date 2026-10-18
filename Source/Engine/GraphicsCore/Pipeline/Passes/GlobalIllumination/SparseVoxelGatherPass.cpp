@@ -55,10 +55,7 @@ xiiResult xiiSparseVoxelGatherPass::Build(xiiRenderPipelinePassContext& context)
   const auto* levels    = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_LevelData));
   const auto* pool      = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_RadiancePool));
   const auto* constants = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_VoxelConstants));
-  if (!pages || pages->m_uiElementByteStride != sizeof(xiiUInt32) || pages->m_uiSize < sizeof(xiiUInt32) ||
-      !levels || levels->m_uiElementByteStride != sizeof(xiiGpuSparseVoxelLevel) || levels->m_uiSize < sizeof(xiiGpuSparseVoxelLevel) ||
-      !pool || pool->m_uiElementByteStride != sizeof(xiiVec4) || pool->m_uiSize < sizeof(xiiVec4) ||
-      !constants || constants->m_uiSize < sizeof(xiiSparseVoxelRadianceConstants))
+  if (!pages || pages->m_uiElementByteStride != sizeof(xiiUInt32) || pages->m_uiSize < sizeof(xiiUInt32) || !levels || levels->m_uiElementByteStride != sizeof(xiiGpuSparseVoxelLevel) || levels->m_uiSize < sizeof(xiiGpuSparseVoxelLevel) || !pool || pool->m_uiElementByteStride != sizeof(xiiVec4) || pool->m_uiSize < sizeof(xiiVec4) || !constants || constants->m_uiSize < sizeof(xiiSparseVoxelRadianceConstants))
     return context.ReportFailure("Sparse gather requires compatible page, level, radiance and constant buffer layouts.");
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);

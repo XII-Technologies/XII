@@ -539,8 +539,7 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
   };
   const auto previousBuffer     = frame.m_Instances;
   const auto previousPoseBuffer = frame.m_Poses;
-  if (!allocate(frame.m_Instances, frame.m_InstanceCapacity, m_Instances.GetCount(), sizeof(xiiGpuSceneInstance)) ||
-      !allocate(frame.m_Poses, frame.m_PoseCapacity, m_SkinningMatrices.GetCount(), sizeof(xiiMat4)))
+  if (!allocate(frame.m_Instances, frame.m_InstanceCapacity, m_Instances.GetCount(), sizeof(xiiGpuSceneInstance)) || !allocate(frame.m_Poses, frame.m_PoseCapacity, m_SkinningMatrices.GetCount(), sizeof(xiiMat4)))
     return {};
   if (frame.m_Instances != previousBuffer)
     frame.m_Versions.Clear();
@@ -603,8 +602,7 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
       auto& command = context.GetCommandList();
       for (const auto& range : data.m_Ranges)
       {
-        command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Instances), xiiUInt64(range.m_First) * sizeof(xiiGpuSceneInstance),
-          xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + range.m_Source), range.m_Count * sizeof(xiiGpuSceneInstance)));
+        command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Instances), xiiUInt64(range.m_First) * sizeof(xiiGpuSceneInstance), xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + range.m_Source), range.m_Count * sizeof(xiiGpuSceneInstance)));
         if (target.m_Instances == data.m_InstanceBuffer)
           for (xiiUInt32 i = 0; i < range.m_Count; ++i) target.m_Versions[range.m_First+i] = data.m_Versions[range.m_Source+i];
       }

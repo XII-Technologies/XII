@@ -539,9 +539,7 @@ private:
     return XII_SUCCESS;
   }
 
-  xiiResult BuildVisibility(xiiRenderPipelineInstance& instance, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
-                            const xiiMat4& projection, xiiUInt32 width, xiiUInt32 height, xiiUInt32 flags, xiiUInt32 priority,
-                            xiiGpuVisibilityOutputs& outputs)
+  xiiResult BuildVisibility(xiiRenderPipelineInstance& instance, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiMat4& projection, xiiUInt32 width, xiiUInt32 height, xiiUInt32 flags, xiiUInt32 priority, xiiGpuVisibilityOutputs& outputs)
   {
     xiiVariantDictionary parameters;
     parameters.Insert("CullingViewProjection", projection);
@@ -596,8 +594,7 @@ private:
         }
       }
       m_uiShadowOutput = pipeline->FindInterface("ShadowDepth", false);
-      if (m_uiShadowOutput == xiiInvalidIndex || pipeline->GetInterface()[m_uiShadowOutput].m_Pin.m_Type != xiiRenderPipelinePin::Texture ||
-          pipeline->GetInterface()[m_uiShadowOutput].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
+      if (m_uiShadowOutput == xiiInvalidIndex || pipeline->GetInterface()[m_uiShadowOutput].m_Pin.m_Type != xiiRenderPipelinePin::Texture || pipeline->GetInterface()[m_uiShadowOutput].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
       {
         xiiLog::Error("Selected shadow resource '{}' requires a D32 ShadowDepth output.", m_hShadowPipeline.GetResourceID());
         return XII_FAILURE;
@@ -667,8 +664,7 @@ private:
       for (const bool input : {true, false})
       {
         const auto index = compiled->FindInterface(input ? "DepthTarget" : "ShadowDepth", input);
-        if (index == xiiInvalidIndex || compiled->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Texture ||
-            compiled->GetInterface()[index].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
+        if (index == xiiInvalidIndex || compiled->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Texture || compiled->GetInterface()[index].m_Pin.m_Format != xiiGALResourceFormat::D32Float)
         {
           xiiLog::Error("Virtual-page resource '{}' requires a D32 target input and depth output.", m_hShadowPagePipeline.GetResourceID());
           return XII_FAILURE;
@@ -685,10 +681,7 @@ private:
     xiiUInt64                 m_uiContentRevision = 0;
   };
 
-  xiiResult BuildVirtualShadowPages(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
-                                    xiiVirtualShadowTableBindings& upload, const xiiSharedPtr<const xiiShadowCascadeSnapshot>& cascades, const xiiSharedPtr<const xiiVirtualShadowResidencySnapshot>& residency,
-                                    const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                    const xiiMaterialGpuStorage::UploadHandles& materials)
+  xiiResult BuildVirtualShadowPages(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiVirtualShadowTableBindings& upload, const xiiSharedPtr<const xiiShadowCascadeSnapshot>& cascades, const xiiSharedPtr<const xiiVirtualShadowResidencySnapshot>& residency, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials)
   {
     XII_SUCCEED_OR_RETURN(SynchronizeShadowPagePipeline());
     const auto count = xiiVirtualShadowMapManager::GetConfiguration().m_uiPhysicalPageCount;
@@ -722,10 +715,7 @@ private:
         runtime->m_uiContentRevision = page.m_uiContentRevision;
       }
       const auto& region = page.m_Viewport;
-      if (BuildShadowResource(runtime->m_Pipeline, graph, blackboard, page.m_ViewProjection, {region.width, region.height},
-                              xiiVec4U32(region.x, region.y, region.width, region.height), visibility, geometry, materials,
-                              upload.m_hPhysicalAtlas, upload.m_hPhysicalAtlas)
-            .Failed())
+      if (BuildShadowResource(runtime->m_Pipeline, graph, blackboard, page.m_ViewProjection, {region.width, region.height}, xiiVec4U32(region.x, region.y, region.width, region.height), visibility, geometry, materials, upload.m_hPhysicalAtlas, upload.m_hPhysicalAtlas).Failed())
       {
         xiiLog::Error("Virtual shadow page {} in physical slot {} failed native resource execution.", page.m_Page.GetPackedValue(), page.m_uiPhysicalPage);
         return XII_FAILURE;
@@ -763,8 +753,7 @@ private:
     };
     const auto* work    = m_ShadowWork.GetPipeline();
     const auto* publish = m_ShadowPublish.GetPipeline();
-    if (!data(work, "Cascades", true, xiiGetStaticRTTI<xiiShadowCascadeSnapshot>()) || !data(work, "Residency", true, xiiGetStaticRTTI<xiiVirtualShadowResidencySnapshot>()) ||
-        !data(work, "RasterPages", false, xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()) || !data(publish, "RasterPages", true, xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()))
+    if (!data(work, "Cascades", true, xiiGetStaticRTTI<xiiShadowCascadeSnapshot>()) || !data(work, "Residency", true, xiiGetStaticRTTI<xiiVirtualShadowResidencySnapshot>()) || !data(work, "RasterPages", false, xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()) || !data(publish, "RasterPages", true, xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()))
     {
       xiiLog::Error("Selected shadow work/publication resources require typed Cascades, Residency and RasterPages interfaces.");
       return XII_FAILURE;
@@ -833,8 +822,7 @@ private:
     const auto  table    = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("VirtualPageTable", false))->m_hBuffer;
     const auto* metadata = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("Residency", false));
     residency            = metadata ? metadata->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>() : xiiSharedPtr<const xiiVirtualShadowResidencySnapshot>();
-    if (!residency || residency->GetSetupSerial() != graph.GetSetupSerial() || residency->m_Bindings.m_hPhysicalAtlas.m_Id != atlas.m_Id ||
-        residency->m_Bindings.m_hPhysicalPageTable.m_Id != physical.m_Id || residency->m_Bindings.m_hVirtualPageTable.m_Id != table.m_Id)
+    if (!residency || residency->GetSetupSerial() != graph.GetSetupSerial() || residency->m_Bindings.m_hPhysicalAtlas.m_Id != atlas.m_Id || residency->m_Bindings.m_hPhysicalPageTable.m_Id != physical.m_Id || residency->m_Bindings.m_hVirtualPageTable.m_Id != table.m_Id)
     {
       xiiLog::Error("Shadow-table resource '{}' must expose matching typed Residency and explicit GPU outputs.", m_hShadowTablesPipeline.GetResourceID());
       return XII_FAILURE;
@@ -864,9 +852,7 @@ private:
         return XII_FAILURE;
       }
       m_uiCascadeOutput = pipeline->FindInterface("CascadeConstants", false);
-      if (m_uiCascadeOutput == xiiInvalidIndex ||
-          pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Type != xiiRenderPipelinePin::Buffer ||
-          !pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+      if (m_uiCascadeOutput == xiiInvalidIndex || pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Type != xiiRenderPipelinePin::Buffer || !pipeline->GetInterface()[m_uiCascadeOutput].m_Pin.m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
       {
         xiiLog::Error("Cascade resource '{}' requires a native directional snapshot and uniform CascadeConstants output.", m_hCascadePipeline.GetResourceID());
         return XII_FAILURE;
@@ -875,8 +861,7 @@ private:
     return XII_SUCCESS;
   }
 
-  xiiResult BuildCascades(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard,
-                          xiiSharedPtr<const xiiShadowCascadeSnapshot>& snapshot, xiiRenderGraphBufferHandle& constants, xiiUInt32& resolution)
+  xiiResult BuildCascades(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiSharedPtr<const xiiShadowCascadeSnapshot>& snapshot, xiiRenderGraphBufferHandle& constants, xiiUInt32& resolution)
   {
     XII_SUCCEED_OR_RETURN(SynchronizeCascadePipeline());
     auto* view = m_World.GetRenderView();
@@ -917,10 +902,7 @@ private:
       const auto* pipeline       = m_ShadowFeedback.GetPipeline();
       m_uiShadowFeedbackDepth    = pipeline->FindInterface("SceneDepth", true);
       m_uiShadowFeedbackCascades = pipeline->FindInterface("CascadeConstants", true);
-      if (m_uiShadowFeedbackDepth == xiiInvalidIndex || m_uiShadowFeedbackCascades == xiiInvalidIndex ||
-          pipeline->GetInterface()[m_uiShadowFeedbackDepth].m_Pin.m_Type != xiiRenderPipelinePin::Texture ||
-          pipeline->GetInterface()[m_uiShadowFeedbackDepth].m_Pin.m_Format != xiiGALResourceFormat::D32Float ||
-          pipeline->GetInterface()[m_uiShadowFeedbackCascades].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+      if (m_uiShadowFeedbackDepth == xiiInvalidIndex || m_uiShadowFeedbackCascades == xiiInvalidIndex || pipeline->GetInterface()[m_uiShadowFeedbackDepth].m_Pin.m_Type != xiiRenderPipelinePin::Texture || pipeline->GetInterface()[m_uiShadowFeedbackDepth].m_Pin.m_Format != xiiGALResourceFormat::D32Float || pipeline->GetInterface()[m_uiShadowFeedbackCascades].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
       {
         xiiLog::Error("Shadow-feedback resource '{}' requires D32 SceneDepth and buffer CascadeConstants inputs.", m_hShadowFeedbackPipeline.GetResourceID());
         m_ShadowFeedback.Clear();
@@ -966,8 +948,7 @@ private:
         return XII_FAILURE;
       m_uiDepthInterface         = pipeline->FindInterface("SceneDepth", true);
       m_uiPreviousDepthInterface = pipeline->FindInterface("PreviousDepthPyramid", false);
-      if (m_uiDepthInterface == xiiInvalidIndex || m_uiPreviousDepthInterface == xiiInvalidIndex ||
-          !pipeline->GetInterface()[m_uiPreviousDepthInterface].m_Pin.m_bTemporalHistoryOutput)
+      if (m_uiDepthInterface == xiiInvalidIndex || m_uiPreviousDepthInterface == xiiInvalidIndex || !pipeline->GetInterface()[m_uiPreviousDepthInterface].m_Pin.m_bTemporalHistoryOutput)
       {
         xiiLog::Error("Selected depth/history resource '{}' must expose SceneDepth and an explicit PreviousDepthPyramid output.", m_hDepthPipeline.GetResourceID());
         m_DepthPipeline.Clear();
@@ -1020,9 +1001,7 @@ private:
     depth                        = m_Targets.GetInterfaceBinding(m_Targets.GetPipeline()->FindInterface("Depth", false))->m_hTexture;
     const auto* colorDescription = graph.GetTextureDescription(color);
     const auto* depthDescription = graph.GetTextureDescription(depth);
-    if (!colorDescription || !depthDescription || colorDescription->m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB || depthDescription->m_Format != xiiGALResourceFormat::D32Float ||
-        colorDescription->m_Size != m_TargetSize || depthDescription->m_Size != m_TargetSize || colorDescription->m_uiSampleCount != 1 || depthDescription->m_uiSampleCount != 1 ||
-        !colorDescription->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+    if (!colorDescription || !depthDescription || colorDescription->m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB || depthDescription->m_Format != xiiGALResourceFormat::D32Float || colorDescription->m_Size != m_TargetSize || depthDescription->m_Size != m_TargetSize || colorDescription->m_uiSampleCount != 1 || depthDescription->m_uiSampleCount != 1 || !colorDescription->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
     {
       xiiLog::Error("Target resource '{}' does not provide this sample's matching RGBA8 sRGB / D32 attachments.", m_hTargetsPipeline.GetResourceID());
       return XII_FAILURE;
@@ -1097,8 +1076,7 @@ private:
       return;
     }
     xiiGpuVisibilityOutputs visibility, sensorVisibility;
-    if (BuildVisibility(m_MainVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, xiiGpuInstanceFlags::Enabled, 3, visibility).Failed() ||
-        BuildVisibility(m_SensorVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::SensorVisible).GetValue(), 3, sensorVisibility).Failed())
+    if (BuildVisibility(m_MainVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, xiiGpuInstanceFlags::Enabled, 3, visibility).Failed() || BuildVisibility(m_SensorVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::SensorVisible).GetValue(), 3, sensorVisibility).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
@@ -1118,9 +1096,7 @@ private:
     const xiiMat4 shadowViewProjection = shadowSnapshot->m_Cascades[0].m_mViewProjection;
 
     xiiGpuVisibilityOutputs shadowVisibility;
-    if (BuildVisibility(m_ShadowVisibility, graph, blackboard, shadowViewProjection, uiShadowResolution, uiShadowResolution,
-                        (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue(), 1, shadowVisibility)
-          .Failed())
+    if (BuildVisibility(m_ShadowVisibility, graph, blackboard, shadowViewProjection, uiShadowResolution, uiShadowResolution, (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue(), 1, shadowVisibility).Failed())
     {
       SetReturnCode(1);
       RequestQuit();

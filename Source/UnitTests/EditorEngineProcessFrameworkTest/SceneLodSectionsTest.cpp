@@ -243,9 +243,7 @@ static void TestLodSections(bool enableMeshShaders)
       hiZ               = source.first->m_Texture;
     }
     xiiGpuVisibilityOutputs visibility;
-    if (!XII_TEST_RESULT(visibilityPipeline.Build(view, graph, graphContext.GetBlackboard(), projection, camera.GetCenterPosition(), enableMeshShaders, visibility,
-                                                  excludeTransparent ? xiiUInt32(xiiGpuInstanceFlags::Transparent) : 0U,
-                                                  xiiUInt32(xiiGpuInstanceFlags::Enabled) | (onlyTransparent ? xiiUInt32(xiiGpuInstanceFlags::Transparent) : 0U), hiZ)))
+    if (!XII_TEST_RESULT(visibilityPipeline.Build(view, graph, graphContext.GetBlackboard(), projection, camera.GetCenterPosition(), enableMeshShaders, visibility, excludeTransparent ? xiiUInt32(xiiGpuInstanceFlags::Transparent) : 0U, xiiUInt32(xiiGpuInstanceFlags::Enabled) | (onlyTransparent ? xiiUInt32(xiiGpuInstanceFlags::Transparent) : 0U), hiZ)))
       return;
     // A single-section candidate contains one box meshlet. Exercise an exact 16-byte indirect
     // command allocation as well as the normal retained visibility capacity.

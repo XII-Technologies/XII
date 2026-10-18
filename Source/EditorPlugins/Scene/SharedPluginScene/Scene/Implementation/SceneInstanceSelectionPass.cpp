@@ -84,8 +84,7 @@ xiiResult xiiSceneInstanceSelectionPass::Build(xiiRenderPipelinePassContext& con
       description.m_uiElementByteStride = sizeof(xiiUInt32);
       description.m_Mode = xiiGALBufferMode::Structured;
       description.m_BindFlags = xiiGALBindFlags::ShaderResource;
-      data.m_Buffer = builder.WriteBuffer("Filtered World Candidates", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Buffer), 0,
-                                                                                                                                                                                                                                                                   xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Indices.GetData()), data.m_Indices.GetCount() * sizeof(xiiUInt32))); });
+      data.m_Buffer = builder.WriteBuffer("Filtered World Candidates", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Buffer), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Indices.GetData()), data.m_Indices.GetCount() * sizeof(xiiUInt32))); });
   return context.SetOutput(m_Candidates, emitted.first->m_Buffer);
 }
 XII_STATICLINK_FILE(SharedPluginScene, SharedPluginScene_Scene_Implementation_SceneInstanceSelectionPass);

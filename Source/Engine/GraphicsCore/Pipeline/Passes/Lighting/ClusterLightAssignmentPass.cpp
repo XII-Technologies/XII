@@ -41,15 +41,13 @@ xiiResult xiiClusterLightAssignmentPass::Build(xiiRenderPipelinePassContext& con
   if (candidates.IsValid())
   {
     const auto* description = context.m_Graph.GetBufferDescription(candidates);
-    if (!description || !description->m_uiSize || description->m_uiSize % sizeof(xiiUInt32) || description->m_uiSize / sizeof(xiiUInt32) > snapshot.Work.x ||
-        !Buffer(context, candidates, sizeof(xiiUInt32), description->m_uiSize / sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource))
+    if (!description || !description->m_uiSize || description->m_uiSize % sizeof(xiiUInt32) || description->m_uiSize / sizeof(xiiUInt32) > snapshot.Work.x || !Buffer(context, candidates, sizeof(xiiUInt32), description->m_uiSize / sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource))
       return context.ReportFailure("Cluster candidates require an exact structured uint selection within the canonical light capacity; use an invalid-index sentinel for an empty selection.");
     snapshot.Work.x = xiiUInt32(description->m_uiSize / sizeof(xiiUInt32));
   }
   const auto lightCount = xiiUInt32(lightDescription->m_uiSize / sizeof(xiiGpuLightData));
   const auto flags      = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-  if (!Buffer(context, lights, sizeof(xiiGpuLightData), lightCount, xiiGALBindFlags::ShaderResource) || !Buffer(context, clusters, sizeof(xiiGpuClusterBounds), snapshot.ClusterCounts.w, xiiGALBindFlags::ShaderResource) ||
-      !Buffer(context, grid, sizeof(xiiVec2U32), snapshot.ClusterCounts.w, flags) || !Buffer(context, indices, sizeof(xiiUInt32), snapshot.Work.y, flags) || !Buffer(context, overflow, sizeof(xiiUInt32), 1, flags) || grid.m_Id == indices.m_Id || grid.m_Id == overflow.m_Id || indices.m_Id == overflow.m_Id)
+  if (!Buffer(context, lights, sizeof(xiiGpuLightData), lightCount, xiiGALBindFlags::ShaderResource) || !Buffer(context, clusters, sizeof(xiiGpuClusterBounds), snapshot.ClusterCounts.w, xiiGALBindFlags::ShaderResource) || !Buffer(context, grid, sizeof(xiiVec2U32), snapshot.ClusterCounts.w, flags) || !Buffer(context, indices, sizeof(xiiUInt32), snapshot.Work.y, flags) || !Buffer(context, overflow, sizeof(xiiUInt32), 1, flags) || grid.m_Id == indices.m_Id || grid.m_Id == overflow.m_Id || indices.m_Id == overflow.m_Id)
     return context.ReportFailure("Cluster list resources must match the layout and have distinct writable allocations.");
   xiiGALDispatchComputeDescription dispatch;
   if (Dispatch(snapshot, snapshot.Work.x, dispatch).Failed())

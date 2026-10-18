@@ -30,8 +30,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
 xiiResult xiiVisibilityViewPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  if (!xiiMath::IsFinite(m_fLodHysteresis) || m_fLodHysteresis < 0 || m_fLodHysteresis > 0.49f ||
-      !xiiMath::IsFinite(m_fLodScreenScale) || m_fLodScreenScale < 0.001f || m_fLodScreenScale > 1000)
+  if (!xiiMath::IsFinite(m_fLodHysteresis) || m_fLodHysteresis < 0 || m_fLodHysteresis > 0.49f || !xiiMath::IsFinite(m_fLodScreenScale) || m_fLodScreenScale < 0.001f || m_fLodScreenScale > 1000)
     return XII_FAILURE;
   return XII_SUCCESS;
 }
@@ -66,9 +65,7 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   if (supplied.IsValid())
   {
     const auto* description = context.m_Graph.GetBufferDescription(supplied);
-    if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiUInt32) ||
-        description->m_uiSize < sizeof(xiiUInt32) || description->m_uiSize % sizeof(xiiUInt32) != 0 ||
-        description->m_uiSize / sizeof(xiiUInt32) > xiiMath::Max(view.GetGpuInstanceData()->GetInstanceCount(), 1U))
+    if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiUInt32) || description->m_uiSize < sizeof(xiiUInt32) || description->m_uiSize % sizeof(xiiUInt32) != 0 || description->m_uiSize / sizeof(xiiUInt32) > xiiMath::Max(view.GetGpuInstanceData()->GetInstanceCount(), 1U))
       return context.ReportFailure("Supplied candidates require an exact structured uint stream within the world instance capacity; use an invalid-index sentinel for an empty selection.");
     snapshot.m_uiUseCandidates  = 1;
     snapshot.m_uiCandidateCount = static_cast<xiiUInt32>(description->m_uiSize / sizeof(xiiUInt32));

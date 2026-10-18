@@ -27,14 +27,11 @@ xiiResult xiiWorldDirectionalLightPass::Build(xiiRenderPipelinePassContext& cont
     if (!light)
       continue;
     const xiiComponent* component = nullptr;
-    if (light->m_hOwnerComponent.GetInternalID().m_WorldIndex != world.GetIndex() || !world.TryGetComponent(light->m_hOwnerComponent, component) ||
-        !component->IsActiveAndInitialized() || !component->GetOwner()->IsActive() || component->GetOwner()->GetHandle() != light->m_hOwnerObject)
+    if (light->m_hOwnerComponent.GetInternalID().m_WorldIndex != world.GetIndex() || !world.TryGetComponent(light->m_hOwnerComponent, component) || !component->IsActiveAndInitialized() || !component->GetOwner()->IsActive() || component->GetOwner()->GetHandle() != light->m_hOwnerObject)
       continue;
-    if (!light->m_vDirection.IsValid() || light->m_vDirection.GetLengthSquared() < 1e-12f || !xiiMath::IsFinite(light->m_fPhotometricIntensity) || light->m_fPhotometricIntensity < 0 ||
-        !xiiMath::IsFinite(light->m_fRadius) || light->m_fRadius < 0 || light->m_fRadius > 1)
+    if (!light->m_vDirection.IsValid() || light->m_vDirection.GetLengthSquared() < 1e-12f || !xiiMath::IsFinite(light->m_fPhotometricIntensity) || light->m_fPhotometricIntensity < 0 || !xiiMath::IsFinite(light->m_fRadius) || light->m_fRadius < 0 || light->m_fRadius > 1)
       return context.ReportFailure("Invalid extracted directional emitter.");
-    if (!selected || light->m_fPhotometricIntensity > selected->m_fPhotometricIntensity ||
-        (light->m_fPhotometricIntensity == selected->m_fPhotometricIntensity && light->m_hOwnerComponent.GetInternalID().m_Data < selected->m_hOwnerComponent.GetInternalID().m_Data))
+    if (!selected || light->m_fPhotometricIntensity > selected->m_fPhotometricIntensity || (light->m_fPhotometricIntensity == selected->m_fPhotometricIntensity && light->m_hOwnerComponent.GetInternalID().m_Data < selected->m_hOwnerComponent.GetInternalID().m_Data))
       selected = light;
   }
   xiiVec4 direction(0, 0, -1, 0), color(1, 1, 1, 0);

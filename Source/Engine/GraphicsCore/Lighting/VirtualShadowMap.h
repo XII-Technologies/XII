@@ -235,8 +235,7 @@ public:
 
   /// Select a deterministic bounded batch without constructing any raster operations.
   /// Selected pages are touched for GPU retirement and claimed once per device frame.
-  static void               GatherRasterPages(xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiLightId,
-                                              xiiDynamicArray<xiiVirtualShadowRasterPage>& out_pages, xiiUInt32 maxPages = xiiInvalidIndex);
+  static void               GatherRasterPages(xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiLightId, xiiDynamicArray<xiiVirtualShadowRasterPage>& out_pages, xiiUInt32 maxPages = xiiInvalidIndex);
   [[nodiscard]] static bool IsRasterWorkCurrent(const xiiVirtualShadowRasterTicket& page);
   /// Pure capture/retirement operations; this device service constructs no render graph.
   [[nodiscard]] static xiiSharedPtr<const xiiVirtualShadowPagePublication> CapturePagePublication(xiiSharedPtr<const xiiVirtualShadowTableUpload> upload, xiiArrayPtr<const xiiVirtualShadowRasterPage> pages);

@@ -75,8 +75,7 @@ void xiiRenderPipelineSubgraphPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin
   xiiGetRenderPipelineInterface(wrapper, out_pins).IgnoreResult();
 }
 
-xiiResult xiiApplyRenderPipelineInterfaceContracts(const xiiGraphDefinition& root, xiiGraphComposition::Resolver resolver, const xiiGraphExpansion& expanded,
-                                                   xiiArrayPtr<xiiArrayPtr<xiiRenderPipelinePin>> pinSchemas, xiiStringBuilder* out_error)
+xiiResult xiiApplyRenderPipelineInterfaceContracts(const xiiGraphDefinition& root, xiiGraphComposition::Resolver resolver, const xiiGraphExpansion& expanded, xiiArrayPtr<xiiArrayPtr<xiiRenderPipelinePin>> pinSchemas, xiiStringBuilder* out_error)
 {
   const auto fail = [&](xiiStringView message) {
     if (out_error)

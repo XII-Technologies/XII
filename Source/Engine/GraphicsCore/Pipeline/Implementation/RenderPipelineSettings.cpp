@@ -9,8 +9,7 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelineDeviceFeature, 1)
-  XII_BITFLAGS_CONSTANTS(xiiRenderPipelineDeviceFeature::None, xiiRenderPipelineDeviceFeature::Compute,
-    xiiRenderPipelineDeviceFeature::MeshShaders, xiiRenderPipelineDeviceFeature::RayTracing, xiiRenderPipelineDeviceFeature::BindlessResources)
+  XII_BITFLAGS_CONSTANTS(xiiRenderPipelineDeviceFeature::None, xiiRenderPipelineDeviceFeature::Compute, xiiRenderPipelineDeviceFeature::MeshShaders, xiiRenderPipelineDeviceFeature::RayTracing, xiiRenderPipelineDeviceFeature::BindlessResources)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineSettings, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineSettings>)
@@ -20,8 +19,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineSettings, 1, xiiRTTIDefaultAll
     XII_BITFLAGS_MEMBER_PROPERTY("RequiredDeviceFeatures", xiiRenderPipelineDeviceFeature, m_RequiredDeviceFeatures),
     XII_ENUM_MEMBER_PROPERTY("OutputFormat", xiiGALResourceFormat, m_OutputFormat),
     XII_MEMBER_PROPERTY("OutputSamples", m_uiOutputSamples)->AddAttributes(new xiiClampValueAttribute(0U, 64U)),
-  } XII_END_PROPERTIES;
-} XII_END_DYNAMIC_REFLECTED_TYPE;
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 namespace

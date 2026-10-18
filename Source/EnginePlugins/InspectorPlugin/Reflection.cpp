@@ -29,35 +29,7 @@ namespace ReflectionDetail
       return pRTTI->GetParentType()->GetTypeName();
     }
 
-    if ((pRTTI->GetTypeName() == "bool") || (pRTTI->GetTypeName() == "float") ||
-        (pRTTI->GetTypeName() == "double") || (pRTTI->GetTypeName() == "xiiInt8") ||
-        (pRTTI->GetTypeName() == "xiiUInt8") || (pRTTI->GetTypeName() == "xiiInt16") ||
-        (pRTTI->GetTypeName() == "xiiUInt16") || (pRTTI->GetTypeName() == "xiiInt32") ||
-        (pRTTI->GetTypeName() == "xiiUInt32") || (pRTTI->GetTypeName() == "xiiInt64") ||
-        (pRTTI->GetTypeName() == "xiiUInt64") || (pRTTI->GetTypeName() == "xiiConstCharPtr") ||
-
-        (pRTTI->GetTypeName() == "xiiVec2") || (pRTTI->GetTypeName() == "xiiVec3") ||
-        (pRTTI->GetTypeName() == "xiiVec4") || (pRTTI->GetTypeName() == "xiiMat3") ||
-        (pRTTI->GetTypeName() == "xiiMat4") ||
-
-        (pRTTI->GetTypeName() == "xiiVec2d") || (pRTTI->GetTypeName() == "xiiVec3d") ||
-        (pRTTI->GetTypeName() == "xiiVec4d") || (pRTTI->GetTypeName() == "xiiMat3d") ||
-        (pRTTI->GetTypeName() == "xiiMat4d") ||
-
-        (pRTTI->GetTypeName() == "xiiVec2I") || (pRTTI->GetTypeName() == "xiiVec3I") ||
-        (pRTTI->GetTypeName() == "xiiVec4I") ||
-
-        (pRTTI->GetTypeName() == "xiiVec2U") || (pRTTI->GetTypeName() == "xiiVec3U") ||
-        (pRTTI->GetTypeName() == "xiiVec4U") ||
-
-        (pRTTI->GetTypeName() == "xiiVec2I64") || (pRTTI->GetTypeName() == "xiiVec3I64") ||
-        (pRTTI->GetTypeName() == "xiiVec4I64") ||
-
-        (pRTTI->GetTypeName() == "xiiVec2U64") || (pRTTI->GetTypeName() == "xiiVec3U64") ||
-        (pRTTI->GetTypeName() == "xiiVec4U64") ||
-
-        (pRTTI->GetTypeName() == "xiiTime") || (pRTTI->GetTypeName() == "xiiUuid") || (pRTTI->GetTypeName() == "xiiColor") ||
-        (pRTTI->GetTypeName() == "xiiVariant") || (pRTTI->GetTypeName() == "xiiQuat") || (pRTTI->GetTypeName() == "xiiQuatd"))
+    if ((pRTTI->GetTypeName() == "bool") || (pRTTI->GetTypeName() == "float") || (pRTTI->GetTypeName() == "double") || (pRTTI->GetTypeName() == "xiiInt8") || (pRTTI->GetTypeName() == "xiiUInt8") || (pRTTI->GetTypeName() == "xiiInt16") || (pRTTI->GetTypeName() == "xiiUInt16") || (pRTTI->GetTypeName() == "xiiInt32") || (pRTTI->GetTypeName() == "xiiUInt32") || (pRTTI->GetTypeName() == "xiiInt64") || (pRTTI->GetTypeName() == "xiiUInt64") || (pRTTI->GetTypeName() == "xiiConstCharPtr") || (pRTTI->GetTypeName() == "xiiVec2") || (pRTTI->GetTypeName() == "xiiVec3") || (pRTTI->GetTypeName() == "xiiVec4") || (pRTTI->GetTypeName() == "xiiMat3") || (pRTTI->GetTypeName() == "xiiMat4") || (pRTTI->GetTypeName() == "xiiVec2d") || (pRTTI->GetTypeName() == "xiiVec3d") || (pRTTI->GetTypeName() == "xiiVec4d") || (pRTTI->GetTypeName() == "xiiMat3d") || (pRTTI->GetTypeName() == "xiiMat4d") || (pRTTI->GetTypeName() == "xiiVec2I") || (pRTTI->GetTypeName() == "xiiVec3I") || (pRTTI->GetTypeName() == "xiiVec4I") || (pRTTI->GetTypeName() == "xiiVec2U") || (pRTTI->GetTypeName() == "xiiVec3U") || (pRTTI->GetTypeName() == "xiiVec4U") || (pRTTI->GetTypeName() == "xiiVec2I64") || (pRTTI->GetTypeName() == "xiiVec3I64") || (pRTTI->GetTypeName() == "xiiVec4I64") || (pRTTI->GetTypeName() == "xiiVec2U64") || (pRTTI->GetTypeName() == "xiiVec3U64") || (pRTTI->GetTypeName() == "xiiVec4U64") || (pRTTI->GetTypeName() == "xiiTime") || (pRTTI->GetTypeName() == "xiiUuid") || (pRTTI->GetTypeName() == "xiiColor") || (pRTTI->GetTypeName() == "xiiVariant") || (pRTTI->GetTypeName() == "xiiQuat") || (pRTTI->GetTypeName() == "xiiQuatd"))
     {
       return "Basic Types";
     }

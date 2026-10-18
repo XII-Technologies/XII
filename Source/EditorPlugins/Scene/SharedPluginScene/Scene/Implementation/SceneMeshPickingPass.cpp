@@ -66,8 +66,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
     return value ? *value : xiiVariant();
   };
   const auto selectedObjects = policy("Editor.SelectedObjects"), pickSelected = policy("Editor.PickSelected"), transparent = policy("Editor.PickTransparent");
-  if (revision != state.m_uiObservedDataRevision || signature != state.m_uiViewSelection ||
-      selectedObjects != state.m_SelectionPolicy || pickSelected != state.m_PickSelectedPolicy || transparent != state.m_TransparentPolicy)
+  if (revision != state.m_uiObservedDataRevision || signature != state.m_uiViewSelection || selectedObjects != state.m_SelectionPolicy || pickSelected != state.m_PickSelectedPolicy || transparent != state.m_TransparentPolicy)
   {
     state.Invalidate();
     state.m_uiObservedDataRevision = revision;

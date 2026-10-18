@@ -39,8 +39,7 @@ xiiResult xiiParticleIntegratePass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  particles   = context.GetInputBuffer(m_InputParticles);
   const auto* description = context.m_Graph.GetBufferDescription(particles);
-  if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiParticleGPUState) ||
-      description->m_uiSize % sizeof(xiiParticleGPUState) != 0 || description->m_uiSize / sizeof(xiiParticleGPUState) > xiiParticleSystemConstants::s_uiMaxSupportedParticles)
+  if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiParticleGPUState) || description->m_uiSize % sizeof(xiiParticleGPUState) != 0 || description->m_uiSize / sizeof(xiiParticleGPUState) > xiiParticleSystemConstants::s_uiMaxSupportedParticles)
     return XII_FAILURE;
   if (m_bBypass)
     return context.SetOutput(m_OutputParticles, particles);

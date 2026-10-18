@@ -89,16 +89,13 @@ xiiResult xiiSensorCapture::Record(xiiRenderPipelinePassContext& context, const 
   const auto* cameraDesc = context.m_Graph.GetBufferDescription(camera);
   const auto* globalDesc = context.m_Graph.GetBufferDescription(global);
   const bool  rolling    = capture.m_Profile.m_Shutter == xiiSensorShutterType::Rolling && capture.m_Profile.m_fRollingShutterSeconds > 0;
-  if (!depthDesc || depthDesc->m_Type != xiiGALResourceDimension::Texture2D || depthDesc->m_uiArraySizeOrDepth != 1 || depthDesc->m_uiSampleCount != 1 ||
-      (depthDesc->m_Format != xiiGALResourceFormat::D32Float && depthDesc->m_Format != xiiGALResourceFormat::R32Float) || !depthDesc->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ||
-      !cameraDesc || cameraDesc->m_uiSize != sizeof(xiiFrameCameraConstants))
+  if (!depthDesc || depthDesc->m_Type != xiiGALResourceDimension::Texture2D || depthDesc->m_uiArraySizeOrDepth != 1 || depthDesc->m_uiSampleCount != 1 || (depthDesc->m_Format != xiiGALResourceFormat::D32Float && depthDesc->m_Format != xiiGALResourceFormat::R32Float) || !depthDesc->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !cameraDesc || cameraDesc->m_uiSize != sizeof(xiiFrameCameraConstants))
     return context.ReportFailure("Sensor capture requires canonical depth and camera constants.");
   const auto matchingSize = [&](xiiRenderGraphTextureHandle image) {
     const auto* desc = context.m_Graph.GetTextureDescription(image);
     return !image.IsValid() || (desc && desc->m_Size == depthDesc->m_Size);
   };
-  if (!matchingSize(inputs.m_Radiance) || !matchingSize(inputs.m_Normal) || !matchingSize(inputs.m_Albedo) ||
-      (rolling && (!IsColorInput(context, velocity, 2) || !matchingSize(velocity) || !globalDesc || globalDesc->m_uiSize != sizeof(xiiFrameGlobalConstants))))
+  if (!matchingSize(inputs.m_Radiance) || !matchingSize(inputs.m_Normal) || !matchingSize(inputs.m_Albedo) || (rolling && (!IsColorInput(context, velocity, 2) || !matchingSize(velocity) || !globalDesc || globalDesc->m_uiSize != sizeof(xiiFrameGlobalConstants))))
     return context.ReportFailure("Sensor input sizes disagree, or rolling shutter lacks matching velocity/frame-time inputs.");
   if (!xiiGALDevice::HasDefaultDevice())
     return context.ReportFailure("Sensor output allocation requires an active graphics device.");

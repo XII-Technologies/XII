@@ -200,8 +200,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   XII_TEST_STATUS(document.GetCommandHistory()->Redo());
   XII_TEST_INT(requirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 16);
   accessor->StartTransaction("Connect reflected pass resources");
-  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(),
-                                                        *manager->GetOutputPinByName(source, "Output"), *manager->GetInputPinByName(target, "Input")));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(source, "Output"), *manager->GetInputPinByName(target, "Input")));
   accessor->FinishTransaction();
   const auto connectionId = manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid();
   accessor->StartTransaction("Temporarily invalidate pass configuration");
@@ -221,9 +220,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   accessor->FinishTransaction();
   XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input")).IsEmpty());
   xiiDocumentNodeManager::CanConnectResult canConnect;
-  XII_TEST_BOOL(manager->CanConnect(manager->GetConnectionType(), *manager->GetOutputPinByName(source, "Output"),
-                                    *manager->GetInputPinByName(target, "Input"), canConnect)
-                  .Failed());
+  XII_TEST_BOOL(manager->CanConnect(manager->GetConnectionType(), *manager->GetOutputPinByName(source, "Output"), *manager->GetInputPinByName(target, "Input"), canConnect).Failed());
   XII_TEST_STATUS(document.GetCommandHistory()->Undo());
   XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
   accessor->StartTransaction("Add dynamic pin");

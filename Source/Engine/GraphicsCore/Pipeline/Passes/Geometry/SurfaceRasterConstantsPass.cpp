@@ -38,8 +38,7 @@ xiiResult xiiSurfaceRasterConstantsPass::Configure(const xiiVariantDictionary& p
 }
 xiiResult xiiSurfaceRasterConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
-  if (!context.m_pView || !context.m_pView->GetCamera() || context.m_pView->GetCamera()->GetCameraMode() == xiiCameraMode::None ||
-      !xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
+  if (!context.m_pView || !context.m_pView->GetCamera() || context.m_pView->GetCamera()->GetCameraMode() == xiiCameraMode::None || !xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Raster constants require a camera and initialized device residency producers.");
   const auto width = context.m_pView->GetRenderResolutionWidth(), height = context.m_pView->GetRenderResolutionHeight();
   if (width == 0 || height == 0)

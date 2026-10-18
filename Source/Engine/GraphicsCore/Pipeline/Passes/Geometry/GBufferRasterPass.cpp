@@ -69,10 +69,7 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
   const auto* uniform = context.m_Graph.GetBufferDescription(constants);
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) ||
-      !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) ||
-      !valid(arguments, m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32)) || !valid(argumentCount, sizeof(xiiUInt32)) ||
-      !uniform || uniform->m_uiSize != sizeof(xiiGpuSceneGBufferConstants) || !uniform->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) || !valid(arguments, m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32)) || !valid(argumentCount, sizeof(xiiUInt32)) || !uniform || uniform->m_uiSize != sizeof(xiiGpuSceneGBufferConstants) || !uniform->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
     return context.ReportFailure("G-buffer rasterization requires canonical data, raster constants and explicit indirect commands.");
   const auto  capacity = context.m_Graph.GetBufferDescription(arguments)->m_uiSize / (m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32));
   const auto& draw     = device->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties;
@@ -83,10 +80,7 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Invalid G-buffer raster resolution.");
   const auto  depth            = context.GetInputTexture(m_InputDepth);
   const auto* depthDescription = context.m_Graph.GetTextureDescription(depth);
-  if (!depthDescription || depthDescription->m_Format != xiiGALResourceFormat::D32Float ||
-      depthDescription->m_Type != xiiGALResourceDimension::Texture2D || depthDescription->m_uiArraySizeOrDepth != 1 ||
-      depthDescription->m_uiSampleCount != 1 || depthDescription->m_Size.width != width || depthDescription->m_Size.height != height ||
-      !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+  if (!depthDescription || depthDescription->m_Format != xiiGALResourceFormat::D32Float || depthDescription->m_Type != xiiGALResourceDimension::Texture2D || depthDescription->m_uiArraySizeOrDepth != 1 || depthDescription->m_uiSampleCount != 1 || depthDescription->m_Size.width != width || depthDescription->m_Size.height != height || !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
     return context.ReportFailure("G-buffer rasterization requires a matching single-sample D32 depth attachment.");
   if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != m_FillMode)
   {

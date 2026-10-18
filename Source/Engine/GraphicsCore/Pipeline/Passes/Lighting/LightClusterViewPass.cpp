@@ -69,8 +69,7 @@ xiiResult xiiLightClusterViewPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ClusterNear", nearDistance));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ClusterFar", farDistance));
   auto projection = matrix;
-  if (!matrix.IsValid() || projection.Invert().Failed() || !position.IsValid() || !forward.IsValid() || forward.NormalizeIfNotZero(xiiVec3(0, 0, 1)).Failed() ||
-      !xiiMath::IsFinite(nearDistance) || !xiiMath::IsFinite(farDistance) || nearDistance <= 0 || farDistance <= nearDistance || !xiiMath::IsFinite(farDistance / nearDistance) || !width || !height || width > 65536 || height > 65536)
+  if (!matrix.IsValid() || projection.Invert().Failed() || !position.IsValid() || !forward.IsValid() || forward.NormalizeIfNotZero(xiiVec3(0, 0, 1)).Failed() || !xiiMath::IsFinite(nearDistance) || !xiiMath::IsFinite(farDistance) || nearDistance <= 0 || farDistance <= nearDistance || !xiiMath::IsFinite(farDistance / nearDistance) || !width || !height || width > 65536 || height > 65536)
     return context.ReportFailure("Invalid cluster projection, camera, resolution or finite depth range.");
   // Validate finite rays at interior NDC depths, including orthographic and finite/infinite perspective projections.
   float referenceW = 0, referenceDepthDirection = 0;

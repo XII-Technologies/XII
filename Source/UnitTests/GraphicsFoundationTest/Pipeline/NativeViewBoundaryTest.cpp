@@ -110,14 +110,12 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
       cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
       XII_SCOPE_EXIT(cache.EndFrame());
       graph.BeginSetup(frame.GetFrameIndex());
-      if (!XII_TEST_RESULT(targets[v].Synchronize(targetRoots[v])) || !XII_TEST_RESULT(outputs[v].Synchronize(outputRoots[v])) || !XII_TEST_RESULT(counters[v].Synchronize(counterRoots[v])) ||
-          !XII_TEST_RESULT(targets[v].Build(views[v], graph, contexts[v].GetBlackboard())))
+      if (!XII_TEST_RESULT(targets[v].Synchronize(targetRoots[v])) || !XII_TEST_RESULT(outputs[v].Synchronize(outputRoots[v])) || !XII_TEST_RESULT(counters[v].Synchronize(counterRoots[v])) || !XII_TEST_RESULT(targets[v].Build(views[v], graph, contexts[v].GetBlackboard())))
         return;
       colorHandles[v] = targets[v].GetInterfaceBinding(targets[v].GetPipeline()->FindInterface("Color", false))->m_hTexture;
       depthHandles[v] = targets[v].GetInterfaceBinding(targets[v].GetPipeline()->FindInterface("Depth", false))->m_hTexture;
       const xiiRenderPipelineInputBinding color(graph, outputs[v].GetPipeline()->FindInterface("Color", true), colorHandles[v]);
-      if (!XII_TEST_RESULT(outputs[v].Build(views[v], graph, contexts[v].GetBlackboard(), {}, xiiMakeArrayPtr(&color, 1))) ||
-          !XII_TEST_RESULT(counters[v].Build(nullptr, graph, contexts[v].GetBlackboard())))
+      if (!XII_TEST_RESULT(outputs[v].Build(views[v], graph, contexts[v].GetBlackboard(), {}, xiiMakeArrayPtr(&color, 1))) || !XII_TEST_RESULT(counters[v].Build(nullptr, graph, contexts[v].GetBlackboard())))
         return;
       outputHandles[v]   = outputs[v].GetInterfaceBinding(outputs[v].GetPipeline()->FindInterface("ViewOutput", false))->m_hTexture;
       constantHandles[v] = outputs[v].GetInterfaceBinding(outputs[v].GetPipeline()->FindInterface("Constants", false))->m_hBuffer;
@@ -141,8 +139,7 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
       counters[v].Clear();
       graph.EndSetup();
       xiiStringBuilder error;
-      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = false}, &error), "%s", error.GetData()) ||
-          !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = false}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
         return;
       XII_TEST_INT(graph.GetStatistics().m_uiQueueSubmissionCount, 1);
     }
@@ -157,11 +154,7 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
       float                 depth = 1;
       xiiFinalBlitConstants constants;
       xiiUInt32             counter = 0;
-      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(colorHandles[v]).Borrow(), 1, 1, source) ||
-          !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), target.Borrow(), 1, 1, result) ||
-          !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(depthHandles[v]).Borrow(), 1, 1, depth) ||
-          !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(constantHandles[v]).Borrow(), 0, constants) ||
-          !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(counterHandles[v]).Borrow(), 0, counter))
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(colorHandles[v]).Borrow(), 1, 1, source) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), target.Borrow(), 1, 1, result) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(depthHandles[v]).Borrow(), 1, 1, depth) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(constantHandles[v]).Borrow(), 0, constants) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(counterHandles[v]).Borrow(), 0, counter))
         return;
       XII_TEST_INT(source.r, v ? 0 : 255);
       XII_TEST_INT(source.b, v ? 255 : 0);
@@ -181,8 +174,7 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
   for (xiiUInt32 invalid = 0; invalid < 3; ++invalid)
   {
     graph.BeginSetup(100 + invalid);
-    if (!XII_TEST_RESULT(targets[0].Synchronize(targetRoots[0])) || !XII_TEST_RESULT(outputs[0].Synchronize(outputRoots[0])) ||
-        !XII_TEST_RESULT(targets[0].Build(views[0], graph, contexts[0].GetBlackboard())))
+    if (!XII_TEST_RESULT(targets[0].Synchronize(targetRoots[0])) || !XII_TEST_RESULT(outputs[0].Synchronize(outputRoots[0])) || !XII_TEST_RESULT(targets[0].Build(views[0], graph, contexts[0].GetBlackboard())))
       return;
     const auto source = targets[0].GetInterfaceBinding(targets[0].GetPipeline()->FindInterface(invalid == 1 ? "Depth" : "Color", false))->m_hTexture;
     if (!invalid)

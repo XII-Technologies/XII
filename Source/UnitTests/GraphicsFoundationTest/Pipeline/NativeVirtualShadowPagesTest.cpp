@@ -57,8 +57,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
   settings.m_uiPhysicalPageCount                         = 2;
   settings.m_uiMaxPageAllocations = settings.m_uiMaxPageRasterizations = 2;
   settings.m_uiMaxFeedbackRequests                                     = 8;
-  if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)) ||
-      !XII_TEST_RESULT(xiiGeometryResidencyManager::EnsureInitialized()) || !XII_TEST_RESULT(xiiMaterialManager::EnsureInitialized()))
+  if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)) || !XII_TEST_RESULT(xiiGeometryResidencyManager::EnsureInitialized()) || !XII_TEST_RESULT(xiiMaterialManager::EnsureInitialized()))
     return;
   xiiGeometry box;
   box.AddBox(xiiVec3(0.4f), true);
@@ -280,12 +279,10 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
       continue;
     }
     xiiStringBuilder error;
-    if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = phase == 0}, &error), "%s", error.GetData()) ||
-        !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+    if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = phase == 0}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
       return;
     const auto& statistics = graph.GetStatistics();
-    xiiTestFramework::Output(xiiTestOutput::Details, "Virtual pages (phase %u): %u logical operations, %u queue submissions, %u render-pass groups.",
-                             phase, statistics.m_uiCompiledPassCount, statistics.m_uiQueueSubmissionCount, statistics.m_uiMergeGroupCount);
+    xiiTestFramework::Output(xiiTestOutput::Details, "Virtual pages (phase %u): %u logical operations, %u queue submissions, %u render-pass groups.", phase, statistics.m_uiCompiledPassCount, statistics.m_uiQueueSubmissionCount, statistics.m_uiMergeGroupCount);
     if (phase != 0)
     {
       XII_TEST_INT(statistics.m_uiQueueSubmissionCount, 1);

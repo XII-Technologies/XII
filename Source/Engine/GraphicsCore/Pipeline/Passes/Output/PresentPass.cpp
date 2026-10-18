@@ -86,8 +86,7 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
   const auto  input  = context.GetInputTexture(m_InputGradedColor);
   const auto* source = context.m_Graph.GetTextureDescription(input);
-  if (!source || source->m_Type != xiiGALResourceDimension::Texture2D || source->m_uiArraySizeOrDepth != 1 || source->m_uiSampleCount != 1 ||
-      !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || xiiGALResourceFormat::IsDepthFormat(source->m_Format))
+  if (!source || source->m_Type != xiiGALResourceDimension::Texture2D || source->m_uiArraySizeOrDepth != 1 || source->m_uiSampleCount != 1 || !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || xiiGALResourceFormat::IsDepthFormat(source->m_Format))
     return context.ReportFailure("Presentation requires one shader-readable, single-sample color image.");
   const auto                        target    = context.m_pView->GetRenderTargetView();
   const auto                        swapchain = target ? nullptr : context.m_pView->GetSwapChain();
@@ -96,9 +95,7 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   if (!texture)
     return context.ReportFailure("Presentation has no configured view target or acquired swapchain image.");
   const auto& description = texture->GetDescription();
-  if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 || description.m_uiSampleCount != 1 ||
-      !description.m_Size.width || !description.m_Size.height || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) ||
-      (target && (target->GetDescription().m_ViewType != xiiGALTextureViewType::RenderTarget || target->GetDescription().m_Format != description.m_Format || target->GetDescription().m_uiMostDetailedMip || target->GetDescription().m_uiFirstArrayOrDepthSlice || target->GetDescription().m_uiArrayOrDepthSlicesCount != 1)))
+  if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 || description.m_uiSampleCount != 1 || !description.m_Size.width || !description.m_Size.height || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || (target && (target->GetDescription().m_ViewType != xiiGALTextureViewType::RenderTarget || target->GetDescription().m_Format != description.m_Format || target->GetDescription().m_uiMostDetailedMip || target->GetDescription().m_uiFirstArrayOrDepthSlice || target->GetDescription().m_uiArrayOrDepthSlicesCount != 1)))
     return context.ReportFailure("Presentation requires a full single-sample 2D render target.");
   const auto                                    handle = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/FinalBlit.xiiShader"), {}, false);
   xiiResourceLock<xiiShaderPermutationResource> shader(handle, xiiResourceAcquireMode::BlockTillLoaded);

@@ -19,8 +19,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLodHistoryResetPass, 1, xiiRTTIDefaultAlloca
 xiiResult xiiLodHistoryResetPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto* input = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_Instances));
-  if (!input || input->m_Mode != xiiGALBufferMode::Structured || input->m_uiElementByteStride != sizeof(xiiGpuSceneInstance) ||
-      input->m_uiSize == 0 || input->m_uiSize % sizeof(xiiGpuSceneInstance) != 0 || input->m_uiSize / sizeof(xiiGpuSceneInstance) > xiiMath::MaxValue<xiiUInt32>())
+  if (!input || input->m_Mode != xiiGALBufferMode::Structured || input->m_uiElementByteStride != sizeof(xiiGpuSceneInstance) || input->m_uiSize == 0 || input->m_uiSize % sizeof(xiiGpuSceneInstance) != 0 || input->m_uiSize / sizeof(xiiGpuSceneInstance) > xiiMath::MaxValue<xiiUInt32>())
     return context.ReportFailure("LOD initialization requires a canonical GPU instance buffer.");
   const auto count = static_cast<xiiUInt32>(input->m_uiSize / sizeof(xiiGpuSceneInstance));
   if (!xiiGALDevice::HasDefaultDevice())

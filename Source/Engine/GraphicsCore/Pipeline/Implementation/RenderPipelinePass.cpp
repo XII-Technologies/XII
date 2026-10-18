@@ -33,9 +33,7 @@ void xiiRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_p
   GetDynamicRTTI()->GetAllProperties(properties);
   for (const auto* property : properties)
   {
-    if (property->GetCategory() != xiiPropertyCategory::Member ||
-        property->GetFlags().IsSet(xiiPropertyFlags::Pointer) ||
-        !property->GetSpecificType()->IsDerivedFrom<xiiRenderPipelinePinHandle>())
+    if (property->GetCategory() != xiiPropertyCategory::Member || property->GetFlags().IsSet(xiiPropertyFlags::Pointer) || !property->GetSpecificType()->IsDerivedFrom<xiiRenderPipelinePinHandle>())
       continue;
     const auto* member = static_cast<const xiiAbstractMemberProperty*>(property);
     const auto* handle = static_cast<const xiiRenderPipelinePinHandle*>(member->GetPropertyPointer(this));
@@ -44,8 +42,7 @@ void xiiRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_p
     {
       const auto* flag = GetDynamicRTTI()->FindPropertyByName(enabled->m_sProperty);
       XII_ASSERT_DEV(flag && flag->GetCategory() == xiiPropertyCategory::Member && flag->GetSpecificType() == xiiGetStaticRTTI<bool>(), "Pin presence must reference a boolean member property.");
-      if (!flag || flag->GetCategory() != xiiPropertyCategory::Member || flag->GetSpecificType() != xiiGetStaticRTTI<bool>() ||
-          !xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(flag), this).Get<bool>())
+      if (!flag || flag->GetCategory() != xiiPropertyCategory::Member || flag->GetSpecificType() != xiiGetStaticRTTI<bool>() || !xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(flag), this).Get<bool>())
         continue;
     }
     auto        pin  = handle->m_Declaration;

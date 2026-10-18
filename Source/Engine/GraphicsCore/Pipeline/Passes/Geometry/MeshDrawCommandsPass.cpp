@@ -32,8 +32,7 @@ xiiResult xiiMeshDrawCommandsPass::Build(xiiRenderPipelinePassContext& context)
   const auto  visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count);
   const auto* stream  = context.m_Graph.GetBufferDescription(visible);
   const auto* counter = context.m_Graph.GetBufferDescription(count);
-  if (!stream || stream->m_Mode != xiiGALBufferMode::Structured || stream->m_uiElementByteStride != sizeof(xiiVec2U32) || stream->m_uiSize < sizeof(xiiVec2U32) || stream->m_uiSize % sizeof(xiiVec2U32) != 0 ||
-      !counter || counter->m_Mode != xiiGALBufferMode::Structured || counter->m_uiElementByteStride != sizeof(xiiUInt32) || counter->m_uiSize < sizeof(xiiUInt32))
+  if (!stream || stream->m_Mode != xiiGALBufferMode::Structured || stream->m_uiElementByteStride != sizeof(xiiVec2U32) || stream->m_uiSize < sizeof(xiiVec2U32) || stream->m_uiSize % sizeof(xiiVec2U32) != 0 || !counter || counter->m_Mode != xiiGALBufferMode::Structured || counter->m_uiElementByteStride != sizeof(xiiUInt32) || counter->m_uiSize < sizeof(xiiUInt32))
     return context.ReportFailure("Mesh draw preparation requires a compact uint2 stream and a structured uint counter.");
   if (!xiiGALDevice::HasDefaultDevice() || xiiGALDevice::GetDefaultDevice()->GetFeatures().m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
     return XII_FAILURE;
@@ -43,8 +42,7 @@ xiiResult xiiMeshDrawCommandsPass::Build(xiiRenderPipelinePassContext& context)
   const xiiUInt64 rows     = (capacity + m_uiMeshGroupCountX - 1) / m_uiMeshGroupCountX;
   const xiiUInt64 height   = xiiMath::Min<xiiUInt64>(rows, m_uiMeshGroupCountY);
   const xiiUInt64 depth    = (rows + m_uiMeshGroupCountY - 1) / m_uiMeshGroupCountY;
-  if (capacity > xiiMath::MaxValue<xiiUInt32>() || m_uiMeshGroupCountX > limits.m_uiMaxThreadGroupCountX || m_uiMeshGroupCountY > limits.m_uiMaxThreadGroupCountY ||
-      depth > limits.m_uiMaxThreadGroupCountZ || width * height * depth > limits.m_uiMaxThreadGroupTotalCount)
+  if (capacity > xiiMath::MaxValue<xiiUInt32>() || m_uiMeshGroupCountX > limits.m_uiMaxThreadGroupCountX || m_uiMeshGroupCountY > limits.m_uiMaxThreadGroupCountY || depth > limits.m_uiMaxThreadGroupCountZ || width * height * depth > limits.m_uiMaxThreadGroupTotalCount)
     return context.ReportFailure("Authored mesh command strides cannot cover the supplied stream within device limits.");
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_Pipeline, "Shaders/Geometry/MeshDrawCommands.xiiShader"));
   xiiRenderPassResourceScope scope(context);

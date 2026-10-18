@@ -96,9 +96,7 @@ xiiResult xiiScreenSpaceReflectionsPass::Build(xiiRenderPipelinePassContext& con
     return XII_FAILURE;
   if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHDRSceneColor)); !desc || desc->m_Size != size)
     return XII_FAILURE;
-  if (!context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHiZClosestPyramid)) ||
-      !context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHiZPyramid)) ||
-      !context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputBRDFLut)))
+  if (!context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHiZClosestPyramid)) || !context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHiZPyramid)) || !context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputBRDFLut)))
     return XII_FAILURE;
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;

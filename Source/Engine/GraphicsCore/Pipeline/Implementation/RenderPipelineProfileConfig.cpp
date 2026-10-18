@@ -77,9 +77,7 @@ xiiStringView xiiRenderPipelineProfileConfig::GetResourceReference(xiiRenderPipe
   }
 }
 
-xiiResult xiiRenderPipelineProfileConfig::ResolveResource(xiiStringView explicitReference, const xiiPlatformProfile* profile,
-                                                          xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_resource,
-                                                          xiiStringBuilder* out_error)
+xiiResult xiiRenderPipelineProfileConfig::ResolveResource(xiiStringView explicitReference, const xiiPlatformProfile* profile, xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_resource, xiiStringBuilder* out_error)
 {
   if (out_error)
     out_error->Clear();

@@ -70,10 +70,7 @@ xiiResult xiiDirectionalMeshRasterPass::Build(xiiRenderPipelinePassContext& cont
     return desc && desc->m_uiSize == size && desc->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer);
   };
   const auto* draws = context.m_Graph.GetBufferDescription(arguments);
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) ||
-      !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) || !valid(pagetable, sizeof(xiiGpuVirtualShadowPage)) ||
-      !valid(argumentcount, sizeof(xiiUInt32)) || !draws || draws->m_uiSize != sizeof(xiiVec3U32) || !draws->m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments) ||
-      !uniform(rasterconstants, sizeof(xiiGpuSceneGBufferConstants)) || !uniform(constants, sizeof(xiiDirectionalMeshConstants)) || !uniform(shadowconstants, sizeof(xiiVirtualShadowSamplingConstants)))
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) || !valid(pagetable, sizeof(xiiGpuVirtualShadowPage)) || !valid(argumentcount, sizeof(xiiUInt32)) || !draws || draws->m_uiSize != sizeof(xiiVec3U32) || !draws->m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments) || !uniform(rasterconstants, sizeof(xiiGpuSceneGBufferConstants)) || !uniform(constants, sizeof(xiiDirectionalMeshConstants)) || !uniform(shadowconstants, sizeof(xiiVirtualShadowSamplingConstants)))
     return context.ReportFailure("Directional mesh rasterization requires canonical structured streams, explicit uniforms and one mesh indirect command.");
   const auto  color = context.GetInputTexture(m_ColorTarget), depth = context.GetInputTexture(m_DepthTarget), shadow = context.GetInputTexture(m_ShadowMap), atlas = context.GetInputTexture(m_ShadowAtlas);
   const auto* colorDesc = context.m_Graph.GetTextureDescription(color);
@@ -82,9 +79,7 @@ xiiResult xiiDirectionalMeshRasterPass::Build(xiiRenderPipelinePassContext& cont
     const auto* desc = context.m_Graph.GetTextureDescription(handle);
     return desc && desc->m_Type == xiiGALResourceDimension::Texture2D && desc->m_uiArraySizeOrDepth == 1 && desc->m_uiSampleCount == 1 && desc->m_Size.HasNonZeroArea() && (format == xiiGALResourceFormat::Unknown || desc->m_Format == format);
   };
-  if (!image(color, xiiGALResourceFormat::Unknown) || !image(depth, xiiGALResourceFormat::D32Float) || !image(shadow, xiiGALResourceFormat::D32Float) || !image(atlas, xiiGALResourceFormat::D32Float) || colorDesc->m_Size != depthDesc->m_Size ||
-      (colorDesc->m_Format != xiiGALResourceFormat::RGBA8UNormalized && colorDesc->m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB && colorDesc->m_Format != xiiGALResourceFormat::RGBA16Float && colorDesc->m_Format != xiiGALResourceFormat::RGBA32Float) ||
-      !colorDesc->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !depthDesc->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+  if (!image(color, xiiGALResourceFormat::Unknown) || !image(depth, xiiGALResourceFormat::D32Float) || !image(shadow, xiiGALResourceFormat::D32Float) || !image(atlas, xiiGALResourceFormat::D32Float) || colorDesc->m_Size != depthDesc->m_Size || (colorDesc->m_Format != xiiGALResourceFormat::RGBA8UNormalized && colorDesc->m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB && colorDesc->m_Format != xiiGALResourceFormat::RGBA16Float && colorDesc->m_Format != xiiGALResourceFormat::RGBA32Float) || !colorDesc->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !depthDesc->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
     return context.ReportFailure("Directional mesh rasterization requires matching color/D32 targets and supplied single-sample shadow images.");
   if (!m_Shader.IsValid())
     m_Shader = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Geometry/DirectionalMesh.xiiShader"), {}, false);

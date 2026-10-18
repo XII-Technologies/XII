@@ -36,8 +36,7 @@ xiiResult xiiMeshletDispatchPass::Build(xiiRenderPipelinePassContext& context)
   const auto& limits          = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
   const auto  visibleCapacity = context.m_Graph.GetBufferDescription(visible)->m_uiSize / sizeof(xiiUInt32);
   const auto  meshletCapacity = context.m_Graph.GetBufferDescription(meshlets)->m_uiSize / sizeof(xiiMeshlet);
-  if ((meshletCapacity + 63U) / 64U > limits.m_uiMaxThreadGroupCountX || limits.m_uiMaxThreadGroupCountY < 65535U ||
-      visibleCapacity > xiiMath::MaxValue<xiiUInt32>() - 65534U || (visibleCapacity + 65534U) / 65535U > limits.m_uiMaxThreadGroupCountZ)
+  if ((meshletCapacity + 63U) / 64U > limits.m_uiMaxThreadGroupCountX || limits.m_uiMaxThreadGroupCountY < 65535U || visibleCapacity > xiiMath::MaxValue<xiiUInt32>() - 65534U || (visibleCapacity + 65534U) / 65535U > limits.m_uiMaxThreadGroupCountZ)
     return context.ReportFailure("Meshlet indirect dimensions exceed the device's compute limits.");
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_Pipeline, "Shaders/Visibility/MeshletDispatch.xiiShader"));
   xiiRenderPassResourceScope scope(context);

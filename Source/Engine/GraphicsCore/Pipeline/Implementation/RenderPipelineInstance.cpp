@@ -331,8 +331,7 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         }
         else if (pin.m_Type == xiiRenderPipelinePin::FrameData)
         {
-          if (binding.m_hTexture.IsValid() || binding.m_hBuffer.IsValid() || !binding.m_AccelerationStructure.IsEmpty() ||
-              (binding.m_pFrameData ? !pin.m_pDataType || binding.m_pFrameData->GetSetupSerial() != graph.GetSetupSerial() || !binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(pin.m_pDataType) : !pin.m_bOptional))
+          if (binding.m_hTexture.IsValid() || binding.m_hBuffer.IsValid() || !binding.m_AccelerationStructure.IsEmpty() || (binding.m_pFrameData ? !pin.m_pDataType || binding.m_pFrameData->GetSetupSerial() != graph.GetSetupSerial() || !binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(pin.m_pDataType) : !pin.m_bOptional))
           {
             error.SetFormat("Pass '{}' (type '{}', instance '{}'), {} frame-data pin '{}': snapshot is missing, stale or violates its native RTTI contract.", context.m_sPassName, pass.m_pType->GetTypeName(), context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
             m_sBuildError = error;

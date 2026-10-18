@@ -180,8 +180,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
         continue;
       }
       xiiStringBuilder error;
-      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) ||
-          !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
         return;
       if (phase & 1U)
       {
@@ -339,8 +338,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenPageMappingsRetireBeforePhysica
       tables[v]           = *exported.first;
       graph.EndSetup();
       xiiStringBuilder error;
-      if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) ||
-          !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+      if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[v].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
         return;
     }
     // Neither view waits for the host before both have submitted their graph.

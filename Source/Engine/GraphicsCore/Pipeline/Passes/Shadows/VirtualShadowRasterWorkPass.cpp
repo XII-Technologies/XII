@@ -33,8 +33,7 @@ xiiResult xiiVirtualShadowRasterWorkPass::Build(xiiRenderPipelinePassContext& co
     return context.ReportFailure("Shadow raster work requires a current GPU frame, a valid light and a bounded page count.");
   const auto cascades  = context.GetInputData(m_Cascades).Downcast<const xiiShadowCascadeSnapshot>();
   const auto residency = context.GetInputData(m_Residency).Downcast<const xiiVirtualShadowResidencySnapshot>();
-  if (!cascades || !residency || !residency->m_Upload || residency->m_Upload->m_uiFrame != context.m_Graph.GetFrameIndex() ||
-      residency->m_Upload->m_uiConfigurationRevision != xiiVirtualShadowMapManager::GetConfigurationRevision() || cascades->m_Cascades.IsEmpty() || cascades->m_Cascades.GetCount() > 4)
+  if (!cascades || !residency || !residency->m_Upload || residency->m_Upload->m_uiFrame != context.m_Graph.GetFrameIndex() || residency->m_Upload->m_uiConfigurationRevision != xiiVirtualShadowMapManager::GetConfigurationRevision() || cascades->m_Cascades.IsEmpty() || cascades->m_Cascades.GetCount() > 4)
     return context.ReportFailure("Shadow raster work requires current residency and explicit cascade snapshots.");
   xiiStaticArray<xiiMat4, 4> projections;
   for (const auto& cascade : cascades->m_Cascades)

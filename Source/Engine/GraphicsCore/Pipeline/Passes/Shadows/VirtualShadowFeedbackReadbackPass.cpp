@@ -104,12 +104,10 @@ xiiResult                     xiiVirtualShadowFeedbackReadbackPass::Build(xiiRen
 {
   const auto  input       = context.GetInputBuffer(m_Requests);
   const auto* description = context.m_Graph.GetBufferDescription(input);
-  if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiGpuVirtualShadowFeedback) ||
-      description->m_uiSize % sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize < 2 * sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize > 1048577ULL * sizeof(xiiGpuVirtualShadowFeedback))
+  if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize % sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize < 2 * sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize > 1048577ULL * sizeof(xiiGpuVirtualShadowFeedback))
     return context.ReportFailure("Shadow feedback readback requires a bounded structured append stream plus header.");
   xiiUInt64 completed = 0;
-  if (!xiiVirtualShadowMapManager::IsInitialized() || !xiiGALDevice::HasDefaultDevice() ||
-      xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
+  if (!xiiVirtualShadowMapManager::IsInitialized() || !xiiGALDevice::HasDefaultDevice() || xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
     return context.ReportFailure("Shadow feedback readback requires configured device residency and an active shared GPU frame.");
   const auto device = xiiGALDevice::GetDefaultDevice();
   if (!m_State)

@@ -66,10 +66,7 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
       description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
   const auto* uniform = context.m_Graph.GetBufferDescription(constants);
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) ||
-      !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) ||
-      !valid(arguments, m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32)) || !valid(argumentCount, sizeof(xiiUInt32)) ||
-      !uniform || uniform->m_uiSize != sizeof(xiiGpuSceneGBufferConstants) || !uniform->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) || !valid(arguments, m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32)) || !valid(argumentCount, sizeof(xiiUInt32)) || !uniform || uniform->m_uiSize != sizeof(xiiGpuSceneGBufferConstants) || !uniform->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
     return context.ReportFailure("Surface rasterization requires canonical data, raster constants and explicit indirect commands.");
   const auto  capacity = context.m_Graph.GetBufferDescription(arguments)->m_uiSize / (m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32));
   const auto& draw     = device->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties;

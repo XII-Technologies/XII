@@ -2260,8 +2260,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, InstanceVisibility)
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, MeshletVisibility)
 {
   const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeMeshletAuthoring", "NativeMeshletBase", xiiDataDirUsage::ReadOnly)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeMeshletAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeMeshletAuthoring", "NativeMeshletBase", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeMeshletAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeMeshletAuthoring"));
   XII_TEST_STATUS(AuthorMeshletVisibility(path));
@@ -2270,8 +2269,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, MeshletVisibility)
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VertexPullDraws)
 {
   const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeDrawAuthoring", "NativeDrawBase", xiiDataDirUsage::ReadOnly)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDrawAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeDrawAuthoring", "NativeDrawBase", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDrawAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDrawAuthoring"));
   XII_TEST_STATUS(AuthorVertexPullDraws(path));
@@ -2280,8 +2278,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VertexPullDraws)
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SurfaceQuery)
 {
   const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeSurfaceAuthoring", "NativeSurfaceBase", xiiDataDirUsage::ReadOnly)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSurfaceAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeSurfaceAuthoring", "NativeSurfaceBase", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSurfaceAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSurfaceAuthoring"));
   XII_TEST_STATUS(AuthorSurfaceQuery(path));
@@ -2299,8 +2296,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DebugVisualization)
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, EditorMeshPicking)
 {
   const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeEditorPickingAuthoring", "NativeEditorPickingBase", xiiDataDirUsage::ReadOnly)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeEditorPickingAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeEditorPickingAuthoring", "NativeEditorPickingBase", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeEditorPickingAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeEditorPickingAuthoring"));
   XII_TEST_STATUS(AuthorEditorMeshPicking(path));
@@ -2309,8 +2305,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, EditorMeshPicking)
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthOnly)
 {
   const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeDepthAuthoring", "NativeDepthBase", xiiDataDirUsage::ReadOnly)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDepthAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeDepthAuthoring", "NativeDepthBase", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDepthAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDepthAuthoring"));
   XII_TEST_STATUS(AuthorDepthOnly(path));
@@ -2319,8 +2314,7 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthOnly)
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, GBuffer)
 {
   const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeGBufferAuthoring", "NativeGBufferBase", xiiDataDirUsage::ReadOnly)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeGBufferAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeGBufferAuthoring", "NativeGBufferBase", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeGBufferAuthoring", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeGBufferAuthoring"));
   XII_TEST_STATUS(AuthorDepthOnly(path, true));

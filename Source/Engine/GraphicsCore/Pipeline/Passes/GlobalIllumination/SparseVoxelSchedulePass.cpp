@@ -49,8 +49,7 @@ xiiResult xiiSparseVoxelSchedulePass::Configure(const xiiVariantDictionary& prop
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   const xiiUInt64 required = xiiUInt64(m_Grid) * m_Grid * m_Grid * m_Levels;
   const xiiUInt64 count    = xiiUInt64(m_Voxels) * m_Voxels * m_Voxels * m_Resident;
-  if (!m_Levels || m_Levels > 8 || m_Grid < 2 || m_Grid > 64 || m_Voxels < 2 || m_Voxels > 32 || required > m_Resident || m_Resident > 1048576 || !m_Budget || m_Budget > 1048576 || !m_Refresh ||
-      count * sizeof(xiiVec4) > m_MaximumPoolBytes || !xiiMath::IsFinite(m_fVoxelSize) || m_fVoxelSize <= 0 || !xiiMath::IsFinite(m_fVoxelSize * 128 * m_Voxels) || !xiiMath::IsFinite(m_fHysteresis) || m_fHysteresis < 0 || m_fHysteresis >= 1 || !m_CameraPosition.IsValid())
+  if (!m_Levels || m_Levels > 8 || m_Grid < 2 || m_Grid > 64 || m_Voxels < 2 || m_Voxels > 32 || required > m_Resident || m_Resident > 1048576 || !m_Budget || m_Budget > 1048576 || !m_Refresh || count * sizeof(xiiVec4) > m_MaximumPoolBytes || !xiiMath::IsFinite(m_fVoxelSize) || m_fVoxelSize <= 0 || !xiiMath::IsFinite(m_fVoxelSize * 128 * m_Voxels) || !xiiMath::IsFinite(m_fHysteresis) || m_fHysteresis < 0 || m_fHysteresis >= 1 || !m_CameraPosition.IsValid())
     return XII_FAILURE;
   m_State.Clear();
   return XII_SUCCESS;

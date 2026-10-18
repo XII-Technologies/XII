@@ -74,12 +74,9 @@ xiiResult xiiVirtualShadowTablesPass::Build(xiiRenderPipelinePassContext& contex
       const auto& captured = *data.m_Capture;
       if (!data.m_Completion || xiiVirtualShadowMapManager::IsTableUploadRecorded(captured)) return;
       for (const auto& range : captured.m_PhysicalRanges)
-        execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Bindings.m_hPhysicalPageTable),
-          (captured.m_Layout.m_uiFrameBaseIndex + range.m_uiFirstPhysicalPage) * sizeof(xiiGpuVirtualShadowPage),
-          xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(captured.m_PhysicalRecords.GetData() + range.m_uiFirstRecord), range.m_uiRecordCount * sizeof(xiiGpuVirtualShadowPage)));
+        execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Bindings.m_hPhysicalPageTable), (captured.m_Layout.m_uiFrameBaseIndex + range.m_uiFirstPhysicalPage) * sizeof(xiiGpuVirtualShadowPage), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(captured.m_PhysicalRecords.GetData() + range.m_uiFirstRecord), range.m_uiRecordCount * sizeof(xiiGpuVirtualShadowPage)));
       if (!captured.m_VirtualRecords.IsEmpty())
-        execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Bindings.m_hVirtualPageTable), captured.m_Layout.m_uiVirtualTableBaseIndex * sizeof(xiiGpuVirtualShadowPage),
-          xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(captured.m_VirtualRecords.GetData()), captured.m_VirtualRecords.GetCount() * sizeof(xiiGpuVirtualShadowPage)));
+        execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Bindings.m_hVirtualPageTable), captured.m_Layout.m_uiVirtualTableBaseIndex * sizeof(xiiGpuVirtualShadowPage), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(captured.m_VirtualRecords.GetData()), captured.m_VirtualRecords.GetCount() * sizeof(xiiGpuVirtualShadowPage)));
       execute.GetCommandList().EnqueueSignal(data.m_Completion.Borrow(), 1);
       xiiVirtualShadowMapManager::RecordTableUpload(data.m_Capture, data.m_Completion); }, changes);
     snapshot           = emitted.first->m_Bindings;

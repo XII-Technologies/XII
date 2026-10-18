@@ -101,8 +101,7 @@ const xiiDocumentObject* xiiRenderPipelineNodeManager::GetPinPropertyObject(cons
       continue;
     const auto  metadataId = child->GetTypeAccessor().GetValue("Metadata");
     const auto* metadata   = metadataId.IsA<xiiUuid>() ? GetObject(metadataId.Get<xiiUuid>()) : nullptr;
-    if (metadata && metadata->GetTypeAccessor().GetValue("Name") == xiiVariant(pin.GetName()) &&
-        metadata->GetTypeAccessor().GetValue("Input") == xiiVariant(pin.GetType() == xiiPin::Type::Input))
+    if (metadata && metadata->GetTypeAccessor().GetValue("Name") == xiiVariant(pin.GetName()) && metadata->GetTypeAccessor().GetValue("Input") == xiiVariant(pin.GetType() == xiiPin::Type::Input))
       return child;
   }
   return nullptr;

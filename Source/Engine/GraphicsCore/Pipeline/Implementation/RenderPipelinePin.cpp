@@ -122,9 +122,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinEnabledAttribute, 1, xiiRTT
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiRenderPipelinePinHandle::xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Type type, bool input, bool optional,
-                                                       xiiGALResourceFormat::Enum format, xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension,
-                                                       xiiUInt32 samples, xiiRenderPipelinePinAccess::Enum access, bool temporal)
+xiiRenderPipelinePinHandle::xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Type type, bool input, bool optional, xiiGALResourceFormat::Enum format, xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension, xiiUInt32 samples, xiiRenderPipelinePinAccess::Enum access, bool temporal)
 {
   m_Declaration.m_Type                            = type;
   m_Declaration.m_bInput                          = input;
@@ -136,11 +134,9 @@ xiiRenderPipelinePinHandle::xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Typ
   m_Declaration.m_Access                          = access;
   m_Declaration.m_bTemporalHistoryOutput          = temporal;
 }
-xiiRenderPipelineTextureInputPin::xiiRenderPipelineTextureInputPin(xiiGALResourceFormat::Enum format, bool optional,
-                                                                   xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension, xiiUInt32 samples) :
+xiiRenderPipelineTextureInputPin::xiiRenderPipelineTextureInputPin(xiiGALResourceFormat::Enum format, bool optional, xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension, xiiUInt32 samples) :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Texture, true, optional, format, bindings, dimension, samples, xiiRenderPipelinePinAccess::Automatic, false) {}
-xiiRenderPipelineTextureOutputPin::xiiRenderPipelineTextureOutputPin(xiiGALResourceFormat::Enum format, bool optional,
-                                                                     xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension, xiiUInt32 samples, xiiRenderPipelinePinAccess::Enum access, bool temporal) :
+xiiRenderPipelineTextureOutputPin::xiiRenderPipelineTextureOutputPin(xiiGALResourceFormat::Enum format, bool optional, xiiBitflags<xiiGALBindFlags> bindings, xiiGALResourceDimension::Enum dimension, xiiUInt32 samples, xiiRenderPipelinePinAccess::Enum access, bool temporal) :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Texture, false, optional, format, bindings, dimension, samples, access, temporal) {}
 xiiRenderPipelineBufferInputPin::xiiRenderPipelineBufferInputPin(bool optional, xiiBitflags<xiiGALBindFlags> bindings) :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Buffer, true, optional, xiiGALResourceFormat::Unknown, bindings, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
@@ -187,8 +183,7 @@ xiiResult xiiRenderPipelinePin::Apply(const xiiRenderPipelinePinConfiguration& c
   const auto& limits = configuration.m_Constraints;
   if (!configuration.m_Id.IsValid())
     return fail("configuration has no persistent document identity.");
-  if (configuration.m_Format.GetValue() >= xiiGALResourceFormat::ENUM_COUNT || limits.m_Dimension.GetValue() >= xiiGALResourceDimension::ENUM_COUNT ||
-      (limits.m_uiSamples && (limits.m_uiSamples > 64 || !xiiMath::IsPowerOf2(limits.m_uiSamples))))
+  if (configuration.m_Format.GetValue() >= xiiGALResourceFormat::ENUM_COUNT || limits.m_Dimension.GetValue() >= xiiGALResourceDimension::ENUM_COUNT || (limits.m_uiSamples && (limits.m_uiSamples > 64 || !xiiMath::IsPowerOf2(limits.m_uiSamples))))
     return fail("invalid format, dimension or sample count.");
   if (m_Type != Texture && (configuration.m_Format != xiiGALResourceFormat::Unknown || limits.m_Dimension != xiiGALResourceDimension::Undefined || limits.m_uiSamples || limits.m_uiWidth || limits.m_uiHeight))
     return fail("texture requirements are not valid on this resource kind.");

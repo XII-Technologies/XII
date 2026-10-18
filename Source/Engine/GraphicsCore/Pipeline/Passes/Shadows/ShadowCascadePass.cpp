@@ -48,11 +48,7 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Directional cascades require an explicit view camera.");
   const auto& camera   = *context.m_pView->GetCamera();
   const auto& viewport = context.m_pView->GetViewport();
-  if (camera.IsStereoscopic() || (!camera.IsPerspective() && !camera.IsOrthographic()) ||
-      !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 ||
-      !xiiMath::IsFinite(camera.GetNearPlane()) || !xiiMath::IsFinite(camera.GetFarPlane()) || camera.GetNearPlane() <= 0 || camera.GetFarPlane() <= camera.GetNearPlane() ||
-      !xiiMath::IsFinite(camera.GetFovOrDim()) || camera.GetFovOrDim() <= 0 || (camera.IsPerspective() && camera.GetFovOrDim() >= 180) ||
-      !camera.GetPosition().IsValid() || !camera.GetDirForwards().IsValid() || !camera.GetDirRight().IsValid() || !camera.GetDirUp().IsValid())
+  if (camera.IsStereoscopic() || (!camera.IsPerspective() && !camera.IsOrthographic()) || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 || !xiiMath::IsFinite(camera.GetNearPlane()) || !xiiMath::IsFinite(camera.GetFarPlane()) || camera.GetNearPlane() <= 0 || camera.GetFarPlane() <= camera.GetNearPlane() || !xiiMath::IsFinite(camera.GetFovOrDim()) || camera.GetFovOrDim() <= 0 || (camera.IsPerspective() && camera.GetFovOrDim() >= 180) || !camera.GetPosition().IsValid() || !camera.GetDirForwards().IsValid() || !camera.GetDirRight().IsValid() || !camera.GetDirUp().IsValid())
     return context.ReportFailure("Directional cascades require a finite perspective/orthographic camera and nonempty viewport; stereo requires an explicit eye view.");
   xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
   if (xiiShadowCascadeUtils::Build(camera, viewport.width / viewport.height, direction, m_Settings, cascades).Failed())

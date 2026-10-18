@@ -26,10 +26,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClearTexturePass, 1, xiiRTTIDefaultAllocator
 xiiResult xiiClearTexturePass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  if (m_uiWidth > 65536 || m_uiHeight > 65536 || !xiiMath::IsFinite(m_fResolutionScale) || m_fResolutionScale < 0.0625f || m_fResolutionScale > 16 ||
-      m_Format == xiiGALResourceFormat::Unknown || m_Format.GetValue() >= xiiGALResourceFormat::ENUM_COUNT ||
-      xiiGALResourceFormat::IsDepthFormat(m_Format) || xiiGALResourceFormat::IsTypeless(m_Format) || xiiGALResourceFormat::IsMultiplanar(m_Format) || xiiGALTextureUtilities::GetResourceFormatProperties(m_Format).IsCompressed() ||
-      !xiiMath::IsFinite(m_Color.r) || !xiiMath::IsFinite(m_Color.g) || !xiiMath::IsFinite(m_Color.b) || !xiiMath::IsFinite(m_Color.a))
+  if (m_uiWidth > 65536 || m_uiHeight > 65536 || !xiiMath::IsFinite(m_fResolutionScale) || m_fResolutionScale < 0.0625f || m_fResolutionScale > 16 || m_Format == xiiGALResourceFormat::Unknown || m_Format.GetValue() >= xiiGALResourceFormat::ENUM_COUNT || xiiGALResourceFormat::IsDepthFormat(m_Format) || xiiGALResourceFormat::IsTypeless(m_Format) || xiiGALResourceFormat::IsMultiplanar(m_Format) || xiiGALTextureUtilities::GetResourceFormatProperties(m_Format).IsCompressed() || !xiiMath::IsFinite(m_Color.r) || !xiiMath::IsFinite(m_Color.g) || !xiiMath::IsFinite(m_Color.b) || !xiiMath::IsFinite(m_Color.a))
     return XII_FAILURE;
   return XII_SUCCESS;
 }

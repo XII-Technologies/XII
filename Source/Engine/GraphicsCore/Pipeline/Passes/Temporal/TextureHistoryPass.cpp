@@ -55,8 +55,7 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  input       = context.GetInputTexture(m_Input);
   const auto* description = context.m_Graph.GetTextureDescription(input);
-  if (!description || !description->m_Size.width || !description->m_Size.height || description->m_uiSampleCount != 1 ||
-      !description->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || description->m_Usage == xiiGALResourceUsage::Sparse)
+  if (!description || !description->m_Size.width || !description->m_Size.height || description->m_uiSampleCount != 1 || !description->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || description->m_Usage == xiiGALResourceUsage::Sparse)
     return context.ReportFailure("Texture history requires a nonempty, single-sample, nonsparse shader-resource texture.");
   auto allocation             = *description;
   allocation.m_BindFlags      = xiiGALBindFlags::ShaderResource;

@@ -94,13 +94,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionPass, 1, xiiRTTIDefaultAlloc
 xiiResult xiiAmbientOcclusionPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  if ((!m_bUseRayTracing && !m_bAllowScreenSpace) || !xiiMath::IsFinite(m_fRadius) || m_fRadius < 0.01f || m_fRadius > 10000 ||
-      !xiiMath::IsFinite(m_fRayOriginBias) || m_fRayOriginBias < 0 || m_fRayOriginBias > 10 ||
-      !xiiMath::IsFinite(m_fRayTMin) || m_fRayTMin < 0.00001f || m_fRayTMin > 100 || m_fRayTMin >= m_fRadius ||
-      !xiiMath::IsFinite(m_fNormalBias) || m_fNormalBias < 0 || m_fNormalBias > 1 ||
-      !xiiMath::IsFinite(m_fPixelStride) || m_fPixelStride < 0.1f || m_fPixelStride > 128 ||
-      !xiiMath::IsFinite(m_fMinSampleDistance) || m_fMinSampleDistance < 0 || m_fMinSampleDistance > 10 || m_fMinSampleDistance >= m_fRadius ||
-      m_uiDirectionCount == 0 || m_uiDirectionCount > 64 || m_uiStepCount == 0 || m_uiStepCount > 32)
+  if ((!m_bUseRayTracing && !m_bAllowScreenSpace) || !xiiMath::IsFinite(m_fRadius) || m_fRadius < 0.01f || m_fRadius > 10000 || !xiiMath::IsFinite(m_fRayOriginBias) || m_fRayOriginBias < 0 || m_fRayOriginBias > 10 || !xiiMath::IsFinite(m_fRayTMin) || m_fRayTMin < 0.00001f || m_fRayTMin > 100 || m_fRayTMin >= m_fRadius || !xiiMath::IsFinite(m_fNormalBias) || m_fNormalBias < 0 || m_fNormalBias > 1 || !xiiMath::IsFinite(m_fPixelStride) || m_fPixelStride < 0.1f || m_fPixelStride > 128 || !xiiMath::IsFinite(m_fMinSampleDistance) || m_fMinSampleDistance < 0 || m_fMinSampleDistance > 10 || m_fMinSampleDistance >= m_fRadius || m_uiDirectionCount == 0 || m_uiDirectionCount > 64 || m_uiStepCount == 0 || m_uiStepCount > 32)
     return XII_FAILURE;
   return XII_SUCCESS;
 }

@@ -124,8 +124,7 @@ XII_CREATE_SIMPLE_TEST(NativeHistoryOwnership, RepeatedOccurrencesSurviveOwnerRe
           XII_TEST_BOOL(values[view][i] != values[view][1 - i] && values[view][i] != values[1 - view][i]);
           float     depthValue   = 0;
           xiiUInt32 counterValue = 0;
-          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), images[view][i].Borrow(), 1, 1, depthValue) ||
-              !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), values[view][i].Borrow(), 0, counterValue))
+          if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), images[view][i].Borrow(), 1, 1, depthValue) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), values[view][i].Borrow(), 0, counterValue))
             return;
           XII_TEST_FLOAT(depthValue, i ? 0.8f : 0.2f, 0.00001f);
           XII_TEST_INT(counterValue, i ? 91 : 17);

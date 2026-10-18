@@ -50,8 +50,7 @@ xiiResult xiiMatrixRasterConstantsPass::Build(xiiRenderPipelinePassContext& cont
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterHeight", height));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterMeshGroupCountX", groupsX));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterMeshGroupCountY", groupsY));
-  if (!projection.IsValid() || !previous.IsValid() || !width || !height || width > 65536 || height > 65536 ||
-      !groupsX || !groupsY || xiiUInt64(groupsX) * groupsY > xiiMath::MaxValue<xiiUInt32>())
+  if (!projection.IsValid() || !previous.IsValid() || !width || !height || width > 65536 || height > 65536 || !groupsX || !groupsY || xiiUInt64(groupsX) * groupsY > xiiMath::MaxValue<xiiUInt32>())
     return context.ReportFailure("Invalid matrix raster projection, dimensions or mesh command strides.");
   xiiRenderPassResourceScope scope(context);
   struct Data

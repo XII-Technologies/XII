@@ -57,10 +57,7 @@ xiiResult xiiVirtualShadowFeedbackPass::Build(xiiRenderPipelinePassContext& cont
   const auto* image     = context.m_Graph.GetTextureDescription(depth);
   const auto* constants = context.m_Graph.GetBufferDescription(cascades);
   const auto* requests  = context.m_Graph.GetBufferDescription(initial);
-  if (!image || image->m_Format != xiiGALResourceFormat::D32Float || image->m_Type != xiiGALResourceDimension::Texture2D || image->m_uiSampleCount != 1 ||
-      !image->m_Size.HasNonZeroArea() || image->m_Size.width > 65536 || image->m_Size.height > 65536 || !constants || constants->m_uiSize < sizeof(xiiShadowCascadeConstants) ||
-      !requests || requests->m_Mode != xiiGALBufferMode::Structured || requests->m_uiElementByteStride != sizeof(xiiGpuVirtualShadowFeedback) ||
-      requests->m_uiSize % sizeof(xiiGpuVirtualShadowFeedback) || requests->m_uiSize < 2 * sizeof(xiiGpuVirtualShadowFeedback) || requests->m_uiSize > 1048577ULL * sizeof(xiiGpuVirtualShadowFeedback))
+  if (!image || image->m_Format != xiiGALResourceFormat::D32Float || image->m_Type != xiiGALResourceDimension::Texture2D || image->m_uiSampleCount != 1 || !image->m_Size.HasNonZeroArea() || image->m_Size.width > 65536 || image->m_Size.height > 65536 || !constants || constants->m_uiSize < sizeof(xiiShadowCascadeConstants) || !requests || requests->m_Mode != xiiGALBufferMode::Structured || requests->m_uiElementByteStride != sizeof(xiiGpuVirtualShadowFeedback) || requests->m_uiSize % sizeof(xiiGpuVirtualShadowFeedback) || requests->m_uiSize < 2 * sizeof(xiiGpuVirtualShadowFeedback) || requests->m_uiSize > 1048577ULL * sizeof(xiiGpuVirtualShadowFeedback))
     return context.ReportFailure("Virtual shadow feedback requires single-sample D32 depth, cascade constants and a bounded initialized structured append stream.");
   if (!xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;

@@ -21,6 +21,4 @@ struct xiiRayTracingDeformedVertices : xiiRefCounted
 
 /// Returns a typed dependency on the deformed native vertex stream. Reuses successful
 /// unchanged frame slots, and only publishes readiness when the dispatch is recorded.
-xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xiiStringView name,
-                                      const xiiSharedPtr<xiiRayTracingDeformedVertices>& capture, xiiSharedPtr<xiiGALComputePipelineState>& pipeline,
-                                      const xiiGpuInstanceData& instances, xiiUInt32 drawIndex, bool& dispatched);
+xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xiiStringView name, const xiiSharedPtr<xiiRayTracingDeformedVertices>& capture, xiiSharedPtr<xiiGALComputePipelineState>& pipeline, const xiiGpuInstanceData& instances, xiiUInt32 drawIndex, bool& dispatched);

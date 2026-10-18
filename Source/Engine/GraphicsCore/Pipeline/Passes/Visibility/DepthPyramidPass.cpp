@@ -22,9 +22,7 @@ xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  input  = context.GetInputTexture(m_Depth);
   const auto* source = context.m_Graph.GetTextureDescription(input);
-  if (!source || (source->m_Format != xiiGALResourceFormat::D32Float && source->m_Format != xiiGALResourceFormat::R32Float) ||
-      source->m_Type != xiiGALResourceDimension::Texture2D || source->m_uiArraySizeOrDepth != 1 || source->m_uiSampleCount != 1 ||
-      !source->m_Size.width || !source->m_Size.height || !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  if (!source || (source->m_Format != xiiGALResourceFormat::D32Float && source->m_Format != xiiGALResourceFormat::R32Float) || source->m_Type != xiiGALResourceDimension::Texture2D || source->m_uiArraySizeOrDepth != 1 || source->m_uiSampleCount != 1 || !source->m_Size.width || !source->m_Size.height || !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     return context.ReportFailure("Depth pyramid requires a nonempty single-sample D32 or R32Float 2D depth image.");
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_Pipeline, "Shaders/Visibility/DepthPyramid.xiiShader"));
   const auto& limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;

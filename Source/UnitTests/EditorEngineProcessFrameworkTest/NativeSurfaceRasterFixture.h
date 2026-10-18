@@ -39,8 +39,7 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
                                            xiiRenderGraphBufferHandle* out_commands = nullptr, xiiRenderGraphBufferHandle* out_count = nullptr, bool depthOnly = false, xiiTestMaterialTargets* materialTargets = nullptr, xiiRenderGraphTextureHandle sceneDepth = {})
 {
   output = {};
-  if (!view || !raster.m_ViewProjectionMatrix.IsValid() || !raster.m_uiWidth || !raster.m_uiHeight ||
-      raster.m_uiWidth != view->GetRenderResolutionWidth() || raster.m_uiHeight != view->GetRenderResolutionHeight())
+  if (!view || !raster.m_ViewProjectionMatrix.IsValid() || !raster.m_uiWidth || !raster.m_uiHeight || raster.m_uiWidth != view->GetRenderResolutionWidth() || raster.m_uiHeight != view->GetRenderResolutionHeight())
     return XII_FAILURE;
   xiiSurfaceRasterConstantsPass layout;
   layout.m_uiVertexStride    = raster.m_uiVertexStride;

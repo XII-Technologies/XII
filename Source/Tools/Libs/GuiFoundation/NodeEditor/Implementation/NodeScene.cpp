@@ -218,8 +218,7 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
     // A click inspects a backed pin; dragging still creates a connection. Legacy graphs
     // without pin property objects retain their existing wire/search interaction.
-    if (m_pStartPin->flags().testFlag(QGraphicsItem::ItemIsSelectable) &&
-        (event->screenPos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength() < QApplication::startDragDistance())
+    if (m_pStartPin->flags().testFlag(QGraphicsItem::ItemIsSelectable) && (event->screenPos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength() < QApplication::startDragDistance())
     {
       CancelConnection();
       return;

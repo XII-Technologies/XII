@@ -48,8 +48,7 @@ xiiResult xiiDirectionalMeshConstantsPass::Build(xiiRenderPipelinePassContext& c
     texel            = 2 * cascades->m_Cascades[0].m_fWorldRadius / cascades->m_uiResolution;
   }
   const auto* shadow = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_ShadowMap));
-  if (!shadow || shadow->m_Type != xiiGALResourceDimension::Texture2D || shadow->m_Format != xiiGALResourceFormat::D32Float || shadow->m_uiSampleCount != 1 || !shadow->m_Size.HasNonZeroArea() ||
-      !shadowProjection.IsValid() || !snapshot.SunDirectionIntensity.IsValid() || snapshot.SunDirectionIntensity.GetAsVec3().IsZero() || snapshot.SunDirectionIntensity.w < 0 || !xiiMath::IsFinite(texel) || texel < 0 || shadow->m_uiArraySizeOrDepth != 1 || !shadow->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  if (!shadow || shadow->m_Type != xiiGALResourceDimension::Texture2D || shadow->m_Format != xiiGALResourceFormat::D32Float || shadow->m_uiSampleCount != 1 || !shadow->m_Size.HasNonZeroArea() || !shadowProjection.IsValid() || !snapshot.SunDirectionIntensity.IsValid() || snapshot.SunDirectionIntensity.GetAsVec3().IsZero() || snapshot.SunDirectionIntensity.w < 0 || !xiiMath::IsFinite(texel) || texel < 0 || shadow->m_uiArraySizeOrDepth != 1 || !shadow->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     return context.ReportFailure("Invalid directional mesh light, projection or shadow image.");
   snapshot.ShadowViewProjectionMatrix = shadowProjection;
   snapshot.ShadowTexelSize            = xiiVec4(1.0f / shadow->m_Size.width, 1.0f / shadow->m_Size.height, texel, 0);

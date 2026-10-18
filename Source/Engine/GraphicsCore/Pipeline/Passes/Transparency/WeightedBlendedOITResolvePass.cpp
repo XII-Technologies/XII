@@ -35,8 +35,7 @@ xiiResult xiiWeightedBlendedOITResolvePass::Build(xiiRenderPipelinePassContext& 
   const auto* hdrDescription          = context.m_Graph.GetTextureDescription(hdr);
   const auto* accumulationDescription = context.m_Graph.GetTextureDescription(accumulation);
   const auto* revealageDescription    = context.m_Graph.GetTextureDescription(revealage);
-  if (!hdrDescription || !accumulationDescription || !revealageDescription ||
-      hdrDescription->m_Size != accumulationDescription->m_Size || hdrDescription->m_Size != revealageDescription->m_Size)
+  if (!hdrDescription || !accumulationDescription || !revealageDescription || hdrDescription->m_Size != accumulationDescription->m_Size || hdrDescription->m_Size != revealageDescription->m_Size)
     return XII_FAILURE;
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);

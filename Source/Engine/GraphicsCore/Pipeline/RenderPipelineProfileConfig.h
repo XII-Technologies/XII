@@ -40,9 +40,7 @@ public:
   /// Explicit view references take precedence over the selected project policy. Empty
   /// selection fails and clears the handle; loading/compilation validates the chosen resource.
   /// No default implementation or fallback graph is created by this operation.
-  static xiiResult ResolveResource(xiiStringView explicitReference, const xiiPlatformProfile* profile,
-                                   xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_resource,
-                                   xiiStringBuilder* out_error = nullptr);
+  static xiiResult ResolveResource(xiiStringView explicitReference, const xiiPlatformProfile* profile, xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_resource, xiiStringBuilder* out_error = nullptr);
 
 private:
   bool m_bRuntimeDataValid = true;

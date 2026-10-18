@@ -67,8 +67,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AssetSettings)
   xiiMemoryStreamWriter            writer(&bytes), repeatWriter(&repeated);
   XII_TEST_RESULT(descriptor.Serialize(writer));
   XII_TEST_RESULT(descriptor.Serialize(repeatWriter));
-  XII_TEST_BOOL(bytes.GetStorageSize32() == repeated.GetStorageSize32() &&
-                xiiMemoryUtils::IsEqual(bytes.GetData(), repeated.GetData(), bytes.GetStorageSize32()));
+  XII_TEST_BOOL(bytes.GetStorageSize32() == repeated.GetStorageSize32() && xiiMemoryUtils::IsEqual(bytes.GetData(), repeated.GetData(), bytes.GetStorageSize32()));
   xiiMemoryStreamReader               reader(&bytes);
   xiiRenderPipelineResourceDescriptor restored;
   XII_TEST_RESULT(restored.Deserialize(reader));

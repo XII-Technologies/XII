@@ -35,8 +35,7 @@ xiiResult xiiVertexPullDrawCommandsPass::Build(xiiRenderPipelinePassContext& con
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride &&
       description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) ||
-      !valid(meshlets, sizeof(xiiMeshlet)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)))
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)))
     return context.ReportFailure("Vertex-pull draw preparation requires canonical structured inputs.");
   if (!xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;
