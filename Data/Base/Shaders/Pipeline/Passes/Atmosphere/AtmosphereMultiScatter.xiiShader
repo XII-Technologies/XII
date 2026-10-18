@@ -1,8 +1,4 @@
-// XII Engine - AtmosphereMultiScatter.xiiShader  [NEW]
-// Pass 25b: Precompute multiple-scattering approximation LUT (32 × 32 × RGBA16F).
-// Method: Hillaire 2020 - single 2D LUT approximating higher-order scattering.
-// Dispatch: ceil(32/8) × ceil(32/8) × 1
-
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 [PLATFORMS]
 ALL
 
@@ -12,11 +8,11 @@ ALL
 
 #include <Shaders/Common/StorageImageFormat.h>
 
-#include <Shaders/Common/Common.h>
+SamplerState LinearClampSampler;
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 
 Texture2D<float4>   g_TransmittanceLUT;
-XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_MultiScatterLUT;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_MultiScatterLUT;
 
 float RayleighPhase(float cosTheta) { return (3.0f / (16.0f * 3.14159265f)) * (1.0f + cosTheta * cosTheta); }
 float MiePhase(float cosTheta, float g)
@@ -38,7 +34,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     float2 uv      = (float2(tid.xy) + 0.5f) / float2(dims);
     float  cosSun  = uv.x * 2.0f - 1.0f;
     float  height  = lerp(PlanetAtmosphereRadiiScaleHeights.x, PlanetAtmosphereRadiiScaleHeights.y, uv.y);
-    const uint sqrtSamples = max(SampleCounts.y, 1u);
+    const uint sqrtSamples = clamp(SampleCounts.y, 1u, 64u);
     float3 sunTransmittance = g_TransmittanceLUT.SampleLevel(LinearClampSampler, float2(uv.y, cosSun * 0.5f + 0.5f), 0).rgb;
 
     // Integrate sphere of directions - approximation for multiple scatter luminance.
