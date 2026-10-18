@@ -3,7 +3,6 @@
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
@@ -24,7 +23,6 @@ static_assert(!std::is_default_constructible_v<xiiMaterialManager>, "Material st
 static_assert(!std::is_default_constructible_v<xiiGeometryResidencyManager>, "Geometry residency must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiLightingManager>, "The BRDF lookup must be owned by its device service.");
 static_assert(!std::is_default_constructible_v<xiiVirtualShadowMapManager>, "Virtual shadow residency must be owned by its subsystem.");
-static_assert(!std::is_default_constructible_v<xiiAtmosphereManager>, "Atmosphere LUT state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiRayTracingResources>, "Ray tracing scene state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSensorRenderingManager>, "Sensor profiles must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiDisplayOutputManager>, "Display defaults must be owned by their subsystem.");
@@ -44,7 +42,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiGeometryResidencyManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiLightingManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiVirtualShadowMapManager::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiAtmosphereManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiRayTracingResources::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiSensorRenderingManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiDisplayOutputManager::IsSubsystemInitialized());

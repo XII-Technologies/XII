@@ -98,6 +98,21 @@ public:
       return nullptr;
     return node;
   }
+  xiiStatus Override(const xiiDocumentObject* node, const xiiGraphPropertyOverride& value)
+  {
+    if (!node)
+      return xiiStatus("Missing subgraph instance.");
+    auto id = node->GetGuid();
+    for (const auto& element : value.m_Path)
+      id.HashCombine(element);
+    XII_SUCCEED_OR_RETURN(m_Accessor->AddObject(node, node->GetType()->FindPropertyByName("Overrides"), -1, xiiGetStaticRTTI<xiiGraphPropertyOverride>(), id));
+    const auto* object = m_Accessor->GetObject(id);
+    for (const auto& element : value.m_Path)
+      XII_SUCCEED_OR_RETURN(m_Accessor->InsertValueByName(object, "Path", element, -1));
+    for (auto it = value.m_Properties.GetIterator(); it.IsValid(); ++it)
+      XII_SUCCEED_OR_RETURN(m_Accessor->InsertValueByName(object, "Properties", it.Value(), it.Key()));
+    return m_Nodes->SynchronizePinConfigurations(node);
+  }
   xiiStatus Connect(const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input)
   {
     if (!source || !target)

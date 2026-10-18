@@ -59,15 +59,15 @@ namespace xiiRGBlackboardKeys
 
   // Stage 2 - Shadows.
 
-  constexpr xiiStringView k_ShadowCascadeMatrices          = "ShadowCascadeMatrices"_xiisv;          ///< xiiRenderGraphBufferHandle - cascade view-proj matrices (float4x4[4]).
-  constexpr xiiStringView k_ShadowCascadeCount             = "ShadowCascadeCount"_xiisv;             ///< uint32 - active cascade count (0–4).
-  constexpr xiiStringView k_DirectionalShadowAtlas         = "DirShadowAtlas"_xiisv;                 ///< xiiRenderGraphTextureHandle - cascaded shadow map texture (D32F array).
-  constexpr xiiStringView k_LocalShadowAtlas               = "LocalShadowAtlas"_xiisv;               ///< xiiRenderGraphTextureHandle - spot/point shadow atlas (D32F).
-  constexpr xiiStringView k_LocalShadowAtlasDescs          = "LocalShadowAtlasDescs"_xiisv;          ///< xiiRenderGraphBufferHandle - per-light atlas placement data.
-  constexpr xiiStringView k_RTRawShadowMask                = "RTRawShadows"_xiisv;                   ///< xiiRenderGraphTextureHandle - raw RT shadow mask per light (R8_UNORM).
-  constexpr xiiStringView k_RTFinalShadowMask              = "RTFinalShadows"_xiisv;                 ///< xiiRenderGraphTextureHandle - denoised RT shadow mask.
-  constexpr xiiStringView k_ContactShadowTerm              = "ContactShadows"_xiisv;                 ///< xiiRenderGraphTextureHandle - screen-space contact shadow mask (R8_UNORM).
-  constexpr xiiStringView k_CloudShadowConstants           = "CloudShadowConstants"_xiisv;           ///< xiiRenderGraphBufferHandle - procedural cloud layer projection and optical depth.
+  constexpr xiiStringView k_ShadowCascadeMatrices  = "ShadowCascadeMatrices"_xiisv; ///< xiiRenderGraphBufferHandle - cascade view-proj matrices (float4x4[4]).
+  constexpr xiiStringView k_ShadowCascadeCount     = "ShadowCascadeCount"_xiisv;    ///< uint32 - active cascade count (0–4).
+  constexpr xiiStringView k_DirectionalShadowAtlas = "DirShadowAtlas"_xiisv;        ///< xiiRenderGraphTextureHandle - cascaded shadow map texture (D32F array).
+  constexpr xiiStringView k_LocalShadowAtlas       = "LocalShadowAtlas"_xiisv;      ///< xiiRenderGraphTextureHandle - spot/point shadow atlas (D32F).
+  constexpr xiiStringView k_LocalShadowAtlasDescs  = "LocalShadowAtlasDescs"_xiisv; ///< xiiRenderGraphBufferHandle - per-light atlas placement data.
+  constexpr xiiStringView k_RTRawShadowMask        = "RTRawShadows"_xiisv;          ///< xiiRenderGraphTextureHandle - raw RT shadow mask per light (R8_UNORM).
+  constexpr xiiStringView k_RTFinalShadowMask      = "RTFinalShadows"_xiisv;        ///< xiiRenderGraphTextureHandle - denoised RT shadow mask.
+  constexpr xiiStringView k_ContactShadowTerm      = "ContactShadows"_xiisv;        ///< xiiRenderGraphTextureHandle - screen-space contact shadow mask (R8_UNORM).
+  constexpr xiiStringView k_CloudShadowConstants   = "CloudShadowConstants"_xiisv;  ///< xiiRenderGraphBufferHandle - procedural cloud layer projection and optical depth.
 
   // Stage 3 - Depth & Motion.
 
@@ -89,12 +89,10 @@ namespace xiiRGBlackboardKeys
 
   // Stage 5 - Lighting Preparation.
 
-  constexpr xiiStringView k_BRDFLut                    = "BRDFLut"_xiisv;                  ///< xiiRenderGraphTextureHandle - 256x256 R16G16F GGX split-sum BRDF LUT (persistent).
-  constexpr xiiStringView k_SparseVoxelIrradiance      = "SparseVoxelIrradiance"_xiisv;    ///< xiiRenderGraphTextureHandle - far-field irradiance gather.
-  constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv;         ///< xiiRenderGraphTextureHandle - 256x64 R16G16B16A16F atmosphere transmittance LUT.
-  constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;          ///< xiiRenderGraphTextureHandle - 32x32 R16G16B16A16F multiple-scattering LUT.
-  constexpr xiiStringView k_RawAOTexture               = "RawAO"_xiisv;                    ///< xiiRenderGraphTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).
-  constexpr xiiStringView k_StableAOTexture            = "StableAO"_xiisv;                 ///< xiiRenderGraphTextureHandle - temporally-denoised AO (R8_UNORM).
+  constexpr xiiStringView k_BRDFLut               = "BRDFLut"_xiisv;               ///< xiiRenderGraphTextureHandle - 256x256 R16G16F GGX split-sum BRDF LUT (persistent).
+  constexpr xiiStringView k_SparseVoxelIrradiance = "SparseVoxelIrradiance"_xiisv; ///< xiiRenderGraphTextureHandle - far-field irradiance gather.
+  constexpr xiiStringView k_RawAOTexture          = "RawAO"_xiisv;                 ///< xiiRenderGraphTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).
+  constexpr xiiStringView k_StableAOTexture       = "StableAO"_xiisv;              ///< xiiRenderGraphTextureHandle - temporally-denoised AO (R8_UNORM).
 
   // Stage 6 - Main Lighting.
 

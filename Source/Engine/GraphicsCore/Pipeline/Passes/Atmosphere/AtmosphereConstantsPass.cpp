@@ -32,7 +32,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiResult xiiAtmosphereConstantsPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return xiiAtmosphereManager::IsValidSettings(m_Settings) ? XII_SUCCESS : XII_FAILURE;
+  return xiiIsValidAtmosphereSettings(m_Settings) ? XII_SUCCESS : XII_FAILURE;
 }
 xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -42,11 +42,12 @@ xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& contex
   {
     if (!context.m_pView)
       return XII_FAILURE;
-    settings = xiiAtmosphereManager::GetConfiguration();
     if (const auto* extracted = context.m_pView->GetExtractedRenderData())
       if (const auto* atmosphere = xiiSelectSkyAtmosphere(extracted->GetAllRenderData()))
         settings = atmosphere->m_AtmosphereSettings;
   }
+  if (!xiiIsValidAtmosphereSettings(settings))
+    return context.ReportFailure("Invalid authored or extracted atmosphere parameters.");
   struct Data
   {
     xiiAtmosphereConstants     m_Constants;
