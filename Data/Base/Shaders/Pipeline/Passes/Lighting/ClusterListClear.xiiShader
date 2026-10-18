@@ -1,0 +1,16 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
+RWStructuredBuffer<uint2> g_LightGrid;
+RWStructuredBuffer<uint> g_LightIndices;
+RWStructuredBuffer<uint> g_Overflow;
+[numthreads(64,1,1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  const uint index=tid.x+tid.y*Work.z;
+  if(index<ClusterCounts.w) g_LightGrid[index]=uint2(index*Viewport.w,0);
+  if(index<Work.y) g_LightIndices[index]=0xFFFFFFFFu;
+  if(index==0) g_Overflow[0]=0;
+}

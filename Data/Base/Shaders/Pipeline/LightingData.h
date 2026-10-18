@@ -68,13 +68,13 @@ uint GetClusterLightCDF(uint packedEntry)
 /// Returns the stable per-light shadow contribution for this camera. An authored zero keeps full
 /// shadow coverage (the component's "Auto" setting); positive values fade over the final 20% of
 /// the camera-to-light distance budget instead of being misinterpreted as a unitless strength.
-float GetLocalShadowFadeStrength(xiiGpuLightData lightData)
+float GetLocalShadowFadeStrength(xiiGpuLightData lightData, float3 cameraPosition)
 {
   const float fadeEnd = lightData.ShadowData.y;
   if (fadeEnd <= 0.0f)
     return 1.0f;
 
-  const float cameraDistance = length(g_CameraPositionAndNearPlane.xyz - lightData.PositionAndInvRange.xyz);
+  const float cameraDistance = length(cameraPosition - lightData.PositionAndInvRange.xyz);
   const float fadeWidth      = max(fadeEnd * 0.2f, 0.01f);
   return 1.0f - smoothstep(max(fadeEnd - fadeWidth, 0.0f), fadeEnd, cameraDistance);
 }

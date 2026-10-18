@@ -104,5 +104,5 @@ float EvaluateVolumetricLocalShadow(uint lightIndex, xiiGpuLightData lightData, 
     const float  mapDepth = g_VolumetricLocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
     visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
   }
-  return lerp(1.0f, visibility * 0.25f, GetLocalShadowFadeStrength(lightData));
+  return lerp(1.0f, visibility * 0.25f, GetLocalShadowFadeStrength(lightData, g_CameraPositionAndNearPlane.xyz));
 }
