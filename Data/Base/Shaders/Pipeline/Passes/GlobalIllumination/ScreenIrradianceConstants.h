@@ -5,5 +5,5 @@
 DECLARE_CONSTANT_BUFFER_AUTO(xiiScreenIrradianceConstants)
 {
   FLOAT4(TraceDistances); // Ray length, thickness, reserved.
-  UINT4(TraceCounts); // Samples, steps, sample sequence offset, reserved.
+  UINT4(TraceCounts);     // Samples, steps, sample sequence offset, reserved.
 };

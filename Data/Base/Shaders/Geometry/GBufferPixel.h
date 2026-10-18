@@ -12,7 +12,7 @@ struct GBufferOutput
   float4 Emissive : SV_Target3;
   float4 NormalRoughness : SV_Target4;
   float2 Velocity : SV_Target5;
-  uint ObjectId : SV_Target6;
+  uint   ObjectId : SV_Target6;
 };
 
 GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
@@ -21,11 +21,11 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
 
   float4 baseColor = xiiSampleSceneBaseColor(material, input.TexCoord);
   xiiClipSceneSurface(material, baseColor, isFrontFace, false);
-  float3 emissive = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
-  float roughness = saturate(material.EmissiveColorAndRoughness.w);
-  float metallic = saturate(material.SurfaceParameters.x);
-  float occlusion = 1.0f;
-  float transmission = saturate(material.SurfaceParameters.z);
+  float3 emissive     = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
+  float  roughness    = saturate(material.EmissiveColorAndRoughness.w);
+  float  metallic     = saturate(material.SurfaceParameters.x);
+  float  occlusion    = 1.0f;
+  float  transmission = saturate(material.SurfaceParameters.z);
 
   if (material.TextureIndices0.z != 0xFFFFFFFFu)
   {
@@ -36,7 +36,7 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   if (material.TextureIndices0.w != 0xFFFFFFFFu)
   {
     const float sampledOcclusion = g_Textures[NonUniformResourceIndex(material.TextureIndices0.w)].Sample(g_sLinearWrap, input.TexCoord).r;
-    occlusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
+    occlusion                    = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (material.TextureIndices1.x != 0xFFFFFFFFu)
     emissive *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)].Sample(g_sLinearWrap, input.TexCoord).rgb, 0.0f);
@@ -48,27 +48,27 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   {
     float3 tangentNormal = g_Textures[NonUniformResourceIndex(material.TextureIndices0.y)].Sample(g_sAnisotropicWrap, input.TexCoord).xyz * 2.0f - 1.0f;
     tangentNormal.xy *= material.LayerParameters.y;
-    tangentNormal.z = sqrt(saturate(1.0f - dot(tangentNormal.xy, tangentNormal.xy)));
-    const float3 worldTangent = normalize(input.WorldTangent);
+    tangentNormal.z             = sqrt(saturate(1.0f - dot(tangentNormal.xy, tangentNormal.xy)));
+    const float3 worldTangent   = normalize(input.WorldTangent);
     const float3 worldBitangent = cross(worldNormal, worldTangent) * (input.TangentSign < 0.0f ? -1.0f : 1.0f);
-    worldNormal = normalize(worldTangent * tangentNormal.x + worldBitangent * tangentNormal.y + worldNormal * tangentNormal.z);
+    worldNormal                 = normalize(worldTangent * tangentNormal.x + worldBitangent * tangentNormal.y + worldNormal * tangentNormal.z);
   }
 
-  const float2 octNormal = EncodeOctNormal(worldNormal);
-  const float featureByte = float(min(material.Metadata.y, 255u)) / 255.0f;
+  const float2 octNormal   = EncodeOctNormal(worldNormal);
+  const float  featureByte = float(min(material.Metadata.y, 255u)) / 255.0f;
 
   GBufferOutput output;
-  output.Albedo = float4(baseColor.rgb, occlusion);
-  output.Normal = octNormal;
+  output.Albedo   = float4(baseColor.rgb, occlusion);
+  output.Normal   = octNormal;
   output.Material = float4(max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y), featureByte);
   // Emissive alpha carries the scalar transmission factor. Emissive composition
   // consumes RGB only, leaving one full-precision channel for screen refraction.
-  output.Emissive = float4(emissive, transmission);
-  output.NormalRoughness = float4(octNormal, max(roughness, 0.01f), saturate(material.SurfaceParameters.y));
-  float2 currentNDC = input.Position.xy * InvRenderSize * 2.0f - 1.0f;
-  currentNDC.y = -currentNDC.y;
+  output.Emissive          = float4(emissive, transmission);
+  output.NormalRoughness   = float4(octNormal, max(roughness, 0.01f), saturate(material.SurfaceParameters.y));
+  float2 currentNDC        = input.Position.xy * InvRenderSize * 2.0f - 1.0f;
+  currentNDC.y             = -currentNDC.y;
   const float2 previousNDC = input.PreviousClipPosition.xy / max(input.PreviousClipPosition.w, 1e-7f);
-  output.Velocity = (currentNDC - CurrentJitter) - (previousNDC - PreviousJitter);
-  output.ObjectId = input.ObjectId;
+  output.Velocity          = (currentNDC - CurrentJitter) - (previousNDC - PreviousJitter);
+  output.ObjectId          = input.ObjectId;
   return output;
 }

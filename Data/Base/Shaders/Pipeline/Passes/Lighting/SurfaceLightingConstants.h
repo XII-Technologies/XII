@@ -11,6 +11,6 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiSurfaceCameraConstants)
 };
 DECLARE_CONSTANT_BUFFER_AUTO(xiiSurfaceLightingConstants)
 {
-  UINT4(SurfaceExtent); ///< width, height, visibility texture supplied, reserved.
+  UINT4(SurfaceExtent);      ///< width, height, visibility texture supplied, reserved.
   FLOAT4(SurfaceEvaluation); ///< scale, reserved.
 };

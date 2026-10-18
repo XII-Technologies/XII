@@ -52,7 +52,7 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   output.TexCoord             = texCoord;
   output.MaterialIndex        = instance.MaterialIndex;
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
-  output.WorldPosition = worldPosition;
+  output.WorldPosition  = worldPosition;
   output.ObjectUserData = instance.UserData;
 #endif
 #if !defined(XII_SCENE_SURFACE_QUERY) && !defined(XII_SCENE_DEPTH_ONLY)

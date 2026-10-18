@@ -1,17 +1,17 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 Texture2D<float> g_SceneDepth;
 #if SENSOR_ROLLING_SHUTTER
 Texture2D<float2> g_Velocity;
 #endif
 RWTexture2D<float4> g_SensorOutput;
-static const uint NOISE_NONE = 0U;
-static const uint NOISE_GAUSSIAN = 1U;
-static const uint NOISE_PHOTON_SHOT_READ = 2U;
-float HashToUnitFloat(uint value)
+static const uint   NOISE_NONE             = 0U;
+static const uint   NOISE_GAUSSIAN         = 1U;
+static const uint   NOISE_PHOTON_SHOT_READ = 2U;
+float               HashToUnitFloat(uint value)
 {
   value ^= value >> 16U;
   value *= 0x7feb352dU;
@@ -24,7 +24,7 @@ float HashToUnitFloat(uint value)
 float GaussianNoise(uint2 pixel, uint stream)
 {
   const uint seed = OutputDescription.w ^ (FrameAndResolution.x * 0x9e3779b9U) ^
-                    (pixel.x * 0x85ebca6bU) ^ (pixel.y * 0xc2b2ae35U) ^ stream;
+    (pixel.x * 0x85ebca6bU) ^ (pixel.y * 0xc2b2ae35U) ^ stream;
   const float u1 = max(HashToUnitFloat(seed), 1e-7f);
   const float u2 = HashToUnitFloat(seed ^ 0x68bc21ebU);
   return sqrt(-2.0f * log(u1)) * cos(6.28318530718f * u2);
@@ -32,7 +32,7 @@ float GaussianNoise(uint2 pixel, uint stream)
 
 float QuantizeNormalized(float value)
 {
-  const uint bits = min(OutputDescription.z, 24U);
+  const uint  bits   = min(OutputDescription.z, 24U);
   const float levels = float((1U << bits) - 1U);
   return round(saturate(value) * levels) / levels;
 }
@@ -69,12 +69,11 @@ float2 UndistortSensorRay(float2 distortedRay)
 
   // Invert the Brown-Conrady model because output pixels are measured sensor
   // coordinates while the source render is an ideal pinhole image.
-  [unroll]
-  for (uint iteration = 0U; iteration < 5U; ++iteration)
+  [unroll] for (uint iteration = 0U; iteration < 5U; ++iteration)
   {
-    const float r2 = dot(ray, ray);
-    const float r4 = r2 * r2;
-    const float r6 = r4 * r2;
+    const float r2     = dot(ray, ray);
+    const float r4     = r2 * r2;
+    const float r6     = r4 * r2;
     const float radial = 1.0f + RadialDistortion.x * r2 + RadialDistortion.y * r4 + RadialDistortion.z * r6;
     if (abs(radial) < 1e-5f)
       break;
@@ -91,30 +90,38 @@ float2 UndistortSensorRay(float2 distortedRay)
 
 bool ResolveSensorSample(uint2 pixel, out uint2 sourcePixel, out float2 sourceUV, out float3 sensorRay, out float axialDepth, out float radialRange)
 {
-  sourcePixel = 0; sourceUV = 0; sensorRay = 0; axialDepth = 0; radialRange = 0;
+  sourcePixel = 0;
+  sourceUV    = 0;
+  sensorRay   = 0;
+  axialDepth  = 0;
+  radialRange = 0;
   uint2 outputDimensions, sourceDimensions;
   g_SensorOutput.GetDimensions(outputDimensions.x, outputDimensions.y);
   g_SceneDepth.GetDimensions(sourceDimensions.x, sourceDimensions.y);
-  if (any(pixel >= outputDimensions) || any(sourceDimensions == 0)) return false;
-  const float2 distortedRay = (float2(pixel) + 0.5f - Intrinsics.zw) / max(Intrinsics.xy, 1e-5f);
+  if (any(pixel >= outputDimensions) || any(sourceDimensions == 0))
+    return false;
+  const float2 distortedRay  = (float2(pixel) + 0.5f - Intrinsics.zw) / max(Intrinsics.xy, 1e-5f);
   const float2 calibratedRay = UndistortSensorRay(distortedRay);
-  sensorRay = float3(calibratedRay, 1.0f);
-  sourceUV = (calibratedRay * Intrinsics.xy + Intrinsics.zw) / float2(outputDimensions);
-  if (any(sourceUV <= 0.0f) || any(sourceUV >= 1.0f)) return false;
+  sensorRay                  = float3(calibratedRay, 1.0f);
+  sourceUV                   = (calibratedRay * Intrinsics.xy + Intrinsics.zw) / float2(outputDimensions);
+  if (any(sourceUV <= 0.0f) || any(sourceUV >= 1.0f))
+    return false;
 #if SENSOR_ROLLING_SHUTTER
-  const uint2 velocityPixel = min((uint2)(sourceUV * float2(sourceDimensions)), sourceDimensions - 1U);
-  const float2 velocity = g_Velocity.Load(int3(velocityPixel, 0));
-  const float readoutFrameFraction = saturate(RangeAndExposure.w / max(g_DeltaTimeMs * 0.001f, 1e-6f));
-  const float scanlineHistory = 1.0f - (float(pixel.y) + 0.5f) / float(outputDimensions.y);
+  const uint2  velocityPixel        = min((uint2)(sourceUV * float2(sourceDimensions)), sourceDimensions - 1U);
+  const float2 velocity             = g_Velocity.Load(int3(velocityPixel, 0));
+  const float  readoutFrameFraction = saturate(RangeAndExposure.w / max(g_DeltaTimeMs * 0.001f, 1e-6f));
+  const float  scanlineHistory      = 1.0f - (float(pixel.y) + 0.5f) / float(outputDimensions.y);
   sourceUV -= velocity * float2(0.5f, -0.5f) * (readoutFrameFraction * scanlineHistory);
 #endif
-  if (any(sourceUV <= 0.0f) || any(sourceUV >= 1.0f)) return false;
-  sourcePixel = min((uint2)(sourceUV * float2(sourceDimensions)), sourceDimensions - 1U);
+  if (any(sourceUV <= 0.0f) || any(sourceUV >= 1.0f))
+    return false;
+  sourcePixel       = min((uint2)(sourceUV * float2(sourceDimensions)), sourceDimensions - 1U);
   const float depth = g_SceneDepth.Load(int3(sourcePixel, 0));
-  if (depth <= 0.0f) return false;
+  if (depth <= 0.0f)
+    return false;
   // Reconstruct with the supplied projection, including finite far planes.
   const float3 worldPosition = ReconstructWorldPos(sourceUV, depth);
-  axialDepth = dot(worldPosition - g_CameraPositionAndNearPlane.xyz, normalize(g_CameraForwardAndFarPlane.xyz));
-  radialRange = axialDepth * length(sensorRay);
+  axialDepth                 = dot(worldPosition - g_CameraPositionAndNearPlane.xyz, normalize(g_CameraForwardAndFarPlane.xyz));
+  radialRange                = axialDepth * length(sensorRay);
   return isfinite(radialRange) && radialRange >= RangeAndExposure.x && radialRange <= RangeAndExposure.y;
 }
