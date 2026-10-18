@@ -1940,6 +1940,7 @@ namespace
       return input ? connect(node, "Value", operation, pin) : connect(operation, pin, node, "Value");
     };
     XII_SUCCEED_OR_RETURN(boundary("Lights", true, assign, "Lights", xiiRenderPipelinePin::Buffer, 800));
+    XII_SUCCEED_OR_RETURN(boundary("Candidates", true, assign, "Candidates", xiiRenderPipelinePin::Buffer, 1000));
     XII_SUCCEED_OR_RETURN(boundary("Layout", false, layout, "Layout", xiiRenderPipelinePin::FrameData, 0));
     XII_SUCCEED_OR_RETURN(boundary("Clusters", false, bounds, "Clusters", xiiRenderPipelinePin::Buffer, 200));
     XII_SUCCEED_OR_RETURN(boundary("LightGrid", false, assign, "LightGrid", xiiRenderPipelinePin::Buffer, 400));
