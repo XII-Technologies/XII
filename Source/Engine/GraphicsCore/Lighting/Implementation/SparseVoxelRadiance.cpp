@@ -5,7 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Containers/HashTable.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
-#include <GraphicsCore/Pipeline/FrameConstants.h>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -503,13 +503,13 @@ const xiiSparseVoxelBrickState* xiiSparseVoxelRadianceContext::FindBrick(xiiUInt
   return m_pState->m_BrickLookup.TryGetValue(uiPackedKey, uiPhysicalBrick) ? &m_pState->m_Bricks[uiPhysicalBrick] : nullptr;
 }
 
-xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle lightConstants)
+xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle environmentLight)
 {
   UpdateHandles result;
   if (!IsInitialized() || m_pState->m_uiFrameIndex == 0)
     return result;
-  const auto* frameDescription = graph.GetBufferDescription(lightConstants);
-  if (!frameDescription || frameDescription->m_uiSize < sizeof(xiiFrameLightConstants) || !frameDescription->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  const auto* frameDescription = graph.GetBufferDescription(environmentLight);
+  if (!frameDescription || frameDescription->m_uiSize != sizeof(xiiEnvironmentLightConstants) || !frameDescription->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
     return result;
   if (m_pState->m_pRadiancePool == nullptr && CreateGpuResources().Failed())
     return result;
@@ -547,8 +547,8 @@ xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddU
   };
 
   const bool bPerformUpdates = m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex;
-  auto       pass            = graph.AddPass<UpdatePassData>("Sparse Voxel Radiance Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates, lightConstants](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_LightConstants=builder.ReadBuffer(lightConstants,xiiGALResourceStateFlags::ConstantBuffer);
+  auto       pass            = graph.AddPass<UpdatePassData>("Sparse Voxel Radiance Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates, environmentLight](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_LightConstants=builder.ReadBuffer(environmentLight,xiiGALResourceStateFlags::ConstantBuffer);
       xiiGALBufferCreationDescription description;
       const xiiUInt32                 uiResolution = m_pState->m_Settings.m_uiClipmapBrickResolution;
       const xiiUInt32                 uiPageCount  = m_pState->m_Settings.m_uiClipmapLevels * uiResolution * uiResolution * uiResolution;
@@ -604,7 +604,7 @@ xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddU
       if (!data.m_Updates.IsEmpty())
       {
         cmd.SetPipelineState(m_pState->m_pUpdatePipeline);
-        cmd.ResolveAndSetConstantBuffer("PerFrameLight",context.GetBuffer(data.m_LightConstants),xiiGALShaderType::Compute);
+        cmd.ResolveAndSetConstantBuffer("xiiEnvironmentLightConstants",context.GetBuffer(data.m_LightConstants),xiiGALShaderType::Compute);
         cmd.ResolveAndSetConstantBuffer("xiiSparseVoxelRadianceConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
         cmd.ResolveAndSetShaderResourceBufferView("g_SparseVoxelUpdates", context.GetBuffer(data.m_hUpdates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
         cmd.ResolveAndSetUnorderedAccessBufferView("g_SparseVoxelRadiancePool", context.GetBuffer(data.m_hRadiancePool)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);

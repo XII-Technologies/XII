@@ -15,7 +15,7 @@ public:
   xiiRenderPipelineTextureInputPin  m_DistanceAtlas{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin   m_ProbeStates{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin   m_ProbeConstants{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineBufferInputPin   m_Light{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferInputPin   m_Environment{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   float                             m_fIntensity = 1.0f;
   xiiDDGIProbeGatherPass();

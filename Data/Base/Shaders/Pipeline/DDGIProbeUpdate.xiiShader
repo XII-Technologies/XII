@@ -10,6 +10,7 @@ ALL
 #include <Shaders/Common/StorageImageFormat.h>
 
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 #include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 
 struct xiiGpuDDGIProbeUpdate
@@ -38,8 +39,8 @@ void main(uint3 tid : SV_DispatchThreadID)
     // This compute path is the non-RT baseline. It seeds probes with the
     // physically-scaled sky and sun field; hardware ray tracing replaces the
     // target radiance while retaining the same temporal storage contract.
-    const float3 skyRadiance = max(g_AmbientLightColor.rgb, 0.0f);
-    const float3 sunRadiance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * 0.25f;
+    const float3 skyRadiance = max(EnvironmentAmbientRadiance.rgb, 0.0f);
+    const float3 sunRadiance = max(EnvironmentColorAndAngularRadius.rgb * EnvironmentDirectionAndIlluminance.w, 0.0f) * 0.25f;
     const float3 targetRadiance = skyRadiance + sunRadiance;
     const float historyWeight = saturate(update.PositionAndHistoryWeight.w);
     const float3 previousRadiance = g_DDGIIrradianceAtlas[atlasPixel].rgb;

@@ -12,6 +12,7 @@ ALL
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/GatherConstants.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 #include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 
 struct xiiGpuDDGIProbeState
@@ -99,5 +100,5 @@ void main(uint3 tid : SV_DispatchThreadID)
         totalWeight += weight;
     }
 
-    g_DDGIOut[tid.xy] = float4((totalWeight > 1e-5f ? irradiance / totalWeight : g_AmbientLightColor.rgb) * GatherIntensityAndPadding.x, saturate(totalWeight));
+    g_DDGIOut[tid.xy] = float4((totalWeight > 1e-5f ? irradiance / totalWeight : EnvironmentAmbientRadiance.rgb) * GatherIntensityAndPadding.x, saturate(totalWeight));
 }

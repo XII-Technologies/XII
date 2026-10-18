@@ -148,7 +148,7 @@ public:
 
   /// Adds the temporally accumulated probe update pass and publishes resources
   /// consumed by the per-pixel DDGI final gather.
-  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle lightConstants);
+  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle environmentLight);
 
 private:
   [[nodiscard]] xiiResult CreateGpuResources();

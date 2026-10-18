@@ -8,6 +8,7 @@ ALL
 [COMPUTE_SHADER]
 
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 #include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
 
 struct xiiGpuSparseVoxelBrickUpdate
@@ -35,8 +36,8 @@ void main(uint3 tid : SV_DispatchThreadID)
     // Isotropic low-frequency injection is the portable baseline. Geometry
     // voxelization and directional cone lobes can replace this target without
     // changing residency, page-table, or temporal storage contracts.
-    const float3 ambientRadiance = max(g_AmbientLightColor.rgb, 0.0f);
-    const float3 sunRadiance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * 0.08f;
+    const float3 ambientRadiance = max(EnvironmentAmbientRadiance.rgb, 0.0f);
+    const float3 sunRadiance = max(EnvironmentColorAndAngularRadius.rgb * EnvironmentDirectionAndIlluminance.w, 0.0f) * 0.08f;
     const float3 targetRadiance = ambientRadiance + sunRadiance;
     const float historyWeight = saturate(asfloat(update.PhysicalLevelAndKey.w));
     const float3 previousRadiance = g_SparseVoxelRadiancePool[poolIndex].rgb;

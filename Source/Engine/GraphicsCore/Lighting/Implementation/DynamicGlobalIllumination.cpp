@@ -5,7 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Algorithm/Sorting.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
-#include <GraphicsCore/Pipeline/FrameConstants.h>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -378,7 +378,7 @@ const xiiDDGISettings& xiiDDGIContext::GetConfiguration() const
   return m_pState->m_Settings;
 }
 
-xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle lightConstants)
+xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle environmentLight)
 {
   UpdateHandles result;
   if (!IsInitialized() || m_pState->m_uiFrameIndex == 0)
@@ -386,8 +386,8 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
   if ((m_pState->m_pIrradianceAtlas == nullptr || m_pState->m_pDistanceAtlas == nullptr) && CreateGpuResources().Failed())
     return result;
 
-  const auto* frameDescription = graph.GetBufferDescription(lightConstants);
-  if (!frameDescription || frameDescription->m_uiSize < sizeof(xiiFrameLightConstants) || !frameDescription->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  const auto* frameDescription = graph.GetBufferDescription(environmentLight);
+  if (!frameDescription || frameDescription->m_uiSize != sizeof(xiiEnvironmentLightConstants) || !frameDescription->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
     return result;
   if (m_pState->m_pUpdatePipeline == nullptr)
   {
@@ -423,8 +423,8 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
 
   const bool bPerformUpdates = m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex;
 
-  auto pass = graph.AddPass<UpdatePassData>("DDGI Probe Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates, lightConstants](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_LightConstants=builder.ReadBuffer(lightConstants,xiiGALResourceStateFlags::ConstantBuffer);
+  auto pass = graph.AddPass<UpdatePassData>("DDGI Probe Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates, environmentLight](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_LightConstants=builder.ReadBuffer(environmentLight,xiiGALResourceStateFlags::ConstantBuffer);
       xiiGALBufferCreationDescription bufferDescription;
       bufferDescription.m_uiSize              = xiiMath::Max(m_pState->m_Probes.GetCount(), 1U) * sizeof(xiiGpuDDGIProbeState);
       bufferDescription.m_uiElementByteStride = sizeof(xiiGpuDDGIProbeState);
@@ -481,7 +481,7 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
       if (!data.m_ProbeUpdates.IsEmpty())
       {
         cmd.SetPipelineState(m_pState->m_pUpdatePipeline);
-        cmd.ResolveAndSetConstantBuffer("PerFrameLight",context.GetBuffer(data.m_LightConstants),xiiGALShaderType::Compute);
+        cmd.ResolveAndSetConstantBuffer("xiiEnvironmentLightConstants",context.GetBuffer(data.m_LightConstants),xiiGALShaderType::Compute);
         cmd.ResolveAndSetConstantBuffer("xiiDDGIProbeConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
         cmd.ResolveAndSetShaderResourceBufferView("g_DDGIProbeUpdates", context.GetBuffer(data.m_hProbeUpdates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
         cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIIrradianceAtlas", context.GetTexture(data.m_hIrradianceAtlas)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);

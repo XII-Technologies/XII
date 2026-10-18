@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/GatherConstants.h>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 
 struct xiiDDGIProbeGatherPass::State
 {
@@ -30,7 +31,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeGatherPass, 1, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("DDGIProbeDistanceAtlas", m_DistanceAtlas)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DDGIProbeStates", m_ProbeStates)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DDGIProbeConstants", m_ProbeConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("PerFrameLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("EnvironmentLight", m_Environment)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DDGIIrradiance", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Intensity", m_fIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 1000.0f)),
   } XII_END_PROPERTIES;
@@ -54,11 +55,11 @@ xiiResult xiiDDGIProbeGatherPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("GI gather requires matching depth/normal extents and valid camera constants.");
   const auto* states     = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_ProbeStates));
   const auto* constants  = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_ProbeConstants));
-  const auto* light      = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_Light));
+  const auto* light      = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_Environment));
   const auto* irradiance = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_IrradianceAtlas));
   const auto* distance   = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_DistanceAtlas));
   if (!states || states->m_uiElementByteStride != sizeof(xiiGpuDDGIProbeState) || states->m_uiSize < sizeof(xiiGpuDDGIProbeState) ||
-      !constants || constants->m_uiSize < sizeof(xiiDDGIProbeConstants) || !light || light->m_uiSize < sizeof(xiiFrameLightConstants) ||
+      !constants || constants->m_uiSize < sizeof(xiiDDGIProbeConstants) || !light || light->m_uiSize != sizeof(xiiEnvironmentLightConstants) ||
       !irradiance || !distance || irradiance->m_Size != distance->m_Size)
     return context.ReportFailure("DDGI gather requires compatible probe records, constants and equal atlas extents.");
   if (!m_pState)
@@ -68,19 +69,21 @@ xiiResult xiiDDGIProbeGatherPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
-    xiiRenderGraphTextureHandle m_Depth, m_Normal, m_Output;
-    xiiRenderGraphBufferHandle  m_Camera, m_Constants;
-    xiiRenderGraphTextureHandle m_IrradianceAtlas;
-    xiiRenderGraphTextureHandle m_DistanceAtlas;
-    xiiRenderGraphBufferHandle  m_ProbeStates;
-    xiiRenderGraphBufferHandle  m_ProbeConstants;
-    xiiRenderGraphBufferHandle  m_Light;
-    xiiSizeU32                  m_Size;
-    float                       m_fIntensity;
+    xiiRenderGraphTextureHandle              m_Depth, m_Normal, m_Output;
+    xiiRenderGraphBufferHandle               m_Camera, m_Constants;
+    xiiRenderGraphTextureHandle              m_IrradianceAtlas;
+    xiiRenderGraphTextureHandle              m_DistanceAtlas;
+    xiiRenderGraphBufferHandle               m_ProbeStates;
+    xiiRenderGraphBufferHandle               m_ProbeConstants;
+    xiiRenderGraphBufferHandle               m_Environment;
+    xiiSizeU32                               m_Size;
+    float                                    m_fIntensity;
+    xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+    xiiSharedPtr<xiiGALSampler>              m_Point;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_fIntensity = m_fIntensity;
+    data.m_fIntensity = m_fIntensity; data.m_Pipeline = m_pState->m_Pipeline; data.m_Point = m_pState->m_Point;
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Normal = builder.ReadTexture(normal, xiiGALResourceStateFlags::ShaderResource);
     data.m_Camera = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
@@ -89,20 +92,20 @@ xiiResult xiiDDGIProbeGatherPass::Build(xiiRenderPipelinePassContext& context)
     data.m_DistanceAtlas = builder.ReadTexture(context.GetInputTexture(m_DistanceAtlas), xiiGALResourceStateFlags::ShaderResource);
     data.m_ProbeStates = builder.ReadBuffer(context.GetInputBuffer(m_ProbeStates), xiiGALResourceStateFlags::ShaderResource);
     data.m_ProbeConstants = builder.ReadBuffer(context.GetInputBuffer(m_ProbeConstants), xiiGALResourceStateFlags::ConstantBuffer);
-    data.m_Light = builder.ReadBuffer(context.GetInputBuffer(m_Light), xiiGALResourceStateFlags::ConstantBuffer);
+    data.m_Environment = builder.ReadBuffer(context.GetInputBuffer(m_Environment), xiiGALResourceStateFlags::ConstantBuffer);
     xiiGALTextureCreationDescription description;
     description.m_Type = xiiGALResourceDimension::Texture2D;
     description.m_Size = size;
     description.m_Format = xiiGALResourceFormat::RGBA16Float;
     description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-    data.m_Output = builder.WriteTexture("Irradiance", description, xiiGALResourceStateFlags::UnorderedAccess); }, [this](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Output = builder.WriteTexture("Irradiance", description, xiiGALResourceStateFlags::UnorderedAccess); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     {
       xiiGALMapHelper<xiiGIGatherConstants> constants(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       constants->GatherIntensityAndPadding = xiiVec4(data.m_fIntensity, 0, 0, 0);
     }
-    commands.SetPipelineState(m_pState->m_Pipeline.Borrow());
-    commands.ResolveAndSetSampler("PointClampSampler", m_pState->m_Point.Borrow());
+    commands.SetPipelineState(data.m_Pipeline.Borrow());
+    commands.ResolveAndSetSampler("PointClampSampler", data.m_Point.Borrow());
     commands.ResolveAndSetConstantBuffer("PerFrameCamera", execute.GetBuffer(data.m_Camera), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("xiiGIGatherConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_SceneDepth", execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -111,7 +114,7 @@ xiiResult xiiDDGIProbeGatherPass::Build(xiiRenderPipelinePassContext& context)
     commands.ResolveAndSetShaderResourceTextureView("g_DDGIDistanceAtlas", execute.GetTexture(data.m_DistanceAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceBufferView("g_DDGIProbeStates", execute.GetBuffer(data.m_ProbeStates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("xiiDDGIProbeConstants", execute.GetBuffer(data.m_ProbeConstants), xiiGALShaderType::Compute);
-    commands.ResolveAndSetConstantBuffer("PerFrameLight", execute.GetBuffer(data.m_Light), xiiGALShaderType::Compute);
+    commands.ResolveAndSetConstantBuffer("xiiEnvironmentLightConstants", execute.GetBuffer(data.m_Environment), xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessTextureView("g_DDGIOut", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     commands.DispatchCompute({(data.m_Size.width + 7U) / 8U, (data.m_Size.height + 7U) / 8U, 1U}); });

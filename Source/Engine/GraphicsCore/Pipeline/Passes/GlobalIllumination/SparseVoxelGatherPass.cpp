@@ -67,18 +67,20 @@ xiiResult xiiSparseVoxelGatherPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
-    xiiRenderGraphTextureHandle m_Depth, m_Normal, m_Output;
-    xiiRenderGraphBufferHandle  m_Camera, m_Constants;
-    xiiRenderGraphBufferHandle  m_RadiancePool;
-    xiiRenderGraphBufferHandle  m_PageTable;
-    xiiRenderGraphBufferHandle  m_LevelData;
-    xiiRenderGraphBufferHandle  m_VoxelConstants;
-    xiiSizeU32                  m_Size;
-    float                       m_fIntensity;
+    xiiRenderGraphTextureHandle              m_Depth, m_Normal, m_Output;
+    xiiRenderGraphBufferHandle               m_Camera, m_Constants;
+    xiiRenderGraphBufferHandle               m_RadiancePool;
+    xiiRenderGraphBufferHandle               m_PageTable;
+    xiiRenderGraphBufferHandle               m_LevelData;
+    xiiRenderGraphBufferHandle               m_VoxelConstants;
+    xiiSizeU32                               m_Size;
+    float                                    m_fIntensity;
+    xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+    xiiSharedPtr<xiiGALSampler>              m_Point;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_fIntensity = m_fIntensity;
+    data.m_fIntensity = m_fIntensity; data.m_Pipeline=m_pState->m_Pipeline; data.m_Point=m_pState->m_Point;
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Normal = builder.ReadTexture(normal, xiiGALResourceStateFlags::ShaderResource);
     data.m_Camera = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
@@ -92,14 +94,14 @@ xiiResult xiiSparseVoxelGatherPass::Build(xiiRenderPipelinePassContext& context)
     description.m_Size = size;
     description.m_Format = xiiGALResourceFormat::RGBA16Float;
     description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-    data.m_Output = builder.WriteTexture("Irradiance", description, xiiGALResourceStateFlags::UnorderedAccess); }, [this](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Output = builder.WriteTexture("Irradiance", description, xiiGALResourceStateFlags::UnorderedAccess); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     {
       xiiGALMapHelper<xiiGIGatherConstants> constants(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       constants->GatherIntensityAndPadding = xiiVec4(data.m_fIntensity, 0, 0, 0);
     }
-    commands.SetPipelineState(m_pState->m_Pipeline.Borrow());
-    commands.ResolveAndSetSampler("PointClampSampler", m_pState->m_Point.Borrow());
+    commands.SetPipelineState(data.m_Pipeline.Borrow());
+    commands.ResolveAndSetSampler("PointClampSampler", data.m_Point.Borrow());
     commands.ResolveAndSetConstantBuffer("PerFrameCamera", execute.GetBuffer(data.m_Camera), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("xiiGIGatherConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_SceneDepth", execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);

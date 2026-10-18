@@ -24,6 +24,7 @@
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 #include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
 
 class xiiOpaqueTestExport : public xiiRenderPipelinePass
@@ -536,7 +537,7 @@ public:
         description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
         return builder.WriteBuffer(name, description, stride ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::ConstantBuffer);
       };
-      data.m_Light = create("Test Light", sizeof(xiiFrameLightConstants));
+      data.m_Light = create("Test Light", sizeof(xiiEnvironmentLightConstants));
       data.m_ProbeConstants = create("Test Probe Constants", sizeof(xiiDDGIProbeConstants));
       data.m_States = create("Test Probes", sizeof(xiiGpuDDGIProbeState), sizeof(xiiGpuDDGIProbeState));
       data.m_PageTable = create("Test Pages", 8 * sizeof(xiiUInt32), sizeof(xiiUInt32));
@@ -545,9 +546,9 @@ public:
       data.m_VoxelConstants = create("Test Voxel Constants", sizeof(xiiSparseVoxelRadianceConstants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       {
-        xiiGALMapHelper<xiiFrameLightConstants> mapped(commands, execute.GetBuffer(data.m_Light), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-        *mapped = xiiFrameLightConstants();
-        mapped->m_AmbientLightColor = xiiVec4(0.3f, 0.4f, 0.5f, 1);
+        xiiGALMapHelper<xiiEnvironmentLightConstants> mapped(commands, execute.GetBuffer(data.m_Light), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        *mapped = xiiEnvironmentLightConstants();
+        mapped->EnvironmentAmbientRadiance = xiiVec4(0.3f, 0.4f, 0.5f, 1);
       }
       {
         xiiGALMapHelper<xiiDDGIProbeConstants> mapped(commands, execute.GetBuffer(data.m_ProbeConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -592,7 +593,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiIrradianceTestSource, 1, xiiRTTIDefaultAlloc
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("PerFrameLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("EnvironmentLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("DDGIProbeConstants", m_ProbeConstants)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("DDGIProbeStates", m_States)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("SparseVoxelPageTable", m_PageTable)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -636,7 +637,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentIrradianceGathers)
   }
   XII_TEST_RESULT(leaf.Connect(irradianceAtlas, "Texture", ddgi, "DDGIProbeIrradianceAtlas"));
   XII_TEST_RESULT(leaf.Connect(distanceAtlas, "Texture", ddgi, "DDGIProbeDistanceAtlas"));
-  for (auto pin : {"DDGIProbeStates", "DDGIProbeConstants", "PerFrameLight"})
+  for (auto pin : {"DDGIProbeStates", "DDGIProbeConstants", "EnvironmentLight"})
     XII_TEST_RESULT(leaf.Connect(resources, pin, ddgi, pin));
   for (auto pin : {"SparseVoxelPageTable", "SparseVoxelLevelData", "SparseVoxelRadiancePool", "SparseVoxelConstants"})
     XII_TEST_RESULT(leaf.Connect(resources, pin, sparse, pin));
@@ -695,5 +696,44 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentIrradianceGathers)
     }
     XII_TEST_INT(outputs, 4);
   }
+  // Compile and record a final independent graph after both gather instances and their view retire.
+  xiiRenderGraphContext     queued;
+  xiiRenderPipelineInstance detached;
+  if (!XII_TEST_RESULT(queued.Initialize("Retained irradiance gathers")) || !XII_TEST_RESULT(detached.Synchronize(resource)))
+    return;
+  xiiRenderGraphFrame queuedFrame;
+  if (!XII_TEST_RESULT(queuedFrame.Begin()))
+    return;
+  auto& graph = queued.GetGraph();
+  auto& cache = queued.GetResourceCache();
+  cache.BeginFrame(queuedFrame.GetFrameIndex(), queuedFrame.GetCompletedFrame());
+  XII_SCOPE_EXIT(cache.EndFrame());
+  graph.BeginSetup(queuedFrame.GetFrameIndex());
+  if (!XII_TEST_RESULT(detached.Build(view, graph, queued.GetBlackboard())))
+    return;
+  xiiDynamicArray<xiiRenderGraphTextureHandle> retained;
+  xiiDynamicArray<xiiColor>                    expected;
+  const auto*                                  compiled = detached.GetPipeline();
+  for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
+  {
+    const auto& provenance = compiled->GetProvenance()[i];
+    if (provenance.m_Element != ddgiId && provenance.m_Element != sparseId)
+      continue;
+    const auto* binding = detached.GetOutputBinding(i, "Output");
+    if (!XII_TEST_BOOL(binding && binding->m_hTexture.IsValid()))
+      return;
+    retained.PushBack(binding->m_hTexture);
+    const bool other = provenance.m_InstancePath[0] == secondId;
+    expected.PushBack(provenance.m_Element == ddgiId ? (other ? xiiColor(0.6f, 0.8f, 1, 0) : xiiColor(0.3f, 0.4f, 0.5f, 0)) : (other ? xiiColor(0.5f, 1, 2, 1) : xiiColor(2, 4, 8, 1)));
+  }
+  detached.Clear();
   module->DestroyView(handle);
+  graph.EndSetup();
+  if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &queued.GetBlackboard(), &cache)))
+    return;
+  queuedFrame.End();
+  environment.GetDevice()->WaitIdle();
+  XII_TEST_INT(retained.GetCount(), 4);
+  for (xiiUInt32 i = 0; i < retained.GetCount(); ++i)
+    CheckOpaquePixels(environment, graph.GetExportedTexture(retained[i]), expected[i]);
 }

@@ -5,6 +5,8 @@
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/WorldDirectionalLightPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
@@ -264,7 +266,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IrradianceGatherMemberPins)
   properties.Clear();
   XII_TEST_RESULT(probe.GetProperties(properties));
   XII_TEST_FLOAT(properties["Intensity"].Get<float>(), 2, 0);
-  XII_TEST_BOOL(!properties.Contains("PerFrameLight") && !properties.Contains("DDGIProbeStates"));
+  XII_TEST_BOOL(!properties.Contains("EnvironmentLight") && !properties.Contains("DDGIProbeStates"));
   xiiDDGIProbeGatherPass copy;
   XII_TEST_RESULT(copy.Configure(properties));
   properties.Insert("Intensity", -0.01f);
@@ -273,7 +275,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IrradianceGatherMemberPins)
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   probe.GetPins(pins);
   XII_TEST_RESULT(probe.InitializePinBindings(pins));
-  XII_TEST_BOOL(pins[probe.m_Light.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer));
+  XII_TEST_BOOL(pins[probe.m_Environment.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer));
   XII_TEST_BOOL(pins[probe.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA16Float);
   pins.Clear();
   sparse.GetPins(pins);
@@ -378,4 +380,39 @@ XII_CREATE_SIMPLE_TEST(Pipeline, CompiledRootBoundaryBindings)
   XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, recompiled));
   XII_TEST_INT(recompiled->GetInterface().GetCount(), compiled->GetInterface().GetCount());
   XII_TEST_INT(recompiled->GetInterface()[recompiled->FindInterface("Color", true)].m_Bindings.GetCount(), 2);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, EnvironmentLightMemberPins)
+{
+  xiiEnvironmentLightConstantsPass environment;
+  xiiVariantDictionary             properties;
+  properties.Insert("Illuminance", 125.0f);
+  properties.Insert("AmbientRadiance", xiiVec3(0.25f, 0.5f, 1.0f));
+  XII_TEST_RESULT(environment.Configure(properties));
+  properties.Clear();
+  XII_TEST_RESULT(environment.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("DirectionalLight") && !properties.Contains("EnvironmentLight"));
+  xiiEnvironmentLightConstantsPass copy;
+  XII_TEST_RESULT(copy.Configure(properties));
+  XII_TEST_FLOAT(copy.m_fIlluminance, 125, 0);
+  XII_TEST_BOOL(copy.m_Ambient == xiiVec3(0.25f, 0.5f, 1));
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  copy.GetPins(pins);
+  XII_TEST_RESULT(copy.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[copy.m_Directional.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[copy.m_Directional.GetBindingIndex()].m_pDataType == xiiGetStaticRTTI<xiiDirectionalLightFrameData>());
+  XII_TEST_BOOL(pins[copy.m_Constants.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer));
+  xiiWorldDirectionalLightPass source;
+  XII_TEST_BOOL(source.GetRuntimeFeatures().IsNoFlagSet() && source.GetExtractionRequirements() == xiiRenderExtractionCategory::Lights);
+  for (const xiiStringView property : {"Illuminance", "AngularRadius"})
+  {
+    xiiEnvironmentLightConstantsPass rejected;
+    xiiVariantDictionary             invalid;
+    invalid.Insert(property, -1.0f);
+    XII_TEST_BOOL(rejected.Configure(invalid).Failed());
+  }
+  xiiEnvironmentLightConstantsPass rejectedDirection;
+  xiiVariantDictionary             invalid;
+  invalid.Insert("Direction", xiiVec3::MakeZero());
+  XII_TEST_BOOL(rejectedDirection.Configure(invalid).Failed());
 }

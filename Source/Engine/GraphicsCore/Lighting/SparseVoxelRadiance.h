@@ -155,7 +155,7 @@ public:
 
   /// Adds the sparse radiance injection pass and publishes the page table and
   /// persistent pool consumed by far-field final gather.
-  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle lightConstants);
+  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle environmentLight);
 
   /// Collision-free key used by CPU residency, GPU page tables, captures, and tools.
   [[nodiscard]] static xiiUInt64 PackBrickKey(xiiUInt32 uiClipmapLevel, const xiiVec3I32& vCell);
