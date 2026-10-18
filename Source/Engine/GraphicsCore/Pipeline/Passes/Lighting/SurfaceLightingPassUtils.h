@@ -20,7 +20,7 @@ namespace xiiSurfaceLightingPassUtils
     xiiRenderGraphBufferHandle  m_Camera;
     xiiSizeU32                  m_Size;
   };
-  inline xiiResult Validate(xiiRenderPipelinePassContext& context, Inputs& data)
+  inline xiiResult Validate(xiiRenderPipelinePassContext& context, Inputs& data, bool requireEmission = true)
   {
     const auto* depth  = context.m_Graph.GetTextureDescription(data.m_Depth);
     const auto* camera = context.m_Graph.GetBufferDescription(data.m_Camera);
@@ -31,7 +31,7 @@ namespace xiiSurfaceLightingPassUtils
       const auto* d = context.m_Graph.GetTextureDescription(handle);
       return d && d->m_Size == data.m_Size && d->m_Type == xiiGALResourceDimension::Texture2D && d->m_uiArraySizeOrDepth == 1 && d->m_uiSampleCount == 1 && d->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) && FloatReadable(d->m_Format) && xiiGALTextureUtilities::GetComponentCount(d->m_Format) >= channels;
     };
-    if (!compatible(data.m_Depth, 1) || !compatible(data.m_Normal, 2) || !compatible(data.m_Albedo, 4) || !compatible(data.m_Material, 4) || !compatible(data.m_Emissive, 4))
+    if (!compatible(data.m_Depth, 1) || !compatible(data.m_Normal, 2) || !compatible(data.m_Albedo, 4) || !compatible(data.m_Material, 4) || (requireEmission && !compatible(data.m_Emissive, 4)))
       return context.ReportFailure("Surface images must have matching extents, sample count and shader-readable channel layouts.");
     return XII_SUCCESS;
   }
@@ -42,8 +42,9 @@ namespace xiiSurfaceLightingPassUtils
     data.m_Normal   = builder.ReadTexture(source.m_Normal, xiiGALResourceStateFlags::ShaderResource);
     data.m_Albedo   = builder.ReadTexture(source.m_Albedo, xiiGALResourceStateFlags::ShaderResource);
     data.m_Material = builder.ReadTexture(source.m_Material, xiiGALResourceStateFlags::ShaderResource);
-    data.m_Emissive = builder.ReadTexture(source.m_Emissive, xiiGALResourceStateFlags::ShaderResource);
-    data.m_Camera   = builder.ReadBuffer(source.m_Camera, xiiGALResourceStateFlags::ConstantBuffer);
+    if (source.m_Emissive.IsValid())
+      data.m_Emissive = builder.ReadTexture(source.m_Emissive, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Camera = builder.ReadBuffer(source.m_Camera, xiiGALResourceStateFlags::ConstantBuffer);
     return data;
   }
   inline void Bind(const Inputs& data, xiiRenderGraphPassContext& execute)
@@ -54,7 +55,8 @@ namespace xiiSurfaceLightingPassUtils
     commands.ResolveAndSetShaderResourceTextureView("g_SurfaceNormal", execute.GetTexture(data.m_Normal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_SurfaceAlbedo", execute.GetTexture(data.m_Albedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_SurfaceMaterial", execute.GetTexture(data.m_Material)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    commands.ResolveAndSetShaderResourceTextureView("g_SurfaceEmissive", execute.GetTexture(data.m_Emissive)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    if (data.m_Emissive.IsValid())
+      commands.ResolveAndSetShaderResourceTextureView("g_SurfaceEmissive", execute.GetTexture(data.m_Emissive)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
   }
   inline xiiRenderGraphTextureHandle Output(xiiRenderGraphBuilder& builder, xiiSizeU32 size)
   {
