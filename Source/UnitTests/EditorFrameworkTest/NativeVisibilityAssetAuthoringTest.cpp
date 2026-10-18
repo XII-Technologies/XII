@@ -1821,6 +1821,64 @@ namespace
     return context.ExportDocument(&message);
   }
 
+  xiiStatus AuthorWorldRayProbe(xiiStringView directory)
+  {
+    const xiiStringView            name = "WorldRayProbe";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author world acceleration structure and triangle probe");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    const xiiBitflags<xiiRenderPipelineDeviceFeature> features = xiiRenderPipelineDeviceFeature::Compute | xiiRenderPipelineDeviceFeature::RayTracing | xiiRenderPipelineDeviceFeature::BindlessResources;
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(features.GetValue())));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* scene  = add("World Acceleration Structure", "xiiRayTracingScenePass", {0, 0});
+    const auto* probe  = add("Closest Triangle Probe", "xiiSceneRayProbePass", {600, 0});
+    const auto* retain = add("Retain Result", "xiiBufferExportPass", {1200, 0});
+    const auto* output = add("Result", "xiiRenderPipelineInterfacePass", {1800, 0});
+    if (!scene || !probe || !retain || !output)
+      return xiiStatus("Missing world ray probe node.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(scene, "RequireHardwareRayTracing", true));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(scene, "UseViewSelection", false));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Name", "Result"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "Input", false));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(output, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Buffer)));
+    XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(output));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView outName, const xiiDocumentObject* target, xiiStringView inName) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, outName);
+      const auto* in  = manager->GetInputPinByName(target, inName);
+      if (!out || !in)
+        return xiiStatus("Missing world ray probe connection.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    XII_SUCCEED_OR_RETURN(connect(scene, "Scene", probe, "Scene"));
+    XII_SUCCEED_OR_RETURN(connect(scene, "Materials", probe, "Materials"));
+    XII_SUCCEED_OR_RETURN(connect(probe, "Result", retain, "Input"));
+    XII_SUCCEED_OR_RETURN(connect(retain, "Output", output, "Value"));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    return context.ExportDocument(&message);
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -2132,4 +2190,22 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VirtualShadowSamplingConstants)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DirectionalAuthoring"));
   XII_TEST_STATUS(AuthorNativeLeaf(path, "VirtualShadowSamplingConstants", "xiiVirtualShadowSamplingConstantsPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SceneRayProbe)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "RayProbeAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("RayProbeAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "SceneRayProbe", "xiiSceneRayProbePass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldRayProbe)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "RayProbeAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("RayProbeAuthoring"));
+  XII_TEST_STATUS(AuthorWorldRayProbe(path));
 }

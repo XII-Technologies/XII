@@ -22,23 +22,18 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
-#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <GraphicsFoundation/States/PipelineState.h>
-#include <GraphicsFoundation/Tools/MapHelper.h>
 
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
-#include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
@@ -60,6 +55,7 @@ xiiCommandLineOptionString opt_GpuDrivenShadowWorkPipeline("GpuDrivenScene", "-s
 xiiCommandLineOptionString opt_GpuDrivenShadowPublishPipeline("GpuDrivenScene", "-shadow-publish-pipeline", "Authored virtual shadow page publication resource.", "RenderPipelines/VirtualShadowPagePublish.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowTablesPipeline("GpuDrivenScene", "-shadow-tables-pipeline", "Authored virtual-shadow residency table upload resource.", "RenderPipelines/VirtualShadowTables.xiiBinRenderPipeline");
 
+xiiCommandLineOptionString opt_GpuDrivenRayProbePipeline("GpuDrivenScene", "-ray-probe-pipeline", "Authored world TLAS and closest-triangle probe resource.", "RenderPipelines/WorldRayProbe.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenDirectionalPipeline("GpuDrivenScene", "-directional-pipeline", "Authored directional mesh constants/shadow sampling/raster resource.", "RenderPipelines/DirectionalMesh.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenTargetsPipeline("GpuDrivenScene", "-targets-pipeline", "Authored scene color/depth initialization resource.", "RenderPipelines/SceneTargets.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenPresentationPipeline("GpuDrivenScene", "-presentation-pipeline", "Authored final view output resource.", "RenderPipelines/ViewPresentation.xiiBinRenderPipeline");
@@ -106,15 +102,6 @@ namespace
     return true;
   }
 
-  struct RayTracingValidationPassData
-  {
-    xiiRenderGraphBufferHandle         m_hSceneDependency;
-    xiiRenderGraphBufferHandle         m_hShaderBindingTable;
-    xiiRenderGraphBufferHandle         m_hValidationResult;
-    xiiShaderPermutationResourceHandle m_hShaderPermutation;
-    xiiSharedPtr<xiiGALTopLevelAS>     m_pTopLevelAS;
-    xiiUInt32                          m_uiShaderRecordStride = 0U;
-  };
 } // namespace
 
 class xiiGpuDrivenSceneApp final : public xiiApplication
@@ -365,7 +352,16 @@ public:
       RequestQuit();
       return;
     }
-    CreateRayTracingValidationResources();
+    if (m_pDevice->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled)
+    {
+      m_hRayProbePipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenRayProbePipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+      if (SynchronizeRayProbePipeline().Failed())
+      {
+        SetReturnCode(1);
+        RequestQuit();
+        return;
+      }
+    }
 
     xiiRenderGraphRegistrationDescription graphDescription;
     graphDescription.m_sName     = "GPU Driven Scene";
@@ -409,10 +405,10 @@ public:
     m_hVisibilityPipeline.Invalidate();
     xiiFrameAllocator::Reset();
     m_World.Shutdown(m_uiFrameIndex);
+    m_RayProbe.Clear();
+    m_hRayProbePipeline.Invalidate();
     m_Directional.Clear();
     m_hDirectionalPipeline.Invalidate();
-    m_hRayTracingValidationPermutation.Invalidate();
-    m_pRayTracingValidationSBT.Clear();
     m_pSwapChain.Clear();
     xiiStartup::ShutdownHighLevelSystems();
     if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
@@ -429,6 +425,23 @@ public:
   }
 
 private:
+  xiiResult SynchronizeRayProbePipeline()
+  {
+    if (m_RayProbe.Synchronize(m_hRayProbePipeline).Failed())
+    {
+      xiiLog::Error("Selected ray-probe resource '{}' is missing or invalid.", m_hRayProbePipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    const auto* definition = m_RayProbe.GetPipeline();
+    const auto  result     = definition->FindInterface("Result", false);
+    if (result == xiiInvalidIndex || definition->GetInterface()[result].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+    {
+      xiiLog::Error("Ray-probe resource '{}' requires buffer output 'Result'.", m_hRayProbePipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+
   xiiResult SynchronizeDirectionalPipeline()
   {
     if (m_Directional.Synchronize(m_hDirectionalPipeline).Failed())
@@ -1036,18 +1049,30 @@ private:
 
   void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
   {
-    m_uiVirtualPagesThisFrame                        = 0;
-    const auto                       geometry        = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
-    const auto                       materials       = xiiMaterialManager::AddUploadPasses(graph);
-    const xiiRenderGraphBufferHandle hMaterials      = materials.m_hSurfaceData;
-    const auto                       rayTracingScene = m_World.AddRayTracingBuildPass(graph, m_uiFrameIndex);
-    if (m_uiFrameIndex == 1)
+    m_uiVirtualPagesThisFrame                   = 0;
+    const auto                       geometry   = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
+    const auto                       materials  = xiiMaterialManager::AddUploadPasses(graph);
+    const xiiRenderGraphBufferHandle hMaterials = materials.m_hSurfaceData;
+    if (m_hRayProbePipeline.IsValid())
     {
-      if (xiiRayTracingResources::IsHardwareRayTracingSupported())
-        xiiLog::Info("World-derived ray tracing contains {} TLAS instances.", rayTracingScene.m_uiInstanceCount);
-      else
-        xiiLog::Info("Hardware ray tracing is unavailable on this configured device; raster validation remains active.");
+      auto* view = m_World.GetRenderView();
+      XII_LOCK(view->GetWorld()->GetReadMarker());
+      if (SynchronizeRayProbePipeline().Failed() || m_RayProbe.Build(view, graph, blackboard).Failed())
+      {
+        xiiLog::Error("Selected ray-probe resource '{}' failed: {}", m_hRayProbePipeline.GetResourceID(), m_RayProbe.GetLastBuildError());
+        SetReturnCode(1);
+        RequestQuit();
+        return;
+      }
+      if (m_uiFrameIndex == 1)
+      {
+        for (xiiUInt32 i = 0; i < m_RayProbe.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+          if (const auto* source = xiiDynamicCast<const xiiRayTracingScenePass*>(m_RayProbe.GetPass(i)))
+            xiiLog::Info("World-derived ray tracing contains {} TLAS instances.", source->GetLastBuildStatistics().m_uiInstanceCount);
+      }
     }
+    else if (m_uiFrameIndex == 1)
+      xiiLog::Info("Hardware ray tracing is unavailable on this configured device; raster validation remains active.");
     if (SynchronizeDepthPipeline().Failed() || m_DepthPipeline.BeginFrame(nullptr, graph, blackboard).Failed())
     {
       xiiLog::Error("Could not prepare the selected depth/history resource: {}", m_DepthPipeline.GetLastBuildError());
@@ -1062,30 +1087,6 @@ private:
       SetReturnCode(1);
       RequestQuit();
       return;
-    }
-
-    if (rayTracingScene.m_pTopLevelAS != nullptr && m_pRayTracingValidationSBT != nullptr && m_hRayTracingValidationPermutation.IsValid())
-    {
-      auto validationPass = graph.AddPass<RayTracingValidationPassData>("Ray Tracing Dispatch Validation", xiiGALCommandQueueFlags::Compute, [this, rayTracingScene](RayTracingValidationPassData& data, xiiRenderGraphBuilder& builder) {
-          data.m_pTopLevelAS          = rayTracingScene.m_pTopLevelAS;
-          data.m_hShaderPermutation   = m_hRayTracingValidationPermutation;
-          data.m_uiShaderRecordStride = m_uiRayTracingValidationShaderRecordStride;
-          if (rayTracingScene.m_hSceneDependency.IsValid())
-            data.m_hSceneDependency = builder.ReadBuffer(rayTracingScene.m_hSceneDependency, xiiGALResourceStateFlags::BuildASRead);
-
-          data.m_hShaderBindingTable = builder.ImportBuffer("Ray Tracing Validation SBT", m_pRayTracingValidationSBT, m_pRayTracingValidationSBT->GetResourceState());
-          data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
-
-          xiiGALBufferCreationDescription resultDescription;
-          resultDescription.m_uiSize              = sizeof(xiiUInt32);
-          resultDescription.m_uiElementByteStride = sizeof(xiiUInt32);
-          resultDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-          resultDescription.m_Usage               = xiiGALResourceUsage::Default;
-          resultDescription.m_Mode                = xiiGALBufferMode::Structured;
-          data.m_hValidationResult                = builder.WriteBuffer("Ray Tracing Validation Result", resultDescription, xiiGALResourceStateFlags::UnorderedAccess);
-          builder.SetPassSideEffects(true);
-          builder.SetPassAllowMerge(false); }, [this](const RayTracingValidationPassData& data, xiiRenderGraphPassContext& context) { ExecuteRayTracingValidation(data, context); }, true);
-      XII_IGNORE_UNUSED(validationPass);
     }
 
     if (SynchronizeVisibilityPipelines().Failed() || m_World.GetGpuInstances().GetMaximumMeshletCount() > m_uiVisibilityCapacity)
@@ -1260,147 +1261,13 @@ private:
     }
   }
 
-  void CreateRayTracingValidationResources()
-  {
-    XII_ASSERT_ALWAYS(ValidateComputePipeline("Shaders/Pipeline/TemporalDenoise.xiiShader"), "Failed to validate the production temporal denoising pipeline.");
-    XII_ASSERT_ALWAYS(ValidateComputePipeline("Shaders/Pipeline/ReSTIRGITemporal.xiiShader"), "Failed to validate the production temporal ReSTIR GI pipeline.");
-    XII_ASSERT_ALWAYS(ValidateComputePipeline("Shaders/Pipeline/ReSTIRGISpatial.xiiShader"), "Failed to validate the production spatial ReSTIR GI pipeline.");
-
-    if (m_pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
-      return;
-
-    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTShadow.xiiShader", sizeof(xiiUInt32)), "Failed to validate the production ray-traced shadow pipeline.");
-    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RayTracedAmbientOcclusion.xiiShader", sizeof(xiiUInt32)), "Failed to validate the production ray-traced ambient-occlusion pipeline.");
-    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTGIFinalGather.xiiShader", 16U), "Failed to validate the production ray-traced GI pipeline.");
-    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTReflection.xiiShader", 16U), "Failed to validate the production ray-traced reflection pipeline.");
-
-    const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/RayTracingValidation.xiiShader");
-    m_hRayTracingValidationPermutation   = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
-
-    const xiiGALRayTracingProperties& properties      = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
-    const xiiUInt64                   uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
-    const xiiUInt64                   uiStride        = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
-    XII_ASSERT_DEV(uiStride != 0U, "Ray tracing shader record stride must be non-zero.");
-
-    xiiGALBufferCreationDescription description;
-    description.m_uiSize       = uiStride * 3U;
-    description.m_BindFlags    = xiiGALBindFlags::RayTracing;
-    description.m_Usage        = xiiGALResourceUsage::Mutable;
-    description.m_Mode         = xiiGALBufferMode::Raw;
-    m_pRayTracingValidationSBT = m_pDevice->CreateBuffer(description);
-    XII_ASSERT_DEV(m_pRayTracingValidationSBT != nullptr, "Failed to create ray tracing validation SBT.");
-    m_pRayTracingValidationSBT->SetDebugName("Ray Tracing Validation SBT");
-    m_uiRayTracingValidationShaderRecordStride = static_cast<xiiUInt32>(uiStride);
-  }
-
-  bool ValidateComputePipeline(xiiStringView sShaderPath)
-  {
-    const xiiShaderResourceHandle                 shader            = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
-    const xiiShaderPermutationResourceHandle      permutationHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
-    xiiResourceLock<xiiShaderPermutationResource> permutation(permutationHandle, xiiResourceAcquireMode::BlockTillLoaded);
-    if (!permutation.IsValid() || !permutation->IsShaderValid())
-      return false;
-
-    const xiiSharedPtr<xiiGALShader> computeShader = permutation->GetGALShader(xiiGALShaderType::Compute);
-    if (computeShader == nullptr)
-      return false;
-
-    xiiGALComputePipelineStateCreationDescription description;
-    description.m_pComputeShader             = computeShader;
-    description.m_pPipelineResourceSignature = permutation->GetPipelineResourceSignature();
-    return xiiGALPipelineCache::GetPipeline(description) != nullptr;
-  }
-
-  bool ValidateRayTracingPipeline(xiiStringView sShaderPath, xiiUInt32 uiPayloadSize)
-  {
-    const xiiShaderResourceHandle                 shader            = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
-    const xiiShaderPermutationResourceHandle      permutationHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
-    xiiResourceLock<xiiShaderPermutationResource> permutation(permutationHandle, xiiResourceAcquireMode::BlockTillLoaded);
-    if (!permutation.IsValid() || !permutation->IsShaderValid())
-      return false;
-
-    const xiiSharedPtr<xiiGALShader> rayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
-    const xiiSharedPtr<xiiGALShader> miss          = permutation->GetGALShader(xiiGALShaderType::RayMiss);
-    const xiiSharedPtr<xiiGALShader> closestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
-    if (rayGeneration == nullptr || miss == nullptr || closestHit == nullptr)
-      return false;
-
-    xiiGALRayTracingPipelineStateCreationDescription description;
-    description.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
-    description.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
-    description.m_uiMaximumPayloadSize                     = uiPayloadSize;
-    description.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
-    auto& rayGenerationGroup                               = description.m_GeneralShaders.ExpandAndGetRef();
-    rayGenerationGroup.m_sName.Assign("ProductionValidationRayGeneration");
-    rayGenerationGroup.m_pShader = rayGeneration;
-    auto& missGroup              = description.m_GeneralShaders.ExpandAndGetRef();
-    missGroup.m_sName.Assign("ProductionValidationMiss");
-    missGroup.m_pShader = miss;
-    auto& hitGroup      = description.m_TriangleHitShaders.ExpandAndGetRef();
-    hitGroup.m_sName.Assign("ProductionValidationTriangleHit");
-    hitGroup.m_pClosestHitShader = closestHit;
-
-    return xiiGALPipelineCache::GetPipeline(description) != nullptr;
-  }
-
-  void ExecuteRayTracingValidation(const RayTracingValidationPassData& data, xiiRenderGraphPassContext& context)
-  {
-    xiiResourceLock<xiiShaderPermutationResource> permutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-    if (!permutation.IsValid() || !permutation->IsShaderValid())
-    {
-      xiiLog::Error("Ray tracing validation shader failed to load; skipping the validation dispatch.");
-      return;
-    }
-
-    xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
-    pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
-    pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
-    pipelineDescription.m_uiMaximumPayloadSize                     = sizeof(xiiUInt32);
-    pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
-
-    auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
-    rayGeneration.m_sName.Assign("ValidationRayGeneration");
-    rayGeneration.m_pShader = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
-    auto& miss              = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
-    miss.m_sName.Assign("ValidationMiss");
-    miss.m_pShader = permutation->GetGALShader(xiiGALShaderType::RayMiss);
-    auto& hit      = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
-    hit.m_sName.Assign("ValidationTriangleHit");
-    hit.m_pClosestHitShader = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
-
-    const xiiSharedPtr<xiiGALRayTracingPipelineState> pipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
-    XII_ASSERT_DEV(pipeline != nullptr, "Failed to create ray tracing validation pipeline.");
-
-    xiiGALCommandList& commandList = context.GetCommandList();
-    commandList.SetPipelineState(pipeline.Borrow());
-    commandList.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
-    commandList.ResolveAndSetUnorderedAccessBufferView("g_ValidationResult", context.GetBuffer(data.m_hValidationResult)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
-    commandList.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
-
-    const xiiUInt64            uiStride = data.m_uiShaderRecordStride;
-    xiiGALUpdateSBTDescription sbtUpdate;
-    sbtUpdate.m_pPipelineState      = pipeline.Borrow();
-    sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
-    sbtUpdate.m_RayGenerationTable  = {0U, uiStride, uiStride};
-    sbtUpdate.m_MissTable           = {uiStride, uiStride, uiStride};
-    sbtUpdate.m_HitTable            = {uiStride * 2U, uiStride, uiStride};
-    commandList.UpdateSBT(sbtUpdate);
-
-    xiiGALTraceRaysDescription trace(sbtUpdate.m_pShaderBindingTable, 1U, 1U, 1U);
-    trace.m_RayGenerationTable = sbtUpdate.m_RayGenerationTable;
-    trace.m_MissTable          = sbtUpdate.m_MissTable;
-    trace.m_HitTable           = sbtUpdate.m_HitTable;
-    commandList.TraceRays(trace);
-  }
-
   xiiSharedPtr<xiiGALDevice>                        m_pDevice;
   xiiSharedPtr<xiiGALSwapChain>                     m_pSwapChain;
   xiiUniquePtr<xiiWindow>                           m_pWindow;
-  xiiShaderPermutationResourceHandle                m_hRayTracingValidationPermutation;
-  xiiSharedPtr<xiiGALBuffer>                        m_pRayTracingValidationSBT;
-  xiiUInt32                                         m_uiRayTracingValidationShaderRecordStride = 0U;
   xiiRenderPipelineResourceHandle                   m_hDirectionalPipeline;
   xiiRenderPipelineInstance                         m_Directional;
+  xiiRenderPipelineResourceHandle                   m_hRayProbePipeline;
+  xiiRenderPipelineInstance                         m_RayProbe;
   xiiGpuDrivenSceneConfiguration                    m_Configuration;
   xiiGpuDrivenSceneWorld                            m_World;
   xiiRenderPipelineResourceHandle                   m_hTargetsPipeline, m_hPresentationPipeline, m_hSensorExportPipeline;

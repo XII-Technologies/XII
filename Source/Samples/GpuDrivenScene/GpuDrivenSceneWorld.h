@@ -55,11 +55,6 @@ public:
     XII_LOCK(m_World->GetReadMarker());
     return *static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->GetGpuInstanceData();
   }
-  xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame) const
-  {
-    XII_LOCK(m_World->GetReadMarker());
-    return static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->AddRayTracingBuildPass(graph, frame);
-  }
   xiiView*                             GetRenderView() const;
   [[nodiscard]] xiiGpuDrivenSceneLight GetSunLight() const;
   [[nodiscard]] xiiBoundingBox         GetAnimatedShadowBounds() const;
