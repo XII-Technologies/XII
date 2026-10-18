@@ -4,6 +4,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+#include <EditorFrameworkTest/PipelineAuthoringTestUtils.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <EnginePluginAssets/RenderPipelineAsset/RenderPipelineContext.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -30,53 +31,6 @@
 
 namespace
 {
-  class NativeVisibilityAuthorDocument : public xiiRenderPipelineAssetDocument
-  {
-  public:
-    explicit NativeVisibilityAuthorDocument(xiiStringView path, xiiStringView name = "InstanceVisibility") : xiiRenderPipelineAssetDocument(path, xiiAssetDocEngineConnection::None)
-    {
-      m_pDocumentInfo               = CreateDocumentInfo();
-      m_pDocumentInfo->m_DocumentID = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name));
-      static xiiAssetDocumentTypeDescriptor descriptor;
-      descriptor.m_sDocumentTypeName  = "RenderPipeline";
-      descriptor.m_AssetDocumentFlags = xiiAssetDocumentFlags::DisableTransform;
-      m_pTypeDescriptor               = &descriptor;
-      static_cast<xiiAssetDocumentInfo*>(m_pDocumentInfo)->SetAssetsDocumentTypeName("RenderPipeline");
-    }
-
-  protected:
-    xiiTaskGroupID InternalSaveDocument(AfterSaveCallback callback) override { return xiiDocument::InternalSaveDocument(callback); }
-    void           InternalAfterSaveDocument() override {}
-  };
-  class NativeVisibilityAuthorContext : public xiiRenderPipelineContext
-  {
-  public:
-    ~NativeVisibilityAuthorContext()
-    {
-      for (const auto& id : m_Objects)
-        m_Context.DeleteObject(id);
-    }
-    xiiResult Import(const xiiDocument& document)
-    {
-      m_DocumentGuid = document.GetGuid();
-      xiiAbstractObjectGraph           graph;
-      xiiDocumentObjectConverterWriter writer(&graph, document.GetObjectManager());
-      for (const auto* object : document.GetObjectManager()->GetRootObject()->GetChildren())
-        writer.AddObjectToGraph(object);
-      xiiRttiConverterReader reader(&graph, &m_Context);
-      for (const auto* object : document.GetObjectManager()->GetRootObject()->GetChildren())
-      {
-        if (!reader.CreateObjectFromNode(graph.GetNode(object->GetGuid())))
-          return XII_FAILURE;
-        m_Objects.PushBack(object->GetGuid());
-      }
-      return XII_SUCCESS;
-    }
-    using xiiRenderPipelineContext::ExportDocument;
-
-  private:
-    xiiDynamicArray<xiiUuid> m_Objects;
-  };
 
 
   xiiStatus AuthorGeometryLodFeedback(xiiStringView outputDirectory);
@@ -85,7 +39,7 @@ namespace
     const xiiStringView name = matrix ? "MatrixInstanceVisibility" : "InstanceVisibility";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native world instance visibility");
@@ -164,7 +118,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -191,7 +145,7 @@ namespace
     const xiiStringView name = matrix ? "MatrixMeshletVisibility" : "MeshletVisibility";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native meshlet visibility");
@@ -274,7 +228,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -302,7 +256,7 @@ namespace
     XII_SUCCEED_OR_RETURN(AuthorMeshletVisibility(library));
     xiiStringBuilder path(outputDirectory, "/VertexPullDraws.xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "VertexPullDraws");
+    xiiPipelineTestDocument document(path, "VertexPullDraws");
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native vertex-pull draws");
@@ -363,7 +317,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -392,7 +346,7 @@ namespace
     XII_SUCCEED_OR_RETURN(AuthorGeometryLodFeedback(library));
     xiiStringBuilder path(outputDirectory, "/WorldMeshDraws.xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "WorldMeshDraws");
+    xiiPipelineTestDocument document(path, "WorldMeshDraws");
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author world mesh draws");
@@ -461,7 +415,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -490,7 +444,7 @@ namespace
     XII_SUCCEED_OR_RETURN(AuthorVertexPullDraws(library));
     xiiStringBuilder path(outputDirectory, "/SurfaceQuery.xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "SurfaceQuery");
+    xiiPipelineTestDocument document(path, "SurfaceQuery");
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native surface raster graph");
@@ -555,7 +509,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -579,7 +533,7 @@ namespace
   {
     xiiStringBuilder path(outputDirectory, "/DebugVisualization.xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "DebugVisualization");
+    xiiPipelineTestDocument document(path, "DebugVisualization");
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author explicit debug composition");
@@ -644,7 +598,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -673,7 +627,7 @@ namespace
     XII_SUCCEED_OR_RETURN(AuthorSurfaceQuery(library));
     xiiStringBuilder path(outputDirectory, "/EditorMeshPicking.xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "EditorMeshPicking");
+    xiiPipelineTestDocument document(path, "EditorMeshPicking");
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author explicit editor mesh picking");
@@ -726,7 +680,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -756,7 +710,7 @@ namespace
     const xiiStringView assetName = materialTargets ? "GBuffer" : "DepthOnly";
     xiiStringBuilder    path(outputDirectory, "/", assetName, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, assetName);
+    xiiPipelineTestDocument document(path, assetName);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent depth raster graph");
@@ -837,7 +791,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import visibility asset.");
     xiiExportDocumentMsgToEngine message;
@@ -861,7 +815,7 @@ namespace
   {
     xiiStringBuilder path(outputDirectory, "/DepthPyramid.xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, "DepthPyramid");
+    xiiPipelineTestDocument document(path, "DepthPyramid");
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author separate depth reduction and texture history");
@@ -907,7 +861,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import depth/history asset.");
     xiiExportDocumentMsgToEngine message;
@@ -940,7 +894,7 @@ namespace
     const xiiStringView name = meshlets ? "MeshletOcclusion" : "InstanceOcclusion";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent depth occlusion");
@@ -993,7 +947,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import occlusion asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1016,7 +970,7 @@ namespace
     const xiiStringView name = "ShadowDepth";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent depth shadow depth");
@@ -1070,7 +1024,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import shadow depth asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1095,7 +1049,7 @@ namespace
     XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
     XII_SUCCEED_OR_RETURN(AuthorShadowDepth(library));
     xiiStringBuilder               path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author explicit shadow target and reusable depth subgraph");
@@ -1175,7 +1129,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import shadow map asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1198,7 +1152,7 @@ namespace
     const xiiStringView name = "GeometryLodFeedback";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent geometry streaming feedback");
@@ -1252,7 +1206,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import geometry feedback asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1275,7 +1229,7 @@ namespace
     const xiiStringView name = "VirtualShadowFeedback";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent virtual shadow feedback");
@@ -1329,7 +1283,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import shadow feedback asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1352,7 +1306,7 @@ namespace
     const xiiStringView name = "ShadowCascades";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author stabilized directional cascades");
@@ -1410,7 +1364,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import directional cascades asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1433,7 +1387,7 @@ namespace
     const xiiStringView name = "VirtualShadowTables";
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author device residency table uploads");
@@ -1484,7 +1438,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import virtual shadow tables asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1506,7 +1460,7 @@ namespace
   {
     xiiStringBuilder path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author an independent native operation");
@@ -1571,7 +1525,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import native operation asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1592,7 +1546,7 @@ namespace
   xiiStatus AuthorViewBoundaryAsset(xiiStringView outputDirectory, xiiStringView name)
   {
     xiiStringBuilder               path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
-    NativeVisibilityAuthorDocument document(path, name);
+    xiiPipelineTestDocument document(path, name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent view boundary operations");
@@ -1654,7 +1608,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     if (context.Import(document).Failed())
       return xiiStatus("Could not import view boundary asset.");
     xiiExportDocumentMsgToEngine message;
@@ -1674,7 +1628,7 @@ namespace
   xiiStatus AuthorDepthSensorDiagnostic(xiiStringView directory)
   {
     const xiiStringView            name = "DepthSensorDiagnostic";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author an empty-depth sensor diagnostic");
@@ -1717,7 +1671,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
@@ -1735,7 +1689,7 @@ namespace
   xiiStatus AuthorDirectionalMesh(xiiStringView directory)
   {
     const xiiStringView            name = "DirectionalMesh";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author directional mesh uniforms and rasterization");
@@ -1812,7 +1766,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
@@ -1824,7 +1778,7 @@ namespace
   xiiStatus AuthorWorldRayProbe(xiiStringView directory)
   {
     const xiiStringView            name = "WorldRayProbe";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author world acceleration structure and triangle probe");
@@ -1870,7 +1824,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
@@ -1882,7 +1836,7 @@ namespace
   xiiStatus AuthorClusterLightLists(xiiStringView directory)
   {
     const xiiStringView            name = "ClusterLightLists";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent cluster operations");
@@ -1951,7 +1905,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
@@ -1963,7 +1917,7 @@ namespace
   xiiStatus AuthorDDGIEnvironmentProbes(xiiStringView directory)
   {
     const xiiStringView name="DDGIEnvironmentProbes";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
     auto* accessor=document.GetObjectAccessor();
     auto* manager=static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independently scheduled environment probes");
@@ -2026,14 +1980,14 @@ namespace
     XII_SUCCEED_OR_RETURN(boundary("Schedule",false,schedule,"Schedule",xiiRenderPipelinePin::FrameData,xiiGALResourceFormat::Unknown,800));
     accessor->FinishTransaction(); finished=true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiPipelineTestContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message; message.m_sOutputFile=xiiStringBuilder(directory,"/",name,".xiiBinRenderPipeline"); message.m_uiAssetHash=1; message.m_uiVersion=7;
     return context.ExportDocument(&message);
   }
   xiiStatus AuthorSparseVoxelEnvironment(xiiStringView directory)
   {
     const xiiStringView name="SparseVoxelEnvironment";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
     auto* accessor=document.GetObjectAccessor();
     auto* manager=static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independently scheduled environment probes");
@@ -2092,7 +2046,7 @@ namespace
     XII_SUCCEED_OR_RETURN(boundary("Schedule",false,schedule,"Schedule",xiiRenderPipelinePin::FrameData,xiiGALResourceFormat::Unknown,800));
     accessor->FinishTransaction(); finished=true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiPipelineTestContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message; message.m_sOutputFile=xiiStringBuilder(directory,"/",name,".xiiBinRenderPipeline"); message.m_uiAssetHash=1; message.m_uiVersion=7;
     return context.ExportDocument(&message);
   }
@@ -2100,7 +2054,7 @@ namespace
   xiiStatus AuthorWorldSurfaceLighting(xiiStringView directory)
   {
     const xiiStringView            name = "WorldSurfaceLighting";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author world surface-lighting composition");
@@ -2181,7 +2135,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
@@ -2193,7 +2147,7 @@ namespace
   xiiStatus AuthorSurfaceRadianceComposition(xiiStringView directory)
   {
     const xiiStringView            name = "SurfaceRadianceComposition";
-    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
     auto*                          accessor = document.GetObjectAccessor();
     auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author surface radiance composition");
@@ -2254,7 +2208,7 @@ namespace
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    NativeVisibilityAuthorContext context;
+    xiiPipelineTestContext context;
     XII_SUCCEED_OR_RETURN(context.Import(document));
     xiiExportDocumentMsgToEngine message;
     message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
