@@ -46,6 +46,12 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
+      - name: Check out trusted publication utility
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.sha }}
+          path: automation
+          persist-credentials: false
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           repository: XII-Technologies/APIDocumentation
@@ -62,13 +68,7 @@ jobs:
           GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
           SOURCE_SHA: ${{ github.sha }}
         run: |
-          mkdir -p host/docs
-          rsync -a --delete generated/ host/docs/
-          cd host
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Documentation: Update API reference for $SOURCE_SHA."
+          git -C host config user.name 'github-actions[bot]'
+          git -C host config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           gh auth setup-git
-          git push origin HEAD:Development
+          python3 automation/Utilities/CI/publish_api_docs.py --checkout host --generated generated --source-sha "$SOURCE_SHA"
