@@ -2253,3 +2253,34 @@ Vulkan (native-fixture-cpu.log, -scheduling.log, -resources.log, -depth-boundary
 Deferred/EditorScene binary path references. Ignored generated AssetCache lookup tables
 still contain historical paths; they are not source assets or active implementations.
 No render Builtin files or compatibility wrappers are added.
+
+
+## Retain private temporal state through command recording
+
+BufferHistoryPass and TextureHistoryPass previously captured their pass pointer in the
+queued copy callback. Both now retain their existing private state until recording is
+finished. Slot selection, completion checks, readiness fences, copy ranges, promotion and
+invalidation semantics are unchanged. Each newly constructed pass still allocates its own
+state; copying and assignment are explicitly prohibited, preserving the previous unique
+ownership contract. No new temporal manager or shared writable cache is introduced.
+
+NativeHistoryOwnership creates one definition with native depth/counter producers and
+both history operations, references it twice with different reflected values, and builds
+two independent pipeline roots. Actual GPU readback checks four private image histories
+and four private buffer histories, first-frame absence and distinct values. Every pass is
+destroyed before final setup completion/compilation/recording. Static assertions also
+preserve the noncopyable contract. This regression exercises queued state promotion after
+the original pass objects are gone, alongside earlier retained-history reads.
+
+GraphicsCoreTest, GraphicsFoundationTest, EditorEngineProcessFrameworkTest and GpuDrivenScene
+build with dependencies (native-history-retention-build.log and -final-build.log). All 66
+CPU tests, 21 native GPU tests, 14 PipelineResources tests, PipelineTemporal,
+NativeDepthBoundary, TemporalHistory and all three TemporalMemory tests pass on Vulkan
+(native-history-retention-*-regressions.log and -cpu.log). The full sample again completes
+300 frames with exit 0 (native-history-retention-sample-results.json and .log). D3D12 is
+excluded. No new Release throughput measurement is claimed; the change adds retained
+references to existing occurrence state, without copying authoring graphs or world data.
+
+Current totals remain 78 concrete native pass classes and 42 asset pairs. Complete native
+light/cluster preparation, full application/editor/advanced lighting graphs, per-page
+sample orchestration and world/view-scoped virtual page identities remain outstanding.
