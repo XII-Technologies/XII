@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **78 concrete reflected operation classes** in
+Current source inventory: **83 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -22,7 +22,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
-| Lighting | 1 | `xiiBRDFLutPass` |
+| Lighting | 6 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
 | Preparation | 2 | `xiiViewConstantsPass`, `xiiWorldInstancesUploadPass` |
@@ -92,7 +92,7 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | --- | --- |
 | Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are independent native operations, consumed by the authored sample graph. Both vertex-pull and mesh-shader indirect command preparation are native. The old visibility manager/system and their shaders are deleted; remaining sample shadow/VSM/raster orchestration needs conversion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
-| Lights | World light snapshot/upload, cluster construction, light-list clear/assignment, sampling preparation, probe selection. Remove the oversized lighting context after consumers use explicit resources. |
+| Lights | Cluster layout/bounds, list clear/assignment and emitted-power CDF preparation are now independent native operations with authored assets. World light snapshot/upload, IES residency and probe selection remain. Remove the oversized lighting context after consumers use explicit resources. |
 | Shadows | Directional cascade construction/snapshot upload is native. Local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
 | Direct illumination | ReSTIR DI temporal/spatial/visibility/emissive visibility and deferred direct lighting. |
@@ -2284,3 +2284,102 @@ references to existing occurrence state, without copying authoring graphs or wor
 Current totals remain 78 concrete native pass classes and 42 asset pairs. Complete native
 light/cluster preparation, full application/editor/advanced lighting graphs, per-page
 sample orchestration and world/view-scoped virtual page identities remain outstanding.
+
+
+## Native cluster layout, bounds, assignment and sampling
+
+Five independent reflected operations replace the orphaned cluster shader path:
+
+- LightClusterView captures a setup-owned camera/projection/layout snapshot. It supports
+  explicit projections as well as a view camera, exact viewport sizes, bounded list budgets,
+  and logarithmic or linear depth slices. It performs no GPU work and requests no scene
+  extraction. Invalid ranges, singular/horizon-crossing projections and excessive allocations
+  fail with the original occurrence provenance. The aligned snapshot contains no scene registry.
+- ClusterBounds reconstructs world-space cell bounds from the supplied inverse projection.
+  It intersects unprojected rays with camera-depth planes instead of assuming an infinite
+  perspective depth formula. Finite/infinite perspective, asymmetric projections,
+  orthographic cameras and partial edge tiles share the same operation.
+- ClusterListClear initializes private fixed-offset uint2 grid entries, every invalid index
+  and the overflow flag. Dispatch limits are checked, with a flattened two-dimensional
+  dispatch when the device's X limit requires it.
+- ClusterLightAssignment consumes explicit canonical lights, bounds and initialized lists.
+  A conservative homogeneous projection interval limits candidate tiles; world-space sphere
+  tests reject unrelated clusters. Atomic reservations saturate at the reflected capacity.
+  An explicit overflow output reports dropped assignments. Directional and zero-intensity
+  records do not enter local lists. Parallel slot order is not promised to be deterministic;
+  compilation and authored expansion remain deterministic.
+- ClusterLightSampling preserves the raw list and writes a separate packed 20-bit light
+  index / 12-bit emitted-power CDF plus per-cluster totals. It preserves the existing
+  photometric emitter measures for analytical light types. It owns no light lifecycle,
+  GI history or surface shading. Sampling is independently omittable.
+
+All pins are concrete XII_MEMBER_PROPERTY members. Properties and pin attributes use the
+existing editor/reflection system. Each GPU operation captures owned constants, resources
+and pipeline objects, with no execution-time pass, camera or world pointer. The compiler
+can cull unused outputs/operations; no new stage selector or renderer manager is added.
+
+The canonical xiiGpuLightData record, its RTTI and xiiGpuLightType now live in LightingData.h
+and Implementation/LightingData.cpp. Local-shadow planning consumes that interface directly
+instead of depending on the oversized lighting context. Record size, reflected type name
+and properties are preserved; no compatibility alias retains the old nested light-type API.
+The shared shader light-data header's shadow-fade helper also takes its camera position
+explicitly, and every surface/volume caller is migrated.
+
+ClusterGridBuild.xiiShader, LightListClear.xiiShader, LightListBuild.xiiShader,
+LightSamplingBuild.xiiShader and LightClusteringConstants.h are physically deleted. Their
+resource/global-constant assumptions are replaced by the new kernels and explicit pins.
+The old lighting context itself is not yet deleted: world light packing/upload, IES residency,
+local shadow and GI update consumers still need native ownership and operation migration.
+This phase does not claim a completed world-light extraction path or forward/deferred renderer.
+
+Six ordinary editable source/binary asset pairs are exported through normal editor commands:
+LightClusterView, ClusterBounds, ClusterListClear, ClusterLightAssignment, ClusterLightSampling
+and the five-operation ClusterLightLists composition. Inputs and outputs use existing graph
+boundary mappings and persistent document identities. Total inventory is now 83 concrete
+native pass classes and 48 asset pairs.
+
+
+Verification, Debug/Vulkan; D3D12 excluded:
+
+- GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build with dependencies
+  (native-cluster-consumer-build.log, -sampling-build.log, -final-build.log,
+  -final-fixture-build.log, -large-fixture-build.log and -projection-build.log).
+  Initial builds corrected the existing AreAllSet API spelling and FrameData pin-kind name.
+- All 66 CPU tests pass (native-cluster-projection-cpu.log). All 42 NativeAssetAuthoring
+  fixtures and 16 EditorDocuments tests pass, including deterministic packaged/source/repeated
+  exports for all 48 assets (native-cluster-final-authoring.log and -editor.log).
+- All 23 native GPU subtests pass (native-cluster-final-native.log). The new cluster fixture
+  reads actual buffers for two occurrences in each of two independent roots, with different
+  capacities/resolutions, translated orthographic and asymmetric finite/infinite perspective
+  projections, linear/log depth, edge tiles, empty input, parallel multi-group assignment,
+  explicit overflow, private allocations, raw/packed indices, emitted power and monotonic CDFs.
+  It destroys all pass instances before final recording. Negative ranges, excessive budgets
+  and projection horizons report nested provenance and clear stale outputs.
+- The large-list fixture initializes 4,196,352 grid/index entries and checks invalid indices,
+  offsets and the cleared overflow flag after destroying its pass owner. Its observed device
+  X-group limit is 2,147,483,647, so this run uses a one-dimensional dispatch; the helper's
+  two-dimensional fallback is implemented but not hardware-exercised by this device.
+- All 14 PipelineResources tests, three PipelineExtraction tests and NativeDepthBoundary pass
+  (native-cluster-resources-regressions.log, -extraction-regressions.log and
+  -depth-boundary-regressions.log). This includes world component updates, sparse multi-camera
+  uploads, ray deformation and interleaved temporal resources.
+- The full sample completes all 300 frames with exit 0 (native-cluster-sample-results.json
+  and .log), including the migrated shared surface-lighting helper. The sample still uses
+  directional shading rather than claiming a complete clustered forward/deferred pipeline.
+
+The GPU fixtures exposed an aligned-allocation requirement in the immutable shader-layout
+snapshot, a reserved HLSL identifier, an implicit camera-global dependency in the shared light
+header and the editor's zero vector default. Each production issue is corrected. The CDF
+reference allows one 12-bit step for FP32 halfway rounding, while requiring monotonicity,
+correct raw indices, analytic emitted-power totals and an exact terminal CDF.
+
+Each repeated cluster root records ten compiled operations, one submission and 46 barriers.
+The CPU-only layout nodes do not add GPU operations. The large-list test takes about 0.17 s
+including device setup and readback; this is not a GPU timing or Release throughput benchmark.
+The full sample retains 124 registered / 116 compiled / 8 culled operations, one submission
+and 190 barriers. Its topology does not yet include the new cluster composition.
+
+World light packing/upload, IES/probe ownership, deletion of LightingSystem/lighting contexts,
+complete application/editor/advanced lighting graphs, per-page sample orchestration and
+world/view virtual page identities remain. The full renderer migration remains active.
