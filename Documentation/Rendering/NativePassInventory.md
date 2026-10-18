@@ -3122,3 +3122,100 @@ editable source/binary asset pairs. Native probe preparation/selection, geometry
 GI updates, advanced illumination, remaining composite granularity and application/editor
 entry-point migration remain unfinished. No legacy subsystem or compatibility wrapper is
 reintroduced. The complete rendering-stack migration remains active.
+
+## Reflection selection as authored confidence layers
+
+ConfidenceBlend and RadianceReplace replace the deleted xiiHybridReflectionCompositePass.
+The old header, implementation, static-link registration and ReflectionComposite shader
+entry point are physically removed. ReflectionSelection is an independently authored
+resource containing two confidence layers: traced detail over environment radiance, then
+screen detail over that result. ReflectionComposition references that selection and wires
+its result to RadianceReplace. No C++ operation knows about reflection-tier orchestration.
+
+ConfidenceBlend consumes a required background image and an optional straight radiance/
+confidence layer. It computes lerp(nonnegative background, nonnegative layer,
+saturate(layer alpha) * Opacity), preserving background alpha. Opacity and AsyncCompute
+are reflected member properties; Opacity is finite and bounded to [0,1]. Missing layers
+use zero opacity without creating a placeholder image or initializing a tracing subsystem.
+This differs intentionally from IrradianceLayer, which normalizes weighted irradiance
+and carries a combined confidence. Background alpha is not another blend confidence.
+
+RadianceReplace consumes a scene image, its previously included contribution and a
+replacement contribution. It computes max(scene - nonnegative previous + nonnegative
+replacement, 0), preserving scene alpha. All three inputs are read-only shader resources;
+the operation allocates an independent RGBA32Float output. ConfidenceBlend also outputs
+RGBA32Float, avoiding intermediate half-precision overflow. Non-finite RGB tuples contribute
+zero; non-finite confidence contributes zero and non-finite preserved alpha becomes zero.
+Both operations validate nonempty compatible float-readable four-channel, single-sample
+2D images and matching connected extents. Their recorded callbacks retain pipelines,
+configuration snapshots and explicit graph resources, with no pass-object capture.
+
+Four new source/binary asset pairs expose ConfidenceBlend, RadianceReplace,
+ReflectionSelection and ReflectionComposition. OpaqueComposition is rebuilt through
+ordinary editor commands with the same persistent document identity. Its seven authored
+nodes reference SurfaceRadianceComposition and ReflectionComposition around explicit
+scene/raw/resolved texture selection and screen-reflection tracing/temporal resolution.
+Two instances flatten to 26 native operations with separate provenance. The obsolete
+DrawIndirectCommands input/output and BufferForward node are removed; unrelated
+input-echo outputs are removed as well. Meaningful reflection outputs, temporal history
+and diagnostic constant buffers remain explicit boundaries. No compatibility wrapper for
+the deleted class is retained. The existing opaque/reflection consumer fixture now
+references the complete OpaqueComposition resource instead of assembling its techniques
+in C++. One occurrence selects the authored screen trace and the other a supplied raw
+signal through an explicit nested override. Independent temporal histories, resize and
+invalidation remain covered, and the fixture reads float32 results correctly.
+
+Reflection-composition verification - 2026-10-18:
+
+- Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene (`native-reflection-final-build.log`).
+  Source-list regeneration after physical deletion is recorded in
+  `native-reflection-deletion-configure.log`.
+- All 75 GraphicsCore CPU subtests pass, including reflected opacity configuration,
+  optional layer contracts, read-only scene binding requirements, nested resource
+  expansion, independent occurrence provenance and the rebuilt opaque graph.
+- PriorityReplacementReadOnlyInputsAndRetiredRecording executes two graph contexts,
+  each containing two ReflectionComposition occurrences. A nested opacity override
+  affects only the second occurrence. GPU readback checks first/center/last pixels
+  of 9-by-11 outputs, confidence priority and saturation, absent traced/screen/both
+  producers, negative radiance, final nonnegative replacement, preserved alpha and
+  high radiance exceeding half precision. The original shared scene image remains
+  unchanged, outputs are distinct across occurrences and contexts, and every pass
+  instance retires before queued recording. Invalid extents and integer image layouts
+  reject with a nested ConfidenceBlend diagnostic. The ordinary case compiles 16
+  logical operations to one submission and 32 barriers when async queues are disabled
+  (`native-reflection-vulkan-final.log`). Neither geometry nor material services start.
+- An initial source-generation macro substitution error was corrected before the
+  successful authoring build. The GPU fixture initially selected an override target
+  using an editor type/name after resource lowering; the corrected fixture follows
+  the definition reference and persistent native node identity. The failed build/run
+  diagnostics remain in `native-reflection-author-build.log`, `native-reflection-vulkan.log`
+  and `native-reflection-vulkan-corrected.log`. No production validation was bypassed.
+
+- All 37 native Vulkan subtests pass, then pass again after the final complete-opaque
+  fixture migration (`native-reflection-final-Native.log`, `native-reflection-native-repeat.log`).
+  All 14 PipelineResources subtests pass before and after that fixture migration
+  (`native-reflection-final-PipelineResources.log`, `native-reflection-opaque-resource-regressions.log`).
+  The latter change builds in `native-reflection-opaque-resource-build.log`.
+- All 16 EditorDocuments subtests pass, including Qt node/pin inspection and deterministic
+  packaged/exported/repeated bytes for all 80 source/binary pairs. The 58 established
+  native-authoring, four radiance-authoring, five indirect-authoring, one scene-authoring
+  and one new reflection-authoring subtest pass. The new authoring fixture exports all
+  four reflection assets and rebuilds OpaqueComposition (`native-reflection-final-*.log`).
+  Three PipelineExtraction, three shader failure/recovery, one temporal-history, three
+  temporal-memory and one native depth-boundary subtest also pass. The full CPU result
+  is `native-reflection-cpu-final.log`.
+- The full Vulkan sample completes 300 frames with exit code zero, preserving its
+  unchanged 124 registered / 116 compiled / eight culled operation graph, one submission
+  and 190 barriers (`native-reflection-sample.log`, `native-reflection-sample-results.json`).
+  The sample still uses its existing custom advanced graph; this does not establish
+  completion of application entry-point migration. Repository searches find no active
+  deleted compositor/entry-point reference, scene database type or rendering Builtin file.
+
+The library now contains 102 concrete reflected operation classes and 80 editable
+source/binary asset pairs. The full migration remains active: native reflection-probe
+preparation/selection, geometry-dependent GI updates, advanced lighting, remaining
+composites and application/editor entry points still require work. GPU submission counts
+are fixture measurements; no general performance improvement or completed shader fusion
+is claimed. Float32 intermediates retain dynamic range at additional bandwidth/allocation
+cost. D3D12 remains excluded.
