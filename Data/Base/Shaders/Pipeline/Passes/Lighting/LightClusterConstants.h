@@ -10,7 +10,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiLightClusterConstants)
   FLOAT4(DepthRange);   ///< near, far, log2(far/near), logarithmic flag.
   FLOAT4(CameraPosition);
   FLOAT4(CameraForward);
-  UINT4(Work); ///< light count, index capacity, dispatch width, reserved.
+  UINT4(Work); ///< work item count, index capacity, dispatch width, assignment uses candidates.
 };
 struct XII_SHADER_STRUCT xiiGpuClusterBounds
 {

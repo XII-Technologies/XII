@@ -5,6 +5,7 @@ ALL
 #include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
 #include <Shaders/Pipeline/LightingData.h>
 StructuredBuffer<xiiGpuLightData> g_Lights;
+StructuredBuffer<uint> g_Candidates;
 StructuredBuffer<xiiGpuClusterBounds> g_Clusters;
 RWStructuredBuffer<uint2> g_LightGrid;
 RWStructuredBuffer<uint> g_LightIndices;
@@ -35,8 +36,12 @@ float2 ProjectInterval(float center,float radius,float minimumW,float maximumW)
 [numthreads(64,1,1)]
 void main(uint3 tid : SV_DispatchThreadID)
 {
-  const uint lightIndex=tid.x+tid.y*Work.z;
-  if(lightIndex>=Work.x) return;
+  const uint workIndex=tid.x+tid.y*Work.z;
+  if(workIndex>=Work.x) return;
+  const uint lightIndex=Work.w!=0 ? g_Candidates[workIndex] : workIndex;
+  uint lightCount,lightStride;
+  g_Lights.GetDimensions(lightCount,lightStride);
+  if(lightIndex>=lightCount) return;
   const xiiGpuLightData light=g_Lights[lightIndex];
   if(GetLightType(light)==XII_LIGHT_TYPE_DIRECTIONAL || light.ColorAndIntensity.w<=0) return;
   const float3 center=light.BoundsCenterAndRadius.xyz;
