@@ -1585,7 +1585,7 @@ namespace
       return xiiStatus("Native operation asset did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 1);
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), pins.GetCount() - 2);
-    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures() == features);
+    XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == prototype->GetExtractionRequirements() && loaded->GetPipeline()->GetRuntimeFeatures() == features);
     return XII_SUCCESS;
   }
 
@@ -2342,4 +2342,13 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ClusterLightSampling)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ClusterAuthoring"));
   XII_TEST_STATUS(AuthorNativeLeaf(path, "ClusterLightSampling", "xiiClusterLightSamplingPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldLightsUpload)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "WorldLightAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("WorldLightAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "WorldLightsUpload", "xiiWorldLightsUploadPass", xiiRenderPipelineFeature::Lighting));
 }
