@@ -324,6 +324,7 @@ function(xii_set_build_flags TARGET_NAME)
   xii_pull_compiler_and_architecture_vars()
 
   set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 23)
+  set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 
   if(XII_CMAKE_COMPILER_MSVC)
     xii_set_build_flags_msvc(${TARGET_NAME} ${ARGN})

@@ -114,6 +114,50 @@
         "cacheVariables": {
           "CMAKE_BUILD_TYPE": "Shipping"
         }
+      },
+      {
+        "name": "ci-base",
+        "hidden": true,
+        "binaryDir": "${sourceDir}/Workspace/${presetName}",
+        "cacheVariables": {
+          "XII_BUILD_FILTER": "HeadlessTests",
+          "XII_BUILD_UNITTESTS": "ON",
+          "XII_BUILD_SAMPLES": "OFF",
+          "XII_ENABLE_QT_SUPPORT": "OFF",
+          "XII_BUILD_VULKAN": "OFF",
+          "XII_BUILD_D3D12": "OFF",
+          "XII_3RDPARTY_SDL_SUPPORT": "OFF",
+          "XII_3RDPARTY_BC7ENC_RDO_SUPPORT": "OFF",
+          "XII_COMPILE_ENGINE_AS_DLL": "ON",
+          "XII_ENABLE_FOLDER_UNITY_FILES": "ON",
+          "XII_OUTPUT_DIRECTORY_DLL": "${sourceDir}/Workspace/${presetName}/Bin",
+          "XII_OUTPUT_DIRECTORY_LIB": "${sourceDir}/Workspace/${presetName}/Lib"
+        }
+      },
+      {
+        "name": "ci-windows",
+        "inherits": "ci-base",
+        "generator": "Visual Studio 17 2022",
+        "architecture": "x64"
+      },
+      {
+        "name": "ci-linux-gcc",
+        "inherits": "ci-base",
+        "generator": "Ninja",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug",
+          "CMAKE_C_COMPILER": "gcc",
+          "CMAKE_CXX_COMPILER": "g++",
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        }
+      },
+      {
+        "name": "ci-linux-clang",
+        "inherits": "ci-linux-gcc",
+        "cacheVariables": {
+          "CMAKE_C_COMPILER": "clang",
+          "CMAKE_CXX_COMPILER": "clang++"
+        }
       }
     ]
   }
