@@ -5,6 +5,8 @@
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/ClusteredLocalSurfaceLightingPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/DirectionalSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/WorldDirectionalLightPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeSchedulePass.h>
@@ -460,4 +462,33 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SparseVoxelIndependentSchemasAndBudgets)
   invalid.Clear(); invalid.Insert("Hysteresis",1.0f); xiiSparseVoxelSchedulePass badWeight; XII_TEST_BOOL(badWeight.Configure(invalid).Failed());
   xiiSparseVoxelEnvironmentSeedPass seed; pins.Clear(); seed.GetPins(pins); XII_TEST_RESULT(seed.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[seed.m_InitialPages.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, IndependentSurfaceLightingMemberSchemas)
+{
+  xiiDirectionalSurfaceLightingPass sun;
+  xiiVariantDictionary              properties;
+  properties.Insert("Scale", 2.0f);
+  XII_TEST_RESULT(sun.Configure(properties));
+  properties.Clear();
+  XII_TEST_RESULT(sun.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("EnvironmentLight") && !properties.Contains("Camera"));
+  xiiDirectionalSurfaceLightingPass copy;
+  XII_TEST_RESULT(copy.Configure(properties));
+  XII_TEST_FLOAT(copy.m_fScale, 2, 0);
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  copy.GetPins(pins);
+  XII_TEST_RESULT(copy.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[copy.m_Visibility.GetBindingIndex()].m_bOptional && pins[copy.m_Environment.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UniformBuffer));
+  xiiClusteredLocalSurfaceLightingPass local;
+  pins.Clear();
+  local.GetPins(pins);
+  XII_TEST_RESULT(local.InitializePinBindings(pins));
+  XII_TEST_BOOL(!pins[local.m_Candidates.GetBindingIndex()].m_bOptional && !pins[local.m_Overflow.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[local.m_Layout.GetBindingIndex()].m_pDataType == xiiGetStaticRTTI<xiiLightClusterFrameData>());
+  XII_TEST_BOOL(local.GetExtractionRequirements().IsNoFlagSet() && local.GetRuntimeFeatures().IsNoFlagSet() && sun.GetExtractionRequirements().IsNoFlagSet());
+  xiiVariantDictionary invalid;
+  invalid.Insert("Scale", -1.0f);
+  XII_TEST_BOOL(copy.Configure(invalid).Failed());
+  XII_TEST_BOOL(local.Configure(invalid).Failed());
 }
