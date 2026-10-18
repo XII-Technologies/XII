@@ -37,7 +37,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredOpaqueComposition)
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
   const auto descriptor = loaded->GetAuthoring()->m_Descriptor;
-  XII_TEST_INT(descriptor.m_Passes.GetCount(), 8);
+  XII_TEST_INT(descriptor.m_Passes.GetCount(), 7);
   XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
   xiiDynamicArray<xiiRenderPipelinePin> interfacePins;
@@ -61,8 +61,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredOpaqueComposition)
   XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
   if (compiled)
   {
-    XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 24);
-    XII_TEST_BOOL(compiled->GetProvenance()[0].m_InstancePath != compiled->GetProvenance()[12].m_InstancePath);
+    XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 26);
+    XII_TEST_BOOL(compiled->GetProvenance()[0].m_InstancePath != compiled->GetProvenance()[13].m_InstancePath);
   }
 }
 

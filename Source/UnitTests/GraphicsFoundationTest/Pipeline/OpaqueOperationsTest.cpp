@@ -12,8 +12,8 @@
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
-#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
@@ -80,13 +80,17 @@ namespace
     {
       for (xiiUInt32 y = 0; y < capture.m_uiHeight; ++y)
       {
-        const auto* row = xiiMemoryUtils::AddByteOffset(static_cast<const xiiFloat16*>(mapped.m_pData), y * mapped.m_uiStride);
+        const bool  fullPrecision = texture->GetDescription().m_Format == xiiGALResourceFormat::RGBA32Float;
+        const auto* row           = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
+        const auto  value         = [&](xiiUInt32 i) {
+          return fullPrecision ? reinterpret_cast<const float*>(row)[i] : float(reinterpret_cast<const xiiFloat16*>(row)[i]);
+        };
         for (xiiUInt32 x = 0; x < capture.m_uiWidth; ++x)
         {
-          XII_TEST_FLOAT(static_cast<float>(row[x * 4]), expected.r, 0.01f);
-          XII_TEST_FLOAT(static_cast<float>(row[x * 4 + 1]), expected.g, 0.01f);
-          XII_TEST_FLOAT(static_cast<float>(row[x * 4 + 2]), expected.b, 0.01f);
-          XII_TEST_FLOAT(static_cast<float>(row[x * 4 + 3]), expected.a, 0.01f);
+          XII_TEST_FLOAT(value(x * 4), expected.r, 0.01f);
+          XII_TEST_FLOAT(value(x * 4 + 1), expected.g, 0.01f);
+          XII_TEST_FLOAT(value(x * 4 + 2), expected.b, 0.01f);
+          XII_TEST_FLOAT(value(x * 4 + 3), expected.a, 0.01f);
         }
       }
       XII_TEST_RESULT(commands->UnmapTextureSubresource(capture.m_pStagingTexture, {}));
@@ -113,10 +117,10 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
     XII_TEST_RESULT(pass.GetProperties(properties));
     return leaf.AddPass(name, "xiiClearTexturePass", properties);
   };
-  const auto direct         = clear("Direct", {1, 2, 3, 1});
-  const auto indirect       = clear("Indirect", {0.5f, 0.25f, 1, 1});
-  const auto emissive       = clear("Emissive", {0.1f, 0.2f, 0.3f, 1});
-  const auto gi             = clear("Near GI", {0.4f, 0.8f, 1.2f, 0.5f});
+  const auto                                 direct              = clear("Direct", {1, 2, 3, 1});
+  const auto                                 indirect            = clear("Indirect", {0.5f, 0.25f, 1, 1});
+  const auto                                 emissive            = clear("Emissive", {0.1f, 0.2f, 0.3f, 1});
+  const auto                                 gi                  = clear("Near GI", {0.4f, 0.8f, 1.2f, 0.5f});
   const auto                                 volume              = clear("Volume", {0.05f, 0.1f, 0.15f, 0.25f});
   const auto                                 environmentMap      = clear("Environment", {0.2f, 0.4f, 0.6f, 1});
   const auto                                 traced              = clear("Traced reflections", {0.4f, 0.8f, 1.2f, 0.25f});
@@ -126,54 +130,45 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   const auto                                 surface             = clear("Previous surface", xiiColor::MakeZero());
   const auto                                 objects             = clear("Object identity", xiiColor::MakeZero(), xiiGALResourceFormat::R32UInt);
   const auto                                 camera              = leaf.AddPass("Camera", "xiiViewConstantsPass");
-  const auto                                 compositionResource = xiiLoadPipelineLibraryResource("SurfaceRadianceComposition");
+  const auto                                 compositionResource = xiiLoadPipelineLibraryResource("OpaqueComposition");
   xiiResourceLock<xiiRenderPipelineResource> composition(compositionResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(composition.IsValid() && composition->GetAuthoring()))
     return;
   const auto compositionId = composition->GetAuthoring()->m_Descriptor.m_Id;
   leaf.m_References.PushBack({compositionId, compositionResource.GetResourceID()});
-  const auto opaque    = leaf.AddSubgraph("Authored surface radiance", compositionId);
-  const auto trace     = leaf.AddPass("Trace", "xiiScreenSpaceReflectionsPass");
-  const auto temporal  = leaf.AddPass("Temporal", "xiiScreenSpaceReflectionsTemporalPass");
-  const auto composite = leaf.AddPass("Composite", "xiiHybridReflectionCompositePass");
-  const auto connect   = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView pin) {
-    XII_TEST_RESULT(leaf.Connect(source, "Texture", target, pin));
+  const auto opaque  = leaf.AddSubgraph("Authored opaque and reflection composition", compositionId);
+  const auto connect = [&](xiiUInt32 source, xiiStringView pin) {
+    XII_TEST_RESULT(leaf.Connect(source, "Texture", opaque, pin));
   };
-  connect(direct, opaque, "DirectLighting");
-  connect(indirect, opaque, "IndirectLighting");
-  connect(emissive, opaque, "GBufferEmissive");
-  connect(gi, opaque, "RTFinalGI");
-  connect(volume, opaque, "VolumetricScattering");
-  connect(environmentMap, composite, "EnvironmentSpecular");
-  connect(traced, composite, "RTFinalReflections");
-  for (auto operation : {trace, temporal})
-  {
-    connect(depth, operation, "SceneDepth");
-    connect(attributes, operation, "GBufferNormal");
-    connect(attributes, operation, "GBufferMaterial");
-    XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", operation, "PerFrameCamera"));
-  }
-  connect(attributes, trace, "GBufferAlbedo");
-  connect(attributes, trace, "BRDFLut");
-  connect(depth, trace, "HiZClosestPyramid");
-  connect(depth, trace, "HiZPyramid");
-  XII_TEST_RESULT(leaf.Connect(camera, "PerFrameGlobal", trace, "PerFrameGlobal"));
-  XII_TEST_RESULT(leaf.Connect(opaque, "HDRSceneColor", trace, "HDRSceneColor"));
-  XII_TEST_RESULT(leaf.Connect(opaque, "HDRSceneColor", composite, "HDRSceneColor"));
-  connect(radiance, temporal, "SSRRawTerm");
-  connect(attributes, temporal, "DilatedVelocityBuffer");
-  connect(objects, temporal, "GBufferObjectId");
-  connect(surface, temporal, "ReSTIRDISurfacePrevious");
-  XII_TEST_RESULT(leaf.Connect(temporal, "SSRTerm", composite, "SSRTerm"));
+  connect(direct, "DirectLighting");
+  connect(indirect, "IndirectLighting");
+  connect(emissive, "GBufferEmissive");
+  connect(gi, "RTFinalGI");
+  connect(volume, "VolumetricScattering");
+  connect(environmentMap, "EnvironmentSpecular");
+  connect(traced, "RTFinalReflections");
+  connect(depth, "SceneDepth");
+  connect(attributes, "GBufferNormal");
+  connect(attributes, "GBufferMaterial");
+  connect(attributes, "GBufferAlbedo");
+  connect(attributes, "BRDFLut");
+  connect(depth, "HiZClosestPyramid");
+  connect(depth, "HiZPyramid");
+  connect(radiance, "SSRRawTerm");
+  connect(attributes, "DilatedVelocityBuffer");
+  connect(objects, "GBufferObjectId");
+  connect(surface, "ReSTIRDISurfacePrevious");
+  XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", opaque, "PerFrameCamera"));
+  XII_TEST_RESULT(leaf.Connect(camera, "PerFrameGlobal", opaque, "PerFrameGlobal"));
   const auto exportPin = [&](xiiStringView name, xiiUInt32 source, xiiStringView pin) {
     const auto output = leaf.AddPass(name, "xiiOpaqueTestExport");
     XII_TEST_RESULT(leaf.Connect(source, pin, output, "Input"));
     return leaf.m_Passes[output].m_Id;
   };
-  const auto         outputId   = exportPin("Composite readback", composite, "HDRSceneColor");
-  const auto         traceId    = exportPin("Trace readback", trace, "SSRRawTerm");
-  const auto         historyId  = exportPin("Current reflection readback", temporal, "SSRTerm");
-  const auto         previousId = exportPin("Previous reflection readback", temporal, "PreviousReflection");
+  const auto         outputId   = exportPin("Composite readback", opaque, "HDRSceneColor");
+  const auto         traceId    = exportPin("Selected raw readback", opaque, "SSRRawTerm");
+  const auto         historyId  = exportPin("Current reflection readback", opaque, "SSRTerm");
+  const auto         previousId = exportPin("Previous reflection readback", opaque, "PreviousReflection");
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
   xiiRenderPipelineResourceDescriptor root;
@@ -182,7 +177,12 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   root.AddSubgraph("First reflection instance", definition.m_Id);
   root.AddSubgraph("Second reflection instance", definition.m_Id);
   const auto secondId = root.m_Passes[1].m_Id;
-  auto&      override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
+  // One occurrence uses the authored screen trace, the other an explicitly supplied raw signal.
+  auto& rawOverride = root.m_Passes[0].m_Overrides.ExpandAndGetRef();
+  rawOverride.m_Path.PushBack(leaf.m_Passes[opaque].m_Id);
+  rawOverride.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.OpaqueComposition/Select Raw Reflections"));
+  rawOverride.m_Properties.Insert("PreferPrimary", false);
+  auto& override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
   override.m_Path.PushBack(leaf.m_Passes[radiance].m_Id);
   xiiClearTexturePass second;
   second.m_Color = {0.4f, 0.2f, 0.1f, 0.5f};
@@ -234,11 +234,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
         return;
       XII_TEST_INT(texture->GetDescription().m_Size.width, frame < 2 ? 8 : 16);
       if (provenance.m_Element == outputId)
-        CheckOpaquePixels(environment, texture, other ? xiiColor(1.525f, 2.1875f, 3.65f, 1) : xiiColor(1.725f, 2.2875f, 3.7f, 1));
-      else if (provenance.m_Element == traceId)
-        CheckOpaquePixels(environment, texture, xiiColor::MakeZero());
+        CheckOpaquePixels(environment, texture, other ? xiiColor(1.525f, 2.1875f, 3.65f, 1) : xiiColor(1.45f, 2.3375f, 3.975f, 1));
       else
-        CheckOpaquePixels(environment, texture, other ? xiiColor(0.4f, 0.2f, 0.1f, 0.5f) : xiiColor(0.8f, 0.4f, 0.2f, 0.5f));
+        CheckOpaquePixels(environment, texture, other ? xiiColor(0.4f, 0.2f, 0.1f, 0.5f) : xiiColor::MakeZero());
       if (provenance.m_Element == historyId)
       {
         histories[other ? 1 : 0] = texture;
