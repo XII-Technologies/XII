@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **84 concrete reflected operation classes** in
+Current source inventory: **86 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -22,7 +22,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
-| Lighting | 7 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass` |
+| Lighting | 9 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
 | Preparation | 2 | `xiiViewConstantsPass`, `xiiWorldInstancesUploadPass` |
@@ -2493,3 +2493,67 @@ in this checkout; D3D12 remains excluded. The library still has 84 concrete nati
 49 asset pairs. Device-shared IES GPU residency, complete surface/advanced lighting graphs,
 remaining legacy algorithm contexts and the other application/editor integration work are
 still outstanding; the full rendering-stack migration is not complete.
+
+## Focused environment illumination and directional-only extraction
+
+WorldDirectionalLight is a reflected CPU snapshot producer. It selects the brightest
+eligible directional emitter from this camera's existing extracted packets, breaking ties
+by the full validated runtime component handle. Transform direction, photometric lux,
+authored color temperature and angular source radius come from the authoritative component.
+Inactive, removed, foreign-world or owner-mismatched components cannot supply the snapshot.
+No emitter is represented by a new scene object or rendering-side hierarchy.
+
+EnvironmentLightConstants is a separate reflected operation. Its optional typed
+DirectionalLight input replaces the authored emitter, including an explicitly empty world
+selection. Without that input, reflected Direction, Color, Illuminance and AngularRadius
+properties provide an independently authored environment. AmbientRadiance belongs to this
+operation. The immutable 48-byte result contains only those environment fields; no cluster,
+contact-shadow, atlas, fog or ReSTIR configuration is bundled into it.
+
+The world source requests existing Lights extraction without the Lighting GPU-table feature.
+It does not initialize canonical GPU light tables or acquire unrelated point/spot IES
+resources. The constants-only operation requires no scene extraction or lighting service.
+The canonical color-temperature conversion is shared with WorldLightData through the existing
+LightingData implementation, preserving its previous numeric response without another owner.
+
+DDGI gather and the existing DDGI/sparse-voxel update helpers now require this explicit focused
+environment buffer. Their shaders no longer consume PerFrameLight. DDGI gather retains its
+pipeline and sampler in queued graph data instead of borrowing the pass object. Sparse-voxel
+gather now retains those resources as well. The GI update
+helpers still need decomposition into native scheduling/upload/update operations; this phase
+does not present their algorithm contexts as the completed native GI pipeline. Other legacy
+shaders still use the old frame-light ABI and must be migrated with their own consumers.
+
+Verification for this phase:
+
+- All five Debug consumers built: GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene. The first focused GPU run rejected two
+  fixture mistakes (duplicate node names and a shader-resource exporter used for a uniform
+  buffer). The corrected fixture uses unique names and an explicit uniform readback contract.
+- 67 GraphicsCore CPU tests passed, including reflected environment member pins, property
+  round trips, required uniform access and invalid emitter configuration.
+- 45 native asset authoring fixtures and 16 editor document tests passed, including deterministic
+  re-export of the two new source/binary assets. The library has 86 native classes and 51 asset pairs.
+- All 27 native Vulkan GPU tests, 14 resource GPU tests and three extraction GPU tests passed.
+  The new fixtures read back independently configured repeated environments after instance
+  destruction; another composes WorldDirectionalLight and EnvironmentLightConstants for two
+  tagged views across ties, brightness changes, world rotations, activation, deletion and
+  component replacement. An unrelated missing point-light IES profile is never acquired.
+  No canonical world GPU light table, GPU instances, geometry or material service is initialized.
+- The irradiance regression also compiles and records a final graph after both repeated
+  DDGI/sparse gather instances and their view are destroyed, then checks all four GPU images.
+- ShaderCompilerTool compiled DDGIProbeUpdate and SparseVoxelRadianceUpdate for VK_SM60,
+  reflecting xiiEnvironmentLightConstants in both. Their existing algorithm-context GPU
+  update paths were not dispatched in this phase; their native replacements remain required.
+- The constants payload is 48 bytes versus the former 128-byte all-feature light ABI. This is
+  a layout/upload-size comparison, not a GPU timing or Release throughput benchmark. World
+  selection is linear in the already-extracted camera light packets and adds no GPU operation.
+  Only Vulkan is built here; D3D12 remains excluded.
+- The full Vulkan sample completed 300 frames with exit code zero, retaining 124 registered /
+  116 compiled / eight culled operations, one submission and 190 barriers. This sample does
+  not yet compose the new environment/GI preparation; its run is a general integration
+  regression, while the focused fixtures exercise the new producers and migrated gather.
+
+Native DDGI/sparse scheduling and update decomposition, complete surface/advanced lighting
+assets, device-shared IES GPU residency and the remaining application/editor integration
+are still required. This phase does not complete the full rendering-stack migration.

@@ -108,7 +108,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuDDGIProbeUpdate
 static_assert(sizeof(xiiGpuDDGIProbeUpdate) == 32U);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuDDGIProbeUpdate);
 
-/// Camera-centred GI state owned by one lighting context. CPU scheduling can be used without a device.
+/// Camera-centred GI algorithm state for one consumer. CPU scheduling can be used without a device.
 /// GPU storage is private to the context; settings and algorithm state are never process global.
 /// This object is not thread-safe. It must outlive graphs capturing it. Before reinitialization,
 /// shutdown or destruction, discard those graphs and wait for their submitted GPU work to finish.
