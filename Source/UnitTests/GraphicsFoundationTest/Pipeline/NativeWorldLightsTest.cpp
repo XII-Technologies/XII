@@ -80,6 +80,29 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
     XII_TEST_RESULT(root.Connect(upload, name, retain, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[retain].m_Id, "Output"});
   }
+  const auto                                 clusterAsset = xiiLoadPipelineLibraryResource("ClusterLightLists");
+  xiiResourceLock<xiiRenderPipelineResource> clusterDefinition(clusterAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(clusterDefinition.IsValid() && clusterDefinition->GetAuthoring()))
+    return;
+  const auto clusters = clusterDefinition->GetAuthoring();
+  root.m_References.PushBack({clusters->m_Descriptor.m_Id, clusterAsset.GetResourceID()});
+  const auto clustering = root.AddSubgraph("View selected light lists", clusters->m_Descriptor.m_Id);
+  XII_TEST_RESULT(root.Connect(upload, "Lights", clustering, "Lights"));
+  XII_TEST_RESULT(root.Connect(upload, "Candidates", clustering, "Candidates"));
+  for (const auto& node : clusters->m_Descriptor.m_Passes)
+    if (node.m_sType == "xiiLightClusterViewPass")
+    {
+      auto& override = root.m_Passes[clustering].m_Overrides.ExpandAndGetRef();
+      override.m_Path.PushBack(node.m_Id);
+      override.m_Properties.Insert("DepthSlices", 1U);
+      override.m_Properties.Insert("MaxLightsPerCluster", 8U);
+    }
+  for (const xiiStringView name : {"LightGrid", "LightIndices", "Overflow", "PackedIndices", "SamplingTotals"})
+  {
+    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), "xiiBufferExportPass");
+    XII_TEST_RESULT(root.Connect(clustering, name, retain, "Input"));
+    root.m_Interface.PushBack({name, false, root.m_Passes[retain].m_Id, "Output"});
+  }
   const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Native world light extraction", std::move(root));
   const auto profile  = xiiResourceManager::LoadResource<xiiIESProfileResource>("NativeWorldLights.ies");
   if (!ReloadLightProfile(profile, false))
@@ -252,6 +275,41 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
       const auto selected   = phase == 7 ? 0U : view == 1 || phase == 4 ? 6U :
                                                                           7U;
       XII_TEST_INT(candidates->GetDescription().m_uiSize, xiiMath::Max(selected, 1U) * sizeof(xiiUInt32));
+      struct ClusterGrid
+      {
+        XII_DECLARE_POD_TYPE();
+        xiiVec2U32 m_Cells[4];
+      } grid;
+      struct ClusterIndices
+      {
+        XII_DECLARE_POD_TYPE();
+        xiiUInt32 m_Values[32];
+      } indices;
+      xiiUInt32 overflow = 1;
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("LightGrid").Borrow(), 0, grid) ||
+          !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("LightIndices").Borrow(), 0, indices) ||
+          !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer("Overflow").Borrow(), 0, overflow))
+        return;
+      XII_TEST_INT(overflow, 0);
+      bool       pointAssigned = false;
+      const auto pointIndex    = lights->GetIndex(handles[1]);
+      for (const auto& cell : grid.m_Cells)
+      {
+        if (!XII_TEST_BOOL(cell.y <= 8 && cell.x <= 24))
+          return;
+        for (xiiUInt32 i = 0; i < cell.y; ++i)
+        {
+          const auto index = indices.m_Values[cell.x + i];
+          XII_TEST_BOOL(index < active);
+          if (index == pointIndex)
+            pointAssigned = true;
+          if (view == 1)
+            XII_TEST_BOOL(index != pointIndex);
+        }
+        if (!selected)
+          XII_TEST_INT(cell.y, 0);
+      }
+      XII_TEST_BOOL(pointAssigned == (view == 0 && phase != 4 && phase != 7));
       for (xiiUInt32 i = 0; i < xiiMath::Max(selected, 1U); ++i)
       {
         xiiUInt32 candidate = 0;
