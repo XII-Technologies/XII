@@ -13,4 +13,10 @@ target_sources(${PROJECT_NAME} PRIVATE
   ${CMAKE_SOURCE_DIR}/Source/Tools/Inspector/Implementation/ProfilingWidget.cpp
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE TestFramework GuiFoundation GraphicsCore ads)
-xii_ci_add_test(${PROJECT_NAME})
+add_dependencies(${PROJECT_NAME} InspectorPlugin)
+if(XII_BUILD_VULKAN OR XII_BUILD_D3D12)
+  target_sources(${PROJECT_NAME} PRIVATE ../GraphicsFoundationTest/TestingEnvironment/Implementation/TestingEnvironment.cpp)
+  xii_add_renderers(${PROJECT_NAME})
+  target_compile_definitions(${PROJECT_NAME} PRIVATE XII_INSPECTOR_GPU_TESTS)
+endif()
+xii_ci_add_test(${PROJECT_NAME} NEEDS_HW_ACCESS)
