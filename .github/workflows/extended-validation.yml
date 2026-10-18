@@ -1,0 +1,30 @@
+name: Extended validation
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extended-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang:
+    name: Linux Clang Shipping
+    uses: ./.github/workflows/native-build.yml
+    with:
+      os: ubuntu-24.04
+      preset: ci-linux-clang
+      configuration: Shipping
+  analysis:
+    name: Windows MSVC analysis
+    uses: ./.github/workflows/native-build.yml
+    with:
+      os: windows-2025
+      preset: ci-windows
+      configuration: Debug
+      analysis: true
