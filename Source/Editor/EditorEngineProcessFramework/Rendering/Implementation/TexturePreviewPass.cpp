@@ -54,19 +54,6 @@ namespace
   }
 } // namespace
 
-xiiRenderPipelineResourceHandle xiiTexturePreviewPass::GetPipeline(bool bCube)
-{
-  const xiiStringView id       = bCube ? "{ XII Editor Cube Texture Preview }" : "{ XII Editor Texture Preview }";
-  auto                existing = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(id);
-  if (existing.IsValid())
-    return existing;
-  xiiRenderPipelineResourceDescriptor descriptor;
-  xiiVariantDictionary                properties;
-  properties.Insert("Cube", bCube);
-  descriptor.AddPass("Texture inspection", "xiiTexturePreviewPass", properties);
-  return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(id, std::move(descriptor));
-}
-
 void xiiTexturePreviewPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
   out_pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false});
@@ -264,12 +251,14 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Succeeded())
       commands.DrawIndexed({data.m_uiIndexCount, data.m_IndexType});
   };
-  graph.AddPass<PreviewData>("Inspect texture", xiiGALCommandQueueFlags::Graphics, setupInspection, executeInspection);
-  xiiDebugRenderer::AddRenderGraphPasses(graph);
+  const auto inspection = graph.AddPass<PreviewData>("Inspect texture", xiiGALCommandQueueFlags::Graphics, setupInspection, executeInspection);
+  color                 = inspection.first->m_Color;
+  depth                 = inspection.first->m_Depth;
+  XII_SUCCEED_OR_RETURN(xiiDebugRenderer::AddRenderGraphPasses(graph, color, depth));
   xiiRenderGraphTextureHandle result;
   const bool                  swapChain    = view->GetSwapChain() != nullptr;
   const auto                  setupPublish = [&](PreviewData& data, xiiRenderGraphBuilder& builder) {
-    result = data.m_Color = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::RenderTarget);
+    result = data.m_Color = builder.ReadTexture(color, xiiGALResourceStateFlags::RenderTarget);
     builder.ExportTexture(result, swapChain ? xiiGALResourceStateFlags::Present : xiiGALResourceStateFlags::ShaderResource);
   };
   // Export-only root: the graph performs the final transition after all drawing and overlays.

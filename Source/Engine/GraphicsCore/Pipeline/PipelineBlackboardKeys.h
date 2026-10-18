@@ -59,23 +59,15 @@ namespace xiiRGBlackboardKeys
 
   // Stage 2 - Shadows.
 
-  constexpr xiiStringView k_ShadowCascadeMatrices          = "ShadowCascadeMatrices"_xiisv;          ///< xiiRenderGraphBufferHandle - cascade view-proj matrices (float4x4[4]).
-  constexpr xiiStringView k_ShadowCascadeCount             = "ShadowCascadeCount"_xiisv;             ///< uint32 - active cascade count (0–4).
-  constexpr xiiStringView k_DirectionalShadowAtlas         = "DirShadowAtlas"_xiisv;                 ///< xiiRenderGraphTextureHandle - cascaded shadow map texture (D32F array).
-  constexpr xiiStringView k_LocalShadowAtlas               = "LocalShadowAtlas"_xiisv;               ///< xiiRenderGraphTextureHandle - spot/point shadow atlas (D32F).
-  constexpr xiiStringView k_LocalShadowAtlasDescs          = "LocalShadowAtlasDescs"_xiisv;          ///< xiiRenderGraphBufferHandle - per-light atlas placement data.
-  constexpr xiiStringView k_RTRawShadowMask                = "RTRawShadows"_xiisv;                   ///< xiiRenderGraphTextureHandle - raw RT shadow mask per light (R8_UNORM).
-  constexpr xiiStringView k_RTFinalShadowMask              = "RTFinalShadows"_xiisv;                 ///< xiiRenderGraphTextureHandle - denoised RT shadow mask.
-  constexpr xiiStringView k_ContactShadowTerm              = "ContactShadows"_xiisv;                 ///< xiiRenderGraphTextureHandle - screen-space contact shadow mask (R8_UNORM).
-  constexpr xiiStringView k_CloudShadowConstants           = "CloudShadowConstants"_xiisv;           ///< xiiRenderGraphBufferHandle - procedural cloud layer projection and optical depth.
-  constexpr xiiStringView k_VirtualShadowPhysicalPageTable = "VirtualShadowPhysicalPageTable"_xiisv; ///< xiiRenderGraphBufferHandle - frame-sliced physical-slot residency records.
-  constexpr xiiStringView k_VirtualShadowPageTable         = "VirtualShadowPageTable"_xiisv;         ///< xiiRenderGraphBufferHandle - frame-sliced hashed virtual-to-physical lookup table.
-  constexpr xiiStringView k_VirtualShadowAtlas             = "VirtualShadowAtlas"_xiisv;             ///< xiiRenderGraphTextureHandle - persistent physical depth-page atlas.
-  constexpr xiiStringView k_VirtualShadowSamplingConstants = "VirtualShadowSamplingConstants"_xiisv; ///< xiiRenderGraphBufferHandle - current frame lookup and atlas metadata.
-  constexpr xiiStringView k_VirtualShadowPhysicalBaseIndex = "VirtualShadowPhysicalBaseIndex"_xiisv; ///< uint32 - first physical-slot record for the current frame.
-  constexpr xiiStringView k_VirtualShadowPhysicalPageCount = "VirtualShadowPhysicalPageCount"_xiisv; ///< uint32 - physical page count in one frame slice.
-  constexpr xiiStringView k_VirtualShadowTableBaseIndex    = "VirtualShadowTableBaseIndex"_xiisv;    ///< uint32 - first hashed lookup bucket for the current frame.
-  constexpr xiiStringView k_VirtualShadowTableCapacity     = "VirtualShadowTableCapacity"_xiisv;     ///< uint32 - power-of-two lookup bucket count in one frame slice.
+  constexpr xiiStringView k_ShadowCascadeMatrices  = "ShadowCascadeMatrices"_xiisv; ///< xiiRenderGraphBufferHandle - cascade view-proj matrices (float4x4[4]).
+  constexpr xiiStringView k_ShadowCascadeCount     = "ShadowCascadeCount"_xiisv;    ///< uint32 - active cascade count (0–4).
+  constexpr xiiStringView k_DirectionalShadowAtlas = "DirShadowAtlas"_xiisv;        ///< xiiRenderGraphTextureHandle - cascaded shadow map texture (D32F array).
+  constexpr xiiStringView k_LocalShadowAtlas       = "LocalShadowAtlas"_xiisv;      ///< xiiRenderGraphTextureHandle - spot/point shadow atlas (D32F).
+  constexpr xiiStringView k_LocalShadowAtlasDescs  = "LocalShadowAtlasDescs"_xiisv; ///< xiiRenderGraphBufferHandle - per-light atlas placement data.
+  constexpr xiiStringView k_RTRawShadowMask        = "RTRawShadows"_xiisv;          ///< xiiRenderGraphTextureHandle - raw RT shadow mask per light (R8_UNORM).
+  constexpr xiiStringView k_RTFinalShadowMask      = "RTFinalShadows"_xiisv;        ///< xiiRenderGraphTextureHandle - denoised RT shadow mask.
+  constexpr xiiStringView k_ContactShadowTerm      = "ContactShadows"_xiisv;        ///< xiiRenderGraphTextureHandle - screen-space contact shadow mask (R8_UNORM).
+  constexpr xiiStringView k_CloudShadowConstants   = "CloudShadowConstants"_xiisv;  ///< xiiRenderGraphBufferHandle - procedural cloud layer projection and optical depth.
 
   // Stage 3 - Depth & Motion.
 
@@ -97,21 +89,10 @@ namespace xiiRGBlackboardKeys
 
   // Stage 5 - Lighting Preparation.
 
-  constexpr xiiStringView k_BRDFLut                    = "BRDFLut"_xiisv;                  ///< xiiRenderGraphTextureHandle - 256x256 R16G16F GGX split-sum BRDF LUT (persistent).
-  constexpr xiiStringView k_DDGIIrradiance             = "DDGIIrradiance"_xiisv;           ///< xiiRenderGraphTextureHandle - DDGI probe irradiance atlas (if DDGI enabled).
-  constexpr xiiStringView k_DDGIProbeIrradianceAtlas   = "DDGIProbeIrradianceAtlas"_xiisv; ///< xiiRenderGraphTextureHandle - persistent scrolling probe radiance.
-  constexpr xiiStringView k_DDGIProbeDistanceAtlas     = "DDGIProbeDistanceAtlas"_xiisv;   ///< xiiRenderGraphTextureHandle - persistent probe visibility moments.
-  constexpr xiiStringView k_DDGIProbeStates            = "DDGIProbeStates"_xiisv;          ///< xiiRenderGraphBufferHandle - logical cell and validity metadata.
-  constexpr xiiStringView k_DDGIProbeConstants         = "DDGIProbeConstants"_xiisv;       ///< xiiRenderGraphBufferHandle - scrolling volume transform and dimensions.
-  constexpr xiiStringView k_SparseVoxelRadiancePool    = "SparseVoxelRadiancePool"_xiisv;  ///< xiiRenderGraphBufferHandle - persistent physical voxel radiance pool.
-  constexpr xiiStringView k_SparseVoxelPageTable       = "SparseVoxelPageTable"_xiisv;     ///< xiiRenderGraphBufferHandle - clipmap logical-to-physical brick mapping.
-  constexpr xiiStringView k_SparseVoxelLevelData       = "SparseVoxelLevelData"_xiisv;     ///< xiiRenderGraphBufferHandle - per-level clipmap transforms.
-  constexpr xiiStringView k_SparseVoxelConstants       = "SparseVoxelConstants"_xiisv;     ///< xiiRenderGraphBufferHandle - sparse radiance pool layout.
-  constexpr xiiStringView k_SparseVoxelIrradiance      = "SparseVoxelIrradiance"_xiisv;    ///< xiiRenderGraphTextureHandle - far-field irradiance gather.
-  constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv;         ///< xiiRenderGraphTextureHandle - 256x64 R16G16B16A16F atmosphere transmittance LUT.
-  constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;          ///< xiiRenderGraphTextureHandle - 32x32 R16G16B16A16F multiple-scattering LUT.
-  constexpr xiiStringView k_RawAOTexture               = "RawAO"_xiisv;                    ///< xiiRenderGraphTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).
-  constexpr xiiStringView k_StableAOTexture            = "StableAO"_xiisv;                 ///< xiiRenderGraphTextureHandle - temporally-denoised AO (R8_UNORM).
+  constexpr xiiStringView k_BRDFLut               = "BRDFLut"_xiisv;               ///< xiiRenderGraphTextureHandle - 256x256 R16G16F GGX split-sum BRDF LUT (persistent).
+  constexpr xiiStringView k_SparseVoxelIrradiance = "SparseVoxelIrradiance"_xiisv; ///< xiiRenderGraphTextureHandle - far-field irradiance gather.
+  constexpr xiiStringView k_RawAOTexture          = "RawAO"_xiisv;                 ///< xiiRenderGraphTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).
+  constexpr xiiStringView k_StableAOTexture       = "StableAO"_xiisv;              ///< xiiRenderGraphTextureHandle - temporally-denoised AO (R8_UNORM).
 
   // Stage 6 - Main Lighting.
 
@@ -155,7 +136,6 @@ namespace xiiRGBlackboardKeys
 
   // Stage 9 - Screen-Space Effects.
 
-  constexpr xiiStringView k_PlanarReflectionMap = "PlanarReflectionMap"_xiisv; ///< xiiRenderGraphTextureHandle - planar reflection render target.
 
   // Stage 10 - Temporal Reconstruction.
 

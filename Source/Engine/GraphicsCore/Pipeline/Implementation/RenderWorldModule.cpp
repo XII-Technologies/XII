@@ -13,7 +13,7 @@
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Lighting/WorldLightData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -23,9 +23,9 @@
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
@@ -126,6 +126,7 @@ void xiiRenderWorldModule::ReleaseGpuResources()
   m_RetiredPackets.Clear();
   m_pRayTracingResources.Clear();
   m_pGpuInstances.Clear();
+  m_pWorldLights.Clear();
 }
 
 // Reuse the existing world registry for device shutdown; do not maintain another world/scene registry.
@@ -185,12 +186,20 @@ void xiiRenderWorldModule::Deinitialize()
 
   m_pRayTracingResources.Clear();
   m_pGpuInstances.Clear();
+  m_pWorldLights.Clear();
 
   xiiDebugRenderer::ClearContext(GetWorld());
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
 {
+}
+
+xiiResult xiiRenderWorldModule::UpdateWorldLights(xiiArrayPtr<xiiRenderData* const> packets)
+{
+  if (!m_pWorldLights)
+    m_pWorldLights = XII_DEFAULT_NEW(xiiWorldLightData, *GetWorld());
+  return m_pWorldLights->UpdateFromExtraction(packets);
 }
 
 xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame)
@@ -808,7 +817,10 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (!pDevice)
     return;
 
-  if (m_ViewIdTable.IsEmpty())
+  bool active = false;
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    active |= it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled();
+  if (!active)
     return;
 
   // Honor compiled demand before choosing the frame's retirement/ring limits.
@@ -832,21 +844,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
   // Convert extracted engine meshes into persistent, subsystem-owned GPU scene records before
   // residency streaming runs. Stable render IDs retain previous transforms across frames.
-  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
-  {
-    ViewDetail& viewDetail = it.Value();
-    if (viewDetail.m_bPrepared && viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
-    {
-      if (viewDetail.m_pView->PrepareRenderResources().Failed())
-      {
-        viewDetail.m_bPrepared = false;
-        viewDetail.m_pView->InvalidateTemporalHistory();
-        xiiLog::Error("Failed to synchronize render resources for view '{}'.", viewDetail.m_pView->GetName());
-        continue;
-      }
-    }
-  }
-
   if (m_RuntimeFeatures.IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing))
   {
     xiiDynamicArray<xiiRenderData*> packets;
@@ -863,6 +860,21 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   }
   else
     m_pGpuInstances.Clear();
+
+  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::Lighting))
+  {
+    xiiDynamicArray<xiiRenderData*> packets;
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+      if (it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled() && it.Value().m_pView->GetRuntimeFeatures().IsSet(xiiRenderPipelineFeature::Lighting))
+        packets.PushBackRange(it.Value().m_pExtractedData->GetAllRenderData());
+    if (UpdateWorldLights(packets).Failed())
+    {
+      xiiLog::Error("Could not update world light records or their IES resources.");
+      return;
+    }
+  }
+  else
+    m_pWorldLights.Clear();
 
   // Scene synchronization can acquire resource-backed materials that did not exist at the start
   // of the frame. Resolve their bindless textures before any view captures its material upload.
@@ -895,15 +907,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     // Reconstruct the graph for this frame.
     pGraph->BeginSetup(uiFrameIndex);
 
-    // Publish virtual-shadow residency before the view builds its passes. Consumers
-    // can therefore declare proper render-graph reads and inherit the transfer
-    // dependency without reaching into the manager during execution.
-    const xiiVirtualShadowMapManager::UploadHandles virtualShadowHandles = viewDetail.m_pView->GetRuntimeFeatures().IsSet(xiiRenderPipelineFeature::VirtualShadows) ? xiiVirtualShadowMapManager::AddUploadPass(*pGraph, uiFrameIndex) : xiiVirtualShadowMapManager::UploadHandles{};
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowHandles.m_uiFrameBaseIndex);
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowHandles.m_uiPhysicalPageCount);
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowHandles.m_uiVirtualTableBaseIndex);
-    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, virtualShadowHandles.m_uiVirtualTableCapacity);
-
     const xiiView::RenderGraphBuilder& graphBuilder = viewDetail.m_pView->GetRenderGraphBuilder();
     if (graphBuilder.IsValid())
     {
@@ -913,11 +916,11 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     else
     {
       // Standard full-featured pipeline.
-      if (viewDetail.m_pView->BuildRenderPipeline(*pGraph, blackboard, virtualShadowHandles).Failed())
+      if (viewDetail.m_pView->BuildRenderPipeline(*pGraph, blackboard).Failed())
       {
         pGraph->EndSetup();
         resourceCache.EndFrame();
-        xiiLog::Error("Failed to build render pipeline for view '{}'.", viewDetail.m_pView->GetName());
+        xiiLog::Error("Failed to build render pipeline for view '{}': {}", viewDetail.m_pView->GetName(), viewDetail.m_pView->GetRenderPipelineInstance().GetLastBuildError());
         continue;
       }
     }

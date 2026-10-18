@@ -1,0 +1,41 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
+#include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
+#include <Shaders/Pipeline/Passes/GlobalIllumination/SparseVoxelPoolConstants.h>
+struct BrickUpdate { float4 WorldMinimumAndVoxelSize; uint4 PhysicalLevelAndKey; };
+struct LevelData { int4 MinimumCellAndPageOffset; float4 VoxelAndBrickSize; };
+StructuredBuffer<BrickUpdate> g_BrickUpdates;
+StructuredBuffer<LevelData> g_Levels;
+RWStructuredBuffer<float4> g_RadiancePool;
+RWStructuredBuffer<uint> g_PageTable;
+[numthreads(64,1,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  const uint index=tid.x+tid.y*PoolWork.y, voxels=PoolLayout.x;
+  if(voxels==0 || index>=ClipmapAndUpdateCounts.w*voxels) return;
+  const uint updateIndex=index/voxels, local=index%voxels;
+  uint updateCount,stride; g_BrickUpdates.GetDimensions(updateCount,stride); if(updateIndex>=updateCount) return;
+  const BrickUpdate update=g_BrickUpdates[updateIndex]; const uint physical=update.PhysicalLevelAndKey.x;
+  uint poolCount; g_RadiancePool.GetDimensions(poolCount,stride);
+  if(physical>=PoolLayout.y || physical*voxels+local>=poolCount) return;
+  const uint poolIndex=physical*voxels+local;
+  const float3 target=max(EnvironmentAmbientRadiance.rgb,0)+max(EnvironmentColorAndAngularRadius.rgb*EnvironmentDirectionAndIlluminance.w,0)*0.08f;
+  const float weight=saturate(asfloat(update.PhysicalLevelAndKey.w));
+  const float3 previous=weight>0 ? g_RadiancePool[poolIndex].rgb:0;
+  g_RadiancePool[poolIndex]=float4(lerp(target,previous,weight),1);
+  if(local==0)
+  {
+    const uint low=update.PhysicalLevelAndKey.y,high=update.PhysicalLevelAndKey.z;
+    const uint level=(high>>25)&7;
+    uint levelCount; g_Levels.GetDimensions(levelCount,stride); if(level>=levelCount) return;
+    const int3 cell=int3(low&0x7ffff,((low>>19)|(high<<13))&0x7ffff,(high>>6)&0x7ffff)-262144;
+    const LevelData data=g_Levels[level]; const int3 localCell=cell-data.MinimumCellAndPageOffset.xyz;
+    if(any(localCell<0) || any(localCell>=(int)ClipmapAndUpdateCounts.y)) return;
+    const uint grid=ClipmapAndUpdateCounts.y;
+    const uint page=data.MinimumCellAndPageOffset.w+(localCell.z*grid+localCell.y)*grid+localCell.x;
+    uint pages; g_PageTable.GetDimensions(pages,stride); if(page<pages) g_PageTable[page]=physical;
+  }
+}

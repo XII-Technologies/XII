@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 
 XII_CREATE_SIMPLE_TEST(Resources, Fence)
@@ -34,5 +36,34 @@ XII_CREATE_SIMPLE_TEST(Resources, Fence)
         XII_TEST_INT(pGeneralFence->GetCompletedValue(), 3U);
       }
     }
+  }
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(FenceSynchronization);
+XII_CREATE_SIMPLE_TEST(FenceSynchronization, IndependentCallerAndQueueValues)
+{
+  xiiGPUTestingEnvironment environment;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
+  auto pFence = environment.GetDevice()->CreateFence({});
+  XII_TEST_BOOL(pFence != nullptr);
+
+  for (xiiUInt32 i = 0; i < 3; ++i)
+  {
+    const auto flags    = (i & 1U) ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics;
+    auto*      queue    = environment.GetDevice()->GetCommandQueue(flags);
+    auto       commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = flags});
+
+    if (!XII_TEST_BOOL(queue && commands))
+      return;
+
+    // Private values exceed both queues' unrelated submission clocks.
+    const xiiUInt64 value = 10000 + i;
+    commands->Begin();
+    commands->EnqueueSignal(pFence.Borrow(), value);
+    commands->End();
+    queue->Submit(commands);
+    pFence->Wait(value);
+    XII_TEST_INT(pFence->GetCompletedValue(), value);
   }
 }

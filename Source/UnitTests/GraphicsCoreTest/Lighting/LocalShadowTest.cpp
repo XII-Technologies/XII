@@ -2,7 +2,7 @@
 
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
-#include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Lighting/LocalShadow.h>
 
 XII_CREATE_SIMPLE_TEST(Lighting, LocalShadows)
@@ -13,8 +13,8 @@ XII_CREATE_SIMPLE_TEST(Lighting, LocalShadows)
     lights.SetCount(3U);
     xiiMemoryUtils::ZeroFill(lights.GetData(), lights.GetCount());
 
-    lights[0].m_Metadata.z              = static_cast<xiiUInt32>(xiiLightingSystem::LightType::Spot);
-    lights[0].m_DirectionAndType        = xiiVec4(1.0f, 0.0f, 0.0f, static_cast<float>(xiiLightingSystem::LightType::Spot));
+    lights[0].m_Metadata.z              = static_cast<xiiUInt32>(xiiGpuLightType::Spot);
+    lights[0].m_DirectionAndType        = xiiVec4(1.0f, 0.0f, 0.0f, static_cast<float>(xiiGpuLightType::Spot));
     lights[0].m_OrientationRightAndIES  = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
     lights[0].m_AttenuationAndSize      = xiiVec4(20.0f, 0.1f, 0.0f, 0.0f);
     lights[0].m_SpotAnglesAndRectSize.y = xiiMath::Cos(xiiAngle::MakeFromDegree(25.0f));
@@ -22,8 +22,8 @@ XII_CREATE_SIMPLE_TEST(Lighting, LocalShadows)
 
     for (xiiUInt32 i = 1U; i < lights.GetCount(); ++i)
     {
-      lights[i].m_Metadata.z          = static_cast<xiiUInt32>(xiiLightingSystem::LightType::Point);
-      lights[i].m_DirectionAndType.w  = static_cast<float>(xiiLightingSystem::LightType::Point);
+      lights[i].m_Metadata.z          = static_cast<xiiUInt32>(xiiGpuLightType::Point);
+      lights[i].m_DirectionAndType.w  = static_cast<float>(xiiGpuLightType::Point);
       lights[i].m_PositionAndInvRange = xiiVec4(static_cast<float>(i) * 4.0f, 0.0f, 1.0f, 0.05f);
       lights[i].m_AttenuationAndSize  = xiiVec4(20.0f, 0.1f, 0.0f, 0.0f);
       lights[i].m_ShadowData.x        = 1.0f;
@@ -66,13 +66,13 @@ XII_CREATE_SIMPLE_TEST(Lighting, LocalShadows)
   {
     xiiGpuLightData lights[2];
     xiiMemoryUtils::ZeroFill(lights, 2U);
-    lights[0].m_Metadata.z              = static_cast<xiiUInt32>(xiiLightingSystem::LightType::Spot);
-    lights[0].m_DirectionAndType        = xiiVec4(1.0f, 0.0f, 0.0f, static_cast<float>(xiiLightingSystem::LightType::Spot));
+    lights[0].m_Metadata.z              = static_cast<xiiUInt32>(xiiGpuLightType::Spot);
+    lights[0].m_DirectionAndType        = xiiVec4(1.0f, 0.0f, 0.0f, static_cast<float>(xiiGpuLightType::Spot));
     lights[0].m_OrientationRightAndIES  = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
     lights[0].m_AttenuationAndSize      = xiiVec4(10.0f, 0.1f, 0.0f, 0.0f);
     lights[0].m_SpotAnglesAndRectSize.y = xiiMath::Cos(xiiAngle::MakeFromDegree(30.0f));
     lights[0].m_ShadowData.x            = 1.0f;
-    lights[1].m_Metadata.z              = static_cast<xiiUInt32>(xiiLightingSystem::LightType::Point);
+    lights[1].m_Metadata.z              = static_cast<xiiUInt32>(xiiGpuLightType::Point);
     lights[1].m_AttenuationAndSize      = xiiVec4(10.0f, 0.1f, 0.0f, 0.0f);
     lights[1].m_ShadowData.x            = 1.0f;
 

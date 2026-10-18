@@ -1,21 +1,24 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
-#include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
+#include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Pipeline/FrameConstants.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
-#include <TestFramework/Utilities/TestLogInterface.h>
 
 namespace
 {
@@ -132,9 +135,7 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  xiiRenderPipelineResourceDescriptor definition;
-  xiiRenderPipelineResource::GetDefaultDescriptor(definition);
-  const auto          pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Sensor retention default pipeline", std::move(definition));
+  const auto          pipeline = xiiLoadPipelineLibraryResource("DepthSensorDiagnostic");
   xiiWorldDescription description("Sensor retention");
   xiiWorld            world(description);
   XII_LOCK(world.GetWriteMarker());
@@ -150,12 +151,16 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
   }
   world.Update();
   environment.GetDevice()->WaitIdle();
+  XII_TEST_BOOL(world.GetModule<xiiRenderWorldModule>()->GetExtractionRequirements().IsNoFlagSet());
+  XII_TEST_BOOL(views[0]->GetGpuInstanceData() == nullptr && views[1]->GetGpuInstanceData() == nullptr);
+  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
   auto       original    = views[0]->GetSensorOutputTexture();
   const auto independent = views[1]->GetSensorOutputTexture();
   if (!XII_TEST_BOOL(original != nullptr && independent != nullptr && original != independent))
     return;
   XII_TEST_RESULT(views[0]->SetSensorProfile(views[0]->GetSensorProfile()));
   XII_TEST_BOOL(views[0]->GetSensorOutputTexture() == original);
+  xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> retired;
   for (xiiUInt32 i = 0; i < 64; ++i)
   {
     const xiiUInt32 width  = 8 + i;
@@ -170,9 +175,14 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
     XII_TEST_INT(output->GetDescription().m_Size.height, height);
     XII_TEST_BOOL(output->GetDescription().m_Format == xiiGALResourceFormat::RGBA32Float);
     XII_TEST_BOOL(views[1]->GetSensorOutputTexture() == independent && output != independent);
-    XII_TEST_INT(original->GetRefCount(), 1);
+    if (i + 1 < 64)
+      retired.PushBack(output);
   }
   environment.GetDevice()->WaitIdle();
+  XII_TEST_INT(original->GetRefCount(), 1);
+  for (const auto& texture : retired)
+    XII_TEST_INT(texture->GetRefCount(), 1);
+  retired.Clear();
   const auto current = views[0]->GetSensorOutputTexture();
   if (!SeedSensorOutput(*environment.GetDevice(), current.Borrow()))
     return;
@@ -192,27 +202,6 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
   XII_TEST_BOOL(views[0]->GetSensorOutputTexture() != nullptr && views[0]->GetSensorOutputTexture() != original);
 }
 
-class xiiSensorAllocationTestPass : public xiiRenderPipelinePass
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiSensorAllocationTestPass, xiiRenderPipelinePass);
-
-public:
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>&) const override {}
-  xiiResult Build(xiiRenderPipelinePassContext& context) override
-  {
-    xiiBuiltinRenderPipelinePass pass;
-    xiiVariantDictionary         properties;
-    properties.Insert("Stage", "ScreenEffects");
-    XII_SUCCEED_OR_RETURN(pass.Configure(properties));
-    const auto device = xiiGALDevice::GetDefaultDevice();
-    xiiGALDevice::SetDefaultDevice(nullptr);
-    XII_SCOPE_EXIT(xiiGALDevice::SetDefaultDevice(device));
-    return pass.Build(context);
-  }
-};
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSensorAllocationTestPass, 1, xiiRTTIDefaultAllocator<xiiSensorAllocationTestPass>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
 XII_CREATE_SIMPLE_TEST(SensorMemory, AllocationFailureAndRecovery)
 {
   xiiGPUTestingEnvironment environment;
@@ -230,22 +219,48 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, AllocationFailureAndRecovery)
   if (!ConfigureView(environment, world, camera, view))
     return;
   XII_TEST_RESULT(view->SetSensorProfile(Profile(16, 16)));
-  xiiRenderPipelineResourceDescriptor failure;
-  failure.AddPass("Sensor allocation failure", "xiiSensorAllocationTestPass");
-  const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Sensor allocation failure", std::move(failure));
-  view->SetRenderPipelineResource(pipeline);
+  // Exercise the real native pass's allocation precondition with valid graph
+  // inputs; do not manufacture a wrapper pass or replace production resource owners.
+  xiiRenderGraphContext testContext;
+  if (!XII_TEST_RESULT(testContext.Initialize("Sensor allocation precondition")))
+    return;
+  auto& graph = testContext.GetGraph();
+  graph.BeginSetup(1);
+  struct Inputs
   {
-    xiiTestLogInterface   log;
-    xiiTestLogSystemScope scope(&log, true);
-    log.ExpectMessage("Failed to allocate calibrated sensor output", xiiLogMsgType::ErrorMsg);
-    log.ExpectMessage("Failed to build render pipeline", xiiLogMsgType::ErrorMsg);
-    world.Update();
+    xiiRenderGraphTextureHandle m_Depth;
+    xiiRenderGraphBufferHandle  m_Camera;
+  };
+  const auto         inputs = graph.AddPass<Inputs>("Test calibration inputs", xiiGALCommandQueueFlags::Graphics, [](auto& data, xiiRenderGraphBuilder& builder) {
+    xiiGALTextureCreationDescription depth; depth.m_Type=xiiGALResourceDimension::Texture2D; depth.m_Size={16,16}; depth.m_Format=xiiGALResourceFormat::D32Float; depth.m_BindFlags=xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
+    data.m_Depth=builder.WriteTexture("Depth",depth,xiiGALResourceStateFlags::DepthWrite);
+    xiiGALBufferCreationDescription camera; camera.m_uiSize=sizeof(xiiFrameCameraConstants); camera.m_BindFlags=xiiGALBindFlags::UniformBuffer;
+    data.m_Camera=builder.WriteBuffer("Camera",camera,xiiGALResourceStateFlags::ConstantBuffer); }, [](const auto&, xiiRenderGraphPassContext&) {});
+  xiiDepthSensorPass sensor;
+  sensor.m_bUseViewProfile = true;
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  sensor.GetPins(pins);
+  if (!XII_TEST_RESULT(sensor.InitializePinBindings(pins)))
+    return;
+  xiiDynamicArray<xiiRenderPipelineBinding> bindings;
+  bindings.SetCount(pins.GetCount());
+  bindings[sensor.m_InputSceneDepth.GetBindingIndex()].m_hTexture    = inputs.first->m_Depth;
+  bindings[sensor.m_InputPerFrameCamera.GetBindingIndex()].m_hBuffer = inputs.first->m_Camera;
+  xiiVariantDictionary         parameters;
+  xiiStringBuilder             error;
+  xiiRenderPipelinePassContext context{view, graph, testContext.GetBlackboard(), parameters, pins, bindings, "Sensor allocation precondition", {}, {}, {}};
+  context.m_pBuildError = &error;
+  {
+    const auto device = xiiGALDevice::GetDefaultDevice();
+    xiiGALDevice::SetDefaultDevice(nullptr);
+    XII_SCOPE_EXIT(xiiGALDevice::SetDefaultDevice(device));
+    XII_TEST_BOOL(sensor.Build(context).Failed());
+    XII_TEST_BOOL(error.FindSubString("allocation requires an active graphics device") != nullptr);
+    XII_TEST_BOOL(sensor.GetViewOutput(view->GetSensorProfile()) == nullptr);
   }
+  graph.EndSetup();
   XII_TEST_BOOL(view->GetSensorOutputTexture() == nullptr);
-  xiiRenderPipelineResourceDescriptor recovered;
-  xiiRenderPipelineResource::GetDefaultDescriptor(recovered);
-  const auto restored = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Sensor allocation restored", std::move(recovered));
-  view->SetRenderPipelineResource(restored);
+  view->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("DepthSensorDiagnostic"));
   world.Update();
   environment.GetDevice()->WaitIdle();
   const auto output = view->GetSensorOutputTexture();

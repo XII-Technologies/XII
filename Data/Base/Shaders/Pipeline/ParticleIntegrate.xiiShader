@@ -1,0 +1,93 @@
+// XII Engine - ParticleIntegrate.xiiShader
+// GPU particle simulation - Euler integration, drag, turbulence, lifetime kill.
+// Two-dimensional tiled dispatch over an explicitly supplied particle buffer.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/Passes/Particles/ParticleIntegrationConstants.h>
+
+struct Particle
+{
+    float4 PositionAge;            // xyz = world-space position, w = age
+    float4 PreviousPositionRadius; // xyz = previous position, w = radius
+    float4 VelocityLifetime;       // xyz = world-space velocity, w = lifetime
+    float4 Color;                  // rgba
+    float4 ForceInverseMass;       // xyz = accumulated force, w = inverse mass
+    float4 Custom0;
+    float4 Custom1;
+    uint   Id;
+    uint   Flags;
+    uint   Emitter;
+    uint   CellId;
+};
+
+RWStructuredBuffer<Particle> g_Particles : register(u0);
+
+float ParticleHash(float3 x)
+{
+    return frac(sin(dot(x, float3(127.1f, 311.7f, 74.7f))) * 43758.5453f);
+}
+
+// Fast cheap curl-noise approximation (Smith 2007 turbulence field).
+float3 CurlNoise(float3 p, float scale)
+{
+    const float eps = 0.01f;
+    float3 dx = float3(eps, 0, 0);
+    float3 dy = float3(0, eps, 0);
+    float3 dz = float3(0, 0, eps);
+
+    float3 c;
+    c.x = ParticleHash(p + dy) - ParticleHash(p - dy) - (ParticleHash(p + dz) - ParticleHash(p - dz));
+    c.y = ParticleHash(p + dz) - ParticleHash(p - dz) - (ParticleHash(p + dx) - ParticleHash(p - dx));
+    c.z = ParticleHash(p + dx) - ParticleHash(p - dx) - (ParticleHash(p + dy) - ParticleHash(p - dy));
+    return normalize(c) * scale / (2.0f * eps);
+}
+
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    uint capacity, stride;
+    g_Particles.GetDimensions(capacity, stride);
+    uint idx = tid.x + tid.y * DispatchGroupsX * 64u;
+    uint count = min(capacity, DispatchParticleCount);
+    if (ActiveCount != 0u) count = min(count, ActiveCount);
+    if (idx >= count) return;
+
+    Particle p = g_Particles[idx];
+
+    // Kill particle when lifetime elapsed.
+    p.PositionAge.w += DeltaTimeS;
+    if (p.PositionAge.w >= p.VelocityLifetime.w)
+    {
+        p.PositionAge.xyz      = float3(0, -1e6f, 0);
+        p.VelocityLifetime.xyz = float3(0, 0, 0);
+        p.VelocityLifetime.w   = 0.0f;
+        g_Particles[idx] = p;
+        return;
+    }
+
+    float3 accel = float3(0.0f, -9.81f * GravityScale, 0.0f);
+    accel += WindVelocity;
+    accel += p.ForceInverseMass.xyz;
+
+    if (TurbulenceScale > 0.0f)
+    {
+        accel += CurlNoise(p.PositionAge.xyz * 0.1f, TurbulenceScale);
+    }
+
+    accel -= p.VelocityLifetime.xyz * DragCoefficient;
+
+    p.PreviousPositionRadius.xyz = p.PositionAge.xyz;
+    p.VelocityLifetime.xyz      += accel * DeltaTimeS;
+    p.PositionAge.xyz           += p.VelocityLifetime.xyz * DeltaTimeS;
+
+    float t = saturate(p.PositionAge.w / max(p.VelocityLifetime.w, 0.0001f));
+    p.Color.a = 1.0f - t * t;
+
+    g_Particles[idx] = p;
+}

@@ -40,12 +40,14 @@ public:
   xiiArrayPtr<const xiiMat4>                   GetSkinningMatrices() const { return m_SkinningMatrices; }
   xiiArrayPtr<const xiiGpuInstanceUploadRange> GetUploadRanges() const { return m_UploadRanges; }
   xiiUInt32                                    GetInstanceCount() const { return m_Instances.GetCount(); }
-  xiiUInt64                                    GetMaximumMeshletCount() const;
-  xiiMeshResourceHandle                        GetMeshResource(xiiUInt32 drawIndex) const;
-  xiiMaterialGpuHandle                         GetMaterialHandle(xiiUInt32 drawIndex) const;
-  xiiArrayPtr<const float>                     GetMorphWeights(xiiUInt32 drawIndex) const;
-  xiiMeshBufferResourceHandle                  GetMeshBufferResource(xiiUInt32 drawIndex) const;
-  xiiArrayPtr<const xiiMeshMorphTarget>        GetMorphTargets(xiiUInt32 drawIndex) const;
+  /// Changes when packed records, membership or pose bytes change; never a serialized identity.
+  xiiUInt64                             GetDataRevision() const { return m_uiDataRevision; }
+  xiiUInt64                             GetMaximumMeshletCount() const;
+  xiiMeshResourceHandle                 GetMeshResource(xiiUInt32 drawIndex) const;
+  xiiMaterialGpuHandle                  GetMaterialHandle(xiiUInt32 drawIndex) const;
+  xiiArrayPtr<const float>              GetMorphWeights(xiiUInt32 drawIndex) const;
+  xiiMeshBufferResourceHandle           GetMeshBufferResource(xiiUInt32 drawIndex) const;
+  xiiArrayPtr<const xiiMeshMorphTarget> GetMorphTargets(xiiUInt32 drawIndex) const;
   /// Returns failure for background, retired candidates, a foreign world's identity or dead owners.
   xiiResult Resolve(xiiUInt32 gpuIdentity, xiiGpuInstanceSource& source) const;
   /// Produces a compact candidate stream for a camera or picking subset; records are not copied.
@@ -62,6 +64,7 @@ public:
   const xiiGpuInstanceUploadStatistics& GetUploadStatistics() const;
 
 private:
+  xiiUInt64                                  m_uiDataRevision = 0;
   xiiUniquePtr<xiiGpuInstanceDataState>      m_pState;
   xiiDynamicArray<xiiGpuSceneInstance>       m_Instances;
   xiiDynamicArray<xiiMat4>                   m_SkinningMatrices;

@@ -173,9 +173,7 @@ namespace
     {
       auto pMemberProperty = static_cast<const xiiAbstractMemberProperty*>(pProperty);
 
-      if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                    std::is_same_v<T, xiiComponentHandle> ||
-                    std::is_same_v<T, xiiTypedPointer>)
+      if constexpr (std::is_same_v<T, xiiGameObjectHandle> || std::is_same_v<T, xiiComponentHandle> || std::is_same_v<T, xiiTypedPointer>)
       {
         XII_ASSERT_NOT_IMPLEMENTED;
       }
@@ -229,9 +227,7 @@ namespace
     {
       auto pMemberProperty = static_cast<const xiiAbstractMemberProperty*>(pProperty);
 
-      if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                    std::is_same_v<T, xiiComponentHandle> ||
-                    std::is_same_v<T, xiiTypedPointer>)
+      if constexpr (std::is_same_v<T, xiiGameObjectHandle> || std::is_same_v<T, xiiComponentHandle> || std::is_same_v<T, xiiTypedPointer>)
       {
         XII_ASSERT_NOT_IMPLEMENTED;
       }
@@ -453,11 +449,7 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_IncVariable(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    if constexpr (std::is_same_v<T, xiiUInt8> ||
-                  std::is_same_v<T, xiiInt32> ||
-                  std::is_same_v<T, xiiInt64> ||
-                  std::is_same_v<T, float> ||
-                  std::is_same_v<T, double>)
+    if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double>)
     {
       T a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       inout_context.SetData(node.GetOutputDataOffset(0), ++a);
@@ -475,11 +467,7 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_DecVariable(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    if constexpr (std::is_same_v<T, xiiUInt8> ||
-                  std::is_same_v<T, xiiInt32> ||
-                  std::is_same_v<T, xiiInt64> ||
-                  std::is_same_v<T, float> ||
-                  std::is_same_v<T, double>)
+    if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double>)
     {
       T a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       inout_context.SetData(node.GetOutputDataOffset(0), --a);
@@ -560,26 +548,13 @@ namespace
     auto& userData = node.GetUserData<NodeUserData_Comparison>();
     bool  bRes     = false;
 
-    if constexpr (std::is_same_v<T, bool> ||
-                  std::is_same_v<T, xiiUInt8> ||
-                  std::is_same_v<T, xiiInt32> ||
-                  std::is_same_v<T, xiiInt64> ||
-                  std::is_same_v<T, float> ||
-                  std::is_same_v<T, double> ||
-                  std::is_same_v<T, xiiColor> ||
-                  std::is_same_v<T, xiiVec3> ||
-                  std::is_same_v<T, xiiTime> ||
-                  std::is_same_v<T, xiiAngle> ||
-                  std::is_same_v<T, xiiString> ||
-                  std::is_same_v<T, xiiHashedString>)
+    if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, xiiColor> || std::is_same_v<T, xiiVec3> || std::is_same_v<T, xiiTime> || std::is_same_v<T, xiiAngle> || std::is_same_v<T, xiiString> || std::is_same_v<T, xiiHashedString>)
     {
       const T& a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       const T& b = inout_context.GetData<T>(node.GetInputDataOffset(1));
       bRes       = xiiComparisonOperator::Compare(userData.m_ComparisonOperator, a, b);
     }
-    else if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                       std::is_same_v<T, xiiComponentHandle> ||
-                       std::is_same_v<T, xiiTypedPointer>)
+    else if constexpr (std::is_same_v<T, xiiGameObjectHandle> || std::is_same_v<T, xiiComponentHandle> || std::is_same_v<T, xiiTypedPointer>)
     {
       xiiTypedPointer a = inout_context.GetPointerData(node.GetInputDataOffset(0));
       xiiTypedPointer b = inout_context.GetPointerData(node.GetInputDataOffset(1));
@@ -606,10 +581,7 @@ namespace
         xiiLog::Error("Comparison '{}' is not defined for type '{}'", sCompOp, GetTypeName<T>());
       }
     }
-    else if constexpr (std::is_same_v<T, xiiQuat> ||
-                       std::is_same_v<T, xiiTransform> ||
-                       std::is_same_v<T, xiiVariantArray> ||
-                       std::is_same_v<T, xiiVariantDictionary>)
+    else if constexpr (std::is_same_v<T, xiiQuat> || std::is_same_v<T, xiiTransform> || std::is_same_v<T, xiiVariantArray> || std::is_same_v<T, xiiVariantDictionary>)
     {
       const T& a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       const T& b = inout_context.GetData<T>(node.GetInputDataOffset(1));
@@ -675,9 +647,7 @@ namespace
     {
       bIsValid = inout_context.GetData<xiiHashedString>(dataOffset).IsEmpty() == false;
     }
-    else if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                       std::is_same_v<T, xiiComponentHandle> ||
-                       std::is_same_v<T, xiiTypedPointer>)
+    else if constexpr (std::is_same_v<T, xiiGameObjectHandle> || std::is_same_v<T, xiiComponentHandle> || std::is_same_v<T, xiiTypedPointer>)
     {
       bIsValid = inout_context.GetPointerData(dataOffset).m_pObject != nullptr;
     }
@@ -720,15 +690,7 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_Add(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    if constexpr (std::is_same_v<T, xiiUInt8> ||
-                  std::is_same_v<T, xiiInt32> ||
-                  std::is_same_v<T, xiiInt64> ||
-                  std::is_same_v<T, float> ||
-                  std::is_same_v<T, double> ||
-                  std::is_same_v<T, xiiColor> ||
-                  std::is_same_v<T, xiiVec3> ||
-                  std::is_same_v<T, xiiTime> ||
-                  std::is_same_v<T, xiiAngle>)
+    if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, xiiColor> || std::is_same_v<T, xiiVec3> || std::is_same_v<T, xiiTime> || std::is_same_v<T, xiiAngle>)
     {
       const T& a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       const T& b = inout_context.GetData<T>(node.GetInputDataOffset(1));
@@ -775,15 +737,7 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_Sub(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    if constexpr (std::is_same_v<T, xiiUInt8> ||
-                  std::is_same_v<T, xiiInt32> ||
-                  std::is_same_v<T, xiiInt64> ||
-                  std::is_same_v<T, float> ||
-                  std::is_same_v<T, double> ||
-                  std::is_same_v<T, xiiColor> ||
-                  std::is_same_v<T, xiiVec3> ||
-                  std::is_same_v<T, xiiTime> ||
-                  std::is_same_v<T, xiiAngle>)
+    if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, xiiColor> || std::is_same_v<T, xiiVec3> || std::is_same_v<T, xiiTime> || std::is_same_v<T, xiiAngle>)
     {
       const T& a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       const T& b = inout_context.GetData<T>(node.GetInputDataOffset(1));
@@ -808,13 +762,7 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_Mul(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    if constexpr (std::is_same_v<T, xiiUInt8> ||
-                  std::is_same_v<T, xiiInt32> ||
-                  std::is_same_v<T, xiiInt64> ||
-                  std::is_same_v<T, float> ||
-                  std::is_same_v<T, double> ||
-                  std::is_same_v<T, xiiColor> ||
-                  std::is_same_v<T, xiiTime>)
+    if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, xiiColor> || std::is_same_v<T, xiiTime>)
     {
       const T& a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       const T& b = inout_context.GetData<T>(node.GetInputDataOffset(1));
@@ -851,12 +799,7 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_Div(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    if constexpr (std::is_same_v<T, xiiUInt8> ||
-                  std::is_same_v<T, xiiInt32> ||
-                  std::is_same_v<T, xiiInt64> ||
-                  std::is_same_v<T, float> ||
-                  std::is_same_v<T, double> ||
-                  std::is_same_v<T, xiiTime>)
+    if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, xiiTime>)
     {
       const T& a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       const T& b = inout_context.GetData<T>(node.GetInputDataOffset(1));
@@ -964,17 +907,11 @@ namespace
     {
       bRes = inout_context.GetData<T>(dataOffset);
     }
-    else if constexpr (std::is_same_v<T, xiiUInt8> ||
-                       std::is_same_v<T, xiiInt32> ||
-                       std::is_same_v<T, xiiInt64> ||
-                       std::is_same_v<T, float> ||
-                       std::is_same_v<T, double>)
+    else if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double>)
     {
       bRes = inout_context.GetData<T>(dataOffset) != 0;
     }
-    else if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                       std::is_same_v<T, xiiComponentHandle> ||
-                       std::is_same_v<T, xiiTypedPointer>)
+    else if constexpr (std::is_same_v<T, xiiGameObjectHandle> || std::is_same_v<T, xiiComponentHandle> || std::is_same_v<T, xiiTypedPointer>)
     {
       bRes = inout_context.GetPointerData(dataOffset).m_pObject != nullptr;
     }
@@ -1003,11 +940,7 @@ namespace
     {
       res = inout_context.GetData<T>(dataOffset) ? NumberType(1) : NumberType(0);
     }
-    else if constexpr (std::is_same_v<T, xiiUInt8> ||
-                       std::is_same_v<T, xiiInt32> ||
-                       std::is_same_v<T, xiiInt64> ||
-                       std::is_same_v<T, float> ||
-                       std::is_same_v<T, double>)
+    else if constexpr (std::is_same_v<T, xiiUInt8> || std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiInt64> || std::is_same_v<T, float> || std::is_same_v<T, double>)
     {
       res = static_cast<NumberType>(inout_context.GetData<T>(dataOffset));
     }
@@ -1050,9 +983,7 @@ namespace
 
     xiiStringBuilder sb;
     xiiStringView    s;
-    if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                  std::is_same_v<T, xiiComponentHandle> ||
-                  std::is_same_v<T, xiiTypedPointer>)
+    if constexpr (std::is_same_v<T, xiiGameObjectHandle> || std::is_same_v<T, xiiComponentHandle> || std::is_same_v<T, xiiTypedPointer>)
     {
       xiiTypedPointer p = inout_context.GetPointerData(dataOffset);
       sb.SetFormat("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));
@@ -1117,9 +1048,7 @@ namespace
 
     xiiStringBuilder sb;
     xiiStringView    s;
-    if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                  std::is_same_v<T, xiiComponentHandle> ||
-                  std::is_same_v<T, xiiTypedPointer>)
+    if constexpr (std::is_same_v<T, xiiGameObjectHandle> || std::is_same_v<T, xiiComponentHandle> || std::is_same_v<T, xiiTypedPointer>)
     {
       xiiTypedPointer p = inout_context.GetPointerData(dataOffset);
       sb.SetFormat("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));

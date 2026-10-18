@@ -9,17 +9,18 @@
 
 class xiiSceneMeshPickingState;
 
-/// Resource-defined, view-local nearest mesh queries using the Engine's native visibility and
-/// material rasterization. Consumes PrepareFrame's geometry/material buffer pins and frame-table
-/// blackboard keys. Owns no mesh objects; selected-object filtering uses indices into world-owned GPU records.
-/// Editor.Picking, Editor.PickSelected and Editor.PickTransparent default to true.
-/// Editor.SelectedObjects is a VariantArray of UInt64 native game-object handle IDs.
+/// Captures an explicitly supplied native surface and resolves asynchronous pixels against xiiWorld.
+/// Owns no visibility, geometry preparation, rasterization or selected-object rendering.
 /// Build and queries require world read access at a CPU frame boundary. No GPU wait or submission.
 class XII_SHAREDPLUGINSCENE_DLL xiiSceneMeshPickingPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneMeshPickingPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputSurface{xiiGALResourceFormat::RGBA32UInt, false, {}, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputSurface{xiiGALResourceFormat::RGBA32UInt, true, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read};
+  bool                              m_bEnabled = true;
+
   xiiSceneMeshPickingPass();
   ~xiiSceneMeshPickingPass() override;
 
@@ -31,11 +32,11 @@ public:
     xiiVec3              m_vRayStart      = xiiVec3::MakeZero();
   };
 
-  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Geometry; }
-  xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override { return xiiRenderPipelineFeature::GpuScene; }
-  void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
-  xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
-  void                                     InvalidateTemporalHistory() override;
+  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return m_bEnabled ? xiiRenderExtractionCategory::Geometry : xiiRenderExtractionCategory::None; }
+  xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override { return m_bEnabled ? xiiRenderPipelineFeature::GpuScene : xiiRenderPipelineFeature::None; }
+
+  xiiResult Build(xiiRenderPipelinePassContext& context) override;
+  void      InvalidateTemporalHistory() override;
 
   /// Window pixels, including the viewport origin. Outputs are cleared first. Success with an
   /// invalid owner means background; failure means unavailable/stale capture or invalid input.
@@ -44,13 +45,6 @@ public:
   xiiResult Pick(const xiiView& view, xiiUInt32 x, xiiUInt32 y, PickingResult& out_hit) const;
   /// Exclusive right/bottom edges. Unique native owners in first visible pixel order.
   xiiResult PickObjectsInRect(const xiiView& view, const xiiRectU32& rectangle, xiiDynamicArray<xiiGameObjectHandle>& out_objects) const;
-
-  /// A selected-only surface producer for selection compositing. Uses Editor.SelectionOverlay
-  /// and Editor.SelectedObjects, emits no CPU captures, and does not provide Pick queries.
-  bool m_bSelectionOnly = false;
-
-  /// Prefer mesh shading when available. False selects indexed vertex pulling on all devices.
-  bool m_bUseMeshShaders = true;
 
 private:
   xiiUniquePtr<xiiSceneMeshPickingState> m_pState;

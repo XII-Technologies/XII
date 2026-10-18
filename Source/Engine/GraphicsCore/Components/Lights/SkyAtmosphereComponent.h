@@ -200,3 +200,6 @@ protected:
   xiiAtmosphereSettings m_AtmosphereSettings;
   xiiInt32              m_iPriority = 0;
 };
+
+/// Deterministic selection from a frame-owned extraction snapshot.
+XII_GRAPHICSCORE_DLL const xiiSkyAtmosphereRenderData* xiiSelectSkyAtmosphere(const xiiArrayPtr<xiiRenderData* const>& renderData);

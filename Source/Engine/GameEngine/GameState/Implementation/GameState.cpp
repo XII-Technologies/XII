@@ -14,6 +14,7 @@
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -188,11 +189,22 @@ xiiView* xiiGameState::CreateMainView()
   if (m_pMainWorld == nullptr)
     return nullptr;
 
+  const auto*                     application = xiiGameApplicationBase::GetGameApplicationBaseInstance();
+  xiiRenderPipelineResourceHandle pipeline;
+  xiiStringBuilder                pipelineError;
+  if (!application || xiiRenderPipelineProfileConfig::ResolveResource({}, &application->GetPlatformProfile(), xiiRenderPipelineUsage::Game, pipeline, &pipelineError).Failed())
+  {
+    xiiLog::Error("Cannot create the game view: {}", application ? pipelineError.GetView() : xiiStringView("No game application profile is available."));
+    return nullptr;
+  }
+
   XII_LOCK(m_pMainWorld->GetWriteMarker());
 
   xiiView*              pView              = nullptr;
   xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
   m_hMainView                              = pRenderWorldModule->CreateView("MainView", pView);
+
+  pView->SetRenderPipelineResource(pipeline);
 
   pView->SetCameraUsageHint(xiiCameraUsageHint::MainView);
   pView->SetCamera(&m_MainCamera);

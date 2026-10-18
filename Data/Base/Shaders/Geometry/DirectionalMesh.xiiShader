@@ -1,0 +1,63 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[RENDERSTATE]
+DepthEnable = true
+DepthWriteEnable = true
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+CullMode = CullMode_Back
+ScissorEnable = true
+[SHADER]
+#define XII_SCENE_WORLD_ATTRIBUTES
+#define XII_SCENE_SURFACE_CURRENT_ONLY
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+[MESH_SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceMesh.h>
+[PIXEL_SHADER]
+#include <Shaders/Pipeline/Passes/Geometry/DirectionalMeshConstants.h>
+#include <Shaders/Pipeline/GpuSceneSurfaceMaterial.h>
+Texture2D<float> g_ShadowMap;
+SamplerState PointClampSampler;
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowSampling.h>
+float EvaluateSunShadow(float3 worldPosition, float3 worldNormal, float3 directionToSun)
+{
+  const float NoL = saturate(dot(worldNormal, directionToSun));
+  const float normalBias = ShadowTexelSize.z * lerp(0.5f, 2.0f, 1.0f - NoL);
+  const float4 shadowClip = mul(ShadowViewProjectionMatrix, float4(worldPosition + worldNormal * normalBias, 1.0f));
+  if (shadowClip.w <= 0.0f)
+    return 1.0f;
+
+  const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
+  const float2 shadowUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  if (any(shadowUV <= 0.0f) || any(shadowUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
+    return 1.0f;
+
+  const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.00065f, 1.0f - NoL);
+  float virtualVisibility;
+  if (TrySampleVirtualDirectionalShadow(0u, shadowUV, receiverDepth, virtualVisibility))
+    return virtualVisibility;
+
+  float visibility = 0.0f;
+  [unroll]
+  for (int y = -1; y <= 1; ++y)
+  {
+    [unroll]
+    for (int x = -1; x <= 1; ++x)
+    {
+      const float mapDepth = g_ShadowMap.SampleLevel(PointClampSampler, shadowUV + float2(x, y) * ShadowTexelSize.xy, 0.0f);
+      visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
+    }
+  }
+  return visibility * (1.0f / 9.0f);
+}
+
+float4 main(GBufferVertex input) : SV_Target0
+{
+  const float4 baseColor = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex).BaseColorOpacity;
+  const float3 lightDirection = normalize(-SunDirectionIntensity.xyz);
+  const float diffuse = saturate(dot(normalize(input.WorldNormal), lightDirection));
+  const float shadow = EvaluateSunShadow(input.WorldPosition, normalize(input.WorldNormal), lightDirection);
+  const float3 lighting = AmbientColor.rgb + diffuse * SunDirectionIntensity.w * shadow;
+  const float selectionPulse = AmbientColor.w * sin((float)input.ObjectUserData * 0.6180339f);
+  return float4(saturate(baseColor.rgb * lighting + selectionPulse), baseColor.a);
+}

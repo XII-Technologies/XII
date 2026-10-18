@@ -93,7 +93,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleSystemFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiParticleSystemFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemFlags);
 
-/// GPU particle state. Keep in sync with Data/Base/Shaders/Pipeline/GPUParticleSimulate.xiiShader.
+/// GPU particle state. Keep in sync with Data/Base/Shaders/Pipeline/ParticleIntegrate.xiiShader.
 struct alignas(16) XII_GRAPHICSCORE_DLL xiiParticleGPUState
 {
   XII_DECLARE_POD_TYPE();

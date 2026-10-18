@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 #include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
+#include <EditorEngineProcessFrameworkTest/NativeSurfaceRasterFixture.h>
 
 #include <bit>
 
@@ -9,6 +10,7 @@
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
+#include <EditorEngineProcessFrameworkTest/NativeVisibilityFixture.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -22,8 +24,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuSceneRaster.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
@@ -38,7 +38,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  if (!xiiGpuSceneRasterManager::IsSupported())
+  if (environment.GetDevice()->GetFeatures().m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
   {
     xiiTestFramework::Output(xiiTestOutput::Message, "Native LOD visibility and surface tests require mesh shaders.");
     return;
@@ -82,24 +82,25 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   view->SetCamera(&camera);
   view->SetViewport({0, 0, 64, 64});
   const auto projection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
-  const auto frustum    = xiiFrustum::MakeFromMVP(projection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
-  xiiGpuInstanceData    sceneContext(world);
+  XII_TEST_RESULT(renderer->UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const>(), 0));
+  const auto& sceneContext = *renderer->GetGpuInstanceData();
+  view->SetRenderEnabled(false);
   xiiRenderGraphContext graphContext;
   if (!XII_TEST_RESULT(graphContext.Initialize("Native LOD selection")))
     return;
-  const auto visibilityContext = xiiGpuVisibilityManager::CreateContext();
-  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiGpuVisibilityManager::DestroyContext(visibilityContext));
-  if (!XII_TEST_BOOL(!visibilityContext.IsInvalidated()))
+  xiiTestNativeVisibility visibilityPipeline;
+  if (!XII_TEST_RESULT(visibilityPipeline.Initialize()))
     return;
   const auto geometryHandle = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
   XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(geometryHandle, 8));
 
-  xiiGpuFrameCompletionTracker completion;
-  completion.Initialize(environment.GetDevice());
   xiiUInt64 frame = 0;
   auto      run   = [&](xiiUInt32 forcedLod, float bias, xiiUInt32 expectedLod, bool useHiZ, bool missingForced = false, xiiUInt32 missingLod = 0) {
-    ++frame;
+    xiiRenderGraphFrame gpuFrame;
+    if (!XII_TEST_RESULT(gpuFrame.Begin()))
+      return;
+    frame = gpuFrame.GetFrameIndex();
     component->SetForcedLOD(forcedLod);
     component->SetLodBias(bias);
     xiiExtractedRenderData  extracted;
@@ -120,29 +121,21 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
       if (missingForced)
         packet->m_uiLODIndex = missingLod;
     }
-    if (!XII_TEST_RESULT(sceneContext.UpdateFromExtraction(extracted, frame)))
+    if (!XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, frame)))
       return;
     const auto instances = sceneContext.GetInstances();
     if (!XII_TEST_INT(instances.GetCount(), 1))
       return;
     XII_TEST_INT(instances[0].m_uiForcedLod, missingForced ? missingLod : forcedLod);
     XII_TEST_FLOAT(instances[0].m_fLodBias, bias, 0);
-    const auto completed = completion.PollCompletedFrames();
-    xiiGALBindlessResourceTable::Collect(completed);
-    xiiMaterialManager::BeginFrame(frame, completed);
-    xiiGpuVisibilityManager::BeginFrame(frame, completed);
+    const auto completed = gpuFrame.GetCompletedFrame();
     xiiGeometryResidencyManager::ProcessStreaming(frame, completed, missingForced ? 0 : xiiMath::MaxValue<xiiUInt64>());
     auto& graph = graphContext.GetGraph();
     auto& cache = graphContext.GetResourceCache();
     cache.BeginFrame(frame, completed);
     graph.BeginSetup(frame);
-    const auto                      uploaded       = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
-    const auto                      materials      = xiiMaterialManager::AddUploadPasses(graph);
-    auto                            visibilityView = xiiGpuVisibilitySystem::BuildView(projection, frustum, camera.GetCenterPosition(), 64, 64, 0, 1);
-    xiiGpuVisibilityPassDescription description;
-    description.m_sName              = "LOD regression";
-    description.m_bAsyncCompute      = false;
-    description.m_bEnableLodFeedback = false;
+    const auto                  uploaded  = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
+    const auto                  materials = xiiMaterialManager::AddUploadPasses(graph);
     xiiRenderGraphTextureHandle hiZ;
     if (useHiZ)
     {
@@ -154,21 +147,23 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
         xiiGALTextureCreationDescription texture;
         texture.m_Type = xiiGALResourceDimension::Texture2D;
         texture.m_Size = {64, 64};
-        texture.m_Format = xiiGALResourceFormat::D32Float;
-        texture.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-        hiZ = data.m_Depth = builder.WriteTexture("LOD Hi-Z input", texture, xiiGALResourceStateFlags::DepthWrite);
-        builder.SetPassRenderPassManaged(); }, [](const Depth& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0); });
+        texture.m_Format = xiiGALResourceFormat::R32Float;
+        texture.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+        hiZ = data.m_Depth = builder.WriteTexture("LOD Hi-Z input", texture, xiiGALResourceStateFlags::RenderTarget);
+        builder.SetPassRenderPassManaged(); }, [](const Depth& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); });
     }
-    const auto                          visible = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, sceneContext, visibilityView, uploaded, description, hiZ);
-    xiiGpuSceneGBufferRasterDescription raster;
+    xiiGpuVisibilityOutputs visible;
+    if (!XII_TEST_RESULT(visibilityPipeline.Build(view, graph, graphContext.GetBlackboard(), projection, camera.GetCenterPosition(), true, visible, 0, xiiGpuInstanceFlags::Enabled, hiZ)))
+      return;
+    xiiTestSurfaceLayout raster;
     raster.m_ViewProjectionMatrix = projection;
     raster.m_uiWidth = raster.m_uiHeight = 64;
     raster.m_uiVertexStride              = sizeof(xiiMeshPackedVertex);
     raster.m_uiTexCoordOffset            = offsetof(xiiMeshPackedVertex, m_vTexCoord0);
-    raster.m_uiMeshDispatchGroupCountX   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
-    raster.m_uiMeshDispatchGroupCountY   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
+    raster.m_uiMeshDispatchGroupCountX   = visibilityPipeline.m_Commands.m_uiMeshGroupCountX;
+    raster.m_uiMeshDispatchGroupCountY   = visibilityPipeline.m_Commands.m_uiMeshGroupCountY;
     xiiRenderGraphTextureHandle surface;
-    if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "LOD surface", visible, uploaded, materials, raster, surface)))
+    if (!XII_TEST_RESULT(xiiTestNativeSurfaceQuery(graph, view, "LOD surface", visible, uploaded, materials, raster, surface)))
       return;
     struct Export
     {
@@ -187,8 +182,8 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     graph.EndSetup();
     if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), view, &graphContext.GetBlackboard(), &cache)))
       return;
-    completion.CaptureSubmittedFrame(frame);
-    completion.WaitForFrame(frame);
+    gpuFrame.End();
+    environment.GetDevice()->WaitIdle();
     xiiUInt32 count = 0;
     if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(visible.m_hVisibleMeshletCount).Borrow(), 0, count) || !XII_TEST_INT(count, expectedLod == xiiInvalidIndex ? 0 : 1))
       return;
@@ -235,7 +230,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     run(0, -16, 0, true);
     run(1, 0, 1, true);
   }
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Automatic coverage bias works in ordinary and temporal Hi-Z visibility")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Automatic coverage bias works with explicit depth occlusion")
   {
     run(xiiInvalidIndex, 0, 1, false);
     run(xiiInvalidIndex, 8, 0, true);
@@ -248,14 +243,14 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     invalid.m_hMesh          = mesh;
     invalid.m_fLodBias       = xiiMath::NaN<float>();
     xiiRenderData* packets[] = {&invalid};
-    XII_TEST_BOOL(sceneContext.UpdateFromExtraction(xiiMakeArrayPtr(packets), frame + 1).Failed());
+    XII_TEST_BOOL(renderer->UpdateGpuInstances(xiiMakeArrayPtr(packets), frame + 1).Failed());
     invalid.m_fLodBias = 0;
     invalid.m_Flags.Add(xiiMeshRenderDataFlags::ForceLOD);
     invalid.m_uiLODIndex = 8;
-    XII_TEST_BOOL(sceneContext.UpdateFromExtraction(xiiMakeArrayPtr(packets), frame + 1).Failed());
+    XII_TEST_BOOL(renderer->UpdateGpuInstances(xiiMakeArrayPtr(packets), frame + 1).Failed());
     invalid.m_Flags.Remove(xiiMeshRenderDataFlags::ForceLOD);
     invalid.m_RangeMode = static_cast<xiiMeshRenderData::RangeMode>(255);
-    XII_TEST_BOOL(sceneContext.UpdateFromExtraction(xiiMakeArrayPtr(packets), frame + 1).Failed());
+    XII_TEST_BOOL(renderer->UpdateGpuInstances(xiiMakeArrayPtr(packets), frame + 1).Failed());
     XII_TEST_BOOL(xiiMemoryUtils::RawByteCompare(&sceneContext.GetInstances()[0], &unchanged, sizeof(unchanged)) == 0);
     XII_TEST_INT(sceneContext.GetInstanceCount(), 1);
   }

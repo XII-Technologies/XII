@@ -57,7 +57,7 @@
 /// Finishes a subsystem's startup / shutdown sequence declaration.
 #define XII_END_SUBSYSTEM_DECLARATION \
   }                                   \
-  static XII_PP_CONCAT(s_SubSystem, XII_SOURCE_LINE)
+  static XII_PP_CONCAT(s_SubSystem, XII_SOURCE_COUNTER)
 
 /// Defines what code is to be executed upon base startup.
 ///

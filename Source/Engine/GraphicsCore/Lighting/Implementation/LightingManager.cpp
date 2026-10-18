@@ -3,18 +3,18 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 class xiiLightingManagerState
 {
 public:
-  xiiIdTable<xiiLightingContextId, xiiUniquePtr<xiiLightingSystem>> m_Contexts;
-  xiiSharedPtr<xiiGALTexture>                                       m_pBRDFLUT;
-  bool                                                              m_bBRDFLUTGenerated = false;
-  bool                                                              m_bEngineStarted    = false;
+  xiiSharedPtr<xiiGALTexture> m_pBRDFLUT;
+  xiiSharedPtr<xiiGALFence>   m_pBRDFReadyFence;
+  bool                        m_bBRDFLUTGenerated = false;
+  bool                        m_bEngineStarted    = false;
 };
 
 xiiUniquePtr<xiiLightingManagerState> xiiLightingManager::s_pState;
@@ -51,9 +51,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, LightingManager)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingContextHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiLightingContextHandle>)
-XII_END_STATIC_REFLECTED_TYPE;
-
 bool xiiLightingManager::IsSubsystemInitialized()
 {
   return s_pState != nullptr;
@@ -62,48 +59,6 @@ bool xiiLightingManager::IsSubsystemInitialized()
 bool xiiLightingManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();
-}
-
-xiiLightingContextHandle xiiLightingManager::CreateContext(const xiiLightingSystemSettings& settings)
-{
-  XII_ASSERT_DEV(IsInitialized(), "The lighting manager is not initialized.");
-  if (!IsInitialized())
-    return {};
-
-  xiiUniquePtr<xiiLightingSystem> pSystem = XII_DEFAULT_NEW(xiiLightingSystem);
-  if (pSystem->Initialize(xiiGALDevice::GetDefaultDevice(), settings).Failed())
-    return {};
-
-  return xiiLightingContextHandle(s_pState->m_Contexts.Insert(std::move(pSystem)));
-}
-
-void xiiLightingManager::DestroyContext(xiiLightingContextHandle handle)
-{
-  xiiLightingSystem* pSystem = GetContext(handle);
-  if (pSystem == nullptr)
-    return;
-
-  pSystem->Shutdown();
-  XII_VERIFY(s_pState->m_Contexts.Remove(handle.GetInternalID()), "The lighting context was validated before removal.");
-}
-
-bool xiiLightingManager::IsValid(xiiLightingContextHandle handle)
-{
-  return GetContext(handle) != nullptr;
-}
-
-xiiLightingSystem* xiiLightingManager::GetContext(xiiLightingContextHandle handle)
-{
-  if (s_pState == nullptr)
-    return nullptr;
-
-  xiiUniquePtr<xiiLightingSystem>* pSystem = nullptr;
-  return s_pState->m_Contexts.TryGetValue(handle.GetInternalID(), pSystem) ? pSystem->Borrow() : nullptr;
-}
-
-const xiiLightingSystem* xiiLightingManager::GetContextConst(xiiLightingContextHandle handle)
-{
-  return GetContext(handle);
 }
 
 xiiResult xiiLightingManager::EnsureBRDFLUTResources()
@@ -126,9 +81,15 @@ xiiResult xiiLightingManager::EnsureBRDFLUTResources()
   xiiSharedPtr<xiiGALTexture> pBRDFLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   if (pBRDFLUT == nullptr)
     return XII_FAILURE;
+  xiiGALFenceCreationDescription fenceDescription;
+  fenceDescription.m_Type = xiiGALFenceType::General;
+  auto ready              = xiiGALDevice::GetDefaultDevice()->CreateFence(fenceDescription);
+  if (!ready)
+    return XII_FAILURE;
 
   pBRDFLUT->SetDebugName("Split-Sum BRDF LUT");
   s_pState->m_pBRDFLUT          = std::move(pBRDFLUT);
+  s_pState->m_pBRDFReadyFence   = std::move(ready);
   s_pState->m_bBRDFLUTGenerated = false;
   return XII_SUCCESS;
 }
@@ -136,6 +97,11 @@ xiiResult xiiLightingManager::EnsureBRDFLUTResources()
 xiiSharedPtr<xiiGALTexture> xiiLightingManager::GetBRDFLUT()
 {
   return s_pState != nullptr ? s_pState->m_pBRDFLUT : nullptr;
+}
+
+xiiSharedPtr<xiiGALFence> xiiLightingManager::GetBRDFLUTReadyFence()
+{
+  return s_pState != nullptr ? s_pState->m_pBRDFReadyFence : nullptr;
 }
 
 bool xiiLightingManager::IsBRDFLUTGenerationPending()
@@ -161,7 +127,7 @@ void xiiLightingManager::EngineStartup()
   if (s_pState != nullptr)
   {
     s_pState->m_bEngineStarted = true;
-    EnsureBRDFLUTResources().IgnoreResult();
+    // Lookup allocation is demand-driven by the reflected generation pass.
   }
 }
 
@@ -171,11 +137,9 @@ void xiiLightingManager::EngineShutdown()
     return;
 
   s_pState->m_pBRDFLUT.Clear();
+  s_pState->m_pBRDFReadyFence.Clear();
   s_pState->m_bBRDFLUTGenerated = false;
 
-  for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)
-    it.Value()->Shutdown();
-  s_pState->m_Contexts.Clear();
   s_pState->m_bEngineStarted = false;
 }
 
@@ -183,126 +147,6 @@ void xiiLightingManager::Shutdown()
 {
   EngineShutdown();
   s_pState.Clear();
-}
-
-xiiLightingContext::~xiiLightingContext()
-{
-  Shutdown();
-}
-
-xiiResult xiiLightingContext::Initialize(const xiiLightingSystemSettings& settings)
-{
-  Shutdown();
-  m_Handle = xiiLightingManager::CreateContext(settings);
-  return m_Handle.IsInvalidated() ? XII_FAILURE : XII_SUCCESS;
-}
-
-void xiiLightingContext::Shutdown()
-{
-  xiiLightingManager::DestroyContext(m_Handle);
-  m_Handle = {};
-}
-
-bool xiiLightingContext::IsInitialized() const
-{
-  return xiiLightingManager::IsValid(m_Handle);
-}
-
-void xiiLightingContext::BuildFrameData(const xiiView& view, const xiiExtractedRenderData& extractedData, xiiUInt32 uiFrameIndex)
-{
-  GetSystem()->BuildFrameData(view, extractedData, uiFrameIndex);
-}
-
-void xiiLightingContext::UploadFrameData(xiiGALCommandList& ref_commandList)
-{
-  GetSystem()->UploadFrameData(ref_commandList);
-}
-
-void xiiLightingContext::BindFrameConstants(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
-{
-  GetSystem()->BindFrameConstants(ref_commandList, shaderStages);
-}
-
-void xiiLightingContext::BindLightData(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
-{
-  GetSystem()->BindLightData(ref_commandList, shaderStages);
-}
-
-void xiiLightingContext::BindIESProfiles(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
-{
-  GetSystem()->BindIESProfiles(ref_commandList, shaderStages);
-}
-
-void xiiLightingContext::BindLightingResources(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
-{
-  GetSystem()->BindLightingResources(ref_commandList, shaderStages);
-}
-
-void xiiLightingContext::WriteBlackboard(xiiRenderGraphBlackboard& ref_blackboard) const
-{
-  GetSystem()->WriteBlackboard(ref_blackboard);
-}
-
-const xiiLightingSystemSettings& xiiLightingContext::GetSettings() const
-{
-  return GetSystem()->GetSettings();
-}
-
-const xiiLightingSystem::FrameStatistics& xiiLightingContext::GetFrameStatistics() const
-{
-  return GetSystem()->GetFrameStatistics();
-}
-
-const xiiLocalShadowAtlasStatistics& xiiLightingContext::GetLocalShadowStatistics() const
-{
-  return GetSystem()->GetLocalShadowStatistics();
-}
-
-xiiArrayPtr<const xiiLocalShadowAtlasData> xiiLightingContext::GetLocalShadowData() const
-{
-  return GetSystem()->GetLocalShadowData();
-}
-
-xiiUInt32 xiiLightingContext::GetActiveLightCount() const
-{
-  return GetSystem()->GetActiveLightCount();
-}
-
-xiiUInt32 xiiLightingContext::GetClusterCountX() const
-{
-  return GetSystem()->GetClusterCountX();
-}
-
-xiiUInt32 xiiLightingContext::GetClusterCountY() const
-{
-  return GetSystem()->GetClusterCountY();
-}
-
-xiiUInt32 xiiLightingContext::GetClusterCountZ() const
-{
-  return GetSystem()->GetClusterCountZ();
-}
-
-xiiUInt32 xiiLightingContext::GetTotalClusterCount() const
-{
-  return GetSystem()->GetTotalClusterCount();
-}
-
-xiiGALBuffer* xiiLightingContext::GetLightDataBuffer() const
-{
-  return GetSystem()->GetLightDataBuffer();
-}
-
-xiiLightingSystem* xiiLightingContext::BorrowSystem() const
-{
-  return GetSystem();
-}
-
-xiiLightingSystem* xiiLightingContext::GetSystem() const
-{
-  xiiLightingSystem* pSystem = xiiLightingManager::GetContext(m_Handle);
-  XII_ASSERT_DEV(pSystem != nullptr, "The lighting context is not initialized or was invalidated by subsystem shutdown.");
-  return pSystem;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_LightingManager);

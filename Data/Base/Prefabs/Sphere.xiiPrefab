@@ -21,7 +21,7 @@ o
 		s %AssetType{"Prefab"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{15748994306735928310,12904375070997979970}}
-		u4 %Hash{17182022250867472885}
+		u4 %Hash{7516808835207028934}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{4845061311353680451,4580871010728353972}}
@@ -30,13 +30,8 @@ o
 		VarArray %PackageDeps
 		{
 			s{"{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"}
-			s{"{ b93a6e80-5bf7-48f0-b7b3-2097d0133159 }"}
 		}
-		VarArray %References
-		{
-			s{"{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"}
-			s{"{ b93a6e80-5bf7-48f0-b7b3-2097d0133159 }"}
-		}
+		VarArray %References{}
 		s %Tags{""}
 	}
 }
@@ -47,17 +42,16 @@ o
 {
 	Uuid %id{u4{4821827150793336727,5479752337044029889}}
 	s %t{"xiiMeshComponent"}
-	u3 %v{3}
+	u3 %v{1}
 	p
 	{
 		b %Active{1}
-		Color %Color{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
-		VarArray %Materials
-		{
-			s{"{ b93a6e80-5bf7-48f0-b7b3-2097d0133159 }"}
-		}
+		VarArray %MaterialOverrides{}
 		s %Mesh{"{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"}
-		f %SortingDepthOffset{0}
+		b %PreferMeshShaders{1}
+		b %RayTracingVisible{1}
+		u3 %SectionIndex{4294967295}
+		u3 %VisibilityMask{4294967295}
 	}
 }
 o
@@ -167,6 +161,23 @@ o
 }
 o
 {
+	Uuid %id{u4{17524843922218886194,1906037905004637917}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiMeshComponentBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiStaticMeshComponent"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{8224268647907297484,2300230217040154700}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -243,11 +254,11 @@ o
 		VarArray %Attributes{}
 		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
-		s %ParentTypeName{"xiiMeshComponentBase"}
+		s %ParentTypeName{"xiiStaticMeshComponent"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshComponent"}
-		u3 %TypeVersion{3}
+		u3 %TypeVersion{1}
 	}
 }
 o
@@ -349,7 +360,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshComponentBase"}
-		u3 %TypeVersion{3}
+		u3 %TypeVersion{2}
 	}
 }
 o

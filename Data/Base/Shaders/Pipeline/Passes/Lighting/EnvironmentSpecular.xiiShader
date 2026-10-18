@@ -1,0 +1,30 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/Lighting/SurfaceGeometryInputs.h>
+#include <Shaders/Pipeline/EnvironmentBRDF.h>
+SamplerState LinearClampSampler;
+Texture2D<float4> g_EnvironmentRadiance;
+Texture2D<float2> g_BRDFLut;
+Texture2D<float> g_Occlusion;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Lighting;
+[numthreads(8,8,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  if(any(tid.xy>=SurfaceExtent.xy)) return;
+  SurfaceSample surface; float3 lighting=0;
+  if(LoadSurfaceGeometry(tid.xy,surface))
+  {
+    const float NoV=saturate(dot(surface.Normal,surface.View));
+    const float roughness=max(surface.Roughness,0.02f);
+    const float3 f0=lerp((0.08f*surface.Specular).xxx,surface.Albedo,surface.Metallic);
+    const float3 fresnel=FresnelSchlickRoughness(NoV,f0,roughness);
+    const float2 brdf=g_BRDFLut.SampleLevel(LinearClampSampler,float2(NoV,roughness),0);
+    const float3 radiance=max(g_EnvironmentRadiance.Load(int3(tid.xy,0)).rgb,0);
+    const float occlusion=saturate(surface.Occlusion*(SurfaceExtent.z!=0 ? g_Occlusion.Load(int3(tid.xy,0)):1));
+    lighting=radiance*(fresnel*brdf.x+brdf.y)*(occlusion*SurfaceEvaluation.x);
+  }
+  g_Lighting[tid.xy]=float4(all(isfinite(lighting)) ? max(lighting,0):0,1);
+}

@@ -1,0 +1,13 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Streaming/GeometryLodFeedbackTypes.h>
+RWStructuredBuffer<GeometryLodRequest> g_Requests;
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  uint count, stride; g_Requests.GetDimensions(count, stride); if (tid.x >= count) return;
+  GeometryLodRequest request; request.Key = 0u; request.DesiredLod = tid.x == 0u ? 0u : 0xFFFFFFFFu; request.Priority = 0u; request.PurposeMask = 0u;
+  g_Requests[tid.x] = request;
+}

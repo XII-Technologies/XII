@@ -1,0 +1,62 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Visibility/GpuSceneCommon.h>
+#include <Shaders/Streaming/GeometryLodFeedbackTypes.h>
+#include <Shaders/Streaming/GeometryLodFeedbackConstants.h>
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_VisibilityView;
+StructuredBuffer<GpuGeometryRecord> g_Geometry;
+StructuredBuffer<uint> g_Candidates;
+RWStructuredBuffer<GeometryLodRequest> g_Requests;
+uint HashKey(uint key)
+{
+  key ^= key >> 16u; key *= 0x7FEB352Du; key ^= key >> 15u; key *= 0x846CA68Bu; return key ^ (key >> 16u);
+}
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  uint sceneCount, views, geometryCount, candidates, entries, stride;
+  g_SceneInstances.GetDimensions(sceneCount, stride); g_VisibilityView.GetDimensions(views, stride); g_Geometry.GetDimensions(geometryCount, stride);
+  g_Candidates.GetDimensions(candidates, stride); g_Requests.GetDimensions(entries, stride);
+  if (!views || entries < 2u || PurposeMask == 0u) return;
+  GpuVisibilityView view = g_VisibilityView[0]; uint index = tid.x;
+  if (view.UseCandidates != 0u) { if (index >= min(view.CandidateCount, candidates)) return; index = g_Candidates[index]; }
+  if (index >= min(view.InstanceCount, sceneCount)) return;
+  GpuSceneInstance instance = g_SceneInstances[index];
+  if ((instance.Flags & view.RequiredFlags) != view.RequiredFlags || (instance.Flags & view.ExcludedFlags) != 0u || (instance.VisibilityMask & view.VisibilityMask) == 0u ||
+      instance.GeometryIndex >= 0xFFFFFFu || view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex ||
+      !all(isfinite(instance.BoundsCenterRadius)) || instance.BoundsCenterRadius.w < 0.0f || !SphereInsideFrustum(instance.BoundsCenterRadius.xyz, instance.BoundsCenterRadius.w, view)) return;
+  GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
+  uint selectionIndex = index;
+  if (instance.LodSelectionIndex < min(view.InstanceCount, sceneCount))
+  {
+    if (g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex) selectionIndex = instance.LodSelectionIndex;
+  }
+  GpuSceneInstance selection = g_SceneInstances[selectionIndex];
+  float distanceToCamera = length(selection.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
+  float radius = GetInstanceLodRadius(selection);
+  if (!isfinite(distanceToCamera) || !isfinite(radius) || radius < 0.0f || !isfinite(view.ViewportAndHiZ.y) || view.ViewportAndHiZ.y <= 0.0f || geometry.Generation > 255u) return;
+  uint desired = SelectInstanceDesiredLod(geometry, selection, distanceToCamera, view.ViewportAndHiZ.y);
+  if (desired >= min(geometry.LodCount, 8u) || (geometry.ResidentLodMask & (1u << desired)) != 0u) return;
+  // Complete 24-bit slot and 8-bit generation identity. The invalid slot was rejected above.
+  uint key = ((geometry.Generation << 24u) | instance.GeometryIndex) + 1u;
+  uint capacity = entries - 1u, base = HashKey(key) & (capacity - 1u), ignored;
+  InterlockedAdd(g_Requests[0].Key, 1u, ignored);
+  // Bound worst-case GPU work. Collisions/full tables are reported explicitly, never silently complete.
+  for (uint probe = 0u; probe < min(capacity, 32u); ++probe)
+  {
+    uint slot = 1u + ((base + probe) & (capacity - 1u)), observed;
+    InterlockedCompareExchange(g_Requests[slot].Key, 0u, key, observed);
+    if (observed != 0u && observed != key) continue;
+    if (observed == 0u) InterlockedAdd(g_Requests[0].DesiredLod, 1u, ignored);
+    float coverage = radius * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
+    uint priority = (PriorityTier << 30u) | (uint)min(max(coverage, 0.0f) * 1024.0f, 1073741760.0f);
+    InterlockedMin(g_Requests[slot].DesiredLod, desired);
+    InterlockedMax(g_Requests[slot].Priority, priority);
+    InterlockedOr(g_Requests[slot].PurposeMask, PurposeMask);
+    return;
+  }
+  InterlockedAdd(g_Requests[0].Priority, 1u, ignored);
+}

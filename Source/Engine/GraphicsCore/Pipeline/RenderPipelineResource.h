@@ -9,6 +9,7 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/RenderPipelineSettings.h>
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassDescriptor
 {
@@ -54,6 +55,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
   xiiDynamicArray<xiiRenderPipelinePassDescriptor> m_Passes;
   xiiDynamicArray<xiiRenderPipelineConnection>     m_Connections;
   xiiVariantDictionary                             m_Parameters;
+  xiiRenderPipelineSettings                        m_Settings;
   xiiUuid                                          m_Id = xiiUuid::MakeUuid();
   xiiDynamicArray<xiiGraphBoundaryMapping>         m_Interface;
   /// Shared definitions are stored once per document/library, regardless of instance count.
@@ -88,6 +90,14 @@ public:
     xiiUInt32 m_uiSourceBinding;
     xiiUInt32 m_uiTargetBinding;
   };
+  /// Root document boundary lowered to direct frame-binding slots. Indices belong to this compilation only.
+  struct Interface
+  {
+    xiiRenderPipelinePin       m_Pin;
+    xiiDynamicArray<xiiUInt32> m_Bindings;
+  };
+  xiiArrayPtr<const Interface>                    GetInterface() const { return m_Interface; }
+  xiiUInt32                                       FindInterface(xiiStringView name, bool input) const;
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   const xiiGraph&                                 GetTopology() const { return m_Topology; }
@@ -96,6 +106,7 @@ public:
   xiiArrayPtr<const xiiGraphProvenance>           GetProvenance() const { return m_Provenance; }
   xiiArrayPtr<const xiiGraphDefinitionDependency> GetDependencies() const { return m_Dependencies; }
   const xiiVariantDictionary&                     GetPassParameters(xiiUInt32 index) const { return m_PassParameters[index]; }
+  xiiArrayPtr<const xiiRenderPipelinePin>         GetPins(xiiUInt32 index) const { return m_Passes[index].m_Pins; }
   xiiBitflags<xiiRenderExtractionCategory>        GetExtractionRequirements() const { return m_ExtractionRequirements; }
   xiiBitflags<xiiRenderPipelineFeature>           GetRuntimeFeatures() const { return m_RuntimeFeatures; }
   xiiBitflags<xiiRenderPipelineFeature>           GetRootRuntimeFeatures() const
@@ -115,6 +126,7 @@ private:
   xiiRenderPipelineResourceDescriptor                                                         m_Descriptor;
   xiiDynamicArray<Pass>                                                                       m_Passes;
   xiiDynamicArray<Connection>                                                                 m_Connections;
+  xiiDynamicArray<Interface>                                                                  m_Interface;
   xiiDynamicArray<xiiUInt32>                                                                  m_Order;
   xiiDynamicArray<xiiGraphProvenance>                                                         m_Provenance;
   xiiDynamicArray<xiiGraphDefinitionDependency>                                               m_Dependencies;
@@ -147,10 +159,6 @@ public:
   /// Resolve only definitions reachable from the root. Each independently authored resource is
   /// acquired once, before compilation, so definition recursion cannot deadlock resource loading.
   static xiiResult ResolveDefinitions(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderPipelineResourceDescriptor& out_resolved, xiiDynamicArray<DefinitionDependency>* out_dependencies = nullptr, xiiStringBuilder* out_error = nullptr);
-  /// Built-in reusable definition, cached by ResourceManager. Does not hold a static resource handle.
-  static xiiRenderPipelineResourceHandle GetDefaultPipeline();
-  /// Creates an editable default definition without loading a resource or accessing GAL.
-  static void GetDefaultDescriptor(xiiRenderPipelineResourceDescriptor& out_descriptor);
 
 private:
   xiiResourceLoadDescription                     UnloadData(Unload whatToUnload) override;

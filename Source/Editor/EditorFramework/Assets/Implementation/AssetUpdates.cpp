@@ -171,6 +171,11 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
   xiiUniquePtr<xiiAssetInfo> pNewAssetInfo;
   XII_SUCCEED_OR_RETURN(ReadAssetDocumentInfo(absFilePath, stat, pNewAssetInfo));
   XII_ASSERT_DEV(pNewAssetInfo != nullptr && pNewAssetInfo->m_Info != nullptr, "Info should be valid on success.");
+  if (!pNewAssetInfo->m_Info->m_DocumentID.IsValid())
+  {
+    xiiLog::Error("Asset document '{}' has no persistent document identity.", absFilePath);
+    return XII_FAILURE;
+  }
 
 
   XII_LOCK(m_CuratorMutex);
@@ -266,7 +271,16 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
   CheckForCircularDependencies(pCurrentAssetInfo).IgnoreResult();
 
   InvalidateAssetTransformState(newGuid);
-  pFiles->LinkDocument(absFilePath, pCurrentAssetInfo->m_Info->m_DocumentID).AssertSuccess("Failed to link document in file system model");
+  if (pFiles->LinkDocument(absFilePath, pCurrentAssetInfo->m_Info->m_DocumentID).Failed())
+  {
+    // The watched file can disappear after reading its document info. Retire the
+    // derived asset state just as a normal FileRemoved event would; do not publish
+    // a live asset whose file/document association no longer exists.
+    UntrackDependencies(pCurrentAssetInfo);
+    RemoveAssetTransformState(newGuid);
+    SetAssetExistanceState(*pCurrentAssetInfo, xiiAssetExistanceState::FileRemoved);
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 

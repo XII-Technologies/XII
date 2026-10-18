@@ -1,0 +1,81 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
+#include <Shaders/Pipeline/LightingData.h>
+StructuredBuffer<xiiGpuLightData> g_Lights;
+StructuredBuffer<uint> g_Candidates;
+StructuredBuffer<xiiGpuClusterBounds> g_Clusters;
+RWStructuredBuffer<uint2> g_LightGrid;
+RWStructuredBuffer<uint> g_LightIndices;
+RWStructuredBuffer<uint> g_Overflow;
+uint Slice(float depth)
+{
+  const float t=DepthRange.w>0 ? log2(max(depth,DepthRange.x)/DepthRange.x)/DepthRange.z : (depth-DepthRange.x)/(DepthRange.y-DepthRange.x);
+  return min((uint)(saturate(t)*ClusterCounts.z),ClusterCounts.z-1);
+}
+uint Reserve(uint cluster)
+{
+  uint current;
+  InterlockedAdd(g_LightGrid[cluster].y,0,current);
+  [loop] for(;;)
+  {
+    if(current>=Viewport.w) return Viewport.w;
+    uint observed;
+    InterlockedCompareExchange(g_LightGrid[cluster].y,current,current+1,observed);
+    if(observed==current) return current;
+    current=observed;
+  }
+}
+float2 ProjectInterval(float center,float radius,float minimumW,float maximumW)
+{
+  const float4 candidates=float4((center-radius)/minimumW,(center-radius)/maximumW,(center+radius)/minimumW,(center+radius)/maximumW);
+  return float2(min(min(candidates.x,candidates.y),min(candidates.z,candidates.w)),max(max(candidates.x,candidates.y),max(candidates.z,candidates.w)));
+}
+[numthreads(64,1,1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  const uint workIndex=tid.x+tid.y*Work.z;
+  if(workIndex>=Work.x) return;
+  const uint lightIndex=Work.w!=0 ? g_Candidates[workIndex] : workIndex;
+  uint lightCount,lightStride;
+  g_Lights.GetDimensions(lightCount,lightStride);
+  if(lightIndex>=lightCount) return;
+  const xiiGpuLightData light=g_Lights[lightIndex];
+  if(GetLightType(light)==XII_LIGHT_TYPE_DIRECTIONAL || light.ColorAndIntensity.w<=0) return;
+  const float3 center=light.BoundsCenterAndRadius.xyz;
+  const float radius=max(light.BoundsCenterAndRadius.w,0.0f);
+  if(!all(isfinite(center)) || !isfinite(radius)) return;
+  const float depth=dot(center-CameraPosition.xyz,CameraForward.xyz);
+  if(depth+radius<DepthRange.x || depth-radius>DepthRange.y) return;
+  const uint nearSlice=Slice(depth-radius)>0 ? Slice(depth-radius)-1 : 0;
+  const uint farSlice=min(Slice(depth+radius)+1,ClusterCounts.z-1);
+  uint2 minCell=uint2(0,0),maxCell=ClusterCounts.xy-1;
+  const float4 clip=mul(ViewProjection,float4(center,1));
+  const float radiusW=radius*length(ViewProjection[3].xyz);
+  const float minimumW=clip.w-radiusW,maximumW=clip.w+radiusW;
+  if(maximumW<=0) return;
+  if(minimumW>1e-6f)
+  {
+    const float2 x=ProjectInterval(clip.x,radius*length(ViewProjection[0].xyz),minimumW,maximumW);
+    const float2 y=ProjectInterval(clip.y,radius*length(ViewProjection[1].xyz),minimumW,maximumW);
+    const float2 uvMin=float2(x.x*0.5f+0.5f,0.5f-y.y*0.5f);
+    const float2 uvMax=float2(x.y*0.5f+0.5f,0.5f-y.x*0.5f);
+    if(any(uvMax<0) || any(uvMin>1)) return;
+    minCell=(uint2)clamp(floor(uvMin*Viewport.xy/Viewport.z)-1,0,(float2)(ClusterCounts.xy-1));
+    maxCell=(uint2)clamp(floor(uvMax*Viewport.xy/Viewport.z)+1,0,(float2)(ClusterCounts.xy-1));
+  }
+  [loop] for(uint z=nearSlice;z<=farSlice;++z)
+    [loop] for(uint y=minCell.y;y<=maxCell.y;++y)
+      [loop] for(uint x=minCell.x;x<=maxCell.x;++x)
+      {
+        const uint cluster=(z*ClusterCounts.y+y)*ClusterCounts.x+x;
+        const xiiGpuClusterBounds bounds=g_Clusters[cluster];
+        const float3 separation=center-clamp(center,bounds.MinBounds.xyz,bounds.MaxBounds.xyz);
+        if(dot(separation,separation)>radius*radius) continue;
+        const uint slot=Reserve(cluster);
+        if(slot<Viewport.w) g_LightIndices[cluster*Viewport.w+slot]=lightIndex;
+        else { uint ignored; InterlockedOr(g_Overflow[0],1u,ignored); }
+      }
+}

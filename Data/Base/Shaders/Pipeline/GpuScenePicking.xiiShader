@@ -16,6 +16,7 @@ FillMode = FillMode_Wireframe
 #endif
 
 [SHADER]
+#define XII_SCENE_SURFACE_QUERY
 #include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
 
 [MESH_SHADER]

@@ -6,7 +6,7 @@
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 /// One frame-sliced derived vertex allocation; never owns authored component state.
-struct xiiRayTracingDeformedVertices
+struct xiiRayTracingDeformedVertices : xiiRefCounted
 {
   ~xiiRayTracingDeformedVertices();
   xiiSharedPtr<xiiGALBuffer>   m_Buffer, m_Source;
@@ -21,6 +21,4 @@ struct xiiRayTracingDeformedVertices
 
 /// Returns a typed dependency on the deformed native vertex stream. Reuses successful
 /// unchanged frame slots, and only publishes readiness when the dispatch is recorded.
-xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xiiStringView name,
-                                      xiiRayTracingDeformedVertices& cache, xiiSharedPtr<xiiGALComputePipelineState>& pipeline,
-                                      const xiiGpuInstanceData& instances, xiiUInt32 drawIndex, bool& dispatched);
+xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xiiStringView name, const xiiSharedPtr<xiiRayTracingDeformedVertices>& capture, xiiSharedPtr<xiiGALComputePipelineState>& pipeline, const xiiGpuInstanceData& instances, xiiUInt32 drawIndex, bool& dispatched);

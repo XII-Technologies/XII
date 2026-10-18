@@ -8,7 +8,6 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/StringDeduplicationContext.h>
 #include <Foundation/IO/TypeVersionContext.h>
-#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
@@ -60,6 +59,12 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
 
   xiiRenderPipelineResourceDescriptor descriptor;
   descriptor.m_Id = GetDocumentGuid();
+  xiiDynamicArray<xiiRenderPipelineSettings*> settings;
+  m_Context.GetObjectsByType(settings);
+  if (settings.GetCount() > 1)
+    return xiiStatus("Render pipeline has more than one pipeline settings object.");
+  if (!settings.IsEmpty())
+    descriptor.m_Settings = *settings[0];
   xiiHashTable<xiiUuid, xiiUInt32>                             passUuidToIndex;
   xiiHashTable<xiiUuid, const xiiRenderPipelineInterfacePass*> interfaces;
   xiiDynamicArray<xiiUInt32>                                   sortedPasses;
@@ -95,17 +100,20 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
       node.m_Id         = passUuids[i];
       node.m_Parameters = instance->m_Parameters;
       node.m_Overrides  = instance->m_Overrides;
+      if (!instance->m_PinConfigurations.IsEmpty())
+      {
+        xiiVariantDictionary properties;
+        if (instance->GetProperties(properties).Failed())
+          return xiiStatus("Cannot serialize subgraph interface pin settings.");
+        if (const auto* pins = properties.GetValue("PinConfigurations"))
+          node.m_Properties.Insert("PinConfigurations", *pins);
+      }
       passUuidToIndex.Insert(passUuids[i], index);
       continue;
     }
-    xiiVariantDictionary                           settings;
-    xiiHybridArray<const xiiAbstractProperty*, 32> properties;
-    passes[i]->GetDynamicRTTI()->GetAllProperties(properties);
-    for (const auto* property : properties)
-    {
-      if (property->GetCategory() == xiiPropertyCategory::Member && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
-        settings.Insert(property->GetPropertyName(), xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), passes[i]));
-    }
+    xiiVariantDictionary settings;
+    if (passes[i]->GetProperties(settings).Failed())
+      return xiiStatus(xiiFmt("Cannot serialize reflected configuration for pass '{}'.", name));
     const auto index                        = descriptor.AddPass(name, passes[i]->GetDynamicRTTI()->GetTypeName(), settings);
     descriptor.m_Passes[index].m_Id         = passUuids[i];
     descriptor.m_Passes[index].m_Parameters = passes[i]->m_ParameterOverrides;

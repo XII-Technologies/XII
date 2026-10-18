@@ -70,7 +70,7 @@ void xiiRenderModeAction::GetEntries(xiiDynamicArray<Item>& out_entries)
 {
   xiiEnumerationMenuAction::GetEntries(out_entries);
   for (xiiUInt32 i = out_entries.GetCount(); i > 0; --i)
-    if (!xiiViewRenderMode::IsSupportedByDefaultPipeline(static_cast<xiiViewRenderMode::Enum>(out_entries[i - 1].m_UserValue.ConvertTo<xiiInt64>())))
+    if (!xiiViewRenderMode::IsSupportedVisualizationMode(static_cast<xiiViewRenderMode::Enum>(out_entries[i - 1].m_UserValue.ConvertTo<xiiInt64>())))
       out_entries.RemoveAtAndCopy(i - 1);
 }
 

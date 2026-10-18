@@ -14,7 +14,12 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneSelectionPass : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneSelectionPass, xiiRenderPipelinePass);
 
 public:
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
+  xiiRenderPipelineTextureInputPin  m_InputColor;
+  xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
+  xiiRenderPipelineTextureInputPin  m_InputSelectionSurface{xiiGALResourceFormat::RGBA32UInt, true};
+  xiiRenderPipelineTextureOutputPin m_OutputColor;
+
+
   xiiResult Build(xiiRenderPipelinePassContext& context) override;
 
   xiiColor  m_VisibleColor   = xiiColor(1.0f, 0.5f, 0.0f, 1.0f);

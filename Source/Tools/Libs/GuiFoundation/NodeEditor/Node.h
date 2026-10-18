@@ -52,6 +52,8 @@ public:
   virtual void UpdateGeometry();
 
   void CreatePins();
+  /// Destroy visual pins while their native descriptions are still valid.
+  void ClearPins();
 
   xiiQtPin* GetInputPin(const xiiPin& pin);
   xiiQtPin* GetOutputPin(const xiiPin& pin);

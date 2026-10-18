@@ -21,7 +21,7 @@ o
 		s %AssetType{"Prefab"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{8866705325096395918,5045814042450016507}}
-		u4 %Hash{17124585600229661342}
+		u4 %Hash{3583960104883003230}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{6260322975900899627,3647404401962759201}}
@@ -29,14 +29,9 @@ o
 		VarArray %Outputs{}
 		VarArray %PackageDeps
 		{
-			s{"Materials/Common/MissingPrefab.xiiMaterial"}
 			s{"{ e9e6b167-c18c-4260-9b0e-4cf4503c1463 }"}
 		}
-		VarArray %References
-		{
-			s{"Materials/Common/MissingPrefab.xiiMaterial"}
-			s{"{ e9e6b167-c18c-4260-9b0e-4cf4503c1463 }"}
-		}
+		VarArray %References{}
 		s %Tags{""}
 	}
 }
@@ -47,17 +42,16 @@ o
 {
 	Uuid %id{u4{4531535883514245625,464421117301029042}}
 	s %t{"xiiMeshComponent"}
-	u3 %v{3}
+	u3 %v{1}
 	p
 	{
 		b %Active{1}
-		Color %Color{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
-		VarArray %Materials
-		{
-			s{"Materials/Common/MissingPrefab.xiiMaterial"}
-		}
+		VarArray %MaterialOverrides{}
 		s %Mesh{"{ e9e6b167-c18c-4260-9b0e-4cf4503c1463 }"}
-		f %SortingDepthOffset{0}
+		b %PreferMeshShaders{1}
+		b %RayTracingVisible{1}
+		u3 %SectionIndex{4294967295}
+		u3 %VisibilityMask{4294967295}
 	}
 }
 o
@@ -164,6 +158,23 @@ o
 }
 o
 {
+	Uuid %id{u4{17524843922218886194,1906037905004637917}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiMeshComponentBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiStaticMeshComponent"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{8224268647907297484,2300230217040154700}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -240,11 +251,11 @@ o
 		VarArray %Attributes{}
 		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
-		s %ParentTypeName{"xiiMeshComponentBase"}
+		s %ParentTypeName{"xiiStaticMeshComponent"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshComponent"}
-		u3 %TypeVersion{3}
+		u3 %TypeVersion{1}
 	}
 }
 o
@@ -346,7 +357,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshComponentBase"}
-		u3 %TypeVersion{3}
+		u3 %TypeVersion{2}
 	}
 }
 o

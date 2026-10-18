@@ -27,8 +27,12 @@ bool xiiAnimationClipViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphe
 
 xiiViewHandle xiiAnimationClipViewContext::CreateView()
 {
+  xiiRenderPipelineResourceHandle pipeline;
+  if (ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, pipeline).Failed())
+    return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Animation Clip Editor - View", pView);
+  pView->SetRenderPipelineResource(pipeline);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
   pView->SetCamera(&m_Camera);

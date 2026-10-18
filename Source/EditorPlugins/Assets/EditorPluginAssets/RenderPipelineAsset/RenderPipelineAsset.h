@@ -3,11 +3,15 @@
 #pragma once
 
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
-class xiiRenderPipelineNodeManager : public xiiDocumentNodeManager
+class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineNodeManager : public xiiDocumentNodeManager
 {
 public:
+  const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const override;
+  /// Creates/removes owned pin settings using the document's current undo transaction.
+  xiiStatus    SynchronizePinConfigurations(const xiiDocumentObject* node);
   void         GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
   virtual bool InternalIsNode(const xiiDocumentObject* pObject) const override;
   bool         InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const override;
@@ -18,21 +22,25 @@ public:
   bool              InternalCanConnectToSelf(const xiiPin& source, const xiiPin& target) const override;
 
 private:
-  mutable xiiDynamicArray<xiiNodePropertyValue> m_BuiltinProperties;
 };
 
-class xiiRenderPipelineAssetDocument : public xiiAssetDocument
+class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineAssetDocument : public xiiAssetDocument
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineAssetDocument, xiiAssetDocument);
 
 public:
-  xiiRenderPipelineAssetDocument(xiiStringView sDocumentPath);
+  /// Offline authoring/asset automation can omit IPC; interactive documents use full mirroring.
+  xiiRenderPipelineAssetDocument(xiiStringView sDocumentPath, xiiAssetDocEngineConnection connection = xiiAssetDocEngineConnection::FullObjectMirroring);
   ~xiiRenderPipelineAssetDocument();
+  const xiiDocumentObject* GetSettingsObject() const;
+  /// Initialize new/older documents through ordinary commands, never a const getter.
+  xiiStatus EnsureSettingsObject();
   /// Replace one reference node with configured leaf nodes and remapped boundary connections.
   /// Uses one undoable transaction and leaves the document unchanged on failure.
   xiiStatus ExpandSubgraph(const xiiDocumentObject* object);
 
 protected:
+  void                       InitializeAfterLoading(bool bFirstTimeCreation) override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 

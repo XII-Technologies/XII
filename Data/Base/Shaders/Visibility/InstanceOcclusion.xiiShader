@@ -1,0 +1,38 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Visibility/GpuSceneCommon.h>
+#include <Shaders/Visibility/DepthOcclusionConstants.h>
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_OcclusionView;
+StructuredBuffer<uint> g_Candidates;
+StructuredBuffer<uint> g_CandidateCount;
+Texture2D<float> g_DepthPyramid;
+RWStructuredBuffer<uint> g_Visible;
+RWStructuredBuffer<uint> g_Count;
+
+#include <Shaders/Visibility/DepthOcclusion.h>
+bool Visible(GpuSceneInstance instance, GpuVisibilityView view)
+{
+  return KeepWithoutOcclusion(instance) || BoundsVisibleInDepth(g_DepthPyramid, instance.BoundsCenterRadius.xyz, instance.BoundsExtents.xyz, view.OcclusionViewProjectionMatrix, DepthBias);
+}
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatch : SV_DispatchThreadID)
+{
+  uint candidates, scenes, views, counts, capacity, stride;
+  g_Candidates.GetDimensions(candidates, stride); g_CandidateCount.GetDimensions(counts, stride);
+  g_SceneInstances.GetDimensions(scenes, stride); g_OcclusionView.GetDimensions(views, stride); g_Visible.GetDimensions(capacity, stride);
+  if (!counts || !views || dispatch.x >= min(g_CandidateCount[0], candidates)) return;
+  const uint index = g_Candidates[dispatch.x];
+  if (index >= scenes) return;
+  const GpuSceneInstance instance = g_SceneInstances[index];
+  if ((instance.Flags & 1u) == 0u || !Visible(instance, g_OcclusionView[0])) return;
+  for (;;)
+  {
+    const uint count = g_Count[0]; if (count >= capacity) return;
+    uint observed; InterlockedCompareExchange(g_Count[0], count, count + 1u, observed);
+    if (observed == count) { g_Visible[count] = index; return; }
+  }
+}

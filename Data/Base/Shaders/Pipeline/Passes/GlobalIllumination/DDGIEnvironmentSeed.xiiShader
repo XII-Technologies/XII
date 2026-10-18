@@ -1,0 +1,39 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
+struct ProbeUpdate { float4 PositionAndHistoryWeight; uint4 Metadata; };
+struct ProbeState { float4 PositionAndLastUpdate; int4 CellAndFlags; };
+StructuredBuffer<ProbeUpdate> g_ProbeUpdates;
+RWStructuredBuffer<ProbeState> g_ProbeStates;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Irradiance;
+XII_STORAGE_IMAGE_FORMAT("rg32f") RWTexture2D<float2> g_Distance;
+[numthreads(64,1,1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  uint updateCount,updateStride;
+  g_ProbeUpdates.GetDimensions(updateCount,updateStride);
+  if(tid.x>=min(ProbeCountsAndUpdateCount.w,updateCount) || MinimumCellAndAtlasWidth.w<=0) return;
+  const ProbeUpdate update=g_ProbeUpdates[tid.x];
+  const uint probe=update.Metadata.x;
+  uint probeCount,probeStride;
+  g_ProbeStates.GetDimensions(probeCount,probeStride);
+  if(probe>=probeCount) return;
+  const uint2 pixel=uint2(probe%MinimumCellAndAtlasWidth.w,probe/MinimumCellAndAtlasWidth.w);
+  uint width,height,distanceWidth,distanceHeight;
+  g_Irradiance.GetDimensions(width,height); g_Distance.GetDimensions(distanceWidth,distanceHeight);
+  if(any(pixel>=uint2(width,height)) || any(pixel>=uint2(distanceWidth,distanceHeight))) return;
+  const float3 target=max(EnvironmentAmbientRadiance.rgb,0)+max(EnvironmentColorAndAngularRadius.rgb*EnvironmentDirectionAndIlluminance.w,0)*0.25f;
+  const float weight=saturate(update.PositionAndHistoryWeight.w);
+  const float3 previous=weight>0 ? g_Irradiance[pixel].rgb : 0;
+  g_Irradiance[pixel]=float4(min(lerp(target,previous,weight),65504.0f),1);
+  const float maximumDistance=SpacingHysteresisDistance.z;
+  g_Distance[pixel]=float2(maximumDistance,maximumDistance*maximumDistance);
+  ProbeState state=g_ProbeStates[probe];
+  state.CellAndFlags.w=(state.CellAndFlags.w|1)&~14;
+  state.PositionAndLastUpdate.w=SpacingHysteresisDistance.w;
+  g_ProbeStates[probe]=state;
+}

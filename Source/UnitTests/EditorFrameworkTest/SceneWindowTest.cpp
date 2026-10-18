@@ -178,6 +178,9 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       // than accepting any non-uniform startup image as evidence of functioning rendering.
       auto captureMode = [&](xiiViewRenderMode::Enum mode, const char* filename) {
         view->m_pViewConfig->m_RenderMode = mode;
+        // Queue document settings (including grid visibility) before the view and
+        // screenshot messages. A timer delay does not establish this IPC ordering.
+        window->TriggerRedraw();
         view->SyncToEngine();
         xiiStringBuilder output = sProjectDirectory;
         output.AppendPath(filename);
@@ -225,11 +228,9 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       auto*      scenePreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(scene);
       const bool showGrid         = scenePreferences->GetShowGrid();
       scenePreferences->SetShowGrid(false);
-      PumpUntil([] { return false; }, 200);
       const auto skyImage    = captureMode(xiiViewRenderMode::Default, "ViewportAtmosphere.png");
       const auto noGridImage = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportNoGrid.png");
       scenePreferences->SetShowGrid(true);
-      PumpUntil([] { return false; }, 200);
       const auto gridImage = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportGrid.png");
       scenePreferences->SetShowGrid(showGrid);
       xiiUInt32 gridPixels = 0;

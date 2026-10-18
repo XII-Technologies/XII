@@ -8,7 +8,7 @@
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuEmissiveTriangle);

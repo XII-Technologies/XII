@@ -11,9 +11,10 @@
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphCategory
 {
   using StorageType = xiiUInt8;
+
   enum Enum : StorageType
   {
-    ScenePreparation,
+    ScenePreparation = 0U,
     SceneRendering,
     ScenePostProcess,
     Output,
@@ -21,24 +22,29 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCategory
     AsyncCompute,
 
     ENUM_COUNT,
+
     Default = SceneRendering
   };
 };
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphCategory);
 
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphFrequency
 {
   using StorageType = xiiUInt8;
+
   enum Enum : StorageType
   {
-    EveryFrame,
+    EveryFrame = 0U,
     EveryNFrames,
     OnDemand,
 
     ENUM_COUNT,
+
     Default = EveryFrame
   };
 };
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphFrequency);
 
 /// Serializable registration metadata. Category, priority and registration order form the stable
@@ -51,6 +57,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphRegistrationDescription
   xiiInt32                         m_iPriority      = 0;
   xiiUInt32                        m_uiEveryNFrames = 1U;
 };
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphRegistrationDescription);
 
 class xiiRenderGraphManagerState;
@@ -129,6 +136,11 @@ public:
 
   [[nodiscard]] static xiiRenderGraphResourceCache*     GetResourceCache();
   [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler();
+
+  /// Conservative queue completion for the currently active shared GPU frame. Allows
+  /// pass-owned histories to retire images after all consumers have finished. Requires
+  /// the caller's graph to belong to this frame; does not wait or advance the timeline.
+  [[nodiscard]] static xiiResult GetFrameCompletion(xiiUInt64 uiFrameIndex, xiiUInt64& out_uiCompletedFrame);
 
   /// Executes eligible graphs in a newly allocated shared GPU frame. Frequency decisions use
   /// the device-wide frame index, including world submissions. Failed frames are captured too.

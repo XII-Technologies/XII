@@ -161,7 +161,9 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
 {
   if (xiiGeometryResidencyManager::EnsureInitialized().Failed())
     return XII_FAILURE;
-  auto& state = *m_pState;
+  auto&      state           = *m_pState;
+  const auto previousVersion = state.m_Version, previousPoseVersion = state.m_PoseVersion;
+  const auto previousCount = m_Instances.GetCount();
   // Validate before changing membership or leases. Stale authoritative owners are omitted.
   for (const auto* data : packets)
     if (const auto* mesh = xiiDynamicCast<const xiiMeshRenderData*>(data); mesh && mesh->m_hMesh.IsValid())
@@ -409,6 +411,8 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
   for (auto& entry : state.m_Entries)
     if (entry.m_Changed)
       entry.m_Version = ++state.m_Version;
+  if (previousVersion != state.m_Version || previousPoseVersion != state.m_PoseVersion || previousCount != m_Instances.GetCount())
+    ++m_uiDataRevision;
   m_UploadRanges.Clear();
   for (xiiUInt32 i = 0; i < state.m_Entries.GetCount();)
   {
@@ -535,8 +539,7 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
   };
   const auto previousBuffer     = frame.m_Instances;
   const auto previousPoseBuffer = frame.m_Poses;
-  if (!allocate(frame.m_Instances, frame.m_InstanceCapacity, m_Instances.GetCount(), sizeof(xiiGpuSceneInstance)) ||
-      !allocate(frame.m_Poses, frame.m_PoseCapacity, m_SkinningMatrices.GetCount(), sizeof(xiiMat4)))
+  if (!allocate(frame.m_Instances, frame.m_InstanceCapacity, m_Instances.GetCount(), sizeof(xiiGpuSceneInstance)) || !allocate(frame.m_Poses, frame.m_PoseCapacity, m_SkinningMatrices.GetCount(), sizeof(xiiMat4)))
     return {};
   if (frame.m_Instances != previousBuffer)
     frame.m_Versions.Clear();
@@ -599,8 +602,7 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
       auto& command = context.GetCommandList();
       for (const auto& range : data.m_Ranges)
       {
-        command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Instances), xiiUInt64(range.m_First) * sizeof(xiiGpuSceneInstance),
-          xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + range.m_Source), range.m_Count * sizeof(xiiGpuSceneInstance)));
+        command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Instances), xiiUInt64(range.m_First) * sizeof(xiiGpuSceneInstance), xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + range.m_Source), range.m_Count * sizeof(xiiGpuSceneInstance)));
         if (target.m_Instances == data.m_InstanceBuffer)
           for (xiiUInt32 i = 0; i < range.m_Count; ++i) target.m_Versions[range.m_First+i] = data.m_Versions[range.m_Source+i];
       }

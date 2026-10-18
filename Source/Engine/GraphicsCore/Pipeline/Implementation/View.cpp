@@ -5,7 +5,9 @@
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
+
+#include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -38,11 +40,12 @@ namespace
   }
 } // namespace
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 2, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 3, xiiRTTINoAllocator)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_ENUM_ACCESSOR_PROPERTY("RenderPath", xiiRenderPath, GetRenderPath, SetRenderPath),
+      XII_ACCESSOR_PROPERTY("RenderScale", GetRenderScale, SetRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -53,28 +56,27 @@ void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
                                                        xiiSharedPtr<xiiGALTextureView>(pRenderTargetView, pRenderTargetView->GetDevice()->GetAllocator());
 }
 
-xiiBuiltinRenderPipelineRuntime* xiiView::GetBuiltinRuntime() const
+xiiRenderPipelineInstance* xiiView::GetPipelineInstance() const
 {
-  auto* runtime = static_cast<xiiBuiltinRenderPipelineRuntime*>(xiiViewRenderResourceManager::GetContext(m_hPipelineRuntime));
+  auto* runtime = xiiViewRenderResourceManager::GetContext(m_hPipelineRuntime);
   XII_ASSERT_DEV(runtime != nullptr, "View pipeline runtime is unavailable after subsystem shutdown.");
   return runtime;
 }
 
 const xiiRenderPipelineInstance& xiiView::GetRenderPipelineInstance() const
 {
-  return GetBuiltinRuntime()->m_Instance;
+  return (*GetPipelineInstance());
 }
 
 xiiView::xiiView(xiiWorld* pWorld) :
   m_pWorld(pWorld)
 {
   m_DisplayOutputSettings = xiiDisplayOutputManager::GetDefaults();
-  m_hRenderPipeline       = xiiRenderPipelineResource::GetDefaultPipeline();
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
 
-  m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext(*this);
+  m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext();
   XII_ASSERT_DEV(!m_hPipelineRuntime.IsInvalidated(), "Failed to create the view render-resource context.");
   XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
 
@@ -86,8 +88,8 @@ xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& sett
   if (!xiiDisplayOutputManager::IsValid(settings))
     return XII_FAILURE;
 
-  m_DisplayOutputSettings                                                   = settings;
-  GetBuiltinRuntime()->m_Resources.m_TemporalPasses.m_bExposureHistoryValid = false;
+  m_DisplayOutputSettings = settings;
+  ++m_uiDisplayOutputSettingsRevision;
   return XII_SUCCESS;
 }
 
@@ -98,23 +100,13 @@ const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
 
 void xiiView::InvalidateTemporalHistory()
 {
-  xiiGpuVisibilityManager::InvalidateHiZHistory(m_hGpuVisibilityContext);
-  GetBuiltinRuntime()->InvalidateTemporalHistory();
-  GetBuiltinRuntime()->m_Instance.InvalidateTemporalHistory();
+  GetPipelineInstance()->InvalidateTemporalHistory();
 }
 
 xiiView::~xiiView()
 {
   m_InternalId.Invalidate();
 
-  // High-level subsystem shutdown may have invalidated the handle before a late world teardown.
-  // In that case all persistent resources (including the lighting context) are already released.
-  if (auto* pResources = static_cast<xiiBuiltinRenderPipelineRuntime*>(xiiViewRenderResourceManager::GetContext(m_hPipelineRuntime)))
-  {
-    pResources->m_Resources.m_LightingSystem.Shutdown();
-  }
-  xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
-  m_hGpuVisibilityContext = {};
   m_RenderGraphContext.Shutdown();
   xiiViewRenderResourceManager::DestroyContext(m_hPipelineRuntime);
   m_hPipelineRuntime = {};
@@ -135,42 +127,43 @@ xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
       return XII_FAILURE;
   }
 
-  auto& outputPasses = GetBuiltinRuntime()->m_Resources.m_OutputPasses;
-  if (outputPasses.m_hSensorProfile == hProfile)
-    return XII_SUCCESS;
-
-  outputPasses.m_hSensorProfile       = hProfile;
-  outputPasses.m_pSensorOutputTexture = nullptr;
+  m_hSensorProfile = hProfile;
   return XII_SUCCESS;
 }
 
 xiiSensorProfileHandle xiiView::GetSensorProfile() const
 {
-  return GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_hSensorProfile;
+  return m_hSensorProfile;
 }
 
 xiiSharedPtr<xiiGALTexture> xiiView::GetSensorOutputTexture() const
 {
-  return GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_pSensorOutputTexture;
+  const auto& instance = GetRenderPipelineInstance();
+  if (const auto* pipeline = instance.GetPipeline())
+    for (xiiUInt32 index = 0; index < pipeline->GetDescriptor().m_Passes.GetCount(); ++index)
+      if (const auto* sensor = xiiDynamicCast<const xiiSensorCapture*>(instance.GetPass(index)))
+        if (auto output = sensor->GetViewOutput(m_hSensorProfile))
+          return output;
+  return {};
 }
 
 void xiiView::SetRenderScale(float fRenderScale)
 {
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+  m_DynamicResolution.m_fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
 
   float fDynamicMin = 0.1f;
   float fDynamicMax = 1.0f;
-  ComputeDynamicScaleBounds(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale, fDynamicMin, fDynamicMax);
+  ComputeDynamicScaleBounds(m_DynamicResolution.m_fRenderScale, fDynamicMin, fDynamicMax);
 
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale, fDynamicMin, fDynamicMax);
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale, fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   UpdateRenderResolutionState();
 }
 
 float xiiView::GetRenderScale() const
 {
-  return GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale;
+  return m_DynamicResolution.m_fRenderScale;
 }
 
 void xiiView::UpdateCachedMatrices() const
@@ -239,13 +232,13 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
 
 void xiiView::UpdateRenderResolutionState() const
 {
-  const float fRenderScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
+  const float fRenderScale = xiiMath::Clamp(m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
 
   float fDynamicMin = 0.1f;
   float fDynamicMax = 1.0f;
   ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
 
-  const float fDynamicScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
+  const float fDynamicScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   m_Data.m_fRenderResolutionScale = xiiMath::Clamp(fDynamicScale * fRenderScale, 0.1f, 1.0f);
 
@@ -266,10 +259,9 @@ void xiiView::RunDynamicResolutionPID()
     fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
   }
 
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fLastGpuFrameTimeMs = fGpuTimeMs;
 
   // PID controller.
-  const float fRenderScale = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
+  const float fRenderScale = xiiMath::Clamp(m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
   float       fDynamicMin  = 0.1f;
   float       fDynamicMax  = 1.0f;
   ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
@@ -280,18 +272,18 @@ void xiiView::RunDynamicResolutionPID()
   const float fError = (fTarget - fGpuTimeMs) / fTarget;
 
   // Anti-windup clamp on integral.
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fErrorIntegral = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fErrorIntegral + fError * fDeltaTime, -1.0f, 1.0f);
+  m_DynamicResolution.m_fErrorIntegral = xiiMath::Clamp(m_DynamicResolution.m_fErrorIntegral + fError * fDeltaTime, -1.0f, 1.0f);
 
-  const float fDerivative = (fError - GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fPreviousError) / xiiMath::Max(fDeltaTime, 0.001f);
-  const float fPID        = 0.35f * fError + 0.05f * GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fErrorIntegral + 0.15f * fDerivative;
+  const float fDerivative = (fError - m_DynamicResolution.m_fPreviousError) / xiiMath::Max(fDeltaTime, 0.001f);
+  const float fPID        = 0.35f * fError + 0.05f * m_DynamicResolution.m_fErrorIntegral + 0.15f * fDerivative;
 
   // Clamp per-frame delta to avoid oscillation.
-  const float fDesired = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale + fPID, fDynamicMin, fDynamicMax);
-  const float fDelta   = xiiMath::Clamp(fDesired - GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale, -0.10f, 0.10f);
+  const float fDesired = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale + fPID, fDynamicMin, fDynamicMax);
+  const float fDelta   = xiiMath::Clamp(fDesired - m_DynamicResolution.m_fCurrentScale, -0.10f, 0.10f);
 
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale + fDelta, fDynamicMin, fDynamicMax);
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(xiiMath::Lerp(GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fSmoothedScale, GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fCurrentScale, 0.20f), fDynamicMin, fDynamicMax);
-  GetBuiltinRuntime()->m_Resources.m_DynamicResolution.m_fPreviousError = fError;
+  m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale + fDelta, fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(xiiMath::Lerp(m_DynamicResolution.m_fSmoothedScale, m_DynamicResolution.m_fCurrentScale, 0.20f), fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fPreviousError = fError;
 
   UpdateRenderResolutionState();
 }
@@ -314,16 +306,11 @@ xiiUInt32 xiiView::GetRenderResolutionHeight() const
   return m_Data.m_uiRenderResolutionHeight;
 }
 
-////////// Lighting Data Upload //////////
-//
-// Uploads per-view camera, frame, and light data into persistent GAL buffers once per frame.
-
-
 void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
 {
   m_Data.m_CameraUsageHint = hint;
 
-  if (GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_hSensorProfile.IsInvalidated())
+  if (m_hSensorProfile.IsInvalidated())
   {
     xiiSensorType::Enum sensorType = xiiSensorType::ENUM_COUNT;
     switch (hint.GetValue())
@@ -345,7 +332,7 @@ void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
     }
 
     if (sensorType != xiiSensorType::ENUM_COUNT)
-      GetBuiltinRuntime()->m_Resources.m_OutputPasses.m_hSensorProfile = xiiSensorRenderingManager::GetDefaultProfileHandle(sensorType);
+      m_hSensorProfile = xiiSensorRenderingManager::GetDefaultProfileHandle(sensorType);
   }
 }
 
@@ -353,71 +340,52 @@ void xiiView::SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& p
 {
   if (m_hRenderPipeline == pipeline)
     return;
-  m_hRenderPipeline = pipeline;
+  m_hRenderPipeline                = pipeline;
+  m_bPipelineSynchronizationFailed = false;
   InvalidateTemporalHistory();
 }
 
 xiiResult xiiView::SynchronizeRenderPipeline()
 {
-  auto* runtime = GetBuiltinRuntime();
+  auto* runtime = GetPipelineInstance();
   if (m_RenderGraphBuilder.IsValid())
   {
-    m_ExtractionRequirements = m_CustomExtractionRequirements;
-    m_RuntimeFeatures        = m_CustomRuntimeFeatures;
+    m_bPipelineSynchronizationFailed = false;
+    m_ExtractionRequirements         = m_CustomExtractionRequirements;
+    m_RuntimeFeatures                = m_CustomRuntimeFeatures;
     return XII_SUCCESS;
   }
   bool changed = false;
-  if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed())
+  if (runtime->Synchronize(m_hRenderPipeline, &changed).Failed())
   {
-    m_ExtractionRequirements = {};
-    m_RuntimeFeatures        = {};
+    if (!m_bPipelineSynchronizationFailed)
+    {
+      if (m_hRenderPipeline.IsValid())
+        xiiLog::Error("View '{}' cannot load or compile render pipeline resource '{}'.", GetName(), m_hRenderPipeline.GetResourceID());
+      else
+        xiiLog::Error("View '{}' has no selected render pipeline resource.", GetName());
+    }
+    m_bPipelineSynchronizationFailed = true;
+    m_ExtractionRequirements         = {};
+    m_RuntimeFeatures                = {};
     InvalidateTemporalHistory();
     return XII_FAILURE;
   }
+  m_bPipelineSynchronizationFailed = false;
   if (changed)
   {
-    runtime->ClearSubgraphs();
     InvalidateTemporalHistory();
   }
-  m_ExtractionRequirements = runtime->m_Instance.GetPipeline()->GetExtractionRequirements();
-  m_RuntimeFeatures        = runtime->m_Instance.GetPipeline()->GetRuntimeFeatures();
+  m_ExtractionRequirements = runtime->GetPipeline()->GetExtractionRequirements();
+  m_RuntimeFeatures        = runtime->GetPipeline()->GetRuntimeFeatures();
   return XII_SUCCESS;
 }
 
-xiiResult xiiView::PrepareRenderResources()
+xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  const auto* pipeline     = GetBuiltinRuntime()->m_Instance.GetPipeline();
-  const auto  rootFeatures = m_RenderGraphBuilder.IsValid() ? m_CustomRuntimeFeatures : pipeline ? pipeline->GetRootRuntimeFeatures() :
-                                                                                                   xiiBitflags<xiiRenderPipelineFeature>{};
-  if (rootFeatures.IsSet(xiiRenderPipelineFeature::GpuScene))
-  {
-    if (m_hGpuVisibilityContext.IsInvalidated())
-      m_hGpuVisibilityContext = xiiGpuVisibilityManager::CreateContext();
-    if (m_hGpuVisibilityContext.IsInvalidated())
-      return XII_FAILURE;
-  }
-  else
-  {
-    xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
-    m_hGpuVisibilityContext = {};
-  }
-  auto& lighting = GetBuiltinRuntime()->m_Resources.m_LightingSystem;
-  if (rootFeatures.IsSet(xiiRenderPipelineFeature::Lighting))
-  {
-    if (!lighting.IsInitialized())
-      XII_SUCCEED_OR_RETURN(lighting.Initialize());
-  }
-  else
-    lighting.Shutdown();
-  return XII_SUCCESS;
-}
-
-xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& shadows)
-{
-  auto* runtime = GetBuiltinRuntime();
+  auto* runtime = GetPipelineInstance();
   RunDynamicResolutionPID();
-  runtime->BeginFrame(shadows);
-  const xiiResult result = runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
+  const xiiResult result = runtime->Build(this, graph, blackboard, m_PipelineParameters);
   if (result.Failed())
     InvalidateTemporalHistory();
   return result;

@@ -6,6 +6,7 @@
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Id.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Material/MaterialTypes.h>
@@ -28,7 +29,7 @@ public:
 
 private:
   friend class xiiRayTracingResources;
-  xiiUniquePtr<xiiRayTracingFrameResourcesState> m_pState;
+  xiiSharedPtr<xiiRayTracingFrameResourcesState> m_pState;
 };
 
 /// Generation-checked lease for one device-resident BLAS geometry.
@@ -106,6 +107,8 @@ public:
 
   struct BuildHandles
   {
+    /// Success may describe an empty eligible selection; failure never substitutes a scene.
+    xiiResult m_Result = XII_FAILURE;
     /// Rotating TLAS owned by the supplied frame resources. Trace-ready after the build pass executes.
     xiiSharedPtr<xiiGALTopLevelAS> m_pTopLevelAS;
     /// Render-graph dependency token for ray-dispatch passes that consume m_pTopLevelAS.

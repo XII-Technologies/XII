@@ -17,9 +17,13 @@
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 
 namespace
 {
@@ -143,43 +147,139 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   {
     XII_TEST_RESULT(extract());
     XII_TEST_BOOL(instances->GetUploadRanges().IsEmpty());
+    const auto revision = instances->GetDataRevision();
     parent->SetLocalPosition(xiiVec3(4, 0, 0));
     world.Update();
     XII_TEST_RESULT(extract());
+    XII_TEST_BOOL(instances->GetDataRevision() != revision);
     XII_TEST_FLOAT(instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 6, 0);
     XII_TEST_FLOAT(instances->GetInstances()[0].m_PreviousGlobalTransform.GetTranslationVector().x, 3, 0);
     XII_TEST_INT(instances->GetUploadRanges().GetCount(), 1);
     XII_TEST_RESULT(extract());
     XII_TEST_FLOAT(instances->GetInstances()[0].m_PreviousGlobalTransform.GetTranslationVector().x, 6, 0);
     XII_TEST_INT(instances->GetUploadRanges().GetCount(), 1);
+    const auto settled = instances->GetDataRevision();
     XII_TEST_RESULT(extract());
     XII_TEST_BOOL(instances->GetUploadRanges().IsEmpty());
+    XII_TEST_INT(instances->GetDataRevision(), settled);
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two cameras share sparse uploads; warmed unchanged frames upload zero bytes")
   {
+    xiiRenderPipelineResourceDescriptor uploadDefinition;
+    uploadDefinition.AddPass("World data", "xiiWorldInstancesUploadPass");
+    uploadDefinition.AddPass("Repeated world data", "xiiWorldInstancesUploadPass");
+    uploadDefinition.AddPass("Device geometry", "xiiGeometryUploadPass");
+    uploadDefinition.AddPass("Device materials", "xiiMaterialUploadPass");
+    xiiVariantDictionary cullingProperties;
+    cullingProperties.Insert("UseViewSelection", false);
+    cullingProperties.Insert("VisibilityMask", 0x42U);
+    uploadDefinition.AddPass("Camera culling inputs", "xiiVisibilityViewPass", cullingProperties);
+    uploadDefinition.AddPass("Empty work", "xiiCounterResetPass");
+    xiiVariantDictionary counterProperties;
+    counterProperties.Insert("Value", 17U);
+    uploadDefinition.AddPass("Seeded work", "xiiCounterResetPass", counterProperties);
+    uploadDefinition.AddPass("Matrix query", "xiiMatrixVisibilityViewPass");
+    uploadDefinition.AddPass("Repeated geometry", "xiiGeometryUploadPass");
+    uploadDefinition.AddPass("Repeated materials", "xiiMaterialUploadPass");
+    xiiCamera cullingCamera;
+    cullingCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+
+    xiiSharedPtr<const xiiRenderPipeline> compiledUpload;
+    if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(uploadDefinition, compiledUpload)))
+      return;
+    xiiRenderPipelineInstance uploadInstances[2];
+    for (auto& instance : uploadInstances)
+      if (!XII_TEST_RESULT(instance.Initialize(compiledUpload)))
+        return;
     xiiRenderGraphContext graphs[2];
     XII_TEST_RESULT(graphs[0].Initialize("World upload camera A"));
     XII_TEST_RESULT(graphs[1].Initialize("World upload camera B"));
-    auto render = [&](xiiUInt32 camera, const xiiRenderGraphFrame& gpuFrame) -> xiiSharedPtr<xiiGALBuffer> {
+    xiiUInt32 viewTokens[2] = {0, 0};
+    auto      render        = [&](xiiUInt32 camera, const xiiRenderGraphFrame& gpuFrame) -> xiiSharedPtr<xiiGALBuffer> {
       auto& graph = graphs[camera].GetGraph();
       auto& cache = graphs[camera].GetResourceCache();
       cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
       XII_SCOPE_EXIT(cache.EndFrame());
       graph.BeginSetup(gpuFrame.GetFrameIndex());
-      const auto uploaded = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
-      const auto repeated = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
-      XII_TEST_BOOL(uploaded.m_Instances == repeated.m_Instances && uploaded.m_Skinning == repeated.m_Skinning);
+      xiiView*   view   = nullptr;
+      const auto handle = module->CreateView("Native world upload", view);
+      XII_SCOPE_EXIT(module->DestroyView(handle));
+      view->SetCamera(&cullingCamera);
+      view->SetViewport({0, 0, 16, 16});
+      xiiVariantDictionary query;
+      const auto           queryMatrix = xiiMat4::MakeScaling(xiiVec3(float(camera + 1)));
+      query.Insert("CullingViewProjection", queryMatrix);
+      query.Insert("CullingCameraPosition", xiiVec3(float(camera), 2, 3));
+      query.Insert("CullingWidth", 16U);
+      query.Insert("CullingHeight", 32U);
+      query.Insert("CullingRequiredFlags", camera + 1U);
+      if (!XII_TEST_RESULT(uploadInstances[camera].Build(view, graph, graphs[camera].GetBlackboard(), query)))
+        return nullptr;
+      XII_TEST_BOOL(uploadInstances[camera].GetOutputBinding(2, "GeometryMetadata")->m_hBuffer == uploadInstances[camera].GetOutputBinding(8, "GeometryMetadata")->m_hBuffer);
+      XII_TEST_BOOL(uploadInstances[camera].GetOutputBinding(2, "MeshletMetadata")->m_hBuffer == uploadInstances[camera].GetOutputBinding(8, "MeshletMetadata")->m_hBuffer);
+      XII_TEST_BOOL(uploadInstances[camera].GetOutputBinding(3, "SurfaceMaterials")->m_hBuffer == uploadInstances[camera].GetOutputBinding(9, "SurfaceMaterials")->m_hBuffer);
+      xiiGpuInstanceData::UploadHandles uploaded;
+      uploaded.m_Instances = uploadInstances[camera].GetOutputBinding(0, "SceneInstances")->m_hBuffer;
+      uploaded.m_Skinning  = uploadInstances[camera].GetOutputBinding(0, "SkinningMatrices")->m_hBuffer;
+      XII_TEST_BOOL(uploaded.m_Instances == uploadInstances[camera].GetOutputBinding(1, "SceneInstances")->m_hBuffer);
+      XII_TEST_BOOL(uploaded.m_Skinning == uploadInstances[camera].GetOutputBinding(1, "SkinningMatrices")->m_hBuffer);
       struct Export
       {
         XII_DECLARE_POD_TYPE();
       };
       graph.AddPass<Export>("World inputs", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
         builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(2, "GeometryMetadata")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(2, "MeshletMetadata")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(3, "SurfaceMaterials")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(4, "Candidates")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(5, "Counter")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(6, "Counter")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(7, "VisibilityView")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
       graph.EndSetup();
       if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphs[camera].GetBlackboard(), &cache)))
         return nullptr;
-      return graph.GetExportedBuffer(uploaded.m_Instances);
+
+
+      const auto empty  = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(5, "Counter")->m_hBuffer);
+      const auto seeded = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(6, "Counter")->m_hBuffer);
+      XII_TEST_BOOL(empty && seeded && empty != seeded);
+      xiiUInt32 count = xiiInvalidIndex;
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), empty.Borrow(), 0, count))
+        return nullptr;
+      XII_TEST_INT(count, 0);
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), seeded.Borrow(), 0, count))
+        return nullptr;
+      XII_TEST_INT(count, 17);
+      xiiGpuVisibilityView snapshot;
+      const auto           parameters = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(4, "VisibilityView")->m_hBuffer);
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), parameters.Borrow(), 0, snapshot))
+        return nullptr;
+      XII_TEST_INT(snapshot.m_uiInstanceCount, 1);
+      XII_TEST_INT(snapshot.m_uiVisibilityMask, 0x42);
+      XII_TEST_INT(snapshot.m_uiUseCandidates, 0);
+      XII_TEST_FLOAT(snapshot.m_ViewportAndHiZ.x, 16, 0);
+      XII_TEST_FLOAT(snapshot.m_LodParameters.y, float(viewTokens[camera] % 65535U), 0);
+      XII_TEST_FLOAT(snapshot.m_LodParameters.z, float((viewTokens[camera] + 65534U) % 65535U), 0);
+      const auto matrixParameters = graph.GetExportedBuffer(uploadInstances[camera].GetOutputBinding(7, "VisibilityView")->m_hBuffer);
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), matrixParameters.Borrow(), 0, snapshot))
+        return nullptr;
+      XII_TEST_BOOL(snapshot.m_ViewProjectionMatrix == queryMatrix);
+      XII_TEST_FLOAT(snapshot.m_CameraPosition.x, float(camera), 0);
+      XII_TEST_FLOAT(snapshot.m_ViewportAndHiZ.y, 32, 0);
+      XII_TEST_INT(snapshot.m_uiRequiredFlags, camera + 1U);
+      XII_TEST_FLOAT(snapshot.m_LodParameters.y, float(viewTokens[camera] % 65535U), 0);
+      XII_TEST_BOOL(uploadInstances[camera].GetPipeline() == compiledUpload.Borrow());
+      ++viewTokens[camera];
+      xiiGpuSceneInstance record;
+      const auto          result = graph.GetExportedBuffer(uploaded.m_Instances);
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), result.Borrow(), 0, record))
+        return nullptr;
+      XII_TEST_INT(record.m_uiObjectId, identity);
+      XII_TEST_FLOAT(record.m_GlobalTransform.GetTranslationVector().x, instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 0);
+      return result;
     };
     for (xiiUInt32 i = 0; i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight + 1; ++i)
     {
@@ -196,6 +296,14 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       gpuFrame.End();
       environment.GetDevice()->WaitIdle();
     }
+    // An unrelated world advances the device clock; only one camera is cut.
+    {
+      xiiRenderGraphFrame unrelated;
+      XII_TEST_RESULT(unrelated.Begin());
+      unrelated.End();
+    }
+    uploadInstances[0].InvalidateTemporalHistory();
+    viewTokens[0] = 0;
     parent->SetLocalPosition(xiiVec3(7, 0, 0));
     world.Update();
     XII_TEST_RESULT(extract());

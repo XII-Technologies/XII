@@ -4,13 +4,12 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Vec3.h>
+#include <Foundation/Math/Vec4.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Bitflags.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsCore/Pipeline/RenderGraph.h>
 
-class xiiLightingSystem;
-class xiiGALDevice;
 
 /// Runtime controls for the camera-centred mid-field DDGI clipmap.
 struct XII_GRAPHICSCORE_DLL xiiDDGISettings
@@ -109,10 +108,8 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuDDGIProbeUpdate
 static_assert(sizeof(xiiGpuDDGIProbeUpdate) == 32U);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuDDGIProbeUpdate);
 
-/// Camera-centred GI state owned by one lighting context. CPU scheduling can be used without a device.
-/// GPU storage is private to the context; settings and algorithm state are never process global.
-/// This object is not thread-safe. It must outlive graphs capturing it. Before reinitialization,
-/// shutdown or destruction, discard those graphs and wait for their submitted GPU work to finish.
+/// CPU-only camera-centred probe scheduling. No GPU resources, graph construction or scene ownership.
+/// One consumer owns each context. Updates and commits require serial access.
 class XII_GRAPHICSCORE_DLL xiiDDGIContext
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiDDGIContext);
@@ -121,9 +118,8 @@ public:
   xiiDDGIContext();
   ~xiiDDGIContext();
 
-  /// Initialize CPU scheduling and, when a device is supplied, persistent GPU storage.
-  /// Failure preserves an existing configuration. A null device selects CPU-only scheduling.
-  [[nodiscard]] xiiResult Initialize(const xiiDDGISettings& settings = {}, xiiSharedPtr<xiiGALDevice> pDevice = nullptr);
+  /// Initialize CPU scheduling. Invalid settings preserve the existing configuration.
+  [[nodiscard]] xiiResult Initialize(const xiiDDGISettings& settings = {});
   void                    Shutdown();
   [[nodiscard]] bool      IsInitialized() const;
   /// Discard accumulated lighting without reallocating storage or disturbing another view.
@@ -139,20 +135,9 @@ public:
   [[nodiscard]] xiiDDGIFrameStats                     GetFrameStats() const;
   [[nodiscard]] const xiiDDGISettings&                GetConfiguration() const;
 
-  struct UpdateHandles
-  {
-    xiiRenderGraphTextureHandle m_hIrradianceAtlas;
-    xiiRenderGraphTextureHandle m_hDistanceAtlas;
-    xiiRenderGraphBufferHandle  m_hProbeStates;
-    xiiRenderGraphBufferHandle  m_hProbeConstants;
-  };
-
-  /// Adds the temporally accumulated probe update pass and publishes resources
-  /// consumed by the per-pixel DDGI final gather.
-  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
+  [[nodiscard]] xiiVec3I32 GetMinimumCell() const;
 
 private:
-  [[nodiscard]] xiiResult CreateGpuResources();
   class State;
   xiiUniquePtr<State> m_pState;
 };

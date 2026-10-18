@@ -15,7 +15,6 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
-#include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -25,9 +24,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
-class xiiBuiltinRenderPipelineRuntime;
+
 class xiiRenderPipelineInstance;
 class xiiFrustum;
 class xiiWorld;
@@ -97,17 +95,18 @@ public:
   void                   SetRenderPath(xiiEnum<xiiRenderPath> value);
   xiiEnum<xiiRenderPath> GetRenderPath() const;
 
-  /// Enables calibrated sensor output for this view. Passing an invalid handle disables it.
+  /// Configures passes that opt into the view sensor profile. An invalid handle disables them.
   [[nodiscard]] xiiResult              SetSensorProfile(xiiSensorProfileHandle hProfile);
   [[nodiscard]] xiiSensorProfileHandle GetSensorProfile() const;
-  /// Returns shared ownership of the last allocated sensor output. Empty after profile changes or
-  /// disabling output, until the next successful pipeline build. Retain this pointer for asynchronous
+  /// Returns the first completed output of a pass using this view profile, in compiled node order.
+  /// Empty after profile changes or disabling output, until rendering completes. Retain for asynchronous
   /// readback; synchronize GPU completion through GAL before accessing the image contents.
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetSensorOutputTexture() const;
 
   /// Applies validated, view-local exposure, tone-mapping and display calibration.
   [[nodiscard]] xiiResult                       SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
   [[nodiscard]] const xiiDisplayOutputSettings& GetDisplayOutputSettings() const;
+  xiiUInt64                                     GetDisplayOutputSettingsRevision() const { return m_uiDisplayOutputSettingsRevision; }
 
   /// Invalidates all per-view temporal lighting and reconstruction history after a camera cut or teleport.
   void InvalidateTemporalHistory();
@@ -227,8 +226,6 @@ public:
 
 private:
   friend class xiiRenderWorldModule;
-  friend class xiiBuiltinRenderPipelineRuntime;
-  friend class xiiBuiltinRenderPipelinePass;
   friend class xiiViewRenderResourceManager;
   friend class xiiViewRenderResourceManagerState;
   friend class xiiMemoryUtils;
@@ -238,11 +235,10 @@ private:
   void      UpdateCachedMatrices() const;
   void      UpdateRenderResolutionState() const;
   xiiResult SynchronizeRenderPipeline();
-  xiiResult PrepareRenderResources();
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
-  xiiResult BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& virtualShadowHandles);
+  xiiResult BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   // CPU PID dynamic resolution (runs before BeginSetup)
   void RunDynamicResolutionPID();
@@ -269,9 +265,18 @@ private:
 
   mutable xiiViewData m_Data;
 
-  xiiRenderGraphContext         m_RenderGraphContext;
-  xiiDynamicArray<xiiUInt32>    m_GpuInstanceSelection;
-  xiiGpuVisibilityContextHandle m_hGpuVisibilityContext;
+  /// Camera-dependent resolution policy and feedback belong to this view, not a graph occurrence.
+  struct DynamicResolution
+  {
+    float m_fCurrentScale  = 1.0f;
+    float m_fErrorIntegral = 0.0f;
+    float m_fPreviousError = 0.0f;
+    float m_fSmoothedScale = 1.0f;
+    float m_fRenderScale   = 1.0f;
+  } m_DynamicResolution;
+
+  xiiRenderGraphContext      m_RenderGraphContext;
+  xiiDynamicArray<xiiUInt32> m_GpuInstanceSelection;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.
   xiiExtractedRenderData* m_pExtractedData = nullptr;
@@ -283,15 +288,18 @@ private:
 
   xiiViewRenderResourceContextHandle       m_hPipelineRuntime;
   xiiRenderPipelineResourceHandle          m_hRenderPipeline;
+  bool                                     m_bPipelineSynchronizationFailed = false;
   xiiVariantDictionary                     m_PipelineParameters;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderExtractionCategory> m_CustomExtractionRequirements = xiiRenderExtractionCategory::All;
   xiiRenderExtractionStatistics            m_ExtractionStatistics;
   xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
   xiiBitflags<xiiRenderPipelineFeature>    m_CustomRuntimeFeatures = xiiRenderPipelineFeature::All;
-  xiiBuiltinRenderPipelineRuntime*         GetBuiltinRuntime() const;
+  xiiRenderPipelineInstance*               GetPipelineInstance() const;
 
+  xiiSensorProfileHandle   m_hSensorProfile;
   xiiDisplayOutputSettings m_DisplayOutputSettings;
+  xiiUInt64                m_uiDisplayOutputSettingsRevision = 1;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

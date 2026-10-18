@@ -197,6 +197,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceDescription
   xiiUInt32                                m_uiLastUsePassIndex  = xiiInvalidIndex;
   xiiUInt32                                m_uiAliasGroup        = xiiInvalidIndex;
   bool                                     m_bIsTexture          = true;
+  xiiGALTextureCreationDescription         m_TextureDescription;
+  xiiGALBufferCreationDescription          m_BufferDescription;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphResourceDescription);
@@ -421,6 +423,11 @@ public:
   ///        Call this for passes that write to swap-chain images, initiate readbacks, etc.
   void SetPassSideEffects(bool bHasSideEffects);
 
+  /// Device-side readiness for resources produced outside this graph, including
+  /// previous-frame history. The wait precedes submission barriers on this pass's
+  /// queue. The graph owns the fence until execution; this never blocks the CPU.
+  [[nodiscard]] xiiResult WaitForFence(xiiSharedPtr<xiiGALFence> fence, xiiUInt64 value);
+
   /// Controls whether this pass participates in render-pass merge groups.
   ///        Default is true. Set to false if the pass must stand alone (e.g. readback).
   void SetPassAllowMerge(bool bAllowMerge);
@@ -594,6 +601,8 @@ public:
 
   /// Stable ID and name of this graph instance.
   [[nodiscard]] xiiRenderGraphGraphId GetId() const;
+  /// Process-local identity, unique even when several views use the same stable graph name.
+  [[nodiscard]] xiiUInt64             GetInstanceId() const { return m_uiInstanceId; }
   [[nodiscard]] xiiStringView         GetName() const;
 
   /// Reflection/editor-friendly compiler records.
@@ -678,6 +687,8 @@ private:
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
+    xiiHybridArray<xiiSharedPtr<xiiGALFence>, 2>  m_WaitFences;
+    xiiHybridArray<xiiUInt64, 2>                  m_WaitValues;
     void*                                         m_pPassData = nullptr;
     xiiDelegate<void(void*)>                      m_DestroyPassDataDelegate;
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;
@@ -709,6 +720,7 @@ private:
   xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
   xiiHashedString                                            m_sName;
   xiiRenderGraphGraphId                                      m_Id;
+  xiiUInt64                                                  m_uiInstanceId = 0;
   xiiRenderGraphIdTable                                      m_IdTable;
 
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALTexture>> m_PersistentTextures;

@@ -8,10 +8,13 @@
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
@@ -21,6 +24,36 @@
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
 #include <bit>
+
+class xiiRaySceneBindingRelay : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRaySceneBindingRelay, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineAccelerationStructureInputPin  m_InputScene;
+  xiiRenderPipelineAccelerationStructureOutputPin m_OutputScene{false, xiiRenderPipelinePinAccess::Read};
+  xiiRenderPipelineBufferInputPin                 m_InputMaterials, m_InputGeometry;
+  xiiRenderPipelineBufferOutputPin                m_OutputMaterials{false, {}, xiiRenderPipelinePinAccess::Read}, m_OutputGeometry{false, {}, xiiRenderPipelinePinAccess::Read};
+  xiiResult                                       Build(xiiRenderPipelinePassContext& context) override
+  {
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputScene, context.GetInputAccelerationStructure(m_InputScene)));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputMaterials, context.GetInputBuffer(m_InputMaterials)));
+    return context.SetOutput(m_OutputGeometry, context.GetInputBuffer(m_InputGeometry));
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRaySceneBindingRelay, 1, xiiRTTIDefaultAllocator<xiiRaySceneBindingRelay>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("SceneInput", m_InputScene)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Scene")),
+      XII_MEMBER_PROPERTY("SceneOutput", m_OutputScene)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Scene")),
+      XII_MEMBER_PROPERTY("MaterialsInput", m_InputMaterials)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Materials")),
+      XII_MEMBER_PROPERTY("MaterialsOutput", m_OutputMaterials)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Materials")),
+      XII_MEMBER_PROPERTY("GeometryInput", m_InputGeometry)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Geometry")),
+      XII_MEMBER_PROPERTY("GeometryOutput", m_OutputGeometry)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinNameAttribute("Geometry")),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
@@ -166,13 +199,33 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   const auto&                     properties = environment.GetDevice()->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
   const xiiUInt64                 stride     = xiiMemoryUtils::AlignSize(xiiUInt64(properties.m_uiShaderGroupHandleSize), xiiUInt64(xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment)));
   xiiGALBufferCreationDescription sbtDescription;
-  sbtDescription.m_uiSize         = stride * 3;
-  sbtDescription.m_Mode           = xiiGALBufferMode::Raw;
-  sbtDescription.m_BindFlags      = xiiGALBindFlags::RayTracing;
-  sbtDescription.m_Usage          = xiiGALResourceUsage::Mutable;
-  auto                        sbt = environment.GetDevice()->CreateBuffer(sbtDescription);
-  xiiRayTracingFrameResources views[2];
-  xiiRenderGraphContext       context;
+  sbtDescription.m_uiSize                 = stride * 3;
+  sbtDescription.m_Mode                   = xiiGALBufferMode::Raw;
+  sbtDescription.m_BindFlags              = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage                  = xiiGALResourceUsage::Mutable;
+  auto                                sbt = environment.GetDevice()->CreateBuffer(sbtDescription);
+  xiiRenderPipelineResourceDescriptor rayLeaf;
+  xiiVariantDictionary                rayProperties;
+  rayProperties.Insert("UseViewSelection", false);
+  rayProperties.Insert("RequireHardwareRayTracing", true);
+  rayLeaf.AddPass("Ray scene", "xiiRayTracingScenePass", rayProperties);
+  rayLeaf.AddPass("Typed scene consumer", "xiiRaySceneBindingRelay");
+  XII_TEST_RESULT(rayLeaf.Connect(0, "Scene", 1, "Scene"));
+  XII_TEST_RESULT(rayLeaf.Connect(0, "Materials", 1, "Materials"));
+  XII_TEST_RESULT(rayLeaf.Connect(0, "Geometry", 1, "Geometry"));
+  xiiGraphDefinition rayDefinition;
+  XII_TEST_RESULT(rayLeaf.MakeGraphDefinition(rayDefinition));
+  xiiRenderPipelineResourceDescriptor rayRoot;
+  rayRoot.m_Definitions.PushBack(rayDefinition);
+  rayRoot.AddSubgraph("First ray scene", rayDefinition.m_Id);
+  rayRoot.AddSubgraph("Second ray scene", rayDefinition.m_Id);
+  xiiSharedPtr<const xiiRenderPipeline> rayCompiled;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(rayRoot, rayCompiled)))
+    return;
+  xiiRenderPipelineInstance rayScenes;
+  if (!XII_TEST_RESULT(rayScenes.Initialize(rayCompiled)))
+    return;
+  xiiRenderGraphContext context;
   XII_TEST_RESULT(context.Initialize("Skinned and morphed ray trace regression"));
   xiiUInt32 ids[2] = {};
   struct Capture
@@ -204,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
       }
     }
   };
-  auto render = [&](xiiUInt32 expectedDispatches, float distance0, float distance1, xiiUInt32 firstRay, bool defer = false) {
+  auto render = [&](xiiUInt32 expectedDispatches, float distance0, float distance1, xiiUInt32 firstRay, bool defer = false, bool releaseOwners = false) {
     xiiRenderGraphFrame frame;
     if (!XII_TEST_RESULT(frame.Begin()))
       return;
@@ -251,19 +304,45 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
     cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
     XII_SCOPE_EXIT(cache.EndFrame());
     graph.BeginSetup(frame.GetFrameIndex());
-    const auto first  = module->AddRayTracingBuildPass(graph, frame.GetFrameIndex(), &views[0]);
-    const auto second = module->AddRayTracingBuildPass(graph, frame.GetFrameIndex(), &views[1]);
+    xiiView*   buildView       = nullptr;
+    const auto buildViewHandle = module->CreateView("Explicit ray scene build", buildView);
+    XII_SCOPE_EXIT(module->DestroyView(buildViewHandle));
+    const auto builtScenes = rayScenes.Build(buildView, graph, context.GetBlackboard());
+    if (!XII_TEST_RESULT(builtScenes))
+    {
+      xiiTestFramework::Output(xiiTestOutput::Details, "Ray scene build: %s", rayScenes.GetLastBuildError().GetStartPointer());
+      graph.EndSetup();
+      return;
+    }
+    const auto inspect = [&](xiiUInt32 index, xiiUInt32 expected) {
+      xiiRayTracingResources::BuildHandles result;
+      const auto*                          structure = rayScenes.GetOutputBinding(index + 1, "Scene");
+      const auto*                          material  = rayScenes.GetOutputBinding(index + 1, "Materials");
+      const auto*                          geometry  = rayScenes.GetOutputBinding(index + 1, "Geometry");
+      if (!XII_TEST_BOOL(structure && material && geometry))
+        return result;
+      result.m_pTopLevelAS      = structure->m_AccelerationStructure.m_pStructure;
+      result.m_hSceneDependency = structure->m_AccelerationStructure.m_Dependency;
+      result.m_hMaterialData    = material->m_hBuffer;
+      result.m_hGeometryData    = geometry->m_hBuffer;
+      const auto* producer      = xiiDynamicCast<const xiiRayTracingScenePass*>(rayScenes.GetPass(index));
+      if (XII_TEST_BOOL(producer != nullptr))
+      {
+        const auto& statistics = producer->GetLastBuildStatistics();
+        XII_TEST_INT(statistics.m_uiInstanceCount, 2);
+        XII_TEST_INT(statistics.m_uiDeformationDispatchCount, expected);
+        XII_TEST_INT(statistics.m_uiDynamicBLASBuildCount, expected);
+      }
+      return result;
+    };
+    const auto first  = inspect(0, expectedDispatches);
+    const auto second = inspect(2, 0);
     if (!XII_TEST_BOOL(first.m_pTopLevelAS && second.m_pTopLevelAS))
     {
       graph.EndSetup();
       return;
     }
-    XII_TEST_INT(first.m_uiInstanceCount, 2);
-    XII_TEST_BOOL(first.m_pTopLevelAS && second.m_pTopLevelAS && first.m_pTopLevelAS != second.m_pTopLevelAS);
-    XII_TEST_INT(first.m_uiDeformationDispatchCount, expectedDispatches);
-    XII_TEST_INT(first.m_uiDynamicBLASBuildCount, expectedDispatches);
-    XII_TEST_INT(second.m_uiDeformationDispatchCount, 0);
-    XII_TEST_INT(second.m_uiDynamicBLASBuildCount, 0);
+    XII_TEST_BOOL(first.m_pTopLevelAS != second.m_pTopLevelAS);
     struct Trace
     {
       xiiRayTracingResources::BuildHandles m_Build;
@@ -331,6 +410,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
           builder.SetPassSideEffects(true); }, [](const Copy& copy, xiiRenderGraphPassContext& context) { context.GetCommandList().CopyBufferRegion(context.GetBuffer(copy.m_Source), 0, context.GetBuffer(copy.m_Destination), 0, 4 * sizeof(Hit)); });
       }
     }
+    if (releaseOwners)
+      rayScenes.Clear();
     graph.EndSetup();
     if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
       return;
@@ -439,5 +520,17 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
       xiiGpuInstanceSource source;
       XII_TEST_RESULT(module->GetGpuInstanceData()->Resolve(id, source));
     }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Recorded deformation and TLAS work retain destroyed occurrence owners")
+  {
+    xiiSkinnedMeshComponent* component = nullptr;
+    if (!XII_TEST_BOOL(world.TryGetComponent(components[0], component)))
+      return;
+    const auto pose = xiiMat4::MakeTranslation(xiiVec3(-1, 0, 0));
+    XII_TEST_RESULT(component->SetSkinningMatrices(xiiMakeArrayPtr(&pose, 1)));
+    const float weight = 0.25f;
+    component->SetMorphWeights(xiiMakeArrayPtr(&weight, 1));
+    world.Update();
+    render(1, 9.5f, 8.5f, 0, false, true);
   }
 }

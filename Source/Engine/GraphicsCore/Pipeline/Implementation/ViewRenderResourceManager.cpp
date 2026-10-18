@@ -4,15 +4,15 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/IdTable.h>
-#include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 class xiiViewRenderResourceManagerState
 {
 public:
-  xiiIdTable<xiiViewRenderResourceContextId, xiiUniquePtr<xiiBuiltinRenderPipelineRuntime>> m_Contexts;
-  bool                                                                                      m_bEngineStarted = false;
+  xiiIdTable<xiiViewRenderResourceContextId, xiiUniquePtr<xiiRenderPipelineInstance>> m_Contexts;
+  bool                                                                                m_bEngineStarted = false;
 };
 
 xiiUniquePtr<xiiViewRenderResourceManagerState> xiiViewRenderResourceManager::s_pState;
@@ -22,8 +22,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, ViewRenderResourceManager)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
-    "Core",
-    "LightingManager"
+    "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -63,13 +62,13 @@ bool xiiViewRenderResourceManager::IsInitialized()
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();
 }
 
-xiiViewRenderResourceContextHandle xiiViewRenderResourceManager::CreateContext(xiiView& view)
+xiiViewRenderResourceContextHandle xiiViewRenderResourceManager::CreateContext()
 {
   XII_ASSERT_DEV(IsInitialized(), "The view render-resource manager is not initialized.");
   if (!IsInitialized())
     return {};
 
-  return xiiViewRenderResourceContextHandle(s_pState->m_Contexts.Insert(XII_DEFAULT_NEW(xiiBuiltinRenderPipelineRuntime, view)));
+  return xiiViewRenderResourceContextHandle(s_pState->m_Contexts.Insert(XII_DEFAULT_NEW(xiiRenderPipelineInstance)));
 }
 
 void xiiViewRenderResourceManager::DestroyContext(xiiViewRenderResourceContextHandle handle)
@@ -85,16 +84,16 @@ bool xiiViewRenderResourceManager::IsValid(xiiViewRenderResourceContextHandle ha
   return GetContext(handle) != nullptr;
 }
 
-void* xiiViewRenderResourceManager::GetContext(xiiViewRenderResourceContextHandle handle)
+xiiRenderPipelineInstance* xiiViewRenderResourceManager::GetContext(xiiViewRenderResourceContextHandle handle)
 {
   if (s_pState == nullptr)
     return nullptr;
 
-  xiiUniquePtr<xiiBuiltinRenderPipelineRuntime>* pResources = nullptr;
+  xiiUniquePtr<xiiRenderPipelineInstance>* pResources = nullptr;
   return s_pState->m_Contexts.TryGetValue(handle.GetInternalID(), pResources) ? pResources->Borrow() : nullptr;
 }
 
-const void* xiiViewRenderResourceManager::GetContextConst(xiiViewRenderResourceContextHandle handle)
+const xiiRenderPipelineInstance* xiiViewRenderResourceManager::GetContextConst(xiiViewRenderResourceContextHandle handle)
 {
   return GetContext(handle);
 }

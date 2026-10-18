@@ -22,7 +22,6 @@ struct xiiGpuDrivenSceneConfiguration
   float     m_fObjectSpacing       = 2.4f;
   xiiUInt32 m_uiMaxVisibleMeshlets = 262144U;
   xiiUInt32 m_uiFramesInFlight     = 3U;
-  bool      m_bAsyncCompute        = true;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiGpuDrivenSceneConfiguration);
@@ -56,11 +55,7 @@ public:
     XII_LOCK(m_World->GetReadMarker());
     return *static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->GetGpuInstanceData();
   }
-  xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame) const
-  {
-    XII_LOCK(m_World->GetReadMarker());
-    return static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->AddRayTracingBuildPass(graph, frame);
-  }
+  xiiView*                             GetRenderView() const;
   [[nodiscard]] xiiGpuDrivenSceneLight GetSunLight() const;
   [[nodiscard]] xiiBoundingBox         GetAnimatedShadowBounds() const;
 
@@ -77,6 +72,7 @@ private:
 
   xiiGpuDrivenSceneConfiguration             m_Configuration;
   xiiComponentHandle                         m_hSunLight;
+  xiiViewHandle                              m_hRenderView;
   xiiUniquePtr<xiiWorld>                     m_World;
   xiiDynamicArray<GeometryAsset>             m_GeometryAssets;
   xiiDynamicArray<xiiMaterialResourceHandle> m_Materials;

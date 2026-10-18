@@ -2,6 +2,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 
@@ -19,18 +20,26 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineInterfacePass, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Name", m_sName),
-    XII_MEMBER_PROPERTY("Input", m_bInput),
+    XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("Input")),
+    XII_MEMBER_PROPERTY("Input", m_bInput)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ResourceType", m_uiResourceType),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiGALResourceFormat, m_Format),
+    XII_MEMBER_PROPERTY("DataType", m_sDataType),
   } XII_END_PROPERTIES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 void xiiRenderPipelineInterfacePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
-  if (m_uiResourceType <= xiiRenderPipelinePin::Order && !m_sName.IsEmpty())
-    out_pins.PushBack({"Value", static_cast<xiiRenderPipelinePin::Type>(m_uiResourceType), !m_bInput, false, m_Format});
+  if (m_uiResourceType <= xiiRenderPipelinePin::FrameData && !m_sName.IsEmpty())
+  {
+    auto& pin       = out_pins.ExpandAndGetRef();
+    pin.m_sName     = "Value";
+    pin.m_Type      = static_cast<xiiRenderPipelinePin::Type>(m_uiResourceType);
+    pin.m_bInput    = !m_bInput;
+    pin.m_Format    = m_Format;
+    pin.m_pDataType = pin.m_Type == xiiRenderPipelinePin::FrameData ? xiiRTTI::FindTypeByName(m_sDataType) : nullptr;
+  }
 }
 
 void xiiRenderPipelineSubgraphPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
@@ -66,6 +75,105 @@ void xiiRenderPipelineSubgraphPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin
   xiiGetRenderPipelineInterface(wrapper, out_pins).IgnoreResult();
 }
 
+xiiResult xiiApplyRenderPipelineInterfaceContracts(const xiiGraphDefinition& root, xiiGraphComposition::Resolver resolver, const xiiGraphExpansion& expanded, xiiArrayPtr<xiiArrayPtr<xiiRenderPipelinePin>> pinSchemas, xiiStringBuilder* out_error)
+{
+  const auto fail = [&](xiiStringView message) {
+    if (out_error)
+      out_error->Set(message);
+    return XII_FAILURE;
+  };
+  struct InterfaceConfigurations
+  {
+    xiiDynamicArray<xiiRenderPipelinePinConfiguration> m_Configurations;
+    xiiDynamicArray<bool>                              m_Used;
+  };
+  xiiMap<xiiString, InterfaceConfigurations> interfaces;
+  xiiDynamicArray<xiiUuid>                   instancePath;
+  const auto                                 pathKey = [](xiiArrayPtr<const xiiUuid> path) {
+    xiiStringBuilder key, id;
+    for (const auto& element : path)
+    {
+      xiiConversionUtils::ToString(element, id);
+      key.Append(id, "/");
+    }
+    return key;
+  };
+  const auto collectInterfaces = [&](auto&& self, const xiiGraphDefinition& definition) -> xiiResult {
+    for (const auto& node : definition.m_Nodes)
+    {
+      if (!node.m_Definition.IsValid())
+        continue;
+      instancePath.PushBack(node.m_Id);
+      XII_SCOPE_EXIT(instancePath.PopBack());
+      if (!node.m_Properties.IsEmpty())
+      {
+        if (node.m_Properties.GetCount() != 1 || !node.m_Properties.Contains("PinConfigurations"))
+          return fail("Unknown subgraph instance property; use explicit node overrides or pin configurations.");
+        xiiRenderPipelineSubgraphPass instance;
+        if (instance.Configure(node.m_Properties).Failed() || instance.m_PinConfigurations.GetCount() > 256)
+          return fail("Invalid subgraph interface pin configurations.");
+        auto&                 group = interfaces[pathKey(instancePath)];
+        xiiHashSet<xiiString> bindings;
+        for (const auto* configuration : instance.m_PinConfigurations)
+        {
+          if (!configuration)
+            return fail("Null subgraph interface pin configuration.");
+          xiiStringBuilder binding(configuration->m_Metadata.m_bInput ? "Input/" : "Output/", configuration->m_Metadata.m_sName);
+          if (bindings.Contains(binding))
+            return fail("Duplicate subgraph interface pin configuration.");
+          bindings.Insert(binding);
+          group.m_Configurations.PushBack(*configuration);
+          group.m_Used.PushBack(false);
+        }
+      }
+      const auto* child = resolver(node.m_Definition);
+      if (!child || instancePath.GetCount() > 128)
+        return fail("Invalid subgraph definition while applying interface contracts.");
+      XII_SUCCEED_OR_RETURN(self(self, *child));
+    }
+    return XII_SUCCESS;
+  };
+  XII_SUCCEED_OR_RETURN(collectInterfaces(collectInterfaces, root));
+  for (const auto& boundary : expanded.m_Boundary)
+  {
+    auto group = interfaces.Find(pathKey(boundary.m_Source.m_InstancePath));
+    if (!group.IsValid())
+      continue;
+    const auto index = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
+    for (xiiUInt32 i = 0; i < group.Value().m_Configurations.GetCount(); ++i)
+    {
+      const auto& configuration = group.Value().m_Configurations[i];
+      if (configuration.m_Metadata.m_sName != boundary.m_sName || configuration.m_Metadata.m_bInput != boundary.m_bInput)
+        continue;
+      bool found = false;
+      for (auto& pin : pinSchemas[index])
+        if (pin.m_sName == boundary.m_sPort && pin.m_bInput == boundary.m_bInput)
+        {
+          xiiStringBuilder error;
+          if (pin.Apply(configuration, &error).Failed())
+          {
+            error.Append(" Interface instance: ", group.Key());
+            return fail(error);
+          }
+          found                   = true;
+          group.Value().m_Used[i] = true;
+          break;
+        }
+      if (!found)
+        return fail("Subgraph contract maps an unknown internal pin.");
+    }
+  }
+  for (auto group = interfaces.GetIterator(); group.IsValid(); ++group)
+    for (xiiUInt32 i = 0; i < group.Value().m_Used.GetCount(); ++i)
+      if (!group.Value().m_Used[i])
+      {
+        xiiStringBuilder error;
+        error.SetFormat("Unknown interface pin '{}' in instance '{}'.", group.Value().m_Configurations[i].m_Metadata.m_sName, group.Key());
+        return fail(error);
+      }
+  return XII_SUCCESS;
+}
+
 xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescriptor& descriptor, xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error)
 {
   const auto fail = [&](xiiStringView message) {
@@ -90,12 +198,13 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
   limits.m_uiNodes = 4096;
   limits.m_uiEdges = 65536;
   XII_SUCCEED_OR_RETURN(xiiGraphComposition::Expand(root, resolver, limits, expanded, out_error));
-  xiiDynamicArray<xiiRenderPipelinePin> result;
-  for (const auto& boundary : expanded.m_Boundary)
+  xiiDynamicArray<xiiRenderPipelinePin>                  result;
+  xiiDynamicArray<xiiDynamicArray<xiiRenderPipelinePin>> schemas;
+  schemas.SetCount(expanded.m_Nodes.GetCount());
+  xiiDynamicArray<xiiArrayPtr<xiiRenderPipelinePin>> pinSchemas;
+  for (xiiUInt32 index = 0; index < expanded.m_Nodes.GetCount(); ++index)
   {
-    if (!boundary.m_Source.m_InstancePath.IsEmpty())
-      continue;
-    const auto& node = expanded.m_Nodes[expanded.m_Graph.GetVertexIndex(boundary.m_hVertex)];
+    const auto& node = expanded.m_Nodes[index];
     const auto* type = xiiRTTI::FindTypeByName(node.m_sType);
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
       return fail("Interface maps to an unknown reflected pass type.");
@@ -105,9 +214,16 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
     XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(pass));
     if (pass->Configure(node.m_Properties).Failed())
       return fail("Invalid interface pass configuration.");
-    xiiDynamicArray<xiiRenderPipelinePin> pins;
-    pass->GetPins(pins);
-    bool found = false;
+    XII_SUCCEED_OR_RETURN(pass->GetConfiguredPins(schemas[index], out_error));
+    pinSchemas.PushBack(schemas[index].GetArrayPtr());
+  }
+  XII_SUCCEED_OR_RETURN(xiiApplyRenderPipelineInterfaceContracts(root, resolver, expanded, pinSchemas, out_error));
+  for (const auto& boundary : expanded.m_Boundary)
+  {
+    if (!boundary.m_Source.m_InstancePath.IsEmpty())
+      continue;
+    const auto& pins  = schemas[expanded.m_Graph.GetVertexIndex(boundary.m_hVertex)];
+    bool        found = false;
     for (auto pin : pins)
     {
       if (pin.m_sName != boundary.m_sPort || pin.m_bInput != boundary.m_bInput)
@@ -118,10 +234,19 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
       {
         if (external.m_sName != pin.m_sName || external.m_bInput != pin.m_bInput)
           continue;
-        if (external.m_Type != pin.m_Type || (external.m_Format != xiiGALResourceFormat::Unknown && pin.m_Format != xiiGALResourceFormat::Unknown && external.m_Format != pin.m_Format))
+        if (!external.IsCompatibleWith(pin))
           return fail("Interface fan-out maps incompatible reflected pin types.");
         if (external.m_Format == xiiGALResourceFormat::Unknown)
           external.m_Format = pin.m_Format;
+        if (external.m_Constraints.m_Dimension == xiiGALResourceDimension::Undefined)
+          external.m_Constraints.m_Dimension = pin.m_Constraints.m_Dimension;
+        if (!external.m_Constraints.m_uiSamples)
+          external.m_Constraints.m_uiSamples = pin.m_Constraints.m_uiSamples;
+        if (!external.m_Constraints.m_uiWidth)
+          external.m_Constraints.m_uiWidth = pin.m_Constraints.m_uiWidth;
+        if (!external.m_Constraints.m_uiHeight)
+          external.m_Constraints.m_uiHeight = pin.m_Constraints.m_uiHeight;
+        external.m_Constraints.m_RequiredBindFlags.Add(pin.m_Constraints.m_RequiredBindFlags);
         external.m_bOptional &= pin.m_bOptional;
         existing = true;
       }

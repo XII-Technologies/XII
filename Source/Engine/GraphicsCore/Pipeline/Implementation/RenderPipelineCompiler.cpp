@@ -4,6 +4,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+#include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 xiiRenderPipeline::xiiRenderPipeline() :
@@ -37,6 +38,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   };
   if (out_error)
     out_error->Clear();
+  XII_SUCCEED_OR_RETURN(authored.m_Settings.Validate(out_error));
   if (authored.m_Passes.GetCount() > 4096 || authored.m_Connections.GetCount() > 65536 || authored.m_Definitions.GetCount() > 4096)
     return fail("Pipeline exceeds definition limits.");
   xiiGraphDefinition root;
@@ -63,6 +65,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   XII_SUCCEED_OR_RETURN(xiiGraphComposition::Expand(root, resolver, limits, expanded, out_error));
   descriptor.m_Id         = authored.m_Id;
   descriptor.m_Parameters = authored.m_Parameters;
+  descriptor.m_Settings   = authored.m_Settings;
   for (const auto& node : expanded.m_Nodes)
   {
     xiiStringBuilder name, id;
@@ -140,9 +143,12 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     auto& pass             = result->m_Passes.ExpandAndGetRef();
     pass.m_pType           = type;
     pass.m_uiBindingOffset = result->m_uiBindingCount;
-    prototype->GetPins(pass.m_Pins);
+    xiiStringBuilder pinError;
+    if (prototype->GetConfiguredPins(pass.m_Pins, &pinError).Failed())
+      return fail(pinError.IsEmpty() ? "Invalid authored pin configuration."_xiisv : pinError.GetView());
     result->m_ExtractionRequirements |= prototype->GetExtractionRequirements();
     result->m_RuntimeFeatures |= prototype->GetRuntimeFeatures();
+    result->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.Add(prototype->GetRequiredDeviceFeatures());
     if (pass.m_Pins.GetCount() > 256)
       return fail("Pass exceeds pin limit.");
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
@@ -152,12 +158,14 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
         return fail("Pin names must be nonempty.");
       if (pin.m_bTemporalHistoryOutput)
       {
-        if (pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
-          return fail("Temporal history must be a typed resource output pin.");
+        if (pin.m_bInput || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Type != xiiRenderPipelinePin::Buffer))
+          return fail("Temporal history must be a texture or buffer output pin.");
         pass.m_bHasTemporalHistory = true;
       }
-      if (pin.m_Type > xiiRenderPipelinePin::Order || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
+      if (pin.m_Type > xiiRenderPipelinePin::FrameData || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
         return fail("Invalid pin resource schema.");
+      if ((pin.m_Type == xiiRenderPipelinePin::FrameData) != (pin.m_pDataType != nullptr) || (pin.m_pDataType && !pin.m_pDataType->IsDerivedFrom<xiiRenderPipelineFrameData>()))
+        return fail("Frame-data pins require a native reflected snapshot type.");
       for (xiiUInt32 j = 0; j < i; ++j)
         if (pass.m_Pins[j].m_bInput == pin.m_bInput && pass.m_Pins[j].m_sName == pin.m_sName)
           return fail("Duplicate pin name.");
@@ -167,6 +175,26 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddVertex(vertex));
     vertices.PushBack(vertex);
   }
+  xiiDynamicArray<xiiArrayPtr<xiiRenderPipelinePin>> pinSchemas;
+  for (auto& pass : result->m_Passes)
+    pinSchemas.PushBack(pass.m_Pins.GetArrayPtr());
+  xiiStringBuilder interfaceError;
+  diagnosticPass = xiiInvalidIndex;
+  if (xiiApplyRenderPipelineInterfaceContracts(root, resolver, expanded, pinSchemas, &interfaceError).Failed())
+    return fail(interfaceError);
+  for (xiiUInt32 index = 0; index < result->m_Passes.GetCount(); ++index)
+    for (auto& pin : result->m_Passes[index].m_Pins)
+    {
+      if (!pin.m_SourceId.IsValid())
+      {
+        xiiStringBuilder key(pin.m_bInput ? "Input/" : "Output/", pin.m_sName);
+        pin.m_SourceId = xiiUuid::MakeStableUuidFromString(key);
+        pin.m_SourceId.HashCombine(expanded.m_Nodes[index].m_Source.m_Element);
+      }
+      pin.m_Id = pin.m_SourceId;
+      pin.m_Id.HashCombine(descriptor.m_Id);
+      pin.m_Id.HashCombine(descriptor.m_Passes[index].m_Id);
+    }
   xiiHashTable<xiiString, xiiBitflags<xiiRenderExtractionCategory>> groups;
   for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
     groups[result->m_ResourceScopes[i]] |= prototypes[i]->GetExtractionRequirements();
@@ -180,6 +208,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   xiiDynamicArray<xiiUInt8> connected;
   connected.SetCount(result->m_uiBindingCount, 0);
   xiiHashTable<xiiString, xiiRenderPipelinePin> boundarySchemas;
+  xiiHashTable<xiiString, xiiUInt32>            rootInterfaces;
   for (const auto& boundary : expanded.m_Boundary)
   {
     xiiStringBuilder boundaryKey, sourceId;
@@ -202,15 +231,43 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
         xiiRenderPipelinePin* existing = nullptr;
         if (boundarySchemas.TryGetValue(boundaryKey.GetView(), existing))
         {
-          if (existing->m_Type != pin.m_Type || (existing->m_Format != xiiGALResourceFormat::Unknown && pin.m_Format != xiiGALResourceFormat::Unknown && existing->m_Format != pin.m_Format))
+          if (!existing->IsCompatibleWith(pin))
             return fail("Subgraph interface fan-out maps incompatible reflected resource pins.");
           if (existing->m_Format == xiiGALResourceFormat::Unknown)
             existing->m_Format = pin.m_Format;
+          if (existing->m_Constraints.m_Dimension == xiiGALResourceDimension::Undefined)
+            existing->m_Constraints.m_Dimension = pin.m_Constraints.m_Dimension;
+          if (!existing->m_Constraints.m_uiSamples)
+            existing->m_Constraints.m_uiSamples = pin.m_Constraints.m_uiSamples;
+          if (!existing->m_Constraints.m_uiWidth)
+            existing->m_Constraints.m_uiWidth = pin.m_Constraints.m_uiWidth;
+          if (!existing->m_Constraints.m_uiHeight)
+            existing->m_Constraints.m_uiHeight = pin.m_Constraints.m_uiHeight;
+          existing->m_Constraints.m_RequiredBindFlags.Add(pin.m_Constraints.m_RequiredBindFlags);
+          existing->m_bOptional &= pin.m_bOptional;
         }
         else
           boundarySchemas.Insert(boundaryKey.GetView(), pin);
-        if (boundary.m_bInput && boundary.m_Source.m_InstancePath.IsEmpty())
-          connected[pass.m_uiBindingOffset + i] = 1;
+        if (boundary.m_Source.m_InstancePath.IsEmpty())
+        {
+          xiiUInt32 external = 0;
+          if (!rootInterfaces.TryGetValue(boundaryKey.GetView(), external))
+          {
+            external = result->m_Interface.GetCount();
+            rootInterfaces.Insert(boundaryKey.GetView(), external);
+            result->m_Interface.ExpandAndGetRef();
+          }
+          auto& externalMapping         = result->m_Interface[external];
+          externalMapping.m_Pin         = boundarySchemas[boundaryKey.GetView()];
+          externalMapping.m_Pin.m_sName = boundary.m_sName;
+          const auto binding            = pass.m_uiBindingOffset + i;
+          if (!boundary.m_bInput && !externalMapping.m_Bindings.IsEmpty() && !externalMapping.m_Bindings.Contains(binding))
+            return fail("An external output maps multiple resource producers.");
+          if (!externalMapping.m_Bindings.Contains(binding))
+            externalMapping.m_Bindings.PushBack(binding);
+          if (boundary.m_bInput)
+            connected[binding] = 1;
+        }
       }
     if (!found)
       return fail("Subgraph interface references an unknown reflected pin or direction.");
@@ -233,8 +290,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       return fail("Connection references an unknown pin or incorrect direction.");
     const auto& a = source.m_Pins[output];
     const auto& b = target.m_Pins[input];
-    if (a.m_Type != b.m_Type || (a.m_Format != xiiGALResourceFormat::Unknown && b.m_Format != xiiGALResourceFormat::Unknown && a.m_Format != b.m_Format))
-      return fail("Incompatible resource pin types or texture formats.");
+    if (!a.IsCompatibleWith(b))
+      return fail("Incompatible resource pin types, formats, samples or dimensions.");
     const auto targetBinding = target.m_uiBindingOffset + input;
     if (connected[targetBinding] && b.m_Type != xiiRenderPipelinePin::Order)
       return fail("An input resource pin has multiple producers.");

@@ -29,6 +29,7 @@ public:
   bool                          m_bInput         = true;
   xiiUInt32                     m_uiResourceType = xiiRenderPipelinePin::Texture;
   xiiEnum<xiiGALResourceFormat> m_Format         = xiiGALResourceFormat::Unknown;
+  xiiString                     m_sDataType;
   void                          GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                     Build(xiiRenderPipelinePassContext&) override { return XII_FAILURE; }
 };
@@ -36,3 +37,7 @@ public:
 /// Infer the external schema from configured reflected internal pass pins, including nested
 /// mappings and overrides. Asset-authored schemas cannot override native resource types.
 XII_GRAPHICSCORE_DLL xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescriptor& descriptor, xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr);
+
+/// Apply authored instance-interface requirements through Core's occurrence boundary map.
+/// Used by compilation and editor interface inference so both see identical contracts.
+XII_GRAPHICSCORE_DLL xiiResult xiiApplyRenderPipelineInterfaceContracts(const xiiGraphDefinition& root, xiiGraphComposition::Resolver resolver, const xiiGraphExpansion& expansion, xiiArrayPtr<xiiArrayPtr<xiiRenderPipelinePin>> pins, xiiStringBuilder* out_error = nullptr);

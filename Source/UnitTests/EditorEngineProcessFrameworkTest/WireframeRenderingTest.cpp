@@ -5,16 +5,19 @@
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
-#include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
+
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
-#include <Texture/Image/Image.h>
+#include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
+
 
 namespace
 {
@@ -61,7 +64,43 @@ namespace
     view->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
     view->SetViewport({0, 0, 64, 64});
     view->SetViewRenderMode(xiiViewRenderMode::Wireframe);
-    view->SetRenderPipelineResource(xiiRenderPipelineResource::GetDefaultPipeline());
+    // Rebuild this fixture from the explicitly selected native surface graph.
+    // No default full-stack pipeline or automatic device-dependent path is involved.
+    xiiRenderPipelineResourceDescriptor definition;
+    if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(definition, "EditorMeshPicking")))
+      return;
+    xiiUInt32 commands = xiiInvalidIndex;
+    xiiUInt32 capture  = xiiInvalidIndex;
+    for (xiiUInt32 i = 0; i < definition.m_Passes.GetCount(); ++i)
+    {
+      auto& pass = definition.m_Passes[i];
+      if (pass.m_sType == "xiiSurfaceQueryPass")
+      {
+        pass.m_Properties.Insert("FillMode", static_cast<xiiInt64>(xiiGALFillMode::Wireframe));
+        pass.m_Properties.Insert("UseMeshShaders", enableMeshShaders);
+      }
+      if (pass.m_sType == "xiiSurfaceRasterConstantsPass" && enableMeshShaders)
+        pass.m_Properties.Insert("MeshGroupCountX", 65535U);
+      if (pass.m_sType == "xiiSceneMeshPickingPass")
+        capture = i;
+      if (pass.m_sType == "xiiVertexPullDrawCommandsPass" && enableMeshShaders)
+      {
+        commands     = i;
+        pass.m_sType = "xiiMeshDrawCommandsPass";
+        pass.m_Properties.Clear();
+      }
+    }
+    if (enableMeshShaders)
+      for (xiiUInt32 i = definition.m_Connections.GetCount(); i-- > 0;)
+      {
+        const auto& edge = definition.m_Connections[i];
+        if (edge.m_uiTarget == commands && edge.m_sInput != "VisibleMeshlets" && edge.m_sInput != "VisibleMeshletCount")
+          definition.m_Connections.RemoveAtAndCopy(i);
+      }
+    if (!XII_TEST_BOOL(capture != xiiInvalidIndex))
+      return;
+    const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(enableMeshShaders ? "NativeWireframeMesh" : "NativeWireframeVertexPull", std::move(definition));
+    view->SetRenderPipelineResource(pipeline);
     xiiGALTextureCreationDescription targetDescription;
     targetDescription.m_Type      = xiiGALResourceDimension::Texture2D;
     targetDescription.m_Size      = {64, 64};
@@ -71,25 +110,29 @@ namespace
     if (!XII_TEST_BOOL(target != nullptr))
       return;
     view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    for (xiiUInt32 frame = 0; frame < 3; ++frame)
+    for (xiiUInt32 frame = 0; frame < 6; ++frame)
+    {
       world.Update();
-    xiiImage image;
-    if (!XII_TEST_RESULT(xiiCaptureThumbnail(target, {64, 64}, image)))
+      environment.GetDevice()->WaitIdle();
+    }
+    const auto* picking = xiiDynamicCast<const xiiSceneMeshPickingPass*>(view->GetRenderPipelineInstance().GetPass(capture));
+    if (!XII_TEST_BOOL(picking != nullptr))
       return;
     XII_TEST_BOOL(view->GetViewRenderMode() == xiiViewRenderMode::Wireframe);
     xiiUInt32 edgePixels = 0;
     for (xiiUInt32 y = 0; y < 64; ++y)
       for (xiiUInt32 x = 0; x < 64; ++x)
       {
-        const auto* pixel = image.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y);
-        if (pixel[0] > 160)
+        xiiSceneMeshPickingPass::PickingResult hit;
+        if (!XII_TEST_RESULT(picking->Pick(*view, x, y, hit)))
+          return;
+        if (!hit.m_Source.m_hOwnerObject.IsInvalidated())
         {
           ++edgePixels;
-          XII_TEST_INT(pixel[0], pixel[1]);
-          XII_TEST_INT(pixel[1], pixel[2]);
+          XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == object->GetHandle());
         }
       }
-    XII_TEST_BOOL_MSG(edgePixels > 30 && edgePixels < 64 * 64 / 2, "The default pipeline must present actual wireframe geometry with this device's selected raster path.");
+    XII_TEST_BOOL_MSG(edgePixels > 30 && edgePixels < 64 * 64 / 2, "The authored raster path must produce sparse wireframe geometry with validated world identities.");
   }
 } // namespace
 

@@ -54,11 +54,11 @@ void xiiQtPin::SetPin(const xiiPin& pin)
 
   if (m_bTranslatePinName)
   {
-    m_pLabel->setPlainText(xiiMakeQString(xiiTranslate(pin.GetName())));
+    m_pLabel->setPlainText(xiiMakeQString(xiiTranslate(pin.GetDisplayName())));
   }
   else
   {
-    m_pLabel->setPlainText(xiiMakeQString(pin.GetName()));
+    m_pLabel->setPlainText(xiiMakeQString(pin.GetDisplayName()));
   }
 
   auto rectLabel = m_pLabel->boundingRect();
@@ -239,6 +239,10 @@ bool xiiQtPin::UpdatePinColors(const xiiColorGammaUB* pOverwriteColor)
 
   m_pLabel->setDefaultTextColor(labelColor);
 
+  auto selectedPen = pen();
+  selectedPen.setWidthF(isSelected() ? 5.0 : 3.0);
+  setPen(selectedPen);
+
   return true;
 }
 
@@ -247,6 +251,11 @@ QVariant xiiQtPin::itemChange(GraphicsItemChange change, const QVariant& value)
   if (change == QGraphicsItem::ItemScenePositionHasChanged)
   {
     UpdateConnections();
+  }
+  else if (change == QGraphicsItem::ItemSelectedHasChanged && m_pPin)
+  {
+    UpdatePinColors();
+    update();
   }
 
   return QGraphicsPathItem::itemChange(change, value);

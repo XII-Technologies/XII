@@ -2,14 +2,10 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Foundation/Configuration/Startup.h>
-#include <Foundation/Containers/IdTable.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Serialization/GraphPatch.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 namespace
 {
@@ -35,81 +31,11 @@ namespace
       settings.m_uiAerialPerspectiveSteps > 0U && settings.m_uiAerialPerspectiveSteps <= 64U;
   }
 
-  bool IsEqual(const xiiAtmosphereSettings& lhs, const xiiAtmosphereSettings& rhs)
-  {
-    return lhs.m_fPlanetRadiusKm == rhs.m_fPlanetRadiusKm && lhs.m_fAtmosphereRadiusKm == rhs.m_fAtmosphereRadiusKm &&
-      lhs.m_fRayleighScaleHeightKm == rhs.m_fRayleighScaleHeightKm && lhs.m_fMieScaleHeightKm == rhs.m_fMieScaleHeightKm &&
-      lhs.m_vRayleighScattering == rhs.m_vRayleighScattering && lhs.m_vMieScattering == rhs.m_vMieScattering &&
-      lhs.m_vMieAbsorption == rhs.m_vMieAbsorption && lhs.m_vOzoneAbsorption == rhs.m_vOzoneAbsorption &&
-      lhs.m_vPlanetUpDirection == rhs.m_vPlanetUpDirection && lhs.m_fGroundAltitudeMeters == rhs.m_fGroundAltitudeMeters &&
-      lhs.m_fMiePhaseG == rhs.m_fMiePhaseG && lhs.m_fSunLimbDarkening == rhs.m_fSunLimbDarkening &&
-      lhs.m_uiTransmittanceIntegrationSteps == rhs.m_uiTransmittanceIntegrationSteps &&
-      lhs.m_uiMultiScatterSqrtSamples == rhs.m_uiMultiScatterSqrtSamples &&
-      lhs.m_uiSkyViewIntegrationSteps == rhs.m_uiSkyViewIntegrationSteps &&
-      lhs.m_uiAerialPerspectiveSteps == rhs.m_uiAerialPerspectiveSteps;
-  }
 } // namespace
 
-class xiiAtmosphereManager::State
-{
-public:
-  struct CacheEntry
-  {
-    xiiAtmosphereSettings       m_Settings;
-    xiiSharedPtr<xiiGALTexture> m_pTransmittanceLUT;
-    xiiSharedPtr<xiiGALTexture> m_pMultiScatterLUT;
-    bool                        m_bGenerated = false;
-  };
-
-  CacheEntry* GetEntry(xiiAtmosphereLUTHandle handle)
-  {
-    CacheEntry* pEntry = nullptr;
-    return m_Entries.TryGetValue(handle.GetInternalID(), pEntry) ? pEntry : nullptr;
-  }
-
-  const CacheEntry* GetEntry(xiiAtmosphereLUTHandle handle) const
-  {
-    CacheEntry* pEntry = nullptr;
-    return m_Entries.TryGetValue(handle.GetInternalID(), pEntry) ? pEntry : nullptr;
-  }
-
-  xiiIdTable<xiiAtmosphereLUTId, CacheEntry> m_Entries;
-  xiiAtmosphereSettings                      m_Settings;
-  xiiAtmosphereLUTHandle                     m_hDefaultEntry;
-  xiiUInt64                                  m_uiConfigurationRevision = 1U;
-  bool                                       m_bEngineStarted          = false;
-  bool                                       m_bInitialized            = false;
-};
-
-xiiUniquePtr<xiiAtmosphereManager::State> xiiAtmosphereManager::s_pState;
+bool xiiIsValidAtmosphereSettings(const xiiAtmosphereSettings& settings) { return IsValid(settings); }
 
 // clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, AtmosphereManager)
-  BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation"
-  END_SUBSYSTEM_DEPENDENCIES
-
-  ON_CORESYSTEMS_STARTUP
-  {
-    xiiAtmosphereManager::Startup();
-  }
-
-  ON_HIGHLEVELSYSTEMS_STARTUP
-  {
-    xiiAtmosphereManager::EngineStartup();
-  }
-
-  ON_HIGHLEVELSYSTEMS_SHUTDOWN
-  {
-    xiiAtmosphereManager::EngineShutdown();
-  }
-
-  ON_CORESYSTEMS_SHUTDOWN
-  {
-    xiiAtmosphereManager::Shutdown();
-  }
-XII_END_SUBSYSTEM_DECLARATION;
-
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiAtmosphereSettings>)
 {
   XII_BEGIN_PROPERTIES
@@ -135,21 +61,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 4, xiiRTTIDefa
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereLUTHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiAtmosphereLUTHandle>)
-XII_END_STATIC_REFLECTED_TYPE;
-
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereCacheStats, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiAtmosphereCacheStats>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("ConfigurationRevision", m_uiConfigurationRevision),
-    XII_MEMBER_PROPERTY("GeneratedRevision", m_uiGeneratedRevision),
-    XII_MEMBER_PROPERTY("GpuResourcesAvailable", m_bGpuResourcesAvailable),
-    XII_MEMBER_PROPERTY("GenerationPending", m_bGenerationPending),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
 namespace
@@ -183,231 +94,5 @@ namespace
 
   xiiAtmosphereSettingsPatch_3_4 g_xiiAtmosphereSettingsPatch_3_4;
 } // namespace
-
-void xiiAtmosphereManager::Startup()
-{
-  s_pState                 = XII_DEFAULT_NEW(State);
-  s_pState->m_bInitialized = true;
-  AcquireLUTs(s_pState->m_Settings, s_pState->m_hDefaultEntry).AssertSuccess("Failed to create the default atmosphere LUT cache entry.");
-}
-
-void xiiAtmosphereManager::EngineStartup()
-{
-  if (s_pState == nullptr)
-    return;
-
-  s_pState->m_bEngineStarted = true;
-  for (auto it = s_pState->m_Entries.GetIterator(); it.IsValid(); ++it)
-    EnsureGpuResources(xiiAtmosphereLUTHandle(it.Id())).IgnoreResult();
-}
-
-void xiiAtmosphereManager::EngineShutdown()
-{
-  if (s_pState == nullptr)
-    return;
-
-  for (auto it = s_pState->m_Entries.GetIterator(); it.IsValid(); ++it)
-  {
-    State::CacheEntry& entry = it.Value();
-    entry.m_pMultiScatterLUT.Clear();
-    entry.m_pTransmittanceLUT.Clear();
-    entry.m_bGenerated = false;
-  }
-  s_pState->m_bEngineStarted = false;
-}
-
-void xiiAtmosphereManager::Shutdown()
-{
-  EngineShutdown();
-  s_pState.Clear();
-}
-
-xiiResult xiiAtmosphereManager::Configure(const xiiAtmosphereSettings& settings)
-{
-  if (s_pState == nullptr || !IsValid(settings))
-    return XII_FAILURE;
-
-  if (IsEqual(s_pState->m_Settings, settings))
-    return XII_SUCCESS;
-
-  xiiAtmosphereLUTHandle hEntry;
-  if (AcquireLUTs(settings, hEntry).Failed())
-    return XII_FAILURE;
-
-  s_pState->m_Settings      = settings;
-  s_pState->m_hDefaultEntry = hEntry;
-  ++s_pState->m_uiConfigurationRevision;
-  return XII_SUCCESS;
-}
-
-bool xiiAtmosphereManager::IsSubsystemInitialized()
-{
-  return s_pState != nullptr;
-}
-
-bool xiiAtmosphereManager::IsInitialized()
-{
-  return s_pState != nullptr && s_pState->m_bInitialized;
-}
-
-const xiiAtmosphereSettings& xiiAtmosphereManager::GetConfiguration()
-{
-  XII_ASSERT_DEV(IsInitialized(), "Atmosphere manager is not started.");
-  return s_pState->m_Settings;
-}
-
-xiiResult xiiAtmosphereManager::AcquireLUTs(const xiiAtmosphereSettings& settings, xiiAtmosphereLUTHandle& out_handle)
-{
-  out_handle = {};
-  if (!IsInitialized() || !IsValid(settings))
-    return XII_FAILURE;
-
-  for (auto it = s_pState->m_Entries.GetIterator(); it.IsValid(); ++it)
-  {
-    if (IsEqual(it.Value().m_Settings, settings))
-    {
-      out_handle = xiiAtmosphereLUTHandle(it.Id());
-      return s_pState->m_bEngineStarted ? EnsureGpuResources(out_handle) : XII_SUCCESS;
-    }
-  }
-
-  State::CacheEntry entry;
-  entry.m_Settings = settings;
-  out_handle       = xiiAtmosphereLUTHandle(s_pState->m_Entries.Insert(std::move(entry)));
-  return s_pState->m_bEngineStarted ? EnsureGpuResources(out_handle) : XII_SUCCESS;
-}
-
-xiiAtmosphereLUTHandle xiiAtmosphereManager::GetDefaultLUTHandle()
-{
-  return s_pState != nullptr ? s_pState->m_hDefaultEntry : xiiAtmosphereLUTHandle{};
-}
-
-const xiiAtmosphereSettings& xiiAtmosphereManager::GetConfiguration(xiiAtmosphereLUTHandle handle)
-{
-  XII_ASSERT_DEV(IsInitialized() && s_pState->GetEntry(handle) != nullptr, "Invalid atmosphere LUT cache handle.");
-  return s_pState->GetEntry(handle)->m_Settings;
-}
-
-xiiResult xiiAtmosphereManager::EnsureGpuResources()
-{
-  return EnsureGpuResources(GetDefaultLUTHandle());
-}
-
-xiiResult xiiAtmosphereManager::EnsureGpuResources(xiiAtmosphereLUTHandle handle)
-{
-  if (!IsInitialized() || !s_pState->m_bEngineStarted)
-    return XII_FAILURE;
-
-  State::CacheEntry* pEntry = s_pState->GetEntry(handle);
-  if (pEntry == nullptr)
-    return XII_FAILURE;
-  if (pEntry->m_pTransmittanceLUT != nullptr && pEntry->m_pMultiScatterLUT != nullptr)
-    return XII_SUCCESS;
-
-  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-  if (pDevice == nullptr)
-    return XII_FAILURE;
-
-  xiiGALTextureCreationDescription description;
-  description.m_Type        = xiiGALResourceDimension::Texture2D;
-  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_uiMipLevels = 1U;
-  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage       = xiiGALResourceUsage::Default;
-
-  description.m_Size.width                   = 256U;
-  description.m_Size.height                  = 64U;
-  xiiSharedPtr<xiiGALTexture> pTransmittance = pDevice->CreateTexture(description);
-  if (pTransmittance == nullptr)
-    return XII_FAILURE;
-  pTransmittance->SetDebugName("Atmosphere Transmittance LUT");
-
-  description.m_Size.width                  = 32U;
-  description.m_Size.height                 = 32U;
-  xiiSharedPtr<xiiGALTexture> pMultiScatter = pDevice->CreateTexture(description);
-  if (pMultiScatter == nullptr)
-    return XII_FAILURE;
-  pMultiScatter->SetDebugName("Atmosphere Multi-Scatter LUT");
-
-  pEntry->m_pTransmittanceLUT = std::move(pTransmittance);
-  pEntry->m_pMultiScatterLUT  = std::move(pMultiScatter);
-  pEntry->m_bGenerated        = false;
-  return XII_SUCCESS;
-}
-
-xiiSharedPtr<xiiGALTexture> xiiAtmosphereManager::GetTransmittanceLUT()
-{
-  return GetTransmittanceLUT(GetDefaultLUTHandle());
-}
-
-xiiSharedPtr<xiiGALTexture> xiiAtmosphereManager::GetTransmittanceLUT(xiiAtmosphereLUTHandle handle)
-{
-  const State::CacheEntry* pEntry = s_pState != nullptr ? s_pState->GetEntry(handle) : nullptr;
-  return pEntry != nullptr ? pEntry->m_pTransmittanceLUT : nullptr;
-}
-
-xiiSharedPtr<xiiGALTexture> xiiAtmosphereManager::GetMultiScatterLUT()
-{
-  return GetMultiScatterLUT(GetDefaultLUTHandle());
-}
-
-xiiSharedPtr<xiiGALTexture> xiiAtmosphereManager::GetMultiScatterLUT(xiiAtmosphereLUTHandle handle)
-{
-  const State::CacheEntry* pEntry = s_pState != nullptr ? s_pState->GetEntry(handle) : nullptr;
-  return pEntry != nullptr ? pEntry->m_pMultiScatterLUT : nullptr;
-}
-
-xiiUInt64 xiiAtmosphereManager::GetConfigurationRevision()
-{
-  return s_pState != nullptr ? s_pState->m_uiConfigurationRevision : 0U;
-}
-
-bool xiiAtmosphereManager::IsGenerationPending()
-{
-  return IsGenerationPending(GetDefaultLUTHandle());
-}
-
-bool xiiAtmosphereManager::IsGenerationPending(xiiAtmosphereLUTHandle handle)
-{
-  const State::CacheEntry* pEntry = s_pState != nullptr ? s_pState->GetEntry(handle) : nullptr;
-  return pEntry == nullptr || !pEntry->m_bGenerated;
-}
-
-void xiiAtmosphereManager::MarkLUTsGenerated(xiiUInt64 uiConfigurationRevision)
-{
-  if (s_pState != nullptr && uiConfigurationRevision == s_pState->m_uiConfigurationRevision)
-    MarkLUTsGenerated(s_pState->m_hDefaultEntry);
-}
-
-void xiiAtmosphereManager::MarkLUTsGenerated(xiiAtmosphereLUTHandle handle)
-{
-  State::CacheEntry* pEntry = s_pState != nullptr ? s_pState->GetEntry(handle) : nullptr;
-  if (pEntry != nullptr)
-    pEntry->m_bGenerated = true;
-}
-
-void xiiAtmosphereManager::InvalidateLUTs()
-{
-  if (s_pState != nullptr)
-  {
-    ++s_pState->m_uiConfigurationRevision;
-    if (State::CacheEntry* pEntry = s_pState->GetEntry(s_pState->m_hDefaultEntry))
-      pEntry->m_bGenerated = false;
-  }
-}
-
-xiiAtmosphereCacheStats xiiAtmosphereManager::GetCacheStats()
-{
-  xiiAtmosphereCacheStats stats;
-  if (s_pState != nullptr)
-  {
-    stats.m_uiConfigurationRevision = s_pState->m_uiConfigurationRevision;
-    const State::CacheEntry* pEntry = s_pState->GetEntry(s_pState->m_hDefaultEntry);
-    stats.m_uiGeneratedRevision     = pEntry != nullptr && pEntry->m_bGenerated ? s_pState->m_uiConfigurationRevision : 0U;
-    stats.m_bGpuResourcesAvailable  = pEntry != nullptr && pEntry->m_pTransmittanceLUT != nullptr && pEntry->m_pMultiScatterLUT != nullptr;
-    stats.m_bGenerationPending      = pEntry == nullptr || !pEntry->m_bGenerated;
-  }
-  return stats;
-}
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_Atmosphere);

@@ -81,9 +81,11 @@ public:
 
   Shape m_Shape = Shape::Default;
 
-  Type                     GetType() const { return m_Type; }
-  xiiStringView            GetName() const { return m_sName; }
-  const xiiColorGammaUB&   GetColor() const { return m_Color; }
+  Type                   GetType() const { return m_Type; }
+  xiiStringView          GetName() const { return m_sName; }
+  const xiiColorGammaUB& GetColor() const { return m_Color; }
+  /// Presentation only; connections continue to use the stable schema name.
+  virtual xiiStringView    GetDisplayName() const { return m_sName; }
   const xiiDocumentObject* GetParent() const { return m_pParent; }
 
 private:
@@ -147,6 +149,11 @@ public:
   virtual void GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const;
 
   virtual const xiiRTTI* GetConnectionType() const;
+
+  /// Optional persistent document object inspected when this pin is selected. It must belong
+  /// to this document and follow its normal commands, serialization and lifetime. Return null
+  /// for graphs whose pins have no authored properties. No Qt or rendering dependency.
+  virtual const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const { return nullptr; }
 
   xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
   const xiiConnection& GetConnection(const xiiDocumentObject* pObject) const;

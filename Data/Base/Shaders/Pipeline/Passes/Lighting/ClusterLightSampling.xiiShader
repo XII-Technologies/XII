@@ -1,0 +1,89 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
+#include <Shaders/Pipeline/LightingData.h>
+StructuredBuffer<xiiGpuLightData> g_Lights;
+StructuredBuffer<uint2> g_LightGrid;
+StructuredBuffer<uint> g_LightIndex;
+RWStructuredBuffer<uint> g_PackedIndices;
+RWStructuredBuffer<float> g_LightSamplingTotals;
+float GetLightPowerWeight(xiiGpuLightData lightData)
+{
+  const float luminance = dot(max(lightData.ColorAndIntensity.rgb, 0.0f), float3(0.2126f, 0.7152f, 0.0722f));
+  const float intensity = max(lightData.ColorAndIntensity.w, 0.0f);
+  const uint lightType = GetLightType(lightData);
+  const float pi = 3.14159265359f;
+  float emitterMeasure = 0.0f;
+
+  if (lightType == XII_LIGHT_TYPE_POINT)
+  {
+    emitterMeasure = 4.0f * pi;
+  }
+  else if (lightType == XII_LIGHT_TYPE_SPOT)
+  {
+    emitterMeasure = 2.0f * pi * max(1.0f - lightData.SpotAnglesAndRectSize.y, 0.0f);
+  }
+  else if (lightType == XII_LIGHT_TYPE_RECTANGLE)
+  {
+    emitterMeasure = pi * max(lightData.SpotAnglesAndRectSize.z * lightData.SpotAnglesAndRectSize.w, 0.0f);
+  }
+  else if (lightType == XII_LIGHT_TYPE_DISC)
+  {
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    emitterMeasure = pi * pi * radius * radius;
+  }
+  else if (lightType == XII_LIGHT_TYPE_SPHERE)
+  {
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    emitterMeasure = 4.0f * pi * pi * radius * radius;
+  }
+  else if (lightType == XII_LIGHT_TYPE_TUBE)
+  {
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    const float length = max(lightData.AttenuationAndSize.z, 0.0f);
+    emitterMeasure = pi * (2.0f * pi * radius * length + 4.0f * pi * radius * radius);
+  }
+
+  const float power = luminance * intensity * emitterMeasure;
+  return isfinite(power) ? max(power, 0.0f) : 0.0f;
+}
+
+
+[numthreads(64,1,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  const uint cluster=tid.x+tid.y*Work.z;
+  if(cluster>=ClusterCounts.w) return;
+  const uint2 range=g_LightGrid[cluster];
+  const uint count=min(range.y,Viewport.w);
+  float power=0;
+  [loop] for(uint slot=0;slot<count;++slot)
+  {
+    const uint address=range.x+slot;
+    if(address>=Work.y) continue;
+    const uint light=g_LightIndex[address];
+    if(light<Work.x) power+=GetLightPowerWeight(g_Lights[light]);
+  }
+  if(!isfinite(power)) power=0;
+  g_LightSamplingTotals[cluster]=power;
+  float cumulative=0;
+  [loop] for(uint slot=0;slot<Viewport.w;++slot)
+  {
+    const uint address=range.x+slot;
+    if(address>=Work.y) continue;
+    uint packed=0xFFFFFFFFu;
+    if(slot<count)
+    {
+      const uint light=g_LightIndex[address];
+      if(light<Work.x)
+      {
+        cumulative+=GetLightPowerWeight(g_Lights[light]);
+        const uint cdf=power>0 ? (uint)round(saturate(cumulative/power)*XII_CLUSTER_LIGHT_CDF_MAX) : 0;
+        packed=PackClusterLightEntry(light,cdf);
+      }
+    }
+    g_PackedIndices[address]=packed;
+  }
+}

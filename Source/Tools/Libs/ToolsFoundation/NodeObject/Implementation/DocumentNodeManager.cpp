@@ -977,9 +977,9 @@ void xiiDocumentNodeManager::PropertyEventsHandler(const xiiDocumentObjectProper
 
   HandlePotentialDynamicPinPropertyChanged(e.m_pObject, e.m_sProperty);
 
-  if (const xiiDocumentObject* pParent = e.m_pObject->GetParent())
+  for (const xiiDocumentObject* child = e.m_pObject; child->GetParent(); child = child->GetParent())
   {
-    HandlePotentialDynamicPinPropertyChanged(pParent, e.m_pObject->GetParentProperty());
+    HandlePotentialDynamicPinPropertyChanged(child->GetParent(), child->GetParentProperty());
   }
 }
 

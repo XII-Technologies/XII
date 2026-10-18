@@ -1,0 +1,31 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/Lighting/SurfaceLightingConstants.h>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
+Texture2D<float> g_SurfaceDepth;
+Texture2D<float4> g_SurfaceAlbedo;
+Texture2D<float4> g_SurfaceMaterial;
+Texture2D<float4> g_SurfaceEmissive;
+Texture2D<float4> g_Irradiance;
+Texture2D<float> g_Occlusion;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Lighting;
+[numthreads(8,8,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  if(any(tid.xy>=SurfaceExtent.xy)) return;
+  const float depth=g_SurfaceDepth.Load(int3(tid.xy,0)); float3 lighting=0;
+  if(isfinite(depth) && depth>0 && depth<=1)
+  {
+    const float4 albedo=g_SurfaceAlbedo.Load(int3(tid.xy,0)), material=g_SurfaceMaterial.Load(int3(tid.xy,0));
+    const uint flags=(uint)round(saturate(material.a)*255);
+    const float transmission=(flags&64)!=0 ? saturate(g_SurfaceEmissive.Load(int3(tid.xy,0)).a):0;
+    const float4 incident=SurfaceExtent.z!=0 ? g_Irradiance.Load(int3(tid.xy,0)):0;
+    const float3 irradiance=lerp(max(EnvironmentAmbientRadiance.rgb,0),max(incident.rgb,0),saturate(incident.a));
+    const float occlusion=saturate(albedo.a*(SurfaceExtent.w!=0 ? g_Occlusion.Load(int3(tid.xy,0)):1));
+    lighting=irradiance*max(albedo.rgb,0)*(1-saturate(material.g))*(1-transmission)*(occlusion*SurfaceEvaluation.x/3.14159265f);
+  }
+  g_Lighting[tid.xy]=float4(all(isfinite(lighting)) ? max(lighting,0):0,1);
+}

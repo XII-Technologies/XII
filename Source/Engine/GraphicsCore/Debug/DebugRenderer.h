@@ -2,6 +2,8 @@
 
 #pragma once
 
+class xiiRenderGraphTextureHandle;
+
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Math/Color.h>
@@ -294,7 +296,7 @@ public:
   static void SetTextScale(float fScale);
 
 public:
-  static void AddRenderGraphPasses(xiiRenderGraph& graph);
+  static xiiResult AddRenderGraphPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle& color, xiiRenderGraphTextureHandle& sceneDepth);
 
 private:
   static void SetupDebugUpload(xiiDebugUploadData& data, xiiRenderGraphBuilder& builder);

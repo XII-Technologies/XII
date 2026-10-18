@@ -114,7 +114,7 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 void xiiQtEngineViewWidget::SyncToEngine()
 {
   xiiViewRedrawMsgToEngine cam;
-  if (!xiiViewRenderMode::IsSupportedByDefaultPipeline(m_pViewConfig->m_RenderMode))
+  if (!xiiViewRenderMode::IsSupportedVisualizationMode(m_pViewConfig->m_RenderMode))
     m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
   cam.m_RenderMode = m_pViewConfig->m_RenderMode;
 

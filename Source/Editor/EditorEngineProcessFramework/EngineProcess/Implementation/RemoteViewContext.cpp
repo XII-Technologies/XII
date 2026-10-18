@@ -123,9 +123,13 @@ xiiViewHandle xiiRemoteEngineProcessViewContext::CreateView()
   auto* pWorld = GetDocumentContext()->GetWorld();
   if (!pWorld)
     return {};
+  xiiRenderPipelineResourceHandle pipeline;
+  if (ResolveRenderPipeline(xiiRenderPipelineUsage::Game, pipeline).Failed())
+    return {};
   XII_LOCK(pWorld->GetWriteMarker());
   xiiView*   pView  = nullptr;
   const auto handle = pWorld->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Remote View", pView);
+  pView->SetRenderPipelineResource(pipeline);
   pView->SetCamera(&m_Camera);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
   return handle;

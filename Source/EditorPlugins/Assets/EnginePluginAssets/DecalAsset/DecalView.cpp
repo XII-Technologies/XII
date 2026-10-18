@@ -17,8 +17,12 @@ xiiDecalViewContext::~xiiDecalViewContext() = default;
 
 xiiViewHandle xiiDecalViewContext::CreateView()
 {
+  xiiRenderPipelineResourceHandle pipeline;
+  if (ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, pipeline).Failed())
+    return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Decal Editor - View", pView);
+  pView->SetRenderPipelineResource(pipeline);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
 

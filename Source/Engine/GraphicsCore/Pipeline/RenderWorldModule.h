@@ -22,6 +22,7 @@ struct xiiResourceEvent;
 class xiiView;
 class xiiGameObject;
 class xiiGpuInstanceData;
+class xiiWorldLightData;
 
 struct XII_GRAPHICSCORE_DLL xiiViewEventType
 {
@@ -98,6 +99,9 @@ public:
   xiiResult                            UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame);
   xiiResult                            UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame);
   xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame, xiiRayTracingFrameResources* viewResources = nullptr, const xiiArrayPtr<const xiiUInt32>* selection = nullptr) const;
+
+  xiiResult                UpdateWorldLights(xiiArrayPtr<xiiRenderData* const> packets);
+  const xiiWorldLightData* GetWorldLightData() const { return m_pWorldLights.Borrow(); }
 
   virtual ~xiiRenderWorldModule();
 
@@ -223,6 +227,7 @@ private:
   xiiBitflags<xiiRenderExtractionCategory>          m_ExtractionRequirements;
   xiiBitflags<xiiRenderPipelineFeature>             m_RuntimeFeatures;
   xiiUniquePtr<xiiGpuInstanceData>                  m_pGpuInstances;
+  xiiUniquePtr<xiiWorldLightData>                   m_pWorldLights;
   mutable xiiUniquePtr<xiiRayTracingFrameResources> m_pRayTracingResources;
 
   static xiiUniquePtr<ExtractionEvent> s_pRenderEvent;

@@ -10,10 +10,13 @@
 #include <GraphicsCore/Components/Fog/VolumetricCloudComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
+#include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereMultiScatterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereTransmittancePass.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
 {
-  XII_TEST_BOOL(xiiAtmosphereManager::IsInitialized());
+  XII_TEST_BOOL(xiiIsValidAtmosphereSettings(xiiAtmosphereSettings()));
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Serialized zero-default settings are migrated without resetting authored values")
   {
@@ -109,43 +112,54 @@ XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
   XII_TEST_BOOL(pCloudComponentType->FindPropertyByName("Cloud") != nullptr);
   XII_TEST_BOOL(pCloudComponentType->FindPropertyByName("Priority") != nullptr);
 
-  const xiiAtmosphereSettings original           = xiiAtmosphereManager::GetConfiguration();
-  const xiiUInt64             uiOriginalRevision = xiiAtmosphereManager::GetConfigurationRevision();
-
-  xiiAtmosphereSettings modified = original;
-  modified.m_fMiePhaseG          = 0.72f;
-  XII_TEST_BOOL(xiiAtmosphereManager::Configure(modified).Succeeded());
-  XII_TEST_BOOL(xiiAtmosphereManager::GetConfigurationRevision() > uiOriginalRevision);
-  XII_TEST_BOOL(xiiAtmosphereManager::IsGenerationPending());
-
-  const xiiUInt64 uiModifiedRevision = xiiAtmosphereManager::GetConfigurationRevision();
-  xiiAtmosphereManager::MarkLUTsGenerated(uiModifiedRevision - 1U);
-  XII_TEST_BOOL(xiiAtmosphereManager::IsGenerationPending());
-  xiiAtmosphereManager::MarkLUTsGenerated(uiModifiedRevision);
-  XII_TEST_BOOL(!xiiAtmosphereManager::IsGenerationPending());
-
-  xiiAtmosphereSettings invalid = modified;
+  xiiAtmosphereSettings settings;
+  settings.m_fMiePhaseG = 0.72f;
+  XII_TEST_BOOL(xiiIsValidAtmosphereSettings(settings));
+  auto invalid                  = settings;
   invalid.m_fAtmosphereRadiusKm = invalid.m_fPlanetRadiusKm;
-  XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
-  XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
+  XII_TEST_BOOL(!xiiIsValidAtmosphereSettings(invalid));
+  invalid = settings;
+  invalid.m_vPlanetUpDirection.SetZero();
+  XII_TEST_BOOL(!xiiIsValidAtmosphereSettings(invalid));
+  invalid                                   = settings;
+  invalid.m_uiTransmittanceIntegrationSteps = 1025;
+  XII_TEST_BOOL(!xiiIsValidAtmosphereSettings(invalid));
+  invalid                             = settings;
+  invalid.m_uiMultiScatterSqrtSamples = 65;
+  XII_TEST_BOOL(!xiiIsValidAtmosphereSettings(invalid));
+  invalid                    = settings;
+  invalid.m_vMieAbsorption.x = -0.1f;
+  XII_TEST_BOOL(!xiiIsValidAtmosphereSettings(invalid));
+}
 
-  invalid                      = modified;
-  invalid.m_vPlanetUpDirection = xiiVec3::MakeZero();
-  XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
-  XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
-
-  xiiAtmosphereSettings second = modified;
-  second.m_fMiePhaseG          = 0.71f;
-  xiiAtmosphereLUTHandle hModified;
-  xiiAtmosphereLUTHandle hSecond;
-  XII_TEST_BOOL(xiiAtmosphereManager::AcquireLUTs(modified, hModified).Succeeded());
-  XII_TEST_BOOL(xiiAtmosphereManager::AcquireLUTs(second, hSecond).Succeeded());
-  XII_TEST_BOOL(!hModified.IsInvalidated());
-  XII_TEST_BOOL(!hSecond.IsInvalidated());
-  XII_TEST_BOOL(!(hModified == hSecond));
-  xiiAtmosphereManager::MarkLUTsGenerated(hModified);
-  XII_TEST_BOOL(!xiiAtmosphereManager::IsGenerationPending(hModified));
-  XII_TEST_BOOL(xiiAtmosphereManager::IsGenerationPending(hSecond));
-
-  XII_TEST_BOOL(xiiAtmosphereManager::Configure(original).Succeeded());
+XII_CREATE_SIMPLE_TEST(Pipeline, AtmosphereLookupResourceContracts)
+{
+  xiiAtmosphereTransmittancePass transmission;
+  xiiAtmosphereMultiScatterPass  multiple;
+  xiiVariantDictionary           properties;
+  XII_TEST_RESULT(transmission.GetProperties(properties));
+  properties.Insert("Width", 0U);
+  XII_TEST_BOOL(transmission.Configure(properties).Failed());
+  properties.Insert("Width", 33U);
+  properties.Insert("Height", 17U);
+  XII_TEST_RESULT(transmission.Configure(properties));
+  properties.Clear();
+  properties.Insert("Width", 4097U);
+  XII_TEST_BOOL(multiple.Configure(properties).Failed());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  transmission.GetPins(pins);
+  XII_TEST_RESULT(transmission.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[transmission.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA32Float);
+  pins.Clear();
+  multiple.GetPins(pins);
+  XII_TEST_RESULT(multiple.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[multiple.m_Transmittance.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::ShaderResource));
+  const auto                                 lookup = xiiLoadPipelineLibraryResource("AtmosphereLookup"), world = xiiLoadPipelineLibraryResource("WorldAtmosphereView");
+  xiiResourceLock<xiiRenderPipelineResource> plain(lookup, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), scene(world, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(plain.IsValid() && scene.IsValid() && plain->GetPipeline() && scene->GetPipeline()))
+    return;
+  XII_TEST_INT(plain->GetPipeline()->GetExecutionOrder().GetCount(), 3);
+  XII_TEST_INT(scene->GetPipeline()->GetExecutionOrder().GetCount(), 4);
+  XII_TEST_BOOL(plain->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && plain->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
+  XII_TEST_BOOL(scene->GetPipeline()->GetExtractionRequirements() == xiiRenderExtractionCategory::Atmosphere && scene->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
 }

@@ -10,6 +10,7 @@
 #include <EditorFrameworkTest/AssetResaveTest.h>
 #include <EditorFrameworkTest/DocumentSaveUiTest.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
+#include <EditorFrameworkTest/RenderPipelineSettingsEditorTest.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
 #include <EditorFramework/Assets/AssetProcessor.h>
@@ -159,6 +160,7 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     document->GetDocumentManager()->CloseDocument(document);
     pump();
     XII_TEST_BOOL(closedWindow.isNull());
+    TestRenderPipelineSettingsWindow(*editor, project.GetFileDirectory());
     TestSceneWindow(*editor, project.GetFileDirectory());
     TestExposedAssetDependencies(*editor, project.GetFileDirectory());
     TestAssetResave(*editor, project.GetFileDirectory());

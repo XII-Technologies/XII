@@ -16,6 +16,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneSelectionPass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("ColorInput", m_InputColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Color")),
+    XII_MEMBER_PROPERTY("SceneDepth", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("SelectionSurface", m_InputSelectionSurface)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("ColorOutput", m_OutputColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Color")),
     XII_MEMBER_PROPERTY("VisibleColor", m_VisibleColor)->AddAttributes(new xiiDefaultValueAttribute(xiiColor(1.0f, 0.5f, 0.0f, 1.0f))),
     XII_MEMBER_PROPERTY("OccludedColor", m_OccludedColor)->AddAttributes(new xiiDefaultValueAttribute(xiiColor(0.2f, 0.4f, 1.0f, 0.5f))),
     XII_MEMBER_PROPERTY("FillOpacity", m_fFillOpacity)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.1f)),
@@ -26,15 +30,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneSelectionPass, 1, xiiRTTIDefaultAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSceneSelectionPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
-{
-  pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
-  pins.PushBack({"Color", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, false});
-  pins.PushBack({"SelectionSurface", xiiRenderPipelinePin::Texture, true, true, xiiGALResourceFormat::RGBA32UInt});
-  pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false});
-  pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
-}
+
 
 xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -47,11 +43,11 @@ xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
     enabled          = setting->ConvertTo<bool>(&result);
     XII_SUCCEED_OR_RETURN(result);
   }
-  auto       color     = context.GetInputTexture("Color");
-  const auto selection = context.GetInputTexture("SelectionSurface");
+  auto       color     = context.GetInputTexture(m_InputColor);
+  const auto selection = context.GetInputTexture(m_InputSelectionSurface);
   if (!enabled || context.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView || !selection.IsValid())
-    return context.SetOutput("Color", color);
-  const auto  depth      = context.GetInputTexture("SceneDepth");
+    return context.SetOutput(m_OutputColor, color);
+  const auto  depth      = context.GetInputTexture(m_InputSceneDepth);
   const auto* output     = context.m_Graph.GetTextureDescription(color);
   const auto* sceneDepth = context.m_Graph.GetTextureDescription(depth);
   const auto* surface    = context.m_Graph.GetTextureDescription(selection);
@@ -135,5 +131,5 @@ xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
     commands.ResolveAndSetShaderResourceTextureView("SelectionSurface", execution.GetTexture(data.m_Surface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Succeeded())
       commands.Draw({3}); });
-  return context.SetOutput("Color", color);
+  return context.SetOutput(m_OutputColor, color);
 }

@@ -1,0 +1,24 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/Lighting/SurfaceInputs.h>
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
+#include <Shaders/Pipeline/SurfaceBRDF.h>
+Texture2D<float> g_DirectionalVisibility;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Lighting;
+[numthreads(8,8,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  if(any(tid.xy>=SurfaceExtent.xy)) return;
+  SurfaceSample surface;
+  float3 result=0;
+  if(LoadSurface(tid.xy,surface) && EnvironmentDirectionAndIlluminance.w>0)
+  {
+    const float3 L=normalize(-EnvironmentDirectionAndIlluminance.xyz);
+    const float visibility=SurfaceExtent.z!=0 ? saturate(g_DirectionalVisibility.Load(int3(tid.xy,0))):1;
+    result=BRDFLayered(surface.Albedo,surface.Roughness,surface.Metallic,surface.Specular,surface.Transmission,0,0.1f,surface.Normal,L,surface.View)*EnvironmentColorAndAngularRadius.rgb*EnvironmentDirectionAndIlluminance.w*visibility*SurfaceEvaluation.x;
+  }
+  g_Lighting[tid.xy]=float4(all(isfinite(result)) ? clamp(result,0,65504.0f):0,1);
+}

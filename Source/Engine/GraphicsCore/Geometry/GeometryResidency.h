@@ -142,7 +142,8 @@ public:
   [[nodiscard]] static const xiiGeometryResidencyDescription& GetConfiguration();
   [[nodiscard]] static bool                                   IsSubsystemInitialized();
   [[nodiscard]] static bool                                   IsInitialized();
-  /// Allocates shared device buffers on first consumption, on the render thread.
+  /// Allocates shared device buffers on first consumption. Concurrent initialization requests
+  /// share one completed allocation; subsequent residency mutations use the render-frame scope.
   [[nodiscard]] static xiiResult EnsureInitialized();
 
   [[nodiscard]] static xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
@@ -174,6 +175,8 @@ public:
   /// source buffers belonging to a different revision. Call on the render thread.
   [[nodiscard]] static xiiResult                  GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts);
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> GetMetadataBuffer();
+  /// Shader-visible first element in the shared metadata frame slice.
+  [[nodiscard]] static xiiUInt32                  GetMetadataBaseIndex(xiiUInt64 frameIndex);
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> GetMeshletMetadataBuffer();
   [[nodiscard]] static xiiGeometryResidencyStats  GetStats();
 

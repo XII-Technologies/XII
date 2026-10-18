@@ -22,6 +22,11 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneShapeIconPass : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneShapeIconPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_InputColor;
+  xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
+  xiiRenderPipelineTextureOutputPin m_OutputColor;
+  xiiRenderPipelineTextureOutputPin m_OutputPicking{xiiGALResourceFormat::R32UInt, true};
+
   xiiSceneShapeIconPass();
   ~xiiSceneShapeIconPass() override;
 
@@ -43,7 +48,6 @@ public:
     float                      m_fCameraDepth = 0; ///< Distance along camera forward; used for compositing order.
   };
 
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult Build(xiiRenderPipelinePassContext& context) override;
 
   /// Borrowed until the next Build. Far-to-near order, with object identity breaking depth ties.

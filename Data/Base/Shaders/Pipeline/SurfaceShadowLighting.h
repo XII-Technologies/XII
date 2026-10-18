@@ -188,7 +188,7 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
       const float  mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
       visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
     }
-    return lerp(1.0f, visibility / 9.0f, GetLocalShadowFadeStrength(lightData));
+    return lerp(1.0f, visibility / 9.0f, GetLocalShadowFadeStrength(lightData, g_CameraPositionAndNearPlane.xyz));
   }
 
   const float projectedSourceRadius = sourceRadius / max(distanceToLight, sourceRadius);
@@ -220,7 +220,7 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
     const float  mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
     visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
   }
-  return lerp(1.0f, visibility / float(filterSampleCount), GetLocalShadowFadeStrength(lightData));
+  return lerp(1.0f, visibility / float(filterSampleCount), GetLocalShadowFadeStrength(lightData, g_CameraPositionAndNearPlane.xyz));
 }
 
 // A cheap current-frame atlas probe used before accepting cached ReSTIR visibility.
@@ -240,7 +240,7 @@ bool ValidateLocalShadowReuse(uint lightIndex, xiiGpuLightData lightData, float3
   if (shadowData.Metadata.z == 0u || shadowData.Metadata.x == 0u)
     return cachedLit;
 
-  const float fadeStrength = GetLocalShadowFadeStrength(lightData);
+  const float fadeStrength = GetLocalShadowFadeStrength(lightData, g_CameraPositionAndNearPlane.xyz);
   if (fadeStrength <= (1.0f / 255.0f))
     return cachedLit;
   if (cachedOccluded && fadeStrength < (254.0f / 255.0f))

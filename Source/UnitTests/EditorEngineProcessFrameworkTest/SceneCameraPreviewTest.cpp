@@ -39,7 +39,7 @@ namespace
       xiiSharedPtr<xiiGALTexture> target    = context.m_pView->GetRenderTargetView()->GetTexture();
       const auto*                 parameter = context.m_Parameters.GetValue("TestColor");
       const auto                  color     = parameter ? parameter->Get<xiiColor>() : xiiColor::Black;
-      context.m_Graph.AddPass<Data>("Camera preview test", xiiGALCommandQueueFlags::Graphics, [&target, color](Data& data, xiiRenderGraphBuilder& builder) {
+      const auto                  cleared   = context.m_Graph.AddPass<Data>("Camera preview test", xiiGALCommandQueueFlags::Graphics, [&target, color](Data& data, xiiRenderGraphBuilder& builder) {
           data.m_Target = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, target, target->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
           auto depth = target->GetDescription();
           depth.m_Format = xiiGALResourceFormat::D32Float;
@@ -50,9 +50,11 @@ namespace
           execution.GetCommandList().ClearDepthStencilView(execution.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0); }, true);
       if (context.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::EditorView)
       {
-        xiiDebugRenderer::AddRenderGraphPasses(context.m_Graph);
-        context.m_Graph.AddPass<Data>("Camera preview test output", xiiGALCommandQueueFlags::Graphics, [](Data& data, xiiRenderGraphBuilder& builder) {
-            data.m_Target = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::CopySource);
+        auto output = cleared.first->m_Target;
+        auto depth  = cleared.first->m_Depth;
+        XII_SUCCEED_OR_RETURN(xiiDebugRenderer::AddRenderGraphPasses(context.m_Graph, output, depth));
+        context.m_Graph.AddPass<Data>("Camera preview test output", xiiGALCommandQueueFlags::Graphics, [output](Data& data, xiiRenderGraphBuilder& builder) {
+            data.m_Target = builder.ReadTexture(output, xiiGALResourceStateFlags::CopySource);
             builder.ExportTexture(data.m_Target, xiiGALResourceStateFlags::CopySource); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
       }
       return XII_SUCCESS;

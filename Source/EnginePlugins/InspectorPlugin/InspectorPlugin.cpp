@@ -51,6 +51,8 @@ void AddResourceManagerEventHandler();
 void RemoveResourceManagerEventHandler();
 
 void SetAppStats();
+void AddRenderingEventHandler();
+void RemoveRenderingEventHandler();
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(InspectorPlugin, InspectorPluginMain)
@@ -76,12 +78,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(InspectorPlugin, InspectorPluginMain)
     AddTimeEventHandler();
     AddFileSystemEventHandler();
     AddResourceManagerEventHandler();
+    AddRenderingEventHandler();
 
     SetAppStats();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
+    RemoveRenderingEventHandler();
     RemoveResourceManagerEventHandler();
     RemoveFileSystemEventHandler();
     RemoveTimeEventHandler();

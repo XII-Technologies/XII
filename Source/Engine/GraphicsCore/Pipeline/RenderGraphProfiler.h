@@ -47,6 +47,12 @@ public:
   /// Returns the last resolved GPU duration for the given pass in milliseconds.
   ///        Returns 0.0f if no data is yet available (warmup frames).
   [[nodiscard]] virtual float GetPassDurationMs(xiiStringView sPassName) const = 0;
+
+  /// Called before recording a graph; isolates instances which share a stable graph name.
+  virtual void SetGraphInstance(xiiUInt64 uiInstanceId) {}
+
+  /// Lookup by process-local graph instance and registered pass index. False means unavailable, not zero cost.
+  virtual bool GetPassTiming(xiiUInt64 uiGraphId, xiiUInt32 uiPassIndex, xiiStringView sPassName, float& out_fDurationMs, xiiUInt64& out_uiFrameIndex) const { return false; }
 };
 
 /// A concrete render graph profiler that uses GPU Duration queries.
@@ -62,6 +68,7 @@ public:
 
 public:
   xiiRenderGraphTimestampProfiler();
+  void SetGraphInstance(xiiUInt64 uiInstanceId) override { m_uiRecordingGraphId = uiInstanceId; }
   ~xiiRenderGraphTimestampProfiler() override;
 
   /// Initializes the profiler with the device that will be used to create queries.
@@ -80,6 +87,7 @@ public:
 
   /// Returns the last resolved GPU duration for the given pass in milliseconds.
   [[nodiscard]] float GetPassDurationMs(xiiStringView sPassName) const override;
+  bool                GetPassTiming(xiiUInt64 uiGraphId, xiiUInt32 uiPassIndex, xiiStringView sPassName, float& out_fDurationMs, xiiUInt64& out_uiFrameIndex) const override;
 
   /// Returns the last resolved GPU duration for the entire frame in milliseconds.
   [[nodiscard]] float GetFrameDurationMs() const;
@@ -93,7 +101,9 @@ private:
   {
     xiiSharedPtr<xiiGALQuery> m_pDurationQuery;
     xiiHashedString           m_sPassName;
-    bool                      m_bActive = false;
+    bool                      m_bActive     = false;
+    xiiUInt64                 m_uiGraphId   = 0;
+    xiiUInt32                 m_uiPassIndex = 0;
   };
 
   struct FrameData
@@ -117,4 +127,12 @@ private:
   xiiHashTable<xiiUInt64, float>       m_ResolvedGraphDurationsMs;
   xiiHashTable<xiiUInt64, float>       m_ResolvedQueueDurationsMs;
   mutable xiiMutex                     m_ResultMutex;
+  struct Timing
+  {
+    float           m_fDurationMs  = 0;
+    xiiUInt64       m_uiFrameIndex = 0;
+    xiiHashedString m_sPassName;
+  };
+  xiiHashTable<xiiUInt64, xiiHashTable<xiiUInt32, Timing>> m_ResolvedPassTimings;
+  xiiUInt64                                                m_uiRecordingGraphId = 0;
 };

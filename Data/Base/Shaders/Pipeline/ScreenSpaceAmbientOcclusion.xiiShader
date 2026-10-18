@@ -1,0 +1,71 @@
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/StorageImageFormat.h>
+
+// Screen-space ambient visibility with tuning supplied by reflected pass properties.
+
+#include "PipelineCommon.xiiShader"
+#include <Shaders/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionConstants.h>
+
+Texture2D<float>   g_SceneDepth      : register(t4);
+Texture2D<float4>  g_NormalRoughness : register(t5);
+XII_STORAGE_IMAGE_FORMAT("r8") RWTexture2D<float> g_AOOut           : register(u6);
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_AOOut.GetDimensions(dimensions.x, dimensions.y);
+  if (any(tid.xy >= dimensions))
+    return;
+
+  const float depth = g_SceneDepth.Load(int3(tid.xy, 0));
+  if (depth <= 0.0f)
+  {
+    g_AOOut[tid.xy] = 1.0f;
+    return;
+  }
+
+  const float2 uv       = (float2(tid.xy) + 0.5f) / float2(dimensions);
+  const float3 worldPos = ReconstructWorldPos(uv, depth);
+  const float3 normal   = DecodeOctNormal(g_NormalRoughness.Load(int3(tid.xy, 0)).rg);
+  const float phase     = InterleavedGradientNoise(float2(tid.xy), g_FrameIndex) * 6.28318530718f;
+  const float2 invDimensions = rcp(float2(dimensions));
+
+  float occlusion = 0.0f;
+  const uint directionCount = DirectionCount;
+  [loop]
+  for (uint directionIndex = 0U; directionIndex < directionCount; ++directionIndex)
+  {
+    const float angle = phase + 6.28318530718f * (float(directionIndex) / float(directionCount));
+    const float2 direction = float2(cos(angle), sin(angle));
+    float directionOcclusion = 0.0f;
+
+    [loop]
+    for (uint stepIndex = 1U; stepIndex <= StepCount; ++stepIndex)
+    {
+      const float2 sampleUv = uv + direction * (float(stepIndex) * PixelStride) * invDimensions;
+      if (any(sampleUv <= 0.0f) || any(sampleUv >= 1.0f))
+        continue;
+
+      const float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, sampleUv, 0.0f);
+      if (sampleDepth <= 0.0f)
+        continue;
+
+      const float3 toSample = ReconstructWorldPos(sampleUv, sampleDepth) - worldPos;
+      const float distanceToSample = length(toSample);
+      if (distanceToSample > MinSampleDistance && distanceToSample < Radius)
+      {
+        const float horizon = saturate(dot(normal, toSample / distanceToSample) - NormalBias);
+        directionOcclusion = max(directionOcclusion, horizon * saturate(1.0f - distanceToSample / Radius));
+      }
+    }
+
+    occlusion += directionOcclusion;
+  }
+
+  g_AOOut[tid.xy] = saturate(1.0f - occlusion / float(directionCount));
+}

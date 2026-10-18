@@ -17,15 +17,19 @@ class xiiAssetPipelineSource : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiAssetPipelineSource, xiiRenderPipelinePass);
 
 public:
-  xiiUInt32 m_uiValue = 1;
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override { pins.PushBack({"Data", xiiRenderPipelinePin::Buffer, false}); }
-  xiiResult Build(xiiRenderPipelinePassContext&) override { return XII_SUCCESS; }
+  xiiUInt32                  m_uiValue = 1;
+  xiiDynamicArray<xiiUInt32> m_Samples;
+  xiiMap<xiiString, float>   m_Weights;
+  void                       GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override { pins.PushBack({"Data", xiiRenderPipelinePin::Buffer, false}); }
+  xiiResult                  Build(xiiRenderPipelinePassContext&) override { return XII_SUCCESS; }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetPipelineSource, 1, xiiRTTIDefaultAllocator<xiiAssetPipelineSource>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("Value", m_uiValue),
+      XII_ARRAY_MEMBER_PROPERTY("Samples", m_Samples),
+      XII_MAP_MEMBER_PROPERTY("Weights", m_Weights),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -77,7 +81,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, RenderPipelineAsset)
   const char* rootPath   = ":pipelineassets/Root.xiiBinRenderPipeline";
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native interface and repeated reference nodes export through the existing asset compiler")
   {
-    xiiAssetPipelineSource         source;
+    xiiAssetPipelineSource source;
+    source.m_Samples.PushBack(2);
+    source.m_Samples.PushBack(4);
+    source.m_Weights.Insert("Near", 0.25f);
+    source.m_Weights.Insert("Far", 0.75f);
     xiiRenderPipelineInterfacePass boundary;
     boundary.m_sName          = "Output";
     boundary.m_bInput         = false;
@@ -102,6 +110,15 @@ XII_CREATE_SIMPLE_TEST(EditorViews, RenderPipelineAsset)
       return;
     XII_TEST_BOOL(acquiredChild->GetAuthoring()->m_Descriptor.m_Id == childId);
     XII_TEST_BOOL(acquiredChild->GetAuthoring()->m_Descriptor.m_Interface[0].m_Node == passId);
+    const auto& captured = acquiredChild->GetAuthoring()->m_Descriptor.m_Passes[0].m_Properties;
+    const auto* samples  = captured.GetValue("Samples");
+    const auto* weights  = captured.GetValue("Weights");
+    if (!XII_TEST_BOOL(samples && weights))
+      return;
+    XII_TEST_INT(samples->Get<xiiVariantArray>().GetCount(), 2);
+    const auto* nearWeight = weights->Get<xiiVariantDictionary>().GetValue("Near");
+    if (XII_TEST_BOOL(nearWeight != nullptr))
+      XII_TEST_FLOAT(nearWeight->Get<float>(), 0.25f, 0);
     xiiRenderPipelineSubgraphPass    instances[2];
     xiiAssetPipelineSink             sinks[2];
     xiiDocumentObject_ConnectionBase connections[2];
@@ -138,7 +155,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, RenderPipelineAsset)
     for (xiiUInt32 i = 0; i < 4; ++i)
       if (runtime.GetPass(i)->IsInstanceOf<xiiAssetPipelineSource>())
       {
-        const auto value = static_cast<const xiiAssetPipelineSource*>(runtime.GetPass(i))->m_uiValue;
+        const auto* configuredSource = static_cast<const xiiAssetPipelineSource*>(runtime.GetPass(i));
+        const auto  value            = configuredSource->m_uiValue;
+        XII_TEST_BOOL(configuredSource->m_Samples == source.m_Samples);
+        XII_TEST_BOOL(configuredSource->m_Weights == source.m_Weights);
         if (value == 4)
           ++configured[0];
         if (value == 7)

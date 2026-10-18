@@ -1,0 +1,102 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+[COMPUTE_SHADER]
+#include "GpuSceneCommon.h"
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_VisibilityView;
+StructuredBuffer<GpuGeometryRecord> g_Geometry;
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<uint> g_VisibleInstances;
+StructuredBuffer<uint> g_VisibleInstanceCount;
+StructuredBuffer<uint4> g_CurrentLodHistory;
+RWStructuredBuffer<uint2> g_VisibleMeshlets;
+RWStructuredBuffer<uint> g_VisibleMeshletCount;
+RWStructuredBuffer<uint> g_VisibleMeshletOverflow;
+bool ReserveMeshlet(out uint destination)
+{
+  uint capacity, stride;
+  g_VisibleMeshlets.GetDimensions(capacity, stride);
+  for (;;)
+  {
+    uint count = g_VisibleMeshletCount[0];
+    if (count >= capacity)
+    {
+      InterlockedOr(g_VisibleMeshletOverflow[0], 1u);
+      destination = 0u;
+      return false;
+    }
+    uint observed;
+    InterlockedCompareExchange(g_VisibleMeshletCount[0], count, count + 1u, observed);
+    if (observed == count) { destination = count; return true; }
+  }
+}
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID)
+{
+  uint capacity, stride, sceneCount, geometryCount, meshletCount, historyCount, viewCount;
+  g_VisibleInstances.GetDimensions(capacity, stride);
+  g_SceneInstances.GetDimensions(sceneCount, stride);
+  g_Geometry.GetDimensions(geometryCount, stride);
+  g_Meshlets.GetDimensions(meshletCount, stride);
+  g_CurrentLodHistory.GetDimensions(historyCount, stride);
+  g_VisibilityView.GetDimensions(viewCount, stride);
+  uint candidate = group.y + group.z * 65535u;
+  if (viewCount == 0u || candidate >= min(g_VisibleInstanceCount[0], capacity)) return;
+  uint index = g_VisibleInstances[candidate];
+  if (index >= sceneCount || index >= historyCount) return;
+  GpuSceneInstance instance = g_SceneInstances[index];
+  GpuVisibilityView view = g_VisibilityView[0];
+  if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex) return;
+  GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
+  // Section candidates share one geometry-level LOD decision and representative ID.
+  // Validate the same representative that InstanceCull used when publishing history.
+  uint selectionIndex = index;
+  if (instance.LodSelectionIndex < min(view.InstanceCount, sceneCount) &&
+      g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
+    selectionIndex = instance.LodSelectionIndex;
+  uint4 history = g_CurrentLodHistory[index];
+  if (history.x >= min(geometry.LodCount, 8u) || history.y != geometry.Generation || history.z != g_SceneInstances[selectionIndex].ObjectId ||
+      (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x)) return;
+  GpuGeometryLod lod = geometry.Lods[history.x];
+  uint localMeshlet = tid.x;
+  if (localMeshlet >= lod.MeshletCount || lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset) return;
+  uint meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
+  GpuMeshlet meshlet = g_Meshlets[meshletIndex];
+  if ((meshlet.PackedLodSection & 0xFFFFu) != history.x) return;
+  uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  if (primitives == 0u || (meshlet.PackedPrimitiveVertexCount >> 16u) == 0u) return;
+  if (instance.PrimitiveCount != 0u)
+  {
+    // Difference comparisons preserve half-open ranges without overflowing uint ends.
+    if (meshlet.Header.x >= instance.FirstPrimitive)
+    {
+      if (meshlet.Header.x - instance.FirstPrimitive >= instance.PrimitiveCount) return;
+    }
+    else if (instance.FirstPrimitive - meshlet.Header.x >= primitives) return;
+  }
+  float3 c0 = float3(instance.GlobalTransform[0][0], instance.GlobalTransform[1][0], instance.GlobalTransform[2][0]);
+  float3 c1 = float3(instance.GlobalTransform[0][1], instance.GlobalTransform[1][1], instance.GlobalTransform[2][1]);
+  float3 c2 = float3(instance.GlobalTransform[0][2], instance.GlobalTransform[1][2], instance.GlobalTransform[2][2]);
+  float3 diagonal = float3(dot(c0, c0), dot(c1, c1), dot(c2, c2));
+  float3 offDiagonal = abs(float3(dot(c0, c1), dot(c0, c2), dot(c1, c2)));
+  // The largest Gram-matrix row sum bounds the squared stretch, including shear.
+  float3 stretch = diagonal + float3(offDiagonal.x + offDiagonal.y, offDiagonal.x + offDiagonal.z, offDiagonal.y + offDiagonal.z);
+  float maximumScale = sqrt(max(stretch.x, max(stretch.y, stretch.z)));
+  bool posed = instance.SkinningCount != 0u;
+  float3 center = posed ? instance.BoundsCenterRadius.xyz : mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
+  float radius = posed ? instance.BoundsCenterRadius.w : meshlet.Bounds.w * maximumScale;
+  if (!SphereInsideFrustum(center, radius, view)) return;
+  float tolerance = max(max(diagonal.x, max(diagonal.y, diagonal.z)), 0.00000001f) * 0.001f;
+  bool uniformScale = max(diagonal.x, max(diagonal.y, diagonal.z)) - min(diagonal.x, min(diagonal.y, diagonal.z)) <= tolerance &&
+                 max(offDiagonal.x, max(offDiagonal.y, offDiagonal.z)) <= tolerance;
+  if (!posed && meshlet.Cone.w >= 0.0f && uniformScale && dot(c0, cross(c1, c2)) > 0.0f)
+  {
+    float3 axis = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
+    float3 toCamera = normalize(view.CameraPosition.xyz - center);
+    if (dot(axis, toCamera) <= -sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w))) return;
+  }
+  uint destination;
+  if (ReserveMeshlet(destination)) g_VisibleMeshlets[destination] = uint2(index, meshletIndex);
+}

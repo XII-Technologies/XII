@@ -1,0 +1,39 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
+RWStructuredBuffer<xiiGpuClusterBounds> g_Clusters;
+float SliceDepth(uint slice)
+{
+  const float t = (float)slice / ClusterCounts.z;
+  return DepthRange.w > 0 ? DepthRange.x * exp2(t * DepthRange.z) : lerp(DepthRange.x, DepthRange.y, t);
+}
+float3 DepthPoint(float2 uv, float depth)
+{
+  const float2 ndc = float2(uv.x * 2 - 1, 1 - uv.y * 2);
+  const float4 a = mul(InverseViewProjection, float4(ndc, 0.25f, 1));
+  const float4 b = mul(InverseViewProjection, float4(ndc, 0.75f, 1));
+  const float3 origin = a.xyz / a.w, direction = b.xyz / b.w - origin;
+  return origin + direction * ((depth - dot(origin - CameraPosition.xyz, CameraForward.xyz)) / dot(direction, CameraForward.xyz));
+}
+[numthreads(64,1,1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  const uint index = tid.x + tid.y * Work.z;
+  if(index >= ClusterCounts.w) return;
+  const uint3 cell = uint3(index % ClusterCounts.x, (index / ClusterCounts.x) % ClusterCounts.y, index / (ClusterCounts.x * ClusterCounts.y));
+  const float2 uvMin = (float2)(cell.xy * Viewport.z) / Viewport.xy;
+  // Partial edge tiles end at the real viewport, never a rounded-up virtual image.
+  const float2 uvMax = (float2)min((cell.xy + 1) * Viewport.z, Viewport.xy) / Viewport.xy;
+  float3 minimum = float3(3.402823e38f,3.402823e38f,3.402823e38f), maximum = -minimum;
+  [unroll] for(uint z=0;z<2;++z)
+    [unroll] for(uint y=0;y<2;++y)
+      [unroll] for(uint x=0;x<2;++x)
+      {
+        const float3 worldPosition = DepthPoint(float2(x ? uvMax.x : uvMin.x,y ? uvMax.y : uvMin.y),SliceDepth(cell.z+z));
+        minimum = min(minimum,worldPosition); maximum = max(maximum,worldPosition);
+      }
+  g_Clusters[index].MinBounds = float4(minimum,0);
+  g_Clusters[index].MaxBounds = float4(maximum,0);
+}

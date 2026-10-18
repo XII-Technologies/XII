@@ -8,10 +8,12 @@
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <GuiFoundation/Widgets/SearchableMenu.moc.h>
+#include <QApplication>
 #include <QGraphicsSceneMouseEvent>
 #include <QMenu>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
+#include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiRttiMappedObjectFactory<xiiQtNode>       xiiQtNodeScene::s_NodeFactory;
 xiiRttiMappedObjectFactory<xiiQtPin>        xiiQtNodeScene::s_PinFactory;
@@ -66,6 +68,7 @@ void xiiQtNodeScene::InitScene(const xiiDocumentNodeManager* pManager)
       CreateQtConnection(pObject);
     }
   }
+  UpdateSelection();
 }
 
 const xiiDocument* xiiQtNodeScene::GetDocument() const
@@ -165,7 +168,13 @@ void xiiQtNodeScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
           continue;
 
         event->accept();
-        xiiQtPin* pPin    = static_cast<xiiQtPin*>(item);
+        xiiQtPin* pPin = static_cast<xiiQtPin*>(item);
+        if (pPin->flags().testFlag(QGraphicsItem::ItemIsSelectable))
+        {
+          if (!event->modifiers().testFlag(Qt::ControlModifier))
+            clearSelection();
+          pPin->setSelected(!event->modifiers().testFlag(Qt::ControlModifier) || !pPin->isSelected());
+        }
         m_pStartPin       = pPin;
         m_pTempConnection = new xiiQtConnection(nullptr);
         addItem(m_pTempConnection);
@@ -207,6 +216,14 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   {
     event->accept();
 
+    // A click inspects a backed pin; dragging still creates a connection. Legacy graphs
+    // without pin property objects retain their existing wire/search interaction.
+    if (m_pStartPin->flags().testFlag(QGraphicsItem::ItemIsSelectable) && (event->screenPos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength() < QApplication::startDragDistance())
+    {
+      CancelConnection();
+      return;
+    }
+
     const bool    startWasInput = m_pStartPin->GetPin()->GetType() == xiiPin::Type::Input;
     const QPointF releasePos    = startWasInput ? m_pTempConnection->GetOutPos() : m_pTempConnection->GetInPos();
 
@@ -247,12 +264,7 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     }
 
   Cleanup:
-    delete m_pTempConnection;
-    m_pTempConnection = nullptr;
-    m_pStartPin       = nullptr;
-    m_pTempNode       = nullptr;
-
-    ResetConnectablePinMarkup();
+    CancelConnection();
     return;
   }
 
@@ -292,6 +304,15 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
     xiiQtUiServices::GetSingleton()->MessageBoxStatus(res, "Move node failed");
   }
+}
+
+void xiiQtNodeScene::CancelConnection()
+{
+  ResetConnectablePinMarkup();
+  delete m_pTempConnection;
+  m_pTempConnection = nullptr;
+  m_pStartPin       = nullptr;
+  m_pTempNode       = nullptr;
 }
 
 void xiiQtNodeScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* contextMenuEvent)
@@ -457,6 +478,7 @@ void xiiQtNodeScene::CreateQtConnection(const xiiDocumentObject* pObject)
   // Reset flags to update the node's title to reflect connection changes
   pSource->ResetFlags();
   pTarget->ResetFlags();
+  UpdateSelection();
 }
 
 void xiiQtNodeScene::DeleteQtConnection(const xiiDocumentObject* pObject)
@@ -479,8 +501,13 @@ void xiiQtNodeScene::DeleteQtConnection(const xiiDocumentObject* pObject)
   pOutput->RemoveConnection(pQtConnection);
   pInput->RemoveConnection(pQtConnection);
 
+  // The document object can remain alive during an undoable pin rebuild. Its
+  // selection follows document lifetime, rather than temporary visual removal.
+  const bool ignored       = m_bIgnoreSelectionChange;
+  m_bIgnoreSelectionChange = true;
   removeItem(pQtConnection);
   delete pQtConnection;
+  m_bIgnoreSelectionChange = ignored;
 
   // reset flags to update the node's title to reflect connection changes
   pSource->ResetFlags();
@@ -489,7 +516,10 @@ void xiiQtNodeScene::DeleteQtConnection(const xiiDocumentObject* pObject)
 
 void xiiQtNodeScene::RecreateQtPins(const xiiDocumentObject* pObject)
 {
-  xiiQtNode* pNode = m_Nodes[pObject];
+  auto it = m_Nodes.Find(pObject);
+  if (!it.IsValid())
+    return; // The document can configure a node before it is added to the scene.
+  xiiQtNode* pNode = it.Value();
   pNode->CreatePins();
   pNode->UpdateState();
   pNode->UpdateGeometry();
@@ -507,7 +537,8 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
     cmd.m_NewObjectGuid = xiiUuid::MakeUuid();
     cmd.m_Index         = -1;
 
-    res = history->AddCommand(cmd);
+    auto* accessor = m_pManager->GetDocument()->GetObjectAccessor();
+    res            = accessor->AddObject(nullptr, nullptr, cmd.m_Index, cmd.m_pType, cmd.m_NewObjectGuid);
     if (res.Succeeded())
     {
       xiiMoveNodeCommand move;
@@ -521,11 +552,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
       if (res.Failed())
         break;
 
-      xiiSetObjectPropertyCommand setCmd;
-      setCmd.m_Object    = cmd.m_NewObjectGuid;
-      setCmd.m_sProperty = propValue.m_sPropertyName.GetString();
-      setCmd.m_NewValue  = propValue.m_Value;
-      res                = history->AddCommand(setCmd);
+      res = accessor->SetValueByName(accessor->GetObject(cmd.m_NewObjectGuid), propValue.m_sPropertyName.GetString(), propValue.m_Value);
     }
   }
 
@@ -557,17 +584,54 @@ void xiiQtNodeScene::NodeEventsHandler(const xiiDocumentNodeManagerEvent& e)
       break;
 
     case xiiDocumentNodeManagerEvent::Type::BeforePinsChanged:
-      break;
+    {
+      auto node = m_Nodes.Find(e.m_pObject);
+      if (!node.IsValid())
+        break;
+      if (m_pTempConnection)
+        CancelConnection();
+      m_PinSelectionBeforeRebuild.Clear();
+      const auto remember = [&](const auto& pins) {
+        for (auto* pin : pins)
+          if (pin->isSelected())
+            if (const auto* properties = m_pManager->GetPinPropertyObject(*pin->GetPin()))
+              m_PinSelectionBeforeRebuild.PushBack(properties->GetGuid());
+      };
+      remember(node.Value()->GetInputPins());
+      remember(node.Value()->GetOutputPins());
+      const bool ignored       = m_bIgnoreSelectionChange;
+      m_bIgnoreSelectionChange = true;
+      node.Value()->ClearPins();
+      m_bIgnoreSelectionChange = ignored;
+    }
+    break;
 
     case xiiDocumentNodeManagerEvent::Type::AfterPinsChanged:
+    {
       RecreateQtPins(e.m_pObject);
-      break;
+      for (const auto& id : m_PinSelectionBeforeRebuild)
+      {
+        const auto* properties = m_pManager->GetObject(id);
+        bool        present    = false;
+        for (const auto& pin : m_pManager->GetInputPins(e.m_pObject))
+          present |= m_pManager->GetPinPropertyObject(*pin) == properties;
+        for (const auto& pin : m_pManager->GetOutputPins(e.m_pObject))
+          present |= m_pManager->GetPinPropertyObject(*pin) == properties;
+        if (properties && !present)
+          GetDocument()->GetSelectionManager()->RemoveObject(properties);
+      }
+      m_PinSelectionBeforeRebuild.Clear();
+      UpdateSelection();
+    }
+    break;
 
     case xiiDocumentNodeManagerEvent::Type::AfterNodeAdded:
       CreateQtNode(e.m_pObject);
       break;
 
     case xiiDocumentNodeManagerEvent::Type::BeforeNodeRemoved:
+      if (m_pTempConnection)
+        CancelConnection();
       DeleteQtNode(e.m_pObject);
       break;
 
@@ -588,6 +652,11 @@ void xiiQtNodeScene::PropertyEventsHandler(const xiiDocumentObjectPropertyEvent&
 
 void xiiQtNodeScene::SelectionEventsHandler(const xiiSelectionManagerEvent& e)
 {
+  UpdateSelection();
+}
+
+void xiiQtNodeScene::UpdateSelection()
+{
   const xiiDeque<const xiiDocumentObject*>& selection = GetDocument()->GetSelectionManager()->GetSelection();
 
   if (!m_bIgnoreSelectionChange)
@@ -600,10 +669,26 @@ void xiiQtNodeScene::SelectionEventsHandler(const xiiSelectionManagerEvent& e)
     for (const xiiDocumentObject* pObject : selection)
     {
       auto it = m_Nodes.Find(pObject);
-      if (!it.IsValid())
+      if (it.IsValid())
+      {
+        it.Value()->setSelected(true);
         continue;
-
-      it.Value()->setSelected(true);
+      }
+      auto connection = m_Connections.Find(pObject);
+      if (connection.IsValid())
+      {
+        connection.Value()->setSelected(true);
+        continue;
+      }
+      for (auto node : m_Nodes)
+      {
+        for (auto* pin : node.Value()->GetInputPins())
+          if (m_pManager->GetPinPropertyObject(*pin->GetPin()) == pObject)
+            pin->setSelected(true);
+        for (auto* pin : node.Value()->GetOutputPins())
+          if (m_pManager->GetPinPropertyObject(*pin->GetPin()) == pObject)
+            pin->setSelected(true);
+      }
     }
     m_bIgnoreSelectionChange = false;
   }
@@ -803,12 +888,27 @@ void xiiQtNodeScene::RemoveSelectedNodesAction()
 {
   xiiDeque<xiiQtNode*> selection;
   GetSelectedNodes(selection);
+  xiiHybridArray<xiiUuid, 8> connections;
+  for (auto* item : selectedItems())
+    if (item->type() == Type::Connection)
+      connections.PushBack(static_cast<xiiQtConnection*>(item)->GetObject()->GetGuid());
 
-  if (selection.IsEmpty())
+  if (selection.IsEmpty() && connections.IsEmpty())
     return;
 
   xiiCommandHistory* history = GetDocumentNodeManager()->GetDocument()->GetCommandHistory();
-  history->StartTransaction("Remove Nodes");
+  history->StartTransaction("Remove Graph Selection");
+
+  for (const auto& id : connections)
+  {
+    const auto result = xiiNodeCommands::DisconnectAndRemoveCommand(history, id);
+    if (result.Failed())
+    {
+      history->CancelTransaction();
+      xiiQtUiServices::GetSingleton()->MessageBoxStatus(result, "Failed to remove connection");
+      return;
+    }
+  }
 
   for (xiiQtNode* pNode : selection)
   {
@@ -931,6 +1031,8 @@ void xiiQtNodeScene::OnMenuItemTriggered(const QString& sName, const QVariant& v
 
 void xiiQtNodeScene::OnSelectionChanged()
 {
+  if (m_bIgnoreSelectionChange)
+    return;
   xiiCommandHistory* pHistory = m_pManager->GetDocument()->GetCommandHistory();
   if (pHistory->IsInUndoRedo() || pHistory->IsInTransaction())
     return;
@@ -948,6 +1050,12 @@ void xiiQtNodeScene::OnSelectionChanged()
     {
       xiiQtConnection* pConnection = static_cast<xiiQtConnection*>(pItem);
       m_Selection.PushBack(pConnection->GetObject());
+    }
+    else if (pItem->type() == xiiQtNodeScene::Pin)
+    {
+      const auto* pin = static_cast<xiiQtPin*>(pItem)->GetPin();
+      if (const auto* properties = m_pManager->GetPinPropertyObject(*pin))
+        m_Selection.PushBack(properties);
     }
   }
 

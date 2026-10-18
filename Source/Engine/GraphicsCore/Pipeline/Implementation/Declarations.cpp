@@ -4,7 +4,7 @@
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 
-bool xiiViewRenderMode::IsSupportedByDefaultPipeline(Enum mode)
+bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
 {
   switch (mode)
   {

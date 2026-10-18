@@ -23,12 +23,7 @@ namespace
     for (xiiUInt32 i = 0; i < pipeline->GetDescriptor().m_Passes.GetCount(); ++i)
     {
       const auto* pass = xiiDynamicCast<const T*>(instance.GetPass(i));
-      if constexpr (std::is_same_v<T, xiiSceneMeshPickingPass>)
-      {
-        if (pass && !pass->m_bSelectionOnly)
-          return pass;
-      }
-      else if (pass)
+      if (pass)
         return pass;
     }
     return nullptr;

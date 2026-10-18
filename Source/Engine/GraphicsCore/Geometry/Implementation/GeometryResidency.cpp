@@ -5,6 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -31,6 +32,8 @@ public:
     for (Slot& slot : m_Slots)
       xiiGeometryResidencyManager::ReleaseBindlessResources(slot, xiiMath::Max(slot.m_uiLastUsedFrame, slot.m_uiRetireFrame));
 
+    m_SetupUploads.Clear();
+    m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
     m_pMetadataBuffer.Clear();
     m_pMeshletMetadataBuffer.Clear();
     m_GeometryIds.Clear();
@@ -56,13 +59,16 @@ public:
   xiiDynamicArray<UploadPassData::MeshletUpload>                   m_PendingMeshletUploads;
   xiiHashTable<xiiGeometryHandle, MeshGeometryEntry, GeometryHash> m_MeshGeometries;
   xiiHashTable<xiiMeshResourceHandle, xiiGeometryHandle>           m_CurrentMeshGeometries;
-  xiiUInt32                                                        m_uiFramesInFlight      = 0U;
-  xiiUInt64                                                        m_uiAllFrameMask        = 0U;
-  xiiUInt64                                                        m_uiBudgetBytes         = 0U;
-  xiiUInt64                                                        m_uiResidentBytes       = 0U;
+  xiiUInt32                                                        m_uiFramesInFlight = 0U;
+  xiiUInt64                                                        m_uiAllFrameMask   = 0U;
+  xiiUInt64                                                        m_uiBudgetBytes    = 0U;
+  xiiUInt64                                                        m_uiResidentBytes  = 0U;
+  xiiHashTable<xiiUInt64, UploadHandles>                           m_SetupUploads;
+  xiiUInt64                                                        m_uiUploadFrame         = xiiMath::MaxValue<xiiUInt64>();
   xiiUInt64                                                        m_uiLastUploadedBytes   = 0U;
   xiiUInt64                                                        m_uiNextMeshletUploadId = 1U;
   xiiGeometryResidencyDescription                                  m_Configuration;
+  xiiMutex                                                         m_InitializationMutex;
   bool                                                             m_bEngineStarted = false;
   bool                                                             m_bInitialized   = false;
 };
@@ -269,6 +275,7 @@ xiiResult xiiGeometryResidencyManager::Configure(const xiiGeometryResidencyDescr
   if (s_pState == nullptr || description.m_uiMaxGeometries == 0U || description.m_uiFramesInFlight == 0U || description.m_uiFramesInFlight > 64U || description.m_uiMaxMeshlets == 0U)
     return XII_FAILURE;
 
+  XII_LOCK(s_pState->m_InitializationMutex);
   if (s_pState->m_bInitialized && GetStats().m_uiGeometryCount != 0U)
   {
     XII_ASSERT_DEV(false, "Geometry residency cannot be reconfigured while geometry handles are active.");
@@ -306,15 +313,23 @@ bool xiiGeometryResidencyManager::IsSubsystemInitialized()
 
 bool xiiGeometryResidencyManager::IsInitialized()
 {
-  return s_pState != nullptr && s_pState->m_bInitialized;
+  if (!s_pState)
+    return false;
+  XII_LOCK(s_pState->m_InitializationMutex);
+  return s_pState->m_bInitialized;
 }
 
 xiiResult xiiGeometryResidencyManager::EnsureInitialized()
 {
-  if (IsInitialized())
-    return XII_SUCCESS;
-  if (!s_pState || !s_pState->m_bEngineStarted)
+  if (!s_pState)
     return XII_FAILURE;
+  // Different worlds can request residency before acquiring their render-frame scope.
+  // Publish one complete allocation and prevent concurrent ClearGpuState/SetCount calls.
+  XII_LOCK(s_pState->m_InitializationMutex);
+  if (!s_pState->m_bEngineStarted)
+    return XII_FAILURE;
+  if (s_pState->m_bInitialized)
+    return XII_SUCCESS;
   const auto device = xiiGALDevice::GetDefaultDevice();
   return device ? Initialize(device.Borrow(), s_pState->m_Configuration) : XII_FAILURE;
 }
@@ -380,6 +395,7 @@ void xiiGeometryResidencyManager::EngineStartup()
   if (s_pState == nullptr)
     return;
 
+  XII_LOCK(s_pState->m_InitializationMutex);
   s_pState->m_bEngineStarted = true;
 }
 
@@ -388,6 +404,7 @@ void xiiGeometryResidencyManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
+  XII_LOCK(s_pState->m_InitializationMutex);
   s_pState->ClearGpuState();
   s_pState->m_bEngineStarted = false;
 }
@@ -886,7 +903,7 @@ xiiResult xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometr
       return XII_FAILURE;
     for (const auto& meshlet : meshlets.GetSubArray(source.m_uiFirstMeshlet, count))
     {
-      // Use the same overlap test as GpuSceneMeshletCull, including boundary meshlets.
+      // Use the same overlap test as native MeshletCull, including boundary meshlets.
       const xiiUInt64 end = static_cast<xiiUInt64>(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
       if (uiPrimitiveCount == 0 || (meshlet.m_uiFirstPrimitive < uiFirstPrimitive + uiPrimitiveCount && end > uiFirstPrimitive))
         ++counts[lod];
@@ -894,6 +911,11 @@ xiiResult xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometr
   }
   out_counts.CopyFrom(xiiMakeArrayPtr(counts));
   return XII_SUCCESS;
+}
+
+xiiUInt32 xiiGeometryResidencyManager::GetMetadataBaseIndex(xiiUInt64 frameIndex)
+{
+  return s_pState && s_pState->m_uiFramesInFlight ? static_cast<xiiUInt32>(frameIndex % s_pState->m_uiFramesInFlight) * s_pState->m_Slots.GetCount() : 0;
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiGeometryResidencyManager::GetMetadataBuffer()
@@ -934,7 +956,15 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
     return {};
 
   State* pState = s_pState.Borrow();
-  auto   pass   = graph.AddPass<UploadPassData>("Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer, [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+  if (pState->m_uiUploadFrame != uiFrameIndex)
+  {
+    pState->m_SetupUploads.Clear();
+    pState->m_uiUploadFrame = uiFrameIndex;
+  }
+  UploadHandles existing;
+  if (pState->m_SetupUploads.TryGetValue(graph.GetSetupSerial(), existing))
+    return existing;
+  auto pass = graph.AddPass<UploadPassData>("Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer, [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", pState->m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometryBuffer = builder.WriteBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::ShaderResource);
@@ -1005,8 +1035,9 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
   UploadHandles result;
   result.m_hGeometryMetadata             = pass.first->m_hGeometryBuffer;
   result.m_hMeshletMetadata              = pass.first->m_hMeshletBuffer;
-  result.m_uiGeometryBaseIndex           = uiFrameSlice * pState->m_Slots.GetCount();
+  result.m_uiGeometryBaseIndex           = GetMetadataBaseIndex(uiFrameIndex);
   result.m_uiMaximumResidentMeshletCount = uiMaximumResidentMeshletCount;
+  pState->m_SetupUploads.Insert(graph.GetSetupSerial(), result);
   return result;
 }
 

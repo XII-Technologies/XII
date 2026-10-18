@@ -174,15 +174,17 @@ void xiiGALFenceVulkan::AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQu
     XII_REPORT_FAILURE("AddPendingSyncPoint() is not supported for timeline semaphore.");
   }
 
-  ValidateFenceSignal(uiFenceValue);
-
   XII_LOCK(m_SyncPointGuard);
+
+  // Caller fence values and queue submission values are independent domains.
+  // A completed readback may switch to a queue whose submission counter is lower.
+  ValidateFenceSignal(uiWaitValue);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
     const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiWaitValue;
 
-    XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
+    XII_ASSERT_DEV(uiWaitValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that does not exceed the last queued or completed value ({}).", uiWaitValue, uiLastCompletedValue);
   }
   if (!m_SyncPoints.IsEmpty())
   {

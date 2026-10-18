@@ -171,8 +171,8 @@ struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
 
     Default = None
   };
-  /// Modes for which the built-in pipeline supplies the required render data.
-  static bool IsSupportedByDefaultPipeline(Enum mode);
+  /// Modes implemented by the reflected channel-visualization operation.
+  static bool IsSupportedVisualizationMode(Enum mode);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderMode);

@@ -13,11 +13,13 @@
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <Texture/Image/Image.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
@@ -61,18 +63,6 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
           ++executions[i]; }, true);
     });
   }
-  xiiGpuVisibilityDescription visibility;
-  visibility.m_uiMaxInstances           = 4;
-  visibility.m_uiMaxVisibleMeshlets     = 4;
-  visibility.m_uiMaxMeshletsPerGeometry = 1;
-  visibility.m_uiMaxVisibilitySets      = 1;
-  visibility.m_uiLodFeedbackCapacity    = 4;
-  visibility.m_uiFramesInFlight         = 2;
-  const auto shortRing                  = xiiGpuVisibilityManager::CreateContext(visibility);
-  if (!XII_TEST_BOOL(xiiGpuVisibilityManager::IsValid(shortRing)))
-    return;
-  XII_SCOPE_EXIT(xiiGpuVisibilityManager::DestroyContext(shortRing));
-  XII_TEST_INT(xiiGpuVisibilityManager::GetMinimumFramesInFlight(), 2);
   xiiUInt64                             registeredFrame = 0;
   xiiRenderGraphRegistrationDescription registration;
   registration.m_sName  = "Interleaved registered frame";
@@ -113,7 +103,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     previousFrame = xiiMath::Max(frames[0], frames[1]);
     {
       xiiRenderGraphFrame frame;
-      if (!XII_TEST_RESULT(frame.Begin(64)))
+      if (!XII_TEST_RESULT(frame.Begin(2)))
         return;
       XII_TEST_INT(frame.GetFrameIndex(), previousFrame + 1);
       XII_TEST_BOOL(frame.GetCompletedFrame() >= frame.GetFrameIndex() - 2);
@@ -173,14 +163,37 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     XII_TEST_RESULT(xiiRenderGraphManager::ExecuteFrame(recovery, nullptr));
     previousFrame = registeredFrame;
   }
-  xiiGpuVisibilityManager::DestroyContext(shortRing);
-  XII_TEST_BOOL(xiiGpuVisibilityManager::GetMinimumFramesInFlight() != 2);
   worlds[0].Clear();
   {
     XII_LOCK(worlds[1]->GetWriteMarker());
     worlds[1]->Update();
   }
   XII_TEST_BOOL(frames[1] > previousFrame);
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViews, DisabledViewsDoNotRecordFrames)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiWorldDescription description("Disabled query view");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*    renderer = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiView* view     = nullptr;
+  renderer->CreateView("Externally executed query", view);
+  view->SetRenderEnabled(false);
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  // A disabled query view can be used during setup by another graph owner. World
+  // updates must not start a second frame or initialize unrequested rendering data.
+  world.Update();
+  XII_TEST_BOOL(frame.IsActive());
+  XII_TEST_BOOL(renderer->GetGpuInstanceData() == nullptr);
 }
 
 namespace
@@ -190,6 +203,8 @@ namespace
   public:
     using xiiEngineProcessViewContext::xiiEngineProcessViewContext;
     using xiiEngineProcessViewContext::SetCamera;
+    using xiiEngineProcessViewContext::ResolveRenderPipeline;
+    using xiiEngineProcessViewContext::UpdateRenderPipeline;
     xiiView* BorrowView() const { return GetView(); }
     void     SetWindowHandle(xiiRegisteredWindowHandle window) { m_hEditorWindow = window; }
 
@@ -337,6 +352,52 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
     XII_TEST_BOOL(firstView->GetCamera()->GetCameraMode() == xiiCameraMode::OrthoFixedHeight);
     XII_TEST_VEC3(firstView->GetCamera()->GetCenterPosition(), camera.m_vPosition, 0.001f);
     XII_TEST_BOOL(firstView->GetViewRenderMode() == xiiViewRenderMode::Wireframe);
+
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Views require a selected resource and recover without a fallback")
+    {
+      world.SetWorldSimulationEnabled(false);
+      first.Redraw(false);
+      XII_TEST_BOOL(!firstView->GetRenderPipelineResource().IsValid());
+      xiiTestLogInterface   log;
+      xiiTestLogSystemScope scope(&log, true);
+      log.ExpectMessage("has no selected render pipeline resource", xiiLogMsgType::ErrorMsg, 2);
+      world.Update();
+      world.Update(); // Diagnose once until selection changes.
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() == nullptr);
+      XII_TEST_BOOL(firstView->GetExtractionRequirements().IsNoFlagSet());
+      XII_TEST_BOOL(firstView->GetRuntimeFeatures().IsNoFlagSet());
+      xiiPlatformProfile profile;
+      profile.AddMissingConfigs();
+      auto* policy = profile.GetTypeConfig<xiiRenderPipelineProfileConfig>();
+      if (!XII_TEST_BOOL(policy != nullptr))
+        return;
+      TestViewContext configured(&document);
+      configured.SetRenderPipelineProfile(&profile);
+      xiiRenderPipelineResourceHandle selected;
+      log.ExpectMessage("Cannot select the editor view pipeline", xiiLogMsgType::ErrorMsg, 2);
+      XII_TEST_BOOL(configured.ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, selected).Failed());
+      policy->m_sAssetPreviewPipeline = xiiLoadPipelineLibraryResource("InstanceVisibility").GetResourceID();
+      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, selected));
+      XII_TEST_STRING(selected.GetResourceID(), policy->m_sAssetPreviewPipeline);
+      configured.SetRenderPipelineResourceReference(xiiLoadPipelineLibraryResource("InstanceVisibility").GetResourceID());
+      configured.UpdateRenderPipeline(*firstView);
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
+      policy->m_sAssetPreviewPipeline.Clear();
+      configured.UpdateRenderPipeline(*firstView); // Explicit selection survives project changes.
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
+      configured.SetRenderPipelineResourceReference({});
+      configured.UpdateRenderPipeline(*firstView);
+      XII_TEST_BOOL(!firstView->GetRenderPipelineResource().IsValid());
+      firstView->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("InstanceVisibility"));
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
+      firstView->SetRenderPipelineResource({});
+      world.Update();
+      XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() == nullptr);
+      first.SuspendRendering();
+    }
 
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Paused worlds execute only enabled views and retain their configuration")
     {

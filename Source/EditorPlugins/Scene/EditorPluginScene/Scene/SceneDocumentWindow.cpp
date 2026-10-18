@@ -328,7 +328,7 @@ void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(QMenu& menu, co
     connect(pAction, &QAction::triggered, pAction, [this, &menu, &items, pProp]() {
       while (true)
       {
-        bool bOk = false;
+        bool    bOk  = false;
         QString name = QInputDialog::getText(this, "Parameter Name", "Name:", QLineEdit::Normal, xiiMakeQString(pProp->GetPropertyName()), &bOk);
 
         if (!bOk)
@@ -336,8 +336,7 @@ void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(QMenu& menu, co
 
         if (!xiiStringUtils::IsValidIdentifierName(name.toUtf8().data()))
         {
-          xiiQtUiServices::GetSingleton()->MessageBoxInformation("This name is not a valid identifier.\nAllowed characters are a-z, A-Z, "
-                                                                 "0-9 and _.\nWhitespace and special characters are not allowed.");
+          xiiQtUiServices::GetSingleton()->MessageBoxInformation("This name is not a valid identifier.\nAllowed characters are a-z, A-Z, 0-9 and _.\nWhitespace and special characters are not allowed.");
           continue; // try again
         }
 
@@ -353,7 +352,8 @@ void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(QMenu& menu, co
         }
         pAccessor->FinishTransaction();
         return;
-      } });
+      }
+    });
   }
   {
     QAction* pAction = menu.addAction("Remove Exposed Parameter");
@@ -369,7 +369,8 @@ void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(QMenu& menu, co
           GetSceneDocument()->RemoveExposedParameter(index).LogFailure();
         }
       }
-      pAccessor->FinishTransaction(); });
+      pAccessor->FinishTransaction();
+    });
   }
 }
 

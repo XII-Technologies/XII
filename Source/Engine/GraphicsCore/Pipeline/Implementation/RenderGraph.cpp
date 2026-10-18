@@ -5,10 +5,12 @@
 
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 #include <GraphicsCore/Pipeline/RenderGraphSkills.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
@@ -482,6 +484,22 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiStringView sNam
   return WriteBuffer(DeclareBuffer(sName, description), requiredState);
 }
 
+xiiResult xiiRenderGraphBuilder::WaitForFence(xiiSharedPtr<xiiGALFence> fence, xiiUInt64 value)
+{
+  if (!fence || value == 0 || fence->GetDescription().m_Type != xiiGALFenceType::General)
+    return XII_FAILURE;
+  auto& pass = m_Graph.m_Passes[m_uiPassIndex];
+  for (xiiUInt32 i = 0; i < pass.m_WaitFences.GetCount(); ++i)
+    if (pass.m_WaitFences[i] == fence)
+    {
+      pass.m_WaitValues[i] = xiiMath::Max(pass.m_WaitValues[i], value);
+      return XII_SUCCESS;
+    }
+  pass.m_WaitFences.PushBack(std::move(fence));
+  pass.m_WaitValues.PushBack(value);
+  return XII_SUCCESS;
+}
+
 void xiiRenderGraphBuilder::SetPassSideEffects(bool bHasSideEffects)
 {
   m_Graph.m_Passes[m_uiPassIndex].m_bHasSideEffects = bHasSideEffects;
@@ -506,6 +524,8 @@ void xiiRenderGraphBuilder::SetPassPreparation(xiiDelegate<void(xiiRenderGraphPa
 
 xiiRenderGraph::xiiRenderGraph(xiiStringView sName)
 {
+  static xiiAtomicInteger64 s_uiNextInstanceId;
+  m_uiInstanceId = s_uiNextInstanceId.Increment();
   m_sName.Assign(sName);
   m_Id.m_uiValue = xiiHashingUtils::xxHash64String(sName);
   if (!m_Id.IsValid())
@@ -568,6 +588,8 @@ void xiiRenderGraph::EndSetup()
 
 xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
+  m_bIsCompiled = false;
+  XII_SCOPE_EXIT(if (!m_bIsCompiled) xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, nullptr, m_uiFrameIndex, false, out_pError ? out_pError->GetView() : xiiStringView{}}));
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while setup is still open.");
 
   // Cache only frame-independent topology analysis. Every hit rebuilds compiled pass records
@@ -676,6 +698,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
     description.m_uiLastUsePassIndex               = resource.m_uiLastUsePassIdx;
     description.m_uiAliasGroup                     = resource.m_uiAliasGroup;
     description.m_bIsTexture                       = resource.m_bIsTexture;
+    description.m_TextureDescription               = resource.m_TextureDescription;
+    description.m_BufferDescription                = resource.m_BufferDescription;
 
     for (const VersionEntry& version : resource.m_Versions)
     {
@@ -985,6 +1009,7 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
     xiiUInt32 m_uiResourceCount   = 0U;
     xiiUInt8  m_uiQueueMask       = 0U;
     bool      m_bIsTexture        = true;
+    bool      m_bExported         = false;
   };
 
   xiiHybridArray<AliasSlot, 16> aliasSlots;
@@ -998,7 +1023,7 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
     for (xiiUInt32 i = 0U; i < aliasSlots.GetCount(); ++i)
     {
       AliasSlot& slot                = aliasSlots[i];
-      const bool bSingleOrderedQueue = resource.m_ExportFinalState == xiiGALResourceStateFlags::Unknown && resource.m_uiQueueMask != 0U && (resource.m_uiQueueMask & (resource.m_uiQueueMask - 1U)) == 0U && resource.m_uiQueueMask == slot.m_uiQueueMask;
+      const bool bSingleOrderedQueue = !slot.m_bExported && resource.m_ExportFinalState == xiiGALResourceStateFlags::Unknown && resource.m_uiQueueMask != 0U && (resource.m_uiQueueMask & (resource.m_uiQueueMask - 1U)) == 0U && resource.m_uiQueueMask == slot.m_uiQueueMask;
       if (bSingleOrderedQueue && xiiRenderGraphSkills::Aliasing::CanReuse(slot.m_bIsTexture == resource.m_bIsTexture, uiDescriptionHash, slot.m_uiDescriptionHash, slot.m_uiLastUse, resource.m_uiFirstUsePassIdx))
       {
         uiAliasGroup = i;
@@ -1013,6 +1038,7 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
       slot.m_bIsTexture        = resource.m_bIsTexture;
       slot.m_uiDescriptionHash = uiDescriptionHash;
       slot.m_uiQueueMask       = resource.m_uiQueueMask;
+      slot.m_bExported         = resource.m_ExportFinalState != xiiGALResourceStateFlags::Unknown;
     }
 
     AliasSlot& slot  = aliasSlots[uiAliasGroup];
@@ -1360,6 +1386,19 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
         m_QueueSubmissions[uiConsumerSubmission].m_WaitSubmissionIndices.PushBack(uiProducerSubmission);
     };
 
+    // Waits are frame-specific execution data, not part of the cached topology.
+    auto& submission = m_QueueSubmissions[compiledToSubmissionIndex[uiConsumerCompiledIndex]];
+    for (xiiUInt32 i = 0; i < pass.m_WaitFences.GetCount(); ++i)
+    {
+      xiiUInt32 existing = submission.m_WaitFences.IndexOf(pass.m_WaitFences[i]);
+      if (existing == xiiInvalidIndex)
+      {
+        submission.m_WaitFences.PushBack(pass.m_WaitFences[i]);
+        submission.m_WaitValues.PushBack(pass.m_WaitValues[i]);
+      }
+      else
+        submission.m_WaitValues[existing] = xiiMath::Max(submission.m_WaitValues[existing], pass.m_WaitValues[i]);
+    }
     for (const ResourceUsage& read : pass.m_Reads)
       AddProducer(m_Resources[read.m_uiResourceIndex].m_Versions[read.m_uiVersion].m_uiProducerPassIdx);
 
@@ -1607,6 +1646,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   }
 
   // Run render-pass merging now that we have a live device.
+  bool bExecutionSucceeded = false;
+  XII_SCOPE_EXIT(xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_uiFrameIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}, pView ? pView->GetName() : xiiStringView{}}));
   PhaseF_RenderPassMerging(pDevice);
 
   // Resolve all transient and imported resources for this frame's execution.
@@ -1685,6 +1726,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   }
 
   const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
+  if (bEnableGpuProfiling)
+    pProfiler->SetGraphInstance(m_uiInstanceId);
 
   // One general fence per producer submission that has cross-queue consumers. Fences are created
   // per Execute call so frame overlap cannot accidentally reuse an in-flight timeline value.
@@ -2050,6 +2093,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     pProfiler->OnFrameEnd(m_uiFrameIndex);
   }
 
+  bExecutionSucceeded = true;
   return XII_SUCCESS;
 }
 

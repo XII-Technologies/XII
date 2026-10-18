@@ -10,6 +10,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
