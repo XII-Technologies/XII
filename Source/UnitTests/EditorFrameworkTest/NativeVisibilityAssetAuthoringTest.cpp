@@ -2353,3 +2353,21 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldLightsUpload)
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("WorldLightAuthoring"));
   XII_TEST_STATUS(AuthorNativeLeaf(path, "WorldLightsUpload", "xiiWorldLightsUploadPass", xiiRenderPipelineFeature::Lighting));
 }
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldDirectionalLight)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDirectionalLightAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDirectionalLightAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "WorldDirectionalLight", "xiiWorldDirectionalLightPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, EnvironmentLightConstants)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeEnvironmentAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeEnvironmentAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "EnvironmentLightConstants", "xiiEnvironmentLightConstantsPass", {}));
+}
