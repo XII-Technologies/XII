@@ -2190,6 +2190,79 @@ namespace
     return context.ExportDocument(&message);
   }
 
+  xiiStatus AuthorSurfaceRadianceComposition(xiiStringView directory)
+  {
+    const xiiStringView            name = "SurfaceRadianceComposition";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author surface radiance composition");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto connect = [&](const xiiDocumentObject* a, xiiStringView output, const xiiDocumentObject* b, xiiStringView input) -> xiiStatus {
+      if (!a || !b)
+        return xiiStatus("Missing surface radiance operation.");
+      const auto* out = manager->GetOutputPinByName(a, output);
+      const auto* in  = manager->GetInputPinByName(b, input);
+      if (!out || !in)
+        return xiiStatus("Missing reflected surface radiance pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+
+    const auto* confidence     = add("Weight Near GI Confidence", "xiiConfidenceRadiancePass", {0, 900});
+    const auto* directIndirect = add("Add Direct And Indirect", "xiiRadianceAddPass", {0, 0});
+    const auto* emissive       = add("Add Surface Emission", "xiiRadianceAddPass", {600, 0});
+    const auto* nearGI         = add("Add Weighted Near GI", "xiiRadianceAddPass", {1200, 0});
+    const auto* fog            = add("Apply Integrated Fog", "xiiVolumetricCompositePass", {1800, 0});
+    XII_SUCCEED_OR_RETURN(connect(directIndirect, "Radiance", emissive, "A"));
+    XII_SUCCEED_OR_RETURN(connect(emissive, "Radiance", nearGI, "A"));
+    XII_SUCCEED_OR_RETURN(connect(confidence, "Radiance", nearGI, "B"));
+    XII_SUCCEED_OR_RETURN(connect(nearGI, "Radiance", fog, "SceneRadiance"));
+    const auto boundary = [&](xiiStringView label, bool input, const xiiDocumentObject* target, xiiStringView pin, float row) -> xiiStatus {
+      const auto* node = add(label, "xiiRenderPipelineInterfacePass", {input ? -600.0f : 2400.0f, row});
+      if (!node)
+        return xiiStatus("Missing surface radiance interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Name", label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Input", input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(pin == "Before" || pin == "After" ? xiiRenderPipelinePin::Order : xiiRenderPipelinePin::Texture)));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
+      return input ? connect(node, "Value", target, pin) : connect(target, pin, node, "Value");
+    };
+    XII_SUCCEED_OR_RETURN(boundary("DirectLighting", true, directIndirect, "A", 0));
+    XII_SUCCEED_OR_RETURN(boundary("IndirectLighting", true, directIndirect, "B", 200));
+    XII_SUCCEED_OR_RETURN(boundary("GBufferEmissive", true, emissive, "B", 400));
+    XII_SUCCEED_OR_RETURN(boundary("RTFinalGI", true, confidence, "Signal", 600));
+    XII_SUCCEED_OR_RETURN(boundary("VolumetricScattering", true, fog, "ScatteringOpacity", 800));
+    XII_SUCCEED_OR_RETURN(boundary("HDRSceneColor", false, fog, "Radiance", 0));
+    XII_SUCCEED_OR_RETURN(boundary("Before",true,directIndirect,"Before",1000));
+    const auto* before=accessor->GetObject(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SurfaceRadianceComposition/Before"));
+    XII_SUCCEED_OR_RETURN(connect(before,"Value",confidence,"Before"));
+    XII_SUCCEED_OR_RETURN(boundary("After",false,fog,"After",200));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    return context.ExportDocument(&message);
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -2707,4 +2780,41 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldSurfaceLighting)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeWorldSurfaceAuthoring"));
   XII_TEST_STATUS(AuthorWorldSurfaceLighting(path));
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(NativeCompositionAuthoring);
+XII_CREATE_SIMPLE_TEST(NativeCompositionAuthoring, RadianceAdd)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeCompositionAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeCompositionAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "RadianceAdd", "xiiRadianceAddPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeCompositionAuthoring, ConfidenceRadiance)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeCompositionAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeCompositionAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "ConfidenceRadiance", "xiiConfidenceRadiancePass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeCompositionAuthoring, VolumetricComposite)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeCompositionAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeCompositionAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "VolumetricComposite", "xiiVolumetricCompositePass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeCompositionAuthoring, SurfaceRadianceComposition)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeCompositionAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeCompositionAuthoring"));
+  XII_TEST_STATUS(AuthorSurfaceRadianceComposition(path));
 }
