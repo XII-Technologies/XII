@@ -104,7 +104,8 @@ automatically update the PrecompiledTools repository.
 ## Test classification and results
 
 CTest calls the existing TestFramework executables with `-noSave -all` and disables
-interactive HTML/console behavior. Native HTML/JSON diagnostics live in
+interactive HTML/console behavior. It supplies `-sdkRoot` explicitly so generated
+`Data/Base` build directories cannot shadow source test assets. Native HTML/JSON diagnostics live in
 `Workspace/<preset>/TestResults/<configuration>/<suite>`; CTest records its own logs
 under `Testing/Temporary`. Suites run serially because fixtures share state.
 

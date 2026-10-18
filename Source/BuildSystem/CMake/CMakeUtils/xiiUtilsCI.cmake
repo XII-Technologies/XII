@@ -51,6 +51,7 @@ function(xii_ci_add_test TARGET_NAME)
     add_test(
       NAME ${TARGET_NAME}
       COMMAND ${TARGET_NAME} -noGui -run -close -noSave -all -console false -html false
+        -sdkRoot "${XII_ROOT}"
         -outputDir "${CMAKE_BINARY_DIR}/TestResults/$<CONFIG>/${TARGET_NAME}"
         -json "${CMAKE_BINARY_DIR}/TestResults/$<CONFIG>/${TARGET_NAME}/results.json"
     )
