@@ -279,7 +279,7 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
       const auto* graph    = views[view]->GetRenderGraph();
       if (!XII_TEST_BOOL(instance.GetPipeline() != nullptr && graph != nullptr))
         return;
-      const auto  texture  = [&](xiiStringView name) {
+      const auto texture = [&](xiiStringView name) {
         const auto* binding = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface(name, false));
         return binding ? graph->GetExportedTexture(binding->m_hTexture) : xiiSharedPtr<xiiGALTexture>();
       };
@@ -295,7 +295,7 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
         const float range = xiiMath::Max(light.GetEffectiveRange(), 0.001f);
         return xiiMath::Square(xiiMath::Saturate(1.0f - 1.0f / (range * range)));
       };
-      const float primary = phase == 3 ? 0.0f : (phase == 0 ? 1.0f : 2.0f) * (phase >= 2 ? 0.5f : 1.0f) * window(*point);
+      const float primary    = phase == 3 ? 0.0f : (phase == 0 ? 1.0f : 2.0f) * (phase >= 2 ? 0.5f : 1.0f) * window(*point);
       const float additional = phase >= 5 && phase < 9 ? 3.0f * window(*second) : 0.0f;
       CheckSurfacePixel(*environment.GetDevice(), localImage.Borrow(), empty || view == 1 ? xiiVec3::MakeZero() : response * ((primary + additional) * transmission));
       const auto* overflow = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Overflow", false));

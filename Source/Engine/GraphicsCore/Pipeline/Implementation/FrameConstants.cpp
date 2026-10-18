@@ -32,4 +32,3 @@ xiiFrameGlobalConstants xiiSnapshotGlobalConstants(const xiiView& view, xiiUInt3
   result.m_RenderScaleJitter = xiiVec4(view.GetRenderResolutionScale(), 0, 0, 0);
   return result;
 }
-

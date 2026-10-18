@@ -79,5 +79,3 @@ void xiiRenderGraph::StoreTopologyCache(const xiiRenderGraphCompileSettings& set
     m_CachedTopologyCulled.PushBack(pass.m_bIsCulled ? 1 : 0);
   m_bTopologyCacheValid = true;
 }
-
-

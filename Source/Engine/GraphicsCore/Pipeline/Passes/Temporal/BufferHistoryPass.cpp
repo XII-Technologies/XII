@@ -102,7 +102,7 @@ xiiResult xiiBufferHistoryPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphBufferHandle m_Input, m_Output;
     State::Slot                m_Next;
   };
-  context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCopy ? xiiGALCommandQueueFlags::Transfer:xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+  context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCopy ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Input = builder.ReadBuffer(input, xiiGALResourceStateFlags::CopySource);
       data.m_Output = builder.WriteBuffer(builder.ImportBuffer("Retained Frame", next.m_Buffer, next.m_Buffer->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_Output, xiiGALResourceStateFlags::ShaderResource);

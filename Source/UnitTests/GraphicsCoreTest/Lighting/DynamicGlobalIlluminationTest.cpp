@@ -19,7 +19,7 @@ XII_CREATE_SIMPLE_TEST(Lighting, DynamicGlobalIllumination)
 
   XII_TEST_RESULT(context.BeginFrame(xiiVec3::MakeZero(), 1U));
   XII_TEST_INT(context.GetFrameStats().m_uiProbeCount, 32U);
-  XII_TEST_BOOL(context.GetMinimumCell()==xiiVec3I32(-2,-1,-2));
+  XII_TEST_BOOL(context.GetMinimumCell() == xiiVec3I32(-2, -1, -2));
   XII_TEST_INT(context.GetFrameStats().m_uiInvalidProbeCount, 32U);
   XII_TEST_INT(context.GetFrameStats().m_uiScrolledProbeCount, 32U);
   XII_TEST_INT(context.GetScheduledUpdates().GetCount(), 32U);

@@ -491,9 +491,9 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         xiiRenderGraphFrame gpuFrame;
         if (!XII_TEST_RESULT(gpuFrame.Begin()))
           return;
-        const auto frame = gpuFrame.GetFrameIndex();
-        nextFrame = frame + 1;
-        const auto completed = gpuFrame.GetCompletedFrame();
+        const auto frame                        = gpuFrame.GetFrameIndex();
+        nextFrame                               = frame + 1;
+        const auto                    completed = gpuFrame.GetCompletedFrame();
         xiiMaterialResourceDescriptor materialDescription;
         materialDescription.m_AlphaMode   = alphaMode;
         materialDescription.m_BlendMode   = alphaMode == xiiMaterialAlphaMode::Blend ? xiiMaterialBlendMode::Translucent :

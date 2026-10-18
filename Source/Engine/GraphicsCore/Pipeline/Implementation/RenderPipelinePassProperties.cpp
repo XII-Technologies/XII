@@ -351,5 +351,3 @@ xiiResult xiiRenderPipelinePass::GetProperties(xiiVariantDictionary& out_propert
   out_properties = std::move(properties);
   return XII_SUCCESS;
 }
-
-

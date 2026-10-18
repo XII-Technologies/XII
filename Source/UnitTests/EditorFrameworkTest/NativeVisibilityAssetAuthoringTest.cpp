@@ -40,8 +40,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native world instance visibility");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -146,8 +146,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native meshlet visibility");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -257,8 +257,8 @@ namespace
     xiiStringBuilder path(outputDirectory, "/VertexPullDraws.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, "VertexPullDraws");
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native vertex-pull draws");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -347,8 +347,8 @@ namespace
     xiiStringBuilder path(outputDirectory, "/WorldMeshDraws.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, "WorldMeshDraws");
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author world mesh draws");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -445,8 +445,8 @@ namespace
     xiiStringBuilder path(outputDirectory, "/SurfaceQuery.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, "SurfaceQuery");
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author native surface raster graph");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -534,8 +534,8 @@ namespace
     xiiStringBuilder path(outputDirectory, "/DebugVisualization.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, "DebugVisualization");
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author explicit debug composition");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -628,8 +628,8 @@ namespace
     xiiStringBuilder path(outputDirectory, "/EditorMeshPicking.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, "EditorMeshPicking");
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author explicit editor mesh picking");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -711,8 +711,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", assetName, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, assetName);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent depth raster graph");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -816,8 +816,8 @@ namespace
     xiiStringBuilder path(outputDirectory, "/DepthPyramid.xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, "DepthPyramid");
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author separate depth reduction and texture history");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -895,8 +895,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent depth occlusion");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -971,8 +971,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent depth shadow depth");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1048,10 +1048,10 @@ namespace
     const xiiStringBuilder library(outputDirectory, "/RenderPipelines");
     XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(library));
     XII_SUCCEED_OR_RETURN(AuthorShadowDepth(library));
-    xiiStringBuilder               path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
+    xiiStringBuilder        path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author explicit shadow target and reusable depth subgraph");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1153,8 +1153,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent geometry streaming feedback");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1230,8 +1230,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent virtual shadow feedback");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1307,8 +1307,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author stabilized directional cascades");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1388,8 +1388,8 @@ namespace
     xiiStringBuilder    path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author device residency table uploads");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1461,8 +1461,8 @@ namespace
     xiiStringBuilder path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     path.MakeCleanPath();
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author an independent native operation");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1545,10 +1545,10 @@ namespace
 
   xiiStatus AuthorViewBoundaryAsset(xiiStringView outputDirectory, xiiStringView name)
   {
-    xiiStringBuilder               path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
+    xiiStringBuilder        path(outputDirectory, "/", name, ".xiiRenderPipelineAsset");
     xiiPipelineTestDocument document(path, name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent view boundary operations");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1627,10 +1627,10 @@ namespace
 
   xiiStatus AuthorDepthSensorDiagnostic(xiiStringView directory)
   {
-    const xiiStringView            name = "DepthSensorDiagnostic";
+    const xiiStringView     name = "DepthSensorDiagnostic";
     xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author an empty-depth sensor diagnostic");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1688,10 +1688,10 @@ namespace
 
   xiiStatus AuthorDirectionalMesh(xiiStringView directory)
   {
-    const xiiStringView            name = "DirectionalMesh";
+    const xiiStringView     name = "DirectionalMesh";
     xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author directional mesh uniforms and rasterization");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1777,10 +1777,10 @@ namespace
 
   xiiStatus AuthorWorldRayProbe(xiiStringView directory)
   {
-    const xiiStringView            name = "WorldRayProbe";
+    const xiiStringView     name = "WorldRayProbe";
     xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author world acceleration structure and triangle probe");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1835,10 +1835,10 @@ namespace
 
   xiiStatus AuthorClusterLightLists(xiiStringView directory)
   {
-    const xiiStringView            name = "ClusterLightLists";
+    const xiiStringView     name = "ClusterLightLists";
     xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independent cluster operations");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -1916,147 +1916,175 @@ namespace
 
   xiiStatus AuthorDDGIEnvironmentProbes(xiiStringView directory)
   {
-    const xiiStringView name="DDGIEnvironmentProbes";
-    xiiPipelineTestDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
-    auto* accessor=document.GetObjectAccessor();
-    auto* manager=static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    const xiiStringView     name = "DDGIEnvironmentProbes";
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independently scheduled environment probes");
-    bool finished=false;
-    XII_SCOPE_EXIT(if(!finished) accessor->CancelTransaction());
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
     XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(),"RequiredDeviceFeatures",xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
-    const auto add=[&](xiiStringView label,xiiStringView type,xiiVec2 position)->const xiiDocumentObject*{
-      auto id=xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.",name,"/",label));
-      if(accessor->AddObject(nullptr,nullptr,-1,xiiRTTI::FindTypeByName(type),id).Failed()) return nullptr;
-      xiiMoveNodeCommand move; move.m_Object=id; move.m_NewPos=position;
-      if(document.GetCommandHistory()->AddCommand(move).Failed()) return nullptr;
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
       return accessor->GetObject(id);
     };
-    const auto connect=[&](const xiiDocumentObject* a,xiiStringView output,const xiiDocumentObject* b,xiiStringView input)->xiiStatus{
-      if(!a || !b) return xiiStatus("Missing DDGI operation.");
-      const auto* out=manager->GetOutputPinByName(a,output); const auto* in=manager->GetInputPinByName(b,input);
-      if(!out || !in) return xiiStatus("Missing reflected DDGI pin.");
-      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(),manager->GetConnectionType(),*out,*in);
+    const auto connect = [&](const xiiDocumentObject* a, xiiStringView output, const xiiDocumentObject* b, xiiStringView input) -> xiiStatus {
+      if (!a || !b)
+        return xiiStatus("Missing DDGI operation.");
+      const auto* out = manager->GetOutputPinByName(a, output);
+      const auto* in  = manager->GetInputPinByName(b, input);
+      if (!out || !in)
+        return xiiStatus("Missing reflected DDGI pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
-    const auto* schedule=add("Schedule Camera Probes","xiiDDGIProbeSchedulePass",{0,0});
-    const auto* upload=add("Upload Probe Snapshot","xiiDDGIProbeUploadPass",{600,0});
-    const auto* prepare=add("Prepare Current Atlases","xiiDDGIAtlasPreparePass",{600,600});
-    const auto* seed=add("Seed Environment Radiance","xiiDDGIEnvironmentSeedPass",{1200,0});
-    const auto* irradianceHistory=add("Retain Irradiance History","xiiTextureHistoryPass",{1800,400});
-    const auto* distanceHistory=add("Retain Distance History","xiiTextureHistoryPass",{1800,800});
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(irradianceHistory,"AsyncCopy",false));
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(distanceHistory,"AsyncCopy",false));
-    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",upload,"Schedule"));
-    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",prepare,"Schedule"));
-    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",seed,"Schedule"));
-    XII_SUCCEED_OR_RETURN(connect(upload,"ProbeConstants",seed,"ProbeConstants"));
-    XII_SUCCEED_OR_RETURN(connect(upload,"ProbeUpdates",seed,"ProbeUpdates"));
-    XII_SUCCEED_OR_RETURN(connect(upload,"ProbeStates",seed,"InitialProbeStates"));
-    XII_SUCCEED_OR_RETURN(connect(prepare,"Irradiance",seed,"InitialIrradiance"));
-    XII_SUCCEED_OR_RETURN(connect(prepare,"Distance",seed,"InitialDistance"));
-    XII_SUCCEED_OR_RETURN(connect(seed,"Irradiance",irradianceHistory,"Texture"));
-    XII_SUCCEED_OR_RETURN(connect(seed,"Distance",distanceHistory,"Texture"));
-    for(const auto* consumer:{schedule,prepare})
+    const auto* schedule          = add("Schedule Camera Probes", "xiiDDGIProbeSchedulePass", {0, 0});
+    const auto* upload            = add("Upload Probe Snapshot", "xiiDDGIProbeUploadPass", {600, 0});
+    const auto* prepare           = add("Prepare Current Atlases", "xiiDDGIAtlasPreparePass", {600, 600});
+    const auto* seed              = add("Seed Environment Radiance", "xiiDDGIEnvironmentSeedPass", {1200, 0});
+    const auto* irradianceHistory = add("Retain Irradiance History", "xiiTextureHistoryPass", {1800, 400});
+    const auto* distanceHistory   = add("Retain Distance History", "xiiTextureHistoryPass", {1800, 800});
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(irradianceHistory, "AsyncCopy", false));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(distanceHistory, "AsyncCopy", false));
+    XII_SUCCEED_OR_RETURN(connect(schedule, "Schedule", upload, "Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule, "Schedule", prepare, "Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule, "Schedule", seed, "Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(upload, "ProbeConstants", seed, "ProbeConstants"));
+    XII_SUCCEED_OR_RETURN(connect(upload, "ProbeUpdates", seed, "ProbeUpdates"));
+    XII_SUCCEED_OR_RETURN(connect(upload, "ProbeStates", seed, "InitialProbeStates"));
+    XII_SUCCEED_OR_RETURN(connect(prepare, "Irradiance", seed, "InitialIrradiance"));
+    XII_SUCCEED_OR_RETURN(connect(prepare, "Distance", seed, "InitialDistance"));
+    XII_SUCCEED_OR_RETURN(connect(seed, "Irradiance", irradianceHistory, "Texture"));
+    XII_SUCCEED_OR_RETURN(connect(seed, "Distance", distanceHistory, "Texture"));
+    for (const auto* consumer : {schedule, prepare})
     {
-      XII_SUCCEED_OR_RETURN(connect(irradianceHistory,"PreviousTexture",consumer,"PreviousIrradiance"));
-      XII_SUCCEED_OR_RETURN(connect(distanceHistory,"PreviousTexture",consumer,"PreviousDistance"));
+      XII_SUCCEED_OR_RETURN(connect(irradianceHistory, "PreviousTexture", consumer, "PreviousIrradiance"));
+      XII_SUCCEED_OR_RETURN(connect(distanceHistory, "PreviousTexture", consumer, "PreviousDistance"));
     }
-    const auto boundary=[&](xiiStringView label,bool input,const xiiDocumentObject* operation,xiiStringView pin,xiiRenderPipelinePin::Type kind,xiiGALResourceFormat::Enum format,float row)->xiiStatus{
-      const auto* node=add(label,"xiiRenderPipelineInterfacePass",{input ? -600.0f : 2400.0f,row});
-      if(!node) return xiiStatus("Missing DDGI interface.");
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Name",label));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Input",input));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"ResourceType",xiiUInt32(kind)));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Format",xiiInt64(format)));
-      if(kind==xiiRenderPipelinePin::FrameData) XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"DataType","xiiDDGIProbeFrameData"));
+    const auto boundary = [&](xiiStringView label, bool input, const xiiDocumentObject* operation, xiiStringView pin, xiiRenderPipelinePin::Type kind, xiiGALResourceFormat::Enum format, float row) -> xiiStatus {
+      const auto* node = add(label, "xiiRenderPipelineInterfacePass", {input ? -600.0f : 2400.0f, row});
+      if (!node)
+        return xiiStatus("Missing DDGI interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Name", label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Input", input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(kind)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Format", xiiInt64(format)));
+      if (kind == xiiRenderPipelinePin::FrameData)
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "DataType", "xiiDDGIProbeFrameData"));
       XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
-      return input ? connect(node,"Value",operation,pin) : connect(operation,pin,node,"Value");
+      return input ? connect(node, "Value", operation, pin) : connect(operation, pin, node, "Value");
     };
-    XII_SUCCEED_OR_RETURN(boundary("EnvironmentLight",true,seed,"EnvironmentLight",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,1000));
-    XII_SUCCEED_OR_RETURN(boundary("Irradiance",false,seed,"Irradiance",xiiRenderPipelinePin::Texture,xiiGALResourceFormat::RGBA16Float,0));
-    XII_SUCCEED_OR_RETURN(boundary("Distance",false,seed,"Distance",xiiRenderPipelinePin::Texture,xiiGALResourceFormat::RG32Float,200));
-    XII_SUCCEED_OR_RETURN(boundary("ProbeStates",false,seed,"ProbeStates",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,400));
-    XII_SUCCEED_OR_RETURN(boundary("ProbeConstants",false,upload,"ProbeConstants",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,600));
-    XII_SUCCEED_OR_RETURN(boundary("Schedule",false,schedule,"Schedule",xiiRenderPipelinePin::FrameData,xiiGALResourceFormat::Unknown,800));
-    accessor->FinishTransaction(); finished=true;
+    XII_SUCCEED_OR_RETURN(boundary("EnvironmentLight", true, seed, "EnvironmentLight", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 1000));
+    XII_SUCCEED_OR_RETURN(boundary("Irradiance", false, seed, "Irradiance", xiiRenderPipelinePin::Texture, xiiGALResourceFormat::RGBA16Float, 0));
+    XII_SUCCEED_OR_RETURN(boundary("Distance", false, seed, "Distance", xiiRenderPipelinePin::Texture, xiiGALResourceFormat::RG32Float, 200));
+    XII_SUCCEED_OR_RETURN(boundary("ProbeStates", false, seed, "ProbeStates", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 400));
+    XII_SUCCEED_OR_RETURN(boundary("ProbeConstants", false, upload, "ProbeConstants", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 600));
+    XII_SUCCEED_OR_RETURN(boundary("Schedule", false, schedule, "Schedule", xiiRenderPipelinePin::FrameData, xiiGALResourceFormat::Unknown, 800));
+    accessor->FinishTransaction();
+    finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    xiiPipelineTestContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
-    xiiExportDocumentMsgToEngine message; message.m_sOutputFile=xiiStringBuilder(directory,"/",name,".xiiBinRenderPipeline"); message.m_uiAssetHash=1; message.m_uiVersion=7;
+    xiiPipelineTestContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
     return context.ExportDocument(&message);
   }
   xiiStatus AuthorSparseVoxelEnvironment(xiiStringView directory)
   {
-    const xiiStringView name="SparseVoxelEnvironment";
-    xiiPipelineTestDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
-    auto* accessor=document.GetObjectAccessor();
-    auto* manager=static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    const xiiStringView     name = "SparseVoxelEnvironment";
+    xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author independently scheduled environment probes");
-    bool finished=false;
-    XII_SCOPE_EXIT(if(!finished) accessor->CancelTransaction());
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
     XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(),"RequiredDeviceFeatures",xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
-    const auto add=[&](xiiStringView label,xiiStringView type,xiiVec2 position)->const xiiDocumentObject*{
-      auto id=xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.",name,"/",label));
-      if(accessor->AddObject(nullptr,nullptr,-1,xiiRTTI::FindTypeByName(type),id).Failed()) return nullptr;
-      xiiMoveNodeCommand move; move.m_Object=id; move.m_NewPos=position;
-      if(document.GetCommandHistory()->AddCommand(move).Failed()) return nullptr;
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
       return accessor->GetObject(id);
     };
-    const auto connect=[&](const xiiDocumentObject* a,xiiStringView output,const xiiDocumentObject* b,xiiStringView input)->xiiStatus{
-      if(!a || !b) return xiiStatus("Missing SparseVoxel operation.");
-      const auto* out=manager->GetOutputPinByName(a,output); const auto* in=manager->GetInputPinByName(b,input);
-      if(!out || !in) return xiiStatus("Missing reflected SparseVoxel pin.");
-      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(),manager->GetConnectionType(),*out,*in);
+    const auto connect = [&](const xiiDocumentObject* a, xiiStringView output, const xiiDocumentObject* b, xiiStringView input) -> xiiStatus {
+      if (!a || !b)
+        return xiiStatus("Missing SparseVoxel operation.");
+      const auto* out = manager->GetOutputPinByName(a, output);
+      const auto* in  = manager->GetInputPinByName(b, input);
+      if (!out || !in)
+        return xiiStatus("Missing reflected SparseVoxel pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
     };
 
-    const auto* schedule=add("Schedule Camera Bricks","xiiSparseVoxelSchedulePass",{0,0});
-    const auto* upload=add("Upload Clipmap Snapshot","xiiSparseVoxelUploadPass",{600,0});
-    const auto* prepare=add("Prepare Current Pool","xiiSparseVoxelPoolPreparePass",{600,600});
-    const auto* seed=add("Seed Environment Radiance","xiiSparseVoxelEnvironmentSeedPass",{1200,0});
-    const auto* history=add("Retain Radiance History","xiiBufferHistoryPass",{1800,400});
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(history,"AsyncCopy",false));
-    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",upload,"Schedule"));
-    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",prepare,"Schedule"));
-    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",seed,"Schedule"));
-    XII_SUCCEED_OR_RETURN(connect(upload,"Constants",seed,"Constants"));
-    XII_SUCCEED_OR_RETURN(connect(upload,"BrickUpdates",seed,"BrickUpdates"));
-    XII_SUCCEED_OR_RETURN(connect(upload,"LevelData",seed,"LevelData"));
-    XII_SUCCEED_OR_RETURN(connect(upload,"PageTable",seed,"InitialPageTable"));
-    XII_SUCCEED_OR_RETURN(connect(prepare,"RadiancePool",seed,"InitialPool"));
-    XII_SUCCEED_OR_RETURN(connect(seed,"RadiancePool",history,"Buffer"));
-    XII_SUCCEED_OR_RETURN(connect(history,"PreviousBuffer",schedule,"PreviousPool"));
-    XII_SUCCEED_OR_RETURN(connect(history,"PreviousBuffer",prepare,"PreviousPool"));
-    const auto boundary=[&](xiiStringView label,bool input,const xiiDocumentObject* operation,xiiStringView pin,xiiRenderPipelinePin::Type kind,xiiGALResourceFormat::Enum format,float row)->xiiStatus{
-      const auto* node=add(label,"xiiRenderPipelineInterfacePass",{input ? -600.0f : 2400.0f,row});
-      if(!node) return xiiStatus("Missing SparseVoxel interface.");
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Name",label));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Input",input));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"ResourceType",xiiUInt32(kind)));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Format",xiiInt64(format)));
-      if(kind==xiiRenderPipelinePin::FrameData) XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"DataType","xiiSparseVoxelFrameData"));
+    const auto* schedule = add("Schedule Camera Bricks", "xiiSparseVoxelSchedulePass", {0, 0});
+    const auto* upload   = add("Upload Clipmap Snapshot", "xiiSparseVoxelUploadPass", {600, 0});
+    const auto* prepare  = add("Prepare Current Pool", "xiiSparseVoxelPoolPreparePass", {600, 600});
+    const auto* seed     = add("Seed Environment Radiance", "xiiSparseVoxelEnvironmentSeedPass", {1200, 0});
+    const auto* history  = add("Retain Radiance History", "xiiBufferHistoryPass", {1800, 400});
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(history, "AsyncCopy", false));
+    XII_SUCCEED_OR_RETURN(connect(schedule, "Schedule", upload, "Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule, "Schedule", prepare, "Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule, "Schedule", seed, "Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(upload, "Constants", seed, "Constants"));
+    XII_SUCCEED_OR_RETURN(connect(upload, "BrickUpdates", seed, "BrickUpdates"));
+    XII_SUCCEED_OR_RETURN(connect(upload, "LevelData", seed, "LevelData"));
+    XII_SUCCEED_OR_RETURN(connect(upload, "PageTable", seed, "InitialPageTable"));
+    XII_SUCCEED_OR_RETURN(connect(prepare, "RadiancePool", seed, "InitialPool"));
+    XII_SUCCEED_OR_RETURN(connect(seed, "RadiancePool", history, "Buffer"));
+    XII_SUCCEED_OR_RETURN(connect(history, "PreviousBuffer", schedule, "PreviousPool"));
+    XII_SUCCEED_OR_RETURN(connect(history, "PreviousBuffer", prepare, "PreviousPool"));
+    const auto boundary = [&](xiiStringView label, bool input, const xiiDocumentObject* operation, xiiStringView pin, xiiRenderPipelinePin::Type kind, xiiGALResourceFormat::Enum format, float row) -> xiiStatus {
+      const auto* node = add(label, "xiiRenderPipelineInterfacePass", {input ? -600.0f : 2400.0f, row});
+      if (!node)
+        return xiiStatus("Missing SparseVoxel interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Name", label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Input", input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(kind)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Format", xiiInt64(format)));
+      if (kind == xiiRenderPipelinePin::FrameData)
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "DataType", "xiiSparseVoxelFrameData"));
       XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
-      return input ? connect(node,"Value",operation,pin) : connect(operation,pin,node,"Value");
+      return input ? connect(node, "Value", operation, pin) : connect(operation, pin, node, "Value");
     };
 
-    XII_SUCCEED_OR_RETURN(boundary("EnvironmentLight",true,seed,"EnvironmentLight",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,1000));
-    XII_SUCCEED_OR_RETURN(boundary("RadiancePool",false,seed,"RadiancePool",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,0));
-    XII_SUCCEED_OR_RETURN(boundary("PageTable",false,seed,"PageTable",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,200));
-    XII_SUCCEED_OR_RETURN(boundary("LevelData",false,upload,"LevelData",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,400));
-    XII_SUCCEED_OR_RETURN(boundary("Constants",false,upload,"Constants",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,600));
-    XII_SUCCEED_OR_RETURN(boundary("Schedule",false,schedule,"Schedule",xiiRenderPipelinePin::FrameData,xiiGALResourceFormat::Unknown,800));
-    accessor->FinishTransaction(); finished=true;
+    XII_SUCCEED_OR_RETURN(boundary("EnvironmentLight", true, seed, "EnvironmentLight", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 1000));
+    XII_SUCCEED_OR_RETURN(boundary("RadiancePool", false, seed, "RadiancePool", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 0));
+    XII_SUCCEED_OR_RETURN(boundary("PageTable", false, seed, "PageTable", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 200));
+    XII_SUCCEED_OR_RETURN(boundary("LevelData", false, upload, "LevelData", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 400));
+    XII_SUCCEED_OR_RETURN(boundary("Constants", false, upload, "Constants", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 600));
+    XII_SUCCEED_OR_RETURN(boundary("Schedule", false, schedule, "Schedule", xiiRenderPipelinePin::FrameData, xiiGALResourceFormat::Unknown, 800));
+    accessor->FinishTransaction();
+    finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
-    xiiPipelineTestContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
-    xiiExportDocumentMsgToEngine message; message.m_sOutputFile=xiiStringBuilder(directory,"/",name,".xiiBinRenderPipeline"); message.m_uiAssetHash=1; message.m_uiVersion=7;
+    xiiPipelineTestContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
     return context.ExportDocument(&message);
   }
 
   xiiStatus AuthorWorldSurfaceLighting(xiiStringView directory)
   {
-    const xiiStringView            name = "WorldSurfaceLighting";
+    const xiiStringView     name = "WorldSurfaceLighting";
     xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author world surface-lighting composition");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -2146,10 +2174,10 @@ namespace
 
   xiiStatus AuthorSurfaceRadianceComposition(xiiStringView directory)
   {
-    const xiiStringView            name = "SurfaceRadianceComposition";
+    const xiiStringView     name = "SurfaceRadianceComposition";
     xiiPipelineTestDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
-    auto*                          accessor = document.GetObjectAccessor();
-    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    auto*                   accessor = document.GetObjectAccessor();
+    auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
     accessor->StartTransaction("Author surface radiance composition");
     bool finished = false;
     XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
@@ -2201,10 +2229,10 @@ namespace
     XII_SUCCEED_OR_RETURN(boundary("RTFinalGI", true, confidence, "Signal", 600));
     XII_SUCCEED_OR_RETURN(boundary("VolumetricScattering", true, fog, "ScatteringOpacity", 800));
     XII_SUCCEED_OR_RETURN(boundary("HDRSceneColor", false, fog, "Radiance", 0));
-    XII_SUCCEED_OR_RETURN(boundary("Before",true,directIndirect,"Before",1000));
-    const auto* before=accessor->GetObject(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SurfaceRadianceComposition/Before"));
-    XII_SUCCEED_OR_RETURN(connect(before,"Value",confidence,"Before"));
-    XII_SUCCEED_OR_RETURN(boundary("After",false,fog,"After",200));
+    XII_SUCCEED_OR_RETURN(boundary("Before", true, directIndirect, "Before", 1000));
+    const auto* before = accessor->GetObject(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SurfaceRadianceComposition/Before"));
+    XII_SUCCEED_OR_RETURN(connect(before, "Value", confidence, "Before"));
+    XII_SUCCEED_OR_RETURN(boundary("After", false, fog, "After", 200));
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
@@ -2631,80 +2659,90 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, EnvironmentLightConstants)
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIProbeSchedule)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIProbeScheduleAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDDGIProbeScheduleAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIProbeScheduleAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIProbeSchedule","xiiDDGIProbeSchedulePass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "DDGIProbeSchedule", "xiiDDGIProbeSchedulePass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIProbeUpload)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIProbeUploadAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDDGIProbeUploadAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIProbeUploadAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIProbeUpload","xiiDDGIProbeUploadPass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "DDGIProbeUpload", "xiiDDGIProbeUploadPass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIAtlasPrepare)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIAtlasPrepareAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDDGIAtlasPrepareAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIAtlasPrepareAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIAtlasPrepare","xiiDDGIAtlasPreparePass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "DDGIAtlasPrepare", "xiiDDGIAtlasPreparePass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIEnvironmentSeed)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIEnvironmentSeedAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDDGIEnvironmentSeedAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIEnvironmentSeedAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"DDGIEnvironmentSeed","xiiDDGIEnvironmentSeedPass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "DDGIEnvironmentSeed", "xiiDDGIEnvironmentSeedPass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIEnvironmentProbes)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIEnvironmentAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDDGIEnvironmentAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIEnvironmentAuthoring"));
   XII_TEST_STATUS(AuthorDDGIEnvironmentProbes(path));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelSchedule)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelScheduleAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSparseVoxelScheduleAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelScheduleAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelSchedule","xiiSparseVoxelSchedulePass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "SparseVoxelSchedule", "xiiSparseVoxelSchedulePass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelUpload)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelUploadAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSparseVoxelUploadAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelUploadAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelUpload","xiiSparseVoxelUploadPass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "SparseVoxelUpload", "xiiSparseVoxelUploadPass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelPoolPrepare)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelPoolPrepareAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSparseVoxelPoolPrepareAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelPoolPrepareAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelPoolPrepare","xiiSparseVoxelPoolPreparePass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "SparseVoxelPoolPrepare", "xiiSparseVoxelPoolPreparePass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelEnvironmentSeed)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelEnvironmentSeedAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSparseVoxelEnvironmentSeedAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelEnvironmentSeedAuthoring"));
-  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelEnvironmentSeed","xiiSparseVoxelEnvironmentSeedPass",{}));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "SparseVoxelEnvironmentSeed", "xiiSparseVoxelEnvironmentSeedPass", {}));
 }
 
 XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelEnvironment)
 {
-  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseEnvironmentAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeSparseEnvironmentAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseEnvironmentAuthoring"));
   XII_TEST_STATUS(AuthorSparseVoxelEnvironment(path));
 }

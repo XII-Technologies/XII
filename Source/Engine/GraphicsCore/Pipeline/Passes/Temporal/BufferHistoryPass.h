@@ -12,7 +12,7 @@ class XII_GRAPHICSCORE_DLL xiiBufferHistoryPass final : public xiiRenderPipeline
 public:
   xiiRenderPipelineBufferInputPin  m_Input{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin m_Previous{true, xiiGALBindFlags::ShaderResource, xiiRenderPipelinePinAccess::Read, true};
-  bool m_bAsyncCopy=true;
+  bool                             m_bAsyncCopy = true;
   xiiBufferHistoryPass();
   ~xiiBufferHistoryPass();
   xiiResult Build(xiiRenderPipelinePassContext& context) override;

@@ -58,5 +58,3 @@ xiiResult xiiResolvePipelineDisplaySettings(const xiiVariantDictionary& paramete
   inout_settings = replacement;
   return XII_SUCCESS;
 }
-
-

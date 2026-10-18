@@ -3,16 +3,16 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIEnvironmentSeedPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeSchedulePass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelEnvironmentSeedPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelSchedulePass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/ClusteredLocalSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/DirectionalSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/WorldDirectionalLightPass.h>
-#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeSchedulePass.h>
-#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIEnvironmentSeedPass.h>
-#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelSchedulePass.h>
-#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelEnvironmentSeedPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
@@ -426,23 +426,44 @@ XII_CREATE_SIMPLE_TEST(Pipeline, EnvironmentLightMemberPins)
 XII_CREATE_SIMPLE_TEST(Pipeline, DDGIIndependentOperationSchemas)
 {
   xiiDDGIProbeSchedulePass schedule;
-  xiiVariantDictionary properties;
-  properties.Insert("ProbeCountX",4U); properties.Insert("ProbeCountY",2U); properties.Insert("ProbeCountZ",4U);
-  properties.Insert("UpdateBudget",8U); properties.Insert("UseViewCamera",false); properties.Insert("Hysteresis",0.5f);
+  xiiVariantDictionary     properties;
+  properties.Insert("ProbeCountX", 4U);
+  properties.Insert("ProbeCountY", 2U);
+  properties.Insert("ProbeCountZ", 4U);
+  properties.Insert("UpdateBudget", 8U);
+  properties.Insert("UseViewCamera", false);
+  properties.Insert("Hysteresis", 0.5f);
   XII_TEST_RESULT(schedule.Configure(properties));
-  properties.Clear(); XII_TEST_RESULT(schedule.GetProperties(properties));
+  properties.Clear();
+  XII_TEST_RESULT(schedule.GetProperties(properties));
   XII_TEST_BOOL(!properties.Contains("Schedule") && !properties.Contains("PreviousIrradiance"));
-  xiiDDGIProbeSchedulePass copy; XII_TEST_RESULT(copy.Configure(properties));
-  XII_TEST_INT(copy.m_CountX,4); XII_TEST_FLOAT(copy.m_fHysteresis,0.5f,0);
-  xiiDynamicArray<xiiRenderPipelinePin> pins; copy.GetPins(pins); XII_TEST_RESULT(copy.InitializePinBindings(pins));
+  xiiDDGIProbeSchedulePass copy;
+  XII_TEST_RESULT(copy.Configure(properties));
+  XII_TEST_INT(copy.m_CountX, 4);
+  XII_TEST_FLOAT(copy.m_fHysteresis, 0.5f, 0);
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  copy.GetPins(pins);
+  XII_TEST_RESULT(copy.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[copy.m_PreviousIrradiance.GetBindingIndex()].m_bOptional && pins[copy.m_PreviousDistance.GetBindingIndex()].m_bOptional);
-  XII_TEST_BOOL(pins[copy.m_Schedule.GetBindingIndex()].m_pDataType==xiiGetStaticRTTI<xiiDDGIProbeFrameData>());
+  XII_TEST_BOOL(pins[copy.m_Schedule.GetBindingIndex()].m_pDataType == xiiGetStaticRTTI<xiiDDGIProbeFrameData>());
   XII_TEST_BOOL(copy.GetExtractionRequirements().IsNoFlagSet() && copy.GetRuntimeFeatures().IsNoFlagSet());
   xiiDDGIProbeSchedulePass rejected;
-  xiiVariantDictionary invalid; invalid.Insert("ProbeCountX",0U); XII_TEST_BOOL(rejected.Configure(invalid).Failed());
-  invalid.Clear(); invalid.Insert("ProbeCountX",256U); invalid.Insert("ProbeCountY",256U); invalid.Insert("ProbeCountZ",256U); XII_TEST_BOOL(rejected.Configure(invalid).Failed());
-  invalid.Clear(); invalid.Insert("Hysteresis",1.0f); xiiDDGIProbeSchedulePass invalidHysteresis; XII_TEST_BOOL(invalidHysteresis.Configure(invalid).Failed());
-  xiiDDGIEnvironmentSeedPass seed; pins.Clear(); seed.GetPins(pins); XII_TEST_RESULT(seed.InitializePinBindings(pins));
+  xiiVariantDictionary     invalid;
+  invalid.Insert("ProbeCountX", 0U);
+  XII_TEST_BOOL(rejected.Configure(invalid).Failed());
+  invalid.Clear();
+  invalid.Insert("ProbeCountX", 256U);
+  invalid.Insert("ProbeCountY", 256U);
+  invalid.Insert("ProbeCountZ", 256U);
+  XII_TEST_BOOL(rejected.Configure(invalid).Failed());
+  invalid.Clear();
+  invalid.Insert("Hysteresis", 1.0f);
+  xiiDDGIProbeSchedulePass invalidHysteresis;
+  XII_TEST_BOOL(invalidHysteresis.Configure(invalid).Failed());
+  xiiDDGIEnvironmentSeedPass seed;
+  pins.Clear();
+  seed.GetPins(pins);
+  XII_TEST_RESULT(seed.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[seed.m_StatesInput.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
   XII_TEST_BOOL(seed.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::Compute) && seed.GetRuntimeFeatures().IsNoFlagSet());
 }
@@ -450,17 +471,41 @@ XII_CREATE_SIMPLE_TEST(Pipeline, DDGIIndependentOperationSchemas)
 XII_CREATE_SIMPLE_TEST(Pipeline, SparseVoxelIndependentSchemasAndBudgets)
 {
   xiiSparseVoxelSchedulePass schedule;
-  xiiVariantDictionary values; values.Insert("ClipmapLevels",2U); values.Insert("BrickGridResolution",2U); values.Insert("BrickVoxelResolution",2U); values.Insert("ResidentBricks",16U); values.Insert("UpdateBudget",4U); values.Insert("UseViewCamera",false);
-  XII_TEST_RESULT(schedule.Configure(values)); values.Clear(); XII_TEST_RESULT(schedule.GetProperties(values));
+  xiiVariantDictionary       values;
+  values.Insert("ClipmapLevels", 2U);
+  values.Insert("BrickGridResolution", 2U);
+  values.Insert("BrickVoxelResolution", 2U);
+  values.Insert("ResidentBricks", 16U);
+  values.Insert("UpdateBudget", 4U);
+  values.Insert("UseViewCamera", false);
+  XII_TEST_RESULT(schedule.Configure(values));
+  values.Clear();
+  XII_TEST_RESULT(schedule.GetProperties(values));
   XII_TEST_BOOL(!values.Contains("Schedule") && !values.Contains("PreviousPool"));
-  xiiSparseVoxelSchedulePass copy; XII_TEST_RESULT(copy.Configure(values)); XII_TEST_INT(copy.m_Resident,16);
-  xiiDynamicArray<xiiRenderPipelinePin> pins; copy.GetPins(pins); XII_TEST_RESULT(copy.InitializePinBindings(pins));
-  XII_TEST_BOOL(pins[copy.m_PreviousPool.GetBindingIndex()].m_bOptional && pins[copy.m_Schedule.GetBindingIndex()].m_pDataType==xiiGetStaticRTTI<xiiSparseVoxelFrameData>());
+  xiiSparseVoxelSchedulePass copy;
+  XII_TEST_RESULT(copy.Configure(values));
+  XII_TEST_INT(copy.m_Resident, 16);
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  copy.GetPins(pins);
+  XII_TEST_RESULT(copy.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[copy.m_PreviousPool.GetBindingIndex()].m_bOptional && pins[copy.m_Schedule.GetBindingIndex()].m_pDataType == xiiGetStaticRTTI<xiiSparseVoxelFrameData>());
   XII_TEST_BOOL(copy.GetRuntimeFeatures().IsNoFlagSet() && copy.GetExtractionRequirements().IsNoFlagSet());
-  xiiVariantDictionary invalid; invalid.Insert("MaximumPoolBytes",16U); xiiSparseVoxelSchedulePass rejected; XII_TEST_BOOL(rejected.Configure(invalid).Failed());
-  invalid.Clear(); invalid.Insert("ResidentBricks",1U); xiiSparseVoxelSchedulePass insufficient; XII_TEST_BOOL(insufficient.Configure(invalid).Failed());
-  invalid.Clear(); invalid.Insert("Hysteresis",1.0f); xiiSparseVoxelSchedulePass badWeight; XII_TEST_BOOL(badWeight.Configure(invalid).Failed());
-  xiiSparseVoxelEnvironmentSeedPass seed; pins.Clear(); seed.GetPins(pins); XII_TEST_RESULT(seed.InitializePinBindings(pins));
+  xiiVariantDictionary invalid;
+  invalid.Insert("MaximumPoolBytes", 16U);
+  xiiSparseVoxelSchedulePass rejected;
+  XII_TEST_BOOL(rejected.Configure(invalid).Failed());
+  invalid.Clear();
+  invalid.Insert("ResidentBricks", 1U);
+  xiiSparseVoxelSchedulePass insufficient;
+  XII_TEST_BOOL(insufficient.Configure(invalid).Failed());
+  invalid.Clear();
+  invalid.Insert("Hysteresis", 1.0f);
+  xiiSparseVoxelSchedulePass badWeight;
+  XII_TEST_BOOL(badWeight.Configure(invalid).Failed());
+  xiiSparseVoxelEnvironmentSeedPass seed;
+  pins.Clear();
+  seed.GetPins(pins);
+  XII_TEST_RESULT(seed.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[seed.m_InitialPages.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
 }
 
