@@ -5,6 +5,8 @@
 #include <Core/World/World.h>
 #include <Core/World/WorldDesc.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -251,8 +253,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, HierarchicalExecution)
   }
 }
 
-XII_CREATE_SIMPLE_TEST_GROUP(PipelineDefault);
-XII_CREATE_SIMPLE_TEST(PipelineDefault, ReaderStateScheduling)
+XII_CREATE_SIMPLE_TEST_GROUP(PipelineScheduling);
+XII_CREATE_SIMPLE_TEST(PipelineScheduling, ReaderStateScheduling)
 {
   for (bool exportAfterReaders : {false, true})
   {
@@ -340,10 +342,10 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, ReaderStateScheduling)
   }
 }
 
-XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
+XII_CREATE_SIMPLE_TEST(PipelineScheduling, OffscreenRendering)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize()))
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
     return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
@@ -353,7 +355,7 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     xiiGALDevice::SetDefaultDevice(nullptr);
     environment.Shutdown(););
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default pipeline compiles and renders to an off-screen target")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Authored target and presentation resources render without scene services")
   {
     xiiGALTextureCreationDescription description;
     description.m_Type      = xiiGALResourceDimension::Texture2D;
@@ -363,39 +365,64 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     auto target             = environment.GetDevice()->CreateTexture(description);
     if (!XII_TEST_BOOL(target != nullptr))
       return;
-    xiiWorldDescription worldDescription("Default Pipeline Test");
+    xiiWorldDescription worldDescription("Explicit Native Pipeline Test");
     xiiWorld            world(worldDescription);
     XII_LOCK(world.GetWriteMarker());
     auto*     module = world.GetOrCreateModule<xiiRenderWorldModule>();
     xiiCamera camera;
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 100.0f);
     xiiView*   view   = nullptr;
-    const auto handle = module->CreateView("Default", view);
+    const auto handle = module->CreateView("Explicit", view);
     view->SetCamera(&camera);
     view->SetViewport(xiiRectFloat(0, 0, 32, 32));
     view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow());
-    const float                         viewBloomStrength = view->GetDisplayOutputSettings().m_fBloomStrength;
-    xiiRenderPipelineResourceDescriptor definition;
-    if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(definition)))
+    const auto                                 targets      = xiiLoadPipelineLibraryResource("SceneTargets");
+    const auto                                 presentation = xiiLoadPipelineLibraryResource("ViewPresentation");
+    xiiResourceLock<xiiRenderPipelineResource> targetSource(targets, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    xiiResourceLock<xiiRenderPipelineResource> outputSource(presentation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(targetSource.IsValid() && outputSource.IsValid() && targetSource->GetAuthoring() && outputSource->GetAuthoring()))
       return;
+    const auto targetDefinition = targetSource->GetAuthoring();
+    const auto outputDefinition = outputSource->GetAuthoring();
+    xiiUuid    clearNode;
+    for (const auto& pass : targetDefinition->m_Descriptor.m_Passes)
+      if (pass.m_sType == "xiiClearTexturePass")
+        clearNode = pass.m_Id;
+    if (!XII_TEST_BOOL(clearNode.IsValid()))
+      return;
+    xiiRenderPipelineResourceDescriptor definition;
+    definition.m_References.PushBack({targetDefinition->m_Descriptor.m_Id, targets.GetResourceID()});
+    definition.m_References.PushBack({outputDefinition->m_Descriptor.m_Id, presentation.GetResourceID()});
+    const auto initialize = definition.AddSubgraph("Selected target resource", targetDefinition->m_Descriptor.m_Id);
+    const auto present    = definition.AddSubgraph("Selected presentation resource", outputDefinition->m_Descriptor.m_Id);
+    auto&      color      = definition.m_Passes[initialize].m_Overrides.ExpandAndGetRef();
+    color.m_Path.PushBack(clearNode);
+    color.m_Properties.Insert("Color", xiiColor(1, 0, 0));
+    XII_TEST_RESULT(definition.Connect(initialize, "Color", present, "Color"));
+    definition.m_Interface.PushBack({"ViewOutput", false, definition.m_Passes[present].m_Id, "ViewOutput"});
     xiiVariantDictionary display;
-    display.Insert("BloomStrength", 0.2f);
+    display.Insert("PaperWhiteNits", 203.0f);
     definition.m_Parameters.Insert("DisplayOutput", display);
-    const auto outputIndex = definition.m_Passes.GetCount() - 1;
-    view->SetRenderPipelineResource(xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("Configured default pipeline", std::move(definition)));
+    const auto originalPaperWhite = view->GetDisplayOutputSettings().m_fPaperWhiteNits;
+    view->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Explicit native view pipeline", std::move(definition)));
     xiiGALTextureReadback readback(environment.GetDevice());
     for (xiiUInt32 frame = 0; frame < 2; ++frame)
     {
       if (frame == 1)
       {
-        display.Insert("BloomStrength", 0.1f);
+        display.Insert("PaperWhiteNits", 300.0f);
         view->SetPipelineParameter("DisplayOutput", display);
       }
       world.Update();
-      XII_TEST_FLOAT(view->GetDisplayOutputSettings().m_fBloomStrength, viewBloomStrength, 0.0001f);
+      XII_TEST_FLOAT(view->GetDisplayOutputSettings().m_fPaperWhiteNits, originalPaperWhite, 0.0001f);
       environment.GetDevice()->WaitIdle();
-      XII_TEST_BOOL(view->GetRenderGraph()->GetStatistics().m_uiCompiledPassCount > 10);
-      const auto* output = view->GetRenderPipelineInstance().GetOutputBinding(outputIndex, "ViewOutput");
+      XII_TEST_INT(view->GetRenderGraph()->GetStatistics().m_uiCompiledPassCount, 2);
+      XII_TEST_INT(view->GetRenderGraph()->GetStatistics().m_uiQueueSubmissionCount, 1);
+      XII_TEST_BOOL(view->GetRenderPipelineInstance().GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
+      XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr);
+      XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+      const auto& execution = view->GetRenderPipelineInstance();
+      const auto* output    = execution.GetInterfaceBinding(execution.GetPipeline()->FindInterface("ViewOutput", false));
       XII_TEST_BOOL(output && view->GetRenderGraph()->GetExportedTexture(output->m_hTexture) == target);
       xiiGALCommandListCreationDescription commands;
       commands.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
@@ -420,7 +447,12 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
           {
             const auto* row = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
             for (xiiUInt32 x = 0; x < 32; ++x)
+            {
+              XII_TEST_INT(row[x * 4], 255);
+              XII_TEST_INT(row[x * 4 + 1], 0);
+              XII_TEST_INT(row[x * 4 + 2], 0);
               XII_TEST_INT(row[x * 4 + 3], 255);
+            }
           }
           XII_TEST_RESULT(commandList->UnmapTextureSubresource(capture.m_pStagingTexture, mip));
         }
