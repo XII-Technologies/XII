@@ -7,10 +7,13 @@ by the existing `xiiRenderPipelineContext` asset compiler.
 
 | Asset | Supported use |
 | --- | --- |
-| Deferred | Existing complete scene rendering stack. |
-| EditorScene | Scene rendering with mesh picking, selection and shape icons. |
 | TransparencyResolve | Weighted accumulation/revealage composition over supplied HDR radiance; optional cleared targets. |
-| OpaqueComposition | Opaque lighting, screen-space reflection trace and temporal reuse, and hybrid reflection composition. |
+| OpaqueComposition | Nested surface-radiance composition, screen-space reflection trace and temporal reuse, and hybrid reflection composition. |
+| RadianceAdd | Independently weighted addition of two supplied radiance images. |
+| ConfidenceRadiance | Nonnegative radiance weighted by a signal alpha confidence. |
+| VolumetricComposite | Integrated scattering/opacity applied to supplied scene radiance. |
+| SurfaceRadianceComposition | Editable addition of supplied direct, indirect, emissive and confidence-weighted near GI, followed by explicit fog. |
+| WorldSurfaceLighting | World-derived directional and clustered local lighting contributions over explicit surface inputs. |
 | ScreenEffects | Diffuse screen-space GI, refraction, atmosphere composition and sensor output. |
 | DebugVisualization | Surface queries, channel visualization and debug overlays. |
 | TexturePreview | Texture inspection through the existing reflected preview pass. |
@@ -28,9 +31,9 @@ production document/node manager, reconstructs their Qt nodes and connections,
 exports them through the production asset compiler, loads the result through
 ResourceManager, and checks byte-for-byte reproduction and repeated export.
 
-The scene assets currently contain the existing reflected composite stages. The
-ongoing migration replaces those stages with focused passes and reusable subgraph
-assets; this library checkpoint does not claim that decomposition is complete.
+The removed Deferred and EditorScene assets are not available. Complete scene graphs
+still require native rebuilding; this library does not claim those techniques are
+fully migrated. Select only assets that implement the required operations.
 
 The source documents now own persistent reflected pin configurations. Their
 compiled snapshots preserve source pin identities and resource constraints; these
@@ -38,21 +41,21 @@ settings are lowered into immutable execution metadata rather than document
 objects in each runtime pass. The production library regression checks every
 pin's backing document identity and reproduces the packaged bytes.
 
-Each source also owns reflected pipeline settings. Scene and texture preview assets
-declare single-sample view outputs; reusable subgraphs leave the view-output contract
-unconstrained and specify requirements on individual resource pins. Scene assets and
-the four operation subgraphs require compute support. Output format remains
-unconstrained so compatible view targets can choose their format.
+Each source owns reflected pipeline settings. Texture previews declare single-sample
+view outputs; reusable subgraphs leave the view-output contract unconstrained and
+specify requirements on individual resource pins. Device capabilities are declared
+by each supported operation. Output format can remain unconstrained so compatible
+view targets choose their format.
 These contracts are validated before pass construction and do not choose topology.
 
-OpaqueComposition is authored from independent typed-member-pin operations. It
-preserves the former interface, including optional supplied reflection signals,
-through explicit selection nodes. Camera/frame and lighting-result connections are
-ordinary graph edges. SSR radiance and identity history belong to each temporal
-pass occurrence and view. The optional PlanarReflectionMap output is an empty
-half-resolution image from a generic clear operation; this is not an implemented
-secondary-view planar reflection renderer. Four former hair/water/SSS/eye
-placeholders had no initialized pipelines or executable work and are removed.
+OpaqueComposition references SurfaceRadianceComposition as an ordinary nested
+definition. Addition, confidence weighting and fog are independent typed-member-pin
+operations. Intermediate radiance uses RGBA32Float so sums above half-float range
+remain valid before attenuation; the fog result is RGBA16Float. Optional supplied
+reflection signals use explicit selection nodes. Camera/frame and lighting-result
+connections are ordinary graph edges. SSR radiance and identity history belong to
+each temporal pass occurrence and view. The unused PlanarReflectionMap selection,
+clear and boundary nodes are removed. No secondary-view planar renderer is implied.
 
 TransparencyResolve is an eight-node authored composition: accumulation and
 revealage clears, optional supplied-target selection, weighted resolve, optional

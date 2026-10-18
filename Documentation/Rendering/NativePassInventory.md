@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **96 concrete reflected operation classes** in
+Current source inventory: **98 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -18,7 +18,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | --- | ---: | --- |
 | AmbientOcclusion | 2 | `xiiAmbientOcclusionPass`, `xiiAmbientOcclusionTemporalPass` |
 | Atmosphere | 2 | `xiiAtmosphereCompositePass`, `xiiAtmosphereConstantsPass` |
-| Composition | 1 | `xiiOpaqueLightingCompositePass` |
+| Composition | 3 | `xiiRadianceAddPass`, `xiiConfidenceRadiancePass`, `xiiVolumetricCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 12 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass`, `xiiSparseVoxelSchedulePass`, `xiiSparseVoxelUploadPass`, `xiiSparseVoxelPoolPreparePass`, `xiiSparseVoxelEnvironmentSeedPass` |
@@ -2830,3 +2830,91 @@ Complete forward/deferred assets, remaining advanced lighting and geometry-depen
 GI updates, device-shared IES residency and application/editor integration remain open.
 The full rendering migration is still active; these two operations bring the source
 inventory to 96 concrete reflected passes and 64 editable source/binary asset pairs.
+
+
+## Independent radiance combination and fog composition
+
+The fixed OpaqueLightingComposite C++ class/header and OpaqueComposite shader are
+physically deleted. Their five-input stack formula is now five authored operations
+in SurfaceRadianceComposition: three RadianceAdd occurrences, ConfidenceRadiance and
+VolumetricComposite. OpaqueComposition references that ordinary resource definition.
+Its remaining reflection trace/filter/selection nodes are retained. No operation
+creates another operation or chooses a renderer stage.
+
+RadianceAdd has typed A/B/Radiance member pins and reflected finite nonnegative
+ScaleA, ScaleB and AsyncCompute properties. It adds nonnegative supplied radiance
+without treating alpha as an implicit mask. ConfidenceRadiance applies the supplied
+signal alpha as saturated confidence. VolumetricComposite consumes scene radiance
+and integrated scattering/opacity: scene * (1 - opacity) + scattering. Both confidence
+and opacity saturate to their physical range. Invalid computed radiance is black;
+outputs have alpha one. Required inputs are nonempty, matching, single-sample,
+float-readable RGBA 2D images. These nodes have no world extraction or runtime scene
+service requirements, no global resource lookup and no pass-object recording capture.
+
+Addition and confidence outputs are RGBA32Float. This preserves intermediate sums
+above 65,504 before fog attenuation. The final fog result is saturated RGBA16Float.
+The added intermediate bandwidth/allocation is a real tradeoff; no automatic shader
+fusion or speedup is claimed. Each operation remains separately authorable, and the
+compiler schedules the logical graph through ordinary resource dependencies.
+
+OpaqueComposition also loses its unused PlanarReflectionMap input/output, selection
+and clear nodes, plus the five redundant input-echo output boundaries from the removed
+fixed pass. The unused planar blackboard key is deleted. No compatibility-forwarding
+nodes or replacement planar renderer were added. The replacement subgraph has a fresh
+persistent document identity and explicitly remapped connections. Ordinary Before/After
+boundary mappings preserve authored ordering through its independent operations.
+
+Four new editable source/binary asset pairs expose RadianceAdd, ConfidenceRadiance,
+VolumetricComposite and SurfaceRadianceComposition. The OpaqueComposition pair is
+updated through the editor document commands and production compiler. The one-time
+mutation helper was removed from source after exporting; the permanent authoring and
+asset-library regressions exercise only the final native graph model.
+
+Radiance-composition verification - 2026-10-18:
+
+- Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene after source-list regeneration
+  and physical legacy deletion (`Workspace/native-composition-deletion-configure.log`,
+  `native-composition-final-build.log`). The active GraphicsCore project contains no
+  removed source reference.
+- All 71 GraphicsCore CPU subtests pass (`native-composition-cpu-final.log`). Coverage
+  checks reflected weights, invalid configuration, typed output formats, absence of
+  extraction/service requirements, removed planar/echo boundaries and two nested
+  OpaqueComposition instances expanding to 24 native operations with distinct provenance.
+- Vulkan NativeRadianceComposition covers two instances with independent ScaleA/ScaleB,
+  confidence zero/out-of-range, fog opacity limits, 9-by-11 partial dispatch tiles,
+  mismatched-extent rejection and retirement of every pass instance before recording.
+  Analytical readback checks all output pixels, including a 140,000-radiance intermediate
+  attenuated before conversion to half precision. The two-instance fixture records
+  17 logical operations in one submission with 36 barriers
+  (`native-composition-final-Native.log`).
+- All 33 native Vulkan subtests, 14 PipelineResources and three PipelineExtraction
+  subtests pass. Existing opaque/reflection output values and temporal resize behavior
+  remain covered by the migrated resource fixture. Three shader failure/recovery,
+  one temporal-history, three temporal-memory and one depth-boundary subtest pass
+  (`native-composition-final-*.log`).
+- All 16 EditorDocuments subtests pass, including deterministic packaged/exported/
+  repeated bytes and Qt reconstruction for all 68 asset pairs. The 58 established
+  native-authoring tests and four independent composition-authoring tests also pass
+  (`native-composition-final-EditorDocuments.log`,
+  `native-composition-final-NativeAssetAuthoring.log`,
+  `native-composition-final-NativeCompositionAuthoring.log`).
+- Initial fixture compile errors and a one-time asset-edit failure were fixed before
+  final validation. The asset edit initially reused a removed node UUID while undo
+  history retained the old object; the final asset uses a fresh persistent identity
+  and remaps incident connections explicitly. No document lifetime guarantee was changed.
+- The full Vulkan sample completes 300 frames with exit code zero, no assertion log,
+  and its steady 124 registered / 116 compiled / eight culled operations in one
+  submission with 190 barriers (`native-composition-sample.log` and
+  `native-composition-sample-results.json`). Its existing sample graph is unchanged;
+  the dedicated native fixture exercises the newly authored composition.
+- Active Source/Data references to the removed opaque class, shader and planar key
+  are absent. Vulkan is the exercised backend; D3D12 remains excluded. There is no new
+  scene ownership or rendering manager. No controlled performance benchmark was run;
+  RGBA32Float intermediates cost additional bandwidth and memory, and this phase does
+  not implement automatic shader fusion.
+
+The source inventory is 98 concrete reflected operation classes with 68 editable
+source/binary asset pairs. Complete scene graphs, advanced/indirect illumination,
+remaining composite granularity and application/editor rendering integration remain
+unfinished. The complete renderer migration is still active.
