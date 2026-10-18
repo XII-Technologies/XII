@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **90 concrete reflected operation classes** in
+Current source inventory: **94 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -21,7 +21,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
-| GlobalIllumination | 8 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
+| GlobalIllumination | 12 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass`, `xiiSparseVoxelSchedulePass`, `xiiSparseVoxelUploadPass`, `xiiSparseVoxelPoolPreparePass`, `xiiSparseVoxelEnvironmentSeedPass` |
 | Lighting | 9 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
@@ -2650,3 +2650,90 @@ Sparse-voxel context GPU orchestration still needs the same native decomposition
 DDGI visibility/relocation and geometry-dependent radiance, complete surface/advanced
 lighting assets, shared device IES residency and remaining application/editor integration
 are outstanding. The full rendering-stack migration remains active.
+
+## Independent sparse-voxel radiance preparation and environment seeding
+
+SparseVoxelRadianceContext is now CPU-only clipmap residency, brick-key validation,
+eviction, refresh scheduling and commit feedback. Its device-taking initialization,
+CreateGpuResources, AddUpdatePass, persistent GPU pool and shader pipeline are deleted.
+The root SparseVoxelRadianceUpdate shader and four unused storage blackboard keys are
+removed. Physical brick slots remain internal to this derived radiance algorithm; they
+are not world objects, public scene manipulation indices or authoritative transforms.
+
+Four reflected operations expose the former coherent boundaries:
+
+- SparseVoxelSchedule snapshots the existing CPU scheduler, clipmap levels, valid pages
+  and budgeted updates into owned aligned data. The optional PreviousPool input controls
+  whether old CPU validity may be retained. Resource limits include an authored byte budget
+  to reject impractical pool configurations before allocation.
+- SparseVoxelUpload publishes the page table, level transforms, update records and constants
+  into graph-owned buffers. Pages initially expose only valid prior bricks. Empty update
+  lists use a typed minimum allocation; their logical count remains zero.
+- SparseVoxelPoolPrepare creates a private current pool. An explicit history input is copied
+  by a bounded compute dispatch, or the pool is zeroed. A separate typed dummy input avoids
+  binding the same buffer simultaneously as an SRV and UAV on the first frame.
+- SparseVoxelEnvironmentSeed writes the selected analytic environment field only into scheduled
+  brick slots, applies per-brick temporal weight and publishes their current pages. The
+  packed CPU keys decode into checked level/cell/page indices in the shader. Updated pages
+  and radiance carry graph write dependencies, so gather cannot observe a published page
+  before its corresponding dispatch completes. Recycled slots have zero history weight.
+  Recording commits CPU feedback through retained, frame-guarded scheduling state.
+
+SparseVoxelEnvironment is an ordinary editable composition of these operations and the
+existing BufferHistory pass. The history edge is temporal and explicit. Definitions share
+compiled metadata while each occurrence/view owns private residency state, writable buffers
+and completion-safe history. Four independent leaf assets expose the individual operations.
+BufferHistory now has the same reflected AsyncCopy choice as TextureHistory; this composition
+selects graphics copies to avoid small transfer batches. Existing visibility assets retain
+their default transfer policy and are re-exported with its explicit property.
+
+This preserves the former isotropic sky/sun environment seed. Geometry voxelization,
+directional radiance lobes and traced visibility are not implemented by this operation and
+are not silently substituted by it. Current pool preparation and history retention copy
+whole pools for safe immutable snapshots; page/level uploads remain whole tables as before.
+No incremental GPU-pool-copy or Release throughput claim is made. The byte budget is an
+explicit authoring constraint, not evidence of device allocation success or performance.
+
+The Vulkan regression checks every radiance-pool element and every current page/level
+record for two repeated definitions in each of two independent execution instances.
+It covers partial update budgets, idle frames with zero updates, refresh with temporal
+weights, one-cell and complete scrolls, reuse of physical slots, explicit invalidation,
+dependent resource reload, eight consecutive submitted frames without explicit host-idle
+waits and destruction of all pass instances before final recording. Page expectations
+combine retained valid mappings and exactly the newly dispatched updates; unscheduled
+new bricks remain inaccessible to gather. Pool bytes use canonical float4 storage.
+
+A separate world fixture composes WorldDirectionalLight, EnvironmentLightConstants and
+SparseVoxelEnvironment for two cameras. Component illuminance changes and a camera move
+update the derived field while histories and physical pools remain independent. The
+graph requests Lights packets only, leaving world GPU light tables, GPU mesh instances,
+geometry residency and material services uninitialized. No separate scene lifecycle is added.
+
+The focused fixture records 16 compiled operations in one queue submission with 42 barriers
+per execution instance on the available Vulkan device. That is measured batching evidence,
+not a GPU timing or Release throughput benchmark. The library now has 94 native operations
+and 61 source/binary asset pairs. The old context no longer provides a parallel GPU path.
+
+Verification for this phase:
+
+- All five Debug consumers built: GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene. Initial source errors were an ambiguous
+  const array view and a local settings name conflicting with a result macro; both were fixed
+  before the final consumer build. Both focused Vulkan fixtures passed on their first run.
+- 69 GraphicsCore CPU tests, 55 native asset authoring fixtures and 16 editor document tests
+  passed. All 61 assets re-export deterministically, including the two visibility graphs
+  refreshed with the unchanged default BufferHistory copy policy.
+- Vulkan passed 31 native GPU tests, 14 pipeline resource tests, three extraction tests,
+  the interleaved depth-boundary fixture, the failed-recording temporal fixture and three
+  temporal memory fixtures. The new tests explicitly observe zero-update frames and
+  zero-history writes into reused physical slots rather than assuming those cases occurred.
+- The full Vulkan sample completed 300 frames with exit code zero; the steady graph retains
+  124 registered / 116 compiled / eight culled operations, one submission and 190 barriers.
+  This sample does not yet use the sparse composition; the focused actual-world test exercises it.
+- Searches found no old sparse-update shader path, context GPU factory or deleted storage
+  blackboard keys in Source/Data. No rendering Builtin file, legacy lighting context or scene
+  database was reintroduced. Vulkan is the available built backend; D3D12 remains excluded.
+
+Both GI context GPU orchestration paths have now been removed. Geometry-dependent radiance
+updates, complete surface/advanced lighting graphs, shared device IES residency and remaining
+application/editor integration are still outstanding. The full renderer migration remains active.
