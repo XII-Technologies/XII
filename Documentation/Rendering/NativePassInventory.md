@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **86 concrete reflected operation classes** in
+Current source inventory: **90 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -21,7 +21,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Composition | 1 | `xiiOpaqueLightingCompositePass` |
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
-| GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
+| GlobalIllumination | 8 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
 | Lighting | 9 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
@@ -2557,3 +2557,96 @@ Verification for this phase:
 Native DDGI/sparse scheduling and update decomposition, complete surface/advanced lighting
 assets, device-shared IES GPU residency and the remaining application/editor integration
 are still required. This phase does not complete the full rendering-stack migration.
+
+## Independent DDGI probe scheduling, upload, preparation and environment seeding
+
+The previous DDGI context GPU path is deleted: Initialize no longer takes a device,
+CreateGpuResources and AddUpdatePass no longer exist, and the context owns no device,
+shader pipeline or GPU atlas. The old root DDGIProbeUpdate shader and five unused DDGI
+blackboard keys are removed. The retained context is a CPU-only toroidal probe scheduler;
+its existing scrolling, prioritization, update-budget and relocation API remains tested.
+
+Four independent reflected operations replace the orchestration:
+
+- DDGIProbeSchedule owns one CPU scheduler per occurrence. It snapshots camera or explicit
+  position, dimensions, spacing, budget and hysteresis. Explicit previous atlas inputs
+  determine whether CPU validity/history can be retained. No history invalidates all probe
+  eligibility before scheduling. The published snapshot and GPU-record arrays use XII's
+  aligned allocator; queued consumers retain them independently of the schedule pass.
+- DDGIProbeUpload creates graph-owned state/update buffers and constants from that snapshot.
+  It uploads the existing 32-byte state and 32-byte update records; there is no global
+  registry, GPU object lifecycle, scene transform authority or context-owned buffer table.
+- DDGIAtlasPrepare creates private current irradiance/distance atlases. It clears a newly
+  invalidated pair or copies the explicitly supplied history pair. Atlas storage belongs
+  to the graph; its dimensions and device limits are validated before allocation.
+- DDGIEnvironmentSeed applies the selected analytic sky/sun algorithm to the budgeted
+  slots. This preserves the old non-RT environment seed and is explicitly authored, never
+  a substitute silently selected for a missing ray-tracing pipeline. GPU validity is
+  published only for updated slots. CPU scheduling feedback is committed during recording
+  through retained snapshot state, with a frame guard against stale feedback.
+
+DDGIEnvironmentProbes is an ordinary editable composition of those four operations and
+two existing TextureHistory nodes. Temporal edges explicitly feed previous atlases to the
+scheduler and preparation operation; current outputs feed history retention. Definitions
+and compiled metadata are shared, while CPU schedules, mutable resources, history rings
+and readiness fences remain private to each occurrence and execution instance.
+Four leaf assets expose each operation independently. The library now has 90 native
+operations and 56 asset pairs.
+
+TextureHistory gains a reflected AsyncCopy property. Its default stays true, preserving
+the prior transfer-queue policy for existing assets. This DDGI composition explicitly
+disables it for small copies so independent probe fields can remain in one graphics batch.
+DepthPyramid is re-exported with the explicit unchanged default. No pass stage selector,
+manual pin-type array, centralized pipeline factory or compatibility context is added.
+
+Irradiance remains RGBA16Float, with finite half-range saturation on writes. Distance
+moments use RG32Float so ordinary larger probe spacing cannot overflow half-precision
+squared distances. The two atlas planes now cost 16 rather than 12 bytes per texel.
+Preparation and retention copy explicit whole atlases for safe temporal ownership; probe
+state upload still processes all records, as the previous path did. These costs are
+explicit; no Release throughput or GPU timing claim is made from layout sizes or tests.
+The algorithm seeds an environment field; traced visibility, directional probe textures
+and geometry-dependent radiance updates are not claimed as implemented by this operation.
+
+The focused Vulkan fixtures exercise two repeated definitions in each of two independent
+execution instances. They check every atlas texel (including padding), distance moments,
+GPU cell/validity metadata and recorded update frames against the scheduled updates.
+Coverage includes partial budgets, hysteresis with changing illumination, single-cell
+scrolling, complete scrolls, explicit invalidation, dependent definition hot reload,
+eight consecutive submitted frames without explicit host-idle waits, and destruction of
+all pass instances before the final graph records. A separate actual-world fixture composes
+WorldDirectionalLight, EnvironmentLightConstants and DDGIEnvironmentProbes for two cameras;
+it changes component illuminance and camera position and verifies independent image history.
+Only Lights extraction is requested; canonical world GPU light tables, mesh instances,
+geometry and material services remain uninitialized.
+
+The first GPU run caught default-allocator alignment errors for the new 16-byte-aligned
+snapshot and records; aligned allocation fixes them. A clean baseline then recorded 14
+compiled operations in four queue submissions per execution instance. The explicit small-copy
+policy reduces that to one submission with the same 48 barriers and passing numerical/lifetime
+checks. The regression asserts the one-submission cold path on the available Vulkan device.
+This is observed batching evidence, not a GPU timing benchmark or a claim about every backend.
+
+Verification for this phase:
+
+- All five Debug consumers built: GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene. Initial compile/link mistakes in a
+  pipeline pointer call and the test's use of a private helper were corrected before the
+  final builds; the allocator failure described above was reproduced and fixed.
+- 68 GraphicsCore CPU tests, 50 native authoring fixtures and 16 editor document tests passed.
+  Source/binary export is deterministic for all 56 assets, including the refreshed DepthPyramid.
+- Vulkan passed all 29 native GPU tests, 14 pipeline resource tests, three extraction tests,
+  the interleaved depth-boundary fixture, the failed-recording temporal fixture and three
+  temporal memory fixtures. Both new DDGI fixtures passed after the aligned-allocation fix
+  and again after the copy-queue optimization.
+- The full Vulkan sample completed 300 frames with exit code zero. Its steady graph remains
+  124 registered / 116 compiled / eight culled operations, one submission and 190 barriers.
+  It does not yet use this DDGI composition; the focused actual-world fixture exercises that path.
+- Repository searches found no old DDGI update-shader path, context graph factory or deleted
+  DDGI blackboard constants in Source/Data. No rendering Builtin file or scene database was
+  reintroduced. Vulkan is the available built backend; D3D12 was excluded as requested.
+
+Sparse-voxel context GPU orchestration still needs the same native decomposition. Traced
+DDGI visibility/relocation and geometry-dependent radiance, complete surface/advanced
+lighting assets, shared device IES residency and remaining application/editor integration
+are outstanding. The full rendering-stack migration remains active.
