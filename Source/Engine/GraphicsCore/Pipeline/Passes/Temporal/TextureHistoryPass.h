@@ -12,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiTextureHistoryPass final : public xiiRenderPipelin
 public:
   xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Undefined, 1};
   xiiRenderPipelineTextureOutputPin m_Previous{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Undefined, 1, xiiRenderPipelinePinAccess::Read, true};
+  /// Large copies may use the transfer queue. Disable for small copies that would fragment graphics work.
+  bool m_bAsyncCopy = true;
   xiiTextureHistoryPass();
   ~xiiTextureHistoryPass();
   xiiResult Build(xiiRenderPipelinePassContext& context) override;

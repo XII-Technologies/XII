@@ -27,6 +27,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureHistoryPass, 1, xiiRTTIDefaultAllocat
   {
     XII_MEMBER_PROPERTY("Texture", m_Input)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousTexture", m_Previous)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("AsyncCopy", m_bAsyncCopy)->AddAttributes(new xiiDefaultValueAttribute(true)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Temporal") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -104,7 +105,7 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphTextureHandle m_Input, m_Output;
     State::Slot                 m_Next;
   };
-  context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
+  context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCopy ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Input = builder.ReadTexture(input, xiiGALResourceStateFlags::CopySource);
       data.m_Output = builder.WriteTexture(builder.ImportTexture("Retained Frame", next.m_Texture, next.m_Texture->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
       builder.ExportTexture(data.m_Output, xiiGALResourceStateFlags::ShaderResource);
