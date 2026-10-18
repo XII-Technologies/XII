@@ -35,7 +35,7 @@ xiiResult xiiRayTracingScenePass::Build(xiiRenderPipelinePassContext& context)
     return XII_FAILURE;
   if (!xiiRayTracingResources::IsHardwareRayTracingSupported())
     return m_bRequireHardwareRayTracing ? XII_FAILURE : XII_SUCCESS;
-  const auto* module = context.m_pView->GetWorld()->GetModule<xiiRenderWorldModule>();
+  const auto* module = static_cast<const xiiWorld*>(context.m_pView->GetWorld())->GetModule<xiiRenderWorldModule>();
   if (!module || !module->GetGpuInstanceData())
     return XII_FAILURE;
   if (module->GetGpuInstanceData()->GetInstanceCount() == 0)

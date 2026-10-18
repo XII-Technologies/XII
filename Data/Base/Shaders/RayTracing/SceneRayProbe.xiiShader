@@ -1,0 +1,37 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[SHADER]
+#include <Shaders/Pipeline/Passes/RayTracing/SceneRayProbeConstants.h>
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
+struct xiiSceneRayProbePayload { xiiSceneRayProbeResult Result; };
+[RAY_GENERATION_SHADER]
+RaytracingAccelerationStructure g_Scene;
+RWStructuredBuffer<xiiSceneRayProbeResult> g_Result;
+[shader("raygeneration")]
+void main()
+{
+  RayDesc ray;
+  ray.Origin=OriginAndMinimumDistance.xyz; ray.TMin=OriginAndMinimumDistance.w;
+  ray.Direction=DirectionAndMaximumDistance.xyz; ray.TMax=DirectionAndMaximumDistance.w;
+  xiiSceneRayProbePayload payload;
+  payload.Result.Identity=uint4(0,0xFFFFFFFFu,0xFFFFFFFFu,0);
+  payload.Result.Intersection=float4(ray.TMax,0,0,0);
+  TraceRay(g_Scene,0u,InstanceMaskAndPadding.x,0u,1u,0u,ray,payload);
+  g_Result[0]=payload.Result;
+}
+[RAY_MISS_SHADER]
+[shader("miss")]
+void main(inout xiiSceneRayProbePayload payload) {}
+[RAY_CLOSEST_HIT_SHADER]
+StructuredBuffer<xiiRayTracingMaterialData> g_InstanceMaterials;
+[shader("closesthit")]
+void main(inout xiiSceneRayProbePayload payload,in BuiltInTriangleIntersectionAttributes attributes)
+{
+  uint count, stride;
+  g_InstanceMaterials.GetDimensions(count, stride);
+  const uint index = InstanceIndex();
+  const uint identity = index < count ? g_InstanceMaterials[index].Metadata.y : 0xFFFFFFFFu;
+  payload.Result.Identity=uint4(1u,identity,PrimitiveIndex(),HitKind());
+  payload.Result.Intersection=float4(RayTCurrent(),attributes.barycentrics,0);
+}
