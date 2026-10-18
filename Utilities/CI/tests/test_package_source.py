@@ -55,6 +55,18 @@ class SourcePackageTests(unittest.TestCase):
         self.assertNotEqual(self.package("v9.9.9").returncode, 0)
         self.assertFalse((self.repo / "dist").exists())
 
+    def test_records_submodule_revision_without_payload(self):
+        revision = self.git("rev-parse", "HEAD")
+        self.git("update-index", "--add", "--cacheinfo", f"160000,{revision},deps/component")
+        self.git("commit", "-qm", "Record submodule")
+        self.git("tag", "-f", "v1.2.3")
+        result = self.package("v1.2.3")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        manifest = json.loads((self.repo / "dist/XII-1.2.3-source-manifest.json").read_text())
+        self.assertEqual(manifest["submodules"], [{"path": "deps/component", "commit": revision}])
+        with tarfile.open(self.repo / "dist/XII-1.2.3-source.tar.gz") as archive:
+            self.assertFalse(any(name.startswith("XII-1.2.3/deps/component/") for name in archive.getnames()))
+
     def test_tag_must_identify_head(self):
         (self.repo / "new.txt").write_text("new commit", encoding="utf-8")
         self.git("add", "new.txt")
