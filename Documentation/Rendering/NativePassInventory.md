@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **94 concrete reflected operation classes** in
+Current source inventory: **96 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -22,7 +22,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 12 | `xiiDDGIProbeSchedulePass`, `xiiDDGIProbeUploadPass`, `xiiDDGIAtlasPreparePass`, `xiiDDGIEnvironmentSeedPass`, `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass`, `xiiSparseVoxelSchedulePass`, `xiiSparseVoxelUploadPass`, `xiiSparseVoxelPoolPreparePass`, `xiiSparseVoxelEnvironmentSeedPass` |
-| Lighting | 9 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass` |
+| Lighting | 11 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass`, `xiiWorldDirectionalLightPass`, `xiiEnvironmentLightConstantsPass`, `xiiDirectionalSurfaceLightingPass`, `xiiClusteredLocalSurfaceLightingPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
 | Preparation | 2 | `xiiViewConstantsPass`, `xiiWorldInstancesUploadPass` |
@@ -92,11 +92,11 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | --- | --- |
 | Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are independent native operations, consumed by the authored sample graph. Both vertex-pull and mesh-shader indirect command preparation are native. The old visibility manager/system and their shaders are deleted; remaining sample shadow/VSM/raster orchestration needs conversion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
-| Lights | Cluster layout/bounds, list clear/assignment and emitted-power CDF preparation are now independent native operations with authored assets. World light snapshot/upload, IES residency and probe selection remain. Remove the oversized lighting context after consumers use explicit resources. |
+| Lights | Cluster layout/bounds, list clear/assignment, emitted-power CDF preparation, world light snapshot/upload, directional selection and environment constants are independent native operations with authored assets. The old lighting context and registry are deleted. Shared device IES residency and reflection-probe selection remain. |
 | Shadows | Directional cascade construction/snapshot upload is native. Local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
 | Atmosphere/environment | Transmittance, multiple scattering, sky irradiance convolution and environment/probe resources. Constants and aerial perspective composition are native. |
-| Direct illumination | ReSTIR DI temporal/spatial/visibility/emissive visibility and deferred direct lighting. |
-| Indirect illumination | Deferred indirect lighting, DDGI and sparse-voxel updates, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising. The gather nodes already exist. |
+| Direct illumination | Directional and clustered analytical local surface evaluation are now independent native operations in WorldSurfaceLighting. ReSTIR DI temporal/spatial/visibility/emissive visibility, local shadows, all-directional evaluation and complete forward/deferred composition remain. |
+| Indirect illumination | DDGI and sparse-voxel scheduling/upload/preparation/environment seeding are independent native operations; their old context GPU orchestration is deleted. Geometry-dependent radiance updates, deferred indirect lighting, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising remain. The gather nodes already exist. |
 | Reflections | Ray-traced reflections and denoising. Screen trace, temporal filter and hybrid composition are native. |
 | Volumes | Froxel allocation, fog initialization, light injection, integration, resolve and temporal reprojection. |
 | Decals | Upload, cull/batch, projected resolve and mesh decal draw. |
@@ -108,7 +108,7 @@ CPU frustum/source-update/draw-list arrays from the deleted runtime are not a ne
 scene API to reproduce. World transforms, component/resource identities, geometry
 selection and incremental GPU records must continue to come from existing owners.
 
-## Verification status
+## Initial rebuild verification (historical)
 
 Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest,
 EditorEngineProcessFrameworkTest and EditorFrameworkTest, including the editor
@@ -2737,3 +2737,96 @@ Verification for this phase:
 Both GI context GPU orchestration paths have now been removed. Geometry-dependent radiance
 updates, complete surface/advanced lighting graphs, shared device IES residency and remaining
 application/editor integration are still outstanding. The full renderer migration remains active.
+
+## Independent surface-light evaluation from explicit world resources
+
+DirectionalSurfaceLighting evaluates the selected environment emitter against explicit
+depth, normal, albedo, material, emissive/transmission and camera inputs. Its optional
+Visibility input is a scalar visibility factor (one unoccluded, zero occluded); it is not
+an implicit choice of shadow algorithm. Omitting it leaves the emitter unoccluded.
+Scale and AsyncCompute are reflected member properties. This operation does not initialize
+world GPU light tables, IES, clusters, mesh residency, GI or shadow services.
+
+ClusteredLocalSurfaceLighting independently evaluates canonical analytical local lights.
+It consumes explicit Lights, Counts, Candidates, IESProfiles, cluster Layout, LightGrid,
+raw LightIndices and Overflow inputs. Normal operation uses the cluster's current raw list.
+An overflow flag selects the entire supplied view candidate set for correctness, preserving
+local-light energy without silently truncating it to the authored list capacity. Candidate,
+canonical-record, cluster-list and IES accesses are bounds checked. Empty selections remain safe.
+The existing finite-area emitter and spot/profile evaluation math is reused. No resource is
+discovered through a global execution-time name registry.
+
+The BRDF and local-light math are factored out of SurfaceLighting into shared headers.
+Existing remaining consumers include the shared helpers; the new operations do not include
+the monolithic PerFrameLight ABI or ReSTIR/shadow orchestration. The unused root DirectLighting
+shader is physically deleted. Its remaining test consumer was an obsolete failure fixture
+that referenced the already-deleted Deferred asset; that fixture now explicitly authors
+native inputs, a single operation and presentation, and tests missing-shader recovery.
+
+WorldSurfaceLighting is an ordinary editable composition. It references the existing world
+light upload, directional selection, environment constants and cluster definitions, then
+connects the two native surface evaluators. Surface/camera inputs are explicit boundaries;
+directional and local contributions remain separate outputs so the caller controls composition.
+This asset shades one selected directional environment emitter plus the eligible local lights.
+It does not claim complete deferred/forward rendering, all directional emitters, local shadows,
+ReSTIR or emissive-triangle integration. Their remaining algorithm resources are not deleted
+as a shortcut to claiming the complete renderer has migrated.
+
+The operations retain pipelines and immutable setup data in queued graph records, without
+borrowing pass objects or live world component storage. Shared definitions do not share
+writable output images. Validation requires matching single-sample 2D surface extents,
+float-readable channel layouts, exact camera/environment buffer sizes and cluster/light
+tables matching their compiled schemas. Output is nonnegative RGBA16Float with finite
+half-range saturation; black/invalid depth contributes no radiance. Only the producer nodes
+request extraction or world-scoped GPU light data. The two evaluator leaf assets can also
+consume independently supplied resources without world extraction.
+
+Surface-lighting verification - 2026-10-18:
+
+- Debug builds pass for GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene, including their editor/process
+  dependencies (`Workspace/native-surface-validation-build.log`). The corrected focused
+  fixture also builds (`native-surface-photometric-fixture-build.log`).
+- All 70 GraphicsCore CPU subtests, 58 asset-authoring subtests and 16 EditorDocuments
+  subtests pass. The library fixture opens all 64 editable assets, instantiates Qt nodes
+  and pins, and compares packaged, exported and repeated-export bytes for determinism
+  (`native-surface-cpu-final.log`, `native-surface-authoring-final.log`,
+  `native-surface-editor-documents.log`). The new assets are DirectionalSurfaceLighting,
+  ClusteredLocalSurfaceLighting and WorldSurfaceLighting.
+- Vulkan NativeSurfaceLighting checks ten world-change phases in two views, with
+  repeated directional evaluator instances and nested cluster-property overrides.
+  GPU readback checks point-light intensity and component effective-range attenuation,
+  Type-C photometric profile sampling, component deactivation/reactivation, view-tag
+  exclusion, empty selections/depth, transmission, independent scale/visibility inputs
+  and the complete-candidate fallback when cluster capacity overflows. It then retires
+  both views and the detached pass instance before recording its already-built graph
+  (`native-surface-vulkan-passed.log`). No mesh/material service or GPU instance table
+  is initialized by this world-light-only composition.
+- All 32 native Vulkan subtests, 14 PipelineResources and three PipelineExtraction
+  subtests pass (`native-surface-regression-Native.log`,
+  `native-surface-regression-PipelineResources.log`,
+  `native-surface-regression-PipelineExtraction.log`). The three migrated shader failure/
+  recovery tests, one temporal-history test, three temporal-memory tests and one native
+  depth-boundary test also pass (`native-surface-failure-recovery.log` and
+  `native-surface-editor-*.log`). An initial regression script selected the latter groups
+  in the wrong executable and ran no matching tests; they were rerun in
+  EditorEngineProcessFrameworkTest. No empty filter result is counted as passing evidence.
+- Initial fixture failures were corrected: SDK dependency mounting during authoring,
+  nested-node lookup by definition identity, redundant differently rooted references,
+  and analytical expectations that ignored the component's photometric range cap.
+  A null-pipeline guard also prevents a secondary test crash from hiding compile errors.
+- The full Vulkan sample completes 300 frames with exit code zero. Its steady graph
+  remains 124 registered / 116 compiled / eight culled operations, one submission and
+  190 barriers (`native-surface-sample.log` and `native-surface-sample-results.json`).
+  This sample still uses its existing graph; the dedicated world fixture exercises the
+  new surface composition. These checks are correctness evidence, not a controlled
+  performance benchmark. Overflow evaluation intentionally costs O(view candidates).
+- Repository searches find no active SceneDatabase/SceneDatabaseManager or root
+  DirectLighting shader references and no rendering Builtin files. D3D12 is excluded;
+  Vulkan is the available built backend. Spot/finite-area evaluator branches reuse the
+  existing math but have not received new numerical GPU coverage in this phase.
+
+Complete forward/deferred assets, remaining advanced lighting and geometry-dependent
+GI updates, device-shared IES residency and application/editor integration remain open.
+The full rendering migration is still active; these two operations bring the source
+inventory to 96 concrete reflected passes and 64 editable source/binary asset pairs.
