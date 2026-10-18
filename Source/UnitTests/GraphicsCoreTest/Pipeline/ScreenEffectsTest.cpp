@@ -1,25 +1,27 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereApplyPass.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
-#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/ScreenSpaceGlobalIlluminationPass.h>
-#include <GraphicsCore/Pipeline/Passes/Refraction/ScreenSpaceRefractionPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/ScreenIrradianceTracePass.h>
+#include <GraphicsCore/Pipeline/Passes/Refraction/ScreenRefractionTracePass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
+#include <GraphicsCore/Pipeline/Passes/Sensors/RgbSensorPass.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceComposition)
 {
-  xiiScreenSpaceGlobalIlluminationPass gi;
-  gi.m_fIntensity = 0.25f;
+  xiiScreenIrradianceTracePass gi;
+  gi.m_uiStepCount = 3;
   xiiVariantDictionary properties;
   XII_TEST_RESULT(gi.GetProperties(properties));
-  xiiScreenSpaceGlobalIlluminationPass copy;
+  xiiScreenIrradianceTracePass copy;
   XII_TEST_RESULT(copy.Configure(properties));
-  XII_TEST_FLOAT(copy.m_fIntensity, 0.25f, 0.0001f);
+  XII_TEST_INT(copy.m_uiStepCount, 3);
   properties.Insert("SampleCount", 0U);
   XII_TEST_BOOL(copy.Configure(properties).Failed());
-  xiiScreenSpaceRefractionPass refraction;
+  xiiScreenRefractionTracePass refraction;
   properties.Clear();
   properties.Insert("MaximumDistance", -1.0f);
   XII_TEST_BOOL(refraction.Configure(properties).Failed());
@@ -65,4 +67,42 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceComposition)
   XII_TEST_BOOL(compiled->GetProvenance()[0].m_InstancePath[0] != compiled->GetProvenance()[child->GetPipeline()->GetDescriptor().m_Passes.GetCount()].m_InstancePath[0]);
   for (xiiUInt32 index = 0; index < compiled->GetDescriptor().m_Passes.GetCount(); ++index)
     XII_TEST_BOOL(compiled->GetDescriptor().m_Passes[index].m_Id == compiledAgain->GetDescriptor().m_Passes[index].m_Id);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, IndependentScreenTransportSchemas)
+{
+  xiiScreenIrradianceTracePass trace;
+  xiiScreenRefractionTracePass refract;
+  xiiAtmosphereApplyPass       atmosphere;
+  xiiRgbSensorPass             rgb;
+  xiiVariantDictionary         properties;
+  XII_TEST_RESULT(trace.GetProperties(properties));
+  XII_TEST_BOOL(!properties.Contains("HardwareGI") && !properties.Contains("SkipWithHardwareGI") && properties.Contains("StepCount"));
+  properties.Insert("StepCount", 65U);
+  XII_TEST_BOOL(trace.Configure(properties).Failed());
+  properties.Clear();
+  properties.Insert("Thickness", 0.0f);
+  XII_TEST_BOOL(trace.Configure(properties).Failed());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  trace.GetPins(pins);
+  XII_TEST_RESULT(trace.InitializePinBindings(pins));
+  for (const auto& pin : pins)
+    XII_TEST_BOOL(pin.m_sName != "Albedo" && pin.m_sName != "Material" && pin.m_sName != "PerFrameGlobal");
+  XII_TEST_BOOL(pins[trace.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA32Float);
+  pins.Clear();
+  refract.GetPins(pins);
+  XII_TEST_RESULT(refract.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[refract.m_Radiance.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::ShaderResource) && !pins[refract.m_Radiance.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
+  for (const auto& pin : pins)
+    XII_TEST_BOOL(pin.m_sName != "HDRSceneColor" && pin.m_sName != "RefractionSceneColorInput");
+  pins.Clear();
+  atmosphere.GetPins(pins);
+  XII_TEST_RESULT(atmosphere.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[atmosphere.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA32Float);
+  pins.Clear();
+  rgb.GetPins(pins);
+  XII_TEST_RESULT(rgb.InitializePinBindings(pins));
+  XII_TEST_BOOL(pins[rgb.m_Radiance.GetBindingIndex()].m_Format == xiiGALResourceFormat::Unknown);
+  XII_TEST_BOOL(trace.GetRuntimeFeatures().IsNoFlagSet() && refract.GetRuntimeFeatures().IsNoFlagSet() && atmosphere.GetRuntimeFeatures().IsNoFlagSet());
+  XII_TEST_BOOL(trace.GetExtractionRequirements().IsNoFlagSet() && refract.GetExtractionRequirements().IsNoFlagSet() && atmosphere.GetExtractionRequirements().IsNoFlagSet());
 }
