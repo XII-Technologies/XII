@@ -13,6 +13,7 @@
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelGatherPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
@@ -39,7 +40,7 @@ public:
     const auto input = context.GetInputTexture(m_Input);
     if (!input.IsValid())
       return XII_SUCCESS;
-    const auto emitted = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](xiiRenderGraphTextureHandle& data, xiiRenderGraphBuilder& builder) {
+    const auto emitted = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](xiiRenderGraphTextureHandle& data, xiiRenderGraphBuilder& builder) {
       data = builder.ReadTexture(input, xiiGALResourceStateFlags::CopySource);
       builder.ExportTexture(data, xiiGALResourceStateFlags::CopySource); }, [](const xiiRenderGraphTextureHandle&, xiiRenderGraphPassContext&) {}, true);
     return context.SetOutput(m_Output, *emitted.first);
@@ -116,20 +117,26 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   const auto indirect       = clear("Indirect", {0.5f, 0.25f, 1, 1});
   const auto emissive       = clear("Emissive", {0.1f, 0.2f, 0.3f, 1});
   const auto gi             = clear("Near GI", {0.4f, 0.8f, 1.2f, 0.5f});
-  const auto volume         = clear("Volume", {0.05f, 0.1f, 0.15f, 0.25f});
-  const auto environmentMap = clear("Environment", {0.2f, 0.4f, 0.6f, 1});
-  const auto traced         = clear("Traced reflections", {0.4f, 0.8f, 1.2f, 0.25f});
-  const auto radiance       = clear("Screen reflection signal", {0.8f, 0.4f, 0.2f, 0.5f});
-  const auto depth          = clear("Depth", xiiColor::MakeZero(), xiiGALResourceFormat::R32Float);
-  const auto attributes     = clear("Material", {1, 0, 0, 0}); // Roughness rejects screen traversal deterministically.
-  const auto surface        = clear("Previous surface", xiiColor::MakeZero());
-  const auto objects        = clear("Object identity", xiiColor::MakeZero(), xiiGALResourceFormat::R32UInt);
-  const auto camera         = leaf.AddPass("Camera", "xiiViewConstantsPass");
-  const auto opaque         = leaf.AddPass("Opaque", "xiiOpaqueLightingCompositePass");
-  const auto trace          = leaf.AddPass("Trace", "xiiScreenSpaceReflectionsPass");
-  const auto temporal       = leaf.AddPass("Temporal", "xiiScreenSpaceReflectionsTemporalPass");
-  const auto composite      = leaf.AddPass("Composite", "xiiHybridReflectionCompositePass");
-  const auto connect        = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView pin) {
+  const auto                                 volume              = clear("Volume", {0.05f, 0.1f, 0.15f, 0.25f});
+  const auto                                 environmentMap      = clear("Environment", {0.2f, 0.4f, 0.6f, 1});
+  const auto                                 traced              = clear("Traced reflections", {0.4f, 0.8f, 1.2f, 0.25f});
+  const auto                                 radiance            = clear("Screen reflection signal", {0.8f, 0.4f, 0.2f, 0.5f});
+  const auto                                 depth               = clear("Depth", xiiColor::MakeZero(), xiiGALResourceFormat::R32Float);
+  const auto                                 attributes          = clear("Material", {1, 0, 0, 0}); // Roughness rejects screen traversal deterministically.
+  const auto                                 surface             = clear("Previous surface", xiiColor::MakeZero());
+  const auto                                 objects             = clear("Object identity", xiiColor::MakeZero(), xiiGALResourceFormat::R32UInt);
+  const auto                                 camera              = leaf.AddPass("Camera", "xiiViewConstantsPass");
+  const auto                                 compositionResource = xiiLoadPipelineLibraryResource("SurfaceRadianceComposition");
+  xiiResourceLock<xiiRenderPipelineResource> composition(compositionResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(composition.IsValid() && composition->GetAuthoring()))
+    return;
+  const auto compositionId = composition->GetAuthoring()->m_Descriptor.m_Id;
+  leaf.m_References.PushBack({compositionId, compositionResource.GetResourceID()});
+  const auto opaque    = leaf.AddSubgraph("Authored surface radiance", compositionId);
+  const auto trace     = leaf.AddPass("Trace", "xiiScreenSpaceReflectionsPass");
+  const auto temporal  = leaf.AddPass("Temporal", "xiiScreenSpaceReflectionsTemporalPass");
+  const auto composite = leaf.AddPass("Composite", "xiiHybridReflectionCompositePass");
+  const auto connect   = [&](xiiUInt32 source, xiiUInt32 target, xiiStringView pin) {
     XII_TEST_RESULT(leaf.Connect(source, "Texture", target, pin));
   };
   connect(direct, opaque, "DirectLighting");
@@ -171,6 +178,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
   xiiRenderPipelineResourceDescriptor root;
   root.m_Definitions.PushBack(definition);
+  root.m_References = leaf.m_References;
   root.AddSubgraph("First reflection instance", definition.m_Id);
   root.AddSubgraph("Second reflection instance", definition.m_Id);
   const auto secondId = root.m_Passes[1].m_Id;
@@ -736,4 +744,136 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentIrradianceGathers)
   XII_TEST_INT(retained.GetCount(), 4);
   for (xiiUInt32 i = 0; i < retained.GetCount(); ++i)
     CheckOpaquePixels(environment, graph.GetExportedTexture(retained[i]), expected[i]);
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(NativeRadianceComposition);
+XII_CREATE_SIMPLE_TEST(NativeRadianceComposition, IndependentWeightsFogRangeAndRetiredRecording)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  const auto                                 asset = xiiLoadPipelineLibraryResource("SurfaceRadianceComposition");
+  xiiResourceLock<xiiRenderPipelineResource> composition(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(composition.IsValid() && composition->GetAuthoring()))
+    return;
+  const auto authored = composition->GetAuthoring();
+  xiiUuid    directNode;
+  for (const auto& boundary : authored->m_Descriptor.m_Interface)
+    if (boundary.m_bInput && boundary.m_sName == "DirectLighting")
+      directNode = boundary.m_Node;
+  if (!XII_TEST_BOOL(directNode.IsValid()))
+    return;
+  for (xiiUInt32 phase = 0; phase < 6; ++phase)
+  {
+    xiiColor direct(1, 2, 3, 1), indirect(0.5f, 0.25f, 1, 1), emissive(0.1f, 0.2f, 0.3f, 1), signal(0.4f, 0.8f, 1.2f, 0.5f), fog(0.05f, 0.1f, 0.15f, 0.25f);
+    if (phase == 1)
+      signal.a = 0;
+    if (phase == 2)
+    {
+      signal.a = 2;
+      fog.a    = 2;
+    }
+    if (phase == 3)
+    {
+      signal.a = -1;
+      fog.a    = -1;
+    }
+    if (phase == 4)
+    {
+      direct   = {60000, 60000, 60000, 1};
+      indirect = direct;
+      emissive = {10000, 10000, 10000, 1};
+      signal   = {20000, 20000, 20000, 0.5f};
+      fog      = {0, 0, 0, 0.75f};
+    }
+    xiiRenderPipelineResourceDescriptor root;
+    root.m_References.PushBack({authored->m_Descriptor.m_Id, asset.GetResourceID()});
+    const auto source = [&](xiiStringView name, xiiColor color, bool mismatch = false) {
+      xiiClearTexturePass clear;
+      clear.m_uiWidth  = mismatch ? 8 : 9;
+      clear.m_uiHeight = 11;
+      clear.m_Format   = xiiGALResourceFormat::RGBA32Float;
+      clear.m_Color    = color;
+      xiiVariantDictionary properties;
+      XII_TEST_RESULT(clear.GetProperties(properties));
+      return root.AddPass(name, "xiiClearTexturePass", properties);
+    };
+    const auto a = source("Direct", direct), b = source("Indirect", indirect, phase == 5), e = source("Emission", emissive), g = source("Near GI", signal), v = source("Fog", fog);
+    const auto first = root.AddSubgraph("First composition", authored->m_Descriptor.m_Id), second = root.AddSubgraph("Second composition", authored->m_Descriptor.m_Id);
+    auto&      weight = root.m_Passes[second].m_Overrides.ExpandAndGetRef();
+    weight.m_Path.PushBack(directNode);
+    weight.m_Properties.Insert("ScaleA", 1.5f);
+    weight.m_Properties.Insert("ScaleB", 0.25f);
+    for (const auto target : {first, second})
+    {
+      XII_TEST_RESULT(root.Connect(a, "Texture", target, "DirectLighting"));
+      XII_TEST_RESULT(root.Connect(b, "Texture", target, "IndirectLighting"));
+      XII_TEST_RESULT(root.Connect(e, "Texture", target, "GBufferEmissive"));
+      XII_TEST_RESULT(root.Connect(g, "Texture", target, "RTFinalGI"));
+      XII_TEST_RESULT(root.Connect(v, "Texture", target, "VolumetricScattering"));
+    }
+    for (const auto node : {first, second})
+    {
+      const auto out = root.AddPass(node == first ? "First export" : "Second export", "xiiOpaqueTestExport");
+      XII_TEST_RESULT(root.Connect(node, "HDRSceneColor", out, "Input"));
+      root.m_Interface.PushBack({node == first ? "First" : "Second", false, root.m_Passes[out].m_Id, "Output"});
+    }
+    xiiStringBuilder resourceName;
+    resourceName.SetFormat("Radiance composition phase {}", phase);
+    const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(resourceName, std::move(root));
+    xiiRenderGraphContext     context;
+    xiiRenderPipelineInstance instance;
+    if (!XII_TEST_RESULT(context.Initialize("Standalone radiance composition")) || !XII_TEST_RESULT(instance.Synchronize(resource)))
+      return;
+    XII_TEST_BOOL(instance.GetPipeline()->GetRuntimeFeatures().IsNoFlagSet() && instance.GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    auto& graph = context.GetGraph();
+    auto& cache = context.GetResourceCache();
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame());
+    graph.BeginSetup(frame.GetFrameIndex());
+    if (phase == 5)
+    {
+      XII_TEST_BOOL(instance.Build(nullptr, graph, context.GetBlackboard(), {}).Failed());
+      XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("RadianceAdd requires matching") != nullptr);
+      frame.End();
+      continue;
+    }
+    if (!XII_TEST_RESULT(instance.Build(nullptr, graph, context.GetBlackboard(), {})))
+      return;
+    const auto firstImage  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("First", false))->m_hTexture;
+    const auto secondImage = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Second", false))->m_hTexture;
+    instance.Clear(); // The queued graph owns pipelines and setup values, even without live pass objects.
+    graph.EndSetup();
+    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
+      return;
+    frame.End();
+    environment.GetDevice()->WaitIdle();
+    const auto firstTexture = graph.GetExportedTexture(firstImage), secondTexture = graph.GetExportedTexture(secondImage);
+    if (!XII_TEST_BOOL(firstTexture && secondTexture && firstTexture != secondTexture))
+      return;
+    for (xiiUInt32 other = 0; other < 2; ++other)
+    {
+      xiiColor    expected;
+      const float confidence = xiiMath::Saturate(signal.a), transmission = 1 - xiiMath::Saturate(fog.a);
+      for (xiiUInt32 channel = 0; channel < 3; ++channel)
+      {
+        const float radiance        = (direct.GetData()[channel] * (other ? 1.5f : 1.0f) + indirect.GetData()[channel] * (other ? 0.25f : 1.0f) + emissive.GetData()[channel] + signal.GetData()[channel] * confidence) * transmission + fog.GetData()[channel];
+        expected.GetData()[channel] = float(xiiFloat16(xiiMath::Clamp(radiance, 0.0f, 65504.0f)));
+      }
+      expected.a = 1;
+      CheckOpaquePixels(environment, other ? secondTexture : firstTexture, expected);
+    }
+    if (phase == 0)
+    {
+      XII_TEST_INT(graph.GetStatistics().m_uiQueueSubmissionCount, 1);
+      xiiTestFramework::Output(xiiTestOutput::Details, "Radiance composition: %u operations, %u submissions, %u barriers.", graph.GetStatistics().m_uiCompiledPassCount, graph.GetStatistics().m_uiQueueSubmissionCount, graph.GetStatistics().m_uiTotalBarrierCount);
+    }
+    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+  }
 }

@@ -138,7 +138,6 @@ namespace xiiRGBlackboardKeys
 
   // Stage 9 - Screen-Space Effects.
 
-  constexpr xiiStringView k_PlanarReflectionMap = "PlanarReflectionMap"_xiisv; ///< xiiRenderGraphTextureHandle - planar reflection render target.
 
   // Stage 10 - Temporal Reconstruction.
 
