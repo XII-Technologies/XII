@@ -154,6 +154,9 @@ and workflow source without requiring the full editor build.
 - Memory pressure: reduce `--parallel`, and limit nested MSVC compilation with
   `$env:_CL_='/MP2'`. For PDB/toolchain contention, retry MSBuild serially using
   `cmake --build <directory> --config Debug --target <target> -- /m:1 /nr:false`.
+- Directory watcher tests must poll intermediate filesystem states when their
+  assertions require them: ReFS can coalesce unobserved changes. Do not disable
+  tests or add arbitrary sleeps to conceal failures.
 - Failures in editor or graphics consumers are not waived by CPU CI. Include the
   first error and complete configure/build/test logs in a build/platform issue.
 - macOS requires additional portability work in Texture/DirectXTex and its test

@@ -2,6 +2,7 @@
 
 - [Build, test, and troubleshoot](Building.md)
 - [CI, security, releases, and maintainer settings](Infrastructure.md)
+- [Infrastructure audit and verification results](InfrastructureAudit.md)
 - [Contribution guide](../CONTRIBUTING.md)
 - [World rendering migration](Rendering/WorldRenderingMigration.md)
 - [Renderer remaining work](Rendering/RemainingWork.md)

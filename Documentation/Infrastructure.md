@@ -62,7 +62,7 @@ Do not also enable conflicting CodeQL default setup when using this advanced wor
 PR builds deliberately avoid a full OS/compiler/configuration Cartesian product.
 Superseded PR builds cancel, matrix failures retain independent diagnostics, and
 compilation is bounded at two build processes with MSVC `/MP2`. CPU builds avoid
-Qt/SDL/DXC downloads. Linux ccache stores objects, not build trees, with separate
+Qt/SDL/DXC downloads and does not fetch unused submodule payloads. Linux ccache stores objects, not build trees, with separate
 platform/architecture/compiler-preset/configuration/build-definition keys and
 ccache's compiler/flag validation. Fork caches are scoped by GitHub and are not
 promoted into a binary release pipeline. Release tags do not restore PR build trees.
@@ -111,6 +111,9 @@ enforce repository settings themselves:
    once the initial scans establish the existing findings baseline. Confirm exact
    displayed check names after the first hosted run. Merge queues require adding
    `merge_group` triggers before enabling them.
+   The existing `build-and-test.yml` workflow was manually disabled at audit time;
+   re-enable it after merging the replacement, then run it on `Development`.
+   A dispatch attempted during modernization returned HTTP 422 for this disabled state.
 2. Default Actions token permissions to read-only; restrict allowed actions and
    require immutable SHA references where organization settings support it. Keep
    approvals for first-time fork contributors. Do not expose write secrets to PR jobs.
@@ -146,5 +149,5 @@ in the existing CMake system still need checksum enforcement in a focused depend
 hardening task; CPU CI avoids those downloads rather than caching unchecked SDKs.
 
 The [build guide](Building.md) gives authoritative commands. The local/hosted
-verification record is maintained with the modernization report; unavailable
+verification record is maintained in the [modernization report](InfrastructureAudit.md); unavailable
 environments and real failures must remain explicit.

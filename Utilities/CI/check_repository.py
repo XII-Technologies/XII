@@ -35,7 +35,7 @@ for preset in presets["configurePresets"]:
         errors.append(f"Unknown parent in preset {preset['name']}")
 
 docs = [root / name for name in ("README.md", "CONTRIBUTING.md", "SECURITY.md", "SUPPORT.md", "Coding-Standards.md")]
-docs += [root / "Documentation" / name for name in ("Readme.md", "Building.md", "Infrastructure.md")]
+docs += [root / "Documentation" / name for name in ("Readme.md", "Building.md", "Infrastructure.md", "InfrastructureAudit.md")]
 for path in docs:
     if not path.is_file():
         errors.append(f"Missing document: {path}")
