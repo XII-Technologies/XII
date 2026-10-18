@@ -1,0 +1,20 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/Composition/ConfidenceBlendConstants.h>
+Texture2D<float4> g_Background;
+Texture2D<float4> g_Layer;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Radiance;
+[numthreads(8,8,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  uint2 extent;g_Radiance.GetDimensions(extent.x,extent.y);if(any(tid.xy>=extent))return;
+  const float4 background=g_Background.Load(int3(tid.xy,0)),layer=ConfidenceOptions.x>0?g_Layer.Load(int3(tid.xy,0)):0;
+  const float3 base=all(isfinite(background.rgb))?max(background.rgb,0):0;
+  const float3 detail=all(isfinite(layer.rgb))?max(layer.rgb,0):0;
+  const float confidence=isfinite(layer.a)?saturate(layer.a)*ConfidenceOptions.x:0;
+  const float3 radiance=lerp(base,detail,confidence);
+  g_Radiance[tid.xy]=float4(all(isfinite(radiance))?radiance:0,isfinite(background.a)?background.a:0);
+}
