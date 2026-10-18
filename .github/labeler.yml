@@ -90,7 +90,7 @@
               "xiiCMakeConfig.cmake",
               "Generate.ps1",
               "Generate.sh",
-              "GenerateWin64vs2022.bat",
+              "GenerateWin64vs2026.bat",
               "cgmanifest.json",
               "version.txt",
               "launch.vs.json",

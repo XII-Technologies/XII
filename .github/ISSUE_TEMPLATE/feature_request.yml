@@ -37,13 +37,13 @@ body:
     attributes:
       label: Target Area
       options:
-        - Area: Graphics
-        - Area: Compute
-        - Area: UI
-        - Area: Scripting
-        - Area: Platform
-        - Area: I/O
-        - Area: Asset Pipeline
-        - Area: Core
+        - "Area: Graphics"
+        - "Area: Compute"
+        - "Area: UI"
+        - "Area: Scripting"
+        - "Area: Platform"
+        - "Area: I/O"
+        - "Area: Asset Pipeline"
+        - "Area: Core"
     validations:
       required: true
