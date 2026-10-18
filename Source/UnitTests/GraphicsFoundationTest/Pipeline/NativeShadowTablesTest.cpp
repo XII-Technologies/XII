@@ -201,6 +201,14 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
     if (phase == 6)
       continue;
     // Both view graphs have been submitted without a host wait between them.
+    // Odd phases copy the captures on compute, whereas ReadBufferRecord submits
+    // its staging copy on graphics. Complete that producer queue before host
+    // readback; the readback's own graphics fence cannot order compute writes.
+    if (phase & 1U)
+    {
+      auto* queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Compute);
+      queue->WaitForFenceValue(queue->GetNextFenceValue() - 1);
+    }
     for (xiiUInt32 v = 0; v < 2; ++v)
     {
       auto&       graph       = contexts[v].GetGraph();
