@@ -91,11 +91,11 @@ These are **configured hosted jobs**, not claims of successful hosted execution:
 
 | Runner / architecture | Compiler | Configuration | Tests / purpose |
 | --- | --- | --- | --- |
-| windows-2025 / x64 | MSVC, VS 2022 | Debug + Shipping | PR CPU suites |
-| ubuntu-24.04 / x64 | GCC 14 | Debug | PR CPU suites |
-| ubuntu-24.04 / x64 | Clang 18 | Shipping | Weekly/manual CPU suites |
-| windows-2025 / x64 | MSVC with `/analyze` | Debug | Weekly/manual CPU suites and compiler analysis |
-| Windows + Linux above | MSVC + GCC 14 | Shipping | Tag validation gates |
+| windows-2025-vs2026 / x64 | MSVC, VS 2026 | Debug + Shipping | PR CPU suites |
+| ubuntu-26.04 / x64 | GCC 15 | Debug | PR CPU suites |
+| ubuntu-26.04 / x64 | Clang 22 / LLD 22 | Shipping | Weekly/manual CPU suites |
+| windows-2025-vs2026 / x64 | MSVC with `/analyze` | Debug | Weekly/manual CPU suites and compiler analysis |
+| Windows + Linux above | MSVC + GCC 15 | Shipping | Tag validation gates |
 
 macOS, ARM, GPU devices, full editor flows and sanitizer configurations are excluded
 from this hosted matrix until their dependencies/runtime requirements are qualified.
@@ -110,9 +110,21 @@ Actual local native results (each row includes compilation and all three CTest s
 | Windows x64, same toolchain | MSVC 19.52.37025 / CMake 4.4.3 | Shipping | 3/3 passed |
 | Ubuntu 26.04 x64 under WSL, native Linux scratch filesystem | GCC 15.2 / CMake 4.2.3 | Debug | 3/3 passed |
 
-The local toolchains differ from the intended hosted images. Their results do not
-certify VS 2022, Ubuntu 24.04, GCC 14, Clang 18, `/analyze`, or GitHub runtime behavior.
+The local toolchains are not the exact hosted image snapshots. Their results do not
+certify the hosted image versions, Clang 22, `/analyze`, or GitHub runtime behavior.
 The Windows Shipping ArchiveTool target also compiled successfully.
+
+The requested current-environment follow-up selects VS 2026 directly in
+`ci-windows` and uses `windows-2025-vs2026` for every Windows workflow. All Linux
+workflows now select Ubuntu 26.04, with GCC 15 and Clang 22 / LLD 22 centralized in
+the CI presets. GitHub's current runner manifests confirm these hosted toolchains:
+[Windows](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-VS2026-Readme.md)
+and [Ubuntu](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2604-Readme.md).
+The VS 2026 preset was reconfigured without a generator override, rebuilt, and
+passed all three Debug suites. The explicit GCC 15 preset was also configured.
+Clang 22 is available on the hosted image but was not executed locally: installation
+was blocked by an existing interrupted dpkg operation involving Perl packages in
+the WSL environment. No unrelated package repair was performed.
 
 Other completed checks:
 
@@ -172,6 +184,8 @@ scoped `API_DOCS_TOKEN` for the existing documentation repository.
 
 - Added workflows: `native-build.yml`, `code-quality.yml`, `security.yml`,
   `extended-validation.yml` under `.github/workflows`.
+- Added `.github/actionlint.yaml` to recognize the verified Ubuntu 26.04 hosted
+  label while retaining the runner-label rule in actionlint 1.7.12.
 - Replaced/hardened: `build-and-test.yml`, `build-release-package.yml`,
   `update-api-docs.yml`, `update-precompiled-tools.yml`, `pull-request-labeler.yml`.
 - Removed superseded workflows: `continuous-integration.yml`, `clang-format.yml`,

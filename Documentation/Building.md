@@ -3,8 +3,8 @@
 ## Scope and prerequisites
 
 XII uses CMake, C++23, and native platform toolchains. The build configurations are
-`Debug`, `Dev`, and `Shipping`. Use CMake 3.22+ for the presets; VS 2026 requires a
-CMake version that recognizes the `Visual Studio 18 2026` generator. Install Git
+`Debug`, `Dev`, and `Shipping`. Use CMake 3.22+ for the presets; Windows CI and the
+VS 2026 presets require CMake 4.2+ for the `Visual Studio 18 2026` generator. Install Git
 and Python 3.11+ for the infrastructure utilities. Keep several GB free for a CPU
 build and substantially more for full engine builds, symbols, Qt, and SDK downloads.
 
@@ -21,9 +21,9 @@ Other third-party code is vendored in the tree. There is no vcpkg/Conan manifest
 
 ## CPU build on Windows
 
-Install Visual Studio 2022 with **Desktop development with C++**, an x64 MSVC
-toolset and Windows SDK. The hosted workflow uses `windows-2025` and its VS 2022
-installation. The local development tree also has a `vs2026x64` preset.
+Install Visual Studio 2026 with **Desktop development with C++**, an x64 MSVC
+toolset and Windows SDK. The hosted workflow uses `windows-2025-vs2026` and the
+`Visual Studio 18 2026` generator, matching the local `ci-windows` preset.
 
 ```powershell
 cmake --preset ci-windows
@@ -34,27 +34,29 @@ cmake --build Workspace/ci-windows --config Shipping --parallel 2 --target Found
 ctest --test-dir Workspace/ci-windows -C Shipping -L '^headless$' --no-tests=error --output-on-failure
 ```
 
-For a machine with VS 2026 instead, use a fresh build directory and override the
-generator: `cmake --preset ci-windows -G "Visual Studio 18 2026"`. Do not switch
-generators in an already configured directory. Compiler outputs remain isolated
+For an existing CPU build generated with VS 2022, select a fresh build directory:
+`cmake --preset ci-windows -B Workspace/ci-windows-vs2026`. Do not switch
+generators in an already configured directory; use that directory in subsequent
+build and CTest commands. Compiler outputs remain isolated
 under `Workspace/ci-windows`, including configuration-specific Bin/Lib directories.
 
 ## CPU build on Linux
 
-Hosted jobs target Ubuntu 24.04 x64, GCC 14, and scheduled Clang 18 with libstdc++.
+Hosted jobs target Ubuntu 26.04 x64, GCC 15, and scheduled Clang 22 with libstdc++.
 Install only the dependencies needed for this scope:
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y --no-install-recommends cmake ninja-build gcc-14 g++-14 clang-18 lld-18 ccache pkg-config uuid-dev
-cmake --preset ci-linux-gcc -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+sudo apt-get install -y --no-install-recommends cmake ninja-build gcc-15 g++-15 clang-22 lld-22 ccache pkg-config uuid-dev
+cmake --preset ci-linux-gcc
 cmake --build Workspace/ci-linux-gcc --parallel 2 --target FoundationTest CoreTest ToolsFoundationTest
 python3 Utilities/CI/check_test_discovery.py Workspace/ci-linux-gcc Debug
 ctest --test-dir Workspace/ci-linux-gcc -C Debug -L '^headless$' --no-tests=error --output-on-failure
 ```
 
-Use `ci-linux-clang` with `-DCMAKE_C_COMPILER=clang-18
--DCMAKE_CXX_COMPILER=clang++-18` for Clang. Set `-DCMAKE_BUILD_TYPE=Shipping`
+The CI presets select GCC 15 or Clang 22 and matching LLD 22 explicitly, so local
+and hosted builds use the same compiler selection. Use `ci-linux-clang` for Clang.
+Set `-DCMAKE_BUILD_TYPE=Shipping`
 at configure time for an optimized single-configuration build. The `--config`
 argument alone does not change a Ninja build's configuration.
 

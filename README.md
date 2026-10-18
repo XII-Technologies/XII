@@ -28,7 +28,7 @@ and editor work should be evaluated against their specific tests and limitations
 
 | Environment | Status and scope |
 | --- | --- |
-| Windows x64, MSVC | Primary development platform. Hosted CI targets VS 2022 in Debug and Shipping for CPU modules. Local VS 2026 validation is recorded separately. |
+| Windows x64, MSVC | Primary development platform. Hosted CI targets VS 2026 in Debug and Shipping for CPU modules. Local validation and hosted execution are recorded separately. |
 | Linux x64, GCC / Clang | Experimental. Hosted GCC CPU checks and scheduled Clang validation are configured; this does not certify Linux editor or graphics runtime support. |
 | macOS, Apple Clang | Platform code exists; no current whole-engine/test validation. Texture/test-framework compatibility and platform dependencies must be resolved before adding a required job. |
 | Other architectures | Not validated by this CI matrix. |
@@ -46,8 +46,8 @@ git clone --recurse-submodules https://github.com/XII-Technologies/XII.git
 cd XII
 ```
 
-For a CPU-only Windows build, install Visual Studio 2022 with Desktop development
-with C++, a Windows SDK, CMake 3.22 or newer, Git, and Python 3.11 or newer:
+For a CPU-only Windows build, install Visual Studio 2026 with Desktop development
+with C++, a Windows SDK, CMake 4.2 or newer, Git, and Python 3.11 or newer:
 
 ```powershell
 cmake --preset ci-windows

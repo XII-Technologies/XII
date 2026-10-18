@@ -30,17 +30,25 @@ not the supported GitHub/local build procedure.
 
 | Workflow | Trigger | Scope |
 | --- | --- | --- |
-| `build-and-test.yml` | PRs, Development pushes, manual | Windows x64 MSVC Debug + Shipping; Linux x64 GCC 14 Debug; FoundationTest, CoreTest, ToolsFoundationTest |
+| `build-and-test.yml` | PRs, Development pushes, manual | Windows x64 VS 2026 MSVC Debug + Shipping; Ubuntu 26.04 x64 GCC 15 Debug; FoundationTest, CoreTest, ToolsFoundationTest |
 | `native-build.yml` | Reusable workflow only | Preset configuration, bounded compilation, test discovery, CTest, diagnostics, Linux ccache |
 | `code-quality.yml` | PRs, Development pushes, manual, release call | Actionlint, YAML, pins/permissions/local links, changed-line formatting and copyright on PRs |
 | `security.yml` | PRs, Development pushes, weekly, manual | CodeQL C/C++ and Actions; PR dependency review at high severity |
-| `extended-validation.yml` | Weekly, manual | Linux Clang 18 Shipping CPU tests; Windows MSVC Debug `/analyze` |
+| `extended-validation.yml` | Weekly, manual | Ubuntu 26.04 Clang 22 / LLD 22 Shipping CPU tests; Windows VS 2026 MSVC Debug `/analyze` |
 | `build-release-package.yml` | Explicit `v*` tags | Exact version/default-branch ancestry check; Windows/Linux Shipping CPU gates; quality gate; attested draft source release |
 | `pull-request-labeler.yml` | PR metadata changes | Labels using base-branch configuration; no checkout or shell execution |
 | `update-api-docs.yml` | Manual | Generate Doxygen HTML artifact; optional protected cross-repository publication |
 | `update-precompiled-tools.yml` | Manual | Windows x64 Shipping ArchiveTool candidate and dependencies; review before any external update |
 
 The required aggregate job fails when any native matrix leg fails or is cancelled.
+Windows jobs explicitly select `windows-2025-vs2026`; all Linux jobs select
+`ubuntu-26.04`, including quality, security, documentation, and release publication.
+These are the latest suitable x64 hosted environments verified on 2026-10-18 in
+[GitHub's runner inventory](https://github.com/actions/runner-images). Explicit
+labels avoid the older Ubuntu image still used by `ubuntu-latest` during migration.
+The CI Windows preset requires CMake 4.2+; legacy developer presets remain available.
+Actionlint 1.7.12 predates the Ubuntu 26.04 label, so `.github/actionlint.yaml`
+explicitly allows that verified hosted label without disabling runner-label validation.
 PR workflows run without secrets, with read-only contents permissions and checkout
 credentials disabled. The metadata-only labeler uses `pull_request_target` solely
 to apply labels to forks; it never checks out or executes their code.
