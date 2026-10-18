@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
+#include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Math/Vec4.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
@@ -36,3 +37,6 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
 
 static_assert(sizeof(xiiGpuLightData) == 144);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuLightData);
+
+/// Canonical linear light color including the authored color-temperature response.
+XII_GRAPHICSCORE_DLL xiiColor xiiEvaluateLightColor(const xiiColorLinearUB& color, xiiUInt32 temperature);

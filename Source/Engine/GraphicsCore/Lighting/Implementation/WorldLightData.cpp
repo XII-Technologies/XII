@@ -16,7 +16,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <cmath>
 namespace
 {
   static xiiVec3 NormalizeOrFallback(xiiVec3 vDirection, const xiiVec3& vFallback)
@@ -45,38 +44,6 @@ namespace
     return xiiLightComponent::CalculateEffectiveRange(0.0f, fIntensity);
   }
 
-  xiiColor EvaluateTemperatureColor(xiiUInt32 uiTemperature)
-  {
-    const float fTemperature = static_cast<float>(xiiMath::Clamp(uiTemperature, 1000U, 50000U)) / 100.0f;
-
-    float fRed   = 1.0f;
-    float fGreen = 1.0f;
-    float fBlue  = 1.0f;
-
-    if (fTemperature <= 66.0f)
-    {
-      fRed   = 1.0f;
-      fGreen = xiiMath::Clamp(0.39008158f * static_cast<float>(std::log(fTemperature)) - 0.63184144f, 0.0f, 1.0f);
-      fBlue  = fTemperature <= 19.0f ? 0.0f : xiiMath::Clamp(0.5432068f * static_cast<float>(std::log(fTemperature - 10.0f)) - 1.1962541f, 0.0f, 1.0f);
-    }
-    else
-    {
-      fRed   = xiiMath::Clamp(1.2929362f * static_cast<float>(std::pow(fTemperature - 60.0f, -0.13320476f)), 0.0f, 1.0f);
-      fGreen = xiiMath::Clamp(1.1298909f * static_cast<float>(std::pow(fTemperature - 60.0f, -0.07551485f)), 0.0f, 1.0f);
-      fBlue  = 1.0f;
-    }
-
-    return xiiColor(fRed, fGreen, fBlue, 1.0f);
-  }
-
-  xiiColor EvaluateLightColor(const xiiColorLinearUB& color, xiiUInt32 uiTemperature)
-  {
-    xiiColor result = color.ToLinearFloat() * EvaluateTemperatureColor(uiTemperature);
-    result.a        = 1.0f;
-    return result;
-  }
-
-
   bool Pack(const xiiRenderData* pRenderData, xiiGpuLightData& result, xiiIESProfileResourceHandle& profile)
   {
     const auto finish = [&](xiiGpuLightData value, xiiGpuLightType type) {
@@ -90,7 +57,7 @@ namespace
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const xiiColor lightColor = EvaluateLightColor(pDirectionalLight->m_LightColor, pDirectionalLight->m_uiTemperature);
+      const xiiColor lightColor = xiiEvaluateLightColor(pDirectionalLight->m_LightColor, pDirectionalLight->m_uiTemperature);
       const xiiVec3  vDirection = NormalizeOrFallback(pDirectionalLight->m_vDirection, xiiVec3(0.0f, 0.0f, -1.0f));
 
       lightData.m_PositionAndInvRange   = xiiVec4::MakeZero();
@@ -112,7 +79,7 @@ namespace
       const xiiVec3  vPosition  = pPointLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pPointLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
       const xiiVec3  vRight     = NormalizeOrFallback(pPointLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
-      const xiiColor lightColor = EvaluateLightColor(pPointLight->m_LightColor, pPointLight->m_uiTemperature);
+      const xiiColor lightColor = xiiEvaluateLightColor(pPointLight->m_LightColor, pPointLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Point));
@@ -136,7 +103,7 @@ namespace
       const xiiVec3  vPosition  = pSpotLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pSpotLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
       const xiiVec3  vRight     = NormalizeOrFallback(pSpotLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
-      const xiiColor lightColor = EvaluateLightColor(pSpotLight->m_LightColor, pSpotLight->m_uiTemperature);
+      const xiiColor lightColor = xiiEvaluateLightColor(pSpotLight->m_LightColor, pSpotLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Spot));
@@ -162,7 +129,7 @@ namespace
       const xiiVec3  vPosition  = pRectangleLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pRectangleLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
       const xiiVec3  vRight     = NormalizeOrFallback(pRectangleLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
-      const xiiColor lightColor = EvaluateLightColor(pRectangleLight->m_LightColor, pRectangleLight->m_uiTemperature);
+      const xiiColor lightColor = xiiEvaluateLightColor(pRectangleLight->m_LightColor, pRectangleLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Rectangle));
@@ -185,7 +152,7 @@ namespace
       const xiiVec3  vPosition  = pDiscLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pDiscLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
       const xiiVec3  vRight     = NormalizeOrFallback(pDiscLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
-      const xiiColor lightColor = EvaluateLightColor(pDiscLight->m_LightColor, pDiscLight->m_uiTemperature);
+      const xiiColor lightColor = xiiEvaluateLightColor(pDiscLight->m_LightColor, pDiscLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Disc));
@@ -206,7 +173,7 @@ namespace
 
       const float    fRange     = xiiMath::Max(pSphereLight->m_fRange, 0.001f);
       const xiiVec3  vPosition  = pSphereLight->m_GlobalTransform.m_vPosition;
-      const xiiColor lightColor = EvaluateLightColor(pSphereLight->m_LightColor, pSphereLight->m_uiTemperature);
+      const xiiColor lightColor = xiiEvaluateLightColor(pSphereLight->m_LightColor, pSphereLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(xiiGpuLightType::Sphere));
@@ -227,7 +194,7 @@ namespace
       const float    fRange     = xiiMath::Max(pTubeLight->m_fRange, 0.001f);
       const xiiVec3  vPosition  = pTubeLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pTubeLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
-      const xiiColor lightColor = EvaluateLightColor(pTubeLight->m_LightColor, pTubeLight->m_uiTemperature);
+      const xiiColor lightColor = xiiEvaluateLightColor(pTubeLight->m_LightColor, pTubeLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(xiiGpuLightType::Tube));
