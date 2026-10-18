@@ -7,6 +7,6 @@ class XII_GRAPHICSCORE_DLL xiiRgbSensorPass final : public xiiSensorCapture
 
 public:
   xiiRgbSensorPass() : xiiSensorCapture(xiiSensorType::RGBCamera) {}
-  xiiRenderPipelineTextureInputPin m_Radiance{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin m_Radiance{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override;
 };

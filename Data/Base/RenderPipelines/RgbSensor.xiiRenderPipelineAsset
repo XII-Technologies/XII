@@ -145,7 +145,7 @@ o
 		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
 		s %DataType{""}
-		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Radiance"}
 		b %Optional{1}
@@ -286,33 +286,20 @@ o
 }
 o
 {
-	Uuid %id{u4{8030251827470800044,4726450595025396109}}
+	Uuid %id{u4{10806653624981217440,4719874926572858464}}
 	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{1889043740548167043,1107814470265882473}}
-		s %SourcePin{"SensorOutput"}
-		Uuid %Target{u4{3235087451196639530,5054345215668931943}}
-		s %TargetPin{"Value"}
-	}
-}
-o
-{
-	Uuid %id{u4{10914721834164604591,4750811942288364639}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Source{u4{17513365664125261357,8773694221140287376}}
+		Uuid %Source{u4{3177665422912445667,14322413274066162269}}
 		s %SourcePin{"Value"}
 		Uuid %Target{u4{1889043740548167043,1107814470265882473}}
-		s %TargetPin{"PerFrameGlobal"}
+		s %TargetPin{"Radiance"}
 	}
 }
 o
 {
-	Uuid %id{u4{17722167527805743522,4926484933383505091}}
+	Uuid %id{u4{16719982796513430958,4831612801781004535}}
 	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
@@ -343,6 +330,19 @@ o
 }
 o
 {
+	Uuid %id{u4{373403887555926679,5022877106939382829}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1889043740548167043,1107814470265882473}}
+		s %SourcePin{"SensorOutput"}
+		Uuid %Target{u4{3235087451196639530,5054345215668931943}}
+		s %TargetPin{"Value"}
+	}
+}
+o
+{
 	Uuid %id{u4{3235087451196639530,5054345215668931943}}
 	s %t{"xiiRenderPipelineInterfacePass"}
 	u3 %v{1}
@@ -365,19 +365,6 @@ o
 }
 o
 {
-	Uuid %id{u4{7187537729040125860,5059040798137648086}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Source{u4{147737487241662444,266686445152106641}}
-		s %SourcePin{"Value"}
-		Uuid %Target{u4{1889043740548167043,1107814470265882473}}
-		s %TargetPin{"PerFrameCamera"}
-	}
-}
-o
-{
 	Uuid %id{u4{11030182634728758870,5120114772586918040}}
 	s %t{"xiiRenderPipelinePinConstraints"}
 	u3 %v{1}
@@ -392,15 +379,28 @@ o
 }
 o
 {
-	Uuid %id{u4{5491414274961033878,5323418384274810653}}
+	Uuid %id{u4{4723709265331350657,5208254160625751753}}
 	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{2065441022527512772,7555998272797421883}}
+		Uuid %Source{u4{17513365664125261357,8773694221140287376}}
 		s %SourcePin{"Value"}
 		Uuid %Target{u4{1889043740548167043,1107814470265882473}}
-		s %TargetPin{"SceneDepth"}
+		s %TargetPin{"PerFrameGlobal"}
+	}
+}
+o
+{
+	Uuid %id{u4{422377679005850549,5392284177988460310}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15372557076527890559,7084155638140953090}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{1889043740548167043,1107814470265882473}}
+		s %TargetPin{"Velocity"}
 	}
 }
 o
@@ -426,28 +426,28 @@ o
 }
 o
 {
-	Uuid %id{u4{1342209129892877205,5659325010499291441}}
+	Uuid %id{u4{2110587781406067370,5548835032704091622}}
 	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{15372557076527890559,7084155638140953090}}
+		Uuid %Source{u4{147737487241662444,266686445152106641}}
 		s %SourcePin{"Value"}
 		Uuid %Target{u4{1889043740548167043,1107814470265882473}}
-		s %TargetPin{"Velocity"}
+		s %TargetPin{"PerFrameCamera"}
 	}
 }
 o
 {
-	Uuid %id{u4{15268234150535730057,5699506468839617631}}
+	Uuid %id{u4{9977244744859363734,5665791719373572326}}
 	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{3177665422912445667,14322413274066162269}}
+		Uuid %Source{u4{2065441022527512772,7555998272797421883}}
 		s %SourcePin{"Value"}
 		Uuid %Target{u4{1889043740548167043,1107814470265882473}}
-		s %TargetPin{"Radiance"}
+		s %TargetPin{"SceneDepth"}
 	}
 }
 o
@@ -513,19 +513,19 @@ o
 			Uuid{u4{6073688636051101086,2827922729369738072}}
 			Uuid{u4{1889043740548167043,1107814470265882473}}
 			Uuid{u4{2065441022527512772,7555998272797421883}}
-			Uuid{u4{5491414274961033878,5323418384274810653}}
+			Uuid{u4{9977244744859363734,5665791719373572326}}
 			Uuid{u4{15372557076527890559,7084155638140953090}}
-			Uuid{u4{1342209129892877205,5659325010499291441}}
+			Uuid{u4{422377679005850549,5392284177988460310}}
 			Uuid{u4{147737487241662444,266686445152106641}}
-			Uuid{u4{7187537729040125860,5059040798137648086}}
+			Uuid{u4{2110587781406067370,5548835032704091622}}
 			Uuid{u4{17513365664125261357,8773694221140287376}}
-			Uuid{u4{10914721834164604591,4750811942288364639}}
+			Uuid{u4{4723709265331350657,5208254160625751753}}
 			Uuid{u4{3235087451196639530,5054345215668931943}}
-			Uuid{u4{8030251827470800044,4726450595025396109}}
+			Uuid{u4{373403887555926679,5022877106939382829}}
 			Uuid{u4{15517389439785459196,8048566017150052651}}
-			Uuid{u4{17722167527805743522,4926484933383505091}}
+			Uuid{u4{16719982796513430958,4831612801781004535}}
 			Uuid{u4{3177665422912445667,14322413274066162269}}
-			Uuid{u4{15268234150535730057,5699506468839617631}}
+			Uuid{u4{10806653624981217440,4719874926572858464}}
 		}
 	}
 }
@@ -636,7 +636,7 @@ o
 		s %Access{"xiiRenderPipelinePinAccess::Write"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
 		s %DataType{""}
-		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Value"}
 		b %Optional{0}
@@ -1058,7 +1058,7 @@ o
 		Uuid %After{u4{15256232238586764148,17053515069001044100}}
 		Uuid %Before{u4{1860094132408109175,7811714338890950242}}
 		s %DataType{""}
-		s %Format{"xiiGALResourceFormat::RGBA16Float"}
+		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Radiance"}
 		Vec2 %Node::Pos{f{0,0x00006144}}
