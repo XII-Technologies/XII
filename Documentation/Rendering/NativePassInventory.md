@@ -2224,3 +2224,32 @@ application/editor/advanced lighting graphs, per-page sample orchestration and w
 virtual page identities remain. The obsolete Deferred fixture loads and helper default
 listed in the preceding report also remain at this point. No claim of a completed
 hundred-operation library or complete engine migration is made.
+
+
+## Remove obsolete default-pipeline test orchestration
+
+The final implicit Deferred descriptor loads in RenderPipelineExecutionTest.cpp and
+TemporalHistoryTest.cpp are removed. PipelineLibraryTestUtils.h now requires an explicit
+asset name. PipelineScheduling.OffscreenRendering composes the existing SceneTargets and
+ViewPresentation assets by document identity, with a reflected color override and explicit
+interface connection. World updates execute the selected graph, and GPU readback checks
+every output pixel across a runtime display-parameter update. The two compiled operations
+use one submission, request no scene extraction and initialize no geometry/material service.
+The former greater-than-ten-passes assertion and bloom-only configuration are deleted.
+
+The obsolete nine-feature temporal checker and InterleavedDefaultPipelines fixture are
+physically deleted (238 lines). They depended on deleted orchestration, hardcoded global
+resource names, removed ordering pins and implicit DDGI/voxel initialization. No test-only
+legacy renderer is reconstructed to satisfy them. Existing native interleaved depth-history,
+independent AO/SSR/TAA operation and failure-recovery tests remain. This removes invalid
+coverage claims; complete advanced lighting graphs and their integration coverage still
+require native implementation.
+
+GraphicsCoreTest, GraphicsFoundationTest and EditorEngineProcessFrameworkTest rebuild
+successfully (native-fixture-cleanup-build.log). All 66 CPU tests, both PipelineScheduling
+subtests, all PipelineResources subtests, NativeDepthBoundary and TemporalHistory pass on
+Vulkan (native-fixture-cpu.log, -scheduling.log, -resources.log, -depth-boundary.log and
+-temporal.log). Tracked Source/Data/Base searches find no SceneDatabase/manager or old
+Deferred/EditorScene binary path references. Ignored generated AssetCache lookup tables
+still contain historical paths; they are not source assets or active implementations.
+No render Builtin files or compatibility wrappers are added.
