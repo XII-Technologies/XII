@@ -2,110 +2,110 @@
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Engine/GraphicsFoundation/**",
-              "Source/Engine/GraphicsVulkan/**",
-              "Source/Engine/GraphicsD3D12/**",
-              "Source/Engine/GraphicsCore/**",
-              "Source/Engine/ShaderCompilerSPIRV/**",
-              "Source/Engine/ShaderCompilerDXIL/**",
-              "Data/Base/Shaders/**"
-            ]
+            "Source/Engine/GraphicsFoundation/**",
+            "Source/Engine/GraphicsVulkan/**",
+            "Source/Engine/GraphicsD3D12/**",
+            "Source/Engine/GraphicsCore/**",
+            "Source/Engine/ShaderCompilerSPIRV/**",
+            "Source/Engine/ShaderCompilerDXIL/**",
+            "Data/Base/Shaders/**"
+          ]
 
 "Area: Compute":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Engine/Foundation/Threading/**",
-              "Source/Engine/Foundation/SimdMath/**"
-            ]
+            "Source/Engine/Foundation/Threading/**",
+            "Source/Engine/Foundation/SimdMath/**"
+          ]
 
 "Area: Core":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Engine/Foundation/**",
-              "Source/Engine/Core/**"
-            ]
+            "Source/Engine/Foundation/**",
+            "Source/Engine/Core/**"
+          ]
 
 "Area: I/O":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Engine/Foundation/IO/**",
-              "Source/Engine/Foundation/Serialization/**"
-            ]
+            "Source/Engine/Foundation/IO/**",
+            "Source/Engine/Foundation/Serialization/**"
+          ]
 
 "Area: UI":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Tools/Libs/GuiFoundation/**",
-              "Source/Editor/EditorFramework/GuiFoundation/**",
-              "Source/ThirdParty/ads/**"
-            ]
+            "Source/Tools/Libs/GuiFoundation/**",
+            "Source/Editor/EditorFramework/GuiFoundation/**",
+            "Source/ThirdParty/ads/**"
+          ]
 
 "Area: Scripting":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Engine/Core/Scripting/**",
-              "Source/EnginePlugins/VisualScriptPlugin/**",
-              "Source/EditorPlugins/VisualScript/**",
-              "Source/ThirdParty/Lua/**"
-            ]
+            "Source/Engine/Core/Scripting/**",
+            "Source/EnginePlugins/VisualScriptPlugin/**",
+            "Source/EditorPlugins/VisualScript/**",
+            "Source/ThirdParty/Lua/**"
+          ]
 
 "Area: Platform":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Engine/Foundation/Basics/**",
-              "Source/Engine/Foundation/Platform/**",
-              "Source/Engine/Core/Platform/**",
-              "Source/Engine/Core/Input/**",
-              "Source/Engine/Core/System/**",
-              "Data/Platform/**"
-            ]
+            "Source/Engine/Foundation/Basics/**",
+            "Source/Engine/Foundation/Platform/**",
+            "Source/Engine/Core/Platform/**",
+            "Source/Engine/Core/Input/**",
+            "Source/Engine/Core/System/**",
+            "Data/Platform/**"
+          ]
 
 "Area: Asset Pipeline":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Data/Base/**",
-              "Data/UnitTests/**",
-              "Data/Samples/**",
-              "Data/Plugins/**"
-            ]
+            "Data/Base/**",
+            "Data/UnitTests/**",
+            "Data/Samples/**",
+            "Data/Plugins/**"
+          ]
 
 "Area: Build System":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/BuildSystem/**",
-              "**/CMakeLists.txt",
-              "**/init.cmake",
-              "**/finalize.cmake",
-              "CMakeLists.txt",
-              "CMakePresets.json",
-              "CMakeSettings.json",
-              "xiiCMakeConfig.cmake",
-              "Generate.ps1",
-              "Generate.sh",
-              "GenerateWin64vs2026.bat",
-              "cgmanifest.json",
-              "version.txt",
-              "launch.vs.json",
-            ]
+            "Source/BuildSystem/**",
+            "**/CMakeLists.txt",
+            "**/init.cmake",
+            "**/finalize.cmake",
+            "CMakeLists.txt",
+            "CMakePresets.json",
+            "CMakeSettings.json",
+            "xiiCMakeConfig.cmake",
+            "Generate.ps1",
+            "Generate.sh",
+            "GenerateWin64vs2026.bat",
+            "cgmanifest.json",
+            "version.txt",
+            "launch.vs.json",
+          ]
 
 "Area: Editor":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/Editor/**",
-            ]
+            "Source/Editor/**",
+          ]
 
 "GitHub":
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              ".github/**"
-            ]
+            ".github/**"
+          ]

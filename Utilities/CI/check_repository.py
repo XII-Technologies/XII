@@ -51,5 +51,5 @@ for path in docs:
             errors.append(f"{path.relative_to(root)}: missing link {target}")
 if errors:
     raise SystemExit("\n".join(errors))
-subprocess.run(["git", "diff", "--check"], cwd=root, check=True)
+subprocess.run(["git", "diff", "--check", "--ignore-submodules=all"], cwd=root, check=True)
 print("Action pins, workflow boundaries, preset references, local documentation links, and diff whitespace passed.")

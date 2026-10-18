@@ -41,5 +41,6 @@ manifest.write_text(json.dumps({
 }, indent=2) + "\n", encoding="utf-8")
 with (args.output / "SHA256SUMS").open("w", encoding="utf-8", newline="\n") as checksums:
     for path in (archive, manifest):
-        digest = hashlib.file_digest(path.open("rb"), "sha256").hexdigest()
+        with path.open("rb") as artifact:
+            digest = hashlib.file_digest(artifact, "sha256").hexdigest()
         checksums.write(f"{digest}  {path.name}\n")

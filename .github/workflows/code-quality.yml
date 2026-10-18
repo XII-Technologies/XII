@@ -36,6 +36,7 @@ jobs:
           "$RUNNER_TEMP/actionlint" -color
           yamllint .github
           python3 Utilities/CI/check_repository.py
+          python3 -m unittest discover -s Utilities/CI/tests -v
       - name: Check changed source formatting and copyright
         if: github.event_name == 'pull_request'
         env:
