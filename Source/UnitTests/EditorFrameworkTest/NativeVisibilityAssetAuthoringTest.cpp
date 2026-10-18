@@ -2097,6 +2097,99 @@ namespace
     return context.ExportDocument(&message);
   }
 
+  xiiStatus AuthorWorldSurfaceLighting(xiiStringView directory)
+  {
+    const xiiStringView            name = "WorldSurfaceLighting";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author world surface-lighting composition");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto connect = [&](const xiiDocumentObject* a, xiiStringView output, const xiiDocumentObject* b, xiiStringView input) -> xiiStatus {
+      if (!a || !b)
+        return xiiStatus("Missing world surface-lighting operation.");
+      const auto* out = manager->GetOutputPinByName(a, output);
+      const auto* in  = manager->GetInputPinByName(b, input);
+      if (!out || !in)
+        return xiiStatus("Missing reflected world surface-lighting pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+
+
+    const auto reference = [&](xiiStringView label, xiiStringView resource, xiiVec2 position) -> const xiiDocumentObject* {
+      const auto* node = add(label, "xiiRenderPipelineSubgraphPass", position);
+      if (!node || accessor->SetValueByName(node, "Resource", resource).Failed() || manager->SynchronizePinConfigurations(node).Failed())
+        return nullptr;
+      return node;
+    };
+    const auto* lights      = reference("World Analytical Lights", "RenderPipelines/WorldLightsUpload.xiiBinRenderPipeline", {0, 0});
+    const auto* sun         = reference("World Directional Selection", "RenderPipelines/WorldDirectionalLight.xiiBinRenderPipeline", {0, 600});
+    const auto* environment = reference("Environment Constants", "RenderPipelines/EnvironmentLightConstants.xiiBinRenderPipeline", {600, 600});
+    const auto* clusters    = reference("Camera Cluster Lists", "RenderPipelines/ClusterLightLists.xiiBinRenderPipeline", {600, 0});
+    const auto* directional = add("Directional Surface Evaluation", "xiiDirectionalSurfaceLightingPass", {1200, 600});
+    const auto* local       = add("Local Surface Evaluation", "xiiClusteredLocalSurfaceLightingPass", {1200, 0});
+    XII_SUCCEED_OR_RETURN(connect(lights, "Lights", clusters, "Lights"));
+    XII_SUCCEED_OR_RETURN(connect(lights, "Candidates", clusters, "Candidates"));
+    XII_SUCCEED_OR_RETURN(connect(sun, "DirectionalLight", environment, "DirectionalLight"));
+    XII_SUCCEED_OR_RETURN(connect(environment, "EnvironmentLight", directional, "EnvironmentLight"));
+    for (const xiiStringView pin : {"Lights", "Counts", "Candidates", "IESProfiles"})
+      XII_SUCCEED_OR_RETURN(connect(lights, pin, local, pin));
+    for (const xiiStringView pin : {"Layout", "LightGrid", "LightIndices", "Overflow"})
+      XII_SUCCEED_OR_RETURN(connect(clusters, pin, local, pin));
+    const auto boundary = [&](xiiStringView label, bool input, const xiiDocumentObject* operation, xiiStringView pin, xiiRenderPipelinePin::Type kind, xiiGALResourceFormat::Enum format, float row) -> xiiStatus {
+      const auto* node = add(label, "xiiRenderPipelineInterfacePass", {input ? -600.0f : 2400.0f, row});
+      if (!node)
+        return xiiStatus("Missing world surface-lighting interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Name", label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Input", input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(kind)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Format", xiiInt64(format)));
+      if (kind == xiiRenderPipelinePin::FrameData)
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "DataType", "xiiLightClusterFrameData"));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
+      return input ? connect(node, "Value", operation, pin) : connect(operation, pin, node, "Value");
+    };
+
+
+    xiiUInt32 row = 0;
+    for (const xiiStringView pin : {"Depth", "Normal", "Albedo", "Material", "Emissive", "Camera"})
+    {
+      const auto kind = pin == "Camera" ? xiiRenderPipelinePin::Buffer : xiiRenderPipelinePin::Texture;
+      XII_SUCCEED_OR_RETURN(boundary(pin, true, directional, pin, kind, xiiGALResourceFormat::Unknown, float(row++ * 200)));
+      const auto* interfaceNode = accessor->GetObject(xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", pin)));
+      XII_SUCCEED_OR_RETURN(connect(interfaceNode, "Value", local, pin));
+    }
+    XII_SUCCEED_OR_RETURN(boundary("Visibility", true, directional, "Visibility", xiiRenderPipelinePin::Texture, xiiGALResourceFormat::Unknown, 1400));
+    XII_SUCCEED_OR_RETURN(boundary("DirectionalLighting", false, directional, "Lighting", xiiRenderPipelinePin::Texture, xiiGALResourceFormat::RGBA16Float, 0));
+    XII_SUCCEED_OR_RETURN(boundary("LocalLighting", false, local, "Lighting", xiiRenderPipelinePin::Texture, xiiGALResourceFormat::RGBA16Float, 200));
+    XII_SUCCEED_OR_RETURN(boundary("Overflow", false, clusters, "Overflow", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 400));
+    XII_SUCCEED_OR_RETURN(boundary("EnvironmentLight", false, environment, "EnvironmentLight", xiiRenderPipelinePin::Buffer, xiiGALResourceFormat::Unknown, 600));
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    return context.ExportDocument(&message);
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -2587,4 +2680,31 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelEnvironment)
   if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseEnvironmentAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseEnvironmentAuthoring"));
   XII_TEST_STATUS(AuthorSparseVoxelEnvironment(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DirectionalSurfaceLighting)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeDirectionalSurfaceLightingAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDirectionalSurfaceLightingAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "DirectionalSurfaceLighting", "xiiDirectionalSurfaceLightingPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, ClusteredLocalSurfaceLighting)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeClusteredLocalSurfaceLightingAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeClusteredLocalSurfaceLightingAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "ClusteredLocalSurfaceLighting", "xiiClusteredLocalSurfaceLightingPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, WorldSurfaceLighting)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "NativeWorldSurfaceAuthoring", "NativeWorldSurfaceBase", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "NativeWorldSurfaceAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeWorldSurfaceAuthoring"));
+  XII_TEST_STATUS(AuthorWorldSurfaceLighting(path));
 }
