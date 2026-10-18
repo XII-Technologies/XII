@@ -1,0 +1,53 @@
+name: Code quality
+
+on:
+  pull_request:
+  push:
+    branches: [Development]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Repository quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install configuration validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends yamllint
+          curl --fail --silent --show-error --location https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz -o "$RUNNER_TEMP/actionlint.tar.gz"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+      - name: Validate workflows, YAML, and repository contracts
+        run: |
+          "$RUNNER_TEMP/actionlint" -color
+          yamllint .github
+          python3 Utilities/CI/check_repository.py
+      - name: Check changed source formatting and copyright
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git submodule update --init Data/Tools/Precompiled
+          chmod +x Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0
+          python3 Utilities/CI/check_changed_source.py --base "$BASE_SHA" --formatter Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0
+      - name: Preserve suggested formatting
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: source-style-patch
+          path: Workspace/Quality/*.patch
+          retention-days: 7
