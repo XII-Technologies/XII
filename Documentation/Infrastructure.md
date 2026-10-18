@@ -38,9 +38,16 @@ not the supported GitHub/local build procedure.
 | `build-release-package.yml` | Explicit `v*` tags | Exact version/default-branch ancestry check; Windows/Linux Shipping CPU gates; quality gate; attested draft source release |
 | `pull-request-labeler.yml` | PR metadata changes | Labels using base-branch configuration; no checkout or shell execution |
 | `update-api-docs.yml` | Manual | Generate Doxygen HTML artifact; optional protected cross-repository publication |
-| `update-precompiled-tools.yml` | Manual | Windows x64 Shipping ArchiveTool candidate and dependencies; review before any external update |
 
 The required aggregate job fails when any native matrix leg fails or is cancelled.
+The standalone ArchiveTool candidate workflow was removed: it did not implement
+the former precompiled-tools update process. ArchiveTool remains buildable with
+the existing CPU preset, as described in the [build guide](Building.md).
+
+Legacy formatting/copyright workflows are superseded by Repository quality;
+the old monolithic CI and Clang-Tidy workflows are superseded by native/extended
+validation and security analysis. Disable their registered GitHub workflows while
+the branch replacement awaits merge. Historical runs remain available.
 
 ## Pull request labels
 
@@ -78,6 +85,24 @@ The metadata-only labeler runs from the PR base branch and synchronizes configur
 path labels as files change, preserving unrelated labels. Catalog/workflow changes
 take effect for PR automation once merged into the base branch. No PR code is
 checked out or executed by this privileged workflow.
+
+## API documentation publication
+
+Only `update-api-docs.yml` pushes Git commits, to the existing APIDocumentation
+repository. Publication remains opt-in from `Development` behind the documentation
+environment. The publisher checks out the trusted source revision separately
+from the disposable destination checkout and downloads only this run's HTML.
+
+Before committing, `Utilities/CI/publish_api_docs.py` fetches the latest destination
+`Development` branch. It replaces only the generated `docs/` directory, retaining
+all other destination files and commits. If another writer advances the branch
+before the push, it fetches again and recreates the generated documentation commit
+on that new tip, up to five attempts. This also handles overlapping edits within
+generated documentation without rebase conflicts. Identical output is a successful
+no-op. Pushes never force history; authentication/policy failures still fail, and
+continuous contention beyond the retry bound produces an explicit rerun request.
+The published content identifies its original source SHA in the commit message;
+retrying publication does not regenerate HTML from newer engine source.
 
 ## Hosted environments
 
@@ -145,9 +170,9 @@ with `sha256sum --check SHA256SUMS` and
 Binary distributions remain deferred until install/export layout, runtime libraries,
 assets, third-party license payloads, platform smoke tests, and debug-symbol
 packaging are established. The former broad copy-and-delete Dev package was not
-a defensible release artifact. The tool-candidate workflow retains a usable CPU
-utility build; the obsolete full PrecompiledTools filter needs a separate Qt/renderer
-migration before broader candidates or publication can be restored safely.
+a defensible release artifact. The obsolete full PrecompiledTools filter needs a
+separate Qt/renderer migration, packaging contract and runtime validation before
+an updater can be restored safely.
 
 ## Maintainer settings
 

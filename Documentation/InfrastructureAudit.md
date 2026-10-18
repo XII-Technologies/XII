@@ -206,3 +206,31 @@ scoped `API_DOCS_TOKEN` for the existing documentation repository.
 
 For the complete path-level change list, use
 `git diff --name-status c1cad315e2eee4da62a16117d48ba661c946c81c..TE/Maintenance`.
+
+## Workflow retirement and publication contention follow-up
+
+Removed `update-precompiled-tools.yml`: the replacement built only an ArchiveTool
+candidate and did not provide a complete precompiled-tools distribution/update
+contract. Local ArchiveTool builds remain documented. Eight workflows remain,
+with distinct CI, reusable build, extended validation, quality, security, release,
+PR metadata and API documentation responsibilities.
+
+Using `gh`, disabled the registered legacy ClangFormat, Ensure Copyright Header
+and Update Precompiled Tools workflows. Readback confirmed they are disabled;
+the old ClangTidy and Continuous Integration entries were already disabled.
+Historical runs were preserved. Native CI's pre-existing disabled state was not
+changed; it still needs enabling after the replacement is merged into Development.
+
+API documentation is the only remaining Git-commit publisher. Its tested utility
+fetches the destination branch immediately before creating a commit, then fetches
+and recreates the generated commit if a competing push wins. All outside-docs
+history is retained and no push forces history. Five attempts bound contention;
+permission/policy failures remain failures. Six real local Git integration tests
+cover stale checkouts, overlapping generated-file pushes, identical publications,
+permission rejection, retry exhaustion and protection of dirty checkouts.
+
+Validation: all 23 infrastructure tests passed in WSL; actionlint, yamllint,
+label catalog/module coverage, action pins, workflow permission boundaries,
+documentation links and diff whitespace checks passed. No production API
+documentation was published and the revised workflow was not run on hosted
+runners. The workflow changes take effect after merge into the base branch.

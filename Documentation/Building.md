@@ -100,8 +100,8 @@ for tests. Full-editor verification remains separate from these targeted builds.
 
 `ArchiveTool` can be built with the CPU preset as a standalone tool:
 `cmake --build Workspace/ci-windows --config Shipping --target ArchiveTool`.
-The manual tool workflow creates a candidate artifact for review; it does not
-automatically update the PrecompiledTools repository.
+PrecompiledTools updates require separate packaging and runtime validation; there
+is no automated updater for that repository.
 
 ## Test classification and results
 
