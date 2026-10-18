@@ -16,6 +16,8 @@
 #include <Inspector/ResourceWidget.moc.h>
 #include <Inspector/SubsystemsWidget.moc.h>
 #include <Inspector/TimeWidget.moc.h>
+#include <Inspector/RenderGraphWidget.h>
+#include <Inspector/ProfilingWidget.h>
 
 const int g_iDockingStateVersion = 1;
 
@@ -58,6 +60,10 @@ xiiQtMainWindow::xiiQtMainWindow() :
   xiiQtReflectionWidget*   pReflectionWidget   = new xiiQtReflectionWidget(m_pDockManager);
   xiiQtDataWidget*         pDataWidget         = new xiiQtDataWidget(m_pDockManager);
   xiiQtResourceWidget*     pResourceWidget     = new xiiQtResourceWidget(m_pDockManager);
+  auto* pRenderGraphWidget = new xiiQtRenderGraphWidget(m_pDockManager);
+  auto* pProfilingWidget = new xiiQtProfilingWidget(m_pDockManager);
+  menuWindows->addAction(pRenderGraphWidget->toggleViewAction());
+  menuWindows->addAction(pProfilingWidget->toggleViewAction());
 
   XII_VERIFY(nullptr != QWidget::connect(pMainWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pLogWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
@@ -115,6 +121,8 @@ xiiQtMainWindow::xiiQtMainWindow() :
   m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pReflectionWidget);
   m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pResourceWidget);
   m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pSubsystemsWidget);
+  m_pDockManager->addDockWidgetTab(ads::CenterDockWidgetArea, pRenderGraphWidget);
+  m_pDockManager->addDockWidgetTab(ads::CenterDockWidgetArea, pProfilingWidget);
 
   m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, pFileWidget);
   m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, pMemoryWidget);
@@ -266,6 +274,8 @@ void xiiQtMainWindow::UpdateNetwork()
     xiiQtGlobalEventsWidget::s_pWidget->ResetStats();
     xiiQtDataWidget::s_pWidget->ResetStats();
     xiiQtResourceWidget::s_pWidget->ResetStats();
+    xiiQtRenderGraphWidget::s_pWidget->ResetStats();
+    xiiQtProfilingWidget::s_pWidget->ResetStats();
   }
 
   UpdateAlwaysOnTop();

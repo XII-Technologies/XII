@@ -19,6 +19,8 @@
 #include <Inspector/ResourceWidget.moc.h>
 #include <Inspector/SubsystemsWidget.moc.h>
 #include <Inspector/TimeWidget.moc.h>
+#include <Inspector/RenderGraphWidget.h>
+#include <Inspector/ProfilingWidget.h>
 
 #include <QApplication>
 #include <QSettings>
@@ -77,6 +79,8 @@ public:
     xiiTelemetry::AcceptMessagesForSystem('RFLC', true, xiiQtReflectionWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('TRAN', true, xiiQtDataWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('RESM', true, xiiQtResourceWidget::ProcessTelemetry, nullptr);
+    xiiTelemetry::AcceptMessagesForSystem('RGRF', true, xiiQtRenderGraphWidget::ProcessTelemetry, nullptr);
+    xiiTelemetry::AcceptMessagesForSystem('PROF', true, xiiQtProfilingWidget::ProcessTelemetry, nullptr);
 
     QSettings     Settings;
     const QString sServer = Settings.value("LastConnection", QLatin1String("localhost:1040")).toString();

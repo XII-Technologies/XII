@@ -3,6 +3,7 @@
 #include <Inspector/InspectorPCH.h>
 #include <Inspector/CaptureUi.h>
 #include <Inspector/RenderGraphWidget.h>
+#include <Inspector/ProfilingWidget.h>
 #include <QCheckBox>
 #include <QGraphicsScene>
 #include <QJsonDocument>
@@ -111,6 +112,8 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
   const int previous = m_pGraphs->findData(selected);
   m_pGraphs->setCurrentIndex(previous >= 0 ? previous : m_pGraphs->findData(id));
   Rebuild();
+  if (xiiQtProfilingWidget::s_pWidget)
+    xiiQtProfilingWidget::s_pWidget->ApplyGraphCapture(object);
   return true;
 }
 

@@ -82,6 +82,11 @@ namespace
     if (!requested || !xiiTelemetry::IsConnectedToClient())
       return;
 
+    // Also collect the render graph's resolved duration queries. They have durations and frame
+    // identities, but no calibrated absolute timestamps; do not fabricate timeline positions.
+    s_uiRequest.fetch_add(1);
+    s_iExpires.store(static_cast<xiiInt64>((xiiTime::Now() + xiiTime::MakeFromSeconds(2)).GetMicroseconds()));
+
     xiiProfilingSystem::ProfilingData capture;
     xiiProfilingSystem::Capture(capture); // Preserve the application's own profiling history.
     const xiiTime cutoff = xiiTime::Now() - xiiTime::MakeFromSeconds(1);
