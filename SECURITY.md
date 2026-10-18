@@ -1,19 +1,37 @@
-## Reporting a Vulnerability
+# Security policy
 
-XII Technologies is committed to protecting the integrity and resilience of our systems, libraries, and user-facing APIs. If you believe you have discovered a security vulnerability, we strongly encourage you to report it in a responsible and confidential manner. This allows us to investigate, resolve, and disclose issues thoughtfully and transparently-prioritizing the security of our community and users.
+## Support policy
 
-To report a potential vulnerability:
+XII is under active development. Security fixes target the current `Development`
+branch. There is no established long-term support or guaranteed backport policy
+for historical tags or binary snapshots. Consumers should evaluate the current
+revision and track advisories and release notes.
 
-- 📬 **Contact us at** [contact@xiitechnologies.com](mailto:contact@xiitechnologies.com).
-- ⏱️ **Expected response time:** within 48 hours.
-- 🤝 **Disclosure policy:** We prefer coordinated disclosure and will work with you to define a remediation timeline that aligns with impact severity and downstream dependencies.
+## Private reporting
 
-When submitting a report, please include:
+Use [GitHub private vulnerability reporting](https://github.com/XII-Technologies/XII/security/advisories/new)
+when it is enabled. If that option is unavailable, the project's existing contact
+is [contact@xiitechnologies.com](mailto:contact@xiitechnologies.com). Do not open
+a public issue containing exploit details, secrets, or sensitive data.
 
-- A **clear and concise description** of the vulnerability.
-- **Steps to reproduce**, or a minimal test case (if available).
-- The **affected component(s)** and potential impact.
-- Any known **workarounds or mitigation strategies**.
-- Whether you’ve tested the issue against the latest version or commit.
+Include the affected commit/version and component, impact, prerequisites, exact
+reproduction steps or a minimal test case, platform/toolchain information, and
+any mitigation. Tell us whether the report also affects a third-party dependency.
+Provide enough information to reproduce the issue without sharing production data.
 
-We value responsible disclosure and deeply appreciate security research and collaboration. Valid reports will be acknowledged publicly (with permission) and addressed through patch releases, advisory bulletins, and changelogs.
+## Scope and disclosure
+
+Relevant reports include memory corruption, unsafe asset/archive parsing, unintended
+code execution, path traversal, security-relevant networking flaws, and compromise
+of build, dependency, or release automation. Ordinary crashes, rendering defects,
+and unsupported configurations without a security impact belong in the issue tracker.
+
+Please coordinate disclosure while the report is assessed and a remediation or
+mitigation is prepared. Avoid accessing other people's data, disrupting services,
+or testing systems without authorization. Response and resolution times depend
+on available maintainers and complexity; no fixed deadline or bounty is promised.
+
+Confirmed issues can be communicated through
+[GitHub security advisories](https://github.com/XII-Technologies/XII/security/advisories),
+fix commits, and release notes. Researcher credit is given with consent. A release
+archive or successful CI run does not imply a security certification.

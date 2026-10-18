@@ -15,6 +15,7 @@
 *.cs text eol=lf
 *.ps1 text eol=lf
 *.sh text eol=lf
+*.py text eol=lf
 *.cmake text eol=lf
 *.ui text eol=lf
 *.json text eol=lf

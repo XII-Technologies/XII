@@ -1,11 +1,11 @@
-# **Support**
+# Support
 
-## Obtain direct support from the project's owners
+Use the [issue tracker](https://github.com/XII-Technologies/XII/issues) for technical
+questions and reproducible problems. Search existing issues first. Choose the bug,
+build/platform, feature, or documentation form as appropriate; use a blank issue
+for a general question. Include a commit, environment, commands, and relevant logs.
 
-1. Open a new issue and select the issue with the template called "❓ Question or Support Request".
-2. Read the instructions carefully in that template and submit the issue asking for support
-or any question.
-
-## Bug reports
-
-See the [contributing guidelines](CONTRIBUTING.md) for sharing bug reports and read our developer guide.
+See the [build guide](Documentation/Building.md) for setup and troubleshooting,
+and [CONTRIBUTING.md](CONTRIBUTING.md) for development expectations. Community
+support depends on contributor availability; no service level is guaranteed.
+Security reports must follow the [private reporting process](SECURITY.md).
