@@ -13,7 +13,7 @@
 using namespace xiiRenderPassUtils;
 struct xiiLuminanceHistogramPass::Data
 {
-  XII_DECLARE_POD_TYPE();
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
 
   xiiRenderGraphTextureHandle m_hHDRIn;     ///< ShaderResource in (current HDR scene color).
   xiiRenderGraphBufferHandle  m_hHistogram; ///< UnorderedAccess out (256-bin luminance histogram).
@@ -77,14 +77,15 @@ xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context
     data.m_Size = size;
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;
     data.m_hHDRIn = context.GetInputTexture(m_InputHDRSceneColor);
-    Setup(data, builder); }, xiiMakeDelegate(&xiiLuminanceHistogramPass::Execute, this));
+    Setup(data, builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputLuminanceHistogram, emitted.first->m_hHistogram));
   return XII_SUCCESS;
 }
 
 void xiiLuminanceHistogramPass::Setup(Data& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hHDRIn = builder.ReadTexture(data.m_hHDRIn, xiiGALResourceStateFlags::ShaderResource);
+  data.m_Pipeline = m_pState->m_Pipeline;
+  data.m_hHDRIn   = builder.ReadTexture(data.m_hHDRIn, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 4U;
@@ -121,7 +122,7 @@ void xiiLuminanceHistogramPass::Execute(const Data& data, xiiRenderGraphPassCont
 
     xiiUInt32 zeroHistogram[256] = {};
     UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hHistogram), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroHistogram), sizeof(zeroHistogram)));
-    cmd.SetPipelineState(m_pState->m_Pipeline);
+    cmd.SetPipelineState(data.m_Pipeline.Borrow());
     cmd.ResolveAndSetConstantBuffer("xiiExposureHistogramConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRInput", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_Histogram", context.GetBuffer(data.m_hHistogram)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);

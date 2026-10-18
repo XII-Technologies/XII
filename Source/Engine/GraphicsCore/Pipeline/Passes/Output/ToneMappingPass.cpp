@@ -11,7 +11,7 @@
 
 struct xiiToneMappingPass::Data
 {
-  XII_DECLARE_POD_TYPE();
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
 
   xiiRenderGraphTextureHandle m_hHDRInput;
   xiiRenderGraphTextureHandle m_hBloom;
@@ -93,13 +93,14 @@ xiiResult xiiToneMappingPass::Build(xiiRenderPipelinePassContext& context)
     data.m_hHDRInput=context.GetInputTexture(m_InputUpscaledColor);
     data.m_hBloom=context.GetInputTexture(m_InputBloomTexture);
     data.m_hExposure=context.GetInputBuffer(m_InputCurrentExposure);
-    Setup(data,builder); }, xiiMakeDelegate(&xiiToneMappingPass::Execute, this));
+    Setup(data,builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hDisplayLinear));
   return XII_SUCCESS;
 }
 
 void xiiToneMappingPass::Setup(Data& data, xiiRenderGraphBuilder& builder)
 {
+  data.m_Pipeline                = m_pState->m_Pipeline;
   const xiiUInt32 uiOutputWidth  = data.m_Size.width;
   const xiiUInt32 uiOutputHeight = data.m_Size.height;
 
@@ -143,7 +144,7 @@ void xiiToneMappingPass::Execute(const Data& data, xiiRenderGraphPassContext& co
       pConstants->_Padding           = xiiVec3::MakeZero();
     }
 
-    cmd.SetPipelineState(m_pState->m_Pipeline);
+    cmd.SetPipelineState(data.m_Pipeline.Borrow());
 
 
     cmd.ResolveAndSetConstantBuffer("xiiToneMappingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);

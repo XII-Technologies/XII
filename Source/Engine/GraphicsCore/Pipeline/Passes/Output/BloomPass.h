@@ -27,6 +27,6 @@ private:
   struct Data;
   struct State;
   void                Setup(Data& data, xiiRenderGraphBuilder& builder);
-  void                Execute(const Data& data, xiiRenderGraphPassContext& context);
+  static void         Execute(const Data& data, xiiRenderGraphPassContext& context);
   xiiUniquePtr<State> m_pState;
 };

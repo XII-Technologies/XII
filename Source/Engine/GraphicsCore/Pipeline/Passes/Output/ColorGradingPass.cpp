@@ -11,7 +11,7 @@
 
 struct xiiColorGradingPass::Data
 {
-  XII_DECLARE_POD_TYPE();
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
 
   xiiRenderGraphTextureHandle m_hDisplayLinear; ///< ShaderResource in (tone-mapped display-linear input).
   xiiRenderGraphTextureHandle m_hGraded;        ///< UnorderedAccess out (graded display-linear output).
@@ -79,7 +79,7 @@ xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
     data.m_bDefaultViewMode=!context.m_pView || context.m_pView->GetViewRenderMode()==xiiViewRenderMode::Default;
     data.m_hDisplayLinear=context.GetInputTexture(m_InputDisplayLinearColor);
-    Setup(data,builder); }, xiiMakeDelegate(&xiiColorGradingPass::Execute, this));
+    Setup(data,builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGradedColor, emitted.first->m_hGraded));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputColorGradingConstants, emitted.first->m_hConstants));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hDisplayLinear));
@@ -88,6 +88,7 @@ xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
 
 void xiiColorGradingPass::Setup(Data& data, xiiRenderGraphBuilder& builder)
 {
+  data.m_Pipeline                = m_pState->m_Pipeline;
   const xiiUInt32 uiOutputWidth  = data.m_Size.width;
   const xiiUInt32 uiOutputHeight = data.m_Size.height;
 
@@ -126,7 +127,7 @@ void xiiColorGradingPass::Execute(const Data& data, xiiRenderGraphPassContext& c
       pConstants->FilmGrain        = xiiVec4(settings.m_fFilmGrainStrength, static_cast<float>(context.GetFrameIndex() & 0x00FFFFFFU), 0.0f, 0.0f);
     }
 
-    cmd.SetPipelineState(m_pState->m_Pipeline);
+    cmd.SetPipelineState(data.m_Pipeline.Borrow());
 
 
     cmd.ResolveAndSetConstantBuffer("xiiColorGradingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);

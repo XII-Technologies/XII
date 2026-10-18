@@ -11,7 +11,8 @@
 
 struct xiiBloomPass::Data
 {
-  XII_DECLARE_POD_TYPE();
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+  xiiSharedPtr<xiiGALSampler>              m_Sampler;
 
   xiiRenderGraphTextureHandle m_hHDRIn; ///< ShaderResource in (upscaled HDR input).
   xiiRenderGraphTextureHandle m_hBloom; ///< UnorderedAccess out (bloom result).
@@ -82,13 +83,15 @@ xiiResult xiiBloomPass::Build(xiiRenderPipelinePassContext& context)
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
     data.m_hHDRIn=context.GetInputTexture(m_InputUpscaledColor);
-    Setup(data,builder); }, xiiMakeDelegate(&xiiBloomPass::Execute, this));
+    Setup(data,builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputBloomTexture, emitted.first->m_hBloom));
   return XII_SUCCESS;
 }
 
 void xiiBloomPass::Setup(Data& data, xiiRenderGraphBuilder& builder)
 {
+  data.m_Pipeline                = m_pState->m_Pipeline;
+  data.m_Sampler                 = m_pState->m_Sampler;
   const xiiUInt32 uiOutputWidth  = data.m_Size.width;
   const xiiUInt32 uiOutputHeight = data.m_Size.height;
 
@@ -125,9 +128,9 @@ void xiiBloomPass::Execute(const Data& data, xiiRenderGraphPassContext& context)
       pConstants->BloomParameters = xiiVec4(data.m_DisplaySettings.m_fBloomThreshold, data.m_DisplaySettings.m_fBloomKnee, data.m_DisplaySettings.m_fBloomRadius, 0.0f);
     }
 
-    cmd.SetPipelineState(m_pState->m_Pipeline);
+    cmd.SetPipelineState(data.m_Pipeline.Borrow());
 
-    cmd.ResolveAndSetSampler("g_sLinearClamp", m_pState->m_Sampler.Borrow());
+    cmd.ResolveAndSetSampler("g_sLinearClamp", data.m_Sampler.Borrow());
     cmd.ResolveAndSetConstantBuffer("xiiBloomConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_BloomOut", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
