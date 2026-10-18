@@ -1,0 +1,22 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+Texture2D<float4> g_CoarseIrradiance;
+Texture2D<float4> g_DetailIrradiance;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Radiance;
+[numthreads(8,8,1)]
+void main(uint3 tid:SV_DispatchThreadID)
+{
+  uint2 extent; g_Radiance.GetDimensions(extent.x,extent.y);
+  if(any(tid.xy>=extent)) return;
+  const float4 coarse=g_CoarseIrradiance.Load(int3(tid.xy,0));
+  const float4 detail=g_DetailIrradiance.Load(int3(tid.xy,0));
+  const float detailWeight=saturate(detail.a);
+  const float coarseWeight=saturate(coarse.a)*(1-detailWeight);
+  const float confidence=detailWeight+coarseWeight;
+  const float3 weighted=max(coarse.rgb,0)*coarseWeight+max(detail.rgb,0)*detailWeight;
+  const float3 irradiance=confidence>0 ? weighted/confidence:0;
+  g_Radiance[tid.xy]=all(isfinite(irradiance)) && isfinite(confidence) ? float4(irradiance,confidence):0;
+}
