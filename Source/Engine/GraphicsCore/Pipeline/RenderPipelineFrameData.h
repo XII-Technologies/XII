@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/RefCounted.h>

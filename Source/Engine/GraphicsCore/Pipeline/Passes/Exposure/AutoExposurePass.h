@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>

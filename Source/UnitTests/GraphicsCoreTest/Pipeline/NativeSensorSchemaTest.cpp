@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Types/ScopeExit.h>

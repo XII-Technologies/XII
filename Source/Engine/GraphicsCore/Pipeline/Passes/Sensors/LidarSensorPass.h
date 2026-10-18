@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
 class XII_GRAPHICSCORE_DLL xiiLidarSensorPass final : public xiiSensorCapture

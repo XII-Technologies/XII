@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>

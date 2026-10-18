@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 float3 FresnelSchlickRoughness(float NoV, float3 f0, float roughness)
 {

@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/ClusterBoundsPass.h>

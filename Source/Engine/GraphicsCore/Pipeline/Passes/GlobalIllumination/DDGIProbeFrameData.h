@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Foundation/Math/Size.h>
 #include <Foundation/Types/SharedPtr.h>

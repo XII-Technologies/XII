@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 /// Creates one transient, fully initialized D32 depth image. Rasterization is a separate operation.

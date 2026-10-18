@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Composition/ConfidenceRadiancePass.h>
 #include <GraphicsCore/Pipeline/Passes/Composition/RadianceAddPass.h>

@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 /// Publishes shared world light/IES uploads and this view's explicit candidate stream.

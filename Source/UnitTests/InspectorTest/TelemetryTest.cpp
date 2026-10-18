@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Plugin.h>
 #include <Foundation/IO/OSFile.h>

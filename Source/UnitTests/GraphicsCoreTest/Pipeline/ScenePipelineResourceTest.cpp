@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredOpaqueSceneResources)

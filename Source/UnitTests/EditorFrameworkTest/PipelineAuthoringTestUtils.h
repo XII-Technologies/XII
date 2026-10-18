@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>

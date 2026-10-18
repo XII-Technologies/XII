@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadeSnapshot, 1, xiiRTTINoAllocator)

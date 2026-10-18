@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>

@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Pipeline/RenderPipelineFrameData.h>
 #include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>

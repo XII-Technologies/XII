@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/Graphics/Camera.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/GraphicsCorePCH.h>

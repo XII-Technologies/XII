@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeFrameData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>

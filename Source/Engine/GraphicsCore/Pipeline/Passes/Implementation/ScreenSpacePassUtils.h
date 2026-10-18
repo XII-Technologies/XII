@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/Composition/CompositionPassUtils.h>

@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Math/Vec4.h>

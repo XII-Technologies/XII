@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>

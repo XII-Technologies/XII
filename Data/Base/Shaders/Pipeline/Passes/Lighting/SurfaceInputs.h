@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Shaders/Pipeline/Passes/Lighting/SurfaceGeometryInputs.h>
 Texture2D<float4> g_SurfaceEmissive;

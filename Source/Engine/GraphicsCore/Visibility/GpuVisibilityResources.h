@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>

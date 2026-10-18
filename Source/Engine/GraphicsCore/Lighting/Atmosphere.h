@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>

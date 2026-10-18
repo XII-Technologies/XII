@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 // Shared conservative projection/coverage tests for independent instance and meshlet operations.
 bool KeepWithoutOcclusion(GpuSceneInstance instance)

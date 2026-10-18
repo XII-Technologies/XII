@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCore/Pipeline/Passes/Composition/ConfidenceBlendPass.h>
 #include <GraphicsCore/Pipeline/Passes/Composition/RadianceReplacePass.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>

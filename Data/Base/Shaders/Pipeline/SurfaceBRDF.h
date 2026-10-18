@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 float D_GGX(float NoH, float roughness)
 {
@@ -56,4 +57,3 @@ float3 BRDF(float3 albedo, float roughness, float metallic, float dielectricSpec
 {
   return BRDFLayered(albedo, roughness, metallic, dielectricSpecular, 0.0f, 0.0f, 0.1f, N, L, V);
 }
-

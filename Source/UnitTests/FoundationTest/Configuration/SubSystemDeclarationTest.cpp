@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Configuration/SubSystem.h>
 #include <FoundationTest/FoundationTestPCH.h>

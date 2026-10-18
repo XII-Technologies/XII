@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>

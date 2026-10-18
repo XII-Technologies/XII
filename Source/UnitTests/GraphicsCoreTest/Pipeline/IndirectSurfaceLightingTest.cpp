@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/IrradianceLayerPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/DiffuseSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentSpecularPass.h>

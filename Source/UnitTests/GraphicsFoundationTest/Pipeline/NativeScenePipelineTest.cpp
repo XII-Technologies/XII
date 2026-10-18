@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/Graphics/Geometry.h>
 #include <Foundation/Math/Float16.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>

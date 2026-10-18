@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/GraphicsCorePCH.h>

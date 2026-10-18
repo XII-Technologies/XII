@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>

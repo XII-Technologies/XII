@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Math/Frustum.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>

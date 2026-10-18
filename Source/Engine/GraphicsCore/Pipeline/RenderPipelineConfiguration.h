@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Foundation/Types/Variant.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>

@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Shaders/Pipeline/LightingData.h>
 #include <Shaders/Pipeline/PhotometricLightSampling.h>
@@ -37,4 +38,3 @@ float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, 
 {
   return EvaluateLocalLightLayered(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, 0.0f, 0.0f, 0.1f);
 }
-
