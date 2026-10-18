@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **83 concrete reflected operation classes** in
+Current source inventory: **84 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -22,7 +22,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Exposure | 2 | `xiiAutoExposurePass`, `xiiLuminanceHistogramPass` |
 | Geometry | 8 | `xiiDepthRasterPass`, `xiiDirectionalMeshConstantsPass`, `xiiDirectionalMeshRasterPass`, `xiiGBufferRasterPass`, `xiiMeshDrawCommandsPass`, `xiiMatrixRasterConstantsPass`, `xiiSurfaceRasterConstantsPass`, `xiiVertexPullDrawCommandsPass` |
 | GlobalIllumination | 4 | `xiiDDGIProbeGatherPass`, `xiiScreenSpaceGlobalIlluminationCompositePass`, `xiiScreenSpaceGlobalIlluminationPass`, `xiiSparseVoxelGatherPass` |
-| Lighting | 6 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass` |
+| Lighting | 7 | `xiiBRDFLutPass`, `xiiLightClusterViewPass`, `xiiClusterBoundsPass`, `xiiClusterListClearPass`, `xiiClusterLightAssignmentPass`, `xiiClusterLightSamplingPass`, `xiiWorldLightsUploadPass` |
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
 | Preparation | 2 | `xiiViewConstantsPass`, `xiiWorldInstancesUploadPass` |
@@ -2383,3 +2383,82 @@ and 190 barriers. Its topology does not yet include the new cluster composition.
 World light packing/upload, IES/probe ownership, deletion of LightingSystem/lighting contexts,
 complete application/editor/advanced lighting graphs, per-page sample orchestration and
 world/view virtual page identities remain. The full renderer migration remains active.
+
+
+## World-owned light uploads and legacy lighting-context deletion
+
+LightingSystem.h and Implementation/LightingSystem.cpp are physically deleted.
+xiiLightingSystem, xiiLightingSystemSettings, its unused quality preset, xiiLightingContext,
+xiiLightingContextHandle/Id and the context ID table/factory/lookup/teardown APIs no longer
+exist. The large light/camera/global upload facade, bind helpers, global name publication,
+automatic local-shadow planning and eager DDGI/voxel ownership are removed. LightingManager
+retains only the distinct demand-allocated immutable device BRDF lookup and its readiness.
+It owns no camera, world, light array, hierarchy, context registry or GI state.
+
+The existing DDGI and sparse-voxel update helpers now require an explicit graph uniform
+buffer for light constants and declare that read. They no longer borrow a LightingSystem
+pointer or bind arbitrary global frame resources. Their algorithmic contexts remain;
+complete native update passes and advanced-lighting graph integration are still required.
+The old settings were not referenced by current assets or production callers; no permanent
+compatibility object/factory is retained to keep deleted renderer orchestration alive.
+
+WorldLightsUpload is an independent reflected producer with Lights, IESProfiles, Counts
+and Candidates typed member pins. It requests only the existing Lights extraction category
+and Lighting GPU-data feature. No mesh/material residency, GI, shadow atlas or device BRDF
+lookup is initialized merely because lights are consumed. Its ordinary editable asset is
+exported through the editor document path. The library now contains 84 native pass classes
+and 49 asset pairs.
+
+xiiRenderWorldModule aggregates the existing view-independent component packets from views
+that consume GPU lights and updates a focused WorldLightData owner once per world frame.
+All seven analytical light kinds preserve canonical photometric intensities, temperature
+colors, directions, influence bounds, source dimensions and shadow properties. Point/spot
+IES references use the existing resource manager, are deduplicated within the world upload,
+and are re-read at extraction so source reloads update GPU contents and content revisions.
+Missing/invalid requested profiles report failure rather than silently changing the light.
+
+WorldLightData contains only derived shader records, validated source associations and
+completion-safe GPU upload slots. It offers no create/destroy/reparent/transform authoring
+API, stores no object hierarchy, and introduces no entity or general handle framework.
+Internal monotonically allocated light GPU tokens never alias a retired token; resolution
+validates the authoritative component generation, world and activation. They are runtime
+identities, not document/serialized handles. Compact table indices remain derived bindings.
+
+Camera graphs share the world's immutable CPU upload snapshot and physical light/profile
+buffers. Changed contiguous records become sparse upload ranges. Unchanged contents retain
+the prior snapshot; queued work retains snapshot/state/resources independently of the world.
+Writable slots are reused only within the same immutable frame or after their last frame is
+complete. The uploaded version is promoted while recording, not during setup. Every view
+gets a separate explicit candidate stream honoring its extracted tags/activation; consumers
+must apply this stream instead of treating the world's union as that camera's selection.
+The clustered consumer connection and full surface-lighting assets still need migration.
+
+The cache is cleared when the world drops GPU-light demand, on world teardown and on device
+release. This extends the existing world module and shared extraction lifecycle; no new
+world module or scene ownership abstraction is added. CPU light packing still processes the
+eligible light packets once per world update. Incremental GPU bytes and shared extraction
+are implemented; a full per-property CPU packing-revision optimization is not claimed.
+IES resources share resource-manager ownership, but the packed GPU profile table remains
+world-scoped; shared device-level IES residency across different worlds is still outstanding.
+
+Verification for this phase:
+
+- Debug GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene built with serial MSBuild.
+- 66 CPU pipeline tests, 43 native asset-authoring fixtures and 16 editor document tests passed.
+- Vulkan passed 25 native GPU tests, 14 pipeline resource tests, three extraction tests,
+  the interleaved depth-boundary test, the failed-recording history test and three temporal
+  memory tests. The two new world-light tests cover all seven light types, authoritative
+  parent transforms, tagged views, activation/removal/recreation, validated GPU identities,
+  IES hot reload, empty demand, an eight-frame burst without host waits and world/pipeline
+  destruction before queued graph recording.
+- Two views share the canonical physical buffers. A changed point transform uploads one
+  144-byte record in one range/pass; warmed unchanged frames upload zero shared bytes.
+  The seven-light initial snapshot including its IES profile uploads 9,216 bytes; profile
+  reload uploads 8,480 bytes including affected record revisions. These are measured upload
+  byte counts, not GPU timings or a Release throughput benchmark.
+- The full Vulkan sample completed 300 frames with exit code zero after the legacy
+  lighting-system deletion. D3D12 was excluded as requested.
+- Source and asset searches found no remaining lighting-system/context production references.
+  The former files and static-link registration are deleted. The full renderer migration
+  remains active, including the explicit remaining work listed above.
