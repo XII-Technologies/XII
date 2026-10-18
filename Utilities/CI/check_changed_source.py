@@ -34,11 +34,15 @@ for name in files:
         failed = True
 code = [name for name in files if Path(name).suffix not in {".cmake", ".BuildFilter"} and Path(name).name != "CMakeLists.txt"]
 if code:
-    diff = subprocess.check_output(["git", "diff", "-U0", "--no-color", args.base, "HEAD", "--", *code])
+    diff = subprocess.check_output(["git", "-c", "core.quotePath=false", "diff", "-U0", "--no-color", args.base, "HEAD", "--", *code])
     result = subprocess.run(
-        [sys.executable, "Utilities/ClangFormatDiff.py", "-p1", "-style", "file", "-binary", args.formatter, "-verbose"],
-        input=diff, capture_output=True, check=True,
+        [sys.executable, "Utilities/ClangFormatDiff.py", "-p1", "-style", "file", "-binary", args.formatter,
+         "--verbose", "-iregex", r".*\.(cpp|c|cc|cxx|h|hpp|inl)"],
+        input=diff, capture_output=True,
     )
+    if result.returncode:
+        sys.stderr.buffer.write(result.stderr)
+        raise SystemExit(result.returncode)
     if result.stdout:
         (output / "clang-format.patch").write_bytes(result.stdout)
         print("Changed lines need formatting; apply Workspace/Quality/clang-format.patch", file=sys.stderr)

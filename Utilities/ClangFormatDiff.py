@@ -94,7 +94,9 @@ def main():
         # Match file marker lines like "+++ b/path/to/file"
         match = re.search(r"^\+\+\+\ (.*?/){%d}([^\s].*)" % args.p, line)
         if match:
-            candidate = match.group(2)
+            # Git terminates paths containing spaces with a tab; unified diffs
+            # may also have a timestamp after that separator.
+            candidate = match.group(2).split("\t", 1)[0]
             # Skip deletions/new files referencing /dev/null
             if candidate == "dev/null" or candidate.endswith("/dev/null"):
                 filename = None
