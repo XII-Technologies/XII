@@ -2030,6 +2030,72 @@ namespace
     xiiExportDocumentMsgToEngine message; message.m_sOutputFile=xiiStringBuilder(directory,"/",name,".xiiBinRenderPipeline"); message.m_uiAssetHash=1; message.m_uiVersion=7;
     return context.ExportDocument(&message);
   }
+  xiiStatus AuthorSparseVoxelEnvironment(xiiStringView directory)
+  {
+    const xiiStringView name="SparseVoxelEnvironment";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory,"/",name,".xiiRenderPipelineAsset"),name);
+    auto* accessor=document.GetObjectAccessor();
+    auto* manager=static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author independently scheduled environment probes");
+    bool finished=false;
+    XII_SCOPE_EXIT(if(!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(),"RequiredDeviceFeatures",xiiInt64(xiiRenderPipelineDeviceFeature::Compute)));
+    const auto add=[&](xiiStringView label,xiiStringView type,xiiVec2 position)->const xiiDocumentObject*{
+      auto id=xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.",name,"/",label));
+      if(accessor->AddObject(nullptr,nullptr,-1,xiiRTTI::FindTypeByName(type),id).Failed()) return nullptr;
+      xiiMoveNodeCommand move; move.m_Object=id; move.m_NewPos=position;
+      if(document.GetCommandHistory()->AddCommand(move).Failed()) return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto connect=[&](const xiiDocumentObject* a,xiiStringView output,const xiiDocumentObject* b,xiiStringView input)->xiiStatus{
+      if(!a || !b) return xiiStatus("Missing SparseVoxel operation.");
+      const auto* out=manager->GetOutputPinByName(a,output); const auto* in=manager->GetInputPinByName(b,input);
+      if(!out || !in) return xiiStatus("Missing reflected SparseVoxel pin.");
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(),manager->GetConnectionType(),*out,*in);
+    };
+
+    const auto* schedule=add("Schedule Camera Bricks","xiiSparseVoxelSchedulePass",{0,0});
+    const auto* upload=add("Upload Clipmap Snapshot","xiiSparseVoxelUploadPass",{600,0});
+    const auto* prepare=add("Prepare Current Pool","xiiSparseVoxelPoolPreparePass",{600,600});
+    const auto* seed=add("Seed Environment Radiance","xiiSparseVoxelEnvironmentSeedPass",{1200,0});
+    const auto* history=add("Retain Radiance History","xiiBufferHistoryPass",{1800,400});
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(history,"AsyncCopy",false));
+    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",upload,"Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",prepare,"Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(schedule,"Schedule",seed,"Schedule"));
+    XII_SUCCEED_OR_RETURN(connect(upload,"Constants",seed,"Constants"));
+    XII_SUCCEED_OR_RETURN(connect(upload,"BrickUpdates",seed,"BrickUpdates"));
+    XII_SUCCEED_OR_RETURN(connect(upload,"LevelData",seed,"LevelData"));
+    XII_SUCCEED_OR_RETURN(connect(upload,"PageTable",seed,"InitialPageTable"));
+    XII_SUCCEED_OR_RETURN(connect(prepare,"RadiancePool",seed,"InitialPool"));
+    XII_SUCCEED_OR_RETURN(connect(seed,"RadiancePool",history,"Buffer"));
+    XII_SUCCEED_OR_RETURN(connect(history,"PreviousBuffer",schedule,"PreviousPool"));
+    XII_SUCCEED_OR_RETURN(connect(history,"PreviousBuffer",prepare,"PreviousPool"));
+    const auto boundary=[&](xiiStringView label,bool input,const xiiDocumentObject* operation,xiiStringView pin,xiiRenderPipelinePin::Type kind,xiiGALResourceFormat::Enum format,float row)->xiiStatus{
+      const auto* node=add(label,"xiiRenderPipelineInterfacePass",{input ? -600.0f : 2400.0f,row});
+      if(!node) return xiiStatus("Missing SparseVoxel interface.");
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Name",label));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Input",input));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"ResourceType",xiiUInt32(kind)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"Format",xiiInt64(format)));
+      if(kind==xiiRenderPipelinePin::FrameData) XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node,"DataType","xiiSparseVoxelFrameData"));
+      XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
+      return input ? connect(node,"Value",operation,pin) : connect(operation,pin,node,"Value");
+    };
+
+    XII_SUCCEED_OR_RETURN(boundary("EnvironmentLight",true,seed,"EnvironmentLight",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,1000));
+    XII_SUCCEED_OR_RETURN(boundary("RadiancePool",false,seed,"RadiancePool",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,0));
+    XII_SUCCEED_OR_RETURN(boundary("PageTable",false,seed,"PageTable",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,200));
+    XII_SUCCEED_OR_RETURN(boundary("LevelData",false,upload,"LevelData",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,400));
+    XII_SUCCEED_OR_RETURN(boundary("Constants",false,upload,"Constants",xiiRenderPipelinePin::Buffer,xiiGALResourceFormat::Unknown,600));
+    XII_SUCCEED_OR_RETURN(boundary("Schedule",false,schedule,"Schedule",xiiRenderPipelinePin::FrameData,xiiGALResourceFormat::Unknown,800));
+    accessor->FinishTransaction(); finished=true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context; XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message; message.m_sOutputFile=xiiStringBuilder(directory,"/",name,".xiiBinRenderPipeline"); message.m_uiAssetHash=1; message.m_uiVersion=7;
+    return context.ExportDocument(&message);
+  }
 
 } // namespace
 
@@ -2481,4 +2547,44 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DDGIEnvironmentProbes)
   if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeDDGIEnvironmentAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeDDGIEnvironmentAuthoring"));
   XII_TEST_STATUS(AuthorDDGIEnvironmentProbes(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelSchedule)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelScheduleAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelScheduleAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelSchedule","xiiSparseVoxelSchedulePass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelUpload)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelUploadAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelUploadAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelUpload","xiiSparseVoxelUploadPass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelPoolPrepare)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelPoolPrepareAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelPoolPrepareAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelPoolPrepare","xiiSparseVoxelPoolPreparePass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelEnvironmentSeed)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseVoxelEnvironmentSeedAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseVoxelEnvironmentSeedAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path,"SparseVoxelEnvironmentSeed","xiiSparseVoxelEnvironmentSeedPass",{}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, SparseVoxelEnvironment)
+{
+  const auto path=xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if(!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path,"NativeSparseEnvironmentAuthoring",":",xiiDataDirUsage::AllowWrites))) return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSparseEnvironmentAuthoring"));
+  XII_TEST_STATUS(AuthorSparseVoxelEnvironment(path));
 }
