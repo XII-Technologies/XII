@@ -2,8 +2,8 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Containers/HashSet.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
@@ -12,18 +12,18 @@
 namespace
 {
   // Capture work is opt-in. Bound both each reliable packet and the number of graphs per request.
-  constexpr xiiUInt32 s_uiMaxCaptureBytes = 16 * 1024 * 1024;
-  std::atomic<xiiUInt64> s_uiRequest = 0;
-  std::atomic<xiiInt64> s_iExpires = 0;
-  xiiUInt64 s_uiHandledRequest = 0;
-  xiiHashSet<xiiUInt64> s_CapturedGraphs; // Used only inside the serialized execution event.
+  constexpr xiiUInt32    s_uiMaxCaptureBytes = 16 * 1024 * 1024;
+  std::atomic<xiiUInt64> s_uiRequest         = 0;
+  std::atomic<xiiInt64>  s_iExpires          = 0;
+  xiiUInt64              s_uiHandledRequest  = 0;
+  xiiHashSet<xiiUInt64>  s_CapturedGraphs; // Used only inside the serialized execution event.
 
   class CaptureStream : public xiiStreamWriter
   {
   public:
     xiiContiguousMemoryStreamStorage m_Storage;
-    xiiMemoryStreamWriter m_Writer{&m_Storage};
-    xiiResult WriteBytes(const void* data, xiiUInt64 size) override
+    xiiMemoryStreamWriter            m_Writer{&m_Storage};
+    xiiResult                        WriteBytes(const void* data, xiiUInt64 size) override
     {
       if (size > s_uiMaxCaptureBytes - m_Storage.GetStorageSize32())
         return XII_FAILURE;
@@ -38,7 +38,7 @@ namespace
     xiiTelemetryMessage message;
     message.SetMessageID(system, succeeded ? 'DATA' : 'ERRO');
     const xiiStringView error = "Capture exceeded the 16 MiB limit or serialization failed.";
-    const xiiUInt32 size = succeeded ? stream.m_Storage.GetStorageSize32() : error.GetElementCount();
+    const xiiUInt32     size  = succeeded ? stream.m_Storage.GetStorageSize32() : error.GetElementCount();
     message.GetWriter() << size;
     message.GetWriter().WriteBytes(succeeded ? stream.m_Storage.GetData() : reinterpret_cast<const xiiUInt8*>(error.GetStartPointer()), size).IgnoreResult();
     xiiTelemetry::Broadcast(xiiTelemetry::Reliable, message);
@@ -54,9 +54,9 @@ namespace
       s_uiHandledRequest = request;
       s_CapturedGraphs.Clear();
     }
-    if (request == 0 || s_CapturedGraphs.GetCount() >= 64 || s_CapturedGraphs.Contains(event.m_Graph.GetId().m_uiValue))
+    if (request == 0 || s_CapturedGraphs.GetCount() >= 64 || s_CapturedGraphs.Contains(event.m_Graph.GetInstanceId()))
       return;
-    s_CapturedGraphs.Insert(event.m_Graph.GetId().m_uiValue);
+    s_CapturedGraphs.Insert(event.m_Graph.GetInstanceId());
     CaptureStream stream;
     SendCapture('RGRF', stream, xiiRenderGraphDebug::WriteSnapshot(event, stream).Succeeded());
   }
@@ -76,7 +76,7 @@ namespace
   void RequestProfile(void*)
   {
     xiiTelemetryMessage message;
-    bool requested = false;
+    bool                requested = false;
     while (xiiTelemetry::RetrieveMessage('PROF', message).Succeeded())
       requested |= message.GetMessageID() == 'CAPT';
     if (!requested || !xiiTelemetry::IsConnectedToClient())
@@ -116,7 +116,7 @@ namespace
     if (event.m_EventType == xiiTelemetry::TelemetryEventData::DisconnectedFromClient)
       s_iExpires.store(0);
   }
-}
+} // namespace
 
 void AddRenderingEventHandler()
 {

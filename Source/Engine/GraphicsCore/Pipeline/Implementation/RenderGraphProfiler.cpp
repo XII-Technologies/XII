@@ -51,7 +51,6 @@ bool xiiRenderGraphTimestampProfiler::SupportsDurationQueries(const xiiGALComman
 
 void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
-  m_uiRecordingGraphId = uiGraphId;
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
@@ -122,7 +121,7 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   PassQueries& pass = frame.m_PassQueries[uiPassIndex];
   pass.m_bActive    = SupportsDurationQueries(commandList);
   pass.m_sPassName.Assign(sPassName);
-  pass.m_uiGraphId = m_uiRecordingGraphId;
+  pass.m_uiGraphId   = m_uiRecordingGraphId;
   pass.m_uiPassIndex = uiPassIndex;
 
   if (!pass.m_bActive)
@@ -274,10 +273,10 @@ bool xiiRenderGraphTimestampProfiler::GetPassTiming(xiiUInt64 uiGraphId, xiiUInt
 {
   XII_LOCK(m_ResultMutex);
   const xiiHashTable<xiiUInt32, Timing>* pGraph = nullptr;
-  Timing timing;
+  Timing                                 timing;
   if (!m_ResolvedPassTimings.TryGetValue(uiGraphId, pGraph) || !pGraph->TryGetValue(uiPassIndex, timing) || timing.m_sPassName.GetView() != sPassName)
     return false;
-  out_fDurationMs = timing.m_fDurationMs;
+  out_fDurationMs  = timing.m_fDurationMs;
   out_uiFrameIndex = timing.m_uiFrameIndex;
   return true;
 }

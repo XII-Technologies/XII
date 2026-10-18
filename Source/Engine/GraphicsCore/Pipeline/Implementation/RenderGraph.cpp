@@ -8,6 +8,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/RenderGraphSkills.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -523,6 +524,8 @@ void xiiRenderGraphBuilder::SetPassPreparation(xiiDelegate<void(xiiRenderGraphPa
 
 xiiRenderGraph::xiiRenderGraph(xiiStringView sName)
 {
+  static xiiAtomicInteger64 s_uiNextInstanceId;
+  m_uiInstanceId = s_uiNextInstanceId.Increment();
   m_sName.Assign(sName);
   m_Id.m_uiValue = xiiHashingUtils::xxHash64String(sName);
   if (!m_Id.IsValid())
@@ -1644,7 +1647,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
   // Run render-pass merging now that we have a live device.
   bool bExecutionSucceeded = false;
-  XII_SCOPE_EXIT(xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_uiFrameIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}}));
+  XII_SCOPE_EXIT(xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_uiFrameIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}, pView ? pView->GetName() : xiiStringView{}}));
   PhaseF_RenderPassMerging(pDevice);
 
   // Resolve all transient and imported resources for this frame's execution.
@@ -1723,6 +1726,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   }
 
   const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
+  if (bEnableGpuProfiling)
+    pProfiler->SetGraphInstance(m_uiInstanceId);
 
   // One general fence per producer submission that has cross-queue consumers. Fences are created
   // per Execute call so frame overlap cannot accidentally reuse an in-flight timeline value.

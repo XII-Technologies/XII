@@ -26,11 +26,11 @@ namespace
       writer.WriteUInt32(value);
     writer.EndArray();
   }
-}
+} // namespace
 
 xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStreamWriter& stream)
 {
-  const auto& graph = event.m_Graph;
+  const auto&           graph = event.m_Graph;
   xiiStandardJSONWriter writer;
   writer.SetOutputStream(&stream);
   writer.SetWhitespaceMode(xiiJSONWriter::WhitespaceMode::None);
@@ -38,8 +38,10 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.AddVariableUInt32("version", 1);
   writer.AddVariableString("kind", "renderGraph");
   WriteId(writer, "id", graph.GetId().m_uiValue);
+  WriteId(writer, "instance", graph.GetInstanceId());
   WriteId(writer, "frame", event.m_uiFrameIndex);
   writer.AddVariableString("name", graph.GetName());
+  writer.AddVariableString("view", event.m_sViewName);
   writer.AddVariableBool("succeeded", event.m_bSucceeded);
   writer.AddVariableBool("compiled", graph.IsCompiled());
   writer.AddVariableString("error", event.m_sError);
@@ -81,9 +83,9 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     WriteIndices(writer, "postBarriers", pass.m_PostBarrierIndices);
     WriteIndices(writer, "acquire", pass.m_AcquireResourceIndices);
     WriteIndices(writer, "release", pass.m_ReleaseResourceIndices);
-    float duration = 0;
-    xiiUInt64 frame = 0;
-    const bool available = event.m_pProfiler && event.m_pProfiler->GetPassTiming(graph.GetId().m_uiValue, pass.m_uiPassIndex, pass.m_sName.GetView(), duration, frame);
+    float      duration  = 0;
+    xiiUInt64  frame     = 0;
+    const bool available = !pass.m_bIsCulled && event.m_pProfiler && event.m_pProfiler->GetPassTiming(graph.GetInstanceId(), pass.m_uiPassIndex, pass.m_sName.GetView(), duration, frame);
     writer.AddVariableBool("timingAvailable", available);
     if (available)
     {

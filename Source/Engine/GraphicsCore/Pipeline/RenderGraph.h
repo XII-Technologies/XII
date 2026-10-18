@@ -197,8 +197,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceDescription
   xiiUInt32                                m_uiLastUsePassIndex  = xiiInvalidIndex;
   xiiUInt32                                m_uiAliasGroup        = xiiInvalidIndex;
   bool                                     m_bIsTexture          = true;
-  xiiGALTextureCreationDescription          m_TextureDescription;
-  xiiGALBufferCreationDescription           m_BufferDescription;
+  xiiGALTextureCreationDescription         m_TextureDescription;
+  xiiGALBufferCreationDescription          m_BufferDescription;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphResourceDescription);
@@ -601,6 +601,8 @@ public:
 
   /// Stable ID and name of this graph instance.
   [[nodiscard]] xiiRenderGraphGraphId GetId() const;
+  /// Process-local identity, unique even when several views use the same stable graph name.
+  [[nodiscard]] xiiUInt64 GetInstanceId() const { return m_uiInstanceId; }
   [[nodiscard]] xiiStringView         GetName() const;
 
   /// Reflection/editor-friendly compiler records.
@@ -718,6 +720,7 @@ private:
   xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
   xiiHashedString                                            m_sName;
   xiiRenderGraphGraphId                                      m_Id;
+  xiiUInt64                                                 m_uiInstanceId = 0;
   xiiRenderGraphIdTable                                      m_IdTable;
 
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALTexture>> m_PersistentTextures;

@@ -4,10 +4,10 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <Foundation/Strings/StringBuilder.h>
-#include <Foundation/Types/ArrayPtr.h>
 #include <Foundation/Communication/Event.h>
+#include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Types/ArrayPtr.h>
 
 class xiiRenderGraph;
 class xiiRenderGraphProfiler;
@@ -32,11 +32,12 @@ public:
   /// Listeners must copy metadata and never retain graph or GPU resource pointers.
   struct ExecutionEvent
   {
-    const xiiRenderGraph& m_Graph;
+    const xiiRenderGraph&   m_Graph;
     xiiRenderGraphProfiler* m_pProfiler;
-    xiiUInt64 m_uiFrameIndex;
-    bool m_bSucceeded;
-    xiiStringView m_sError;
+    xiiUInt64               m_uiFrameIndex;
+    bool                    m_bSucceeded;
+    xiiStringView           m_sError;
+    xiiStringView           m_sViewName;
   };
 
   static xiiEvent<const ExecutionEvent&, xiiMutex> s_ExecutionEvents;
