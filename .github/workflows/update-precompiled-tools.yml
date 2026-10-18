@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: windows-2025
+    runs-on: windows-2025-vs2026
     timeout-minutes: 60
     env:
       _CL_: /MP2
@@ -32,6 +32,6 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: XII-tools-windows-x64-Shipping-${{ github.sha }}
-          path: Workspace/precompiled-tools/Bin/WinVs2022Shipping64/
+          path: Workspace/precompiled-tools/Bin/WinVs2026Shipping64/
           if-no-files-found: error
           retention-days: 14

@@ -137,7 +137,7 @@
       {
         "name": "ci-windows",
         "inherits": "ci-base",
-        "generator": "Visual Studio 17 2022",
+        "generator": "Visual Studio 18 2026",
         "architecture": "x64"
       },
       {
@@ -146,8 +146,8 @@
         "generator": "Ninja",
         "cacheVariables": {
           "CMAKE_BUILD_TYPE": "Debug",
-          "CMAKE_C_COMPILER": "gcc",
-          "CMAKE_CXX_COMPILER": "g++",
+          "CMAKE_C_COMPILER": "gcc-15",
+          "CMAKE_CXX_COMPILER": "g++-15",
           "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
         }
       },
@@ -155,8 +155,10 @@
         "name": "ci-linux-clang",
         "inherits": "ci-linux-gcc",
         "cacheVariables": {
-          "CMAKE_C_COMPILER": "clang",
-          "CMAKE_CXX_COMPILER": "clang++"
+          "CMAKE_C_COMPILER": "clang-22",
+          "CMAKE_CXX_COMPILER": "clang++-22",
+          "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=lld-22",
+          "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=lld-22"
         }
       }
     ]

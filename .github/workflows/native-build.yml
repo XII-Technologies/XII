@@ -44,27 +44,22 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build gcc-14 g++-14 clang-18 lld-18 ccache pkg-config uuid-dev
+          sudo apt-get install -y --no-install-recommends ninja-build gcc-15 g++-15 clang-22 lld-22 ccache pkg-config uuid-dev
           echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
       - name: Restore Linux compiler cache
         if: runner.os == 'Linux'
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ${{ runner.temp }}/ccache
-          key: ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-${{ github.sha }}
+          key: ccache-v2-${{ inputs.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-${{ github.sha }}
           restore-keys: |
-            ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-
+            ccache-v2-${{ inputs.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-
       - name: Configure
         run: |
           $ErrorActionPreference = 'Stop'
           $args = @('--preset', $env:BUILD_PRESET, "-DCMAKE_BUILD_TYPE=$env:BUILD_CONFIGURATION")
           if ($IsLinux) {
             $args += @('-DCMAKE_C_COMPILER_LAUNCHER=ccache', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
-            if ($env:BUILD_PRESET -eq 'ci-linux-clang') {
-              $args += @('-DCMAKE_C_COMPILER=clang-18', '-DCMAKE_CXX_COMPILER=clang++-18')
-            } else {
-              $args += @('-DCMAKE_C_COMPILER=gcc-14', '-DCMAKE_CXX_COMPILER=g++-14')
-            }
           }
           if ($env:COMPILER_ANALYSIS -eq 'true') { $args += '-DXII_ENABLE_COMPILER_STATIC_ANALYSIS=ON' }
           New-Item -ItemType Directory -Force 'Workspace/Diagnostics' | Out-Null

@@ -21,15 +21,15 @@ jobs:
       matrix:
         include:
           - name: Windows MSVC Debug
-            os: windows-2025
+            os: windows-2025-vs2026
             preset: ci-windows
             configuration: Debug
           - name: Windows MSVC Shipping
-            os: windows-2025
+            os: windows-2025-vs2026
             preset: ci-windows
             configuration: Shipping
           - name: Linux GCC Debug
-            os: ubuntu-24.04
+            os: ubuntu-26.04
             preset: ci-linux-gcc
             configuration: Debug
     uses: ./.github/workflows/native-build.yml
@@ -42,7 +42,7 @@ jobs:
     name: Native CI required
     if: always()
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Require every native build and test job
         env:
