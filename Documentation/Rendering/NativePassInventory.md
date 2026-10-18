@@ -1,6 +1,6 @@
 # Native rendering pass rebuild
 
-Current source inventory: **77 concrete reflected operation classes** in
+Current source inventory: **78 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -26,7 +26,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Output | 5 | `xiiBloomPass`, `xiiColorGradingPass`, `xiiPresentPass`, `xiiToneMappingPass`, `xiiUpscalePass` |
 | Particles | 2 | `xiiParticleIntegratePass`, `xiiParticleIntegrationConstantsPass` |
 | Preparation | 2 | `xiiViewConstantsPass`, `xiiWorldInstancesUploadPass` |
-| RayTracing | 1 | `xiiRayTracingScenePass` |
+| RayTracing | 2 | `xiiRayTracingScenePass`, `xiiSceneRayProbePass` |
 | Reflections | 3 | `xiiHybridReflectionCompositePass`, `xiiScreenSpaceReflectionsPass`, `xiiScreenSpaceReflectionsTemporalPass` |
 | Refraction | 2 | `xiiScreenSpaceRefractionPass`, `xiiScreenSpaceRefractionSnapshotPass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
@@ -2127,3 +2127,100 @@ orchestration, and world/view-scoped virtual page identities remain. The two obs
 Deferred fixture loads in TemporalHistoryTest.cpp and RenderPipelineExecutionTest.cpp
 and the helper's default argument still need removal/replacement. No claim of full engine
 migration, all-backend correctness or a completed hundred-operation library is made.
+
+
+## Native world ray probes and retained recording ownership
+
+SceneRayProbe is an independent reflected closest-triangle operation. Its Scene and
+Materials inputs are concrete typed member properties; Result is a structured GPU
+buffer. Origin, direction, metric range, instance mask and queue preference are reflected
+properties with normal editor attributes. Typed occurrence parameters can override the
+ray without mutating authored defaults. Invalid values produce occurrence provenance in
+the build diagnostic. No stage selector, pin-type array or scene lifecycle is introduced.
+
+The shader returns hit status, the full generation-validated world GPU identity,
+primitive index, hit kind, distance and barycentrics. HLSL InstanceIndex indexes the
+existing canonical hit-metadata records explicitly supplied through Materials. The
+hardware custom ID remains a compact TLAS index; it is not repurposed as a 32-bit world
+identity or silently truncated to 24 bits. The first GPU readback caught this distinction
+and the operation now consumes the existing metadata rather than inventing another ID
+registry. This triangle-only geometric probe does not implement material alpha testing,
+procedural intersections or a complete ray renderer.
+
+Every occurrence/frame owns graph allocations for its constants, shader records and
+result. The graph retains the compiled pipeline and explicit TLAS, and declares the
+TLAS build dependency and metadata-buffer read. An empty eligible scene produces a
+defined miss without allocating an SBT or initializing a ray shader. Unsupported hardware
+still fails the declared device contract. Shader/PSO acquisition occurs during setup;
+recording captures no world, view, mutable component storage or pass pointer.
+
+SceneRayProbe and WorldRayProbe are ordinary editable source/binary assets, exported by
+the editor document implementation. WorldRayProbe connects RayTracingScene -> SceneRayProbe
+-> BufferExport and exposes Result. The library now contains 42 asset pairs. Repeated
+references configure independent writable TLAS/results while using existing device BLAS
+residency and world deformation caches. The sample selects this resource explicitly with
+-ray-probe-pipeline and synchronizes it each frame. Its former AddPass validation callback,
+persistent SBT, shader/permutation members, validation-only shader and unrelated startup
+shader smoke checks are physically removed. No direct low-level graph execution callback
+remains in GpuDrivenScene.cpp. Its per-page resource orchestration is still C++ code.
+
+Recording ownership in the existing ray-tracing services is also corrected. A queued
+TLAS build retains its occurrence frame state and geometry leases. Deformation callbacks
+retain their existing cache entry, and queued dynamic BLAS records retain their build
+entry even after the world or occurrence is destroyed. Replacing dynamic source geometry
+allocates a new entry rather than overwriting an entry still referenced by queued work.
+This changes retention of derived allocations; no scene registry, transform hierarchy or
+new manager is added. Public frame-resource copying remains prohibited.
+
+The full sample exposed a second issue that focused write-locked tests did not: the
+scene-source pass used a mutable world-module lookup during read-only graph setup. It now
+uses the const lookup, and the sample establishes the same world read boundary used by its
+other world-consuming resources. Simulation/extraction still uses the existing world write
+boundary, and execution uses retained immutable captures.
+
+Verification, Debug/Vulkan; D3D12 excluded:
+
+- All five affected consumers build with their dependencies: GraphicsCoreTest,
+  GraphicsFoundationTest, EditorFrameworkTest, EditorEngineProcessFrameworkTest and
+  GpuDrivenScene (native-ray-probe-consumer-build.log). Subsequent identity, read-boundary
+  and final regression edits rebuild successfully (native-ray-probe-identity-build.log,
+  -final-build.log, -world-boundary-build.log and -read-boundary-build.log).
+- All 66 GraphicsCore CPU tests pass (native-ray-probe-final-cpu.log). All 36 native
+  authoring fixtures and 16 EditorDocuments fixtures pass, including deterministic
+  packaged/source/repeated exports for all 42 assets (native-ray-probe-identity-authoring.log
+  and -identity-editor.log).
+- All 20 native GPU subtests pass (native-ray-probe-final-native.log). NativeSceneRayProbe
+  checks analytic cube hit distance and barycentrics, full owner identity, private TLAS and
+  result buffers, mask/range changes, authoritative transform updates, empty-world misses,
+  foreign/retired identity rejection after world recreation, invalid-parameter diagnostics
+  and output clearing. It destroys every world/pass owner before final recording and
+  performs setup under a read marker. Two nonempty instances compile to eight operations,
+  one submission and 16-23 barriers; empty instances use four operations and four barriers.
+- All three PipelineExtraction subtests pass (native-ray-probe-extraction.log). The
+  deformation regression now destroys its occurrence owners before the final skin/morph
+  and dynamic BLAS recording. Existing delayed frames, component replacement and source
+  reload checks remain. The existing incremental fixture records 288 uploaded bytes once
+  for a changed instance across two cameras, then zero bytes for a warmed static frame.
+  Its Debug-only 1024-component packing timing is 51.013 ms for 20 updates (2.551 ms/update);
+  this is a diagnostic measurement, not a Release performance comparison.
+- Missing and incompatible ray-probe resources exit 1 with diagnostics. The full sample
+  completes all 300 requested frames with exit 0 and 384 world-derived TLAS instances
+  (native-ray-probe-sample-results.json and -sample.log). The initial full run exposed the
+  missing world access boundary above; its assertion log is preserved separately. After
+  correction there is no logged error/device loss. The two existing unused mesh-output
+  warnings remain.
+- With ray tracing disabled, 300 frames also complete with exit 0 despite deliberately
+  selecting an absent ray-probe path (native-ray-probe-raster-only-results.json and .log).
+  That unrequested resource and its TLAS/shader setup are never consumed.
+
+The steady full sample records 124 registered / 116 compiled / 8 culled operations,
+one queue submission and 190 barriers. The preceding phase recorded 123 / 115 / 8,
+one submission and 187 barriers. The explicit result export adds one operation; private
+shader records/constants and metadata reads remain within the same submission. No Release
+throughput or cross-backend benchmark is claimed.
+
+The renderer migration is still incomplete: native light/cluster preparation, complete
+application/editor/advanced lighting graphs, per-page sample orchestration and world/view
+virtual page identities remain. The obsolete Deferred fixture loads and helper default
+listed in the preceding report also remain at this point. No claim of a completed
+hundred-operation library or complete engine migration is made.
