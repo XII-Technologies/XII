@@ -22,7 +22,6 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
-#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/States/PipelineState.h>
@@ -36,7 +35,6 @@
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
-#include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -44,7 +42,6 @@
 #include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
-#include <Shaders/GpuDrivenSceneConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 
 xiiCommandLineOptionInt    opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
@@ -63,6 +60,7 @@ xiiCommandLineOptionString opt_GpuDrivenShadowWorkPipeline("GpuDrivenScene", "-s
 xiiCommandLineOptionString opt_GpuDrivenShadowPublishPipeline("GpuDrivenScene", "-shadow-publish-pipeline", "Authored virtual shadow page publication resource.", "RenderPipelines/VirtualShadowPagePublish.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenShadowTablesPipeline("GpuDrivenScene", "-shadow-tables-pipeline", "Authored virtual-shadow residency table upload resource.", "RenderPipelines/VirtualShadowTables.xiiBinRenderPipeline");
 
+xiiCommandLineOptionString opt_GpuDrivenDirectionalPipeline("GpuDrivenScene", "-directional-pipeline", "Authored directional mesh constants/shadow sampling/raster resource.", "RenderPipelines/DirectionalMesh.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenTargetsPipeline("GpuDrivenScene", "-targets-pipeline", "Authored scene color/depth initialization resource.", "RenderPipelines/SceneTargets.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenPresentationPipeline("GpuDrivenScene", "-presentation-pipeline", "Authored final view output resource.", "RenderPipelines/ViewPresentation.xiiBinRenderPipeline");
 xiiCommandLineOptionString opt_GpuDrivenSensorExportPipeline("GpuDrivenScene", "-sensor-export-pipeline", "Authored external sensor counter lifetime resource.", "RenderPipelines/BufferExport.xiiBinRenderPipeline");
@@ -108,42 +106,6 @@ namespace
     return true;
   }
 
-  struct GpuDrivenDrawPassData
-  {
-    xiiRenderGraphTextureHandle        m_hColor;
-    xiiRenderGraphTextureHandle        m_hDepth;
-    xiiRenderGraphTextureHandle        m_hShadowMap;
-    xiiRenderGraphTextureHandle        m_hVirtualShadowAtlas;
-    xiiRenderGraphBufferHandle         m_hVirtualShadowPageTable;
-    xiiRenderGraphBufferHandle         m_hVirtualShadowConstants;
-    xiiRenderGraphBufferHandle         m_hConstants;
-    xiiRenderGraphBufferHandle         m_hSceneInstances;
-    xiiRenderGraphBufferHandle         m_hSkinningMatrices;
-    xiiRenderGraphBufferHandle         m_hGeometry;
-    xiiRenderGraphBufferHandle         m_hMeshlets;
-    xiiRenderGraphBufferHandle         m_hVisibleMeshlets;
-    xiiRenderGraphBufferHandle         m_hVisibleMeshletCount;
-    xiiRenderGraphBufferHandle         m_hIndirectCommands;
-    xiiRenderGraphBufferHandle         m_hIndirectCommandCount;
-    xiiRenderGraphBufferHandle         m_hMaterials;
-    xiiShaderPermutationResourceHandle m_hShaderPermutation;
-    xiiSharedPtr<xiiGALRenderPass>     m_pRenderPass;
-    xiiMat4                            m_ViewProjection                     = xiiMat4::MakeIdentity();
-    xiiMat4                            m_ShadowViewProjection               = xiiMat4::MakeIdentity();
-    float                              m_fShadowWorldUnitsPerTexel          = 0.0f;
-    xiiUInt32                          m_uiGeometryBase                     = 0U;
-    xiiUInt32                          m_uiMaterialFrameBase                = 0U;
-    xiiUInt32                          m_uiMaterialStride                   = 0U;
-    xiiUInt32                          m_uiVirtualShadowPageTableBaseIndex  = 0U;
-    xiiUInt32                          m_uiVirtualShadowPageTableCapacity   = 0U;
-    xiiUInt32                          m_uiVirtualShadowResolution          = 0U;
-    xiiUInt32                          m_uiVirtualShadowPageSize            = 0U;
-    xiiUInt32                          m_uiVirtualShadowPhysicalAtlasWidth  = 0U;
-    xiiUInt32                          m_uiVirtualShadowPhysicalAtlasHeight = 0U;
-    xiiUInt32                          m_uiVirtualShadowDirectionalLightId  = 0U;
-    xiiUInt32                          m_uiVirtualShadowEnabled             = 0U;
-  };
-
   struct RayTracingValidationPassData
   {
     xiiRenderGraphBufferHandle         m_hSceneDependency;
@@ -188,21 +150,6 @@ public:
 
     xiiClock::GetGlobalClock()->Update();
     xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
-
-    if (!m_hShaderPermutation.IsValid())
-    {
-      xiiLog::Error("The GPU-driven draw shader could not be loaded.");
-      SetReturnCode(1);
-      return Execution::Quit;
-    }
-    // Keep the validated permutation acquired while recording this frame.
-    xiiResourceLock<xiiShaderPermutationResource> drawShader(m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-    if (!drawShader.IsValid() || !drawShader->IsShaderValid())
-    {
-      xiiLog::Error("The GPU-driven draw shader failed to compile; stopping rendering.");
-      SetReturnCode(1);
-      return Execution::Quit;
-    }
 
     m_pDevice->BeginFrame();
     const bool bCanRender = m_pSwapChain != nullptr && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture() != nullptr;
@@ -411,10 +358,14 @@ public:
       return;
     }
 
-    const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
-    m_hShaderPermutation                 = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+    m_hDirectionalPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenDirectionalPipeline.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+    if (SynchronizeDirectionalPipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
     CreateRayTracingValidationResources();
-    CreateSceneRenderPass();
 
     xiiRenderGraphRegistrationDescription graphDescription;
     graphDescription.m_sName     = "GPU Driven Scene";
@@ -458,10 +409,10 @@ public:
     m_hVisibilityPipeline.Invalidate();
     xiiFrameAllocator::Reset();
     m_World.Shutdown(m_uiFrameIndex);
-    m_hShaderPermutation.Invalidate();
+    m_Directional.Clear();
+    m_hDirectionalPipeline.Invalidate();
     m_hRayTracingValidationPermutation.Invalidate();
     m_pRayTracingValidationSBT.Clear();
-    m_pSceneRenderPass.Clear();
     m_pSwapChain.Clear();
     xiiStartup::ShutdownHighLevelSystems();
     if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
@@ -478,6 +429,53 @@ public:
   }
 
 private:
+  xiiResult SynchronizeDirectionalPipeline()
+  {
+    if (m_Directional.Synchronize(m_hDirectionalPipeline).Failed())
+    {
+      xiiLog::Error("Selected directional mesh resource '{}' is missing or invalid.", m_hDirectionalPipeline.GetResourceID());
+      return XII_FAILURE;
+    }
+    const auto* pipeline = m_Directional.GetPipeline();
+    for (xiiStringView name : {"SceneInstances", "SkinningMatrices", "GeometryMetadata", "MeshletMetadata", "VisibleMeshlets", "VisibleMeshletCount", "DrawCommands", "DrawCommandCount", "SurfaceMaterials", "VirtualPageTable"})
+    {
+      const auto index = pipeline->FindInterface(name, true);
+      if (index == xiiInvalidIndex || pipeline->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Buffer)
+      {
+        xiiLog::Error("Directional mesh resource '{}' requires buffer input '{}'.", m_hDirectionalPipeline.GetResourceID(), name);
+        return XII_FAILURE;
+      }
+    }
+    for (xiiStringView name : {"ColorTarget", "DepthTarget", "ShadowMap", "VirtualShadowAtlas"})
+    {
+      const auto index = pipeline->FindInterface(name, true);
+      if (index == xiiInvalidIndex || pipeline->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Texture)
+      {
+        xiiLog::Error("Directional mesh resource '{}' requires texture input '{}'.", m_hDirectionalPipeline.GetResourceID(), name);
+        return XII_FAILURE;
+      }
+    }
+    for (xiiStringView name : {"Cascades", "Residency"})
+    {
+      const auto index = pipeline->FindInterface(name, true);
+      if (index == xiiInvalidIndex || pipeline->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::FrameData)
+      {
+        xiiLog::Error("Directional mesh resource '{}' requires frame-data input '{}'.", m_hDirectionalPipeline.GetResourceID(), name);
+        return XII_FAILURE;
+      }
+    }
+    for (xiiStringView name : {"Color", "Depth"})
+    {
+      const auto index = pipeline->FindInterface(name, false);
+      if (index == xiiInvalidIndex || pipeline->GetInterface()[index].m_Pin.m_Type != xiiRenderPipelinePin::Texture)
+      {
+        xiiLog::Error("Directional mesh resource '{}' requires texture output '{}'.", m_hDirectionalPipeline.GetResourceID(), name);
+        return XII_FAILURE;
+      }
+    }
+    return XII_SUCCESS;
+  }
+
   xiiResult SynchronizeVisibilityPipelines()
   {
     bool changed = false;
@@ -1161,51 +1159,60 @@ private:
       return;
     }
 
-    auto drawPass                               = graph.AddPass<GpuDrivenDrawPassData>("GPU Driven Mesh Dispatch", xiiGALCommandQueueFlags::Graphics, [sceneColor, sceneDepth, geometry, visibility, hMaterials, hShadowMap, virtualShadowUpload](GpuDrivenDrawPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hColor                  = builder.ReadWriteTexture(sceneColor, xiiGALResourceStateFlags::RenderTarget);
-        data.m_hDepth                  = builder.ReadWriteTexture(sceneDepth, xiiGALResourceStateFlags::DepthWrite);
-        data.m_hShadowMap              = builder.ReadTexture(hShadowMap, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVirtualShadowAtlas     = builder.ReadTexture(virtualShadowUpload.m_hPhysicalAtlas, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVirtualShadowPageTable = builder.ReadBuffer(virtualShadowUpload.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hSceneInstances         = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hSkinningMatrices       = builder.ReadBuffer(visibility.m_hSkinningMatrices, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hGeometry               = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hMeshlets               = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVisibleMeshlets        = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVisibleMeshletCount    = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hIndirectCommands       = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
-        data.m_hIndirectCommandCount   = builder.ReadBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::IndirectArgument);
-        data.m_hMaterials              = builder.ReadBuffer(hMaterials, xiiGALResourceStateFlags::ShaderResource);
-
-        xiiGALBufferCreationDescription constantsDescription;
-        constantsDescription.m_uiSize         = sizeof(xiiGpuDrivenSceneConstants);
-        constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
-        constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
-        constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-        data.m_hConstants                     = builder.WriteBuffer("GPU Driven Scene Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-        constantsDescription.m_uiSize         = sizeof(xiiVirtualShadowSamplingConstants);
-        data.m_hVirtualShadowConstants        = builder.WriteBuffer("GPU Driven Virtual Shadow Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer); }, [this](const GpuDrivenDrawPassData& data, xiiRenderGraphPassContext& context) { ExecuteGpuDrivenDraw(data, context); });
-    drawPass.first->m_hShaderPermutation        = m_hShaderPermutation;
-    drawPass.first->m_pRenderPass               = m_pSceneRenderPass;
-    drawPass.first->m_ViewProjection            = m_ViewProjection;
-    drawPass.first->m_ShadowViewProjection      = shadowViewProjection;
-    drawPass.first->m_fShadowWorldUnitsPerTexel = bHasShadowCascade ? (2.0f * shadowSnapshot->m_Cascades[0].m_fWorldRadius) / static_cast<float>(uiShadowResolution) : 0.0f;
-    drawPass.first->m_uiGeometryBase            = geometry.m_uiGeometryBaseIndex;
-    drawPass.first->m_uiMaterialFrameBase       = materials.m_uiSurfaceBaseIndex;
-    drawPass.first->m_uiMaterialStride          = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
-
-    const xiiVirtualShadowMapSettings& virtualShadowSettings = xiiVirtualShadowMapManager::GetConfiguration();
-    const xiiVirtualShadowMapStats     virtualShadowStats    = xiiVirtualShadowMapManager::GetStats();
-    drawPass.first->m_uiVirtualShadowPageTableBaseIndex      = virtualShadowUpload.m_uiVirtualTableBaseIndex;
-    drawPass.first->m_uiVirtualShadowPageTableCapacity       = virtualShadowUpload.m_uiVirtualTableCapacity;
-    drawPass.first->m_uiVirtualShadowResolution              = virtualShadowSettings.m_uiVirtualResolution;
-    drawPass.first->m_uiVirtualShadowPageSize                = virtualShadowSettings.m_uiPageSize;
-    drawPass.first->m_uiVirtualShadowPhysicalAtlasWidth      = virtualShadowStats.m_uiPhysicalAtlasWidth;
-    drawPass.first->m_uiVirtualShadowPhysicalAtlasHeight     = virtualShadowStats.m_uiPhysicalAtlasHeight;
-    drawPass.first->m_uiVirtualShadowDirectionalLightId      = g_uiDirectionalLightId;
-    drawPass.first->m_uiVirtualShadowEnabled                 = bHasShadowCascade ? 1U : 0U;
-
-    const xiiRenderPipelineInputBinding depthInput(graph, m_uiDepthInterface, drawPass.first->m_hDepth);
+    if (SynchronizeDirectionalPipeline().Failed())
+    {
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
+    xiiVariantDictionary directionalParameters;
+    directionalParameters.Insert("RasterViewProjection", m_ViewProjection);
+    directionalParameters.Insert("RasterPreviousViewProjection", m_ViewProjection);
+    directionalParameters.Insert("RasterWidth", m_TargetSize.width);
+    directionalParameters.Insert("RasterHeight", m_TargetSize.height);
+    const auto& sun = m_World.GetSunLight();
+    directionalParameters.Insert("DirectionalSun", xiiVec4(sun.m_vDirection.x, sun.m_vDirection.y, sun.m_vDirection.z, sun.m_fIntensity));
+    directionalParameters.Insert("RasterMeshGroupCountX", m_uiMeshGroupX);
+    directionalParameters.Insert("RasterMeshGroupCountY", m_uiMeshGroupY);
+    directionalParameters.Insert("ShadowSamplingLightId", g_uiDirectionalLightId);
+    directionalParameters.Insert("ShadowSamplingEnabled", bHasShadowCascade);
+    const auto*                                       directional = m_Directional.GetPipeline();
+    xiiHybridArray<xiiRenderPipelineInputBinding, 16> directionalInputs;
+    const auto                                        bindBuffer = [&](xiiStringView name, xiiRenderGraphBufferHandle handle) {
+      directionalInputs.PushBack(xiiRenderPipelineInputBinding(graph, directional->FindInterface(name, true), handle));
+    };
+    const auto bindTexture = [&](xiiStringView name, xiiRenderGraphTextureHandle handle) {
+      directionalInputs.PushBack(xiiRenderPipelineInputBinding(graph, directional->FindInterface(name, true), handle));
+    };
+    bindBuffer("SceneInstances", visibility.m_hSceneInstances);
+    bindBuffer("SkinningMatrices", visibility.m_hSkinningMatrices);
+    bindBuffer("GeometryMetadata", geometry.m_hGeometryMetadata);
+    bindBuffer("MeshletMetadata", geometry.m_hMeshletMetadata);
+    bindBuffer("VisibleMeshlets", visibility.m_hVisibleMeshlets);
+    bindBuffer("VisibleMeshletCount", visibility.m_hVisibleMeshletCount);
+    bindBuffer("DrawCommands", visibility.m_hIndirectCommands);
+    bindBuffer("DrawCommandCount", visibility.m_hIndirectCommandCount);
+    bindBuffer("SurfaceMaterials", hMaterials);
+    bindBuffer("VirtualPageTable", virtualShadowUpload.m_hVirtualPageTable);
+    bindTexture("ColorTarget", sceneColor);
+    bindTexture("DepthTarget", sceneDepth);
+    bindTexture("ShadowMap", hShadowMap);
+    bindTexture("VirtualShadowAtlas", virtualShadowUpload.m_hPhysicalAtlas);
+    xiiRenderPipelineBinding cascadeBinding, residencyBinding;
+    cascadeBinding.m_pFrameData   = shadowSnapshot;
+    residencyBinding.m_pFrameData = shadowResidency;
+    directionalInputs.PushBack({graph, directional->FindInterface("Cascades", true), cascadeBinding});
+    directionalInputs.PushBack({graph, directional->FindInterface("Residency", true), residencyBinding});
+    if (m_Directional.Build(nullptr, graph, blackboard, directionalParameters, directionalInputs).Failed())
+    {
+      xiiLog::Error("Selected directional mesh resource '{}' failed: {}", m_hDirectionalPipeline.GetResourceID(), m_Directional.GetLastBuildError());
+      SetReturnCode(1);
+      RequestQuit();
+      return;
+    }
+    const auto                          shadedColor = m_Directional.GetInterfaceBinding(directional->FindInterface("Color", false))->m_hTexture;
+    const auto                          shadedDepth = m_Directional.GetInterfaceBinding(directional->FindInterface("Depth", false))->m_hTexture;
+    const xiiRenderPipelineInputBinding depthInput(graph, m_uiDepthInterface, shadedDepth);
     if (m_DepthPipeline.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(&depthInput, 1)).Failed())
     {
       xiiLog::Error("Authored depth/history pipeline failed: {}", m_DepthPipeline.GetLastBuildError());
@@ -1213,14 +1220,14 @@ private:
       RequestQuit();
       return;
     }
-    if (BuildShadowFeedback(graph, blackboard, drawPass.first->m_hDepth, hCascadeConstants).Failed())
+    if (BuildShadowFeedback(graph, blackboard, shadedDepth, hCascadeConstants).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
       return;
     }
 
-    if (BuildViewOutput(graph, blackboard, drawPass.first->m_hColor, sensorVisibility.m_hVisibleInstanceCount).Failed())
+    if (BuildViewOutput(graph, blackboard, shadedColor, sensorVisibility.m_hVisibleInstanceCount).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
@@ -1251,31 +1258,6 @@ private:
       m_SensorVisibility.InvalidateTemporalHistory();
       m_ShadowVisibility.InvalidateTemporalHistory();
     }
-  }
-
-  void CreateSceneRenderPass()
-  {
-    xiiGALRenderPassCreationDescription description;
-    auto&                               color = description.m_Attachments.ExpandAndGetRef();
-    color.m_Format                            = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-    color.m_uiSampleCount                     = 1U;
-    color.m_LoadOperation                     = xiiGALAttachmentLoadOperation::Load;
-    color.m_StoreOperation                    = xiiGALAttachmentStoreOperation::Store;
-    color.m_InitialStateFlags                 = xiiGALResourceStateFlags::RenderTarget;
-    color.m_FinalStateFlags                   = xiiGALResourceStateFlags::RenderTarget;
-    auto& depth                               = description.m_Attachments.ExpandAndGetRef();
-    depth.m_Format                            = xiiGALResourceFormat::D32Float;
-    depth.m_uiSampleCount                     = 1U;
-    depth.m_LoadOperation                     = xiiGALAttachmentLoadOperation::Load;
-    depth.m_StoreOperation                    = xiiGALAttachmentStoreOperation::Store;
-    depth.m_StencilLoadOperation              = xiiGALAttachmentLoadOperation::Load;
-    depth.m_StencilStoreOperation             = xiiGALAttachmentStoreOperation::Store;
-    depth.m_InitialStateFlags                 = xiiGALResourceStateFlags::DepthWrite;
-    depth.m_FinalStateFlags                   = xiiGALResourceStateFlags::DepthWrite;
-    auto& subPass                             = description.m_SubPasses.ExpandAndGetRef();
-    subPass.m_RenderTargetAttachments.PushBack({0U, xiiGALResourceStateFlags::RenderTarget});
-    subPass.m_DepthStencilAttachment.PushBack({1U, xiiGALResourceStateFlags::DepthWrite});
-    m_pSceneRenderPass = xiiGALRenderPassCache::GetRenderPass(description);
   }
 
   void CreateRayTracingValidationResources()
@@ -1411,88 +1393,14 @@ private:
     commandList.TraceRays(trace);
   }
 
-  void ExecuteGpuDrivenDraw(const GpuDrivenDrawPassData& data, xiiRenderGraphPassContext& context)
-  {
-    xiiResourceLock<xiiShaderPermutationResource>  permutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-    xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
-    pipelineDescription.m_PipelineType                          = xiiGALPipelineType::Mesh;
-    pipelineDescription.m_pPipelineResourceSignature            = permutation->GetPipelineResourceSignature();
-    pipelineDescription.m_pMeshShader                           = permutation->GetGALShader(xiiGALShaderType::Mesh);
-    pipelineDescription.m_pPixelShader                          = permutation->GetGALShader(xiiGALShaderType::Pixel);
-    pipelineDescription.m_GraphicsPipeline.m_pBlendState        = permutation->GetBlendState();
-    pipelineDescription.m_GraphicsPipeline.m_pRasterizerState   = permutation->GetRasterizerState();
-    pipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = permutation->GetDepthStencilState();
-    pipelineDescription.m_GraphicsPipeline.m_pRenderPass        = data.m_pRenderPass;
-    pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
-    const xiiSharedPtr<xiiGALGraphicsPipelineState> pipeline    = xiiGALPipelineCache::GetPipeline(pipelineDescription);
-
-    xiiGALFramebufferCreationDescription framebufferDescription;
-    framebufferDescription.m_pRenderPass       = data.m_pRenderPass;
-    framebufferDescription.m_FramebufferSize   = m_pWindow->GetClientAreaSize();
-    framebufferDescription.m_uiArraySliceCount = 1U;
-    framebufferDescription.m_Attachments.PushBack(context.GetTexture(data.m_hColor)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    framebufferDescription.m_Attachments.PushBack(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
-    const xiiSharedPtr<xiiGALFramebuffer> framebuffer = m_pDevice->CreateFramebuffer(framebufferDescription);
-
-    xiiGALCommandList& commandList = context.GetCommandList();
-    {
-      xiiGALMapHelper<xiiGpuDrivenSceneConstants> constants(commandList, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      constants->ViewProjectionMatrix       = data.m_ViewProjection;
-      constants->ShadowViewProjectionMatrix = data.m_ShadowViewProjection;
-      constants->GeometryBaseIndex          = data.m_uiGeometryBase;
-      constants->MaterialFrameBase          = data.m_uiMaterialFrameBase;
-      constants->MaterialStride             = data.m_uiMaterialStride;
-      constants->VertexStride               = sizeof(xiiMeshPackedVertex);
-      constants->MeshDispatchGroupCountX    = m_uiMeshGroupX;
-      constants->MeshDispatchGroupCountY    = m_uiMeshGroupY;
-      constants->Padding                    = xiiVec2U32::MakeZero();
-      const xiiGpuDrivenSceneLight& sun     = m_World.GetSunLight();
-      constants->SunDirectionIntensity      = xiiVec4(sun.m_vDirection.x, sun.m_vDirection.y, sun.m_vDirection.z, sun.m_fIntensity);
-      constants->AmbientColor               = xiiVec4(0.12f, 0.15f, 0.22f, 1.0f);
-      const auto& shadowSize                = context.GetTexture(data.m_hShadowMap)->GetDescription().m_Size;
-      constants->ShadowTexelSize            = xiiVec4(1.0f / shadowSize.width, 1.0f / shadowSize.height, data.m_fShadowWorldUnitsPerTexel, 0.0f);
-    }
-    {
-      xiiGALMapHelper<xiiVirtualShadowSamplingConstants> constants(commandList, context.GetBuffer(data.m_hVirtualShadowConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      constants->VirtualShadowPageTableBaseIndex  = data.m_uiVirtualShadowPageTableBaseIndex;
-      constants->VirtualShadowPageTableCapacity   = data.m_uiVirtualShadowPageTableCapacity;
-      constants->VirtualShadowResolution          = data.m_uiVirtualShadowResolution;
-      constants->VirtualShadowPageSize            = data.m_uiVirtualShadowPageSize;
-      constants->VirtualShadowPhysicalAtlasWidth  = data.m_uiVirtualShadowPhysicalAtlasWidth;
-      constants->VirtualShadowPhysicalAtlasHeight = data.m_uiVirtualShadowPhysicalAtlasHeight;
-      constants->VirtualShadowDirectionalLightId  = data.m_uiVirtualShadowDirectionalLightId;
-      constants->VirtualShadowEnabled             = data.m_uiVirtualShadowEnabled;
-    }
-
-    commandList.BeginRenderPass({data.m_pRenderPass.Borrow(), framebuffer.Borrow()});
-    commandList.SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(framebufferDescription.m_FramebufferSize.width), static_cast<float>(framebufferDescription.m_FramebufferSize.height)));
-    commandList.SetPipelineState(pipeline.Borrow());
-    commandList.ResolveAndSetConstantBuffer("xiiGpuDrivenSceneConstants", context.GetBuffer(data.m_hConstants));
-    commandList.ResolveAndSetConstantBuffer("xiiVirtualShadowSamplingConstants", context.GetBuffer(data.m_hVirtualShadowConstants), xiiGALShaderType::Pixel);
-    commandList.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-    commandList.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", context.GetBuffer(data.m_hSkinningMatrices)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-    commandList.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-    commandList.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-    commandList.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-    commandList.ResolveAndSetShaderResourceBufferView("g_VisibleMeshletCount", context.GetBuffer(data.m_hVisibleMeshletCount)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
-    commandList.ResolveAndSetShaderResourceBufferView("g_MaterialData", context.GetBuffer(data.m_hMaterials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
-    commandList.ResolveAndSetShaderResourceTextureView("g_ShadowMap", context.GetTexture(data.m_hShadowMap)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
-    commandList.ResolveAndSetShaderResourceTextureView("g_VirtualShadowAtlas", context.GetTexture(data.m_hVirtualShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
-    commandList.ResolveAndSetShaderResourceBufferView("g_VirtualShadowPageTable", context.GetBuffer(data.m_hVirtualShadowPageTable)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
-    xiiGALBindlessResourceTable::BindBufferSRVs(commandList, "g_Buffers", xiiGALShaderType::Mesh);
-    commandList.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();
-    commandList.DrawMeshIndirect({context.GetBuffer(data.m_hIndirectCommands), 1U, 0U, xiiGALStateTransitionMode::None, context.GetBuffer(data.m_hIndirectCommandCount)});
-    commandList.EndRenderPass();
-  }
-
   xiiSharedPtr<xiiGALDevice>                        m_pDevice;
   xiiSharedPtr<xiiGALSwapChain>                     m_pSwapChain;
   xiiUniquePtr<xiiWindow>                           m_pWindow;
-  xiiSharedPtr<xiiGALRenderPass>                    m_pSceneRenderPass;
-  xiiShaderPermutationResourceHandle                m_hShaderPermutation;
   xiiShaderPermutationResourceHandle                m_hRayTracingValidationPermutation;
   xiiSharedPtr<xiiGALBuffer>                        m_pRayTracingValidationSBT;
   xiiUInt32                                         m_uiRayTracingValidationShaderRecordStride = 0U;
+  xiiRenderPipelineResourceHandle                   m_hDirectionalPipeline;
+  xiiRenderPipelineInstance                         m_Directional;
   xiiGpuDrivenSceneConfiguration                    m_Configuration;
   xiiGpuDrivenSceneWorld                            m_World;
   xiiRenderPipelineResourceHandle                   m_hTargetsPipeline, m_hPresentationPipeline, m_hSensorExportPipeline;

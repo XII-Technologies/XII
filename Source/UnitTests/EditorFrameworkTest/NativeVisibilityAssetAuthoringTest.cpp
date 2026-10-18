@@ -1732,6 +1732,95 @@ namespace
     return XII_SUCCESS;
   }
 
+  xiiStatus AuthorDirectionalMesh(xiiStringView directory)
+  {
+    const xiiStringView            name = "DirectionalMesh";
+    NativeVisibilityAuthorDocument document(xiiStringBuilder(directory, "/", name, ".xiiRenderPipelineAsset"), name);
+    auto*                          accessor = document.GetObjectAccessor();
+    auto*                          manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+    accessor->StartTransaction("Author directional mesh uniforms and rasterization");
+    bool finished = false;
+    XII_SCOPE_EXIT(if (!finished) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(document.EnsureSettingsObject());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetSettingsObject(), "RequiredDeviceFeatures", xiiInt64(xiiBitflags<xiiRenderPipelineDeviceFeature>(xiiRenderPipelineDeviceFeature::MeshShaders | xiiRenderPipelineDeviceFeature::BindlessResources).GetValue())));
+    const auto add = [&](xiiStringView label, xiiStringView type, xiiVec2 position) -> const xiiDocumentObject* {
+      auto id = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/", label));
+      if (accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(type), id).Failed())
+        return nullptr;
+      xiiMoveNodeCommand move;
+      move.m_Object = id;
+      move.m_NewPos = position;
+      if (document.GetCommandHistory()->AddCommand(move).Failed())
+        return nullptr;
+      return accessor->GetObject(id);
+    };
+    const auto* constants         = add("Directional Constants", "xiiDirectionalMeshConstantsPass", {600, 0});
+    const auto* sampling          = add("Shadow Sampling", "xiiVirtualShadowSamplingConstantsPass", {600, 500});
+    const auto* raster            = add("Mesh Raster", "xiiDirectionalMeshRasterPass", {1400, 0});
+    const auto* geometryConstants = add("Geometry Constants", "xiiMatrixRasterConstantsPass", {600, -400});
+    if (!constants || !sampling || !raster || !geometryConstants)
+      return xiiStatus("Missing native directional mesh operation.");
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(constants, "SelectionPulseStrength", 0.04f));
+    const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
+      const auto* out = manager->GetOutputPinByName(source, output);
+      const auto* in  = manager->GetInputPinByName(target, input);
+      if (!out || !in)
+        return xiiStatus(xiiFmt("Missing directional mesh pin '{} -> {}'.", output, input));
+      return xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *out, *in);
+    };
+    XII_SUCCEED_OR_RETURN(connect(geometryConstants, "RasterConstants", raster, "RasterConstants"));
+    XII_SUCCEED_OR_RETURN(connect(constants, "Constants", raster, "Constants"));
+    XII_SUCCEED_OR_RETURN(connect(sampling, "Constants", raster, "VirtualShadowConstants"));
+    xiiHashTable<xiiString, const xiiDocumentObject*> inputs;
+    xiiUInt32                                         inputRow = 0, outputRow = 0;
+    const auto                                        expose = [&](const xiiDocumentObject* node, const xiiRenderPipelinePin& pin, xiiStringView name) -> xiiStatus {
+      const xiiDocumentObject* boundary = nullptr;
+      if (pin.m_bInput)
+        inputs.TryGetValue(name, boundary);
+      if (!boundary)
+      {
+        boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", name), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 2200.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 160 + 900)});
+        if (!boundary)
+          return xiiStatus("Could not create native directional mesh interface.");
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Name", name));
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Input", pin.m_bInput));
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "ResourceType", xiiUInt32(pin.m_Type)));
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "Format", xiiInt64(pin.m_Format)));
+        if (pin.m_pDataType)
+          XII_SUCCEED_OR_RETURN(accessor->SetValueByName(boundary, "DataType", pin.m_pDataType->GetTypeName()));
+        XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(boundary));
+        if (pin.m_bInput)
+          inputs.Insert(name, boundary);
+      }
+      return pin.m_bInput ? connect(boundary, "Value", node, pin.m_sName) : connect(node, pin.m_sName, boundary, "Value");
+    };
+    for (const auto* node : {constants, sampling, raster})
+    {
+      xiiRenderPipelinePass* prototype = node->GetType()->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+      XII_SCOPE_EXIT(node->GetType()->GetAllocator()->Deallocate(prototype));
+      xiiDynamicArray<xiiRenderPipelinePin> pins;
+      prototype->GetPins(pins);
+      for (const auto& pin : pins)
+      {
+        if (pin.m_Type == xiiRenderPipelinePin::Order || (node == raster && pin.m_bInput && (pin.m_sName == "Constants" || pin.m_sName == "VirtualShadowConstants" || pin.m_sName == "RasterConstants")))
+          continue;
+        const xiiStringView external = node == constants && !pin.m_bInput ? xiiStringView("RasterConstants") : node == sampling && !pin.m_bInput ? xiiStringView("SamplingConstants") :
+                                                                                                                                                   xiiStringView(pin.m_sName);
+        XII_SUCCEED_OR_RETURN(expose(node, pin, external));
+      }
+    }
+    accessor->FinishTransaction();
+    finished = true;
+    XII_SUCCEED_OR_RETURN(document.SaveDocument(true));
+    NativeVisibilityAuthorContext context;
+    XII_SUCCEED_OR_RETURN(context.Import(document));
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(directory, "/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    return context.ExportDocument(&message);
+  }
+
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeAssetAuthoring);
@@ -2016,4 +2105,31 @@ XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DepthSensorDiagnostic)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NativeSensorDiagnosticAuthoring"));
   XII_TEST_STATUS(AuthorDepthSensorDiagnostic(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DirectionalMesh)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "DirectionalAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DirectionalAuthoring"));
+  XII_TEST_STATUS(AuthorDirectionalMesh(path));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, DirectionalMeshConstants)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "DirectionalAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DirectionalAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "DirectionalMeshConstants", "xiiDirectionalMeshConstantsPass", {}));
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAssetAuthoring, VirtualShadowSamplingConstants)
+{
+  const auto path = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(path, "DirectionalAuthoring", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DirectionalAuthoring"));
+  XII_TEST_STATUS(AuthorNativeLeaf(path, "VirtualShadowSamplingConstants", "xiiVirtualShadowSamplingConstantsPass", {}));
 }

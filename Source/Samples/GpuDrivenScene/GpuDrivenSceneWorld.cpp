@@ -149,7 +149,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
   for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(colors); ++i)
   {
     xiiMaterialResourceDescriptor material;
-    material.m_hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
+    material.m_hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Geometry/DirectionalMesh.xiiShader");
     material.m_BaseColor    = colors[i];
     material.m_FeatureFlags = xiiMaterialFeatureFlags::ReceivesLighting | xiiMaterialFeatureFlags::CastsShadows;
     xiiStringBuilder name;
