@@ -5,7 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Algorithm/Sorting.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
-#include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -378,14 +378,17 @@ const xiiDDGISettings& xiiDDGIContext::GetConfiguration() const
   return m_pState->m_Settings;
 }
 
-xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem)
+xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle lightConstants)
 {
   UpdateHandles result;
-  if (!IsInitialized() || m_pState->m_uiFrameIndex == 0 || pLightingSystem == nullptr)
+  if (!IsInitialized() || m_pState->m_uiFrameIndex == 0)
     return result;
   if ((m_pState->m_pIrradianceAtlas == nullptr || m_pState->m_pDistanceAtlas == nullptr) && CreateGpuResources().Failed())
     return result;
 
+  const auto* frameDescription = graph.GetBufferDescription(lightConstants);
+  if (!frameDescription || frameDescription->m_uiSize < sizeof(xiiFrameLightConstants) || !frameDescription->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+    return result;
   if (m_pState->m_pUpdatePipeline == nullptr)
   {
     const xiiShaderResourceHandle                  hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/DDGIProbeUpdate.xiiShader");
@@ -415,12 +418,13 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
     xiiDynamicArray<xiiGpuDDGIProbeState, xiiAlignedAllocatorWrapper>  m_ProbeStates;
     xiiDynamicArray<xiiGpuDDGIProbeUpdate, xiiAlignedAllocatorWrapper> m_ProbeUpdates;
     xiiVec3I32                                                         m_vMinimumCell;
-    const xiiLightingSystem*                                           m_pLightingSystem = nullptr;
+    xiiRenderGraphBufferHandle                                         m_LightConstants;
   };
 
   const bool bPerformUpdates = m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex;
 
-  auto pass = graph.AddPass<UpdatePassData>("DDGI Probe Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+  auto pass = graph.AddPass<UpdatePassData>("DDGI Probe Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates, lightConstants](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_LightConstants=builder.ReadBuffer(lightConstants,xiiGALResourceStateFlags::ConstantBuffer);
       xiiGALBufferCreationDescription bufferDescription;
       bufferDescription.m_uiSize              = xiiMath::Max(m_pState->m_Probes.GetCount(), 1U) * sizeof(xiiGpuDDGIProbeState);
       bufferDescription.m_uiElementByteStride = sizeof(xiiGpuDDGIProbeState);
@@ -477,8 +481,7 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
       if (!data.m_ProbeUpdates.IsEmpty())
       {
         cmd.SetPipelineState(m_pState->m_pUpdatePipeline);
-        if (data.m_pLightingSystem != nullptr)
-          data.m_pLightingSystem->BindFrameConstants(cmd, xiiGALShaderType::Compute);
+        cmd.ResolveAndSetConstantBuffer("PerFrameLight",context.GetBuffer(data.m_LightConstants),xiiGALShaderType::Compute);
         cmd.ResolveAndSetConstantBuffer("xiiDDGIProbeConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
         cmd.ResolveAndSetShaderResourceBufferView("g_DDGIProbeUpdates", context.GetBuffer(data.m_hProbeUpdates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
         cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIIrradianceAtlas", context.GetTexture(data.m_hIrradianceAtlas)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -492,8 +495,7 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
       if (m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex)
         m_pState->m_uiLastGpuUpdateFrame = m_pState->m_uiFrameIndex; });
 
-  pass.first->m_vMinimumCell    = m_pState->m_vMinimumCell;
-  pass.first->m_pLightingSystem = pLightingSystem;
+  pass.first->m_vMinimumCell = m_pState->m_vMinimumCell;
   pass.first->m_ProbeStates.SetCount(m_pState->m_Probes.GetCount());
   for (xiiUInt32 i = 0U; i < m_pState->m_Probes.GetCount(); ++i)
   {

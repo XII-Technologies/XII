@@ -306,11 +306,6 @@ xiiUInt32 xiiView::GetRenderResolutionHeight() const
   return m_Data.m_uiRenderResolutionHeight;
 }
 
-////////// Lighting Data Upload //////////
-//
-// Uploads per-view camera, frame, and light data into persistent GAL buffers once per frame.
-
-
 void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
 {
   m_Data.m_CameraUsageHint = hint;

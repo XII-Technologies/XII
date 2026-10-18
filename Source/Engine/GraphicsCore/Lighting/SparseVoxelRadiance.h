@@ -9,7 +9,6 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
-class xiiLightingSystem;
 class xiiGALDevice;
 
 /// Configuration for the camera-centred far-field radiance clipmap.
@@ -156,7 +155,7 @@ public:
 
   /// Adds the sparse radiance injection pass and publishes the page table and
   /// persistent pool consumed by far-field final gather.
-  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
+  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle lightConstants);
 
   /// Collision-free key used by CPU residency, GPU page tables, captures, and tools.
   [[nodiscard]] static xiiUInt64 PackBrickKey(xiiUInt32 uiClipmapLevel, const xiiVec3I32& vCell);

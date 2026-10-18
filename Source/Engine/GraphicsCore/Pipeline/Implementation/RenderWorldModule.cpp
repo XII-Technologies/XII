@@ -13,6 +13,7 @@
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/WorldLightData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -125,6 +126,7 @@ void xiiRenderWorldModule::ReleaseGpuResources()
   m_RetiredPackets.Clear();
   m_pRayTracingResources.Clear();
   m_pGpuInstances.Clear();
+  m_pWorldLights.Clear();
 }
 
 // Reuse the existing world registry for device shutdown; do not maintain another world/scene registry.
@@ -184,12 +186,20 @@ void xiiRenderWorldModule::Deinitialize()
 
   m_pRayTracingResources.Clear();
   m_pGpuInstances.Clear();
+  m_pWorldLights.Clear();
 
   xiiDebugRenderer::ClearContext(GetWorld());
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
 {
+}
+
+xiiResult xiiRenderWorldModule::UpdateWorldLights(xiiArrayPtr<xiiRenderData* const> packets)
+{
+  if (!m_pWorldLights)
+    m_pWorldLights = XII_DEFAULT_NEW(xiiWorldLightData, *GetWorld());
+  return m_pWorldLights->UpdateFromExtraction(packets);
 }
 
 xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame)
@@ -850,6 +860,21 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   }
   else
     m_pGpuInstances.Clear();
+
+  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::Lighting))
+  {
+    xiiDynamicArray<xiiRenderData*> packets;
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+      if (it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled() && it.Value().m_pView->GetRuntimeFeatures().IsSet(xiiRenderPipelineFeature::Lighting))
+        packets.PushBackRange(it.Value().m_pExtractedData->GetAllRenderData());
+    if (UpdateWorldLights(packets).Failed())
+    {
+      xiiLog::Error("Could not update world light records or their IES resources.");
+      return;
+    }
+  }
+  else
+    m_pWorldLights.Clear();
 
   // Scene synchronization can acquire resource-backed materials that did not exist at the start
   // of the frame. Resolve their bindless textures before any view captures its material upload.

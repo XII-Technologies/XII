@@ -9,7 +9,6 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
-class xiiLightingSystem;
 class xiiGALDevice;
 
 /// Runtime controls for the camera-centred mid-field DDGI clipmap.
@@ -149,7 +148,7 @@ public:
 
   /// Adds the temporally accumulated probe update pass and publishes resources
   /// consumed by the per-pixel DDGI final gather.
-  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
+  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, xiiRenderGraphBufferHandle lightConstants);
 
 private:
   [[nodiscard]] xiiResult CreateGpuResources();

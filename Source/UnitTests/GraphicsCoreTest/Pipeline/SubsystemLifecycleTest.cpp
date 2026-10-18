@@ -22,7 +22,7 @@
 static_assert(!std::is_default_constructible_v<xiiRenderGraphManager>, "Render graphs must be owned by the render graph subsystem.");
 static_assert(!std::is_default_constructible_v<xiiMaterialManager>, "Material storage must be owned by the material subsystem.");
 static_assert(!std::is_default_constructible_v<xiiGeometryResidencyManager>, "Geometry residency must be owned by its subsystem.");
-static_assert(!std::is_default_constructible_v<xiiLightingManager>, "Lighting contexts must be owned by the lighting subsystem.");
+static_assert(!std::is_default_constructible_v<xiiLightingManager>, "The BRDF lookup must be owned by its device service.");
 static_assert(!std::is_default_constructible_v<xiiVirtualShadowMapManager>, "Virtual shadow residency must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiAtmosphereManager>, "Atmosphere LUT state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiRayTracingResources>, "Ray tracing scene state must be owned by its subsystem.");
@@ -59,16 +59,13 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Context handles are inert before allocation")
   {
-    const xiiLightingContextHandle           lightingHandle;
     const xiiRenderGraphContextHandle        renderGraphHandle;
     const xiiParticleSystemRuntimeHandle     particleHandle;
     const xiiViewRenderResourceContextHandle viewResourceHandle;
 
-    XII_TEST_BOOL(lightingHandle.IsInvalidated());
     XII_TEST_BOOL(renderGraphHandle.IsInvalidated());
     XII_TEST_BOOL(particleHandle.IsInvalidated());
     XII_TEST_BOOL(viewResourceHandle.IsInvalidated());
-    XII_TEST_BOOL(xiiGetStaticRTTI<xiiLightingContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiParticleSystemRuntimeHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiViewRenderResourceContextHandle>() != nullptr);
