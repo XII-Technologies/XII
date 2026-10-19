@@ -91,7 +91,6 @@
           - "Source/Engine/Texture/**"
           - "Source/Editor/EditorFramework/Assets/**"
           - "Source/EditorPlugins/Assets/**"
-          - "Data/Content/**"
 
 "Area: Build System":
   - changed-files:
