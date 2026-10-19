@@ -556,7 +556,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     avg.SetZero();
 
     xiiRandom rng;
-    rng.InitializeFromCurrentTime();
+    rng.Initialize(12345);
 
     const xiiAngled dev          = xiiAngled::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
@@ -568,7 +568,9 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
       XII_TEST_BOOL(v.IsNormalized());
 
-      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<double>());
+      // GetAngleBetween returns a float angle, even for double vectors.
+      // Check the cone directly without narrowing the dot product.
+      XII_TEST_BOOL(vAxis.Dot(v) >= xiiMath::Cos(dev) - xiiMath::DefaultEpsilon<double>());
 
       avg += v;
     }
@@ -614,7 +616,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     avg.SetZero();
 
     xiiRandom rng;
-    rng.InitializeFromCurrentTime();
+    rng.Initialize(67890);
 
     const xiiAngled dev          = xiiAngled::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
@@ -626,7 +628,9 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
       XII_TEST_BOOL(v.IsNormalized());
 
-      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<double>());
+      // GetAngleBetween returns a float angle, even for double vectors.
+      // Check the cone directly without narrowing the dot product.
+      XII_TEST_BOOL(vAxis.Dot(v) >= xiiMath::Cos(dev) - xiiMath::DefaultEpsilon<double>());
 
       avg += v;
     }
@@ -672,7 +676,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     avg.SetZero();
 
     xiiRandom rng;
-    rng.InitializeFromCurrentTime();
+    rng.Initialize(98765);
 
     const xiiAngled dev          = xiiAngled::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
@@ -684,7 +688,9 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
       XII_TEST_BOOL(v.IsNormalized());
 
-      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<float>());
+      // GetAngleBetween returns a float angle, even for double vectors.
+      // Check the cone directly without narrowing the dot product.
+      XII_TEST_BOOL(vAxis.Dot(v) >= xiiMath::Cos(dev) - xiiMath::DefaultEpsilon<double>());
 
       avg += v;
     }
