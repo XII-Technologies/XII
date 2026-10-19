@@ -26,8 +26,8 @@ xiiDynamicArray<xiiString>& GetStaticPlugins()
 
 struct ModuleData
 {
-  xiiPluginModule                          m_hModule       = 0;
-  xiiUInt8                                 m_uiFileNumber  = 0;
+  xiiPluginModule                          m_hModule = 0;
+  xiiString                                m_sCopiedFile;
   bool                                     m_bCalledOnLoad = false;
   xiiHybridArray<xiiPluginInitCallback, 2> m_OnLoadCB;
   xiiHybridArray<xiiPluginInitCallback, 2> m_OnUnloadCB;
@@ -49,7 +49,7 @@ xiiCopyOnBroadcastEvent<const xiiPluginEvent&> s_PluginEvents;
 
 void xiiPlugin::SetMaxParallelInstances(xiiUInt32 uiMaxParallelInstances)
 {
-  s_uiMaxParallelInstances = xiiMath::Max(1u, uiMaxParallelInstances);
+  s_uiMaxParallelInstances = xiiMath::Clamp(uiMaxParallelInstances, 1u, 255u);
 }
 
 void xiiPlugin::InitializeStaticallyLinkedPlugins()
@@ -189,13 +189,10 @@ static xiiResult UnloadPluginInternal(xiiStringView sPluginFile)
     return XII_FAILURE;
   }
 
-  // delete the plugin copy that we had loaded
-  if (xiiPlugin::PlatformNeedsPluginCopy())
+  // Retain the actual copy path; the original may have moved or disappeared since loading.
+  if (!thisMod.Value().m_sCopiedFile.IsEmpty())
   {
-    xiiStringBuilder sOriginalFile, sCopiedFile;
-    xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, g_LoadedModules[sPluginFile].m_uiFileNumber);
-
-    xiiOSFile::DeleteFile(sCopiedFile).IgnoreResult();
+    xiiOSFile::DeleteFile(thisMod.Value().m_sCopiedFile).IgnoreResult();
   }
 
   // Broadcast event: After unloading plugin
@@ -214,12 +211,12 @@ static xiiResult UnloadPluginInternal(xiiStringView sPluginFile)
 
 #if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
 
-static xiiResult LoadPluginInternal(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags)
+static xiiResult LoadPluginInternal(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags, xiiStringView sPluginDirectory)
 {
   xiiUInt8 uiFileNumber = 0;
 
   xiiStringBuilder sOriginalFile, sCopiedFile;
-  xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, uiFileNumber);
+  xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, uiFileNumber, sPluginDirectory);
 
   if (!xiiOSFile::ExistsFile(sOriginalFile))
   {
@@ -233,14 +230,13 @@ static xiiResult LoadPluginInternal(xiiStringView sPluginFile, xiiBitflags<xiiPl
     const xiiUInt8 uiMaxParallelInstances = static_cast<xiiUInt8>(s_uiMaxParallelInstances);
     for (uiFileNumber = 0; uiFileNumber < uiMaxParallelInstances; ++uiFileNumber)
     {
-      xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, uiFileNumber);
+      xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, uiFileNumber, sPluginDirectory);
       if (xiiOSFile::CopyFile(sOriginalFile, sCopiedFile) == XII_SUCCESS)
         goto Success;
     }
 
     xiiLog::Error("Could not copy the plugin file '{0}' to '{1}' (and all previous file numbers). Plugin MaxParallelInstances is set to {2}.", sOriginalFile, sCopiedFile, s_uiMaxParallelInstances);
 
-    g_LoadedModules.Remove(sCopiedFile);
     return XII_FAILURE;
   }
   else
@@ -250,9 +246,10 @@ static xiiResult LoadPluginInternal(xiiStringView sPluginFile, xiiBitflags<xiiPl
 
 Success:
 
-  auto& thisMod          = g_LoadedModules[sPluginFile];
-  thisMod.m_uiFileNumber = uiFileNumber;
-  thisMod.m_LoadFlags    = flags;
+  auto& thisMod = g_LoadedModules[sPluginFile];
+  if (sCopiedFile != sOriginalFile)
+    thisMod.m_sCopiedFile = sCopiedFile;
+  thisMod.m_LoadFlags = flags;
 
   xiiPlugin::BeginPluginChanges();
   XII_SCOPE_EXIT(xiiPlugin::EndPluginChanges());
@@ -272,6 +269,8 @@ Success:
     // loaded, but failed
     g_pCurrentlyLoadingModule = nullptr;
     thisMod.m_hModule         = 0;
+    if (!thisMod.m_sCopiedFile.IsEmpty())
+      xiiOSFile::DeleteFile(thisMod.m_sCopiedFile).IgnoreResult();
 
     return XII_FAILURE;
   }
@@ -304,17 +303,23 @@ Success:
 
 #endif
 
-bool xiiPlugin::ExistsPluginFile(xiiStringView sPluginFile)
+bool xiiPlugin::ExistsPluginFile(xiiStringView sPluginFile, xiiStringView sPluginDirectory)
 {
   xiiStringBuilder sOriginalFile, sCopiedFile;
-  GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, 0);
+  GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, 0, sPluginDirectory);
 
   return xiiOSFile::ExistsFile(sOriginalFile);
 }
 
-xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags /*= xiiPluginLoadFlags::Default*/)
+xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags /*= xiiPluginLoadFlags::Default*/, xiiStringView sPluginDirectory /*= {}*/)
 {
   XII_LOG_BLOCK("Loading Plugin", sPluginFile);
+
+  if (!sPluginDirectory.IsEmpty() && !xiiPathUtils::IsAbsolutePath(sPluginDirectory))
+  {
+    xiiLog::Error("Plugin directory must be absolute: '{}'", sPluginDirectory);
+    return XII_FAILURE;
+  }
 
   // make sure this is done first
   InitializeStaticallyLinkedPlugins();
@@ -328,13 +333,14 @@ xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPlugin
 #if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
   // #TODO XII_COMPILE_ENGINE_AS_DLL and being able to load plugins are not necessarily the same thing.
   XII_IGNORE_UNUSED(flags);
+  XII_IGNORE_UNUSED(sPluginDirectory);
   return XII_FAILURE;
 #else
 
   if (flags.IsSet(xiiPluginLoadFlags::PluginIsOptional))
   {
     // early out without logging an error
-    if (!ExistsPluginFile(sPluginFile))
+    if (!ExistsPluginFile(sPluginFile, sPluginDirectory))
       return XII_FAILURE;
   }
 
@@ -343,7 +349,7 @@ xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPlugin
   // make sure to use a static string pointer from now on, that stays where it is
   sPluginFile = g_LoadedModules.FindOrAdd(sPluginFile).Key();
 
-  xiiResult res = LoadPluginInternal(sPluginFile, flags);
+  xiiResult res = LoadPluginInternal(sPluginFile, flags, sPluginDirectory);
 
   if (res.Succeeded())
   {
