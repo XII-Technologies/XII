@@ -5,6 +5,7 @@
 *.pdb
 *.loaded
 *.xiiPluginBundle
+*/xiiSdkRoot.txt
 */iconengines/*
 */imageformats/*
 */platforms/*

@@ -745,14 +745,18 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& ref_sResult, xi
     // first try with the redirection
     if (!sRedirection.IsEmpty())
     {
-      FullPath = sStartDirAbs;
-      FullPath.AppendPath(sRedirection);
+      FullPath = sRedirection.IsAbsolutePath() ? sRedirection : sStartDirAbs;
+      if (!sRedirection.IsAbsolutePath())
+        FullPath.AppendPath(sRedirection);
       FullPath.AppendPath(sSubPath);
       FullPath.MakeCleanPath();
 
       if (xiiOSFile::ExistsDirectory(FullPath) || xiiOSFile::ExistsFile(FullPath))
       {
-        ref_sResult.AppendPath(sRedirection);
+        if (sRedirection.IsAbsolutePath())
+          ref_sResult = sRedirection;
+        else
+          ref_sResult.AppendPath(sRedirection);
         ref_sResult.MakeCleanPath();
         return XII_SUCCESS;
       }

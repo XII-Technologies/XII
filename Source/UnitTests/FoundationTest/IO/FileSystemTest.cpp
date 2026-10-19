@@ -356,6 +356,23 @@ Only concrete and clocks.\n\
       XII_TEST_STRING(result, expected);
     }
 
+    {
+      // Project executables can live on a different drive from the SDK.
+      // Absolute redirections must work without appending a drive-qualified path.
+      const xiiStringBuilder redirection(sOutputFolder1Resolved, "/xiiSdkRoot.txt");
+      for (xiiStringView target : {sOutputFolder2Resolved.GetView(), "../SubFolder2"_xiisv})
+      {
+        {
+          xiiFileWriter writer;
+          XII_TEST_RESULT(writer.Open(redirection));
+          XII_TEST_RESULT(writer.WriteBytes(target.GetStartPointer(), target.GetElementCount()));
+        }
+        XII_TEST_RESULT(xiiFileSystem::FindFolderWithSubPath(result, sOutputFolder1Resolved, "FileSystemTest2.txt", "xiiSdkRoot.txt"));
+        XII_TEST_STRING(result, sOutputFolder2Resolved);
+      }
+      xiiFileSystem::DeleteFile(redirection);
+    }
+
     xiiFileSystem::DeleteFile(":output1/FileSystemTest2.txt");
     xiiFileSystem::DeleteFile(":output2/FileSystemTest2.txt");
 

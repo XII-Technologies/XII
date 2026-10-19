@@ -37,6 +37,14 @@ endmacro()
 # Standalone project applications need the SDK's runtime libraries and dynamically
 # loaded plugins beside them. Only copy into the project; never modify the SDK.
 function(xii_stage_external_runtime TARGET_NAME)
+  # Use the existing SDK discovery mechanism so older generated applications also
+  # continue to find SDK data when their executable lives outside the installation.
+  set(SDK_REDIRECTION_FILE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}-xiiSdkRoot.txt")
+  file(WRITE "${SDK_REDIRECTION_FILE}" "${XII_SDK_DIR}")
+  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDK_REDIRECTION_FILE}" "$<TARGET_FILE_DIR:${TARGET_NAME}>/xiiSdkRoot.txt"
+    VERBATIM)
+
   get_property(SDK_RUNTIME_TARGETS GLOBAL PROPERTY XII_SDK_RUNTIME_TARGETS)
   foreach(SDK_TARGET IN LISTS SDK_RUNTIME_TARGETS)
     get_target_property(SDK_TARGET_TYPE ${SDK_TARGET} TYPE)
@@ -46,6 +54,18 @@ function(xii_stage_external_runtime TARGET_NAME)
         VERBATIM)
     endif()
   endforeach()
+
+  # DXC is a private native dependency, so it is not part of the exported target interface.
+  if(TARGET ShaderCompilerSPIRV)
+    if(WIN32)
+      set(DXC_RUNTIME_NAME "dxcompiler.dll")
+    else()
+      set(DXC_RUNTIME_NAME "libdxcompiler.so")
+    endif()
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:ShaderCompilerSPIRV>/${DXC_RUNTIME_NAME}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+      VERBATIM)
+  endif()
 endfunction()
 
 # #####################################

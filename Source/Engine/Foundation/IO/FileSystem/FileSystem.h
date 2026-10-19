@@ -133,7 +133,7 @@ public:
   ///
   /// Additionally the 'redirection file' feature of xiiFileSystem::FindFolderWithSubPath() is used
   /// to allow finding a relocated SDK folder. To do that, place a file called 'xiiSdkRoot.txt'
-  /// in your top level folder. It should contain the relative path pointing to the SDK folder.
+  /// in your top level folder. It should contain an absolute or relative path pointing to the SDK folder.
   ///
   /// Upon success SetSdkRootDirectory() is called with the resulting path.
   ///
