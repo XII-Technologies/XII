@@ -54,6 +54,7 @@ xiiCommandLineOptionInt    opt_Assert("_TestFramework", "-assert", "Whether to a
 xiiCommandLineOptionString opt_Filter("_TestFramework", "-filter", "Filter to execute only certain tests.", "");
 xiiCommandLineOptionPath   opt_Json("_TestFramework", "-json", "JSON file to write.", "");
 xiiCommandLineOptionPath   opt_OutputDir("_TestFramework", "-outputDir", "Output directory", "");
+xiiCommandLineOptionPath   opt_SdkRoot("_TestFramework", "-sdkRoot", "Source SDK root containing Data/UnitTests, for out-of-source test builds.", "");
 
 constexpr int s_iMaxErrorMessageLength = 512;
 
@@ -146,7 +147,14 @@ void xiiTestFramework::Initialize()
   xiiSetAssertHandler(TestAssertHandler);
 
   CreateOutputFolder();
-  xiiFileSystem::DetectSdkRootDirectory().IgnoreResult();
+  if (opt_SdkRoot.IsOptionSpecified())
+  {
+    xiiFileSystem::SetSdkRootDirectory(opt_SdkRoot.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+  }
+  else
+  {
+    xiiFileSystem::DetectSdkRootDirectory().IgnoreResult();
+  }
 
   xiiCommandLineUtils& cmd = *xiiCommandLineUtils::GetGlobalInstance();
   // figure out which tests exist

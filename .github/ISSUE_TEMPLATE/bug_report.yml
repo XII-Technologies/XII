@@ -17,6 +17,20 @@ body:
       required: true
 
   - type: textarea
+    id: environment
+    attributes:
+      label: Platform and toolchain
+      description: OS/version, architecture, compiler/version, CMake version, generator, preset/filter, and Debug/Dev/Shipping configuration.
+    validations:
+      required: true
+
+  - type: textarea
+    id: graphics
+    attributes:
+      label: Graphics environment (when applicable)
+      description: Backend, GPU, driver, Vulkan loader/SDK or other SDK versions, and desktop/headless session.
+
+  - type: textarea
     id: description
     attributes:
       label: Description
@@ -50,12 +64,23 @@ body:
       label: Affected Area
       multiple: true
       options:
-        - Area: Graphics
-        - Area: Compute
-        - Area: Scripting
-        - Area: UI
-        - Area: I/O
-        - Area: Core
-        - Area: Platform
+        - "Area: Foundation"
+        - "Area: Core"
+        - "Area: Graphics"
+        - "Area: Compute"
+        - "Area: I/O"
+        - "Area: UI"
+        - "Area: Scripting"
+        - "Area: Platform"
+        - "Area: Asset Pipeline"
+        - "Area: Build System"
+        - "Area: Editor"
+        - "Area: Tools"
+        - "Area: Tests"
+        - "Area: Samples"
+        - "Area: Documentation"
+        - "Area: Dependencies"
+        - "Area: Plugins"
+        - "GitHub"
     validations:
       required: true

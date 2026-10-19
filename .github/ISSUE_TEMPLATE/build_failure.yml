@@ -1,0 +1,39 @@
+name: Build or platform failure
+description: Report configuration, compilation, linking, or test setup failures
+title: '[Build]: '
+labels: ['Area: Build System', 'Status: Review Requested']
+body:
+  - type: input
+    id: revision
+    attributes:
+      label: Engine commit and submodule revisions
+      description: Include git rev-parse HEAD and git submodule status output.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS/version, architecture, compiler/version, CMake, generator, SDKs, and available RAM.
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Exact configure, build, and test commands
+      description: Include preset/filter, Debug/Dev/Shipping configuration, optional features, and local changes.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: failure
+    attributes:
+      label: First error and complete logs
+      description: Include configure and build logs, expected behavior, and whether a clean directory reproduces it. Redact secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: graphics
+    attributes:
+      label: Device or desktop requirements
+      description: For runtime tests, include backend, GPU, driver/loader/SDK versions, and session type.

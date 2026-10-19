@@ -9,17 +9,26 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber) {}
+xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber)
+{
+  XII_IGNORE_UNUSED(uiWindowNumber);
+}
 xiiStandardInputDevice::~xiiStandardInputDevice() = default;
 
-void xiiStandardInputDevice::SetShowMouseCursor(bool bShow) {}
+void xiiStandardInputDevice::SetShowMouseCursor(bool bShow)
+{
+  XII_IGNORE_UNUSED(bShow);
+}
 
 bool xiiStandardInputDevice::GetShowMouseCursor() const
 {
   return false;
 }
 
-void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode) {}
+void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode)
+{
+  XII_IGNORE_UNUSED(mode);
+}
 
 xiiMouseCursorClipMode::Enum xiiStandardInputDevice::GetClipMouseCursor() const
 {

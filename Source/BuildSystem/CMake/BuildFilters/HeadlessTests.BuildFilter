@@ -1,0 +1,28 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+# CPU test suites and their transitive dependencies; no Qt, SDL or graphics device.
+set_property(GLOBAL PROPERTY XII_BUILD_FILTER_HeadlessTests
+  enet
+  zstd
+  zlib
+  Foundation
+  Lua
+  mikktspace
+  Core
+  GraphicsFoundation
+  Texture
+  stb
+  tinyexr
+  DirectXTex
+  DirectX-Headers
+  DirectXMath
+  sal
+  FoundationTest_Plugin1
+  FoundationTest_Plugin2
+  TestFramework
+  FoundationTest
+  CoreTest
+  ToolsFoundation
+  ToolsFoundationTest
+  ArchiveTool
+)

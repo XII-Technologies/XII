@@ -1,5 +1,474 @@
 [
   {
+    "name": "GitHub",
+    "color": "6a737d",
+    "description": "GitHub workflows, repository automation and community configuration.",
+    "paths": [
+      ".github/**"
+    ]
+  },
+  {
+    "name": "Area: Foundation",
+    "color": "90a4ae",
+    "description": "Foundational containers, memory, math, threading, IO and platform abstractions.",
+    "paths": [
+      "Source/Engine/Foundation/**",
+      "Source/UnitTests/FoundationTest*/**",
+      "Data/UnitTests/FoundationTest/**"
+    ]
+  },
+  {
+    "name": "Area: Core",
+    "color": "90a4ae",
+    "description": "World and component model, resources, messages, input and core engine services.",
+    "paths": [
+      "Source/Engine/Core/**",
+      "Source/Engine/GameEngine/**",
+      "Source/UnitTests/CoreTest/**",
+      "Source/UnitTests/GameEngineTest/**",
+      "Data/UnitTests/GameEngineTest/**"
+    ]
+  },
+  {
+    "name": "Area: Graphics",
+    "color": "9575cd",
+    "description": "Graphics abstractions, backends, render pipelines, shaders and rendering tests.",
+    "paths": [
+      "Source/Engine/Graphics*/**",
+      "Source/Engine/ShaderCompiler*/**",
+      "Data/Base/Shaders/**",
+      "Documentation/Rendering/**",
+      "Source/UnitTests/Graphics*Test/**",
+      "Data/UnitTests/GraphicsFoundationTest/**",
+      "Source/Tools/ShaderCompilerTool/**",
+      "Source/Samples/GpuDrivenScene/**",
+      "Source/Samples/GraphicsExplorer/**",
+      "Source/Samples/ProceduralTriangle/**"
+    ]
+  },
+  {
+    "name": "Area: Compute",
+    "color": "4fc3f7",
+    "description": "Math, SIMD, data processing, task scheduling and concurrency.",
+    "paths": [
+      "Source/Engine/Foundation/Math/**",
+      "Source/Engine/Foundation/SimdMath/**",
+      "Source/Engine/Foundation/Threading/**",
+      "Source/Engine/Foundation/DataProcessing/**"
+    ]
+  },
+  {
+    "name": "Area: I/O",
+    "color": "81d4fa",
+    "description": "File access, communication, streaming, serialization and file serving.",
+    "paths": [
+      "Source/Engine/Foundation/IO/**",
+      "Source/Engine/Foundation/Serialization/**",
+      "Source/Engine/Foundation/Communication/**",
+      "Source/EnginePlugins/FileservePlugin/**",
+      "Source/Tools/Fileserve/**",
+      "Source/EditorPlugins/Fileserve/**"
+    ]
+  },
+  {
+    "name": "Area: UI",
+    "color": "fff176",
+    "description": "Tool interfaces, editor widgets and immediate-mode UI integration.",
+    "paths": [
+      "Source/Tools/Libs/GuiFoundation/**",
+      "Source/EnginePlugins/DearImguiPlugin/**",
+      "Source/ThirdParty/ads/**",
+      "Source/Tools/Inspector/**",
+      "Source/Editor/EditorFramework/GUI/**",
+      "Source/Editor/EditorFramework/Dialogs/**",
+      "Source/Editor/EditorFramework/Panels/**",
+      "Source/Editor/EditorFramework/PropertyGrid/**"
+    ]
+  },
+  {
+    "name": "Area: Scripting",
+    "color": "4db6ac",
+    "description": "Runtime scripting, visual scripting and Lua integration.",
+    "paths": [
+      "Source/Engine/Core/Scripting/**",
+      "Source/EnginePlugins/VisualScriptPlugin/**",
+      "Source/EditorPlugins/VisualScript/**",
+      "Source/ThirdParty/Lua/**"
+    ]
+  },
+  {
+    "name": "Area: Platform",
+    "color": "a1887f",
+    "description": "Platform abstractions, native system integration, windowing and input.",
+    "paths": [
+      "Source/Engine/Foundation/Basics/**",
+      "Source/Engine/Foundation/Platform/**",
+      "Source/Engine/Foundation/System/**",
+      "Source/Engine/Core/Platform/**",
+      "Source/Engine/Core/Input/**",
+      "Source/Engine/Core/System/**"
+    ]
+  },
+  {
+    "name": "Area: Asset Pipeline",
+    "color": "bcaaa4",
+    "description": "Asset import, transformation, texture processing and asset editing.",
+    "paths": [
+      "Source/Tools/Libs/ModelImporter/**",
+      "Source/Tools/TextureConverter/**",
+      "Source/Engine/Texture/**",
+      "Source/Editor/EditorFramework/Assets/**",
+      "Source/EditorPlugins/Assets/**"
+    ]
+  },
+  {
+    "name": "Area: Build System",
+    "color": "78909c",
+    "description": "Build configuration, generation, dependency setup and validation utilities.",
+    "paths": [
+      "Source/BuildSystem/**",
+      "Source/BuildTools/**",
+      "Utilities/CI/**",
+      "**/CMakeLists.txt",
+      "**/init.cmake",
+      "**/finalize.cmake",
+      "**/*.BuildFilter",
+      "CMakePresets.json",
+      "xiiCMakeConfig.cmake",
+      "Generate*",
+      "Setup.sh",
+      "cgmanifest.json",
+      "version.txt",
+      ".clang-format",
+      ".clang-tidy",
+      ".yamllint.yml"
+    ]
+  },
+  {
+    "name": "Area: Editor",
+    "color": "1975d2",
+    "description": "Editor applications, process framework, scene editing and editor plugins.",
+    "paths": [
+      "Source/Editor/**",
+      "Source/EditorPlugins/**",
+      "Source/UnitTests/EditorFrameworkTest/**",
+      "Source/UnitTests/EditorEngineProcessFrameworkTest/**",
+      "Data/UnitTests/EditorEngineProcessFrameworkTest/**"
+    ]
+  },
+  {
+    "name": "Area: Tools",
+    "color": "f9a825",
+    "description": "Standalone engine tools, shared tool libraries and developer utilities.",
+    "paths": [
+      "Source/Tools/**",
+      "Source/BuildTools/**",
+      "Utilities/**",
+      "Data/Tools/**"
+    ]
+  },
+  {
+    "name": "Area: Tests",
+    "color": "ff8a65",
+    "description": "Test framework, regression suites, test assets and CI utility tests.",
+    "paths": [
+      "Source/UnitTests/**",
+      "Data/UnitTests/**",
+      "Utilities/CI/tests/**"
+    ]
+  },
+  {
+    "name": "Area: Samples",
+    "color": "26a69a",
+    "description": "Sample applications and their data.",
+    "paths": [
+      "Source/Samples/**",
+      "Data/Samples/**"
+    ]
+  },
+  {
+    "name": "Area: Documentation",
+    "color": "ffd54f",
+    "description": "Developer guides, API documentation and repository Markdown.",
+    "paths": [
+      "**/*.md",
+      "Documentation/**"
+    ]
+  },
+  {
+    "name": "Area: Dependencies",
+    "color": "b0bec5",
+    "description": "Third-party sources, SDK manifests, submodules and dependency updates.",
+    "paths": [
+      "Source/ThirdParty/**",
+      "Source/Engine/Foundation/ThirdParty/**",
+      ".gitmodules",
+      "cgmanifest.json",
+      "Data/Tools/Precompiled",
+      "Data/Tools/Precompiled/**",
+      ".github/dependabot.yml"
+    ]
+  },
+  {
+    "name": "Area: Plugins",
+    "color": "4db6ac",
+    "description": "Engine and editor plugin implementations and plugin data.",
+    "paths": [
+      "Source/EnginePlugins/**",
+      "Source/EditorPlugins/**"
+    ]
+  },
+  {
+    "name": "Module: Core",
+    "color": "90a4ae",
+    "description": "World, component, resource and other core engine services.",
+    "paths": [
+      "Source/Engine/Core/**",
+      "Source/UnitTests/CoreTest/**"
+    ]
+  },
+  {
+    "name": "Module: Foundation",
+    "color": "90a4ae",
+    "description": "Foundational runtime library and its regression tests.",
+    "paths": [
+      "Source/Engine/Foundation/**",
+      "Source/UnitTests/FoundationTest/**",
+      "Source/UnitTests/FoundationTest_Plugin1/**",
+      "Source/UnitTests/FoundationTest_Plugin2/**",
+      "Data/UnitTests/FoundationTest/**"
+    ]
+  },
+  {
+    "name": "Module: GameEngine",
+    "color": "90a4ae",
+    "description": "Game-oriented engine components and systems.",
+    "paths": [
+      "Source/Engine/GameEngine/**",
+      "Source/UnitTests/GameEngineTest/**",
+      "Data/UnitTests/GameEngineTest/**"
+    ]
+  },
+  {
+    "name": "Module: GraphicsCore",
+    "color": "9575cd",
+    "description": "Render pipeline, visibility and higher-level graphics systems.",
+    "paths": [
+      "Source/Engine/GraphicsCore/**",
+      "Source/UnitTests/GraphicsCoreTest/**"
+    ]
+  },
+  {
+    "name": "Module: GraphicsD3D12",
+    "color": "9575cd",
+    "description": "Direct3D 12 graphics backend.",
+    "paths": [
+      "Source/Engine/GraphicsD3D12/**"
+    ]
+  },
+  {
+    "name": "Module: GraphicsFoundation",
+    "color": "9575cd",
+    "description": "Graphics API abstraction and device interfaces.",
+    "paths": [
+      "Source/Engine/GraphicsFoundation/**",
+      "Source/UnitTests/GraphicsFoundationTest/**",
+      "Data/UnitTests/GraphicsFoundationTest/**"
+    ]
+  },
+  {
+    "name": "Module: GraphicsVulkan",
+    "color": "9575cd",
+    "description": "Vulkan graphics backend.",
+    "paths": [
+      "Source/Engine/GraphicsVulkan/**"
+    ]
+  },
+  {
+    "name": "Module: ShaderCompilerDXIL",
+    "color": "9575cd",
+    "description": "DXIL shader compiler integration.",
+    "paths": [
+      "Source/Engine/ShaderCompilerDXIL/**"
+    ]
+  },
+  {
+    "name": "Module: ShaderCompilerSPIRV",
+    "color": "9575cd",
+    "description": "SPIR-V shader compiler integration.",
+    "paths": [
+      "Source/Engine/ShaderCompilerSPIRV/**"
+    ]
+  },
+  {
+    "name": "Module: Texture",
+    "color": "90a4ae",
+    "description": "Texture representation, processing and conversion library.",
+    "paths": [
+      "Source/Engine/Texture/**",
+      "Source/UnitTests/TextureTest/**",
+      "Data/UnitTests/TextureTest/**"
+    ]
+  },
+  {
+    "name": "Module: Utilities",
+    "color": "90a4ae",
+    "description": "Reusable engine utility systems.",
+    "paths": [
+      "Source/Engine/Utilities/**"
+    ]
+  },
+  {
+    "name": "Module: GuiFoundation",
+    "color": "90a4ae",
+    "description": "Shared Qt GUI infrastructure.",
+    "paths": [
+      "Source/Tools/Libs/GuiFoundation/**"
+    ]
+  },
+  {
+    "name": "Module: ModelImporter",
+    "color": "90a4ae",
+    "description": "Model importing library.",
+    "paths": [
+      "Source/Tools/Libs/ModelImporter/**"
+    ]
+  },
+  {
+    "name": "Module: ToolsFoundation",
+    "color": "90a4ae",
+    "description": "Shared document and tooling infrastructure.",
+    "paths": [
+      "Source/Tools/Libs/ToolsFoundation/**",
+      "Source/UnitTests/ToolsFoundationTest/**"
+    ]
+  },
+  {
+    "name": "Module: Editor",
+    "color": "1975d2",
+    "description": "Editor application.",
+    "paths": [
+      "Source/Editor/Editor/**"
+    ]
+  },
+  {
+    "name": "Module: EditorEngineProcess",
+    "color": "1975d2",
+    "description": "Editor engine process application.",
+    "paths": [
+      "Source/Editor/EditorEngineProcess/**"
+    ]
+  },
+  {
+    "name": "Module: EditorEngineProcessFramework",
+    "color": "1975d2",
+    "description": "Shared editor engine process infrastructure.",
+    "paths": [
+      "Source/Editor/EditorEngineProcessFramework/**",
+      "Source/UnitTests/EditorEngineProcessFrameworkTest/**",
+      "Data/UnitTests/EditorEngineProcessFrameworkTest/**"
+    ]
+  },
+  {
+    "name": "Module: EditorFramework",
+    "color": "1975d2",
+    "description": "Editor documents, assets, widgets and editing infrastructure.",
+    "paths": [
+      "Source/Editor/EditorFramework/**",
+      "Source/UnitTests/EditorFrameworkTest/**"
+    ]
+  },
+  {
+    "name": "Module: EditorProcessor",
+    "color": "1975d2",
+    "description": "Editor asset processing application.",
+    "paths": [
+      "Source/Editor/EditorProcessor/**"
+    ]
+  },
+  {
+    "name": "Module: DearImguiPlugin",
+    "color": "4db6ac",
+    "description": "Dear ImGui engine integration.",
+    "paths": [
+      "Source/EnginePlugins/DearImguiPlugin/**"
+    ]
+  },
+  {
+    "name": "Module: FileservePlugin",
+    "color": "4db6ac",
+    "description": "Engine file-serving plugin.",
+    "paths": [
+      "Source/EnginePlugins/FileservePlugin/**"
+    ]
+  },
+  {
+    "name": "Module: InspectorPlugin",
+    "color": "4db6ac",
+    "description": "Engine inspection and profiling plugin.",
+    "paths": [
+      "Source/EnginePlugins/InspectorPlugin/**",
+      "Source/UnitTests/InspectorTest/**",
+      "Data/UnitTests/InspectorTest/**"
+    ]
+  },
+  {
+    "name": "Module: RenderDocPlugin",
+    "color": "4db6ac",
+    "description": "RenderDoc graphics capture integration.",
+    "paths": [
+      "Source/EnginePlugins/RenderDocPlugin/**"
+    ]
+  },
+  {
+    "name": "Module: VisualScriptPlugin",
+    "color": "4db6ac",
+    "description": "Visual scripting engine plugin.",
+    "paths": [
+      "Source/EnginePlugins/VisualScriptPlugin/**"
+    ]
+  },
+  {
+    "name": "Module: EditorPlugins/Assets",
+    "color": "1975d2",
+    "description": "Editor plugin family: Assets.",
+    "paths": [
+      "Source/EditorPlugins/Assets/**"
+    ]
+  },
+  {
+    "name": "Module: EditorPlugins/Fileserve",
+    "color": "1975d2",
+    "description": "Editor plugin family: Fileserve.",
+    "paths": [
+      "Source/EditorPlugins/Fileserve/**"
+    ]
+  },
+  {
+    "name": "Module: EditorPlugins/Scene",
+    "color": "1975d2",
+    "description": "Editor plugin family: Scene.",
+    "paths": [
+      "Source/EditorPlugins/Scene/**"
+    ]
+  },
+  {
+    "name": "Module: EditorPlugins/VisualScript",
+    "color": "1975d2",
+    "description": "Editor plugin family: VisualScript.",
+    "paths": [
+      "Source/EditorPlugins/VisualScript/**"
+    ]
+  },
+  {
+    "name": "Module: TestFramework",
+    "color": "ff8a65",
+    "description": "Shared native test framework and runners.",
+    "paths": [
+      "Source/UnitTests/TestFramework/**"
+    ]
+  },
+  {
     "name": "Status: Draft",
     "color": "c0e8e0",
     "description": "Not ready for review; work in progress."
@@ -29,7 +498,6 @@
     "color": "FFD54F",
     "description": "Requires documentation updates or additions."
   },
-
   {
     "name": "Change: New Capability",
     "color": "64b5f6",
@@ -65,58 +533,6 @@
     "color": "90caf9",
     "description": "Prototype or unstable system under evaluation."
   },
-
-  {
-    "name": "Area: Compute",
-    "color": "4fc3f7",
-    "description": "Math kernels, task scheduling, async operations."
-  },
-  {
-    "name": "Area: I/O",
-    "color": "81d4fa",
-    "description": "File access, streaming, serialization."
-  },
-  {
-    "name": "Area: Graphics",
-    "color": "9575cd",
-    "description": "Rendering, pipeline configuration, shaders."
-  },
-  {
-    "name": "Area: Scripting",
-    "color": "4db6ac",
-    "description": "Codegen, runtime logic, scripting hooks."
-  },
-  {
-    "name": "Area: UI",
-    "color": "fff176",
-    "description": "Tooling interface or in-engine GUI changes."
-  },
-  {
-    "name": "Area: Core",
-    "color": "90a4ae",
-    "description": "Math, containers, threading, foundations."
-  },
-  {
-    "name": "Area: Platform",
-    "color": "a1887f",
-    "description": "Platform abstraction, windowing, input."
-  },
-  {
-    "name": "Area: Asset Pipeline",
-    "color": "bcaaa4",
-    "description": "Import/export formats, processing tools."
-  },
-  {
-    "name": "Area: Build System",
-    "color": "78909c",
-    "description": "Build scripts, dependencies, CI tooling."
-  },
-  {
-    "name": "Area: Editor",
-    "color": "1975d2",
-    "description": "IDE for real-time simulation, scene editing, asset tools, debugging, and system orchestration."
-  },
-
   {
     "name": "Review: Unit Testing Needed",
     "color": "ff8a65",

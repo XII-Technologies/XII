@@ -18,7 +18,7 @@ add_dependencies(${PROJECT_NAME}
   FoundationTest_Plugin2
 )
 
-xii_ci_add_test(${PROJECT_NAME})
+xii_ci_add_test(${PROJECT_NAME} HEADLESS)
 
 if(XII_CMAKE_COMPILER_MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE /wd4244 /wd4018)

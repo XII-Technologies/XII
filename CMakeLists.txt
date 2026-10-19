@@ -41,7 +41,7 @@ if(NOT XII_SUBMODULE_MODE)
   set(XII_SOLUTION_NAME ${DETECTED_NAME} CACHE STRING "The name of the solution")
   project(${XII_SOLUTION_NAME}
     VERSION 1.0
-    DESCRIPTION "Copyright (c) 2022-2025 Theophilus Eriata. All Rights Reserved."
+    DESCRIPTION "Copyright (c) 2022-2026 Theophilus Eriata. All Rights Reserved."
     HOMEPAGE_URL "www.xiitechnologies.com"
     LANGUAGES ${XII_LANGUAGES})
 

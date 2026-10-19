@@ -20,6 +20,7 @@ xiiResult xiiWindow::Destroy()
 
 xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 {
+  XII_IGNORE_UNUSED(newWindowSize);
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_FAILURE;
 }
@@ -27,12 +28,6 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 void xiiWindow::ProcessWindowMessages()
 {
   XII_ASSERT_NOT_IMPLEMENTED;
-}
-
-void xiiWindow::OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY)
-{
-  XII_IGNORE_UNUSED(iNewPosX);
-  XII_IGNORE_UNUSED(iNewPosY);
 }
 
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const

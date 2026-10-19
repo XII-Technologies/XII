@@ -1,65 +1,74 @@
-name: Update API Docs
+name: Generate API documentation
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the generated documentation to APIDocumentation
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-documentation
+  cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          fetch-depth: 1
-
-      - name: Install Doxygen
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y graphviz
-          mkdir Documentation/ThirdParty/
-          wget https://github.com/doxygen/doxygen/releases/download/Release_1_13_2/doxygen-1.13.2.linux.bin.tar.gz -P Documentation/ThirdParty/
-          cd Documentation/ThirdParty
-          tar -xzf doxygen-1.13.2.linux.bin.tar.gz
-          cd doxygen-1.13.2
-          sudo make install
-          cd ../../../
-
-      - name: Run Doxygen
-        run: |
-          mkdir Output
-          cd Documentation
-          doxygen Doxyfile
-
-      - name: Checkout host repository
-        uses: actions/checkout@v4
-        with:
-          repository: XII-Technologies/APIDocumentation
-          path: _generated
-          fetch-depth: 1
           persist-credentials: false
-
-      - name: Copy to host repository
+      - name: Install Doxygen and Graphviz
         run: |
-          rm -rf _generated/docs/*
-          cp -r Output/Doxygen/html/* _generated/docs
-
-      - name: Commit
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends doxygen graphviz
+      - name: Generate documentation
+        working-directory: Documentation
         run: |
-          export GIT_COMMITTER_NAME=$(git show -s --format='%cn')
-          export GIT_COMMITTER_EMAIL=$(git show -s --format='%ce')
-          export GIT_AUTHOR_NAME=$(git show -s --format='%an')
-          export GIT_AUTHOR_EMAIL=$(git show -s --format='%ae')
-          export COMMIT_HASH=$(git show -s --format='%H')
-          export SUBJECT=$(git show -s --format='%s')
-          cd _generated
-          git add .
-          git commit -m "$SUBJECT" -m "Original commit: $COMMIT_HASH"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
+          mkdir -p ../Output
+          doxygen Doxyfile
+          test -f ../Output/Doxygen/html/index.html
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          github_token: ${{ secrets.API_TOKEN_GITHUB }}
-          branch: Development
-          directory: _generated
+          name: api-documentation
+          path: Output/Doxygen/html/
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    if: inputs.publish && github.ref == 'refs/heads/Development'
+    needs: build
+    environment: documentation
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out trusted publication utility
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.sha }}
+          path: automation
+          persist-credentials: false
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
           repository: XII-Technologies/APIDocumentation
-          force: true
+          ref: Development
+          path: host
+          token: ${{ secrets.API_DOCS_TOKEN }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: api-documentation
+          path: generated
+      - name: Publish without rewriting history
+        env:
+          GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          git -C host config user.name 'github-actions[bot]'
+          git -C host config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          gh auth setup-git
+          python3 automation/Utilities/CI/publish_api_docs.py --checkout host --generated generated --source-sha "$SOURCE_SHA"

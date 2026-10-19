@@ -163,9 +163,8 @@ XII_CREATE_SIMPLE_TEST(Logging, Log)
     xiiLog::Debug("Still alive, still alive.");
   }
 
-  /// \todo This test will fail if XII_COMPILE_FOR_DEVELOPMENT is disabled.
-  /// We also currently don't test xiiLog::Debug, because our build machines compile in release and then the text below would need to be
-  /// different.
+  // Development messages are compiled out in Shipping, independently of the
+  // runtime log level. Keep the output check active in every configuration.
 
   const char* szResult   = log.m_Result;
   const char* szExpected = "\
@@ -202,7 +201,13 @@ E: And when you're dead I will be, still alive.\n\
 <Last One Verse 6\n\
 ";
 
-  XII_TEST_STRING(szResult, szExpected);
+  xiiStringBuilder sExpected = szExpected;
+#if XII_DISABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  sExpected.ReplaceAll("E: Aperture Science. We do what we must, because we can,\n", "");
+  sExpected.ReplaceAll("E: For the good of all of us, except the ones who are dead.\n", "");
+  sExpected.ReplaceAll("E: But there's no sense crying over every mistake.\n", "");
+#endif
+  XII_TEST_STRING(szResult, sExpected.GetData());
 
   const char* szResult2   = log2.m_Result;
   const char* szExpected2 = "\

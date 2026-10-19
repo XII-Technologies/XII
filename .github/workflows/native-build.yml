@@ -1,0 +1,91 @@
+name: Native build implementation
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: true
+      preset:
+        type: string
+        required: true
+      configuration:
+        type: string
+        required: true
+      analysis:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Build and test
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 60
+    env:
+      BUILD_PRESET: ${{ inputs.preset }}
+      BUILD_CONFIGURATION: ${{ inputs.configuration }}
+      COMPILER_ANALYSIS: ${{ inputs.analysis }}
+      CCACHE_MAXSIZE: 1G
+      _CL_: /MP2
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          # The CPU preset disables SDL and does not execute precompiled tools.
+          submodules: false
+      - name: Install Linux CPU build dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build gcc-15 g++-15 clang-22 lld-22 ccache pkg-config uuid-dev
+          echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+      - name: Restore Linux compiler cache
+        if: runner.os == 'Linux'
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v2-${{ inputs.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-v2-${{ inputs.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-
+      - name: Configure
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $args = @('--preset', $env:BUILD_PRESET, "-DCMAKE_BUILD_TYPE=$env:BUILD_CONFIGURATION")
+          if ($IsLinux) {
+            $args += @('-DCMAKE_C_COMPILER_LAUNCHER=ccache', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
+          }
+          if ($env:COMPILER_ANALYSIS -eq 'true') { $args += '-DXII_ENABLE_COMPILER_STATIC_ANALYSIS=ON' }
+          New-Item -ItemType Directory -Force 'Workspace/Diagnostics' | Out-Null
+          cmake @args 2>&1 | Tee-Object 'Workspace/Diagnostics/configure.log'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build CPU suites and dependencies
+        run: |
+          cmake --build "Workspace/$env:BUILD_PRESET" --config $env:BUILD_CONFIGURATION --parallel 2 --target FoundationTest CoreTest ToolsFoundationTest 2>&1 | Tee-Object 'Workspace/Diagnostics/build.log'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run all CPU suites through CTest
+        run: |
+          python Utilities/CI/check_test_discovery.py "Workspace/$env:BUILD_PRESET" $env:BUILD_CONFIGURATION
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir "Workspace/$env:BUILD_PRESET" -C $env:BUILD_CONFIGURATION -L '^headless$' --no-tests=error --output-on-failure --output-junit "$env:GITHUB_WORKSPACE/Workspace/Diagnostics/ctest.xml"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Cache statistics
+        if: always() && runner.os == 'Linux'
+        run: ccache --show-stats
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: diagnostics-${{ inputs.preset }}-${{ inputs.configuration }}-analysis-${{ inputs.analysis }}
+          path: |
+            Workspace/Diagnostics/
+            Workspace/${{ inputs.preset }}/TestResults/
+            Workspace/${{ inputs.preset }}/Testing/Temporary/
+            Workspace/${{ inputs.preset }}/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 7

@@ -1,27 +1,18 @@
 # XII Engine Coding Guidelines
 
-The following guidelines help maintain a consistent and readable codebase for XII Engine. By following these standards, each developer quickly understands the purpose and type of any variable or class member. Enforcement is built-in through **clang-tidy** and our Continuous Integration (CI) process, which automatically inspects pull requests. When clang-tidy finds deviations, it supplies a git patch with suggested fixes. **Always verify that your project still compiles after applying those changes**, as automatic fixes are not guaranteed to work perfectly in every situation.
+The following guidelines describe XII's naming conventions. Follow neighboring code,
+the root `.clang-format`, and `.editorconfig`. Review naming changes for API and
+reflection compatibility; automated fixes are not sufficient validation.
 
 ---
 
 ## 1. Automated Code Quality & CI Integration
 
-**clang-tidy Enforcement**  
-Clang-tidy acts as our first line of defense against inconsistencies. You can run it locally before committing changes. Alternatively, every Pull Request automatically goes through our CI, which:
-- Checks for guideline compliance.
-- Generates a git patch with recommended changes.
-- Prompts you to review and apply these changes manually.
-
-**Example Workflow Snippet:**
-
-```yaml
-steps:
-  - uses: actions/checkout@v3
-  - name: Run clang-tidy
-    run: clang-tidy -p build
-```
-
-This integration ensures that even if human errors slip by, our code quality remains high.
+PR checks validate changed-line formatting and copyright without modifying branches.
+Native builds retain existing warning policies; extended MSVC analysis and CodeQL
+provide additional analysis. The custom Clang-Tidy naming plugin is a specialist
+local tool, not part of stock LLVM or a required hosted check. See
+[quality checks](Documentation/Building.md#quality-checks) for exact commands.
 
 ---
 

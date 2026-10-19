@@ -1,0 +1,7 @@
+name: XII first-party security analysis
+paths-ignore:
+  - Source/ThirdParty
+  - Source/Engine/Foundation/ThirdParty
+  - Data/Tools
+  - Workspace
+  - Output

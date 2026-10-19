@@ -10,10 +10,15 @@
 ////////////////////////////////////////////////////////////////////////
 
 const char* const xiiTestOutput::s_Names[] = {
-  "StartOutput", "BeginBlock", "EndBlock", "ImportantInfo", "Details", "Success", "Message", "Warning", "Error", "Duration", "FinalResult"};
+  "StartOutput", "BeginBlock", "EndBlock", "ImportantInfo", "Details", "Success", "Message", "Warning", "Error", "ImageDiffFile", "Duration", "FinalResult"};
+
+static_assert(XII_ARRAY_SIZE(xiiTestOutput::s_Names) == xiiTestOutput::AllOutputTypes);
 
 const char* xiiTestOutput::ToString(Enum type)
 {
+  if (type < StartOutput || type >= AllOutputTypes)
+    return "InvalidType";
+
   return s_Names[type];
 }
 

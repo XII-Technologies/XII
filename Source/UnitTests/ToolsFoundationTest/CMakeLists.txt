@@ -13,4 +13,4 @@ target_link_libraries(${PROJECT_NAME}
   ToolsFoundation
 )
 
-xii_ci_add_test(${PROJECT_NAME})
+xii_ci_add_test(${PROJECT_NAME} HEADLESS)

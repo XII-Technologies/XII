@@ -2,6 +2,7 @@
 
 #include <FoundationTest/FoundationTestPCH.h>
 
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <TestFramework/Framework/TestFramework.h>
@@ -27,6 +28,10 @@ XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN("FoundationTest", "Foundation Tests")
   // this is used to test process launching (e.g. xiiProcess)
   if (cmd.GetBoolOption("-cmd"))
   {
+    // The regular test loop initializes core systems. Process fixtures bypass
+    // that loop, but still need the same startup/shutdown lifecycle.
+    xiiStartup::StartupCoreSystems();
+
     // print something to stdout
     xiiStringView sStdOut = cmd.GetStringOption("-stdout");
     if (!sStdOut.IsEmpty())
