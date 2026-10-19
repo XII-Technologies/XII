@@ -7,7 +7,10 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Project/ProjectExport.h>
 #include <EditorFrameworkTest/CppProjectTest.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
@@ -48,6 +51,27 @@ XII_CREATE_SIMPLE_TEST(CodeGen, CppSettings)
   const xiiStringBuilder project(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/Project With Spaces");
   const xiiStringBuilder expected(project, "/Output/Bin/", BUILDSYSTEM_BUILDTYPE);
   XII_TEST_STRING(xiiCppProject::GetPluginOutputDir(project), expected);
+}
+
+XII_CREATE_SIMPLE_TEST(CodeGen, CppProject)
+{
+  auto* editor = xiiQtEditorApp::GetSingleton();
+  if (!XII_TEST_BOOL(editor != nullptr))
+    return;
+  xiiStartup::StartupCoreSystems();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/CppProjectPreferences");
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(preferences));
+  editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor->ShutdownEditor());
+  xiiStringBuilder project(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/CppProject/xiiProject");
+  if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
+    return;
+  XII_SCOPE_EXIT(editor->CloseProject());
+  TestCppProjectConfiguration(project.GetFileDirectory());
 }
 
 void TestCppProjectConfiguration(xiiStringView sProjectDirectory)
@@ -141,6 +165,38 @@ void TestCppProjectConfiguration(xiiStringView sProjectDirectory)
     WriteFixture(marker);
     WriteFixture(sdkMarker);
     XII_SCOPE_EXIT(xiiOSFile::DeleteFile(binary).IgnoreResult(); xiiOSFile::DeleteFile(dependency).IgnoreResult(); xiiOSFile::DeleteFile(copy).IgnoreResult(); xiiOSFile::DeleteFile(marker).IgnoreResult(); xiiOSFile::DeleteFile(sdkMarker).IgnoreResult());
+    // This fixture covers binary packaging. Source assets are deliberately excluded;
+    // the export dialog normally transforms them before calling ExportProject().
+    xiiStringBuilder filterPath(sProjectDirectory, "/ProjectData.xiiExportFilter");
+    const bool       hadFilter = xiiOSFile::ExistsFile(filterPath);
+    xiiStringBuilder previousFilter;
+    if (hadFilter)
+    {
+      xiiFileReader reader;
+      if (!XII_TEST_RESULT(reader.Open(filterPath)))
+        return;
+      previousFilter.ReadAll(reader);
+    }
+    auto RestoreFilter = [&]() {
+      if (hadFilter)
+      {
+        xiiDeferredFileWriter writer;
+        writer.SetOutput(filterPath);
+        writer.WriteBytes(previousFilter.GetData(), previousFilter.GetElementCount()).IgnoreResult();
+        writer.Close().IgnoreResult();
+      }
+      else
+        xiiOSFile::DeleteFile(filterPath).IgnoreResult();
+    };
+    XII_SCOPE_EXIT(RestoreFilter());
+    {
+      xiiDeferredFileWriter writer;
+      writer.SetOutput(filterPath);
+      const xiiStringView dataFilter = "#include <CommonData.xiiExportFilter>\n[EXCLUDE]\n*.xii*\n";
+      XII_TEST_RESULT(writer.WriteBytes(dataFilter.GetStartPointer(), dataFilter.GetElementCount()));
+      XII_TEST_RESULT(writer.Close());
+    }
+
     xiiPlatformProfile profile;
     profile.SetConfigName("CppExportTest");
     xiiStringBuilder lookup(sProjectDirectory, "/AssetCache/CppExportTest.xiiAidlt");
