@@ -54,8 +54,8 @@ xiiUInt32 xiiHashHelper<xiiExposedBone>::Hash(const xiiExposedBone& value)
   {
     xiiUInt32 uiBits;
     xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&uiBits), reinterpret_cast<const xiiUInt8*>(&fComponent), sizeof(uiBits));
-    // Normalize zero using its bits: /fp:fast may fold floating-point signed-zero
-    // canonicalization away in optimized builds.
+    // Normalize zero using its bits so optimized floating-point code generation
+    // cannot change the equality/hash contract for signed zero.
     if ((uiBits & 0x7FFFFFFFU) == 0)
       uiBits = 0;
     uiHash = xiiHashingUtils::CombineHashValues32(uiHash, xiiHashingUtils::xxHash32(&uiBits, sizeof(uiBits)));

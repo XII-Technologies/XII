@@ -5,7 +5,14 @@ xii_cmake_init()
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
-xii_create_target(LIBRARY ${PROJECT_NAME})
+# Keep noise compilation separate so its arithmetic policy is respected in unity builds.
+xii_create_target(LIBRARY ${PROJECT_NAME} EXCLUDE_FOLDER_FOR_UNITY SimdMath/Implementation)
+
+if(XII_CMAKE_COMPILER_GCC OR XII_CMAKE_COMPILER_CLANG)
+  # Perlin output must not change between Debug and optimized configurations.
+  # Explicit SIMD fused operations remain available; implicit contraction does not.
+  set_source_files_properties(SimdMath/Implementation/SimdNoise.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+endif()
 
 if(XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
