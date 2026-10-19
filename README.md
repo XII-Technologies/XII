@@ -1,7 +1,7 @@
 # XII
 
 <p align="center">
-  <img src="Documentation/XII-Logo.png" alt="XII Engine logo" width="128">
+  <img src="Utilities\Logos\XII-Logo-Only-1024.svg" alt="XII logo" width="1024">
 </p>
 
 XII is a modular, multi-platform engine for real-time simulation and interactive applications. Built in C++23, it combines rendering, simulation, resource management, and native development tools in a unified architecture.
