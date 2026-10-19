@@ -91,14 +91,15 @@ These are **configured hosted jobs**, not claims of successful hosted execution:
 
 | Runner / architecture | Compiler | Configuration | Tests / purpose |
 | --- | --- | --- | --- |
-| windows-2025-vs2026 / x64 | MSVC, VS 2026 | Debug + Shipping | PR CPU suites |
-| ubuntu-26.04 / x64 | GCC 15 | Debug | PR CPU suites |
-| ubuntu-26.04 / x64 | Clang 22 / LLD 22 | Shipping | Weekly/manual CPU suites |
+| windows-2025-vs2026 / x64 | MSVC, VS 2026 | Debug, Dev, Shipping | PR CPU suites |
+| ubuntu-26.04 / x64 | GCC 15 | Debug, Dev, Shipping | PR CPU suites |
+| ubuntu-26.04 / x64 | Clang 22 / LLD 22 | Debug, Dev, Shipping | PR CPU suites |
+| macos-26 / ARM64 | Apple Clang, stable Xcode 26.6 | Debug, Dev, Shipping | PR CPU suites |
 | windows-2025-vs2026 / x64 | MSVC with `/analyze` | Debug | Weekly/manual CPU suites and compiler analysis |
 | Windows + Linux above | MSVC + GCC 15 | Shipping | Tag validation gates |
 
-macOS, ARM, GPU devices, full editor flows and sanitizer configurations are excluded
-from this hosted matrix until their dependencies/runtime requirements are qualified.
+GPU devices, full editor flows and sanitizer configurations are excluded from this
+hosted matrix. macOS ARM64 coverage applies to the three CPU suites only.
 
 ## 4. Verification results
 
@@ -234,3 +235,34 @@ label catalog/module coverage, action pins, workflow permission boundaries,
 documentation links and diff whitespace checks passed. No production API
 documentation was published and the revised workflow was not run on hosted
 runners. The workflow changes take effect after merge into the base branch.
+
+## Build and Test matrix expansion
+
+The primary workflow is now **Build and Test**, with the aggregate check
+**Build and Test required**. Debug, Dev and Shipping each run with Windows VS 2026
+MSVC, Linux GCC 15, Linux Clang 22 / LLD 22, and macOS 26 ARM64 Apple Clang from
+the image's stable Xcode 26.6. This is twelve jobs, limited to six simultaneous
+builds. Clang Shipping moved out of extended validation because the primary matrix
+now covers it; weekly MSVC compiler analysis remains distinct.
+
+The macOS preset reuses the CPU filter and existing Makefile platform support.
+The port repairs stale platform macros, supplies the existing non-Windows
+DirectXTex compatibility headers, uses Mach VM statistics, supports Darwin's
+semaphore API and correct CLI executable paths, and adds missing standard headers
+required by libc++. Existing capability flags remain explicit; no tests were
+disabled to obtain passing results. The fallback message-loop constructor now
+uses the declared implementation class.
+
+Expanded validation exposed real optimized-build issues: signed-zero bone hashes,
+implicit GCC contraction changing Perlin results, and an assertion-only image
+variable rejected by Clang Shipping. The fixes use semantic integer-bit hashing,
+a source-specific noise contraction policy that respects unity exclusions, and
+`[[maybe_unused]]` for the development assertion operand. Warning policies and
+test failure propagation remain unchanged. New semaphore and executable-path
+checks cover the platform behavior repaired here.
+
+Local VS 2026 Shipping and Dev builds each passed FoundationTest, CoreTest and
+ToolsFoundationTest. Hosted macOS Debug built and passed those same suites in
+[the focused platform validation](https://github.com/XII-Technologies/XII/actions/runs/39207255628).
+The temporary port-validation workflow has been removed; required coverage lives
+in the primary matrix. Full-matrix results are recorded after its final run.

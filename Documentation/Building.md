@@ -42,7 +42,9 @@ under `Workspace/ci-windows`, including configuration-specific Bin/Lib directori
 
 ## CPU build on Linux
 
-Hosted jobs target Ubuntu 26.04 x64, GCC 15, and scheduled Clang 22 with libstdc++.
+Hosted jobs target Ubuntu 26.04 x64, GCC 15, and Clang 22 with libstdc++.
+Both compilers run Debug, Dev and Shipping in the primary Build and Test workflow;
+Windows runs the same configurations with VS 2026 MSVC.
 Install only the dependencies needed for this scope:
 
 ```sh
@@ -56,7 +58,7 @@ ctest --test-dir Workspace/ci-linux-gcc -C Debug -L '^headless$' --no-tests=erro
 
 The CI presets select GCC 15 or Clang 22 and matching LLD 22 explicitly, so local
 and hosted builds use the same compiler selection. Use `ci-linux-clang` for Clang.
-Set `-DCMAKE_BUILD_TYPE=Shipping`
+Set `-DCMAKE_BUILD_TYPE=Dev` or `-DCMAKE_BUILD_TYPE=Shipping`
 at configure time for an optimized single-configuration build. The `--config`
 argument alone does not change a Ninja build's configuration.
 
@@ -161,5 +163,26 @@ and workflow source without requiring the full editor build.
   tests or add arbitrary sleeps to conceal failures.
 - Failures in editor or graphics consumers are not waived by CPU CI. Include the
   first error and complete configure/build/test logs in a build/platform issue.
-- macOS requires additional portability work in Texture/DirectXTex and its test
-  dependencies. Current presets do not provide a verified macOS engine build.
+- macOS editor and graphics builds require separate dependency and runtime
+  validation; the CPU preset does not enable those components.
+
+## CPU build on macOS
+
+Use macOS 26 with the stable Xcode command-line toolchain, CMake, Git and Python.
+Hosted ARM64 jobs select the `macos-26` image's default stable Xcode (currently
+26.6) and run Debug, Dev and Shipping. The preset selects `/usr/bin/clang` and
+`/usr/bin/clang++`, which follow the active Xcode selection, and Unix Makefiles.
+
+```sh
+cmake --preset ci-macos -DCMAKE_BUILD_TYPE=Debug
+cmake --build Workspace/ci-macos --parallel 2 --target FoundationTest CoreTest ToolsFoundationTest
+python3 Utilities/CI/check_test_discovery.py Workspace/ci-macos Debug
+ctest --test-dir Workspace/ci-macos -C Debug -L '^headless$' --no-tests=error --output-on-failure
+```
+
+For Dev or Shipping, change `CMAKE_BUILD_TYPE` at configure time and use the same
+configuration for discovery/CTest. The CPU filter disables Qt, SDL and GPU backends.
+It includes Texture/DirectXTex through the TestFramework dependency chain, using
+the existing non-Windows compatibility headers. Platform capabilities remain
+explicit in `PlatformFeatures_OSX.h`; graphics/editor support requires separate
+validation.
