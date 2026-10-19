@@ -264,6 +264,14 @@ compiles its validation only in development configurations. Warning policies
 and failure propagation remain unchanged. New semaphore and executable-path
 checks cover the platform behavior repaired here.
 
+An optimized GCC 15 reproduction matched the six failing CI hashes; its maximum
+sample error against the original reference was 5.96046448e-8 (one float rounding
+step). The numerical test preserves every sample while tolerating that rounding.
+The Windows Dev run also exposed a double-vector cone assertion that compared a
+float-returning angle API against double precision. Those three tests now check
+the cone directly with double dot products and cosines, retain 100,000 samples
+per axis, and use fixed seeds for reproducible regression coverage.
+
 Local VS 2026 Shipping and Dev builds each passed FoundationTest, CoreTest and
 ToolsFoundationTest. Hosted macOS Debug built and passed those same suites in
 [the focused platform validation](https://github.com/XII-Technologies/XII/actions/runs/39207255628).
