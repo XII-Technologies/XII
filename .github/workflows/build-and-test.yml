@@ -1,4 +1,4 @@
-name: Native CI
+name: Build and Test
 
 on:
   push:
@@ -10,36 +10,35 @@ permissions:
   contents: read
 
 concurrency:
-  group: native-ci-${{ github.workflow }}-${{ github.ref }}
+  group: build-and-test-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.toolchain.name }} / ${{ matrix.configuration }}
     strategy:
       fail-fast: false
+      max-parallel: 6
       matrix:
-        include:
-          - name: Windows MSVC Debug
+        configuration: [Debug, Dev, Shipping]
+        toolchain:
+          - name: Windows / MSVC (VS 2026)
             os: windows-2025-vs2026
             preset: ci-windows
-            configuration: Debug
-          - name: Windows MSVC Shipping
-            os: windows-2025-vs2026
-            preset: ci-windows
-            configuration: Shipping
-          - name: Linux GCC Debug
+          - name: Linux / GCC 15
             os: ubuntu-26.04
             preset: ci-linux-gcc
-            configuration: Debug
+          - name: Linux / Clang 22
+            os: ubuntu-26.04
+            preset: ci-linux-clang
     uses: ./.github/workflows/native-build.yml
     with:
-      os: ${{ matrix.os }}
-      preset: ${{ matrix.preset }}
+      os: ${{ matrix.toolchain.os }}
+      preset: ${{ matrix.toolchain.preset }}
       configuration: ${{ matrix.configuration }}
 
   required:
-    name: Native CI required
+    name: Build and Test required
     if: always()
     needs: build
     runs-on: ubuntu-26.04
