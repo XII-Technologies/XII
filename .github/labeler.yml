@@ -164,7 +164,6 @@
       - any-glob-to-any-file:
           - "Source/EnginePlugins/**"
           - "Source/EditorPlugins/**"
-          - "Data/Plugins/**"
 
 "Module: Core":
   - changed-files:

@@ -215,8 +215,7 @@
     "description": "Engine and editor plugin implementations and plugin data.",
     "paths": [
       "Source/EnginePlugins/**",
-      "Source/EditorPlugins/**",
-      "Data/Plugins/**"
+      "Source/EditorPlugins/**"
     ]
   },
   {
