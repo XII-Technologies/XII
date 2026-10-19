@@ -98,6 +98,6 @@ void xiiImageView::ValidateDataTypeAccessor(xiiUInt32 uiPlaneIndex) const
 
   XII_ASSERT_DEV(uiBytesPerBlock % xiiImageSizeofHelper<T>::Size == 0, "Accessor type is not suitable for interpreting contained data");
 #else
-  XII_UNUSED(uiPlaneIndex);
+  XII_IGNORE_UNUSED(uiPlaneIndex);
 #endif
 }

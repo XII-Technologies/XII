@@ -260,7 +260,7 @@ Perlin test retains the six original reference hashes to verify its compact
 float32 reference fixture, then checks all 1,536 computed samples for finiteness
 and agreement within 1e-6. Noise uses normal unity compilation and compiler
 optimization settings; no per-source compiler overrides remain. The image check
-uses `[[maybe_unused]]` for its development assertion operand. Warning policies
+compiles its validation only in development configurations. Warning policies
 and failure propagation remain unchanged. New semaphore and executable-path
 checks cover the platform behavior repaired here.
 
