@@ -62,8 +62,9 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $configureArguments = @('--preset', $env:BUILD_PRESET)
+          if (-not $IsWindows) { $configureArguments += "-DCMAKE_BUILD_TYPE=$env:BUILD_CONFIGURATION" }
           if ($IsLinux) {
-            $configureArguments += @("-DCMAKE_BUILD_TYPE=$env:BUILD_CONFIGURATION", '-DCMAKE_C_COMPILER_LAUNCHER=ccache', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
+            $configureArguments += @('-DCMAKE_C_COMPILER_LAUNCHER=ccache', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
           }
           if ($env:COMPILER_ANALYSIS -eq 'true') { $configureArguments += '-DXII_ENABLE_COMPILER_STATIC_ANALYSIS=ON' }
           New-Item -ItemType Directory -Force 'Workspace/Diagnostics' | Out-Null

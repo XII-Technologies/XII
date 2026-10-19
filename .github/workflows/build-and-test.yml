@@ -31,6 +31,9 @@ jobs:
           - name: Linux / Clang 22
             os: ubuntu-26.04
             preset: ci-linux-clang
+          - name: macOS / Apple Clang
+            os: macos-26
+            preset: ci-macos
     uses: ./.github/workflows/native-build.yml
     with:
       os: ${{ matrix.toolchain.os }}

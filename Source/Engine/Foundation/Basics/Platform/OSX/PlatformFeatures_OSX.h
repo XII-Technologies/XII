@@ -3,24 +3,24 @@
 #pragma once
 
 #include <cstdio>
+#include <malloc/malloc.h>
 #include <pthread.h>
-#include <sys/malloc.h>
 #include <sys/time.h>
 
 // unset common macros
 #undef min
 #undef max
 
-#define XIII_PLATFORM_NAME "OSX"
+#define XII_PLATFORM_NAME "OSX"
 
-#undef XIII_PLATFORM_OSX
-#define XIII_PLATFORM_OSX XIII_ON
+#undef XII_PLATFORM_OSX
+#define XII_PLATFORM_OSX XII_ON
 
-#undef XIII_PLATFORM_LITTLE_ENDIAN
-#define XIII_PLATFORM_LITTLE_ENDIAN XIII_ON
+#undef XII_PLATFORM_LITTLE_ENDIAN
+#define XII_PLATFORM_LITTLE_ENDIAN XII_ON
 
-#undef XIII_PLATFORM_PATH_SEPARATOR
-#define XIII_PLATFORM_PATH_SEPARATOR '/'
+#undef XII_PLATFORM_PATH_SEPARATOR
+#define XII_PLATFORM_PATH_SEPARATOR '/'
 
 /// If set to 1, the POSIX file implementation will be used. Otherwise a platform specific implementation must be available.
 #undef XII_USE_POSIX_FILE_API
