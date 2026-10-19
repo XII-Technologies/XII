@@ -27,6 +27,6 @@
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
-#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <Utilities/DataStructures/GameGrid.h>

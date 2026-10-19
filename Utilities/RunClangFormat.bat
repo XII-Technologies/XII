@@ -9,4 +9,7 @@
 %~dp0..\Source\Samples ^
 %~dp0..\Source\Tools ^
 %~dp0..\Source\UnitTests ^
-%~dp0..\Source\Data\Base\Shaders
+%~dp0..\Data\Base\Shaders ^
+%~dp0..\Data\Plugins ^
+%~dp0..\Data\Samples ^
+%~dp0..\Data\UnitTests

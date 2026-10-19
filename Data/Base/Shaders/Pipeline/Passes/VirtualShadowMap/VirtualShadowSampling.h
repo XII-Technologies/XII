@@ -77,18 +77,18 @@ bool TrySampleVirtualDirectionalShadow(uint mipLevel, float2 shadowUV, float rec
   if (!TryResolveVirtualShadowPage(PackVirtualShadowPageKey(VirtualShadowDirectionalLightId, mipLevel, virtualPage), mapping))
     return false;
 
-  const uint   physicalPagesPerRow = max(VirtualShadowPhysicalAtlasWidth / VirtualShadowPageSize, 1u);
-  const uint2  physicalPage        = uint2(mapping.PhysicalPage % physicalPagesPerRow, mapping.PhysicalPage / physicalPagesPerRow);
+  const uint  physicalPagesPerRow = max(VirtualShadowPhysicalAtlasWidth / VirtualShadowPageSize, 1u);
+  const uint2 physicalPage        = uint2(mapping.PhysicalPage % physicalPagesPerRow, mapping.PhysicalPage / physicalPagesPerRow);
   // Sample at texel centres. Using the unshifted integer-space coordinate puts
   // exact virtual-page locations on physical texel boundaries, where point
   // sampling can select either neighbor and shimmer as the receiver moves.
   // Keep the 3x3 kernel one complete texel inside the page so it can never
   // observe an unrelated resident page in the shared physical atlas.
-  const float2 pageMinimum         = float2(physicalPage * VirtualShadowPageSize) + 1.5f;
-  const float2 pageMaximum         = float2((physicalPage + 1u) * VirtualShadowPageSize) - 1.5f;
-  const float2 pageTexel           = frac(virtualPagePosition) * float(VirtualShadowPageSize) + 0.5f;
-  const float2 atlasPixel          = clamp(float2(physicalPage * VirtualShadowPageSize) + pageTexel, pageMinimum, pageMaximum);
-  const float2 inverseAtlasSize    = rcp(float2(VirtualShadowPhysicalAtlasWidth, VirtualShadowPhysicalAtlasHeight));
+  const float2 pageMinimum      = float2(physicalPage * VirtualShadowPageSize) + 1.5f;
+  const float2 pageMaximum      = float2((physicalPage + 1u) * VirtualShadowPageSize) - 1.5f;
+  const float2 pageTexel        = frac(virtualPagePosition) * float(VirtualShadowPageSize) + 0.5f;
+  const float2 atlasPixel       = clamp(float2(physicalPage * VirtualShadowPageSize) + pageTexel, pageMinimum, pageMaximum);
+  const float2 inverseAtlasSize = rcp(float2(VirtualShadowPhysicalAtlasWidth, VirtualShadowPhysicalAtlasHeight));
 
   visibility = 0.0f;
   [unroll] for (int y = -1; y <= 1; ++y)

@@ -15,7 +15,7 @@
 
 /// Turns some piece of code (usually some identifier name) into a string. Even works on macros.
 #  define XII_PP_STRINGIFY(str)      XII_PP_STRINGIFY_HELPER(str)
-#  define XII_PP_STRINGIFY_HELPER(x) #  x
+#  define XII_PP_STRINGIFY_HELPER(x) #x
 
 #endif
 
