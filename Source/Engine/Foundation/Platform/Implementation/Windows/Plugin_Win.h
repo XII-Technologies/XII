@@ -65,7 +65,9 @@ xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModu
   // reset last error code
   SetLastError(ERROR_SUCCESS);
 
-  ref_pModule = LoadLibraryExW(xiiStringWChar(sFileToLoad).GetData(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+  // Locate sibling dependencies beside project plugins while preserving the normal
+  // system and PATH fallbacks used by existing SDK plugins.
+  ref_pModule = LoadLibraryExW(xiiStringWChar(sFileToLoad).GetData(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
 
   if (ref_pModule == nullptr)
   {
