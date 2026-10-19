@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <FeatureLabRuntime/FeatureLabApp.h>
 
 #include <Core/Input/InputManager.h>

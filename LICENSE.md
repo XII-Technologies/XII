@@ -1,3 +1,3 @@
 # License
 
-Copyright (c) 2022-2026 Theophilus Eriata. All Rights Reserved.
+Copyright (c) Theophilus Eriata. All Rights Reserved.

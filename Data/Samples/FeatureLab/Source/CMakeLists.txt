@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 cmake_minimum_required(VERSION 3.21)
 
 project (FeatureLab VERSION 1.0 LANGUAGES C CXX)
