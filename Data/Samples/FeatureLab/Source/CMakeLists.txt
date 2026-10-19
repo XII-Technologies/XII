@@ -8,7 +8,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
 	message(STATUS "XII_SDK_DIR is set to '${XII_SDK_DIR}'")
 
-	# Set output directory to the engine binary location
+	# Locate SDK imports. xii_configure_external_project() then selects project-local output.
 	set (XII_OUTPUT_DIRECTORY_LIB "${XII_SDK_DIR}/Output/Lib" CACHE PATH "Where to store the compiled .lib files." FORCE)
 	set (XII_OUTPUT_DIRECTORY_DLL "${XII_SDK_DIR}/Output/Bin" CACHE PATH "Where to store the compiled .dll files." FORCE)
 

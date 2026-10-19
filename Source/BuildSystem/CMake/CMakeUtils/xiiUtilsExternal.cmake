@@ -27,8 +27,26 @@ macro(xii_include_xiiExport)
   file(WRITE ${IMP_FILE} "${IMP_CONTENT}")
 
   # include the modified file, so that the CMake targets become known
+  get_property(SDK_IMPORTS_BEFORE DIRECTORY PROPERTY IMPORTED_TARGETS)
   include(${IMP_FILE})
+  get_property(SDK_IMPORTS_AFTER DIRECTORY PROPERTY IMPORTED_TARGETS)
+  list(REMOVE_ITEM SDK_IMPORTS_AFTER ${SDK_IMPORTS_BEFORE})
+  set_property(GLOBAL PROPERTY XII_SDK_RUNTIME_TARGETS ${SDK_IMPORTS_AFTER})
 endmacro()
+
+# Standalone project applications need the SDK's runtime libraries and dynamically
+# loaded plugins beside them. Only copy into the project; never modify the SDK.
+function(xii_stage_external_runtime TARGET_NAME)
+  get_property(SDK_RUNTIME_TARGETS GLOBAL PROPERTY XII_SDK_RUNTIME_TARGETS)
+  foreach(SDK_TARGET IN LISTS SDK_RUNTIME_TARGETS)
+    get_target_property(SDK_TARGET_TYPE ${SDK_TARGET} TYPE)
+    if(SDK_TARGET_TYPE STREQUAL "SHARED_LIBRARY")
+      add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${SDK_TARGET}>" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+        VERBATIM)
+    endif()
+  endforeach()
+endfunction()
 
 # #####################################
 # ## xii_configure_external_project()
@@ -54,4 +72,12 @@ macro(xii_configure_external_project)
   xii_build_filter_init()
 
   xii_set_build_types()
+
+  # Import SDK targets before changing these paths. Imported libraries must continue
+  # to point into the SDK, while all project-owned build products stay in the project.
+  get_filename_component(XII_PROJECT_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../Output" ABSOLUTE)
+  set(XII_OUTPUT_DIRECTORY_DLL "${XII_PROJECT_OUTPUT_DIRECTORY}/Bin")
+  set(XII_OUTPUT_DIRECTORY_LIB "${XII_PROJECT_OUTPUT_DIRECTORY}/Lib")
+  set_property(GLOBAL PROPERTY XII_EXTERNAL_PROJECT_OUTPUT TRUE)
+  set(XII_PROJECT_OUTPUT_LAYOUT_VERSION 1 CACHE INTERNAL "Project-local C++ plugin output layout" FORCE)
 endmacro()
