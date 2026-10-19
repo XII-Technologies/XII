@@ -253,12 +253,15 @@ required by libc++. Existing capability flags remain explicit; no tests were
 disabled to obtain passing results. The fallback message-loop constructor now
 uses the declared implementation class.
 
-Expanded validation exposed real optimized-build issues: signed-zero bone hashes,
-implicit GCC contraction changing Perlin results, and an assertion-only image
-variable rejected by Clang Shipping. The fixes use semantic integer-bit hashing,
-a source-specific noise contraction policy that respects unity exclusions, and
-`[[maybe_unused]]` for the development assertion operand. Warning policies and
-test failure propagation remain unchanged. New semaphore and executable-path
+Expanded validation exposed signed-zero bone hashes, a bit-exact Perlin regression
+that rejected optimized GCC output, and an assertion-only image variable rejected
+by Clang Shipping. The bone hash canonicalizes zero through integer bits. The
+Perlin test retains the six original reference hashes to verify its compact
+float32 reference fixture, then checks all 1,536 computed samples for finiteness
+and agreement within 1e-6. Noise uses normal unity compilation and compiler
+optimization settings; no per-source compiler overrides remain. The image check
+uses `[[maybe_unused]]` for its development assertion operand. Warning policies
+and failure propagation remain unchanged. New semaphore and executable-path
 checks cover the platform behavior repaired here.
 
 Local VS 2026 Shipping and Dev builds each passed FoundationTest, CoreTest and
