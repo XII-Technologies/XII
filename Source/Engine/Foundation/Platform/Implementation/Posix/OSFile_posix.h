@@ -362,8 +362,9 @@ xiiStringView xiiOSFile::GetApplicationPath()
       if (_NSGetExecutablePath(executablePath.GetData(), &uiSize) != 0)
         return {};
     }
-    s_sApplicationPath = executablePath.GetData();
-    s_sApplicationPath.MakeCleanPath();
+    xiiStringBuilder normalizedPath = executablePath.GetData();
+    normalizedPath.MakeCleanPath();
+    s_sApplicationPath = normalizedPath;
 #else
     char    result[PATH_MAX];
     ssize_t length     = readlink("/proc/self/exe", result, PATH_MAX);

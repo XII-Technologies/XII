@@ -3,6 +3,9 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
+#include <exception>
+#include <typeinfo>
+
 #include <Foundation/Logging/Log.h>
 #include <Foundation/System/CrashHandler.h>
 #include <Foundation/System/StackTracer.h>
