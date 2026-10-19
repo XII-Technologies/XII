@@ -139,6 +139,12 @@ void xiiQtCppProjectDlg::on_GenerateSolution_clicked()
     m_CppSettings.m_sPluginName = PluginName->placeholderText().toUtf8().data();
   }
 
+  if (!xiiCppSettings::IsValidPluginName(m_CppSettings.m_sPluginName))
+  {
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning("The C++ plugin name must start with a letter or underscore and contain only letters, digits, and underscores.");
+    return;
+  }
+
   if (!m_OldCppSettings.m_sPluginName.IsEmpty() && m_OldCppSettings.m_sPluginName != m_CppSettings.m_sPluginName)
   {
     if (xiiQtUiServices::MessageBoxQuestion("You are attempting to change the name of the existing C++ plugin.\n\nTHIS IS A BAD IDEA.\n\nThe C++ sources and CMake files were already created with the old name in it. To not accidentally delete your work, XII won't touch any of those files. Therefore this change won't have any effect, unless you have already deleted those files yourself and XII can just create new ones. Only select YES if you have done the necessary steps and/or know what you are doing.", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)

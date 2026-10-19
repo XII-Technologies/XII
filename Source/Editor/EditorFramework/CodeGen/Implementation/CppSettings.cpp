@@ -3,16 +3,35 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/CodeGen/CppSettings.h>
+#include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
-#include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/IO/OpenDdlUtils.h>
 #include <Foundation/IO/OpenDdlWriter.h>
 
+bool xiiCppSettings::IsValidPluginName(xiiStringView sName)
+{
+  if (sName.IsEmpty())
+    return false;
+
+  bool bFirst = true;
+  for (const auto c : sName)
+  {
+    const bool bLetter = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+    if (!bLetter && (bFirst || c < '0' || c > '9'))
+      return false;
+    bFirst = false;
+  }
+  return true;
+}
+
 xiiResult xiiCppSettings::Save(xiiStringView sFile)
 {
-  xiiFileWriter file;
-  XII_SUCCEED_OR_RETURN(file.Open(sFile));
+  if (!IsValidPluginName(m_sPluginName))
+    return XII_FAILURE;
+
+  xiiDeferredFileWriter file;
+  file.SetOutput(sFile);
 
   xiiOpenDdlWriter ddl;
   ddl.SetOutputStream(&file);
@@ -23,11 +42,12 @@ xiiResult xiiCppSettings::Save(xiiStringView sFile)
 
   ddl.EndObject();
 
-  return XII_SUCCESS;
+  return file.Close();
 }
 
 xiiResult xiiCppSettings::Load(xiiStringView sFile)
 {
+  m_sPluginName.Clear();
   xiiFileReader file;
   XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
@@ -42,5 +62,10 @@ xiiResult xiiCppSettings::Load(xiiStringView sFile)
     }
   }
 
+  if (!IsValidPluginName(m_sPluginName))
+  {
+    m_sPluginName.Clear();
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }

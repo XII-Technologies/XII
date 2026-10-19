@@ -8,6 +8,7 @@
 #include <EditorFrameworkTest/AssetProfileTest.h>
 #include <EditorFrameworkTest/AssetReplacementTest.h>
 #include <EditorFrameworkTest/AssetResaveTest.h>
+#include <EditorFrameworkTest/CppProjectTest.h>
 #include <EditorFrameworkTest/DocumentSaveUiTest.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
 #include <EditorFrameworkTest/RenderPipelineSettingsEditorTest.h>
@@ -87,6 +88,7 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
       return;
     XII_TEST_BOOL(xiiToolsProject::IsProjectOpen());
+    TestCppProjectConfiguration(project.GetFileDirectory());
     TestDocumentSaveUi(*editor, project.GetFileDirectory());
     TestAssetReplacement(*editor, project.GetFileDirectory());
     xiiStringBuilder path = project.GetFileDirectory();
