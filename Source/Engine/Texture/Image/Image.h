@@ -88,7 +88,7 @@ protected:
   void ValidateSubImageIndices(xiiUInt32 uiMipLevel, xiiUInt32 uiFace, xiiUInt32 uiArrayIndex, xiiUInt32 uiPlaneIndex) const;
 
   template <typename T>
-  void ValidateDataTypeAccessor([[maybe_unused]] xiiUInt32 uiPlaneIndex) const;
+  void ValidateDataTypeAccessor(xiiUInt32 uiPlaneIndex) const;
 
   const xiiUInt64& GetSubImageOffset(xiiUInt32 uiMipLevel, xiiUInt32 uiFace, xiiUInt32 uiArrayIndex, xiiUInt32 uiPlaneIndex) const;
 
