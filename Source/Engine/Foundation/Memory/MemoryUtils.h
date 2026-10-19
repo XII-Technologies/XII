@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Basics.h>
+#include <cstddef>
 #include <cstdint> // for uintptr_t
 
 enum xiiConstructionMode

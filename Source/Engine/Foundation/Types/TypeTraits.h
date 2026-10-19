@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #ifndef XII_INCLUDING_BASICS_H
 #  error "TypeTraits.h must not be included directly, but instead include Foundation/Basics.h."
 #endif
