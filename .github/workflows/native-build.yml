@@ -72,7 +72,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build CPU suites and dependencies
         run: |
-          cmake --build "Workspace/$env:BUILD_PRESET" --config $env:BUILD_CONFIGURATION --parallel 2 --target FoundationTest CoreTest ToolsFoundationTest 2>&1 | Tee-Object 'Workspace/Diagnostics/build.log'
+          $buildArguments = @('--build', "Workspace/$env:BUILD_PRESET", '--config', $env:BUILD_CONFIGURATION, '--parallel', '2', '--target', 'FoundationTest', 'CoreTest', 'ToolsFoundationTest')
+          # Make reports independent compiler errors in the same diagnostic log.
+          if ($IsMacOS) { $buildArguments += @('--', '-k') }
+          cmake @buildArguments 2>&1 | Tee-Object 'Workspace/Diagnostics/build.log'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run all CPU suites through CTest
         run: |
