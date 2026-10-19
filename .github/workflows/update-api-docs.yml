@@ -68,7 +68,7 @@ jobs:
           GH_TOKEN: ${{ secrets.API_DOCS_TOKEN }}
           SOURCE_SHA: ${{ github.sha }}
         run: |
-          git -C host config user.name 'github-actions[bot]'
-          git -C host config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C host config user.name 'xiiautomation'
+          git -C host config user.email 'automation@xiitechnologies.com'
           gh auth setup-git
           python3 automation/Utilities/CI/publish_api_docs.py --checkout host --generated generated --source-sha "$SOURCE_SHA"
