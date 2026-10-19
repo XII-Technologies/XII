@@ -1,7 +1,8 @@
 # GitHub infrastructure modernization report
 
-Audit and local verification date: 2026-10-18. Baseline commit:
-`c1cad315e2eee4da62a16117d48ba661c946c81c`. Implementation branch: `TE/Maintenance`.
+Initial audit date: 2026-10-18; cross-platform follow-up: 2026-10-19. Baseline commit:
+`c1cad315e2eee4da62a16117d48ba661c946c81c`. Initial implementation branch:
+`TE/Maintenance`; follow-up branch: `TE/CI`.
 The repository was initially clean. License and attribution were preserved.
 
 ## 1. Audit findings
@@ -30,10 +31,10 @@ The repository was initially clean. License and attribution were preserved.
 preserved ordinary developer presets. A reusable native workflow builds and runs
 the actual Foundation/Core/ToolsFoundation suites through CTest. An explicit
 discovery check rejects missing/extra suites, including an empty selection.
-Debug and Shipping use the engine's native configuration names. C++23 fallback
+Debug, Dev and Shipping use the engine's native configuration names. C++23 fallback
 is disallowed. CTest receives the source SDK root, avoids saved test selection,
 runs shared-fixture suites serially, labels headless/hardware/interactive suites,
-and emits native JSON/HTML plus JUnit diagnostics.
+and emits native JSON plus JUnit diagnostics without opening HTML or console UIs.
 
 **Efficiency and quality.** Replaced duplicate nightly builds with a representative
 PR matrix and weekly extended checks. Added bounded compilation, cancellation,
@@ -87,7 +88,9 @@ without disabling tests or weakening engine warning policies:
 
 ## 3. CI support matrix
 
-These are **configured hosted jobs**, not claims of successful hosted execution:
+The primary matrix builds and runs the three CPU suites in every combination.
+The dated execution results below distinguish this coverage from the additional
+weekly analysis and release-validation jobs.
 
 | Runner / architecture | Compiler | Configuration | Tests / purpose |
 | --- | --- | --- | --- |
@@ -109,6 +112,7 @@ Actual local native results (each row includes compilation and all three CTest s
 | --- | --- | --- | --- |
 | Windows x64, ReFS development drive | MSVC 19.52.37025, VS 2026 / CMake 4.4.3 | Debug | 3/3 passed |
 | Windows x64, same toolchain | MSVC 19.52.37025 / CMake 4.4.3 | Shipping | 3/3 passed |
+| Windows x64, same toolchain | MSVC 19.52.37025 / CMake 4.4.3 | Dev | 3/3 passed |
 | Ubuntu 26.04 x64 under WSL, native Linux scratch filesystem | GCC 15.2 / CMake 4.2.3 | Debug | 3/3 passed |
 
 The local toolchains are not the exact hosted image snapshots. Their results do not
@@ -140,8 +144,9 @@ Other completed checks:
   The four packaging cases also passed on Windows; POSIX formatter fixtures are
   intentionally platform-specific and were executed on Linux.
 - Expected hosted suite discovery and a negative check proving empty discovery fails.
-- Inspected complete diffs and confirmed engine changes are limited to the
-  SDL-disabled stubs; remaining C++ changes belong to the test infrastructure/fixtures.
+- Inspected complete diffs. The initial implementation repaired SDL-disabled
+  stubs and test infrastructure; subsequent cross-platform repairs are recorded
+  in the matrix-expansion section below.
 
 Local detailed logs and JUnit files are retained under the ignored `Workspace`
 directory with the `infrastructure-` prefix. Accepted native run logs are
@@ -149,16 +154,15 @@ directory with the `infrastructure-` prefix. Accepted native run logs are
 `infrastructure-ctest-windows-shipping-passed.log`, and
 `infrastructure-ctest-linux-debug-passed.log`; corresponding XML files have the same stems.
 
-**Hosted execution blocker:** dispatching the existing `build-and-test.yml` returned
-HTTP 422 because it is manually disabled in GitHub. Its replacement must be merged
-and re-enabled before hosted certification. New workflows, CodeQL upload, dependency
-review, protected publication, OIDC attestation and artifact transfer have not been
-executed on GitHub during this task. No release/tag was created or published.
+The initial hosted dispatch returned HTTP 422 because `build-and-test.yml` was
+manually disabled. It has since been enabled and exercised on `TE/CI`; the current
+native results are recorded below. Protected release publication and OIDC release
+attestation remain unexercised. No release/tag was created or published.
 
 ## 5. GitHub configuration requirements
 
 See [the exact maintainer settings](Infrastructure.md#maintainer-settings): protect
-`Development`, re-enable Native CI after merge, establish required aggregate/quality
+`Development`, keep Build and Test enabled, establish required aggregate/quality
 checks, retain read-only default token permissions and fork approvals, enable
 dependency graph/code scanning/private vulnerability reporting, restrict version
 tags, and configure reviewed `release` and optional `documentation` environments.
@@ -168,10 +172,10 @@ scoped `API_DOCS_TOKEN` for the existing documentation repository.
 
 ## 6. Remaining limitations
 
-- Hosted image/compiler validation remains required after the disabled workflow
-  is enabled. Establish the existing CodeQL findings baseline before making scans
-  required. Build-free scanning cannot replace a successful native build.
-- No GPU/editor/macOS/ARM/runtime certification, sanitizer support, binary SDK,
+- Establish the existing CodeQL findings baseline before making scans required.
+  Build-free scanning cannot replace a successful native build. Weekly compiler
+  analysis and protected release publication require their own execution evidence.
+- No GPU/editor runtime certification, sanitizer support, binary SDK,
   reproducibility guarantee or complete vendored-dependency CVE coverage is claimed.
 - Existing CMake SDK downloads still lack a comprehensive checksum policy; CPU CI
   avoids those downloads. Vendored dependencies need human updates and license review.
@@ -185,8 +189,8 @@ scoped `API_DOCS_TOKEN` for the existing documentation repository.
 
 - Added workflows: `native-build.yml`, `code-quality.yml`, `security.yml`,
   `extended-validation.yml` under `.github/workflows`.
-- Added `.github/actionlint.yaml` to recognize the verified Ubuntu 26.04 hosted
-  label while retaining the runner-label rule in actionlint 1.7.12.
+- Added `.github/actionlint.yaml` to recognize the verified Ubuntu 26.04 and macOS 26
+  hosted labels while retaining the runner-label rule in actionlint 1.7.12.
 - Replaced/hardened: `build-and-test.yml`, `build-release-package.yml`,
   `update-api-docs.yml`, `update-precompiled-tools.yml`, `pull-request-labeler.yml`.
 - Removed superseded workflows: `continuous-integration.yml`, `clang-format.yml`,
@@ -219,8 +223,8 @@ PR metadata and API documentation responsibilities.
 Using `gh`, disabled the registered legacy ClangFormat, Ensure Copyright Header
 and Update Precompiled Tools workflows. Readback confirmed they are disabled;
 the old ClangTidy and Continuous Integration entries were already disabled.
-Historical runs were preserved. Native CI's pre-existing disabled state was not
-changed; it still needs enabling after the replacement is merged into Development.
+Historical runs were preserved. The primary workflow remained disabled at this
+stage; it was subsequently enabled for the matrix validation recorded below.
 
 API documentation is the only remaining Git-commit publisher. Its tested utility
 fetches the destination branch immediately before creating a commit, then fetches
@@ -276,4 +280,21 @@ Local VS 2026 Shipping and Dev builds each passed FoundationTest, CoreTest and
 ToolsFoundationTest. Hosted macOS Debug built and passed those same suites in
 [the focused platform validation](https://github.com/XII-Technologies/XII/actions/runs/39207255628).
 The temporary port-validation workflow has been removed; required coverage lives
-in the primary matrix. Full-matrix results are recorded after its final run.
+in the primary matrix.
+
+The [final hosted Build and Test run](https://github.com/XII-Technologies/XII/actions/runs/39211476495)
+passed all twelve combinations and **Build and Test required** on commit
+`b8923507db7cfe066c68a831e52f704c965ed37e`: Debug, Dev and Shipping on each of
+Windows/MSVC, Linux/GCC, Linux/Clang and macOS/Apple Clang. Each job compiled and
+passed FoundationTest, CoreTest and ToolsFoundationTest, for 36 suite executions.
+The [hosted Repository quality run](https://github.com/XII-Technologies/XII/actions/runs/39211572106)
+also passed, including actionlint, YAML lint, repository/label contracts and all
+23 infrastructure tests. The changed-source formatting/copyright check passed
+locally with the pinned formatter; that step runs only on PR events in the hosted
+quality workflow. The final report-only edits do not change the tested sources.
+
+The earlier run's Windows Dev failure was diagnosed as the cone-test precision
+mismatch above, corrected and validated in the final run. No failed test was
+waived or converted into a successful result. These results cover CPU suites;
+graphics, editor, weekly `/analyze` and protected release publication remain
+separate validation responsibilities.
