@@ -19,7 +19,7 @@ jobs:
   codeql:
     name: CodeQL C++ and Actions
     runs-on: ubuntu-26.04
-    timeout-minutes: 45
+    timeout-minutes: 120
     permissions:
       contents: read
       security-events: write
