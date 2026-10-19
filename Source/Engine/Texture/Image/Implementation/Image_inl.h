@@ -85,7 +85,7 @@ T* xiiImage::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 
 template <typename T>
 void xiiImageView::ValidateDataTypeAccessor([[maybe_unused]] xiiUInt32 uiPlaneIndex) const
 {
-  xiiUInt32 uiBytesPerBlock = 0;
+  [[maybe_unused]] xiiUInt32 uiBytesPerBlock = 0;
   if (xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format))
   {
     uiBytesPerBlock = xiiGALTextureUtilities::GetMultiPlanarFormatProperties(m_Description.m_Format).GetPlane(uiPlaneIndex).m_uiBytesPerElement;
