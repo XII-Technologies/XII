@@ -118,7 +118,7 @@
       "Source/Tools/TextureConverter/**",
       "Source/Engine/Texture/**",
       "Source/Editor/EditorFramework/Assets/**",
-      "Source/EditorPlugins/Assets/**",
+      "Source/EditorPlugins/Assets/**"
     ]
   },
   {
