@@ -17,7 +17,7 @@
   <p>
     <a href="https://www.xiitechnologies.com"><strong>Website</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="Documentation/Readme.md"><strong>Documentation</strong></a>
+    <a href="https://xii-technologies.github.io/APIDocumentation"><strong>Documentation</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
     <a href="https://github.com/XII-Technologies/XII/issues"><strong>Issues</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
@@ -77,7 +77,7 @@ Use XII as a complete engine, or integrate selected components through dynamical
       Explore the core systems, graphics backends, and engine modules.
     </td>
     <td width="50%" valign="top">
-      <strong><a href="Documentation/Readme.md">API documentation</a></strong><br />
+      <strong><a href="https://xii-technologies.github.io/APIDocumentation">API documentation</a></strong><br />
       Learn how to generate the project's Doxygen reference.
     </td>
   </tr>
