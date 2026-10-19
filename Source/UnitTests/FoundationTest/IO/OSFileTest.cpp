@@ -292,6 +292,13 @@ Only concrete and clocks.\n\
     XII_TEST_BOOL(xiiOSFile::ExistsDirectory(sOutputFolder) == true);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetApplicationPath")
+  {
+    xiiStringView sAppPath = xiiOSFile::GetApplicationPath();
+    XII_TEST_BOOL(xiiOSFile::ExistsFile(sAppPath));
+    XII_TEST_STRING(sAppPath.GetFileDirectory(), xiiOSFile::GetApplicationDirectory());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetApplicationDirectory")
   {
     xiiStringView sAppDir = xiiOSFile::GetApplicationDirectory();

@@ -20,9 +20,11 @@ target_link_libraries(${PROJECT_NAME}
   stb
 )
 
-if(XII_CMAKE_PLATFORM_LINUX)
+if(XII_CMAKE_PLATFORM_LINUX OR XII_CMAKE_PLATFORM_OSX)
   target_link_libraries(${PROJECT_NAME} PRIVATE sal)
+endif()
 
+if(XII_CMAKE_PLATFORM_LINUX)
   if(XII_3RDPARTY_BC7ENC_RDO_SUPPORT)
     target_link_libraries(${PROJECT_NAME} PRIVATE bc7enc_rdo)
   endif()

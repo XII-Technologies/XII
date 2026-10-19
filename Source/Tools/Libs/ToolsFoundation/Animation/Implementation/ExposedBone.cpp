@@ -4,6 +4,7 @@
 
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/IO/Stream.h>
+#include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Types/VariantTypeRegistry.h>
 #include <ToolsFoundation/Animation/ExposedBone.h>
 
@@ -51,8 +52,13 @@ xiiUInt32 xiiHashHelper<xiiExposedBone>::Hash(const xiiExposedBone& value)
                               t.m_vScale.x, t.m_vScale.y, t.m_vScale.z};
   for (float fComponent : components)
   {
-    const float fCanonical = fComponent == 0.0f ? 0.0f : fComponent;
-    uiHash                 = xiiHashingUtils::CombineHashValues32(uiHash, xiiHashingUtils::xxHash32(&fCanonical, sizeof(fCanonical)));
+    xiiUInt32 uiBits;
+    xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&uiBits), reinterpret_cast<const xiiUInt8*>(&fComponent), sizeof(uiBits));
+    // Normalize zero using its bits so optimized floating-point code generation
+    // cannot change the equality/hash contract for signed zero.
+    if ((uiBits & 0x7FFFFFFFU) == 0)
+      uiBits = 0;
+    uiHash = xiiHashingUtils::CombineHashValues32(uiHash, xiiHashingUtils::xxHash32(&uiBits, sizeof(uiBits)));
   }
   return uiHash;
 }

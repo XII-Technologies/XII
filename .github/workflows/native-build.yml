@@ -1,4 +1,4 @@
-name: Native build implementation
+name: Build and Test implementation
 
 on:
   workflow_call:
@@ -44,7 +44,11 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build gcc-15 g++-15 clang-22 lld-22 ccache pkg-config uuid-dev
+          packages=(ninja-build gcc-15 g++-15 ccache pkg-config uuid-dev)
+          if [[ "$BUILD_PRESET" == ci-linux-clang ]]; then
+            packages+=(clang-22 lld-22)
+          fi
+          sudo apt-get install -y --no-install-recommends "${packages[@]}"
           echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
       - name: Restore Linux compiler cache
         if: runner.os == 'Linux'
@@ -57,17 +61,21 @@ jobs:
       - name: Configure
         run: |
           $ErrorActionPreference = 'Stop'
-          $args = @('--preset', $env:BUILD_PRESET, "-DCMAKE_BUILD_TYPE=$env:BUILD_CONFIGURATION")
+          $configureArguments = @('--preset', $env:BUILD_PRESET)
+          if (-not $IsWindows) { $configureArguments += "-DCMAKE_BUILD_TYPE=$env:BUILD_CONFIGURATION" }
           if ($IsLinux) {
-            $args += @('-DCMAKE_C_COMPILER_LAUNCHER=ccache', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
+            $configureArguments += @('-DCMAKE_C_COMPILER_LAUNCHER=ccache', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
           }
-          if ($env:COMPILER_ANALYSIS -eq 'true') { $args += '-DXII_ENABLE_COMPILER_STATIC_ANALYSIS=ON' }
+          if ($env:COMPILER_ANALYSIS -eq 'true') { $configureArguments += '-DXII_ENABLE_COMPILER_STATIC_ANALYSIS=ON' }
           New-Item -ItemType Directory -Force 'Workspace/Diagnostics' | Out-Null
-          cmake @args 2>&1 | Tee-Object 'Workspace/Diagnostics/configure.log'
+          cmake @configureArguments 2>&1 | Tee-Object 'Workspace/Diagnostics/configure.log'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build CPU suites and dependencies
         run: |
-          cmake --build "Workspace/$env:BUILD_PRESET" --config $env:BUILD_CONFIGURATION --parallel 2 --target FoundationTest CoreTest ToolsFoundationTest 2>&1 | Tee-Object 'Workspace/Diagnostics/build.log'
+          $buildArguments = @('--build', "Workspace/$env:BUILD_PRESET", '--config', $env:BUILD_CONFIGURATION, '--parallel', '2', '--target', 'FoundationTest', 'CoreTest', 'ToolsFoundationTest')
+          # Make reports independent compiler errors in the same diagnostic log.
+          if ($IsMacOS) { $buildArguments += @('--', '-k') }
+          cmake @buildArguments 2>&1 | Tee-Object 'Workspace/Diagnostics/build.log'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run all CPU suites through CTest
         run: |

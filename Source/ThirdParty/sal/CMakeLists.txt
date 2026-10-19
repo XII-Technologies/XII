@@ -1,6 +1,6 @@
 xii_cmake_init()
 
-xii_requires(XII_CMAKE_PLATFORM_LINUX)
+xii_requires_one_of(XII_CMAKE_PLATFORM_LINUX XII_CMAKE_PLATFORM_OSX)
 
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)

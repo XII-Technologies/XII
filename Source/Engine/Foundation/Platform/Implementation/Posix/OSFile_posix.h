@@ -26,7 +26,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_OSX)
-#  include <CoreFoundation/CoreFoundation.h>
+#  include <mach-o/dyld.h>
 #endif
 
 #ifndef PATH_MAX
@@ -353,28 +353,18 @@ xiiStringView xiiOSFile::GetApplicationPath()
   {
 #if XII_ENABLED(XII_PLATFORM_OSX)
 
-    CFBundleRef appBundle  = CFBundleGetMainBundle();
-    CFURLRef    bundleURL  = CFBundleCopyBundleURL(appBundle);
-    CFStringRef bundlePath = CFURLCopyFileSystemPath(bundleURL, kCFURLPOSIXPathStyle);
-
-    if (bundlePath != nullptr)
+    xiiHybridArray<char, PATH_MAX> executablePath;
+    uint32_t                       uiSize = PATH_MAX;
+    executablePath.SetCountUninitialized(uiSize);
+    if (_NSGetExecutablePath(executablePath.GetData(), &uiSize) != 0)
     {
-      CFIndex length  = CFStringGetLength(bundlePath);
-      CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
-
-      xiiArrayPtr<char> temp = XII_DEFAULT_NEW_ARRAY(char, static_cast<xiiUInt32>(maxSize));
-
-      if (CFStringGetCString(bundlePath, temp.GetPtr(), maxSize, kCFStringEncodingUTF8))
-      {
-        s_sApplicationPath = temp.GetPtr();
-      }
-
-      XII_DEFAULT_DELETE_ARRAY(temp);
+      executablePath.SetCountUninitialized(uiSize);
+      if (_NSGetExecutablePath(executablePath.GetData(), &uiSize) != 0)
+        return {};
     }
-
-    CFRelease(bundlePath);
-    CFRelease(bundleURL);
-    CFRelease(appBundle);
+    xiiStringBuilder normalizedPath = executablePath.GetData();
+    normalizedPath.MakeCleanPath();
+    s_sApplicationPath = normalizedPath;
 #else
     char    result[PATH_MAX];
     ssize_t length     = readlink("/proc/self/exe", result, PATH_MAX);

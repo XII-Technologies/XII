@@ -83,8 +83,9 @@ T* xiiImage::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 
 }
 
 template <typename T>
-void xiiImageView::ValidateDataTypeAccessor([[maybe_unused]] xiiUInt32 uiPlaneIndex) const
+void xiiImageView::ValidateDataTypeAccessor(xiiUInt32 uiPlaneIndex) const
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiUInt32 uiBytesPerBlock = 0;
   if (xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format))
   {
@@ -96,4 +97,7 @@ void xiiImageView::ValidateDataTypeAccessor([[maybe_unused]] xiiUInt32 uiPlaneIn
   }
 
   XII_ASSERT_DEV(uiBytesPerBlock % xiiImageSizeofHelper<T>::Size == 0, "Accessor type is not suitable for interpreting contained data");
+#else
+  XII_IGNORE_UNUSED(uiPlaneIndex);
+#endif
 }

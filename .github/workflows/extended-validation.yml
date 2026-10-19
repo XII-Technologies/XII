@@ -13,13 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  clang:
-    name: Linux Clang Shipping
-    uses: ./.github/workflows/native-build.yml
-    with:
-      os: ubuntu-26.04
-      preset: ci-linux-clang
-      configuration: Shipping
   analysis:
     name: Windows MSVC analysis
     uses: ./.github/workflows/native-build.yml

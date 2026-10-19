@@ -4,10 +4,10 @@
 XII_FOUNDATION_INTERNAL_HEADER
 
 #include <assert.h>
+#include <mach/mach.h>
 #include <stdbool.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
-#include <sys/vmmeter.h>
 #include <unistd.h>
 
 // https://developer.apple.com/library/archive/qa/qa1361/_index.html
@@ -91,17 +91,14 @@ void xiiSystemInformation::Initialize()
 
 xiiUInt64 xiiSystemInformation::GetAvailableMainMemory() const
 {
-  struct vmtotal vmt      = {0};
-  size_t         vmt_size = sizeof(vmt);
-
-  xiiInt32 rc = sysctlbyname("vm.vmtotal", &vmt, &vmt_size, NULL, 0);
-  if (rc < 0)
-  {
-    perror("sysctlbyname");
+  vm_statistics64_data_t statistics = {};
+  mach_msg_type_number_t count      = HOST_VM_INFO64_COUNT;
+  const mach_port_t      host       = mach_host_self();
+  const kern_return_t    result     = host_statistics64(host, HOST_VM_INFO64, reinterpret_cast<host_info64_t>(&statistics), &count);
+  mach_port_deallocate(mach_task_self(), host);
+  if (result != KERN_SUCCESS)
     return 0;
-  }
-
-  return static_cast<xiiUInt64>(s_SystemInformation.m_uiMemoryPageSize) * static_cast<xiiUInt64>(vmt.t_free);
+  return static_cast<xiiUInt64>(s_SystemInformation.m_uiMemoryPageSize) * statistics.free_count;
 }
 
 float xiiSystemInformation::GetCPUUtilization() const

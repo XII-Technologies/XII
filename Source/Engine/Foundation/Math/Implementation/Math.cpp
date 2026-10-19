@@ -2,6 +2,8 @@
 
 #include <Foundation/FoundationPCH.h>
 
+#include <exception>
+
 #include <Foundation/Math/Easing.h>
 #include <Foundation/Math/Mat3.h>
 #include <Foundation/Math/Math.h>

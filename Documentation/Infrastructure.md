@@ -30,16 +30,21 @@ not the supported GitHub/local build procedure.
 
 | Workflow | Trigger | Scope |
 | --- | --- | --- |
-| `build-and-test.yml` | PRs, Development pushes, manual | Windows x64 VS 2026 MSVC Debug + Shipping; Ubuntu 26.04 x64 GCC 15 Debug; FoundationTest, CoreTest, ToolsFoundationTest |
+| `build-and-test.yml` | PRs, Development pushes, manual | Build and Test: Windows x64 VS 2026 MSVC, Ubuntu 26.04 x64 GCC 15 / Clang 22, macOS 26 ARM64 Apple Clang; each in Debug, Dev and Shipping; FoundationTest, CoreTest, ToolsFoundationTest |
 | `native-build.yml` | Reusable workflow only | Preset configuration, bounded compilation, test discovery, CTest, diagnostics, Linux ccache |
 | `code-quality.yml` | PRs, Development pushes, manual, release call | Actionlint, YAML, pins/permissions/local links, changed-line formatting and copyright on PRs |
 | `security.yml` | PRs, Development pushes, weekly, manual | CodeQL C/C++ and Actions; PR dependency review at high severity |
-| `extended-validation.yml` | Weekly, manual | Ubuntu 26.04 Clang 22 / LLD 22 Shipping CPU tests; Windows VS 2026 MSVC Debug `/analyze` |
+| `extended-validation.yml` | Weekly, manual | Windows VS 2026 MSVC Debug `/analyze`; Clang now runs in the primary matrix |
 | `build-release-package.yml` | Explicit `v*` tags | Exact version/default-branch ancestry check; Windows/Linux Shipping CPU gates; quality gate; attested draft source release |
 | `pull-request-labeler.yml` | PR metadata changes | Labels using base-branch configuration; no checkout or shell execution |
 | `update-api-docs.yml` | Manual | Generate Doxygen HTML artifact; optional protected cross-repository publication |
 
 The required aggregate job fails when any native matrix leg fails or is cancelled.
+All twelve compiler/configuration combinations run for every PR and relevant push,
+with up to six jobs running concurrently. The displayed aggregate check is
+**Build and Test required**; update any branch rule that still names the former
+**Native CI required** check. Compiler versions track the stable toolchains
+available in the selected hosted images; preview Xcode/toolchains are not selected.
 The standalone ArchiveTool candidate workflow was removed: it did not implement
 the former precompiled-tools update process. ArchiveTool remains buildable with
 the existing CPU preset, as described in the [build guide](Building.md).
@@ -108,6 +113,11 @@ retrying publication does not regenerate HTML from newer engine source.
 
 Windows jobs explicitly select `windows-2025-vs2026`; all Linux jobs select
 `ubuntu-26.04`, including quality, security, documentation, and release publication.
+Apple Clang jobs select `macos-26` (ARM64) and the image's default stable Xcode;
+the current image uses Xcode 26.6. The macOS preset uses Makefiles, supported by
+the existing platform hooks, and needs neither Homebrew LLVM nor GCC masquerading
+behind Apple's `gcc` alias. GCC and upstream Clang are covered on Linux; MSVC is
+covered on Windows, where it is supported.
 These are the latest suitable x64 hosted environments verified on 2026-10-18 in
 [GitHub's runner inventory](https://github.com/actions/runner-images). Explicit
 labels avoid the older Ubuntu image still used by `ubuntu-latest` during migration.
@@ -179,14 +189,13 @@ an updater can be restored safely.
 Repository administrators must configure these controls; workflow files cannot
 enforce repository settings themselves:
 
-1. Protect `Development`: PR review, required **Native CI required** and
+1. Protect `Development`: PR review, required **Build and Test required** and
    **Repository quality**, and no force pushes. Add CodeQL/dependency-review gates
    once the initial scans establish the existing findings baseline. Confirm exact
    displayed check names after the first hosted run. Merge queues require adding
    `merge_group` triggers before enabling them.
-   The existing `build-and-test.yml` workflow was manually disabled at audit time;
-   re-enable it after merging the replacement, then run it on `Development`.
-   A dispatch attempted during modernization returned HTTP 422 for this disabled state.
+   The existing `build-and-test.yml` workflow was manually disabled at audit time,
+   but is now enabled. Keep it enabled when merging the renamed workflow.
 2. Default Actions token permissions to read-only; restrict allowed actions and
    require immutable SHA references where organization settings support it. Keep
    approvals for first-time fork contributors. Do not expose write secrets to PR jobs.
@@ -208,8 +217,9 @@ enforce repository settings themselves:
 
 ## Deferred validation
 
-Hosted CPU jobs are not graphics/editor certification. macOS lacks a verified
-Texture/DirectXTex/test dependency path; Apple Clang/ARM support is not advertised.
+Hosted CPU jobs are not graphics/editor certification. The macOS CPU preset and
+dependency adaptations cover the same three suites as Windows/Linux. This does
+not certify the macOS editor, graphics runtime or unsupported platform services.
 Linux editor and native Vulkan need dedicated runtime validation. Stock Clang-Tidy
 does not contain the project's `xii-name-check` plugin, so the brittle autofix gate
 is replaced with existing compiler warnings, MSVC analysis and CodeQL.
