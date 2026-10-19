@@ -6,6 +6,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/IO/OSFile.h>
 
 #if XII_ENABLED(XII_SUPPORTS_LONG_PATHS)
 #  define LongPath                                                                                                                                   \
@@ -363,14 +364,15 @@ Only concrete and clocks.\n\
       for (xiiStringView target : {sOutputFolder2Resolved.GetView(), "../SubFolder2"_xiisv})
       {
         {
-          xiiFileWriter writer;
-          XII_TEST_RESULT(writer.Open(redirection));
-          XII_TEST_RESULT(writer.WriteBytes(target.GetStartPointer(), target.GetElementCount()));
+          xiiOSFile writer;
+          if (!XII_TEST_RESULT(writer.Open(redirection, xiiFileOpenMode::Write)))
+            return;
+          XII_TEST_RESULT(writer.Write(target.GetStartPointer(), target.GetElementCount()));
         }
         XII_TEST_RESULT(xiiFileSystem::FindFolderWithSubPath(result, sOutputFolder1Resolved, "FileSystemTest2.txt", "xiiSdkRoot.txt"));
         XII_TEST_STRING(result, sOutputFolder2Resolved);
       }
-      xiiFileSystem::DeleteFile(redirection);
+      XII_TEST_RESULT(xiiOSFile::DeleteFile(redirection));
     }
 
     xiiFileSystem::DeleteFile(":output1/FileSystemTest2.txt");
