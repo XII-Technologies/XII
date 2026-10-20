@@ -18,16 +18,16 @@ bool xiiPlugin::PlatformNeedsPluginCopy()
   return true;
 }
 
-void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber)
+void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber, xiiStringView sPluginDirectory)
 {
-  ref_sOriginalFile = xiiOSFile::GetApplicationDirectory();
+  ref_sOriginalFile = sPluginDirectory.IsEmpty() ? xiiOSFile::GetApplicationDirectory() : sPluginDirectory;
   ref_sOriginalFile.AppendPath(sPluginName);
   ref_sOriginalFile.Append(".dll");
 
-  ref_sCopiedFile = xiiOSFile::GetApplicationDirectory();
+  ref_sCopiedFile = sPluginDirectory.IsEmpty() ? xiiOSFile::GetApplicationDirectory() : sPluginDirectory;
   ref_sCopiedFile.AppendPath(sPluginName);
 
-  if (!xiiOSFile::ExistsFile(ref_sOriginalFile))
+  if (sPluginDirectory.IsEmpty() && !xiiOSFile::ExistsFile(ref_sOriginalFile))
   {
     ref_sOriginalFile = xiiOSFile::GetCurrentWorkingDirectory();
     ref_sOriginalFile.AppendPath(sPluginName);
@@ -65,7 +65,9 @@ xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModu
   // reset last error code
   SetLastError(ERROR_SUCCESS);
 
-  ref_pModule = LoadLibraryW(xiiStringWChar(sFileToLoad).GetData());
+  // Locate sibling dependencies beside project plugins while preserving the normal
+  // system and PATH fallbacks used by existing SDK plugins.
+  ref_pModule = LoadLibraryExW(xiiStringWChar(sFileToLoad).GetData(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
 
   if (ref_pModule == nullptr)
   {

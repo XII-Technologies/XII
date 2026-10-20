@@ -69,28 +69,28 @@ xiiMaterialData FillMaterialData()
 #if defined(USE_WORLDPOS)
   matData.worldPosition = G.Input.WorldPosition;
 #else
-  matData.worldPosition           = float3(0.0, 0.0, 0.0);
+  matData.worldPosition = float3(0.0, 0.0, 0.0);
 #endif
 
 #if SHADING_MODE == SHADING_MODE_FULLBRIGHT
   matData.worldNormal = float3(0, 0, 1);
 #else
-  float3 worldNormal              = normalize(GetNormal());
+  float3 worldNormal = normalize(GetNormal());
 #  if TWO_SIDED == TRUE && defined(USE_TWO_SIDED_LIGHTING)
 #    if FLIP_WINDING == TRUE
-  matData.worldNormal             = G.Input.FrontFace ? -worldNormal : worldNormal;
+  matData.worldNormal = G.Input.FrontFace ? -worldNormal : worldNormal;
 #    else
   matData.worldNormal = G.Input.FrontFace ? worldNormal : -worldNormal;
 #    endif
 #  else
-  matData.worldNormal   = worldNormal;
+  matData.worldNormal = worldNormal;
 #  endif
 #endif
 
 #if defined(USE_NORMAL)
   matData.vertexNormal = normalize(G.Input.Normal);
 #else
-  matData.vertexNormal            = float3(0, 0, 1);
+  matData.vertexNormal = float3(0, 0, 1);
 #endif
 
 #if defined(USE_SIMPLE_MATERIAL_MODEL)
@@ -109,10 +109,10 @@ xiiMaterialData FillMaterialData()
 #  endif
 
 #else
-  matData.diffuseColor            = GetDiffuseColor();
+  matData.diffuseColor = GetDiffuseColor();
 
 #  if SHADING_MODE == SHADING_MODE_FULLBRIGHT
-  matData.specularColor           = float3(0, 0, 0);
+  matData.specularColor = float3(0, 0, 0);
 #  else
   matData.specularColor = GetSpecularColor();
 #  endif
@@ -121,19 +121,19 @@ xiiMaterialData FillMaterialData()
 #if defined(USE_MATERIAL_EMISSIVE)
   matData.emissiveColor = GetEmissiveColor();
 #else
-  matData.emissiveColor           = 0.0f;
+  matData.emissiveColor = 0.0f;
 #endif
 
 #if defined(USE_MATERIAL_REFRACTION)
   matData.refractionColor = GetRefractionColor();
 #else
-  matData.refractionColor         = float4(0, 0, 0, 1);
+  matData.refractionColor = float4(0, 0, 0, 1);
 #endif
 
 #if SHADING_MODE == SHADING_MODE_FULLBRIGHT
   matData.perceptualRoughness = MIN_PERCEPTUAL_ROUGHNESS;
 #else
-  matData.perceptualRoughness     = max(GetRoughness(), MIN_PERCEPTUAL_ROUGHNESS);
+  matData.perceptualRoughness = max(GetRoughness(), MIN_PERCEPTUAL_ROUGHNESS);
 #endif
 
   matData.roughness = RoughnessFromPerceptualRoughness(matData.perceptualRoughness);
@@ -143,23 +143,23 @@ xiiMaterialData FillMaterialData()
   float3 viewVector    = normalize(GetCameraPosition() - matData.worldPosition);
   float  occlusionFade = saturate(dot(matData.vertexNormal, viewVector));
 #  else
-  float occlusionFade   = 1.0f;
+  float occlusionFade = 1.0f;
 #  endif
   matData.occlusion = lerp(1.0f, GetOcclusion(), occlusionFade);
 #else
-  matData.occlusion               = 1.0f;
+  matData.occlusion = 1.0f;
 #endif
 
 #if BLEND_MODE != BLEND_MODE_OPAQUE && BLEND_MODE != BLEND_MODE_MASKED
   matData.opacity = GetOpacity();
 #else
-  matData.opacity                 = 1.0f;
+  matData.opacity = 1.0f;
 #endif
 
 #if defined(USE_MATERIAL_SUBSURFACE_COLOR)
   matData.subsurfaceColor = GetSubsurfaceColor() * matData.diffuseColor;
 #else
-  matData.subsurfaceColor         = 0.0;
+  matData.subsurfaceColor = 0.0;
 #endif
 
 #if defined(USE_MATERIAL_SUBSURFACE_PARAMS)

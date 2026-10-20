@@ -3,11 +3,11 @@
 // XII Engine - GPU lighting data shared by clustered lighting passes.
 #pragma once
 
-static const uint XII_LIGHT_TYPE_DIRECTIONAL = 0u;
-static const uint XII_LIGHT_TYPE_POINT       = 1u;
-static const uint XII_LIGHT_TYPE_SPOT        = 2u;
-static const uint XII_LIGHT_TYPE_RECTANGLE   = 3u;
-static const uint XII_LIGHT_TYPE_DISC        = 4u;
+static const uint XII_LIGHT_TYPE_DIRECTIONAL   = 0u;
+static const uint XII_LIGHT_TYPE_POINT         = 1u;
+static const uint XII_LIGHT_TYPE_SPOT          = 2u;
+static const uint XII_LIGHT_TYPE_RECTANGLE     = 3u;
+static const uint XII_LIGHT_TYPE_DISC          = 4u;
 static const uint XII_LIGHT_TYPE_SPHERE        = 5u;
 static const uint XII_LIGHT_TYPE_TUBE          = 6u;
 static const uint XII_LIGHT_TYPE_EMISSIVE_MESH = 7u;
@@ -20,13 +20,13 @@ static const uint XII_CLUSTER_LIGHT_CDF_MAX    = 0x00000FFFu;
 
 struct xiiGpuLightData
 {
-  float4 PositionAndInvRange;   // xyz = position, w = 1 / range
-  float4 DirectionAndType;      // xyz = direction, w = light type
-  float4 ColorAndIntensity;     // rgb = normalized color, w = cd (local), lx (directional), or nt (area)
-  float4 AttenuationAndSize;    // x = range, y = source radius, z = tube length
-  float4 SpotAnglesAndRectSize; // x = cos inner, y = cos outer, zw = rectangle extents
-  float4 ShadowData;            // x = casts shadow, y = camera fade-out distance in metres (0 = automatic/full), z = angular/source size
-  float4 BoundsCenterAndRadius; // xyz = culling sphere center, w = radius
+  float4 PositionAndInvRange;    // xyz = position, w = 1 / range
+  float4 DirectionAndType;       // xyz = direction, w = light type
+  float4 ColorAndIntensity;      // rgb = normalized color, w = cd (local), lx (directional), or nt (area)
+  float4 AttenuationAndSize;     // x = range, y = source radius, z = tube length
+  float4 SpotAnglesAndRectSize;  // x = cos inner, y = cos outer, zw = rectangle extents
+  float4 ShadowData;             // x = casts shadow, y = camera fade-out distance in metres (0 = automatic/full), z = angular/source size
+  float4 BoundsCenterAndRadius;  // xyz = culling sphere center, w = radius
   float4 OrientationRightAndIES; // xyz = local right axis, w = compact IES profile index + 1
   uint4  Metadata;               // x = stable light ID, y = compact frame index, z = light type, w = 16-bit content revision
 };

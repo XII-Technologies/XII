@@ -5,6 +5,7 @@
 #include <Foundation/Application/Config/PluginConfig.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/IO/OpenDdlUtils.h>
@@ -21,12 +22,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationPluginConfig, xiiNoBase, 1, xiiRTT
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationPluginConfig_PluginConfig, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiApplicationPluginConfig_PluginConfig>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationPluginConfig_PluginConfig, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiApplicationPluginConfig_PluginConfig>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("RelativePath", m_sAppDirRelativePath),
     XII_MEMBER_PROPERTY("LoadCopy", m_bLoadCopy),
+    XII_MEMBER_PROPERTY("PluginDirectory", m_sPluginDirectory),
   }
   XII_END_PROPERTIES;
 }
@@ -90,6 +92,8 @@ xiiResult xiiApplicationPluginConfig::Save(xiiStringView sConfigPath) const
 
     xiiOpenDdlUtils::StoreString(writer, m_Plugins[i].m_sAppDirRelativePath, "Path");
     xiiOpenDdlUtils::StoreBool(writer, m_Plugins[i].m_bLoadCopy, "LoadCopy");
+    if (!m_Plugins[i].m_sPluginDirectory.IsEmpty())
+      xiiOpenDdlUtils::StoreString(writer, m_Plugins[i].m_sPluginDirectory, "PluginDirectory");
 
     writer.EndObject();
   }
@@ -139,6 +143,9 @@ void xiiApplicationPluginConfig::Load(xiiStringView sConfigPath)
       cfg.m_bLoadCopy = pCopy->GetPrimitivesBool()[0];
     }
 
+    if (const auto* pDirectory = pPlugin->FindChildOfType(xiiOpenDdlPrimitiveType::String, "PluginDirectory"))
+      cfg.m_sPluginDirectory = pDirectory->GetPrimitivesString()[0];
+
     // this prevents duplicates
     AddPlugin(cfg);
   }
@@ -154,7 +161,17 @@ void xiiApplicationPluginConfig::Apply()
     flags.AddOrRemove(xiiPluginLoadFlags::LoadCopy, var.m_bLoadCopy);
     flags.AddOrRemove(xiiPluginLoadFlags::CustomDependency, false);
 
-    xiiPlugin::LoadPlugin(var.m_sAppDirRelativePath, flags).IgnoreResult();
+    xiiStringBuilder sDirectory;
+    if (!var.m_sPluginDirectory.IsEmpty())
+    {
+      if (xiiFileSystem::ResolveSpecialDirectory(var.m_sPluginDirectory, sDirectory).Failed() || !sDirectory.IsAbsolutePath())
+      {
+        xiiLog::Error("Could not resolve directory '{}' for plugin '{}'", var.m_sPluginDirectory, var.m_sAppDirRelativePath);
+        continue;
+      }
+    }
+
+    xiiPlugin::LoadPlugin(var.m_sAppDirRelativePath, flags, sDirectory).IgnoreResult();
   }
 }
 

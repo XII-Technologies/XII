@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #include <Foundation/Basics.h>
@@ -24,11 +26,9 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/Uuid.h>
-#include <GameEngine/DearImgui/DearImgui.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <Imgui/imgui.h>
 #include <Utilities/DataStructures/GameGrid.h>

@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
@@ -679,6 +680,12 @@ const xiiApplicationPluginConfig xiiQtEditorApp::GetRuntimePluginConfig(bool bIn
     {
       AddBundlesInOrder(cfg.m_Plugins, m_PluginBundles, it.Key(), false, bIncludeEditorPlugins, true).IgnoreResult();
     }
+  }
+
+  for (auto& plugin : cfg.m_Plugins)
+  {
+    if (!xiiCppProject::GetPluginBinaryDirectory(plugin.m_sAppDirRelativePath).IsEmpty())
+      plugin.m_sPluginDirectory = xiiCppProject::GetPluginOutputDir(">project");
   }
 
   return cfg;

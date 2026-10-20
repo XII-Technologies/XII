@@ -16,7 +16,7 @@ void xiiQtEditorApp::StoreEnginePluginModificationTimes()
     for (const xiiString& rt : plugin.m_RuntimePlugins)
     {
       xiiStringBuilder sPath, sCopy;
-      xiiPlugin::GetPluginPaths(rt, sPath, sCopy, 0);
+      xiiPlugin::GetPluginPaths(rt, sPath, sCopy, 0, xiiCppProject::GetPluginBinaryDirectory(rt));
 
       xiiFileStats stats;
       if (xiiOSFile::GetFileStats(sPath, stats).Succeeded())
@@ -61,7 +61,7 @@ bool xiiQtEditorApp::CheckForEnginePluginModifications()
     for (const xiiString& rt : plugin.m_RuntimePlugins)
     {
       xiiStringBuilder sPath, sCopy;
-      xiiPlugin::GetPluginPaths(rt, sPath, sCopy, 0);
+      xiiPlugin::GetPluginPaths(rt, sPath, sCopy, 0, xiiCppProject::GetPluginBinaryDirectory(rt));
 
       xiiFileStats stats;
       if (xiiOSFile::GetFileStats(sPath, stats).Succeeded())

@@ -8,6 +8,9 @@
 class XII_EDITORFRAMEWORK_DLL xiiCppSettings
 {
 public:
+  /// Names are used as C++ identifiers, CMake targets, and directory names.
+  static bool IsValidPluginName(xiiStringView sName);
+
   xiiResult Save(xiiStringView sFile = ":project/Editor/CppProject.ddl");
   xiiResult Load(xiiStringView sFile = ":project/Editor/CppProject.ddl");
 

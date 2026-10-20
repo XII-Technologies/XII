@@ -602,8 +602,8 @@ public:
   /// Stable ID and name of this graph instance.
   [[nodiscard]] xiiRenderGraphGraphId GetId() const;
   /// Process-local identity, unique even when several views use the same stable graph name.
-  [[nodiscard]] xiiUInt64             GetInstanceId() const { return m_uiInstanceId; }
-  [[nodiscard]] xiiStringView         GetName() const;
+  [[nodiscard]] xiiUInt64     GetInstanceId() const { return m_uiInstanceId; }
+  [[nodiscard]] xiiStringView GetName() const;
 
   /// Reflection/editor-friendly compiler records.
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphResourceDescription>        GetResourceDescriptions() const;

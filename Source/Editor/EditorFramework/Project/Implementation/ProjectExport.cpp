@@ -147,6 +147,7 @@ xiiResult xiiProjectExport::CopyFiles(const char* szSrcFolder, const char* szDst
     else
     {
       xiiLog::Error(" Copy failed: {}", itFile.Key());
+      return XII_FAILURE;
     }
   }
 
@@ -162,7 +163,7 @@ xiiResult xiiProjectExport::GatherGeneratedAssetManagerFiles(xiiSet<xiiString>& 
   {
     if (auto pAssMan = xiiDynamicCast<xiiAssetDocumentManager*>(pMan))
     {
-      pAssMan->GetAdditionalOutputs(addFiles).AssertSuccess();
+      XII_SUCCEED_OR_RETURN(pAssMan->GetAdditionalOutputs(addFiles).GetResult());
 
       for (const auto& file : addFiles)
       {
@@ -365,6 +366,53 @@ xiiResult xiiProjectExport::GatherBinaries(DirectoryMapping& mapping, const xiiP
   if (xiiProjectExport::ScanFolder(ddInfo.m_Files, sAppDir, filter, nullptr, nullptr, nullptr).Failed())
     return XII_FAILURE;
 
+  const auto config = xiiQtEditorApp::GetSingleton()->GetRuntimePluginConfig(false);
+  for (const auto& plugin : config.m_Plugins)
+  {
+    if (plugin.m_sPluginDirectory.IsEmpty())
+      continue;
+
+    xiiStringBuilder directory;
+    XII_SUCCEED_OR_RETURN(xiiFileSystem::ResolveSpecialDirectory(plugin.m_sPluginDirectory, directory));
+    directory.MakeCleanPath();
+    directory.Trim("/\\");
+    xiiStringBuilder binary, copy;
+    xiiPlugin::GetPluginPaths(plugin.m_sAppDirRelativePath, binary, copy, 0, directory);
+    if (!xiiOSFile::ExistsFile(binary))
+    {
+      xiiLog::Error("Project plugin binary '{}' is missing. Build the C++ project before exporting.", binary);
+      return XII_FAILURE;
+    }
+
+    auto& projectBinaries                = mapping[directory];
+    projectBinaries.m_sTargetDirPath     = "Bin";
+    projectBinaries.m_sTargetDirRootName = "-";
+    xiiPathPatternFilter projectFilter;
+    projectFilter.AddFilter("/*", false);
+    projectFilter.AddFilter(xiiStringBuilder("/", binary.GetFileNameAndExtension()), true);
+    for (const auto& bundle : xiiQtEditorApp::GetSingleton()->GetPluginBundles().m_Plugins)
+    {
+      if (bundle.Value().m_RuntimePlugins.Contains(plugin.m_sAppDirRelativePath))
+      {
+        for (const auto& dependency : bundle.Value().m_PackageDependencies)
+          projectFilter.AddFilter(dependency, true);
+      }
+    }
+
+    xiiSet<xiiString> candidates;
+    XII_SUCCEED_OR_RETURN(ScanFolder(candidates, directory, filter, nullptr, nullptr, nullptr));
+    for (const auto& file : candidates)
+    {
+      if (projectFilter.PassesFilters(file))
+      {
+        projectBinaries.m_Files.Insert(file);
+        // Staged SDK dependencies beside a standalone application may be older
+        // than the installation. Only project-owned files supersede SDK binaries.
+        ddInfo.m_Files.Remove(file);
+      }
+    }
+  }
+
   return XII_SUCCESS;
 }
 
@@ -502,6 +550,16 @@ xiiResult xiiProjectExport::ExportProject(const char* szTargetDirectory, const x
   {
     mainProgress.BeginNextStep("Writing data directory config");
     XII_SUCCEED_OR_RETURN(xiiProjectExport::CreateDataDirectoryDDL(fileList, szTargetDirectory));
+
+    // Packaged plugins live beside the player; do not retain development-project paths.
+    auto plugins = xiiQtEditorApp::GetSingleton()->GetRuntimePluginConfig(false);
+    for (auto& plugin : plugins.m_Plugins)
+    {
+      plugin.m_sPluginDirectory.Clear();
+      plugin.m_bLoadCopy = false;
+    }
+    xiiStringBuilder pluginConfigPath(szTargetDirectory, "/Data/project/RuntimeConfigs/Plugins.ddl");
+    XII_SUCCEED_OR_RETURN(plugins.Save(pluginConfigPath));
   }
 
   // 6

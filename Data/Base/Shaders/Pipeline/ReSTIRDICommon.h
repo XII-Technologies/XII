@@ -11,10 +11,10 @@
 StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
 StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
 
-static const uint XII_RESTIR_INVALID_LIGHT = 0xFFFFFFFFu;
+static const uint XII_RESTIR_INVALID_LIGHT        = 0xFFFFFFFFu;
 static const uint XII_RESTIR_EMISSIVE_BIT         = 0x80000000u;
 static const uint XII_RESTIR_SAMPLE_MASK          = 0x7FFFFFFFu;
-static const uint XII_RESTIR_MAX_M         = 32u;
+static const uint XII_RESTIR_MAX_M                = 32u;
 static const uint XII_RESTIR_M_BITS               = 6u;
 static const uint XII_RESTIR_M_MASK               = (1u << XII_RESTIR_M_BITS) - 1u;
 static const uint XII_RESTIR_REVISION_MASK        = 0xFFFFu;
@@ -74,9 +74,9 @@ xiiReSTIRDIReservoir ReSTIREmptyReservoir()
 {
   xiiReSTIRDIReservoir reservoir;
   reservoir.SampleIndex     = XII_RESTIR_INVALID_LIGHT;
-  reservoir.StableLightId = 0u;
-  reservoir.WeightSum     = 0.0f;
-  reservoir.M             = 0u;
+  reservoir.StableLightId   = 0u;
+  reservoir.WeightSum       = 0.0f;
+  reservoir.M               = 0u;
   reservoir.SampleRevision  = 0u;
   reservoir.Visibility      = 1.0f;
   reservoir.VisibilityValid = 0u;
@@ -115,8 +115,8 @@ xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
 {
   xiiReSTIRDIReservoir reservoir;
   reservoir.SampleIndex     = packedReservoir.x;
-  reservoir.StableLightId = packedReservoir.y;
-  reservoir.WeightSum     = asfloat(packedReservoir.z);
+  reservoir.StableLightId   = packedReservoir.y;
+  reservoir.WeightSum       = asfloat(packedReservoir.z);
   reservoir.M               = packedReservoir.w & XII_RESTIR_M_MASK;
   reservoir.SampleRevision  = (packedReservoir.w >> XII_RESTIR_REVISION_SHIFT) & XII_RESTIR_REVISION_MASK;
   reservoir.Visibility      = (float)((packedReservoir.w >> XII_RESTIR_VISIBILITY_SHIFT) & XII_RESTIR_VISIBILITY_MASK) * (1.0f / 255.0f);
@@ -149,7 +149,7 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleInde
   if (ReSTIRRandom01(randomState) * reservoir.WeightSum <= candidateWeight)
   {
     reservoir.SampleIndex     = sampleIndex;
-    reservoir.StableLightId = stableLightId;
+    reservoir.StableLightId   = stableLightId;
     reservoir.SampleRevision  = sampleRevision & XII_RESTIR_REVISION_MASK;
     reservoir.Visibility      = saturate(candidateVisibility);
     reservoir.VisibilityValid = candidateVisibilityValid != 0u ? 1u : 0u;

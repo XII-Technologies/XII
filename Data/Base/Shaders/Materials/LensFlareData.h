@@ -4,9 +4,9 @@
 
 #include <Shaders/Common/ShaderResourceMacros.h>
 
-#define LENS_FLARE_INVERSE_TONEMAP (1 << 0)
+#define LENS_FLARE_INVERSE_TONEMAP   (1 << 0)
 #define LENS_FLARE_GREYSCALE_TEXTURE (1 << 1)
-#define LENS_FLARE_APPLY_FOG (1 << 3)
+#define LENS_FLARE_APPLY_FOG         (1 << 3)
 
 struct XII_SHADER_STRUCT xiiPerLensFlareData
 {

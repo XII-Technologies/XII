@@ -49,10 +49,18 @@ public:
   [[nodiscard]] virtual float GetPassDurationMs(xiiStringView sPassName) const = 0;
 
   /// Called before recording a graph; isolates instances which share a stable graph name.
-  virtual void SetGraphInstance(xiiUInt64 uiInstanceId) {}
+  virtual void SetGraphInstance(xiiUInt64 uiInstanceId) { XII_IGNORE_UNUSED(uiInstanceId); }
 
   /// Lookup by process-local graph instance and registered pass index. False means unavailable, not zero cost.
-  virtual bool GetPassTiming(xiiUInt64 uiGraphId, xiiUInt32 uiPassIndex, xiiStringView sPassName, float& out_fDurationMs, xiiUInt64& out_uiFrameIndex) const { return false; }
+  virtual bool GetPassTiming(xiiUInt64 uiGraphId, xiiUInt32 uiPassIndex, xiiStringView sPassName, float& out_fDurationMs, xiiUInt64& out_uiFrameIndex) const
+  {
+    XII_IGNORE_UNUSED(uiGraphId);
+    XII_IGNORE_UNUSED(uiPassIndex);
+    XII_IGNORE_UNUSED(sPassName);
+    XII_IGNORE_UNUSED(out_fDurationMs);
+    XII_IGNORE_UNUSED(out_uiFrameIndex);
+    return false;
+  }
 };
 
 /// A concrete render graph profiler that uses GPU Duration queries.

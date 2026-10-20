@@ -18,13 +18,13 @@ bool xiiPlugin::PlatformNeedsPluginCopy()
   return false;
 }
 
-void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
+void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber, xiiStringView sPluginDirectory)
 {
-  sOriginalFile = xiiOSFile::GetApplicationDirectory();
+  sOriginalFile = sPluginDirectory.IsEmpty() ? xiiOSFile::GetApplicationDirectory() : sPluginDirectory;
   sOriginalFile.AppendPath(sPluginName);
   sOriginalFile.Append(".so");
 
-  sCopiedFile = xiiOSFile::GetApplicationDirectory();
+  sCopiedFile = sPluginDirectory.IsEmpty() ? xiiOSFile::GetApplicationDirectory() : sPluginDirectory;
   sCopiedFile.AppendPath(sPluginName);
 
   if (uiFileCopyNumber > 0)

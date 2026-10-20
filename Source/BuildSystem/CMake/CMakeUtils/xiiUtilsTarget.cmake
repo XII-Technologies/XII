@@ -88,6 +88,11 @@ macro(xii_create_target TYPE TARGET_NAME)
 
   xii_set_build_flags(${TARGET_NAME} ${ARGN})
 
+  get_property(EXTERNAL_PROJECT_OUTPUT GLOBAL PROPERTY XII_EXTERNAL_PROJECT_OUTPUT)
+  if(EXTERNAL_PROJECT_OUTPUT AND ${TYPE} STREQUAL "APPLICATION")
+    xii_stage_external_runtime(${TARGET_NAME})
+  endif()
+
   # On linux we want all symbols to be hidden by default. We manually "export" them.
   if(XII_COMPILE_ENGINE_AS_DLL AND XII_CMAKE_PLATFORM_LINUX AND NOT ARG_ALL_SYMBOLS_VISIBLE)
     # PLATFORM-TODO (use general hook as above?)

@@ -6,6 +6,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/IO/OSFile.h>
 
 #if XII_ENABLED(XII_SUPPORTS_LONG_PATHS)
 #  define LongPath                                                                                                                                   \
@@ -354,6 +355,24 @@ Only concrete and clocks.\n\
 
       XII_TEST_BOOL(xiiFileSystem::FindFolderWithSubPath(result, StartPath, SubPath).Succeeded());
       XII_TEST_STRING(result, expected);
+    }
+
+    {
+      // Project executables can live on a different drive from the SDK.
+      // Absolute redirections must work without appending a drive-qualified path.
+      const xiiStringBuilder redirection(sOutputFolder1Resolved, "/xiiSdkRoot.txt");
+      for (xiiStringView target : {sOutputFolder2Resolved.GetView(), "../SubFolder2"_xiisv})
+      {
+        {
+          xiiOSFile writer;
+          if (!XII_TEST_RESULT(writer.Open(redirection, xiiFileOpenMode::Write)))
+            return;
+          XII_TEST_RESULT(writer.Write(target.GetStartPointer(), target.GetElementCount()));
+        }
+        XII_TEST_RESULT(xiiFileSystem::FindFolderWithSubPath(result, sOutputFolder1Resolved, "FileSystemTest2.txt", "xiiSdkRoot.txt"));
+        XII_TEST_STRING(result, sOutputFolder2Resolved);
+      }
+      XII_TEST_RESULT(xiiOSFile::DeleteFile(redirection));
     }
 
     xiiFileSystem::DeleteFile(":output1/FileSystemTest2.txt");

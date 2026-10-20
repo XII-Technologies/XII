@@ -110,6 +110,12 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiPreferences
 
   static xiiString GetBuildDir(const xiiCppSettings& cfg);
 
+  /// Configuration-specific directory for project-owned binaries, independent of the SDK installation.
+  static xiiString GetPluginOutputDir(xiiStringView sProjectDirectory = {});
+
+  /// Returns the project output directory for the configured C++ plugin; empty for SDK plugins.
+  static xiiString GetPluginBinaryDirectory(xiiStringView sPluginName);
+
   static xiiString GetSolutionPath(const xiiCppSettings& cfg);
 
   static xiiStatus OpenSolution(const xiiCppSettings& cfg);

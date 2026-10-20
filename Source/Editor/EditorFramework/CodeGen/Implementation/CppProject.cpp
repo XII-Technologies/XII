@@ -11,6 +11,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/System/Process.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GuiFoundation/UIServices/DynamicEnums.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
@@ -108,7 +109,8 @@ namespace
       sStdout.Append(out);
     };
 
-    if (xiiProcess::Execute(po).Failed())
+    xiiInt32 iExitCode = -1;
+    if (xiiProcess::Execute(po, &iExitCode).Failed() || iExitCode != 0)
       return XII_FAILURE;
 
     xiiHybridArray<xiiStringView, 8> lines;
@@ -254,6 +256,27 @@ xiiString xiiCppProject::GetBuildDir(const xiiCppSettings& cfg)
   xiiStringBuilder sBuildDir;
   sBuildDir.SetFormat("{}/Build/{}", GetTargetSourceDir(), GetGeneratorFolderName(cfg));
   return sBuildDir;
+}
+
+xiiString xiiCppProject::GetPluginOutputDir(xiiStringView sProjectDirectory /*= {}*/)
+{
+  xiiStringBuilder sDirectory = sProjectDirectory;
+  if (sDirectory.IsEmpty())
+    sDirectory = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  sDirectory.AppendPath("Output/Bin", BUILDSYSTEM_BUILDTYPE);
+  sDirectory.MakeCleanPath();
+  return sDirectory;
+}
+
+xiiString xiiCppProject::GetPluginBinaryDirectory(xiiStringView sPluginName)
+{
+  if (xiiToolsProject::IsProjectOpen())
+  {
+    xiiCppSettings cfg;
+    if (cfg.Load().Succeeded() && sPluginName == xiiStringBuilder(cfg.m_sPluginName, "Plugin"))
+      return GetPluginOutputDir();
+  }
+  return {};
 }
 
 xiiString xiiCppProject::GetSolutionPath(const xiiCppSettings& cfg)
@@ -499,23 +522,29 @@ xiiResult xiiCppProject::CheckCMakeCache(const xiiCppSettings& cfg)
   xiiStringBuilder content;
   content.ReadAll(file);
 
-  const xiiStringView sSearchFor = "CMAKE_CONFIGURATION_TYPES:STRING="_xiisv;
+  auto ReadCacheValue = [&](xiiStringView sKey) -> xiiString {
+    xiiHybridArray<xiiStringView, 128> lines;
+    content.Split(false, lines, "\n");
+    for (auto line : lines)
+    {
+      if (!line.StartsWith(sKey) || line.GetElementCount() <= sKey.GetElementCount() || line.GetStartPointer()[sKey.GetElementCount()] != ':')
+        continue;
+      if (const char* pValue = line.FindSubString("="))
+      {
+        xiiStringBuilder value = xiiStringView(pValue + 1, line.GetEndPointer());
+        value.Trim("\t\n\r ");
+        return value;
+      }
+    }
+    return {};
+  };
 
-  const char* pConfig = content.FindSubString(sSearchFor);
-  if (pConfig == nullptr)
+  const bool bMultiConfig = GetCMakeGeneratorName(cfg).StartsWith("Visual Studio");
+  if (ReadCacheValue(bMultiConfig ? "CMAKE_CONFIGURATION_TYPES" : "CMAKE_BUILD_TYPE") != BUILDSYSTEM_BUILDTYPE)
     return XII_FAILURE;
 
-  pConfig += sSearchFor.GetElementCount();
-
-  const char* pEndConfig = content.FindSubString("\n", pConfig);
-  if (pEndConfig == nullptr)
-    return XII_FAILURE;
-
-  xiiStringBuilder sUsedCfg;
-  sUsedCfg.SetSubString_FromTo(pConfig, pEndConfig);
-  sUsedCfg.Trim("\t\n\r ");
-
-  if (sUsedCfg != BUILDSYSTEM_BUILDTYPE)
+  // Older generated projects placed their binaries in the SDK. Force regeneration once.
+  if (ReadCacheValue("XII_PROJECT_OUTPUT_LAYOUT_VERSION") != "1")
     return XII_FAILURE;
 
   return XII_SUCCESS;
@@ -611,6 +640,9 @@ bool xiiCppProject::ExistsProjectCMakeListsTxt()
 
 xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
 {
+  if (!xiiCppSettings::IsValidPluginName(cfg.m_sPluginName))
+    return XII_FAILURE;
+
   QApplication::setOverrideCursor(Qt::WaitCursor);
   XII_SCOPE_EXIT(QApplication::restoreOverrideCursor());
 
@@ -703,7 +735,7 @@ xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
           return XII_FAILURE;
         }
 
-        file.WriteBytes(content.GetData(), content.GetElementCount()).IgnoreResult();
+        XII_SUCCEED_OR_RETURN(file.WriteBytes(content.GetData(), content.GetElementCount()));
       }
     }
   }
@@ -799,8 +831,9 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
 
   XII_LOG_BLOCK("Compile C++ Plugin");
 
-  xiiHybridArray<xiiString, 32> errors;
-  xiiInt32                      iReturnCode = 0;
+  xiiStringBuilder sBuildOutput;
+  xiiMutex         outputMutex;
+  xiiInt32         iReturnCode = 0;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   if (xiiSystemInformation::IsDebuggerAttached())
   {
@@ -827,17 +860,10 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   po.m_sWorkingDirectory  = GetBuildDir(cfg);
   po.m_bHideConsoleWindow = true;
   po.m_onStdOut           = [&](xiiStringView sText) {
-    if (sText.FindSubString_NoCase("error") != nullptr)
-    {
-      errors.PushBack(sText);
-    }
+    XII_LOCK(outputMutex);
+    sBuildOutput.Append(sText);
   };
-  po.m_onStdError = [&](xiiStringView sText) {
-    if (sText.FindSubString_NoCase("error") != nullptr)
-    {
-      errors.PushBack(sText);
-    }
-  };
+  po.m_onStdError = po.m_onStdOut;
 
   xiiStringBuilder sCMakeBuildCmd;
   po.BuildCommandLineString(sCMakeBuildCmd);
@@ -850,16 +876,18 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
 
   if (iReturnCode == 0)
   {
+    if (!xiiPlugin::ExistsPluginFile(xiiStringBuilder(cfg.m_sPluginName, "Plugin"), GetPluginOutputDir()))
+    {
+      xiiLog::Error("The build succeeded but the C++ plugin was not produced in '{}'. Check the project's CMake output settings.", GetPluginOutputDir());
+      return XII_FAILURE;
+    }
     xiiLog::Success("Compiled C++ code.");
     return XII_SUCCESS;
   }
 
   xiiLog::Error("CMake --build failed with return code {}", iReturnCode);
 
-  for (const auto& err : errors)
-  {
-    xiiLog::Error(err);
-  }
+  xiiLog::Error("C++ build output:\n{}", sBuildOutput);
 
   return XII_FAILURE;
 }
@@ -869,10 +897,7 @@ xiiResult xiiCppProject::BuildCodeIfNecessary(const xiiCppSettings& cfg)
   if (!xiiCppProject::ExistsProjectCMakeListsTxt())
     return XII_SUCCESS;
 
-  if (!xiiCppProject::ExistsSolution(cfg) || xiiCppProject::CheckCMakeCache(cfg).Failed())
-  {
-    XII_SUCCEED_OR_RETURN(xiiCppProject::RunCMake(cfg));
-  }
+  XII_SUCCEED_OR_RETURN(RunCMakeIfNecessary(cfg));
 
   return CompileSolution(cfg);
 }
@@ -974,7 +999,7 @@ bool xiiCppProject::IsBuildRequired()
 
   xiiCppSettings cfg;
   if (cfg.Load().Failed())
-    return false;
+    return true;
 
   if (!xiiCppProject::ExistsSolution(cfg))
     return true;
@@ -982,18 +1007,10 @@ bool xiiCppProject::IsBuildRequired()
   if (xiiCppProject::CheckCMakeCache(cfg).Failed())
     return true;
 
-  xiiStringBuilder sPath = xiiOSFile::GetApplicationDirectory();
-  sPath.AppendPath(cfg.m_sPluginName);
+  if (CheckCMakeUserPresets(cfg, false) != ModifyResult::NOT_MODIFIED)
+    return true;
 
-  sPath.Append("Plugin");
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  sPath.Append(".dll");
-#else
-  sPath.Append(".so");
-#endif
-
-  if (!xiiOSFile::ExistsFile(sPath))
+  if (!xiiPlugin::ExistsPluginFile(xiiStringBuilder(cfg.m_sPluginName, "Plugin"), GetPluginOutputDir()))
     return true;
 
   return false;
@@ -1041,6 +1058,7 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
 
   const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
+  bool bFoundEnginePreset = false;
   for (auto& preset : *configurePresets)
   {
     if (!preset.IsA<xiiVariantDictionary>())
@@ -1053,6 +1071,10 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
     {
       continue;
     }
+
+    if (bFoundEnginePreset)
+      return ModifyResult::FAILURE;
+    bFoundEnginePreset = true;
 
     auto cacheVariables = Expect<xiiVariantDictionary>(presetDict, "cacheVariables");
     if (!cacheVariables)
@@ -1081,11 +1103,11 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
     }
     else
     {
-      cacheVariables->Remove("CMAKE_C_COMPILER");
-      cacheVariables->Remove("CMAKE_CXX_COMPILER");
+      Remove(*cacheVariables, "CMAKE_C_COMPILER", result);
+      Remove(*cacheVariables, "CMAKE_CXX_COMPILER", result);
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-      cacheVariables->Remove("CMAKE_RC_COMPILER");
-      cacheVariables->Remove("CMAKE_RC_COMPILER_INIT");
+      Remove(*cacheVariables, "CMAKE_RC_COMPILER", result);
+      Remove(*cacheVariables, "CMAKE_RC_COMPILER_INIT", result);
 #endif
     }
 
@@ -1103,7 +1125,7 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
     }
   }
 
-  return result;
+  return bFoundEnginePreset ? result : ModifyResult::FAILURE;
 }
 
 xiiCppProject::xiiCppProject() :

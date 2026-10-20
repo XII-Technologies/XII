@@ -24,6 +24,9 @@ public:
 
     xiiString m_sAppDirRelativePath;
     bool      m_bLoadCopy = false;
+    /// Optional absolute or special-directory path (for example >project/Output/Bin/Dev).
+    /// Empty retains the application-directory lookup used by packaged applications.
+    xiiString m_sPluginDirectory;
   };
 
   bool AddPlugin(const PluginConfig& cfg);

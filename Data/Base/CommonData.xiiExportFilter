@@ -9,6 +9,7 @@
 *.glb
 *.fbx
 */Source
+*/Output
 */AssetCache
 */Editor/*
 */DataDirectories.ddl

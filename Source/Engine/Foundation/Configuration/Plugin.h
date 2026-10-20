@@ -54,8 +54,8 @@ using xiiPluginInitCallback = void (*)();
 
 /// xiiPlugin manages all dynamically loadable plugins.
 ///
-/// To load a plugin, call xiiPlugin::LoadPlugin() with the filename of the plugin (without a path).
-/// The plugin DLL has to be located next to the application binary.
+/// To load a plugin, call xiiPlugin::LoadPlugin() with its name and, optionally, an explicit binary directory.
+/// Without an explicit directory, plugins are located next to the application binary.
 ///
 /// It is not possible to unload individual plugins, but you can unload all plugins. Make sure to only do this when no code and data
 /// from any of the plugins is still referenced somewhere.
@@ -87,7 +87,7 @@ public:
   static void EndPluginChanges();
 
   /// Checks whether a plugin with the given name exists. Does not guarantee that the plugin could be loaded successfully.
-  static bool ExistsPluginFile(xiiStringView sPluginFile);
+  static bool ExistsPluginFile(xiiStringView sPluginFile, xiiStringView sPluginDirectory = {});
 
   /// Tries to load a DLL dynamically into the program.
   ///
@@ -95,7 +95,9 @@ public:
   /// XII_FAILURE is returned if the DLL cannot be located or it could not be loaded properly.
   ///
   /// See xiiPluginLoadFlags for additional options.
-  static xiiResult LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags = xiiPluginLoadFlags::Default); // [tested]
+  /// An explicit absolute directory takes precedence over the application directory, even if the plugin is missing there.
+  /// The plugin name remains its identity for dependencies and load/unload events.
+  static xiiResult LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags = xiiPluginLoadFlags::Default, xiiStringView sPluginDirectory = {}); // [tested]
 
   /// Unloads all previously loaded plugins in the reverse order in which they were loaded.
   ///
@@ -128,7 +130,7 @@ public:
   static void GetAllPluginInfos(xiiDynamicArray<PluginInfo>& ref_infos);
 
   /// \internal Determines the plugin paths.
-  static void GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber);
+  static void GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber, xiiStringView sPluginDirectory = {});
 
   /// \internal Determines if a plugin copy is required for hot reloading for plugin code.
   static bool PlatformNeedsPluginCopy();
