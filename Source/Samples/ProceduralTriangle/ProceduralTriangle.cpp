@@ -35,8 +35,6 @@
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
-#include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
-#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
@@ -167,30 +165,16 @@ public:
 
     // Perform rendering.
     {
-      // Before starting to render in a frame call this function.
+      // Begin the GAL frame before starting the shared GPU frame.
       m_pDevice->BeginFrame();
 
-      // Skip rendering if the swap chain or its back buffer is unavailable.
-      bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr);
-
-      if (bCanRender)
+      xiiRenderGraphFrame frame;
+      if (frame.Begin(3U).Succeeded())
       {
-        // Build a minimal render graph that clears the depth and backbuffer.
-        ++m_uiFrameIndex;
+        // Skip rendering if the swap chain or its back buffer is unavailable.
+        const bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr);
 
-        xiiRenderGraph&              renderGraph   = m_RenderGraphContext.GetGraph();
-        xiiRenderGraphBlackboard&    blackboard    = m_RenderGraphContext.GetBlackboard();
-        xiiRenderGraphResourceCache& resourceCache = m_RenderGraphContext.GetResourceCache();
-
-        renderGraph.BeginSetup(m_uiFrameIndex);
-        {
-          renderGraph.AddPass<OffscreenPassData>("PRISMATIC.Clear", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteOffscreenPass, this));
-          renderGraph.AddPass<ProceduralTrianglePassData>("PRISMATIC.Crystal", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteProceduralTrianglePass, this));
-          renderGraph.AddPass<BlitPassData>("PRISMATIC.Present", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupBlitPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
-        }
-        renderGraph.EndSetup();
-
-        resourceCache.BeginFrame(m_uiFrameIndex);
+        if (bCanRender)
         {
           xiiStringBuilder              sError;
           xiiRenderGraphCompileSettings settings;
@@ -199,26 +183,25 @@ public:
           settings.m_bEnableAsyncQueues  = true;
           settings.m_bEnableGPUProfiling = true;
 
-          if (renderGraph.Compile(settings, &sError).Succeeded())
+          // The manager invokes BuildRenderGraph(), compiles, and executes the graph.
+          if (xiiRenderGraphManager::ExecuteGraph(frame, m_hRenderGraph, /*pView=*/nullptr, settings, &sError).Failed())
           {
-            renderGraph.Execute(m_pDevice.Borrow(), /*pView=*/nullptr, &blackboard, &resourceCache, &m_RenderGraphContext.GetProfiler()).AssertSuccess("RenderGraph execution failed.");
-          }
-          else
-          {
-            xiiLog::Error("RenderGraph compile failed: {0}", sError);
+            xiiLog::Error("RenderGraph execution failed: {0}", sError);
           }
         }
-        resourceCache.EndFrame();
 
-        m_pSwapChain->Present();
-      }
-      else
-      {
-        // Ensure the swap chain can perform any internal throttling (e.g. when minimized)
+        // Present even if the window is minimized, so the swap chain can perform any internal throttling.
         if (m_pSwapChain)
         {
           m_pSwapChain->Present();
         }
+
+        // End the shared GPU frame after all submissions, including presentation.
+        frame.End();
+      }
+      else
+      {
+        xiiLog::Error("Failed to begin the render graph GPU frame.");
       }
 
       m_pDevice->EndFrame();
@@ -397,7 +380,8 @@ public:
     // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
 
-    m_RenderGraphContext.Initialize("Procedural Triangle").AssertSuccess("The render graph subsystem failed to create the sample context.");
+    m_hRenderGraph = xiiRenderGraphManager::CreateGraph("Procedural Triangle", xiiMakeDelegate(&xiiProceduralTriangleApp::BuildRenderGraph, this));
+    XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create procedural triangle render graph.");
   }
 
   virtual void BeforeCoreSystemsShutdown() override
@@ -416,7 +400,11 @@ public:
     m_pDirectoryWatcher.Clear();
 #endif
 
-    m_RenderGraphContext.Shutdown();
+    if (!m_hRenderGraph.IsInvalidated())
+    {
+      xiiRenderGraphManager::DestroyGraph(m_hRenderGraph).AssertSuccess("Failed to destroy procedural triangle render graph.");
+      m_hRenderGraph.Invalidate();
+    }
 
     m_pSwapChain.Clear();
 
@@ -465,6 +453,13 @@ public:
   }
 
 private:
+  void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
+  {
+    graph.AddPass<OffscreenPassData>("PRISMATIC.Clear", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteOffscreenPass, this));
+    graph.AddPass<ProceduralTrianglePassData>("PRISMATIC.Crystal", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteProceduralTrianglePass, this));
+    graph.AddPass<BlitPassData>("PRISMATIC.Present", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupBlitPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
+  }
+
   struct OffscreenPassData
   {
     xiiRenderGraphTextureHandle m_hOffScreenTexture;
@@ -662,8 +657,7 @@ private:
   xiiSharedPtr<xiiGALDevice>    m_pDevice;
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
 
-  xiiRenderGraphContext   m_RenderGraphContext;
-  xiiUInt64               m_uiFrameIndex = 0ULL;
+  xiiRenderGraphHandle    m_hRenderGraph;
   xiiUniquePtr<xiiWindow> m_pWindow;
 
   struct
