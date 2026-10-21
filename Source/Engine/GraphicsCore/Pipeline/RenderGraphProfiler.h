@@ -75,15 +75,10 @@ public:
   static constexpr xiiUInt32 s_uiMaxTrackedPasses = 128U;
 
 public:
-  xiiRenderGraphTimestampProfiler();
-  void SetGraphInstance(xiiUInt64 uiInstanceId) override { m_uiRecordingGraphId = uiInstanceId; }
+  xiiRenderGraphTimestampProfiler(xiiSharedPtr<xiiGALDevice> pDevice);
   ~xiiRenderGraphTimestampProfiler() override;
 
-  /// Initializes the profiler with the device that will be used to create queries.
-  void Initialize(xiiSharedPtr<xiiGALDevice> pDevice);
-
-  /// Releases all GPU queries.
-  void Shutdown();
+  void SetGraphInstance(xiiUInt64 uiInstanceId) override { m_uiRecordingGraphId = uiInstanceId; }
 
   // xiiRenderGraphProfiler interface
   void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex) override;

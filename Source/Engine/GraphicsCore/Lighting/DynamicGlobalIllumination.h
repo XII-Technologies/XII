@@ -119,7 +119,7 @@ public:
   ~xiiDDGIContext();
 
   /// Initialize CPU scheduling. Invalid settings preserve the existing configuration.
-  [[nodiscard]] xiiResult Initialize(const xiiDDGISettings& settings = {});
+  xiiResult Initialize(const xiiDDGISettings& settings = {});
   void                    Shutdown();
   [[nodiscard]] bool      IsInitialized() const;
   /// Discard accumulated lighting without reallocating storage or disturbing another view.
@@ -127,7 +127,7 @@ public:
 
   /// Frames must be nonzero and strictly increasing; the entire clipmap must fit its cell coordinates.
   /// Non-finite or out-of-range positions and invalid frames fail without changing state.
-  [[nodiscard]] xiiResult BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
+  xiiResult BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
   void                    CommitProbeUpdate(xiiUInt32 uiPhysicalProbe, const xiiVec3& vRelocationOffset, bool bValid, bool bInsideGeometry = false);
 
   [[nodiscard]] xiiArrayPtr<const xiiDDGIProbeState>  GetProbes() const;

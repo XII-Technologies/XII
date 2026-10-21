@@ -5,21 +5,13 @@
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-xiiRenderGraphTimestampProfiler::xiiRenderGraphTimestampProfiler() = default;
+xiiRenderGraphTimestampProfiler::xiiRenderGraphTimestampProfiler(xiiSharedPtr<xiiGALDevice> pDevice) :
+  m_pDevice(std::move(pDevice))
+{
+  XII_ASSERT_DEV(m_pDevice != nullptr, "Render graph profiler must be initialized with a valid device.");
+}
 
 xiiRenderGraphTimestampProfiler::~xiiRenderGraphTimestampProfiler()
-{
-  Shutdown();
-}
-
-void xiiRenderGraphTimestampProfiler::Initialize(xiiSharedPtr<xiiGALDevice> pDevice)
-{
-  XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
-
-  m_pDevice = pDevice;
-}
-
-void xiiRenderGraphTimestampProfiler::Shutdown()
 {
   for (xiiUInt32 i = 0U; i < s_uiRingFrameCount; ++i)
   {
@@ -33,6 +25,7 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
   m_pDevice = nullptr;
 
   XII_LOCK(m_ResultMutex);
+
   m_ResolvedDurationsMs.Clear();
   m_ResolvedGraphDurationsMs.Clear();
   m_ResolvedQueueDurationsMs.Clear();

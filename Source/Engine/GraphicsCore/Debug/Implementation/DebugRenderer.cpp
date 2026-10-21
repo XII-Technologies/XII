@@ -564,39 +564,50 @@ xiiResult xiiDebugRenderer::DrawGeometry(const xiiDebugRendererContext& context,
     if (!vertex.m_vPosition.IsValid() || !vertex.m_Color.IsValid() || !transform.m_Mat4.TransformPosition(vertex.m_vPosition).IsValid() || !(vertex.m_Color * color).IsValid())
       return XII_FAILURE;
   }
+
   for (const auto& polygon : geometry.GetPolygons())
   {
     if (polygon.m_Vertices.GetCount() != 3)
       return XII_FAILURE;
+
     for (xiiUInt32 index : polygon.m_Vertices)
+    {
       if (index >= vertices.GetCount())
         return XII_FAILURE;
+    }
   }
+
   for (const auto& line : geometry.GetLines())
+  {
     if (line.m_uiStartVertex >= vertices.GetCount() || line.m_uiEndVertex >= vertices.GetCount())
       return XII_FAILURE;
+  }
 
   XII_LOCK(s_Mutex);
+
   auto& data         = GetDataForExtraction(context);
   auto& triangles    = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayTriangleVertices : data.m_TriangleVertices;
   auto& lines        = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayLineVertices : data.m_LineVertices;
-  auto  appendVertex = [&](auto& target, xiiUInt32 index) {
+  auto  AppendVertex = [&](auto& target, xiiUInt32 uiIndex) -> void {
     auto& output       = target.ExpandAndGetRef();
-    output.m_vPosition = transform.m_Mat4.TransformPosition(vertices[index].m_vPosition);
-    output.m_Color     = vertices[index].m_Color * color;
+    output.m_vPosition = transform.m_Mat4.TransformPosition(vertices[uiIndex].m_vPosition);
+    output.m_Color     = vertices[uiIndex].m_Color * color;
   };
+
   const bool bFlipWinding = transform.m_Mat4.GetRotationalPart().GetDeterminant() < 0.0f;
   for (const auto& polygon : geometry.GetPolygons())
   {
-    appendVertex(triangles, polygon.m_Vertices[0]);
-    appendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 2 : 1]);
-    appendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 1 : 2]);
+    AppendVertex(triangles, polygon.m_Vertices[0]);
+    AppendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 2 : 1]);
+    AppendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 1 : 2]);
   }
+
   for (const auto& line : geometry.GetLines())
   {
-    appendVertex(lines, line.m_uiStartVertex);
-    appendVertex(lines, line.m_uiEndVertex);
+    AppendVertex(lines, line.m_uiStartVertex);
+    AppendVertex(lines, line.m_uiEndVertex);
   }
+
   return XII_SUCCESS;
 }
 
@@ -2622,15 +2633,17 @@ xiiResult xiiDebugRenderer::AddRenderGraphPasses(xiiRenderGraph& graph, xiiRende
     xiiLog::Error("Could not prepare scene depth for display-resolution debug drawing.");
     return XII_FAILURE;
   }
-  const auto upload  = graph.AddPass<xiiDebugUploadData>("DebugUpload", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugUpload), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugUpload));
-  const auto drawing = graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, [depth, color, token = upload.first->m_hSyncToken](xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder) {
+  const auto uploadPass = graph.AddPass<xiiDebugUploadData>("DebugUpload", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugUpload), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugUpload));
+  const auto drawPass   = graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, [depth, color, token = uploadPass.first->m_hSyncToken](xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder) -> void {
     data.m_hSceneColor = color;
     data.m_hSyncToken = token;
     data.m_hSceneDepth = depth;
     SetupDebugVisualization(data, builder); }, xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugVisualization));
-  color              = drawing.first->m_hSceneColor;
+  color                 = drawPass.first->m_hSceneColor;
   if (depth == sceneDepth)
-    sceneDepth = drawing.first->m_hSceneDepth;
+  {
+    sceneDepth = drawPass.first->m_hSceneDepth;
+  }
   return XII_SUCCESS;
 }
 

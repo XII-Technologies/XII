@@ -426,7 +426,7 @@ public:
   /// Device-side readiness for resources produced outside this graph, including
   /// previous-frame history. The wait precedes submission barriers on this pass's
   /// queue. The graph owns the fence until execution; this never blocks the CPU.
-  [[nodiscard]] xiiResult WaitForFence(xiiSharedPtr<xiiGALFence> fence, xiiUInt64 value);
+  xiiResult WaitForFence(xiiSharedPtr<xiiGALFence> fence, xiiUInt64 value);
 
   /// Controls whether this pass participates in render-pass merge groups.
   ///        Default is true. Set to false if the pass must stand alone (e.g. readback).
@@ -549,7 +549,7 @@ public:
   /// \param out_pError - Optional diagnostics string populated on XII_FAILURE.
   ///
   /// \returns XII_SUCCESS on success, XII_FAILURE if a cycle or invalid state is detected.
-  [[nodiscard]] xiiResult Compile(const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
+  xiiResult Compile(const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 
 
   /// Executes the compiled render graph.
@@ -581,7 +581,7 @@ public:
   /// Failure may follow partial GPU submission. A valid recorded prefix is submitted to preserve
   /// tracked resource states; callers must invalidate temporal state and retain frame resources
   /// until the submitted work completes, including on failure.
-  [[nodiscard]] xiiResult Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler = nullptr, xiiStringBuilder* out_pError = nullptr);
+  xiiResult Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler = nullptr, xiiStringBuilder* out_pError = nullptr);
 
 
   /// Returns the graph's compile-time statistics, populated after Compile() and useful for diagnostics.
@@ -615,7 +615,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer>  GetExportedBuffer(xiiRenderGraphBufferHandle hBuffer) const;
 
   /// Serializes the compiled graph to a DOT string for Graphviz visualization.
-  [[nodiscard]] xiiResult DumpToDot(xiiStringBuilder& out_sDot) const;
+  xiiResult DumpToDot(xiiStringBuilder& out_sDot) const;
 
   /// True if the graph has been compiled and not yet invalidated.
   [[nodiscard]] bool IsCompiled() const;
@@ -700,7 +700,7 @@ private:
   void                    PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
   void                    PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
   void                    PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
-  [[nodiscard]] xiiResult MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError);
+  xiiResult MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError);
   void                    PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
   void                    BuildTopologyCacheKey(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& key) const;
   bool                    RestoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_order);

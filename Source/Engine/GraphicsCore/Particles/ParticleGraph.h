@@ -269,7 +269,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphResourceDescriptor
   [[nodiscard]] xiiParticleGraphNodeDesc* FindNode(const xiiUuid& nodeId);
 
   /// Validates the integrity of the graph, checking for issues such as missing nodes, invalid links, duplicate IDs, and other potential problems. If the graph is valid, returns success. If the graph is invalid, returns failure and optionally fills out_pError with a description of the first encountered issue. The caller can use this function to ensure that the graph is well-formed before attempting to compile or execute it.
-  [[nodiscard]] xiiResult Validate(xiiStringBuilder* out_pError = nullptr) const;
+  xiiResult Validate(xiiStringBuilder* out_pError = nullptr) const;
 
   /// Computes a hash value for the compute pipeline that would be generated from this graph. This can be used for caching and quick comparisons of graph configurations. The hash should take into account the structure of the graph, the types and connections of nodes, and any relevant parameters that would affect the generated compute shader. The exact hashing algorithm is up to the implementation, but it should produce the same hash for graphs that are functionally equivalent in terms of their compute behavior.
   [[nodiscard]] xiiUInt64 ComputePipelineHash() const;

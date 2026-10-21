@@ -96,7 +96,7 @@ public:
   xiiEnum<xiiRenderPath> GetRenderPath() const;
 
   /// Configures passes that opt into the view sensor profile. An invalid handle disables them.
-  [[nodiscard]] xiiResult              SetSensorProfile(xiiSensorProfileHandle hProfile);
+  xiiResult              SetSensorProfile(xiiSensorProfileHandle hProfile);
   [[nodiscard]] xiiSensorProfileHandle GetSensorProfile() const;
   /// Returns the first completed output of a pass using this view profile, in compiled node order.
   /// Empty after profile changes or disabling output, until rendering completes. Retain for asynchronous
@@ -104,7 +104,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetSensorOutputTexture() const;
 
   /// Applies validated, view-local exposure, tone-mapping and display calibration.
-  [[nodiscard]] xiiResult                       SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
+  xiiResult                       SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
   [[nodiscard]] const xiiDisplayOutputSettings& GetDisplayOutputSettings() const;
   xiiUInt64                                     GetDisplayOutputSettingsRevision() const { return m_uiDisplayOutputSettingsRevision; }
 
@@ -192,7 +192,7 @@ public:
   /// Call at a CPU frame boundary under world access. The ID must come from this view;
   /// asynchronous callers must also retain/validate their view, camera and capture state.
   /// Returns failure and clears output for background, retired packets or deleted owners.
-  [[nodiscard]] xiiResult     ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiGpuInstanceSource& out_source) const;
+  xiiResult     ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiGpuInstanceSource& out_source) const;
   void                        SetPipelineParameter(xiiStringView name, const xiiVariant& value);
   void                        RemovePipelineParameter(xiiStringView name);
   const xiiVariantDictionary& GetPipelineParameters() const { return m_PipelineParameters; }

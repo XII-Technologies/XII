@@ -30,13 +30,13 @@ struct XII_GRAPHICSCORE_DLL xiiIESProfileResourceDescriptor
 
   /// Parses an IESNA LM-63 photometric file. Type-C data and TILT=NONE are
   /// supported; invalid or unsupported inputs fail without modifying this descriptor.
-  [[nodiscard]] xiiResult ParseLM63(xiiStringView sSource, xiiStringBuilder* pError = nullptr);
+  xiiResult ParseLM63(xiiStringView sSource, xiiStringBuilder* pError = nullptr);
 
   /// Bilinear full-sphere lookup used by validation tools and CPU sensor paths.
   [[nodiscard]] float Sample(xiiAngle verticalAngle, xiiAngle horizontalAngle) const;
 
   void                    Serialize(xiiStreamWriter& inout_stream) const;
-  [[nodiscard]] xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiIESProfileResourceDescriptor);

@@ -440,9 +440,7 @@ public:
     }
 
     xiiRenderGraphRegistrationDescription graphDescription;
-    graphDescription.m_sName     = "GPU Driven Scene";
-    graphDescription.m_Category  = xiiRenderGraphCategory::SceneRendering;
-    graphDescription.m_Frequency = xiiRenderGraphFrequency::EveryFrame;
+    graphDescription.m_sName.Assign("GPU Driven Scene");
     graphDescription.m_iPriority = 0;
     m_hRenderGraph               = xiiRenderGraphManager::RegisterGraph(graphDescription, xiiMakeDelegate(&xiiGpuDrivenSceneApp::BuildRenderGraph, this));
   }

@@ -273,13 +273,13 @@ public:
   ~xiiParticleSystemRuntime();
 
   /// Initializes the runtime with the given device and descriptor, creating necessary GPU resources. Returns failure if initialization fails (e.g., due to insufficient GPU resources or invalid descriptor parameters), in which case the runtime should not be used.
-  [[nodiscard]] xiiResult Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiParticleSystemDescriptor& descriptor);
+  xiiResult Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiParticleSystemDescriptor& descriptor);
 
   /// Shuts down the runtime and releases all GPU resources. After calling this, the runtime should not be used unless it is re-initialized.
   void Shutdown();
 
   /// Ensures that the runtime has sufficient capacity for the given descriptor, resizing GPU buffers if necessary. Returns failure if resizing fails (e.g., due to insufficient GPU resources), in which case the runtime may be left in a valid but potentially under-provisioned state.
-  [[nodiscard]] xiiResult EnsureCapacity(const xiiParticleSystemDescriptor& descriptor);
+  xiiResult EnsureCapacity(const xiiParticleSystemDescriptor& descriptor);
 
   /// Returns whether the runtime has been successfully initialized and is ready for use. This checks whether necessary GPU resources have been created and are valid, but does not guarantee that the runtime is fully provisioned for a specific descriptor (e.g., if EnsureCapacity has not been called or has failed).
   [[nodiscard]] bool IsInitialized() const;
@@ -294,7 +294,7 @@ public:
   void SetNodeExecutor(xiiParticleGraphNodeExecutor executor);
 
   /// Adds the necessary simulation passes to the given render graph for executing the particle graph defined in the descriptor. This should be called during render graph construction, and will set up passes for emitting, simulating, and processing particles according to the logic defined in the particle graph resource. The sNamePrefix parameter can be used to give unique names to the passes for debugging purposes. Returns failure if adding the passes fails (e.g., due to invalid graph resources or issues with the render graph), in which case the render graph may be left in a valid but incomplete state.
-  [[nodiscard]] xiiResult AddSimulationPasses(xiiRenderGraph& ref_graph, xiiStringView sNamePrefix, const xiiParticleSystemDescriptor& descriptor);
+  xiiResult AddSimulationPasses(xiiRenderGraph& ref_graph, xiiStringView sNamePrefix, const xiiParticleSystemDescriptor& descriptor);
 
 private:
   friend class xiiParticleSystemManager;
@@ -369,7 +369,7 @@ public:
   const xiiParticleGraphResourceHandle& GetParticleGraph() const;
 
   /// Prepares the runtime resources for the particle system based on the current descriptor and graph settings. This should be called after setting the descriptor and graph to ensure that the runtime has sufficient resources for simulation and rendering. Returns failure if resource preparation fails (e.g., due to insufficient GPU resources or invalid descriptor/graph parameters), in which case the runtime may be left in an uninitialized or partially initialized state.
-  [[nodiscard]] xiiResult PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const;
+  xiiResult PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const;
 
   /// Returns a reference to the particle system runtime, which manages the GPU resources and simulation for this particle system. This can be used for accessing buffers, adding simulation passes, or other operations related to the runtime. The exact semantics of the runtime (e.g., whether it reflects pending changes that have not yet been applied to GPU resources) are defined by the implementation of the component and runtime.
   [[nodiscard]] xiiParticleSystemRuntime&      GetRuntime() const;

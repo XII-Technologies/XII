@@ -15,6 +15,8 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
+//////////////////////////////////////////////////////////////////////////
+
 class xiiRenderGraphManagerState
 {
 public:
@@ -33,19 +35,51 @@ public:
     xiiRenderGraphBlackboard              m_Blackboard;
     xiiRenderGraphManager::BuildDelegate  m_BuildDelegate;
     xiiUInt32                             m_uiRegistrationOrder = 0U;
-    bool                                  m_bOnDemandRequested  = false;
   };
 
-  xiiDynamicArray<xiiUniquePtr<Entry>>                       m_Entries;
-  xiiIdTable<xiiRenderGraphContextId, xiiUniquePtr<Context>> m_Contexts;
-  xiiUniquePtr<xiiRenderGraphResourceCache>                  m_pResourceCache;
-  xiiUniquePtr<xiiRenderGraphTimestampProfiler>              m_pProfiler;
-  xiiGpuFrameCompletionTracker                               m_FrameCompletionTracker;
-  xiiMutex                                                   m_FrameMutex;
-  xiiUInt64                                                  m_uiFrameIndex            = 0U;
-  bool                                                       m_bFrameActive            = false;
-  xiiUInt32                                                  m_uiNextRegistrationOrder = 0U;
-  bool                                                       m_bEngineStarted          = false;
+  using ContextTable = xiiIdTable<xiiRenderGraphContextHandle::IdType, Context*, xiiLocalAllocatorWrapper>;
+
+public:
+  xiiRenderGraphManagerState() :
+    m_Allocator("RenderGraphManager", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator)
+  {
+  }
+
+  ~xiiRenderGraphManagerState() = default;
+
+  /// Returns the allocator used by the render graph manager state.
+  XII_ALWAYS_INLINE xiiAllocator* GetAllocator() { return &m_Allocator; }
+
+  /// Returns the object associated with the given handle, or nullptr if the handle is invalid.
+  template <typename IdTableType, typename ReturnType>
+  XII_ALWAYS_INLINE ReturnType* Get(typename IdTableType::TypeOfId hHandle, const IdTableType& IdTable) const
+  {
+    XII_LOCK(m_Mutex);
+
+    ReturnType* pObject = nullptr;
+    IdTable.TryGetValue(hHandle, pObject);
+    return pObject;
+  }
+
+  /// Returns the context associated with the given handle, or nullptr if the handle is invalid.
+  XII_ALWAYS_INLINE Context* GetContext(xiiRenderGraphContextHandle hHandle) const { return Get<ContextTable, Context>(hHandle, m_ContextTable); }
+
+public:
+  xiiProxyAllocator        m_Allocator;
+  xiiLocalAllocatorWrapper m_AllocatorWrapper;
+
+  mutable xiiMutex m_Mutex;
+
+  ContextTable m_ContextTable;
+
+  xiiDynamicArray<xiiUniquePtr<Entry>>          m_Entries;
+  xiiUniquePtr<xiiRenderGraphResourceCache>     m_pResourceCache;
+  xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
+  xiiGpuFrameCompletionTracker                  m_FrameCompletionTracker;
+  xiiMutex                                      m_FrameMutex;
+  xiiUInt64                                     m_uiFrameIndex            = 0U;
+  bool                                          m_bFrameActive            = false;
+  xiiUInt32                                     m_uiNextRegistrationOrder = 0U;
 };
 
 xiiUniquePtr<xiiRenderGraphManagerState> xiiRenderGraphManager::s_pState;
@@ -60,27 +94,6 @@ namespace
         return i;
     }
     return xiiInvalidIndex;
-  }
-
-  [[nodiscard]] bool ShouldExecute(const xiiRenderGraphManagerState::Entry& entry, xiiUInt64 uiFrameIndex)
-  {
-    switch (entry.m_Description.m_Frequency.GetValue())
-    {
-      case xiiRenderGraphFrequency::EveryFrame:
-        return true;
-      case xiiRenderGraphFrequency::EveryNFrames:
-        return (uiFrameIndex % entry.m_Description.m_uiEveryNFrames) == 0ULL;
-      case xiiRenderGraphFrequency::OnDemand:
-        return entry.m_bOnDemandRequested;
-      default:
-        return false;
-    }
-  }
-
-  [[nodiscard]] xiiRenderGraphManagerState::Context* GetContext(xiiRenderGraphManagerState& state, xiiRenderGraphContextHandle handle)
-  {
-    xiiUniquePtr<xiiRenderGraphManagerState::Context>* pContext = nullptr;
-    return state.m_Contexts.TryGetValue(handle.GetInternalID(), pContext) ? pContext->Borrow() : nullptr;
   }
 } // namespace
 
@@ -120,117 +133,89 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderGraphManager)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderGraphCategory, 1)
-  XII_ENUM_CONSTANT(xiiRenderGraphCategory::ScenePreparation),
-    XII_ENUM_CONSTANT(xiiRenderGraphCategory::SceneRendering),
-    XII_ENUM_CONSTANT(xiiRenderGraphCategory::ScenePostProcess),
-    XII_ENUM_CONSTANT(xiiRenderGraphCategory::Output),
-    XII_ENUM_CONSTANT(xiiRenderGraphCategory::Background),
-    XII_ENUM_CONSTANT(xiiRenderGraphCategory::AsyncCompute),
-XII_END_STATIC_REFLECTED_ENUM;
+//////////////////////////////////////////////////////////////////////////
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderGraphFrequency, 1)
-  XII_ENUM_CONSTANT(xiiRenderGraphFrequency::EveryFrame),
-    XII_ENUM_CONSTANT(xiiRenderGraphFrequency::EveryNFrames),
-    XII_ENUM_CONSTANT(xiiRenderGraphFrequency::OnDemand),
-XII_END_STATIC_REFLECTED_ENUM;
+xiiRenderGraphFrame::xiiRenderGraphFrame() = default;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderGraphRegistrationDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderGraphRegistrationDescription>)
+xiiRenderGraphFrame::~xiiRenderGraphFrame()
+{
+  End();
+}
+
+xiiResult xiiRenderGraphFrame::Begin(xiiUInt32 uiFramesInFlight)
+{
+  return xiiRenderGraphManager::BeginFrame(*this, uiFramesInFlight);
+}
+
+void xiiRenderGraphFrame::End()
+{
+  if (IsActive())
   {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Name", m_sName),
-      XII_ENUM_MEMBER_PROPERTY("Category", xiiRenderGraphCategory, m_Category),
-      XII_ENUM_MEMBER_PROPERTY("Frequency", xiiRenderGraphFrequency, m_Frequency),
-      XII_MEMBER_PROPERTY("Priority", m_iPriority),
-      XII_MEMBER_PROPERTY("EveryNFrames", m_uiEveryNFrames)->AddAttributes(new xiiDefaultValueAttribute(1U), new xiiClampValueAttribute(1U, 100000U)),
-    } XII_END_PROPERTIES;
+    xiiRenderGraphManager::EndFrame(*this);
   }
-XII_END_STATIC_REFLECTED_TYPE;
-
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderGraphContextHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderGraphContextHandle>)
-XII_END_STATIC_REFLECTED_TYPE;
-
-bool xiiRenderGraphManager::IsSubsystemInitialized()
-{
-  return s_pState != nullptr;
 }
 
-bool xiiRenderGraphManager::IsInitialized()
-{
-  return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();
-}
+//////////////////////////////////////////////////////////////////////////
 
 xiiRenderGraphContextHandle xiiRenderGraphManager::CreateContext(xiiStringView sName)
 {
-  XII_ASSERT_DEV(IsInitialized(), "The render graph manager is not initialized.");
-  if (!IsInitialized())
-    return {};
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Cannot create a render graph context without a valid GAL device.");
 
-  xiiSharedPtr<xiiGALDevice>                        pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiUniquePtr<xiiRenderGraphManagerState::Context> pContext = XII_DEFAULT_NEW(xiiRenderGraphManagerState::Context);
-  pContext->m_pGraph                                         = XII_DEFAULT_NEW(xiiRenderGraph, sName);
-  pContext->m_pResourceCache                                 = XII_DEFAULT_NEW(xiiRenderGraphResourceCache);
-  pContext->m_pProfiler                                      = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
-  pContext->m_pResourceCache->Initialize(pDevice);
-  pContext->m_pProfiler->Initialize(pDevice);
+  xiiInternal::NewInstance<xiiRenderGraphManagerState::Context> pRenderGraphContext = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphManagerState::Context);
+  pRenderGraphContext->m_pGraph                                                     = XII_NEW(s_pState->GetAllocator(), xiiRenderGraph, sName);
+  pRenderGraphContext->m_pResourceCache                                             = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphResourceCache, pDevice);
+  pRenderGraphContext->m_pProfiler                                                  = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphTimestampProfiler, pDevice);
 
-  return xiiRenderGraphContextHandle(s_pState->m_Contexts.Insert(std::move(pContext)));
+  return xiiRenderGraphContextHandle(s_pState->m_ContextTable.Insert(pRenderGraphContext));
 }
 
-void xiiRenderGraphManager::DestroyContext(xiiRenderGraphContextHandle handle)
+void xiiRenderGraphManager::DestroyContext(xiiRenderGraphContextHandle hContext)
 {
-  if (s_pState == nullptr || GetContext(*s_pState, handle) == nullptr)
-    return;
+  xiiRenderGraphManagerState::Context* pContext = nullptr;
 
-  xiiRenderGraphManagerState::Context* pContext = GetContext(*s_pState, handle);
-  pContext->m_pProfiler->Shutdown();
-  pContext->m_pResourceCache->Shutdown();
-  XII_VERIFY(s_pState->m_Contexts.Remove(handle.GetInternalID()), "The render graph context was validated before removal.");
+  XII_VERIFY(s_pState->m_ContextTable.Remove(hContext, &pContext), "Invalid render graph context.");
+
+  XII_DELETE(s_pState->GetAllocator(), pContext);
 }
 
-bool xiiRenderGraphManager::IsValid(xiiRenderGraphContextHandle handle)
+xiiRenderGraph* xiiRenderGraphManager::GetGraph(xiiRenderGraphContextHandle hContext)
 {
-  return s_pState != nullptr && GetContext(*s_pState, handle) != nullptr;
+  XII_ASSERT_DEV(!hContext.IsInvalidated(), "The render graph context is invalid.");
+
+  return s_pState->GetContext(hContext)->m_pGraph.Borrow();
 }
 
-xiiRenderGraph* xiiRenderGraphManager::GetGraph(xiiRenderGraphContextHandle handle)
+xiiRenderGraphBlackboard* xiiRenderGraphManager::GetBlackboard(xiiRenderGraphContextHandle hContext)
 {
-  xiiRenderGraphManagerState::Context* pContext = s_pState != nullptr ? GetContext(*s_pState, handle) : nullptr;
-  return pContext != nullptr ? pContext->m_pGraph.Borrow() : nullptr;
+  XII_ASSERT_DEV(!hContext.IsInvalidated(), "The render graph context is invalid.");
+
+  return &s_pState->GetContext(hContext)->m_Blackboard;
 }
 
-xiiRenderGraphBlackboard* xiiRenderGraphManager::GetBlackboard(xiiRenderGraphContextHandle handle)
+xiiRenderGraphResourceCache* xiiRenderGraphManager::GetResourceCache(xiiRenderGraphContextHandle hContext)
 {
-  xiiRenderGraphManagerState::Context* pContext = s_pState != nullptr ? GetContext(*s_pState, handle) : nullptr;
-  return pContext != nullptr ? &pContext->m_Blackboard : nullptr;
+  XII_ASSERT_DEV(!hContext.IsInvalidated(), "The render graph context is invalid.");
+
+  return s_pState->GetContext(hContext)->m_pResourceCache.Borrow();
 }
 
-xiiRenderGraphResourceCache* xiiRenderGraphManager::GetResourceCache(xiiRenderGraphContextHandle handle)
+xiiRenderGraphTimestampProfiler* xiiRenderGraphManager::GetProfiler(xiiRenderGraphContextHandle hContext)
 {
-  xiiRenderGraphManagerState::Context* pContext = s_pState != nullptr ? GetContext(*s_pState, handle) : nullptr;
-  return pContext != nullptr ? pContext->m_pResourceCache.Borrow() : nullptr;
-}
+  XII_ASSERT_DEV(!hContext.IsInvalidated(), "The render graph context is invalid.");
 
-xiiRenderGraphTimestampProfiler* xiiRenderGraphManager::GetProfiler(xiiRenderGraphContextHandle handle)
-{
-  xiiRenderGraphManagerState::Context* pContext = s_pState != nullptr ? GetContext(*s_pState, handle) : nullptr;
-  return pContext != nullptr ? pContext->m_pProfiler.Borrow() : nullptr;
+  return s_pState->GetContext(hContext)->m_pProfiler.Borrow();
 }
 
 xiiRenderGraphGraphId xiiRenderGraphManager::RegisterGraph(const xiiRenderGraphRegistrationDescription& description, BuildDelegate buildDelegate)
 {
-  XII_ASSERT_DEV(s_pState != nullptr, "Render graph manager is not started.");
   XII_ASSERT_DEV(!description.m_sName.IsEmpty(), "A render graph registration requires a name.");
   XII_ASSERT_DEV(buildDelegate.IsValid(), "A render graph registration requires a build delegate.");
-  if (s_pState == nullptr || description.m_sName.IsEmpty() || !buildDelegate.IsValid())
-    return {};
 
-  xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry = XII_DEFAULT_NEW(xiiRenderGraphManagerState::Entry);
+  xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphManagerState::Entry);
   xiiRenderGraphManagerState::Entry&              entry  = *pEntry;
   entry.m_Description                                    = description;
-  entry.m_Description.m_uiEveryNFrames                   = xiiMath::Max(1U, description.m_uiEveryNFrames);
-  entry.m_pGraph                                         = XII_DEFAULT_NEW(xiiRenderGraph, description.m_sName);
+  entry.m_pGraph                                         = XII_NEW(s_pState->GetAllocator(), xiiRenderGraph, description.m_sName);
   entry.m_BuildDelegate                                  = buildDelegate;
   entry.m_uiRegistrationOrder                            = s_pState->m_uiNextRegistrationOrder++;
   const xiiRenderGraphGraphId id                         = entry.m_pGraph->GetId();
@@ -238,114 +223,116 @@ xiiRenderGraphGraphId xiiRenderGraphManager::RegisterGraph(const xiiRenderGraphR
   return id;
 }
 
-bool xiiRenderGraphManager::UnregisterGraph(xiiRenderGraphGraphId id)
+void xiiRenderGraphManager::UnregisterGraph(xiiRenderGraphGraphId id)
 {
-  if (s_pState == nullptr || !id.IsValid())
-    return false;
+  XII_ASSERT_DEV(id.IsValid(), "The render graph ID is invalid.");
 
   const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
-  if (uiIndex == xiiInvalidIndex)
-    return false;
+  XII_ASSERT_DEV(uiIndex != xiiInvalidIndex, "The render graph ID is invalid.");
+
   s_pState->m_Entries.RemoveAtAndSwap(uiIndex);
-  return true;
-}
-
-bool xiiRenderGraphManager::RequestExecution(xiiRenderGraphGraphId id)
-{
-  if (s_pState == nullptr || !id.IsValid())
-    return false;
-
-  const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
-  if (uiIndex == xiiInvalidIndex)
-    return false;
-  s_pState->m_Entries[uiIndex]->m_bOnDemandRequested = true;
-  return true;
 }
 
 xiiRenderGraph* xiiRenderGraphManager::GetGraph(xiiRenderGraphGraphId id)
 {
-  if (s_pState == nullptr || !id.IsValid())
-    return nullptr;
+  XII_ASSERT_DEV(id.IsValid(), "The render graph ID is invalid.");
 
   const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
-  return uiIndex == xiiInvalidIndex ? nullptr : s_pState->m_Entries[uiIndex]->m_pGraph.Borrow();
+  XII_ASSERT_DEV(uiIndex != xiiInvalidIndex, "The render graph ID is invalid.");
+
+  return s_pState->m_Entries[uiIndex]->m_pGraph.Borrow();
 }
 
 xiiRenderGraphBlackboard* xiiRenderGraphManager::GetBlackboard(xiiRenderGraphGraphId id)
 {
-  if (s_pState == nullptr || !id.IsValid())
-    return nullptr;
+  XII_ASSERT_DEV(id.IsValid(), "The render graph ID is invalid.");
 
   const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
-  return uiIndex == xiiInvalidIndex ? nullptr : &s_pState->m_Entries[uiIndex]->m_Blackboard;
+  XII_ASSERT_DEV(uiIndex != xiiInvalidIndex, "The render graph ID is invalid.");
+
+  return &s_pState->m_Entries[uiIndex]->m_Blackboard;
 }
 
 xiiRenderGraphResourceCache* xiiRenderGraphManager::GetResourceCache()
 {
-  return s_pState != nullptr ? s_pState->m_pResourceCache.Borrow() : nullptr;
+  return s_pState->m_pResourceCache.Borrow();
 }
 
 xiiRenderGraphTimestampProfiler* xiiRenderGraphManager::GetProfiler()
 {
-  return s_pState != nullptr ? s_pState->m_pProfiler.Borrow() : nullptr;
-}
-
-xiiRenderGraphFrame::~xiiRenderGraphFrame() { End(); }
-xiiResult xiiRenderGraphFrame::Begin(xiiUInt32 uiFramesInFlight) { return xiiRenderGraphManager::BeginFrame(*this, uiFramesInFlight); }
-void      xiiRenderGraphFrame::End()
-{
-  if (IsActive())
-    xiiRenderGraphManager::EndFrame(*this);
+  return s_pState->m_pProfiler.Borrow();
 }
 
 xiiResult xiiRenderGraphManager::GetFrameCompletion(xiiUInt64 uiFrameIndex, xiiUInt64& out_uiCompletedFrame)
 {
   out_uiCompletedFrame = 0;
-  if (!IsInitialized())
-    return XII_FAILURE;
+
   XII_LOCK(s_pState->m_FrameMutex);
+
   if (!s_pState->m_bFrameActive || uiFrameIndex == 0 || uiFrameIndex != s_pState->m_uiFrameIndex)
     return XII_FAILURE;
+
   out_uiCompletedFrame = s_pState->m_FrameCompletionTracker.GetLastCompletedFrame();
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt32 uiFramesInFlight)
 {
-  if (!IsInitialized() || frame.IsActive() || uiFramesInFlight == 0U)
+  if (frame.IsActive() || uiFramesInFlight == 0U)
     return XII_FAILURE;
+
   s_pState->m_FrameMutex.Lock();
+
   // Foundation mutexes are recursive; reject nested frames while other threads wait for End.
   if (s_pState->m_bFrameActive || s_pState->m_uiFrameIndex == xiiMath::MaxValue<xiiUInt64>())
   {
     s_pState->m_FrameMutex.Unlock();
     return XII_FAILURE;
   }
-  // All global and context-local slices advance on this clock. Never reuse a shorter
-  // ring while its previous occupant is still in flight, even if the caller permits more.
+  // All global and context-local slices advance on this clock.
+  // Never reuse a shorter ring while its previous occupant is still in flight, even if the caller permits more.
   if (xiiMaterialManager::IsInitialized())
+  {
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiMaterialManager::GetGpuStorage().GetFramesInFlight());
+  }
   if (xiiGeometryResidencyManager::IsInitialized())
+  {
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
+  }
   if (xiiRayTracingResources::IsInitialized())
+  {
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiRayTracingResources::GetConfiguration().m_uiFramesInFlight);
+  }
   if (xiiVirtualShadowMapManager::IsInitialized())
+  {
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiVirtualShadowMapManager::GetConfiguration().m_uiFramesInFlight);
+  }
 
   s_pState->m_bFrameActive     = true;
   const xiiUInt64 uiFrameIndex = ++s_pState->m_uiFrameIndex;
   if (uiFrameIndex > uiFramesInFlight)
+  {
     s_pState->m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
+  }
 
   const xiiUInt64 uiCompletedFrame = s_pState->m_FrameCompletionTracker.PollCompletedFrames();
   if (xiiGALBindlessResourceTable::IsInitialized())
+  {
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
+  }
   if (xiiMaterialManager::IsInitialized())
+  {
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  }
   if (xiiVirtualShadowMapManager::IsInitialized())
+  {
     xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  }
+
   frame.m_uiFrameIndex     = uiFrameIndex;
   frame.m_uiCompletedFrame = uiCompletedFrame;
+
   return XII_SUCCESS;
 }
 
@@ -363,12 +350,13 @@ xiiResult xiiRenderGraphManager::ExecuteFrame(const xiiView* pView, xiiUInt32 ui
 {
   xiiRenderGraphFrame frame;
   XII_SUCCEED_OR_RETURN(frame.Begin(uiFramesInFlight));
+
   return ExecuteFrame(frame, pView, settings, out_pError);
 }
 
 xiiResult xiiRenderGraphManager::ExecuteFrame(const xiiRenderGraphFrame& frame, const xiiView* pView, const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
-  if (!IsInitialized() || !frame.IsActive() || frame.GetFrameIndex() != s_pState->m_uiFrameIndex)
+  if (!frame.IsActive() || frame.GetFrameIndex() != s_pState->m_uiFrameIndex)
     return XII_FAILURE;
 
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -391,162 +379,87 @@ xiiResult xiiRenderGraphManager::ExecuteFrame(const xiiRenderGraphFrame& frame, 
 
 xiiResult xiiRenderGraphManager::ExecuteFrame(xiiUInt64 uiFrameIndex, xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
-  XII_ASSERT_DEV(pDevice != nullptr && pResourceCache != nullptr, "Render graph manager requires a device and resource cache.");
-  XII_ASSERT_DEV(s_pState != nullptr && s_pState->m_bEngineStarted, "Render graph manager is not initialized.");
-  if (s_pState == nullptr || !s_pState->m_bEngineStarted || pDevice == nullptr || pResourceCache == nullptr)
-    return XII_FAILURE;
+  XII_ASSERT_DEV(pResourceCache != nullptr, "The render graph resource cache is invalid.");
 
-  xiiDynamicArray<xiiUInt32> executionOrder;
-  for (xiiUInt32 i = 0U; i < s_pState->m_Entries.GetCount(); ++i)
-  {
-    if (ShouldExecute(*s_pState->m_Entries[i], uiFrameIndex))
-      executionOrder.PushBack(i);
-  }
+  XII_LOCK(s_pState->m_FrameMutex);
 
-  executionOrder.Sort([](xiiUInt32 lhs, xiiUInt32 rhs) {
+  s_pState->m_Entries.Sort([](xiiUInt32 lhs, xiiUInt32 rhs) -> bool {
     const xiiRenderGraphManagerState::Entry& a = *s_pState->m_Entries[lhs];
     const xiiRenderGraphManagerState::Entry& b = *s_pState->m_Entries[rhs];
-    if (a.m_Description.m_Category != b.m_Description.m_Category)
-      return a.m_Description.m_Category < b.m_Description.m_Category;
+
     if (a.m_Description.m_iPriority != b.m_Description.m_iPriority)
+    {
       return a.m_Description.m_iPriority < b.m_Description.m_iPriority;
+    }
     return a.m_uiRegistrationOrder < b.m_uiRegistrationOrder;
   });
 
-  for (xiiUInt32 uiEntryIndex : executionOrder)
+  for (auto& pEntry : s_pState->m_Entries)
   {
-    xiiRenderGraphManagerState::Entry& entry = *s_pState->m_Entries[uiEntryIndex];
-    entry.m_Blackboard.ClearFrame();
-    entry.m_pGraph->BeginSetup(uiFrameIndex);
-    entry.m_BuildDelegate(*entry.m_pGraph, entry.m_Blackboard);
-    entry.m_pGraph->EndSetup();
+    pEntry->m_Blackboard.ClearFrame();
+    pEntry->m_pGraph->BeginSetup(uiFrameIndex);
+    pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard);
+    pEntry->m_pGraph->EndSetup();
 
-    if (entry.m_pGraph->Compile(settings, out_pError).Failed())
-      return XII_FAILURE;
-    if (entry.m_pGraph->Execute(pDevice, pView, &entry.m_Blackboard, pResourceCache, pProfiler, out_pError).Failed())
+    if (pEntry->m_pGraph->Compile(settings, out_pError).Failed())
       return XII_FAILURE;
 
-    entry.m_bOnDemandRequested = false;
+    if (pEntry->m_pGraph->Execute(pDevice, pView, &pEntry->m_Blackboard, pResourceCache, pProfiler, out_pError).Failed())
+      return XII_FAILURE;
   }
+
   return XII_SUCCESS;
 }
 
 void xiiRenderGraphManager::Startup()
 {
   XII_ASSERT_DEV(s_pState == nullptr, "Render graph manager started twice.");
+
   s_pState = XII_DEFAULT_NEW(xiiRenderGraphManagerState);
 }
 
 void xiiRenderGraphManager::EngineStartup()
 {
-  XII_ASSERT_DEV(s_pState != nullptr, "Core startup must precede render graph engine startup.");
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-  if (pDevice == nullptr)
-    return;
+  XII_ASSERT_DEV(pDevice != nullptr, "Cannot initialize render graph manager without a valid GAL device.");
 
-  s_pState->m_pResourceCache = XII_DEFAULT_NEW(xiiRenderGraphResourceCache);
-  s_pState->m_pProfiler      = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
-  s_pState->m_pResourceCache->Initialize(pDevice);
-  s_pState->m_pProfiler->Initialize(pDevice);
+  s_pState->m_pResourceCache = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphResourceCache, pDevice);
+  s_pState->m_pProfiler      = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphTimestampProfiler, pDevice);
+
   s_pState->m_FrameCompletionTracker.Initialize(pDevice.Borrow());
-  s_pState->m_bEngineStarted = true;
 }
 
 void xiiRenderGraphManager::EngineShutdown()
 {
-  if (s_pState == nullptr)
-    return;
-
   XII_ASSERT_DEV(!s_pState->m_bFrameActive, "End GPU frames before renderer shutdown.");
 
-  s_pState->m_Entries.Clear();
-  for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)
+  // Check for object leaks.
   {
-    it.Value()->m_pProfiler->Shutdown();
-    it.Value()->m_pResourceCache->Shutdown();
+    if (!s_pState->m_ContextTable.IsEmpty())
+    {
+      xiiLog::Warning("Render graph manager context leak detected: {0} contexts were not destroyed.", s_pState->m_ContextTable.GetCount());
+
+      for (auto it = s_pState->m_ContextTable.GetIterator(); it.IsValid(); ++it)
+      {
+        auto pContext = it.Value();
+
+        xiiLog::Warning("  Context '{0}' was not destroyed.", pContext->m_pGraph->GetName());
+      }
+    }
   }
-  s_pState->m_Contexts.Clear();
+
+  s_pState->m_Entries.Clear();
+  s_pState->m_ContextTable.Clear();
   s_pState->m_FrameCompletionTracker.Reset();
-  s_pState->m_uiFrameIndex = 0U;
-  if (s_pState->m_pProfiler != nullptr)
-    s_pState->m_pProfiler->Shutdown();
-  if (s_pState->m_pResourceCache != nullptr)
-    s_pState->m_pResourceCache->Shutdown();
   s_pState->m_pProfiler.Clear();
   s_pState->m_pResourceCache.Clear();
-  s_pState->m_bEngineStarted = false;
+
+  s_pState->m_uiFrameIndex = 0U;
 }
 
 void xiiRenderGraphManager::Shutdown()
 {
-  EngineShutdown();
   s_pState.Clear();
-}
-
-xiiRenderGraphContext::~xiiRenderGraphContext()
-{
-  Shutdown();
-}
-
-xiiResult xiiRenderGraphContext::Initialize(xiiStringView sName)
-{
-  Shutdown();
-  m_Handle = xiiRenderGraphManager::CreateContext(sName);
-  return m_Handle.IsInvalidated() ? XII_FAILURE : XII_SUCCESS;
-}
-
-void xiiRenderGraphContext::Shutdown()
-{
-  xiiRenderGraphManager::DestroyContext(m_Handle);
-  m_Handle = {};
-}
-
-bool xiiRenderGraphContext::IsInitialized() const
-{
-  return xiiRenderGraphManager::IsValid(m_Handle);
-}
-
-xiiRenderGraph& xiiRenderGraphContext::GetGraph()
-{
-  xiiRenderGraph* pGraph = xiiRenderGraphManager::GetGraph(m_Handle);
-  XII_ASSERT_DEV(pGraph != nullptr, "The render graph context is not initialized or was invalidated by subsystem shutdown.");
-  return *pGraph;
-}
-
-const xiiRenderGraph& xiiRenderGraphContext::GetGraph() const
-{
-  return const_cast<xiiRenderGraphContext*>(this)->GetGraph();
-}
-
-xiiRenderGraphBlackboard& xiiRenderGraphContext::GetBlackboard()
-{
-  xiiRenderGraphBlackboard* pBlackboard = xiiRenderGraphManager::GetBlackboard(m_Handle);
-  XII_ASSERT_DEV(pBlackboard != nullptr, "The render graph context is not initialized or was invalidated by subsystem shutdown.");
-  return *pBlackboard;
-}
-
-const xiiRenderGraphBlackboard& xiiRenderGraphContext::GetBlackboard() const
-{
-  return const_cast<xiiRenderGraphContext*>(this)->GetBlackboard();
-}
-
-xiiRenderGraphResourceCache& xiiRenderGraphContext::GetResourceCache()
-{
-  xiiRenderGraphResourceCache* pCache = xiiRenderGraphManager::GetResourceCache(m_Handle);
-  XII_ASSERT_DEV(pCache != nullptr, "The render graph context is not initialized or was invalidated by subsystem shutdown.");
-  return *pCache;
-}
-
-const xiiRenderGraphResourceCache& xiiRenderGraphContext::GetResourceCache() const
-{
-  return const_cast<xiiRenderGraphContext*>(this)->GetResourceCache();
-}
-
-xiiRenderGraphTimestampProfiler& xiiRenderGraphContext::GetProfiler()
-{
-  xiiRenderGraphTimestampProfiler* pProfiler = xiiRenderGraphManager::GetProfiler(m_Handle);
-  XII_ASSERT_DEV(pProfiler != nullptr, "The render graph context is not initialized or was invalidated by subsystem shutdown.");
-  return *pProfiler;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderGraphManager);
