@@ -301,9 +301,85 @@ Conversely, a class with few methods is not automatically cohesive if those meth
 
 > Expose capabilities, not implementation details. Abstractions should protect invariants, clarify ownership, and reduce coupling without introducing unnecessary indirection.
 
-### 1.4 Think across engine boundaries
+### 1.4 Think Across Engine Boundaries
 
-A change in GraphicsCore can affect GraphicsFoundation, platform backends, plugins, tools, render pipelines, editors, reflection, serialization, and tests. Changes to shared headers, exported symbols, enums, handles, shaders, and binary formats require compatibility review beyond compilation of the edited file.
+XII is a modular, multi-platform engine whose components operate within a shared architectural and runtime environment. Changes to one subsystem can affect other modules, platform implementations, plugins, tools, and applications, even when those dependencies are not immediately visible.
+
+Changes **MUST** be evaluated against the contracts of the affected subsystems, not merely the compilation or correctness of the modified source file.
+
+- Consider the full dependency chain before modifying shared interfaces, data structures, resource representations, or execution semantics.
+- Preserve module boundaries and dependency direction. Lower-level modules **MUST NOT** acquire dependencies on higher-level modules merely to accommodate a local implementation.
+- Prefer changes at the layer that owns the relevant responsibility. Do not introduce workarounds in dependent modules when the underlying issue belongs to a shared abstraction.
+- Avoid coupling platform-independent functionality to a particular operating system, graphics API, compiler, or hardware architecture.
+- Changes to public interfaces **MUST** account for existing consumers, including plugins, tools, scripting interfaces, and external integrations.
+- Changes to shared behavior **MUST** preserve documented invariants across all supported platforms and configurations.
+- Do not introduce cross-module dependencies, initialization requirements, or global state without a demonstrated architectural need.
+
+#### Compatibility Requirements
+
+Compatibility extends beyond source-level compilation. Depending on the affected subsystem, changes may influence binary interfaces, serialized data, runtime behavior, resource lifetimes, and externally consumed formats.
+
+The following changes **MUST** receive compatibility consideration:
+
+- **Public headers and exported symbols:** Function signatures, symbol visibility, type layouts, calling conventions, and binary compatibility.
+- **Enums and flags:** Numeric values, underlying types, bit assignments, serialization mappings, and assumptions made by external consumers.
+- **Handles and resource identifiers:** Validity rules, generation semantics, ownership, lifetime, and compatibility with existing resource managers.
+- **Reflection and type registration:** Type names, properties, metadata, inheritance relationships, versioning, and registration behavior.
+- **Serialization and binary formats:** Schema changes, field ordering, versioning, backward compatibility, and migration requirements.
+- **Shaders and GPU interfaces:** Resource bindings, constant-buffer layouts, shader permutations, pipeline interfaces, and backend-specific restrictions.
+- **Plugin interfaces:** Loading, initialization, shutdown, exported functionality, and compatibility across module boundaries.
+- **Threading and synchronization:** Execution ordering, thread affinity, shared-state access, and CPU/GPU synchronization guarantees.
+- **Build configuration:** Conditional compilation, feature flags, compiler differences, static and dynamic linking, and platform-specific dependencies.
+
+Compatibility requirements **MUST** be assessed according to the documented contract of the affected interface. Not every internal implementation change requires backward compatibility, but changes to persistent formats or externally consumed interfaces must not silently invalidate existing consumers.
+
+#### Platform and Backend Independence
+
+Platform-independent modules **MUST** express behavior through abstractions that can be implemented consistently across supported backends.
+
+- Do not expose backend-specific types through platform-independent interfaces unless the interface explicitly represents a native interoperability boundary.
+- Do not assume that behavior guaranteed by one platform or graphics API is universally supported.
+- Backend implementations **MUST** preserve the common interface's documented semantics or explicitly report unsupported functionality.
+- Optional functionality **SHOULD** be represented through capability queries or existing feature mechanisms rather than assumptions about the active backend.
+- Do not introduce platform-specific branches into shared code when the behavior belongs in a platform implementation.
+- Consider differences in memory alignment, endianness, pointer size, synchronization, filesystem behavior, and compiler support where relevant.
+
+An implementation that works on one backend is not necessarily correct across the engine.
+
+#### Dependency and Change Propagation
+
+Changes **SHOULD** remain localized to the component that owns the affected responsibility.
+
+When a modification requires updates across multiple modules, determine whether the change represents:
+
+1. A legitimate evolution of a shared contract.
+2. An implementation detail that has leaked across abstraction boundaries.
+3. An unnecessary dependency or architectural coupling.
+4. A missing responsibility in an existing subsystem.
+
+Do not introduce additional abstraction layers solely to prevent every change from propagating. Some coordinated changes are legitimate and preferable to maintaining unnecessary compatibility mechanisms.
+
+Conversely, repeated changes across unrelated consumers may indicate that an implementation detail has been exposed too broadly.
+
+#### Validation Across Boundaries
+
+Validation **MUST** reflect the scope and potential impact of the change.
+
+- Compile and test the directly affected module and its relevant dependents.
+- Verify supported platform and backend configurations when modifying shared or platform-sensitive functionality.
+- Test affected resource lifetimes, initialization sequences, shutdown paths, and error-handling behavior.
+- Validate reflection and serialization compatibility when modifying reflected types or persistent data.
+- Verify shader compilation, resource binding compatibility, and pipeline behavior when changing GPU-facing interfaces.
+- Consider existing plugins, tools, and applications that depend on the modified contract.
+- Update relevant tests and documentation whenever observable behavior or public contracts change.
+
+A successful local build is necessary but not sufficient evidence of correctness for changes that affect shared contracts.
+
+Where complete cross-platform or cross-backend validation is impractical, the limitations **SHOULD** be documented, and the unverified configurations identified during review.
+
+**Guiding principle:**
+
+> A change is correct only when it preserves the intended contracts of every affected boundary. Local correctness must not come at the expense of system-wide consistency, portability, or maintainability.
 
 ### 1.5 Optimize from evidence
 
