@@ -1808,86 +1808,478 @@ Spelling and terminology are particularly important for public interfaces becaus
 
 > Names are part of the interface. Favor clarity, preserve established terminology, and use abbreviations only when their meaning is sufficiently well understood.
 
-## 4. File organization and headers
+## 4. File Organization and Headers
 
-### 4.1 One clear primary responsibility per file
+Source files and public interfaces **MUST** be organized to preserve clear module boundaries, minimize compilation dependencies, and support independent development across XII's subsystems.
 
-Pair public declarations with implementation files in the same module layout whenever practical:
+This section extends the source layout requirements established in §2, focusing on header design, dependency management, translation-unit boundaries, template organization, and binary interfaces.
+
+Formatting, include ordering, license placement, and the `Implementation` directory convention are governed by §§2.1–2.8 and are not repeated here.
+
+### 4.1 One Clear Primary Responsibility per File
+
+Each source file **SHOULD** have a coherent primary responsibility corresponding to a class, subsystem operation, or closely related group of functions.
+
+- Prefer organizing files around meaningful responsibilities rather than arbitrary implementation size.
+- Keep implementation-specific helpers near the component that owns them.
+- Do not move unrelated types into generic `Utilities`, `Common`, or `Helpers` files merely because their implementations are small.
+- Extract reusable functionality into independent files only when it has a clear responsibility and demonstrated consumers.
+- Avoid distributing a single cohesive implementation across multiple translation units without a meaningful architectural reason.
+- Avoid accumulating unrelated functionality in an existing file solely because it is convenient.
+- File names **SHOULD** identify their principal type, interface, or responsibility.
+
+Public headers and corresponding implementation files follow the directory organization defined in §2.8.
 
 ```text
-GraphicsCore/
-  Pipeline/
-    RenderGraphManager.h
-    Implementation/
-      RenderGraphManager.cpp
+Core/
+└── ResourceManager/
+    ├── ResourceManager.h
+    ├── ResourceManagerTypes.h
+    └── Implementation/
+        ├── ResourceManager.cpp
+        └── ResourceManagerTypes.cpp
 ```
 
-Do not move types into a generic `Utilities` file solely because they are small. Group helpers with their owner unless they have legitimate independent reuse.
+Related types may share a file when their responsibilities are inseparable and separating them would introduce unnecessary dependencies or fragmentation.
 
-### 4.2 Header self-sufficiency
+**Guiding principle:**
 
-Public headers must compile when included alone, without relying on a PCH or accidental include order. Include definitions for fields held by value; forward declare types used only via pointers/references where legal and useful.
+> Organize files around cohesive responsibilities, not arbitrary size limits or superficial classification.
+
+### 4.2 Header Self-Sufficiency and Complete Types
+
+Public headers **MUST** be independently compilable and must declare their dependencies explicitly.
+
+A header must not rely on another header, a precompiled header, or a particular inclusion order to provide required declarations.
+
+The include organization and module `DLL.h` placement requirements are defined in §2.5.
+
+#### General Requirements
+
+- Public headers **MUST** contain the declarations and dependencies necessary for their independent compilation.
+- A header **MUST NOT** rely on transitive includes for symbols it directly requires.
+- Complete type definitions **MUST** be available wherever the C++ language requires them.
+- Forward declarations **SHOULD** be used where legal and beneficial to reduce unnecessary dependencies.
+- Avoid including implementation-specific headers in public interfaces unless their definitions are genuinely required.
+- Public headers **SHOULD** minimize dependencies on unrelated modules.
+- Header self-sufficiency **SHOULD** be validated through independent compilation or automated header checks.
+
+**Prefer:**
+
+```cpp
+// ResourceLoader.h
+
+#pragma once
+
+#include <Core/CoreDLL.h>
+
+#include <Foundation/Strings/StringView.h>
+#include <Foundation/Types/Result.h>
+
+class xiiResourceManager;
+
+class XII_CORE_DLL xiiResourceLoader
+{
+public:
+  xiiResult LoadResource(xiiStringView sPath);
+
+  void SetResourceManager(xiiResourceManager* pManager);
+
+private:
+  xiiResourceManager* m_pManager = nullptr;
+};
+```
+
+The forward declaration is sufficient because the header only stores a non-owning pointer to `xiiResourceManager`.
+
+The corresponding implementation file includes the complete definition when it accesses the manager's members.
+
+#### Incomplete Types and Ownership
+
+Forward declarations are not universally interchangeable with includes.
+
+Complete types are generally required for:
+
+- Non-static data members stored by value.
+- Base classes.
+- Inline functions that access type members.
+- Operations requiring an object's size or alignment.
+- Template instantiations whose definitions require complete types.
+- Destruction or allocation operations requiring a complete type.
+
+Smart pointers may support declarations involving incomplete types, but their destruction and instantiation requirements must be respected.
+
+**Prefer:**
+
+```cpp
+// SimulationController.h
+
+#pragma once
+
+#include <Core/CoreDLL.h>
+
+#include <Foundation/Types/UniquePtr.h>
+
+class xiiSimulationData;
+
+class XII_CORE_DLL xiiSimulationController
+{
+public:
+  xiiSimulationController();
+  ~xiiSimulationController();
+
+private:
+  xiiUniquePtr<xiiSimulationData> m_pData;
+};
+```
+
+```cpp
+// Implementation/SimulationController.cpp
+
+#include <Core/CorePCH.h>
+
+#include <Core/Simulation/SimulationController.h>
+#include <Core/Simulation/SimulationData.h>
+
+xiiSimulationController::xiiSimulationController() = default;
+
+xiiSimulationController::~xiiSimulationController() = default;
+```
+
+This pattern is valid when the smart pointer's implementation supports incomplete types and the out-of-line destructor is instantiated with the complete definition available.
+
+Do not assume that all ownership wrappers have identical incomplete-type requirements.
+
+**Guiding principle:**
+
+> Headers must provide every dependency required by their contracts while avoiding dependencies needed only by their implementations.
+
+### 4.3 Header Inclusion and One Definition Rule
+
+XII uses `#pragma once` as its established header inclusion mechanism, as specified in §2.5.
+
+In addition to preventing repeated inclusion, header design **MUST** respect C++ linkage and the One Definition Rule (ODR).
+
+#### General Requirements
+
+- Header definitions **MUST** be safe for inclusion in multiple translation units.
+- Ordinary non-inline functions and variables with external linkage **MUST NOT** be defined in headers unless the language explicitly permits the intended definition pattern.
+- Use `inline` or `inline constexpr` where appropriate for definitions intentionally shared across translation units.
+- Avoid namespace-scope mutable state defined in headers.
+- Do not rely on `#pragma once` to prevent ODR violations across separate translation units.
+- Header-defined templates, inline functions, and constants **MUST** have consistent definitions across all translation units.
+- Conditional compilation **MUST NOT** produce incompatible definitions of the same externally linked type or symbol.
+
+**Avoid:**
 
 ```cpp
 #pragma once
 
-#include <GraphicsCore/GraphicsCoreDLL.h>
-#include <Foundation/Types/Delegate.h>
-#include <Foundation/Types/UniquePtr.h>
-
-class xiiRenderGraphResourceCache;
-class xiiRenderGraphTimestampProfiler;
+xiiUInt32 GetDefaultCapacity()
+{
+  return 1024U;
+}
 ```
 
-A by-value field needs the complete type at the point where it is declared. Some smart-pointer declarations may be possible with incomplete types, but ensure the destructor and instantiation sites have full definitions.
+Including this header in multiple translation units can produce multiple definitions of the same externally linked function.
 
-### 4.3 `#pragma once` and include guards
+**Prefer:**
 
-Follow the established XII header convention (`#pragma once`). Do not combine guard styles unnecessarily. Include headers by their module-root paths instead of fragile relative traversals.
+```cpp
+#pragma once
 
-### 4.4 Header exposure and include hygiene
+XII_ALWAYS_INLINE xiiUInt32 GetDefaultCapacity()
+{
+  return 1024U;
+}
+```
 
-- Include what you use; do not depend on transitive includes.
-- Keep backend-only headers out of portable public interfaces.
-- Do not include a heavyweight implementation header when a forward declaration is enough.
-- Avoid public headers that pull in platform SDKs or third-party libraries without an explicit API reason.
-- Resolve cyclic dependencies by splitting interfaces, forwarding declarations, or moving implementation details to `.cpp` files—not by changing include order randomly.
+Alternatively, declare the function in the header and provide its definition in the corresponding `.cpp` file.
 
-### 4.5 Internal linkage and translation-unit helpers
+For non-trivial functions, the latter is generally preferred.
 
-For helpers used only by one `.cpp`, prefer an unnamed namespace or `static` according to local convention. Do not export helpers unnecessarily.
+**Guiding principle:**
+
+> Header inclusion protection prevents repeated inclusion within a translation unit; correct linkage and definition placement prevent conflicts across translation units.
+
+### 4.4 Public Interface Exposure and Dependency Boundaries
+
+Public headers form part of a module's contract and influence every consumer that includes them.
+
+Changes to public headers must therefore consider dependency direction, compilation costs, portability, and interface stability.
+
+#### General Requirements
+
+- Public interfaces **MUST NOT** expose private implementation details without a documented architectural reason.
+- Backend-specific declarations **SHOULD** remain within their corresponding backend modules.
+- Platform SDK and third-party types **SHOULD NOT** appear in portable public interfaces unless native interoperability is an explicit responsibility.
+- Implementation-only dependencies **MUST** remain outside public headers where practical.
+- Avoid exposing concrete storage containers when the contract requires only controlled operations or abstract resource access.
+- Do not include large subsystem headers solely to obtain a small declaration when a narrower dependency is available.
+- Public headers **MUST** respect the module dependency architecture.
+- Cyclic dependencies **MUST** be resolved through appropriate interface design rather than dependence on include order.
+
+#### Resolving Cyclic Dependencies
+
+Circular dependencies frequently indicate unclear ownership or excessively coupled interfaces.
+
+When resolving them, consider:
+
+1. Replacing unnecessary includes with forward declarations.
+2. Moving implementation-specific dependencies into `.cpp` files.
+3. Extracting genuinely shared types into an appropriate lower-level header.
+4. Separating unrelated responsibilities into distinct components.
+5. Revising ownership or interface contracts when two components depend on each other's implementation details.
+
+Do not introduce generic interface layers solely to eliminate every cycle without evaluating whether the additional abstraction improves the architecture.
+
+#### Public Versus Private Dependencies
+
+A dependency belongs in a public header when it is necessary to express or compile that header's public contract.
+
+Dependencies required only for internal algorithms, storage management, platform operations, or implementation-specific functionality should remain private.
+
+This separation helps reduce rebuild propagation and permits implementations to evolve without unnecessarily affecting consumers.
+
+**Guiding principle:**
+
+> A public header should reveal what a component provides, not how the component happens to implement it.
+
+### 4.5 Internal Linkage and Translation-Unit Helpers
+
+Symbols used exclusively within a single implementation file **SHOULD** have internal linkage or otherwise remain inaccessible outside that translation unit.
+
+This prevents accidental dependencies on implementation details and reduces the risk of symbol collisions.
+
+#### General Requirements
+
+- Prefer unnamed namespaces for non-member helper functions, constants, and implementation-specific types that are local to a translation unit.
+- File-local `static` functions and variables **MAY** be used when consistent with neighboring implementations.
+- Do not export helper symbols without a demonstrated external consumer.
+- Do not place translation-unit implementation details in public namespaces unnecessarily.
+- Helpers **SHOULD** be located near the operations that use them when doing so improves readability.
+- Avoid introducing globally accessible utility functions for logic used by only one component.
+- Helper names **MUST** remain descriptive even when their scope is limited.
+
+**Prefer:**
 
 ```cpp
 namespace
 {
-  [[nodiscard]] bool IsValidInterval(xiiUInt32 uiInterval)
+  bool IsValidCapacity(xiiUInt32 uiCapacity)
   {
-    return uiInterval > 0U;
+    return uiCapacity > 0U;
   }
+
+  constexpr xiiUInt32 DefaultCapacity = 1024U;
 }
 ```
 
-### 4.6 Templates and inline code
+An unnamed namespace limits these declarations to the translation unit.
 
-Put template definitions where instantiations can see them, typically in headers or `.inl` files following module patterns. Do not hide a template body in a `.cpp` unless you explicitly instantiate every supported specialization.
+For class-specific helpers that require private member access or participate in class invariants, prefer private member functions when that more accurately expresses their responsibility.
 
-Keep non-template method bodies in `.cpp` by default. Small, stable accessors may be inline if consistent with surrounding code; don't turn substantial implementations into header-only code just to avoid file navigation.
+#### Avoid Unnecessary External Linkage
 
-### 4.7 Export boundaries
-
-Use the correct module DLL/export macro on exported public declarations, as in:
+**Avoid:**
 
 ```cpp
-class XII_GRAPHICSCORE_DLL xiiRenderGraphManager;
+bool ValidateInternalResourceState(const xiiResourceState& state)
+{
+  return state.m_bInitialized;
+}
 ```
 
-Check symbol visibility, platform ABI, and plugin compatibility before exporting classes that contain implementation-heavy STL/custom container members. An ABI-stable façade or handle API may be more appropriate across independently versioned boundaries.
+If this function is used only in one translation unit, external linkage provides no benefit.
 
-### 4.8 Implementation PCH
+Prefer giving it internal linkage unless it intentionally forms part of a shared interface.
 
-Implementation files may include their module PCH first if that module uses PCH, but must also include their own public declaration and direct dependencies as needed. PCH is a build accelerator, not an implicit dependency declaration.
+**Guiding principle:**
 
----
+> Keep implementation details local to the smallest scope that requires them. External visibility should be intentional.
+
+### 4.6 Templates, Inline Functions, and Implementation Files
+
+Templates and inline functions require particular attention because their definitions may need to be visible to multiple translation units.
+
+Their placement **MUST** satisfy C++ instantiation and linkage requirements without unnecessarily increasing compilation dependencies.
+
+#### Template Requirements
+
+- Template definitions **MUST** be visible at their required instantiation points unless explicit instantiation is used.
+- Template implementations **SHOULD** follow the existing module conventions for headers and `_inl.h` files.
+- Do not place template definitions exclusively in `.cpp` files unless all required specializations are explicitly instantiated and the supported instantiation contract is documented.
+- Avoid unnecessarily large template implementations in public headers when the code can be organized into a dedicated implementation include.
+- Template interfaces **SHOULD** expose only the constraints and operations required by their consumers.
+- Do not introduce template abstractions solely to avoid a small amount of ordinary implementation duplication.
+
+#### Inline Functions
+
+- Small accessors and simple operations **MAY** be defined inline when consistent with surrounding code.
+- Substantial non-template implementations **SHOULD** remain in `.cpp` files.
+- Do not assume that the `inline` keyword guarantees machine-code inlining.
+- Do not move implementations into headers solely in pursuit of speculative performance improvements.
+- Header-defined functions **MUST** respect linkage and ODR requirements.
+- Performance-motivated inlining decisions **SHOULD** follow the evidence-based optimization requirements in §1.5.
+
+**Prefer:**
+
+```cpp
+class xiiSimulationClock
+{
+public:
+  XII_ALWAYS_INLINE xiiUInt64 GetStepCount() const
+  {
+    return m_uiStepCount;
+  }
+
+  void Advance(xiiTime deltaTime);
+
+private:
+  xiiUInt64 m_uiStepCount = 0U;
+};
+```
+
+The trivial accessor is suitable for a header definition, while `Advance()` may contain substantial logic and belongs in the corresponding implementation file.
+
+#### Template Implementation Includes
+
+Where the repository uses `_inl.h` files, these **SHOULD** remain associated with the corresponding template declarations and follow the established include structure.
+
+Do not introduce additional source-file extensions or template organization patterns without a clear benefit.
+
+**Guiding principle:**
+
+> Place definitions where C++ requires them, but keep implementation complexity out of public headers whenever practical.
+
+### 4.7 Export Boundaries and Binary Interfaces
+
+Modules intended for dynamic linking **MUST** use the appropriate XII DLL export and import declarations.
+
+Public symbol visibility is part of the module boundary and must be managed deliberately.
+
+The placement of each module's `DLL.h` is defined in §2.5.
+
+#### General Requirements
+
+- Exported classes, functions, and variables **MUST** use the appropriate module export macro.
+- Symbols **MUST NOT** be exported solely for convenience when they are internal implementation details.
+- Avoid unnecessary exposure of internal types, storage layouts, or ownership mechanisms through exported interfaces.
+- Cross-module ownership and destruction responsibilities **MUST** be explicit.
+- Public binary interfaces **MUST** consider calling conventions, type layout, alignment, and supported compiler or platform requirements.
+- Changes to exported interfaces **MUST** be reviewed for compatibility with their intended consumers.
+- Plugin and dynamically loaded module boundaries **MUST** account for initialization, shutdown, object lifetime, and module unloading.
+- Do not assume that successful compilation guarantees binary compatibility.
+
+**Example:**
+
+```cpp
+class XII_GRAPHICSCORE_DLL xiiRenderGraphManager
+{
+public:
+  xiiResult Initialize();
+  void Shutdown();
+};
+```
+
+A public class may require the module export macro when its methods or type are intended to be consumed across dynamic library boundaries.
+
+A forward declaration alone does not necessarily require an export annotation unless its particular usage or compiler contract requires one.
+
+#### ABI Considerations
+
+Exporting a concrete C++ class may expose aspects of its binary representation to dependent modules.
+
+Potential compatibility concerns include:
+
+- Data member layout and alignment.
+- Virtual function table organization.
+- Inheritance structure.
+- Constructor and destructor behavior.
+- Compiler and standard-library compatibility.
+- Template and container implementation details.
+- Allocation and deallocation across module boundaries.
+- Exception and runtime-library configuration.
+
+Where independently versioned binary compatibility is a requirement, opaque handles, controlled interfaces, or ABI-stable façade patterns **SHOULD** be considered.
+
+These mechanisms **MUST NOT** be introduced automatically for every internal engine interface. Their complexity should be justified by actual deployment and compatibility requirements.
+
+#### Exported Ownership Contracts
+
+When resources are created in one module and released in another, their ownership and destruction mechanism must be explicit.
+
+Avoid interfaces that permit callers to release module-owned allocations through an incompatible allocator or runtime.
+
+Where appropriate, provide destruction operations through the same subsystem responsible for creation.
+
+**Guiding principle:**
+
+> Export only intentional contracts. Symbol visibility, ownership, and binary compatibility are architectural decisions, not merely compiler annotations.
+
+### 4.8 Precompiled Headers and Compilation Independence
+
+Precompiled headers are a build optimization and **MUST NOT** be treated as implicit dependency declarations.
+
+The implementation-file ordering requirements, including placement of the repository's license notice before the module PCH, are defined in §2.5.
+
+#### General Requirements
+
+- Implementation files belonging to PCH-enabled modules **MUST** use the corresponding module PCH according to the repository's build configuration.
+- Public headers **MUST NOT** depend on a PCH for required declarations.
+- Implementation files **MUST** include their associated public declaration and other directly required headers.
+- Removing or disabling PCH support **SHOULD NOT** reveal missing dependencies in otherwise valid source files.
+- A PCH **MUST NOT** be used to conceal circular dependencies or invalid include relationships.
+- Avoid adding narrowly used dependencies to a module PCH solely to eliminate local include directives.
+- Changes to shared PCH content **SHOULD** consider compilation impact across the entire module.
+
+**Prefer:**
+
+```cpp
+// Copyright and license notice.
+
+#include <Core/CorePCH.h>
+
+#include <Foundation/Containers/DynamicArray.h>
+
+#include <Core/Simulation/SimulationController.h>
+#include <Core/Simulation/SimulationData.h>
+```
+
+The PCH accelerates compilation, while the remaining includes document the translation unit's actual dependencies.
+
+#### Compilation Validation
+
+When modifying shared headers, PCH configuration, or module dependencies, contributors **SHOULD** consider validating builds with PCH disabled where the build system supports that configuration.
+
+This helps identify accidental dependencies that ordinary PCH-enabled builds might conceal.
+
+**Guiding principle:**
+
+> A precompiled header may accelerate compilation, but it must never determine whether otherwise valid source code can compile correctly.
+
+### 4.9 Public Header Stability and Compilation Cost
+
+Public headers are frequently included throughout the engine and can have a disproportionate effect on build times and dependency propagation.
+
+Changes to widely included headers **SHOULD** consider both architectural impact and compilation cost.
+
+#### General Requirements
+
+- Keep widely consumed headers focused on the declarations required by their consumers.
+- Avoid introducing heavyweight dependencies into foundational headers without a demonstrated need.
+- Prefer implementation-side changes when a public contract does not need to change.
+- Do not introduce large implementation bodies into public headers solely to reduce the number of source files.
+- Avoid unnecessary macro definitions in shared headers.
+- Shared macros **MUST** use appropriate naming and scope conventions to minimize collisions.
+- Changes to common type definitions **SHOULD** consider their effects on downstream compilation, reflection, serialization, and binary compatibility.
+- Build-time improvements **SHOULD** be measured rather than assumed.
+
+Forward declarations, explicit dependencies, and implementation separation can reduce compilation costs, but they should not compromise interface clarity or correctness.
+
+**Guiding principle:**
+
+> Shared headers are high-impact dependencies. Keep their contracts focused, their dependencies intentional, and their implementations appropriately isolated.
 
 ## 5. Types, classes, and interfaces
 
