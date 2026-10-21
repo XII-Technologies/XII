@@ -48,18 +48,19 @@ XII_CREATE_SIMPLE_TEST(Device, Device)
     XII_TEST_BOOL(pDevice->GetGraphicsDeviceAdapterProperties().m_BufferProperties.m_uiConstantBufferAlignment > 0U);
 
     if (pDevice->GetDebugName().IsEqual_NoCase("Vulkan"))
+    {
       XII_TEST_BOOL(pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan);
+    }
     if (pDevice->GetDebugName().IsEqual_NoCase("D3D12"))
+    {
       XII_TEST_BOOL(pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Direct3D12);
+    }
 
     xiiGALCommandQueue* pGraphicsQueue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
     XII_TEST_BOOL(pGraphicsQueue != nullptr);
-    if (pGraphicsQueue != nullptr)
-    {
-      XII_TEST_BOOL(pGraphicsQueue->GetDevice() == pDevice);
-      XII_TEST_BOOL(pGraphicsQueue->GetDescription().m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics));
-      XII_TEST_BOOL(pGraphicsQueue->GetNextFenceValue() > 0U);
-    }
+    XII_TEST_BOOL(pGraphicsQueue->GetDevice() == pDevice);
+    XII_TEST_BOOL(pGraphicsQueue->GetDescription().m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics));
+    XII_TEST_BOOL(pGraphicsQueue->GetNextFenceValue() > 0U);
 
     pDevice->BeginFrame();
     pDevice->EndFrame();

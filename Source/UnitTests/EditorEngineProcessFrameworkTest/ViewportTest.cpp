@@ -65,7 +65,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
   }
   xiiUInt64                             registeredFrame = 0;
   xiiRenderGraphRegistrationDescription registration;
-  registration.m_sName  = "Interleaved registered frame";
+  registration.m_sName.Assign("Interleaved registered frame");
   const auto registered = xiiRenderGraphManager::RegisterGraph(registration, [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
     struct Stamp
     {
@@ -131,7 +131,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
   // A later graph can fail compilation after an earlier graph submitted GPU work.
   // The automatic frame scope must still capture it and release the recording lock.
   xiiRenderGraphRegistrationDescription invalidRegistration;
-  invalidRegistration.m_sName     = "Cyclic registered frame";
+  invalidRegistration.m_sName.Assign("Cyclic registered frame");
   invalidRegistration.m_iPriority = 1;
   const auto cyclic               = xiiRenderGraphManager::RegisterGraph(invalidRegistration, [](xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
     struct Data

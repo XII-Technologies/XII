@@ -1,29 +1,35 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(RenderGraphAllocations);
+
 XII_CREATE_SIMPLE_TEST(RenderGraphAllocations, ExportedBufferOutlivesGraphUses)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize()))
-    return;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+
   xiiStartup::StartupHighLevelSystems();
+
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
   xiiRenderGraphContext context;
-  if (!XII_TEST_RESULT(context.Initialize("Export lifetime")))
-    return;
+  XII_TEST_RESULT(context.Initialize("Export lifetime"));
+
   xiiRenderGraphFrame frame;
-  if (!XII_TEST_RESULT(frame.Begin()))
-    return;
-  auto& graph = context.GetGraph();
-  auto& cache = context.GetResourceCache();
+  XII_TEST_RESULT(frame.Begin());
+
+  xiiRenderGraph&              graph = context.GetGraph();
+  xiiRenderGraphResourceCache& cache = context.GetResourceCache();
+
   cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
   XII_SCOPE_EXIT(cache.EndFrame());
   graph.BeginSetup(frame.GetFrameIndex());

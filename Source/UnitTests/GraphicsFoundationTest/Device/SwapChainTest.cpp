@@ -51,24 +51,29 @@ XII_CREATE_SIMPLE_TEST(Device, SwapChain)
     XII_TEST_BOOL(swapChain.GetDescription() == description);
     XII_TEST_BOOL(swapChain.GetCurrentSize() == xiiSizeU32(320U, 180U));
     XII_TEST_BOOL(swapChain.GetPresentMode() == xiiGALPresentMode::VSync);
+
     swapChain.SetPresentMode(xiiGALPresentMode::Immediate);
+
     XII_TEST_BOOL(swapChain.GetPresentMode() == xiiGALPresentMode::Immediate);
     XII_TEST_BOOL(swapChain.Resize(xiiSizeU32(640U, 360U), xiiGALSurfaceTransform::Identity).Succeeded());
     XII_TEST_BOOL(swapChain.GetCurrentSize() == xiiSizeU32(640U, 360U));
+
     swapChain.Present();
+
     XII_TEST_INT(swapChain.m_uiPresentCount, 1U);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native swapchain accepts reverse depth clear")
   {
-    auto window = environment.CreateWindow(128, 128, "Reverse depth swapchain");
-    if (!XII_TEST_BOOL(window != nullptr))
-      return;
+    xiiUniquePtr<xiiWindowBase> pWindow = environment.CreateWindow(128, 128, "Reverse depth swapchain");
+    XII_TEST_BOOL(pWindow != nullptr);
+
     xiiGALSwapChainCreationDescription description;
-    description.m_pWindow            = window.Borrow();
-    description.m_fDefaultDepthValue = 0.0f;
-    auto swapChain                   = environment.GetDevice()->CreateSwapChain(description);
-    if (XII_TEST_BOOL(swapChain != nullptr))
-      XII_TEST_FLOAT(swapChain->GetDescription().m_fDefaultDepthValue, 0.0f, 0.0f);
+    description.m_pWindow                    = pWindow.Borrow();
+    description.m_fDefaultDepthValue         = 0.0f;
+    xiiSharedPtr<xiiGALSwapChain> pSwapChain = environment.GetDevice()->CreateSwapChain(description);
+
+    XII_TEST_BOOL(pSwapChain != nullptr);
+    XII_TEST_FLOAT(pSwapChain->GetDescription().m_fDefaultDepthValue, 0.0f, 0.0f);
   }
 }
