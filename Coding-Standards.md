@@ -381,9 +381,148 @@ Where complete cross-platform or cross-backend validation is impractical, the li
 
 > A change is correct only when it preserves the intended contracts of every affected boundary. Local correctness must not come at the expense of system-wide consistency, portability, or maintainability.
 
-### 1.5 Optimize from evidence
+### 1.5 Optimize From Evidence
 
-Use profiling data, measured allocations, representative workloads, and correctness tests. Do not automatically trade clarity for speculative speed. Conversely, do not ignore allocations, virtual dispatch, cache misses, or synchronization in a proven hot path.
+Performance is a fundamental requirement of XII, but optimization **MUST** be guided by measurable evidence, representative workloads, and an understanding of the underlying system.
+
+Correctness, maintainability, and performance are complementary engineering goals. Code should be designed efficiently from the outset without introducing unnecessary complexity in pursuit of unverified performance improvements.
+
+- Establish correctness before optimizing. An implementation that produces incorrect results more quickly is not an improvement.
+- Prefer efficient algorithms, appropriate data structures, and predictable memory access patterns over low-level optimizations with negligible measurable benefit.
+- Use profiling data, allocation measurements, benchmarks, and representative workloads to identify genuine bottlenecks.
+- Do not sacrifice clarity, safety, or architectural boundaries for speculative performance gains.
+- Conversely, do not disregard allocations, virtual dispatch, cache misses, synchronization overhead, or unnecessary data movement in demonstrated hot paths.
+- Consider performance across the entire operation rather than optimizing isolated instructions without accounting for their broader effects.
+- Performance-sensitive implementations **SHOULD** document non-obvious optimization decisions and the assumptions on which they depend.
+- Optimizations **MUST NOT** introduce undefined behavior, violate ownership contracts, or compromise correctness across supported platforms.
+
+#### Algorithmic Efficiency Before Micro-Optimization
+
+Algorithmic complexity and data representation generally have greater consequences than isolated instruction-level improvements.
+
+- Select algorithms based on expected input sizes, access patterns, and computational requirements.
+- Consider both asymptotic complexity and practical costs, including allocation overhead, memory locality, branching, and synchronization.
+- Prefer contiguous storage when access patterns benefit from spatial locality and stable addresses are not required.
+- Avoid repeated computations, allocations, and conversions when their results can be reused safely and meaningfully.
+- Do not introduce caches without considering invalidation, memory consumption, synchronization, and maintenance costs.
+- Avoid unnecessary abstraction overhead in performance-critical paths, but do not assume that abstraction inherently prevents optimization.
+
+**Prefer:**
+
+```cpp
+void UpdateParticles(xiiArrayPtr<Particle> particles, float fDeltaTime)
+{
+  for (Particle& particle : particles)
+  {
+    particle.m_vPosition += particle.m_vVelocity * fDeltaTime;
+  }
+}
+```
+
+**Avoid:**
+
+```cpp
+void UpdateParticles(xiiArrayPtr<Particle*> particles, float fDeltaTime)
+{
+  for (Particle* pParticle : particles)
+  {
+    // Unnecessary indirection if particles can be stored contiguously.
+    pParticle->m_vPosition += pParticle->m_vVelocity * fDeltaTime;
+  }
+}
+```
+
+When particles have value semantics and do not require stable individual addresses, contiguous storage can improve memory locality, reduce allocation overhead, and simplify ownership.
+
+Pointer-based storage remains appropriate when object identity, polymorphism, stable addresses, or independent lifetimes are required. The preferred representation depends on the actual contract and workload.
+
+#### Memory Allocation and Data Locality
+
+Memory management is an important performance consideration, particularly in frequently executed systems.
+
+- Avoid unnecessary dynamic allocations in established hot paths.
+- Prefer reusing existing storage when doing so does not complicate ownership or introduce excessive retained memory.
+- Reserve container capacity when the expected element count is known and repeated growth would be costly.
+- Consider cache locality, memory fragmentation, alignment, and access patterns when selecting data structures.
+- Avoid unnecessary copies of large objects, but do not replace inexpensive value semantics with pointer indirection without justification.
+- Prefer stack allocation for small, bounded temporary objects when their lifetime and size make it appropriate.
+- Use custom allocators, memory pools, or arenas only when their benefits justify the additional complexity and lifetime constraints.
+
+Allocation count alone is not a sufficient performance metric. Allocation size, frequency, lifetime, contention, and locality can be equally important.
+
+#### Dispatch and Abstraction Costs
+
+Abstractions **SHOULD** be evaluated according to their actual runtime costs rather than assumptions about their implementation.
+
+- Virtual dispatch is acceptable when runtime polymorphism serves a meaningful architectural purpose.
+- Avoid repeated indirect calls in proven hot loops when a simpler dispatch strategy provides a measurable improvement.
+- Prefer compile-time dispatch where the set of operations is known and the resulting code remains manageable.
+- Do not replace clear interfaces with complex template machinery solely to eliminate unmeasured dispatch overhead.
+- Consider the effects of inlining, instruction-cache pressure, code size, and compiler optimization when evaluating alternatives.
+
+Eliminating an individual virtual call does not necessarily improve overall performance if the surrounding computation is dominated by memory access, synchronization, or other costs.
+
+#### Concurrency and Synchronization
+
+Parallel execution **MUST** be evaluated in terms of useful throughput, scheduling overhead, and synchronization requirements.
+
+- Do not assume that additional threads or tasks automatically improve performance.
+- Minimize unnecessary contention, blocking, and shared mutable state in performance-critical systems.
+- Prefer clearly defined ownership and data partitioning over introducing synchronization around poorly structured shared state.
+- Consider lock contention, atomic operations, memory ordering, false sharing, and task scheduling overhead where measurements indicate their relevance.
+- Avoid excessively fine-grained parallelism when scheduling and coordination costs exceed useful computation.
+- Synchronization optimizations **MUST** preserve the required memory-ordering and visibility guarantees.
+- Do not introduce lock-free algorithms solely because they appear faster. Their correctness and performance must be demonstrated under representative contention.
+
+#### CPU and GPU Performance
+
+Graphics and heterogeneous computing workloads require consideration of both CPU and GPU execution costs.
+
+- Distinguish CPU-side submission overhead from GPU execution time when identifying rendering bottlenecks.
+- Measure synchronization stalls, resource transitions, memory transfers, and command submission overhead where applicable.
+- Avoid unnecessary CPU/GPU synchronization, particularly operations that force either processor to wait for work that could otherwise proceed asynchronously.
+- Consider resource lifetime, memory residency, bandwidth, occupancy, and execution dependencies when optimizing GPU workloads.
+- Do not assume that reducing the number of API calls or render passes necessarily improves performance.
+- Evaluate optimizations across supported graphics backends and representative hardware configurations when backend behavior may differ.
+
+Reducing CPU overhead is not necessarily beneficial if the change increases GPU execution time, memory consumption, synchronization cost, or frame latency.
+
+#### Benchmarking and Profiling
+
+Performance claims **SHOULD** be supported by reproducible measurements.
+
+- Establish a baseline before implementing a performance optimization.
+- Profile representative workloads rather than relying exclusively on synthetic microbenchmarks.
+- Use appropriate tools to distinguish CPU execution time, GPU execution time, memory usage, allocation behavior, and synchronization overhead.
+- Measure both typical and worst-case behavior when latency or frame-time consistency is important.
+- Account for warm-up effects, caching, compiler optimization settings, background activity, and measurement variability.
+- Compare results under equivalent conditions, including build configuration, hardware, input data, and execution environment.
+- Repeat measurements sufficiently to distinguish meaningful improvements from noise.
+- Include correctness validation to ensure the optimized implementation preserves the original behavior.
+
+For real-time workloads, average execution time alone is insufficient. Frame-time variance, latency spikes, and worst-case execution behavior may be more important than peak throughput.
+
+#### Optimization Trade-offs
+
+Performance optimizations frequently introduce trade-offs between execution time, memory consumption, code size, complexity, and portability.
+
+Before accepting a non-trivial optimization, consider:
+
+1. **Evidence:** Has a measurable bottleneck been identified?
+2. **Impact:** Does the optimization meaningfully improve the target workload?
+3. **Correctness:** Are all documented invariants and observable semantics preserved?
+4. **Complexity:** Is the additional implementation and maintenance cost justified?
+5. **Portability:** Does the improvement hold across the relevant platforms and hardware?
+6. **Regression risk:** Could the optimization degrade other workloads or execution paths?
+7. **Verification:** Can the performance improvement be reproduced and tested?
+
+An optimization that substantially complicates an implementation for an insignificant improvement **SHOULD** be rejected unless the improvement satisfies a documented performance requirement.
+
+Conversely, additional implementation complexity may be justified when measurements demonstrate a meaningful improvement in a critical subsystem.
+
+**Guiding principle:**
+
+> Design for efficiency, measure before optimizing, and preserve correctness throughout. Performance improvements should solve demonstrated problems rather than anticipated ones.
 
 ---
 
