@@ -436,10 +436,10 @@ public:
   /// RenderTarget / DepthRead / DepthWrite texture writes. The default is false so existing passes
   /// that call BeginRenderPass themselves remain source compatible.
   void SetPassRenderPassManaged(bool bManaged = true);
+
   /// Records resource uploads before a managed native render pass begins. Uses this pass's
   /// declared resources; must restore their declared states before returning.
   void SetPassPreparation(xiiDelegate<void(xiiRenderGraphPassContext&)> preparation);
-
 
 private:
   friend class xiiRenderGraph;
@@ -582,7 +582,6 @@ public:
   /// tracked resource states; callers must invalidate temporal state and retain frame resources
   /// until the submitted work completes, including on failure.
   xiiResult Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler = nullptr, xiiStringBuilder* out_pError = nullptr);
-
 
   /// Returns the graph's compile-time statistics, populated after Compile() and useful for diagnostics.
   [[nodiscard]] const xiiRenderGraphStatistics& GetStatistics() const;
