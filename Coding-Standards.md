@@ -117,15 +117,120 @@ If the interval originates from an external configuration file, the value should
 
 ### 1.2 Make Ownership and Lifetime Visible
 
-Any reviewer should be able to answer:
+Ownership, lifetime, and access semantics **MUST** be explicit and consistent. A component should make it possible to determine who owns a resource, how long it remains valid, and under what conditions it may be accessed.
 
-- Who creates this object?
-- Who destroys it?
-- Can it outlive the object or system it references?
-- What invalidates its pointers, views, iterators, handles, or GPU resources?
-- Who may access it concurrently?
+A reviewer should be able to answer:
 
-Names and types should communicate those answers where feasible. Use handles for independently managed, generation-checked objects; smart pointers for explicit ownership; and non-owning pointers or views for borrowed access.
+- **Creation:** Who creates or acquires the object or resource?
+- **Ownership:** Who is responsible for managing its lifetime?
+- **Destruction:** Who destroys or releases it, and when?
+- **Lifetime:** Can it outlive the object, subsystem, or context on which it depends?
+- **Invalidation:** What invalidates its pointers, references, views, iterators, handles, or GPU resources?
+- **Concurrency:** Which threads may access or modify it, and what synchronization is required?
+
+Names, types, and interfaces **SHOULD** communicate these relationships without requiring callers to inspect implementation details.
+
+#### Ownership Requirements
+
+- Every dynamically managed object or resource **MUST** have a clearly defined owner or ownership policy.
+- Prefer automatic storage and deterministic destruction where practical.
+- Use RAII to associate resource acquisition with cleanup whenever ownership can be represented by object lifetime.
+- Use `xiiUniquePtr` for exclusive dynamic ownership and `xiiSharedPtr` only when shared ownership is genuinely necessary.
+- Use non-owning pointers, references, spans, and views for borrowed access. Their lifetime **MUST NOT** exceed that of the referenced storage.
+- Use opaque, generation-checked handles for independently managed objects whose lifetime is controlled by a registry, manager, or subsystem.
+- Do not expose owning raw pointers without an explicit and documented ownership-transfer contract.
+- Avoid implicit ownership transfer, hidden lifetime extension, and unnecessary shared ownership.
+- Destruction and release operations **MUST** preserve the owning component's invariants, including when an operation fails.
+
+**Prefer:**
+
+```cpp
+class xiiDocument
+{
+public:
+  explicit xiiDocument(xiiUniquePtr<xiiDocumentData>&& pData)
+    : m_pData(std::move(pData))
+  {
+  }
+
+  // Borrowed access. The reference is valid only while
+  // the document and its data remain alive.
+  const xiiDocumentData& GetData() const
+  {
+    return *m_pData;
+  }
+
+private:
+  // Exclusive ownership with deterministic destruction.
+  xiiUniquePtr<xiiDocumentData> m_pData;
+};
+```
+
+**Avoid:**
+
+```cpp
+class xiiDocument
+{
+public:
+  explicit xiiDocument(xiiDocumentData* pData)
+    : m_pData(pData)
+  {
+  }
+
+  // Ownership and lifetime are ambiguous.
+  xiiDocumentData* GetData()
+  {
+    return m_pData;
+  }
+
+private:
+  xiiDocumentData* m_pData;
+};
+```
+
+The preferred implementation makes exclusive ownership explicit through the type system. The document controls the lifetime of its data, and consumers receive borrowed access without acquiring ownership.
+
+The avoided implementation leaves callers uncertain whether the pointer is owned, borrowed, transferred, or expected to be deleted elsewhere.
+
+#### Handles and Resource Lifetimes
+
+Handles are appropriate when resources are managed independently of the objects that reference them.
+
+- Handles **MUST NOT** imply ownership unless explicitly documented.
+- A handle **MUST** be validated before accessing its associated resource whenever its validity cannot be guaranteed by the calling contract.
+- Reusable handle slots **SHOULD** employ generation counters or equivalent mechanisms to detect stale references.
+- Resource destruction **MUST** invalidate the corresponding logical handle according to the subsystem's documented lifetime rules.
+- Do not expose internal resource pointers when a handle-based interface is required to preserve lifetime or synchronization guarantees.
+- Avoid using handles for objects whose lifetime is already clearly and safely expressed through ordinary value or reference semantics.
+
+A generation-checked handle protects against stale logical references but does not automatically guarantee that the underlying resource remains alive during concurrent access.
+
+Likewise, GPU resource lifetime must account for asynchronous execution. Releasing a logical handle does not necessarily mean the underlying allocation can be destroyed immediately if submitted GPU work still references it.
+
+#### Borrowed Access and Invalidation
+
+Non-owning access **MUST** have a clearly established validity period.
+
+- Returned pointers, references, spans, and views **MUST NOT** outlive their backing storage.
+- Container mutation, relocation, resource replacement, and subsystem shutdown **MUST** be considered when establishing validity guarantees.
+- APIs **SHOULD** avoid returning references to internal storage when subsequent operations may invalidate them unexpectedly.
+- Do not retain borrowed references across asynchronous operations unless their lifetime is explicitly guaranteed.
+- Borrowed access **MUST NOT** be mistaken for thread-safe access. Synchronization requirements remain independent of ownership.
+
+#### Concurrency and Destruction
+
+Ownership and thread safety are separate concerns.
+
+- Shared ownership does not imply synchronized access to mutable state.
+- Components **MUST** document concurrent access restrictions when they cannot be inferred from the API contract.
+- Destruction **MUST NOT** race with active operations that access the object or resource.
+- Asynchronous operations **MUST** establish how their dependencies remain valid until completion.
+- Deferred destruction **SHOULD** be used when resources remain referenced by queued operations, background tasks, or GPU submissions.
+- Synchronization and lifetime guarantees **MUST** be enforced by the responsible subsystem rather than delegated implicitly to unrelated callers.
+
+**Guiding principle:**
+
+> Ownership determines who is responsible for a resource. Lifetime determines when it is valid. Access rules determine who may use it and under what conditions. These contracts must remain explicit, independently enforceable, and consistent throughout XII.
 
 ### 1.3 Small Interfaces, Cohesive Implementations
 
