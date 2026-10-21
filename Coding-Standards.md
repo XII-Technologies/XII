@@ -115,7 +115,7 @@ If the interval originates from an external configuration file, the value should
 
 > Expected runtime failures are values, not exceptions. Programming errors are contract violations, not ordinary runtime failures.
 
-### 1.2 Make ownership and lifetime visible
+### 1.2 Make Ownership and Lifetime Visible
 
 Any reviewer should be able to answer:
 
@@ -127,19 +127,74 @@ Any reviewer should be able to answer:
 
 Names and types should communicate those answers where feasible. Use handles for independently managed, generation-checked objects; smart pointers for explicit ownership; and non-owning pointers or views for borrowed access.
 
-### 1.3 Small interfaces, cohesive implementations
+### 1.3 Small Interfaces, Cohesive Implementations
 
-A class or service should have one coherent reason to change. Expose the smallest public API that meets real use cases. Keep storage choices private unless they are intentionally part of a contract.
+Classes, services, and modules **MUST** have clearly defined responsibilities and expose only the functionality required by their consumers. Public interfaces should describe supported operations rather than reveal implementation details.
+
+- Follow the principle of **high cohesion and low coupling**. Group functionality that shares a coherent responsibility, and separate functionality that changes for unrelated reasons.
+- Expose the smallest public API that satisfies demonstrated use cases. Do not add methods, overloads, or extension points for hypothetical requirements.
+- Keep internal storage, data structures, synchronization mechanisms, and implementation-specific state private unless explicitly required by a documented contract.
+- Prefer intention-revealing operations over exposing mutable internal state.
+- Maintain invariants within the component that owns them. Callers **MUST NOT** be required to understand or preserve another component's internal invariants.
+- Avoid unnecessary manager classes, service layers, registries, and wrapper abstractions. Introduce them only when they establish meaningful ownership, coordination, or architectural boundaries.
+- Do not fragment cohesive functionality into multiple classes merely to satisfy an arbitrary class-size or method-count restriction.
+- Prefer stable interfaces that permit implementations to evolve without requiring changes throughout the codebase.
+
+**Prefer:**
 
 ```cpp
-// Better than exposing a mutable internal graph array.
-[[nodiscard]] static xiiRenderGraphHandle CreateGraph(
-  xiiStringView sName, BuildDelegate buildDelegate);
+class xiiResourceRegistry
+{
+public:
+  [[nodiscard]] xiiResourceHandle RegisterResource(xiiStringView sPath);
 
-static xiiResult DestroyGraph(xiiRenderGraphHandle hGraph);
+  void UnregisterResource(xiiResourceHandle hResource);
+
+  [[nodiscard]] bool IsRegistered(xiiResourceHandle hResource) const;
+
+private:
+  xiiHashTable<xiiResourceHandle, ResourceEntry> m_Resources;
+};
 ```
 
-The fact that a manager *can* expose an internal array does not mean callers should depend on it.
+**Avoid:**
+
+```cpp
+class xiiResourceRegistry
+{
+public:
+  // Exposes implementation details and permits external mutation.
+  xiiHashTable<xiiResourceHandle, ResourceEntry>& GetResources();
+
+  // Callers must understand and maintain internal invariants.
+  void RebuildResourceIndices();
+};
+```
+
+The preferred interface allows the registry to control resource registration, removal, and lookup without exposing its underlying container or requiring callers to maintain its internal consistency.
+
+The implementation can subsequently replace its hash table, introduce synchronization, or change its indexing strategy without affecting consumers.
+
+#### Abstraction Boundaries
+
+An abstraction should exist because it establishes a useful boundary, not merely because it reduces the apparent complexity of an individual implementation.
+
+Before introducing a new interface, class, or service, consider:
+
+- **Responsibility:** Does the abstraction own a coherent responsibility?
+- **Consumers:** Is there a concrete consumer that benefits from the abstraction?
+- **Invariants:** Does the abstraction protect meaningful invariants or ownership boundaries?
+- **Coupling:** Does it reduce dependencies, or merely relocate them?
+- **Extensibility:** Is extension genuinely required, or is the abstraction speculative?
+- **Complexity:** Does the abstraction simplify the overall system rather than only the code immediately surrounding it?
+
+A small public interface does not necessarily imply a small implementation. Complex internal algorithms and data structures are acceptable when they are necessary to fulfill a clearly defined responsibility.
+
+Conversely, a class with few methods is not automatically cohesive if those methods address unrelated concerns.
+
+**Guiding principle:**
+
+> Expose capabilities, not implementation details. Abstractions should protect invariants, clarify ownership, and reduce coupling without introducing unnecessary indirection.
 
 ### 1.4 Think across engine boundaries
 
