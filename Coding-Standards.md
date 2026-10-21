@@ -36,37 +36,84 @@ The words **MUST**, **SHOULD**, and **MAY** indicate mandatory rules, expected d
 
 ---
 
-## 1. Core principles
 
-### 1.1 Correctness before cleverness
+## 1. Core Principles
+
+### 1.1 Correctness Before Cleverness
 
 - Code **MUST** express the intended semantics and maintain its documented invariants on all supported platforms.
-- Prefer a straightforward solution over one that saves a few lines but conceals ownership, ordering, lifetime, or failure behavior.
-- Avoid introducing a generic abstraction until it has at least one concrete consumer and a clear responsibility.
-- Do not introduce extra states, registration layers, configuration enums, or caches without a demonstrated need.
-- Make invalid states difficult to represent. Validate untrusted inputs and explicit preconditions at boundaries.
+- Prefer straightforward implementations over clever solutions that obscure ownership, ordering, lifetime, or failure behavior.
+- Avoid introducing generic abstractions without a concrete consumer and a clearly defined responsibility.
+- Do not introduce additional states, registration layers, configuration enums, or caches without a demonstrated need.
+- Make invalid states difficult to represent. Validate untrusted inputs and enforce preconditions at system boundaries.
+- Operations that can legitimately fail **MUST** expose their failure through an explicit mechanism, such as `xiiResult`. XII does not use C++ exceptions for ordinary error handling.
+- Callers **MUST NOT** silently discard failures that affect correctness.
 
 **Prefer:**
 
 ```cpp
-xiiResult SetFrameInterval(xiiUInt32 uiInterval)
+xiiResult LoadConfiguration(xiiStringView sPath)
 {
-  if (uiInterval == 0U)
+  xiiFileReader file;
+
+  if (file.Open(sPath).Failed())
     return XII_FAILURE;
 
-  m_uiFrameInterval = uiInterval;
-  return XII_SUCCESS;
+  return ParseConfiguration(file);
 }
 ```
 
 **Avoid:**
 
 ```cpp
-void SetFrameInterval(xiiUInt32 uiInterval)
+void LoadConfiguration(xiiStringView sPath)
 {
-  m_uiFrameInterval = uiInterval; // A later modulo might divide by zero.
+  xiiFileReader file;
+
+  file.Open(sPath); // Failure is ignored.
+
+  ParseConfiguration(file); // May operate on an unopened file.
 }
 ```
+
+The preferred implementation makes the operation's success or failure observable to the caller and prevents parsing when opening the file fails. It also propagates parsing failures rather than claiming success unconditionally.
+
+#### Expected Failures vs. Contract Violations
+
+Not every invalid argument warrants a `xiiResult`.
+
+A distinction **MUST** be maintained between expected runtime failures and programming errors:
+
+- **Expected runtime failures** arise during otherwise valid operations and must be handled explicitly. Examples include inaccessible files, malformed external data, unavailable network services, and resource initialization failures.
+- **Contract violations** indicate incorrect use of an API or a violated internal invariant. These should be prevented through API design and detected using assertions or other appropriate contract-enforcement mechanisms.
+
+For example, if a function requires a nonzero interval as part of its documented contract, and its callers are entirely under engine control, an assertion is more appropriate:
+
+```cpp
+void SetFrameInterval(xiiUInt32 uiInterval)
+{
+  XII_ASSERT_DEV(uiInterval > 0U, "Frame interval must be greater than zero.");
+
+  m_uiFrameInterval = uiInterval;
+}
+```
+
+If the interval originates from an external configuration file, the value should instead be validated at the configuration boundary, where invalid input can be reported as a recoverable failure.
+
+**Error-handling requirements:**
+
+- Use `xiiResult` for operations where success or failure must be communicated to the caller.
+- Use assertions to detect violations of documented preconditions and internal invariants.
+- Do not use `xiiResult` as a substitute for enforcing API contracts.
+- Do not return `XII_SUCCESS` unless the operation has fulfilled its documented success conditions.
+- Do not silently ignore a failed operation when subsequent execution depends on its success.
+- Propagate failures to the appropriate boundary unless the current function can meaningfully handle or recover from them.
+- Do not use `xiiResult` when callers require structured error information beyond success or failure. Use an appropriate result type or explicit error output instead.
+- C++ exceptions **MUST NOT** be used for ordinary error handling. Exceptions are permitted only where unavoidable within deeply isolated platform-specific implementations and **MUST NOT** propagate across engine API boundaries.
+
+**Guiding principle:**
+
+> Expected runtime failures are values, not exceptions. Programming errors are contract violations, not ordinary runtime failures.
 
 ### 1.2 Make ownership and lifetime visible
 
