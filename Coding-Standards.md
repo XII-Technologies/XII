@@ -1351,146 +1351,462 @@ Any deviation **SHOULD** follow an existing repository pattern and have a clear 
 
 > Keep public interfaces visible and their implementations nearby. A predictable directory structure should make code easy to locate, navigate, and maintain without exposing unnecessary implementation details.
 
-## 3. Naming conventions
 
-**Preserved baseline rule:** Type-dependent prefixes are **mandatory for member variables only** when an applicable type is known. Local variables and parameters may use type-dependent prefixes, and many XII call sites do, but the original policy explicitly leaves their naming to the programmer's discretion. The examples below often use prefixes for locals for consistency, **not** to silently make them mandatory.
+## 3. Naming Conventions
 
-### 3.1 Type and symbol names
+Consistent naming is essential for readability, maintainability, and discoverability across XII's modules. Identifiers should communicate their purpose, type semantics, ownership context, and relationship to the surrounding system without requiring unnecessary inspection of their declarations or implementations.
+
+XII uses a combination of PascalCase, descriptive identifiers, and type-dependent prefixes to maintain consistency across its C++ codebase.
+
+**Preserved baseline rule:** Type-dependent prefixes are **mandatory for member variables only** when an applicable type is known. Local variables and function parameters may use type-dependent prefixes, but their use remains at the programmer's discretion.
+
+Examples throughout this document generally use type-dependent prefixes for local variables and parameters to remain consistent with common XII conventions. These examples **MUST NOT** be interpreted as making such prefixes mandatory outside member variables.
+
+### 3.1 Type and Symbol Names
+
+Names **MUST** be descriptive, consistent with established engine terminology, and appropriate to the responsibility of the symbol.
 
 | Symbol | Convention | Example |
 |---|---|---|
-| Engine class or struct | `xii` + PascalCase | `xiiRenderGraphManager` |
-| Enum wrapper type | `xii` + PascalCase | `xiiRenderGraphQueue` |
-| Enum values | PascalCase | `EveryFrame`, `Graphics` |
-| Functions / methods | PascalCase | `CreateGraph()`, `BeginFrame()` |
-| Accessors | `Get`, `Is`, `Has`, `Can`, `Set` as appropriate | `GetFrameIndex()`, `IsActive()` |
-| Local names / parameters | Descriptive; type prefixes optional | `uiFrameIndex`, `frameIndex` |
-| Private/protected instance fields | `m_` + type prefix when applicable | `m_uiFrameIndex`, `m_pGraph` |
-| Private/protected mutable static fields | `s_` + type prefix when applicable | `s_pState`, `s_uiCount` |
-| Private/protected static constants | PascalCase, ideally `constexpr` | `MaxPassCount` |
-| Macros / compile switches | Established `XII_` convention | `XII_ASSERT_DEV`, `XII_ENABLED` |
-| Template parameters | Semantic PascalCase | `IdTableType`, `ReturnType` |
-| Files | Name for primary type/module | `RenderGraphManager.h` / `.cpp` |
-| Namespaces | Consistent with owning module | `xiiInternal` |
+| Engine classes and structs | `xii` + PascalCase | `xiiResourceManager` |
+| Enum wrapper types | `xii` + PascalCase | `xiiResourceState` |
+| Enum values | PascalCase | `Unloaded`, `Loaded`, `Invalid` |
+| Functions and methods | PascalCase | `Initialize()`, `CreateResource()` |
+| Accessors | `Get`, `Is`, `Has`, `Can`, `Set` as appropriate | `GetCount()`, `IsInitialized()` |
+| Local variables | Descriptive; type prefix optional | `uiResourceCount`, `resourceCount` |
+| Function parameters | Descriptive; type prefix optional | `sPath`, `path` |
+| Private/protected instance fields | `m_` + applicable type prefix | `m_uiCount`, `m_pResource` |
+| Private/protected mutable static fields | `s_` + applicable type prefix | `s_uiInstanceCount` |
+| Private/protected static constants | PascalCase, preferably `constexpr` | `MaxResourceCount` |
+| Compile-time constants | PascalCase, consistent with scope | `DefaultAlignment` |
+| Macros and compile switches | Established `XII_` convention | `XII_ASSERT_DEV`, `XII_ENABLED` |
+| Template type parameters | Semantic PascalCase | `ValueType`, `AllocatorType` |
+| Template non-type parameters | Descriptive, following their semantic role | `Capacity`, `Alignment` |
+| Header files | Name of primary type or responsibility | `ResourceManager.h` |
+| Implementation files | Corresponding header base name | `ResourceManager.cpp` |
+| Namespaces | Established subsystem convention | `xiiInternal` |
 
-Avoid abbreviations that require private knowledge. Established terms such as `GPU`, `GAL`, `ID`, `SRV`, `UAV`, `RT`, `UI`, and `API` are acceptable when consistent with neighboring APIs.
+#### General Requirements
 
-### 3.2 Type-dependent member prefixes
+- Public symbols **MUST** use terminology consistent with the subsystem that owns them.
+- Names **SHOULD** describe responsibilities, behavior, or meaning rather than incidental implementation details.
+- Avoid abbreviations that require private knowledge of the implementation.
+- Prefer established engine terminology over inventing alternative names for existing concepts.
+- Do not encode unnecessary implementation details into identifiers when those details may change.
+- Distinguish operations with different semantics through meaningful names rather than arbitrary suffixes.
+- Do not rename stable public symbols solely for stylistic consistency when doing so would create unnecessary compatibility changes.
+- C++ keywords, reserved identifiers, and implementation-reserved naming patterns **MUST NOT** be used for user-defined symbols.
+
+**Prefer:**
+
+```cpp
+xiiResult InitializeResources();
+xiiUInt32 GetResourceCount() const;
+bool IsResourceReady(xiiResourceHandle hResource) const;
+```
+
+**Avoid:**
+
+```cpp
+xiiResult InitRes();
+xiiUInt32 GetRC() const;
+bool Check(xiiResourceHandle hResource) const;
+```
+
+Names should be understandable without relying on undocumented abbreviations or examining the implementation.
+
+### 3.2 Type-Dependent Member Prefixes
+
+Type-dependent prefixes are **mandatory for member variables** when the member's type belongs to a recognized category.
+
+These prefixes communicate the semantic type of the stored value and are applied after the applicable member or static marker.
 
 | Type family | Prefix | Examples |
 |---|---|---|
 | Signed integers, including signed atomic integers and `ptrdiff_t` | `i` | `m_iPriority`, `s_iLogLevel` |
 | Unsigned integers, including `size_t` | `ui` | `m_uiFrameIndex`, `m_uiCount` |
-| `float`, `double` | `f` | `m_fExposure`, `m_fDeltaSeconds` |
-| Booleans / atomic booleans | `b` | `m_bFrameActive`, `m_bInitialized` |
-| Handle types | `h` | `m_hGraph`, `m_hTexture` |
-| Raw and smart pointers | `p` | `m_pGraph`, `m_pDevice` |
+| Floating-point types (`float`, `double`) | `f` | `m_fDeltaTime`, `m_fThreshold` |
+| Boolean values, including atomic booleans | `b` | `m_bInitialized`, `m_bActive` |
+| Handle types | `h` | `m_hResource`, `m_hTexture` |
+| Raw and smart pointers | `p` | `m_pDevice`, `m_pResource` |
 | NUL-terminated C strings | `sz` | `m_szDisplayName` |
 | Non-NUL-terminated character pointers | `p` | `m_pTextBegin` |
-| XII string objects / string views | `s` | `m_sName`, `m_sPath` |
-| Vector / SIMD vector | `v` | `m_vPosition`, `m_vVelocity` |
-| Quaternion | `q` | `m_qRotation` |
-| Matrix / SIMD matrix | `m` | `m_mTransform` |
-| Other types | No type prefix beyond member/static marker | `m_Blackboard`, `m_Description` |
+| XII string objects and string views | `s` | `m_sName`, `m_sPath` |
+| Vector and SIMD vector types | `v` | `m_vPosition`, `m_vVelocity` |
+| Quaternion types | `q` | `m_qRotation` |
+| Matrix and SIMD matrix types | `m` | `m_mTransform` |
+| Other types | No additional type prefix | `m_Descriptor`, `m_Blackboard` |
 
-Use the **semantic type**, not a convenient but misleading prefix. A 64-bit GPU address is not a `p` pointer unless represented as an actual pointer; a texture handle is `h`, not `p`. `xiiSharedPtr` and `xiiUniquePtr` use `p` because they express pointer ownership/access.
+#### Prefix Requirements
+
+- Member variables **MUST** use their applicable type-dependent prefixes.
+- Prefixes **MUST** represent the semantic type of the value rather than a convenient or misleading interpretation.
+- Type aliases and wrappers **SHOULD** follow the semantic category they represent when that category is unambiguous.
+- Do not assign pointer prefixes to integer values merely because those values represent memory addresses.
+- Handles **MUST** use the `h` prefix rather than the `p` prefix, even when they refer to independently allocated resources.
+- Smart pointers such as `xiiUniquePtr` and `xiiSharedPtr` use the `p` prefix because they represent pointer-based access and ownership.
+- Types without an established prefix **MUST NOT** be assigned arbitrary prefixes merely to maintain a visual pattern.
+- Prefixes **SHOULD** remain consistent when a member's type changes. A type change that alters the appropriate prefix should trigger a corresponding identifier review.
+
+**Prefer:**
 
 ```cpp
-class xiiRendererState
+class xiiSimulationState
 {
 private:
-  xiiUInt64                     m_uiFrameIndex = 0U;
-  xiiInt32                      m_iPriority   = 0;
-  bool                          m_bEnabled    = true;
-  float                         m_fExposure   = 1.0f;
+  xiiUInt64 m_uiSimulationStep = 0U;
+  xiiInt32  m_iPriority        = 0;
+  bool      m_bActive          = false;
+  float     m_fDeltaTime       = 0.0f;
+
   xiiHashedString               m_sName;
-  xiiRenderGraphHandle          m_hGraph;
-  xiiUniquePtr<xiiRenderGraph>  m_pGraph;
-  xiiRenderGraphBlackboard      m_Blackboard;
-  xiiVec3                       m_vPosition;
-  xiiQuat                       m_qRotation;
-  xiiMat4                       m_mWorldToClip;
+  xiiResourceHandle             m_hResource;
+  xiiUniquePtr<xiiResourceData> m_pResourceData;
+
+  xiiVec3 m_vPosition;
+  xiiQuat m_qRotation;
+  xiiMat4 m_mTransform;
+
+  xiiDynamicArray<xiiUInt32> m_ActiveIndices;
 };
 ```
 
-The `m_mWorldToClip` spelling is intentional: the first `m_` means *member*; the second `m` means *matrix*.
+The spelling `m_mTransform` is intentional:
 
-### 3.3 Public fields
+- The first `m_` identifies an instance member.
+- The second `m` identifies a matrix.
 
-The existing XII guidelines do **not** require an `m_` prefix for public non-static data members. Existing public engine data structures frequently use `m_` anyway. For **new POD/configuration-style structures**, prefer the surrounding module's established style and be consistent across the structure. Do not rename public fields merely for aesthetics; such names can be referenced by serialization, reflection, scripts, plugins, and application code.
+Likewise, `m_pResourceData` identifies a member containing a pointer-like object, while `m_hResource` identifies a resource handle.
+
+#### Semantic Types and Aliases
+
+A prefix must not misrepresent the underlying abstraction.
+
+For example:
 
 ```cpp
-struct xiiRenderGraphCompileSettings
+xiiUInt64          m_uiGpuAddress = 0U;
+xiiResourceHandle  m_hResource;
+xiiUniquePtr<Data> m_pData;
+```
+
+A GPU address represented as an unsigned integer uses `ui`, even if the value refers to a location in GPU memory.
+
+An opaque resource handle uses `h`, regardless of how the handle is implemented internally.
+
+The naming convention must remain faithful to the type's public semantics rather than its private representation.
+
+### 3.3 Public Fields
+
+The existing XII naming policy does **not** require the `m_` prefix for public non-static data members.
+
+However, many existing public engine structures use `m_` consistently, particularly configuration objects, descriptors, reflected structures, and serialized data.
+
+For new public data structures, contributors **SHOULD** follow the naming convention established by the surrounding module.
+
+#### General Requirements
+
+- Public fields **SHOULD** use a consistent naming style within the same structure.
+- New configuration and descriptor structures **SHOULD** follow the established conventions of neighboring public data types.
+- Public field names **MUST** communicate their intended meaning and, where relevant, units or state.
+- Do not mix prefixed and unprefixed public fields arbitrarily within a new structure.
+- Existing public fields **MUST NOT** be renamed solely for aesthetic consistency without evaluating compatibility implications.
+- Changes to reflected or serialized public fields **MUST** consider their effect on persistent data, tools, scripts, plugins, and external consumers.
+
+**Prefer:**
+
+```cpp
+struct xiiSimulationSettings
 {
-  bool m_bEnablePassCulling  = true;
-  bool m_bEnableCompileCache = true;
+  bool      m_bEnableSimulation = true;
+  xiiUInt32 m_uiMaxIterations   = 128U;
+  float     m_fFixedTimeStep    = 0.016f;
 };
 ```
 
-### 3.4 Private/protected and static fields
+This structure follows a consistent field convention and communicates each value's semantics through its name.
+
+Public fields may be accessed directly when the structure intentionally represents data rather than an encapsulated behavioral abstraction.
+
+Do not introduce getters and setters for every field of a simple configuration or value structure unless doing so protects meaningful invariants or provides necessary behavior.
+
+### 3.4 Private, Protected, and Static Fields
+
+Private and protected instance fields **MUST** use the `m_` prefix followed by the appropriate type-dependent prefix, where applicable.
+
+Private and protected mutable static fields **MUST** use the `s_` prefix followed by the appropriate type-dependent prefix.
+
+Compile-time constants should use descriptive PascalCase names.
+
+**Prefer:**
 
 ```cpp
 class xiiCounter
 {
 public:
-  [[nodiscard]] xiiUInt32 GetCount() const { return m_uiCount; }
+  XII_ALWAYS_INLINE xiiUInt32 GetCount() const
+  {
+    return m_uiCount;
+  }
 
 private:
   static constexpr xiiUInt32 MaxCount = 1024U;
-  static xiiUInt32           s_uiLiveCounters;
+
+  static xiiUInt32 s_uiLiveCounters;
 
   xiiUInt32 m_uiCount = 0U;
 };
 ```
 
-Existing rules exempt **public static fields** from the private-static naming requirement. Nevertheless, do not expose mutable global state casually. Prefer named constants or controlled APIs.
+#### General Requirements
 
-### 3.5 Fixed-size arrays: intentionally flexible
+- Instance fields **MUST** be distinguishable from local variables and parameters through the `m_` prefix.
+- Private and protected mutable static fields **MUST** use `s_`.
+- Private and protected static constants **SHOULD** use PascalCase without the mutable-static prefix.
+- Prefer `constexpr` for compile-time constants when supported by the required semantics.
+- Avoid mutable static state when ordinary object ownership or explicitly managed subsystem state provides a clearer design.
+- Static data **MUST** have well-defined initialization, synchronization, and destruction behavior.
+- Public mutable static fields **SHOULD** be avoided when they expose internal state or permit uncontrolled modification.
 
-The original standard allows a relaxed prefix for fixed-size arrays:
+The existing naming policy exempts public static fields from the private-static naming requirement.
+
+Nevertheless, public mutable state should not be introduced casually. Prefer named constants or controlled operations when invariants or synchronization requirements must be preserved.
+
+### 3.5 Fixed-Size Arrays
+
+The existing XII naming policy permits a relaxed member-prefix convention for fixed-size arrays.
+
+Both of the following declarations are permitted:
 
 ```cpp
-bool m_bActiveFlags[3]; // Consistent typed field form.
-bool mActiveFlags[3];   // Also permitted by the existing array exception.
+bool m_bActiveFlags[3];
+bool mActiveFlags[3];
 ```
 
-Prefer one style within a class. For new fields, `m_bActiveFlags` is easier to recognize, but this is a recommendation, **not** a retroactive mandatory rule.
+For new code, the conventional typed-member form is **RECOMMENDED** because it remains consistent with other member declarations.
 
-### 3.6 Boolean and query names
+#### General Requirements
 
-Use names that read naturally in a condition:
+- Fixed-size arrays **MAY** use the relaxed member-prefix convention established by the original policy.
+- New fixed-size array members **SHOULD** use the conventional `m_` and applicable type prefix.
+- A class or structure **SHOULD** use one consistent naming style for its fixed-size array members.
+- Existing array members **MUST NOT** be renamed solely to eliminate a permitted naming exception.
+- Array names **SHOULD** describe the meaning of their elements rather than merely identify the storage as an array.
+
+**Prefer for new code:**
 
 ```cpp
-if (m_bFrameActive && pDevice != nullptr)
+class xiiInputState
 {
-  SubmitFrame();
+private:
+  bool      m_bButtonPressed[8] = {};
+  xiiUInt32 m_uiEventCounts[8]  = {};
+};
+```
+
+A fixed-size array exception does not remove the requirement for meaningful names or consistent member organization.
+
+### 3.6 Boolean and Query Names
+
+Boolean identifiers and query methods **SHOULD** communicate conditions that can be read naturally in control-flow expressions.
+
+A boolean name should make its true and false meanings immediately apparent.
+
+#### General Requirements
+
+- Boolean member fields **MUST** use the `b` type prefix where applicable.
+- Prefer affirmative condition names over unnecessary negations.
+- Avoid ambiguous terms such as `Flag`, `Status`, `State`, or `Check` when a more specific condition can be expressed.
+- Boolean query methods **SHOULD** use `Is`, `Has`, or `Can` according to their semantics.
+- Queries **SHOULD NOT** modify observable object state unless their contract explicitly communicates that behavior.
+- Do not use `Get` for boolean queries when `Is`, `Has`, or `Can` communicates the intended meaning more precisely.
+
+**Prefer:**
+
+```cpp
+if (m_bSimulationActive && pWorld != nullptr)
+{
+  AdvanceSimulation();
 }
 ```
 
-Avoid negations of negations and ambiguous state terms such as `m_bValidFlag` or `m_bStatus`. Favor `IsReady()`, `HasResources()`, or `CanExecute()` when implementing boolean queries.
-
-### 3.7 Names must distinguish identity, units, and scope
-
-Use names that distinguish context handles from graph handles, a frame index from a submission index, bytes from elements, and GPU completion from CPU submission.
+**Avoid:**
 
 ```cpp
-xiiRenderGraphHandle        hGraph;
-xiiRenderGraphTextureHandle hTexture;
-xiiUInt64                   uiFrameIndex;
-xiiUInt64                   uiCompletedFrame;
-xiiUInt32                   uiUploadBudgetBytes;
+if (!m_bSimulationDisabled && pWorld != nullptr)
+{
+  AdvanceSimulation();
+}
 ```
 
-Name an object for what it **is**, not for an implementation detail that may change. Do not call an execution index a *priority* unless higher/lower ordering semantics are explicitly documented.
+Prefer query names that communicate distinct meanings:
 
-### 3.8 Abbreviations, acronyms, and spelling
+| Prefix | Intended meaning | Example |
+|---|---|---|
+| `Is` | Current state or property | `IsInitialized()` |
+| `Has` | Possession or availability | `HasPendingTasks()` |
+| `Can` | Capability or permission | `CanExecute()` |
+| `Get` | Retrieve a value or object | `GetResourceCount()` |
+| `Set` | Assign or configure state | `SetPriority()` |
 
-- Prefer unambiguous names like `GetCompletedFrame()` to `GetCF()`.
-- Preserve stable engine terminology and standard graphics acronyms.
-- Avoid inventing synonyms for the same concept (`graph registration`, `entry`, `instance`) in one API unless they mean different things.
-- Spell identifiers and documentation correctly, especially public APIs and diagnostics.
+These conventions are semantic guidelines rather than a requirement to mechanically rename established public APIs.
 
----
+**Guiding principle:**
+
+> A boolean name should describe what is true, and a query method should communicate what it evaluates.
+
+### 3.7 Names Must Distinguish Identity, Units, and Scope
+
+Names **MUST** distinguish concepts that share similar underlying representations but have different meanings.
+
+This is especially important in systems involving resource handles, identifiers, time measurements, memory offsets, simulation state, and asynchronous execution.
+
+#### General Requirements
+
+- Use distinct names for logically different identifiers, even when their underlying types are identical.
+- Include units in identifiers when values could otherwise be misinterpreted.
+- Distinguish indices, counts, offsets, capacities, and sizes according to their actual semantics.
+- Distinguish CPU submission, GPU completion, and application-level frame progression when those concepts are independently tracked.
+- Avoid generic names when the surrounding scope does not make their meaning unambiguous.
+- Prefer domain-specific terminology over implementation-dependent descriptions.
+- Names **MUST NOT** suggest guarantees that the underlying value or operation does not provide.
+
+**Prefer:**
+
+```cpp
+xiiResourceHandle hResource;
+xiiUInt64         uiSimulationStep;
+xiiUInt64         uiCompletedStep;
+xiiUInt32         uiBufferSizeBytes;
+xiiUInt32         uiElementCount;
+xiiUInt32         uiElementOffset;
+float             fElapsedTimeSeconds;
+```
+
+**Avoid:**
+
+```cpp
+xiiResourceHandle hObject;
+xiiUInt64         uiIndex;
+xiiUInt64         uiDone;
+xiiUInt32         uiSize;
+xiiUInt32         uiCount;
+xiiUInt32         uiOffset;
+float             fTime;
+```
+
+The shorter names may be acceptable within a tightly constrained local scope where their meaning is unambiguous. However, public interfaces and long-lived member fields should use sufficiently descriptive names to remain understandable independently of nearby implementation details.
+
+#### Units and Measurements
+
+Unit-bearing identifiers **SHOULD** use explicit unit suffixes when the unit is not already guaranteed by a strongly typed abstraction.
+
+Examples include:
+
+- `uiBufferSizeBytes`
+- `uiTimeoutMilliseconds`
+- `fElapsedTimeSeconds`
+- `fDistanceMeters`
+- `uiFrequencyHertz`
+
+Do not mix values expressed in different units without explicit conversion.
+
+Where a dedicated type already encodes units, repeating the unit in every identifier may be unnecessary.
+
+#### Identity and Ordering
+
+Identifiers should distinguish identity from position or ordering.
+
+For example:
+
+```cpp
+xiiUInt32 uiResourceIndex;
+xiiUInt32 uiExecutionOrder;
+xiiUInt32 uiPriority;
+```
+
+These names describe different concepts:
+
+- An **index** identifies a position in a collection.
+- An **execution order** describes sequencing.
+- A **priority** expresses precedence according to a defined scheduling policy.
+
+Do not call an execution index a priority unless the system actually implements priority semantics.
+
+**Guiding principle:**
+
+> Names should communicate what a value represents, not merely how it is stored. Identity, units, ordering, and scope must remain distinguishable.
+
+### 3.8 Abbreviations, Acronyms, and Spelling
+
+Abbreviations and acronyms **MUST** remain consistent with established XII terminology and commonly understood technical conventions.
+
+Names should favor clarity over brevity, particularly in public APIs and cross-module interfaces.
+
+#### General Requirements
+
+- Prefer descriptive identifiers over abbreviations that require implementation-specific knowledge.
+- Preserve established engine terminology and widely recognized technical acronyms.
+- Do not invent multiple abbreviations for the same concept within a subsystem.
+- Avoid introducing synonyms for established terms unless they represent meaningfully different concepts.
+- Public APIs **SHOULD** use sufficiently descriptive names to remain understandable without implementation context.
+- Identifiers, comments, documentation, assertions, and diagnostic messages **MUST** use correct spelling and terminology.
+- Acronym capitalization **SHOULD** follow the existing conventions of the surrounding API.
+- Do not rename stable public symbols solely to expand an established abbreviation without considering compatibility consequences.
+
+**Prefer:**
+
+```cpp
+xiiUInt64 GetCompletedFrameIndex() const;
+xiiUInt32 GetActiveResourceCount() const;
+bool IsResourceResident() const;
+```
+
+**Avoid:**
+
+```cpp
+xiiUInt64 GetCFI() const;
+xiiUInt32 GetARC() const;
+bool IsResRes() const;
+```
+
+#### Established Acronyms
+
+Common technical abbreviations are acceptable when they are widely recognized or already established within XII.
+
+Examples include:
+
+| Acronym | Meaning |
+|---|---|
+| `CPU` | Central Processing Unit |
+| `GPU` | Graphics Processing Unit |
+| `GAL` | Graphics Abstraction Layer |
+| `API` | Application Programming Interface |
+| `ID` | Identifier |
+| `UI` | User Interface |
+| `SRV` | Shader Resource View |
+| `UAV` | Unordered Access View |
+| `RT` | Render Target or Ray Tracing, depending on context |
+| `SIMD` | Single Instruction, Multiple Data |
+| `ECS` | Entity Component System |
+
+An acronym **SHOULD NOT** be used when its meaning is ambiguous within the relevant subsystem.
+
+For example, `RT` may refer to a render target or ray tracing. Where both concepts appear in the same context, prefer a more explicit name.
+
+#### Terminology Consistency
+
+A subsystem **SHOULD** establish consistent terminology for its primary concepts.
+
+For example, if an API uses the term `ResourceHandle`, related interfaces should not arbitrarily alternate between `ResourceId`, `ResourceReference`, and `ResourceToken` unless those names represent distinct abstractions.
+
+Likewise, distinguish registration, creation, acquisition, initialization, and loading when their operations have different lifecycle semantics.
+
+Spelling and terminology are particularly important for public interfaces because names become part of the contract that developers rely on.
+
+**Guiding principle:**
+
+> Names are part of the interface. Favor clarity, preserve established terminology, and use abbreviations only when their meaning is sufficiently well understood.
 
 ## 4. File organization and headers
 
