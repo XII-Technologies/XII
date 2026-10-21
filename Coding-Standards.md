@@ -591,12 +591,26 @@ ClangFormat suppression directives **SHOULD NOT** be introduced merely to preser
 
 > Formatting is a repository-wide contract, not an individual preference. Automate consistency, minimize unrelated changes, and keep code reviews focused on semantics rather than presentation.
 
-### 2.2 Braces and indentation
+### 2.2 Braces and Indentation
 
-XII examples use Allman-style braces for function/class definitions and multi-line control blocks. Follow the formatter for exact brace placement.
+Consistent brace placement and indentation are essential for expressing control flow clearly and preventing ambiguity. XII follows Allman-style braces for class definitions, function definitions, and multi-line control blocks, with indentation and spacing governed by the repository's `.clang-format` configuration.
+
+Braces and indentation **MUST** make the logical structure of the code immediately apparent without requiring readers to infer statement ownership.
+
+#### General Requirements
+
+- Class, struct, namespace, function, and multi-line control-flow definitions **MUST** follow the brace placement prescribed by `.clang-format`.
+- Use consistent indentation according to the repository's configured indentation width.
+- Opening and closing braces **MUST** clearly delimit the scope they introduce.
+- Closing braces **MUST** align with their corresponding declarations or control statements.
+- Do not introduce unnecessary nesting when guard clauses or early returns provide a clearer implementation.
+- Braces **MUST NOT** be omitted when doing so introduces ambiguity or makes the control flow difficult to follow.
+- Do not manually align statements or braces in ways that conflict with the repository's formatter.
+
+**Prefer:**
 
 ```cpp
-class xiiRenderGraphRegistry
+class xiiResourceRegistry
 {
 public:
   void Clear()
@@ -609,37 +623,231 @@ private:
 };
 ```
 
-Short guarded early returns often omit braces in neighboring XII code:
+The structure makes access control, function scope, and member declarations immediately distinguishable.
+
+#### Single-Statement Control Blocks
+
+Braces **MAY** be omitted for simple, single-statement conditions and loops when the resulting control flow remains unambiguous.
+
+This convention is particularly appropriate for guard clauses, validation checks, and early returns.
+
+**Prefer:**
 
 ```cpp
-if (pDevice == nullptr)
-  return XII_FAILURE;
+xiiResult Initialize(xiiDevice* pDevice)
+{
+  if (pDevice == nullptr)
+    return XII_FAILURE;
+
+  if (m_bInitialized)
+    return XII_SUCCESS;
+
+  return InitializeResources(pDevice);
+}
 ```
 
-For multi-statement branches, nested conditions, and anything likely to grow, prefer braces:
+Braces **SHOULD** be omitted only when all of the following conditions are satisfied:
+
+- The controlled body contains exactly one statement.
+- The statement remains readable without additional scope.
+- No ambiguity exists regarding control-flow ownership.
+- The condition and its body are sufficiently simple to understand immediately.
+- Omitting braces is consistent with the surrounding code and formatter configuration.
+
+Braces **SHOULD** be introduced when the controlled statement becomes more complex or when additional statements are added.
+
+#### Multi-Statement Control Blocks
+
+Braces **MUST** be used when a conditional branch or loop contains multiple statements.
+
+**Prefer:**
 
 ```cpp
 if (bNeedsRebuild)
 {
-  ResetGraph();
+  ResetResources();
   RebuildResources();
+  UpdateResourceBindings();
 }
 ```
 
-Never write ambiguous nested unbraced `if` chains:
+**Avoid:**
 
 ```cpp
-// Avoid: the else binds to the innermost if.
+if (bNeedsRebuild)
+  ResetResources();
+  RebuildResources();
+  UpdateResourceBindings();
+```
+
+In the avoided implementation, only the first statement is controlled by the condition. The remaining statements execute unconditionally, potentially violating the intended control flow.
+
+Braces are therefore a correctness mechanism as well as a formatting convention.
+
+#### Nested Conditions and Ambiguous Control Flow
+
+Nested conditionals **MUST NOT** rely on implicit `else` association.
+
+**Avoid:**
+
+```cpp
 if (bVisible)
   if (bReady)
-    Render();
+    Process();
   else
     LogNotReady();
 ```
 
-### 2.3 Alignment and spacing
+The `else` belongs to the innermost unmatched `if`, which may not reflect the intended behavior.
 
-Keep related initialization and member declarations readable. The formatter decides exact columns.
+**Prefer:**
+
+```cpp
+if (bVisible)
+{
+  if (bReady)
+  {
+    Process();
+  }
+  else
+  {
+    LogNotReady();
+  }
+}
+```
+
+Where possible, simplify nested conditions using guard clauses or combined predicates.
+
+**Prefer when equivalent:**
+
+```cpp
+if (!bVisible)
+  return;
+
+if (!bReady)
+{
+  LogNotReady();
+  return;
+}
+
+Process();
+```
+
+Early returns **SHOULD** be preferred when they reduce nesting without obscuring cleanup, resource ownership, or control-flow requirements.
+
+#### Conditional Branches
+
+For `if`, `else if`, and `else` chains, braces **SHOULD** be applied consistently across branches when any branch requires a multi-statement body.
+
+**Prefer:**
+
+```cpp
+if (state == xiiResourceState::Ready)
+{
+  ProcessResource();
+  UpdateStatistics();
+}
+else if (state == xiiResourceState::Pending)
+{
+  QueueResource();
+}
+else
+{
+  LogResourceFailure();
+}
+```
+
+Avoid mixing braced and unbraced branches when doing so makes the structure less predictable.
+
+Simple conditional chains **MAY** omit braces where permitted by the formatter and where every branch remains unambiguous.
+
+#### Loops and Iteration
+
+Loop bodies follow the same rules as conditional statements.
+
+Braces **MAY** be omitted for simple, single-statement loops.
+
+**Prefer:**
+
+```cpp
+for (xiiUInt32 uiIndex = 0; uiIndex < m_Entries.GetCount(); ++uiIndex)
+  ProcessEntry(m_Entries[uiIndex]);
+```
+
+Braces **MUST** be used for multi-statement loop bodies.
+
+**Prefer:**
+
+```cpp
+for (xiiUInt32 uiIndex = 0; uiIndex < m_Entries.GetCount(); ++uiIndex)
+{
+  ResourceEntry& entry = m_Entries[uiIndex];
+
+  if (!entry.m_bActive)
+    continue;
+
+  ProcessEntry(entry);
+  UpdateStatistics(entry);
+}
+```
+
+Loop bodies **SHOULD** remain focused and avoid excessive nesting. Where iteration logic becomes difficult to follow, consider extracting a cohesive operation into a separate function.
+
+#### Scope and Lifetime
+
+Braces also define lexical scope and therefore influence object lifetime and deterministic destruction.
+
+- Introduce explicit scopes when a shorter lifetime is necessary for correctness, synchronization, or resource management.
+- Do not introduce additional scopes merely for visual grouping when they serve no meaningful purpose.
+- Variables **SHOULD** be declared in the narrowest practical scope that satisfies their intended use.
+- RAII-managed resources **MUST** remain alive for the entire duration of operations that depend on them.
+- Scope boundaries **MUST NOT** accidentally invalidate borrowed references, pointers, views, or iterators.
+
+**Prefer:**
+
+```cpp
+{
+  XII_LOCK(m_Mutex);
+  UpdateSharedState();
+}
+
+// The lock is released before performing independent work.
+ProcessPendingTasks();
+```
+
+An explicit scope is justified here because it determines the duration of synchronization rather than serving as a purely stylistic grouping.
+
+#### Maintenance and Review
+
+Code structure **SHOULD** remain easy to modify without introducing accidental changes in control flow.
+
+- When adding statements to an unbraced control block, introduce braces before expanding the body.
+- Review nested branches carefully when modifying conditions or adding `else` clauses.
+- Avoid formatting that visually suggests a statement belongs to a scope when it does not.
+- Do not rely on indentation alone to express control flow; C++ semantics are determined by statement structure and braces.
+- Prefer restructuring deeply nested logic over adding layers of braces that obscure the operation's intent.
+
+**Guiding principle:**
+
+> Braces define control flow, scope, and lifetime. Use them consistently to eliminate ambiguity, preserve correctness, and make the structure of an implementation immediately understandable.
+
+### 2.3 Alignment and Spacing
+
+Consistent alignment and spacing improve readability by making relationships between declarations, expressions, and operations immediately apparent. Formatting **MUST** follow the repository's `.clang-format` configuration, which determines the exact alignment and spacing rules.
+
+Alignment should clarify related code without introducing unnecessary whitespace or making maintenance more difficult.
+
+#### General Requirements
+
+- Use consistent spacing around operators, assignments, declarations, and expressions as prescribed by the repository's formatter.
+- Related declarations and initializations **MAY** be aligned when doing so improves readability and is supported by the formatter.
+- Do not manually introduce alignment that conflicts with automated formatting.
+- Avoid aligning unrelated statements or declarations across large regions of code.
+- Use blank lines to separate logically distinct operations, not individual statements without meaningful separation.
+- Do not introduce excessive vertical whitespace that unnecessarily fragments cohesive implementations.
+- Preserve consistent spacing within classes, functions, namespaces, and control-flow structures.
+
+**Prefer:**
 
 ```cpp
 xiiUInt32 m_uiFrameIndex = 0U;
@@ -647,26 +855,233 @@ xiiUInt32 m_uiPassCount  = 0U;
 bool      m_bActive      = false;
 ```
 
-Avoid arranging distant or unrelated statements into artificially wide columns. Maintain blank lines between logically separate operations, not after every statement.
+Related member declarations may benefit from alignment because their types, names, and initializers form a compact logical group.
 
-### 2.4 Statement structure
-
-- One declaration per line when each name has independent meaning or initialization.
-- Avoid assignment inside conditions unless it materially improves clarity.
-- Use parentheses to disambiguate complex conditions.
-- Do not combine unrelated side effects on one line.
+**Avoid:**
 
 ```cpp
-const xiiUInt32 uiWidth  = targetSize.width;
-const xiiUInt32 uiHeight = targetSize.height;
+xiiUInt32                    m_uiFrameIndex = 0U;
+xiiUInt32                    m_uiPassCount  = 0U;
+
+bool                         m_bActive      = false;
+
+// Unrelated declarations should not dictate alignment.
+xiiUniquePtr<xiiResourceData> m_pResourceData;
+```
+
+Alignment **SHOULD NOT** introduce large amounts of whitespace merely to maintain common columns across unrelated declarations.
+
+#### Logical Spacing
+
+Blank lines **SHOULD** communicate transitions between logically distinct operations.
+
+**Prefer:**
+
+```cpp
+const xiiUInt32 uiWidth  = descriptor.m_uiWidth;
+const xiiUInt32 uiHeight = descriptor.m_uiHeight;
+
+if (uiWidth == 0U || uiHeight == 0U)
+  return XII_FAILURE;
+
+const xiiUInt64 uiPixelCount = static_cast<xiiUInt64>(uiWidth) * uiHeight;
+
+AllocateStorage(uiPixelCount);
+InitializeStorage();
+```
+
+Avoid inserting blank lines after every declaration or statement when those statements form one cohesive operation.
+
+Similarly, do not compress unrelated stages of an implementation into a single uninterrupted block.
+
+**Guiding principle:**
+
+> Alignment should reveal relationships, and whitespace should reveal structure. Neither should introduce unnecessary complexity or compete with automated formatting.
+
+### 2.4 Statement Structure
+
+Statements **MUST** communicate their purpose clearly and avoid unnecessary combinations of declarations, assignments, conditions, and side effects.
+
+Prefer explicit operations and predictable control flow over compact expressions that require additional interpretation.
+
+#### General Requirements
+
+- Declare one independently meaningful variable per statement.
+- Initialize variables at the point of declaration whenever practical.
+- Prefer declarations in the narrowest scope that satisfies their intended use.
+- Avoid assignment inside conditional expressions unless it materially improves clarity.
+- Use parentheses to clarify complex boolean expressions, particularly when mixing logical operators.
+- Do not combine unrelated side effects into a single statement.
+- Avoid comma expressions when ordinary sequential statements communicate the same behavior more clearly.
+- Prefer early returns for invalid inputs and unmet preconditions when they simplify control flow.
+- Do not rely on implicit operator precedence when an expression could reasonably be misinterpreted.
+- Do not introduce temporary variables that merely rename an expression without improving readability, correctness, or reuse.
+
+#### Declarations and Initialization
+
+**Prefer:**
+
+```cpp
+const xiiUInt32 uiWidth  = descriptor.m_uiWidth;
+const xiiUInt32 uiHeight = descriptor.m_uiHeight;
 
 if (uiWidth == 0U || uiHeight == 0U)
   return XII_FAILURE;
 ```
 
-### 2.5 Includes and whitespace
+**Avoid:**
 
-Use the repository's existing include ordering. Common XII implementation files include their module PCH first, then grouping by Foundation, Core, GraphicsFoundation, GraphicsCore, and application-specific headers. Keep one include per line and avoid redundant includes. A public header must include enough to compile independently; it must not depend on an implementation PCH accidentally supplying types.
+```cpp
+xiiUInt32 uiWidth, uiHeight;
+
+uiWidth = descriptor.m_uiWidth;
+uiHeight = descriptor.m_uiHeight;
+```
+
+Separate declarations make initialization and variable lifetime easier to inspect.
+
+Multiple declarations in a single statement **SHOULD** be avoided when their variables have independent meanings or initialization requirements.
+
+#### Assignments and Conditions
+
+Assignments within conditions **SHOULD** be avoided when separating the operations improves clarity.
+
+**Prefer:**
+
+```cpp
+xiiResource* pResource = FindResource(sName);
+
+if (pResource == nullptr)
+  return XII_FAILURE;
+
+ProcessResource(*pResource);
+```
+
+**Avoid:**
+
+```cpp
+if (xiiResource* pResource = FindResource(sName))
+  ProcessResource(*pResource);
+else
+  return XII_FAILURE;
+```
+
+The second form is valid C++, but the first makes lookup, validation, and subsequent processing distinct operations.
+
+C++17-style conditional initializers **MAY** be used when their scope restriction provides a clear benefit and the condition remains straightforward.
+
+#### Complex Expressions
+
+Complex conditions **SHOULD** be structured so that their intent is immediately understandable.
+
+**Prefer:**
+
+```cpp
+const bool bRequiresUpdate = bDirty || bForceUpdate;
+const bool bCanUpdate      = bInitialized && !bPendingDestruction;
+
+if (bRequiresUpdate && bCanUpdate)
+  UpdateResource();
+```
+
+**Avoid:**
+
+```cpp
+if ((bDirty || bForceUpdate) && bInitialized && !bPendingDestruction)
+  UpdateResource();
+```
+
+Named intermediate predicates are appropriate when they clarify domain-specific meaning, are reused, or make a complex condition easier to verify.
+
+Do not introduce intermediate variables for every simple expression.
+
+#### Side Effects and Evaluation Order
+
+Statements with side effects **MUST** preserve clear and predictable evaluation semantics.
+
+**Prefer:**
+
+```cpp
+UpdateResourceState();
+NotifyDependents();
+RecordStatistics();
+```
+
+**Avoid:**
+
+```cpp
+UpdateResourceState(), NotifyDependents(), RecordStatistics();
+```
+
+Avoid expressions that modify and access shared state through multiple operands when their evaluation order is unclear or dependent on subtle language rules.
+
+**Guiding principle:**
+
+> Each statement should express a clear operation. Prefer explicit initialization, understandable conditions, and predictable evaluation over unnecessary compactness.
+
+### 2.5 Includes and Whitespace
+
+Header dependencies **MUST** be explicit, organized, and consistent with XII's module architecture.
+
+Include ordering should communicate the relationship between the current translation unit, its module, and its dependencies while preserving independent compilation and minimizing unnecessary coupling.
+
+#### General Requirements
+
+- Use one `#include` directive per line.
+- Include only headers required by the declarations or implementation.
+- Prefer the narrowest appropriate header rather than importing a broad subsystem header unnecessarily.
+- Do not rely on transitive includes for types, macros, or functions directly required by the current file.
+- Public headers **MUST** be self-contained and compile independently when included in a valid translation unit.
+- Public headers **MUST NOT** depend on a precompiled header to provide missing declarations or dependencies.
+- Avoid circular header dependencies. Use forward declarations where appropriate and where complete type information is not required.
+- Do not use relative paths to navigate between module include directories when the repository's module-qualified include paths are available.
+- Preserve the established include ordering and grouping conventions.
+- Separate meaningful include groups with a single blank line.
+- Do not introduce unnecessary blank lines within a cohesive include group.
+
+#### Header Files
+
+Header files **MUST** begin with the repository's required license and copyright notice, followed by `#pragma once`.
+
+For headers belonging to a dynamically linked module, the module's `DLL.h` **MUST** be the first included header immediately following `#pragma once`.
+
+No other include directive or forward declaration should appear between `#pragma once` and the module's `DLL.h`.
+
+**Prefer:**
+
+```cpp
+#pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Strings/StringView.h>
+#include <Foundation/Types/Result.h>
+
+#include <GraphicsFoundation/Resources/Resource.h>
+```
+
+The module's `DLL.h` provides the export and import definitions required by its public interfaces.
+
+It **MUST NOT** be omitted from headers that rely on module export macros merely because another included header happens to provide those definitions transitively.
+
+Headers for modules that do not use a DLL export header are exempt from this requirement.
+
+#### Implementation Files
+
+
+C++ implementation files **MUST** begin with the repository's required license and copyright notice. For implementation files that use a module precompiled header, the corresponding module PCH **MUST** be the first include immediately following that notice, before all other header dependencies.
+
+Other dependencies **SHOULD** then be grouped according to their architectural relationship.
+
+A typical implementation file follows this structure:
+
+1. Module precompiled header.
+2. Required headers from lower-level modules.
+3. Headers from the current module.
+4. Additional dependencies from other permitted modules or application-specific components.
+
+**Prefer:**
 
 ```cpp
 #include <GraphicsCore/GraphicsCorePCH.h>
@@ -674,33 +1089,267 @@ Use the repository's existing include ordering. Common XII implementation files 
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Mutex.h>
 
+#include <GraphicsFoundation/Resources/Resource.h>
+
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 ```
 
-### 2.6 Section separators
+The ordering of include groups **MUST NOT** be interpreted as permission to introduce architectural dependencies that violate the module dependency graph.
 
-Use section dividers when they help navigate a substantial implementation. Avoid decorative separators around every tiny helper.
+Where project-specific conventions establish a different ordering, those conventions take precedence unless they conflict with the repository's formatting or build requirements.
+
+#### Forward Declarations
+
+Forward declarations **SHOULD** be used when they meaningfully reduce compilation dependencies without compromising correctness or interface clarity.
+
+They are generally appropriate for types referenced exclusively through pointers or references when no complete definition is required.
+
+**Prefer:**
+
+```cpp
+#pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
+class xiiResourceManager;
+
+class XII_GRAPHICSCORE_DLL xiiResourceLoader
+{
+public:
+  void SetResourceManager(xiiResourceManager* pManager);
+
+private:
+  xiiResourceManager* m_pManager = nullptr;
+};
+```
+
+A forward declaration **MUST NOT** replace an include when a complete type is required, such as for a by-value data member, inheritance, inline member access, or another construct requiring the full definition.
+
+Forward declarations **SHOULD NOT** be introduced solely to eliminate includes when doing so obscures important interface dependencies.
+
+#### Dependency Hygiene
+
+Header dependencies influence compilation time, coupling, and the scope of rebuilds.
+
+- Avoid including implementation-only dependencies in public headers.
+- Move implementation-specific includes into `.cpp` files where practical.
+- Do not include headers solely because they were historically present.
+- Remove unused includes when modifying the surrounding code, provided doing so does not introduce unrelated changes.
+- Do not introduce monolithic convenience headers into low-level modules when narrowly scoped dependencies are available.
+- Changes to public headers **SHOULD** consider their impact on downstream compilation and module boundaries.
+
+**Guiding principle:**
+
+> Every include should represent an intentional dependency. Headers must stand independently, module boundaries must remain explicit, and include ordering must follow the repository's established conventions.
+
+### 2.6 Section Separators
+
+Section separators **MAY** be used to organize substantial implementation files and distinguish meaningful groups of functionality.
+
+Their purpose is navigation and structural clarity, not decoration.
+
+#### General Requirements
+
+- Use the repository's established separator style where section dividers are appropriate.
+- Prefer section separators between logically distinct implementation groups.
+- Do not insert separators between every small function or helper.
+- Avoid excessive or deeply nested visual section hierarchies.
+- Section organization **SHOULD** reflect the responsibilities of the implementation rather than arbitrary file length.
+- Do not use section separators to compensate for unrelated responsibilities that should be separated into different components or translation units.
+
+**Prefer:**
 
 ```cpp
 //////////////////////////////////////////////////////////////////////////
 
-xiiRenderGraphFrame::xiiRenderGraphFrame() = default;
+xiiResourceRegistry::xiiResourceRegistry() = default;
 
-xiiRenderGraphFrame::~xiiRenderGraphFrame()
+xiiResourceRegistry::~xiiResourceRegistry()
 {
-  End();
+  Clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void xiiResourceRegistry::Clear()
+{
+  m_Entries.Clear();
 }
 ```
 
-### 2.7 File endings and comments
+Separators can improve navigation when distinguishing construction and destruction, resource management, serialization, or other substantial implementation groups.
 
-- Use a newline at end of file.
-- Do not leave commented-out old implementations or `#if 0` blocks indefinitely.
-- Keep copyright/license notices in the repository's established form; do not copy a contributor's personal copyright into unrelated files without authorization.
-- Keep the engine's required static-link registration macro where relevant; see §17.
+For short implementation files containing a small number of closely related functions, additional separators are generally unnecessary.
 
----
+#### Structural Organization
+
+When section separators are used, related implementations **SHOULD** remain grouped consistently.
+
+Examples of meaningful groups include:
+
+- Construction, initialization, and destruction.
+- Public interface implementations.
+- Resource creation and release.
+- State management and synchronization.
+- Serialization and deserialization.
+- Internal algorithms and helper functions.
+- Platform-specific implementations.
+
+Section dividers **MUST NOT** replace clear function names, cohesive class design, or appropriate source-file organization.
+
+An excessively large implementation file should be evaluated for responsibility boundaries rather than divided indefinitely with decorative comments.
+
+**Guiding principle:**
+
+> Use visual separators to clarify meaningful implementation boundaries, not to disguise unnecessary complexity or fragmented design.
+
+### 2.7 File Endings and Comments
+
+Source files **MUST** maintain consistent file structure, meaningful documentation, and a clean version-control history.
+
+Comments should explain intent, constraints, and non-obvious decisions rather than repeat information already apparent from the code.
+
+#### File Requirements
+
+- Source files **MUST** end with a single newline.
+- Trailing whitespace and unintended mixed line endings **MUST NOT** be introduced.
+- Required copyright and license notices **MUST** follow the repository's established form.
+- Existing license notices **MUST NOT** be removed or modified without authorization.
+- Contributors **MUST NOT** copy personal or third-party copyright notices into unrelated files without an applicable legal or licensing basis.
+- Required static-link registration macros **MUST** be preserved where applicable. See §17.
+- Generated source files **MUST** retain any required generator metadata, registration declarations, or structural markers.
+
+#### Commenting Requirements
+
+Comments **SHOULD** explain information that cannot be communicated adequately through names, types, interfaces, or straightforward implementation structure.
+
+Appropriate comments include:
+
+- Non-obvious algorithmic decisions.
+- Platform-specific behavior or limitations.
+- Ownership, lifetime, or synchronization constraints.
+- Requirements imposed by external APIs or binary formats.
+- Performance-sensitive assumptions supported by measurements.
+- Intentional deviations from otherwise established conventions.
+- Compatibility requirements that are not apparent from the surrounding code.
+
+**Prefer:**
+
+```cpp
+// Resource destruction is deferred until submitted GPU work
+// no longer references the underlying allocation.
+QueueResourceDestruction(hResource);
+```
+
+**Avoid:**
+
+```cpp
+// Destroy the resource.
+DestroyResource(hResource);
+```
+
+Comments that merely restate the next operation add noise without improving comprehension.
+
+#### Obsolete Code and Temporary Changes
+
+- Do not retain commented-out implementations as a substitute for version control.
+- Obsolete code **MUST** be removed rather than indefinitely disabled.
+- `#if 0` blocks **SHOULD NOT** be used to preserve abandoned implementations.
+- Temporary debugging statements, experimental code, and instrumentation **MUST** be removed before submission unless intentionally retained as supported functionality.
+- `TODO` and `FIXME` comments **SHOULD** identify a concrete issue or required action rather than serve as vague placeholders.
+- Workarounds **SHOULD** explain the underlying constraint and, where appropriate, reference the associated issue or dependency.
+
+**Avoid:**
+
+```cpp
+#if 0
+void ProcessResources()
+{
+  // Previous implementation retained indefinitely.
+}
+#endif
+```
+
+Version control already preserves historical implementations. Keeping disabled code in active source files increases maintenance burden and obscures the current implementation.
+
+#### Comment Accuracy
+
+Comments are part of the maintained source contract.
+
+- Comments **MUST NOT** contradict the implementation.
+- When behavior changes, associated comments and documentation **MUST** be updated.
+- Avoid speculative comments that describe intended future behavior as though it already exists.
+- Do not document guarantees that the implementation does not enforce.
+- Prefer removing an inaccurate comment over preserving it for historical reasons.
+
+**Guiding principle:**
+
+> Source files should contain only the active implementation and the documentation necessary to understand it. Comments must preserve intent, explain constraints, and remain accurate as the code evolves.
+
+
+### 2.8 Header and Implementation File Organization
+
+XII follows a consistent source-file organization in which implementation files are placed within an `Implementation` directory alongside their corresponding public headers.
+
+This convention separates interface declarations from implementation details while preserving the logical grouping of related functionality.
+
+#### General Requirements
+
+- Public header files (`.h`) **MUST** reside in the directory corresponding to their module and subsystem.
+- C++ implementation files (`.cpp`) **MUST** reside in an `Implementation` subdirectory within the same directory as their corresponding headers.
+- The `Implementation` directory **MUST** use the exact capitalization established by the repository.
+- Related headers and implementation files **SHOULD** share the same base filename to make their relationship immediately apparent.
+- Implementation files **MUST NOT** be placed directly alongside public headers unless an established repository convention or technical requirement explicitly permits it.
+- Private implementation headers **SHOULD** reside in the `Implementation` directory when they are not intended for consumption outside the subsystem.
+- Do not introduce unnecessary directory hierarchies or separate implementation directories when an existing subsystem structure is sufficient.
+
+#### Directory Structure
+
+**Prefer:**
+
+```text
+GraphicsCore/
+└── Pipeline/
+    ├── RenderGraph.h
+    ├── RenderGraphManager.h
+    └── Implementation/
+        ├── RenderGraph.cpp
+        └── RenderGraphManager.cpp
+```
+
+**Avoid:**
+
+```text
+GraphicsCore/
+└── Pipeline/
+    ├── RenderGraph.h
+    ├── RenderGraph.cpp
+    ├── RenderGraphManager.h
+    └── RenderGraphManager.cpp
+```
+
+The preferred structure keeps public interfaces immediately discoverable while grouping their implementations in a predictable location.
+
+#### Implementation-Specific Headers
+
+Headers that define private implementation details **SHOULD** remain within the `Implementation` directory when they are not part of the module's public interface.
+
+Examples include internal helper classes, private data structures, and implementation-specific utilities.
+
+Such headers **MUST NOT** be treated as public API merely because they are accessible through the repository's include paths.
+
+If a private header becomes necessary for multiple independent subsystems, its responsibility and appropriate module placement **SHOULD** be reconsidered rather than exposing implementation details by convenience.
+
+#### Exceptions
+
+Exceptions **MAY** be permitted for generated sources, platform-specific implementations, third-party code, or files subject to established build-system conventions.
+
+Any deviation **SHOULD** follow an existing repository pattern and have a clear technical justification.
+
+**Guiding principle:**
+
+> Keep public interfaces visible and their implementations nearby. A predictable directory structure should make code easy to locate, navigate, and maintain without exposing unnecessary implementation details.
 
 ## 3. Naming conventions
 
