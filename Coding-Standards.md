@@ -524,19 +524,72 @@ Conversely, additional implementation complexity may be justified when measureme
 
 > Design for efficiency, measure before optimizing, and preserve correctness throughout. Performance improvements should solve demonstrated problems rather than anticipated ones.
 
----
+## 2. Source Layout and Formatting
 
-## 2. Source layout and formatting
+### 2.1 Formatting Authority
 
-### 2.1 Formatting authority
+Consistent source formatting is essential for readability, maintainability, and effective code review. XII establishes formatting rules through repository-level configuration files to ensure that source code remains uniform across contributors, development environments, and supported platforms.
 
-The root `.clang-format` is the authority for formatting that the tool can express. `.editorconfig` governs applicable whitespace, line endings, indentation, and encoding. Do not manually invent alignment rules that contradict either file.
+The root `.clang-format` file is the authoritative source for C++ formatting rules that can be expressed by ClangFormat. The repository's `.editorconfig` governs applicable editor settings, including indentation, whitespace, line endings, and character encoding.
 
-- **MUST** format modified C++ code with the repository's configured formatter/version.
-- **MUST NOT** include unrelated mass formatting in a functional pull request.
-- **SHOULD** preserve the codebase's established brace and spacing conventions where not automated.
-- **MUST** avoid trailing whitespace, accidental mixed line endings, and unresolved conflict markers.
-- Source text should be UTF-8 where supported by the repository; do not change encodings without checking tooling and file-format constraints.
+Contributors **MUST NOT** introduce personal formatting conventions that conflict with these configurations.
+
+#### Formatting Requirements
+
+- Modified C++ source code **MUST** be formatted using the repository's configured ClangFormat rules and compatible formatter version.
+- The repository's `.clang-format` configuration **MUST NOT** be overridden through personal editor settings or alternative formatting configurations.
+- Formatting **MUST** remain consistent regardless of the editor, IDE, operating system, or development environment used.
+- Contributors **MUST NOT** manually introduce alignment, indentation, or spacing conventions that conflict with the configured formatter.
+- Existing brace placement, declaration layout, spacing, and naming conventions **SHOULD** be preserved where they are not governed by automated formatting.
+- Formatting changes **MUST NOT** alter program semantics, preprocessor behavior, or documented interfaces.
+- Source files **MUST NOT** contain trailing whitespace, inconsistent indentation, unintended mixed line endings, or unresolved merge conflict markers.
+- Source text **SHOULD** use UTF-8 encoding unless a specific file format, platform interface, or toolchain requires otherwise.
+- File encodings and line-ending conventions **MUST NOT** be changed without considering repository configuration and tooling compatibility.
+
+#### Scope of Formatting Changes
+
+Formatting changes **MUST** remain proportional to the scope of the work being performed.
+
+- Functional pull requests **MUST NOT** include unrelated repository-wide or mass formatting changes.
+- Contributors **SHOULD** format only the files or code regions affected by their modifications when formatting an entire file would introduce substantial unrelated changes.
+- Existing formatting inconsistencies outside the scope of a change **SHOULD** be addressed separately unless correcting them is necessary for the current modification.
+- Dedicated formatting changes **MUST** be separated from functional changes whenever practical.
+- Formatting-only changes **MUST NOT** intentionally modify program behavior.
+
+Keeping formatting changes separate from functional changes reduces review noise, preserves meaningful version-control history, and simplifies regression analysis.
+
+#### Automated Formatting and Tooling
+
+Automated formatting **SHOULD** be integrated into the development workflow to reduce manual effort and prevent inconsistencies.
+
+- Editors and IDEs **SHOULD** be configured to discover and use the repository's `.clang-format` and `.editorconfig` files.
+- Contributors **SHOULD** use automated formatting before submitting changes for review.
+- Continuous integration **MAY** enforce formatting compliance using the repository's approved formatter configuration.
+- Automated formatting tools **MUST NOT** silently rewrite unrelated source files as part of a functional change.
+- Formatter upgrades or modifications to formatting configuration **MUST** be reviewed independently because they may affect a substantial portion of the codebase.
+- Generated source files **SHOULD** be formatted consistently when supported by their generators. Contributors **MUST NOT** manually format generated output when those changes would be overwritten by regeneration.
+
+Where automated formatting cannot express a particular convention, contributors **SHOULD** follow the established style of the surrounding code.
+
+#### Formatting Exceptions
+
+Certain source constructs may require deliberate formatting to preserve readability, compatibility, or tool-generated structure.
+
+Examples include:
+
+- Preprocessor macros whose formatting affects continuation or expansion behavior.
+- Generated code whose layout is controlled by an external generator.
+- Platform-specific declarations requiring prescribed syntax or layout.
+- Embedded source languages, shader code, or structured data that follow separate formatting rules.
+- Tables or aligned declarations where automated formatting would significantly reduce readability.
+
+Exceptions **MUST** be narrowly scoped and justified by a concrete technical requirement.
+
+ClangFormat suppression directives **SHOULD NOT** be introduced merely to preserve personal formatting preferences. Where suppression is necessary, it **SHOULD** encompass the smallest practical region.
+
+**Guiding principle:**
+
+> Formatting is a repository-wide contract, not an individual preference. Automate consistency, minimize unrelated changes, and keep code reviews focused on semantics rather than presentation.
 
 ### 2.2 Braces and indentation
 
