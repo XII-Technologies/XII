@@ -1,0 +1,14 @@
+# Render pipeline properties
+
+xiiCreateTexturePass::Texture;Texture;Configure the texture to create through this output pin. Connect it to a writer such as Clear Color before reading it.
+xiiRenderPipelineTextureOutputPin::Format;Format;Texture format. Create Texture uses RGBA16 Float when Unknown is selected.
+xiiRenderPipelineTextureOutputPin::Requirements;Texture Properties;Create Texture allocates from these pin properties. Zero width or height follows the view's render resolution. Undefined dimension uses 2D and zero samples uses one sample.
+
+xiiRenderPipelinePinConfiguration::DisplayName;Pin Label;Optional label for this pin in the graph. Leave empty to use its native name. Click a pin to edit its connection settings.
+xiiRenderPipelinePinConfiguration::RequiredFormat;Required Texture Format;Optional validation of the connected texture. Unknown accepts its native format. This does not choose or change the texture allocation. Set the producing pass's Format to do that.
+xiiRenderPipelinePinConfiguration::Requirements;Connection Requirements;Optional checks on the connected resource. Zero or Undefined keeps the native contract. These requirements validate a connection and do not allocate or resize resources.
+xiiRenderPipelinePinConstraints::Dimension;Texture Dimension;Optional required texture dimension. Undefined keeps the native requirement.
+xiiRenderPipelinePinConstraints::Samples;Sample Count;Required texture sample count. Zero keeps the native requirement. Create Texture uses one sample when zero is selected.
+xiiRenderPipelinePinConstraints::Width;Width;Texture width in pixels. Zero leaves the extent unconstrained. Create Texture uses the view's width when zero is selected.
+xiiRenderPipelinePinConstraints::Height;Height;Texture height in pixels. Zero leaves the extent unconstrained. Create Texture uses the view's height when zero is selected.
+xiiRenderPipelinePinConstraints::RequiredBindFlags;Required Bindings;Bindings the connected texture or buffer must support. An empty selection adds no requirements to the native contract.

@@ -11,6 +11,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -24,6 +25,66 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  const xiiAbstractProperty* GetEditableOutputProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
+  {
+    if (bInput)
+      return nullptr;
+    xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+    pNode->GetType()->GetAllProperties(properties);
+    for (const auto* property : properties)
+    {
+      if (property->GetCategory() != xiiPropertyCategory::Member || property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) ||
+          !property->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineTextureOutputPin>())
+        continue;
+      const auto* alias = property->GetAttributeByType<xiiRenderPipelinePinNameAttribute>();
+      if (sPinName == (alias ? alias->m_sName.GetView() : property->GetPropertyName()))
+        return property;
+    }
+    return nullptr;
+  }
+
+  void PinPropertyMetaState(xiiPropertyMetaStateEvent& event)
+  {
+    const auto* object = event.m_pObject;
+    auto&       states = *event.m_pPropertyStates;
+    if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelinePinMetadata>())
+    {
+      const auto kind                       = object->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
+      const bool hasFormat                  = kind == xiiRenderPipelinePin::Texture && object->GetTypeAccessor().GetValue("DeclaredFormat").ConvertTo<xiiUInt32>() != xiiGALResourceFormat::Unknown;
+      states["DeclaredFormat"].m_Visibility = hasFormat ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["DataType"].m_Visibility       = kind == xiiRenderPipelinePin::FrameData ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      return;
+    }
+    if (object->GetType()->IsDerivedFrom<xiiRenderPipelinePass>())
+    {
+      if (object->GetTypeAccessor().GetCount("PinConfigurations") == 0)
+        states["PinConfigurations"].m_Visibility = xiiPropertyUiState::Invisible;
+      return;
+    }
+    const bool  requirements  = object->GetType() == xiiGetStaticRTTI<xiiRenderPipelinePinConstraints>();
+    const auto* configuration = requirements ? object->GetParent() : object;
+    if (!configuration || !configuration->GetType()->IsDerivedFrom<xiiRenderPipelinePinConfiguration>())
+      return;
+    const auto  metadataId = configuration->GetTypeAccessor().GetValue("Metadata");
+    const auto* metadata   = metadataId.IsA<xiiUuid>() ? object->GetDocumentObjectManager()->GetObject(metadataId.Get<xiiUuid>()) : nullptr;
+    if (!metadata)
+      return;
+    const auto kind    = metadata->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
+    const bool texture = kind == xiiRenderPipelinePin::Texture;
+    const bool buffer  = kind == xiiRenderPipelinePin::Buffer;
+    if (requirements)
+    {
+      for (const char* property : {"Dimension", "Samples", "Width", "Height"})
+        states[property].m_Visibility = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["RequiredBindFlags"].m_Visibility = texture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    }
+    else
+    {
+      states["RequiredFormat"].m_Visibility = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Requirements"].m_Visibility   = texture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    }
+  }
+
   class xiiPipelineCommandAccessor : public xiiNodeCommandAccessor
   {
   public:
@@ -93,8 +154,24 @@ namespace
   };
 } // namespace
 
+XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, RenderPipelinePropertyGrid)
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "PropertyMetaState"
+  END_SUBSYSTEM_DEPENDENCIES
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(PinPropertyMetaState);
+  }
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(PinPropertyMetaState);
+  }
+XII_END_SUBSYSTEM_DECLARATION;
+
 const xiiDocumentObject* xiiRenderPipelineNodeManager::GetPinPropertyObject(const xiiPin& pin) const
 {
+  if (const auto* property = GetEditableOutputProperty(pin.GetParent(), pin.GetName(), pin.GetType() == xiiPin::Type::Input))
+    return GetDocument()->GetObjectAccessor()->GetChildObjectByName(pin.GetParent(), property->GetPropertyName(), {});
   for (const auto* child : pin.GetParent()->GetChildren())
   {
     if (child->GetParentProperty() != "PinConfigurations")
@@ -123,6 +200,9 @@ xiiStatus xiiRenderPipelineNodeManager::SynchronizePinConfigurations(const xiiDo
   xiiHashSet<xiiUuid> retained;
   for (const auto& pin : pins)
   {
+    // Editable reflected output members already own their schema; do not mirror it in a second configuration.
+    if (GetEditableOutputProperty(node, pin.m_sName, pin.m_bInput))
+      continue;
     const xiiDocumentObject* configuration = nullptr;
     for (const auto* child : node->GetChildren())
     {
@@ -538,6 +618,13 @@ void xiiRenderPipelineAssetDocument::InitializeAfterLoading(bool bFirstTimeCreat
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
   GetCommandHistory()->StartTransaction("Initialize Render Pipeline Settings");
   auto result = EnsureSettingsObject();
+  if (result.Succeeded())
+    for (const auto* node : GetObjectManager()->GetRootObject()->GetChildren())
+    {
+      result = static_cast<xiiRenderPipelineNodeManager*>(GetObjectManager())->SynchronizePinConfigurations(node);
+      if (result.Failed())
+        break;
+    }
   if (result.Succeeded())
     GetCommandHistory()->FinishTransaction();
   else

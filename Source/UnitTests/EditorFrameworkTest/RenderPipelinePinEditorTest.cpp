@@ -11,16 +11,19 @@
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/DdlSerializer.h>
+#include <Foundation/Serialization/GraphVersioning.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowRasterWorkPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <QGraphicsSceneMouseEvent>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
@@ -349,8 +352,13 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
       }
       if (node->GetType() == "xiiRenderPipelineSettings")
         obsolete.PushBack(node->GetGuid());
-      if (node->GetType() == "xiiRenderPipelinePinConfiguration" || node->GetType() == "xiiRenderPipelinePinMetadata" || node->GetType() == "xiiRenderPipelinePinConstraints")
+      if (node->GetType() == "xiiRenderPipelinePinConfiguration")
+      {
         obsolete.PushBack(node->GetGuid());
+        for (const char* propertyName : {"Metadata", "Requirements"})
+          if (const auto* property = node->FindProperty(propertyName); property && property->m_Value.IsA<xiiUuid>())
+            obsolete.PushBack(property->m_Value.Get<xiiUuid>());
+      }
     }
     for (const auto& id : obsolete)
       objects->RemoveNode(id);
@@ -477,6 +485,14 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, AccelerationStructurePinProperties)
   if (!XII_TEST_BOOL(metadata != nullptr))
     return;
   XII_TEST_INT(metadata->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>(), xiiRenderPipelinePin::AccelerationStructure);
+  xiiMap<xiiString, xiiPropertyUiState> states;
+  xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(metadata, states);
+  XII_TEST_BOOL(states["DeclaredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+  XII_TEST_BOOL(states["DataType"].m_Visibility == xiiPropertyUiState::Invisible);
+  states.Clear();
+  xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(settings, states);
+  XII_TEST_BOOL(states["RequiredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+  XII_TEST_BOOL(states["Requirements"].m_Visibility == xiiPropertyUiState::Invisible);
   const auto settingsId = settings->GetGuid();
   scene.Click(*output);
   XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == settings);
@@ -584,6 +600,10 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, FrameDataPinInspector)
   if (!XII_TEST_BOOL(configuration && metadata))
     return;
   XII_TEST_STRING(metadata->GetTypeAccessor().GetValue("DataType").Get<xiiString>(), "xiiShadowCascadeSnapshot");
+  xiiMap<xiiString, xiiPropertyUiState> states;
+  xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(metadata, states);
+  XII_TEST_BOOL(states["DeclaredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+  XII_TEST_BOOL(states["DataType"].m_Visibility == xiiPropertyUiState::Default);
   const auto* typeProperty = metadata->GetType()->FindPropertyByName("DataType");
   XII_TEST_BOOL(typeProperty && typeProperty->GetAttributeByType<xiiReadOnlyAttribute>());
   PinScene scene;
@@ -628,4 +648,118 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, FrameDataPinInspector)
   XII_TEST_INT(restoredManager->GetConnections(*restoredOutput).GetCount(), 1);
   const auto* restoredMetadata = restored.GetObjectAccessor()->GetChildObjectByName(restoredConfig, "Metadata", {});
   XII_TEST_STRING(restoredMetadata->GetTypeAccessor().GetValue("DataType").Get<xiiString>(), "xiiShadowCascadeSnapshot");
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
+{
+  const auto directory = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(directory, "CreateTexturePinProperties", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("CreateTexturePinProperties"));
+  const xiiStringBuilder path(directory, "/CreateTexture.xiiRenderPipelineAsset");
+  PinDocument            document(path);
+  auto*                  accessor = document.GetObjectAccessor();
+  auto*                  manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid                id;
+  accessor->StartTransaction("Create reflected texture output");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), id));
+  accessor->FinishTransaction();
+  const auto* node = accessor->GetObject(id);
+  if (!XII_TEST_BOOL(node != nullptr))
+    return;
+  XII_TEST_BOOL(manager->GetInputPins(node).IsEmpty());
+  XII_TEST_INT(manager->GetOutputPins(node).GetCount(), 1);
+  const auto* output = manager->GetOutputPinByName(node, "Texture");
+  if (!XII_TEST_BOOL(output != nullptr))
+    return;
+  const auto* texture      = accessor->GetChildObjectByName(node, "Texture", {});
+  const auto* requirements = accessor->GetChildObjectByName(texture, "Requirements", {});
+  if (!XII_TEST_BOOL(texture && requirements))
+    return;
+  XII_TEST_BOOL(manager->GetPinPropertyObject(*output) == texture);
+  XII_TEST_INT(node->GetTypeAccessor().GetCount("PinConfigurations"), 0);
+  const auto* property = node->GetType()->FindPropertyByName("Texture");
+  XII_TEST_BOOL(property && !property->GetAttributeByType<xiiHiddenAttribute>() && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly));
+  for (const char* name : {"Width", "Height", "Format"})
+    XII_TEST_BOOL(node->GetType()->FindPropertyByName(name) == nullptr);
+
+  PinScene scene;
+  scene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  document.GetSelectionManager()->SetSelection(node);
+  bool textureWidget = false, formatWidget = false, widthWidget = false;
+  for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+    if (const auto* reflected = widget->GetProperty())
+    {
+      textureWidget |= reflected->GetPropertyName() == "Texture";
+      formatWidget |= reflected->GetPropertyName() == "Format";
+      widthWidget |= reflected->GetPropertyName() == "Width";
+    }
+  XII_TEST_BOOL(textureWidget && formatWidget && widthWidget);
+  scene.Click(*output);
+  XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == texture);
+
+  accessor->StartTransaction("Configure texture through its reflected pin");
+  XII_TEST_STATUS(accessor->SetValueByName(texture, "Format", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA8UNormalized)));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 64U));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Height", 32U));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_INT(requirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 0);
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  XII_TEST_STATUS(document.SaveDocument(true));
+
+  PinDocument restored(path);
+  const auto  status = restored.LoadDocument();
+  XII_TEST_STATUS(status);
+  if (status.Failed())
+    return;
+  const auto* restoredNode         = restored.GetObjectManager()->GetObject(id);
+  const auto* restoredTexture      = restored.GetObjectAccessor()->GetChildObjectByName(restoredNode, "Texture", {});
+  const auto* restoredRequirements = restored.GetObjectAccessor()->GetChildObjectByName(restoredTexture, "Requirements", {});
+  XII_TEST_INT(restoredTexture->GetTypeAccessor().GetValue("Format").ConvertTo<xiiUInt32>(), xiiGALResourceFormat::RGBA8UNormalized);
+  XII_TEST_INT(restoredRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 64);
+  XII_TEST_INT(restoredRequirements->GetTypeAccessor().GetValue("Height").Get<xiiUInt32>(), 32);
+  xiiAbstractObjectGraph           graph;
+  xiiDocumentObjectConverterWriter writer(&graph, restored.GetObjectManager());
+  const auto*                      root = writer.AddObjectToGraph(restoredNode, "root");
+  xiiCreateTexturePass             pass;
+  xiiRttiConverterContext          context;
+  context.RegisterObject(root->GetGuid(), pass.GetDynamicRTTI(), &pass);
+  xiiRttiConverterReader reader(&graph, &context);
+  reader.ApplyPropertiesToObject(root, pass.GetDynamicRTTI(), &pass);
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  XII_TEST_BOOL(properties.Contains("Texture") && !properties.Contains("Width") && !properties.Contains("Format"));
+  xiiCreateTexturePass configured;
+  XII_TEST_RESULT(configured.Configure(properties));
+  XII_TEST_BOOL(configured.m_OutputTexture.GetFormat() == xiiGALResourceFormat::RGBA8UNormalized);
+  XII_TEST_INT(configured.m_OutputTexture.GetRequirements().m_uiWidth, 64);
+  XII_TEST_INT(configured.m_OutputTexture.GetRequirements().m_uiHeight, 32);
+
+  auto* legacy        = graph.GetNode(root->GetGuid());
+  auto* legacyTexture = graph.GetNode(legacy->FindProperty("Texture")->m_Value.Get<xiiUuid>());
+  graph.RemoveNode(legacyTexture->FindProperty("Requirements")->m_Value.Get<xiiUuid>());
+  legacyTexture->RemoveProperty("Requirements");
+  legacyTexture->RemoveProperty("Format");
+  legacy->SetTypeVersion(1);
+  legacy->AddProperty("Width", 96U);
+  legacy->AddProperty("Height", 48U);
+  legacy->AddProperty("Format", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA16Float));
+  xiiAbstractObjectGraph legacyTypes;
+  auto*                  type = legacyTypes.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
+  type->AddProperty("TypeName", "xiiCreateTexturePass");
+  type->AddProperty("ParentTypeName", "xiiRenderPipelinePass");
+  type->AddProperty("TypeVersion", 1U);
+  xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &legacyTypes);
+  xiiCreateTexturePass    migrated;
+  xiiRttiConverterContext migrationContext;
+  migrationContext.RegisterObject(legacy->GetGuid(), migrated.GetDynamicRTTI(), &migrated);
+  xiiRttiConverterReader migrationReader(&graph, &migrationContext);
+  migrationReader.ApplyPropertiesToObject(legacy, migrated.GetDynamicRTTI(), &migrated);
+  XII_TEST_BOOL(migrated.m_OutputTexture.GetFormat() == xiiGALResourceFormat::RGBA16Float);
+  XII_TEST_INT(migrated.m_OutputTexture.GetRequirements().m_uiWidth, 96);
+  XII_TEST_INT(migrated.m_OutputTexture.GetRequirements().m_uiHeight, 48);
+  XII_TEST_BOOL(!legacy->FindProperty("Width") && !legacy->FindProperty("Height") && !legacy->FindProperty("Format"));
 }
