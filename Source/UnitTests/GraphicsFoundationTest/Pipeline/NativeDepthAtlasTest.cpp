@@ -79,11 +79,11 @@ static void TestReusableShadowRegions(bool meshShaders)
   xiiUuid    rasterId, clearId, constantsId;
   for (const auto& pass : authoring->m_Descriptor.m_Passes)
   {
-    if (pass.m_pType == xiiDepthRasterPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDepthRasterPass>())
       rasterId = pass.m_Id;
-    if (pass.m_pType == xiiDepthRegionClearPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDepthRegionClearPass>())
       clearId = pass.m_Id;
-    if (pass.m_pType == xiiMatrixRasterConstantsPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiMatrixRasterConstantsPass>())
       constantsId = pass.m_Id;
   }
   xiiRenderPipelineResourceDescriptor root;
@@ -92,16 +92,16 @@ static void TestReusableShadowRegions(bool meshShaders)
   targetProperties.Insert("Width", 32U);
   targetProperties.Insert("Height", 16U);
   targetProperties.Insert("Depth", 0.9f);
-  const auto           target    = root.AddPass("Atlas allocation", xiiDepthTargetPass().GetDynamicRTTI(), targetProperties);
-  const auto           geometry  = root.AddPass("Shared geometry", xiiGeometryUploadPass().GetDynamicRTTI());
-  const auto           materials = root.AddPass("Shared materials", xiiMaterialUploadPass().GetDynamicRTTI());
+  const auto           target    = root.AddPass("Atlas allocation", xiiGetStaticRTTI<xiiDepthTargetPass>(), targetProperties);
+  const auto           geometry  = root.AddPass("Shared geometry", xiiGetStaticRTTI<xiiGeometryUploadPass>());
+  const auto           materials = root.AddPass("Shared materials", xiiGetStaticRTTI<xiiMaterialUploadPass>());
   xiiVariantDictionary commandProperties;
   if (meshShaders)
   {
     commandProperties.Insert("MeshGroupCountX", 1U);
     commandProperties.Insert("MeshGroupCountY", 1U);
   }
-  const auto commands = root.AddPass("Explicit draw commands", meshShaders ? xiiMeshDrawCommandsPass().GetDynamicRTTI() : xiiVertexPullDrawCommandsPass().GetDynamicRTTI(), commandProperties);
+  const auto commands = root.AddPass("Explicit draw commands", meshShaders ? xiiGetStaticRTTI<xiiMeshDrawCommandsPass>() : xiiGetStaticRTTI<xiiVertexPullDrawCommandsPass>(), commandProperties);
   for (const xiiStringView name : {"VisibleMeshlets", "VisibleMeshletCount"})
     root.m_Interface.PushBack({name, true, root.m_Passes[commands].m_Id, name});
   if (!meshShaders)
@@ -247,7 +247,7 @@ static void TestReusableShadowRegions(bool meshShaders)
     XII_TEST_INT(image->GetDescription().m_Size.width, frameNumber >= 4 ? 48 : 32);
     XII_TEST_BOOL(pipeline.GetPipeline() == compiled);
     for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
-      if (compiled->GetDescriptor().m_Passes[i].m_pType == xiiMatrixRasterConstantsPass().GetDynamicRTTI())
+      if (compiled->GetDescriptor().m_Passes[i].m_pType == xiiGetStaticRTTI<xiiMatrixRasterConstantsPass>())
       {
         xiiVariantDictionary authored;
         XII_TEST_RESULT(pipeline.GetPass(i)->GetProperties(authored));

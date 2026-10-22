@@ -80,19 +80,19 @@ namespace
     for (xiiUInt32 i = 0; i < definition.m_Passes.GetCount(); ++i)
     {
       auto& pass = definition.m_Passes[i];
-      if (pass.m_pType == xiiSurfaceQueryPass().GetDynamicRTTI())
+      if (pass.m_pType == xiiGetStaticRTTI<xiiSurfaceQueryPass>())
       {
         pass.m_Properties.Insert("FillMode", static_cast<xiiInt64>(xiiGALFillMode::Wireframe));
         pass.m_Properties.Insert("UseMeshShaders", enableMeshShaders);
       }
-      if (pass.m_pType == xiiSurfaceRasterConstantsPass().GetDynamicRTTI() && enableMeshShaders)
+      if (pass.m_pType == xiiGetStaticRTTI<xiiSurfaceRasterConstantsPass>() && enableMeshShaders)
         pass.m_Properties.Insert("MeshGroupCountX", 65535U);
-      if (pass.m_pType == xiiSceneMeshPickingPass().GetDynamicRTTI())
+      if (pass.m_pType == xiiGetStaticRTTI<xiiSceneMeshPickingPass>())
         capture = i;
-      if (pass.m_pType == xiiVertexPullDrawCommandsPass().GetDynamicRTTI() && enableMeshShaders)
+      if (pass.m_pType == xiiGetStaticRTTI<xiiVertexPullDrawCommandsPass>() && enableMeshShaders)
       {
         commands     = i;
-        pass.m_pType = xiiMeshDrawCommandsPass().GetDynamicRTTI();
+        pass.m_pType = xiiGetStaticRTTI<xiiMeshDrawCommandsPass>();
         pass.m_Properties.Clear();
       }
     }

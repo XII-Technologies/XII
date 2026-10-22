@@ -28,7 +28,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
   XII_TEST_BOOL(bloom.Configure(properties).Failed());
 
   xiiRenderPipelineResourceDescriptor child;
-  child.AddPass("Spatial upscale", xiiUpscalePass().GetDynamicRTTI());
+  child.AddPass("Spatial upscale", xiiGetStaticRTTI<xiiUpscalePass>());
   child.m_Interface.PushBack({"Input", true, child.m_Passes[0].m_Id, "TAAResolved"});
   child.m_Interface.PushBack({"Output", false, child.m_Passes[0].m_Id, "UpscaledColor"});
   xiiGraphDefinition definition;

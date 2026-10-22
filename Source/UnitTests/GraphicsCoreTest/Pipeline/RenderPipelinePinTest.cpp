@@ -82,10 +82,10 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinContracts)
   xiiVariantDictionary properties;
   XII_TEST_RESULT(source.GetProperties(properties));
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Producer", xiiContractPipelinePass().GetDynamicRTTI(), properties);
+  definition.AddPass("Producer", xiiGetStaticRTTI<xiiContractPipelinePass>(), properties);
   xiiVariantDictionary input;
   input.Insert("Input", true);
-  definition.AddPass("Consumer", xiiContractPipelinePass().GetDynamicRTTI(), input);
+  definition.AddPass("Consumer", xiiGetStaticRTTI<xiiContractPipelinePass>(), input);
   XII_TEST_RESULT(definition.Connect(0, "Texture", 1, "Texture"));
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   xiiStringBuilder                      error;
@@ -230,7 +230,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinContracts)
       XII_TEST_RESULT(consumer.GetProperties(captured));
       xiiStringBuilder name;
       name.SetFormat("Consumer{}", i);
-      const auto index = fanout.AddPass(name, xiiContractPipelinePass().GetDynamicRTTI(), captured);
+      const auto index = fanout.AddPass(name, xiiGetStaticRTTI<xiiContractPipelinePass>(), captured);
       fanout.m_Interface.PushBack({"Input", true, fanout.m_Passes[index].m_Id, "Texture"});
     }
     XII_TEST_BOOL(xiiRenderPipeline::Compile(fanout, repeated, &error).Failed());

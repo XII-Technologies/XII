@@ -210,8 +210,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   xiiVariantDictionary                rayProperties;
   rayProperties.Insert("UseViewSelection", false);
   rayProperties.Insert("RequireHardwareRayTracing", true);
-  rayLeaf.AddPass("Ray scene", xiiRayTracingScenePass().GetDynamicRTTI(), rayProperties);
-  rayLeaf.AddPass("Typed scene consumer", xiiRaySceneBindingRelay().GetDynamicRTTI());
+  rayLeaf.AddPass("Ray scene", xiiGetStaticRTTI<xiiRayTracingScenePass>(), rayProperties);
+  rayLeaf.AddPass("Typed scene consumer", xiiGetStaticRTTI<xiiRaySceneBindingRelay>());
   XII_TEST_RESULT(rayLeaf.Connect(0, "Scene", 1, "Scene"));
   XII_TEST_RESULT(rayLeaf.Connect(0, "Materials", 1, "Materials"));
   XII_TEST_RESULT(rayLeaf.Connect(0, "Geometry", 1, "Geometry"));

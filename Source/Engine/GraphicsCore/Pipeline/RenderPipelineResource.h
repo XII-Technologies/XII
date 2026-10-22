@@ -51,7 +51,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineDefinitionReference
 /// RemovePass updates indices and removes incident connections. Compilation validates the entire definition.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
 {
-  /// Stores borrowed pass RTTI, normally obtained from a pass instance through GetDynamicRTTI().
+  /// Stores borrowed pass RTTI. Use xiiGetStaticRTTI<T>() for a known type, or an existing pass's
+  /// GetDynamicRTTI() to preserve its runtime type.
   xiiUInt32 AddPass(xiiStringView name, const xiiRTTI* pType, const xiiVariantDictionary& properties = {});
   xiiUInt32 AddSubgraph(xiiStringView name, const xiiUuid& definition);
   /// Capture authoring topology with document identities, never runtime graph handles.

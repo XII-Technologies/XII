@@ -77,11 +77,11 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
   xiiUuid resetId, generateId, readbackId;
   for (const auto& pass : authoring->m_Descriptor.m_Passes)
   {
-    if (pass.m_pType == xiiGeometryLodFeedbackResetPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiGeometryLodFeedbackResetPass>())
       resetId = pass.m_Id;
-    if (pass.m_pType == xiiGeometryLodFeedbackPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiGeometryLodFeedbackPass>())
       generateId = pass.m_Id;
-    if (pass.m_pType == xiiGeometryLodFeedbackReadbackPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiGeometryLodFeedbackReadbackPass>())
       readbackId = pass.m_Id;
   }
   xiiUuid instances[2];

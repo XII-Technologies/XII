@@ -45,7 +45,7 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
   const auto exportDefinition = exportSource->GetAuthoring();
   xiiUuid    colorNode;
   for (const auto& pass : targetDefinition->m_Descriptor.m_Passes)
-    if (pass.m_pType == xiiClearTexturePass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiClearTexturePass>())
       colorNode = pass.m_Id;
   if (!XII_TEST_BOOL(colorNode.IsValid()))
     return;
@@ -92,7 +92,7 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
     outputRoots[v] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(xiiStringBuilder("View boundary output ", v ? "B" : "A"), std::move(root));
     root           = {};
     root.m_References.PushBack({exportDefinition->m_Descriptor.m_Id, exportAsset.GetResourceID()});
-    const auto counter = root.AddPass("Counter with an external consumer", xiiCounterResetPass().GetDynamicRTTI());
+    const auto counter = root.AddPass("Counter with an external consumer", xiiGetStaticRTTI<xiiCounterResetPass>());
     root.m_Passes[counter].m_Properties.Insert("Value", 41U + v);
     instance = root.AddSubgraph("Explicit export", exportDefinition->m_Descriptor.m_Id);
     if (!XII_TEST_RESULT(root.Connect(counter, "Counter", instance, "Input")))

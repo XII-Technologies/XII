@@ -117,7 +117,7 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       specularInstance = node.m_Id;
   }
   for (const auto& node : la->m_Descriptor.m_Passes)
-    if (node.m_pType == xiiDiffuseSurfaceLightingPass().GetDynamicRTTI())
+    if (node.m_pType == xiiGetStaticRTTI<xiiDiffuseSurfaceLightingPass>())
       diffuseNode = node.m_Id;
   if (!XII_TEST_BOOL(diffuseInstance.IsValid() && specularInstance.IsValid() && diffuseNode.IsValid()))
     return;
@@ -174,10 +174,10 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       pass.m_Color    = xiiColor(color.x, color.y, color.z, color.w);
       xiiVariantDictionary p;
       XII_TEST_RESULT(pass.GetProperties(p));
-      return root.AddPass(name, xiiClearTexturePass().GetDynamicRTTI(), p);
+      return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), p);
     };
     const auto depth = clear("Depth", xiiVec4(phase == 4 ? 0.0f : 0.5f, 0, 0, 0), xiiGALResourceFormat::R32Float), normal = clear("Normal", xiiVec4(0.5f, 0.5f, 0, 0), xiiGALResourceFormat::RG32Float), a = clear("Albedo", albedo), m = clear("Material", material), e = clear("Emissive", emission), c = clear("Coarse irradiance", coarse, xiiGALResourceFormat::RGBA32Float, phase == 5), d = clear("Detail irradiance", detail), r = clear("Filtered environment radiance", radiance);
-    const auto camera = root.AddPass("Analytic camera and lookup", xiiIndirectTestCameraLut().GetDynamicRTTI()), env = root.AddPass("Ambient coefficient", xiiEnvironmentLightConstantsPass().GetDynamicRTTI());
+    const auto camera = root.AddPass("Analytic camera and lookup", xiiGetStaticRTTI<xiiIndirectTestCameraLut>()), env = root.AddPass("Ambient coefficient", xiiGetStaticRTTI<xiiEnvironmentLightConstantsPass>());
     root.m_Passes[env].m_Properties.Insert("AmbientRadiance", xiiVec3(0.2f, 0.4f, 0.6f));
     const auto first = root.AddSubgraph("First indirect", sa->m_Descriptor.m_Id), second = root.AddSubgraph("Second indirect", sa->m_Descriptor.m_Id);
     auto&      diffuseWeight = root.m_Passes[second].m_Overrides.ExpandAndGetRef();
@@ -192,7 +192,7 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       XII_TEST_RESULT(root.Connect(source, output, target, input));
     };
     const auto exportImage = [&](xiiUInt32 source, xiiStringView pin, xiiStringView name) {
-      const auto output = root.AddPass(name, xiiIndirectTestExport().GetDynamicRTTI());
+      const auto output = root.AddPass(name, xiiGetStaticRTTI<xiiIndirectTestExport>());
       connect(source, pin, output, "Input");
       root.m_Interface.PushBack({name, false, root.m_Passes[output].m_Id, "Output"});
     };

@@ -122,8 +122,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ResourceExecution)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two views share a resource and execute isolated state through the render graph")
   {
     xiiRenderPipelineResourceDescriptor descriptor;
-    descriptor.AddPass("Readback", xiiPipelineGPUReadback().GetDynamicRTTI());
-    descriptor.AddPass("Upload", xiiPipelineGPUUpload().GetDynamicRTTI());
+    descriptor.AddPass("Readback", xiiGetStaticRTTI<xiiPipelineGPUReadback>());
+    descriptor.AddPass("Upload", xiiGetStaticRTTI<xiiPipelineGPUUpload>());
     XII_TEST_RESULT(descriptor.Connect(1, "Data", 0, "Data"));
     descriptor.m_Parameters.Insert("Seed", 10U);
     auto                resource = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("Pipeline GPU Execution", std::move(descriptor));
@@ -182,8 +182,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, HierarchicalExecution)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Repeated subgraphs own GPU history and blackboards in two views")
   {
     xiiRenderPipelineResourceDescriptor leaf;
-    leaf.AddPass("Readback", xiiPipelineGPUReadback().GetDynamicRTTI());
-    leaf.AddPass("Upload", xiiPipelineGPUUpload().GetDynamicRTTI());
+    leaf.AddPass("Readback", xiiGetStaticRTTI<xiiPipelineGPUReadback>());
+    leaf.AddPass("Upload", xiiGetStaticRTTI<xiiPipelineGPUUpload>());
     XII_TEST_RESULT(leaf.Connect(1, "Data", 0, "Data"));
     xiiGraphDefinition definition;
     XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
@@ -389,7 +389,7 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, OffscreenRendering)
     const auto outputDefinition = outputSource->GetAuthoring();
     xiiUuid    clearNode;
     for (const auto& pass : targetDefinition->m_Descriptor.m_Passes)
-      if (pass.m_pType == xiiClearTexturePass().GetDynamicRTTI())
+      if (pass.m_pType == xiiGetStaticRTTI<xiiClearTexturePass>())
         clearNode = pass.m_Id;
     if (!XII_TEST_BOOL(clearNode.IsValid()))
       return;

@@ -96,8 +96,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ImmutableFrameDataComposition)
   XII_TEST_INT(xiiRenderPipelinePin::AccelerationStructure, 3);
   XII_TEST_INT(xiiRenderPipelinePin::FrameData, 4);
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Snapshot source", xiiTestPipelineDataSource().GetDynamicRTTI());
-  leaf.AddPass("Snapshot consumer", xiiTestPipelineDataSink().GetDynamicRTTI());
+  leaf.AddPass("Snapshot source", xiiGetStaticRTTI<xiiTestPipelineDataSource>());
+  leaf.AddPass("Snapshot consumer", xiiGetStaticRTTI<xiiTestPipelineDataSink>());
   XII_TEST_RESULT(leaf.Connect(0, "Value", 1, "Input"));
   leaf.m_Interface.PushBack({"Snapshot", false, leaf.m_Passes[1].m_Id, "Output"});
   xiiGraphDefinition definition;
@@ -162,7 +162,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, FrameDataContractsAndSetupLifetime)
     for (const xiiStringView invalid : {"WrongType", "Stale"})
     {
       xiiRenderPipelineResourceDescriptor definition;
-      definition.AddPass("Invalid snapshot", xiiTestPipelineDataSource().GetDynamicRTTI());
+      definition.AddPass("Invalid snapshot", xiiGetStaticRTTI<xiiTestPipelineDataSource>());
       definition.m_Passes[0].m_Properties.Insert(invalid, true);
       definition.m_Passes[0].m_Properties.Insert("BypassSetter", bypass);
       xiiSharedPtr<const xiiRenderPipeline> compiled;
@@ -177,7 +177,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, FrameDataContractsAndSetupLifetime)
       graph.EndSetup();
     }
   xiiRenderPipelineResourceDescriptor external;
-  external.AddPass("External snapshot consumer", xiiTestPipelineDataSink().GetDynamicRTTI());
+  external.AddPass("External snapshot consumer", xiiGetStaticRTTI<xiiTestPipelineDataSink>());
   external.m_Interface.PushBack({"Snapshot", true, external.m_Passes[0].m_Id, "Input"});
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(external, compiled));

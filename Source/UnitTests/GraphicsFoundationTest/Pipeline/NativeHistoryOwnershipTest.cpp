@@ -31,12 +31,12 @@ XII_CREATE_SIMPLE_TEST(NativeHistoryOwnership, RepeatedOccurrencesSurviveOwnerRe
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   xiiRenderPipelineResourceDescriptor leaf;
-  const auto                          depth = leaf.AddPass("Depth source", xiiDepthTargetPass().GetDynamicRTTI());
+  const auto                          depth = leaf.AddPass("Depth source", xiiGetStaticRTTI<xiiDepthTargetPass>());
   leaf.m_Passes[depth].m_Properties.Insert("Width", 4U);
   leaf.m_Passes[depth].m_Properties.Insert("Height", 4U);
-  const auto counter        = leaf.AddPass("Counter source", xiiCounterResetPass().GetDynamicRTTI());
-  const auto textureHistory = leaf.AddPass("Private image history", xiiTextureHistoryPass().GetDynamicRTTI());
-  const auto bufferHistory  = leaf.AddPass("Private counter history", xiiBufferHistoryPass().GetDynamicRTTI());
+  const auto counter        = leaf.AddPass("Counter source", xiiGetStaticRTTI<xiiCounterResetPass>());
+  const auto textureHistory = leaf.AddPass("Private image history", xiiGetStaticRTTI<xiiTextureHistoryPass>());
+  const auto bufferHistory  = leaf.AddPass("Private counter history", xiiGetStaticRTTI<xiiBufferHistoryPass>());
   XII_TEST_RESULT(leaf.Connect(depth, "DepthTarget", textureHistory, "Texture"));
   XII_TEST_RESULT(leaf.Connect(counter, "Counter", bufferHistory, "Buffer"));
   leaf.m_Interface.PushBack({"PreviousDepth", false, leaf.m_Passes[textureHistory].m_Id, "PreviousTexture"});

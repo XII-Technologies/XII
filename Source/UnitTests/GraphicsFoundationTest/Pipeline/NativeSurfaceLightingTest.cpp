@@ -157,14 +157,14 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
   const auto surfaceDefinition = reference("WorldSurfaceLighting"), clusterDefinition = reference("ClusterLightLists", false), directionalDefinition = reference("DirectionalSurfaceLighting");
   if (!surfaceDefinition || !clusterDefinition || !directionalDefinition)
     return;
-  const auto inputs  = root.AddPass("Exact single pixel surface", xiiNativeSurfaceInputs().GetDynamicRTTI());
+  const auto inputs  = root.AddPass("Exact single pixel surface", xiiGetStaticRTTI<xiiNativeSurfaceInputs>());
   const auto surface = root.AddSubgraph("Authored world surface lighting", surfaceDefinition->m_Descriptor.m_Id);
   xiiUuid    clusterNode, layoutNode;
   for (const auto& node : surfaceDefinition->m_Descriptor.m_Passes)
     if (node.m_Definition == clusterDefinition->m_Descriptor.m_Id)
       clusterNode = node.m_Id;
   for (const auto& node : clusterDefinition->m_Descriptor.m_Passes)
-    if (node.m_pType == xiiLightClusterViewPass().GetDynamicRTTI())
+    if (node.m_pType == xiiGetStaticRTTI<xiiLightClusterViewPass>())
       layoutNode = node.m_Id;
   if (!XII_TEST_BOOL(clusterNode.IsValid() && layoutNode.IsValid()))
     return;
@@ -182,13 +182,13 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
   for (const xiiStringView pin : {"Depth", "Normal", "Albedo", "Material", "Emissive", "Camera", "Visibility"})
     XII_TEST_RESULT(root.Connect(inputs, pin, surface, pin));
   const auto expose = [&](xiiUInt32 operation, xiiStringView pin, xiiStringView name) {
-    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), xiiNativeSurfaceRetain().GetDynamicRTTI());
+    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), xiiGetStaticRTTI<xiiNativeSurfaceRetain>());
     XII_TEST_RESULT(root.Connect(operation, pin, retain, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[retain].m_Id, "Output"});
   };
   expose(surface, "DirectionalLighting", "SunA");
   expose(surface, "LocalLighting", "Local");
-  const auto overflow = root.AddPass("Retain overflow", xiiBufferExportPass().GetDynamicRTTI());
+  const auto overflow = root.AddPass("Retain overflow", xiiGetStaticRTTI<xiiBufferExportPass>());
   XII_TEST_RESULT(root.Connect(surface, "Overflow", overflow, "Input"));
   root.m_Interface.PushBack({"Overflow", false, root.m_Passes[overflow].m_Id, "Output"});
   const auto secondSun = root.AddSubgraph("Second sun evaluator", directionalDefinition->m_Descriptor.m_Id);

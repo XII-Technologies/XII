@@ -91,8 +91,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedAccelerationStructurePins)
   XII_TEST_RESULT(source.GetProperties(properties));
   XII_TEST_BOOL(properties.GetValue("Scene") == nullptr);
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Producer", xiiRayPinContractSource().GetDynamicRTTI());
-  leaf.AddPass("Consumer", xiiRayPinContractConsumer().GetDynamicRTTI());
+  leaf.AddPass("Producer", xiiGetStaticRTTI<xiiRayPinContractSource>());
+  leaf.AddPass("Consumer", xiiGetStaticRTTI<xiiRayPinContractConsumer>());
   XII_TEST_RESULT(leaf.Connect(0, "Scene", 1, "Scene"));
   leaf.m_Interface.PushBack({"Scene", false, leaf.m_Passes[0].m_Id, "Scene"});
   xiiGraphDefinition definition;

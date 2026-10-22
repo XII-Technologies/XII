@@ -82,7 +82,7 @@ namespace
   bool ReloadProbeDefinition(const xiiRenderPipelineResourceHandle& resource, xiiRenderPipelineResourceDescriptor definition)
   {
     for (auto& pass : definition.m_Passes)
-      if (pass.m_pType == xiiDDGIEnvironmentSeedPass().GetDynamicRTTI())
+      if (pass.m_pType == xiiGetStaticRTTI<xiiDDGIEnvironmentSeedPass>())
         pass.m_Properties.Insert("AsyncCompute", true);
     const auto                          closed = xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>>(XII_DEFAULT_NEW(xiiRefCountedContainer<xiiThreadSignal>));
     xiiUniquePtr<DDGIProbeMemoryLoader> loader = XII_DEFAULT_NEW(DDGIProbeMemoryLoader);
@@ -154,7 +154,7 @@ XII_CREATE_SIMPLE_TEST(NativeDDGIProbes, RepeatedViewsBudgetsHistoryReloadAndQue
   const auto authored = loaded->GetAuthoring();
   xiiUuid    scheduleId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
-    if (pass.m_pType == xiiDDGIProbeSchedulePass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDDGIProbeSchedulePass>())
       scheduleId = pass.m_Id;
   if (!XII_TEST_BOOL(scheduleId.IsValid()))
     return;
@@ -175,7 +175,7 @@ XII_CREATE_SIMPLE_TEST(NativeDDGIProbes, RepeatedViewsBudgetsHistoryReloadAndQue
     properties.m_Properties.Insert("CameraPosition", i ? xiiVec3(100) : xiiVec3::MakeZero());
     root.m_Interface.PushBack({i ? "BEnvironment" : "AEnvironment", true, root.m_Passes[node].m_Id, "EnvironmentLight"});
     root.m_Interface.PushBack({i ? "BSchedule" : "ASchedule", false, root.m_Passes[node].m_Id, "Schedule"});
-    const auto retain = root.AddPass(i ? "Retain second field" : "Retain first field", xiiDDGIProbeTestRetain().GetDynamicRTTI());
+    const auto retain = root.AddPass(i ? "Retain second field" : "Retain first field", xiiGetStaticRTTI<xiiDDGIProbeTestRetain>());
     for (const xiiStringView pin : {"Irradiance", "Distance", "ProbeStates"})
     {
       XII_TEST_RESULT(root.Connect(node, pin, retain, pin));
@@ -347,7 +347,7 @@ XII_CREATE_SIMPLE_TEST(NativeDDGIProbes, AuthoritativeWorldAndIndependentCameraH
   root.m_References.PushBack({p->m_Descriptor.m_Id, probesAsset.GetResourceID()});
   const auto sun = root.AddSubgraph("Authoritative sun", d->m_Descriptor.m_Id), constants = root.AddSubgraph("Environment illumination", e->m_Descriptor.m_Id), field = root.AddSubgraph("Camera probes", p->m_Descriptor.m_Id);
   for (const auto& pass : p->m_Descriptor.m_Passes)
-    if (pass.m_pType == xiiDDGIProbeSchedulePass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDDGIProbeSchedulePass>())
     {
       auto& properties = root.m_Passes[field].m_Overrides.ExpandAndGetRef();
       properties.m_Path.PushBack(pass.m_Id);
@@ -360,7 +360,7 @@ XII_CREATE_SIMPLE_TEST(NativeDDGIProbes, AuthoritativeWorldAndIndependentCameraH
     }
   XII_TEST_RESULT(root.Connect(sun, "DirectionalLight", constants, "DirectionalLight"));
   XII_TEST_RESULT(root.Connect(constants, "EnvironmentLight", field, "EnvironmentLight"));
-  const auto retain = root.AddPass("Retain camera field", xiiDDGIProbeTestRetain().GetDynamicRTTI());
+  const auto retain = root.AddPass("Retain camera field", xiiGetStaticRTTI<xiiDDGIProbeTestRetain>());
   for (const xiiStringView pin : {"Irradiance", "Distance", "ProbeStates"})
   {
     XII_TEST_RESULT(root.Connect(field, pin, retain, pin));

@@ -48,9 +48,9 @@ namespace
     root.m_References.PushBack({authoring.m_Descriptor.m_Id, asset.GetResourceID()});
     xiiUuid filterId;
     for (const auto& pass : authoring.m_Descriptor.m_Passes)
-      if (pass.m_pType == (meshlets ? xiiMeshletOcclusionPass().GetDynamicRTTI() : xiiInstanceOcclusionPass().GetDynamicRTTI()))
+      if (pass.m_pType == (meshlets ? xiiGetStaticRTTI<xiiMeshletOcclusionPass>() : xiiGetStaticRTTI<xiiInstanceOcclusionPass>()))
         filterId = pass.m_Id;
-    const auto reduce = pyramid ? root.AddPass("Reduce supplied depth", xiiDepthPyramidPass().GetDynamicRTTI()) : xiiInvalidIndex;
+    const auto reduce = pyramid ? root.AddPass("Reduce supplied depth", xiiGetStaticRTTI<xiiDepthPyramidPass>()) : xiiInvalidIndex;
     if (pyramid)
       root.m_Interface.PushBack({"DepthPyramid", true, root.m_Passes[reduce].m_Id, "SceneDepth"});
     xiiDynamicArray<xiiRenderPipelinePin> pins;

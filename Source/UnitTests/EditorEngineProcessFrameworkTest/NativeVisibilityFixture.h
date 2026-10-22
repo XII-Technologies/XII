@@ -29,7 +29,7 @@ struct xiiTestNativeVisibility
       return XII_FAILURE;
     auto definition = loaded->GetAuthoring()->m_Descriptor;
     for (auto& pass : definition.m_Passes)
-      if (pass.m_pType == xiiMeshletCullPass().GetDynamicRTTI())
+      if (pass.m_pType == xiiGetStaticRTTI<xiiMeshletCullPass>())
         pass.m_Properties.Insert("MaxVisibleMeshlets", capacity);
     xiiStringBuilder name;
     name.SetFormat("Native visibility fixture {}", capacity);

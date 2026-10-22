@@ -377,7 +377,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     xiiRenderPipelineResourceDescriptor child;
     xiiVariantDictionary                leafProperties;
     leafProperties.Insert("Extra", true);
-    child.AddPass("Leaf", xiiEditorPinTestPass().GetDynamicRTTI(), leafProperties);
+    child.AddPass("Leaf", xiiGetStaticRTTI<xiiEditorPinTestPass>(), leafProperties);
     child.m_Interface.PushBack({"Output", false, child.m_Passes[0].m_Id, "Output"});
     const auto  reusable = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("RenderPinEditorReusable", std::move(child));
     PinDocument composition(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/Composition.xiiRenderPipelineAsset"));

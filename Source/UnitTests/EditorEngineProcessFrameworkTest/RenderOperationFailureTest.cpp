@@ -160,27 +160,27 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
     pass.m_Color    = color;
     xiiVariantDictionary properties;
     XII_TEST_RESULT(pass.GetProperties(properties));
-    return definition.AddPass(name, xiiClearTexturePass().GetDynamicRTTI(), properties);
+    return definition.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
   };
   xiiUInt32 operation = 0;
   xiiString outputPin;
   if (shaderPath == sBloomShader)
   {
     const auto source = clear("Authored HDR", xiiGALResourceFormat::RGBA16Float, {2, 1, 0.5f, 1});
-    operation         = definition.AddPass("Bloom operation", xiiBloomPass().GetDynamicRTTI());
+    operation         = definition.AddPass("Bloom operation", xiiGetStaticRTTI<xiiBloomPass>());
     XII_TEST_RESULT(definition.Connect(source, "Texture", operation, "UpscaledColor"));
     outputPin = "BloomTexture";
   }
   else
   {
-    operation                       = definition.AddPass("Directional surface operation", xiiDirectionalSurfaceLightingPass().GetDynamicRTTI());
+    operation                       = definition.AddPass("Directional surface operation", xiiGetStaticRTTI<xiiDirectionalSurfaceLightingPass>());
     const auto depth                = clear("Depth", xiiGALResourceFormat::R32Float, {0.5f, 0, 0, 0});
     const auto normal               = clear("Normal", xiiGALResourceFormat::RG16Float, {0.5f, 0.5f, 0, 0});
     const auto albedo               = clear("Albedo", xiiGALResourceFormat::RGBA16Float, {0.5f, 0.5f, 0.5f, 1});
     const auto material             = clear("Material", xiiGALResourceFormat::RGBA16Float, {0.5f, 0, 0.5f, 0});
     const auto emissive             = clear("Emissive", xiiGALResourceFormat::RGBA16Float, xiiColor::MakeZero());
-    const auto cameraConstants      = definition.AddPass("Camera constants", xiiViewConstantsPass().GetDynamicRTTI());
-    const auto environmentConstants = definition.AddPass("Environment constants", xiiEnvironmentLightConstantsPass().GetDynamicRTTI());
+    const auto cameraConstants      = definition.AddPass("Camera constants", xiiGetStaticRTTI<xiiViewConstantsPass>());
+    const auto environmentConstants = definition.AddPass("Environment constants", xiiGetStaticRTTI<xiiEnvironmentLightConstantsPass>());
     definition.m_Passes[environmentConstants].m_Properties.Insert("Illuminance", 100.0f);
     XII_TEST_RESULT(definition.Connect(depth, "Texture", operation, "Depth"));
     XII_TEST_RESULT(definition.Connect(normal, "Texture", operation, "Normal"));
@@ -191,7 +191,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
     XII_TEST_RESULT(definition.Connect(environmentConstants, "EnvironmentLight", operation, "EnvironmentLight"));
     outputPin = "Lighting";
   }
-  const auto present = definition.AddPass("Present result", xiiPresentPass().GetDynamicRTTI());
+  const auto present = definition.AddPass("Present result", xiiGetStaticRTTI<xiiPresentPass>());
   XII_TEST_RESULT(definition.Connect(operation, outputPin, present, "GradedColor"));
   view->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>(xiiStringBuilder("Explicit failure fixture/", shaderPath), std::move(definition)));
   xiiGALTextureCreationDescription targetDescription;
@@ -211,7 +211,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
       return nullptr;
     const auto& passes = pipeline->GetDescriptor().m_Passes;
     for (xiiUInt32 index = 0; index < passes.GetCount(); ++index)
-      if (passes[index].m_pType == xiiPresentPass().GetDynamicRTTI())
+      if (passes[index].m_pType == xiiGetStaticRTTI<xiiPresentPass>())
         return instance.GetOutputBinding(index, "ViewOutput");
     return nullptr;
   };

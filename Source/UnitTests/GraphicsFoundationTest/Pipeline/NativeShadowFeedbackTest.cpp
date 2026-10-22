@@ -43,11 +43,11 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
   xiiUuid    resetId, generateId, readbackId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
   {
-    if (pass.m_pType == xiiVirtualShadowFeedbackResetPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVirtualShadowFeedbackResetPass>())
       resetId = pass.m_Id;
-    if (pass.m_pType == xiiVirtualShadowFeedbackPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVirtualShadowFeedbackPass>())
       generateId = pass.m_Id;
-    if (pass.m_pType == xiiVirtualShadowFeedbackReadbackPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVirtualShadowFeedbackReadbackPass>())
       readbackId = pass.m_Id;
   }
   xiiRenderPipelineResourceDescriptor root;

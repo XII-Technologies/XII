@@ -55,8 +55,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, SharedImmutableBRDFLookup)
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   XII_TEST_BOOL(!xiiLightingManager::GetBRDFLUT());
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Integrate GGX", xiiBRDFLutPass().GetDynamicRTTI());
-  leaf.AddPass("Read lookup on graphics", xiiNativePreparationExport().GetDynamicRTTI());
+  leaf.AddPass("Integrate GGX", xiiGetStaticRTTI<xiiBRDFLutPass>());
+  leaf.AddPass("Read lookup on graphics", xiiGetStaticRTTI<xiiNativePreparationExport>());
   XII_TEST_RESULT(leaf.Connect(0, "BRDFLut", 1, "Input"));
   const auto         exportId = leaf.m_Passes[1].m_Id;
   xiiGraphDefinition definition;

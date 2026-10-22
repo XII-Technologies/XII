@@ -46,7 +46,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
   const auto authored = source->GetAuthoring();
   xiiUuid    probeId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
-    if (pass.m_pType == xiiSceneRayProbePass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiSceneRayProbePass>())
       probeId = pass.m_Id;
   if (!XII_TEST_BOOL(probeId.IsValid()))
     return;

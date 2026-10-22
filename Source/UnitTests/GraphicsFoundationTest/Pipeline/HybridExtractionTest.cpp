@@ -113,7 +113,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     xiiRenderPipelineResourceDescriptor shared;
     xiiVariantDictionary                geometryProperties;
     geometryProperties.Insert("Categories", static_cast<xiiUInt32>(xiiRenderExtractionCategory::Geometry));
-    shared.AddPass("Data", xiiExtractionDemandPass().GetDynamicRTTI(), geometryProperties);
+    shared.AddPass("Data", xiiGetStaticRTTI<xiiExtractionDemandPass>(), geometryProperties);
     xiiGraphDefinition definition;
     XII_TEST_RESULT(shared.MakeGraphDefinition(definition));
     xiiRenderPipelineResourceDescriptor composed;
@@ -150,7 +150,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
       xiiVariantDictionary properties;
       properties.Insert("Categories", static_cast<xiiUInt32>(categories[i]));
       xiiRenderPipelineResourceDescriptor pipeline;
-      pipeline.AddPass("Demand", xiiExtractionDemandPass().GetDynamicRTTI(), properties);
+      pipeline.AddPass("Demand", xiiGetStaticRTTI<xiiExtractionDemandPass>(), properties);
       xiiStringBuilder name;
       name.SetFormat("Extraction Demand {}", i);
       const auto resource = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(name, std::move(pipeline));

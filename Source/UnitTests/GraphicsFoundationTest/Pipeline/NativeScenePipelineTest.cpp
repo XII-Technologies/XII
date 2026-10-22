@@ -215,7 +215,7 @@ namespace
     }
     bool changed = false;
     for (auto& pass : descriptor.m_Passes)
-      if (pass.m_pType == xiiDiffuseSurfaceLightingPass().GetDynamicRTTI())
+      if (pass.m_pType == xiiGetStaticRTTI<xiiDiffuseSurfaceLightingPass>())
       {
         pass.m_Properties.Insert("Scale", 0.5f);
         changed = true;
@@ -254,13 +254,13 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
   const auto scene = root.AddSubgraph("Authored opaque scene", loaded->GetAuthoring()->m_Descriptor.m_Id);
   for (const xiiStringView name : {"HDRSceneColor", "DirectLighting", "AmbientLighting", "ObjectId", "Albedo", "Emissive"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiScenePipelineTestExport().GetDynamicRTTI());
+    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiGetStaticRTTI<xiiScenePipelineTestExport>());
     XII_TEST_RESULT(root.Connect(scene, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }
   for (const xiiStringView name : {"CurrentExposure", "LightListOverflow", "VisibleMeshletOverflow"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiBufferExportPass().GetDynamicRTTI());
+    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiGetStaticRTTI<xiiBufferExportPass>());
     XII_TEST_RESULT(root.Connect(scene, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }

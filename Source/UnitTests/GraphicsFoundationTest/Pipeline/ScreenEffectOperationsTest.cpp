@@ -34,8 +34,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   xiiRenderPipelineResourceDescriptor        leaf;
-  const auto                                 source = leaf.AddPass("Synthetic inputs", xiiScreenEffectTestSource().GetDynamicRTTI());
-  const auto                                 camera = leaf.AddPass("Camera", xiiViewConstantsPass().GetDynamicRTTI());
+  const auto                                 source = leaf.AddPass("Synthetic inputs", xiiGetStaticRTTI<xiiScreenEffectTestSource>());
+  const auto                                 camera = leaf.AddPass("Camera", xiiGetStaticRTTI<xiiViewConstantsPass>());
   xiiVariantDictionary                       properties;
   const auto                                 diffuseAsset = xiiLoadPipelineLibraryResource("ScreenDiffuseLighting"), refractionAsset = xiiLoadPipelineLibraryResource("ScreenRefraction");
   xiiResourceLock<xiiRenderPipelineResource> diffuse(diffuseAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), refractionDefinition(refractionAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -48,13 +48,13 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   auto&      responseScale = leaf.m_Passes[trace].m_Overrides.ExpandAndGetRef();
   responseScale.m_Path.PushBack(response);
   responseScale.m_Properties.Insert("Scale", 0.25f);
-  const auto         composite  = leaf.AddPass("Add diffuse radiance", xiiRadianceAddPass().GetDynamicRTTI());
+  const auto         composite  = leaf.AddPass("Add diffuse radiance", xiiGetStaticRTTI<xiiRadianceAddPass>());
   const auto         refraction = leaf.AddSubgraph("Authored screen refraction", refractionDefinition->GetAuthoring()->m_Descriptor.m_Id);
   xiiDepthSensorPass sensor;
   sensor.m_Calibration.m_NoiseModel    = xiiSensorNoiseModel::None;
   sensor.m_Calibration.m_uiResolutionX = sensor.m_Calibration.m_uiResolutionY = 8;
   XII_TEST_RESULT(sensor.GetProperties(properties));
-  const auto output = leaf.AddPass("Calibrated output", xiiDepthSensorPass().GetDynamicRTTI(), properties);
+  const auto output = leaf.AddPass("Calibrated output", xiiGetStaticRTTI<xiiDepthSensorPass>(), properties);
   for (const auto operation : {trace, refraction})
   {
     XII_TEST_RESULT(leaf.Connect(source, "Depth", operation, "Depth"));
@@ -77,7 +77,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   rgb.m_Calibration.m_uiResolutionX = rgb.m_Calibration.m_uiResolutionY = 8;
   rgb.m_Calibration.m_NoiseModel                                        = xiiSensorNoiseModel::None;
   XII_TEST_RESULT(rgb.GetProperties(properties));
-  const auto colorOutput = leaf.AddPass("Calibrated RGB output", xiiRgbSensorPass().GetDynamicRTTI(), properties);
+  const auto colorOutput = leaf.AddPass("Calibrated RGB output", xiiGetStaticRTTI<xiiRgbSensorPass>(), properties);
   XII_TEST_RESULT(leaf.Connect(source, "Depth", colorOutput, "SceneDepth"));
   XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", colorOutput, "PerFrameCamera"));
   XII_TEST_RESULT(leaf.Connect(refraction, "Radiance", colorOutput, "Radiance"));

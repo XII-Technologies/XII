@@ -39,13 +39,13 @@ namespace
     xiiRenderPipelineResourceDescriptor definition;
     definition.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, surface.GetResourceID()});
     definition.AddSubgraph("Authored surface", loaded->GetAuthoring()->m_Descriptor.m_Id);
-    const auto second = definition.AddPass("Second capture", xiiSceneMeshPickingPass().GetDynamicRTTI());
+    const auto second = definition.AddPass("Second capture", xiiGetStaticRTTI<xiiSceneMeshPickingPass>());
     XII_TEST_RESULT(definition.Connect(0, "Surface", second, "Surface"));
     if (selectionOnly)
     {
       auto& property = definition.m_Passes[0].m_Overrides.ExpandAndGetRef();
       for (const auto& node : loaded->GetAuthoring()->m_Descriptor.m_Passes)
-        if (node.m_pType == xiiSceneInstanceSelectionPass().GetDynamicRTTI())
+        if (node.m_pType == xiiGetStaticRTTI<xiiSceneInstanceSelectionPass>())
           property.m_Path.PushBack(node.m_Id);
       XII_TEST_INT(property.m_Path.GetCount(), 1);
       property.m_Properties.Insert("SelectionOnly", true);

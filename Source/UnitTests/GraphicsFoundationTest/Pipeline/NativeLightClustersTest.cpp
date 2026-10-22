@@ -117,13 +117,13 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, ExplicitProjectionAssignmentOverflow
   const auto authored = loaded->GetAuthoring();
   xiiUuid    layoutNode;
   for (const auto& node : authored->m_Descriptor.m_Passes)
-    if (node.m_pType == xiiLightClusterViewPass().GetDynamicRTTI())
+    if (node.m_pType == xiiGetStaticRTTI<xiiLightClusterViewPass>())
       layoutNode = node.m_Id;
   if (!XII_TEST_BOOL(layoutNode.IsValid()))
     return;
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authored->m_Descriptor.m_Id, asset.GetResourceID()});
-  const auto lights = root.AddPass("Explicit synthetic light stream", xiiNativeClusterLightsSource().GetDynamicRTTI());
+  const auto lights = root.AddPass("Explicit synthetic light stream", xiiGetStaticRTTI<xiiNativeClusterLightsSource>());
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     const auto node      = root.AddSubgraph(i ? "Small lists" : "Large lists", authored->m_Descriptor.m_Id);
@@ -315,7 +315,7 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, LargeListDispatchAndPrivateInitializ
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   constexpr xiiUInt32                 count = 2049U * 2048U;
   xiiRenderPipelineResourceDescriptor descriptor;
-  const auto                          layout     = descriptor.AddPass("Large explicit layout", xiiLightClusterViewPass().GetDynamicRTTI());
+  const auto                          layout     = descriptor.AddPass("Large explicit layout", xiiGetStaticRTTI<xiiLightClusterViewPass>());
   auto&                               properties = descriptor.m_Passes[layout].m_Properties;
   properties.Insert("UseViewCamera", false);
   properties.Insert("Width", 2049U);
@@ -325,7 +325,7 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, LargeListDispatchAndPrivateInitializ
   properties.Insert("MaxLightsPerCluster", 1U);
   properties.Insert("MaximumClusters", 8388608U);
   properties.Insert("MaximumIndices", 8388608U);
-  const auto clear = descriptor.AddPass("Large list initialization", xiiClusterListClearPass().GetDynamicRTTI());
+  const auto clear = descriptor.AddPass("Large list initialization", xiiGetStaticRTTI<xiiClusterListClearPass>());
   XII_TEST_RESULT(descriptor.Connect(layout, "Layout", clear, "Layout"));
   for (const xiiStringView name : {"LightGrid", "LightIndices", "Overflow"})
     descriptor.m_Interface.PushBack({name, false, descriptor.m_Passes[clear].m_Id, name});

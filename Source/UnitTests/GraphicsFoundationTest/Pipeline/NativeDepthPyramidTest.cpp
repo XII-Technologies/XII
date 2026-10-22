@@ -196,7 +196,7 @@ XII_CREATE_SIMPLE_TEST(NativeDepthPyramid, AuthoredInterleavedHistory)
   xiiUInt32 subgraphs[2];
   xiiUuid   subgraphIds[2], reduceId;
   for (const auto& pass : definition->m_Descriptor.m_Passes)
-    if (pass.m_pType == xiiDepthPyramidPass().GetDynamicRTTI())
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDepthPyramidPass>())
       reduceId = pass.m_Id;
   if (!XII_TEST_BOOL(reduceId.IsValid()))
     return;
@@ -205,10 +205,10 @@ XII_CREATE_SIMPLE_TEST(NativeDepthPyramid, AuthoredInterleavedHistory)
     xiiVariantDictionary properties;
     properties.Insert("Base", i ? 0.65f : 0.2f);
     properties.Insert("DepthAttachment", i != 0);
-    const auto source = root.AddPass(i ? "Depth attachment" : "Odd-edge depth", xiiNativePyramidSource().GetDynamicRTTI(), properties);
+    const auto source = root.AddPass(i ? "Depth attachment" : "Odd-edge depth", xiiGetStaticRTTI<xiiNativePyramidSource>(), properties);
     subgraphs[i]      = root.AddSubgraph(i ? "Graphics depth history" : "Compute depth history", definition->m_Descriptor.m_Id);
     subgraphIds[i]    = root.m_Passes[subgraphs[i]].m_Id;
-    const auto sink   = root.AddPass(i ? "Depth history readback" : "Odd-edge history readback", xiiNativePyramidExport().GetDynamicRTTI());
+    const auto sink   = root.AddPass(i ? "Depth history readback" : "Odd-edge history readback", xiiGetStaticRTTI<xiiNativePyramidExport>());
     XII_TEST_RESULT(root.Connect(source, "Depth", subgraphs[i], "SceneDepth"));
     XII_TEST_RESULT(root.Connect(subgraphs[i], "DepthPyramid", sink, "Current"));
     XII_TEST_RESULT(root.Connect(subgraphs[i], "PreviousDepthPyramid", sink, "Previous"));
@@ -235,9 +235,9 @@ XII_CREATE_SIMPLE_TEST(NativeDepthPyramid, AuthoredInterleavedHistory)
     for (xiiUInt32 i = 0; i < 2; ++i)
       if (source.m_InstancePath[0] == subgraphIds[i])
       {
-        if (pipeline->GetDescriptor().m_Passes[index].m_pType == xiiDepthPyramidPass().GetDynamicRTTI())
+        if (pipeline->GetDescriptor().m_Passes[index].m_pType == xiiGetStaticRTTI<xiiDepthPyramidPass>())
           currentIndices[i] = index;
-        if (pipeline->GetDescriptor().m_Passes[index].m_pType == xiiTextureHistoryPass().GetDynamicRTTI())
+        if (pipeline->GetDescriptor().m_Passes[index].m_pType == xiiGetStaticRTTI<xiiTextureHistoryPass>())
           historyIndices[i] = index;
       }
   }

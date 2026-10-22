@@ -70,7 +70,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
       pass.m_Color    = xiiColor(color.x, color.y, color.z, color.w);
       xiiVariantDictionary properties;
       XII_TEST_RESULT(pass.GetProperties(properties));
-      return root.AddPass(name, xiiClearTexturePass().GetDynamicRTTI(), properties);
+      return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
     };
     const auto base = clear("Original scene", scene), env = clear("Environment contribution", environmentTerm), ray = clear("Traced detail", traced);
     const auto firstScreen = clear("Screen detail A", screen, true);
@@ -81,7 +81,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
       XII_TEST_RESULT(root.Connect(from, output, to, input));
     };
     const auto capture = [&](xiiUInt32 from, xiiStringView output, xiiStringView name) {
-      const auto sink = root.AddPass(name, xiiOpaqueTestExport().GetDynamicRTTI());
+      const auto sink = root.AddPass(name, xiiGetStaticRTTI<xiiOpaqueTestExport>());
       connect(from, output, sink, "Input");
       root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
     };
@@ -97,7 +97,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
         const auto screenLayer = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ReflectionSelection/Screen Detail Over Traced Result");
         bool       found       = false;
         for (const auto& pass : selection->GetAuthoring()->m_Descriptor.m_Passes)
-          found |= pass.m_Id == screenLayer && pass.m_pType == xiiConfidenceBlendPass().GetDynamicRTTI();
+          found |= pass.m_Id == screenLayer && pass.m_pType == xiiGetStaticRTTI<xiiConfidenceBlendPass>();
         if (!XII_TEST_BOOL(found && override.m_Path.GetCount() == 1))
           return;
         override.m_Path.PushBack(screenLayer);
