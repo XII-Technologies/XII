@@ -5939,8 +5939,7 @@ A move operation must preserve the invariants of both the destination and the mo
 **Prefer:**
 
 ```cpp
-xiiUniquePtr<xiiSimulationData> pData =
-  CreateSimulationData();
+xiiUniquePtr<xiiSimulationData> pData = CreateSimulationData();
 
 m_pSimulationData = std::move(pData);
 ```
@@ -6369,78 +6368,756 @@ Compile-time traits and concepts may complement these systems but do not automat
 
 > Compile-time abstraction is justified when it strengthens contracts or eliminates meaningful runtime complexity. It should not become a parallel architecture without a demonstrated need.
 
----
+## 10. Memory, Allocators, and Containers
 
-## 10. Memory, allocators, and containers
+Memory management in XII **MUST** be explicit, predictable, and appropriate for the lifetime, access patterns, and performance requirements of the owning subsystem.
 
-### 10.1 Choose storage from access patterns
+XII provides specialized containers, allocators, ownership abstractions, and resource-management facilities. These should be selected according to their actual semantics rather than convenience, familiarity, or speculative performance assumptions.
 
-Use a contiguous array when iteration, indexing, and locality dominate. Use a map/table when lookup is primary. Use a stable-address or handle-based container when moving elements would invalidate persistent references. Avoid combining multiple authoritative containers without defining which one owns the objects and how updates remain consistent.
+This section extends §1.2 (Ownership and Lifetime), §1.5 (Optimization), §6 (Initialization, Ownership, and Lifetime), and §8 (Control Flow and Expressions).
 
-| Requirement | Typical approach | Important caveat |
+### 10.1 Choose Storage According to Access Patterns
+
+Container selection **SHOULD** be driven by the operations performed most frequently and the guarantees required by consumers.
+
+No single container is optimal for every workload. Consider access complexity, iteration patterns, memory locality, allocation behavior, reference stability, and modification frequency.
+
+#### General Requirements
+
+- Prefer contiguous storage when sequential iteration, indexed access, and cache locality dominate.
+- Prefer associative containers when lookup by key is a primary operation.
+- Use handle-based storage when independently managed identity and stale-reference detection are required.
+- Use stable-address storage when external references must survive container growth or relocation.
+- Do not introduce multiple authoritative representations of the same data without a clear consistency and ownership model.
+- Container selection **MUST** account for insertion, removal, relocation, and invalidation semantics.
+- Avoid choosing containers solely by asymptotic complexity without considering practical workload characteristics.
+- Prefer established XII containers over introducing incompatible storage abstractions without a demonstrated need.
+- Changes to container representation **MUST** preserve the documented interface and lifetime guarantees.
+
+| Requirement | Typical approach | Important consideration |
 |---|---|---|
-| Frequent sequential iteration | `xiiDynamicArray<T>` | Growth/removal may move elements |
-| Small typical size, occasional spill | Suitable XII hybrid/small-array type | Confirm actual capacity/allocator behavior |
-| Handle-based lookup | `xiiIdTable` | A mapping to `T*` does not own `T` |
-| Hash lookup by key | XII hash table/map | Choose key hashing and equality deliberately |
-| Stable heap address | `xiiUniquePtr<T>` stored in a collection | Pointer valid only until destruction |
-| Non-owning contiguous range | XII array-view type | Underlying storage must outlive view |
+| Frequent sequential iteration | `xiiDynamicArray<T>` | Growth and removal may relocate elements |
+| Fixed-size storage | `xiiStaticArray<T, N>` or appropriate fixed-capacity type | Capacity and overflow behavior must be understood |
+| Small collections with occasional growth | Suitable XII hybrid-array type | Verify inline capacity and allocator behavior |
+| Lookup by stable logical identity | `xiiIdTable` | Handle validity does not automatically guarantee concurrent lifetime safety |
+| Hash-based lookup | `xiiHashTable` | Hashing, equality, memory overhead, and iteration order matter |
+| Ordered associative access | Appropriate ordered container | Ordering requirements and insertion costs must be justified |
+| Stable heap allocation | `xiiUniquePtr<T>` stored in a collection | Address remains stable only while the allocation exists |
+| Non-owning contiguous access | `xiiArrayPtr<T>` | Backing storage must remain valid |
+| Temporary allocations | Appropriate arena or frame allocator | Allocations must not outlive allocator reset |
+| Independently managed resources | Registry with generation-checked handles | Ownership and synchronization remain separate concerns |
 
-### 10.2 Allocation on critical paths
+These are typical approaches, not mandatory mappings. The selected container must satisfy the actual subsystem contract.
 
-Avoid per-element heap allocations in hot loops unless profiling shows they are necessary. Use frame arenas, pooled objects, retained capacity, or batched allocations where lifetime permits. Avoid introducing a custom allocator for an infrequently created object without evidence.
+#### Access Pattern Considerations
 
-### 10.3 Reserve and capacity
+Before selecting a container, consider:
 
-Reserve capacity when expected count is known and the allocation matters. Do not call `Reserve()` redundantly every frame. A container's capacity is an optimization; its count defines initialized elements.
+1. **Iteration:** Is the collection frequently traversed sequentially?
+2. **Lookup:** Are elements located by index, identifier, key, or predicate?
+3. **Mutation:** How frequently are elements inserted, removed, or reordered?
+4. **Identity:** Must references remain valid independently of storage position?
+5. **Ordering:** Is element order meaningful or externally observable?
+6. **Memory:** What allocation, fragmentation, and locality characteristics matter?
+7. **Concurrency:** Are operations performed concurrently, and what synchronization is required?
+8. **Scale:** What are the representative and worst-case element counts?
+
+Do not replace a straightforward container with a complex indexing structure when measurements do not justify the additional state and maintenance cost.
+
+**Guiding principle:**
+
+> Select containers according to the operations and guarantees they must support, not merely their familiarity or theoretical complexity.
+
+### 10.2 Allocation on Performance-Critical Paths
+
+Dynamic allocation can introduce latency, fragmentation, synchronization, and unpredictable execution costs.
+
+Allocation behavior **SHOULD** be considered when designing frequently executed operations, particularly simulation updates, resource processing, rendering, task scheduling, and other latency-sensitive workloads.
+
+#### General Requirements
+
+- Avoid unnecessary heap allocations in demonstrated hot paths.
+- Prefer retaining and reusing storage when its lifetime and memory cost justify doing so.
+- Use pooled or arena-based allocation when allocation patterns and lifetimes are compatible with those mechanisms.
+- Batch allocations when doing so reduces measurable overhead without obscuring ownership.
+- Do not introduce custom allocators solely because an object is performance-sensitive.
+- Allocation optimizations **SHOULD** be supported by profiling or representative allocation measurements.
+- Avoid hidden allocations in frequently invoked interfaces when their cost is significant.
+- Temporary storage **MUST** remain valid for the entire duration of its use.
+- Memory reuse **MUST NOT** expose stale object state or violate construction and destruction requirements.
+
+#### Reusing Storage
+
+**Prefer when repeated allocation is measurable:**
+
+```cpp
+void CollectVisibleObjects(xiiArrayPtr<const xiiObject> pObjects)
+{
+  m_VisibleObjects.Clear();
+
+  for (const xiiObject* pObject : pObjects)
+  {
+    if (pObject->IsVisible())
+    {
+      m_VisibleObjects.PushBack(pObject->GetHandle());
+    }
+  }
+}
+```
+
+The collection retains its allocated capacity when `Clear()` preserves storage according to the container's contract.
+
+This can avoid repeated allocation across successive calls.
+
+The retained capacity also consumes memory between uses. Reuse is appropriate only when that trade-off is justified.
+
+#### Allocation Strategies
+
+Common allocation strategies include:
+
+- **Stack allocation:** Appropriate for bounded, scope-local objects.
+- **General-purpose heap allocation:** Appropriate for independently managed objects with less predictable lifetimes.
+- **Pool allocation:** Appropriate for frequently created objects with compatible allocation sizes or reuse characteristics.
+- **Arena allocation:** Appropriate for groups of allocations sharing a common lifetime.
+- **Frame allocation:** Appropriate for temporary data guaranteed not to survive the frame allocator's reset boundary.
+- **Persistent reserved storage:** Appropriate for collections that repeatedly operate near a known capacity.
+
+These strategies are not interchangeable.
+
+For example, frame allocation is unsafe when the allocated data is retained by an asynchronous task or GPU submission beyond the frame allocator's validity period.
+
+#### Allocation in Real-Time Systems
+
+Performance-sensitive systems **SHOULD** consider not only average allocation time but also latency variation and contention.
+
+An allocator that provides good average throughput may still introduce unacceptable stalls under certain workloads.
+
+Where predictable execution latency is required, measure allocation behavior under representative contention, object sizes, and allocation lifetimes.
+
+**Guiding principle:**
+
+> Reduce allocation overhead where it matters, but do not introduce complex memory-management machinery without evidence that it improves the intended workload.
+
+### 10.3 Capacity, Reservation, and Container Growth
+
+Container capacity and element count represent different properties and **MUST NOT** be treated interchangeably.
+
+Capacity describes how much storage may be available without additional allocation. Count describes the number of logically contained elements.
+
+#### General Requirements
+
+- Reserve capacity when expected element counts are known and avoiding growth is beneficial.
+- Do not reserve excessive memory without considering actual workload requirements.
+- Avoid repeatedly reserving the same capacity in frequently executed operations.
+- Do not assume that reserved capacity represents initialized or constructed elements.
+- Container access **MUST** remain within the valid element count.
+- Growth policies **SHOULD** balance allocation frequency against retained memory consumption.
+- Capacity reductions **SHOULD** be intentional, particularly for repeatedly reused containers.
+- Do not assume that clearing a container releases its allocation unless documented by the container.
+- Reservation and growth operations **MUST** account for reference and pointer invalidation.
+
+**Prefer:**
 
 ```cpp
 m_VisibleObjects.Reserve(uiEstimatedVisibleObjectCount);
+
+for (const xiiObject* pObject : pObjects)
+{
+  if (pObject->IsVisible())
+  {
+    m_VisibleObjects.PushBack(pObject->GetHandle());
+  }
+}
 ```
 
-### 10.4 Pointer invalidation during growth
+Reservation is beneficial when the estimate is meaningful and the container would otherwise require repeated growth.
+
+#### Count Versus Capacity
+
+**Avoid:**
 
 ```cpp
-// Unsafe if the table keeps pointers into moving array entries.
-xiiDynamicArray<Entry> m_Entries;
-Entry* pEntry = &m_Entries[0];
-m_Entries.PushBack(anotherEntry); // May relocate storage.
+m_Entries.Reserve(128U);
+
+ProcessEntry(m_Entries[127]);
 ```
 
-Preferred alternatives include stable separate allocation or table entries keyed by generation-checked IDs. Do not assume a container's address stability; check its documented behavior.
+Reservation alone does not establish that the collection contains 128 valid elements.
 
-### 10.5 Removal semantics
+**Prefer:**
 
-`RemoveAndSwap` is useful when order is irrelevant; it can reorder the collection. Ordered removal can shift elements and be more expensive. Do not optimize away order if it affects scheduling, behavior, serialization, or deterministic tests.
+```cpp
+m_Entries.SetCount(128U);
 
-### 10.6 Allocator lifetime
+ProcessEntry(m_Entries[127]);
+```
 
-An allocator must outlive all objects and containers using it. A manager-owned `xiiProxyAllocator` must not be destroyed before its graph entries and graph-owned allocations are released. Verify member destruction order and explicit `Clear()` calls during subsystem shutdown.
+The preferred example assumes `SetCount()` establishes the required elements according to the container's documented construction and initialization semantics.
 
-### 10.7 Cache semantics
+#### Repeated Reservation
 
-Distinguish:
+Calling `Reserve()` repeatedly may be harmless when the requested capacity is already available, but unnecessary calls can obscure the intended allocation strategy.
 
-- **Ownership:** who ultimately releases an object.
-- **Caching:** which completed/unused objects may be retained for reuse.
-- **Pooling:** how compatible physical objects are recycled.
-- **Aliasing:** how separate logical resources may share memory with non-overlapping uses.
+Prefer reserving storage at initialization or another appropriate capacity-planning boundary when the expected requirement is stable.
 
-Do not call an object a *cache* when it actually owns a graph's authoritative state without explaining its lifetime contract.
+**Guiding principle:**
 
-### 10.8 Memory alignment and layout
+> Capacity is an allocation property; count is an element-validity property. Reserve intentionally and never confuse available storage with constructed objects.
 
-Respect alignment requirements for SIMD types, mapped GPU data, atomics, and API structures. Use the engine's alignment helpers and allocation APIs. Do not rely on undocumented packing, padding, or `sizeof` equivalence when transmitting data to a GPU or disk.
+### 10.4 Pointer, Reference, and Iterator Invalidation
 
-### 10.9 Data-oriented access
+Container modifications may invalidate pointers, references, iterators, views, and indices into their elements.
 
-Prefer iteration over only the data required by a subsystem. An enormous heterogeneous array is simple to append to but can be expensive to filter for every pass. Maintain indices, categories, or sorted batches when a measured workload benefits—without forcing every caller to perform full scans.
+Such invalidation **MUST** be considered whenever references to container-managed storage escape the immediate operation.
 
-### 10.10 Smart-pointer ownership cycles
+#### General Requirements
 
-Avoid ownership cycles, especially across editor modules, callbacks, plugin services, and GPU resources. If two systems need to refer to one another, make one relationship non-owning or use an explicit manager handle.
+- Do not assume elements retain stable addresses across container growth.
+- Verify the invalidation guarantees of the specific XII container being used.
+- Do not retain pointers into relocatable storage across operations that may trigger relocation.
+- Element removal **MUST** invalidate access to the removed object.
+- Iteration **MUST** respect container mutation and invalidation rules.
+- Stable addresses **MUST NOT** be confused with stable logical identity.
+- Avoid unnecessary indirection when stable addresses are not required.
+- Use handles when logical identity must remain independent of storage location.
+- Generation-checked handles **MUST** be validated through their authoritative registry.
+- Container relocation **MUST NOT** invalidate externally registered addresses when those addresses are contractually required to remain stable.
 
----
+#### Relocation Hazards
+
+**Avoid:**
+
+```cpp
+xiiDynamicArray<Entry> m_Entries;
+
+Entry* pEntry = &m_Entries[0];
+
+m_Entries.PushBack(anotherEntry);
+
+// pEntry may now refer to invalid storage.
+ProcessEntry(*pEntry);
+```
+
+Appending an element may require the dynamic array to relocate its existing elements.
+
+The retained pointer may therefore become invalid.
+
+#### Stable Allocation
+
+When stable element addresses are genuinely required, independently allocated objects may be appropriate.
+
+```cpp
+xiiDynamicArray<xiiUniquePtr<Entry>> m_Entries;
+```
+
+Relocating the container's smart pointers does not relocate the independently allocated `Entry` objects.
+
+However, removing or destroying an entry still invalidates pointers to that entry.
+
+#### Index-Based References
+
+Indices may survive relocation when logical ordering remains unchanged, but they can become invalid or refer to different elements after removal or reordering.
+
+Do not treat an index as a persistent resource identity unless the owning subsystem explicitly guarantees that behavior.
+
+For independently managed objects, generation-checked handles are generally more appropriate.
+
+See §6.4 for the distinction between stable identity and stable address.
+
+**Guiding principle:**
+
+> Container stability is defined by documented invalidation rules. Never infer pointer, index, or iterator validity from the container's apparent implementation.
+
+### 10.5 Removal, Ordering, and Compaction
+
+Removal operations **MUST** preserve the ordering and identity guarantees required by the collection's consumers.
+
+Different removal strategies offer different performance and semantic trade-offs.
+
+#### General Requirements
+
+- Use unordered removal only when element order is not part of the collection's contract.
+- Ordered removal **MUST** be used when the relative order of surviving elements must be preserved.
+- Removal **MUST** account for pointer, reference, iterator, and index invalidation.
+- Do not optimize away deterministic ordering when it affects observable behavior.
+- Use compaction when it provides a meaningful benefit and does not invalidate required external references.
+- Avoid unnecessary stable ordering when no consumer depends on it.
+- Removal during iteration **MUST** follow the container's documented mutation rules.
+- Secondary lookup structures **MUST** remain consistent after removal or relocation.
+
+#### Unordered Removal
+
+When order is irrelevant, swap-based removal can reduce the number of elements that must be moved.
+
+```cpp
+for (xiiUInt32 uiIndex = 0; uiIndex < m_Entries.GetCount();)
+{
+  if (m_Entries[uiIndex].m_bExpired)
+  {
+    m_Entries.RemoveAtAndSwap(uiIndex);
+    continue;
+  }
+
+  ++uiIndex;
+}
+```
+
+The element moved into the removed position must still be examined.
+
+#### Ordered Removal
+
+Ordered removal preserves relative ordering but may require shifting subsequent elements.
+
+It is appropriate when order affects:
+
+- Execution sequencing.
+- Scheduling.
+- Serialization.
+- Deterministic iteration.
+- User-visible ordering.
+- Stable relative ordering required by tests or algorithms.
+
+Do not replace ordered removal with swap-based removal without evaluating these requirements.
+
+#### Compaction
+
+Compaction may improve locality and reduce fragmentation, but it can also invalidate addresses and indices.
+
+A system that supports compaction **MUST** distinguish logical identity from physical location when external references must survive relocation.
+
+**Guiding principle:**
+
+> Removal semantics are part of the collection's contract. Optimize movement costs only when ordering and identity requirements permit it.
+
+### 10.6 Allocator Ownership and Lifetime
+
+An allocator **MUST** remain valid for every allocation that depends on it.
+
+Allocator lifetime is a dependency relationship and must be preserved through initialization, ordinary execution, failure recovery, and shutdown.
+
+The general allocator compatibility requirements are established in §6.2.
+
+#### General Requirements
+
+- Allocators **MUST** outlive the allocations and containers that rely on them.
+- Objects **MUST NOT** release memory through an allocator that has already been destroyed.
+- Allocator reset operations **MUST NOT** invalidate allocations that remain in use.
+- Allocator ownership **SHOULD** be explicit when a component selects or manages its own allocator.
+- Member declaration order **MUST** account for reverse-order destruction when members depend on an allocator owned by the same object.
+- Explicit shutdown operations **MUST** release dependent resources before destroying their allocator.
+- Plugin and module-specific allocators **MUST** remain available until all allocations requiring them have been released.
+- Arena and frame allocator boundaries **MUST** account for deferred execution and asynchronous resource use.
+
+#### Member Destruction Order
+
+C++ destroys non-static data members in the reverse order of their declaration.
+
+**Prefer:**
+
+```cpp
+class xiiStorageManager
+{
+private:
+  xiiProxyAllocator            m_Allocator;
+  xiiDynamicArray<xiiUInt32>   m_Entries;
+};
+```
+
+This arrangement is appropriate when `m_Entries` uses `m_Allocator`, assuming the allocator is correctly supplied during construction.
+
+Because `m_Entries` is declared after `m_Allocator`, it is destroyed first.
+
+The allocator remains alive throughout the container's destruction.
+
+#### Explicit Shutdown
+
+```cpp
+void xiiStorageManager::Shutdown()
+{
+  m_Entries.Clear();
+}
+```
+
+Clearing entries may destroy contained objects, but whether it releases the container's backing allocation depends on the container contract.
+
+If allocator teardown requires all backing allocations to be released before the manager itself is destroyed, the implementation must use the appropriate storage-release operation or lifecycle design.
+
+Do not assume `Clear()` necessarily returns memory to the allocator.
+
+#### Arena Reset
+
+An arena allocator may invalidate many allocations simultaneously.
+
+Resetting an arena is appropriate only when every object using its storage has completed its required lifetime.
+
+For non-trivially destructible objects, the implementation must also ensure that required destruction occurs according to the allocator and container contracts.
+
+**Guiding principle:**
+
+> An allocator is part of the lifetime of every allocation it serves. Destruction order, reset behavior, and shutdown must respect that dependency.
+
+### 10.7 Ownership, Caching, Pooling, and Aliasing
+
+Ownership, caching, pooling, and memory aliasing are distinct concepts and **MUST NOT** be conflated.
+
+A subsystem may implement several of these mechanisms simultaneously, but each must have a clearly defined responsibility and lifetime contract.
+
+#### Definitions
+
+| Concept | Responsibility |
+|---|---|
+| **Ownership** | Determines which component is responsible for releasing a resource |
+| **Caching** | Retains reusable data or resources to avoid repeated computation or creation |
+| **Pooling** | Recycles compatible objects or allocations according to defined reuse rules |
+| **Aliasing** | Permits separate logical resources to share physical memory when their usage constraints allow it |
+| **Registration** | Associates an object with a lookup, discovery, or identity mechanism |
+| **Residency** | Describes whether a resource or allocation is present in a required memory domain |
+
+#### General Requirements
+
+- Resource ownership **MUST** remain explicit regardless of whether the resource is cached or pooled.
+- A cache **MUST** define when entries become valid, stale, reusable, and eligible for eviction.
+- A pool **MUST** define compatibility requirements for reusing an allocation or object.
+- Memory aliasing **MUST** respect the lifetime and synchronization constraints of the underlying memory system.
+- Registration **MUST NOT** be assumed to transfer ownership unless the API explicitly establishes that behavior.
+- Caches **MUST NOT** silently become authoritative owners of unrelated subsystem state without an explicit contract.
+- Do not introduce caches or pools without a demonstrated benefit.
+- Cached resources **MUST** be invalidated when the assumptions underlying their correctness no longer hold.
+- Resource eviction **MUST** respect outstanding references and asynchronous operations.
+- The distinction between logical resource identity and physical allocation reuse **MUST** remain clear.
+
+#### Cache Validity
+
+A cached result may depend on:
+
+- Resource contents.
+- Configuration values.
+- Platform capabilities.
+- Compilation settings.
+- Device state.
+- Version identifiers.
+- Other external dependencies.
+
+The cache must define which changes invalidate its entries.
+
+A cache that does not correctly represent its invalidation dependencies may return stale results even when its memory management is otherwise correct.
+
+#### Pool Reuse
+
+A pool may reuse memory without reusing an object's logical identity.
+
+When physical allocations are recycled, new objects **MUST NOT** accidentally inherit stale state, references, or generation identifiers from previous occupants.
+
+For GPU resources, reuse must also respect outstanding GPU execution dependencies.
+
+#### Resource Aliasing
+
+Aliasing permits multiple logical resources to use overlapping physical storage under defined conditions.
+
+It is valid only when their memory usage, synchronization, and API requirements permit that overlap.
+
+Two resources having non-overlapping apparent application lifetimes does not automatically prove that their GPU usage does not overlap.
+
+**Guiding principle:**
+
+> Ownership determines responsibility, caching determines retention, pooling determines reuse, and aliasing determines memory sharing. Each mechanism requires its own correctness contract.
+
+### 10.8 Memory Alignment, Layout, and Representation
+
+Memory layout and alignment **MUST** satisfy the requirements of the C++ object model and any external interface that consumes the data.
+
+This is particularly important for SIMD operations, atomic types, binary serialization, GPU resources, and platform API structures.
+
+#### General Requirements
+
+- Allocations **MUST** satisfy the alignment requirements of the objects stored within them.
+- Use XII's established alignment helpers and allocation facilities where appropriate.
+- Do not assume compiler-generated structure padding is stable across different toolchains or build configurations.
+- Do not rely on undocumented `sizeof()` equivalence between unrelated types.
+- Binary data exchange **MUST** account for representation, alignment, field layout, and endianness where applicable.
+- Do not reinterpret arbitrary byte sequences as C++ objects without satisfying object lifetime, alignment, and representation requirements.
+- SIMD storage **MUST** meet the alignment requirements of the selected operations.
+- Atomics **MUST** be correctly aligned and used according to their synchronization contract.
+- Packed structures **SHOULD** be avoided unless required by an explicit external format or platform interface.
+- Explicit padding **MAY** be used when a binary layout contract requires it.
+
+#### Alignment
+
+**Example:**
+
+```cpp
+struct alignas(16) xiiAlignedVectorData
+{
+  float m_fValues[4] = {};
+};
+```
+
+The explicit alignment establishes a minimum alignment requirement for the type.
+
+Such alignment should be introduced only when it is necessary for the intended operations or external layout contract.
+
+#### Serialization
+
+Do not serialize arbitrary object memory directly merely because a type appears to contain simple fields.
+
+C++ object representations may contain:
+
+- Padding bytes.
+- Platform-dependent layouts.
+- Pointer values.
+- Endianness-dependent representations.
+- Non-portable implementation details.
+
+Persistent formats **SHOULD** define their field representations explicitly.
+
+#### GPU Data Layout
+
+GPU-facing data structures must satisfy the layout rules of the relevant graphics API and shader interface.
+
+CPU structure size, member offsets, and alignment must not be assumed compatible with shader data layouts without verification.
+
+Where necessary, validate layout assumptions using compile-time checks and established reflection or shader interface mechanisms.
+
+**Guiding principle:**
+
+> Memory layout is a correctness contract whenever data crosses representation boundaries. Alignment, padding, and object lifetime must be established explicitly.
+
+### 10.9 Data-Oriented Access and Locality
+
+Data-oriented design **SHOULD** be considered when a subsystem repeatedly processes large collections of objects or performs homogeneous operations over substantial datasets.
+
+The goal is to organize data according to how it is accessed, not to replace every object-oriented abstraction with arrays.
+
+#### General Requirements
+
+- Prefer storage layouts that support the dominant access patterns of the subsystem.
+- Avoid repeatedly scanning large heterogeneous collections when narrower indexing or categorization would provide a demonstrated benefit.
+- Group frequently accessed data when doing so improves locality and reduces unnecessary memory traffic.
+- Separate rarely accessed data from hot-path data when measurements justify the additional organization.
+- Do not duplicate authoritative state across multiple representations without a defined synchronization or invalidation strategy.
+- Secondary indices **MUST** remain consistent with the owning data.
+- Data layout changes **MUST** preserve identity, ownership, and ordering requirements.
+- Avoid introducing complex data-oriented structures for small collections where straightforward storage is sufficient.
+- Evaluate data-oriented optimizations using representative workloads.
+
+#### Array of Structures
+
+An array of structures can be appropriate when operations frequently access most fields of each element.
+
+```cpp
+struct xiiParticle
+{
+  xiiVec3 m_vPosition;
+  xiiVec3 m_vVelocity;
+  float   m_fMass = 1.0f;
+};
+
+xiiDynamicArray<xiiParticle> m_Particles;
+```
+
+This representation keeps each particle's data together.
+
+It may be suitable when updating position, velocity, and mass together.
+
+#### Structure of Arrays
+
+A structure-of-arrays representation may be preferable when operations repeatedly access only selected fields across many elements.
+
+```cpp
+struct xiiParticleStorage
+{
+  xiiDynamicArray<xiiVec3> m_Positions;
+  xiiDynamicArray<xiiVec3> m_Velocities;
+  xiiDynamicArray<float>   m_Masses;
+};
+```
+
+This layout may improve locality for operations that process positions independently of other particle properties.
+
+However, it introduces an invariant: corresponding array elements must remain aligned by index.
+
+Insertion, removal, resizing, and reordering **MUST** preserve that relationship.
+
+#### Secondary Indices
+
+A subsystem may maintain a collection of handles or indices identifying a frequently accessed subset of objects.
+
+```cpp
+xiiDynamicArray<xiiObjectHandle> m_ActiveObjects;
+```
+
+Such indices can reduce repeated filtering costs, but they introduce additional state that must be maintained when objects change eligibility or are destroyed.
+
+Secondary indices **SHOULD** be introduced only when their benefits justify those maintenance requirements.
+
+#### Performance Considerations
+
+Data-oriented representations may improve:
+
+- Cache locality.
+- Sequential memory access.
+- SIMD utilization.
+- Batch processing.
+- Parallel work partitioning.
+- Reduced pointer chasing.
+
+They may also increase:
+
+- State synchronization complexity.
+- Update and removal costs.
+- Memory duplication.
+- Interface complexity.
+- Difficulty preserving independent object identity.
+
+The appropriate representation depends on the workload.
+
+**Guiding principle:**
+
+> Organize data for the operations that consume it. Optimize locality where it matters without sacrificing ownership, consistency, or architectural clarity.
+
+### 10.10 Smart-Pointer Ownership Cycles
+
+Shared ownership graphs **MUST** avoid cycles that prevent resources from being released.
+
+This is particularly important for callbacks, editor services, plugin systems, asynchronous tasks, and resource managers.
+
+#### General Requirements
+
+- Shared ownership **MUST** reflect genuine lifetime responsibility.
+- Do not introduce mutual strong ownership when one relationship is logically non-owning.
+- Ownership graphs **SHOULD** have an identifiable direction or authoritative owner.
+- Use weak references, non-owning pointers, or manager handles where appropriate to break ownership cycles.
+- A non-owning reference **MUST** still have a valid lifetime and invalidation contract.
+- Callback registrations **MUST** be released before their owning objects or executable code become invalid.
+- Do not assume reference counting automatically prevents resource leaks.
+- Shared ownership across plugin boundaries **MUST** account for module unloading and destruction requirements.
+
+#### Ownership Cycles
+
+**Avoid conceptually:**
+
+```cpp
+class xiiServiceA
+{
+  xiiSharedPtr<xiiServiceB> m_pServiceB;
+};
+
+class xiiServiceB
+{
+  xiiSharedPtr<xiiServiceA> m_pServiceA;
+};
+```
+
+If both objects hold strong ownership of each other, their reference counts may never reach zero.
+
+#### Prefer Directed Ownership
+
+When one service owns another, express that relationship directly.
+
+```cpp
+class xiiServiceA
+{
+private:
+  xiiUniquePtr<xiiServiceB> m_pServiceB;
+};
+```
+
+The owned service may retain a non-owning reference to its owner only when that reference is required and its lifetime is guaranteed.
+
+Where neither service should own the other, an authoritative manager or handle-based lookup may provide a clearer relationship.
+
+#### Plugin and Callback Cycles
+
+Callbacks can create indirect ownership cycles when they capture strong references to objects that own the callback registration.
+
+A callback's lifetime must therefore be reviewed together with its capture semantics and registration owner.
+
+**Guiding principle:**
+
+> Shared references are not automatically shared responsibility. Make ownership directional wherever practical, and prevent cycles that obstruct deterministic destruction.
+
+### 10.11 Memory Budgets and Resource Accounting
+
+Systems that manage substantial or variable memory consumption **SHOULD** define appropriate memory accounting and capacity policies.
+
+This is particularly relevant to caches, streaming systems, asset processing, simulations, and GPU resource management.
+
+#### General Requirements
+
+- Memory budgets **SHOULD** be explicit when a subsystem may otherwise grow without meaningful bounds.
+- Resource accounting **MUST** distinguish logical resource sizes from actual physical allocation costs when the distinction affects correctness or budgeting.
+- Do not assume that container element counts accurately represent total memory usage.
+- Cached and pooled allocations **SHOULD** be included in memory accounting when they remain resident.
+- Eviction and reclamation strategies **MUST** respect outstanding references and asynchronous execution.
+- Budget enforcement **MUST** preserve valid resource states when allocation or reclamation fails.
+- Avoid introducing complex budget-management systems when the subsystem's memory requirements are small and predictable.
+- Memory accounting **SHOULD** be validated against allocator or platform measurements where practical.
+
+#### Logical Versus Physical Memory
+
+A resource's logical data size may differ from its actual allocation size due to alignment, metadata, allocator granularity, padding, and internal storage requirements.
+
+For example, a texture's apparent pixel-data size may not equal the physical memory reserved by a graphics backend.
+
+Budgets must use measurements appropriate to the resource-management decisions they control.
+
+#### Cache Growth
+
+A cache that retains every previously used resource without an eviction policy may exhibit unbounded memory growth.
+
+Caches **SHOULD** establish an appropriate retention policy when resource volume is not naturally bounded.
+
+Possible strategies include explicit capacity limits, memory budgets, age-based retirement, or reclamation under pressure.
+
+The selection should follow actual workload requirements rather than a universal policy.
+
+**Guiding principle:**
+
+> Memory retained for performance remains a resource cost. Budgeting and accounting should reflect physical ownership and realistic workload behavior.
+
+### 10.12 Memory Diagnostics and Validation
+
+Memory correctness and performance **SHOULD** be verified using appropriate diagnostics, tests, and profiling tools.
+
+The objective is to detect lifetime violations, allocation mismatches, invalidation errors, leaks, and performance regressions before they become difficult to reproduce.
+
+#### General Requirements
+
+- Allocation and destruction paths **SHOULD** be tested under normal execution and recoverable failure conditions.
+- Resource-owning containers **MUST** preserve their invariants during insertion, growth, removal, and clearing.
+- Memory diagnostics **SHOULD** cover allocator mismatch, double destruction, invalid access, and leaked ownership where applicable.
+- Use supported sanitizers and diagnostic tools when they are compatible with the relevant platform and build configuration.
+- Do not assume that successful execution without a crash proves memory correctness.
+- Profile allocation count, allocated bytes, retained capacity, and fragmentation where those measurements matter.
+- Validate memory behavior under representative workloads rather than relying exclusively on small synthetic tests.
+- GPU memory diagnostics **SHOULD** account for asynchronous execution and deferred destruction.
+- Tests **SHOULD** exercise subsystem shutdown and partial initialization failure paths.
+- Performance improvements **SHOULD** include measurements demonstrating the intended reduction in allocation or memory overhead.
+
+#### Development Assertions
+
+Assertions may detect incorrect indices, unexpected allocation states, or violated container invariants during development.
+
+However, assertions **MUST NOT** perform essential allocation, destruction, or cleanup work.
+
+Expected allocation failures **MUST** follow the subsystem's explicit error-handling contract.
+
+#### Sanitizers and Instrumentation
+
+Where supported, memory diagnostics may include:
+
+- AddressSanitizer for invalid memory accesses and lifetime errors.
+- UndefinedBehaviorSanitizer for supported categories of undefined behavior.
+- Leak detection for unreleased allocations.
+- Heap profiling for allocation frequency and retained memory.
+- Platform memory analyzers for fragmentation and allocation behavior.
+- Graphics API validation and GPU-assisted diagnostics where available.
+
+These tools provide complementary evidence. No single tool can establish every ownership or lifetime guarantee.
+
+**Guiding principle:**
+
+> Memory correctness must be demonstrated across allocation, mutation, failure, and destruction. Performance claims should be supported by measurements rather than assumptions.
 
 ## 11. Strings, identifiers, hashes, and handles
 
