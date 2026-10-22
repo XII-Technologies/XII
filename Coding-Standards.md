@@ -3682,121 +3682,782 @@ Relevant tests **SHOULD** focus on the actual lifetime guarantees of the compone
 
 > Ownership and lifetime guarantees are correctness properties. They should be explicit in interfaces, enforced by implementations, and verified under failure, concurrency, and shutdown conditions.
 
-## 7. Functions, parameters, and return values
+## 7. Functions, Parameters, and Return Values
 
-### 7.1 Functions should do one coherent job
+Functions in XII **MUST** express clear responsibilities, communicate their contracts through their interfaces, and preserve predictable behavior across supported platforms and configurations.
 
-Use separate functions for meaningful steps, particularly when phases have different failure and synchronization semantics.
+Function signatures should make dependencies, ownership, mutability, failure behavior, and observable side effects apparent wherever practical.
+
+This section extends the principles established in §1.1 (Correctness), §1.2 (Ownership and Lifetime), §1.3 (Interface Design), §3 (Naming Conventions), and §5 (Types and Interfaces).
+
+### 7.1 Functions Should Perform One Coherent Operation
+
+A function **SHOULD** perform one coherent operation at a consistent level of abstraction.
+
+This does not require every function to contain only a few statements. A substantial implementation may remain appropriate when its operations collectively fulfill one clearly defined responsibility.
+
+#### General Requirements
+
+- Functions **MUST** have a clearly identifiable purpose.
+- Prefer separating operations with distinct failure, ownership, synchronization, or lifecycle semantics.
+- Do not combine unrelated responsibilities merely to reduce the number of functions.
+- Avoid extracting trivial wrappers that introduce navigation overhead without establishing a meaningful boundary.
+- Functions **SHOULD** operate at a consistent level of abstraction.
+- Prefer meaningful helper functions when they isolate reusable logic, enforce invariants, or clarify complex algorithms.
+- Avoid excessive parameter lists when they indicate that a function performs unrelated operations or depends on too much external state.
+- Do not split tightly coupled operations when doing so would expose invalid intermediate states or compromise correctness.
+- Function names **MUST** accurately describe the work performed and its observable effects.
+
+**Prefer:**
 
 ```cpp
-xiiResult BuildGraph();
-xiiResult CompileGraph();
-xiiResult ExecuteGraph();
+xiiResult LoadDocument(xiiStringView sPath);
+xiiResult ValidateDocument();
+xiiResult SaveDocument(xiiStringView sPath);
 ```
 
-Avoid extracting trivial one-line wrappers that obscure control flow or make a user jump across many files without adding a useful boundary.
+Each operation has a distinct responsibility and may encounter different failure conditions.
 
-### 7.2 Prefer explicit inputs
-
-Pass information at the point of use rather than reading hidden mutable globals. A graph build delegate that depends on a view should receive a view or explicitly documented equivalent context.
+A higher-level operation may coordinate these steps when appropriate:
 
 ```cpp
-using BuildDelegate = xiiDelegate<void(
-  xiiRenderGraph&,
-  xiiRenderGraphBlackboard&,
-  const xiiView*)>;
-```
-
-### 7.3 Parameter passing
-
-| Kind | Recommended form | Why |
-|---|---|---|
-| Small scalar or handle | By value | Simple, clear ownership |
-| Small trivially copied math type | By value when appropriate | Avoid unnecessary indirection |
-| Large read-only object | `const T&` | No copy, cannot mutate |
-| Optional borrowed object | `T*` or `const T*` | Null can mean absent |
-| Required borrowed object | `T&` or `const T&` | Non-null contract |
-| String input | `xiiStringView` when appropriate | Supports multiple callers without ownership transfer |
-| Collection input | XII non-owning array view where available | Avoid copies |
-| Output parameter | Clearly named reference/pointer | Explicit output contract |
-| Ownership transfer | Movable owning type | Shows lifetime transfer |
-
-```cpp
-xiiResult GetFrameCompletion(
-  xiiUInt64 uiFrameIndex,
-  xiiUInt64& out_uiCompletedFrame);
-```
-
-### 7.4 Output names
-
-Use `out_` for outputs, and `inout_` when a parameter is intentionally read and modified. This is a **recommended** documentation convention, grounded in current XII usage, not a newly claimed original naming requirement.
-
-### 7.5 `const` correctness
-
-Mark read-only methods `const`, pass references as `const` when no mutation is needed, and use pointers to const data when callers must not modify the pointee.
-
-```cpp
-[[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_uiFrameIndex; }
-```
-
-A `const` method is not automatically thread-safe. If it accesses changing shared state, synchronization is still required.
-
-### 7.6 `[[nodiscard]]`
-
-Mark return values that signal failure, ownership, or an important computed result as `[[nodiscard]]`. Avoid ignoring such values accidentally.
-
-```cpp
-[[nodiscard]] static xiiResult ExecuteGraph(...);
-[[nodiscard]] static xiiRenderGraphHandle CreateGraph(...);
-```
-
-Do not mark every trivial getter `[[nodiscard]]` mechanically unless it aids correctness and matches neighboring interfaces.
-
-### 7.7 Result handling
-
-Check results immediately when failure affects subsequent work. Follow XII's established result macros and methods.
-
-```cpp
-XII_SUCCEED_OR_RETURN(frame.Begin(3U));
-
-if (graph.Compile(settings, &sError).Failed())
+xiiResult OpenDocument(xiiStringView sPath)
 {
-  xiiLog::Error("Render graph compilation failed: {0}", sError);
+  XII_SUCCEED_OR_RETURN(LoadDocument(sPath));
+  XII_SUCCEED_OR_RETURN(ValidateDocument());
+
+  return XII_SUCCESS;
+}
+```
+
+The coordinating function remains cohesive because its responsibility is opening a valid document.
+
+#### Avoid Excessive Fragmentation
+
+Do not extract every expression into a separate function merely to reduce function length.
+
+A helper function should provide at least one meaningful benefit:
+
+- Encapsulation of a distinct responsibility.
+- Reuse by multiple consumers.
+- Enforcement of an invariant.
+- Clarification of a complex algorithm.
+- Isolation of platform-specific behavior.
+- Separation of independently testable logic.
+- Establishment of a meaningful failure or synchronization boundary.
+
+Function length alone **MUST NOT** determine whether an implementation should be divided.
+
+**Guiding principle:**
+
+> A function should perform one coherent operation, but cohesion matters more than line count.
+
+### 7.2 Prefer Explicit Inputs and Dependencies
+
+Functions **SHOULD** receive the information required for their operation through explicit parameters, object state, or clearly documented subsystem dependencies.
+
+Avoid hidden mutable global state when an explicit dependency would improve correctness, reuse, or testability.
+
+#### General Requirements
+
+- Required inputs **SHOULD** be apparent from the function signature or the owning object's documented state.
+- Avoid retrieving mutable global state when the caller already possesses the required context.
+- Do not introduce hidden dependencies on the active frame, current thread, global device, or singleton unless those dependencies are part of an established subsystem contract.
+- Functions **SHOULD NOT** silently depend on unrelated initialization or execution state.
+- Prefer passing the narrowest context required by the operation.
+- Do not pass entire subsystem objects when only a small, well-defined portion of their capabilities is required, unless doing so is consistent with the architecture.
+- Avoid introducing unnecessary parameter forwarding through multiple layers when the dependency naturally belongs to an owning component.
+- Execution context **MUST** remain valid throughout the operation.
+
+**Prefer:**
+
+```cpp
+xiiResult Simulate(xiiSimulationWorld& world, const xiiSimulationSettings& settings, xiiTime deltaTime);
+```
+
+**Avoid:**
+
+```cpp
+xiiResult Simulate()
+{
+  auto* pWorld    = GetGlobalActiveWorld();
+  auto* pSettings = GetGlobalSimulationSettings();
+
+  // Hidden dependencies on mutable global state.
+}
+```
+
+The preferred interface makes its dependencies explicit and allows the operation to be invoked in different simulation contexts.
+
+#### Callback and Delegate Context
+
+Callbacks and delegates **MUST** receive or safely capture the context required for their execution.
+
+For example:
+
+```cpp
+using SimulationDelegate = xiiDelegate<void(xiiSimulationWorld&, const xiiSimulationSettings&, xiiTime)>;
+```
+
+A delegate **MUST NOT** retain borrowed references beyond their guaranteed lifetime.
+
+When callbacks execute asynchronously or survive subsystem transitions, their captured ownership and executable-code lifetime must follow §6.11.
+
+**Guiding principle:**
+
+> Dependencies should be visible at the boundary where they matter. Hidden state should not determine behavior that callers reasonably expect to control.
+
+### 7.3 Parameter Passing
+
+Parameter types **MUST** accurately express input semantics, mutability, optionality, and ownership.
+
+Choose parameter-passing mechanisms according to the type's size, semantics, lifetime requirements, and intended use.
+
+| Parameter category | Preferred form | Rationale |
+|---|---|---|
+| Small scalar values | By value | Simple semantics without unnecessary indirection |
+| Enum values and handles | By value | Clear identity and inexpensive copying |
+| Small mathematical types | By value when appropriate | Avoid unnecessary indirection where copying is efficient |
+| Large read-only objects | `const T&` | Avoid copying while prohibiting mutation through the reference |
+| Required mutable objects | `T&` | Express non-null borrowed access with permitted mutation |
+| Required read-only objects | `const T&` | Express non-null borrowed access without mutation |
+| Optional mutable objects | `T*` | Allow absence while permitting modification |
+| Optional read-only objects | `const T*` | Allow absence without permitting modification |
+| String inputs | `xiiStringView` where appropriate | Accept supported string representations without ownership transfer |
+| Collection inputs | `xiiArrayPtr<T>` or `xiiArrayPtr<const T>` as appropriate | Express non-owning contiguous access |
+| Output parameters | `T&` or `T*` with documented output semantics | Communicate produced values |
+| Input/output parameters | Mutable reference or pointer | Communicate intentional modification of existing state |
+| Ownership transfer | Movable owning type | Make transfer of ownership explicit |
+| Callable inputs | Appropriate callable or delegate type | Communicate invocation and lifetime requirements |
+
+#### General Requirements
+
+- Prefer pass-by-value for inexpensive value-like types.
+- Avoid copying large objects when borrowed access is sufficient.
+- Use `const` references for read-only access to objects that are expensive or inappropriate to copy.
+- Use mutable references only when mutation is part of the function's contract.
+- Prefer references for required objects and pointers for optional objects, unless existing API conventions establish different semantics.
+- Do not use non-const references merely to avoid copying when the function does not modify the argument.
+- Do not use output parameters when a direct return value is simpler and communicates the result adequately.
+- Ownership transfer **MUST** be explicit and consistent with the owning type.
+- Non-owning parameter views **MUST NOT** be retained beyond their documented lifetime.
+- Parameter types **SHOULD** avoid unnecessarily constraining callers to a particular container implementation.
+
+**Prefer:**
+
+```cpp
+xiiResult CalculateBounds(xiiArrayPtr<const xiiVec3> positions, xiiBoundingBox& out_Bounds);
+```
+
+This signature communicates that the function reads the positions and writes the resulting bounding box.
+
+#### Pass-by-Value Versus References
+
+Pass-by-value is not automatically faster for every small type.
+
+Calling conventions, alignment, register availability, and the type's copy semantics can affect performance.
+
+For mathematical and SIMD types, follow established XII conventions and measured performance requirements.
+
+Do not mechanically replace `const T&` with `T` based solely on `sizeof(T)`.
+
+**Guiding principle:**
+
+> Parameter types should communicate how data is used, whether it may change, and whether its ownership is transferred.
+
+### 7.4 Output and Input/Output Parameters
+
+Output parameters **SHOULD** use descriptive names that distinguish produced values from ordinary inputs.
+
+XII commonly uses the `out_` and `inout_` naming conventions. These are recommended documentation conventions rather than mandatory type-dependent prefix requirements for all parameters.
+
+#### Naming Conventions
+
+- Use `out_` for parameters whose primary purpose is to receive a produced value.
+- Use `inout_` for parameters whose existing value is intentionally read and modified.
+- Names **SHOULD** retain applicable type-dependent prefixes after the direction marker.
+- Do not use output-direction prefixes for parameters that are merely mutable implementation details.
+- Output parameters **MUST** have documented validity guarantees on success and failure.
+- Prefer direct return values when the function produces one simple result and does not require independent failure reporting.
+
+**Example:**
+
+```cpp
+xiiResult GetTaskCompletion(xiiTaskHandle hTask, xiiUInt64& out_uiCompletionValue);
+```
+
+For an input/output parameter:
+
+```cpp
+void NormalizeWeights(xiiArrayPtr<float> inout_Weights);
+```
+
+#### Failure Semantics
+
+When a function returns `xiiResult` and also writes output parameters, the contract **MUST** establish whether those outputs are modified when the operation fails.
+
+Where practical, prefer leaving output parameters unchanged on failure.
+
+**Prefer:**
+
+```cpp
+xiiResult ParseCount(xiiStringView sText, xiiUInt32& out_uiCount)
+{
+  xiiUInt32 uiParsedCount = 0U;
+
+  XII_SUCCEED_OR_RETURN(ParseUnsignedInteger(sText, uiParsedCount));
+
+  out_uiCount = uiParsedCount;
+  return XII_SUCCESS;
+}
+```
+
+The output is committed only after parsing succeeds.
+
+This provides a clear failure guarantee without requiring the caller to inspect partially modified output state.
+
+#### Multiple Outputs
+
+Several related output values may indicate that a small result structure would provide a clearer interface.
+
+However, do not introduce a new structure merely to eliminate two straightforward output parameters.
+
+Choose the representation that best communicates the operation's contract.
+
+**Guiding principle:**
+
+> Output parameters must make data flow and failure behavior explicit. Prefer committing observable changes only after successful completion when practical.
+
+### 7.5 `const` Correctness
+
+`const` correctness **MUST** be maintained throughout function interfaces and implementations.
+
+Read-only access should be expressed through the type system wherever practical.
+
+#### General Requirements
+
+- Member functions that do not modify observable object state **SHOULD** be marked `const`.
+- Read-only reference parameters **SHOULD** use `const T&`.
+- Read-only pointer parameters **SHOULD** use `const T*`.
+- Avoid exposing mutable access through `const` interfaces unless the operation has a justified logical-constness contract.
+- Do not use `const_cast` to bypass interface restrictions without a concrete and documented reason.
+- Prefer immutable local values when reassignment is unnecessary and immutability improves clarity.
+- Use `mutable` only for members whose modification is compatible with the type's logical constness.
+- A `const` member function **MUST NOT** be assumed thread-safe solely because it is declared `const`.
+
+**Prefer:**
+
+```cpp
+class xiiSimulationClock
+{
+public:
+  XII_ALWAYS_INLINE xiiUInt64 GetStepCount() const
+  {
+    return m_uiStepCount;
+  }
+
+private:
+  xiiUInt64 m_uiStepCount = 0U;
+};
+```
+
+#### Logical Constness
+
+A `const` method may legitimately update internal implementation details, such as a cache or statistics counter, when those changes do not violate the method's observable contract.
+
+Such mutation **MUST** remain safe under the type's concurrency guarantees.
+
+For example, lazily populating a mutable cache inside a `const` function can introduce data races if multiple threads invoke the function concurrently.
+
+#### Shallow Constness
+
+`const` qualification does not necessarily make all indirectly referenced objects immutable.
+
+A const smart pointer or const container holding pointers may still permit mutation of the pointed-to objects, depending on its API.
+
+Interfaces **MUST** consider the actual mutability of reachable state rather than relying exclusively on top-level `const`.
+
+**Guiding principle:**
+
+> Use `const` to express permitted mutation accurately, but do not confuse logical immutability with thread safety or transitive immutability.
+
+### 7.6 `[[nodiscard]]` and Return-Value Significance
+
+Return values that communicate failure, ownership, identity, or other correctness-critical information **SHOULD** be marked `[[nodiscard]]`.
+
+The attribute helps identify accidental result omission but does not replace explicit error-handling contracts.
+
+#### General Requirements
+
+- Functions returning a failure-sensitive result **SHOULD** use `[[nodiscard]]` where the relevant result type is not already annotated.
+- Resource creation functions returning owning objects or handles **SHOULD** use `[[nodiscard]]`.
+- Functions returning values whose omission would likely indicate a programming error **SHOULD** use `[[nodiscard]]`.
+- Do not apply `[[nodiscard]]` mechanically to every trivial getter without considering existing API conventions.
+- Do not suppress return-value diagnostics merely to satisfy compilation.
+- If ignoring a result is intentional, use the established mechanism and ensure that doing so is safe under the operation's contract.
+- `[[nodiscard]]` **MUST NOT** be treated as a guarantee that callers cannot discard the result.
+
+**Prefer:**
+
+```cpp
+xiiResult InitializeSubsystem(); // xiiResult is [[nodiscard]] by convention.
+
+[[nodiscard]] xiiResourceHandle CreateResource(const xiiResourceDescriptor& descriptor);
+
+[[nodiscard]] bool IsResourceValid(xiiResourceHandle hResource) const;
+```
+
+An operation returning an important result should make its expected usage apparent.
+
+#### Type-Level Attributes
+
+If `xiiResult` or another return type is already annotated with `[[nodiscard]]`, repeating the attribute on every function may be unnecessary.
+
+Contributors **SHOULD** follow the conventions established by the relevant XII type and surrounding APIs.
+
+**Guiding principle:**
+
+> Important return values should be difficult to ignore accidentally. The type system and compiler diagnostics should reinforce explicit handling.
+
+### 7.7 Results, Failures, and Error Propagation
+
+Expected runtime failures **MUST** be represented through explicit error mechanisms, consistent with §1.1.
+
+`xiiResult` is appropriate when an operation needs to communicate success or failure without returning detailed error information directly.
+
+#### General Requirements
+
+- Functions that may legitimately fail **MUST** provide an observable failure mechanism.
+- Failure-sensitive results **MUST NOT** be silently discarded.
+- Check operation results before executing dependent operations.
+- Prefer early failure propagation when the current function cannot meaningfully recover.
+- Use established XII result macros and methods where they improve clarity.
+- Do not return `XII_SUCCESS` unless the operation has fulfilled its documented success conditions.
+- Error logging **SHOULD** occur where sufficient diagnostic context exists.
+- Avoid logging the same failure repeatedly at every propagation layer.
+- Do not use `xiiResult` to conceal programming errors or violated API preconditions.
+- Failure paths **MUST** preserve the documented invariants and cleanup guarantees of the owning component.
+
+**Prefer:**
+
+```cpp
+xiiResult LoadConfiguration(xiiStringView sPath)
+{
+  xiiFileReader file;
+
+  XII_SUCCEED_OR_RETURN(file.Open(sPath));
+
+  return ParseConfiguration(file);
+}
+```
+
+#### Result Propagation
+
+Use `XII_SUCCEED_OR_RETURN` when the called operation's failure can be propagated without additional handling.
+
+```cpp
+XII_SUCCEED_OR_RETURN(InitializeStorage());
+XII_SUCCEED_OR_RETURN(LoadResources());
+XII_SUCCEED_OR_RETURN(ValidateState());
+```
+
+When additional diagnostic information or recovery behavior is required, use an explicit check.
+
+```cpp
+if (LoadConfiguration(sPath).Failed())
+{
+  xiiLog::Error("Failed to load configuration from '{0}'.", sPath);
   return XII_FAILURE;
 }
 ```
 
-Use `.IgnoreResult()` only when ignoring failure is intentional and documented by the contract; do not use it to silence genuine errors.
+#### Ignoring Results
 
-### 7.8 Default arguments
+Use `.IgnoreResult()` only when intentionally discarding the result is permitted by the operation's contract.
 
-Use defaults for common, safe behavior. Avoid boolean arguments with unclear meaning at call sites; prefer an options record when there are multiple independent choices.
+**Avoid:**
 
 ```cpp
-// Readable default:
-[[nodiscard]] static xiiResult BeginFrame(xiiUInt32 uiFramesInFlight = 3U);
+SaveConfiguration(sPath).IgnoreResult();
 
-// Hard to read:
-// CreateGraph("Main", true, false, true, 2);
+// A required save may have failed silently.
 ```
 
-### 7.9 Avoid overly broad overloads
+Ignoring a result can be appropriate when failure is genuinely inconsequential or explicitly handled through another mechanism.
 
-Overload only when the operations have closely related semantics. Two functions with the same name should not unexpectedly own different lifetimes or perform radically different work. Distinguish `BeginFrame()` from `ExecuteGraph()`; do not hide an implicit new GPU frame behind an operation that claims to execute an existing one.
+Such decisions **SHOULD** be clear from the surrounding implementation or documented where necessary.
 
-### 7.10 `noexcept` and exceptions
+#### Rich Error Information
 
-Use `noexcept` only when the operation truly cannot propagate exceptions under the configured engine/toolchain environment. Do not promise `noexcept` merely because the current build disables exceptions. Engine-facing code should generally use explicit result and error mechanisms consistent with XII; code at third-party exception boundaries must translate failures safely.
+`xiiResult` communicates success or failure but does not inherently carry a detailed failure reason.
 
-### 7.11 Return references and pointers carefully
+When callers need structured diagnostics, error categories, partial results, or recovery information, use an appropriate result structure or explicit error output.
 
-Never return references to local temporaries. Returned pointers/references into manager-owned storage need a lifetime contract. Consider copying a small value or providing a scoped callback instead of returning long-lived mutable access.
+Do not introduce an elaborate generic error framework when a simple `xiiResult` and contextual diagnostic are sufficient.
 
-### 7.12 Inline and force-inline
+**Guiding principle:**
 
-Use ordinary `inline` for header-defined non-template functions when necessary. Use `XII_ALWAYS_INLINE` sparingly and consistently with performance-sensitive established code; it is a compiler hint/contract, not a substitute for measurement. Excessive force-inlining increases compile time and instruction-cache pressure.
+> Failure is part of an operation's contract. Propagate it explicitly, preserve invariants, and report useful diagnostics without unnecessary complexity.
 
----
+### 7.8 Default Arguments
+
+Default arguments **SHOULD** represent common, safe, and unsurprising behavior.
+
+They are appropriate when omitting an argument has a stable meaning that is understandable from the function's name and contract.
+
+#### General Requirements
+
+- Default arguments **MUST** preserve valid behavior.
+- Defaults **SHOULD** represent the most common or least surprising operation.
+- Avoid defaults that depend on hidden mutable state or ambiguous execution context.
+- Do not use default arguments to conceal required dependencies.
+- Avoid long parameter lists containing multiple unrelated defaulted values.
+- Boolean parameters **SHOULD** be avoided when their meaning is unclear at the call site.
+- Prefer a configuration structure when an operation has several independently configurable options.
+- Changes to public default arguments **MUST** consider source compatibility and behavioral effects on existing callers.
+- Default arguments **MUST NOT** be redeclared inconsistently across declarations.
+
+**Prefer:**
+
+```cpp
+xiiResult StartSimulation(xiiUInt32 uiMaxIterations = 128U);
+```
+
+**Avoid:**
+
+```cpp
+StartSimulation(true, false, true, 128U);
+```
+
+The latter obscures the purpose of each boolean argument.
+
+#### Configuration Structures
+
+When several independent options are required, a configuration structure can provide clearer call sites and allow future extension.
+
+**Prefer:**
+
+```cpp
+struct xiiSimulationOptions
+{
+  bool      m_bEnableTracing    = false;
+  bool      m_bAllowParallelism = true;
+  xiiUInt32 m_uiMaxIterations   = 128U;
+};
+
+xiiResult StartSimulation(const xiiSimulationOptions& options);
+```
+
+However, do not introduce a configuration structure for every function with two or three clearly understood parameters.
+
+#### Default Arguments and Virtual Functions
+
+Default arguments are resolved statically according to the declaration visible at the call site, while virtual dispatch selects the implementation dynamically.
+
+Therefore, default arguments **SHOULD NOT** differ across overrides.
+
+Where virtual interfaces require default behavior, consider a non-virtual convenience wrapper that delegates to the virtual operation with explicit arguments.
+
+**Guiding principle:**
+
+> Defaults should simplify common use without concealing meaning, dependencies, or behavioral differences.
+
+### 7.9 Overloads and Operation Semantics
+
+Function overloads **SHOULD** represent the same conceptual operation applied to different supported argument forms.
+
+Do not use overloads to conceal significantly different behavior, ownership requirements, or side effects.
+
+#### General Requirements
+
+- Overloads **MUST** preserve a coherent semantic relationship.
+- Functions with substantially different responsibilities **SHOULD** use distinct names.
+- Overloads **MUST NOT** unexpectedly change ownership transfer or lifetime semantics.
+- Avoid overload sets that create ambiguous conversions or surprising overload resolution.
+- Do not introduce overloads solely to avoid explicit conversions when those conversions clarify intent.
+- Prefer consistent failure and return-value semantics across related overloads.
+- Overload implementations **SHOULD** share a common implementation where doing so reduces duplication without introducing unnecessary indirection.
+- Changes to overload sets **MUST** consider their effects on existing call sites and implicit conversions.
+
+**Prefer:**
+
+```cpp
+xiiResult LoadResource(xiiStringView sPath);
+xiiResult LoadResource(const xiiResourceDescriptor& descriptor);
+```
+
+Both functions perform resource loading using different forms of input.
+
+**Avoid:**
+
+```cpp
+void Process(xiiResourceHandle hResource);
+void Process(xiiUInt32 uiMilliseconds);
+```
+
+The two operations have unrelated meanings despite sharing a name.
+
+#### Lifecycle Semantics
+
+An operation named `ExecuteTask()` should not implicitly initialize an entire task system or advance an unrelated scheduler unless that behavior is part of its documented contract.
+
+Prefer distinct operations for distinct lifecycle stages.
+
+**Guiding principle:**
+
+> Overloading should provide alternative ways to perform the same operation, not hide unrelated behavior behind a common name.
+
+### 7.10 `noexcept` and Exception Boundaries
+
+XII does not permit C++ exceptions for ordinary engine error handling.
+
+Expected failures **MUST** be represented through explicit mechanisms such as `xiiResult`, error outputs, or appropriately designed result types.
+
+Exceptions may be encountered within deeply isolated platform or third-party integration code where their use is unavoidable. Such exceptions must not escape into ordinary engine-facing APIs.
+
+#### General Requirements
+
+- Engine-facing functions **MUST NOT** use exceptions to communicate expected runtime failures.
+- Do not introduce `throw` expressions into ordinary engine code.
+- Use `noexcept` only when the operation can satisfy the exception guarantee under its supported execution environments.
+- Do not annotate functions `noexcept` merely because the current compiler configuration disables exceptions.
+- Functions marked `noexcept` **MUST NOT** permit exception propagation from platform or third-party operations.
+- Exception-generating dependencies **MUST** be isolated at appropriate integration boundaries.
+- Where exception handling is available and unavoidable, caught failures **SHOULD** be translated into the engine's established error-reporting mechanisms.
+- Destructors **MUST NOT** propagate exceptions.
+- Do not use exception specifications as substitutes for documenting ordinary failure behavior.
+
+#### Platform Exception Boundaries
+
+Where a third-party or platform API may throw exceptions, the integration layer should contain the exception mechanism when the build configuration supports catching those exceptions.
+
+The translated failure should be returned through an ordinary engine-compatible mechanism.
+
+If the relevant environment does not permit exception handling, the integration must use an appropriate non-throwing API or another explicitly supported boundary strategy.
+
+**Guiding principle:**
+
+> Expected failures are explicit results. Exception behavior, when unavoidable, must remain isolated from ordinary XII engine contracts.
+
+### 7.11 Returning References, Pointers, and Views
+
+Returned pointers, references, and views **MUST** have clear validity and invalidation guarantees.
+
+A returned reference communicates access, not ownership.
+
+The relevant lifetime and borrowing requirements are established in §§1.2 and 6.3–6.8.
+
+#### General Requirements
+
+- Never return references or views into local temporary storage.
+- Returned borrowed access **MUST** remain valid for the documented duration.
+- Do not return mutable references to internal state when doing so permits callers to violate invariants.
+- Prefer returning small value-like objects directly when copying is inexpensive.
+- Use handles when independently managed identity and validation are required.
+- Do not return pointers into containers without considering relocation and removal invalidation.
+- Access to shared mutable objects **MUST** respect their synchronization requirements.
+- Prefer scoped access or controlled operations when a returned pointer cannot safely outlive an internal lock.
+- Do not expose borrowed access across asynchronous boundaries without sufficient lifetime guarantees.
+
+**Avoid:**
+
+```cpp
+const xiiString& GetName() const
+{
+  xiiString sName = BuildName();
+  return sName;
+}
+```
+
+The returned reference refers to an object destroyed when the function returns.
+
+**Prefer:**
+
+```cpp
+xiiString GetName() const
+{
+  return BuildName();
+}
+```
+
+Returning an owning value avoids the lifetime violation.
+
+#### Internal Storage
+
+Returning references to internal storage may be appropriate for stable, read-only access when the owning object's lifetime and invalidation rules are explicit.
+
+However, a `const` reference is not automatically safe if another thread can mutate or destroy the referenced object.
+
+**Guiding principle:**
+
+> Returned access must remain valid for as long as callers are permitted to use it. Ownership, invalidation, and concurrency guarantees must be explicit.
+
+### 7.12 Inline and Force-Inline Functions
+
+Inlining decisions **SHOULD** be based on language requirements, implementation clarity, and demonstrated performance needs.
+
+The `inline` keyword and compiler-specific force-inline mechanisms serve different purposes and must not be treated as interchangeable guarantees.
+
+#### General Requirements
+
+- Use ordinary `inline` where required for header-defined non-template functions with external linkage.
+- Small, stable accessors **MAY** be defined directly within class declarations.
+- Non-trivial non-template implementations **SHOULD** remain in `.cpp` files unless header placement is justified.
+- Use `XII_ALWAYS_INLINE` sparingly and consistently with established performance-sensitive code.
+- Do not assume that ordinary `inline` guarantees machine-code inlining.
+- Do not use force-inlining to compensate for inefficient algorithms or unnecessary abstraction layers.
+- Avoid excessive header-defined implementation code that increases compilation time and dependency propagation.
+- Performance-motivated force-inlining **SHOULD** be supported by measurements, consistent with §1.5.
+- Inlining decisions **MUST NOT** violate linkage, One Definition Rule (ODR), or binary interface requirements.
+
+**Prefer:**
+
+```cpp
+class xiiTaskCounter
+{
+public:
+  XII_ALWAYS_INLINE xiiUInt32 GetCount() const
+  {
+    return m_uiCount;
+  }
+
+private:
+  xiiUInt32 m_uiCount = 0U;
+};
+```
+
+The accessor is trivial and suitable for a header definition.
+
+For larger implementations, prefer ordinary out-of-line definitions.
+
+#### Force-Inlining Trade-offs
+
+Force-inlining may reduce call overhead in appropriate hot paths, but it can also:
+
+- Increase generated code size.
+- Increase instruction-cache pressure.
+- Increase compilation time.
+- Duplicate substantial implementation code.
+- Prevent the compiler from making more effective code-size trade-offs.
+
+An aggressively inlined implementation is not necessarily faster.
+
+**Guiding principle:**
+
+> Inline for correctness and clarity where required; force-inline only when the performance benefit justifies the cost.
+
+### 7.13 Function Preconditions and Postconditions
+
+Function contracts **MUST** distinguish required preconditions from expected runtime failures.
+
+A precondition describes what must be true for a valid call. A postcondition describes the guarantees established after an operation completes.
+
+#### General Requirements
+
+- Preconditions **SHOULD** be apparent from the interface or documented where they are not obvious.
+- Contract violations **SHOULD** be detected through appropriate assertions or explicit enforcement mechanisms.
+- Expected runtime failures **MUST** use the applicable error-reporting mechanism.
+- Successful operations **MUST** establish their documented postconditions.
+- Failed operations **MUST** preserve their documented failure guarantees.
+- Do not use assertions as substitutes for validating untrusted input.
+- Do not return `XII_FAILURE` for every programmer error merely to avoid defining correct API contracts.
+- Functions **MUST NOT** silently accept invalid states that compromise internal invariants.
+
+**Example:**
+
+```cpp
+void SetCapacity(xiiUInt32 uiCapacity)
+{
+  XII_ASSERT_DEV(uiCapacity > 0U, "Capacity must be greater than zero.");
+
+  m_uiCapacity = uiCapacity;
+}
+```
+
+Here, a positive capacity is a programmer-facing precondition.
+
+By contrast:
+
+```cpp
+xiiResult LoadSettings(xiiStringView sPath)
+{
+  xiiFileReader file;
+
+  XII_SUCCEED_OR_RETURN(file.Open(sPath));
+
+  return ParseSettings(file);
+}
+```
+
+File opening and parsing can fail during otherwise valid calls and therefore expose expected runtime failures.
+
+**Guiding principle:**
+
+> Preconditions define valid calls. Results communicate expected failure. Postconditions define what callers may rely on after completion.
+
+### 7.14 Side Effects and Observable Behavior
+
+Function names and signatures **SHOULD** communicate meaningful side effects.
+
+An operation's observable behavior must be consistent with the expectations established by its interface.
+
+#### General Requirements
+
+- Query functions **SHOULD NOT** modify externally observable state unless their contract explicitly permits it.
+- Functions that mutate state **SHOULD** use names that communicate the operation being performed.
+- Do not conceal resource allocation, synchronization, scheduling, or substantial I/O behind apparently trivial accessors.
+- Operations that may block for significant or unbounded periods **SHOULD** make that behavior apparent through their naming or documented contract.
+- Avoid unexpected global state changes within functions that appear to operate on local data.
+- Side effects **MUST** remain consistent across overloads that represent the same conceptual operation.
+- Functions **SHOULD** avoid partially committing externally observable state before recoverable validation has completed.
+
+**Prefer:**
+
+```cpp
+bool IsTaskComplete(xiiTaskHandle hTask) const;
+
+xiiResult WaitForTask(xiiTaskHandle hTask);
+```
+
+These names distinguish a non-blocking query from an operation that may wait.
+
+**Avoid:**
+
+```cpp
+bool GetTaskComplete(xiiTaskHandle hTask);
+```
+
+If the implementation also waits for the task to finish, its name conceals important execution behavior.
+
+**Guiding principle:**
+
+> Callers should not need to inspect an implementation to discover consequential side effects.
+
+### 7.15 Function Complexity and Reviewability
+
+Functions **SHOULD** remain understandable as cohesive units of behavior.
+
+Complexity should be controlled through appropriate decomposition, explicit state transitions, and meaningful abstraction boundaries rather than arbitrary limits on function length.
+
+#### General Requirements
+
+- Avoid deeply nested control flow when guard clauses or restructuring can simplify the implementation.
+- Avoid functions that coordinate unrelated responsibilities or manipulate unrelated subsystem state.
+- Prefer descriptive intermediate variables when they clarify non-obvious expressions.
+- Do not introduce unnecessary temporaries or helpers that make straightforward logic harder to follow.
+- Keep resource acquisition, use, and release relationships visible.
+- Error paths **SHOULD** remain easy to follow and verify.
+- Complex algorithms **SHOULD** document important invariants and non-obvious reasoning.
+- Do not introduce generic abstractions solely to reduce apparent function complexity.
+- Refactoring **MUST** preserve externally observable behavior unless a behavioral change is intentional.
+
+A long function implementing one cohesive algorithm may be clearer than several tightly coupled functions that require readers to reconstruct control flow across multiple files.
+
+Conversely, a short function may still be poorly designed if it combines unrelated responsibilities or conceals significant side effects.
+
+**Guiding principle:**
+
+> Optimize functions for comprehension and correctness, not arbitrary line counts. Structure should reveal intent, dependencies, and failure behavior.
 
 ## 8. Control flow and expressions
 
