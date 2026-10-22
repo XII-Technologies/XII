@@ -17,6 +17,8 @@
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowRasterWorkPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearColorPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -193,10 +195,10 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
     if (const auto* property = widget->GetProperty())
     {
-      formatWidget |= property->GetPropertyName() == "RequiredFormat";
+      formatWidget |= property->GetPropertyName() == "RequiredFormat" && !widget->isHidden();
       metadataWidget |= property->GetPropertyName() == "Metadata";
     }
-  XII_TEST_BOOL(formatWidget);
+  XII_TEST_BOOL(!formatWidget);
   XII_TEST_BOOL(!metadataWidget);
   const auto* metadataProperty = settings->GetType()->FindPropertyByName("Metadata");
   XII_TEST_BOOL(metadataProperty && metadataProperty->GetAttributeByType<xiiHiddenAttribute>());
@@ -439,6 +441,10 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     const auto* boundary = objects->GetPinPropertyObject(*objects->GetOutputPinByName(instance, "Output"));
     if (!XII_TEST_BOOL(boundary != nullptr))
       return;
+    xiiMap<xiiString, xiiPropertyUiState> boundaryStates;
+    xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(boundary, boundaryStates);
+    XII_TEST_BOOL(boundaryStates["RequiredFormat"].m_Visibility == xiiPropertyUiState::Default);
+    XII_TEST_BOOL(boundaryStates["Requirements"].m_Visibility == xiiPropertyUiState::Default);
     const auto  boundaryId = boundary->GetGuid();
     const auto* limits     = commands->GetChildObjectByName(boundary, "Requirements", {});
     XII_TEST_STATUS(commands->SetValueByName(limits, "Width", 32U));
@@ -688,6 +694,48 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, FrameDataPinInspector)
   XII_TEST_INT(restoredManager->GetConnections(*restoredOutput).GetCount(), 1);
   const auto* restoredMetadata = restored.GetObjectAccessor()->GetChildObjectByName(restoredConfig, "Metadata", {});
   XII_TEST_STRING(restoredMetadata->GetTypeAccessor().GetValue("DataType").Get<xiiString>(), "xiiShadowCascadeSnapshot");
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, ClearPassPinProperties)
+{
+  const xiiStringBuilder  path(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/ClearPassPins.xiiRenderPipelineAsset");
+  PinDocument             document(path);
+  auto*                   accessor = document.GetObjectAccessor();
+  auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  for (const auto* type : {xiiGetStaticRTTI<xiiClearColorPass>(), xiiGetStaticRTTI<xiiClearTexturePass>()})
+  {
+    xiiUuid id;
+    accessor->StartTransaction("Create clear pass");
+    XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, type, id));
+    accessor->FinishTransaction();
+    const auto*   node      = accessor->GetObject(id);
+    const char*   inputName = type == xiiGetStaticRTTI<xiiClearColorPass>() ? "Texture" : "Reference";
+    const xiiPin* pins[]    = {manager->GetInputPinByName(node, inputName), manager->GetOutputPinByName(node, "Texture")};
+    for (const auto* pin : pins)
+    {
+      if (!XII_TEST_BOOL(pin != nullptr))
+        return;
+      const auto* settings = manager->GetPinPropertyObject(*pin);
+      if (!XII_TEST_BOOL(settings != nullptr))
+        return;
+      xiiMap<xiiString, xiiPropertyUiState> states;
+      xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(settings, states);
+      XII_TEST_BOOL(states["RequiredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+      XII_TEST_BOOL(states["Requirements"].m_Visibility == xiiPropertyUiState::Invisible);
+      XII_TEST_BOOL(states["DisplayName"].m_Visibility == xiiPropertyUiState::Default);
+      document.GetSelectionManager()->SetSelection(settings);
+      bool labelVisible = false;
+      for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+        if (const auto* property = widget->GetProperty())
+        {
+          if (property->GetPropertyName() == "RequiredFormat" || property->GetPropertyName() == "Requirements")
+            XII_TEST_BOOL(widget->isHidden());
+          labelVisible |= property->GetPropertyName() == "DisplayName" && !widget->isHidden();
+        }
+      XII_TEST_BOOL(labelVisible);
+    }
+  }
 }
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)

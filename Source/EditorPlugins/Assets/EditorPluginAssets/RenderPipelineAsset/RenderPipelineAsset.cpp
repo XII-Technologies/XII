@@ -25,22 +25,33 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
-  const xiiAbstractProperty* GetEditableOutputProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
+  const xiiAbstractProperty* GetTexturePinProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
   {
-    if (bInput)
+    if (!pNode)
       return nullptr;
+    const auto*                                    pinType = bInput ? xiiGetStaticRTTI<xiiRenderPipelineTextureInputPin>() : xiiGetStaticRTTI<xiiRenderPipelineTextureOutputPin>();
     xiiHybridArray<const xiiAbstractProperty*, 32> properties;
     pNode->GetType()->GetAllProperties(properties);
     for (const auto* property : properties)
     {
-      if (property->GetCategory() != xiiPropertyCategory::Member || property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) ||
-          !property->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineTextureOutputPin>())
+      if (property->GetCategory() != xiiPropertyCategory::Member || !property->GetSpecificType()->IsDerivedFrom(pinType))
         continue;
       const auto* alias = property->GetAttributeByType<xiiRenderPipelinePinNameAttribute>();
       if (sPinName == (alias ? alias->m_sName.GetView() : property->GetPropertyName()))
         return property;
     }
     return nullptr;
+  }
+
+  bool IsReadOnly(const xiiAbstractProperty* property)
+  {
+    return property && (property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) || property->GetAttributeByType<xiiReadOnlyAttribute>());
+  }
+
+  const xiiAbstractProperty* GetEditableOutputProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
+  {
+    const auto* property = bInput ? nullptr : GetTexturePinProperty(pNode, sPinName, false);
+    return IsReadOnly(property) ? nullptr : property;
   }
 
   void PinPropertyMetaState(xiiPropertyMetaStateEvent& event)
@@ -69,19 +80,22 @@ namespace
     const auto* metadata   = metadataId.IsA<xiiUuid>() ? object->GetDocumentObjectManager()->GetObject(metadataId.Get<xiiUuid>()) : nullptr;
     if (!metadata)
       return;
-    const auto kind    = metadata->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
-    const bool texture = kind == xiiRenderPipelinePin::Texture;
-    const bool buffer  = kind == xiiRenderPipelinePin::Buffer;
+    const auto  kind           = metadata->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
+    const bool  texture        = kind == xiiRenderPipelinePin::Texture;
+    const bool  buffer         = kind == xiiRenderPipelinePin::Buffer;
+    const auto* nativeProperty = texture ? GetTexturePinProperty(configuration->GetParent(), metadata->GetTypeAccessor().GetValue("Name").Get<xiiString>(), metadata->GetTypeAccessor().GetValue("Input").Get<bool>()) : nullptr;
+    // Generated configurations must not make a read-only native pin's texture schema editable.
+    const bool editableTexture = texture && !IsReadOnly(nativeProperty);
     if (requirements)
     {
       for (const char* property : {"Dimension", "Samples", "Width", "Height"})
-        states[property].m_Visibility = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-      states["RequiredBindFlags"].m_Visibility = texture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+        states[property].m_Visibility = editableTexture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["RequiredBindFlags"].m_Visibility = editableTexture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
     }
     else
     {
-      states["RequiredFormat"].m_Visibility = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-      states["Requirements"].m_Visibility   = texture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["RequiredFormat"].m_Visibility = editableTexture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Requirements"].m_Visibility   = editableTexture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
     }
   }
 
