@@ -2,6 +2,10 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelEnvironmentSeedPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelSchedulePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
@@ -39,7 +43,7 @@ namespace
   bool ReloadSparseDefinition(const xiiRenderPipelineResourceHandle& resource, xiiRenderPipelineResourceDescriptor definition)
   {
     for (auto& pass : definition.m_Passes)
-      if (pass.m_sType == "xiiSparseVoxelEnvironmentSeedPass")
+      if (pass.m_pType == xiiSparseVoxelEnvironmentSeedPass().GetDynamicRTTI())
         pass.m_Properties.Insert("AsyncCompute", true);
     const auto                       closed = xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>>(XII_DEFAULT_NEW(xiiRefCountedContainer<xiiThreadSignal>));
     xiiUniquePtr<SparseMemoryLoader> loader = XII_DEFAULT_NEW(SparseMemoryLoader);
@@ -103,7 +107,7 @@ XII_CREATE_SIMPLE_TEST(NativeSparseVoxel, IndependentResidencyPagesBudgetsRefres
   const auto authored = loaded->GetAuthoring();
   xiiUuid    scheduleId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
-    if (pass.m_sType == "xiiSparseVoxelSchedulePass")
+    if (pass.m_pType == xiiSparseVoxelSchedulePass().GetDynamicRTTI())
       scheduleId = pass.m_Id;
   if (!XII_TEST_BOOL(scheduleId.IsValid()))
     return;
@@ -128,7 +132,7 @@ XII_CREATE_SIMPLE_TEST(NativeSparseVoxel, IndependentResidencyPagesBudgetsRefres
     root.m_Interface.PushBack({i ? "BSchedule" : "ASchedule", false, root.m_Passes[node].m_Id, "Schedule"});
     for (const xiiStringView pin : {"RadiancePool", "PageTable", "LevelData"})
     {
-      const auto retain = root.AddPass(xiiStringBuilder(i ? "B Retain " : "A Retain ", pin), "xiiBufferExportPass");
+      const auto retain = root.AddPass(xiiStringBuilder(i ? "B Retain " : "A Retain ", pin), xiiBufferExportPass().GetDynamicRTTI());
       XII_TEST_RESULT(root.Connect(node, pin, retain, "Input"));
       root.m_Interface.PushBack({xiiStringBuilder(i ? "B" : "A", pin), false, root.m_Passes[retain].m_Id, "Output"});
     }
@@ -304,7 +308,7 @@ XII_CREATE_SIMPLE_TEST(NativeSparseVoxel, AuthoritativeWorldAndIndependentCamera
   root.m_References.PushBack({p->m_Descriptor.m_Id, probesAsset.GetResourceID()});
   const auto sun = root.AddSubgraph("Authoritative sun", d->m_Descriptor.m_Id), constants = root.AddSubgraph("Environment illumination", e->m_Descriptor.m_Id), field = root.AddSubgraph("Camera probes", p->m_Descriptor.m_Id);
   for (const auto& pass : p->m_Descriptor.m_Passes)
-    if (pass.m_sType == "xiiSparseVoxelSchedulePass")
+    if (pass.m_pType == xiiSparseVoxelSchedulePass().GetDynamicRTTI())
     {
       auto& properties = root.m_Passes[field].m_Overrides.ExpandAndGetRef();
       properties.m_Path.PushBack(pass.m_Id);
@@ -319,7 +323,7 @@ XII_CREATE_SIMPLE_TEST(NativeSparseVoxel, AuthoritativeWorldAndIndependentCamera
     }
   XII_TEST_RESULT(root.Connect(sun, "DirectionalLight", constants, "DirectionalLight"));
   XII_TEST_RESULT(root.Connect(constants, "EnvironmentLight", field, "EnvironmentLight"));
-  const auto retain = root.AddPass("Retain camera field", "xiiBufferExportPass");
+  const auto retain = root.AddPass("Retain camera field", xiiBufferExportPass().GetDynamicRTTI());
   XII_TEST_RESULT(root.Connect(field, "RadiancePool", retain, "Input"));
   root.m_Interface.PushBack({"RadiancePool", false, root.m_Passes[retain].m_Id, "Output"});
   root.m_Interface.PushBack({"Schedule", false, root.m_Passes[field].m_Id, "Schedule"});

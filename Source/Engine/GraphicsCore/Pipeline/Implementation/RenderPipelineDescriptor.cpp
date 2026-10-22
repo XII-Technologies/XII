@@ -1,13 +1,12 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
-
-
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 // clang-format off
@@ -16,7 +15,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelinePassDescriptor, xiiNoBase, 2, x
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_sName),
-    XII_MEMBER_PROPERTY("Type", m_sType),
+    XII_ACCESSOR_PROPERTY("Type", GetTypeName, SetTypeName),
     XII_MAP_MEMBER_PROPERTY("Properties", m_Properties),
     XII_MEMBER_PROPERTY("Id", m_Id),
     XII_MEMBER_PROPERTY("Definition", m_Definition),
@@ -59,10 +58,20 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineResourceDescriptor, xiiNoBase, 
 } XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiUInt32 xiiRenderPipelineResourceDescriptor::AddPass(xiiStringView name, xiiStringView type, const xiiVariantDictionary& properties)
+xiiStringView xiiRenderPipelinePassDescriptor::GetTypeName() const
+{
+  return m_pType ? m_pType->GetTypeName() : "";
+}
+
+void xiiRenderPipelinePassDescriptor::SetTypeName(xiiStringView sTypeName)
+{
+  m_pType = xiiRTTI::FindTypeByName(sTypeName);
+}
+
+xiiUInt32 xiiRenderPipelineResourceDescriptor::AddPass(xiiStringView name, const xiiRTTI* pType, const xiiVariantDictionary& properties)
 {
   const auto index = m_Passes.GetCount();
-  m_Passes.PushBack({name, type, properties});
+  m_Passes.PushBack({name, pType, properties});
   return index;
 }
 xiiResult xiiRenderPipelineResourceDescriptor::RemovePass(xiiUInt32 index)
@@ -90,7 +99,7 @@ xiiResult xiiRenderPipelineResourceDescriptor::RemovePass(xiiUInt32 index)
 }
 xiiUInt32 xiiRenderPipelineResourceDescriptor::AddSubgraph(xiiStringView name, const xiiUuid& definition)
 {
-  const auto index             = AddPass(name, {});
+  const auto index             = AddPass(name, nullptr);
   m_Passes[index].m_Definition = definition;
   return index;
 }
@@ -108,7 +117,7 @@ xiiResult xiiRenderPipelineResourceDescriptor::MakeGraphDefinition(xiiGraphDefin
     node.m_Id         = pass.m_Id;
     node.m_Definition = pass.m_Definition;
     node.m_sName      = pass.m_sName;
-    node.m_sType      = pass.m_sType;
+    node.m_sType      = pass.m_pType ? pass.m_pType->GetTypeName() : "";
     node.m_Properties = pass.m_Properties;
     node.m_Parameters = pass.m_Parameters;
     node.m_Overrides  = pass.m_Overrides;
@@ -187,6 +196,9 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
   context.RegisterObject(root->GetGuid(), xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
   xiiRttiConverterReader converter(&graph, &context);
   converter.ApplyPropertiesToObject(root, xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);
+  for (const auto& pass : replacement.m_Passes)
+    if (!pass.m_Definition.IsValid() && (!pass.m_pType || !pass.m_pType->IsDerivedFrom<xiiRenderPipelinePass>()))
+      return XII_FAILURE;
   *this = std::move(replacement);
   return XII_SUCCESS;
 }

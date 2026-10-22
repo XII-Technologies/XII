@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Uuid.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 struct xiiRenderPipelinePinType
@@ -71,7 +72,12 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePinMetadata
   bool                                     m_bOptional        = false;
   bool                                     m_bTemporalHistory = false;
   xiiEnum<xiiGALResourceFormat>            m_DeclaredFormat   = xiiGALResourceFormat::Unknown;
-  xiiString                                m_sDataType;
+  const xiiRTTI*                           m_pDataType        = nullptr;
+
+private:
+  XII_ALLOW_PRIVATE_PROPERTIES(xiiRenderPipelinePinMetadata);
+  xiiStringView GetDataTypeName() const;
+  void          SetDataTypeName(xiiStringView sTypeName);
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinMetadata);
 

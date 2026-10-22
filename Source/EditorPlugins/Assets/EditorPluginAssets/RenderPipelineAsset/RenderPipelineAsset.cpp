@@ -157,7 +157,7 @@ xiiStatus xiiRenderPipelineNodeManager::SynchronizePinConfigurations(const xiiDo
     XII_SUCCEED_OR_RETURN(set(object, "Optional", metadata.m_bOptional));
     XII_SUCCEED_OR_RETURN(set(object, "TemporalHistory", metadata.m_bTemporalHistory));
     XII_SUCCEED_OR_RETURN(set(object, "DeclaredFormat", static_cast<xiiInt64>(metadata.m_DeclaredFormat.GetValue())));
-    XII_SUCCEED_OR_RETURN(set(object, "DataType", metadata.m_sDataType));
+    XII_SUCCEED_OR_RETURN(set(object, "DataType", metadata.m_pDataType ? metadata.m_pDataType->GetTypeName() : ""));
   }
   xiiDynamicArray<const xiiDocumentObject*> obsolete;
   for (const auto* child : node->GetChildren())

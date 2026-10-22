@@ -2,6 +2,10 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
+#include <GraphicsCore/Pipeline/Passes/Composition/ConfidenceBlendPass.h>
+
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -66,7 +70,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
       pass.m_Color    = xiiColor(color.x, color.y, color.z, color.w);
       xiiVariantDictionary properties;
       XII_TEST_RESULT(pass.GetProperties(properties));
-      return root.AddPass(name, "xiiClearTexturePass", properties);
+      return root.AddPass(name, xiiClearTexturePass().GetDynamicRTTI(), properties);
     };
     const auto base = clear("Original scene", scene), env = clear("Environment contribution", environmentTerm), ray = clear("Traced detail", traced);
     const auto firstScreen = clear("Screen detail A", screen, true);
@@ -77,7 +81,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
       XII_TEST_RESULT(root.Connect(from, output, to, input));
     };
     const auto capture = [&](xiiUInt32 from, xiiStringView output, xiiStringView name) {
-      const auto sink = root.AddPass(name, "xiiOpaqueTestExport");
+      const auto sink = root.AddPass(name, xiiOpaqueTestExport().GetDynamicRTTI());
       connect(from, output, sink, "Input");
       root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
     };
@@ -93,7 +97,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
         const auto screenLayer = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ReflectionSelection/Screen Detail Over Traced Result");
         bool       found       = false;
         for (const auto& pass : selection->GetAuthoring()->m_Descriptor.m_Passes)
-          found |= pass.m_Id == screenLayer && pass.m_sType == "xiiConfidenceBlendPass";
+          found |= pass.m_Id == screenLayer && pass.m_pType == xiiConfidenceBlendPass().GetDynamicRTTI();
         if (!XII_TEST_BOOL(found && override.m_Path.GetCount() == 1))
           return;
         override.m_Path.PushBack(screenLayer);

@@ -2,6 +2,12 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
+#include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -74,19 +80,19 @@ namespace
     for (xiiUInt32 i = 0; i < definition.m_Passes.GetCount(); ++i)
     {
       auto& pass = definition.m_Passes[i];
-      if (pass.m_sType == "xiiSurfaceQueryPass")
+      if (pass.m_pType == xiiSurfaceQueryPass().GetDynamicRTTI())
       {
         pass.m_Properties.Insert("FillMode", static_cast<xiiInt64>(xiiGALFillMode::Wireframe));
         pass.m_Properties.Insert("UseMeshShaders", enableMeshShaders);
       }
-      if (pass.m_sType == "xiiSurfaceRasterConstantsPass" && enableMeshShaders)
+      if (pass.m_pType == xiiSurfaceRasterConstantsPass().GetDynamicRTTI() && enableMeshShaders)
         pass.m_Properties.Insert("MeshGroupCountX", 65535U);
-      if (pass.m_sType == "xiiSceneMeshPickingPass")
+      if (pass.m_pType == xiiSceneMeshPickingPass().GetDynamicRTTI())
         capture = i;
-      if (pass.m_sType == "xiiVertexPullDrawCommandsPass" && enableMeshShaders)
+      if (pass.m_pType == xiiVertexPullDrawCommandsPass().GetDynamicRTTI() && enableMeshShaders)
       {
         commands     = i;
-        pass.m_sType = "xiiMeshDrawCommandsPass";
+        pass.m_pType = xiiMeshDrawCommandsPass().GetDynamicRTTI();
         pass.m_Properties.Clear();
       }
     }

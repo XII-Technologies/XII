@@ -2,6 +2,9 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackResetPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -74,11 +77,11 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
   xiiUuid resetId, generateId, readbackId;
   for (const auto& pass : authoring->m_Descriptor.m_Passes)
   {
-    if (pass.m_sType == "xiiGeometryLodFeedbackResetPass")
+    if (pass.m_pType == xiiGeometryLodFeedbackResetPass().GetDynamicRTTI())
       resetId = pass.m_Id;
-    if (pass.m_sType == "xiiGeometryLodFeedbackPass")
+    if (pass.m_pType == xiiGeometryLodFeedbackPass().GetDynamicRTTI())
       generateId = pass.m_Id;
-    if (pass.m_sType == "xiiGeometryLodFeedbackReadbackPass")
+    if (pass.m_pType == xiiGeometryLodFeedbackReadbackPass().GetDynamicRTTI())
       readbackId = pass.m_Id;
   }
   xiiUuid instances[2];

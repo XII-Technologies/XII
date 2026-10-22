@@ -2,6 +2,9 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackResetPass.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -40,11 +43,11 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
   xiiUuid    resetId, generateId, readbackId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
   {
-    if (pass.m_sType == "xiiVirtualShadowFeedbackResetPass")
+    if (pass.m_pType == xiiVirtualShadowFeedbackResetPass().GetDynamicRTTI())
       resetId = pass.m_Id;
-    if (pass.m_sType == "xiiVirtualShadowFeedbackPass")
+    if (pass.m_pType == xiiVirtualShadowFeedbackPass().GetDynamicRTTI())
       generateId = pass.m_Id;
-    if (pass.m_sType == "xiiVirtualShadowFeedbackReadbackPass")
+    if (pass.m_pType == xiiVirtualShadowFeedbackReadbackPass().GetDynamicRTTI())
       readbackId = pass.m_Id;
   }
   xiiRenderPipelineResourceDescriptor root;

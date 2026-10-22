@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/RayTracing/SceneRayProbePass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -44,7 +46,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
   const auto authored = source->GetAuthoring();
   xiiUuid    probeId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
-    if (pass.m_sType == "xiiSceneRayProbePass")
+    if (pass.m_pType == xiiSceneRayProbePass().GetDynamicRTTI())
       probeId = pass.m_Id;
   if (!XII_TEST_BOOL(probeId.IsValid()))
     return;

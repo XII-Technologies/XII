@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 
 // clang-format off
@@ -24,10 +25,20 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineInterfacePass, 1, xiiRTTIDefau
     XII_MEMBER_PROPERTY("Input", m_bInput)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ResourceType", m_uiResourceType),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiGALResourceFormat, m_Format),
-    XII_MEMBER_PROPERTY("DataType", m_sDataType),
+    XII_ACCESSOR_PROPERTY("DataType", GetDataTypeName, SetDataTypeName),
   } XII_END_PROPERTIES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+xiiStringView xiiRenderPipelineInterfacePass::GetDataTypeName() const
+{
+  return m_pDataType ? m_pDataType->GetTypeName() : "";
+}
+
+void xiiRenderPipelineInterfacePass::SetDataTypeName(xiiStringView sTypeName)
+{
+  m_pDataType = xiiRTTI::FindTypeByName(sTypeName);
+}
 
 void xiiRenderPipelineInterfacePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
@@ -38,7 +49,7 @@ void xiiRenderPipelineInterfacePass::GetPins(xiiDynamicArray<xiiRenderPipelinePi
     pin.m_Type      = static_cast<xiiRenderPipelinePin::Type>(m_uiResourceType);
     pin.m_bInput    = !m_bInput;
     pin.m_Format    = m_Format;
-    pin.m_pDataType = pin.m_Type == xiiRenderPipelinePin::FrameData ? xiiRTTI::FindTypeByName(m_sDataType) : nullptr;
+    pin.m_pDataType = pin.m_Type == xiiRenderPipelinePin::FrameData ? m_pDataType : nullptr;
   }
 }
 
@@ -208,7 +219,7 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
     const auto* type = xiiRTTI::FindTypeByName(node.m_sType);
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
       return fail("Interface maps to an unknown reflected pass type.");
-    if (node.m_sType == "xiiRenderPipelineSubgraphPass" || node.m_sType == "xiiRenderPipelineInterfacePass")
+    if (type->IsDerivedFrom<xiiRenderPipelineSubgraphPass>() || type->IsDerivedFrom<xiiRenderPipelineInterfacePass>())
       return fail("Interface maps to an authoring node that was not lowered to a definition reference.");
     xiiRenderPipelinePass* pass = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(pass));

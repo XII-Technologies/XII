@@ -2,6 +2,11 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterViewPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/WorldLightsUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
@@ -79,7 +84,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
   const auto upload = root.AddSubgraph("Shared world light producer", authored->m_Descriptor.m_Id);
   for (const xiiStringView name : {"Lights", "IESProfiles", "Counts", "Candidates"})
   {
-    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), "xiiBufferExportPass");
+    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), xiiBufferExportPass().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(upload, name, retain, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[retain].m_Id, "Output"});
   }
@@ -93,7 +98,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
   XII_TEST_RESULT(root.Connect(upload, "Lights", clustering, "Lights"));
   XII_TEST_RESULT(root.Connect(upload, "Candidates", clustering, "Candidates"));
   for (const auto& node : clusters->m_Descriptor.m_Passes)
-    if (node.m_sType == "xiiLightClusterViewPass")
+    if (node.m_pType == xiiLightClusterViewPass().GetDynamicRTTI())
     {
       auto& override = root.m_Passes[clustering].m_Overrides.ExpandAndGetRef();
       override.m_Path.PushBack(node.m_Id);
@@ -102,7 +107,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
     }
   for (const xiiStringView name : {"LightGrid", "LightIndices", "Overflow", "PackedIndices", "SamplingTotals"})
   {
-    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), "xiiBufferExportPass");
+    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), xiiBufferExportPass().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(clustering, name, retain, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[retain].m_Id, "Output"});
   }
@@ -368,8 +373,8 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
   }
   // A specialized pipeline with no light demand releases derived allocations and dispatches no light extraction.
   xiiRenderPipelineResourceDescriptor minimal;
-  const auto                          counter = minimal.AddPass("Diagnostic counter", "xiiCounterResetPass");
-  const auto                          retain  = minimal.AddPass("Retain diagnostic counter", "xiiBufferExportPass");
+  const auto                          counter = minimal.AddPass("Diagnostic counter", xiiCounterResetPass().GetDynamicRTTI());
+  const auto                          retain  = minimal.AddPass("Retain diagnostic counter", xiiBufferExportPass().GetDynamicRTTI());
   XII_TEST_RESULT(minimal.Connect(counter, "Counter", retain, "Input"));
   const auto noLights = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("No light demand", std::move(minimal));
   for (auto* view : views)
@@ -389,10 +394,10 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, WorldRetirementAndRecreationBeforeReco
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor definition;
-  const auto                          source = definition.AddPass("World light source", "xiiWorldLightsUploadPass");
+  const auto                          source = definition.AddPass("World light source", xiiWorldLightsUploadPass().GetDynamicRTTI());
   for (const xiiStringView name : {"Lights", "IESProfiles", "Counts", "Candidates"})
   {
-    const auto retain = definition.AddPass(xiiStringBuilder("Retain ", name), "xiiBufferExportPass");
+    const auto retain = definition.AddPass(xiiStringBuilder("Retain ", name), xiiBufferExportPass().GetDynamicRTTI());
     XII_TEST_RESULT(definition.Connect(source, name, retain, "Input"));
     definition.m_Interface.PushBack({name, false, definition.m_Passes[retain].m_Id, "Output"});
   }

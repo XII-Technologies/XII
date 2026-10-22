@@ -101,7 +101,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneCameraPreview)
   world.Update();
 
   xiiRenderPipelineResourceDescriptor pipelineDescription;
-  XII_TEST_INT(pipelineDescription.AddPass("Clear", CameraPreviewTestPass::GetStaticRTTI()->GetTypeName()), 0);
+  XII_TEST_INT(pipelineDescription.AddPass("Clear", CameraPreviewTestPass().GetDynamicRTTI()), 0);
   auto     pipeline   = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("SceneCameraPreviewTest", std::move(pipelineDescription));
   xiiView* editorView = nullptr;
   module->CreateView("Editor owner", editorView);

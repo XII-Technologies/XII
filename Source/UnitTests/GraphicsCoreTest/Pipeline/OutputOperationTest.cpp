@@ -1,11 +1,12 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/ColorGradingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/ToneMappingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Output/UpscalePass.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
@@ -27,7 +28,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
   XII_TEST_BOOL(bloom.Configure(properties).Failed());
 
   xiiRenderPipelineResourceDescriptor child;
-  child.AddPass("Spatial upscale", "xiiUpscalePass");
+  child.AddPass("Spatial upscale", xiiUpscalePass().GetDynamicRTTI());
   child.m_Interface.PushBack({"Input", true, child.m_Passes[0].m_Id, "TAAResolved"});
   child.m_Interface.PushBack({"Output", false, child.m_Passes[0].m_Id, "UpscaledColor"});
   xiiGraphDefinition definition;

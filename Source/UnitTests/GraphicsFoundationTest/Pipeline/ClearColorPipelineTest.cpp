@@ -51,11 +51,11 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
   }
 
   xiiRenderPipelineResourceDescriptor descriptor;
-  const auto                          uiCreate = descriptor.AddPass("Create Texture", xiiGetStaticRTTI<xiiCreateTexturePass>()->GetTypeName());
+  const auto                          uiCreate = descriptor.AddPass("Create Texture", xiiCreateTexturePass().GetDynamicRTTI());
   xiiVariantDictionary                properties;
   properties.Insert("Color", xiiColor::Red);
-  const auto uiClear   = descriptor.AddPass("Clear Color", xiiGetStaticRTTI<xiiClearColorPass>()->GetTypeName(), properties);
-  const auto uiPresent = descriptor.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>()->GetTypeName());
+  const auto uiClear   = descriptor.AddPass("Clear Color", xiiClearColorPass().GetDynamicRTTI(), properties);
+  const auto uiPresent = descriptor.AddPass("Present", xiiPresentPass().GetDynamicRTTI());
   if (!XII_TEST_RESULT(descriptor.Connect(uiCreate, "Texture", uiClear, "Texture")) ||
       !XII_TEST_RESULT(descriptor.Connect(uiClear, "Texture", uiPresent, "GradedColor")))
     return;

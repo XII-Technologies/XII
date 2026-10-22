@@ -254,7 +254,7 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedAllocationInvalidatesView)
   view->SetRenderTargetView(texture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   {
     xiiRenderPipelineResourceDescriptor definition;
-    definition.AddPass("Allocation failure", "xiiTemporalAllocationTestPass");
+    definition.AddPass("Allocation failure", xiiTemporalAllocationTestPass().GetDynamicRTTI());
     auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Temporal allocation failure", std::move(definition));
     view->SetRenderPipelineResource(pipeline);
     {

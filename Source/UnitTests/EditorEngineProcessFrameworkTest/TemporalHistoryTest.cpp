@@ -288,7 +288,7 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, FailedRecordingInvalidatesHistory)
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("History failure regression", "xiiPipelineHistoryFailure");
+  definition.AddPass("History failure regression", xiiPipelineHistoryFailure().GetDynamicRTTI());
   const auto          pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Recoverable history failure", std::move(definition));
   xiiWorldDescription description("Failed recording recovery");
   xiiWorld            world(description);

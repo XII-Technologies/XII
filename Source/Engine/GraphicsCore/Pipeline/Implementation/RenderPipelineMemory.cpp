@@ -55,7 +55,7 @@ xiiUInt64 xiiRenderPipelineResourceDescriptor::GetHeapMemoryUsage() const
   };
   xiiUInt64 size = m_Passes.GetHeapMemoryUsage() + m_Connections.GetHeapMemoryUsage() + DictionaryMemory(m_Parameters) + m_Definitions.GetHeapMemoryUsage() + m_References.GetHeapMemoryUsage() + boundaryMemory(m_Interface);
   for (const auto& pass : m_Passes)
-    size += pass.m_sName.GetHeapMemoryUsage() + pass.m_sType.GetHeapMemoryUsage() + pass.m_sInstanceScope.GetHeapMemoryUsage() + DictionaryMemory(pass.m_Properties) + DictionaryMemory(pass.m_Parameters) + overrideMemory(pass.m_Overrides);
+    size += pass.m_sName.GetHeapMemoryUsage() + pass.m_sInstanceScope.GetHeapMemoryUsage() + DictionaryMemory(pass.m_Properties) + DictionaryMemory(pass.m_Parameters) + overrideMemory(pass.m_Overrides);
   for (const auto& connection : m_Connections)
     size += connection.m_sInput.GetHeapMemoryUsage() + connection.m_sOutput.GetHeapMemoryUsage();
   for (const auto& reference : m_References)

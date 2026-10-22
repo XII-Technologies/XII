@@ -2,10 +2,13 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/Graph/Graph.h>
 #include <Core/Graph/GraphComposition.h>
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Memory/CommonAllocators.h>
+#include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
@@ -14,13 +17,19 @@
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassDescriptor
 {
   xiiString                                 m_sName;
-  xiiString                                 m_sType;
+  const xiiRTTI*                            m_pType = nullptr; ///< Borrowed; the defining plugin must remain loaded.
   xiiVariantDictionary                      m_Properties;
   xiiUuid                                   m_Id = xiiUuid::MakeUuid();
   xiiUuid                                   m_Definition; ///< Shared definition reference; invalid for an ordinary reflected pass.
   xiiVariantDictionary                      m_Parameters;
   xiiDynamicArray<xiiGraphPropertyOverride> m_Overrides;
   xiiString                                 m_sInstanceScope; ///< Compiled diagnostic/ownership scope; derived from the Core instance path.
+
+private:
+  XII_ALLOW_PRIVATE_PROPERTIES(xiiRenderPipelinePassDescriptor);
+  // Keep names confined to the portable reflected representation.
+  xiiStringView GetTypeName() const;
+  void          SetTypeName(xiiStringView sTypeName);
 };
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineConnection
@@ -42,7 +51,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineDefinitionReference
 /// RemovePass updates indices and removes incident connections. Compilation validates the entire definition.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
 {
-  xiiUInt32 AddPass(xiiStringView name, xiiStringView type, const xiiVariantDictionary& properties = {});
+  /// Stores borrowed pass RTTI, normally obtained from a pass instance through GetDynamicRTTI().
+  xiiUInt32 AddPass(xiiStringView name, const xiiRTTI* pType, const xiiVariantDictionary& properties = {});
   xiiUInt32 AddSubgraph(xiiStringView name, const xiiUuid& definition);
   /// Capture authoring topology with document identities, never runtime graph handles.
   xiiResult                                        MakeGraphDefinition(xiiGraphDefinition& out_definition) const;

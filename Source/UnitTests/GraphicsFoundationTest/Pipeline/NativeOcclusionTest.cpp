@@ -2,6 +2,10 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Visibility/DepthPyramidPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -44,9 +48,9 @@ namespace
     root.m_References.PushBack({authoring.m_Descriptor.m_Id, asset.GetResourceID()});
     xiiUuid filterId;
     for (const auto& pass : authoring.m_Descriptor.m_Passes)
-      if (pass.m_sType == (meshlets ? "xiiMeshletOcclusionPass" : "xiiInstanceOcclusionPass"))
+      if (pass.m_pType == (meshlets ? xiiMeshletOcclusionPass().GetDynamicRTTI() : xiiInstanceOcclusionPass().GetDynamicRTTI()))
         filterId = pass.m_Id;
-    const auto reduce = pyramid ? root.AddPass("Reduce supplied depth", "xiiDepthPyramidPass") : xiiInvalidIndex;
+    const auto reduce = pyramid ? root.AddPass("Reduce supplied depth", xiiDepthPyramidPass().GetDynamicRTTI()) : xiiInvalidIndex;
     if (pyramid)
       root.m_Interface.PushBack({"DepthPyramid", true, root.m_Passes[reduce].m_Id, "SceneDepth"});
     xiiDynamicArray<xiiRenderPipelinePin> pins;

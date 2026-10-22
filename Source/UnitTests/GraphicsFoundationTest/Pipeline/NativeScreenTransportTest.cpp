@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -99,7 +101,7 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
     const float                         metallic            = phase == 3 ? 1.0f : 0.0f;
     xiiRenderPipelineResourceDescriptor root;
     root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, resource.GetResourceID()});
-    const auto source = root.AddPass("Analytic transport inputs", "xiiScreenTransportTestSource");
+    const auto source = root.AddPass("Analytic transport inputs", xiiScreenTransportTestSource().GetDynamicRTTI());
     root.m_Passes[source].m_Properties.Insert("Phase", phase);
     const auto clear = [&](xiiStringView name, xiiVec4 value, bool mismatch = false) {
       xiiClearTexturePass p;
@@ -109,19 +111,19 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
       p.m_Color    = xiiColor(value.x, value.y, value.z, value.w);
       xiiVariantDictionary properties;
       XII_TEST_RESULT(p.GetProperties(properties));
-      return root.AddPass(name, "xiiClearTexturePass", properties);
+      return root.AddPass(name, xiiClearTexturePass().GetDynamicRTTI(), properties);
     };
     const auto normal = clear("Transport normals", phase >= 10 ? xiiVec4(1, 0.5f, 0, 0) : phase == 1 ? xiiVec4(0.5f, 0.5f, 0, 0) :
                                                                                                        xiiVec4(1, 1, 0, 0),
                               true),
                albedo = clear("Transport albedo", xiiVec4(0.5f, 0.25f, 0.1f, 1)), material = clear("Transport material", xiiVec4(0.5f, metallic, 0, transmissionEnabled ? 64.0f / 255 : 0)), emissive = clear("Transport transmission", xiiVec4(0, 0, 0, phase == 4 ? 0.75f : transmission)), transmittance = clear("Unit solar transmittance", xiiVec4(1)), multiScatter = clear("No multiple scattering", xiiVec4::MakeZero());
-    const auto background       = root.AddPass("Independent refraction background", "xiiScreenTransportTestSource");
+    const auto background       = root.AddPass("Independent refraction background", xiiScreenTransportTestSource().GetDynamicRTTI());
     const auto suppliedLighting = clear("Supplied screen lighting", xiiVec4(0.2f, 0.4f, 0.6f, 1));
     const auto connect          = [&](xiiUInt32 a, xiiStringView out, xiiUInt32 b, xiiStringView in) {
       XII_TEST_RESULT(root.Connect(a, out, b, in));
     };
     const auto capture = [&](xiiUInt32 node, xiiStringView pin, xiiStringView name) {
-      const auto sink = root.AddPass(name, "xiiIndirectTestExport");
+      const auto sink = root.AddPass(name, xiiIndirectTestExport().GetDynamicRTTI());
       connect(node, pin, sink, "Input");
       root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
     };

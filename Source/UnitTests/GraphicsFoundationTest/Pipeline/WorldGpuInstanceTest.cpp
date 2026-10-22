@@ -2,6 +2,15 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
+#include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MatrixVisibilityViewPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -168,21 +177,21 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two cameras share sparse uploads; warmed unchanged frames upload zero bytes")
   {
     xiiRenderPipelineResourceDescriptor uploadDefinition;
-    uploadDefinition.AddPass("World data", "xiiWorldInstancesUploadPass");
-    uploadDefinition.AddPass("Repeated world data", "xiiWorldInstancesUploadPass");
-    uploadDefinition.AddPass("Device geometry", "xiiGeometryUploadPass");
-    uploadDefinition.AddPass("Device materials", "xiiMaterialUploadPass");
+    uploadDefinition.AddPass("World data", xiiWorldInstancesUploadPass().GetDynamicRTTI());
+    uploadDefinition.AddPass("Repeated world data", xiiWorldInstancesUploadPass().GetDynamicRTTI());
+    uploadDefinition.AddPass("Device geometry", xiiGeometryUploadPass().GetDynamicRTTI());
+    uploadDefinition.AddPass("Device materials", xiiMaterialUploadPass().GetDynamicRTTI());
     xiiVariantDictionary cullingProperties;
     cullingProperties.Insert("UseViewSelection", false);
     cullingProperties.Insert("VisibilityMask", 0x42U);
-    uploadDefinition.AddPass("Camera culling inputs", "xiiVisibilityViewPass", cullingProperties);
-    uploadDefinition.AddPass("Empty work", "xiiCounterResetPass");
+    uploadDefinition.AddPass("Camera culling inputs", xiiVisibilityViewPass().GetDynamicRTTI(), cullingProperties);
+    uploadDefinition.AddPass("Empty work", xiiCounterResetPass().GetDynamicRTTI());
     xiiVariantDictionary counterProperties;
     counterProperties.Insert("Value", 17U);
-    uploadDefinition.AddPass("Seeded work", "xiiCounterResetPass", counterProperties);
-    uploadDefinition.AddPass("Matrix query", "xiiMatrixVisibilityViewPass");
-    uploadDefinition.AddPass("Repeated geometry", "xiiGeometryUploadPass");
-    uploadDefinition.AddPass("Repeated materials", "xiiMaterialUploadPass");
+    uploadDefinition.AddPass("Seeded work", xiiCounterResetPass().GetDynamicRTTI(), counterProperties);
+    uploadDefinition.AddPass("Matrix query", xiiMatrixVisibilityViewPass().GetDynamicRTTI());
+    uploadDefinition.AddPass("Repeated geometry", xiiGeometryUploadPass().GetDynamicRTTI());
+    uploadDefinition.AddPass("Repeated materials", xiiMaterialUploadPass().GetDynamicRTTI());
     xiiCamera cullingCamera;
     cullingCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
 
@@ -360,7 +369,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     xiiVariantDictionary properties;
     properties.Insert("Categories", static_cast<xiiUInt32>(xiiRenderExtractionCategory::Geometry));
     xiiRenderPipelineResourceDescriptor pipeline;
-    pipeline.AddPass("Collect", "xiiExtractionDemandPass", properties);
+    pipeline.AddPass("Collect", xiiExtractionDemandPass().GetDynamicRTTI(), properties);
     const auto resource = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("SharedStaticMeshPipeline", std::move(pipeline));
     xiiCamera  camera;
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);

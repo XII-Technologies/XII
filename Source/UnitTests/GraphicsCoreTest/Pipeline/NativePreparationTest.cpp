@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
@@ -36,7 +38,6 @@
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativePreparation);
 XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedDataProducers)
@@ -69,9 +70,9 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedDataProducers)
   properties.Insert("LodHysteresis", 1.0f);
   XII_TEST_BOOL(copy.Configure(properties).Failed());
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Instances", "xiiWorldInstancesUploadPass");
-  leaf.AddPass("Geometry", "xiiGeometryUploadPass");
-  leaf.AddPass("Materials", "xiiMaterialUploadPass");
+  leaf.AddPass("Instances", xiiWorldInstancesUploadPass().GetDynamicRTTI());
+  leaf.AddPass("Geometry", xiiGeometryUploadPass().GetDynamicRTTI());
+  leaf.AddPass("Materials", xiiMaterialUploadPass().GetDynamicRTTI());
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
   xiiRenderPipelineResourceDescriptor root;
@@ -132,8 +133,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitLodHistoryTopology)
     XII_TEST_BOOL(pass->GetDynamicRTTI()->FindPropertyByName("Stage") == nullptr);
   }
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Cull supplied instances", "xiiInstanceCullPass");
-  definition.AddPass("Retain LOD choices", "xiiBufferHistoryPass");
+  definition.AddPass("Cull supplied instances", xiiInstanceCullPass().GetDynamicRTTI());
+  definition.AddPass("Retain LOD choices", xiiBufferHistoryPass().GetDynamicRTTI());
   XII_TEST_RESULT(definition.Connect(0, "LodHistory", 1, "Buffer"));
   XII_TEST_RESULT(definition.Connect(1, "PreviousBuffer", 0, "PreviousLodHistory"));
   xiiDynamicArray<xiiRenderPipelinePin> pins;
@@ -171,8 +172,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedMeshletWorkPreparation)
   XII_TEST_RESULT(dispatch.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[dispatch.m_Arguments.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Reduce selected LODs", "xiiMeshletDispatchBoundsPass");
-  definition.AddPass("Prepare indirect work", "xiiMeshletDispatchPass");
+  definition.AddPass("Reduce selected LODs", xiiMeshletDispatchBoundsPass().GetDynamicRTTI());
+  definition.AddPass("Prepare indirect work", xiiMeshletDispatchPass().GetDynamicRTTI());
   XII_TEST_RESULT(definition.Connect(0, "MaximumMeshletGroups", 1, "MaximumMeshletGroups"));
   for (xiiUInt32 index = 0; index < 2; ++index)
   {
@@ -352,8 +353,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentInstanceOcclusion)
   XII_TEST_BOOL(pins[pass.m_Depth.GetBindingIndex()].m_Format == xiiGALResourceFormat::R32Float);
   XII_TEST_BOOL(pins[pass.m_Count.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::ReadWrite);
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Occlusion", "xiiInstanceOcclusionPass");
-  definition.AddPass("Reset", "xiiCounterResetPass");
+  definition.AddPass("Occlusion", xiiInstanceOcclusionPass().GetDynamicRTTI());
+  definition.AddPass("Reset", xiiCounterResetPass().GetDynamicRTTI());
   XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
   for (const auto& pin : pins)
     if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
@@ -404,8 +405,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshletOcclusion)
   XII_TEST_BOOL(pins[pass.m_Depth.GetBindingIndex()].m_Format == xiiGALResourceFormat::R32Float);
   XII_TEST_BOOL(pins[pass.m_Count.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::ReadWrite);
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Occlusion", "xiiMeshletOcclusionPass");
-  definition.AddPass("Reset", "xiiCounterResetPass");
+  definition.AddPass("Occlusion", xiiMeshletOcclusionPass().GetDynamicRTTI());
+  definition.AddPass("Reset", xiiCounterResetPass().GetDynamicRTTI());
   XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
   for (const auto& pin : pins)
     if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
@@ -472,9 +473,9 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentGeometryStreamingFeedback)
   }
   XII_TEST_BOOL(xiiGpuGeometryLodRequest().GetGeometry().IsInvalidated());
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Initialize", "xiiGeometryLodFeedbackResetPass");
-  definition.AddPass("Generate", "xiiGeometryLodFeedbackPass");
-  definition.AddPass("Readback", "xiiGeometryLodFeedbackReadbackPass");
+  definition.AddPass("Initialize", xiiGeometryLodFeedbackResetPass().GetDynamicRTTI());
+  definition.AddPass("Generate", xiiGeometryLodFeedbackPass().GetDynamicRTTI());
+  definition.AddPass("Readback", xiiGeometryLodFeedbackReadbackPass().GetDynamicRTTI());
   XII_TEST_RESULT(definition.Connect(0, "Requests", 1, "InitializedRequests"));
   XII_TEST_RESULT(definition.Connect(1, "Requests", 2, "Requests"));
   xiiDynamicArray<xiiRenderPipelinePin> pins;
@@ -664,9 +665,9 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowFeedback)
   XII_TEST_RESULT(readback.Configure(properties));
   XII_TEST_INT(readback.GetStats().m_uiSourceFrame, 0);
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Initialize", "xiiVirtualShadowFeedbackResetPass");
-  leaf.AddPass("Generate", "xiiVirtualShadowFeedbackPass");
-  leaf.AddPass("Readback", "xiiVirtualShadowFeedbackReadbackPass");
+  leaf.AddPass("Initialize", xiiVirtualShadowFeedbackResetPass().GetDynamicRTTI());
+  leaf.AddPass("Generate", xiiVirtualShadowFeedbackPass().GetDynamicRTTI());
+  leaf.AddPass("Readback", xiiVirtualShadowFeedbackReadbackPass().GetDynamicRTTI());
   XII_TEST_RESULT(leaf.Connect(0, "Requests", 1, "InitializedRequests"));
   XII_TEST_RESULT(leaf.Connect(1, "Requests", 2, "Requests"));
   leaf.m_Interface.PushBack({"SceneDepth", true, leaf.m_Passes[1].m_Id, "SceneDepth"});
@@ -728,7 +729,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDirectionalCascades)
   properties.Insert("LightDirection", xiiVec3(1, 0, -1));
   XII_TEST_RESULT(pass.Configure(properties));
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Stabilized cascades", "xiiShadowCascadePass", properties);
+  leaf.AddPass("Stabilized cascades", xiiShadowCascadePass().GetDynamicRTTI(), properties);
   leaf.m_Interface.PushBack({"CascadeConstants", false, leaf.m_Passes[0].m_Id, "CascadeConstants"});
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
@@ -765,7 +766,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowTables)
   XII_TEST_BOOL(pass.GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(pass.GetRuntimeFeatures() == xiiRenderPipelineFeature::VirtualShadows);
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Device page residency", "xiiVirtualShadowTablesPass");
+  definition.AddPass("Device page residency", xiiVirtualShadowTablesPass().GetDynamicRTTI());
   xiiSharedPtr<const xiiRenderPipeline> pipeline;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, pipeline));
   xiiRenderPipelineInstance instance;

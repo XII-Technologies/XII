@@ -195,7 +195,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPassProperties)
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compiled resource serialization and instances retain structured properties")
     {
       xiiRenderPipelineResourceDescriptor definition;
-      definition.AddPass("Structured", "xiiPipelinePropertyPass", properties);
+      definition.AddPass("Structured", xiiPipelinePropertyPass().GetDynamicRTTI(), properties);
       xiiDefaultMemoryStreamStorage storage;
       xiiMemoryStreamWriter         writer(&storage);
       XII_TEST_RESULT(definition.Serialize(writer));

@@ -2,6 +2,21 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/BufferHistoryPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/LodHistoryResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchBoundsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -265,10 +280,10 @@ namespace
   };
   MeshletWork AddMeshletWork(xiiRenderPipelineResourceDescriptor& definition, xiiStringView label, xiiUInt32 prepared, xiiUInt32 culled)
   {
-    const auto reset    = definition.AddPass(xiiStringBuilder(label, " Reset"), "xiiCounterResetPass");
-    const auto bounds   = definition.AddPass(xiiStringBuilder(label, " Bound"), "xiiMeshletDispatchBoundsPass");
-    const auto dispatch = definition.AddPass(xiiStringBuilder(label, " Dispatch"), "xiiMeshletDispatchPass");
-    const auto output   = definition.AddPass(xiiStringBuilder(label, " Export"), "xiiNativeMeshletWorkExport");
+    const auto reset    = definition.AddPass(xiiStringBuilder(label, " Reset"), xiiCounterResetPass().GetDynamicRTTI());
+    const auto bounds   = definition.AddPass(xiiStringBuilder(label, " Bound"), xiiMeshletDispatchBoundsPass().GetDynamicRTTI());
+    const auto dispatch = definition.AddPass(xiiStringBuilder(label, " Dispatch"), xiiMeshletDispatchPass().GetDynamicRTTI());
+    const auto output   = definition.AddPass(xiiStringBuilder(label, " Export"), xiiNativeMeshletWorkExport().GetDynamicRTTI());
     for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
       XII_TEST_RESULT(definition.Connect(prepared, pin, bounds, pin));
     for (auto pin : {"VisibleInstances", "VisibleInstanceCount", "LodHistory"})
@@ -280,9 +295,9 @@ namespace
     XII_TEST_RESULT(definition.Connect(culled, "VisibleInstanceCount", dispatch, "VisibleInstanceCount"));
     XII_TEST_RESULT(definition.Connect(dispatch, "DispatchArguments", output, "Arguments"));
     XII_TEST_RESULT(definition.Connect(bounds, "MaximumMeshletGroups", output, "Maximum"));
-    const auto countReset    = definition.AddPass(xiiStringBuilder(label, " Count Reset"), "xiiCounterResetPass");
-    const auto overflowReset = definition.AddPass(xiiStringBuilder(label, " Overflow Reset"), "xiiCounterResetPass");
-    const auto meshlet       = definition.AddPass(xiiStringBuilder(label, " Cull"), "xiiMeshletCullPass");
+    const auto countReset    = definition.AddPass(xiiStringBuilder(label, " Count Reset"), xiiCounterResetPass().GetDynamicRTTI());
+    const auto overflowReset = definition.AddPass(xiiStringBuilder(label, " Overflow Reset"), xiiCounterResetPass().GetDynamicRTTI());
+    const auto meshlet       = definition.AddPass(xiiStringBuilder(label, " Cull"), xiiMeshletCullPass().GetDynamicRTTI());
     definition.m_Passes[meshlet].m_Properties.Insert("MaxVisibleMeshlets", 16384U);
     for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
       XII_TEST_RESULT(definition.Connect(prepared, pin, meshlet, pin));
@@ -294,14 +309,14 @@ namespace
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", output, "Meshlets"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", output, "Count"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletOverflow", output, "Overflow"));
-    const auto draw = definition.AddPass(xiiStringBuilder(label, " Draw Commands"), "xiiVertexPullDrawCommandsPass");
+    const auto draw = definition.AddPass(xiiStringBuilder(label, " Draw Commands"), xiiVertexPullDrawCommandsPass().GetDynamicRTTI());
     for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
       XII_TEST_RESULT(definition.Connect(prepared, pin, draw, pin));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", draw, "VisibleMeshlets"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", draw, "VisibleMeshletCount"));
     XII_TEST_RESULT(definition.Connect(draw, "DrawCommands", output, "DrawCommands"));
     XII_TEST_RESULT(definition.Connect(draw, "DrawCommandCount", output, "DrawCount"));
-    const auto meshDraw = definition.AddPass(xiiStringBuilder(label, " Mesh Draw Commands"), "xiiMeshDrawCommandsPass");
+    const auto meshDraw = definition.AddPass(xiiStringBuilder(label, " Mesh Draw Commands"), xiiMeshDrawCommandsPass().GetDynamicRTTI());
     definition.m_Passes[meshDraw].m_Properties.Insert("MeshGroupCountX", 4U);
     definition.m_Passes[meshDraw].m_Properties.Insert("MeshGroupCountY", 2U);
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", meshDraw, "VisibleMeshlets"));
@@ -322,12 +337,12 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Input snapshots", "xiiNativeCullSource");
-  leaf.AddPass("Invalidate current LOD", "xiiLodHistoryResetPass");
-  leaf.AddPass("Reset visible count", "xiiCounterResetPass");
-  leaf.AddPass("Cull instances", "xiiInstanceCullPass");
-  leaf.AddPass("Retain LOD history", "xiiBufferHistoryPass");
-  leaf.AddPass("Read back", "xiiNativeCullExport");
+  leaf.AddPass("Input snapshots", xiiNativeCullSource().GetDynamicRTTI());
+  leaf.AddPass("Invalidate current LOD", xiiLodHistoryResetPass().GetDynamicRTTI());
+  leaf.AddPass("Reset visible count", xiiCounterResetPass().GetDynamicRTTI());
+  leaf.AddPass("Cull instances", xiiInstanceCullPass().GetDynamicRTTI());
+  leaf.AddPass("Retain LOD history", xiiBufferHistoryPass().GetDynamicRTTI());
+  leaf.AddPass("Read back", xiiNativeCullExport().GetDynamicRTTI());
   for (auto pin : {"SceneInstances", "GeometryMetadata", "VisibilityView", "Candidates"})
     XII_TEST_RESULT(leaf.Connect(0, pin, 3, pin));
   XII_TEST_RESULT(leaf.Connect(0, "SceneInstances", 1, "SceneInstances"));
@@ -607,21 +622,21 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
   {
     const auto& pass   = nested->GetDescriptor().m_Passes[i];
     const auto& source = nested->GetProvenance()[i];
-    if (pass.m_sType == "xiiInstanceCullPass")
+    if (pass.m_pType == xiiInstanceCullPass().GetDynamicRTTI())
       cullId = source.m_Element;
-    if (pass.m_sType == "xiiWorldInstancesUploadPass")
+    if (pass.m_pType == xiiWorldInstancesUploadPass().GetDynamicRTTI())
       uploadId = source.m_Element;
-    if (pass.m_sType == "xiiMeshletDispatchPass")
+    if (pass.m_pType == xiiMeshletDispatchPass().GetDynamicRTTI())
       dispatchId = source.m_Element;
-    if (pass.m_sType == "xiiMeshletCullPass")
+    if (pass.m_pType == xiiMeshletCullPass().GetDynamicRTTI())
       meshletId = source.m_Element;
-    if (pass.m_sType == "xiiVertexPullDrawCommandsPass")
+    if (pass.m_pType == xiiVertexPullDrawCommandsPass().GetDynamicRTTI())
       drawId = source.m_Element;
-    if (pass.m_sType == (depthOnly ? "xiiDepthRasterPass" : "xiiSurfaceQueryPass"))
+    if (pass.m_pType == (depthOnly ? xiiDepthRasterPass().GetDynamicRTTI() : xiiSurfaceQueryPass().GetDynamicRTTI()))
       surfaceId = source.m_Element;
-    if (pass.m_sType == "xiiGBufferRasterPass")
+    if (pass.m_pType == xiiGBufferRasterPass().GetDynamicRTTI())
       materialId = source.m_Element;
-    if (pass.m_sType == "xiiVisibilityViewPass")
+    if (pass.m_pType == xiiVisibilityViewPass().GetDynamicRTTI())
     {
       viewPath = source.m_InstancePath;
       viewPath.PushBack(source.m_Element);
@@ -641,7 +656,7 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
   override.m_Properties.Insert("VisibilityMask", 0U);
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
-    const auto pixels = root.AddPass(i == 0 ? "Visible surface readback" : "Filtered surface readback", "xiiNativeSurfaceExport");
+    const auto pixels = root.AddPass(i == 0 ? "Visible surface readback" : "Filtered surface readback", xiiNativeSurfaceExport().GetDynamicRTTI());
     if (!depthOnly)
     {
       XII_TEST_RESULT(root.Connect(i, "Surface", pixels, "Surface"));
@@ -650,14 +665,14 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
     if (materialTargets)
       for (auto pin : {"Albedo", "Normal", "Material", "Emissive", "NormalRoughness", "Velocity", "ObjectId"})
         XII_TEST_RESULT(root.Connect(i, pin, pixels, pin));
-    const auto work = root.AddPass(i == 0 ? "Visible meshlet readback" : "Filtered meshlet readback", "xiiNativeMeshletWorkExport");
+    const auto work = root.AddPass(i == 0 ? "Visible meshlet readback" : "Filtered meshlet readback", xiiNativeMeshletWorkExport().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(i, "DispatchArguments", work, "Arguments"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshlets", work, "Meshlets"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshletCount", work, "Count"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshletOverflow", work, "Overflow"));
     XII_TEST_RESULT(root.Connect(i, "DrawCommands", work, "DrawCommands"));
     XII_TEST_RESULT(root.Connect(i, "DrawCommandCount", work, "DrawCount"));
-    const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", "xiiNativeCullExport");
+    const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", xiiNativeCullExport().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(i, "VisibleInstances", sink, "Visible"));
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
     XII_TEST_RESULT(root.Connect(i, "LodHistory", sink, "Lod"));

@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -16,7 +18,6 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 class xiiNativePreparationExport : public xiiRenderPipelinePass
 {
@@ -54,8 +55,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, SharedImmutableBRDFLookup)
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   XII_TEST_BOOL(!xiiLightingManager::GetBRDFLUT());
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Integrate GGX", "xiiBRDFLutPass");
-  leaf.AddPass("Read lookup on graphics", "xiiNativePreparationExport");
+  leaf.AddPass("Integrate GGX", xiiBRDFLutPass().GetDynamicRTTI());
+  leaf.AddPass("Read lookup on graphics", xiiNativePreparationExport().GetDynamicRTTI());
   XII_TEST_RESULT(leaf.Connect(0, "BRDFLut", 1, "Input"));
   const auto         exportId = leaf.m_Passes[1].m_Id;
   xiiGraphDefinition definition;

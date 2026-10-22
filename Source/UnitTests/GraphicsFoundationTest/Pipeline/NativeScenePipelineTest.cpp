@@ -2,6 +2,9 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Lighting/DiffuseSurfaceLightingPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Foundation/Math/Float16.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
@@ -212,7 +215,7 @@ namespace
     }
     bool changed = false;
     for (auto& pass : descriptor.m_Passes)
-      if (pass.m_sType == "xiiDiffuseSurfaceLightingPass")
+      if (pass.m_pType == xiiDiffuseSurfaceLightingPass().GetDynamicRTTI())
       {
         pass.m_Properties.Insert("Scale", 0.5f);
         changed = true;
@@ -251,13 +254,13 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
   const auto scene = root.AddSubgraph("Authored opaque scene", loaded->GetAuthoring()->m_Descriptor.m_Id);
   for (const xiiStringView name : {"HDRSceneColor", "DirectLighting", "AmbientLighting", "ObjectId", "Albedo", "Emissive"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), "xiiScenePipelineTestExport");
+    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiScenePipelineTestExport().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(scene, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }
   for (const xiiStringView name : {"CurrentExposure", "LightListOverflow", "VisibleMeshletOverflow"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), "xiiBufferExportPass");
+    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiBufferExportPass().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(scene, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }

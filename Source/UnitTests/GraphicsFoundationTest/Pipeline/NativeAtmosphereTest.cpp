@@ -2,6 +2,11 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
+#include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -135,23 +140,23 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   clear.m_Color    = xiiColor(1, 2, 3, 0.4f);
   xiiVariantDictionary properties;
   XII_TEST_RESULT(clear.GetProperties(properties));
-  const auto color = root.AddPass("Independent scene radiance", "xiiClearTexturePass", properties);
+  const auto color = root.AddPass("Independent scene radiance", xiiClearTexturePass().GetDynamicRTTI(), properties);
   clear.m_Format   = xiiGALResourceFormat::R32Float;
   clear.m_Color    = xiiColor::MakeZero();
   XII_TEST_RESULT(clear.GetProperties(properties));
-  const auto depth  = root.AddPass("Sky depth", "xiiClearTexturePass", properties);
-  const auto camera = root.AddPass("View camera", "xiiViewConstantsPass"), light = root.AddPass("No direct sun", "xiiEnvironmentLightConstantsPass");
+  const auto depth  = root.AddPass("Sky depth", xiiClearTexturePass().GetDynamicRTTI(), properties);
+  const auto camera = root.AddPass("View camera", xiiViewConstantsPass().GetDynamicRTTI()), light = root.AddPass("No direct sun", xiiEnvironmentLightConstantsPass().GetDynamicRTTI());
   XII_TEST_RESULT(root.Connect(color, "Texture", atmosphere, "Radiance"));
   XII_TEST_RESULT(root.Connect(depth, "Texture", atmosphere, "Depth"));
   XII_TEST_RESULT(root.Connect(camera, "PerFrameCamera", atmosphere, "Camera"));
   XII_TEST_RESULT(root.Connect(light, "EnvironmentLight", atmosphere, "EnvironmentLight"));
   for (const xiiStringView name : {"Radiance", "Transmittance", "MultiScatter"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Read ", name), "xiiIndirectTestExport");
+    const auto sink = root.AddPass(xiiStringBuilder("Read ", name), xiiIndirectTestExport().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(atmosphere, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }
-  const auto parameters = root.AddPass("Read atmosphere parameters", "xiiAtmosphereTestUniformExport");
+  const auto parameters = root.AddPass("Read atmosphere parameters", xiiAtmosphereTestUniformExport().GetDynamicRTTI());
   XII_TEST_RESULT(root.Connect(atmosphere, "Atmosphere", parameters, "Input"));
   root.m_Interface.PushBack({"Atmosphere", false, root.m_Passes[parameters].m_Id, "Output"});
   for (const xiiStringView name : {"Solar Transmittance", "Multiple Scattering"})

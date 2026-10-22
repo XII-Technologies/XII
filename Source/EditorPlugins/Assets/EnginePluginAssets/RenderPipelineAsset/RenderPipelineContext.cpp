@@ -114,7 +114,7 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
     xiiVariantDictionary settings;
     if (passes[i]->GetProperties(settings).Failed())
       return xiiStatus(xiiFmt("Cannot serialize reflected configuration for pass '{}'.", name));
-    const auto index                        = descriptor.AddPass(name, passes[i]->GetDynamicRTTI()->GetTypeName(), settings);
+    const auto index                        = descriptor.AddPass(name, passes[i]->GetDynamicRTTI(), settings);
     descriptor.m_Passes[index].m_Id         = passUuids[i];
     descriptor.m_Passes[index].m_Parameters = passes[i]->m_ParameterOverrides;
     passUuidToIndex.Insert(passUuids[i], index);

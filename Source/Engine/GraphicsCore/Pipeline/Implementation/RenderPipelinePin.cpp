@@ -8,6 +8,16 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
+xiiStringView xiiRenderPipelinePinMetadata::GetDataTypeName() const
+{
+  return m_pDataType ? m_pDataType->GetTypeName() : "";
+}
+
+void xiiRenderPipelinePinMetadata::SetDataTypeName(xiiStringView sTypeName)
+{
+  m_pDataType = xiiRTTI::FindTypeByName(sTypeName);
+}
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinType, 1)
   XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::Order, xiiRenderPipelinePinType::AccelerationStructure, xiiRenderPipelinePinType::FrameData)
 XII_END_STATIC_REFLECTED_ENUM;
@@ -42,7 +52,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelinePinMetadata, xiiNoBase, 1, xiiR
       XII_MEMBER_PROPERTY("Optional", m_bOptional)->AddAttributes(new xiiReadOnlyAttribute()),
       XII_MEMBER_PROPERTY("TemporalHistory", m_bTemporalHistory)->AddAttributes(new xiiReadOnlyAttribute()),
       XII_ENUM_MEMBER_PROPERTY("DeclaredFormat", xiiGALResourceFormat, m_DeclaredFormat)->AddAttributes(new xiiReadOnlyAttribute()),
-      XII_MEMBER_PROPERTY("DataType", m_sDataType)->AddAttributes(new xiiReadOnlyAttribute()),
+      XII_ACCESSOR_PROPERTY("DataType", GetDataTypeName, SetDataTypeName)->AddAttributes(new xiiReadOnlyAttribute()),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -169,7 +179,7 @@ xiiRenderPipelinePinMetadata xiiRenderPipelinePin::GetMetadata() const
   metadata.m_bOptional        = m_bOptional;
   metadata.m_bTemporalHistory = m_bTemporalHistoryOutput;
   metadata.m_DeclaredFormat   = m_Format;
-  metadata.m_sDataType        = m_pDataType ? m_pDataType->GetTypeName() : "";
+  metadata.m_pDataType        = m_pDataType;
   return metadata;
 }
 

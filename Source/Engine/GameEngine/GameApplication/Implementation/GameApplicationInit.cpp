@@ -88,11 +88,14 @@ void xiiGameApplication::Init_SetupDefaultResources()
   // Render pipelines
   {
     xiiRenderPipelineResourceDescriptor desc;
-    const xiiUInt32                     uiCreateTexture = desc.AddPass("Create Texture", xiiGetStaticRTTI<xiiCreateTexturePass>()->GetTypeName());
+    xiiCreateTexturePass                createTexture;
+    xiiClearColorPass                   clearColor;
+    xiiPresentPass                      present;
+    const xiiUInt32                     uiCreateTexture = desc.AddPass("Create Texture", createTexture.GetDynamicRTTI());
     xiiVariantDictionary                clearProperties;
     clearProperties.Insert("Color", xiiColor::Black);
-    const xiiUInt32 uiClearColor = desc.AddPass("Clear Color", xiiGetStaticRTTI<xiiClearColorPass>()->GetTypeName(), clearProperties);
-    const xiiUInt32 uiPresent    = desc.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>()->GetTypeName());
+    const xiiUInt32 uiClearColor = desc.AddPass("Clear Color", clearColor.GetDynamicRTTI(), clearProperties);
+    const xiiUInt32 uiPresent    = desc.AddPass("Present", present.GetDynamicRTTI());
     desc.Connect(uiCreateTexture, "Texture", uiClearColor, "Texture").AssertSuccess();
     desc.Connect(uiClearColor, "Texture", uiPresent, "GradedColor").AssertSuccess();
 

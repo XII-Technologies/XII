@@ -1,14 +1,17 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
+
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <type_traits>
 
@@ -130,10 +133,10 @@ namespace PipelineResourceTest
   {
     xiiRenderPipelineResourceDescriptor descriptor;
     // Insert consumer first to prove compilation follows dependencies rather than asset order.
-    descriptor.AddPass("Consumer", "xiiPipelineTestSink");
+    descriptor.AddPass("Consumer", xiiPipelineTestSink().GetDynamicRTTI());
     xiiVariantDictionary properties;
     properties.Insert("Value", 4U);
-    descriptor.AddPass("Producer", "xiiPipelineTestSource", properties);
+    descriptor.AddPass("Producer", xiiPipelineTestSource().GetDynamicRTTI(), properties);
     descriptor.Connect(1, "Data", 0, "Input").IgnoreResult();
     descriptor.m_Parameters.Insert("Exposure", 1.0f);
     return descriptor;
@@ -190,7 +193,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, TemporalDependencyPolicy)
     XII_TEST_BOOL(diagnostic.FindSubString("fan-out") != nullptr);
   }
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Feedback", "xiiPipelineTestHistory");
+  descriptor.AddPass("Feedback", xiiPipelineTestHistory().GetDynamicRTTI());
   XII_TEST_RESULT(descriptor.Connect(0, "History", 0, "Previous"));
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
@@ -350,8 +353,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
     root.m_Definitions.PushBack(nestedGraph);
     root.AddSubgraph("A", nested.m_Id);
     root.AddSubgraph("B", nested.m_Id);
-    root.AddPass("Sink A", "xiiPipelineTestSink");
-    root.AddPass("Sink B", "xiiPipelineTestSink");
+    root.AddPass("Sink A", xiiPipelineTestSink().GetDynamicRTTI());
+    root.AddPass("Sink B", xiiPipelineTestSink().GetDynamicRTTI());
     XII_TEST_RESULT(root.Connect(0, "Output", 2, "Input"));
     XII_TEST_RESULT(root.Connect(1, "Output", 3, "Input"));
     root.m_Passes[1].m_Parameters.Insert("Exposure", 2.0f);
@@ -463,7 +466,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_INT(descriptor.m_Connections.GetCount(), 0);
     XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
     XII_TEST_BOOL(descriptor.RemovePass(9).Failed());
-    descriptor.m_Passes[0].m_sType = "MissingType";
+    descriptor.m_Passes[0].m_pType = nullptr;
     XII_TEST_BOOL(xiiRenderPipeline::Compile(descriptor, compiled).Failed());
     descriptor = PipelineResourceTest::MakeDefinition();
     descriptor.m_Connections.Clear();
@@ -660,8 +663,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), pipeline->GetTopology().GetVertexCount());
     XII_TEST_BOOL(pipeline->GetHeapMemoryUsage() > pipeline->GetDescriptor().m_Passes.GetHeapMemoryUsage());
     auto descriptor = resource->GetAuthoring()->m_Descriptor;
-    descriptor.AddPass("Extra camera constants", "xiiViewConstantsPass");
-    descriptor.AddPass("Independent camera constants", "xiiViewConstantsPass");
+    descriptor.AddPass("Extra camera constants", xiiViewConstantsPass().GetDynamicRTTI());
+    descriptor.AddPass("Independent camera constants", xiiViewConstantsPass().GetDynamicRTTI());
     xiiSharedPtr<const xiiRenderPipeline> edited;
     XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
     xiiContiguousMemoryStreamStorage bytes;

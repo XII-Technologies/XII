@@ -59,7 +59,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AssetSettings)
   XII_TEST_BOOL(error.FindSubString("OutputFormat") != nullptr);
 
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Operation", "xiiSettingsPipelinePass");
+  descriptor.AddPass("Operation", xiiSettingsPipelinePass().GetDynamicRTTI());
   descriptor.m_Settings = settings;
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
@@ -100,7 +100,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AssetSettings)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Referenced definition device requirements constrain the containing resource")
   {
     xiiRenderPipelineResourceDescriptor child;
-    child.AddPass("Child operation", "xiiSettingsPipelinePass");
+    child.AddPass("Child operation", xiiSettingsPipelinePass().GetDynamicRTTI());
     child.m_Settings.m_RequiredDeviceFeatures    = xiiRenderPipelineDeviceFeature::MeshShaders;
     const auto                          id       = child.m_Id;
     const auto                          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("PipelineSettings/SharedDefinition", std::move(child));

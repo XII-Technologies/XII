@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/Graph/GraphAlgorithms.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
@@ -75,7 +76,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       name.Append(id, "/");
     }
     name.Append(node.m_sName);
-    const auto index                        = descriptor.AddPass(name, node.m_sType, node.m_Properties);
+    const auto index                        = descriptor.AddPass(name, xiiRTTI::FindTypeByName(node.m_sType), node.m_Properties);
     descriptor.m_Passes[index].m_Id         = node.m_Source.m_Element;
     descriptor.m_Passes[index].m_Parameters = node.m_Parameters;
     xiiStringBuilder instanceScope;
@@ -131,10 +132,10 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     if (definition.m_sName.IsEmpty() || names.Contains(definition.m_sName))
       return fail("Pass names must be nonempty and unique.");
     names.Insert(definition.m_sName, true);
-    const auto* type = xiiRTTI::FindTypeByName(definition.m_sType);
+    const auto* type = definition.m_pType;
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
       return fail("Unknown or abstract render pipeline pass type.");
-    if (definition.m_sType == "xiiRenderPipelineSubgraphPass" || definition.m_sType == "xiiRenderPipelineInterfacePass")
+    if (type->IsDerivedFrom<xiiRenderPipelineSubgraphPass>() || type->IsDerivedFrom<xiiRenderPipelineInterfacePass>())
       return fail("Authoring interface and subgraph nodes must be lowered to definition references before compilation.");
     xiiRenderPipelinePass* prototype = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     prototypes.PushBack(prototype);

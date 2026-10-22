@@ -2,6 +2,16 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/Passes/Geometry/DirectionalMeshConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MatrixRasterConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowSamplingConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -86,28 +96,28 @@ XII_CREATE_SIMPLE_TEST(NativeDirectionalMesh, RepeatedAuthoredRasterAndRetainedC
   xiiUuid    constantsId, samplingId, geometryConstantsId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
   {
-    if (pass.m_sType == "xiiDirectionalMeshConstantsPass")
+    if (pass.m_pType == xiiDirectionalMeshConstantsPass().GetDynamicRTTI())
       constantsId = pass.m_Id;
-    if (pass.m_sType == "xiiVirtualShadowSamplingConstantsPass")
+    if (pass.m_pType == xiiVirtualShadowSamplingConstantsPass().GetDynamicRTTI())
       samplingId = pass.m_Id;
-    if (pass.m_sType == "xiiMatrixRasterConstantsPass")
+    if (pass.m_pType == xiiMatrixRasterConstantsPass().GetDynamicRTTI())
       geometryConstantsId = pass.m_Id;
   }
   if (!XII_TEST_BOOL(constantsId.IsValid() && samplingId.IsValid() && geometryConstantsId.IsValid()))
     return;
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authored->m_Descriptor.m_Id, asset.GetResourceID()});
-  const auto           geometry       = root.AddPass("Device geometry", "xiiGeometryUploadPass");
-  const auto           materialUpload = root.AddPass("Device material residency", "xiiMaterialUploadPass");
-  const auto           tables         = root.AddPass("Device shadow tables", "xiiVirtualShadowTablesPass");
+  const auto           geometry       = root.AddPass("Device geometry", xiiGeometryUploadPass().GetDynamicRTTI());
+  const auto           materialUpload = root.AddPass("Device material residency", xiiMaterialUploadPass().GetDynamicRTTI());
+  const auto           tables         = root.AddPass("Device shadow tables", xiiVirtualShadowTablesPass().GetDynamicRTTI());
   xiiVariantDictionary commandProperties;
   commandProperties.Insert("MeshGroupCountX", 1U);
   commandProperties.Insert("MeshGroupCountY", 1U);
-  const auto           commands = root.AddPass("Supplied work dimensions", "xiiMeshDrawCommandsPass", commandProperties);
+  const auto           commands = root.AddPass("Supplied work dimensions", xiiMeshDrawCommandsPass().GetDynamicRTTI(), commandProperties);
   xiiVariantDictionary shadowProperties;
   shadowProperties.Insert("Width", 16U);
   shadowProperties.Insert("Height", 16U);
-  const auto shadow = root.AddPass("Empty ordinary shadow", "xiiDepthTargetPass", shadowProperties);
+  const auto shadow = root.AddPass("Empty ordinary shadow", xiiDepthTargetPass().GetDynamicRTTI(), shadowProperties);
   for (xiiStringView name : {"VisibleMeshlets", "VisibleMeshletCount"})
     root.m_Interface.PushBack({name, true, root.m_Passes[commands].m_Id, name});
   for (xiiUInt32 branch = 0; branch < 2; ++branch)
@@ -117,10 +127,10 @@ XII_CREATE_SIMPLE_TEST(NativeDirectionalMesh, RepeatedAuthoredRasterAndRetainedC
     image.Insert("Height", branch ? 32U : 16U);
     image.Insert("Format", xiiUInt32(xiiGALResourceFormat::RGBA32Float));
     image.Insert("Color", xiiColor(0, 0, 0.25f, 1));
-    const auto color = root.AddPass(branch ? "Green target" : "Red target", "xiiClearTexturePass", image);
+    const auto color = root.AddPass(branch ? "Green target" : "Red target", xiiClearTexturePass().GetDynamicRTTI(), image);
     image.Remove("Format");
     image.Remove("Color");
-    const auto depth     = root.AddPass(branch ? "Green depth" : "Red depth", "xiiDepthTargetPass", image);
+    const auto depth     = root.AddPass(branch ? "Green depth" : "Red depth", xiiDepthTargetPass().GetDynamicRTTI(), image);
     const auto node      = root.AddSubgraph(branch ? "Green mesh" : "Red mesh", authored->m_Descriptor.m_Id);
     auto&      constants = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
     constants.m_Path.PushBack(constantsId);

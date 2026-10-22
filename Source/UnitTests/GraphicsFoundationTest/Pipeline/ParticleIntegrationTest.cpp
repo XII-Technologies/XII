@@ -1,9 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
+#include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegrationConstantsPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -11,7 +15,6 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 /// Test-owned initialized state, deliberately longer than both the active and dispatch ranges.
 class xiiParticleIntegrationTestSource : public xiiRenderPipelinePass
@@ -124,7 +127,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SuppliedParticleStateIntegration)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor leaf;
-  const auto                          source = leaf.AddPass("Initialized particle state", "xiiParticleIntegrationTestSource");
+  const auto                          source = leaf.AddPass("Initialized particle state", xiiParticleIntegrationTestSource().GetDynamicRTTI());
   xiiParticleIntegrationConstantsPass authored;
   authored.m_fDeltaTimeS      = 0.05f;
   authored.m_fGravityScale    = 0;
@@ -133,11 +136,11 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SuppliedParticleStateIntegration)
   authored.m_uiActiveCount    = 2;
   xiiVariantDictionary properties;
   XII_TEST_RESULT(authored.GetProperties(properties));
-  const auto constants = leaf.AddPass("Parameters", "xiiParticleIntegrationConstantsPass", properties);
+  const auto constants = leaf.AddPass("Parameters", xiiParticleIntegrationConstantsPass().GetDynamicRTTI(), properties);
   properties.Clear();
   properties.Insert("ParticleCount", 130U);
-  const auto integrate = leaf.AddPass("Integrate", "xiiParticleIntegratePass", properties);
-  const auto readback  = leaf.AddPass("Read state", "xiiParticleIntegrationTestReadback");
+  const auto integrate = leaf.AddPass("Integrate", xiiParticleIntegratePass().GetDynamicRTTI(), properties);
+  const auto readback  = leaf.AddPass("Read state", xiiParticleIntegrationTestReadback().GetDynamicRTTI());
   XII_TEST_RESULT(leaf.Connect(source, "Particles", integrate, "Particles"));
   XII_TEST_RESULT(leaf.Connect(constants, "ParticleSimConstants", integrate, "ParticleSimConstants"));
   XII_TEST_RESULT(leaf.Connect(integrate, "Particles", readback, "Particles"));
@@ -236,7 +239,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ParticleIntegrationWithoutFrameConsume
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Initialized state", "xiiParticleIntegrationTestSource");
+  descriptor.AddPass("Initialized state", xiiParticleIntegrationTestSource().GetDynamicRTTI());
   xiiParticleIntegrationConstantsPass authored;
   authored.m_fDeltaTimeS      = 0.05f;
   authored.m_fGravityScale    = 0;
@@ -244,8 +247,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ParticleIntegrationWithoutFrameConsume
   authored.m_uiActiveCount    = 2;
   xiiVariantDictionary properties;
   XII_TEST_RESULT(authored.GetProperties(properties));
-  descriptor.AddPass("Parameters", "xiiParticleIntegrationConstantsPass", properties);
-  descriptor.AddPass("Simulate", "xiiParticleIntegratePass");
+  descriptor.AddPass("Parameters", xiiParticleIntegrationConstantsPass().GetDynamicRTTI(), properties);
+  descriptor.AddPass("Simulate", xiiParticleIntegratePass().GetDynamicRTTI());
   XII_TEST_RESULT(descriptor.Connect(0, "Particles", 2, "Particles"));
   XII_TEST_RESULT(descriptor.Connect(1, "ParticleSimConstants", 2, "ParticleSimConstants"));
   // No exports or rendering consumers: the update of externally owned state is observable later.

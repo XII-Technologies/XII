@@ -1,6 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Lighting/DirectionalSurfaceLightingPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Output/PresentPass.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
@@ -155,27 +160,27 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
     pass.m_Color    = color;
     xiiVariantDictionary properties;
     XII_TEST_RESULT(pass.GetProperties(properties));
-    return definition.AddPass(name, "xiiClearTexturePass", properties);
+    return definition.AddPass(name, xiiClearTexturePass().GetDynamicRTTI(), properties);
   };
   xiiUInt32 operation = 0;
   xiiString outputPin;
   if (shaderPath == sBloomShader)
   {
     const auto source = clear("Authored HDR", xiiGALResourceFormat::RGBA16Float, {2, 1, 0.5f, 1});
-    operation         = definition.AddPass("Bloom operation", "xiiBloomPass");
+    operation         = definition.AddPass("Bloom operation", xiiBloomPass().GetDynamicRTTI());
     XII_TEST_RESULT(definition.Connect(source, "Texture", operation, "UpscaledColor"));
     outputPin = "BloomTexture";
   }
   else
   {
-    operation                       = definition.AddPass("Directional surface operation", "xiiDirectionalSurfaceLightingPass");
+    operation                       = definition.AddPass("Directional surface operation", xiiDirectionalSurfaceLightingPass().GetDynamicRTTI());
     const auto depth                = clear("Depth", xiiGALResourceFormat::R32Float, {0.5f, 0, 0, 0});
     const auto normal               = clear("Normal", xiiGALResourceFormat::RG16Float, {0.5f, 0.5f, 0, 0});
     const auto albedo               = clear("Albedo", xiiGALResourceFormat::RGBA16Float, {0.5f, 0.5f, 0.5f, 1});
     const auto material             = clear("Material", xiiGALResourceFormat::RGBA16Float, {0.5f, 0, 0.5f, 0});
     const auto emissive             = clear("Emissive", xiiGALResourceFormat::RGBA16Float, xiiColor::MakeZero());
-    const auto cameraConstants      = definition.AddPass("Camera constants", "xiiViewConstantsPass");
-    const auto environmentConstants = definition.AddPass("Environment constants", "xiiEnvironmentLightConstantsPass");
+    const auto cameraConstants      = definition.AddPass("Camera constants", xiiViewConstantsPass().GetDynamicRTTI());
+    const auto environmentConstants = definition.AddPass("Environment constants", xiiEnvironmentLightConstantsPass().GetDynamicRTTI());
     definition.m_Passes[environmentConstants].m_Properties.Insert("Illuminance", 100.0f);
     XII_TEST_RESULT(definition.Connect(depth, "Texture", operation, "Depth"));
     XII_TEST_RESULT(definition.Connect(normal, "Texture", operation, "Normal"));
@@ -186,7 +191,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
     XII_TEST_RESULT(definition.Connect(environmentConstants, "EnvironmentLight", operation, "EnvironmentLight"));
     outputPin = "Lighting";
   }
-  const auto present = definition.AddPass("Present result", "xiiPresentPass");
+  const auto present = definition.AddPass("Present result", xiiPresentPass().GetDynamicRTTI());
   XII_TEST_RESULT(definition.Connect(operation, outputPin, present, "GradedColor"));
   view->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>(xiiStringBuilder("Explicit failure fixture/", shaderPath), std::move(definition)));
   xiiGALTextureCreationDescription targetDescription;
@@ -206,7 +211,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
       return nullptr;
     const auto& passes = pipeline->GetDescriptor().m_Passes;
     for (xiiUInt32 index = 0; index < passes.GetCount(); ++index)
-      if (passes[index].m_sType == "xiiPresentPass")
+      if (passes[index].m_pType == xiiPresentPass().GetDynamicRTTI())
         return instance.GetOutputBinding(index, "ViewOutput");
     return nullptr;
   };
@@ -217,6 +222,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
     xiiTestLogSystemScope logScope(&log, true);
     log.ExpectMessage("Failed to create reflected compute operation pipeline", xiiLogMsgType::ErrorMsg);
     log.ExpectMessage("Failed to build render pipeline", xiiLogMsgType::ErrorMsg);
+    log.ExpectMessage("Failed to execute render graph for view 'Shader failure view'", xiiLogMsgType::ErrorMsg);
     world.Update();
     XII_TEST_BOOL(view->GetRenderGraph()->GetQueueSubmissions().IsEmpty());
     const auto* output = outputBinding();

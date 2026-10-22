@@ -1,10 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 class xiiRayPinContractSource : public xiiRenderPipelinePass
 {
@@ -90,8 +91,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedAccelerationStructurePins)
   XII_TEST_RESULT(source.GetProperties(properties));
   XII_TEST_BOOL(properties.GetValue("Scene") == nullptr);
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Producer", "xiiRayPinContractSource");
-  leaf.AddPass("Consumer", "xiiRayPinContractConsumer");
+  leaf.AddPass("Producer", xiiRayPinContractSource().GetDynamicRTTI());
+  leaf.AddPass("Consumer", xiiRayPinContractConsumer().GetDynamicRTTI());
   XII_TEST_RESULT(leaf.Connect(0, "Scene", 1, "Scene"));
   leaf.m_Interface.PushBack({"Scene", false, leaf.m_Passes[0].m_Id, "Scene"});
   xiiGraphDefinition definition;

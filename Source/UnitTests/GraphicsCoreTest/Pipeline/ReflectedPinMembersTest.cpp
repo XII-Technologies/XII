@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
@@ -19,7 +21,6 @@
 #include <GraphicsCore/Pipeline/Passes/Temporal/TemporalAntiAliasingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 class xiiMemberPinSource : public xiiRenderPipelinePass
@@ -76,8 +77,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
 {
   // No GetPins implementation or parallel type table exists on either type.
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Source", "xiiMemberPinSource");
-  descriptor.AddPass("Sink", "xiiMemberPinSink");
+  descriptor.AddPass("Source", xiiMemberPinSource().GetDynamicRTTI());
+  descriptor.AddPass("Sink", xiiMemberPinSink().GetDynamicRTTI());
   XII_TEST_RESULT(descriptor.Connect(0, "Color", 1, "Color"));
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
@@ -202,8 +203,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionMemberPins)
   xiiRenderPipelineResourceDescriptor leaf;
   properties.Clear();
   properties.Insert("UseRayTracing", false);
-  leaf.AddPass("Visibility", "xiiAmbientOcclusionPass", properties);
-  leaf.AddPass("Filter", "xiiAmbientOcclusionTemporalPass");
+  leaf.AddPass("Visibility", xiiAmbientOcclusionPass().GetDynamicRTTI(), properties);
+  leaf.AddPass("Filter", xiiAmbientOcclusionTemporalPass().GetDynamicRTTI());
   XII_TEST_RESULT(leaf.Connect(0, "RawAO", 1, "RawAO"));
   for (xiiUInt32 index = 0; index < 2; ++index)
   {
@@ -313,8 +314,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_CREATE_SIMPLE_TEST(Pipeline, CompiledRootBoundaryBindings)
 {
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Forward", "xiiMemberPinForward");
-  descriptor.AddPass("Sink", "xiiMemberPinSink");
+  descriptor.AddPass("Forward", xiiMemberPinForward().GetDynamicRTTI());
+  descriptor.AddPass("Sink", xiiMemberPinSink().GetDynamicRTTI());
   descriptor.m_Interface.PushBack({"Color", true, descriptor.m_Passes[0].m_Id, "Input"});
   descriptor.m_Interface.PushBack({"Color", true, descriptor.m_Passes[1].m_Id, "Color"});
   descriptor.m_Interface.PushBack({"Result", false, descriptor.m_Passes[0].m_Id, "Output"});

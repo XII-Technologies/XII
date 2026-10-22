@@ -1,5 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -11,7 +15,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 class xiiExtractionTestPacket : public xiiRenderData
 {
@@ -91,24 +94,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExtractionDerivedModule, 1, xiiRTTINoAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_IMPLEMENT_WORLD_MODULE(xiiExtractionDerivedModule);
 
-class xiiExtractionDemandPass : public xiiRenderPipelinePass
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiExtractionDemandPass, xiiRenderPipelinePass);
 
-public:
-  xiiUInt32                                m_uiCategories = 0;
-  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return static_cast<xiiRenderExtractionCategory::Enum>(m_uiCategories); }
-  void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>&) const override {}
-  xiiResult                                Build(xiiRenderPipelinePassContext&) override { return XII_SUCCESS; }
-};
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExtractionDemandPass, 1, xiiRTTIDefaultAllocator<xiiExtractionDemandPass>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Categories", m_uiCategories),
-    } XII_END_PROPERTIES;
-  }
-XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST_GROUP(PipelineExtraction);
 XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
@@ -127,7 +113,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     xiiRenderPipelineResourceDescriptor shared;
     xiiVariantDictionary                geometryProperties;
     geometryProperties.Insert("Categories", static_cast<xiiUInt32>(xiiRenderExtractionCategory::Geometry));
-    shared.AddPass("Data", "xiiExtractionDemandPass", geometryProperties);
+    shared.AddPass("Data", xiiExtractionDemandPass().GetDynamicRTTI(), geometryProperties);
     xiiGraphDefinition definition;
     XII_TEST_RESULT(shared.MakeGraphDefinition(definition));
     xiiRenderPipelineResourceDescriptor composed;
@@ -164,7 +150,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
       xiiVariantDictionary properties;
       properties.Insert("Categories", static_cast<xiiUInt32>(categories[i]));
       xiiRenderPipelineResourceDescriptor pipeline;
-      pipeline.AddPass("Demand", "xiiExtractionDemandPass", properties);
+      pipeline.AddPass("Demand", xiiExtractionDemandPass().GetDynamicRTTI(), properties);
       xiiStringBuilder name;
       name.SetFormat("Extraction Demand {}", i);
       const auto resource = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(name, std::move(pipeline));

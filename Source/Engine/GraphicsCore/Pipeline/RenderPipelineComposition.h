@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 /// Authoring node for an independently authored reusable pipeline. The asset compiler replaces
@@ -29,9 +31,13 @@ public:
   bool                          m_bInput         = true;
   xiiUInt32                     m_uiResourceType = xiiRenderPipelinePin::Texture;
   xiiEnum<xiiGALResourceFormat> m_Format         = xiiGALResourceFormat::Unknown;
-  xiiString                     m_sDataType;
+  const xiiRTTI*                m_pDataType      = nullptr;
   void                          GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                     Build(xiiRenderPipelinePassContext&) override { return XII_FAILURE; }
+
+private:
+  xiiStringView GetDataTypeName() const;
+  void          SetDataTypeName(xiiStringView sTypeName);
 };
 
 /// Infer the external schema from configured reflected internal pass pins, including nested
