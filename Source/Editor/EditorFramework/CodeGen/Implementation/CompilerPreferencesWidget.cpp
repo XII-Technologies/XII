@@ -130,7 +130,7 @@ void xiiQtCompilerPreferencesWidget::on_compiler_preset_changed(int index)
   }
 }
 
-void xiiCompilerPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
+void xiiQtCompilerPreferencesWidget::PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
 {
   const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiCompilerPreferences>();
 

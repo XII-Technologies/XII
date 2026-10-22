@@ -74,7 +74,6 @@
 #include <ToolsFoundation/Document/PrefabUtils.h>
 #include <ads/DockManager.h>
 
-void xiiCompilerPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 void xiiCodeEditorPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 
 // clang-format off
@@ -175,7 +174,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiConeVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiConeVisualizerAdapter); });
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiCameraVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiCameraVisualizerAdapter); });
 
-    xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiCompilerPreferences_PropertyMetaStateEventHandler);
+    xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiQtCompilerPreferencesWidget::PropertyMetaStateEventHandler);
     xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiCodeEditorPreferences_PropertyMetaStateEventHandler);
   }
 
@@ -226,7 +225,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.UnregisterCreator(xiiGetStaticRTTI<xiiConeVisualizerAttribute>());
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.UnregisterCreator(xiiGetStaticRTTI<xiiCameraVisualizerAttribute>());
 
-    xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiCompilerPreferences_PropertyMetaStateEventHandler);
+    xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiQtCompilerPreferencesWidget::PropertyMetaStateEventHandler);
     xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiCodeEditorPreferences_PropertyMetaStateEventHandler);
   }
 
