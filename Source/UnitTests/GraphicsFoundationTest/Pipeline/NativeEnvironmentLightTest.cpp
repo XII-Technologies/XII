@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
@@ -16,8 +18,8 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 
 /// Test readback root with an explicit uniform-buffer contract.
@@ -72,7 +74,7 @@ XII_CREATE_SIMPLE_TEST(NativeEnvironmentLight, RepeatedAuthoredEmittersRetireBef
     root.m_Interface.PushBack({i ? "Second" : "First", false, root.m_Passes[retain].m_Id, "Output"});
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Independent environment snapshots", std::move(root));
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   xiiRenderPipelineInstance instance;
   if (!XII_TEST_RESULT(context.Initialize("Independent illumination")) || !XII_TEST_RESULT(instance.Synchronize(resource)))
     return;

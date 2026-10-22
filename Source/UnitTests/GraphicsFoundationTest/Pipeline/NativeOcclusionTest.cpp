@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -10,8 +12,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
@@ -88,7 +90,7 @@ static void RunConservativeOcclusion(bool meshlets)
   const auto                full       = MakeOcclusionGraph(true, meshlets, asset, *loaded->GetAuthoring());
   const auto                incomplete = MakeOcclusionGraph(false, meshlets, asset, *loaded->GetAuthoring());
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(pipelines[i].Synchronize(i ? incomplete : full)) || !XII_TEST_RESULT(contexts[i].Initialize("Native occlusion regression")))
       return;
@@ -216,7 +218,7 @@ static void RunConservativeOcclusion(bool meshlets)
         builder.ExportBuffer(builder.ReadBuffer(visible[i], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(counts[i], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     }
-    XII_TEST_BOOL(visible[0].m_Id != visible[1].m_Id && counts[0].m_Id != counts[1].m_Id);
+    XII_TEST_BOOL(visible[0].GetResourceId() != visible[1].GetResourceId() && counts[0].GetResourceId() != counts[1].GetResourceId());
     graph.EndSetup();
     xiiStringBuilder error;
     if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))

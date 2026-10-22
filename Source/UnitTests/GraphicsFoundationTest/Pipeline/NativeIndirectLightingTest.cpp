@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
@@ -11,7 +13,7 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 class xiiIndirectTestCameraLut : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiIndirectTestCameraLut, xiiRenderPipelinePass);
@@ -129,7 +131,7 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       diffuseNode = node.m_Id;
   if (!XII_TEST_BOOL(diffuseInstance.IsValid() && specularInstance.IsValid() && diffuseNode.IsValid()))
     return;
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   for (auto& context : contexts)
     if (!XII_TEST_RESULT(context.Initialize("Explicit indirect surface view")))

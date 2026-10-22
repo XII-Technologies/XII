@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -15,7 +17,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(RenderingBenchmarks);
 XII_CREATE_SIMPLE_TEST(RenderingBenchmarks, WorldExtraction)
@@ -98,10 +100,8 @@ XII_CREATE_SIMPLE_TEST(RenderingBenchmarks, WorldExtraction)
   report("4096 unchanged candidates, CPU packing", times);
   extracted.Clear(); // Borrowed packet pointers remain valid until the fixture's frame allocator reset.
 
-  xiiRenderGraphContext           contexts[2];
-  xiiRenderGraphTimestampProfiler profiler;
-  profiler.Initialize(environment.GetDeviceShared());
-  XII_SCOPE_EXIT(profiler.Shutdown());
+  xiiRenderGraphTestContext       contexts[2];
+  xiiRenderGraphTimestampProfiler profiler(environment.GetDeviceShared());
   for (auto& context : contexts)
     XII_TEST_RESULT(context.Initialize("Measured two-camera upload"));
   auto execute = [&](xiiUInt32 camera, const xiiRenderGraphFrame& frame) {

@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -20,8 +22,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <bit>
 
@@ -365,7 +367,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
     return;
   XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet() && compiled->GetExtractionRequirements().IsNoFlagSet());
   xiiRenderPipelineInstance instances[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     if (!XII_TEST_RESULT(instances[i].Initialize(compiled)) || !XII_TEST_RESULT(contexts[i].Initialize("Native culling view")))
@@ -408,7 +410,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
             return;
           const bool      coarse = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
           const xiiUInt32 count  = phase == 5 ? 0 : selected ? 1 :
-             phase >= 6                                      ? 126 :
+            phase >= 6                                       ? 126 :
                                                                64;
           XII_TEST_INT(arguments.x, count == 0 ? 0 : coarse ? 2 :
                                                               3);
@@ -424,7 +426,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
             return;
           const bool      coarse   = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
           const xiiUInt32 visible  = phase == 5 ? 0 : selected ? 1 :
-             phase >= 6                                        ? 126 :
+            phase >= 6                                         ? 126 :
                                                                  64;
           xiiUInt32       expected = visible * (coarse ? 63 : 127);
           if (phase == 2)
@@ -660,9 +662,9 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
     XII_TEST_RESULT(root.Connect(i, "LodHistory", sink, "Lod"));
   }
-  const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(materialTargets ? "Authored independent material instances" : depthOnly ? "Authored independent depth instances" :
-                                                                                                                                                                "Authored world visibility instances",
-                                                                                      std::move(root));
+  const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(materialTargets ? "Authored independent material instances" : depthOnly ? "Authored independent depth instances" :
+                                                                                                                                                                 "Authored world visibility instances",
+                                                                                       std::move(root));
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
   xiiMeshResourceDescriptor meshDescription;

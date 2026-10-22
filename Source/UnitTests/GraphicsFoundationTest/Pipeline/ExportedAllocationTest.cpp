@@ -7,6 +7,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(RenderGraphAllocations);
 
@@ -21,7 +22,7 @@ XII_CREATE_SIMPLE_TEST(RenderGraphAllocations, ExportedBufferOutlivesGraphUses)
 
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  xiiRenderGraphContext context;
+  xiiRenderGraphTestContext context;
   XII_TEST_RESULT(context.Initialize("Export lifetime"));
 
   xiiRenderGraphFrame frame;

@@ -902,7 +902,7 @@ private:
     const auto  table    = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("VirtualPageTable", false))->m_hBuffer;
     const auto* metadata = m_ShadowTables.GetInterfaceBinding(compiled->FindInterface("Residency", false));
     residency            = metadata ? metadata->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>() : xiiSharedPtr<const xiiVirtualShadowResidencySnapshot>();
-    if (!residency || residency->GetSetupSerial() != graph.GetSetupSerial() || residency->m_Bindings.m_hPhysicalAtlas.m_Id != atlas.m_Id || residency->m_Bindings.m_hPhysicalPageTable.m_Id != physical.m_Id || residency->m_Bindings.m_hVirtualPageTable.m_Id != table.m_Id)
+    if (!residency || residency->GetSetupSerial() != graph.GetSetupSerial() || residency->m_Bindings.m_hPhysicalAtlas.GetResourceId() != atlas.GetResourceId() || residency->m_Bindings.m_hPhysicalPageTable.GetResourceId() != physical.GetResourceId() || residency->m_Bindings.m_hVirtualPageTable.GetResourceId() != table.GetResourceId())
     {
       xiiLog::Error("Shadow-table resource '{}' must expose matching typed Residency and explicit GPU outputs.", m_hShadowTablesPipeline.GetResourceID());
       return XII_FAILURE;

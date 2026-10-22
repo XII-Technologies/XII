@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -14,8 +16,8 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <Shaders/Pipeline/Passes/Geometry/DirectionalMeshConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
@@ -154,7 +156,7 @@ XII_CREATE_SIMPLE_TEST(NativeDirectionalMesh, RepeatedAuthoredRasterAndRetainedC
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Repeated authored directional mesh", std::move(root));
   xiiRenderPipelineInstance pipeline;
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   if (!XII_TEST_RESULT(pipeline.Synchronize(resource)) || !XII_TEST_RESULT(context.Initialize("Directional mesh readback")))
     return;
   for (xiiUInt32 phase = 0; phase < 4; ++phase)

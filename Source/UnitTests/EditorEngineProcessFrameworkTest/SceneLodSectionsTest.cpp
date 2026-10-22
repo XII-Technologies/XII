@@ -27,6 +27,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
@@ -152,7 +153,7 @@ static void TestLodSections(bool enableMeshShaders)
   XII_TEST_RESULT(renderer->UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const>(), 0));
   const auto& scene = *renderer->GetGpuInstanceData();
   view->SetRenderEnabled(false);
-  xiiRenderGraphContext graphContext;
+  xiiRenderGraphTestContext graphContext;
   if (!XII_TEST_RESULT(graphContext.Initialize("LOD section query")))
     return;
   xiiTestNativeVisibility visibilityPipeline;

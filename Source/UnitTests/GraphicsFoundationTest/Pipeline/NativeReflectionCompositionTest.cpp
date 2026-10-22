@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -7,7 +9,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeReflectionComposition);
@@ -23,7 +25,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
   xiiResourceLock<xiiRenderPipelineResource> reflection(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), selection(selectionResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(reflection.IsValid() && selection.IsValid() && reflection->GetAuthoring() && selection->GetAuthoring()))
     return;
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   for (auto& context : contexts)
     if (!XII_TEST_RESULT(context.Initialize("Independent reflection replacement")))

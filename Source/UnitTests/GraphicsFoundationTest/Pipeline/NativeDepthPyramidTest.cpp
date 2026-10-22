@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -9,7 +11,7 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
@@ -216,7 +218,7 @@ XII_CREATE_SIMPLE_TEST(NativeDepthPyramid, AuthoredInterleavedHistory)
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Native depth history instances", std::move(root));
   xiiRenderPipelineInstance instances[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(instances[i].Synchronize(resource)) || !XII_TEST_RESULT(contexts[i].Initialize("Interleaved native depth")))
       return;

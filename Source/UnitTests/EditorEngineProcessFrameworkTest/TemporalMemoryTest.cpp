@@ -112,8 +112,7 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, TAAResizeReleasesOldHistory)
   xiiRenderGraphBlackboard    blackboard;
   xiiVariantDictionary        parameters;
   xiiSharedPtr<xiiGALTexture> original;
-  xiiRenderGraphResourceCache cache;
-  cache.Initialize(environment.GetDeviceShared());
+  xiiRenderGraphResourceCache cache(environment.GetDeviceShared());
   for (xiiUInt32 iteration = 0; iteration < 64; ++iteration)
   {
     xiiRenderGraphFrame frame;

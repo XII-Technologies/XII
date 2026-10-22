@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -10,8 +12,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
@@ -100,7 +102,7 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Native authored geometry feedback", std::move(root));
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 view = 0; view < 2; ++view)
     if (!XII_TEST_RESULT(pipelines[view].Synchronize(resource)) || !XII_TEST_RESULT(contexts[view].Initialize("Native geometry streaming")))
       return;
@@ -213,7 +215,7 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
       requests[i] = pipeline.GetInterfaceBinding(compiled->FindInterface(i ? "Camera/Requests" : "Shadow/Requests", false))->m_hBuffer;
       graph.AddPass<xiiUInt32>(i ? "Export camera demand" : "Export shadow demand", xiiGALCommandQueueFlags::Graphics, [&, i](auto&, xiiRenderGraphBuilder& builder) { builder.ExportBuffer(builder.ReadBuffer(requests[i], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     }
-    XII_TEST_BOOL(requests[0].m_Id != requests[1].m_Id);
+    XII_TEST_BOOL(requests[0].GetResourceId() != requests[1].GetResourceId());
     graph.EndSetup();
     xiiStringBuilder error;
     if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()))
@@ -235,9 +237,9 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
       if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(requests[i]).Borrow(), 0, header))
         return;
       XII_TEST_INT(header.m_uiKey, phase == 1 ? 0 : phase == 3 ? 61 :
-                                                                                 60);
+                                                                 60);
       XII_TEST_INT(header.m_uiDesiredLod, phase == 1 ? 0 : i ? 4 :
-                                                                               2);
+                                                               2);
       XII_TEST_BOOL((header.m_uiPriority != 0) == (phase != 1 && i == 0));
       xiiUInt32 unique = 0;
       for (xiiUInt32 entry = 1; entry <= (i ? 8U : 2U); ++entry)

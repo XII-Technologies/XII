@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -22,8 +24,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
@@ -119,7 +121,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     else
     {
       xiiRayTracingFrameResources resources[2];
-      xiiRenderGraphContext       context;
+      xiiRenderGraphTestContext   context;
       XII_TEST_RESULT(context.Initialize("Independent extracted TLAS"));
       xiiRenderGraphFrame gpuFrame;
       XII_TEST_RESULT(gpuFrame.Begin());
@@ -191,7 +193,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     for (auto& instance : uploadInstances)
       if (!XII_TEST_RESULT(instance.Initialize(compiledUpload)))
         return;
-    xiiRenderGraphContext graphs[2];
+    xiiRenderGraphTestContext graphs[2];
     XII_TEST_RESULT(graphs[0].Initialize("World upload camera A"));
     XII_TEST_RESULT(graphs[1].Initialize("World upload camera B"));
     xiiUInt32 viewTokens[2] = {0, 0};
@@ -550,7 +552,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_RESULT(module->UpdateGpuInstances(extracted, 1));
     XII_TEST_INT(module->GetGpuInstanceData()->GetInstanceCount(), 1);
     XII_TEST_BOOL(module->GetGpuInstanceData()->GetInstances()[0].m_uiObjectId != identity);
-    xiiRenderGraphContext context;
+    xiiRenderGraphTestContext context;
     XII_TEST_RESULT(context.Initialize("World upload after renderer restart"));
     xiiRenderGraphFrame gpuFrame;
     XII_TEST_RESULT(gpuFrame.Begin());

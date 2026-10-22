@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Math/Float16.h>
@@ -24,7 +26,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 #include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
@@ -704,7 +706,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentIrradianceGathers)
     XII_TEST_INT(outputs, 4);
   }
   // Compile and record a final independent graph after both gather instances and their view retire.
-  xiiRenderGraphContext     queued;
+  xiiRenderGraphTestContext queued;
   xiiRenderPipelineInstance detached;
   if (!XII_TEST_RESULT(queued.Initialize("Retained irradiance gathers")) || !XII_TEST_RESULT(detached.Synchronize(resource)))
     return;
@@ -823,7 +825,7 @@ XII_CREATE_SIMPLE_TEST(NativeRadianceComposition, IndependentWeightsFogRangeAndR
     xiiStringBuilder resourceName;
     resourceName.SetFormat("Radiance composition phase {}", phase);
     const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(resourceName, std::move(root));
-    xiiRenderGraphContext     context;
+    xiiRenderGraphTestContext context;
     xiiRenderPipelineInstance instance;
     if (!XII_TEST_RESULT(context.Initialize("Standalone radiance composition")) || !XII_TEST_RESULT(instance.Synchronize(resource)))
       return;

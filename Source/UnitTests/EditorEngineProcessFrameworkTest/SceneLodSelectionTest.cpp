@@ -25,6 +25,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 
@@ -86,7 +87,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   XII_TEST_RESULT(renderer->UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const>(), 0));
   const auto& sceneContext = *renderer->GetGpuInstanceData();
   view->SetRenderEnabled(false);
-  xiiRenderGraphContext graphContext;
+  xiiRenderGraphTestContext graphContext;
   if (!XII_TEST_RESULT(graphContext.Initialize("Native LOD selection")))
     return;
   xiiTestNativeVisibility visibilityPipeline;

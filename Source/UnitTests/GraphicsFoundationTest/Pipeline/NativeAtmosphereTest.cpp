@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -13,8 +15,8 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 // Test-only sink preserving the uniform-buffer contract of atmosphere parameters.
@@ -281,7 +283,7 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   for (const xiiStringView pin : {"Transmittance", "MultiScatter"})
     standalone.m_Interface.PushBack({pin, false, standalone.m_Passes[occurrence].m_Id, pin});
   const auto                standaloneResource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Retired authored atmosphere lookup", std::move(standalone));
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   xiiRenderPipelineInstance instance;
   if (!XII_TEST_RESULT(context.Initialize("Retired atmosphere lookup")) || !XII_TEST_RESULT(instance.Synchronize(standaloneResource)))
     return;

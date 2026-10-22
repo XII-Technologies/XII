@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -11,8 +13,8 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
 
@@ -49,7 +51,7 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
   XII_LOCK(world.GetWriteMarker());
   auto*                           module = world.GetOrCreateModule<xiiRenderWorldModule>();
   xiiView*                        views[2];
-  xiiRenderGraphContext           contexts[2];
+  xiiRenderGraphTestContext       contexts[2];
   xiiRenderPipelineInstance       targets[2], outputs[2], counters[2];
   xiiRenderPipelineResourceHandle targetRoots[2], outputRoots[2], counterRoots[2];
   xiiSharedPtr<xiiGALTexture>     textures[2];

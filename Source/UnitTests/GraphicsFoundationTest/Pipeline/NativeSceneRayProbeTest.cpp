@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -17,8 +19,8 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/RayTracing/SceneRayProbeConstants.h>
 XII_DEFINE_AS_POD_TYPE(xiiSceneRayProbeResult);
 XII_CREATE_SIMPLE_TEST_GROUP(NativeSceneRayProbe);
@@ -94,7 +96,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     XII_LOCK(world->GetWriteMarker());
     createObject();
   }
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   xiiRenderPipelineInstance pipeline;
   if (!XII_TEST_RESULT(context.Initialize("Repeated owned ray probes")))
     return;

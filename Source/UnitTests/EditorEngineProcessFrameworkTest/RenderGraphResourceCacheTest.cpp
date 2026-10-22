@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(RenderGraphResources);
@@ -20,7 +21,7 @@ XII_CREATE_SIMPLE_TEST(RenderGraphResources, ChangingResolutionRetention)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  xiiRenderGraphContext contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (auto& context : contexts)
     if (!XII_TEST_RESULT(context.Initialize("Changing viewport allocation")))
       return;
@@ -76,8 +77,7 @@ XII_CREATE_SIMPLE_TEST(RenderGraphResources, CompletionBeforeReuseAndEviction)
   if (!XII_TEST_RESULT(environment.Initialize()))
     return;
   XII_SCOPE_EXIT(environment.Shutdown());
-  xiiRenderGraphResourceCache cache;
-  cache.Initialize(environment.GetDeviceShared());
+  xiiRenderGraphResourceCache      cache(environment.GetDeviceShared());
   xiiGALTextureCreationDescription description;
   description.m_Type      = xiiGALResourceDimension::Texture2D;
   description.m_Size      = {32, 32};
@@ -121,59 +121,82 @@ XII_CREATE_SIMPLE_TEST(RenderGraphResources, CompletionBeforeReuseAndEviction)
   cache.EndFrame();
 }
 
-XII_CREATE_SIMPLE_TEST(RenderGraphResources, AllocationFailureStopsExecution)
+XII_CREATE_SIMPLE_TEST(RenderGraphResources, BuildFailureStopsExecution)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
     return;
-  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); environment.Shutdown());
-  // An uninitialized cache returns null deterministically, exercising the same executor branch
-  // as device allocation failure without exhausting the test machine's physical GPU memory.
-  xiiRenderGraphResourceCache cache;
-  for (bool texture : {false, true})
-  {
-    xiiRenderGraph           graph("Allocation failure");
-    xiiRenderGraphBlackboard blackboard;
-    bool                     executed = false;
-    graph.BeginSetup(1);
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  bool       failBuild = true;
+  bool       executed  = false;
+  const auto handle    = xiiRenderGraphManager::CreateGraph("Build failure", [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
     struct Data
     {
-      xiiRenderGraphTextureHandle m_Texture;
-      xiiRenderGraphBufferHandle  m_Buffer;
+      XII_DECLARE_POD_TYPE();
     };
-    graph.AddPass<Data>("Must not execute", xiiGALCommandQueueFlags::Graphics, [texture](Data& data, xiiRenderGraphBuilder& builder) {
-      if (texture)
-      {
-        xiiGALTextureCreationDescription description;
-        description.m_Type = xiiGALResourceDimension::Texture2D;
-        description.m_Size = {32, 32};
-        description.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
-        description.m_BindFlags = xiiGALBindFlags::RenderTarget;
-        data.m_Texture = builder.WriteTexture("Unavailable texture", description, xiiGALResourceStateFlags::CopyDestination);
-      }
-      else
-      {
-        xiiGALBufferCreationDescription description;
-        description.m_uiSize = 32;
-        description.m_BindFlags = xiiGALBindFlags::ShaderResource;
-        description.m_Mode = xiiGALBufferMode::Raw;
-        data.m_Buffer = builder.WriteBuffer("Unavailable buffer", description, xiiGALResourceStateFlags::CopyDestination);
-      } }, [&](const Data&, xiiRenderGraphPassContext&) { executed = true; }, true);
-    graph.EndSetup();
-    if (!XII_TEST_RESULT(graph.Compile()))
-      return;
-    xiiStringBuilder error;
-    XII_TEST_BOOL(graph.Execute(environment.GetDevice(), nullptr, &blackboard, &cache, nullptr, &error).Failed());
-    XII_TEST_BOOL(error.FindSubString(texture ? "Unavailable texture" : "Unavailable buffer") != nullptr);
-    XII_TEST_BOOL(!executed);
-    XII_TEST_INT(cache.GetActiveResourceCount(), 0);
-    // A subsequent successful allocation and execution must still be possible.
-    cache.Initialize(environment.GetDeviceShared());
-    cache.BeginFrame(1, 0);
-    XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &blackboard, &cache, nullptr, &error));
-    XII_TEST_BOOL(executed);
-    cache.EndFrame();
-    environment.GetDevice()->WaitIdle();
-    cache.Shutdown();
-  }
+    graph.AddPass<Data>("Must not execute after failed build", xiiGALCommandQueueFlags::Graphics, [](Data&, xiiRenderGraphBuilder&) {}, [&](const Data&, xiiRenderGraphPassContext&) { executed = true; }, true);
+    return failBuild ? XII_FAILURE : XII_SUCCESS;
+  });
+  if (!XII_TEST_BOOL(!handle.IsInvalidated()))
+    return;
+  XII_SCOPE_EXIT(xiiRenderGraphManager::DestroyGraph(handle).AssertSuccess());
+
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(frame, handle, nullptr).Failed());
+  XII_TEST_BOOL(!executed);
+  XII_TEST_BOOL(!xiiRenderGraphManager::GetGraph(handle)->IsCompiled());
+  XII_TEST_BOOL(xiiRenderGraphManager::GetGraph(handle)->GetCompiledPasses().IsEmpty());
+  failBuild = false;
+  XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, handle, nullptr));
+  XII_TEST_BOOL(executed);
+}
+
+XII_CREATE_SIMPLE_TEST(RenderGraphResources, HandleRetirementDuringFrame)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  bool                                       destroyed = false;
+  const xiiRenderGraphManager::BuildDelegate build     = [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
+    struct Data
+    {
+      bool* m_pDestroyed = nullptr;
+      ~Data() { *m_pDestroyed = true; }
+    };
+    graph.AddPass<Data>("Retained pass data", xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder&) { data.m_pDestroyed = &destroyed; }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
+    return XII_SUCCESS;
+  };
+  const auto original = xiiRenderGraphManager::CreateGraph("Retired graph", build);
+  if (!XII_TEST_BOOL(!original.IsInvalidated()))
+    return;
+  XII_SCOPE_EXIT(if (xiiRenderGraphManager::GetGraph(original) != nullptr) xiiRenderGraphManager::DestroyGraph(original).AssertSuccess());
+
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, original, nullptr));
+  XII_TEST_RESULT(xiiRenderGraphManager::DestroyGraph(original));
+  XII_TEST_BOOL(xiiRenderGraphManager::GetGraph(original) == nullptr);
+  XII_TEST_BOOL(!destroyed);
+  XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(frame, original, nullptr).Failed());
+
+  const auto replacement = xiiRenderGraphManager::CreateGraph("Retired graph", build);
+  if (!XII_TEST_BOOL(!replacement.IsInvalidated()))
+    return;
+  XII_SCOPE_EXIT(xiiRenderGraphManager::DestroyGraph(replacement).AssertSuccess());
+  XII_TEST_BOOL(original != replacement);
+  XII_TEST_BOOL(xiiRenderGraphManager::DestroyGraph(original).Failed());
+  XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, replacement, nullptr));
+  frame.End();
+  XII_TEST_BOOL(destroyed);
+  XII_TEST_BOOL(xiiRenderGraphManager::GetGraph(replacement) != nullptr);
 }

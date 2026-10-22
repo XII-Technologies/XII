@@ -88,6 +88,7 @@ xiiView::xiiView(xiiWorld* pWorld) :
 xiiResult xiiView::BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView)
 {
   XII_ASSERT_DEV(pView == this, "A view must execute its own render graph.");
+  XII_IGNORE_UNUSED(pView);
   blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(graph.GetFrameIndex()));
 
   if (m_RenderGraphBuilder.IsValid())

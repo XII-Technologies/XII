@@ -18,12 +18,11 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
     return;
-  auto*                       device = environment.GetDevice();
-  xiiRenderGraphResourceCache cache;
-  cache.Initialize(environment.GetDeviceShared());
-  xiiRenderGraphTimestampProfiler profiler;
-  profiler.Initialize(environment.GetDeviceShared());
-  XII_SCOPE_EXIT(device->WaitIdle(); profiler.Shutdown(); cache.Shutdown(); environment.Shutdown());
+  auto* device = environment.GetDevice();
+  XII_SCOPE_EXIT(environment.Shutdown());
+  xiiRenderGraphResourceCache     cache(environment.GetDeviceShared());
+  xiiRenderGraphTimestampProfiler profiler(environment.GetDeviceShared());
+  XII_SCOPE_EXIT(device->WaitIdle());
   xiiRenderGraph                                                          graphs[] = {xiiRenderGraph("Inspection"), xiiRenderGraph("Inspection")};
   xiiRenderGraphBlackboard                                                blackboard;
   xiiUInt32                                                               eventCount = 0;

@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
@@ -19,8 +21,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 namespace
 {
@@ -132,7 +134,7 @@ XII_CREATE_SIMPLE_TEST(NativeSparseVoxel, IndependentResidencyPagesBudgetsRefres
     }
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Independent sparse clipmap instances", std::move(root));
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   xiiDynamicArray<xiiVec4>  expected[2][2];
   for (xiiUInt32 v = 0; v < 2; ++v)

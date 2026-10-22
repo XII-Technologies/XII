@@ -59,7 +59,12 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderGraphHandleIdentity)
   XII_TEST_BOOL(first.GetTextureDescription(current.m_hTexture) != nullptr);
   XII_TEST_BOOL(first.GetBufferDescription(current.m_hBuffer) != nullptr);
 
-  xiiHashTable<xiiRenderGraphTextureHandle, xiiUInt32> textures;
+  struct TextureHandleHasher
+  {
+    static xiiUInt32 Hash(const xiiRenderGraphTextureHandle& handle) { return handle.CalculateHash(); }
+    static bool      Equal(const xiiRenderGraphTextureHandle& first, const xiiRenderGraphTextureHandle& second) { return first == second; }
+  };
+  xiiHashTable<xiiRenderGraphTextureHandle, xiiUInt32, TextureHandleHasher> textures;
   textures.Insert(original.m_hTexture, 1);
   textures.Insert(current.m_hTexture, 2);
   XII_TEST_INT(textures.GetCount(), 2);

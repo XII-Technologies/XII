@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
@@ -25,8 +27,8 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 namespace
 {
   class NativeLightProfileLoader : public xiiResourceLoaderFromMemory
@@ -148,7 +150,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
     handles[index]       = T::CreateComponent(object, component);
     component->SetCastShadows(true);
     component->SetIntensityUnit(index == 0 ? xiiPhotometricUnit::Lux : index <= 2 ? xiiPhotometricUnit::Candela :
-                                                                                             xiiPhotometricUnit::Nit);
+                                                                                    xiiPhotometricUnit::Nit);
     component->SetIntensity(100);
     return component;
   };
@@ -394,8 +396,8 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, WorldRetirementAndRecreationBeforeReco
     XII_TEST_RESULT(definition.Connect(source, name, retain, "Input"));
     definition.m_Interface.PushBack({name, false, definition.m_Passes[retain].m_Id, "Output"});
   }
-  const auto            resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("World light owner retirement", std::move(definition));
-  xiiRenderGraphContext context;
+  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("World light owner retirement", std::move(definition));
+  xiiRenderGraphTestContext context;
   if (!XII_TEST_RESULT(context.Initialize("Retained world light uploads")))
     return;
   xiiUInt32 retiredIdentity = 0;

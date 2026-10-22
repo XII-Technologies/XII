@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
@@ -21,7 +23,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
 #include <bit>
 
@@ -225,7 +227,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   xiiRenderPipelineInstance rayScenes;
   if (!XII_TEST_RESULT(rayScenes.Initialize(rayCompiled)))
     return;
-  xiiRenderGraphContext context;
+  xiiRenderGraphTestContext context;
   XII_TEST_RESULT(context.Initialize("Skinned and morphed ray trace regression"));
   xiiUInt32 ids[2] = {};
   struct Capture

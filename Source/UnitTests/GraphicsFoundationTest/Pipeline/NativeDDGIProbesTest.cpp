@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
@@ -21,8 +23,8 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 
 class xiiDDGIProbeTestRetain : public xiiRenderPipelinePass
@@ -178,7 +180,7 @@ XII_CREATE_SIMPLE_TEST(NativeDDGIProbes, RepeatedViewsBudgetsHistoryReloadAndQue
     }
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Repeated independent environment probes", std::move(root));
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   xiiDynamicArray<xiiVec4>  expectedIrradiance[2][2], expectedDistance[2][2];
   for (xiiUInt32 v = 0; v < 2; ++v)

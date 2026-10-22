@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -10,8 +12,8 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeShadowTables);
 XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetirement)
@@ -50,7 +52,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
   XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(compiled->GetRuntimeFeatures() == xiiRenderPipelineFeature::VirtualShadows);
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 v = 0; v < 2; ++v)
     if (!XII_TEST_RESULT(pipelines[v].Initialize(compiled)) || !XII_TEST_RESULT(contexts[v].Initialize("Native shadow table view")))
       return;
@@ -260,7 +262,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenPageMappingsRetireBeforePhysica
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetPipeline()))
     return;
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(pipelines[i].Initialize(loaded->GetPipeline())) || !XII_TEST_RESULT(contexts[i].Initialize("Frozen page lifetime view")))
       return;

@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -9,8 +11,8 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 XII_DEFINE_AS_POD_TYPE(xiiGpuClusterBounds);
 namespace
 {
@@ -138,7 +140,7 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, ExplicitProjectionAssignmentOverflow
       root.m_Interface.PushBack({xiiStringBuilder(i ? "B" : "A", pin), false, root.m_Passes[node].m_Id, pin});
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Repeated authored cluster lists", std::move(root));
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   for (xiiUInt32 view = 0; view < 2; ++view)
     if (!XII_TEST_RESULT(contexts[view].Initialize("Native clustered lighting")) || !XII_TEST_RESULT(instances[view].Synchronize(resource)))
@@ -325,7 +327,7 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, LargeListDispatchAndPrivateInitializ
   for (const xiiStringView name : {"LightGrid", "LightIndices", "Overflow"})
     descriptor.m_Interface.PushBack({name, false, descriptor.m_Passes[clear].m_Id, name});
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Large explicit cluster initialization", std::move(descriptor));
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   xiiRenderPipelineInstance instance;
   if (!XII_TEST_RESULT(context.Initialize("Large cluster dispatch")) || !XII_TEST_RESULT(instance.Synchronize(resource)))
     return;

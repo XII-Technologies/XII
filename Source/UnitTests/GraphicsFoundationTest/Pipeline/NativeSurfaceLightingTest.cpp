@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
@@ -20,8 +22,8 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 class xiiNativeSurfaceInputs : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiNativeSurfaceInputs, xiiRenderPipelinePass);
@@ -307,7 +309,7 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
     }
   }
   // Queued recording retains the independent evaluator resources after instances and views retire.
-  xiiRenderGraphContext     queued;
+  xiiRenderGraphTestContext queued;
   xiiRenderPipelineInstance detached;
   if (!XII_TEST_RESULT(queued.Initialize("Retired native surface recording")) || !XII_TEST_RESULT(detached.Synchronize(resource)))
     return;

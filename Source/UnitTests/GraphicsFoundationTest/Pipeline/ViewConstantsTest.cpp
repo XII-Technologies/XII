@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -11,7 +13,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, ViewConstantSnapshots)
 {
@@ -47,8 +48,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ViewConstantSnapshots)
     return;
   xiiRenderGraph              graph("Independent camera constants");
   xiiRenderGraphBlackboard    blackboard;
-  xiiRenderGraphResourceCache cache;
-  cache.Initialize(environment.GetDeviceShared());
+  xiiRenderGraphResourceCache cache(environment.GetDeviceShared());
   cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
   XII_SCOPE_EXIT(cache.EndFrame());
   graph.BeginSetup(frame.GetFrameIndex());

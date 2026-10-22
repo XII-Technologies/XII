@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Foundation/Math/Float16.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
@@ -24,8 +26,8 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeScenePipeline);
@@ -40,7 +42,7 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposur
   const auto                  resource = xiiLoadPipelineLibraryResource("HdrDisplay");
   xiiWorldDescription         worldDescription("Display recording owners");
   xiiUniquePtr<xiiWorld>      world = XII_DEFAULT_NEW(xiiWorld, worldDescription);
-  xiiRenderGraphContext       contexts[2];
+  xiiRenderGraphTestContext   contexts[2];
   xiiRenderPipelineInstance   instances[2];
   xiiCamera                   cameras[2];
   xiiView*                    views[2];

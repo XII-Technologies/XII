@@ -21,6 +21,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 
 static void RunSceneLodReload(bool skinned)
@@ -149,7 +150,7 @@ static void RunSceneLodReload(bool skinned)
 
   // Upload and read the actual geometry table: an authored empty LOD must not borrow
   // the following LOD's meshlets through the source API's zero-means-to-end convention.
-  xiiRenderGraphContext uploadContext;
+  xiiRenderGraphTestContext uploadContext;
   if (!XII_TEST_RESULT(uploadContext.Initialize("Empty LOD upload")))
     return;
   auto& graph = uploadContext.GetGraph();

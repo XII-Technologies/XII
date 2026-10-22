@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -11,7 +13,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 namespace
 {
@@ -152,7 +154,7 @@ static void TestReusableShadowRegions(bool meshShaders)
   root.m_Interface.PushBack({"Atlas", false, root.m_Passes[previous].m_Id, "ShadowDepth"});
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(meshShaders ? "Native mesh shadow atlas regions" : "Native vertex-pull shadow atlas regions", std::move(root));
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(pipelines[i].Synchronize(resource)) || !XII_TEST_RESULT(contexts[i].Initialize("Native atlas")))
       return;

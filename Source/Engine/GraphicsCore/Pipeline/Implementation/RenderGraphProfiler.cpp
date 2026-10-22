@@ -178,6 +178,7 @@ void xiiRenderGraphTimestampProfiler::OnPassEnd(xiiGALCommandList& commandList, 
 
 void xiiRenderGraphTimestampProfiler::OnFrameEnd(xiiUInt64 uiFrameIndex)
 {
+  XII_IGNORE_UNUSED(uiFrameIndex);
   XII_ASSERT_DEV(m_uiRecordingFrameIndex == uiFrameIndex, "Profiler frame must match the recorded graph.");
   // Keep this slot open for the remaining graphs in the same GPU frame.
 }
