@@ -38,10 +38,15 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
   {
     xiiCreateTexturePass create;
     xiiVariantDictionary properties;
-    properties.Insert("Format", static_cast<xiiInt64>(xiiGALResourceFormat::D32Float));
+    create.m_OutputTexture.SetFormat(xiiGALResourceFormat::D32Float);
+    XII_TEST_RESULT(create.GetProperties(properties));
     XII_TEST_BOOL(create.Configure(properties).Failed());
     properties.Clear();
-    properties.Insert("Width", 65537U);
+    create.m_OutputTexture.SetFormat(xiiGALResourceFormat::RGBA16Float);
+    auto requirements      = create.m_OutputTexture.GetRequirements();
+    requirements.m_uiWidth = 65537U;
+    create.m_OutputTexture.SetRequirements(requirements);
+    XII_TEST_RESULT(create.GetProperties(properties));
     XII_TEST_BOOL(create.Configure(properties).Failed());
 
     xiiClearColorPass clear;
@@ -60,6 +65,15 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
       !XII_TEST_RESULT(descriptor.Connect(uiClear, "Texture", uiPresent, "GradedColor")))
     return;
 
+  auto                 fixedDescriptor = descriptor;
+  xiiCreateTexturePass fixedTexture;
+  fixedTexture.m_OutputTexture.SetFormat(xiiGALResourceFormat::RGBA8UNormalized);
+  auto fixedRequirements       = fixedTexture.m_OutputTexture.GetRequirements();
+  fixedRequirements.m_uiWidth  = 8;
+  fixedRequirements.m_uiHeight = 12;
+  fixedTexture.m_OutputTexture.SetRequirements(fixedRequirements);
+  XII_TEST_RESULT(fixedTexture.GetProperties(fixedDescriptor.m_Passes[uiCreate].m_Properties));
+  const auto hFixed                   = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Explicit texture pin pipeline", std::move(fixedDescriptor));
   const auto hFallback                = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Clear color pipeline test fallback", std::move(descriptor));
   const auto hPreviousLoadingFallback = xiiResourceManager::GetResourceTypeLoadingFallback<xiiRenderPipelineResource>();
   const auto hPreviousMissingFallback = xiiResourceManager::GetResourceTypeMissingFallback<xiiRenderPipelineResource>();
@@ -94,8 +108,12 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
   pView->SetCamera(&camera);
   pView->SetRenderPipelineResource(hMissing);
 
-  for (const xiiSizeU32 size : {xiiSizeU32(16, 24), xiiSizeU32(32, 16)})
+  xiiUInt32 uiFrame = 0;
+  for (const xiiSizeU32 size : {xiiSizeU32(16, 24), xiiSizeU32(32, 16), xiiSizeU32(24, 24)})
   {
+    const bool bFixedTexture = uiFrame++ == 2;
+    if (bFixedTexture)
+      pView->SetRenderPipelineResource(hFixed);
     xiiGALTextureCreationDescription targetDescription;
     targetDescription.m_Type      = xiiGALResourceDimension::Texture2D;
     targetDescription.m_Size      = size;
@@ -121,8 +139,9 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
       const auto* pDescription = pView->GetRenderGraph()->GetTextureDescription(pCreated->m_hTexture);
       if (XII_TEST_BOOL(pDescription != nullptr))
       {
-        XII_TEST_INT(pDescription->m_Size.width, size.width);
-        XII_TEST_INT(pDescription->m_Size.height, size.height);
+        XII_TEST_INT(pDescription->m_Size.width, bFixedTexture ? 8 : size.width);
+        XII_TEST_INT(pDescription->m_Size.height, bFixedTexture ? 12 : size.height);
+        XII_TEST_BOOL(pDescription->m_Format == (bFixedTexture ? xiiGALResourceFormat::RGBA8UNormalized : xiiGALResourceFormat::RGBA16Float));
       }
     }
 

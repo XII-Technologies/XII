@@ -49,7 +49,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinAccess);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinCardinality);
 
 /// Authored requirements. Zero/Undefined accepts the producer's description.
-/// These constrain resources; they do not silently change an algorithm's allocations.
+/// These constrain connections. A resource creation pass can use its editable output pin's requirements to allocate the resource.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePinConstraints
 {
   xiiEnum<xiiGALResourceDimension> m_Dimension = xiiGALResourceDimension::Undefined;
@@ -128,7 +128,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
 /// A native pass member declared with XII_MEMBER_PROPERTY. Its type fixes the
 /// resource kind and direction. The compiler assigns an occurrence-local binding
 /// index; this is neither a graph handle nor a persistent document identity.
-/// Authored requirements remain in the document's persistent pin configurations.
+/// Editable output members own their authored schema; other pins use persistent pin configurations.
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePinHandle : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePinHandle, xiiReflectedClass);
@@ -141,7 +141,9 @@ protected:
                              xiiGALResourceFormat::Enum format, xiiBitflags<xiiGALBindFlags> bindings,
                              xiiGALResourceDimension::Enum dimension, xiiUInt32 samples,
                              xiiRenderPipelinePinAccess::Enum access, bool temporal);
-  void SetDataType(const xiiRTTI* type) { m_Declaration.m_pDataType = type; }
+  void                        SetDataType(const xiiRTTI* type) { m_Declaration.m_pDataType = type; }
+  xiiRenderPipelinePin&       GetDeclaration() { return m_Declaration; }
+  const xiiRenderPipelinePin& GetDeclaration() const { return m_Declaration; }
 
 private:
   friend class xiiRenderPipelinePass;
@@ -167,6 +169,11 @@ public:
                                              bool optional = false, xiiBitflags<xiiGALBindFlags> bindings = {},
                                              xiiGALResourceDimension::Enum dimension = xiiGALResourceDimension::Undefined, xiiUInt32 samples = 0,
                                              xiiRenderPipelinePinAccess::Enum access = xiiRenderPipelinePinAccess::Automatic, bool temporal = false);
+
+  xiiEnum<xiiGALResourceFormat>          GetFormat() const { return GetDeclaration().m_Format; }
+  void                                   SetFormat(xiiEnum<xiiGALResourceFormat> format) { GetDeclaration().m_Format = format; }
+  const xiiRenderPipelinePinConstraints& GetRequirements() const { return GetDeclaration().m_Constraints; }
+  void                                   SetRequirements(const xiiRenderPipelinePinConstraints& requirements) { GetDeclaration().m_Constraints = requirements; }
 };
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineBufferInputPin : public xiiRenderPipelinePinHandle
 {

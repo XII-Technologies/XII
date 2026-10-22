@@ -60,7 +60,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinConfiguration, 1, xiiRTTIDe
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("Id", m_Id)->AddAttributes(new xiiReadOnlyAttribute()),
+      XII_MEMBER_PROPERTY("Id", m_Id)->AddAttributes(new xiiReadOnlyAttribute(), new xiiHiddenAttribute()),
       XII_MEMBER_PROPERTY("Metadata", m_Metadata)->AddAttributes(new xiiReadOnlyAttribute()),
       XII_MEMBER_PROPERTY("DisplayName", m_sDisplayName),
       XII_ENUM_MEMBER_PROPERTY("RequiredFormat", xiiGALResourceFormat, m_Format),
@@ -77,6 +77,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureOutputPin>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_ENUM_ACCESSOR_PROPERTY("Format", xiiGALResourceFormat, GetFormat, SetFormat),
+      XII_ACCESSOR_PROPERTY("Requirements", GetRequirements, SetRequirements),
+    } XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineBufferInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineBufferInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
