@@ -4459,113 +4459,946 @@ Conversely, a short function may still be poorly designed if it combines unrelat
 
 > Optimize functions for comprehension and correctness, not arbitrary line counts. Structure should reveal intent, dependencies, and failure behavior.
 
-## 8. Control flow and expressions
+## 8. Control Flow and Expressions
 
-### 8.1 Prefer early exits
+Control flow and expressions in XII **MUST** be explicit, predictable, and correct across supported platforms, compilers, and execution environments.
 
-Guard invalid inputs and failure states up front. This keeps the main successful path less nested.
+Prefer straightforward branching, well-defined evaluation semantics, and mathematically sound operations over compact expressions that obscure program behavior.
+
+Control-flow decisions should preserve the invariants established in §1.1, follow the statement conventions in §2.4, and respect the error-handling requirements in §7.7.
+
+### 8.1 Prefer Early Exits and Guard Clauses
+
+Guard clauses **SHOULD** be used to handle invalid inputs, unmet preconditions, and recoverable failures before entering the main body of an operation.
+
+Early exits reduce unnecessary nesting and make the successful execution path easier to understand.
+
+#### General Requirements
+
+- Prefer early returns when they simplify control flow and make failure conditions immediately apparent.
+- Validate untrusted inputs before using them in operations that require specific ranges or invariants.
+- Distinguish programmer contract violations from expected runtime failures, as established in §1.1.
+- Do not use deeply nested conditionals when guard clauses express the same behavior more clearly.
+- Error paths **MUST** preserve resource ownership, synchronization, and cleanup guarantees.
+- Prefer RAII for resources that require cleanup across multiple return paths.
+- Do not introduce multiple early returns when they obscure a required common finalization step.
+- Avoid redundant validation when a preceding operation already establishes the necessary invariant.
+
+**Prefer:**
 
 ```cpp
-xiiResult Execute(xiiGALDevice* pDevice)
+xiiResult ProcessDocument(xiiStringView sPath)
 {
-  if (pDevice == nullptr)
+  if (sPath.IsEmpty())
     return XII_FAILURE;
 
-  if (!m_bInitialized)
-    return XII_FAILURE;
+  xiiFileReader file;
 
-  SubmitCommands(pDevice);
-  return XII_SUCCESS;
+  XII_SUCCEED_OR_RETURN(file.Open(sPath));
+
+  return ParseDocument(file);
 }
 ```
 
-### 8.2 Use the simplest appropriate branching construct
-
-- `if` for conditional logic.
-- `switch` for clear discrete alternatives, such as enum states.
-- Compile-time `if constexpr` for template specialization.
-- Avoid long chains of type tests in place of a designed extension interface.
+**Avoid:**
 
 ```cpp
-switch (queue.GetValue())
+xiiResult ProcessDocument(xiiStringView sPath)
 {
-  case xiiRenderGraphQueue::Graphics:
-    return graphicsQueue;
-  case xiiRenderGraphQueue::Compute:
-    return computeQueue;
+  if (!sPath.IsEmpty())
+  {
+    xiiFileReader file;
+
+    if (file.Open(sPath).Succeeded())
+    {
+      return ParseDocument(file);
+    }
+  }
+
+  return XII_FAILURE;
+}
+```
+
+The preferred implementation expresses the unsuccessful conditions first and leaves the primary operation at the function's normal indentation level.
+
+#### Cleanup and Early Returns
+
+Early returns **MUST NOT** bypass required cleanup.
+
+Where cleanup is necessary, prefer scoped ownership or another established resource-management mechanism rather than duplicating cleanup logic across failure branches.
+
+A function with a single exit point may be preferable when a required finalization step cannot be represented safely through RAII.
+
+**Guiding principle:**
+
+> Reject invalid states early and keep the successful path clear, but never simplify control flow at the expense of cleanup or invariants.
+
+### 8.2 Use the Simplest Appropriate Branching Construct
+
+Branching constructs **SHOULD** match the nature of the decision being expressed.
+
+Do not introduce runtime polymorphism, template machinery, or complicated conditional expressions when ordinary control flow adequately expresses the requirement.
+
+#### General Requirements
+
+- Use `if` and `else` for general conditional logic.
+- Use `switch` when selecting among discrete values, particularly enum states.
+- Use `if constexpr` when compile-time conditions determine valid template implementations.
+- Prefer ordinary compile-time constants over preprocessor conditionals when C++ language constructs are sufficient.
+- Avoid long chains of runtime type checks when a genuine polymorphic interface would better represent the required behavior.
+- Do not introduce inheritance or virtual dispatch solely to replace a small, stable conditional.
+- Branches **MUST** preserve the same documented invariants regardless of the selected path.
+- Exhaustive branching over enum values **SHOULD** make newly introduced values detectable through compiler diagnostics or review.
+
+#### Discrete Alternatives
+
+**Prefer:**
+
+```cpp
+xiiResult ProcessTask(xiiTaskState::Enum state)
+{
+  switch (state)
+  {
+    case xiiTaskState::Pending:
+      return QueueTask();
+
+    case xiiTaskState::Running:
+      return UpdateTask();
+
+    case xiiTaskState::Completed:
+      return FinalizeTask();
+  }
+
+  return XII_FAILURE;
+}
+```
+
+When an enum is intended to be exhaustive, explicitly listing its supported values makes the contract easier to inspect.
+
+A final failure return can handle invalid numeric representations without hiding missing cases behind a `default` branch.
+
+Whether compiler warnings detect new enum values depends on the compiler and configured warning policy.
+
+#### Default Cases
+
+A `default` branch is appropriate when unknown values have a meaningful, documented fallback.
+
+**Prefer when unknown values are expected:**
+
+```cpp
+switch (message.m_Type)
+{
+  case xiiMessageType::Connect:
+    HandleConnection();
+    break;
+
+  case xiiMessageType::Disconnect:
+    HandleDisconnection();
+    break;
+
   default:
-    return nullptr;
+    HandleUnknownMessage(message);
+    break;
 }
 ```
 
-When enum values are intended to be exhaustive, consider how adding a value will be detected during review or compiler diagnostics. A silent default can conceal missing cases.
+Do not use a silent `default` merely to suppress warnings when every known enum value requires explicit handling.
 
-### 8.3 Loops
+#### Compile-Time Branching
 
-Use range-based loops when you need elements, index loops when the index is meaningful, and explicit iterators when removal or container behavior requires them.
+Use `if constexpr` when template logic depends on compile-time type properties.
 
 ```cpp
-for (const auto& entry : m_Entries)
+template <typename T>
+void ResetValue(T& value)
+{
+  if constexpr (std::is_trivially_copyable_v<T>)
+  {
+    value = T{};
+  }
+  else
+  {
+    value.Reset();
+  }
+}
+```
+
+This example assumes the supported non-trivially-copyable types provide `Reset()`.
+
+Compile-time branching **MUST** still establish a valid contract for every supported template instantiation.
+
+**Guiding principle:**
+
+> Choose control flow according to the decision being made. Prefer explicit branches over unnecessary dispatch machinery.
+
+### 8.3 Loops and Iteration
+
+Iteration **MUST** preserve container invariants, element validity, and any ordering guarantees required by the operation.
+
+Select the loop construct that most clearly communicates whether the operation depends on elements, indices, or iterator behavior.
+
+#### General Requirements
+
+- Prefer range-based loops when only element access is required.
+- Use index-based loops when the index has semantic meaning or is necessary for the algorithm.
+- Use explicit iterators when container mutation, traversal rules, or specialized iteration requires them.
+- Do not repeatedly perform expensive computations in loop conditions when their results can be safely reused.
+- Avoid unnecessary allocations, copies, and indirect access in demonstrated hot loops.
+- Do not mutate a container during iteration unless the iteration pattern explicitly supports the mutation.
+- Container removal **MUST** account for iterator, pointer, reference, and index invalidation.
+- Do not assume that container removal preserves order unless the selected operation guarantees it.
+- Loop termination **MUST** be well-defined, including for empty collections and boundary values.
+- Avoid modifying the loop control variable unexpectedly inside the body.
+
+#### Element-Based Iteration
+
+**Prefer:**
+
+```cpp
+for (const xiiResourceEntry& entry : m_Entries)
 {
   ProcessEntry(entry);
 }
 ```
 
-Do not erase elements during range iteration unless the container and iteration pattern explicitly support it. Decide whether removal may reorder elements (`RemoveAndSwap`) and whether order is a contract.
-
-### 8.4 Comparators must be valid
-
-Sort comparators must define strict weak ordering. Do not return `<=` or `>=` as a comparator.
+Use mutable references only when modification is intended.
 
 ```cpp
-m_Entries.Sort([](const auto& a, const auto& b) {
-  return a->m_iPriority > b->m_iPriority;
+for (xiiResourceEntry& entry : m_Entries)
+{
+  entry.m_bActive = false;
+}
+```
+
+#### Index-Based Iteration
+
+Use indices when element positions are part of the operation's meaning.
+
+```cpp
+for (xiiUInt32 uiIndex = 0; uiIndex < m_Entries.GetCount(); ++uiIndex)
+{
+  UpdateEntry(uiIndex, m_Entries[uiIndex]);
+}
+```
+
+Index types **SHOULD** be compatible with the container's supported index range.
+
+Avoid narrowing a container's element count into a smaller integer type without establishing that the value fits.
+
+#### Removal During Iteration
+
+Removal operations may shift elements, replace removed elements with the last element, or invalidate iterators.
+
+For example, when removal order is unimportant and `RemoveAtAndSwap()` provides the expected semantics:
+
+```cpp
+for (xiiUInt32 uiIndex = 0; uiIndex < m_Entries.GetCount();)
+{
+  if (m_Entries[uiIndex].m_bExpired)
+  {
+    m_Entries.RemoveAtAndSwap(uiIndex);
+    continue;
+  }
+
+  ++uiIndex;
+}
+```
+
+The index is not advanced following removal because another element may have been moved into the current position.
+
+Do not use swap-based removal when preserving the order of surviving elements is a documented requirement.
+
+#### Loop Progress
+
+Every potentially unbounded loop **MUST** have a defined progress or termination mechanism.
+
+This is especially important for polling, task scheduling, synchronization, and resource reclamation.
+
+Busy-wait loops **SHOULD NOT** be introduced when an appropriate blocking or event-driven mechanism is available.
+
+**Guiding principle:**
+
+> Iterate according to the semantics of the data and the operation. Container mutation, ordering, and progress must remain explicit.
+
+### 8.4 Comparators and Ordering Contracts
+
+Comparators used by sorting and ordered containers **MUST** satisfy the ordering requirements of the relevant algorithm.
+
+For standard strict-ordering algorithms, the comparator must establish a strict weak ordering over the supported input domain.
+
+#### General Requirements
+
+- Strict ordering comparators **MUST** return false when comparing equivalent values.
+- Do not use `<=` or `>=` as strict ordering comparators.
+- Comparators **MUST** produce consistent results for unchanged inputs.
+- Comparator behavior **MUST NOT** depend on mutable state that can change during sorting.
+- Avoid comparators with observable side effects.
+- Do not modify compared elements from within the comparator.
+- Sorting **MUST NOT** be assumed stable unless the algorithm explicitly guarantees stability.
+- Tie-breaking behavior **MUST** be defined when equal primary keys require deterministic ordering.
+- Comparators involving floating-point values **MUST** account for NaNs or establish a valid input domain that excludes them.
+
+**Prefer:**
+
+```cpp
+m_Entries.Sort([](const auto& a, const auto& b)
+{
+  return a.m_iPriority > b.m_iPriority;
 });
 ```
 
-The above orders priorities descending but does **not** guarantee ordering among ties if `Sort()` is unstable. Preserve stable tie order intentionally if the scheduling contract requires it.
+This sorts entries by descending priority.
 
-### 8.5 Boolean logic
+However, it does not guarantee the relative order of entries with equal priorities if the sorting algorithm is unstable.
 
-Make operator precedence obvious. Factor complex conditions into named predicates.
+#### Deterministic Tie-Breaking
+
+When deterministic ordering among equal priorities is required, use an explicit secondary key.
 
 ```cpp
-const bool bValidFrame = frame.IsActive() && frame.GetFrameIndex() == uiExpectedFrame;
-const bool bCanExecute = bValidFrame && pDevice != nullptr && pResourceCache != nullptr;
+m_Entries.Sort([](const auto& a, const auto& b)
+{
+  if (a.m_iPriority != b.m_iPriority)
+    return a.m_iPriority > b.m_iPriority;
 
-if (!bCanExecute)
+  return a.m_uiRegistrationOrder < b.m_uiRegistrationOrder;
+});
+```
+
+The registration order must represent a stable and well-defined value for the relevant sorting operation.
+
+Do not introduce artificial secondary keys unless deterministic tie ordering is a genuine requirement.
+
+#### Invalid Comparators
+
+**Avoid:**
+
+```cpp
+m_Entries.Sort([](const auto& a, const auto& b)
+{
+  return a.m_iPriority >= b.m_iPriority;
+});
+```
+
+For equal values, the comparator returns true in both directions.
+
+This violates the strict ordering requirements and can result in undefined behavior when used with sorting algorithms that require strict weak ordering.
+
+#### Floating-Point Ordering
+
+Ordinary floating-point `<` does not establish strict weak ordering over a domain containing NaNs.
+
+When sorting floating-point data that may contain NaNs, define an explicit ordering policy or reject invalid values before sorting.
+
+Do not use approximate equality in a comparator without verifying that the resulting relation still satisfies the ordering requirements.
+
+**Guiding principle:**
+
+> Ordering is an algorithmic contract. Comparators must be mathematically valid, deterministic for their supported inputs, and consistent with required tie semantics.
+
+### 8.5 Boolean Logic and Conditional Expressions
+
+Boolean expressions **SHOULD** make their intended meaning and evaluation order apparent.
+
+Prefer straightforward predicates over compact expressions that require careful reconstruction of operator precedence.
+
+#### General Requirements
+
+- Use parentheses when mixing logical operators in expressions whose grouping may be misinterpreted.
+- Prefer descriptive intermediate predicates for complex domain-specific conditions.
+- Avoid unnecessary negations and double-negative state names.
+- Do not introduce intermediate boolean variables for every trivial condition.
+- Do not rely on implicit precedence when explicit grouping materially improves clarity.
+- Avoid boolean expressions that combine unrelated side effects.
+- Use short-circuit operators deliberately when later operands depend on earlier conditions.
+- Conditional expressions **MUST** preserve the documented evaluation and failure semantics.
+
+**Prefer:**
+
+```cpp
+const bool bValidSession = session.IsActive() && session.GetSessionId() == uiExpectedSession;
+
+const bool bHasDependencies = pScheduler != nullptr && pResourceManager != nullptr;
+
+if (!bValidSession || !bHasDependencies)
   return XII_FAILURE;
 ```
 
-### 8.6 Avoid hidden mutations
+This separates session validity from dependency availability.
 
-Avoid complicated expressions that modify the same value multiple times, obscure evaluation order, or mix resource creation with validation. Split side effects into statements.
+#### Short-Circuit Evaluation
 
-### 8.7 Integer conversions and arithmetic
+Logical `&&` and `||` operators evaluate their operands with defined short-circuit behavior.
 
-- Check overflow before multiplying buffer dimensions, strides, or counts.
-- Use the signedness and width the domain requires.
-- Use explicit casts when conversion is intentional, and verify range for narrowing conversions.
-- Avoid converting potentially negative signed values to unsigned silently.
+**Prefer:**
 
 ```cpp
+if (pResource != nullptr && pResource->IsReady())
+{
+  ProcessResource(*pResource);
+}
+```
+
+The resource is accessed only when the pointer is non-null.
+
+Do not replace logical operators with bitwise operators when short-circuit evaluation is required.
+
+#### Avoid Redundant Predicates
+
+**Avoid:**
+
+```cpp
+if (bInitialized == true)
+{
+  Execute();
+}
+```
+
+**Prefer:**
+
+```cpp
+if (bInitialized)
+{
+  Execute();
+}
+```
+
+For negative conditions:
+
+```cpp
+if (!bInitialized)
+  return XII_FAILURE;
+```
+
+Do not sacrifice readability merely to eliminate parentheses or intermediate variables.
+
+**Guiding principle:**
+
+> Boolean logic should communicate domain meaning clearly while preserving correct precedence and short-circuit behavior.
+
+### 8.6 Avoid Hidden Mutations and Evaluation-Order Dependencies
+
+Expressions **MUST NOT** rely on undefined or unspecified evaluation behavior.
+
+Side effects should be explicit, appropriately sequenced, and easy to inspect.
+
+#### General Requirements
+
+- Do not modify the same scalar object multiple times in an expression when the modifications are unsequenced.
+- Avoid combining resource creation, validation, mutation, and consumption in unnecessarily complex expressions.
+- Prefer separate statements when evaluation order affects correctness.
+- Do not rely on compiler-specific operand evaluation behavior.
+- Function arguments **SHOULD NOT** contain interdependent side effects whose order matters.
+- Increment and decrement operations **SHOULD** be used where their effects are obvious.
+- Do not use comma expressions to combine unrelated operations.
+- Side effects **MUST** remain visible when failure handling or synchronization depends on their ordering.
+
+**Avoid:**
+
+```cpp
+ProcessValues(++uiIndex, uiIndex++);
+```
+
+The expression modifies the same variable through multiple arguments and obscures the intended sequencing.
+
+**Prefer:**
+
+```cpp
+++uiIndex;
+
+const xiiUInt32 uiCurrentIndex = uiIndex;
+++uiIndex;
+
+ProcessValues(uiCurrentIndex, uiIndex);
+```
+
+The intended sequence is explicit.
+
+#### Resource Creation and Validation
+
+**Prefer:**
+
+```cpp
+xiiResourceHandle hResource = CreateResource(descriptor);
+
+if (hResource.IsInvalidated())
+  return XII_FAILURE;
+
+InitializeResource(hResource);
+```
+
+**Avoid:**
+
+```cpp
+InitializeResource(CreateResource(descriptor));
+```
+
+The avoided form prevents the caller from inspecting creation failure before attempting initialization.
+
+This separation is especially important when the second operation requires a valid handle.
+
+**Guiding principle:**
+
+> Observable state changes should occur in an explicit, understandable sequence. Expression compactness must not conceal evaluation or failure behavior.
+
+### 8.7 Integer Conversions and Arithmetic
+
+Integer arithmetic **MUST** respect the range, signedness, and representation requirements of the values being manipulated.
+
+Overflow and narrowing errors can lead to invalid allocations, incorrect indexing, corrupted resource descriptions, and undefined behavior.
+
+#### General Requirements
+
+- Use integer types whose widths and signedness match the domain's required range.
+- Check for overflow before calculations whose results control allocation sizes, offsets, strides, or buffer capacities.
+- Do not assume that widening the destination prevents overflow if intermediate arithmetic occurs in a narrower type.
+- Validate potentially negative signed values before converting them to unsigned types.
+- Narrowing conversions **MUST** be intentional and range-checked when the source may exceed the destination range.
+- Use explicit casts where they communicate intentional conversions.
+- Avoid unnecessary casts that conceal incorrect type choices.
+- Division and modulo operations **MUST** establish valid nonzero divisors.
+- Signed arithmetic **MUST NOT** rely on overflow.
+- Unsigned wraparound **MUST** be intentional and documented when its behavior is required.
+- Integer comparisons **SHOULD** avoid unintended signed/unsigned conversions.
+- Avoid arithmetic involving invalid sentinel values unless the sentinel has been checked.
+
+#### Multiplication Overflow
+
+**Prefer:**
+
+```cpp
+if (uiStride == 0U)
+  return XII_FAILURE;
+
 if (uiElementCount > xiiMath::MaxValue<xiiUInt64>() / uiStride)
   return XII_FAILURE;
 
-const xiiUInt64 uiByteCount = xiiUInt64(uiElementCount) * uiStride;
+const xiiUInt64 uiByteCount = static_cast<xiiUInt64>(uiElementCount) * uiStride;
 ```
 
-The example assumes a strictly positive stride; validate that separately if zero is invalid.
+The example assumes that both operands are unsigned and that zero stride is invalid under the operation's contract.
 
-### 8.8 Floating-point code
+Checking before multiplication prevents the result from wrapping.
 
-Do not use exact equality for approximate numeric results unless exact representation is part of the contract. Define tolerances relative to scale and precision. Account for NaNs and infinities when values come from untrusted calculations or external data.
+#### Intermediate Arithmetic
 
-### 8.9 Switch fallthrough
+**Avoid:**
 
-Make intentional fallthrough obvious with `[[fallthrough]]` where supported and compatible with the surrounding code. Do not rely on a comment alone if the compiler supports the attribute.
+```cpp
+xiiUInt32 uiWidth  = descriptor.m_uiWidth;
+xiiUInt32 uiHeight = descriptor.m_uiHeight;
 
----
+xiiUInt64 uiPixelCount = uiWidth * uiHeight;
+```
+
+The multiplication may overflow at the 32-bit width before its result is assigned to a 64-bit variable.
+
+**Prefer:**
+
+```cpp
+const xiiUInt64 uiPixelCount = static_cast<xiiUInt64>(descriptor.m_uiWidth) * descriptor.m_uiHeight;
+```
+
+Widening an operand before multiplication causes the multiplication to occur in the wider type.
+
+This is sufficient only when the resulting value is guaranteed to fit within that type. Otherwise, an overflow check is still required.
+
+#### Narrowing Conversions
+
+**Prefer:**
+
+```cpp
+if (uiElementCount > xiiMath::MaxValue<xiiUInt32>())
+  return XII_FAILURE;
+
+const xiiUInt32 uiCount = static_cast<xiiUInt32>(uiElementCount);
+```
+
+Do not perform narrowing conversions merely to satisfy a function signature without confirming that the value fits.
+
+#### Signed and Unsigned Values
+
+**Avoid:**
+
+```cpp
+xiiInt32 iOffset = GetOffset();
+
+xiiUInt32 uiOffset = static_cast<xiiUInt32>(iOffset);
+```
+
+If `iOffset` is negative, conversion to an unsigned type produces an unintended large value.
+
+**Prefer:**
+
+```cpp
+const xiiInt32 iOffset = GetOffset();
+
+if (iOffset < 0)
+  return XII_FAILURE;
+
+const xiiUInt32 uiOffset = static_cast<xiiUInt32>(iOffset);
+```
+
+#### Division and Modulo
+
+**Prefer:**
+
+```cpp
+if (uiBucketCount == 0U)
+  return XII_FAILURE;
+
+const xiiUInt32 uiBucketIndex = uiHash % uiBucketCount;
+```
+
+Never assume a divisor is nonzero merely because normal execution typically supplies a valid value.
+
+When nonzero is a programmer-facing precondition rather than recoverable input validation, enforce it according to §7.13.
+
+**Guiding principle:**
+
+> Integer correctness requires control over widths, ranges, and conversions. Validate arithmetic before a result can overflow, narrow incorrectly, or violate an invariant.
+
+### 8.8 Floating-Point Arithmetic and Comparisons
+
+Floating-point calculations **MUST** account for finite precision, rounding behavior, and the possibility of special values.
+
+Numerical code should use comparison and tolerance policies appropriate to the domain rather than assume that floating-point values behave like exact real numbers.
+
+#### General Requirements
+
+- Do not use exact equality for approximate numerical results unless exact representation or identity is part of the contract.
+- Use tolerances appropriate to the scale, precision, and expected error of the operation.
+- Avoid using a single universal epsilon for unrelated numerical domains.
+- Consider absolute and relative tolerances when comparing values of different magnitudes.
+- Handle NaNs and infinities when they may arise from external inputs or calculations.
+- Do not assume floating-point expressions are associative.
+- Avoid transformations that change numerical behavior unless their accuracy and performance implications are understood.
+- Numerical algorithms **SHOULD** account for loss of precision, cancellation, and accumulation error where relevant.
+- Do not rely on exact reproducibility across platforms unless the required compiler, instruction, and floating-point behavior is explicitly controlled.
+- Floating-point values used in ordering, hashing, or identity comparisons **MUST** follow the requirements of those operations.
+
+#### Approximate Equality
+
+**Avoid:**
+
+```cpp
+if (fCalculatedValue == fExpectedValue)
+{
+  AcceptResult();
+}
+```
+
+**Prefer when approximate equality is intended:**
+
+```cpp
+const float fDifference = xiiMath::Abs(fCalculatedValue - fExpectedValue);
+
+const float fScale = xiiMath::Max(xiiMath::Abs(fCalculatedValue), xiiMath::Abs(fExpectedValue));
+
+const float fTolerance = fAbsoluteTolerance + fRelativeTolerance * fScale;
+
+if (fDifference <= fTolerance)
+{
+  AcceptResult();
+}
+```
+
+This comparison combines absolute and relative tolerances.
+
+It assumes the inputs and tolerance parameters satisfy the algorithm's finite-value and nonnegative-tolerance requirements. Validate those assumptions where they are not guaranteed.
+
+#### Exact Equality
+
+Exact floating-point equality may be appropriate for:
+
+- Comparing values that are required to match an exact representation.
+- Checking values assigned from the same defined constant.
+- Certain sentinel values where their meaning is explicitly defined.
+- Algorithms whose mathematical contract requires bitwise or exact-value identity.
+
+Do not replace every floating-point equality comparison with an epsilon check mechanically.
+
+#### NaNs and Infinities
+
+NaN values have unusual comparison semantics, including the fact that ordinary equality and ordering comparisons do not behave like comparisons over real numbers.
+
+When finite values are required, validate them before performing calculations that depend on finite arithmetic.
+
+```cpp
+if (!xiiMath::IsFinite(fDeltaTime))
+  return XII_FAILURE;
+```
+
+This assumes the operation treats non-finite time values as invalid input.
+
+#### Numerical Stability
+
+Prefer numerically stable formulations when equivalent mathematical expressions exhibit different error behavior.
+
+For iterative simulations, reductions, and long-running computations, consider how rounding error accumulates over time.
+
+Reordering floating-point operations for performance **MUST** account for its effect on numerical accuracy and reproducibility.
+
+**Guiding principle:**
+
+> Floating-point correctness is defined by acceptable numerical error and explicit domain assumptions, not by the appearance of mathematical equivalence.
+
+### 8.9 Switch Fallthrough
+
+Fallthrough between `switch` cases **MUST** be intentional and immediately recognizable.
+
+Use the standard `[[fallthrough]]` attribute where supported and consistent with the surrounding code.
+
+#### General Requirements
+
+- Implicit fallthrough **MUST NOT** occur accidentally.
+- Intentional fallthrough **SHOULD** use `[[fallthrough]]`.
+- Do not rely solely on comments to indicate fallthrough when the compiler supports the standard attribute.
+- Each case **SHOULD** terminate through `break`, `return`, another control transfer, or explicit fallthrough.
+- Avoid fallthrough when duplicating a small amount of straightforward code would communicate the behavior more clearly.
+- Multiple case labels sharing the same body do not require `[[fallthrough]]` between consecutive labels.
+- Fallthrough **MUST NOT** bypass required initialization or violate variable scope rules.
+
+**Prefer:**
+
+```cpp
+switch (state)
+{
+  case xiiTaskState::Failed:
+    LogTaskFailure();
+    [[fallthrough]];
+
+  case xiiTaskState::Cancelled:
+    ReleaseTaskResources();
+    break;
+
+  case xiiTaskState::Completed:
+    FinalizeTask();
+    break;
+}
+```
+
+The failure case performs additional logging before intentionally sharing cleanup behavior with cancellation.
+
+#### Shared Case Bodies
+
+When multiple values require identical behavior, group their labels.
+
+```cpp
+switch (state)
+{
+  case xiiTaskState::Failed:
+  case xiiTaskState::Cancelled:
+    ReleaseTaskResources();
+    break;
+
+  case xiiTaskState::Completed:
+    FinalizeTask();
+    break;
+}
+```
+
+This is not an implicit fallthrough error; both labels intentionally select the same statements.
+
+**Guiding principle:**
+
+> Switch cases should have explicit termination behavior. Intentional fallthrough must be visible to both readers and compiler diagnostics.
+
+### 8.10 Conditional Compilation and Feature Selection
+
+Conditional compilation **SHOULD** be limited to cases where behavior genuinely differs by platform, compiler, build configuration, or compile-time feature availability.
+
+Prefer ordinary C++ constructs when they provide equivalent functionality without introducing unnecessary preprocessor complexity.
+
+#### General Requirements
+
+- Use established XII feature and platform macros rather than inventing alternative detection mechanisms.
+- Follow the repository's conventions for `XII_ENABLED` and related compile-time feature checks.
+- Do not use runtime checks for features that are intentionally unavailable in a given build configuration when compile-time exclusion is required.
+- Do not use preprocessor conditionals when `if constexpr` or ordinary constant expressions provide a clearer solution.
+- Platform-specific code **SHOULD** remain within the appropriate platform implementation rather than spread throughout portable modules.
+- Conditional branches **MUST** preserve the documented interface contract across supported configurations.
+- Avoid deeply nested preprocessor conditionals.
+- Build configurations **MUST NOT** silently change public type layouts or exported interfaces when those interfaces require binary compatibility.
+
+**Example:**
+
+```cpp
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  InitializeWindowsPlatform();
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  InitializeLinuxPlatform();
+#else
+  InitializeGenericPlatform();
+#endif
+```
+
+The exact feature macros and supported fallbacks must follow the existing repository definitions.
+
+#### Compile-Time Versus Runtime Capabilities
+
+Compile-time availability and runtime capability are separate concepts.
+
+A feature may be compiled into the engine but remain unsupported by the active device or execution environment.
+
+Use runtime capability queries when feature support depends on detected hardware, drivers, or system configuration.
+
+Do not assume that compilation of a backend implies support for every optional feature.
+
+**Guiding principle:**
+
+> Use conditional compilation to express build-time availability and runtime checks to express actual capabilities. Keep both mechanisms explicit and appropriately scoped.
+
+### 8.11 Assertions and Unreachable States
+
+Assertions **SHOULD** be used to detect violated internal invariants and programmer-facing preconditions.
+
+They **MUST NOT** replace ordinary error handling for expected runtime failures.
+
+#### General Requirements
+
+- Assertions **MUST** express conditions expected to hold during every valid execution of the relevant code path.
+- Do not rely on assertions to perform required initialization, mutation, or cleanup.
+- Do not place essential side effects inside assertion expressions.
+- Expected failures caused by external data or environmental conditions **MUST** be handled through the appropriate error mechanism.
+- Unreachable-state assumptions **MUST** be justified by established invariants.
+- Do not introduce compiler-specific unreachable hints when an invalid state can legitimately occur.
+- Assertions **SHOULD** include diagnostics that identify the violated contract.
+- Do not use assertions merely to suppress handling of a state that the public API permits.
+
+**Prefer:**
+
+```cpp
+XII_ASSERT_DEV(uiIndex < m_Entries.GetCount(), "Resource index is outside the valid range.");
+
+ProcessEntry(m_Entries[uiIndex]);
+```
+
+This is appropriate when the caller is required by contract to supply a valid internal index.
+
+For externally supplied indices, use explicit runtime validation instead.
+
+#### Essential Side Effects
+
+**Avoid:**
+
+```cpp
+XII_ASSERT_DEV(InitializeResources().Succeeded(), "Initialization failed.");
+```
+
+If assertions are disabled, the initialization operation may not execute.
+
+**Prefer:**
+
+```cpp
+const xiiResult result = InitializeResources();
+
+XII_ASSERT_DEV(result.Succeeded(), "Initialization failed.");
+```
+
+This version preserves execution of the operation regardless of whether the assertion is active.
+
+If initialization failure is an expected runtime condition, the failure should instead be propagated or handled explicitly.
+
+**Guiding principle:**
+
+> Assertions verify invariants; they must never be required for correct execution or substitute for recoverable error handling.
+
+### 8.12 Expression Complexity and Readability
+
+Expressions **SHOULD** remain understandable without requiring readers to reconstruct several independent operations or subtle language rules.
+
+Prefer explicit intermediate values when they clarify units, ownership, ordering, or domain meaning.
+
+#### General Requirements
+
+- Avoid excessively nested conditional operators.
+- Do not combine unrelated calculations and side effects into a single expression.
+- Prefer named intermediate values when they clarify important assumptions or units.
+- Avoid introducing intermediate values that merely duplicate obvious expressions.
+- Use parentheses to make non-obvious precedence explicit.
+- Prefer ordinary statements over complicated expression constructs when side effects or failure behavior are involved.
+- Expression refactoring **MUST** preserve evaluation order and numerical behavior where those characteristics are part of the contract.
+- Do not assume that algebraically equivalent expressions have identical integer-overflow or floating-point behavior.
+
+**Avoid:**
+
+```cpp
+const xiiUInt32 uiResult = bEnabled ? (bReady ? uiPrimary : uiFallback) : (bDefault ? uiDefault : 0U);
+```
+
+**Prefer:**
+
+```cpp
+xiiUInt32 uiResult = 0U;
+
+if (bEnabled)
+{
+  uiResult = bReady ? uiPrimary : uiFallback;
+}
+else if (bDefault)
+{
+  uiResult = uiDefault;
+}
+```
+
+The second form makes each decision explicit.
+
+A simple conditional expression remains appropriate when it selects between two straightforward values.
+
+```cpp
+const xiiUInt32 uiCapacity = bUseLargeBuffer ? uiLargeCapacity : uiSmallCapacity;
+```
+
+Do not replace every conditional operator with a multi-line branch mechanically.
+
+**Guiding principle:**
+
+> Expressions should make calculations and decisions easier to understand, not compress multiple responsibilities into fewer lines.
+
+### 8.13 Determinism and Observable Ordering
+
+Operations whose correctness depends on execution order **MUST** establish that order explicitly.
+
+This applies to scheduling, event processing, serialization, reductions, resource transitions, and other systems where observable results depend on sequencing.
+
+#### General Requirements
+
+- Do not assume iteration order is deterministic unless the container explicitly guarantees it.
+- Do not rely on hash-table iteration order for behavior requiring stable ordering.
+- Sorting **MUST** establish the required tie-breaking semantics when equivalent keys have observable consequences.
+- Concurrent execution **MUST NOT** be assumed deterministic without an explicit synchronization or scheduling contract.
+- Side-effect ordering **MUST** remain well-defined when observable behavior depends on it.
+- Serialization and persistent formats **MUST** use stable ordering where the format requires reproducible output.
+- Do not introduce global ordering requirements when operations are independent and the additional synchronization would be unnecessary.
+- Performance optimizations that reorder operations **MUST** preserve required observable semantics.
+
+#### Container Ordering
+
+**Avoid when stable output is required:**
+
+```cpp
+for (const auto& entry : m_ResourceMap)
+{
+  SerializeResource(entry);
+}
+```
+
+A hash-based container may not provide a stable iteration order.
+
+Where deterministic serialization is required, collect and order the relevant entries according to a defined key before serializing them.
+
+#### Parallel Execution
+
+Concurrent operations may complete in different orders across executions.
+
+When completion order affects externally visible state, the implementation must either enforce a deterministic order or explicitly document that ordering is not guaranteed.
+
+Do not impose determinism on unrelated independent operations unless it is a genuine system requirement.
+
+**Guiding principle:**
+
+> Ordering must be intentional. When behavior depends on sequence, establish that sequence through documented contracts rather than incidental container or scheduling behavior.
 
 ## 9. Modern C++23 features
 
