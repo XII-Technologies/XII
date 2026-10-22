@@ -24,6 +24,9 @@ public:
   xiiRenderGraphProfiler()          = default;
   virtual ~xiiRenderGraphProfiler() = default;
 
+  /// Selects the GPU frame before recording a graph. Several graphs may share one frame.
+  virtual void OnFrameBegin(xiiUInt64 uiFrameIndex) { XII_IGNORE_UNUSED(uiFrameIndex); }
+
   /// Called at the start of a submission command list.
   virtual void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex) = 0;
 
@@ -78,7 +81,8 @@ public:
   xiiRenderGraphTimestampProfiler(xiiSharedPtr<xiiGALDevice> pDevice);
   ~xiiRenderGraphTimestampProfiler() override;
 
-  void SetGraphInstance(xiiUInt64 uiInstanceId) override { m_uiRecordingGraphId = uiInstanceId; }
+  void OnFrameBegin(xiiUInt64 uiFrameIndex) override;
+  void SetGraphInstance(xiiUInt64 uiInstanceId) override;
 
   // xiiRenderGraphProfiler interface
   void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex) override;
@@ -137,5 +141,8 @@ private:
     xiiHashedString m_sPassName;
   };
   xiiHashTable<xiiUInt64, xiiHashTable<xiiUInt32, Timing>> m_ResolvedPassTimings;
-  xiiUInt64                                                m_uiRecordingGraphId = 0;
+  xiiUInt64                                                m_uiRecordingGraphId      = 0;
+  xiiUInt64                                                m_uiRecordingFrameIndex   = xiiInvalidIndex;
+  xiiUInt32                                                m_uiPassQueryOffset       = 0U;
+  xiiUInt32                                                m_uiSubmissionQueryOffset = 0U;
 };

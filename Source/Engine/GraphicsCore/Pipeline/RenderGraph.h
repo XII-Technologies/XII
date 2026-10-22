@@ -35,6 +35,7 @@ class xiiRenderGraph;
 using xiiRenderGraphId = xiiGenericId<32, 31>;
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphId);
+
 /// Flags that control the lifetime and behavior of a render graph resource.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceFlags
 {
@@ -479,6 +480,7 @@ public:
 
   /// Finalizes the setup phase. Must be called after all AddPass calls.
   void EndSetup();
+
 
   /// Named-resource bridge for resource-defined pipeline passes. Bindings are scoped to setup;
   /// handle-based pass code remains the preferred interface. Clear before leaving the scope.

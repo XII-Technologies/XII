@@ -894,39 +894,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     if (!viewDetail.m_bPrepared || !viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
 
-    xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
-    xiiRenderGraphBlackboard&    blackboard    = viewDetail.m_pView->GetBlackboard();
-    xiiRenderGraphResourceCache& resourceCache = viewDetail.m_pView->GetResourceCache();
-    resourceCache.BeginFrame(uiFrameIndex, uiCompletedFrame);
-
-    // Clear the per-view blackboard at the start of each frame so passes start clean.
-    // History data lives in persistent GPU resources inside the pipeline runtime, not here.
-    blackboard.Clear();
-    blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(uiFrameIndex));
-
-    // Reconstruct the graph for this frame.
-    pGraph->BeginSetup(uiFrameIndex);
-
-    const xiiView::RenderGraphBuilder& graphBuilder = viewDetail.m_pView->GetRenderGraphBuilder();
-    if (graphBuilder.IsValid())
-    {
-      // Application-supplied custom graph (e.g. editor, headless, cinematic passes).
-      graphBuilder(*viewDetail.m_pView, *pGraph, blackboard);
-    }
-    else
-    {
-      // Standard full-featured pipeline.
-      if (viewDetail.m_pView->BuildRenderPipeline(*pGraph, blackboard).Failed())
-      {
-        pGraph->EndSetup();
-        resourceCache.EndFrame();
-        xiiLog::Error("Failed to build render pipeline for view '{}': {}", viewDetail.m_pView->GetName(), viewDetail.m_pView->GetRenderPipelineInstance().GetLastBuildError());
-        continue;
-      }
-    }
-
-    pGraph->EndSetup();
-
     xiiRenderGraphCompileSettings compileSettings;
     compileSettings.m_bEnableGPUProfiling = true;
     compileSettings.m_bEnablePassCulling  = true;
@@ -934,22 +901,11 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     compileSettings.m_bEnableCompileCache = true;
 
     xiiStringBuilder graphError;
-    if (pGraph->Compile(compileSettings, &graphError).Succeeded())
+    if (xiiRenderGraphManager::ExecuteGraph(frame, viewDetail.m_pView->m_hRenderGraph, viewDetail.m_pView.Borrow(), compileSettings, &graphError).Failed())
     {
-      // Pass the view's per-view profiler into the executor so every pass gets Duration bracketed.
-      if (pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler(), &graphError).Failed())
-      {
-        // Earlier callbacks may have recorded/promoted history before a later submission fails.
-        // That state cannot be used as completed temporal input on the next view update.
-        viewDetail.m_pView->InvalidateTemporalHistory();
-        xiiLog::Error("Failed to execute render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);
-      }
+      viewDetail.m_pView->InvalidateTemporalHistory();
+      xiiLog::Error("Failed to execute render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);
     }
-    else
-    {
-      xiiLog::Error("Failed to compile render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);
-    }
-    resourceCache.EndFrame();
   }
 }
 

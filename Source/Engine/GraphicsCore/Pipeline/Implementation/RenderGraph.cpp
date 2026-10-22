@@ -568,6 +568,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   m_ResourceVersions.Clear();
   m_Statistics.m_uiRegisteredPassCount = m_Passes.GetCount();
 
+
   // Phase B: topological sort + culling.
   xiiDynamicArray<xiiUInt32> sortedIndices;
   if (!RestoreTopologyCache(settings, sortedIndices))
@@ -1678,7 +1679,10 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
   const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
   if (bEnableGpuProfiling)
+  {
+    pProfiler->OnFrameBegin(m_uiFrameIndex);
     pProfiler->SetGraphInstance(m_uiInstanceId);
+  }
 
   // One general fence per producer submission that has cross-queue consumers. Fences are created
   // per Execute call so frame overlap cannot accidentally reuse an in-flight timeline value.

@@ -96,7 +96,7 @@ public:
   xiiEnum<xiiRenderPath> GetRenderPath() const;
 
   /// Configures passes that opt into the view sensor profile. An invalid handle disables them.
-  xiiResult              SetSensorProfile(xiiSensorProfileHandle hProfile);
+  xiiResult                            SetSensorProfile(xiiSensorProfileHandle hProfile);
   [[nodiscard]] xiiSensorProfileHandle GetSensorProfile() const;
   /// Returns the first completed output of a pass using this view profile, in compiled node order.
   /// Empty after profile changes or disabling output, until rendering completes. Retain for asynchronous
@@ -104,7 +104,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetSensorOutputTexture() const;
 
   /// Applies validated, view-local exposure, tone-mapping and display calibration.
-  xiiResult                       SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
+  xiiResult                                     SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
   [[nodiscard]] const xiiDisplayOutputSettings& GetDisplayOutputSettings() const;
   xiiUInt64                                     GetDisplayOutputSettingsRevision() const { return m_uiDisplayOutputSettingsRevision; }
 
@@ -192,7 +192,7 @@ public:
   /// Call at a CPU frame boundary under world access. The ID must come from this view;
   /// asynchronous callers must also retain/validate their view, camera and capture state.
   /// Returns failure and clears output for background, retired packets or deleted owners.
-  xiiResult     ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiGpuInstanceSource& out_source) const;
+  xiiResult                   ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiGpuInstanceSource& out_source) const;
   void                        SetPipelineParameter(xiiStringView name, const xiiVariant& value);
   void                        RemovePipelineParameter(xiiStringView name);
   const xiiVariantDictionary& GetPipelineParameters() const { return m_PipelineParameters; }
@@ -209,20 +209,20 @@ public:
   /// Both filters are evaluated each extraction, including for cached static render data.
   xiiTagSet m_ExcludeTags;
 
-  xiiRenderGraph*       GetRenderGraph() { return &m_RenderGraphContext.GetGraph(); }
-  const xiiRenderGraph* GetRenderGraph() const { return &m_RenderGraphContext.GetGraph(); }
+  xiiRenderGraph*       GetRenderGraph() { return xiiRenderGraphManager::GetGraph(m_hRenderGraph); }
+  const xiiRenderGraph* GetRenderGraph() const { return xiiRenderGraphManager::GetGraph(m_hRenderGraph); }
 
   xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData; }
   const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData; }
 
-  xiiRenderGraphBlackboard&       GetBlackboard() { return m_RenderGraphContext.GetBlackboard(); }
-  const xiiRenderGraphBlackboard& GetBlackboard() const { return m_RenderGraphContext.GetBlackboard(); }
+  xiiRenderGraphBlackboard&       GetBlackboard() { return *xiiRenderGraphManager::GetBlackboard(m_hRenderGraph); }
+  const xiiRenderGraphBlackboard& GetBlackboard() const { return *xiiRenderGraphManager::GetBlackboard(m_hRenderGraph); }
 
-  xiiRenderGraphResourceCache&       GetResourceCache() { return m_RenderGraphContext.GetResourceCache(); }
-  const xiiRenderGraphResourceCache& GetResourceCache() const { return m_RenderGraphContext.GetResourceCache(); }
+  xiiRenderGraphResourceCache&       GetResourceCache() { return *xiiRenderGraphManager::GetResourceCache(); }
+  const xiiRenderGraphResourceCache& GetResourceCache() const { return *xiiRenderGraphManager::GetResourceCache(); }
 
-  /// Returns the per-view GPU timestamp profiler. Used by xiiRenderWorldModule to pass into graph execution.
-  xiiRenderGraphTimestampProfiler& GetProfiler() { return m_RenderGraphContext.GetProfiler(); }
+  /// Returns the device-wide GPU timestamp profiler.
+  xiiRenderGraphTimestampProfiler& GetProfiler() { return *xiiRenderGraphManager::GetProfiler(); }
 
 private:
   friend class xiiRenderWorldModule;
@@ -239,6 +239,7 @@ private:
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
   xiiResult BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView);
 
   // CPU PID dynamic resolution (runs before BeginSetup)
   void RunDynamicResolutionPID();
@@ -275,7 +276,7 @@ private:
     float m_fRenderScale   = 1.0f;
   } m_DynamicResolution;
 
-  xiiRenderGraphContext      m_RenderGraphContext;
+  xiiRenderGraphHandle       m_hRenderGraph;
   xiiDynamicArray<xiiUInt32> m_GpuInstanceSelection;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.

@@ -69,7 +69,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphManager
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphManager);
 
 public:
-  using BuildDelegate = xiiDelegate<void(xiiRenderGraph&, xiiRenderGraphBlackboard&, const xiiView*)>;
+  using BuildDelegate = xiiDelegate<xiiResult(xiiRenderGraph&, xiiRenderGraphBlackboard&, const xiiView*)>;
 
   /// Creates a manager-owned render graph. The delegate is invoked whenever ExecuteGraph() is called.
   /// A separate graph instance should be created for each view that requires independent graph or temporal state.
@@ -78,6 +78,11 @@ public:
   /// Destroys a graph and invalidates its handle. Waits for previously submitted GPU frames before releasing graph-owned resources.
   /// Cannot be called while a GPU frame is active.
   [[nodiscard]] static xiiResult DestroyGraph(xiiRenderGraphHandle hGraph);
+
+  /// Borrowed graph and blackboard access. Returns null for stale handles.
+  /// The caller must serialize access with execution and destruction of this graph.
+  [[nodiscard]] static xiiRenderGraph*           GetGraph(xiiRenderGraphHandle hGraph);
+  [[nodiscard]] static xiiRenderGraphBlackboard* GetBlackboard(xiiRenderGraphHandle hGraph);
 
   /// Builds, compiles, and executes exactly one graph for the supplied view within an active shared GPU frame.
   /// Calls must be made on the thread that began the frame. Graphs are executed in caller-specified order.

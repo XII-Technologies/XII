@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
@@ -78,9 +79,27 @@ xiiView::xiiView(xiiWorld* pWorld) :
 
   m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext();
   XII_ASSERT_DEV(!m_hPipelineRuntime.IsInvalidated(), "Failed to create the view render-resource context.");
-  XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
+  m_hRenderGraph = xiiRenderGraphManager::CreateGraph("View Render Graph", xiiMakeDelegate(&xiiView::BuildRenderGraph, this));
+  XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create the view render graph.");
 
   UpdateRenderResolutionState();
+}
+
+xiiResult xiiView::BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView)
+{
+  XII_ASSERT_DEV(pView == this, "A view must execute its own render graph.");
+  blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(graph.GetFrameIndex()));
+
+  if (m_RenderGraphBuilder.IsValid())
+  {
+    m_RenderGraphBuilder(*this, graph, blackboard);
+  }
+  else if (BuildRenderPipeline(graph, blackboard).Failed())
+  {
+    xiiLog::Error("Failed to build render pipeline for view '{}': {}", GetName(), GetRenderPipelineInstance().GetLastBuildError());
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings)
@@ -107,7 +126,7 @@ xiiView::~xiiView()
 {
   m_InternalId.Invalidate();
 
-  m_RenderGraphContext.Shutdown();
+  xiiRenderGraphManager::DestroyGraph(m_hRenderGraph).AssertSuccess("Failed to destroy the view render graph.");
   xiiViewRenderResourceManager::DestroyContext(m_hPipelineRuntime);
   m_hPipelineRuntime = {};
 }
@@ -253,7 +272,7 @@ void xiiView::RunDynamicResolutionPID()
 {
   // Try the GPU profiler's resolved duration from 2 frames ago.
   // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
-  float fGpuTimeMs = m_RenderGraphContext.GetProfiler().GetFrameDurationMs();
+  float fGpuTimeMs = GetProfiler().GetGraphDurationMs(GetRenderGraph()->GetId().m_Data);
   if (fGpuTimeMs <= 0.0f)
   {
     fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;

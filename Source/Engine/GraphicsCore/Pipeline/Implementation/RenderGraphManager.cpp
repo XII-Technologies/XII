@@ -206,8 +206,10 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
 
   pEntry->m_Blackboard.ClearFrame();
   pEntry->m_pGraph->BeginSetup(frame.GetFrameIndex());
-  pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard, pView);
+  pEntry->m_pGraph->SetSetupBlackboard(&pEntry->m_Blackboard);
+  const xiiResult buildResult = pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard, pView);
   pEntry->m_pGraph->EndSetup();
+  XII_SUCCEED_OR_RETURN(buildResult);
 
   if (pEntry->m_pGraph->Compile(settings, out_pError).Failed())
     return XII_FAILURE;
@@ -216,6 +218,26 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
     return XII_FAILURE;
 
   return XII_SUCCESS;
+}
+
+xiiRenderGraph* xiiRenderGraphManager::GetGraph(xiiRenderGraphHandle hGraph)
+{
+  if (s_pState == nullptr)
+    return nullptr;
+
+  XII_LOCK(s_pState->m_FrameMutex);
+  xiiRenderGraphManagerState::Entry* pEntry = nullptr;
+  return s_pState->m_GraphTable.TryGetValue(hGraph, pEntry) ? pEntry->m_pGraph.Borrow() : nullptr;
+}
+
+xiiRenderGraphBlackboard* xiiRenderGraphManager::GetBlackboard(xiiRenderGraphHandle hGraph)
+{
+  if (s_pState == nullptr)
+    return nullptr;
+
+  XII_LOCK(s_pState->m_FrameMutex);
+  xiiRenderGraphManagerState::Entry* pEntry = nullptr;
+  return s_pState->m_GraphTable.TryGetValue(hGraph, pEntry) ? &pEntry->m_Blackboard : nullptr;
 }
 
 xiiRenderGraphResourceCache* xiiRenderGraphManager::GetResourceCache()
