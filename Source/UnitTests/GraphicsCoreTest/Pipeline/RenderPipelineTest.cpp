@@ -63,8 +63,6 @@ public:
   {
     pins.PushBack({"Data", xiiRenderPipelinePin::Buffer, false});
     pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, false, true, m_bUnknownTextureFormat ? xiiGALResourceFormat::Unknown : xiiGALResourceFormat::RGBA8UNormalized});
-    pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
-    pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
   }
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
@@ -110,7 +108,6 @@ public:
   {
     pins.PushBack({"Input", xiiRenderPipelinePin::Buffer, true});
     pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, true, true, xiiGALResourceFormat::RGBA16Float});
-    pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
   }
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
@@ -186,7 +183,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, TemporalDependencyPolicy)
   {
     auto invalid = PipelineResourceTest::MakeDefinition();
     invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[0].m_Id, "Texture"});
-    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[1].m_Id, "Before"});
+    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[0].m_Id, "Input"});
     xiiSharedPtr<const xiiRenderPipeline> rejected;
     xiiStringBuilder                      diagnostic;
     XII_TEST_BOOL(xiiRenderPipeline::Compile(invalid, rejected, &diagnostic).Failed());

@@ -15,8 +15,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldDirectionalLightPass, 1, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DirectionalLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Lighting") } XII_END_ATTRIBUTES;

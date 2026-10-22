@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiViewRenderModePass final : public xiiRenderPipelin
   XII_ADD_DYNAMIC_REFLECTION(xiiViewRenderModePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputDisplayLinearColor{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputDisplayLinearColor{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

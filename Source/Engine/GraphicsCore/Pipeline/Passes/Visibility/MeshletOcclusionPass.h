@@ -14,8 +14,6 @@ class XII_GRAPHICSCORE_DLL xiiMeshletOcclusionPass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshletOcclusionPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Instances{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Meshlets{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};

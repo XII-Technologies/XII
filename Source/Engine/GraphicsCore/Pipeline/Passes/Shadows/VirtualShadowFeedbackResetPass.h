@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowFeedbackResetPass final : public xiiR
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowFeedbackResetPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferOutputPin m_Requests{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiUInt32                        m_uiCapacity = 8192;
   xiiResult                        Configure(const xiiVariantDictionary& properties) override;

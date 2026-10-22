@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiConfidenceRadiancePass final : public xiiRenderPip
   XII_ADD_DYNAMIC_REFLECTION(xiiConfidenceRadiancePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineTextureInputPin            m_Signal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   bool                                        m_bAsyncCompute = false;

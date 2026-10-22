@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiPresentPass final : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiPresentPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputGradedColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferOutputPin  m_OutputFinalBlitConstants{true};
   xiiRenderPipelineTextureOutputPin m_OutputGradedColor{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Texture2D, 1};

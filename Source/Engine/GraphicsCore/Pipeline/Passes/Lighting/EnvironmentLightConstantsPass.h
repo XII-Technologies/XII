@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiEnvironmentLightConstantsPass final : public xiiRe
   XII_ADD_DYNAMIC_REFLECTION(xiiEnvironmentLightConstantsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineDataInputPin    m_Directional{xiiGetStaticRTTI<xiiDirectionalLightFrameData>(), true};
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiVec3                          m_Direction = xiiVec3(0, 0, -1), m_Color = xiiVec3(1), m_Ambient = xiiVec3(0.03f, 0.035f, 0.04f);

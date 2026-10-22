@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiVertexPullDrawCommandsPass final : public xiiRende
   XII_ADD_DYNAMIC_REFLECTION(xiiVertexPullDrawCommandsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};

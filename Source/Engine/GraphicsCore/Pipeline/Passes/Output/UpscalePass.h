@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiUpscalePass final : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiUpscalePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputTAAResolved{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputUpscaledColor{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
 

@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowSamplingConstantsPass final : public 
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowSamplingConstantsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineDataInputPin    m_Residency{xiiGetStaticRTTI<xiiVirtualShadowResidencySnapshot>()};
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiUInt32                        m_uiLightId = 1;

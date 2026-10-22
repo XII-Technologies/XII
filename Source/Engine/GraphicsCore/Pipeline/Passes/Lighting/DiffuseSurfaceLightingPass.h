@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiDiffuseSurfaceLightingPass final : public xiiRende
   XII_ADD_DYNAMIC_REFLECTION(xiiDiffuseSurfaceLightingPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineTextureInputPin            m_Depth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Albedo{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Material{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

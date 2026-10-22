@@ -11,8 +11,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusterLightSamplingPass,1,xiiRTTIDefaultAll
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Layout",m_Layout)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Lights",m_Lights)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("LightGrid",m_Grid)->AddFlags(xiiPropertyFlags::ReadOnly),

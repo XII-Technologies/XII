@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiWorldDirectionalLightPass final : public xiiRender
   XII_ADD_DYNAMIC_REFLECTION(xiiWorldDirectionalLightPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin           m_Before;
-  xiiRenderPipelineOrderOutputPin          m_After;
   xiiRenderPipelineDataOutputPin           m_Light{xiiGetStaticRTTI<xiiDirectionalLightFrameData>()};
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Lights; }

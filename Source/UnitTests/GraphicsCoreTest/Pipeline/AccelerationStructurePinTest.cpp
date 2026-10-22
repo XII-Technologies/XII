@@ -72,7 +72,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedAccelerationStructurePins)
   // Existing serialized resource kinds retain their numeric values.
   XII_TEST_INT(xiiRenderPipelinePin::Texture, 0);
   XII_TEST_INT(xiiRenderPipelinePin::Buffer, 1);
-  XII_TEST_INT(xiiRenderPipelinePin::Order, 2);
+  XII_TEST_INT(xiiRenderPipelinePin::AccelerationStructure, 3);
+  XII_TEST_INT(xiiRenderPipelinePin::FrameData, 4);
   xiiRayPinContractSource               source;
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   source.GetPins(pins);

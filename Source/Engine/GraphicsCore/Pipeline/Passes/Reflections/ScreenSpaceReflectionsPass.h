@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiScreenSpaceReflectionsPass final : public xiiRende
   XII_ADD_DYNAMIC_REFLECTION(xiiScreenSpaceReflectionsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputGBufferNormal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputGBufferMaterial{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

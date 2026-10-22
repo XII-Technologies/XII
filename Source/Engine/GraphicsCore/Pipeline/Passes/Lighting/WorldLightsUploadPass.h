@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiWorldLightsUploadPass final : public xiiRenderPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiWorldLightsUploadPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin           m_Before;
-  xiiRenderPipelineOrderOutputPin          m_After;
   xiiRenderPipelineBufferOutputPin         m_Lights{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_Profiles{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_Counts{false, xiiGALBindFlags::ShaderResource};

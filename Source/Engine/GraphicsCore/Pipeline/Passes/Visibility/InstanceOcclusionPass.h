@@ -14,8 +14,6 @@ class XII_GRAPHICSCORE_DLL xiiInstanceOcclusionPass final : public xiiRenderPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiInstanceOcclusionPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Instances{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Candidates{false, xiiGALBindFlags::ShaderResource};

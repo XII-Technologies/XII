@@ -19,10 +19,10 @@ void xiiRenderPipelinePinMetadata::SetDataTypeName(xiiStringView sTypeName)
 }
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinType, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::Order, xiiRenderPipelinePinType::AccelerationStructure, xiiRenderPipelinePinType::FrameData)
+  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::AccelerationStructure, xiiRenderPipelinePinType::FrameData)
 XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinAccess, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelinePinAccess::Automatic, xiiRenderPipelinePinAccess::Read, xiiRenderPipelinePinAccess::Write, xiiRenderPipelinePinAccess::ReadWrite, xiiRenderPipelinePinAccess::Ordering)
+  XII_ENUM_CONSTANTS(xiiRenderPipelinePinAccess::Automatic, xiiRenderPipelinePinAccess::Read, xiiRenderPipelinePinAccess::Write, xiiRenderPipelinePinAccess::ReadWrite)
 XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinCardinality, 1)
   XII_ENUM_CONSTANTS(xiiRenderPipelinePinCardinality::Single, xiiRenderPipelinePinCardinality::Multiple)
@@ -93,13 +93,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAccelerationStructureInputPin,
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAccelerationStructureOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineAccelerationStructureOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderInputPin>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineDataInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineDataInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineDataOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineDataOutputPin>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinNameAttribute, 1, xiiRTTIDefaultAllocator<xiiRenderPipelinePinNameAttribute>)
   {
@@ -167,10 +163,6 @@ xiiRenderPipelineDataInputPin::xiiRenderPipelineDataInputPin(const xiiRTTI* type
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::FrameData, true, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) { SetDataType(type); }
 xiiRenderPipelineDataOutputPin::xiiRenderPipelineDataOutputPin(const xiiRTTI* type, bool optional) :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::FrameData, false, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) { SetDataType(type); }
-xiiRenderPipelineOrderInputPin::xiiRenderPipelineOrderInputPin() :
-  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, true, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
-xiiRenderPipelineOrderOutputPin::xiiRenderPipelineOrderOutputPin() :
-  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, false, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
 
 xiiRenderPipelinePinMetadata xiiRenderPipelinePin::GetMetadata() const
 {
@@ -180,9 +172,8 @@ xiiRenderPipelinePinMetadata xiiRenderPipelinePin::GetMetadata() const
   metadata.m_Type   = m_Type;
   metadata.m_Access = m_Access;
   if (metadata.m_Access == xiiRenderPipelinePinAccess::Automatic)
-    metadata.m_Access = m_Type == Order ? xiiRenderPipelinePinAccess::Ordering : m_bInput || m_bTemporalHistoryOutput ? xiiRenderPipelinePinAccess::Read :
-                                                                                                                        xiiRenderPipelinePinAccess::Write;
-  metadata.m_Cardinality      = !m_bInput || m_Type == Order ? xiiRenderPipelinePinCardinality::Multiple : xiiRenderPipelinePinCardinality::Single;
+    metadata.m_Access = m_bInput || m_bTemporalHistoryOutput ? xiiRenderPipelinePinAccess::Read : xiiRenderPipelinePinAccess::Write;
+  metadata.m_Cardinality      = !m_bInput ? xiiRenderPipelinePinCardinality::Multiple : xiiRenderPipelinePinCardinality::Single;
   metadata.m_bOptional        = m_bOptional;
   metadata.m_bTemporalHistory = m_bTemporalHistoryOutput;
   metadata.m_DeclaredFormat   = m_Format;
@@ -204,8 +195,8 @@ xiiResult xiiRenderPipelinePin::Apply(const xiiRenderPipelinePinConfiguration& c
     return fail("invalid format, dimension or sample count.");
   if (m_Type != Texture && (configuration.m_Format != xiiGALResourceFormat::Unknown || limits.m_Dimension != xiiGALResourceDimension::Undefined || limits.m_uiSamples || limits.m_uiWidth || limits.m_uiHeight))
     return fail("texture requirements are not valid on this resource kind.");
-  if ((m_Type == Order || m_Type == AccelerationStructure || m_Type == FrameData) && limits.m_RequiredBindFlags.IsAnyFlagSet())
-    return fail("ordering, acceleration-structure and frame-data pins cannot require texture/buffer binding flags.");
+  if ((m_Type == AccelerationStructure || m_Type == FrameData) && limits.m_RequiredBindFlags.IsAnyFlagSet())
+    return fail("acceleration-structure and frame-data pins cannot require texture/buffer binding flags.");
   if (m_Type == Texture && limits.m_Dimension == xiiGALResourceDimension::Buffer)
     return fail("a texture pin cannot require a buffer dimension.");
   if (xiiReflectionUtils::MakeEnumerationValid(xiiGetStaticRTTI<xiiGALBindFlags>(), limits.m_RequiredBindFlags.GetValue()) != limits.m_RequiredBindFlags.GetValue())

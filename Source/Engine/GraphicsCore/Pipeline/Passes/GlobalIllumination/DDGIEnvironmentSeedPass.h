@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiDDGIEnvironmentSeedPass final : public xiiRenderPi
   XII_ADD_DYNAMIC_REFLECTION(xiiDDGIEnvironmentSeedPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineDataInputPin               m_Schedule{xiiGetStaticRTTI<xiiDDGIProbeFrameData>()};
   xiiRenderPipelineBufferInputPin             m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin             m_Environment{false, xiiGALBindFlags::UniformBuffer};

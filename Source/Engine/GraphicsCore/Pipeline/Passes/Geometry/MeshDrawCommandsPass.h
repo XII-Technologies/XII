@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiMeshDrawCommandsPass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshDrawCommandsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Visible{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Count{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin            m_Commands{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};

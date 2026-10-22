@@ -45,5 +45,5 @@ XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
   XII_TEST_BOOL(compiled->GetDescriptor().m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute));
   XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet());
-  XII_TEST_BOOL(compiled->GetPins(0)[2].m_Id != compiled->GetPins(1)[2].m_Id);
+  XII_TEST_BOOL(compiled->GetPins(0)[0].m_Id != compiled->GetPins(1)[0].m_Id);
 }

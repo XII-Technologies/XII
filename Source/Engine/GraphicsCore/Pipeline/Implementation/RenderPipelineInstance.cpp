@@ -254,9 +254,6 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         valid = !binding.m_pFrameData && !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() &&
           (binding.m_AccelerationStructure.IsValid() ? graph.GetBufferDescription(binding.m_AccelerationStructure.m_Dependency) != nullptr : external.m_Pin.m_bOptional && binding.m_AccelerationStructure.IsEmpty());
         break;
-      case xiiRenderPipelinePin::Order:
-        valid = !binding.m_pFrameData && !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty();
-        break;
       case xiiRenderPipelinePin::FrameData:
         valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
           (binding.m_pFrameData ? external.m_Pin.m_pDataType && binding.m_pFrameData->GetSetupSerial() == graph.GetSetupSerial() && binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(external.m_Pin.m_pDataType) : external.m_Pin.m_bOptional);

@@ -15,8 +15,7 @@ struct xiiRenderPipelinePinType
   {
     Texture,
     Buffer,
-    Order,
-    AccelerationStructure,
+    AccelerationStructure = 3,
     FrameData,
     Default = Texture
   };
@@ -30,7 +29,6 @@ struct xiiRenderPipelinePinAccess
     Read,
     Write,
     ReadWrite,
-    Ordering,
     Default = Automatic
   };
 };
@@ -102,7 +100,6 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   using Type                                                = xiiRenderPipelinePinType::Enum;
   static constexpr Type               Texture               = xiiRenderPipelinePinType::Texture;
   static constexpr Type               Buffer                = xiiRenderPipelinePinType::Buffer;
-  static constexpr Type               Order                 = xiiRenderPipelinePinType::Order;
   static constexpr Type               AccelerationStructure = xiiRenderPipelinePinType::AccelerationStructure;
   static constexpr Type               FrameData             = xiiRenderPipelinePinType::FrameData;
   xiiString                           m_sName;
@@ -220,21 +217,6 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineDataOutputPin : public xiiRenderPipe
 
 public:
   explicit xiiRenderPipelineDataOutputPin(const xiiRTTI* type = nullptr, bool optional = false);
-};
-
-class XII_GRAPHICSCORE_DLL xiiRenderPipelineOrderInputPin : public xiiRenderPipelinePinHandle
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineOrderInputPin, xiiRenderPipelinePinHandle);
-
-public:
-  xiiRenderPipelineOrderInputPin();
-};
-class XII_GRAPHICSCORE_DLL xiiRenderPipelineOrderOutputPin : public xiiRenderPipelinePinHandle
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineOrderOutputPin, xiiRenderPipelinePinHandle);
-
-public:
-  xiiRenderPipelineOrderOutputPin();
 };
 
 /// Optional serialization name for an input/output pair with the same external

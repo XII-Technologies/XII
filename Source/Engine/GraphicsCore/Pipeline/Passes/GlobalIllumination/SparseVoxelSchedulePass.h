@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiSparseVoxelSchedulePass final : public xiiRenderPi
   XII_ADD_DYNAMIC_REFLECTION(xiiSparseVoxelSchedulePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin  m_Before;
-  xiiRenderPipelineOrderOutputPin m_After;
   xiiRenderPipelineBufferInputPin m_PreviousPool{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineDataOutputPin  m_Schedule{xiiGetStaticRTTI<xiiSparseVoxelFrameData>()};
   xiiUInt32                       m_Levels = 5, m_Grid = 8, m_Voxels = 8, m_Resident = 4096, m_Budget = 64, m_Refresh = 120;

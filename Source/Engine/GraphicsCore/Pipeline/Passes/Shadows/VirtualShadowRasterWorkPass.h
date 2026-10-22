@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowRasterWorkPass final : public xiiRend
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowRasterWorkPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin        m_Before;
-  xiiRenderPipelineOrderOutputPin       m_After;
   xiiRenderPipelineDataInputPin         m_Cascades{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>()};
   xiiRenderPipelineDataInputPin         m_Residency{xiiGetStaticRTTI<xiiVirtualShadowResidencySnapshot>()};
   xiiRenderPipelineDataOutputPin        m_Pages{xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()};

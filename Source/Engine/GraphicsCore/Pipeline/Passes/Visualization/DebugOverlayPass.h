@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiDebugOverlayPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiDebugOverlayPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputDisplayLinearColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget};
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
   xiiRenderPipelineTextureOutputPin m_OutputDisplayLinearColor;

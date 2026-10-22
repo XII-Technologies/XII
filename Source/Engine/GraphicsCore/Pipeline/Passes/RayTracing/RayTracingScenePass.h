@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiRayTracingScenePass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiRayTracingScenePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin                  m_Before;
-  xiiRenderPipelineOrderOutputPin                 m_After;
   xiiRenderPipelineAccelerationStructureOutputPin m_OutputScene{true};
   xiiRenderPipelineBufferOutputPin                m_OutputMaterials{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin                m_OutputGeometry{true, xiiGALBindFlags::ShaderResource};

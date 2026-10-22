@@ -348,7 +348,7 @@ xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source,
       }
     }
   }
-  out_result = input.m_Type == xiiRenderPipelinePin::Order ? CanConnectResult::ConnectNtoN : CanConnectResult::ConnectNto1;
+  out_result = CanConnectResult::ConnectNto1;
   return XII_SUCCESS;
 }
 

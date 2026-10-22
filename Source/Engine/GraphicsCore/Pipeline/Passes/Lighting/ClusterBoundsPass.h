@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiClusterBoundsPass final : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiClusterBoundsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineDataInputPin               m_Layout{xiiGetStaticRTTI<xiiLightClusterFrameData>()};
   xiiRenderPipelineBufferOutputPin            m_Clusters{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   bool                                        m_bAsyncCompute = true;

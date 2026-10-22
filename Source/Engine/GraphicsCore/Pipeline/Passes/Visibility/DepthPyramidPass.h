@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiDepthPyramidPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiDepthPyramidPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineTextureInputPin            m_Depth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Pyramid{xiiGALResourceFormat::R32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   bool                                        m_bAsyncCompute = true;

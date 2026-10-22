@@ -357,7 +357,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentInstanceOcclusion)
   definition.AddPass("Reset", xiiGetStaticRTTI<xiiCounterResetPass>());
   XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+    if (pin.m_sName != "InitialCount")
       definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[0].m_Id, pin.m_sName});
   xiiGraphDefinition reusable;
   XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
@@ -370,7 +370,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentInstanceOcclusion)
     override.m_Path.PushBack(definition.m_Passes[0].m_Id);
     override.m_Properties.Insert("DepthBias", instance ? 0.0f : 0.0005f);
     for (const auto& pin : pins)
-      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+      if (pin.m_bInput && pin.m_sName != "InitialCount")
         root.m_Interface.PushBack({xiiStringBuilder(instance ? "Strict/" : "Biased/", pin.m_sName), true, root.m_Passes[node].m_Id, pin.m_sName});
   }
   xiiSharedPtr<const xiiRenderPipeline> compiled;
@@ -409,7 +409,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshletOcclusion)
   definition.AddPass("Reset", xiiGetStaticRTTI<xiiCounterResetPass>());
   XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+    if (pin.m_sName != "InitialCount")
       definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[0].m_Id, pin.m_sName});
   xiiGraphDefinition reusable;
   XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
@@ -422,7 +422,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshletOcclusion)
     override.m_Path.PushBack(definition.m_Passes[0].m_Id);
     override.m_Properties.Insert("DepthBias", instance ? 0.0f : 0.0005f);
     for (const auto& pin : pins)
-      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+      if (pin.m_bInput && pin.m_sName != "InitialCount")
         root.m_Interface.PushBack({xiiStringBuilder(instance ? "Strict/" : "Biased/", pin.m_sName), true, root.m_Passes[node].m_Id, pin.m_sName});
   }
   xiiSharedPtr<const xiiRenderPipeline> compiled;
@@ -481,7 +481,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentGeometryStreamingFeedback)
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   generate.GetPins(pins);
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitializedRequests")
+    if (pin.m_sName != "InitializedRequests")
       definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[1].m_Id, pin.m_sName});
   xiiGraphDefinition reusable;
   XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
@@ -494,7 +494,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentGeometryStreamingFeedback)
     override.m_Path.PushBack(definition.m_Passes[1].m_Id);
     override.m_Properties.Insert("PriorityTier", i ? 3U : 1U);
     for (const auto& pin : pins)
-      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitializedRequests")
+      if (pin.m_bInput && pin.m_sName != "InitializedRequests")
         root.m_Interface.PushBack({pin.m_sName, true, root.m_Passes[node].m_Id, pin.m_sName});
   }
   xiiContiguousMemoryStreamStorage storage;
@@ -820,7 +820,6 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowWorkAndPublica
   XII_TEST_BOOL(copy.Build(context).Failed());
   XII_TEST_BOOL(error.FindSubString("current GPU frame") != nullptr);
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order)
-      XII_TEST_BOOL(pin.m_Type == xiiRenderPipelinePin::FrameData && pin.m_pDataType != nullptr);
+    XII_TEST_BOOL(pin.m_Type == xiiRenderPipelinePin::FrameData && pin.m_pDataType != nullptr);
   graph.EndSetup();
 }

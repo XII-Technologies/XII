@@ -64,8 +64,6 @@ namespace
       override.m_Properties.Insert("AsyncCompute", i == 0);
       for (const auto& pin : pins)
       {
-        if (pin.m_Type == xiiRenderPipelinePin::Order)
-          continue;
         if (pyramid && pin.m_bInput && pin.m_sName == "DepthPyramid")
         {
           root.Connect(reduce, "DepthPyramid", node, pin.m_sName).AssertSuccess();

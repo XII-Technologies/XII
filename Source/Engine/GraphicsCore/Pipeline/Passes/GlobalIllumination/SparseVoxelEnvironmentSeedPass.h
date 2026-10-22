@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiSparseVoxelEnvironmentSeedPass final : public xiiR
   XII_ADD_DYNAMIC_REFLECTION(xiiSparseVoxelEnvironmentSeedPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineDataInputPin               m_Schedule{xiiGetStaticRTTI<xiiSparseVoxelFrameData>()};
   xiiRenderPipelineBufferInputPin             m_Environment{false, xiiGALBindFlags::UniformBuffer}, m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin             m_Levels{false, xiiGALBindFlags::ShaderResource}, m_Updates{false, xiiGALBindFlags::ShaderResource};

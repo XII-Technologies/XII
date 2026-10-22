@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiMeshletCullPass final : public xiiRenderPipelinePa
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshletCullPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};

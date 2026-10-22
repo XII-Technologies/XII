@@ -11,8 +11,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualShadowRasterWorkPass, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Cascades", m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Residency", m_Residency)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("RasterPages", m_Pages)->AddFlags(xiiPropertyFlags::ReadOnly),

@@ -26,8 +26,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadePass, 1, xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("CascadeConstants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("CascadeSnapshot", m_Snapshot)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Settings", m_Settings),

@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiSurfaceRasterConstantsPass final : public xiiRende
   XII_ADD_DYNAMIC_REFLECTION(xiiSurfaceRasterConstantsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiUInt32                        m_uiVertexStride    = sizeof(xiiMeshPackedVertex);
   xiiUInt32                        m_uiNormalOffset    = offsetof(xiiMeshPackedVertex, m_vNormal);

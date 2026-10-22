@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowTablesPass final : public xiiRenderPi
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowTablesPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin        m_Before;
-  xiiRenderPipelineOrderOutputPin       m_After;
   xiiRenderPipelineBufferOutputPin      m_Physical{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin      m_Virtual{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineTextureOutputPin     m_Atlas{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

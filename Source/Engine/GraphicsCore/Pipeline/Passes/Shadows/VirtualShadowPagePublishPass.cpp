@@ -12,8 +12,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualShadowPagePublishPass, 1, xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("RasterPages", m_Pages)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("RasterAtlas", m_Atlas)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PhysicalPageTable", m_Physical)->AddFlags(xiiPropertyFlags::ReadOnly),

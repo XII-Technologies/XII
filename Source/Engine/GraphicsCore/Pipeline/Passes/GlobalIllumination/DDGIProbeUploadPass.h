@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiDDGIProbeUploadPass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiDDGIProbeUploadPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineDataInputPin    m_Schedule{xiiGetStaticRTTI<xiiDDGIProbeFrameData>()};
   xiiRenderPipelineBufferOutputPin m_States{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferOutputPin m_Updates{false, xiiGALBindFlags::ShaderResource};

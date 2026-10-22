@@ -29,14 +29,12 @@ namespace
     const auto* parameters   = author.Add("Physical Atmosphere Parameters", "xiiAtmosphereConstantsPass", {0, 0});
     const auto* transmission = author.Reference("Solar Transmittance", "AtmosphereTransmittance", {700, 0});
     const auto* scattering   = author.Reference("Multiple Scattering", "AtmosphereMultiScatter", {1400, 0});
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, parameters, "Before", xiiRenderPipelinePin::Order));
     XII_SUCCEED_OR_RETURN(author.Connect(parameters, "AtmosphereConstants", transmission, "Atmosphere"));
     XII_SUCCEED_OR_RETURN(author.Connect(parameters, "AtmosphereConstants", scattering, "Atmosphere"));
     XII_SUCCEED_OR_RETURN(author.Connect(transmission, "Transmittance", scattering, "Transmittance"));
     XII_SUCCEED_OR_RETURN(author.Boundary("Atmosphere", false, parameters, "AtmosphereConstants", xiiRenderPipelinePin::Buffer));
     XII_SUCCEED_OR_RETURN(author.Boundary("Transmittance", false, transmission, "Transmittance"));
     XII_SUCCEED_OR_RETURN(author.Boundary("MultiScatter", false, scattering, "MultiScatter"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, scattering, "After", xiiRenderPipelinePin::Order));
     return author.Save(path);
   }
   xiiStatus AuthorWorldAtmosphereView(xiiStringView path)
@@ -50,7 +48,6 @@ namespace
     override.m_Properties.Insert("UseWorldAtmosphere", true);
     // Instance overrides are stored through the same reflected command accessor as all other properties.
     XII_SUCCEED_OR_RETURN(author.Override(lookup, override));
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, lookup, "Before", xiiRenderPipelinePin::Order));
     for (const xiiStringView pin : {"Atmosphere", "Transmittance", "MultiScatter"})
       XII_SUCCEED_OR_RETURN(author.Connect(lookup, pin, view, pin));
     for (const xiiStringView pin : {"Depth", "Radiance"})
@@ -61,7 +58,6 @@ namespace
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, false, lookup, pin));
     XII_SUCCEED_OR_RETURN(author.Boundary("Atmosphere", false, lookup, "Atmosphere", xiiRenderPipelinePin::Buffer));
     XII_SUCCEED_OR_RETURN(author.Boundary("Radiance", false, view, "AtmosphereRadiance"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, view, "After", xiiRenderPipelinePin::Order));
     return author.Save(path);
   }
 } // namespace

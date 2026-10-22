@@ -13,8 +13,6 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneInstanceSelectionPass final : public xii
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneInstanceSelectionPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin           m_Before;
-  xiiRenderPipelineOrderOutputPin          m_After;
   xiiRenderPipelineBufferOutputPin         m_Candidates{false, xiiGALBindFlags::ShaderResource};
   bool                                     m_bEnabled         = true;
   bool                                     m_bSelectionOnly   = false;

@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiGeometryUploadPass final : public xiiRenderPipelin
   XII_ADD_DYNAMIC_REFLECTION(xiiGeometryUploadPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferOutputPin m_Geometry{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin m_Meshlets{false, xiiGALBindFlags::ShaderResource};
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override;

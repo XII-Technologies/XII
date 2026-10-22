@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiBufferForwardPass final : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiBufferForwardPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferInputPin  m_Input{true};
   xiiRenderPipelineBufferOutputPin m_Output{true, {}, xiiRenderPipelinePinAccess::Read};
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override;

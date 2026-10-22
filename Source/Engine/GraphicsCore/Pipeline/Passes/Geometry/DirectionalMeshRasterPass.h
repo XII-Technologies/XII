@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiDirectionalMeshRasterPass final : public xiiRender
   XII_ADD_DYNAMIC_REFLECTION(xiiDirectionalMeshRasterPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Skinning{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};

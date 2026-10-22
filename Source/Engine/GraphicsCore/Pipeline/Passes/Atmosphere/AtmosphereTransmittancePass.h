@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiAtmosphereTransmittancePass final : public xiiRend
   XII_ADD_DYNAMIC_REFLECTION(xiiAtmosphereTransmittancePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin  m_Before;
-  xiiRenderPipelineOrderOutputPin m_After;
   xiiRenderPipelineBufferInputPin m_Atmosphere{false, xiiGALBindFlags::UniformBuffer};
 
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};

@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiClusterListClearPass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiClusterListClearPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin              m_Before;
-  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineDataInputPin               m_Layout{xiiGetStaticRTTI<xiiLightClusterFrameData>()};
   xiiRenderPipelineBufferOutputPin            m_Grid{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferOutputPin            m_Indices{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};

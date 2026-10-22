@@ -12,8 +12,6 @@ class XII_GRAPHICSCORE_DLL xiiSceneRayProbePass final : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneRayProbePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin                 m_Before;
-  xiiRenderPipelineOrderOutputPin                m_After;
   xiiRenderPipelineAccelerationStructureInputPin m_Scene{true};
   /// Canonical hit records; Metadata.y preserves the full generation-validated world GPU identity.
   xiiRenderPipelineBufferInputPin             m_Materials{true, xiiGALBindFlags::ShaderResource};

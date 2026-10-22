@@ -30,8 +30,6 @@ namespace
     const auto* environment = author.Add("No Additional Ambient Baseline", "xiiEnvironmentLightConstantsPass", {700, 1000});
     const auto* diffuse     = author.Add("Evaluate Diffuse Material", "xiiDiffuseSurfaceLightingPass", {1400, 0});
     XII_SUCCEED_OR_RETURN(author.Set(environment, "AmbientRadiance", xiiVec3::MakeZero()));
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, trace, "Before", xiiRenderPipelinePin::Order));
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, environment, "Before", xiiRenderPipelinePin::Order));
     XII_SUCCEED_OR_RETURN(author.Boundary("Depth", true, trace, "Depth"));
     XII_SUCCEED_OR_RETURN(author.Boundary("Depth", true, diffuse, "Depth"));
     for (const xiiStringView pin : {"Normal", "Radiance"})
@@ -43,7 +41,6 @@ namespace
     XII_SUCCEED_OR_RETURN(author.Connect(environment, "EnvironmentLight", diffuse, "EnvironmentLight"));
     XII_SUCCEED_OR_RETURN(author.Boundary("Irradiance", false, trace, "Irradiance"));
     XII_SUCCEED_OR_RETURN(author.Boundary("Lighting", false, diffuse, "Lighting"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, diffuse, "After", xiiRenderPipelinePin::Order));
     return author.Save(path);
   }
   xiiStatus AuthorScreenRefraction(xiiStringView path)
@@ -53,7 +50,6 @@ namespace
     const auto* trace  = author.Reference("Sample Background Refraction", "ScreenRefractionTrace", {0, 0});
     const auto* weight = author.Add("Apply Transmission Weight", "xiiConfidenceRadiancePass", {700, 0});
     const auto* sum    = author.Add("Add Transmitted Radiance", "xiiRadianceAddPass", {1400, 0});
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, trace, "Before", xiiRenderPipelinePin::Order));
     for (const xiiStringView pin : {"Depth", "Normal", "Material", "Emissive"})
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, true, trace, pin));
     XII_SUCCEED_OR_RETURN(author.Boundary("BackgroundRadiance", true, trace, "Radiance"));
@@ -64,7 +60,6 @@ namespace
     XII_SUCCEED_OR_RETURN(author.Boundary("RefractionSignal", false, trace, "Refraction"));
     XII_SUCCEED_OR_RETURN(author.Boundary("TransmittedRadiance", false, weight, "Radiance"));
     XII_SUCCEED_OR_RETURN(author.Boundary("Radiance", false, sum, "Radiance"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, sum, "After", xiiRenderPipelinePin::Order));
     return author.Save(path);
   }
   xiiStatus AuthorScreenEffects(xiiStringView path)
@@ -79,8 +74,6 @@ namespace
     const auto* settings         = author.Add("World Atmosphere Parameters", "xiiAtmosphereConstantsPass", {2800, 1200});
     const auto* atmosphere       = author.Reference("Atmospheric View", "AtmosphereApply", {3700, 0});
     XII_SUCCEED_OR_RETURN(author.Set(settings, "UseWorldAtmosphere", true));
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, diffuse, "Before", xiiRenderPipelinePin::Order));
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, settings, "Before", xiiRenderPipelinePin::Order));
     for (const xiiStringView pin : {"Depth", "Normal", "Material", "Emissive"})
     {
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, true, diffuse, pin));
@@ -105,7 +98,6 @@ namespace
     for (const xiiStringView pin : {"Transmittance", "MultiScatter"})
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, true, atmosphere, pin));
     XII_SUCCEED_OR_RETURN(author.Boundary("Radiance", false, atmosphere, "AtmosphereRadiance"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, atmosphere, "After", xiiRenderPipelinePin::Order));
     XII_SUCCEED_OR_RETURN(author.Boundary("ScreenIrradiance", false, diffuse, "Irradiance"));
     XII_SUCCEED_OR_RETURN(author.Boundary("ScreenLighting", false, selectGI, "Texture"));
     for (const xiiStringView pin : {"RefractionSignal", "TransmittedRadiance"})

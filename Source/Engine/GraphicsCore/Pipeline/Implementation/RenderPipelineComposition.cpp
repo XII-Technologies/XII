@@ -42,7 +42,7 @@ void xiiRenderPipelineInterfacePass::SetDataTypeName(xiiStringView sTypeName)
 
 void xiiRenderPipelineInterfacePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
-  if (m_uiResourceType <= xiiRenderPipelinePin::FrameData && !m_sName.IsEmpty())
+  if ((m_uiResourceType == xiiRenderPipelinePin::Texture || m_uiResourceType == xiiRenderPipelinePin::Buffer || m_uiResourceType == xiiRenderPipelinePin::AccelerationStructure || m_uiResourceType == xiiRenderPipelinePin::FrameData) && !m_sName.IsEmpty())
   {
     auto& pin       = out_pins.ExpandAndGetRef();
     pin.m_sName     = "Value";

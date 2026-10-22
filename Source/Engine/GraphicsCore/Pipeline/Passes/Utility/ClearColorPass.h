@@ -13,8 +13,6 @@ class XII_GRAPHICSCORE_DLL xiiClearColorPass final : public xiiRenderPipelinePas
   XII_ADD_DYNAMIC_REFLECTION(xiiClearColorPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputTexture{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputTexture{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget, xiiGALResourceDimension::Texture2D, 1};
   xiiColor                          m_Color = xiiColor::Black;

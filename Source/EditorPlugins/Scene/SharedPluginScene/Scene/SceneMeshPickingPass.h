@@ -18,8 +18,6 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneMeshPickingPass : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneMeshPickingPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputSurface{xiiGALResourceFormat::RGBA32UInt, false, {}, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputSurface{xiiGALResourceFormat::RGBA32UInt, true, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read};
   bool                              m_bEnabled = true;

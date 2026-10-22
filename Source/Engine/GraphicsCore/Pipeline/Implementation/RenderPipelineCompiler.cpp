@@ -163,7 +163,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
           return fail("Temporal history must be a texture or buffer output pin.");
         pass.m_bHasTemporalHistory = true;
       }
-      if (pin.m_Type > xiiRenderPipelinePin::FrameData || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
+      if ((pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Type != xiiRenderPipelinePin::Buffer && pin.m_Type != xiiRenderPipelinePin::AccelerationStructure && pin.m_Type != xiiRenderPipelinePin::FrameData) || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
         return fail("Invalid pin resource schema.");
       if ((pin.m_Type == xiiRenderPipelinePin::FrameData) != (pin.m_pDataType != nullptr) || (pin.m_pDataType && !pin.m_pDataType->IsDerivedFrom<xiiRenderPipelineFrameData>()))
         return fail("Frame-data pins require a native reflected snapshot type.");
@@ -294,7 +294,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     if (!a.IsCompatibleWith(b))
       return fail("Incompatible resource pin types, formats, samples or dimensions.");
     const auto targetBinding = target.m_uiBindingOffset + input;
-    if (connected[targetBinding] && b.m_Type != xiiRenderPipelinePin::Order)
+    if (connected[targetBinding])
       return fail("An input resource pin has multiple producers.");
     connected[targetBinding] = 1;
     result->m_Connections.PushBack({source.m_uiBindingOffset + output, targetBinding});

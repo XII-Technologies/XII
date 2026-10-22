@@ -10,8 +10,6 @@ class XII_GRAPHICSCORE_DLL xiiDepthTargetPass final : public xiiRenderPipelinePa
   XII_ADD_DYNAMIC_REFLECTION(xiiDepthTargetPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_Reference{xiiGALResourceFormat::Unknown, true};
   xiiRenderPipelineTextureOutputPin m_Depth{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1};
   xiiUInt32                         m_uiWidth = 0, m_uiHeight = 0;

@@ -20,8 +20,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionalMeshRasterPass,1,xiiRTTIDefaultAl
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("SceneInstances",m_Scene)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SkinningMatrices",m_Skinning)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("GeometryMetadata",m_Geometry)->AddFlags(xiiPropertyFlags::ReadOnly),

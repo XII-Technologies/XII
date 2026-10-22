@@ -101,7 +101,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   bloom.GetPins(pins);
   XII_TEST_RESULT(bloom.InitializePinBindings(pins));
-  XII_TEST_INT(pins.GetCount(), 4);
+  XII_TEST_INT(pins.GetCount(), 2);
+  XII_TEST_BOOL(bloom.GetDynamicRTTI()->FindPropertyByName("Before") == nullptr);
+  XII_TEST_BOOL(bloom.GetDynamicRTTI()->FindPropertyByName("After") == nullptr);
   XII_TEST_STRING(pins[bloom.m_InputUpscaledColor.GetBindingIndex()].m_sName, "UpscaledColor");
   XII_TEST_BOOL(pins[bloom.m_OutputBloomTexture.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA16Float);
   const auto* property = bloom.GetDynamicRTTI()->FindPropertyByName("BloomTexture");
@@ -113,10 +115,10 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   XII_TEST_BOOL(bloom.Configure(properties).Failed()); // Runtime binding indices are never authorable.
   auto inspection = pins;
   bloom.GetPins(inspection); // Appending an editor query must not alter runtime indices.
-  XII_TEST_INT(bloom.m_InputUpscaledColor.GetBindingIndex(), 2);
-  XII_TEST_INT(bloom.m_OutputBloomTexture.GetBindingIndex(), 3);
+  XII_TEST_INT(bloom.m_InputUpscaledColor.GetBindingIndex(), 0);
+  XII_TEST_INT(bloom.m_OutputBloomTexture.GetBindingIndex(), 1);
   auto changed       = pins;
-  changed[2].m_sName = "Stale schema";
+  changed[0].m_sName = "Stale schema";
   XII_TEST_BOOL(bloom.InitializePinBindings(changed).Failed());
   XII_TEST_INT(bloom.m_InputUpscaledColor.GetBindingIndex(), xiiInvalidIndex);
 

@@ -14,8 +14,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMatrixRasterConstantsPass, 1, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("RasterConstants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ViewProjection", m_ViewProjection),
     XII_MEMBER_PROPERTY("PreviousViewProjection", m_PreviousViewProjection),

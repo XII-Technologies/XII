@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiCounterResetPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiCounterResetPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin   m_Before;
-  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferOutputPin m_Counter{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
   xiiUInt32                        m_uiValue = 0;
   xiiResult                        Build(xiiRenderPipelinePassContext& context) override;

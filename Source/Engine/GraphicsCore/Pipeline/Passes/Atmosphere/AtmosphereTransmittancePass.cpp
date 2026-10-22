@@ -11,8 +11,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereTransmittancePass,1,xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Atmosphere",m_Atmosphere)->AddFlags(xiiPropertyFlags::ReadOnly),
 
     XII_MEMBER_PROPERTY("Transmittance",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),

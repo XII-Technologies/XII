@@ -23,8 +23,6 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneShapeIconPass : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneShapeIconPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputColor;
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
   xiiRenderPipelineTextureOutputPin m_OutputColor;

@@ -11,8 +11,6 @@ class XII_GRAPHICSCORE_DLL xiiClearTexturePass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiClearTexturePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineOrderInputPin    m_Before;
-  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputReference{xiiGALResourceFormat::Unknown, true};
   xiiRenderPipelineTextureOutputPin m_OutputTexture;
   xiiUInt32                         m_uiWidth = 0, m_uiHeight = 0;
