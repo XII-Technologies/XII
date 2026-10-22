@@ -534,6 +534,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_RESULT(loaded.Deserialize(reader));
     XII_TEST_INT(loaded.m_Passes.GetCount(), 2);
     XII_TEST_INT(loaded.m_Connections.GetCount(), 1);
+    XII_TEST_BOOL(loaded.m_Passes[0].m_pType == descriptor.m_Passes[0].m_pType);
+    XII_TEST_BOOL(loaded.m_Passes[1].m_pType == descriptor.m_Passes[1].m_pType);
     XII_TEST_INT(loaded.m_Passes[1].m_Properties["Value"].ConvertTo<xiiUInt32>(), 4);
     xiiSharedPtr<const xiiRenderPipeline> pipeline;
     XII_TEST_RESULT(xiiRenderPipeline::Compile(loaded, pipeline));
@@ -545,6 +547,31 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     {
       xiiRawMemoryStreamReader truncated(bytes.GetData(), length);
       XII_TEST_BOOL(loaded.Deserialize(truncated).Failed());
+      XII_TEST_INT(loaded.m_Passes.GetCount(), 2);
+    }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Dynamic pass RTTI is preserved and invalid serialized types do not replace descriptors")
+  {
+    xiiPipelineTestSource               source;
+    const xiiRenderPipelinePass&        pass = source;
+    xiiRenderPipelineResourceDescriptor descriptor;
+    const auto                          index = descriptor.AddPass("Dynamic source", pass.GetDynamicRTTI());
+    XII_TEST_BOOL(descriptor.m_Passes[index].m_pType == source.GetDynamicRTTI());
+    xiiSharedPtr<const xiiRenderPipeline> compiled;
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
+    XII_TEST_BOOL(compiled->GetDescriptor().m_Passes[index].m_pType == pass.GetDynamicRTTI());
+
+    for (const xiiRTTI* pInvalidType : {static_cast<const xiiRTTI*>(nullptr), xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>()})
+    {
+      descriptor.m_Passes[index].m_pType = pInvalidType;
+      xiiDefaultMemoryStreamStorage storage;
+      xiiMemoryStreamWriter         writer(&storage);
+      XII_TEST_RESULT(descriptor.Serialize(writer));
+      auto                  loaded     = PipelineResourceTest::MakeDefinition();
+      const auto            originalId = loaded.m_Id;
+      xiiMemoryStreamReader reader(&storage);
+      XII_TEST_BOOL(loaded.Deserialize(reader).Failed());
+      XII_TEST_BOOL(loaded.m_Id == originalId);
       XII_TEST_INT(loaded.m_Passes.GetCount(), 2);
     }
   }
