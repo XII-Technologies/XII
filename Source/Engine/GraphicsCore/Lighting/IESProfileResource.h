@@ -35,7 +35,7 @@ struct XII_GRAPHICSCORE_DLL xiiIESProfileResourceDescriptor
   /// Bilinear full-sphere lookup used by validation tools and CPU sensor paths.
   [[nodiscard]] float Sample(xiiAngle verticalAngle, xiiAngle horizontalAngle) const;
 
-  void                    Serialize(xiiStreamWriter& inout_stream) const;
+  void      Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 

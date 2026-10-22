@@ -148,7 +148,7 @@ xiiUniquePtr<xiiWindowBase> xiiGPUTestingEnvironment::CreateWindow(xiiUInt32 uiW
   description.m_bSetForegroundOnInit = false;
   description.m_bClipMouseCursor     = false;
   description.m_bShowMouseCursor     = true;
-  xiiUniquePtr<xiiWindow> pWindow     = XII_DEFAULT_NEW(xiiWindow);
+  xiiUniquePtr<xiiWindow> pWindow    = XII_DEFAULT_NEW(xiiWindow);
 
   if (pWindow->Initialize(description).Failed())
     return {};

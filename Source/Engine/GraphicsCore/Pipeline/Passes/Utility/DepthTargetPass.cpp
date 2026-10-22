@@ -32,7 +32,7 @@ xiiResult xiiDepthTargetPass::Build(xiiRenderPipelinePassContext& context)
   xiiSizeU32  size{m_uiWidth ? m_uiWidth : reference ? reference->m_Size.width :
                      context.m_pView                 ? context.m_pView->GetRenderResolutionWidth() :
                                                        0,
-                   m_uiHeight ? m_uiHeight : reference ? reference->m_Size.height :
+                  m_uiHeight ? m_uiHeight : reference ? reference->m_Size.height :
                      context.m_pView                   ? context.m_pView->GetRenderResolutionHeight() :
                                                          0};
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterWidth", size.width));

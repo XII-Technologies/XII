@@ -240,9 +240,9 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
       if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(requests[i]).Borrow(), 0, header))
         return;
       XII_TEST_INT(header.m_uiKey, phase == 1 ? 0 : phase == 3 ? 61 :
-                                                                 60);
+                                                                                 60);
       XII_TEST_INT(header.m_uiDesiredLod, phase == 1 ? 0 : i ? 4 :
-                                                               2);
+                                                                               2);
       XII_TEST_BOOL((header.m_uiPriority != 0) == (phase != 1 && i == 0));
       xiiUInt32 unique = 0;
       for (xiiUInt32 entry = 1; entry <= (i ? 8U : 2U); ++entry)

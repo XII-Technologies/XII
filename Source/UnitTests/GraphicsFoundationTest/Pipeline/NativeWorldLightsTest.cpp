@@ -155,7 +155,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
     handles[index]       = T::CreateComponent(object, component);
     component->SetCastShadows(true);
     component->SetIntensityUnit(index == 0 ? xiiPhotometricUnit::Lux : index <= 2 ? xiiPhotometricUnit::Candela :
-                                                                                    xiiPhotometricUnit::Nit);
+                                                                                             xiiPhotometricUnit::Nit);
     component->SetIntensity(100);
     return component;
   };

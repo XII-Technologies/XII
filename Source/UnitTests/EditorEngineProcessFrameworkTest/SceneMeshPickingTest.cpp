@@ -50,18 +50,18 @@ namespace
       XII_TEST_INT(property.m_Path.GetCount(), 1);
       property.m_Properties.Insert("SelectionOnly", true);
     }
-    const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(selectionOnly ? "NativeCapture.SelectedOnly" : enableMeshShaders ? "NativeCapture.EnabledMeshDevice" :
-                                                                                                                                                            "NativeCapture.DisabledMeshDevice",
-                                                                                         std::move(definition));
+    const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(selectionOnly ? "NativeCapture.SelectedOnly" : enableMeshShaders ? "NativeCapture.EnabledMeshDevice" :
+                                                                                                                                                           "NativeCapture.DisabledMeshDevice",
+                                                                                        std::move(definition));
     xiiGeometry box;
     box.AddBox(xiiVec3(1), true);
     xiiMeshResourceDescriptor meshDescription;
     meshDescription.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, false);
     meshDescription.AddSection(12, 0, 0);
     meshDescription.ComputeBounds();
-    const auto          mesh = xiiResourceManager::CreateResource<xiiMeshResource>(selectionOnly ? "NativeCapture.SelectedMesh" : enableMeshShaders ? "NativeCapture.MeshA" :
-                                                                                                                                                      "NativeCapture.MeshB",
-                                                                                   std::move(meshDescription));
+    const auto mesh = xiiResourceManager::CreateResource<xiiMeshResource>(selectionOnly ? "NativeCapture.SelectedMesh" : enableMeshShaders ? "NativeCapture.MeshA" :
+                                                                                                                                             "NativeCapture.MeshB",
+                                                                          std::move(meshDescription));
     xiiWorldDescription worldDescription("Native surface capture");
     xiiWorld            world(worldDescription);
     XII_LOCK(world.GetWriteMarker());
