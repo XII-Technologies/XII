@@ -27,6 +27,7 @@
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <QGraphicsSceneMouseEvent>
+#include <QKeyEvent>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -83,6 +84,15 @@ namespace
   class PinScene : public xiiQtNodeScene
   {
   public:
+    void DeleteSelection()
+    {
+      QGraphicsSceneMouseEvent move(QEvent::GraphicsSceneMouseMove);
+      move.setScenePos(QPointF(-10000, -10000));
+      mouseMoveEvent(&move);
+      QKeyEvent remove(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
+      keyPressEvent(&remove);
+    }
+
     void Click(const xiiPin& native)
     {
       xiiQtPin* visual = nullptr;
@@ -134,6 +144,47 @@ namespace
     xiiDynamicArray<xiiUuid> m_Objects;
   };
 } // namespace
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, DeleteRenderPipelineNodes)
+{
+  const xiiStringBuilder path(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/DeleteNodes.xiiRenderPipelineAsset");
+  PinDocument            document(path);
+  auto*                  accessor = document.GetObjectAccessor();
+  auto*                  manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid                nodes[2];
+  accessor->StartTransaction("Create connected pipeline");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), nodes[0]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), nodes[1]));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(),
+                                                        *manager->GetOutputPinByName(accessor->GetObject(nodes[0]), "Texture"), *manager->GetInputPinByName(accessor->GetObject(nodes[1]), "Texture")));
+  accessor->FinishTransaction();
+
+  PinScene scene;
+  scene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  for (xiiUInt32 iteration = 0; iteration < 2; ++iteration)
+  {
+    xiiDeque<const xiiDocumentObject*> selection;
+    for (const auto& id : nodes)
+      selection.PushBack(accessor->GetObject(id));
+    if (iteration == 1)
+    {
+      // Selecting a node and its editable pin also exercises nested property widgets.
+      selection.PushBack(manager->GetPinPropertyObject(*manager->GetOutputPinByName(accessor->GetObject(nodes[0]), "Texture")));
+      selection.PushBack(manager->GetPinPropertyObject(*manager->GetInputPinByName(accessor->GetObject(nodes[1]), "Texture")));
+    }
+    document.GetSelectionManager()->SetSelection(selection);
+    scene.DeleteSelection();
+    XII_TEST_BOOL(document.GetSelectionManager()->IsSelectionEmpty());
+    for (const auto& id : nodes)
+      XII_TEST_BOOL(accessor->GetObject(id) == nullptr);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    for (const auto& id : nodes)
+      XII_TEST_BOOL(accessor->GetObject(id) != nullptr);
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
 {
