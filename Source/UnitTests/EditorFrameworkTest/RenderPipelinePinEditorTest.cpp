@@ -218,6 +218,39 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
   const auto* sourceSettings     = manager->GetPinPropertyObject(*manager->GetOutputPinByName(source, "Output"));
   const auto* sourceRequirements = accessor->GetChildObjectByName(sourceSettings, "Requirements", {});
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Live pin edits restore connections between updates and support undo")
+  {
+    const auto undoCount = document.GetCommandHistory()->GetUndoStackSize();
+    accessor->BeginTemporaryCommands("Resize connected texture");
+    for (xiiUInt32 width : {32U, 16U})
+    {
+      accessor->StartTransaction("Update texture width");
+      XII_TEST_STATUS(accessor->SetValueByName(sourceRequirements, "Width", width));
+      accessor->FinishTransaction();
+      const auto connections = manager->GetConnections(*manager->GetInputPinByName(target, "Input"));
+      if (width == 32)
+        XII_TEST_BOOL(connections.IsEmpty());
+      else if (XII_TEST_INT(connections.GetCount(), 1))
+        XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+    }
+    accessor->FinishTemporaryCommands();
+    XII_TEST_INT(document.GetCommandHistory()->GetUndoStackSize(), undoCount + 1);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_INT(sourceRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 0);
+    XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+    XII_TEST_INT(sourceRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 16);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
+
+    accessor->BeginTemporaryCommands("Cancel connected texture resize");
+    accessor->StartTransaction("Invalidate the connection");
+    XII_TEST_STATUS(accessor->SetValueByName(sourceRequirements, "Width", 32U));
+    accessor->FinishTransaction();
+    XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input")).IsEmpty());
+    accessor->CancelTemporaryCommands();
+    XII_TEST_INT(sourceRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 0);
+    XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
+  }
   accessor->StartTransaction("Reject incompatible connected extents");
   XII_TEST_STATUS(accessor->SetValueByName(sourceRequirements, "Width", 32U));
   accessor->FinishTransaction();

@@ -17,32 +17,35 @@ xiiNodeCommandAccessor::xiiNodeCommandAccessor(xiiCommandHistory* pHistory) :
 
 xiiNodeCommandAccessor::~xiiNodeCommandAccessor() = default;
 
+void xiiNodeCommandAccessor::BeginTemporaryCommands(xiiStringView sDisplayString, bool /*bFireEventsWhenUndoingTempCommands*/)
+{
+  // Undoing a live edit must restore native pins before reconnecting the original connection commands.
+  xiiObjectCommandAccessor::BeginTemporaryCommands(sDisplayString, true);
+}
+
 xiiStatus xiiNodeCommandAccessor::SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
-  if (m_pHistory->InTemporaryTransaction() == false)
+  auto pNodeObject         = pObject;
+  auto pDynamicPinProperty = pProp;
+
+  while (pNodeObject && !IsNode(pNodeObject))
   {
-    auto pNodeObject         = pObject;
-    auto pDynamicPinProperty = pProp;
+    const auto* child = pNodeObject;
+    pNodeObject       = child->GetParent();
+    if (pNodeObject)
+      pDynamicPinProperty = pNodeObject->GetType()->FindPropertyByName(child->GetParentProperty());
+  }
 
-    while (pNodeObject && !IsNode(pNodeObject))
-    {
-      const auto* child = pNodeObject;
-      pNodeObject       = child->GetParent();
-      if (pNodeObject)
-        pDynamicPinProperty = pNodeObject->GetType()->FindPropertyByName(child->GetParentProperty());
-    }
+  if (IsDynamicPinProperty(pNodeObject, pDynamicPinProperty))
+  {
+    xiiHybridArray<ConnectionInfo, 16> oldConnections;
+    XII_SUCCEED_OR_RETURN(DisconnectAllPins(pNodeObject, oldConnections));
 
-    if (IsDynamicPinProperty(pNodeObject, pDynamicPinProperty))
-    {
-      xiiHybridArray<ConnectionInfo, 16> oldConnections;
-      XII_SUCCEED_OR_RETURN(DisconnectAllPins(pNodeObject, oldConnections));
+    // TODO: remap oldConnections
 
-      // TODO: remap oldConnections
+    XII_SUCCEED_OR_RETURN(xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index));
 
-      XII_SUCCEED_OR_RETURN(xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index));
-
-      return TryReconnectAllPins(pNodeObject, oldConnections);
-    }
+    return TryReconnectAllPins(pNodeObject, oldConnections);
   }
 
   return xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index);
