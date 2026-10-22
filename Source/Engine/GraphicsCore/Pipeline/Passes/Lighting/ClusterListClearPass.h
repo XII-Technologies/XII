@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiClusterListClearPass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiClusterListClearPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineDataInputPin               m_Layout{xiiGetStaticRTTI<xiiLightClusterFrameData>()};
   xiiRenderPipelineBufferOutputPin            m_Grid{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferOutputPin            m_Indices{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};

@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
@@ -25,6 +26,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSensorCapture, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("SceneDepth", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinOptionalAttribute("UseViewProfile")),
     XII_MEMBER_PROPERTY("Velocity", m_InputVelocity)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiRenderPipelinePinOptionalAttribute("UseViewProfile")),

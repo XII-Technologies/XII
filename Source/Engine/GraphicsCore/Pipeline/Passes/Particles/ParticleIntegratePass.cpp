@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
@@ -22,6 +23,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleIntegratePass, 1, xiiRTTIDefaultAllo
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ParticlesInput", m_InputParticles)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Particles")),
     XII_MEMBER_PROPERTY("Constants", m_InputConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("ParticleSimConstants"), new xiiRenderPipelinePinOptionalAttribute("Bypass")),
     XII_MEMBER_PROPERTY("ParticlesOutput", m_OutputParticles)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Particles")),

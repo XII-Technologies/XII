@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereApplyPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -11,6 +12,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereApplyPass,1,xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Depth",m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Radiance",m_Radiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Transmittance",m_Transmittance)->AddFlags(xiiPropertyFlags::ReadOnly),

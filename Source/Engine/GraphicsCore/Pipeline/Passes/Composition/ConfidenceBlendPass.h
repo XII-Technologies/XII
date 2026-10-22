@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 /// Overlay straight layer radiance by its confidence, preserving the background alpha.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiConfidenceBlendPass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiConfidenceBlendPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineTextureInputPin            m_Background{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Layer{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};

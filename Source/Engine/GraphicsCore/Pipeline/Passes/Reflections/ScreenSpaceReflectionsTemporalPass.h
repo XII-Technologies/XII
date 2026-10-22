@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 class XII_GRAPHICSCORE_DLL xiiScreenSpaceReflectionsTemporalPass final : public xiiRenderPipelinePass
@@ -8,6 +10,8 @@ class XII_GRAPHICSCORE_DLL xiiScreenSpaceReflectionsTemporalPass final : public 
   XII_ADD_DYNAMIC_REFLECTION(xiiScreenSpaceReflectionsTemporalPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputSSRRawTerm{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputSSRRawTerm{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read};
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

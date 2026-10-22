@@ -1,18 +1,21 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <SharedPluginScene/SharedPluginScenePCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <SharedPluginScene/Scene/SceneInstanceSelectionPass.h>
-#include <SharedPluginScene/SharedPluginScenePCH.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneInstanceSelectionPass, 1, xiiRTTIDefaultAllocator<xiiSceneInstanceSelectionPass>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Candidates", m_Candidates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("SelectionOnly", m_bSelectionOnly)->AddAttributes(new xiiDefaultValueAttribute(false)),

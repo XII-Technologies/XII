@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Integrates an explicitly supplied particle buffer. Its owner retains state and lifetime.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiParticleIntegratePass final : public xiiRenderPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiParticleIntegratePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferInputPin  m_InputParticles{false, xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferInputPin  m_InputConstants{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferOutputPin m_OutputParticles{false, xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};

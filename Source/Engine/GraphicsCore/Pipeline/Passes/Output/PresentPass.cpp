@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Output/PresentPass.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -38,6 +39,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPresentPass, 1, xiiRTTIDefaultAllocator<xiiP
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("GradedColorInput", m_InputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GradedColor")),
     XII_MEMBER_PROPERTY("FinalBlitConstants", m_OutputFinalBlitConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Final Blit Constants")),
     XII_MEMBER_PROPERTY("GradedColorOutput", m_OutputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GradedColor")),

@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Output/ColorGradingPass.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -34,6 +35,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiColorGradingPass, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DisplayLinearColorInput", m_InputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("DisplayLinearColor")),
     XII_MEMBER_PROPERTY("GradedColor", m_OutputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ColorGradingConstants", m_OutputColorGradingConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Color Grading Constants")),

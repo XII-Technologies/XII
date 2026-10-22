@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Composition/CompositionPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/IrradianceLayerPass.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -9,6 +10,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiIrradianceLayerPass,1,xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("CoarseIrradiance",m_Coarse)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DetailIrradiance",m_Detail)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Irradiance",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),

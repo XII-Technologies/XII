@@ -125,7 +125,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedAccelerationStructurePins)
   XII_TEST_RESULT(restored.Deserialize(reader));
   xiiSharedPtr<const xiiRenderPipeline> repeated;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, repeated));
-  XII_TEST_BOOL(compiled->GetPins(0)[2].m_Id == repeated->GetPins(0)[2].m_Id);
+  XII_TEST_BOOL(compiled->GetPins(0)[0].m_Id == repeated->GetPins(0)[0].m_Id);
 
   auto incompatible                      = leaf;
   incompatible.m_Connections[0].m_sInput = "Buffer";

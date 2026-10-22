@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Geometry/DirectionalMeshConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
@@ -10,6 +11,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionalMeshConstantsPass, 1, xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ShadowMap", m_ShadowMap)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Cascades", m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Constants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),

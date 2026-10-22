@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/SceneRayProbePass.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -31,6 +32,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneRayProbePass, 1, xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Scene", m_Scene)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Materials", m_Materials)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Result", m_Result)->AddFlags(xiiPropertyFlags::ReadOnly),

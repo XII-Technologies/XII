@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Core/World/World.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Core/World/World.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegrationConstantsPass.h>
@@ -16,6 +17,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleIntegrationConstantsPass, 1, xiiRTTI
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Constants", m_OutputConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("ParticleSimConstants")),
     XII_MEMBER_PROPERTY("UseWorldTime", m_bUseWorldTime)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("DeltaTimeS", m_fDeltaTimeS)->AddAttributes(new xiiDefaultValueAttribute(1.0f / 60.0f), new xiiClampValueAttribute(0.0f, 1.0f / 15.0f)),

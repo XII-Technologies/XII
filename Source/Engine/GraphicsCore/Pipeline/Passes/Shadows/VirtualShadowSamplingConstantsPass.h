@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 /// Captures sampling addresses from explicitly supplied immutable device residency.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowSamplingConstantsPass final : public 
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowSamplingConstantsPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineDataInputPin    m_Residency{xiiGetStaticRTTI<xiiVirtualShadowResidencySnapshot>()};
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiUInt32                        m_uiLightId = 1;

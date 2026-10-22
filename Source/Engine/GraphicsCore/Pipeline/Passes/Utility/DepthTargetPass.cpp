@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -9,6 +10,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthTargetPass, 1, xiiRTTIDefaultAllocator<
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Reference", m_Reference)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DepthTarget", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Width", m_uiWidth)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 65536U)),
@@ -29,7 +32,7 @@ xiiResult xiiDepthTargetPass::Build(xiiRenderPipelinePassContext& context)
   xiiSizeU32  size{m_uiWidth ? m_uiWidth : reference ? reference->m_Size.width :
                      context.m_pView                 ? context.m_pView->GetRenderResolutionWidth() :
                                                        0,
-                  m_uiHeight ? m_uiHeight : reference ? reference->m_Size.height :
+                   m_uiHeight ? m_uiHeight : reference ? reference->m_Size.height :
                      context.m_pView                   ? context.m_pView->GetRenderResolutionHeight() :
                                                          0};
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterWidth", size.width));

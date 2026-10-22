@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Retains supplied GPU texture contents as an explicit previous-frame graph resource.
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiTextureHistoryPass final : public xiiRenderPipelin
   XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureHistoryPass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Undefined, 1};
   xiiRenderPipelineTextureOutputPin m_Previous{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Undefined, 1, xiiRenderPipelinePinAccess::Read, true};
   /// Large copies may use the transfer queue. Disable for small copies that would fragment graphics work.

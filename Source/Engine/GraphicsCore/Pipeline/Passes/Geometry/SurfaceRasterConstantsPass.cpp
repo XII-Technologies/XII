@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
@@ -15,6 +16,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceRasterConstantsPass, 1, xiiRTTIDefaul
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("RasterConstants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VertexStride", m_uiVertexStride)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(sizeof(xiiMeshPackedVertex)))),
     XII_MEMBER_PROPERTY("NormalOffset", m_uiNormalOffset)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(offsetof(xiiMeshPackedVertex, m_vNormal)))),

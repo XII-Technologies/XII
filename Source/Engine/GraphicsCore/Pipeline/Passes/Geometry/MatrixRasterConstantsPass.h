@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiMatrixRasterConstantsPass final : public xiiRender
   XII_ADD_DYNAMIC_REFLECTION(xiiMatrixRasterConstantsPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiMat4                          m_ViewProjection = xiiMat4::MakeIdentity(), m_PreviousViewProjection = xiiMat4::MakeIdentity();
   xiiUInt32                        m_uiWidth = 1, m_uiHeight = 1;

@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Retains supplied GPU buffer contents as an explicit previous-frame graph resource.
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiBufferHistoryPass final : public xiiRenderPipeline
   XII_DISALLOW_COPY_AND_ASSIGN(xiiBufferHistoryPass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferInputPin  m_Input{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin m_Previous{true, xiiGALBindFlags::ShaderResource, xiiRenderPipelinePinAccess::Read, true};
   bool                             m_bAsyncCopy = true;

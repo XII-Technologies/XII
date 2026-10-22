@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiDDGIProbeSchedulePass final : public xiiRenderPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiDDGIProbeSchedulePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineTextureInputPin m_PreviousIrradiance{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin m_PreviousDistance{xiiGALResourceFormat::RG32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineDataOutputPin   m_Schedule{xiiGetStaticRTTI<xiiDDGIProbeFrameData>()};

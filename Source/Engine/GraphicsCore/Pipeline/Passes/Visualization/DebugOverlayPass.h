@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Draws extracted world/view debug primitives over explicitly supplied targets.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiDebugOverlayPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiDebugOverlayPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputDisplayLinearColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget};
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
   xiiRenderPipelineTextureOutputPin m_OutputDisplayLinearColor;

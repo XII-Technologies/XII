@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackResetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackTypes.h>
@@ -21,6 +22,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualShadowFeedbackResetPass, 1, xiiRTTIDe
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Requests", m_Requests)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Capacity", m_uiCapacity)->AddAttributes(new xiiDefaultValueAttribute(8192U), new xiiClampValueAttribute(1U, 1048576U)),
   } XII_END_PROPERTIES;

@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Snapshots integration parameters; owns no particle state or particle lifecycle.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiParticleIntegrationConstantsPass final : public xi
   XII_ADD_DYNAMIC_REFLECTION(xiiParticleIntegrationConstantsPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferOutputPin m_OutputConstants{false, xiiGALBindFlags::UniformBuffer};
   bool                             m_bUseWorldTime    = false;
   float                            m_fDeltaTimeS      = 1.0f / 60.0f;

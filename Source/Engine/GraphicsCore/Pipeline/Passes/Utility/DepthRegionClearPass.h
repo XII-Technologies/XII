@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 /// Clears a scissored region of a supplied depth image, preserving all other atlas texels.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiDepthRegionClearPass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiDepthRegionClearPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::ReadWrite};
   xiiVec4U32                        m_Viewport = xiiVec4U32::MakeZero();

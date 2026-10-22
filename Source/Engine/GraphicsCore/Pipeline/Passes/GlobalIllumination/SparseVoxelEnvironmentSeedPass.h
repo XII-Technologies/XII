@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiSparseVoxelEnvironmentSeedPass final : public xiiR
   XII_ADD_DYNAMIC_REFLECTION(xiiSparseVoxelEnvironmentSeedPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineDataInputPin               m_Schedule{xiiGetStaticRTTI<xiiSparseVoxelFrameData>()};
   xiiRenderPipelineBufferInputPin             m_Environment{false, xiiGALBindFlags::UniformBuffer}, m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin             m_Levels{false, xiiGALBindFlags::ShaderResource}, m_Updates{false, xiiGALBindFlags::ShaderResource};

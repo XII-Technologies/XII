@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Builds an occurrence-local TLAS from world-derived GPU instances. Device BLAS
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiRayTracingScenePass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiRayTracingScenePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin                  m_Before;
+  xiiRenderPipelineOrderOutputPin                 m_After;
   xiiRenderPipelineAccelerationStructureOutputPin m_OutputScene{true};
   xiiRenderPipelineBufferOutputPin                m_OutputMaterials{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin                m_OutputGeometry{true, xiiGALBindFlags::ShaderResource};

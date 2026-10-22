@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackTypes.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowFeedbackReadbackPass final : public x
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowFeedbackReadbackPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin  m_Before;
+  xiiRenderPipelineOrderOutputPin m_After;
   xiiRenderPipelineBufferInputPin m_Requests{false, xiiGALBindFlags::ShaderResource};
   xiiUInt32                       m_uiMaxPendingReadbacks = 4;
   xiiVirtualShadowFeedbackReadbackPass();

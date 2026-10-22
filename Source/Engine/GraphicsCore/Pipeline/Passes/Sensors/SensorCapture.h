@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -12,6 +14,8 @@ class XII_GRAPHICSCORE_DLL xiiSensorCapture : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiSensorCapture, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin  m_Before;
+  xiiRenderPipelineOrderOutputPin m_After;
   ~xiiSensorCapture();
   xiiRenderPipelineTextureInputPin            m_InputSceneDepth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_InputVelocity{xiiGALResourceFormat::RG16Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

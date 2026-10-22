@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiMatrixVisibilityViewPass final : public xiiRenderP
   XII_ADD_DYNAMIC_REFLECTION(xiiMatrixVisibilityViewPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin  m_Before;
+  xiiRenderPipelineOrderOutputPin m_After;
   /// Optional exact candidate stream. Empty selections use one invalid-index sentinel.
   xiiRenderPipelineBufferInputPin          m_InputCandidates{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_View{false, xiiGALBindFlags::ShaderResource};

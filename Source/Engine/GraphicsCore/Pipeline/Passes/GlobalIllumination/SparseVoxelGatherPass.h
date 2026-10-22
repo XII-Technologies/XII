@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Per-pixel irradiance from explicitly supplied, independently prepared GI resources.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiSparseVoxelGatherPass final : public xiiRenderPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiSparseVoxelGatherPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_Depth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_Normal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin   m_Camera{false, xiiGALBindFlags::UniformBuffer};

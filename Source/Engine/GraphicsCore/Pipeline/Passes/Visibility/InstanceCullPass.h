@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiInstanceCullPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiInstanceCullPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Instances{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};

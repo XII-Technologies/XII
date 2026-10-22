@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -12,6 +14,8 @@ class XII_GRAPHICSCORE_DLL xiiSurfaceQueryPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiSurfaceQueryPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineBufferInputPin   m_InputSceneInstances{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin   m_InputSkinningMatrices{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin   m_InputVisibleMeshlets{false, xiiGALBindFlags::ShaderResource};

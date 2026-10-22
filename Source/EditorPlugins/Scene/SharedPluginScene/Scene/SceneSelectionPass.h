@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <SharedPluginScene/SharedPluginSceneDLL.h>
+
+#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Composites selected mesh surfaces onto display-linear scene color. SelectionSurface is the
 /// native RGBA32UInt nearest-surface output from a selected-only scene mesh query. Comparing its
@@ -14,6 +15,8 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneSelectionPass : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneSelectionPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputColor;
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
   xiiRenderPipelineTextureInputPin  m_InputSelectionSurface{xiiGALResourceFormat::RGBA32UInt, true};

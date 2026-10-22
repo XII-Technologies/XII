@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/TextureHistoryPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
@@ -26,6 +27,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureHistoryPass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Texture", m_Input)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousTexture", m_Previous)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("AsyncCopy", m_bAsyncCopy)->AddAttributes(new xiiDefaultValueAttribute(true)),

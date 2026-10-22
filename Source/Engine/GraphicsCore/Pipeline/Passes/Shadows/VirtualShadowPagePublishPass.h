@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowPagePublishPass final : public xiiRen
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowPagePublishPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin        m_Before;
+  xiiRenderPipelineOrderOutputPin       m_After;
   xiiRenderPipelineDataInputPin         m_Pages{xiiGetStaticRTTI<xiiVirtualShadowRasterBatch>()};
   xiiRenderPipelineTextureInputPin      m_Atlas{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin       m_Physical{false, xiiGALBindFlags::ShaderResource}, m_Virtual{false, xiiGALBindFlags::ShaderResource};

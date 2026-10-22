@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 /// Replace a previously included radiance contribution without mutating the input scene.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiRadianceReplacePass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiRadianceReplacePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineTextureInputPin            m_Scene{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_PreviousContribution{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Replacement{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

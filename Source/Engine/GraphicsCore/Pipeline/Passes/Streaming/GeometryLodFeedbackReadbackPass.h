@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackTypes.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiGeometryLodFeedbackReadbackPass final : public xii
   XII_ADD_DYNAMIC_REFLECTION(xiiGeometryLodFeedbackReadbackPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin  m_Before;
+  xiiRenderPipelineOrderOutputPin m_After;
   xiiRenderPipelineBufferInputPin m_Requests{false, xiiGALBindFlags::ShaderResource};
   xiiUInt32                       m_uiMaxPendingReadbacks = 4;
   xiiGeometryLodFeedbackReadbackPass();

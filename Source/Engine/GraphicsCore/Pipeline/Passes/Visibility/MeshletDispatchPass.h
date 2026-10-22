@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiMeshletDispatchPass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshletDispatchPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Visible{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Count{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Meshlets{false, xiiGALBindFlags::ShaderResource};

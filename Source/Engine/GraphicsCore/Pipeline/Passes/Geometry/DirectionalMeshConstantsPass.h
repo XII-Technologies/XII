@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiDirectionalMeshConstantsPass final : public xiiRen
   XII_ADD_DYNAMIC_REFLECTION(xiiDirectionalMeshConstantsPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineTextureInputPin m_ShadowMap{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineDataInputPin    m_Cascades{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>(), true};
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};

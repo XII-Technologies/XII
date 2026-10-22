@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 /// Traces one closest-triangle ray against an explicit TLAS; an empty scene is a defined miss.
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiSceneRayProbePass final : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneRayProbePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin                 m_Before;
+  xiiRenderPipelineOrderOutputPin                m_After;
   xiiRenderPipelineAccelerationStructureInputPin m_Scene{true};
   /// Canonical hit records; Metadata.y preserves the full generation-validated world GPU identity.
   xiiRenderPipelineBufferInputPin             m_Materials{true, xiiGALBindFlags::ShaderResource};

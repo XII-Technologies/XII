@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIEnvironmentSeedPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbePassUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -12,6 +13,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIEnvironmentSeedPass,1,xiiRTTIDefaultAllo
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Schedule",m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ProbeConstants",m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("EnvironmentLight",m_Environment)->AddFlags(xiiPropertyFlags::ReadOnly),

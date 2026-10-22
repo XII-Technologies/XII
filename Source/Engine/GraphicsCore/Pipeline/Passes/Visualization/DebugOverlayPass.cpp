@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/DebugOverlayPass.h>
 
@@ -10,6 +11,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDebugOverlayPass, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DisplayLinearColorInput", m_InputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("DisplayLinearColor")),
     XII_MEMBER_PROPERTY("SceneDepthInput", m_InputSceneDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("SceneDepth")),
     XII_MEMBER_PROPERTY("DisplayLinearColorOutput", m_OutputDisplayLinearColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("DisplayLinearColor")),

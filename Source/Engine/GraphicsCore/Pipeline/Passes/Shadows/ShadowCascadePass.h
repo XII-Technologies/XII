@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiShadowCascadePass final : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiShadowCascadePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineDataOutputPin   m_Snapshot{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>()};
   xiiShadowCascadeSettings         m_Settings;

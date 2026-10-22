@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Variant.h>
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
@@ -69,9 +71,6 @@ public:
   virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }
   /// Clears view-local history after camera cuts and configuration changes.
   virtual void InvalidateTemporalHistory() {}
-
-  xiiRenderPipelineOrderInputPin  m_Before;
-  xiiRenderPipelineOrderOutputPin m_After;
 };
 
 /// Bindings use the pass schema's flat pin indices. Input bindings are resolved before Build;

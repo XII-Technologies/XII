@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/DepthRegionClearPass.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -14,6 +15,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRegionClearPass, 1, xiiRTTIDefaultAlloc
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DepthTarget", m_Input)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Depth", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Viewport", m_Viewport)->AddAttributes(new xiiDefaultValueAttribute(xiiVec4U32::MakeZero())),

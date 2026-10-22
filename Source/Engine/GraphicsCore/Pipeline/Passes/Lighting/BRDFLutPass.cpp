@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/BRDFLutPass.h>
@@ -18,6 +19,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBRDFLutPass, 1, xiiRTTIDefaultAllocator<xiiB
   {
     XII_BEGIN_PROPERTIES
     {
+      XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
       XII_MEMBER_PROPERTY("BRDFLut", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     } XII_END_PROPERTIES;
     XII_BEGIN_ATTRIBUTES

@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -10,6 +11,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldInstancesUploadPass, 1, xiiRTTIDefaultA
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("SceneInstances", m_Instances)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SkinningMatrices", m_Skinning)->AddFlags(xiiPropertyFlags::ReadOnly),
   } XII_END_PROPERTIES;

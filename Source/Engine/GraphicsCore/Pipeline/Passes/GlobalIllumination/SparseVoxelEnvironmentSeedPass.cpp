@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelEnvironmentSeedPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelPassUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -13,6 +14,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSparseVoxelEnvironmentSeedPass,1,xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Schedule",m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("EnvironmentLight",m_Environment)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Constants",m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),

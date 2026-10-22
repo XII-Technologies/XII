@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelSchedulePass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -28,6 +29,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSparseVoxelSchedulePass,1,xiiRTTIDefaultAllo
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PreviousPool",m_PreviousPool)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Schedule",m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ClipmapLevels",m_Levels)->AddAttributes(new xiiDefaultValueAttribute(5U),new xiiClampValueAttribute(1U,8U)),

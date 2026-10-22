@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
@@ -10,6 +11,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEnvironmentLightConstantsPass, 1, xiiRTTIDef
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DirectionalLight", m_Directional)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("EnvironmentLight", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Direction", m_Direction)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(0,0,-1))),

@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiAutoExposurePass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiAutoExposurePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineBufferInputPin  m_InputLuminanceHistogram;
   xiiRenderPipelineBufferOutputPin m_OutputCurrentExposure;
 

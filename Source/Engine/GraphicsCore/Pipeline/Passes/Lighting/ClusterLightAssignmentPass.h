@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
@@ -10,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiClusterLightAssignmentPass final : public xiiRende
   XII_ADD_DYNAMIC_REFLECTION(xiiClusterLightAssignmentPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin  m_Before;
+  xiiRenderPipelineOrderOutputPin m_After;
   xiiRenderPipelineDataInputPin   m_Layout{xiiGetStaticRTTI<xiiLightClusterFrameData>()};
   xiiRenderPipelineBufferInputPin m_Lights{false, xiiGALBindFlags::ShaderResource};
   /// Optional exact view selection; invalid indices are ignored, including the empty sentinel.

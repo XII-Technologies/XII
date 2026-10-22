@@ -84,6 +84,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
   if (!compiled)
     return;
+  XII_TEST_INT(compiled->GetPins(0).GetCount(), 1);
+  XII_TEST_INT(compiled->GetPins(1).GetCount(), 1);
+  XII_TEST_BOOL(!compiled->GetPins(0)[0].m_bInput && compiled->GetPins(1)[0].m_bInput);
   xiiRenderPipelineInstance instance;
   XII_TEST_RESULT(instance.Initialize(compiled));
   xiiRenderGraph graph("Reflected member bindings");
@@ -153,7 +156,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   if (repeated)
   {
     XII_TEST_BOOL(compiled->GetDescriptor().m_Passes[0].m_Id == repeated->GetDescriptor().m_Passes[0].m_Id);
-    XII_TEST_BOOL(compiled->GetPins(0)[2].m_Id == repeated->GetPins(0)[2].m_Id);
+    XII_TEST_BOOL(compiled->GetPins(0)[0].m_Id == repeated->GetPins(0)[0].m_Id);
   }
 }
 

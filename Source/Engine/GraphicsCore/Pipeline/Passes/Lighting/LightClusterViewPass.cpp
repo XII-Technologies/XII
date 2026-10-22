@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterViewPass.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -11,6 +12,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLightClusterViewPass, 1, xiiRTTIDefaultAlloc
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Layout", m_Layout)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("UseViewCamera", m_bUseViewCamera)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("InverseViewProjection", m_InverseViewProjection),

@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowSamplingConstantsPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -11,6 +12,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualShadowSamplingConstantsPass,1,xiiRTTI
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Residency",m_Residency)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Constants",m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("LightId",m_uiLightId)->AddAttributes(new xiiDefaultValueAttribute(1U),new xiiClampValueAttribute(0U,0xFFFFFFU)),

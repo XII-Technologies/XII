@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Ambient visibility from explicit depth/normal/frame inputs and an optional ray scene.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiAmbientOcclusionPass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiAmbientOcclusionPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin                 m_Before;
+  xiiRenderPipelineOrderOutputPin                m_After;
   xiiRenderPipelineTextureInputPin               m_Depth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin               m_Normal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin                m_Camera{false, xiiGALBindFlags::UniformBuffer}, m_Global{false, xiiGALBindFlags::UniformBuffer};

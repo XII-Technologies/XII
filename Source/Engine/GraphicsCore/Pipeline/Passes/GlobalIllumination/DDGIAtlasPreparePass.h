@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 /// Creates private current atlases, copying explicit history or clearing newly invalidated storage.
@@ -9,6 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiDDGIAtlasPreparePass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiDDGIAtlasPreparePass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineDataInputPin     m_Schedule{xiiGetStaticRTTI<xiiDDGIProbeFrameData>()};
   xiiRenderPipelineTextureInputPin  m_PreviousIrradiance{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_PreviousDistance{xiiGALResourceFormat::RG32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};

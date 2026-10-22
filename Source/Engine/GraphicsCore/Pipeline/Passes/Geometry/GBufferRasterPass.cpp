@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -21,6 +22,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGBufferRasterPass, 1, xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("SceneInstances", m_InputSceneInstances)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SkinningMatrices", m_InputSkinningMatrices)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibleMeshlets", m_InputVisibleMeshlets)->AddFlags(xiiPropertyFlags::ReadOnly),

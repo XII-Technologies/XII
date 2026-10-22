@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiVirtualShadowFeedbackPass final : public xiiRender
   XII_ADD_DYNAMIC_REFLECTION(xiiVirtualShadowFeedbackPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineTextureInputPin            m_Depth{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin             m_Cascades{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin             m_Initial{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};

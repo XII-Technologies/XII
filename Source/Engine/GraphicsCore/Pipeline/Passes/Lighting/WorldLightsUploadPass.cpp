@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Containers/HashSet.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Lighting/WorldLightData.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
@@ -14,6 +15,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldLightsUploadPass,1,xiiRTTIDefaultAlloca
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Lights",m_Lights)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("IESProfiles",m_Profiles)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Counts",m_Counts)->AddFlags(xiiPropertyFlags::ReadOnly),

@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include <SharedPluginScene/SharedPluginSceneDLL.h>
+
 #include <Core/World/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-#include <SharedPluginScene/SharedPluginSceneDLL.h>
 
 class xiiSceneShapeIconPicking;
 
@@ -22,6 +23,8 @@ class XII_SHAREDPLUGINSCENE_DLL xiiSceneShapeIconPass : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneShapeIconPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputColor;
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth;
   xiiRenderPipelineTextureOutputPin m_OutputColor;

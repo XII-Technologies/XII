@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -11,6 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiDirectionalMeshRasterPass final : public xiiRender
   XII_ADD_DYNAMIC_REFLECTION(xiiDirectionalMeshRasterPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin              m_Before;
+  xiiRenderPipelineOrderOutputPin             m_After;
   xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Skinning{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};

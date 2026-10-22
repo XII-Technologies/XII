@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Math/Frustum.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
@@ -15,6 +16,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("InputCandidates", m_InputCandidates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibilityView", m_View)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Candidates", m_Candidates)->AddFlags(xiiPropertyFlags::ReadOnly),

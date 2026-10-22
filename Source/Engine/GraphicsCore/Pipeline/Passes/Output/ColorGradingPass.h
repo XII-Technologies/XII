@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -8,6 +10,8 @@ class XII_GRAPHICSCORE_DLL xiiColorGradingPass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiColorGradingPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin    m_Before;
+  xiiRenderPipelineOrderOutputPin   m_After;
   xiiRenderPipelineTextureInputPin  m_InputDisplayLinearColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputGradedColor{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferOutputPin  m_OutputColorGradingConstants{true};

@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIAtlasPreparePass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbePassUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -10,6 +11,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIAtlasPreparePass,1,xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Before", m_Before)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("After", m_After)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Schedule",m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousIrradiance",m_PreviousIrradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousDistance",m_PreviousDistance)->AddFlags(xiiPropertyFlags::ReadOnly),

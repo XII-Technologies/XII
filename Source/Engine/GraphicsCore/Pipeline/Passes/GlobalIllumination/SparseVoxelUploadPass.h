@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/SparseVoxelFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 class XII_GRAPHICSCORE_DLL xiiSparseVoxelUploadPass final : public xiiRenderPipelinePass
@@ -8,6 +10,8 @@ class XII_GRAPHICSCORE_DLL xiiSparseVoxelUploadPass final : public xiiRenderPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiSparseVoxelUploadPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineOrderInputPin   m_Before;
+  xiiRenderPipelineOrderOutputPin  m_After;
   xiiRenderPipelineDataInputPin    m_Schedule{xiiGetStaticRTTI<xiiSparseVoxelFrameData>()};
   xiiRenderPipelineBufferOutputPin m_Pages{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferOutputPin m_Levels{false, xiiGALBindFlags::ShaderResource}, m_Updates{false, xiiGALBindFlags::ShaderResource};
