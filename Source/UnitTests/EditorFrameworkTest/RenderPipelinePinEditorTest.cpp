@@ -23,6 +23,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
@@ -144,6 +145,113 @@ namespace
     xiiDynamicArray<xiiUuid> m_Objects;
   };
 } // namespace
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)
+{
+  const auto directory = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(directory, "DefaultSubgraphInputs", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DefaultSubgraphInputs"));
+  PinDocument child(xiiStringBuilder(directory, "/DefaultChild.xiiRenderPipelineAsset"));
+  auto*       accessor = child.GetObjectAccessor();
+  auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(child.GetObjectManager());
+  xiiUuid     ids[4];
+  accessor->StartTransaction("Author defaulted pipeline input");
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), ids[0]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), ids[1]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), ids[2]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), ids[3]));
+  const auto* texture      = accessor->GetChildObjectByName(accessor->GetObject(ids[0]), "Texture", {});
+  const auto* requirements = accessor->GetChildObjectByName(texture, "Requirements", {});
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 16U));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Height", 16U));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[1]), "Name", "Color"));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[3]), "Input", false));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[3]), "Name", "Color"));
+  const auto connect = [&](xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input) {
+    return xiiNodeCommands::AddAndConnectCommand(child.GetCommandHistory(), manager->GetConnectionType(),
+                                                 *manager->GetOutputPinByName(accessor->GetObject(ids[source]), output), *manager->GetInputPinByName(accessor->GetObject(ids[target]), input));
+  };
+  XII_TEST_STATUS(connect(0, "Texture", 1, "Default"));
+  XII_TEST_STATUS(connect(1, "Value", 2, "Texture"));
+  XII_TEST_STATUS(connect(2, "Texture", 3, "Value"));
+  accessor->FinishTransaction();
+  PinScene childScene;
+  childScene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &child);
+  child.GetSelectionManager()->SetSelection(accessor->GetObject(ids[1]));
+  PinCompiler compiler;
+  if (!XII_TEST_RESULT(compiler.Import(child)))
+    return;
+  xiiExportDocumentMsgToEngine message;
+  message.m_sOutputFile = xiiStringBuilder(directory, "/DefaultChild.xiiBinRenderPipeline");
+  message.m_uiAssetHash = 1;
+  message.m_uiVersion   = 7;
+  const auto exported   = compiler.ExportDocument(&message);
+  XII_TEST_STATUS(exported);
+  if (exported.Failed())
+    return;
+  const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+  xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(loaded && loaded->GetPipeline()))
+    return;
+  const auto compiledChild = loaded->GetPipeline();
+  const auto inputIndex    = compiledChild->FindInterface("Color", true);
+  XII_TEST_BOOL(inputIndex != xiiInvalidIndex && compiledChild->GetInterface()[inputIndex].m_Pin.m_bOptional);
+
+  PinDocument parent(xiiStringBuilder(directory, "/DefaultParent.xiiRenderPipelineAsset"));
+  auto*       commands = parent.GetObjectAccessor();
+  auto*       objects  = static_cast<xiiRenderPipelineNodeManager*>(parent.GetObjectManager());
+  xiiUuid     instances[2];
+  commands->StartTransaction("Include repeated defaulted pipelines");
+  for (auto& id : instances)
+  {
+    XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineSubgraphPass>(), id));
+    XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(id), "Resource", message.m_sOutputFile));
+    XII_TEST_BOOL(objects->GetInputPinByName(commands->GetObject(id), "Color") != nullptr);
+    XII_TEST_BOOL(objects->GetOutputPinByName(commands->GetObject(id), "Color") != nullptr);
+  }
+  commands->FinishTransaction();
+  PinScene parentScene;
+  parentScene.InitScene(objects);
+
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, message.m_sOutputFile});
+  xiiVariantDictionary            properties;
+  xiiCreateTexturePass            producer;
+  xiiRenderPipelinePinConstraints extent;
+  extent.m_uiWidth  = 32;
+  extent.m_uiHeight = 16;
+  producer.m_OutputTexture.SetRequirements(extent);
+  XII_TEST_RESULT(producer.GetProperties(properties));
+  root.AddPass("Parent texture", producer.GetDynamicRTTI(), properties);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    const auto index = root.AddSubgraph(i ? "Defaulted" : "Overridden", loaded->GetAuthoring()->m_Descriptor.m_Id);
+    root.m_Interface.PushBack({i ? "Defaulted" : "Overridden", false, root.m_Passes[index].m_Id, "Color"});
+  }
+  XII_TEST_RESULT(root.Connect(0, "Texture", 1, "Color"));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  xiiStringBuilder                      error;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled, &error)))
+    return;
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  for (xiiUInt32 frame = 1; frame <= 2; ++frame)
+  {
+    graph.BeginSetup(frame);
+    XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+    for (const bool overridden : {false, true})
+    {
+      const auto* binding = instance.GetInterfaceBinding(compiled->FindInterface(overridden ? "Overridden" : "Defaulted", false));
+      if (XII_TEST_BOOL(binding && graph.GetTextureDescription(binding->m_hTexture)))
+        XII_TEST_INT(graph.GetTextureDescription(binding->m_hTexture)->m_Size.width, overridden ? 32 : 16);
+    }
+    graph.EndSetup();
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, DeleteRenderPipelineNodes)
 {

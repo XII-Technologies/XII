@@ -1,5 +1,12 @@
 # Render pipeline properties
 
+xiiRenderPipelineInterfacePass::Name;Interface Name;Name exposed on every subgraph instance. An input and an output can share a name to pass a resource through the pipeline.
+xiiRenderPipelineInterfacePass::Input;External Input;Inputs supply resources to the graph through Value. Connect an internal resource to Default to use it when the including pipeline leaves this input unconnected. Outputs publish the resource connected to Value.
+xiiRenderPipelineInterfacePass::ResourceType;Resource Type;Resource kind accepted by this interface. The including pipeline must connect a compatible resource.
+xiiRenderPipelineInterfacePass::Format;Texture Format;Optional texture format contract. Unknown accepts the connected resource's format.
+xiiRenderPipelineInterfacePass::DataType;Snapshot Type;Reflected frame-data snapshot type accepted by this interface.
+xiiRenderPipelineSubgraphPass::Resource;Render Pipeline;Reusable pipeline definition. Its declared inputs and outputs appear as pins on this node. Parent connections override internal input defaults for this instance.
+
 xiiCreateTexturePass::Texture;Texture;Configure the texture to create through this output pin. Connect it to a writer such as Clear Color before reading it.
 xiiRenderPipelineTextureOutputPin::Format;Format;Texture format. Create Texture uses RGBA16 Float when Unknown is selected.
 xiiRenderPipelineTextureOutputPin::Requirements;Texture Properties;Create Texture allocates from these pin properties. Zero width or height follows the view's render resolution. Undefined dimension uses 2D and zero samples uses one sample.

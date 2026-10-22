@@ -3,6 +3,8 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/BinarySerializer.h>
@@ -25,6 +27,21 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  xiiString ResolvePipelineResource(xiiStringView resource)
+  {
+    // The editor uses the curator, rather than the engine process's asset lookup table.
+    if (const auto* curator = xiiAssetCurator::GetSingleton())
+    {
+      auto asset = curator->FindSubAsset(resource);
+      if (asset)
+      {
+        auto* info = asset->m_pAssetInfo;
+        return info->GetManager()->GetAbsoluteOutputFileName(info->m_pDocumentTypeDescriptor, info->m_Path, {});
+      }
+    }
+    return xiiString(resource);
+  }
+
   const xiiAbstractProperty* GetTexturePinProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
   {
     if (!pNode)
@@ -68,6 +85,12 @@ namespace
     }
     if (object->GetType()->IsDerivedFrom<xiiRenderPipelinePass>())
     {
+      if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
+      {
+        const auto kind                 = object->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
+        states["Format"].m_Visibility   = kind == xiiRenderPipelinePin::Texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+        states["DataType"].m_Visibility = kind == xiiRenderPipelinePin::FrameData ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      }
       if (object->GetTypeAccessor().GetCount("PinConfigurations") == 0)
         states["PinConfigurations"].m_Visibility = xiiPropertyUiState::Invisible;
       return;
@@ -140,6 +163,15 @@ namespace
     context.RegisterObject(root->GetGuid(), type, pass);
     xiiRttiConverterReader reader(&graph, &context);
     reader.ApplyPropertiesToObject(root, type, pass);
+    if (pass->IsInstanceOf<xiiRenderPipelineSubgraphPass>())
+    {
+      xiiDynamicArray<xiiRenderPipelinePin> declarations;
+      static_cast<const xiiRenderPipelineSubgraphPass*>(pass)->GetPins(declarations, ResolvePipelineResource);
+      if (configured && pass->GetConfiguredPins(declarations.GetArrayPtr(), pins).Succeeded())
+        return XII_SUCCESS;
+      pins = std::move(declarations);
+      return XII_SUCCESS;
+    }
     // Preserve pins and connections while an authored property is temporarily invalid.
     // Configuration validation belongs to asset compilation, not editor pin discovery.
     if (configured && pass->GetConfiguredPins(pins).Succeeded())
@@ -269,6 +301,20 @@ void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiN
   GetCreateableTypes(types);
   for (const auto* type : types)
   {
+    if (type == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
+    {
+      static const xiiNodePropertyValue inputProperties[]  = {{xiiMakeHashedString("Input"), true}, {xiiMakeHashedString("Name"), "Input"}};
+      static const xiiNodePropertyValue outputProperties[] = {{xiiMakeHashedString("Input"), false}, {xiiMakeHashedString("Name"), "Output"}};
+      for (const bool input : {true, false})
+      {
+        auto& entry       = out_templates.ExpandAndGetRef();
+        entry.m_pType     = type;
+        entry.m_sTypeName = input ? "Pipeline Input" : "Pipeline Output";
+        entry.m_sCategory.Assign("Interface");
+        entry.m_PropertyValues = input ? xiiMakeArrayPtr(inputProperties) : xiiMakeArrayPtr(outputProperties);
+      }
+      continue;
+    }
     auto& entry       = out_templates.ExpandAndGetRef();
     entry.m_pType     = type;
     entry.m_sTypeName = type->GetTypeName();
@@ -309,7 +355,7 @@ void xiiRenderPipelineNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRT
   xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiRenderPipelinePass>(), types);
   ref_types.Clear();
   for (const auto* type : types)
-    if (!type->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && type->GetAllocator()->CanAllocate())
+    if (!type->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && type->GetAllocator()->CanAllocate() && !type->GetAttributeByType<xiiHiddenAttribute>())
       ref_types.PushBack(type);
 }
 
@@ -376,7 +422,7 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
   objectReader.ApplyPropertiesToObject(objectNode, instance.GetDynamicRTTI(), &instance);
   if (instance.m_sResource.IsEmpty())
     return xiiStatus("Subgraph has no definition resource.");
-  const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(instance.m_sResource);
+  const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(ResolvePipelineResource(instance.m_sResource));
   xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   const auto                                 authoring = acquired.IsValid() ? acquired->GetAuthoring() : xiiSharedPtr<const xiiRenderPipelineAuthoring>();
   if (!authoring)
@@ -402,7 +448,7 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
   }
   xiiRenderPipelineResourceDescriptor resolved;
   xiiStringBuilder                    error;
-  if (xiiRenderPipelineResource::ResolveDefinitions(wrapper, resolved, nullptr, &error).Failed())
+  if (xiiRenderPipelineResource::ResolveDefinitions(wrapper, resolved, nullptr, &error, ResolvePipelineResource).Failed())
     return xiiStatus(error.GetView());
   xiiGraphDefinition root;
   XII_SUCCEED_OR_RETURN(resolved.MakeGraphDefinition(root));
