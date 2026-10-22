@@ -8695,89 +8695,675 @@ Where applicable, verify that:
 
 > Failure handling is part of implementation correctness. Test the guarantees that remain after an operation fails, not merely whether an error was returned.
 
-## 22. Contributor and reviewer checklists
+## 13. Contributor and Reviewer Checklists
 
-### 22.1 Before writing code
+Contributors and reviewers share responsibility for maintaining XII's correctness, architectural consistency, portability, and long-term maintainability.
 
-- [ ] I know which module/layer owns the feature.
-- [ ] I can state the object's ownership and lifetime in one sentence.
-- [ ] I know whether the code is frame-critical, startup-only, or asynchronous.
-- [ ] I understand what existing API/callers/serialized formats will be affected.
-- [ ] I have checked neighboring patterns and the relevant root format/build configuration.
-- [ ] I am not introducing an abstraction solely for a hypothetical future feature.
+The following checklists provide a practical review framework for implementing and evaluating changes. They complement the requirements established throughout this document and **MUST NOT** be treated as substitutes for understanding the contracts of the affected subsystems.
 
-### 22.2 Before submitting code
+Not every checklist item applies to every change. Contributors **SHOULD** evaluate the items relevant to their work, while reviewers **SHOULD** focus on correctness, design decisions, integration risks, and the adequacy of validation.
 
-- [ ] Changed code follows `.clang-format` and `.editorconfig`.
-- [ ] Engine symbols, private members, and type-dependent prefixes follow XII's naming rules.
-- [ ] Public header includes are sufficient and exported API boundaries are appropriate.
-- [ ] Initialization leaves objects valid and all failure paths clean up correctly.
-- [ ] Ownership of dynamic memory and GPU resources is unambiguous.
-- [ ] Pointers, references, string views, array views, iterators, and handles do not outlive storage.
-- [ ] Return values and errors are handled, not silently ignored.
-- [ ] Assertions are not substitutes for externally reachable runtime validation.
-- [ ] Integer arithmetic, conversions, array bounds, and buffer sizes are checked where needed.
-- [ ] Thread safety, lock order, callback lifetime, and re-entrancy are documented and tested.
-- [ ] GPU state transitions, queue synchronization, and retirement are correct where relevant.
-- [ ] Graph-local blackboards and per-view histories are isolated properly.
-- [ ] Feature flags and platform/backend conditions compile as intended.
-- [ ] Reflection, serialization, and public API compatibility have been reviewed.
-- [ ] Comments, documentation, tests, and samples reflect the new behavior.
-- [ ] No unrelated mechanical reformatting or stale commented-out code remains.
+### 13.1 Before Writing Code
 
-### 22.3 Reviewer checklist
+Before beginning implementation, contributors **SHOULD** establish the responsibility, scope, and expected behavior of the proposed change.
 
-- [ ] Does the code solve the stated problem without unnecessary layers?
-- [ ] Are public names precise enough to convey their responsibilities?
-- [ ] Is there one clear authority for each resource and state transition?
-- [ ] Can a caller construct an invalid object or call methods in an unsafe order?
-- [ ] Are callbacks safe if the owning object or plugin is destroyed?
-- [ ] Can concurrent operations invalidate pointers or iterators?
-- [ ] Does the implementation distinguish CPU submission from GPU completion?
-- [ ] Does it behave correctly with multiple views and frames in flight?
-- [ ] Will the change work on the intended platforms and build configurations?
-- [ ] Are diagnostics actionable and tests sensitive to likely regressions?
-- [ ] Have measurements justified performance-sensitive complexity?
+#### Architecture and Scope
 
-### 22.4 Special checklist: render graph change
+- [ ] I understand the problem being solved and can describe the expected behavior.
+- [ ] I have identified the module or subsystem responsible for the functionality.
+- [ ] I have reviewed existing implementations and APIs that may already provide the required capability.
+- [ ] I understand the dependency direction between the affected modules.
+- [ ] I have identified the public interfaces, plugins, tools, and applications that may be affected.
+- [ ] I have considered whether the change affects reflection, serialization, persistent formats, or exported binary interfaces.
+- [ ] I am not introducing an abstraction, manager, registry, or configuration mechanism solely for hypothetical future requirements.
+- [ ] I have considered whether the implementation can remain localized without compromising architectural boundaries.
 
-- [ ] Every pass accurately declares reads, writes, imported resources, and side effects.
-- [ ] All logical handles belong to the correct graph and resource version.
-- [ ] Transient allocations and temporal histories have correct ownership.
-- [ ] Execution selects the correct graph and view.
-- [ ] Shared resources are not reset between unrelated submissions in one active frame.
-- [ ] Registration/destruction cannot race active CPU execution.
-- [ ] Physical GPU resources are not recycled before required queue completion.
-- [ ] GPU profiler data and timestamps survive until readback is safe.
-- [ ] The sample/test covers resize or zero-area swap-chain behavior when relevant.
+#### Ownership and Lifetime
 
----
+- [ ] I can identify who creates, owns, and destroys every new resource.
+- [ ] I understand whether objects require stable addresses, stable logical identities, or generation-checked handles.
+- [ ] I have identified the lifetime of borrowed pointers, references, views, iterators, and callbacks.
+- [ ] I understand the initialization and shutdown dependencies of the affected components.
+- [ ] I know whether asynchronous work can outlive the scope or component that initiates it.
+- [ ] I have considered whether concurrent access or destruction requires synchronization.
 
-## 23. Maintenance and exceptions
+#### Execution and Performance
 
-### 23.1 How to interpret exceptions
+- [ ] I know whether the code executes during initialization, shutdown, ordinary runtime operation, or a performance-critical path.
+- [ ] I understand the expected workload, data volume, and access patterns.
+- [ ] I have identified any relevant latency, allocation, memory, or throughput requirements.
+- [ ] I am not introducing performance-sensitive complexity without an identifiable need.
+- [ ] I have considered whether the behavior depends on platform capabilities, backend implementations, or build configuration.
 
-An exception to a **SHOULD** rule may be justified by an established platform constraint, compatibility requirement, performance evidence, or clearer local code. Document unusual choices in the PR or adjacent code where future maintainers need the rationale.
+#### Implementation Preparation
 
-A **MUST** rule should not be bypassed informally. Where the current standards cannot be followed, update the policy or obtain the project's expected design approval, and add tests showing why the deviation is safe.
+- [ ] I have reviewed neighboring source files for established design and naming conventions.
+- [ ] I understand the relevant `.clang-format`, `.editorconfig`, and module build requirements.
+- [ ] I have identified the appropriate header and `Implementation` directory placement.
+- [ ] I understand how expected failures will be communicated without exceptions.
+- [ ] I have considered which existing tests should be updated and which additional tests may be necessary.
 
-### 23.2 Avoid silent policy drift
+**Guiding principle:**
 
-When a new pattern becomes common—such as generation-checked resource handles, new GAL resource states, a different frame-scoping API, or a supported C++23 feature—update this guide with actual code examples and supported toolchain information. Do not present one experimental pattern as a universally required rule.
+> Before implementing a change, establish its responsibility, contracts, dependencies, and validation requirements. Design decisions should be deliberate rather than discovered accidentally during integration.
 
-### 23.3 Authority and provenance
+### 13.2 Before Submitting Code
 
-The original `Coding-Standards.md` supplied for this guide establishes **naming rules and tooling notes**; its requirements have been preserved here, including the important exception that type-dependent prefixes are mandatory only for member variables and that public/static/fixed-array fields have specific flexibility.
+Before submitting a change, contributors **MUST** verify that the implementation satisfies the applicable coding standards and preserves the documented behavior of affected components.
 
-The additional sections are a **proposed engineering standard** synthesized from the supplied XII engine samples, render graph manager interfaces, and general C++23 systems programming practice. They should be reviewed against the current repository, backend implementations, tests, and CI configuration before being treated as enforceable historical XII policy. In particular, verify the repository's exact `.clang-format`, `.editorconfig`, compiler matrix, allocator contracts, reflection macros, and sanitizer/tooling availability.
+#### Source Organization and Formatting
 
-### 23.4 Guiding test
+- [ ] Modified C++ code follows the repository's `.clang-format` and `.editorconfig` configurations.
+- [ ] License and copyright notices appear before `#pragma once` or the implementation PCH, as applicable.
+- [ ] Header files include their module's `DLL.h` immediately after `#pragma once` where required.
+- [ ] Implementation files use their module PCH first after the license notice where required.
+- [ ] Implementation files are placed in the appropriate `Implementation` directory.
+- [ ] Public headers compile independently and include their required dependencies.
+- [ ] Include ordering and module dependencies follow the repository's conventions.
+- [ ] Naming, member prefixes, and symbol visibility follow the established XII rules.
+- [ ] No unrelated formatting changes, obsolete implementations, or temporary debugging code remain.
 
-When choosing between two designs, ask:
+#### Correctness and API Design
+
+- [ ] The implementation solves the stated problem without unnecessary abstraction or indirection.
+- [ ] Public interfaces expose meaningful capabilities rather than incidental implementation details.
+- [ ] Object construction establishes valid initial states.
+- [ ] Preconditions, postconditions, and expected failure behavior are clear.
+- [ ] Recoverable failures use explicit results rather than exceptions or assertions.
+- [ ] Failure-sensitive return values are checked or intentionally handled.
+- [ ] Output parameters and observable state remain valid according to their failure contracts.
+- [ ] Integer arithmetic, conversions, array bounds, and allocation sizes are validated where required.
+- [ ] Floating-point operations use appropriate precision and comparison semantics.
+- [ ] Control flow does not depend on ambiguous evaluation order or hidden side effects.
+- [ ] State transitions preserve the invariants of their owning components.
+
+#### Ownership and Memory
+
+- [ ] Every dynamic allocation and long-lived resource has an identifiable owner.
+- [ ] Allocation and destruction mechanisms are compatible.
+- [ ] Allocators outlive every allocation that depends on them.
+- [ ] Copy and move semantics reflect the intended ownership and identity contracts.
+- [ ] Borrowed pointers, references, strings, spans, views, and iterators do not outlive their backing storage.
+- [ ] Container growth, removal, and relocation do not invalidate persistent references unexpectedly.
+- [ ] Handles are validated according to their authoritative registry.
+- [ ] Resource destruction and invalidation preserve registry consistency.
+- [ ] Shared ownership does not introduce unintended ownership cycles.
+- [ ] Initialization failure and shutdown paths release resources safely.
+
+#### Concurrency and Asynchronous Execution
+
+- [ ] Shared mutable state has an explicit synchronization contract.
+- [ ] Lock ordering, thread affinity, and reentrancy requirements are respected.
+- [ ] Resource lookup does not expose objects to concurrent destruction without lifetime protection.
+- [ ] Asynchronous tasks retain valid access to their dependencies until completion.
+- [ ] Cancellation and shutdown do not invalidate resources still in use.
+- [ ] Callback registrations are removed or invalidated before their receivers are destroyed.
+- [ ] Plugin-owned callbacks cannot execute after the corresponding plugin is unloaded.
+- [ ] Execution ordering is deterministic where the subsystem requires determinism.
+
+#### Graphics and Hardware Integration
+
+Where applicable:
+
+- [ ] GPU resource states and transitions satisfy the active graphics API's requirements.
+- [ ] CPU submission is not confused with GPU completion.
+- [ ] Resource retirement and reuse respect outstanding queue dependencies.
+- [ ] Frame-scoped and device-scoped resources have compatible lifetimes.
+- [ ] Multiple views, contexts, and frames in flight remain isolated where required.
+- [ ] Feature queries correctly distinguish compile-time availability from runtime hardware support.
+- [ ] Backend-specific behavior preserves the common interface contract.
+- [ ] GPU-facing data layouts satisfy the required alignment and representation rules.
+
+#### Compatibility and Validation
+
+- [ ] Exported interfaces and DLL visibility have been reviewed where applicable.
+- [ ] Reflection metadata and registration remain correct.
+- [ ] Serialized data and persistent identifier compatibility have been considered.
+- [ ] Platform-specific and conditional compilation paths remain valid.
+- [ ] Relevant modules and dependent targets compile successfully.
+- [ ] Existing tests pass, and new behavior has appropriate test coverage.
+- [ ] Failure paths and boundary conditions have been tested where practical.
+- [ ] Performance-sensitive changes are supported by representative measurements.
+- [ ] Comments, documentation, diagnostics, and samples reflect the implemented behavior.
+- [ ] Any unverified platforms, backends, or configurations are identified in the change description.
+
+#### Pull Request Quality
+
+- [ ] The change description explains the problem, approach, and relevant design decisions.
+- [ ] The scope is focused and does not include unrelated refactoring.
+- [ ] Non-obvious ownership, synchronization, and compatibility decisions are documented.
+- [ ] Any intentional deviation from a **SHOULD** rule has a clear justification.
+- [ ] Applicable **MUST** requirements have been satisfied or formally addressed under §14.
+- [ ] Reviewers have enough information to evaluate correctness without reconstructing the entire development process.
+
+**Guiding principle:**
+
+> Submission readiness means more than successful compilation. A change must preserve its contracts, integrate correctly, and provide sufficient evidence for review.
+
+### 13.3 Reviewer Checklist
+
+Reviewers **SHOULD** evaluate the correctness of the proposed design and implementation rather than focus exclusively on formatting or local coding style.
+
+Automated tools should handle mechanical requirements where possible, allowing human review to concentrate on semantics, architecture, and risks that require engineering judgment.
+
+#### Design and Responsibility
+
+- [ ] Does the change solve the stated problem without introducing unnecessary complexity?
+- [ ] Is the functionality implemented in the appropriate module or abstraction layer?
+- [ ] Are interfaces cohesive and limited to demonstrated consumer requirements?
+- [ ] Are names precise enough to communicate responsibilities and behavior?
+- [ ] Does the implementation preserve established dependency direction?
+- [ ] Are abstractions justified by actual ownership, reuse, extensibility, or invariants?
+- [ ] Does the change unnecessarily duplicate existing engine functionality?
+
+#### Correctness and Invariants
+
+- [ ] Are all relevant preconditions and postconditions satisfied?
+- [ ] Can callers construct invalid objects or invoke operations in unsafe lifecycle states?
+- [ ] Are expected failures distinguished from programming errors?
+- [ ] Can any failure path leave partially committed or inconsistent state?
+- [ ] Are numeric conversions, indexing, bounds, and arithmetic safe?
+- [ ] Does the implementation rely on undefined behavior or unsupported platform assumptions?
+- [ ] Are control flow and side effects predictable?
+- [ ] Do assertions verify invariants without providing essential program behavior?
+
+#### Ownership and Lifetime
+
+- [ ] Is there a clear authority responsible for every resource?
+- [ ] Are allocation and destruction mechanisms compatible?
+- [ ] Do borrowed references remain valid for their intended use?
+- [ ] Can container relocation or removal invalidate retained pointers?
+- [ ] Are handles validated through the appropriate registry?
+- [ ] Does destruction preserve outstanding asynchronous dependencies?
+- [ ] Are copy and move operations semantically safe?
+- [ ] Can callbacks or shared ownership create lifetime cycles or use-after-free risks?
+
+#### Concurrency and Execution
+
+- [ ] Can concurrent lookup, mutation, or destruction invalidate active operations?
+- [ ] Are locking and synchronization boundaries sufficient without being unnecessarily broad?
+- [ ] Are lock ordering and reentrancy requirements respected?
+- [ ] Can asynchronous work access resources after their owners are destroyed?
+- [ ] Does cancellation provide the guarantees expected by its callers?
+- [ ] Is observable ordering preserved where deterministic behavior is required?
+- [ ] Are GPU submission, completion, and resource retirement correctly distinguished?
+
+#### Portability and Compatibility
+
+- [ ] Will the change work across the intended platforms, compilers, and build configurations?
+- [ ] Are backend-specific dependencies isolated appropriately?
+- [ ] Are optional capabilities checked rather than assumed?
+- [ ] Are public ABI, reflection, and serialization contracts preserved?
+- [ ] Are persistent identifiers and binary formats compatible where required?
+- [ ] Can existing plugins and downstream consumers continue using the interface as intended?
+
+#### Performance and Maintainability
+
+- [ ] Does the chosen algorithm or container match the relevant access patterns?
+- [ ] Are new allocations, caches, or synchronization mechanisms justified?
+- [ ] Have measurements demonstrated the benefit of performance-sensitive complexity?
+- [ ] Does the implementation remain understandable without unnecessary indirection?
+- [ ] Are diagnostics actionable and proportionate to their execution frequency?
+- [ ] Do tests exercise likely regression and failure scenarios?
+- [ ] Is the implementation maintainable without requiring undocumented subsystem knowledge?
+
+#### Review Priorities
+
+Reviewers **SHOULD** prioritize findings in the following order:
+
+1. Correctness, safety, and violated invariants.
+2. Ownership, lifetime, and synchronization.
+3. Architectural boundaries and public contracts.
+4. Portability, compatibility, and failure behavior.
+5. Performance characteristics and demonstrated regressions.
+6. Maintainability, readability, and documentation.
+7. Mechanical formatting and stylistic consistency.
+
+This ordering does not make formatting optional. It reflects the relative value of human review attention when automated tooling can enforce mechanical requirements.
+
+**Guiding principle:**
+
+> Review the behavior and contracts of the system, not merely the appearance of the code. A successful review establishes confidence in correctness, integration, and future maintainability.
+
+### 13.4 Specialized Checklist: Render Graph Changes
+
+Render graph changes require additional review because logical resource declarations, execution dependencies, physical allocations, and GPU synchronization operate across distinct lifetime boundaries.
+
+This checklist supplements the general requirements and applies only to changes involving XII's render graph or related rendering systems.
+
+#### Graph Construction and Compilation
+
+- [ ] Every pass declares the resources it reads and writes.
+- [ ] Imported resources have explicit ownership and lifetime contracts.
+- [ ] Side effects and ordering constraints are represented correctly.
+- [ ] Resource versions are associated with the correct logical graph.
+- [ ] Pass dependencies preserve the intended execution semantics.
+- [ ] Resource culling does not eliminate passes or resources with required side effects.
+- [ ] Compilation failures preserve valid graph and resource state.
+- [ ] Cached compilation results are invalidated when their dependencies change.
+
+#### Resource Identity and Ownership
+
+- [ ] Logical handles belong to the correct graph and resource domain.
+- [ ] Resource versioning prevents invalid access to outdated logical states.
+- [ ] Transient resources have well-defined allocation and retirement boundaries.
+- [ ] Temporal histories remain valid across the frames and views that require them.
+- [ ] Graph-owned resources are released before required device infrastructure.
+- [ ] Shared resources are not invalidated by unrelated graphs or submissions.
+- [ ] Physical resource aliasing respects actual GPU execution dependencies.
+
+#### Execution and Synchronization
+
+- [ ] Execution identifies the correct graph, view, and execution context.
+- [ ] Registration and destruction cannot race active graph operations without adequate synchronization.
+- [ ] Graph execution does not implicitly start or end unrelated frame lifecycles.
+- [ ] Shared frame resources are not reset between unrelated submissions within the same active frame.
+- [ ] CPU-side execution completion is not treated as GPU completion.
+- [ ] Resource state transitions satisfy the requirements of the active backend.
+- [ ] Queue ownership and synchronization are correct for the required execution dependencies.
+- [ ] Physical allocations are not recycled before the relevant GPU work has completed.
+- [ ] Readback resources and profiling timestamps remain alive until their results are safe to consume.
+
+#### Multiple Views and Frames
+
+- [ ] Per-view state is isolated where the contract requires independent histories.
+- [ ] Graph-local blackboards do not leak state across unrelated graph executions.
+- [ ] Shared resources have explicit synchronization and lifetime guarantees.
+- [ ] Temporal resources remain valid across the required frames in flight.
+- [ ] Resizing and swap-chain recreation preserve valid resource transitions.
+- [ ] Zero-area or unavailable swap-chain conditions are handled where applicable.
+- [ ] Graph recompilation and resource replacement do not invalidate outstanding GPU work.
+
+#### Validation
+
+- [ ] Relevant graph compilation and execution tests pass.
+- [ ] Resource lifetime tests cover invalidation and retirement behavior.
+- [ ] Changes are verified against supported graphics backends where practical.
+- [ ] GPU validation does not report new synchronization or resource-state errors.
+- [ ] Profiling and timestamp behavior remains correct.
+- [ ] Performance-sensitive changes include representative CPU and GPU measurements.
+- [ ] Any backend-specific limitations are documented.
+
+**Guiding principle:**
+
+> Render graph correctness requires agreement between logical dependencies, resource ownership, execution scheduling, and physical GPU lifetimes. These contracts must be validated independently and together.
+
+## 14. Maintenance, Exceptions, and Standards Governance
+
+XII's coding standards establish a consistent engineering contract while allowing justified evolution as the engine's architecture, supported platforms, and development tools change.
+
+The standards **MUST** be maintained deliberately. Deviations should reflect concrete technical requirements rather than individual preference or convenience.
+
+This section governs the interpretation, maintenance, and evolution of the standards document.
+
+### 14.1 Interpreting Requirement Levels
+
+The terms **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** express different levels of obligation.
+
+Their meanings apply consistently throughout this document.
+
+| Term | Meaning |
+|---|---|
+| **MUST** | Mandatory requirement for applicable code |
+| **MUST NOT** | Prohibited behavior |
+| **SHOULD** | Strong recommendation that may be overridden with a justified reason |
+| **SHOULD NOT** | Strong recommendation against a practice, with justified exceptions permitted |
+| **MAY** | Optional practice permitted when appropriate |
+
+#### General Requirements
+
+- **MUST** requirements are normative and **MUST NOT** be bypassed informally.
+- **MUST NOT** requirements prohibit the described behavior unless an approved exception or policy revision explicitly permits it.
+- Deviations from **SHOULD** requirements **MUST** have a defensible technical rationale.
+- A **MAY** statement grants permission but does not imply that the practice is preferred.
+- Requirements **MUST** be interpreted within their documented scope.
+- Examples **MUST NOT** be treated as additional mandatory rules when their accompanying text explicitly identifies them as illustrative.
+- Existing compatibility constraints **MUST** be considered when applying standards to previously established APIs.
+
+#### Exceptions to Recommended Practices
+
+A deviation from a **SHOULD** rule may be justified by:
+
+- Platform or compiler limitations.
+- Existing public interface compatibility.
+- Established subsystem architecture.
+- Demonstrated performance requirements.
+- Clearer local implementation.
+- Toolchain or generated-code constraints.
+- External API requirements.
+- Ownership or lifetime contracts that make the recommended approach unsuitable.
+
+Such deviations **SHOULD** be documented when their rationale would not be apparent to future maintainers.
+
+#### Exceptions to Mandatory Requirements
+
+A **MUST** requirement should not be bypassed through an undocumented local exception.
+
+When compliance is genuinely impossible or would violate a more fundamental system requirement, contributors **MUST** follow the project's established design-review or standards-amendment process.
+
+The proposed deviation should identify:
+
+1. The affected requirement.
+2. The technical reason compliance is not possible or appropriate.
+3. The scope of the deviation.
+4. The alternatives considered.
+5. The correctness and compatibility implications.
+6. The tests or validation supporting the decision.
+
+Approval of a specific exception does not automatically establish a new repository-wide convention.
+
+**Guiding principle:**
+
+> Mandatory rules establish engineering contracts. Recommended practices permit judgment, but deviations must be intentional and technically justified.
+
+### 14.2 Avoid Silent Policy Drift
+
+Coding standards must evolve alongside the engine, but changes to established conventions **MUST** be deliberate.
+
+A pattern appearing in several implementation files does not automatically make it an approved repository-wide requirement.
+
+#### General Requirements
+
+- New conventions **SHOULD** be documented when they become established across relevant subsystems.
+- Experimental implementations **MUST NOT** be presented as universal standards without architectural review.
+- Changes to naming, formatting, ownership, or interface conventions **MUST** consider existing code and compatibility requirements.
+- New engine abstractions **SHOULD** be incorporated into the guide when they replace or substantially change established practices.
+- Documentation examples **MUST** remain representative of supported engine interfaces.
+- Deprecated patterns **SHOULD** be identified when a supported replacement has been established.
+- Do not introduce contradictory guidance across sections without resolving or explicitly scoping the difference.
+- Standards updates **SHOULD** distinguish mandatory policy changes from additional recommendations or explanatory examples.
+- Repository-wide migrations **SHOULD** be planned separately from unrelated functional changes.
+
+#### Triggers for Standards Review
+
+A standards update may be appropriate when:
+
+- A new allocator or container becomes an established engine abstraction.
+- Resource handles adopt revised identity or generation semantics.
+- Module export or binary interface conventions change.
+- Reflection or serialization mechanisms evolve.
+- A supported compiler or C++23 feature changes the preferred implementation pattern.
+- New platform or graphics backend requirements affect portable interfaces.
+- The build system adopts new formatting, analysis, or testing tools.
+- A previously recommended pattern produces recurring correctness or maintenance problems.
+- An architectural change establishes a new lifecycle or concurrency contract.
+
+These developments should be evaluated before changing mandatory language in the document.
+
+#### Migration Scope
+
+A new standard does not automatically justify rewriting all existing code.
+
+Before introducing a broad migration, consider:
+
+- Compatibility risks.
+- Review complexity.
+- Version-control noise.
+- Tooling support.
+- Measurable maintenance benefits.
+- Interaction with active development.
+- Whether gradual adoption is safe.
+
+Prefer incremental adoption when it preserves consistency and avoids unnecessary disruption.
+
+**Guiding principle:**
+
+> Standards should evolve through reviewed engineering decisions, not through accidental repetition or undocumented changes in local practice.
+
+### 14.3 Authority and Provenance
+
+This document consolidates XII's established coding conventions with additional engineering requirements intended to guide development across the engine.
+
+Not every convention has the same historical origin or enforcement status.
+
+#### Established Repository Conventions
+
+The original `Coding-Standards.md` provides the baseline naming and tooling conventions incorporated into this guide.
+
+These include:
+
+- Engine naming and symbol conventions.
+- Type-dependent member prefixes.
+- The distinction between mandatory member prefixes and optional local-variable or parameter prefixes.
+- Existing flexibility for public fields, static fields, and fixed-size arrays.
+- Repository formatting and tooling conventions.
+
+These baseline rules **MUST** remain accurately represented unless intentionally revised through the project's standards governance process.
+
+#### Extended Engineering Requirements
+
+The additional sections establish broader guidance for:
+
+- Correctness and invariants.
+- Ownership and lifetime.
+- Resource and allocator management.
+- Concurrency and asynchronous execution.
+- Public interface design.
+- Error handling and diagnostics.
+- Container selection and performance.
+- Portability and platform abstraction.
+- GPU resource management.
+- Testing and review practices.
+
+These requirements are intended to form a coherent engineering standard for XII rather than merely describe historical source-code patterns.
+
+#### Verification Requirements
+
+Before treating a repository-specific convention as authoritative, its details **SHOULD** be verified against the current implementation and project configuration.
+
+Relevant sources include:
+
+- `.clang-format`
+- `.editorconfig`
+- Module build configuration.
+- Supported compiler and standard-library versions.
+- Existing public interfaces.
+- Allocator and container contracts.
+- Reflection and serialization declarations.
+- Platform and graphics backend implementations.
+- Automated tests and continuous integration configuration.
+- Existing contributor documentation.
+
+Illustrative code examples **MUST NOT** be interpreted as proof that a particular engine API, enum, macro, or helper exists unless it has been verified against the repository.
+
+Where examples describe conceptual APIs, they should remain clearly distinguishable from established interfaces.
+
+#### Source of Authority
+
+When documents or examples appear to conflict, contributors **SHOULD** resolve the discrepancy according to the following considerations:
+
+1. Explicitly approved project standards and architectural requirements.
+2. Current build, formatting, and platform configuration.
+3. Documented public API and subsystem contracts.
+4. Established implementation conventions.
+5. Illustrative examples and informal recommendations.
+
+This ordering is guidance for resolving ambiguity, not permission to ignore mandatory requirements. A substantive conflict between an approved standard and the implementation should be resolved through review rather than silently choosing whichever is more convenient.
+
+**Guiding principle:**
+
+> A coding standard must distinguish established requirements, approved extensions, and illustrative guidance. Authority should be explicit and verifiable.
+
+### 14.4 Standards Changes and Review
+
+Changes to this document **SHOULD** receive the same engineering scrutiny as changes to shared engine interfaces.
+
+A wording change can alter implementation expectations, compatibility requirements, or the interpretation of existing code.
+
+#### General Requirements
+
+- Standards changes **MUST** be internally consistent with the rest of the document.
+- New mandatory requirements **SHOULD** identify the correctness, maintainability, portability, or compatibility problem they address.
+- Do not introduce requirements solely to formalize personal preferences.
+- Rules **SHOULD** be sufficiently precise that contributors can determine whether an implementation complies.
+- Examples **SHOULD** demonstrate the intended behavior without introducing unnecessary subsystem-specific assumptions.
+- Standards updates **MUST** consider existing public APIs and compatibility obligations.
+- New requirements **SHOULD** be enforceable through review, tests, static analysis, or automated tooling where practical.
+- Do not establish rules that depend on unsupported compiler or platform features.
+- Avoid duplicate requirements that create inconsistent interpretations across sections.
+- Substantial changes **SHOULD** identify whether they apply to new code, modified code, or existing code requiring migration.
+
+#### Proposed Rule Evaluation
+
+Before adding a new requirement, consider:
+
+1. **Purpose:** What concrete problem does the rule prevent?
+2. **Scope:** Which modules, platforms, or code categories does it affect?
+3. **Correctness:** Does it strengthen an enforceable invariant or contract?
+4. **Consistency:** Does it agree with existing XII architecture?
+5. **Feasibility:** Can supported toolchains and environments comply?
+6. **Compatibility:** Would adoption break public interfaces or persistent data?
+7. **Verification:** Can violations be identified reliably?
+8. **Cost:** Does the benefit justify additional implementation or review complexity?
+
+A requirement that cannot be explained or verified clearly **SHOULD** be reconsidered before adoption.
+
+**Guiding principle:**
+
+> Standards are engineering interfaces for contributors. Changes to them should be precise, justified, and reviewed for their consequences.
+
+### 14.5 Automated Enforcement and Human Judgment
+
+Automated tooling **SHOULD** enforce objective and mechanically verifiable requirements wherever practical.
+
+Human review should concentrate on correctness, architecture, ownership, concurrency, and other matters that require interpretation.
+
+#### Automated Enforcement
+
+Suitable automated checks may include:
+
+- ClangFormat compliance.
+- Whitespace and line-ending validation.
+- Required license notices.
+- Include-order or header self-sufficiency checks.
+- Compiler warnings.
+- Static analysis.
+- Supported sanitizers.
+- Build configuration validation.
+- Unit and integration tests.
+- Serialization compatibility tests.
+- Platform and backend compilation.
+
+These tools should follow the repository's established configuration and supported toolchains.
+
+#### Human Review
+
+Human reviewers remain responsible for evaluating:
+
+- Whether abstractions are justified.
+- Whether interfaces preserve meaningful invariants.
+- Whether ownership and lifetime relationships are correct.
+- Whether concurrency guarantees are sufficient.
+- Whether error-handling policy matches the operation.
+- Whether performance complexity is evidence-based.
+- Whether cross-module compatibility is preserved.
+- Whether the implementation remains maintainable.
+
+Automated success **MUST NOT** be treated as proof of architectural or semantic correctness.
+
+Likewise, reviewers **SHOULD NOT** repeatedly debate formatting decisions already governed by authoritative tooling.
+
+**Guiding principle:**
+
+> Automate objective consistency and reserve engineering judgment for decisions that tools cannot establish reliably.
+
+### 14.6 Technical Debt and Legacy Code
+
+Existing code may predate the conventions established in this document.
+
+Such code **SHOULD** be improved deliberately without creating unnecessary compatibility risks or unrelated changes.
+
+#### General Requirements
+
+- New code **MUST** follow the applicable current standards.
+- Modified code **SHOULD** move toward current standards where practical and compatible with the change.
+- Do not rename established public symbols solely for stylistic consistency without reviewing their consumers.
+- Avoid broad mechanical refactoring within unrelated functional changes.
+- Legacy patterns **MUST NOT** automatically be treated as approved conventions for new implementations.
+- Necessary compatibility behavior **SHOULD** remain documented until an approved migration is completed.
+- Technical debt **SHOULD** be addressed when it materially affects correctness, maintainability, or future development.
+- Do not introduce replacement abstractions without identifying how existing consumers will transition.
+- Large migrations **SHOULD** include a plan for validation, compatibility, and rollback where applicable.
+
+#### Incremental Improvement
+
+When modifying legacy code, prioritize:
+
+1. Correctness and undefined behavior.
+2. Ownership, lifetime, and resource safety.
+3. Failure handling and invariant enforcement.
+4. Concurrency and synchronization.
+5. Public interface consistency.
+6. Structural maintainability.
+7. Formatting and naming improvements.
+
+This ordering reflects engineering risk rather than permission to disregard formatting requirements for modified code.
+
+**Guiding principle:**
+
+> Improve legacy code where the change provides real value, but avoid turning focused maintenance into uncontrolled architectural migration.
+
+### 14.7 Documentation and Example Maintenance
+
+Examples in this document **SHOULD** remain representative of current XII development practices.
+
+Incorrect examples can establish misleading expectations even when the surrounding prose is accurate.
+
+#### General Requirements
+
+- Code examples **SHOULD** follow current naming and formatting conventions.
+- Repository-specific examples **SHOULD** use verified APIs where practical.
+- Conceptual APIs **MUST** be identified as illustrative when they are not guaranteed to exist.
+- Examples **MUST NOT** intentionally demonstrate undefined behavior as a preferred implementation.
+- Examples involving resource lifetime or concurrency **SHOULD** state important assumptions when those assumptions are necessary for correctness.
+- Updated engine mechanisms **SHOULD** replace obsolete examples when their contracts have changed.
+- Documentation **MUST** distinguish recommendations from mandatory requirements.
+- Do not use examples to silently introduce additional requirements that are absent from the normative text.
+
+#### Example Design
+
+Prefer examples that:
+
+- Demonstrate one primary principle.
+- Use familiar XII types and naming patterns.
+- Avoid unnecessary platform or subsystem dependencies.
+- Make ownership and failure behavior clear.
+- Remain short enough to understand without substantial surrounding implementation.
+- Preserve relevant correctness assumptions.
+
+Examples do not need to be production-complete implementations when their purpose is conceptual, but they must not imply guarantees the actual APIs do not provide.
+
+**Guiding principle:**
+
+> Examples should clarify standards, not create ambiguity. Their assumptions, applicability, and relationship to actual engine APIs must remain clear.
+
+### 14.8 Guiding Design Test
+
+When evaluating competing designs, contributors and reviewers **SHOULD** ask:
 
 > Can a new contributor understand what this code owns, when it runs, what makes it fail, and which invariants it must preserve—without reading unrelated implementation files?
 
-Prefer the design that gives the clearest reliable answer while meeting the actual performance and compatibility requirements.
+A strong design should provide clear answers to the following questions:
+
+- **Responsibility:** What does this component do, and what does it intentionally not do?
+- **Ownership:** Who creates, manages, and destroys its resources?
+- **Lifetime:** When are its objects, handles, and borrowed references valid?
+- **Execution:** When does it run, and what controls its scheduling?
+- **Failure:** Which failures are expected, and how are they communicated?
+- **State:** What invariants must hold before and after each operation?
+- **Concurrency:** Which operations may run concurrently, and what synchronization is required?
+- **Dependencies:** Which modules and external systems does it depend on?
+- **Compatibility:** Which public or persistent contracts must remain stable?
+- **Performance:** What workload characteristics justify its complexity?
+- **Validation:** How can its correctness and performance be demonstrated?
+
+The preferred design is not necessarily the shortest, most abstract, or most optimized implementation.
+
+It is the design that satisfies the actual requirements with the clearest enforceable contracts and the least unnecessary complexity.
+
+**Final guiding principle:**
+
+> Build components whose responsibilities are cohesive, dependencies are intentional, ownership is explicit, failures are observable, and invariants are enforceable. Optimize from evidence, preserve portability, and favor designs that remain understandable as XII evolves.
 
 ---
 
