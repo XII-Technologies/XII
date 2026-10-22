@@ -189,10 +189,17 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     return;
   scene.Click(*pin);
   XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == settings);
-  bool formatWidget = false;
+  bool formatWidget = false, metadataWidget = false;
   for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
-    formatWidget |= widget->GetProperty() && widget->GetProperty()->GetPropertyName() == "RequiredFormat";
+    if (const auto* property = widget->GetProperty())
+    {
+      formatWidget |= property->GetPropertyName() == "RequiredFormat";
+      metadataWidget |= property->GetPropertyName() == "Metadata";
+    }
   XII_TEST_BOOL(formatWidget);
+  XII_TEST_BOOL(!metadataWidget);
+  const auto* metadataProperty = settings->GetType()->FindPropertyByName("Metadata");
+  XII_TEST_BOOL(metadataProperty && metadataProperty->GetAttributeByType<xiiHiddenAttribute>());
   accessor->StartTransaction("Set reflected pin requirements");
   XII_TEST_STATUS(accessor->SetValueByName(settings, "RequiredFormat", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA16Float)));
   XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 16U));

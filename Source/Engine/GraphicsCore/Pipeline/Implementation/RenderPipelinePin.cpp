@@ -61,7 +61,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinConfiguration, 1, xiiRTTIDe
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("Id", m_Id)->AddAttributes(new xiiReadOnlyAttribute(), new xiiHiddenAttribute()),
-      XII_MEMBER_PROPERTY("Metadata", m_Metadata)->AddAttributes(new xiiReadOnlyAttribute()),
+      XII_MEMBER_PROPERTY("Metadata", m_Metadata)->AddAttributes(new xiiReadOnlyAttribute(), new xiiHiddenAttribute()),
       XII_MEMBER_PROPERTY("DisplayName", m_sDisplayName),
       XII_ENUM_MEMBER_PROPERTY("RequiredFormat", xiiGALResourceFormat, m_Format),
       XII_MEMBER_PROPERTY("Requirements", m_Constraints),
