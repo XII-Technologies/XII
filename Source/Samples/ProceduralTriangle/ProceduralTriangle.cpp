@@ -453,11 +453,12 @@ public:
   }
 
 private:
-  void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
+  xiiResult BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
   {
     graph.AddPass<OffscreenPassData>("PRISMATIC.Clear", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteOffscreenPass, this));
     graph.AddPass<ProceduralTrianglePassData>("PRISMATIC.Crystal", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteProceduralTrianglePass, this));
     graph.AddPass<BlitPassData>("PRISMATIC.Present", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupBlitPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
+    return XII_SUCCESS;
   }
 
   struct OffscreenPassData

@@ -143,41 +143,16 @@ public:
 
       if (bCanRender)
       {
-        // Build a minimal render graph that clears the depth and backbuffer.
-        ++m_uiFrameIndex;
-
-        xiiRenderGraph&              renderGraph   = m_RenderGraphContext.GetGraph();
-        xiiRenderGraphBlackboard&    blackboard    = m_RenderGraphContext.GetBlackboard();
-        xiiRenderGraphResourceCache& resourceCache = m_RenderGraphContext.GetResourceCache();
-
-        renderGraph.BeginSetup(m_uiFrameIndex);
+        xiiRenderGraphFrame frame;
+        if (frame.Begin().Succeeded())
         {
-          renderGraph.AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteOffscreenPass, this));
-          renderGraph.AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteProceduralTrianglePass, this));
-          renderGraph.AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupBlitPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
-        }
-        renderGraph.EndSetup();
-
-        resourceCache.BeginFrame(m_uiFrameIndex);
-        {
-          xiiStringBuilder              sError;
+          m_uiFrameIndex = frame.GetFrameIndex();
+          xiiStringBuilder              error;
           xiiRenderGraphCompileSettings settings;
-          settings.m_bEnablePassCulling  = true;
-          settings.m_bEnableCompileCache = true;
-          settings.m_bEnableAsyncQueues  = true;
           settings.m_bEnableGPUProfiling = true;
-
-          if (renderGraph.Compile(settings, &sError).Succeeded())
-          {
-            renderGraph.Execute(m_pDevice.Borrow(), /*pView=*/nullptr, &blackboard, &resourceCache, &m_RenderGraphContext.GetProfiler()).AssertSuccess("RenderGraph execution failed.");
-          }
-          else
-          {
-            xiiLog::Error("RenderGraph compile failed: {0}", sError);
-          }
+          if (xiiRenderGraphManager::ExecuteGraph(frame, m_hRenderGraph, nullptr, settings, &error).Failed())
+            xiiLog::Error("Render graph execution failed: {}", error);
         }
-        resourceCache.EndFrame();
-
         m_pSwapChain->Present();
       }
       else
@@ -372,7 +347,8 @@ public:
     // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
 
-    m_RenderGraphContext.Initialize("Graphics Explorer").AssertSuccess("The render graph subsystem failed to create the sample context.");
+    m_hRenderGraph = xiiRenderGraphManager::CreateGraph("Graphics Explorer", xiiMakeDelegate(&xiiGraphicsExplorerApp::BuildRenderGraph, this));
+    XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create the graphics explorer render graph.");
   }
 
   virtual void BeforeCoreSystemsShutdown() override
@@ -389,7 +365,7 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
-    m_RenderGraphContext.Shutdown();
+    xiiRenderGraphManager::DestroyGraph(m_hRenderGraph).AssertSuccess("Failed to destroy the graphics explorer render graph.");
 
     m_pSwapChain.Clear();
 
@@ -438,6 +414,13 @@ public:
   }
 
 private:
+  xiiResult BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
+  {
+    graph.AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteOffscreenPass, this));
+    graph.AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteProceduralTrianglePass, this));
+    graph.AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupBlitPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteBlitPass, this), true);
+    return XII_SUCCESS;
+  }
   struct OffscreenPassData
   {
     xiiRenderGraphTextureHandle m_hOffScreenTexture;
@@ -609,7 +592,7 @@ private:
   xiiSharedPtr<xiiGALDevice>    m_pDevice;
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
 
-  xiiRenderGraphContext   m_RenderGraphContext;
+  xiiRenderGraphHandle    m_hRenderGraph;
   xiiUInt64               m_uiFrameIndex = 0ULL;
   xiiUniquePtr<xiiWindow> m_pWindow;
 };

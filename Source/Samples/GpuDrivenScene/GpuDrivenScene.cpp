@@ -191,7 +191,7 @@ public:
       settings.m_bEnableAsyncQueues   = false;
       settings.m_bEnableSplitBarriers = false;
       settings.m_bEnableGPUProfiling  = true;
-      if (xiiRenderGraphManager::ExecuteFrame(frame, nullptr, settings, &error).Succeeded())
+      if (xiiRenderGraphManager::ExecuteGraph(frame, m_hRenderGraph, nullptr, settings, &error).Succeeded())
       {
         if (m_uiFrameIndex == 1U || (m_uiVirtualPagesThisFrame != 0 && !m_bReportedVirtualBatch))
         {
@@ -439,10 +439,7 @@ public:
       }
     }
 
-    xiiRenderGraphRegistrationDescription graphDescription;
-    graphDescription.m_sName.Assign("GPU Driven Scene");
-    graphDescription.m_iPriority = 0;
-    m_hRenderGraph               = xiiRenderGraphManager::RegisterGraph(graphDescription, xiiMakeDelegate(&xiiGpuDrivenSceneApp::BuildRenderGraph, this));
+    m_hRenderGraph = xiiRenderGraphManager::CreateGraph("GPU Driven Scene", xiiMakeDelegate(&xiiGpuDrivenSceneApp::BuildRenderGraph, this));
   }
 
   void BeforeHighLevelSystemsShutdown() override
@@ -456,7 +453,8 @@ public:
 
     if (m_pDevice)
       m_pDevice->WaitIdle();
-    xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
+    if (!m_hRenderGraph.IsInvalidated())
+      xiiRenderGraphManager::DestroyGraph(m_hRenderGraph).AssertSuccess("Failed to destroy the GPU-driven render graph.");
     m_Targets.Clear();
     m_Presentation.Clear();
     m_SensorExport.Clear();
@@ -1108,7 +1106,7 @@ private:
     return XII_SUCCESS;
   }
 
-  void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+  xiiResult BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView*)
   {
     m_uiVirtualPagesThisFrame                   = 0;
     const auto                       geometry   = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
@@ -1123,7 +1121,7 @@ private:
         xiiLog::Error("Selected ray-probe resource '{}' failed: {}", m_hRayProbePipeline.GetResourceID(), m_RayProbe.GetLastBuildError());
         SetReturnCode(1);
         RequestQuit();
-        return;
+        return XII_FAILURE;
       }
       if (m_uiFrameIndex == 1)
       {
@@ -1139,7 +1137,7 @@ private:
       xiiLog::Error("Could not prepare the selected depth/history resource: {}", m_DepthPipeline.GetLastBuildError());
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
     xiiVirtualShadowTableBindings                         virtualShadowUpload;
     xiiSharedPtr<const xiiVirtualShadowResidencySnapshot> shadowResidency;
@@ -1147,7 +1145,7 @@ private:
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
 
     if (SynchronizeVisibilityPipelines().Failed() || m_World.GetGpuInstances().GetMaximumMeshletCount() > m_uiVisibilityCapacity)
@@ -1155,14 +1153,14 @@ private:
       xiiLog::Error("The selected visibility resource is invalid or its meshlet budget cannot cover this world's conservative bound.");
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
     xiiGpuVisibilityOutputs visibility, sensorVisibility;
     if (BuildVisibility(m_MainVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, xiiGpuInstanceFlags::Enabled, 3, visibility).Failed() || BuildVisibility(m_SensorVisibility, graph, blackboard, m_ViewProjection, m_TargetSize.width, m_TargetSize.height, (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::SensorVisible).GetValue(), 3, sensorVisibility).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
 
     xiiUInt32                                    uiShadowResolution = 0;
@@ -1172,7 +1170,7 @@ private:
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
     const bool    bHasShadowCascade    = !shadowSnapshot->m_Cascades.IsEmpty();
     const xiiMat4 shadowViewProjection = shadowSnapshot->m_Cascades[0].m_mViewProjection;
@@ -1182,7 +1180,7 @@ private:
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
 
     if (bHasShadowCascade)
@@ -1198,7 +1196,7 @@ private:
       {
         SetReturnCode(1);
         RequestQuit();
-        return;
+        return XII_FAILURE;
       }
     }
 
@@ -1207,7 +1205,7 @@ private:
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
 
     xiiRenderGraphTextureHandle sceneColor, sceneDepth;
@@ -1215,14 +1213,14 @@ private:
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
 
     if (SynchronizeDirectionalPipeline().Failed())
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
     xiiVariantDictionary directionalParameters;
     directionalParameters.Insert("RasterViewProjection", m_ViewProjection);
@@ -1267,7 +1265,7 @@ private:
       xiiLog::Error("Selected directional mesh resource '{}' failed: {}", m_hDirectionalPipeline.GetResourceID(), m_Directional.GetLastBuildError());
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
     const auto                          shadedColor = m_Directional.GetInterfaceBinding(directional->FindInterface("Color", false))->m_hTexture;
     const auto                          shadedDepth = m_Directional.GetInterfaceBinding(directional->FindInterface("Depth", false))->m_hTexture;
@@ -1277,21 +1275,22 @@ private:
       xiiLog::Error("Authored depth/history pipeline failed: {}", m_DepthPipeline.GetLastBuildError());
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
     if (BuildShadowFeedback(graph, blackboard, shadedDepth, hCascadeConstants).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
 
     if (BuildViewOutput(graph, blackboard, shadedColor, sensorVisibility.m_hVisibleInstanceCount).Failed())
     {
       SetReturnCode(1);
       RequestQuit();
-      return;
+      return XII_FAILURE;
     }
+    return XII_SUCCESS;
   }
 
   void UpdateSwapChain()
@@ -1367,7 +1366,7 @@ private:
   xiiUInt32                                         m_uiVirtualPagesThisFrame = 0;
   bool                                              m_bReportedVirtualBatch   = false;
   xiiCamera                                         m_Camera;
-  xiiRenderGraphGraphId                             m_hRenderGraph;
+  xiiRenderGraphHandle                              m_hRenderGraph;
   xiiSizeU32                                        m_TargetSize;
   xiiMat4                                           m_ViewProjection = xiiMat4::MakeIdentity();
   xiiUInt64                                         m_uiFrameIndex   = 0U;
