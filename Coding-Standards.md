@@ -5400,75 +5400,400 @@ Do not impose determinism on unrelated independent operations unless it is a gen
 
 > Ordering must be intentional. When behavior depends on sequence, establish that sequence through documented contracts rather than incidental container or scheduling behavior.
 
-## 9. Modern C++23 features
+## 9. Modern C++23 Features
 
-### 9.1 Use modern C++ when it improves clarity
+XII targets C++23 and should take advantage of modern language facilities when they improve correctness, expressiveness, maintainability, or measurable performance.
 
-C++23 is the language baseline, but a feature is useful only when supported by XII's actual platform toolchains and when its semantics improve the code. Do not introduce modern syntax merely to demonstrate novelty.
+Modern C++ features **MUST** be adopted deliberately. Language availability alone does not justify introducing a feature when an existing engine abstraction or simpler construct already expresses the intended behavior.
 
-### 9.2 `auto`
+The requirements in this section complement §1.1 (Correctness), §1.5 (Performance), §5 (Type Design), §6 (Ownership and Lifetime), and §7 (Function Interfaces).
 
-Use `auto` when the type is explicit from the initializer, verbose without adding value, or intentionally generic. Prefer spelling the type when it communicates a resource boundary, precision, ownership, or conversion.
+### 9.1 Use Modern C++ When It Improves Clarity
+
+C++23 is XII's language baseline, but the availability of a feature in the language standard does not guarantee complete support across all compilers, standard libraries, or target platforms.
+
+#### General Requirements
+
+- Modern C++ features **SHOULD** be preferred when they provide clearer semantics, stronger compile-time guarantees, or simpler implementations.
+- Features **MUST** be supported by the minimum compiler and standard-library versions required by XII.
+- Do not introduce language features merely because they are newer than an existing implementation.
+- Prefer standard language facilities over custom implementations when the standard facility meets the engine's requirements without introducing incompatible dependencies.
+- Existing XII abstractions **SHOULD** remain authoritative where they provide engine-specific allocation, reflection, serialization, or platform behavior.
+- Do not introduce new generic wrappers around standard language features without a demonstrated requirement.
+- Avoid depending on compiler extensions in portable engine code unless those extensions are isolated behind established platform abstractions.
+- Changes to compiler or standard-library requirements **MUST** consider every supported platform and build configuration.
+- Modernization **MUST NOT** alter observable behavior, ownership semantics, or binary compatibility unintentionally.
+
+#### Feature Availability
+
+Before introducing a less commonly used C++23 feature, consider:
+
+1. Whether every supported compiler accepts the required syntax.
+2. Whether the required standard-library implementation is available.
+3. Whether the feature interacts correctly with XII's build configurations.
+4. Whether it introduces additional dependencies or binary compatibility concerns.
+5. Whether the resulting implementation is clearer than the existing alternative.
+
+Feature-test macros **SHOULD** be used when conditional support is necessary and consistent with the repository's platform configuration system.
+
+**Guiding principle:**
+
+> Modern C++ should simplify engineering, not complicate it. Prefer language features that strengthen contracts and reduce unnecessary implementation complexity.
+
+### 9.2 Type Deduction with `auto`
+
+Use `auto` when type deduction improves readability without concealing important semantic information.
+
+Explicit types remain valuable when they communicate precision, ownership, resource identity, or conversion behavior.
+
+#### General Requirements
+
+- Use `auto` when the type is immediately apparent from the initializer.
+- Prefer explicit types when the type communicates meaningful domain semantics.
+- Use `auto` for iterators, verbose template instantiations, and generic code where spelling the complete type adds little value.
+- Do not use `auto` merely to avoid understanding the type returned by an operation.
+- Avoid deduced types when unintended signedness, precision, copying, or reference removal could affect correctness.
+- Use `auto&` and `const auto&` when reference semantics are intended.
+- Avoid unintended copies caused by plain `auto` when the initializer produces a reference.
+- Public interfaces **SHOULD** expose concrete return types when those types form part of the documented contract.
+- Do not use abbreviated function templates accidentally when a non-template interface is intended.
+
+**Prefer when the type communicates meaning:**
 
 ```cpp
-const auto uiFrameIndex = frame.GetFrameIndex();
+const xiiUInt64 uiSimulationStep = simulation.GetStepCount();
 
-xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+xiiUniquePtr<xiiSimulationData> pData = CreateSimulationData();
 ```
 
-Avoid opaque use of `auto` in public declarations when a precise type is part of the interface.
-
-### 9.3 `constexpr`, `consteval`, `constinit`
-
-Use `constexpr` for compile-time constants and functions that legitimately support constant evaluation. Use `consteval` only when runtime use is invalid by design. Use `constinit` for static initialization-order guarantees where supported and appropriate. Do not add compile-time machinery when simple constants suffice.
+**Prefer when the initializer makes the type obvious:**
 
 ```cpp
-static constexpr xiiUInt32 MaxFramesInFlight = 4U;
+auto pData = XII_DEFAULT_NEW(xiiSimulationData);
+
+auto it = m_Resources.GetIterator();
 ```
 
-### 9.4 Scoped enums and engine enum wrappers
+#### Reference Preservation
 
-Prefer strongly typed enum representations. XII has established reflective enum wrapper patterns; follow the existing reflection requirements where serialization/tooling needs them.
+Plain `auto` generally deduces a value type rather than preserving the reference category of the initializer.
+
+**Avoid when mutation of the original is intended:**
 
 ```cpp
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueue
+auto entry = m_Entries[uiIndex];
+
+entry.m_bActive = false;
+```
+
+**Prefer:**
+
+```cpp
+auto& entry = m_Entries[uiIndex];
+
+entry.m_bActive = false;
+```
+
+When the type is short and meaningful, an explicit reference may be clearer:
+
+```cpp
+xiiResourceEntry& entry = m_Entries[uiIndex];
+```
+
+#### `decltype(auto)`
+
+Use `decltype(auto)` only when preserving the exact deduced reference or value category is necessary.
+
+It **SHOULD NOT** be used as a general replacement for `auto`.
+
+A function returning `decltype(auto)` may unintentionally expose references to internal storage or temporary objects if its return expression is not carefully designed.
+
+#### Abbreviated Function Templates
+
+C++20 permits `auto` in function parameters to introduce template parameters implicitly.
+
+```cpp
+void ProcessValue(const auto& value)
+{
+  // Generic implementation.
+}
+```
+
+This is appropriate for genuinely generic functions, but not when the supported parameter types should be constrained by an explicit interface.
+
+**Guiding principle:**
+
+> Deduce types when their meaning remains obvious. Spell them explicitly when they communicate ownership, precision, identity, or API contracts.
+
+### 9.3 `constexpr`, `consteval`, and `constinit`
+
+Compile-time facilities **SHOULD** be used when they improve correctness, eliminate unnecessary runtime work, or communicate initialization requirements.
+
+Do not introduce elaborate compile-time computations when ordinary constants or runtime initialization provide a simpler solution.
+
+#### `constexpr`
+
+Use `constexpr` for values and functions that are intended to support constant evaluation.
+
+**Prefer:**
+
+```cpp
+static constexpr xiiUInt32 MaxWorkerThreads = 64U;
+static constexpr xiiUInt32 DefaultAlignment = 16U;
+```
+
+Functions may also be declared `constexpr` when they can meaningfully operate in constant-evaluation contexts.
+
+```cpp
+constexpr xiiUInt32 AlignUpPowerOfTwo(xiiUInt32 uiValue, xiiUInt32 uiAlignment)
+{
+  return (uiValue + uiAlignment - 1U) & ~(uiAlignment - 1U);
+}
+```
+
+This function requires a nonzero power-of-two alignment and arithmetic that does not overflow. Those preconditions must be established by its callers or enforced by an appropriate implementation.
+
+The use of `constexpr` does not automatically guarantee that every invocation is evaluated at compile time.
+
+#### `consteval`
+
+Use `consteval` when an operation **MUST** be evaluated at compile time.
+
+Appropriate applications may include compile-time validation, constant metadata generation, and calculations whose runtime invocation would violate the intended design.
+
+Do not use `consteval` merely because a function happens to support constant evaluation.
+
+#### `constinit`
+
+Use `constinit` for static or thread-local variables that require static initialization without necessarily being immutable.
+
+```cpp
+constinit xiiUInt32 s_uiInitializationCount = 0U;
+```
+
+`constinit` guarantees static initialization but does not make the variable constant or thread-safe.
+
+#### General Requirements
+
+- Prefer `constexpr` over macros for ordinary typed compile-time constants.
+- Use `consteval` only when compile-time evaluation is a required contract.
+- Use `constinit` when preventing dynamic initialization is important.
+- Do not confuse compile-time initialization with immutable state.
+- Compile-time computation **MUST** preserve the same correctness requirements as runtime computation.
+- Avoid excessive template instantiation and compile-time work without a demonstrated benefit.
+- Do not use compile-time facilities to conceal complex initialization logic.
+
+**Guiding principle:**
+
+> Use compile-time evaluation to enforce meaningful guarantees, not merely to move complexity from runtime into compilation.
+
+### 9.4 Strongly Typed Enums and Engine Enum Wrappers
+
+Enumeration types **SHOULD** express closed sets of discrete values with well-defined semantics.
+
+XII provides established enum wrapper and reflection patterns. These conventions take precedence when types participate in engine reflection, serialization, tooling, or configuration systems.
+
+#### General Requirements
+
+- Prefer strongly typed enum representations over unscoped global constants.
+- Follow XII's established enum wrapper conventions when reflection or serialization requires them.
+- Enum values **MUST** use meaningful names consistent with their domain.
+- Underlying storage types **SHOULD** reflect the required value range and serialization contract.
+- Numeric enum values **MUST NOT** be changed casually when used in persistent formats or public binary interfaces.
+- Do not assume enum declaration order represents execution order, priority, or dependency ordering.
+- Do not introduce closed enum types for concepts that are intentionally extensible through registration.
+- Invalid or unknown enum values **MUST** be handled according to the API's contract.
+- Enum conversion and validation **SHOULD** use established XII helpers where available.
+
+#### Engine Enum Wrappers
+
+**Illustrative XII-style enum:**
+
+```cpp
+struct XII_CORE_DLL xiiTaskExecutionMode
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Graphics = 0U,
-    Compute,
-    Transfer,
+    Immediate = 0U,
+    Deferred,
+    Parallel,
 
     ENUM_COUNT,
 
-    Default = Graphics
+    Default = Deferred
   };
 };
 ```
 
-**Illustrative:** this is an example of the enum *format*, not a recommendation to add this particular type. Do not add a closed enum for an extensible set such as user-provided render-data categories without considering registration-based alternatives. Do not assume numeric enum order is a dependency order.
+This example illustrates the enum declaration structure, not a requirement to introduce this particular type.
 
-### 9.5 Concepts and constraints
+The wrapper's associated reflection, conversion, and registration requirements must follow the conventions of the owning module.
 
-Use concepts or `requires` to express meaningful template requirements when supported and when they clarify diagnostics. Avoid overengineering a concept hierarchy for one trivial call site.
+#### Scoped Enums
+
+Standard `enum class` is appropriate for internal or standalone types that do not require an established XII enum wrapper.
 
 ```cpp
-// Illustrative standard C++ example.
-template <typename T>
-concept UnsignedIntegral = std::is_integral_v<T> && std::is_unsigned_v<T>;
+enum class ProcessingState : xiiUInt8
+{
+  Idle,
+  Running,
+  Completed
+};
 ```
 
-If this code is placed in XII source, include the actual standard headers directly and use existing project constraints when more appropriate.
+Do not mechanically convert existing reflected enum wrappers into `enum class` without evaluating serialization, reflection, and compatibility requirements.
 
-### 9.6 Ranges and views
+#### Enum Exhaustiveness
 
-Use standard ranges when a pipeline is easier to understand than a simple loop and the repository toolchain fully supports the operation. Do not use lazy views when the underlying container may mutate or die before iteration. In hot paths, measure overhead and code generation.
+Switch statements over closed enums **SHOULD** make newly added values visible during maintenance.
 
-### 9.7 Structured bindings
+When every value requires explicit handling, avoid a silent `default` that conceals missing cases.
 
-Use them when the component names are obvious from context; avoid discarding meaningful types or lifetimes inadvertently.
+See §8.2 for the relevant control-flow requirements.
+
+**Guiding principle:**
+
+> Use enums to represent genuinely closed sets of alternatives. Preserve XII's reflection conventions and do not confuse numeric representation with semantic ordering.
+
+### 9.5 Concepts and Template Constraints
+
+Concepts and `requires` expressions **SHOULD** be used when they express meaningful template requirements and improve compiler diagnostics.
+
+Constraints should clarify what operations or properties a template requires rather than create unnecessary abstraction hierarchies.
+
+#### General Requirements
+
+- Use concepts when they communicate a reusable and meaningful semantic requirement.
+- Prefer existing standard or XII concepts when they accurately express the required contract.
+- Do not create a new named concept for every isolated type trait or trivial template condition.
+- Constraints **SHOULD** reflect the operations and semantics actually required by the implementation.
+- Do not use concepts merely to disguise an excessively generic interface.
+- Constrained overloads **MUST** avoid unexpected ambiguity.
+- Public template constraints **SHOULD** provide understandable diagnostics for unsupported types.
+- Include the appropriate standard or engine headers explicitly when using constraint facilities.
+- Avoid unnecessary template specialization when an ordinary function overload provides a clearer solution.
+
+**Example:**
+
+```cpp
+#include <concepts>
+
+template <typename T>
+concept UnsignedInteger = std::unsigned_integral<T>;
+```
+
+This is an illustrative standard C++ concept and is not a requirement to duplicate it within XII.
+
+Where the repository already provides suitable traits or constraints, prefer those established facilities.
+
+#### Constrained Functions
+
+```cpp
+template <std::unsigned_integral T>
+constexpr T CalculateMask(T uiBitIndex)
+{
+  return T{1} << uiBitIndex;
+}
+```
+
+The caller must ensure that the shift count is smaller than the bit width of `T`.
+
+A type constraint alone does not establish every runtime precondition of the operation.
+
+#### Semantic Concepts
+
+A concept that merely checks whether a method exists does not automatically prove that an implementation satisfies the method's semantic contract.
+
+For example, a type with a `Reset()` method is not necessarily safe to reset in every execution state.
+
+Document semantic requirements that cannot be enforced through compile-time syntax checks.
+
+**Guiding principle:**
+
+> Concepts should make generic contracts clearer and invalid instantiations easier to diagnose, without introducing speculative template architecture.
+
+### 9.6 Ranges and Views
+
+Standard ranges and views **MAY** be used when they express data transformation or iteration more clearly than ordinary loops.
+
+Lazy evaluation and borrowed storage introduce lifetime and mutation considerations that must be understood before adopting a ranges-based implementation.
+
+#### General Requirements
+
+- Prefer ordinary loops when they express the operation more clearly.
+- Use ranges and views when composition, filtering, or transformation materially improves readability.
+- Standard ranges operations **MUST** be supported by the repository's required compiler and standard-library implementations.
+- Do not retain lazy views beyond the lifetime of their backing storage.
+- Container mutation **MUST** respect the iterator and reference validity requirements of the view.
+- Avoid returning views that reference temporary or otherwise invalid storage.
+- Do not assume a view owns the elements it exposes.
+- Ranges-based implementations in performance-critical code **SHOULD** be evaluated for allocation behavior, generated code, and iteration overhead.
+- Prefer XII container and view abstractions when interoperability, allocator requirements, or engine conventions make them more appropriate.
+
+#### Simple Iteration
+
+**Prefer:**
+
+```cpp
+for (const xiiResourceEntry& entry : m_Entries)
+{
+  if (!entry.m_bActive)
+    continue;
+
+  ProcessEntry(entry);
+}
+```
+
+This loop is straightforward and does not benefit significantly from introducing a lazy range pipeline.
+
+#### Range Pipelines
+
+A ranges-based implementation may be appropriate when several transformations naturally compose.
+
+```cpp
+auto activeValues = values |
+  std::views::filter([](const auto& value)
+  {
+    return value.IsActive();
+  });
+```
+
+The view does not necessarily own `values`.
+
+Its validity depends on the backing range, iterator stability, and the semantics of the selected adaptors.
+
+#### Lazy Evaluation
+
+Lazy views may execute predicates or transformations when elements are accessed rather than when the view is constructed.
+
+Such operations **SHOULD NOT** contain surprising side effects.
+
+Do not assume that iterating a view multiple times always repeats exactly the same observable behavior when its underlying data may change.
+
+**Guiding principle:**
+
+> Use ranges when they clarify data processing, but preserve explicit control over lifetime, mutation, and evaluation semantics.
+
+### 9.7 Structured Bindings
+
+Structured bindings **SHOULD** be used when they make the components of a tuple-like value or aggregate easier to understand.
+
+They should not conceal important ownership, reference, or lifetime behavior.
+
+#### General Requirements
+
+- Use descriptive binding names that communicate the meaning of each element.
+- Prefer `const auto&` when iterating read-only tuple-like elements without copying.
+- Use `auto&` when mutation of the original elements is intended.
+- Avoid copying large elements inadvertently through plain `auto`.
+- Do not use structured bindings merely to shorten code when an existing named type communicates the same information more clearly.
+- Structured bindings **MUST** respect the lifetime and invalidation guarantees of their source objects.
+- Do not assume every XII container supports standard tuple-like structured binding syntax.
+
+**Illustrative standard C++ example:**
 
 ```cpp
 for (const auto& [resourceName, resourceHandle] : resources)
@@ -5477,46 +5802,572 @@ for (const auto& [resourceName, resourceHandle] : resources)
 }
 ```
 
-This is a standard-library-style illustrative example, not a claim that all XII containers expose pair iterators with this shape.
+This example assumes `resources` exposes suitable tuple-like elements.
 
-### 9.8 Lambdas and captures
+For ordinary engine objects with descriptive member names, direct member access may be clearer.
 
-Prefer explicit captures when callbacks may outlive the current scope. `this` captures require an enforced owner lifetime. Never register callbacks into long-lived systems without a corresponding unregister path.
+#### Copy Versus Reference
+
+**Avoid when mutation is intended:**
 
 ```cpp
-m_pWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& e) {
-  if (e.m_Type == xiiWindowEvent::Type::CloseButtonClicked)
-    RequestQuit();
+auto [key, value] = *iterator;
+
+value = newValue;
+```
+
+This may modify a local copy rather than the original stored value.
+
+**Prefer when the underlying tuple-like element permits it:**
+
+```cpp
+auto& [key, value] = *iterator;
+
+value = newValue;
+```
+
+The exact behavior depends on the type returned by the iterator.
+
+**Guiding principle:**
+
+> Structured bindings should expose the meaning of grouped values without obscuring whether those values are copied or borrowed.
+
+### 9.8 Lambdas, Captures, and Callbacks
+
+Lambdas **SHOULD** be used for localized behavior, callbacks, predicates, and small operations that naturally belong near their point of use.
+
+Capture semantics **MUST** remain explicit when ownership, asynchronous execution, or object lifetime is relevant.
+
+#### General Requirements
+
+- Prefer explicit captures for callbacks that may outlive the current scope.
+- Avoid broad reference captures such as `[&]` in asynchronous or long-lived callbacks.
+- A captured `this` pointer **MUST** remain valid for every possible invocation.
+- Callback registrations **MUST** have a defined invalidation or unregistration mechanism when the event source may outlive the receiver.
+- Do not capture stack references in deferred operations unless their lifetime is guaranteed.
+- Prefer value or move captures when a callback must own the captured data.
+- Do not use shared ownership merely to simplify callback lifetime management when explicit unregistration is sufficient.
+- Callback implementations **SHOULD** remain small and cohesive.
+- Substantial callback logic **SHOULD** be extracted into an appropriately named member or helper function when doing so improves clarity.
+- Lambda return types **SHOULD** be explicit when deduction would obscure an important interface or conversion.
+
+#### Short-Lived Lambdas
+
+**Prefer:**
+
+```cpp
+m_Entries.Sort([](const auto& a, const auto& b)
+{
+  return a.m_iPriority > b.m_iPriority;
 });
 ```
 
-**Lifecycle warning:** remove or invalidate this handler before destroying its receiver if the event source may outlive it.
+The lambda executes synchronously within the sorting operation and does not retain references beyond its intended scope.
 
-### 9.9 Move semantics
+#### Long-Lived Callbacks
 
-Move expensive unique owners instead of copying them. Do not call `std::move` on a `const` object expecting a real move, and do not return `std::move(local)` blindly when it may prevent named return-value optimization.
+```cpp
+m_EventHandler = [this](const xiiEventData& event)
+{
+  HandleEvent(event);
+};
+```
 
-### 9.10 Casts
+This is valid only when the callback registration and receiver lifetime are coordinated.
 
-Use the narrowest explicit C++ cast appropriate to the conversion. `reinterpret_cast` and pointer punning demand strong justification and attention to alignment, aliasing, representation, and lifetime. Prefer engine helpers for checked casts if present.
+The handler **MUST** be removed or rendered permanently inactive before the receiver is destroyed if the event source could invoke it afterward.
+
+#### Capturing Ownership
+
+For deferred operations that require data to survive the scheduling scope, a move capture can make ownership transfer explicit.
+
+```cpp
+xiiString sMessage = "Task completed";
+
+QueueTask([sMessage = std::move(sMessage)]()
+{
+  LogMessage(sMessage);
+});
+```
+
+The task system must preserve the callable's lifetime until it is invoked or discarded safely.
+
+#### Avoid Hidden Reference Captures
+
+**Avoid:**
+
+```cpp
+void QueueUpdate()
+{
+  xiiUInt32 uiCounter = 0U;
+
+  QueueTask([&]()
+  {
+    ++uiCounter;
+  });
+}
+```
+
+The task may execute after the local variable has been destroyed.
+
+This is a lifetime error, not merely a stylistic concern.
+
+**Guiding principle:**
+
+> Lambdas make behavior local, but captures create lifetime dependencies. Every retained callback must have an explicit ownership and invalidation contract.
+
+### 9.9 Move Semantics and Perfect Forwarding
+
+Move semantics **SHOULD** be used when they express meaningful ownership transfer or avoid unnecessary copying.
+
+A move operation must preserve the invariants of both the destination and the moved-from object.
+
+#### General Requirements
+
+- Prefer moving uniquely owned or expensive movable objects when ownership transfer is intended.
+- Do not use `std::move` indiscriminately on inexpensive values.
+- Do not assume that `std::move` itself performs a move; it is a cast enabling move construction or assignment where supported.
+- Do not use `std::move` on a `const` object expecting ordinary mutable move semantics.
+- Avoid using an object after it has been moved from unless its documented moved-from state permits the operation.
+- Do not return `std::move(local)` mechanically when returning a local object by value.
+- Use forwarding references and `std::forward` only when implementing genuine forwarding interfaces.
+- Avoid introducing forwarding templates when ordinary overloads or concrete parameter types provide clearer contracts.
+- Move operations **MUST NOT** invalidate externally registered identities or addresses unless the type explicitly supports that behavior.
+
+#### Ownership Transfer
+
+**Prefer:**
+
+```cpp
+xiiUniquePtr<xiiSimulationData> pData =
+  CreateSimulationData();
+
+m_pSimulationData = std::move(pData);
+```
+
+The transfer of exclusive ownership is explicit.
+
+#### Return-Value Optimization
+
+**Prefer:**
+
+```cpp
+xiiString BuildResourceName()
+{
+  xiiString sName = "SimulationResource";
+  return sName;
+}
+```
+
+**Avoid:**
+
+```cpp
+xiiString BuildResourceName()
+{
+  xiiString sName = "SimulationResource";
+  return std::move(sName);
+}
+```
+
+Applying `std::move` to a named local in a return statement can prevent named return-value optimization.
+
+The ordinary return form allows the compiler to perform copy elision where permitted and use move construction where appropriate.
+
+#### Perfect Forwarding
+
+Use `std::forward` when preserving the value category of an argument is an actual requirement of a generic wrapper or constructor.
+
+Do not introduce variadic forwarding constructors without considering overload resolution, accidental conversions, and interactions with copy or move constructors.
+
+**Guiding principle:**
+
+> Move semantics express transfer, not automatic performance. Move deliberately and preserve valid object states.
+
+### 9.10 Casts and Type Conversions
+
+Type conversions **MUST** be explicit when they may alter meaning, precision, representation, or ownership assumptions.
+
+Prefer the narrowest C++ cast that accurately expresses the intended conversion.
+
+#### General Requirements
+
+- Use `static_cast` for well-defined explicit numeric and related conversions.
+- Use `const_cast` only when constness changes are explicitly justified and safe.
+- Use `reinterpret_cast` only when low-level representation conversion is necessary and valid.
+- Avoid C-style casts because they obscure the conversion category.
+- Narrowing conversions **MUST** be range-checked when values may exceed the destination range.
+- Do not use casts to suppress legitimate type mismatches.
+- Prefer XII's established checked casting or type conversion utilities where available.
+- Pointer conversions **MUST** respect object lifetime, alignment, and type accessibility.
+- Representation-dependent conversions **MUST** consider strict aliasing, object representation, and platform portability.
+- Casts **MUST NOT** be used to bypass ownership or const-correctness contracts.
+
+#### Numeric Conversions
+
+**Prefer:**
 
 ```cpp
 const float fWidth = static_cast<float>(uiWidth);
 ```
 
-Avoid C-style casts because they conceal the conversion category.
+When converting to an integer type with a narrower range, validate that the original value is representable.
 
-### 9.11 `std` and XII abstractions
+Do not assume that an explicit cast makes an otherwise invalid conversion safe.
 
-Prefer XII's established types at shared engine boundaries (`xiiString`, `xiiStringView`, `xiiDynamicArray`, `xiiResult`, `xiiDelegate`, `xiiUniquePtr`, etc.). The standard library is not forbidden. Use it when appropriate, but do not create public APIs that gratuitously mix incompatible ownership, allocation, or ABI conventions.
+#### `reinterpret_cast`
 
-### 9.12 Coroutines and asynchronous code
+Low-level systems code may require reinterpretation of memory representations, especially within platform integration, serialization, or hardware interfaces.
 
-Use coroutines only with a defined executor, cancellation model, ownership contract, error propagation, and shutdown behavior. Do not keep raw engine pointers across suspension unless their lifetime is guaranteed. A coroutine is not automatically thread-safe.
+Such casts demand careful consideration of:
 
-### 9.13 Modules and headers
+- Alignment requirements.
+- Strict aliasing rules.
+- Object lifetime.
+- Pointer provenance and validity.
+- Endianness.
+- Representation compatibility.
+- Bounds and allocation size.
 
-Do not migrate headers to C++ modules piecemeal without a toolchain/build-system plan covering generated reflection, macros, DLL boundaries, PCH, and plugin compilation.
+Where byte-level access is intended, prefer well-defined byte-oriented representations and copying facilities rather than pointer punning.
+
+#### `std::bit_cast`
+
+C++20 provides `std::bit_cast` for copying object representations between eligible trivially copyable types of equal size.
+
+```cpp
+const xiiUInt32 uiBits = std::bit_cast<xiiUInt32>(fValue);
+```
+
+This example assumes the implementation uses a 32-bit `float` and that the target representation is supported.
+
+`std::bit_cast` does not eliminate the need to reason about the validity of the destination representation.
+
+Use it when object-representation conversion is intended, rather than `reinterpret_cast`-based aliasing.
+
+**Guiding principle:**
+
+> A cast should reveal a deliberate conversion. It must never conceal invalid assumptions about representation, lifetime, precision, or ownership.
+
+### 9.11 Standard Library and XII Abstractions
+
+The C++ standard library is available to XII, but engine-level APIs **SHOULD** use established XII abstractions when those abstractions define important architectural contracts.
+
+This is particularly relevant to allocation, memory ownership, reflection, serialization, containers, strings, delegates, and platform interoperability.
+
+#### General Requirements
+
+- Prefer established XII types at shared engine interfaces when they provide required engine semantics.
+- Do not introduce parallel abstraction families without a demonstrated need.
+- Standard-library facilities **MAY** be used when they are appropriate and compatible with XII's architecture.
+- Avoid unnecessary conversion between standard and XII container or string types.
+- Do not expose standard-library types across binary interfaces when doing so violates the module's ABI requirements.
+- Allocation and destruction **MUST** remain compatible with the relevant ownership model.
+- Do not replace established XII types merely because a similar standard-library facility exists.
+- Do not recreate standard-library functionality unnecessarily when the existing facility satisfies the requirements.
+- Standard-library usage **MUST** respect the repository's required compiler and standard-library versions.
+- Include the required standard headers directly rather than relying on the PCH.
+
+#### Common Engine Types
+
+| Responsibility | Established XII abstraction |
+|---|---|
+| Owning strings | `xiiString` |
+| Non-owning string access | `xiiStringView` |
+| Dynamic arrays | `xiiDynamicArray` |
+| Non-owning contiguous arrays | `xiiArrayPtr` |
+| Explicit success/failure | `xiiResult` |
+| Callable delegates | `xiiDelegate` |
+| Exclusive pointer ownership | `xiiUniquePtr` |
+| Shared pointer ownership | `xiiSharedPtr` |
+| Resource identity | Appropriate XII handle type |
+
+This table identifies commonly used engine abstractions rather than prohibiting corresponding standard-library types.
+
+#### Interoperability
+
+When integrating external libraries, standard types may be required by their APIs.
+
+Perform conversions at clearly defined boundaries when doing so prevents allocation, ownership, or representation assumptions from leaking through the engine.
+
+Avoid repeated conversions within established hot paths when direct interoperable representations are available.
+
+**Guiding principle:**
+
+> Prefer consistency at engine boundaries and interoperability at integration boundaries. Use the abstraction whose contract matches the requirement.
+
+### 9.12 Coroutines and Asynchronous Code
+
+C++20 coroutines provide a language mechanism for suspending and resuming execution, but do not independently define scheduling, cancellation, thread safety, or resource ownership.
+
+Coroutines **MUST NOT** be introduced into XII without a clearly defined runtime and lifetime model.
+
+#### General Requirements
+
+- Coroutine use **MUST** have a defined executor or resumption policy.
+- Suspension and resumption behavior **MUST** be documented.
+- Objects referenced across suspension points **MUST** remain valid until their final use.
+- Cancellation behavior **MUST** be explicit.
+- Error propagation **MUST** follow XII's no-exception policy.
+- Coroutine frame ownership and destruction responsibilities **MUST** be defined.
+- Shutdown **MUST** account for suspended and outstanding coroutines.
+- Do not assume coroutines execute on a single thread unless the executor guarantees it.
+- Do not assume a coroutine is thread-safe because its source code appears sequential.
+- Avoid introducing coroutine abstractions when the existing task system adequately expresses the required operation.
+- Do not retain raw engine pointers across suspension points without enforceable lifetime guarantees.
+
+#### Suspension and Lifetime
+
+A suspension point may allow the current scope's external dependencies to change or disappear before the coroutine resumes.
+
+Borrowed references and pointers remain subject to their original lifetime contracts.
+
+In particular, a coroutine that suspends while holding a mutex, reference into a mutable container, or device-owned resource may require additional coordination.
+
+#### Cancellation
+
+Cancellation does not necessarily imply immediate completion.
+
+The coroutine's owning system **MUST** define whether cancellation:
+
+- Prevents future resumption.
+- Requests cooperative termination.
+- Causes completion with a failure result.
+- Requires explicit draining or destruction of the coroutine frame.
+
+Do not assume that destroying a cancellation token safely destroys all work associated with it.
+
+#### Exception Handling
+
+Coroutine implementations must not rely on exception propagation as their ordinary failure mechanism.
+
+Promise types and coroutine runtimes **MUST** respect the engine's exception policy and supported compiler configurations.
+
+**Guiding principle:**
+
+> Coroutines simplify the expression of asynchronous control flow, but do not remove the need for explicit scheduling, cancellation, ownership, or synchronization contracts.
+
+### 9.13 C++ Modules and Header Integration
+
+XII currently relies on a header-based compilation architecture involving module export macros, precompiled headers, reflection code, generated sources, and plugin interfaces.
+
+C++ modules **MUST NOT** be introduced piecemeal without an architectural and build-system plan.
+
+#### General Requirements
+
+- Do not migrate existing headers to C++ modules solely to adopt newer language features.
+- Module adoption **MUST** account for all supported compilers and build systems.
+- Generated reflection and serialization code **MUST** remain compatible with the proposed module architecture.
+- DLL export/import behavior **MUST** be preserved.
+- Precompiled header integration or replacement **MUST** be planned.
+- Macro visibility and preprocessing requirements **MUST** be evaluated.
+- Plugin and dynamically loaded module compilation **MUST** remain supported.
+- Public interface compatibility **MUST** be considered before replacing established header contracts.
+- Avoid maintaining duplicate header and module implementations without a clear transition plan.
+- C++ module support **MUST** be validated across relevant platform and toolchain configurations before broad adoption.
+
+#### Migration Considerations
+
+A future C++ module strategy should evaluate:
+
+1. Compiler and standard-library module support.
+2. Build-system dependency scanning and compilation ordering.
+3. Binary module interface artifact management.
+4. Generated code and reflection integration.
+5. Exported C++ interfaces and dynamic linking.
+6. Platform-specific preprocessing.
+7. Third-party library compatibility.
+8. Incremental build performance.
+9. Developer tooling and IDE support.
+10. Compatibility with existing plugins and downstream consumers.
+
+C++ modules may improve dependency isolation and compilation performance, but those benefits must be demonstrated within XII's actual build architecture.
+
+**Guiding principle:**
+
+> Language modules are an architectural change, not a formatting change. Adopt them only through a coordinated migration that preserves the engine's existing contracts.
+
+### 9.14 `std::span`, `std::string_view`, and Borrowed Standard Views
+
+Non-owning standard-library views **MAY** be used where they are appropriate, but their lifetime contracts must remain consistent with XII's established borrowing conventions.
+
+The ownership and view lifetime requirements of §6.8 apply equally to standard and engine-specific views.
+
+#### General Requirements
+
+- Prefer XII's established view types at engine interfaces where they are part of the module contract.
+- Standard-library views **MUST NOT** outlive their backing storage.
+- Do not assume that `std::span` or `std::string_view` owns the referenced memory.
+- Avoid returning views into temporary containers or strings.
+- Conversions between XII and standard views **MUST** preserve bounds, representation, and lifetime validity.
+- Do not introduce repeated view conversions when one representation can be used consistently.
+- Mutable spans **MUST** be treated as borrowed mutable access.
+- A const-qualified view object is not necessarily a view of const elements.
+
+**Example:**
+
+```cpp
+void ProcessSamples(std::span<const float> samples)
+{
+  for (float fSample : samples)
+  {
+    ProcessSample(fSample);
+  }
+}
+```
+
+This is a standard-library example. Shared XII interfaces should normally use the established engine array-view convention where appropriate.
+
+**Guiding principle:**
+
+> Views describe access to storage, not ownership of it. Their simplicity must not obscure lifetime or mutability.
+
+### 9.15 `std::optional`, `std::variant`, and Explicit State Representation
+
+Modern vocabulary types can make optional values and alternative states explicit.
+
+They **SHOULD** be used when their semantics fit the problem and their adoption does not conflict with established XII abstractions.
+
+#### Optional Values
+
+Use an optional representation when absence is a meaningful value rather than an error.
+
+For example, an optional configuration setting may legitimately be unspecified.
+
+Do not use optional values to conceal operations that should report failure.
+
+#### Alternatives
+
+Use a variant-like representation when a value may be one of a defined set of alternative types.
+
+A variant is not automatically preferable to a polymorphic interface, tagged engine structure, or existing reflection-compatible representation.
+
+#### General Requirements
+
+- Optional values **MUST** distinguish absence from valid values unambiguously.
+- Variant alternatives **SHOULD** represent a meaningful closed set of possibilities.
+- Do not introduce optional wrappers when an existing invalid-handle or sentinel contract is clearer and already established.
+- Do not use variant types as replacements for extensible runtime registries without considering their closed nature.
+- Public vocabulary types **MUST** be compatible with reflection, serialization, and ABI requirements.
+- Do not introduce unnecessary allocations or conversions to represent simple state.
+- State alternatives **MUST** have documented validity and transition rules.
+
+**Guiding principle:**
+
+> Make absence and alternatives explicit when they are real domain concepts, but avoid introducing additional state representations without a concrete benefit.
+
+### 9.16 Three-Way Comparison and Ordering
+
+C++20 provides the three-way comparison operator (`<=>`) and associated comparison categories.
+
+These facilities **MAY** be used when they simplify well-defined value ordering and equality semantics.
+
+#### General Requirements
+
+- Comparison operators **MUST** reflect the type's semantic identity or ordering contract.
+- Do not generate ordering operators automatically when member declaration order does not represent meaningful comparison order.
+- Defaulted equality **SHOULD** be considered for simple value-like types when memberwise equality is correct.
+- Do not use three-way comparison merely to reduce the number of explicitly written operators.
+- Comparison categories **MUST** accurately represent the supported ordering semantics.
+- Floating-point comparison **MUST** account for partial ordering caused by NaNs.
+- Resource handles and identity-bearing objects **SHOULD** use comparison semantics consistent with their documented identity rules.
+- Ordering used by sorting and ordered containers **MUST** satisfy the required algorithmic contracts.
+
+**Example:**
+
+```cpp
+struct xiiVersion
+{
+  xiiUInt32 m_uiMajor = 0U;
+  xiiUInt32 m_uiMinor = 0U;
+  xiiUInt32 m_uiPatch = 0U;
+
+  auto operator<=>(const xiiVersion&) const = default;
+};
+```
+
+The defaulted comparison is appropriate if versions are intentionally ordered lexicographically by major, minor, and patch values.
+
+It would be inappropriate if the type required a different domain-specific ordering.
+
+**Guiding principle:**
+
+> Generate comparisons when memberwise semantics are correct. Otherwise, implement the actual domain contract explicitly.
+
+### 9.17 Attributes and Compile-Time Diagnostics
+
+Standard C++ attributes **SHOULD** be used when they communicate meaningful intent or enable useful diagnostics.
+
+They must not replace the underlying correctness requirements.
+
+#### Common Attributes
+
+| Attribute | Intended use |
+|---|---|
+| `[[nodiscard]]` | Warn when an important return value is discarded |
+| `[[maybe_unused]]` | Mark intentionally unused declarations |
+| `[[deprecated]]` | Identify APIs scheduled for replacement or removal |
+| `[[fallthrough]]` | Document intentional switch fallthrough |
+| `[[likely]]` | Express an expected branch probability |
+| `[[unlikely]]` | Express an expected uncommon branch |
+
+#### General Requirements
+
+- Use `[[nodiscard]]` according to §7.6.
+- Use `[[fallthrough]]` according to §8.9.
+- Do not introduce `[[maybe_unused]]` merely to conceal obsolete code or unused dependencies.
+- Deprecation attributes **SHOULD** provide a useful migration message where supported.
+- Branch-likelihood attributes **SHOULD** be reserved for cases supported by representative profiling or established workload knowledge.
+- Do not use `[[likely]]` or `[[unlikely]]` as substitutes for profiling.
+- Attributes **MUST** remain compatible with the repository's required compilers.
+- Do not stack attributes mechanically when they provide no practical benefit.
+
+#### Branch Prediction
+
+**Example:**
+
+```cpp
+if (bUnexpectedFailure) [[unlikely]]
+{
+  HandleFailure();
+}
+```
+
+This syntax communicates an expected uncommon branch.
+
+However, compiler behavior varies, and branch-likelihood hints are not guaranteed to improve performance.
+
+Use them only when their assumptions are justified and their effect is appropriate for the relevant workload.
+
+**Guiding principle:**
+
+> Attributes should communicate meaningful contracts or evidence-based assumptions, not decorate code without purpose.
+
+### 9.18 Compile-Time Reflection and Metaprogramming Boundaries
+
+Modern C++ template facilities can generate types, select implementations, and enforce compile-time constraints.
+
+These capabilities **SHOULD** remain focused on requirements that genuinely benefit from compile-time reasoning.
+
+#### General Requirements
+
+- Prefer ordinary C++ constructs when they express the same behavior more clearly.
+- Do not introduce complex template metaprogramming solely to eliminate small amounts of duplication.
+- Compile-time mechanisms **SHOULD** provide understandable diagnostics for invalid use.
+- Avoid unnecessary instantiation depth and excessive compile-time computation.
+- Template-generated interfaces **MUST** preserve the intended ownership, lifetime, and type contracts.
+- Compile-time metadata **MUST NOT** be confused with XII's established runtime reflection system.
+- Do not replace engine reflection or serialization registration with unrelated template machinery without a coordinated architectural change.
+- Metaprogramming abstractions **SHOULD** have concrete consumers and demonstrate a reduction in overall complexity.
+
+#### Compile-Time Versus Runtime Reflection
+
+XII's runtime reflection and registration mechanisms may support capabilities that ordinary C++ compile-time type inspection does not provide, including dynamic discovery, serialization, tooling, and plugin interoperability.
+
+Compile-time traits and concepts may complement these systems but do not automatically replace them.
+
+**Guiding principle:**
+
+> Compile-time abstraction is justified when it strengthens contracts or eliminates meaningful runtime complexity. It should not become a parallel architecture without a demonstrated need.
 
 ---
 
