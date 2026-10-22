@@ -91,7 +91,7 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     Clear();
     return XII_FAILURE;
   }
-  xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
   auto                                       pipeline = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
   if (out_changed)
     *out_changed = pipeline != m_pPipeline;
