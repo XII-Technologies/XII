@@ -6,8 +6,6 @@ This guide defines what readable, correct, robust, maintainable, and performance
 
 The words **MUST**, **SHOULD**, and **MAY** indicate mandatory rules, expected defaults (exceptions need a reason), and permitted alternatives. XII-specific APIs shown in examples are taken from the supplied engine code where possible. Examples labeled **illustrative** show a design pattern and may require adaptation to the exact current API.
 
----
-
 ## Contents
 
 1. [Core principles](#1-core-principles)
@@ -33,9 +31,6 @@ The words **MUST**, **SHOULD**, and **MAY** indicate mandatory rules, expected d
 21. [Reference examples](#21-reference-examples)
 22. [Contributor and reviewer checklists](#22-contributor-and-reviewer-checklists)
 23. [Maintenance and exceptions](#23-maintenance-and-exceptions)
-
----
-
 
 ## 1. Core Principles
 
@@ -2281,147 +2276,649 @@ Forward declarations, explicit dependencies, and implementation separation can r
 
 > Shared headers are high-impact dependencies. Keep their contracts focused, their dependencies intentional, and their implementations appropriately isolated.
 
-## 5. Types, classes, and interfaces
+## 5. Types, Classes, and Interfaces
 
-### 5.1 `struct` versus `class`
+Types and interfaces **MUST** communicate their intended responsibilities, ownership semantics, invariants, and permitted operations.
 
-Use `struct` for transparent records whose members form the public data contract. Use `class` for types with behavioral invariants, encapsulated state, significant lifecycle logic, or controlled mutation. This is an intention convention, not a layout or performance distinction.
+XII favors cohesive types, explicit contracts, predictable object lifetimes, and controlled state transitions. Object-oriented abstractions should serve concrete architectural purposes rather than introduce unnecessary indirection or complexity.
+
+The ownership and lifetime requirements established in §1.2, interface design principles in §1.3, and naming conventions in §3 apply throughout this section.
+
+### 5.1 `struct` Versus `class`
+
+Use `struct` for transparent data types whose members intentionally form a public data contract. Use `class` for types that encapsulate behavior, enforce invariants, manage resources, or control access to internal state.
+
+This distinction communicates design intent. In C++, `struct` and `class` have equivalent capabilities and object representation rules; their primary language-level differences are default member accessibility and default inheritance accessibility.
+
+#### General Requirements
+
+- Use `struct` for plain data records, descriptors, configuration objects, and related value types whose members are intentionally accessible.
+- Use `class` when internal state requires controlled mutation or when the type establishes meaningful behavioral invariants.
+- Do not introduce getters and setters for every field of a transparent data structure without a concrete reason.
+- Do not expose mutable fields merely to avoid implementing operations that preserve invariants.
+- A `struct` **MAY** contain constructors, helper functions, and validation methods when these complement its role as a transparent data type.
+- A `class` **MAY** contain public data when required by an established contract, but such exposure **SHOULD** be intentional.
+- Do not select `struct` or `class` based on assumptions about performance, allocation, or memory layout.
+- If a data structure develops invariants that cannot be reliably maintained through public mutation, reconsider its representation and interface.
+
+**Prefer:**
 
 ```cpp
-struct xiiRenderGraphRegistrationOptions
+struct xiiSimulationSettings
 {
-  xiiInt32 m_iPriority = 0;
+  xiiUInt32 m_uiMaxIterations = 128U;
+  float     m_fFixedTimeStep  = 0.016f;
+  bool      m_bEnableGravity  = true;
 };
 
-class xiiRenderGraphManager
+class xiiSimulationController
 {
 public:
-  static xiiResult DestroyGraph(xiiRenderGraphHandle hGraph);
+  xiiResult Initialize(const xiiSimulationSettings& settings);
+  void Shutdown();
+
+  bool IsInitialized() const;
 
 private:
-  xiiRenderGraphManager() = delete;
+  bool m_bInitialized = false;
 };
 ```
 
-If a `struct` grows invariants that must be protected, reconsider whether its public fields still make sense.
+The settings structure represents a transparent configuration contract, while the controller encapsulates lifecycle behavior and the state transitions required to maintain it.
 
-### 5.2 Data should start in a valid state
+**Guiding principle:**
 
-Give members meaningful defaults or initialize them in the constructor. Do not assume a user of a public configuration record will fill in every field.
+> Use `struct` to represent data and `class` to protect behavior and invariants. Choose based on semantics, not perceived complexity or performance.
+
+### 5.2 Valid Initial States and Object Invariants
+
+Objects **MUST** enter a well-defined state when constructed. Their initial state should be valid for the operations permitted by their documented contract.
+
+A valid initial state does not necessarily mean a fully initialized or operational state. Some engine components require an explicit initialization phase, but their behavior before initialization must remain well-defined.
+
+#### General Requirements
+
+- Members **SHOULD** receive meaningful default values through default member initializers or constructors.
+- Do not assume that callers will initialize every field of a public configuration structure manually.
+- Members **MUST NOT** be read before they have been initialized.
+- Default construction **MUST** establish a documented state.
+- Partially initialized objects **MUST NOT** expose operations that require completed initialization without appropriate precondition enforcement.
+- Sentinel values **MUST** have defined meanings and must not be confused with ordinary valid values.
+- Prefer explicit state representations when several distinct lifecycle states must be represented.
+- Avoid introducing additional state variables when the state can be derived reliably and efficiently from existing information.
+- Initialization failures **MUST** leave objects in a documented state that permits safe cleanup, recovery, or destruction.
+
+**Prefer:**
 
 ```cpp
-struct xiiGpuWorkDescription
+struct xiiTaskSchedulerSettings
 {
-  xiiUInt32 m_uiFramesInFlight = 3U;
-  bool      m_bEnableProfiling = false;
+  xiiUInt32 m_uiWorkerCount   = 1U;
+  xiiUInt32 m_uiQueueCapacity = 1024U;
+  bool      m_bEnableTracing  = false;
 };
 ```
 
-Avoid ambiguous sentinel values unless they are defined and checked. Do not depend on zero-initialization of an uninitialized automatic object.
+**Avoid:**
 
-### 5.3 Constructors
+```cpp
+struct xiiTaskSchedulerSettings
+{
+  xiiUInt32 m_uiWorkerCount;
+  xiiUInt32 m_uiQueueCapacity;
+  bool      m_bEnableTracing;
+};
+```
 
-- Prefer default member initializers for invariant defaults.
-- Use member initializer lists for values requiring constructor parameters, references, const members, or allocator construction.
-- Mark converting single-argument constructors `explicit` unless conversion is an intentional, documented part of the type.
-- Never call virtual functions expecting derived behavior from a constructor or destructor.
+The avoided implementation permits uninitialized members when a settings object is default-initialized without value initialization.
+
+#### Initialization Failure
+
+When construction cannot reasonably report an expected runtime failure, prefer a separate initialization operation or a factory that exposes the failure explicitly.
+
+**Prefer:**
+
+```cpp
+class xiiDataStore
+{
+public:
+  xiiResult Open(xiiStringView sPath);
+  void Close();
+
+  bool IsOpen() const;
+
+private:
+  bool m_bOpen = false;
+};
+```
+
+The `Open()` operation may fail because of external conditions, such as an inaccessible file or invalid data.
+
+Such failures should be represented through `xiiResult` or an appropriate richer error mechanism, consistent with §1.1.
+
+An object that requires explicit initialization **MUST** prevent invalid operations before initialization and maintain safe destruction semantics.
+
+**Guiding principle:**
+
+> Every object must have a valid, predictable state throughout its lifetime, including before initialization, after failure, and during destruction.
+
+### 5.3 Constructors and Initialization
+
+Constructors **MUST** establish the invariants required for safe object use and destruction.
+
+Prefer straightforward initialization over constructors that perform substantial work, introduce hidden dependencies, or obscure failure behavior.
+
+#### General Requirements
+
+- Prefer default member initializers for stable, context-independent defaults.
+- Use constructor member initializer lists for values supplied through constructor parameters.
+- References and `const` members **MUST** be initialized during construction.
+- Members **SHOULD** be initialized in their declaration order to avoid misleading initialization dependencies.
+- Constructors accepting a single argument **SHOULD** be marked `explicit` unless implicit conversion is intentional and documented.
+- Prefer `= default` for constructors that require no custom behavior.
+- Use `= delete` to explicitly prohibit construction or conversion operations where appropriate.
+- Do not call virtual functions from constructors or destructors expecting derived-class dispatch.
+- Constructors **MUST NOT** publish an object for external use before its required invariants are established.
+- Avoid performing recoverable operations in constructors when those operations may legitimately fail and require error reporting.
+- Constructor behavior **SHOULD** remain predictable and avoid unnecessary global state changes.
+
+**Prefer:**
 
 ```cpp
 class xiiFrameRing
 {
 public:
-  explicit xiiFrameRing(xiiUInt32 uiCapacity) :
-    m_uiCapacity(uiCapacity)
+  explicit xiiFrameRing(xiiUInt32 uiCapacity)
+    : m_uiCapacity(uiCapacity)
   {
-    XII_ASSERT_DEV(uiCapacity > 0U, "Frame ring capacity must be positive.");
+    XII_ASSERT_DEV(uiCapacity > 0U, "Frame ring capacity must be greater than zero.");
   }
 
 private:
-  xiiUInt32 m_uiCapacity = 0U;
+  xiiUInt32 m_uiCapacity;
 };
 ```
 
-Prefer `= default` and `= delete` to unnecessary empty bodies or hidden declarations when compatible with established macros.
+Here, a positive capacity is an explicit construction precondition. The assertion detects a programmer contract violation; it does not replace validation of untrusted input at the boundary where that input enters the system.
+
+#### Initialization Order
+
+C++ initializes members in declaration order, regardless of the order in which they appear in the constructor initializer list.
+
+**Prefer:**
+
+```cpp
+class xiiBufferRange
+{
+public:
+  xiiBufferRange(xiiUInt32 uiOffset, xiiUInt32 uiCount) :
+    m_uiOffset(uiOffset), m_uiCount(uiCount)
+  {
+  }
+
+private:
+  xiiUInt32 m_uiOffset;
+  xiiUInt32 m_uiCount;
+};
+```
+
+Initializer lists **SHOULD** follow declaration order to make actual initialization behavior apparent.
+
+#### Recoverable Construction Failures
+
+XII does not use exceptions for ordinary error handling.
+
+Constructors should therefore avoid operations that require recoverable failure reporting when a separate initialization method or factory provides a clearer contract.
+
+**Prefer:**
+
+```cpp
+class xiiResourceDatabase
+{
+public:
+  xiiResourceDatabase() = default;
+
+  xiiResult Initialize(xiiStringView sDatabasePath);
+  void Shutdown();
+};
+```
+
+A factory may also be appropriate when partially initialized objects must never be exposed to callers.
+
+The choice between explicit initialization and factory construction should reflect actual ownership and lifecycle requirements, not an arbitrary preference for one pattern.
+
+**Guiding principle:**
+
+> Constructors establish invariants. Recoverable initialization failures belong in operations that can communicate them explicitly.
 
 ### 5.4 Destructors and RAII
 
-Resources acquired by an object should be released deterministically, normally in its destructor. A destructor should not unexpectedly fail or perform unbounded waiting unless its contract explicitly says so.
+Resource Acquisition Is Initialization (RAII) **SHOULD** be used whenever resource ownership can be represented through object lifetime.
+
+Resources acquired by an object should be released deterministically when that ownership ends.
+
+#### General Requirements
+
+- Destructors **MUST** preserve safe cleanup semantics.
+- Destructors **MUST NOT** propagate exceptions across engine boundaries.
+- Destruction **SHOULD** be deterministic and avoid unnecessary hidden work.
+- Resources **MUST** be released using the mechanism appropriate to their ownership contract.
+- RAII guards **SHOULD** represent one clear responsibility, such as locking a mutex, managing temporary state, or owning a resource.
+- Explicit cleanup operations **MUST** account for subsequent destruction.
+- Destructors **SHOULD NOT** perform unbounded waiting or unexpected expensive operations unless the type's contract explicitly requires them.
+- Resource cleanup **MUST** respect outstanding asynchronous operations and external lifetime dependencies.
+- Destructors **MUST NOT** depend on virtual dispatch to derived-class implementations.
+
+#### Explicit Cleanup and Destruction
+
+When a type provides both an explicit cleanup operation and destructor-based cleanup, repeated cleanup must not violate invariants.
+
+**Prefer:**
 
 ```cpp
-xiiRenderGraphFrame::~xiiRenderGraphFrame()
+class xiiScopedOperation
 {
-  End();
-}
-```
-
-RAII guards should own a single well-defined responsibility. Ensure an explicit `End()` can safely be followed by destruction without ending twice.
-
-### 5.5 Copy and move semantics
-
-Choose deliberately:
-
-- Value-like types: copying is fine when meaningful and reasonably cheap.
-- Unique owners: noncopyable, movable when safe.
-- Identity-bearing managers, mutex owners, device handles: copying usually makes no sense.
-- Do not make a type movable if moving it would invalidate registered addresses, synchronization primitives, or callbacks into itself.
-
-```cpp
-class xiiGpuFrameScope
-{
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiGpuFrameScope);
-
 public:
-  xiiGpuFrameScope() = default;
-  ~xiiGpuFrameScope();
+  ~xiiScopedOperation()
+  {
+    End();
+  }
+
+  void End()
+  {
+    if (!m_bActive)
+      return;
+
+    ReleaseResources();
+    m_bActive = false;
+  }
+
+private:
+  void ReleaseResources();
+
+  bool m_bActive = true;
 };
 ```
 
-If the project macro disallows only copying, verify whether moves are implicitly disabled or must also be explicitly deleted. Do not infer move behavior from the macro's name alone.
+The `End()` operation is idempotent: invoking it more than once does not repeat resource release.
 
-### 5.6 Inheritance and virtual dispatch
+This is particularly useful for scoped operations that may finish explicitly before their owning object is destroyed.
 
-- Use inheritance for a genuine substitutability relationship or an established engine extension interface, not merely to reuse implementation.
-- Mark overrides with `override`; use `final` only when further overriding must be prohibited.
-- Give polymorphic bases an appropriate virtual destructor when deletion through the base is permitted.
-- Minimize virtual calls in tight CPU loops when profiling shows a real cost; do not replace clean polymorphism with opaque type switches by default.
+However, idempotent cleanup should not be introduced universally. If repeated cleanup represents a programming error, an assertion or explicit lifecycle contract may be more appropriate.
+
+#### Asynchronous Resource Destruction
+
+Logical ownership and physical destruction may occur at different times.
+
+For example, a GPU resource may become unavailable to new callers while its underlying allocation remains alive until submitted GPU work has completed.
+
+Likewise, an asynchronous task may require captured state to remain valid until execution finishes.
+
+Destructors and cleanup operations **MUST** respect these dependencies.
+
+**Guiding principle:**
+
+> Resource ownership should determine cleanup responsibility, while the resource's actual lifetime must satisfy every outstanding dependency.
+
+### 5.5 Copy and Move Semantics
+
+Copy and move operations **MUST** reflect the semantic identity, ownership, and lifetime requirements of a type.
+
+Do not make types copyable or movable merely because C++ permits the operations.
+
+#### Value Types
+
+Value-like types **SHOULD** support copying when duplication is meaningful and reasonably efficient.
+
+Examples include mathematical vectors, simple descriptors, configuration records, and small independent data objects.
+
+Copying such objects should produce independent values with equivalent observable state.
+
+#### Unique Ownership
+
+Types that own resources exclusively **MUST NOT** permit copying unless a meaningful deep-copy operation is intentionally provided.
+
+Moving may be appropriate when ownership can be transferred without violating invariants.
+
+A move operation **MUST** leave both the destination and moved-from object in documented, safely destructible states.
+
+#### Identity-Bearing Types
+
+Managers, synchronization objects, resource registries, device contexts, and other identity-bearing types are generally noncopyable.
+
+Moving such objects may also be unsafe when other components retain pointers, references, registrations, callbacks, or addresses referring to the original object.
+
+**Prefer:**
 
 ```cpp
-class xiiRendererPlugin : public xiiRendererInterface
+class xiiTaskScheduler
+{
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiTaskScheduler);
+
+public:
+  xiiTaskScheduler() = default;
+  ~xiiTaskScheduler();
+
+  xiiTaskScheduler(xiiTaskScheduler&&) = delete;
+  xiiTaskScheduler& operator=(xiiTaskScheduler&&) = delete;
+};
+```
+
+The move operations are explicitly prohibited because moving a scheduler may invalidate synchronization or registration state associated with its identity.
+
+#### General Requirements
+
+- Copy and move operations **MUST** preserve documented invariants.
+- Exclusive ownership **MUST NOT** be duplicated accidentally.
+- Moving a type **MUST NOT** invalidate externally registered addresses or references unless the contract explicitly permits it.
+- Prefer compiler-generated copy and move operations when their behavior matches the intended semantics.
+- Custom special member functions **SHOULD** be introduced only when ownership, resource management, or invariants require them.
+- When declaring custom destructors or copy operations, review whether move operations must be explicitly defined or deleted.
+- Do not infer a type's move behavior solely from the name of an engine macro.
+- The actual definitions of copy-disabling macros **MUST** be considered before relying on their effects.
+
+Prefer the Rule of Zero for types whose members already manage their own resources correctly.
+
+For ownership-bearing types that require custom special member functions, define or prohibit the relevant operations deliberately.
+
+**Guiding principle:**
+
+> Copying duplicates a value; moving transfers state or ownership. Both operations must be valid according to the type's semantics, not merely its syntax.
+
+### 5.6 Inheritance and Virtual Dispatch
+
+Inheritance **SHOULD** represent a genuine substitutability relationship, an established extension contract, or a deliberate form of interface polymorphism.
+
+Prefer composition when the objective is merely to reuse implementation details.
+
+#### General Requirements
+
+- Public inheritance **MUST** preserve the behavioral contract of the base type.
+- Derived implementations **MUST NOT** weaken required preconditions or violate established postconditions.
+- Overridden virtual functions **MUST** use `override`.
+- Use `final` only when preventing further inheritance or overriding is an intentional design requirement.
+- Polymorphic base classes **MUST** have an appropriate virtual destructor when deletion through a base pointer is permitted.
+- Do not introduce virtual methods solely to make a type hypothetically extensible.
+- Avoid deep inheritance hierarchies that obscure ownership, initialization, or behavioral responsibilities.
+- Do not use inheritance merely to share member variables or common helper implementations.
+- Virtual dispatch overhead **SHOULD** be evaluated through profiling when it occurs in demonstrated hot paths, as described in §1.5.
+
+**Prefer:**
+
+```cpp
+class xiiSimulationBackend
 {
 public:
-  void Initialize() override;
+  virtual ~xiiSimulationBackend() = default;
+
+  virtual xiiResult Initialize() = 0;
+  virtual void Shutdown() = 0;
+  virtual void StepSimulation(float fDeltaTime) = 0;
+};
+
+class xiiCpuSimulationBackend final : public xiiSimulationBackend
+{
+public:
+  xiiResult Initialize() override;
   void Shutdown() override;
+  void StepSimulation(float fDeltaTime) override;
 };
 ```
 
-### 5.7 Interface granularity
+The derived type implements an established behavioral interface rather than inheriting solely to reuse implementation.
 
-An interface should expose capabilities, not containers or incidental state. Avoid publishing raw pointers to mutable manager-owned objects unless access is scoped and lifetime guaranteed.
+#### Virtual Destruction
+
+A base class intended for polymorphic deletion **MUST** provide a public virtual destructor or another explicitly enforced destruction mechanism.
+
+A protected non-virtual destructor may be appropriate for interfaces that prohibit deletion through the base type and delegate destruction to a controlled owner.
+
+Do not add virtual destructors to every class automatically. Polymorphism and destruction semantics must justify their use.
+
+#### Avoiding Artificial Polymorphism
+
+Do not introduce base classes, virtual functions, or runtime type registries when the set of implementations is fixed and ordinary composition or direct calls provide a simpler design.
+
+Conversely, do not replace a cohesive polymorphic interface with manual type identifiers and conditional dispatch without a demonstrated benefit.
+
+**Guiding principle:**
+
+> Inheritance defines behavioral relationships. Use it to express substitutability, not merely to share code or anticipate hypothetical extensions.
+
+### 5.7 Interface Granularity and Capability Exposure
+
+Interfaces **MUST** expose meaningful capabilities while minimizing unnecessary knowledge of internal state.
+
+The general principles of small, cohesive interfaces are established in §1.3. This section focuses on their application to C++ type design.
+
+#### General Requirements
+
+- Public methods **SHOULD** represent meaningful operations rather than direct access to implementation details.
+- Avoid exposing internal containers, registration tables, synchronization objects, or mutable storage without a documented requirement.
+- Do not return unrestricted mutable references to manager-owned resources when doing so bypasses invariants.
+- Prefer controlled operations when resource mutation requires validation, synchronization, or lifecycle management.
+- Do not introduce multiple layers of accessors that merely forward calls without establishing meaningful contracts.
+- Avoid expanding interfaces to support hypothetical consumers.
+- Interface methods **SHOULD** have clearly defined preconditions, postconditions, and failure behavior.
+- Read-only access **SHOULD** be preferred when mutation is unnecessary.
+- Borrowed access **MUST** have valid and understandable lifetime guarantees.
+
+**Prefer:**
 
 ```cpp
-// Preferred manager operation:
-[[nodiscard]] static xiiResult ExecuteGraph(
-  const xiiRenderGraphFrame& frame,
-  xiiRenderGraphHandle hGraph,
-  const xiiView* pView);
+class xiiTaskRegistry
+{
+public:
+  xiiResult RegisterTask(xiiTaskHandle hTask);
+  xiiResult UnregisterTask(xiiTaskHandle hTask);
 
-// Risky as a general public API:
-// static xiiDynamicArray<Entry*>& GetMutableEntries();
+  bool IsRegistered(xiiTaskHandle hTask) const;
+};
 ```
 
-### 5.8 Encapsulation and invariants
+**Avoid:**
 
-A private field is not automatically safe if callers can obtain a mutable reference to it indefinitely. Use methods that preserve state transitions and invariants, particularly for frame, graph, resource, and thread lifecycle state.
+```cpp
+class xiiTaskRegistry
+{
+public:
+  xiiDynamicArray<TaskEntry>& GetMutableEntries();
+};
+```
 
-### 5.9 Abstract ownership from execution policy
+The avoided interface exposes internal storage and permits callers to bypass registration rules, potentially invalidating indices, handles, or synchronization assumptions.
 
-Do not conflate *who owns an object* with *when it runs*. A manager may own a graph without automatically executing it. Adding an object to a registry does not have to imply participation in every frame.
+#### Capability-Oriented Interfaces
 
-### 5.10 Favor composition
+Interfaces should communicate what consumers are permitted to do, not merely what data the implementation contains.
 
-Use composition for owned utilities, allocators, profilers, caches, and synchronization. Avoid deep inheritance solely to share common member declarations.
+However, exposing an immutable view or container may be appropriate when iteration itself is a documented capability and its lifetime and invalidation semantics are well-defined.
 
----
+Controlled interfaces should not become unnecessarily elaborate wrappers around operations that are already safe and self-explanatory.
+
+**Guiding principle:**
+
+> Expose the operations consumers need while retaining control of the invariants consumers must not violate.
+
+### 5.8 Encapsulation and Invariant Preservation
+
+Encapsulation is meaningful only when it protects an actual contract.
+
+Marking a field `private` does not guarantee encapsulation if callers can obtain unrestricted mutable access to the same state.
+
+#### General Requirements
+
+- State transitions **MUST** preserve the invariants owned by the component.
+- Mutable access to internal state **SHOULD** be restricted when arbitrary modification could violate those invariants.
+- Methods **SHOULD** express valid transitions rather than requiring callers to coordinate internal fields manually.
+- Internal synchronization requirements **MUST NOT** be bypassed through unguarded public references or pointers.
+- Avoid exposing implementation storage solely to simplify a caller's code.
+- Do not introduce accessors that provide no meaningful encapsulation benefit.
+- Invariants **MUST** remain valid after operations that report failure, subject to their documented failure guarantees.
+- Components **SHOULD** centralize validation and transition logic rather than duplicate it across unrelated callers.
+
+**Prefer:**
+
+```cpp
+class xiiSimulationSession
+{
+public:
+  xiiResult Begin()
+  {
+    if (m_bActive)
+      return XII_FAILURE;
+
+    m_bActive = true;
+    return XII_SUCCESS;
+  }
+
+  void End()
+  {
+    m_bActive = false;
+  }
+
+  XII_ALWAYS_INLINE bool IsActive() const
+  {
+    return m_bActive;
+  }
+
+private:
+  bool m_bActive = false;
+};
+```
+
+**Avoid:**
+
+```cpp
+class xiiSimulationSession
+{
+public:
+  XII_ALWAYS_INLINE bool& GetActiveState()
+  {
+    return m_bActive;
+  }
+
+private:
+  bool m_bActive = false;
+};
+```
+
+The avoided implementation allows external code to modify state without passing through the operations responsible for enforcing valid transitions.
+
+The preferred example is intentionally simple; `Begin()` and `End()` are justified when they represent meaningful lifecycle transitions. A plain boolean field in a transparent configuration structure would not require this abstraction.
+
+**Guiding principle:**
+
+> Encapsulation is the enforcement of meaningful contracts, not the mechanical replacement of fields with getters and setters.
+
+### 5.9 Separate Ownership from Execution Policy
+
+Object ownership and execution policy are distinct architectural responsibilities.
+
+A component may own, register, or manage the lifetime of an object without determining when or how that object executes.
+
+These responsibilities **SHOULD** remain separate unless their coupling is an explicit part of the subsystem's contract.
+
+#### General Requirements
+
+- Registration **MUST NOT** implicitly imply execution unless documented by the owning subsystem.
+- Ownership **MUST NOT** automatically imply scheduling, activation, or per-frame participation.
+- Execution order, priority, frequency, and synchronization **SHOULD** be represented independently when they are distinct concepts.
+- Avoid embedding global scheduling assumptions into otherwise reusable resource or object managers.
+- Components **SHOULD** be reusable across execution contexts when their responsibilities permit it.
+- Do not introduce a separate scheduler or execution abstraction when ownership and execution are inherently inseparable and no meaningful benefit would result.
+- Changes to execution policy **SHOULD NOT** require restructuring ownership contracts unnecessarily.
+
+#### Example
+
+A simulation registry may own simulation instances while a separate scheduler determines which instances participate in a particular update.
+
+```cpp
+class xiiSimulationRegistry
+{
+public:
+  xiiSimulationHandle CreateSimulation();
+  xiiResult DestroySimulation(xiiSimulationHandle hSimulation);
+};
+
+class xiiSimulationScheduler
+{
+public:
+  xiiResult ScheduleSimulation(xiiSimulationHandle hSimulation);
+  xiiResult UnscheduleSimulation(xiiSimulationHandle hSimulation);
+
+  void ExecuteScheduled(float fDeltaTime);
+};
+```
+
+The registry owns simulation lifetime, while the scheduler controls execution participation.
+
+This separation is appropriate when simulations may be created independently of scheduling or participate in different execution policies.
+
+For smaller systems where ownership and execution are necessarily coupled, a single cohesive component may be preferable.
+
+**Guiding principle:**
+
+> Ownership determines who manages an object. Execution policy determines when and how it participates in work. Do not conflate these responsibilities without a concrete reason.
+
+### 5.10 Favor Composition Over Unnecessary Inheritance
+
+Composition **SHOULD** be preferred when a type needs to use or own another component rather than satisfy its behavioral contract.
+
+Composition permits responsibilities to evolve independently and generally makes ownership and lifetime relationships easier to understand.
+
+#### General Requirements
+
+- Prefer composition for owned utilities, allocators, profilers, caches, synchronization objects, and supporting services.
+- Use inheritance when substitutability or an established extension interface provides a meaningful benefit.
+- Avoid inheriting from a type solely to access its implementation details or reuse a few methods.
+- Do not introduce deep inheritance hierarchies to share common data members.
+- Composed objects **MUST** have clearly defined ownership and lifetime relationships.
+- Prefer direct composition over unnecessary service locators, global registries, or dependency injection layers.
+- Dependencies **SHOULD** be provided explicitly when doing so clarifies ownership and testability.
+- Do not fragment a cohesive type into numerous single-purpose objects without a demonstrated architectural benefit.
+
+**Prefer:**
+
+```cpp
+class xiiSimulationSystem
+{
+public:
+  xiiResult Initialize();
+  void Shutdown();
+
+private:
+  xiiTaskScheduler   m_TaskScheduler;
+  xiiSimulationClock m_SimulationClock;
+};
+```
+
+**Avoid:**
+
+```cpp
+class xiiSimulationSystem : public xiiTaskScheduler, public xiiSimulationClock
+{
+public:
+  xiiResult Initialize();
+  void Shutdown();
+};
+```
+
+The simulation system uses scheduling and timing capabilities; it is not itself necessarily a scheduler or a clock.
+
+Composition communicates that relationship without exposing the implementation details of its supporting components through inheritance.
+
+#### Dependency Lifetime
+
+Composition also clarifies destruction order.
+
+C++ destroys member objects in the reverse order of their declaration. Dependencies between composed members **MUST** respect this behavior.
+
+When one member depends on another during destruction, their declaration order and cleanup contracts must ensure that the dependency remains alive for the required duration.
+
+**Guiding principle:**
+
+> Prefer composition to express what a component has or uses. Reserve inheritance for what a component genuinely is or promises to implement.
 
 ## 6. Initialization, ownership, and lifetime
 
