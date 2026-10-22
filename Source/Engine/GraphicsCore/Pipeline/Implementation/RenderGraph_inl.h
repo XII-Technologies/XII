@@ -82,8 +82,7 @@ std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStrin
   const xiiUInt32 uiPassIndex = m_Passes.GetCount();
 
   PassEntry& passEntry        = m_Passes.ExpandAndGetRef();
-  passEntry.m_Id.m_uiValue    = xiiHashingUtils::xxHash64String(sName, m_Id.m_uiValue);
-  passEntry.m_Id.m_uiValue    = xiiHashingUtils::xxHash64(&uiPassIndex, sizeof(uiPassIndex), passEntry.m_Id.m_uiValue);
+  passEntry.m_Id              = xiiRenderGraphId(uiPassIndex, m_uiSetupSerial);
   passEntry.m_QueueFlags      = queueFlags;
   passEntry.m_bHasSideEffects = bHasSideEffects;
   passEntry.m_bAllowMerge     = true;
@@ -141,7 +140,7 @@ XII_ALWAYS_INLINE bool xiiRenderGraph::IsCompiled() const
   return m_bIsCompiled;
 }
 
-XII_ALWAYS_INLINE xiiRenderGraphGraphId xiiRenderGraph::GetId() const
+XII_ALWAYS_INLINE xiiRenderGraphId xiiRenderGraph::GetId() const
 {
   return m_Id;
 }
@@ -161,21 +160,16 @@ XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> xi
   return m_ResourceVersions;
 }
 
-XII_ALWAYS_INLINE const xiiRenderGraphIdTable& xiiRenderGraph::GetIdTable() const
-{
-  return m_IdTable;
-}
-
 XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> xiiRenderGraph::GetExportedTexture(xiiRenderGraphTextureHandle hTexture) const
 {
   xiiSharedPtr<xiiGALTexture> pTexture;
-  m_ExportedTextures.TryGetValue(hTexture.m_Id.m_uiValue, pTexture);
+  m_ExportedTextures.TryGetValue(hTexture.m_Id.m_Data, pTexture);
   return pTexture;
 }
 
 XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> xiiRenderGraph::GetExportedBuffer(xiiRenderGraphBufferHandle hBuffer) const
 {
   xiiSharedPtr<xiiGALBuffer> pBuffer;
-  m_ExportedBuffers.TryGetValue(hBuffer.m_Id.m_uiValue, pBuffer);
+  m_ExportedBuffers.TryGetValue(hBuffer.m_Id.m_Data, pBuffer);
   return pBuffer;
 }

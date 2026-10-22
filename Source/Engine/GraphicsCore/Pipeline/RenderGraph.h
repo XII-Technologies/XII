@@ -30,48 +30,11 @@ class xiiView;
 struct xiiViewData;
 class xiiRenderGraph;
 
-/// Stable, process-independent identifier used by tooling, profiling and graph serialization.
-/// Runtime handles additionally carry a dense table index; the stable ID deliberately does not.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphId : public xiiHashableStruct<xiiRenderGraphId>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt64 m_uiValue = 0ULL;
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiValue != 0ULL; }
-  [[nodiscard]] XII_ALWAYS_INLINE bool operator==(const xiiRenderGraphId& rhs) const { return m_uiValue == rhs.m_uiValue; }
-};
+/// Indexed render graph identifier. Managers validate generations through xiiIdTable.
+/// Graph-local records are scoped to one setup and are not persistent asset identifiers.
+using xiiRenderGraphId = xiiGenericId<32, 31>;
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphId);
-
-using xiiRenderGraphGraphId    = xiiRenderGraphId;
-using xiiRenderGraphPassId     = xiiRenderGraphId;
-using xiiRenderGraphResourceId = xiiRenderGraphId;
-using xiiRenderGraphVersionId  = xiiRenderGraphId;
-
-/// Stable-ID to dense-index lookup rebuilt by the compiler. Dense indices are frame-local;
-/// stable IDs remain suitable for captures, profiler streams and editor selections.
-class XII_GRAPHICSCORE_DLL xiiRenderGraphIdTable
-{
-public:
-  void Clear();
-  void SetGraphId(xiiRenderGraphGraphId id);
-  void RegisterPass(xiiRenderGraphPassId id, xiiUInt32 uiIndex);
-  void RegisterResource(xiiRenderGraphResourceId id, xiiUInt32 uiIndex);
-  void RegisterVersion(xiiRenderGraphVersionId id, xiiUInt32 uiIndex);
-
-  [[nodiscard]] xiiRenderGraphGraphId GetGraphId() const;
-  [[nodiscard]] xiiUInt32             FindPass(xiiRenderGraphPassId id) const;
-  [[nodiscard]] xiiUInt32             FindResource(xiiRenderGraphResourceId id) const;
-  [[nodiscard]] xiiUInt32             FindVersion(xiiRenderGraphVersionId id) const;
-
-private:
-  xiiRenderGraphGraphId              m_GraphId;
-  xiiHashTable<xiiUInt64, xiiUInt32> m_Passes;
-  xiiHashTable<xiiUInt64, xiiUInt32> m_Resources;
-  xiiHashTable<xiiUInt64, xiiUInt32> m_Versions;
-};
-
 /// Flags that control the lifetime and behavior of a render graph resource.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceFlags
 {
@@ -106,14 +69,14 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphTextureHandle : public xiiHashableStruc
   XII_DECLARE_HANDLE_TYPE(xiiRenderGraphTextureHandle, xiiRenderGraphResourceHandleId);
 
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) :
+  XII_ALWAYS_INLINE xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphId id) :
     m_Id(id), m_InternalId(internalId)
   {
   }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
 
-  xiiRenderGraphResourceId m_Id;
+  xiiRenderGraphId m_Id;
 };
 
 /// Opaque handle to a virtual buffer resource declared in the render graph.
@@ -122,14 +85,14 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphBufferHandle : public xiiHashableStruct
   XII_DECLARE_HANDLE_TYPE(xiiRenderGraphBufferHandle, xiiRenderGraphResourceHandleId);
 
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) :
+  XII_ALWAYS_INLINE xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphId id) :
     m_Id(id), m_InternalId(internalId)
   {
   }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
 
-  xiiRenderGraphResourceId m_Id;
+  xiiRenderGraphId m_Id;
 };
 
 /// Opaque handle to a registered render pass.
@@ -140,14 +103,14 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphPassHandle : public xiiHashableStruct<x
   XII_DECLARE_HANDLE_TYPE(xiiRenderGraphPassHandle, xiiRenderGraphPassHandleId);
 
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphPassHandle(xiiRenderGraphPassHandleId internalId, xiiRenderGraphPassId id) :
+  XII_ALWAYS_INLINE xiiRenderGraphPassHandle(xiiRenderGraphPassHandleId internalId, xiiRenderGraphId id) :
     m_Id(id), m_InternalId(internalId)
   {
   }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
 
-  xiiRenderGraphPassId m_Id;
+  xiiRenderGraphId m_Id;
 };
 
 /// Describes a resource state barrier synthesized during compilation.
@@ -173,9 +136,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphBarrierDescription : public xiiHashabl
 /// Tool-facing metadata for one immutable resource version in the version timeline.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceVersionDescription
 {
-  xiiRenderGraphVersionId               m_Id;
-  xiiRenderGraphResourceId              m_ResourceId;
-  xiiRenderGraphPassId                  m_ProducerPassId;
+  xiiRenderGraphId                      m_Id;
+  xiiRenderGraphId                      m_ResourceId;
+  xiiRenderGraphId                      m_ProducerPassId;
   xiiUInt16                             m_uiVersion           = 0U;
   xiiUInt16                             m_uiParentVersion     = 0xFFFFU;
   xiiUInt32                             m_uiFirstUsePassIndex = xiiInvalidIndex;
@@ -190,7 +153,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphResourceVersion
 /// Tool-facing lifetime and aliasing record for a logical graph resource.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceDescription
 {
-  xiiRenderGraphResourceId                 m_Id;
+  xiiRenderGraphId                         m_Id;
   xiiHashedString                          m_sName;
   xiiBitflags<xiiRenderGraphResourceFlags> m_Flags;
   xiiUInt32                                m_uiFirstUsePassIndex = xiiInvalidIndex;
@@ -236,7 +199,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
 /// A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 {
-  xiiRenderGraphPassId                                m_Id;                                   ///< Stable pass ID for tools and profiling.
+  xiiRenderGraphId                                    m_Id;                                   ///< Setup-local pass ID for tools and profiling.
   xiiHashedString                                     m_sName;                                ///< Debug name for this pass, used in profiling and diagnostics.
   xiiUInt32                                           m_uiPassIndex        = xiiInvalidIndex; ///< Index into the graph's pass table.
   xiiUInt32                                           m_uiQueueIndex       = 0U;              ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
@@ -598,8 +561,8 @@ public:
   /// Returns the list of queue submissions synthesized by the compiler, in execution order.
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphQueueSubmission> GetQueueSubmissions() const;
 
-  /// Stable ID and name of this graph instance.
-  [[nodiscard]] xiiRenderGraphGraphId GetId() const;
+  /// Process-local ID and name of this graph instance.
+  [[nodiscard]] xiiRenderGraphId GetId() const;
   /// Process-local identity, unique even when several views use the same stable graph name.
   [[nodiscard]] xiiUInt64     GetInstanceId() const { return m_uiInstanceId; }
   [[nodiscard]] xiiStringView GetName() const;
@@ -607,7 +570,6 @@ public:
   /// Reflection/editor-friendly compiler records.
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphResourceDescription>        GetResourceDescriptions() const;
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> GetResourceVersions() const;
-  [[nodiscard]] const xiiRenderGraphIdTable&                                GetIdTable() const;
 
   /// Returns a strong reference to an exported graph-owned result after Execute().
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetExportedTexture(xiiRenderGraphTextureHandle hTexture) const;
@@ -626,7 +588,7 @@ private:
 
   struct VersionEntry
   {
-    xiiRenderGraphVersionId               m_Id;
+    xiiRenderGraphId                      m_Id;
     xiiUInt16                             m_uiVersion         = 0U;
     xiiUInt16                             m_uiParentVersion   = 0xFFFFU;
     xiiUInt32                             m_uiProducerPassIdx = xiiInvalidIndex;
@@ -640,7 +602,7 @@ private:
 
   struct ResourceEntry
   {
-    xiiRenderGraphResourceId                 m_Id;
+    xiiRenderGraphId                         m_Id;
     xiiHashedString                          m_sName;
     xiiBitflags<xiiRenderGraphResourceFlags> m_Flags        = xiiRenderGraphResourceFlags::Transient;
     bool                                     m_bIsTexture   = true;
@@ -675,7 +637,7 @@ private:
 
   struct PassEntry
   {
-    xiiRenderGraphPassId      m_Id;
+    xiiRenderGraphId          m_Id;
     xiiRenderGraphBlackboard* m_pBlackboard = nullptr;
 
     xiiHashedString                      m_sName;
@@ -694,16 +656,16 @@ private:
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_PrepareDelegate;
   };
 
-  void                    PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
-  void                    PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
-  void                    PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
-  void                    PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
-  void                    PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
+  void      PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
+  void      PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
+  void      PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
+  void      PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
+  void      PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
   xiiResult MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError);
-  void                    PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
-  void                    BuildTopologyCacheKey(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& key) const;
-  bool                    RestoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_order);
-  void                    StoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiArrayPtr<const xiiUInt32> order);
+  void      PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
+  void      BuildTopologyCacheKey(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& key) const;
+  bool      RestoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_order);
+  void      StoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiArrayPtr<const xiiUInt32> order);
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
@@ -718,9 +680,8 @@ private:
   xiiHashTable<xiiHashedString, xiiRenderGraphTextureHandle> m_SetupTextureBindings;
   xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
   xiiHashedString                                            m_sName;
-  xiiRenderGraphGraphId                                      m_Id;
+  xiiRenderGraphId                                           m_Id;
   xiiUInt64                                                  m_uiInstanceId = 0;
-  xiiRenderGraphIdTable                                      m_IdTable;
 
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALTexture>> m_PersistentTextures;
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALBuffer>>  m_PersistentBuffers;
