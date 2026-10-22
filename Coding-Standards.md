@@ -20,17 +20,8 @@ The words **MUST**, **SHOULD**, and **MAY** indicate mandatory rules, expected d
 10. [Memory, allocators, and containers](#10-memory-allocators-and-containers)
 11. [Strings, identifiers, hashes, and handles](#11-strings-identifiers-hashes-and-handles)
 12. [Errors, assertions, diagnostics, and logging](#12-errors-assertions-diagnostics-and-logging)
-13. [Concurrency and synchronization](#13-concurrency-and-synchronization)
-14. [Performance-sensitive engine code](#14-performance-sensitive-engine-code)
-15. [Graphics, render graphs, and GPU lifetimes](#15-graphics-render-graphs-and-gpu-lifetimes)
-16. [Reflection, serialization, and public API compatibility](#16-reflection-serialization-and-public-api-compatibility)
-17. [Platform, build, plugins, and subsystem lifecycle](#17-platform-build-plugins-and-subsystem-lifecycle)
-18. [Comments and documentation](#18-comments-and-documentation)
-19. [Testing, tooling, and code review](#19-testing-tooling-and-code-review)
-20. [Common mistakes and corrected examples](#20-common-mistakes-and-corrected-examples)
-21. [Reference examples](#21-reference-examples)
-22. [Contributor and reviewer checklists](#22-contributor-and-reviewer-checklists)
-23. [Maintenance and exceptions](#23-maintenance-and-exceptions)
+13. [Contributor and reviewer checklists](#13-contributor-and-reviewer-checklists)
+14. [Maintenance and exceptions](#14-maintenance-and-exceptions)
 
 ## 1. Core Principles
 
