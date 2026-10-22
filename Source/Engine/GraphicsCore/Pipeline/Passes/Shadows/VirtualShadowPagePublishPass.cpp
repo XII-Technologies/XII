@@ -33,7 +33,7 @@ xiiResult xiiVirtualShadowPagePublishPass::Build(xiiRenderPipelinePassContext& c
   auto        atlas    = context.GetInputTexture(m_Atlas);
   auto        physical = context.GetInputBuffer(m_Physical), table = context.GetInputBuffer(m_Virtual);
   const auto& source = batch->m_Residency->m_Bindings;
-  if (atlas.m_Id != source.m_hPhysicalAtlas.m_Id || physical.m_Id != source.m_hPhysicalPageTable.m_Id || table.m_Id != source.m_hVirtualPageTable.m_Id)
+  if (atlas.GetResourceId() != source.m_hPhysicalAtlas.GetResourceId() || physical.GetResourceId() != source.m_hPhysicalPageTable.GetResourceId() || table.GetResourceId() != source.m_hVirtualPageTable.GetResourceId())
     return context.ReportFailure("Page publication inputs do not belong to the batch's captured device allocations.");
   const auto publication = xiiVirtualShadowMapManager::CapturePagePublication(batch->m_Residency->m_Upload, batch->m_Pages);
   if (!publication)

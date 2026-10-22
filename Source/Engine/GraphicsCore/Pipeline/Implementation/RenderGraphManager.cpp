@@ -30,30 +30,34 @@ public:
     xiiRenderGraphManager::BuildDelegate m_BuildDelegate;
   };
 
-  using GraphTable = xiiIdTable<xiiRenderGraphHandle::IdType, Entry*, xiiLocalAllocatorWrapper>;
+  using GraphTable = xiiIdTable<xiiRenderGraphHandle::IdType, xiiUniquePtr<Entry>>;
 
 public:
   xiiRenderGraphManagerState() :
-    m_Allocator("RenderGraphManager", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator), m_Entries(&m_Allocator)
+    m_Allocator("RenderGraphManager", xiiFoundation::GetDefaultAllocator()), m_GraphTable(&m_Allocator), m_RetiredEntries(&m_Allocator)
   {
   }
 
   ~xiiRenderGraphManagerState() = default;
 
+  Entry* FindEntry(xiiRenderGraphHandle hGraph)
+  {
+    xiiUniquePtr<Entry>* pEntry = nullptr;
+    return m_GraphTable.TryGetValue(hGraph.GetInternalID(), pEntry) ? pEntry->Borrow() : nullptr;
+  }
   /// Returns the allocator used by the render graph manager state.
   XII_ALWAYS_INLINE xiiAllocator* GetAllocator() { return &m_Allocator; }
 
 public:
-  xiiProxyAllocator        m_Allocator;
-  xiiLocalAllocatorWrapper m_AllocatorWrapper;
+  xiiProxyAllocator m_Allocator;
 
   // The frame mutex protects graph lifetime against execution. Graph table operations also use this mutex.
   xiiMutex m_FrameMutex;
 
   GraphTable m_GraphTable;
 
-  // Stable Entry allocations: moving these unique pointers does not invalidate graph-table pointers.
-  xiiDynamicArray<xiiUniquePtr<Entry>> m_Entries;
+  // Removed handles cannot be resolved, but their resources may still be referenced by the active frame.
+  xiiDynamicArray<xiiUniquePtr<Entry>> m_RetiredEntries;
 
   xiiUniquePtr<xiiRenderGraphResourceCache>     m_pResourceCache;
   xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
@@ -132,17 +136,14 @@ xiiRenderGraphHandle xiiRenderGraphManager::CreateGraph(xiiStringView sName, Bui
 
   XII_LOCK(s_pState->m_FrameMutex);
 
-  if (s_pState->m_bFrameActive || s_pState->m_pResourceCache == nullptr)
+  if (s_pState->m_pResourceCache == nullptr)
     return {};
 
   xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphManagerState::Entry);
   pEntry->m_pGraph                                       = XII_NEW(s_pState->GetAllocator(), xiiRenderGraph, sName);
   pEntry->m_BuildDelegate                                = buildDelegate;
 
-  const xiiRenderGraphHandle hGraph(s_pState->m_GraphTable.Insert(pEntry.Borrow()));
-  s_pState->m_Entries.PushBack(std::move(pEntry));
-
-  return hGraph;
+  return xiiRenderGraphHandle(s_pState->m_GraphTable.Insert(std::move(pEntry)));
 }
 
 xiiResult xiiRenderGraphManager::DestroyGraph(xiiRenderGraphHandle hGraph)
@@ -152,37 +153,16 @@ xiiResult xiiRenderGraphManager::DestroyGraph(xiiRenderGraphHandle hGraph)
 
   XII_LOCK(s_pState->m_FrameMutex);
 
-  if (s_pState->m_bFrameActive)
+  if (!s_pState->m_GraphTable.Contains(hGraph))
     return XII_FAILURE;
 
-  xiiRenderGraphManagerState::Entry* pEntry = nullptr;
-  if (!s_pState->m_GraphTable.TryGetValue(hGraph, pEntry))
-    return XII_FAILURE;
-
-  xiiUInt32 uiEntryIndex = xiiInvalidIndex;
-  for (xiiUInt32 i = 0U; i < s_pState->m_Entries.GetCount(); ++i)
-  {
-    if (s_pState->m_Entries[i].Borrow() == pEntry)
-    {
-      uiEntryIndex = i;
-      break;
-    }
-  }
-
-  if (uiEntryIndex == xiiInvalidIndex)
-    return XII_FAILURE;
-
-  // A graph can own persistent pass resources in addition to pooled transient resources.
-  // Conservatively wait until all previously captured submissions have completed.
-  if (s_pState->m_uiFrameIndex != 0U)
-  {
+  if (!s_pState->m_bFrameActive && s_pState->m_uiFrameIndex != 0U)
     s_pState->m_FrameCompletionTracker.WaitForFrame(s_pState->m_uiFrameIndex);
-  }
 
-  xiiRenderGraphManagerState::Entry* pRemovedEntry = nullptr;
-  XII_VERIFY(s_pState->m_GraphTable.Remove(hGraph, &pRemovedEntry), "Failed to remove a managed render graph.");
-  s_pState->m_Entries.RemoveAtAndSwap(uiEntryIndex);
-
+  xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry;
+  XII_VERIFY(s_pState->m_GraphTable.Remove(hGraph, &pEntry), "Failed to remove a managed render graph.");
+  if (s_pState->m_bFrameActive)
+    s_pState->m_RetiredEntries.PushBack(std::move(pEntry));
   return XII_SUCCESS;
 }
 
@@ -196,8 +176,8 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
   if (!s_pState->m_bFrameActive || frame.GetFrameIndex() != s_pState->m_uiFrameIndex)
     return XII_FAILURE;
 
-  xiiRenderGraphManagerState::Entry* pEntry = nullptr;
-  if (!s_pState->m_GraphTable.TryGetValue(hGraph, pEntry))
+  xiiRenderGraphManagerState::Entry* pEntry = s_pState->FindEntry(hGraph);
+  if (pEntry == nullptr)
     return XII_FAILURE;
 
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -226,8 +206,8 @@ xiiRenderGraph* xiiRenderGraphManager::GetGraph(xiiRenderGraphHandle hGraph)
     return nullptr;
 
   XII_LOCK(s_pState->m_FrameMutex);
-  xiiRenderGraphManagerState::Entry* pEntry = nullptr;
-  return s_pState->m_GraphTable.TryGetValue(hGraph, pEntry) ? pEntry->m_pGraph.Borrow() : nullptr;
+  xiiRenderGraphManagerState::Entry* pEntry = s_pState->FindEntry(hGraph);
+  return pEntry != nullptr ? pEntry->m_pGraph.Borrow() : nullptr;
 }
 
 xiiRenderGraphBlackboard* xiiRenderGraphManager::GetBlackboard(xiiRenderGraphHandle hGraph)
@@ -236,8 +216,8 @@ xiiRenderGraphBlackboard* xiiRenderGraphManager::GetBlackboard(xiiRenderGraphHan
     return nullptr;
 
   XII_LOCK(s_pState->m_FrameMutex);
-  xiiRenderGraphManagerState::Entry* pEntry = nullptr;
-  return s_pState->m_GraphTable.TryGetValue(hGraph, pEntry) ? &pEntry->m_Blackboard : nullptr;
+  xiiRenderGraphManagerState::Entry* pEntry = s_pState->FindEntry(hGraph);
+  return pEntry != nullptr ? &pEntry->m_Blackboard : nullptr;
 }
 
 xiiRenderGraphResourceCache* xiiRenderGraphManager::GetResourceCache()
@@ -349,6 +329,12 @@ void xiiRenderGraphManager::EndFrame(xiiRenderGraphFrame& frame)
   s_pState->m_pResourceCache->EndFrame();
   s_pState->m_FrameCompletionTracker.CaptureSubmittedFrame(frame.m_uiFrameIndex);
 
+  if (!s_pState->m_RetiredEntries.IsEmpty())
+  {
+    s_pState->m_FrameCompletionTracker.WaitForFrame(frame.m_uiFrameIndex);
+    s_pState->m_RetiredEntries.Clear();
+  }
+
   frame.m_uiFrameIndex     = 0U;
   frame.m_uiCompletedFrame = 0U;
   s_pState->m_bFrameActive = false;
@@ -386,14 +372,14 @@ void xiiRenderGraphManager::EngineShutdown()
   {
     xiiLog::Warning("Render graph manager leak detected: {0} graphs were not destroyed.", s_pState->m_GraphTable.GetCount());
 
-    for (auto& pEntry : s_pState->m_Entries)
+    for (auto it = s_pState->m_GraphTable.GetIterator(); it.IsValid(); ++it)
     {
-      xiiLog::Warning("  Graph '{0}' was not destroyed.", pEntry->m_pGraph->GetName());
+      xiiLog::Warning("  Graph '{0}' was not destroyed.", it.Value()->m_pGraph->GetName());
     }
   }
 
   s_pState->m_GraphTable.Clear();
-  s_pState->m_Entries.Clear();
+  s_pState->m_RetiredEntries.Clear();
   s_pState->m_FrameCompletionTracker.Reset();
   s_pState->m_pProfiler.Clear();
   s_pState->m_pResourceCache.Clear();

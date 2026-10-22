@@ -37,7 +37,7 @@ xiiResult xiiInstanceCullPass::Build(xiiRenderPipelinePassContext& context)
     const auto* description = context.m_Graph.GetBufferDescription(handle);
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride && description->m_uiSize >= stride && description->m_uiSize % stride == 0;
   };
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(candidates, sizeof(xiiUInt32)) || !valid(counter, sizeof(xiiUInt32)) || !valid(current, sizeof(xiiVec4U32)) || (previous.IsValid() && (!valid(previous, sizeof(xiiVec4U32)) || previous.m_Id == current.m_Id)))
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(candidates, sizeof(xiiUInt32)) || !valid(counter, sizeof(xiiUInt32)) || !valid(current, sizeof(xiiVec4U32)) || (previous.IsValid() && (!valid(previous, sizeof(xiiVec4U32)) || previous.GetResourceId() == current.GetResourceId())))
     return context.ReportFailure("Instance culling buffer layouts or previous/current LOD ownership are invalid.");
   const auto capacity = context.m_Graph.GetBufferDescription(scene)->m_uiSize / sizeof(xiiGpuSceneInstance);
   if (capacity > xiiMath::MaxValue<xiiUInt32>() || context.m_Graph.GetBufferDescription(current)->m_uiSize / sizeof(xiiVec4U32) < capacity)

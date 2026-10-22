@@ -63,7 +63,7 @@ private:
 /// Owns render graphs and the shared GPU resources used to execute them.
 /// Graph execution is explicit: registering a graph does not schedule it.
 /// Each graph owns its blackboard; transient physical resources are shared per device.
-/// Graph creation and destruction must occur outside an active GPU frame.
+/// Graph creation and destruction are serialized with frame recording.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphManager
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphManager);
@@ -75,8 +75,8 @@ public:
   /// A separate graph instance should be created for each view that requires independent graph or temporal state.
   [[nodiscard]] static xiiRenderGraphHandle CreateGraph(xiiStringView sName, BuildDelegate buildDelegate);
 
-  /// Destroys a graph and invalidates its handle. Waits for previously submitted GPU frames before releasing graph-owned resources.
-  /// Cannot be called while a GPU frame is active.
+  /// Invalidates the handle immediately. During a GPU frame, graph-owned resources are retained
+  /// until End() waits for that frame to complete; otherwise waits for prior submissions before release.
   [[nodiscard]] static xiiResult DestroyGraph(xiiRenderGraphHandle hGraph);
 
   /// Borrowed graph and blackboard access. Returns null for stale handles.

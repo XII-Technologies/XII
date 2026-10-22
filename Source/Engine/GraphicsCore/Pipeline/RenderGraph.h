@@ -4,11 +4,12 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <Foundation/Algorithm/HashingUtils.h>
+#include <Foundation/Algorithm/HashableStruct.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/HashedString.h>
+#include <Foundation/Strings/String.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/Id.h>
@@ -25,6 +26,8 @@
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+
+#include <utility>
 
 class xiiView;
 struct xiiViewData;
@@ -67,51 +70,72 @@ using xiiRenderGraphResourceHandleId = xiiGenericId<32, 16>;
 
 class XII_GRAPHICSCORE_DLL xiiRenderGraphTextureHandle : public xiiHashableStruct<xiiRenderGraphTextureHandle>
 {
-  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphTextureHandle, xiiRenderGraphResourceHandleId);
-
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphId id) :
-    m_Id(id), m_InternalId(internalId)
+  XII_DECLARE_POD_TYPE();
+  using IdType = xiiRenderGraphResourceHandleId;
+
+  xiiRenderGraphTextureHandle() = default;
+  XII_ALWAYS_INLINE xiiRenderGraphTextureHandle(IdType versionId, xiiRenderGraphId resourceId) :
+    m_ResourceId(resourceId), m_VersionId(versionId)
   {
   }
 
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
+  // A version is identified by its graph setup as well as its resource slot and version number.
+  [[nodiscard]] bool operator==(const xiiRenderGraphTextureHandle& other) const { return m_ResourceId == other.m_ResourceId && m_VersionId == other.m_VersionId; }
+  [[nodiscard]] bool operator<(const xiiRenderGraphTextureHandle& other) const { return m_ResourceId == other.m_ResourceId ? m_VersionId < other.m_VersionId : m_ResourceId < other.m_ResourceId; }
+  void               Invalidate()
+  {
+    m_ResourceId.Invalidate();
+    m_VersionId.Invalidate();
+  }
+  [[nodiscard]] bool             IsInvalidated() const { return m_ResourceId.IsInvalidated() || m_VersionId.IsInvalidated(); }
+  [[nodiscard]] bool             IsValid() const { return !IsInvalidated(); }
+  [[nodiscard]] IdType           GetInternalID() const { return m_VersionId; }
+  [[nodiscard]] xiiRenderGraphId GetResourceId() const { return m_ResourceId; }
 
-  xiiRenderGraphId m_Id;
+private:
+  xiiRenderGraphId m_ResourceId;
+  IdType           m_VersionId;
 };
 
 /// Opaque handle to a virtual buffer resource declared in the render graph.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphBufferHandle : public xiiHashableStruct<xiiRenderGraphBufferHandle>
 {
-  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphBufferHandle, xiiRenderGraphResourceHandleId);
-
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphId id) :
-    m_Id(id), m_InternalId(internalId)
+  XII_DECLARE_POD_TYPE();
+  using IdType = xiiRenderGraphResourceHandleId;
+
+  xiiRenderGraphBufferHandle() = default;
+  XII_ALWAYS_INLINE xiiRenderGraphBufferHandle(IdType versionId, xiiRenderGraphId resourceId) :
+    m_ResourceId(resourceId), m_VersionId(versionId)
   {
   }
 
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
+  // A version is identified by its graph setup as well as its resource slot and version number.
+  [[nodiscard]] bool operator==(const xiiRenderGraphBufferHandle& other) const { return m_ResourceId == other.m_ResourceId && m_VersionId == other.m_VersionId; }
+  [[nodiscard]] bool operator<(const xiiRenderGraphBufferHandle& other) const { return m_ResourceId == other.m_ResourceId ? m_VersionId < other.m_VersionId : m_ResourceId < other.m_ResourceId; }
+  void               Invalidate()
+  {
+    m_ResourceId.Invalidate();
+    m_VersionId.Invalidate();
+  }
+  [[nodiscard]] bool             IsInvalidated() const { return m_ResourceId.IsInvalidated() || m_VersionId.IsInvalidated(); }
+  [[nodiscard]] bool             IsValid() const { return !IsInvalidated(); }
+  [[nodiscard]] IdType           GetInternalID() const { return m_VersionId; }
+  [[nodiscard]] xiiRenderGraphId GetResourceId() const { return m_ResourceId; }
 
-  xiiRenderGraphId m_Id;
+private:
+  xiiRenderGraphId m_ResourceId;
+  IdType           m_VersionId;
 };
 
 /// Opaque handle to a registered render pass.
-using xiiRenderGraphPassHandleId = xiiGenericId<32, 16>;
-
 class XII_GRAPHICSCORE_DLL xiiRenderGraphPassHandle : public xiiHashableStruct<xiiRenderGraphPassHandle>
 {
-  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphPassHandle, xiiRenderGraphPassHandleId);
+  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphPassHandle, xiiRenderGraphId);
 
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphPassHandle(xiiRenderGraphPassHandleId internalId, xiiRenderGraphId id) :
-    m_Id(id), m_InternalId(internalId)
-  {
-  }
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
-
-  xiiRenderGraphId m_Id;
+  [[nodiscard]] bool IsValid() const { return !IsInvalidated(); }
 };
 
 /// Describes a resource state barrier synthesized during compilation.
@@ -296,6 +320,7 @@ private:
 
   xiiRenderGraphPassContext() = default;
 
+  const xiiRenderGraph*          m_pGraph       = nullptr;
   xiiGALCommandList*             m_pCommandList = nullptr;
   xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
   xiiRenderGraphBlackboard*      m_pBlackboard    = nullptr;

@@ -37,7 +37,7 @@ xiiResult xiiSparseVoxelEnvironmentSeedPass::Build(xiiRenderPipelinePassContext&
   const auto* e = context.m_Graph.GetBufferDescription(environment);
   using xiiLightClusterPassUtils::Buffer;
   const auto writable = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-  if (!c || c->m_uiSize != sizeof(xiiSparseVoxelRadianceConstants) || !e || e->m_uiSize != sizeof(xiiEnvironmentLightConstants) || !Buffer(context, levels, sizeof(xiiGpuSparseVoxelLevel), snapshot->m_Levels.GetCount(), xiiGALBindFlags::ShaderResource) || !Buffer(context, updates, sizeof(xiiGpuSparseVoxelBrickUpdate), xiiMath::Max(snapshot->m_Updates.GetCount(), 1U), xiiGALBindFlags::ShaderResource) || !Buffer(context, pages, sizeof(xiiUInt32), snapshot->m_Pages.GetCount(), writable) || !Buffer(context, pool, sizeof(xiiVec4), snapshot->m_PoolCount, writable) || pages.m_Id == pool.m_Id)
+  if (!c || c->m_uiSize != sizeof(xiiSparseVoxelRadianceConstants) || !e || e->m_uiSize != sizeof(xiiEnvironmentLightConstants) || !Buffer(context, levels, sizeof(xiiGpuSparseVoxelLevel), snapshot->m_Levels.GetCount(), xiiGALBindFlags::ShaderResource) || !Buffer(context, updates, sizeof(xiiGpuSparseVoxelBrickUpdate), xiiMath::Max(snapshot->m_Updates.GetCount(), 1U), xiiGALBindFlags::ShaderResource) || !Buffer(context, pages, sizeof(xiiUInt32), snapshot->m_Pages.GetCount(), writable) || !Buffer(context, pool, sizeof(xiiVec4), snapshot->m_PoolCount, writable) || pages.GetResourceId() == pool.GetResourceId())
     return context.ReportFailure("Sparse seed resources must exactly match the schedule and have distinct writable allocations.");
   xiiHashSet<xiiUInt32> seen;
   for (const auto& update : snapshot->m_Updates)
