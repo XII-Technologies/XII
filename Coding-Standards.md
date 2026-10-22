@@ -7911,75 +7911,789 @@ Similarly, do not expose internal identifier fields unless consumers have a legi
 
 > An identifier is an architectural contract. Its type, scope, authority, lifetime, and reuse semantics must be deliberate and consistently enforced.
 
-## 12. Errors, assertions, diagnostics, and logging
 
-### 12.1 Choose the correct failure channel
+## 12. Errors, Assertions, Diagnostics, and Logging
 
-Use explicit results for recoverable operational failures. Use assertions for programmer invariants and impossible internal states. Use logging for diagnostics and user-visible failure context. These are complementary, not interchangeable.
+Error handling in XII **MUST** distinguish expected operational failures from programming errors, preserve the invariants of affected components, and provide sufficient diagnostic context to identify and resolve problems.
 
-| Situation | Default approach |
+XII does not permit C++ exceptions for ordinary error handling. Expected failures are communicated through explicit mechanisms such as `xiiResult`, appropriate result types, and diagnostic outputs. Exceptions may only be encountered within deeply isolated platform or third-party integration code where they are unavoidable and must not propagate through ordinary engine interfaces.
+
+Assertions, error results, logging, and profiling serve different purposes and **MUST NOT** be treated as interchangeable mechanisms.
+
+This section extends §1.1 (Correctness), §6 (Ownership and Lifetime), §7.7 (Result Handling), §7.10 (Exception Boundaries), and §8.11 (Assertions).
+
+### 12.1 Choose the Correct Failure Channel
+
+The mechanism used to report a problem **MUST** reflect whether the condition represents an expected runtime failure, a violated programming contract, or a diagnostic event.
+
+#### General Requirements
+
+- Use `xiiResult` or an appropriate error-returning type for recoverable operational failures.
+- Use assertions to detect programming errors, violated preconditions, and internal invariants that must hold during valid execution.
+- Use logging to provide diagnostic context, not as a substitute for returning or handling failure.
+- Do not use exceptions for ordinary engine error handling.
+- Do not use assertions as substitutes for validating untrusted input.
+- Do not return `XII_FAILURE` for every programming error merely to avoid enforcing a documented contract.
+- Do not continue an operation after a required dependency has failed unless a valid recovery or fallback path exists.
+- Error-handling paths **MUST** maintain the documented ownership and state invariants of the affected components.
+- Failure reporting **SHOULD** provide sufficient information for callers to determine whether recovery, retry, fallback, or termination of the current operation is appropriate.
+
+| Situation | Preferred mechanism |
 |---|---|
-| Invalid external configuration | Validate and return failure |
-| File or shader compilation error | Return failure plus actionable diagnostic |
-| Null pointer that is forbidden by an internal invariant | Assert in development, plus runtime guard when needed |
-| GPU device loss | Propagate actual failure, preserve diagnostic context |
-| Optional feature unavailable | Graceful fallback or defined failure |
-| Non-actionable telemetry event | Trace/profile/log according to verbosity policy |
+| Invalid external configuration | Validate and return explicit failure |
+| File cannot be opened | `xiiResult` with contextual diagnostic |
+| Malformed serialized data | Validation failure with actionable diagnostic |
+| Shader or asset compilation failure | Explicit failure and compiler diagnostics |
+| Network connection failure | Error result with relevant connection context |
+| Resource allocation failure | Explicit failure or established allocator failure mechanism |
+| Required pointer violates an internal contract | Assertion; runtime enforcement where required |
+| Internal invariant is violated | Assertion or appropriate fatal-error mechanism |
+| Optional capability is unavailable | Defined fallback or explicit unsupported-operation result |
+| GPU device loss | Propagate failure and preserve backend diagnostic context |
+| Invalid or stale resource handle | Contract enforcement or recoverable failure according to the API |
+| Non-actionable telemetry event | Trace, profiling event, or appropriately leveled log |
+| Unrecoverable subsystem corruption | Established fatal-error or termination mechanism |
 
-### 12.2 Assertions do not replace release checks
+#### Expected Failures Versus Contract Violations
+
+An expected failure can occur during an otherwise valid operation.
+
+For example, opening a file may fail because the file does not exist, access is denied, or the underlying filesystem encounters an error.
+
+A contract violation occurs when an operation is invoked in a state prohibited by its documented interface.
+
+**Expected failure:**
 
 ```cpp
-XII_ASSERT_DEV(pDevice != nullptr, "Render graph requires a GAL device.");
+xiiResult LoadConfiguration(xiiStringView sPath)
+{
+  xiiFileReader file;
+
+  XII_SUCCEED_OR_RETURN(file.Open(sPath));
+
+  return ParseConfiguration(file);
+}
+```
+
+**Contract violation:**
+
+```cpp
+void SetCapacity(xiiUInt32 uiCapacity)
+{
+  XII_ASSERT_DEV(uiCapacity > 0U, "Capacity must be greater than zero.");
+
+  m_uiCapacity = uiCapacity;
+}
+```
+
+The second example assumes positive capacity is an enforced programmer-facing precondition. If capacity originates from untrusted external data, validation must occur before calling this function.
+
+**Guiding principle:**
+
+> Expected failures are communicated through results. Programming errors violate contracts. Diagnostics explain what happened without replacing either mechanism.
+
+### 12.2 Assertions Do Not Replace Runtime Validation
+
+Assertions are development-time mechanisms for detecting violated assumptions and internal invariants.
+
+Their presence **MUST NOT** be required for correct execution in configurations where the assertions may be disabled.
+
+#### General Requirements
+
+- Assertions **MUST** express conditions expected to hold during valid execution.
+- Do not place essential side effects inside assertion expressions.
+- Do not assume that development assertions execute in every build configuration.
+- Invalid external input **MUST** be handled through runtime validation.
+- Runtime checks **MUST** remain active when their absence could permit invalid memory access, corrupted state, or other unacceptable behavior.
+- Do not duplicate assertions and runtime checks mechanically when the API contract requires only one mechanism.
+- Assertions **SHOULD** include meaningful diagnostic messages identifying the violated invariant.
+- Do not use an assertion to suppress handling of a legitimate operational failure.
+- Assertion conditions **SHOULD** remain inexpensive enough for their intended build configurations.
+
+#### Runtime Validation
+
+**Prefer when invalid input must be handled safely:**
+
+```cpp
+xiiResult InitializeStorage(xiiAllocator* pAllocator)
+{
+  if (pAllocator == nullptr)
+    return XII_FAILURE;
+
+  return CreateStorage(pAllocator);
+}
+```
+
+This example treats the allocator as a potentially absent dependency that must be validated at runtime.
+
+If a valid allocator is instead an unconditional internal precondition, an assertion may be more appropriate.
+
+#### Assertion with Runtime Enforcement
+
+Both mechanisms may be justified when a condition simultaneously represents a programming error and must be guarded against in release configurations.
+
+```cpp
+XII_ASSERT_DEV(pDevice != nullptr, "A valid device is required.");
 
 if (pDevice == nullptr)
   return XII_FAILURE;
 ```
 
-Do this where invalid input can reach release builds. Never depend on debug-only assertion side effects.
+The assertion identifies an unexpected caller violation during development, while the runtime guard prevents the implementation from dereferencing a null pointer.
 
-### 12.3 Log useful context
+This pattern **SHOULD NOT** be applied indiscriminately. The necessity of runtime enforcement depends on the API's trust boundary and documented failure contract.
 
-A diagnostic should say which operation failed, on what object, and with which relevant values. Avoid logging only `"Failed"` or emitting noisy success messages every frame.
+#### Assertion Side Effects
+
+**Avoid:**
 
 ```cpp
-xiiLog::Error("Failed to compile render graph '{0}' for frame {1}: {2}", sGraphName, uiFrameIndex, sError);
+XII_ASSERT_DEV(InitializeResources().Succeeded(), "Resource initialization failed.");
 ```
 
-Use the actual signature of XII's formatting and logging APIs. Do not log secrets, excessive object dumps, or pointers as though they were stable identities.
+If assertions are disabled, `InitializeResources()` may not execute.
 
-### 12.4 Do not continue after failure
+**Prefer:**
 
 ```cpp
-if (graph.Compile(settings, &sError).Failed())
+const xiiResult result = InitializeResources();
+
+XII_ASSERT_DEV(result.Succeeded(), "Resource initialization failed.");
+```
+
+This preserves the side effect independently of assertion evaluation.
+
+However, if initialization failure is expected, handle or propagate the result rather than relying exclusively on an assertion.
+
+**Guiding principle:**
+
+> Assertions verify contracts. Runtime validation enforces safety at boundaries where invalid conditions can legitimately occur or must be defended against.
+
+### 12.3 Log Actionable Diagnostic Context
+
+Diagnostic messages **SHOULD** explain which operation failed, what object or subsystem was involved, and which relevant conditions contributed to the failure.
+
+A useful diagnostic should reduce the amount of additional investigation required to identify the problem.
+
+#### General Requirements
+
+- Error messages **SHOULD** identify the operation that failed.
+- Include relevant object names, identifiers, paths, resource types, or context values when available.
+- Preserve underlying platform or backend error information when it materially helps diagnosis.
+- Prefer precise failure descriptions over generic messages such as `"Failed"` or `"Invalid state"`.
+- Do not log successful high-frequency operations unnecessarily.
+- Avoid excessive diagnostic output that obscures meaningful failures.
+- Do not log credentials, secrets, authentication tokens, or other sensitive information.
+- Do not dump large objects or binary buffers without a demonstrated diagnostic requirement.
+- Do not treat raw pointers as stable resource identities.
+- Diagnostic formatting **MUST** follow XII's established logging and formatting APIs.
+- Diagnostic code **MUST NOT** access resources whose lifetime is no longer guaranteed.
+- Messages **SHOULD** use established engine terminology and correct spelling.
+
+**Prefer:**
+
+```cpp
+xiiLog::Error("Failed to load configuration '{0}': {1}", sConfigurationPath, sError);
+```
+
+**Avoid:**
+
+```cpp
+xiiLog::Error("Loading failed.");
+```
+
+The preferred diagnostic identifies the affected file and provides relevant failure context.
+
+The examples assume that the diagnostic values are available and compatible with the selected logging API.
+
+#### Structured Diagnostic Context
+
+When several values are necessary to understand a failure, include them deliberately.
+
+For example, a resource allocation failure may benefit from reporting:
+
+- Resource type.
+- Requested size.
+- Required alignment.
+- Owning subsystem.
+- Relevant memory budget.
+- Underlying allocator or platform error.
+
+Not every diagnostic requires all available context.
+
+Include the information needed to distinguish the failure from similar failures without producing unnecessarily verbose logs.
+
+#### Logging During Failure Handling
+
+Logging itself may allocate memory, acquire locks, or invoke formatting code.
+
+Failure-handling paths **SHOULD** avoid diagnostics that introduce additional failure risks, particularly during low-memory conditions, device loss, or subsystem shutdown.
+
+**Guiding principle:**
+
+> Diagnostics should identify the failed operation, preserve relevant context, and help locate the cause without introducing unnecessary noise or additional failure risk.
+
+### 12.4 Do Not Continue After Required Operations Fail
+
+An operation **MUST NOT** continue into a state that depends on a failed prerequisite unless an explicit recovery or fallback path establishes the required invariants.
+
+#### General Requirements
+
+- Check failure-sensitive results before performing dependent operations.
+- Propagate failures when the current function cannot meaningfully recover.
+- Do not substitute default values for failed operations unless the fallback is part of the documented contract.
+- Do not report success when required work was not completed.
+- Failed operations **MUST** leave their owning components in documented valid states.
+- Error paths **MUST** release or preserve acquired resources according to their ownership contracts.
+- Do not retry failed operations indefinitely without a defined progress or termination policy.
+- Recovery paths **MUST** establish that the original failure condition has been resolved or safely bypassed.
+
+**Prefer:**
+
+```cpp
+xiiResult LoadAndValidateDocument(xiiStringView sPath)
 {
-  xiiLog::Error("Render graph compilation failed: {0}", sError);
-  return XII_FAILURE;
-}
+  XII_SUCCEED_OR_RETURN(LoadDocument(sPath));
+  XII_SUCCEED_OR_RETURN(ValidateDocument());
 
-return graph.Execute(pDevice, pView, &blackboard, pCache, pProfiler, &sError);
+  return XII_SUCCESS;
+}
 ```
 
-### 12.5 Error propagation and rollback
+**Avoid:**
 
-If registration updates several structures and fails partway through, leave the manager in its original valid state. Prefer constructing local temporary state, validating it, then committing changes. When rollback is complex, document the transaction boundary and test failures deliberately.
+```cpp
+xiiResult LoadAndValidateDocument(xiiStringView sPath)
+{
+  LoadDocument(sPath).IgnoreResult();
 
-### 12.6 Optional return values
+  ValidateDocument().IgnoreResult();
 
-Use an explicit optional/nullable representation when absence is expected, not an assertion. If there are several distinct failure causes, do not reduce them all to an ambiguous `false` unless the caller only needs success/failure; preserve explanatory context for diagnostics.
+  return XII_SUCCESS;
+}
+```
 
-### 12.7 Failure from destructors and shutdown
+The avoided implementation reports success even if the document could not be loaded or validated.
 
-Shutdown paths should clean up as far as safely possible while preserving relevant error information. Avoid throwing through destructors or relying on logging facilities after their subsystem has already shut down.
+#### Recovery and Fallback
 
-### 12.8 Diagnostic level and performance
+Continuing after failure is appropriate only when the operation has a defined recovery strategy.
 
-Avoid constructing expensive debug strings on hot paths when diagnostics are disabled. Use conditional logging and structured profiler zones where supported. Logging may itself involve locks and allocations.
+For example, loading an optional configuration file may permit falling back to documented defaults.
 
-### 12.9 Security and malformed input
+```cpp
+xiiResult LoadOptionalSettings(xiiStringView sPath)
+{
+  if (LoadSettings(sPath).Succeeded())
+    return XII_SUCCESS;
 
-Treat files, network packets, shader source, serialized objects, plugin data, and application arguments as potentially malformed. Validate sizes, offsets, recursion depth, encodings, indices, integer arithmetic, and allocation sizes before use. Assertions are not an input-validation strategy.
+  ApplyDefaultSettings();
 
----
+  return XII_SUCCESS;
+}
+```
+
+This behavior is appropriate only when every failure from `LoadSettings()` is permitted to trigger the fallback.
+
+If malformed configuration, permission errors, and missing optional files require different responses, the implementation must preserve enough error information to distinguish them.
+
+**Guiding principle:**
+
+> A failed prerequisite invalidates the dependent path until recovery establishes a valid alternative.
+
+### 12.5 Error Propagation and Diagnostic Ownership
+
+Errors **SHOULD** be propagated to the layer responsible for deciding how the failure affects the application or subsystem.
+
+Logging and propagation are complementary, but repeated logging of the same failure can obscure its original cause.
+
+#### General Requirements
+
+- Propagate failures when the current layer cannot meaningfully resolve them.
+- Add diagnostic context when crossing a boundary that provides relevant information.
+- Avoid logging identical errors at every propagation layer.
+- Preserve underlying failure information when it is needed for recovery or diagnosis.
+- Do not replace specific errors with generic failures prematurely when callers require the distinction.
+- Public interfaces **MUST** communicate failure through their documented return or output mechanism.
+- Internal helpers **SHOULD** avoid deciding application-level failure policy unless that responsibility belongs to them.
+- Error translation at platform boundaries **MUST** preserve the information necessary to distinguish important failure categories.
+
+#### Propagation Without Additional Context
+
+**Prefer:**
+
+```cpp
+xiiResult InitializeSubsystem()
+{
+  XII_SUCCEED_OR_RETURN(InitializeStorage());
+  XII_SUCCEED_OR_RETURN(InitializeResources());
+
+  return XII_SUCCESS;
+}
+```
+
+This is appropriate when the underlying operations already provide sufficient diagnostics or when a higher layer is responsible for reporting the failure.
+
+#### Propagation With Context
+
+```cpp
+xiiResult InitializeSubsystem()
+{
+  if (InitializeResources().Failed())
+  {
+    xiiLog::Error("Failed to initialize subsystem resources.");
+    return XII_FAILURE;
+  }
+
+  return XII_SUCCESS;
+}
+```
+
+The diagnostic adds useful subsystem context without requiring every lower-level helper to produce redundant messages.
+
+#### Logging Responsibility
+
+For complex call chains, establish a consistent diagnostic strategy.
+
+One practical approach is:
+
+1. Low-level operations preserve detailed failure information.
+2. Intermediate layers propagate failures and add context only when useful.
+3. The responsible boundary logs the actionable failure or presents it to the caller.
+
+This is a guideline rather than a universal requirement. Some failures must be logged immediately because critical diagnostic information is unavailable after returning.
+
+**Guiding principle:**
+
+> Propagate errors without losing their meaning. Log where context is useful, and avoid turning one failure into many redundant diagnostics.
+
+### 12.6 Transactional Operations and Rollback
+
+Operations that update multiple dependent structures **MUST** preserve consistency when an intermediate step fails.
+
+Whenever practical, prefer preparing and validating changes before publishing them to externally observable state.
+
+#### General Requirements
+
+- Multi-step operations **MUST** define their failure guarantees.
+- Prefer completing potentially failing preparation before modifying authoritative state.
+- Partial failure **MUST NOT** leave registries, indices, or ownership structures inconsistent.
+- Rollback operations **MUST** preserve the original invariants.
+- Avoid publishing partially initialized objects to unrelated consumers.
+- Resources acquired during failed operations **MUST** be released or retained according to a documented ownership contract.
+- Concurrent readers **MUST NOT** observe inconsistent intermediate state when the subsystem guarantees atomic updates.
+- Use synchronization appropriate to the transaction's scope.
+- Do not introduce elaborate transaction frameworks for simple operations that can maintain consistency through straightforward ordering.
+- Complex rollback paths **SHOULD** be tested with deliberate failure injection.
+
+#### Prepare, Validate, Commit
+
+A useful pattern for multi-step operations is:
+
+1. **Prepare:** Construct temporary state and acquire required resources.
+2. **Validate:** Confirm that all prerequisites and constraints are satisfied.
+3. **Commit:** Publish the completed state to the owning subsystem.
+4. **Rollback:** Release temporary resources or restore the previous valid state if an operation fails.
+
+**Illustrative example:**
+
+```cpp
+xiiResult RegisterResource(xiiStringView sName, xiiResourceHandle& out_hResource)
+{
+  if (m_NameLookup.Contains(sName))
+    return XII_FAILURE;
+
+  xiiUniquePtr<ResourceEntry> pEntry =
+    CreateResourceEntry(sName);
+
+  if (pEntry == nullptr)
+    return XII_FAILURE;
+
+  XII_SUCCEED_OR_RETURN(ValidateResourceEntry(*pEntry));
+
+  return CommitResourceEntry(std::move(pEntry), out_hResource);
+}
+```
+
+This example assumes `CommitResourceEntry()` provides the required consistency and failure guarantees.
+
+If commitment updates multiple structures and may fail partway through, it must provide rollback or another safe atomic-publication strategy.
+
+#### Failure Guarantees
+
+Where practical, an operation **SHOULD** provide the strong failure guarantee: failure leaves externally observable state unchanged.
+
+When that guarantee cannot reasonably be provided, the operation must at least preserve its documented invariants and clearly define which state changes may remain.
+
+**Guiding principle:**
+
+> Prepare before publishing. Failure must not leave partially committed state that violates the subsystem's contracts.
+
+### 12.7 Optional Values and Recoverable Absence
+
+Absence is not always an error.
+
+Functions **SHOULD** distinguish expected absence from operational failure when callers need to handle those conditions differently.
+
+#### General Requirements
+
+- Use optional or nullable representations when the absence of a value is an expected outcome.
+- Do not assert merely because a valid lookup finds no matching object.
+- Do not use a generic failure result when expected absence is a distinct and meaningful outcome that callers must distinguish.
+- Do not return null or an invalid handle without documenting its meaning.
+- Multiple failure causes **SHOULD** remain distinguishable when callers require different recovery behavior.
+- Avoid introducing complex error types when callers only need success or failure.
+- Optional results **MUST** preserve clear ownership and lifetime semantics.
+- Do not use sentinel values that overlap valid domain values without an explicit encoding contract.
+
+#### Expected Absence
+
+**Example:**
+
+```cpp
+[[nodiscard]] const xiiResourceEntry* FindResource(xiiStringView sName) const;
+```
+
+Returning `nullptr` may be appropriate when no matching resource exists and absence is a normal lookup outcome.
+
+#### Operational Failure
+
+A function that loads or constructs a resource may require a different result contract.
+
+```cpp
+xiiResult LoadResource(xiiStringView sPath, xiiResourceHandle& out_hResource);
+```
+
+This communicates an operation that can fail while producing a handle on success.
+
+#### Rich Error Categories
+
+When callers must distinguish missing files, malformed data, unavailable dependencies, and permission failures, a richer result representation may be appropriate.
+
+Do not collapse these categories into a boolean if doing so prevents required recovery behavior.
+
+**Guiding principle:**
+
+> Absence is a value when it is expected. Failure is an outcome when an operation cannot fulfill its contract. Keep them distinct when the distinction matters.
+
+### 12.8 Destructors, Shutdown, and Failure Reporting
+
+Destruction and shutdown frequently occur when parts of the engine are no longer operational.
+
+Cleanup paths **MUST** preserve resource safety without depending on services that may already be unavailable.
+
+#### General Requirements
+
+- Destructors **MUST NOT** propagate exceptions.
+- Destructors **MUST** preserve safe cleanup behavior according to their ownership contracts.
+- Cleanup **SHOULD** continue as far as safely possible when independent operations fail.
+- Do not continue cleanup steps that depend on resources whose failure invalidated the required state.
+- Explicit shutdown operations **MAY** return a failure result when callers must observe cleanup failures.
+- Avoid performing unbounded waits during destruction unless required by the documented lifetime contract.
+- Logging during shutdown **MUST** respect the lifetime of the logging subsystem.
+- Do not access destroyed allocators, platform services, or graphics devices while reporting cleanup failures.
+- Failure handling **MUST** account for partially initialized resources.
+- Important shutdown failures **SHOULD** preserve diagnostic context before the relevant subsystem becomes unavailable.
+
+#### Explicit Shutdown Results
+
+When cleanup can legitimately fail and the caller needs to know, an explicit shutdown operation may expose the failure.
+
+```cpp
+xiiResult ShutdownSubsystem()
+{
+  xiiResult result = FlushPendingData();
+
+  ReleaseOwnedResources();
+
+  return result;
+}
+```
+
+This example assumes resource release remains safe regardless of the flush result.
+
+It also assumes `FlushPendingData()` does not invalidate the resources required by `ReleaseOwnedResources()`.
+
+#### Destructors and Error Channels
+
+Destructors cannot return `xiiResult`.
+
+Consequently, operations requiring meaningful recoverable failure reporting **SHOULD** expose an explicit close, flush, or shutdown method when appropriate.
+
+Destruction may then provide final safety cleanup without promising recoverable error reporting.
+
+**Guiding principle:**
+
+> Shutdown must preserve ownership and safety even when operations fail. Report meaningful failures while the required diagnostic infrastructure is still available.
+
+### 12.9 Diagnostic Levels and Logging Performance
+
+Logging and diagnostics can introduce meaningful runtime overhead through formatting, allocation, synchronization, and I/O.
+
+Diagnostic instrumentation **SHOULD** be appropriate to the severity and frequency of the event.
+
+#### General Requirements
+
+- Select diagnostic severity according to the impact and actionability of the event.
+- Avoid high-frequency informational or success logs in performance-critical paths.
+- Do not eagerly construct expensive diagnostic strings when the corresponding logging level is disabled.
+- Prefer existing XII logging and profiling mechanisms over introducing independent diagnostic systems.
+- Repeated failures **SHOULD** be rate-limited or aggregated when unbounded logging would obscure useful information or degrade performance.
+- Diagnostic instrumentation **MUST NOT** change required synchronization or lifetime behavior.
+- Do not rely on logging for essential program state changes.
+- Profiling and tracing **SHOULD** use established structured instrumentation where available.
+- Logging overhead in demonstrated hot paths **SHOULD** be measured when relevant.
+- Diagnostic output **MUST** remain safe under the subsystem's threading and shutdown contracts.
+
+#### Diagnostic Categories
+
+| Category | Typical purpose |
+|---|---|
+| Error | Operation failed or a required condition could not be satisfied |
+| Warning | Unexpected or degraded behavior that permits continued operation |
+| Information | Meaningful lifecycle or operational event |
+| Debug | Development-oriented state or behavior details |
+| Trace | Fine-grained execution information |
+| Profiling | Timings, counters, allocations, and performance measurements |
+
+Use the categories and APIs actually provided by XII rather than introducing parallel naming conventions.
+
+#### High-Frequency Logging
+
+**Avoid:**
+
+```cpp
+void UpdateSimulation()
+{
+  xiiLog::Info("Simulation update started.");
+
+  AdvanceSimulation();
+
+  xiiLog::Info("Simulation update completed.");
+}
+```
+
+If this function executes frequently, the logs may become noisy and expensive without providing useful diagnostic value.
+
+Prefer profiling scopes or selectively enabled trace diagnostics when detailed timing or execution information is required.
+
+#### Diagnostic Construction
+
+A disabled log statement should ideally avoid unnecessary formatting and allocation work.
+
+Follow the behavior of XII's logging macros and functions when determining whether argument evaluation or formatting occurs.
+
+Do not assume every logging API lazily evaluates its arguments.
+
+**Guiding principle:**
+
+> Diagnostics must be useful and proportionate. Their cost should not dominate the operation they are intended to explain.
+
+### 12.10 Security and Malformed Input
+
+Data originating outside a trusted subsystem **MUST** be treated as potentially malformed, inconsistent, or adversarial.
+
+This includes file contents, serialized objects, network packets, shader source, plugin-provided data, configuration files, and application arguments.
+
+#### General Requirements
+
+- Validate untrusted input before using it to calculate memory sizes, offsets, indices, or allocation requirements.
+- Check integer overflow before arithmetic involving untrusted sizes, counts, strides, or dimensions.
+- Validate indices and offsets against the actual bounds of the referenced storage.
+- Validate declared lengths against available data before reading or copying.
+- Establish reasonable limits for recursion depth, nesting, object counts, and resource consumption where required.
+- Validate enum values and identifiers before interpreting them as trusted internal state.
+- Reject unsupported or malformed encodings where the consuming interface requires valid text.
+- Do not use assertions as the sole validation mechanism for untrusted input.
+- Do not assume that successful parsing guarantees semantic validity.
+- Resource allocation decisions **MUST** account for validated sizes and applicable memory limits.
+- Error handling **MUST NOT** expose sensitive data unnecessarily.
+- Input validation **SHOULD** occur at the boundary where untrusted data enters the responsible subsystem.
+- Validation **MUST** remain consistent with the actual platform and serialization contracts.
+
+#### Bounds Validation
+
+**Prefer:**
+
+```cpp
+xiiResult ReadPayload(xiiArrayPtr<const xiiUInt8> pData, xiiUInt64 uiOffset, xiiUInt64 uiLength)
+{
+  const xiiUInt64 uiDataSize = pData.GetCount();
+
+  if (uiOffset > uiDataSize)
+    return XII_FAILURE;
+
+  if (uiLength > uiDataSize - uiOffset)
+    return XII_FAILURE;
+
+  return ProcessPayload(pData, uiOffset, uiLength);
+}
+```
+
+Subtracting after validating the offset avoids overflow that could occur in a direct `uiOffset + uiLength` bounds check.
+
+The example assumes `ProcessPayload()` accepts these index widths and respects the validated range.
+
+#### Resource Exhaustion
+
+Malformed or adversarial inputs may request unreasonable amounts of memory or processing work without containing an explicitly invalid field.
+
+Input boundaries **SHOULD** establish appropriate resource limits when such requests could affect system availability.
+
+Examples include:
+
+- Excessively large array counts.
+- Unbounded recursive structures.
+- Oversized shader permutations.
+- Pathological serialized object graphs.
+- Unexpectedly large resource dimensions.
+- Repeated registration requests.
+- Excessive string or allocation lengths.
+
+These limits should reflect supported workloads rather than arbitrary restrictions that prevent valid use.
+
+#### Parsing and Validation
+
+Parsing establishes that input conforms to a syntactic representation.
+
+Semantic validation must separately establish that the parsed values satisfy the requirements of the consuming operation.
+
+For example, a configuration may parse successfully while specifying incompatible settings or values outside the supported domain.
+
+Both stages may require distinct failure reporting.
+
+**Guiding principle:**
+
+> External data is not trustworthy merely because it can be parsed. Validate representation, bounds, resource requirements, and semantic constraints before use.
+
+### 12.11 Platform and Third-Party Error Translation
+
+Platform APIs and third-party libraries may expose error mechanisms that differ from XII's ordinary result conventions.
+
+Integration boundaries **MUST** translate these mechanisms into stable engine-facing contracts where appropriate.
+
+#### General Requirements
+
+- Platform-specific error handling **SHOULD** remain within the corresponding implementation layer.
+- Preserve relevant native error codes or diagnostic context when they are necessary for diagnosis.
+- Do not expose arbitrary platform-specific error types through portable interfaces without a documented interoperability requirement.
+- Translate recoverable failures into `xiiResult` or an appropriate engine-compatible result type.
+- Exceptions encountered at unavoidable third-party or platform boundaries **MUST NOT** propagate through ordinary engine APIs.
+- Error translation **MUST NOT** silently convert failure into success.
+- Do not discard distinctions between native failures when callers require them for recovery.
+- Device-loss, out-of-memory, and other significant platform failures **MUST** follow the owning subsystem's documented recovery policy.
+- Platform diagnostics **SHOULD** identify the failing operation and the relevant native error category.
+- Do not assume that native error codes have identical meanings across platforms or backends.
+
+#### Native Error Context
+
+A portable operation may expose a simple failure result while the platform implementation records richer native details.
+
+For example, a filesystem operation may return `XII_FAILURE` while reporting the relevant platform error through the established diagnostic system.
+
+When callers require programmatic access to native or categorized errors, use an explicit error representation rather than requiring them to parse log messages.
+
+#### Exception Boundaries
+
+Where a third-party API can throw exceptions and the integration environment supports catching them, exception handling must remain inside the isolated adapter.
+
+When the build configuration does not support C++ exception handling, the adapter must use a suitable non-throwing interface or another explicitly supported integration strategy.
+
+**Guiding principle:**
+
+> Platform differences belong at platform boundaries. Preserve useful native diagnostics while maintaining consistent engine-facing failure semantics.
+
+### 12.12 Fatal Errors and Unrecoverable States
+
+Some failures invalidate fundamental engine assumptions and cannot be safely recovered from within the current execution context.
+
+Such failures **MUST** be distinguished from ordinary operational errors.
+
+#### General Requirements
+
+- Fatal-error mechanisms **MUST** be reserved for conditions where continued execution cannot preserve required correctness or safety guarantees.
+- Do not terminate execution for ordinary recoverable failures merely because recovery is inconvenient.
+- Unrecoverable corruption **MUST NOT** be hidden behind a generic success or fallback result.
+- Fatal diagnostics **SHOULD** preserve the most relevant context available without relying on invalid subsystem state.
+- Do not perform unsafe cleanup after corruption has invalidated the invariants required by that cleanup.
+- Fatal-error handling **MUST** respect the engine's established platform and diagnostic mechanisms.
+- Do not invent independent termination policies within individual components without architectural justification.
+- Distinguish local operation failure from failure requiring subsystem or process termination.
+
+#### Recovery Scope
+
+A failure may be unrecoverable for one operation while remaining recoverable at a higher level.
+
+For example:
+
+- A document parser may reject a malformed file.
+- A resource manager may fail to load an asset.
+- A graphics subsystem may need to rebuild resources following a supported device-recovery event.
+- An invalid fundamental memory invariant may prevent safe continuation.
+
+The appropriate response depends on the actual guarantees of the affected subsystem.
+
+Do not classify every hardware or platform failure as fatal without evaluating the supported recovery contract.
+
+**Guiding principle:**
+
+> Fatal errors indicate that safe continuation cannot be guaranteed. Reserve them for genuine unrecoverable states rather than ordinary operational failure.
+
+### 12.13 Error-Handling Tests and Failure Injection
+
+Correctness testing **SHOULD** cover failure behavior, not only successful execution.
+
+Failure paths often exercise ownership, cleanup, synchronization, and state transitions that ordinary tests do not reach.
+
+#### General Requirements
+
+- Test expected failure conditions for operations with explicit failure contracts.
+- Verify that failed operations preserve documented invariants.
+- Exercise partial initialization and cleanup where multiple resources are acquired.
+- Test registration rollback when several authoritative or secondary structures must be updated.
+- Validate stale-handle rejection and resource invalidation where applicable.
+- Test malformed external inputs, including boundary values and inconsistent lengths.
+- Verify that required operations do not continue after failed prerequisites.
+- Test shutdown behavior when resources or tasks remain outstanding.
+- Use failure injection when it provides a practical means of exercising otherwise rare error paths.
+- Do not require external infrastructure failures to occur naturally before validating critical recovery behavior.
+- Diagnostic tests **SHOULD** focus on meaningful error context and severity rather than unnecessarily brittle exact-message comparisons.
+- Tests **MUST NOT** depend on debug-only assertions to establish runtime behavior required in release builds.
+
+#### Failure Injection
+
+Useful failure-injection scenarios may include:
+
+- Allocation failure.
+- File-open failure.
+- Partial resource initialization.
+- Invalid serialized data.
+- Registration conflict.
+- Resource exhaustion.
+- Backend initialization failure.
+- Asynchronous cancellation.
+- Simulated device loss where supported.
+- Subsystem shutdown during pending work.
+
+Injected failures should reproduce the relevant contract without introducing unrelated undefined behavior.
+
+#### Recovery Verification
+
+A successful failure-handling test should establish more than the presence of an error result.
+
+Where applicable, verify that:
+
+1. The failure is observable to the caller.
+2. Relevant diagnostic context is preserved.
+3. No required dependent operation executes incorrectly.
+4. Acquired resources are released or retained safely.
+5. Registries and secondary mappings remain consistent.
+6. The component reaches its documented post-failure state.
+7. Retry or recovery behaves correctly when supported.
+
+**Guiding principle:**
+
+> Failure handling is part of implementation correctness. Test the guarantees that remain after an operation fails, not merely whether an error was returned.
 
 ## 13. Concurrency and synchronization
 
