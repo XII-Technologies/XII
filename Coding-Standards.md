@@ -2920,39 +2920,136 @@ When one member depends on another during destruction, their declaration order a
 
 > Prefer composition to express what a component has or uses. Reserve inheritance for what a component genuinely is or promises to implement.
 
-## 6. Initialization, ownership, and lifetime
+## 6. Initialization, Ownership, and Lifetime
 
-### 6.1 The ownership rule
+Resource management in XII **MUST** be deterministic, explicit, and consistent with the lifetime guarantees of the underlying subsystem.
 
-Every allocation and long-lived resource **MUST** have an identifiable owner. Observers never silently acquire ownership. Use `xiiUniquePtr` when unique heap ownership is appropriate and `xiiSharedPtr` when shared ownership is required by the system's semantics.
+This applies to ordinary heap allocations, engine-managed resources, platform objects, asynchronous operations, GPU resources, plugin registrations, and any object whose lifetime extends beyond a single scope.
+
+The general ownership principles established in §1.2 and the type design requirements in §5 apply throughout this section. This section defines the practical requirements for allocation, initialization, borrowing, stable identity, resource invalidation, and coordinated destruction.
+
+### 6.1 The Ownership Rule
+
+Every dynamically allocated object and long-lived resource **MUST** have an identifiable owner or an explicitly defined shared ownership policy.
+
+Ownership determines which component is responsible for releasing a resource. Borrowed access does not transfer or extend that responsibility.
+
+#### General Requirements
+
+- Every resource **MUST** have a clearly defined ownership and destruction mechanism.
+- Prefer automatic storage and value semantics when dynamic allocation or independent identity is unnecessary.
+- Use `xiiUniquePtr` when exclusive heap ownership is appropriate.
+- Use `xiiSharedPtr` only when multiple independent owners genuinely require shared lifetime management.
+- Raw pointers, references, spans, and views **MUST** be treated as non-owning unless an API explicitly documents an ownership-transfer contract.
+- Ownership transfers **MUST** be visible through the API and supported by the relevant type semantics.
+- Do not introduce shared ownership merely to compensate for unclear lifetime relationships.
+- Do not maintain competing ownership mechanisms for the same resource.
+- Resource-owning objects **MUST** remain safely destructible after partial initialization or recoverable failure.
+- Ownership and thread safety **MUST** be evaluated independently.
+
+**Prefer:**
 
 ```cpp
-struct Entry
+struct xiiSimulationEntry
 {
-  xiiUniquePtr<xiiRenderGraph> m_pGraph;
-  xiiRenderGraphBlackboard     m_Blackboard;
+  xiiUniquePtr<xiiSimulation> m_pSimulation;
+  xiiSimulationState          m_State;
 };
 ```
 
-Do not use shared ownership as a default workaround for uncertain lifetime. Shared ownership makes destruction timing harder to reason about, especially around GPU resources and plugin unload.
+The entry has exclusive ownership of its simulation object, while the associated state follows the entry's lifetime.
 
-### 6.2 Allocation must match the allocator
-
-Use XII allocation conventions consistently. The allocator used for destruction must be compatible with the allocator used for construction. Do not mix `XII_NEW`/`XII_DELETE` with unrelated `new`/`delete` arbitrarily.
+**Avoid:**
 
 ```cpp
-xiiUniquePtr<xiiRenderGraph> pGraph =
-  XII_NEW(pAllocator, xiiRenderGraph);
+struct xiiSimulationEntry
+{
+  xiiSimulation* m_pSimulation = nullptr;
+
+  // Ownership is unspecified.
+  // The caller may not know who destroys the simulation.
+};
 ```
 
-When using custom allocators, pass the allocator explicitly to objects that need it instead of looking up a global singleton in their constructor.
+An owning raw pointer may be required when interacting with a specialized allocator or legacy interface, but its ownership contract **MUST** be explicit and consistently enforced.
+
+#### Shared Ownership
+
+Shared ownership introduces additional costs and lifetime complexity.
+
+These may include:
+
+- Reference-counting operations.
+- Atomic synchronization or contention.
+- Delayed and less predictable destruction.
+- Ownership cycles.
+- Difficulty coordinating resource release with subsystem shutdown.
+- Resources remaining alive beyond plugin or device lifetime.
+
+Shared ownership **SHOULD NOT** be the default solution to lifetime uncertainty.
+
+When an object has one authoritative manager, prefer manager-owned storage and non-owning, validated access where appropriate.
+
+**Guiding principle:**
+
+> Every resource must have an accountable owner. Borrowing grants access, not ownership, and shared ownership must reflect an actual lifetime requirement.
+
+### 6.2 Allocation and Allocator Compatibility
+
+XII's allocation mechanisms **MUST** be used consistently with the allocator responsible for the resource.
+
+The mechanism used to destroy an object must be compatible with the mechanism used to construct it.
+
+#### General Requirements
+
+- Use XII allocation facilities when required by the owning subsystem.
+- Allocations made using `XII_NEW` **MUST** be released using the corresponding compatible XII destruction mechanism.
+- Do not arbitrarily mix `XII_NEW` and `XII_DELETE` with unrelated C++ `new` and `delete` operations.
+- Use `XII_DEFAULT_NEW` and `XII_DEFAULT_DELETE` to use the default allocator when no other allocator is required by the owning subsystem.
+- Objects created through custom allocators **MUST** retain or otherwise have access to the allocator required for destruction.
+- Containers **SHOULD** use the allocator associated with their owning subsystem when allocator selection is part of that subsystem's contract.
+- Avoid introducing independent allocations when values can be stored directly without compromising lifetime or address stability.
+- Allocator ownership and lifetime **MUST** be compatible with the lifetime of every allocation obtained from it.
+- Memory **MUST NOT** be released through an allocator that has already been destroyed or invalidated.
+- Cross-module allocations **MUST** respect the allocation and destruction contract of the module boundary.
+
+**Example:**
 
 ```cpp
-class xiiGraphStorage
+xiiUniquePtr<xiiSimulationData> pData = XII_DEFAULT_NEW(xiiSimulationData);
+```
+
+The example assumes the XII ownership wrapper and allocation macro support the corresponding allocator-aware construction and destruction semantics.
+
+#### Explicit Allocator Dependencies
+
+When an object requires a particular allocator, prefer expressing that dependency through its constructor or initialization contract.
+
+**Prefer:**
+
+```cpp
+class xiiSimulationStorage
 {
 public:
-  explicit xiiGraphStorage(xiiAllocator* pAllocator) :
+  explicit xiiSimulationStorage(xiiAllocator* pAllocator) :
     m_Entries(pAllocator)
+  {
+    XII_ASSERT_DEV(pAllocator != nullptr, "A valid allocator is required.");
+  }
+
+private:
+  xiiDynamicArray<xiiUInt32> m_Entries;
+};
+```
+
+**Avoid:**
+
+```cpp
+class xiiSimulationStorage
+{
+public:
+  xiiSimulationStorage() :
+    m_Entries(GetGlobalSimulationAllocator())
   {
   }
 
@@ -2961,79 +3058,629 @@ private:
 };
 ```
 
-### 6.3 Borrowing is not ownership
+The avoided implementation introduces a hidden dependency on global allocator state.
 
-A raw pointer from `Borrow()` provides access according to the owner’s lifetime contract; it is not a transferable lifetime guarantee.
+A global or subsystem allocator may be appropriate when it is part of an established engine-wide allocation policy. However, allocator dependencies should not be hidden when explicit selection is necessary for correctness, testing, or lifetime management.
+
+#### Allocator Lifetime
+
+An allocator must remain valid until all allocations that depend on it have been released.
+
+This requirement is particularly important for:
+
+- Frame and temporary allocators.
+- Pool and arena allocators.
+- Plugin-specific allocators.
+- Module-local heaps.
+- Device-scoped resource allocators.
+- Memory shared across dynamically loaded modules.
+
+Resetting an arena or destroying a pool invalidates allocations owned by that allocator according to its documented semantics.
+
+**Guiding principle:**
+
+> Allocation and destruction are a single ownership contract. The allocator, allocation, and owning object must have compatible lifetimes.
+
+### 6.3 Borrowing Is Not Ownership
+
+A borrowed pointer, reference, or view provides temporary access to an object according to the owner's lifetime contract.
+
+Borrowing **MUST NOT** be interpreted as ownership transfer or a guarantee that the referenced object will remain alive indefinitely.
+
+#### General Requirements
+
+- Borrowed access **MUST** remain within the validity period guaranteed by the owner.
+- A borrowed pointer **MUST NOT** be destroyed by the borrower unless ownership transfer is explicitly documented.
+- Borrowed access **MUST NOT** be retained beyond owner destruction or resource invalidation.
+- Borrowed access **MUST NOT** be assumed thread-safe.
+- Do not capture borrowed pointers in asynchronous operations without guaranteeing the referenced object's lifetime.
+- Do not expose borrowed references when their validity cannot be adequately described or enforced.
+- Prefer references when null is not a meaningful state and the lifetime contract permits reference semantics.
+- Prefer pointers when optional access, nullability, or reseating is meaningful.
+
+**Example:**
 
 ```cpp
 xiiGALDevice* pDevice = m_pDevice.Borrow();
+
 if (pDevice == nullptr)
   return XII_FAILURE;
+
+InitializeDeviceResources(*pDevice);
 ```
 
-Do not store that pointer longer than the owner can promise it remains valid.
+The pointer is valid only while the owning object guarantees the device's lifetime.
 
-### 6.4 Stable identity is not stable address
+The `Borrow()` operation does not extend that lifetime.
 
-A handle identifies an object through an authoritative registry. A pointer identifies one memory address. They serve different roles and have different failure modes.
+#### Borrowing Across Asynchronous Boundaries
 
-**Wrong:**
+Borrowed access becomes particularly dangerous when execution is deferred.
+
+**Avoid:**
+
+```cpp
+void SubmitTask()
+{
+  xiiString sMessage = "Simulation complete";
+
+  QueueTask([&sMessage]()
+  {
+    LogMessage(sMessage);
+  });
+}
+```
+
+The callback may execute after `sMessage` has been destroyed.
+
+**Prefer:**
+
+```cpp
+void SubmitTask()
+{
+  xiiString sMessage = "Simulation complete";
+
+  QueueTask([sMessage = std::move(sMessage)]()
+  {
+    LogMessage(sMessage);
+  });
+}
+```
+
+The callback owns its captured string, assuming the task system stores and executes the callable according to the required ownership contract.
+
+Copying or moving captured data is not always necessary. Borrowing remains appropriate when the asynchronous operation's completion is guaranteed before the referenced storage becomes invalid.
+
+**Guiding principle:**
+
+> Borrowed access is valid only for the lifetime and synchronization guarantees explicitly provided by its owner.
+
+### 6.4 Stable Identity Is Not Stable Address
+
+Object identity and memory address are distinct concepts.
+
+A handle identifies a logical object through an authoritative subsystem, while a pointer identifies a particular memory location.
+
+Neither mechanism automatically guarantees the continued lifetime of the referenced object.
+
+#### General Requirements
+
+- Use handles when objects require independently managed identity, validation, or generation tracking.
+- Use pointers and references when direct access is appropriate and their lifetime is guaranteed.
+- Do not assume that a container preserves element addresses unless its contract explicitly guarantees that behavior.
+- Container growth, insertion, removal, compaction, or relocation **MUST** be considered when storing pointers or references to elements.
+- Generation-checked handles **SHOULD** be used when reusable registry slots could otherwise allow stale identifiers to reference unrelated objects.
+- Handle validity **MUST** be checked when the calling contract does not guarantee validity.
+- Stable allocation addresses **MUST NOT** be confused with permanent resource validity.
+- Handles **MUST NOT** be treated as ownership tokens unless the subsystem explicitly defines them that way.
+
+**Avoid:**
 
 ```cpp
 xiiDynamicArray<Entry> m_Entries;
-xiiIdTable<GraphId, Entry*, xiiLocalAllocatorWrapper> m_GraphTable;
 
-// Pointers into m_Entries can be invalidated by growth/removal.
+xiiIdTable<GraphId, Entry*, xiiLocalAllocatorWrapper> m_EntryTable;
+
+// Pointers into m_Entries may be invalidated when
+// the container reallocates or relocates its elements.
 ```
 
-**Better:**
+**Prefer when stable allocation addresses are required:**
 
 ```cpp
 xiiDynamicArray<xiiUniquePtr<Entry>> m_Entries;
-// Entry allocations remain at stable addresses while alive.
+
+// Moving or growing the pointer container does not
+// relocate the independently allocated Entry objects.
 ```
 
-A stable address is still unsafe after destruction. A generation-checked handle protects lookup from some stale-ID errors, not concurrent use-after-free of pointers returned from the table.
+This representation preserves the addresses of surviving allocated entries during relocation of the container's pointer elements.
 
-### 6.5 Lifetime-safe lookups
+It does not preserve references after the corresponding entry is destroyed.
 
-Never mistake a lookup mutex for an object-lifetime guarantee.
+#### Handles and Generations
+
+A generation-checked handle generally combines a resource slot or index with information that distinguishes different lifetimes of that slot.
+
+When a resource is destroyed, its previous generation becomes invalid according to the registry's rules.
+
+This prevents certain stale-handle errors, including accidental access to a newly allocated object that reuses an earlier slot.
+
+However, generation tracking does not automatically provide:
+
+- Thread-safe lookup.
+- Atomic lifetime acquisition.
+- Protection against concurrent destruction after lookup.
+- Protection against generation wraparound.
+- Ownership of the referenced resource.
+
+These guarantees require separate mechanisms.
+
+**Guiding principle:**
+
+> Handles preserve logical identity through validation. Pointers provide direct access to memory. Neither alone establishes a lifetime or concurrency guarantee.
+
+### 6.5 Lifetime-Safe Lookup and Concurrent Access
+
+A successful resource lookup does not necessarily guarantee that the resource remains alive after the lookup completes.
+
+This is especially important when registration, lookup, and destruction may occur concurrently.
+
+#### General Requirements
+
+- Resource lookup **MUST** respect the synchronization contract of the owning registry.
+- A lookup mutex **MUST NOT** be assumed to protect a resource after the lock has been released.
+- Returned pointers and references **MUST** remain valid for the documented duration of access.
+- Resource destruction **MUST NOT** race with active access that requires the resource to remain alive.
+- Lookup and lifetime protection **MUST** be coordinated when concurrent destruction is permitted.
+- Do not return unrestricted mutable access to internally synchronized resources unless callers receive an enforceable synchronization contract.
+- Thread-affine registries **MUST** document their permitted access and mutation contexts.
+- Avoid introducing shared ownership solely for lookup convenience when scoped access or execution-boundary guarantees are sufficient.
+
+**Avoid:**
 
 ```cpp
-Entry* GetEntry(xiiRenderGraphHandle hGraph)
+Entry* GetEntry(xiiResourceHandle hResource)
 {
   XII_LOCK(m_Mutex);
 
   Entry* pEntry = nullptr;
-  m_GraphTable.TryGetValue(hGraph, pEntry);
-  return pEntry; // Unsafe if another thread can destroy it now.
+  m_ResourceTable.TryGetValue(hResource, pEntry);
+
+  return pEntry;
 }
 ```
 
-Options include locking across the whole operation, returning a scoped access guard, maintaining stable shared ownership where justified, or making registration/destruction occur only at an execution-safe boundary. Document the selected rule.
+The mutex protects the lookup operation, but it does not necessarily protect the returned pointer.
 
-### 6.6 Parent-child lifetimes
+Another thread may destroy the entry immediately after the function releases the mutex.
 
-Destroy children before parents if the children depend on parent infrastructure. In render systems, release graph-specific objects before destroying the device-scoped resource cache or GAL device. Ensure plugin-owned delegates are removed before unloading their code.
+#### Valid Lifetime Strategies
 
-### 6.7 Resource invalidation
+The appropriate strategy depends on the subsystem's concurrency and execution model.
 
-Call `Invalidate()` on public handles after successful destruction when the API supports it, but do not rely on the local invalidation to revoke copies of a handle elsewhere. The registry must reject generation-stale handles.
+Common approaches include:
 
-### 6.8 Use-after-scope with views
+1. **Scoped locking:** Hold the required lock throughout the operation that accesses the resource.
+2. **Scoped access guards:** Return an object that maintains the necessary lifetime and synchronization protection.
+3. **Shared ownership:** Retain a strong ownership reference for the duration of access when shared lifetime semantics are appropriate.
+4. **Execution-boundary mutation:** Permit registration and destruction only at defined synchronization points.
+5. **Deferred reclamation:** Delay physical destruction until all active readers or operations have completed.
 
-`xiiStringView`, array views, spans, borrowed string storage, callbacks referencing stack variables, and GPU mapping helpers are non-owning or scoped. Never persist them without copying or extending ownership appropriately.
+These strategies are alternatives rather than mechanisms that must all be implemented.
+
+The simplest approach satisfying the actual concurrency requirements **SHOULD** be preferred.
+
+#### Scoped Access
+
+When resource access must remain synchronized, prefer an API that performs the operation within the required lifetime boundary.
+
+For example:
 
 ```cpp
-// Avoid returning a view into a temporary string.
-// xiiStringView MakeName() { xiiString sName = ...; return sName; }
+xiiResult UpdateResource(xiiResourceHandle hResource)
+{
+  XII_LOCK(m_Mutex);
+
+  Entry* pEntry = nullptr;
+
+  if (!m_ResourceTable.TryGetValue(hResource, pEntry))
+    return XII_FAILURE;
+
+  return pEntry->Update();
+}
 ```
 
-### 6.9 Runtime and GPU lifetime differ
+This pattern is appropriate when the mutex protects the entire operation and `Update()` does not violate the lock's reentrancy, ordering, or contention requirements.
 
-Completing CPU-side `Execute()` or destroying an object does not prove the GPU has finished reading its resources. Use queue completion, frame completion, or explicit fences/timelines to determine safe retirement. See §15.
+Long-running operations should not automatically execute while holding a global registry mutex.
 
----
+Where that would cause unacceptable contention, use a more appropriate scoped lifetime mechanism.
+
+**Guiding principle:**
+
+> A lookup establishes that an object existed at a particular moment. Safe access requires that its lifetime and synchronization guarantees remain valid throughout the operation.
+
+### 6.6 Parent-Child and Subsystem Lifetimes
+
+Resources frequently depend on other objects or subsystems for their operation and destruction.
+
+These dependencies **MUST** be reflected in initialization and shutdown ordering.
+
+#### General Requirements
+
+- Dependent resources **MUST** be released before the infrastructure required for their destruction becomes unavailable.
+- Initialization order **SHOULD** follow dependency direction.
+- Shutdown order **SHOULD** reverse dependency order where appropriate.
+- Explicit shutdown operations **MUST** prevent new work from acquiring resources that are being destroyed.
+- Objects **MUST NOT** access dependencies after those dependencies have been destroyed or invalidated.
+- Plugin-owned callbacks, delegates, and registrations **MUST** be removed before unloading the plugin code they reference.
+- Background tasks **MUST** complete, cancel, or otherwise release their dependencies before the owning subsystem is destroyed.
+- Shutdown **MUST** account for partially initialized subsystems.
+- Avoid relying on unspecified static initialization or destruction order across translation units or dynamically loaded modules.
+
+#### Dependency Ordering
+
+For example, a rendering subsystem may have the following dependency hierarchy:
+
+```text
+GAL Device
+  └── Device Resource Cache
+      └── Render Graph Resources
+          └── Frame Execution State
+```
+
+If each child depends on its parent during destruction, shutdown must release the dependent objects before the required parent infrastructure.
+
+A typical shutdown sequence would therefore release:
+
+1. Active frame execution state.
+2. Graph-specific resources.
+3. Device-scoped caches.
+4. The underlying GAL device.
+
+The exact sequence depends on the actual ownership and synchronization contracts.
+
+It must not be inferred solely from the visual hierarchy.
+
+#### Plugin Lifetime
+
+Dynamically loaded plugins introduce an additional dependency: executable code may disappear when the module is unloaded.
+
+Before unloading a plugin, the engine **MUST** ensure that no active operation retains a callback, virtual dispatch target, function pointer, or other executable reference into the unloaded module.
+
+This includes asynchronous tasks and deferred callbacks that may execute after the plugin's shutdown function returns.
+
+**Guiding principle:**
+
+> Dependencies must outlive every operation that relies on them. Initialization establishes those dependencies; shutdown must dismantle them safely.
+
+### 6.7 Resource Invalidation and Destruction
+
+Resource invalidation **MUST** distinguish between invalidating a caller's reference, removing a resource from a registry, and physically destroying its underlying allocation.
+
+These events may occur at different times.
+
+#### General Requirements
+
+- Public handles **SHOULD** be invalidated after successful destruction when the API supports explicit invalidation.
+- Invalidating one handle variable **MUST NOT** be interpreted as invalidating copies held elsewhere.
+- The authoritative registry **MUST** reject handles that are stale according to its generation and validity rules.
+- Destruction operations **MUST** preserve registry consistency.
+- Resource removal **MUST** prevent future lookups from acquiring access when the resource is no longer logically available.
+- Physical destruction **MUST** respect outstanding references and asynchronous execution dependencies.
+- Repeated destruction attempts **MUST** have documented behavior.
+- Failed destruction operations **MUST** leave resource ownership and validity in a documented state.
+
+**Example:**
+
+```cpp
+if (DestroyResource(hResource).Succeeded())
+{
+  hResource.Invalidate();
+}
+```
+
+The caller invalidates its local handle only after the destruction operation reports success.
+
+This does not revoke other copies of the handle.
+
+The resource registry remains responsible for rejecting stale identifiers.
+
+#### Logical and Physical Destruction
+
+In asynchronous systems, resource destruction may involve multiple phases:
+
+1. **Logical invalidation:** The resource becomes unavailable for new operations.
+2. **Retirement:** Existing operations are allowed to complete or release their references.
+3. **Physical destruction:** The underlying allocation and associated objects are released.
+
+Not every subsystem requires all three phases.
+
+A simple CPU-owned object with no outstanding references may be destroyed immediately.
+
+GPU resources, asynchronously accessed objects, and concurrently readable registry entries may require deferred reclamation.
+
+**Guiding principle:**
+
+> Invalidating a reference prevents future intended use. Safe destruction additionally requires that no outstanding operation can still access the resource.
+
+### 6.8 Non-Owning Views and Scope-Bound Data
+
+Views, spans, borrowed strings, iterators, mapped memory, and similar abstractions provide access without necessarily controlling the lifetime of the referenced storage.
+
+Their validity **MUST** remain within the lifetime and invalidation guarantees of the underlying owner.
+
+#### General Requirements
+
+- Non-owning views **MUST NOT** outlive their backing storage.
+- Views **MUST NOT** be retained across container mutations that invalidate their referenced storage.
+- Do not return views or references into temporary objects that are destroyed before the caller can use them.
+- Do not persist borrowed stack storage in asynchronous callbacks or long-lived objects.
+- Copy data into owning storage when its lifetime must extend beyond the original owner's guarantees.
+- Mapping objects and scoped access helpers **MUST** respect their required unmapping or release operations.
+- Borrowed views **MUST NOT** be assumed safe for concurrent mutation.
+- Prefer explicit ownership when lifetime extension cannot be guaranteed reliably.
+
+**Avoid:**
+
+```cpp
+xiiStringView MakeResourceName()
+{
+  xiiString sName = "SimulationResource";
+
+  return sName;
+}
+```
+
+The returned view references storage owned by a local string that is destroyed when the function returns.
+
+**Prefer:**
+
+```cpp
+xiiString MakeResourceName()
+{
+  return xiiString("SimulationResource");
+}
+```
+
+The returned string owns its storage.
+
+#### Container Invalidation
+
+Container operations may invalidate references, pointers, iterators, or views into their contents.
+
+Code **MUST** respect the invalidation guarantees of the specific container being used.
+
+Do not assume that all XII containers share the same relocation or iterator stability semantics.
+
+For example, growing a contiguous dynamic array may relocate its elements, invalidating previously obtained pointers.
+
+A container providing stable element addresses may have different guarantees, but element removal still invalidates access to the removed object.
+
+#### Scoped Mapping
+
+Memory obtained through a mapping operation may remain valid only until its corresponding unmap or release operation.
+
+Such pointers **MUST NOT** be retained beyond that boundary.
+
+This applies to CPU memory mappings, GPU-visible mapped ranges, temporary allocator storage, and similar scoped resources.
+
+**Guiding principle:**
+
+> A view grants access to existing storage; it does not extend the storage's lifetime. Persist ownership, not borrowed access, when data must survive its original scope.
+
+### 6.9 Runtime and GPU Resource Lifetimes
+
+CPU-side execution completion and GPU execution completion are different events.
+
+A function returning from command recording, submission, or render graph execution does not necessarily mean that the GPU has finished accessing the submitted resources.
+
+GPU resource lifetime **MUST** account for asynchronous execution.
+
+#### General Requirements
+
+- CPU-side submission completion **MUST NOT** be treated as proof of GPU execution completion.
+- Resources referenced by submitted GPU work **MUST** remain valid until the GPU has completed the operations that require them.
+- Resource retirement **MUST** use appropriate queue completion, fence, timeline, or equivalent synchronization guarantees.
+- Command allocators, descriptor storage, upload buffers, temporary resources, and other GPU-visible allocations **MUST** respect their actual in-flight lifetimes.
+- Frame-index progression **MUST NOT** be confused with GPU completion unless the frame-management contract explicitly establishes that relationship.
+- Resource reuse **MUST** respect outstanding GPU dependencies.
+- Deferred destruction mechanisms **MUST** preserve the resources and associated device infrastructure required for final cleanup.
+- Device shutdown **MUST** account for outstanding submissions and pending resource retirement.
+- Synchronization mechanisms **MUST** follow the guarantees of the active graphics backend.
+
+#### Submission Versus Completion
+
+Consider a typical sequence:
+
+```text
+CPU:
+  Record Commands
+        |
+        v
+  Submit Commands
+        |
+        v
+  Execute() Returns
+        |
+        v
+  Continue CPU Work
+
+GPU:
+        Execute Submitted Commands
+                    |
+                    v
+              Signal Completion
+```
+
+The CPU may continue execution while the GPU is still processing previously submitted commands.
+
+Destroying a resource immediately after the submission function returns may therefore be unsafe.
+
+#### Deferred Resource Retirement
+
+A rendering subsystem may logically release a resource immediately while retaining its physical allocation until the relevant GPU completion condition is satisfied.
+
+For example:
+
+```cpp
+void ReleaseResource(xiiGALResourceHandle hResource)
+{
+  QueueResourceRetirement(hResource, GetCurrentSubmissionValue());
+}
+```
+
+This is a conceptual example. The retirement system must ensure that the recorded completion value covers every GPU submission that may still access the resource.
+
+A resource may have dependencies across multiple queues or submissions. The last submission recorded by a local subsystem is not necessarily sufficient to establish safe destruction.
+
+#### Frames in Flight
+
+Frame-buffering strategies commonly retain resources across several in-flight frames.
+
+However, a fixed number of frames in flight is not itself a completion guarantee.
+
+Resource reuse and destruction **MUST** be based on the synchronization semantics of the frame system and graphics backend.
+
+Do not assume that advancing a frame counter by a particular amount proves that earlier GPU work has completed.
+
+Detailed GPU synchronization, queue completion, and retirement requirements are covered in §15.
+
+**Guiding principle:**
+
+> CPU execution determines when work is submitted. GPU synchronization determines when its resources can be safely reused or destroyed. These lifetimes must never be conflated.
+
+### 6.10 Initialization and Shutdown State Machines
+
+Subsystem initialization and shutdown **MUST** follow a documented lifecycle.
+
+A component should not require callers to infer which operations are valid from partially initialized internal state.
+
+#### General Requirements
+
+- Initialization and shutdown operations **MUST** define their valid calling conditions.
+- Repeated initialization **MUST** have documented behavior.
+- Repeated shutdown **MUST** either be supported safely or treated as an explicit contract violation.
+- Initialization failures **MUST** leave the component in a state where cleanup or recovery is possible.
+- Shutdown **MUST** prevent new work from accessing resources that are being retired.
+- Lifecycle state **SHOULD** remain minimal and correspond to actual observable requirements.
+- Do not introduce elaborate state machines for simple components that require only initialized and uninitialized states.
+- Explicit initialization methods **SHOULD** return `xiiResult` when initialization may fail for expected runtime reasons.
+
+**Example:**
+
+```cpp
+class xiiSubsystem
+{
+public:
+  xiiResult Initialize()
+  {
+    if (m_bInitialized)
+      return XII_FAILURE;
+
+    if (InitializeResources().Failed())
+      return XII_FAILURE;
+
+    m_bInitialized = true;
+    return XII_SUCCESS;
+  }
+
+  void Shutdown()
+  {
+    if (!m_bInitialized)
+      return;
+
+    ReleaseResources();
+    m_bInitialized = false;
+  }
+
+  XII_ALWAYS_INLINE bool IsInitialized() const
+  {
+    return m_bInitialized;
+  }
+
+private:
+  xiiResult InitializeResources();
+  void ReleaseResources();
+
+  bool m_bInitialized = false;
+};
+```
+
+This example assumes `InitializeResources()` either cleans up any partial acquisitions before returning failure or leaves them in a state safely handled by the component's cleanup contract.
+
+The implementation must not mark initialization as complete before all required invariants have been established.
+
+#### Transactional Initialization
+
+Where practical, initialization **SHOULD** provide an all-or-nothing observable result.
+
+If initialization fails, the subsystem should either:
+
+- Restore its previous valid state.
+- Return to a documented uninitialized state.
+- Enter an explicit recoverable failure state when restoration is impossible or inappropriate.
+
+Partial initialization must not leave resources permanently owned without a valid cleanup path.
+
+**Guiding principle:**
+
+> Initialization establishes a usable state; shutdown dismantles it. Both operations must preserve ownership, invariants, and well-defined recovery behavior.
+
+### 6.11 Asynchronous Operations and Cancellation
+
+Asynchronous execution introduces lifetimes that may extend beyond the scope of the function that schedules the work.
+
+Every asynchronous operation **MUST** establish ownership and cancellation rules for the data and resources it accesses.
+
+#### General Requirements
+
+- Captured objects **MUST** remain valid until asynchronous work completes or releases them.
+- Cancellation **MUST NOT** be treated as synchronous completion unless the API explicitly guarantees it.
+- Owners **MUST** coordinate outstanding tasks before destroying resources those tasks may access.
+- Callbacks **MUST NOT** retain references to destroyed objects or unloaded plugin code.
+- Task completion and resource release **MUST** obey the required synchronization and memory-visibility rules.
+- Do not introduce shared ownership merely because an operation is asynchronous when scoped completion or explicit lifetime coordination provides a simpler solution.
+- Asynchronous APIs **SHOULD** make ownership transfer and cancellation responsibilities visible.
+- Shutdown paths **MUST** define how pending, executing, and completed tasks are handled.
+
+#### Cancellation Versus Completion
+
+Cancellation commonly represents a request that work should stop or avoid starting.
+
+It does not necessarily guarantee that currently executing work has finished.
+
+A component that requests cancellation and then immediately destroys task dependencies may therefore introduce use-after-free behavior.
+
+Safe destruction may require waiting for task completion, transferring ownership of required data, or deferring reclamation.
+
+**Guiding principle:**
+
+> Scheduling transfers work into the future, not automatically the ownership of everything that work accesses. Asynchronous lifetime guarantees must be explicit.
+
+### 6.12 Resource Lifetime Verification
+
+Lifetime correctness **SHOULD** be validated through tests and development diagnostics, particularly for resource managers, concurrent registries, asynchronous execution, and device-scoped resources.
+
+#### General Requirements
+
+- Test initialization failure and partial cleanup paths where recoverable failures are possible.
+- Verify that repeated cleanup does not violate the documented lifecycle contract.
+- Test stale-handle rejection when generation-checked handles are used.
+- Exercise container growth, removal, and relocation when references to stored elements are retained.
+- Validate concurrent lookup and destruction when the subsystem permits those operations.
+- Test subsystem shutdown with outstanding work when asynchronous execution is supported.
+- Verify that plugin shutdown removes callbacks and registrations before unloading.
+- Exercise GPU resource retirement under representative frames-in-flight and queue synchronization conditions.
+- Use assertions and diagnostic instrumentation to detect violated ownership and lifetime contracts during development.
+- Do not rely exclusively on assertions to prevent invalid resource access in production execution.
+
+Relevant tests **SHOULD** focus on the actual lifetime guarantees of the component rather than merely confirming that normal construction and destruction succeed.
+
+**Guiding principle:**
+
+> Ownership and lifetime guarantees are correctness properties. They should be explicit in interfaces, enforced by implementations, and verified under failure, concurrency, and shutdown conditions.
 
 ## 7. Functions, parameters, and return values
 
