@@ -7119,73 +7119,797 @@ These tools provide complementary evidence. No single tool can establish every o
 
 > Memory correctness must be demonstrated across allocation, mutation, failure, and destruction. Performance claims should be supported by measurements rather than assumptions.
 
-## 11. Strings, identifiers, hashes, and handles
 
-### 11.1 Use the right string representation
+## 11. Strings, Identifiers, Hashes, and Handles
 
-| Type | Typical role |
+Strings, identifiers, hashes, and handles serve distinct purposes in XII. Their representations **MUST** reflect the intended semantics of ownership, identity, comparison, lookup, and lifetime.
+
+Choosing an appropriate representation is important for correctness, performance, and interoperability across engine modules. In particular, textual names must not be confused with object identity, hash values must not be assumed collision-free, and resource handles must not be treated as owning pointers.
+
+This section extends §1.2 (Ownership and Lifetime), §3 (Naming Conventions), §6 (Resource Lifetime), and §10 (Memory and Containers).
+
+### 11.1 Use the Appropriate String Representation
+
+XII provides several string abstractions with different ownership, construction, comparison, and storage characteristics.
+
+The selected string type **SHOULD** reflect how the text is produced, stored, and consumed.
+
+| Type | Typical responsibility | Important consideration |
+|---|---|---|
+| `xiiString` | Owned string storage | Suitable when text must remain valid independently of its source |
+| `xiiStringBuilder` | Mutable construction and manipulation | Appropriate for repeated formatting, concatenation, and modification |
+| `xiiStringView` | Non-owning string access | Backing storage must remain valid |
+| `xiiHashedString` | Persistent names with cached hashing | Useful for repeated comparisons and lookups |
+| `xiiTempHashedString` | Temporary hashed lookup values | Appropriate when the receiving API supports compatible hashed lookup |
+| `const char*` | C-compatible string interfaces | Requires explicit null-termination and lifetime assumptions |
+
+#### General Requirements
+
+- Prefer `xiiStringView` for read-only string inputs when ownership transfer is unnecessary.
+- Use `xiiString` when a component must retain text independently of the caller.
+- Use `xiiStringBuilder` when constructing or modifying text repeatedly.
+- Use `xiiHashedString` when cached hashing provides a meaningful benefit for a persistent name.
+- Use `xiiTempHashedString` for temporary lookup operations when supported by the target container or API.
+- Do not store non-owning string views without establishing the backing storage's lifetime.
+- Do not repeatedly compute hashes for stable identities in demonstrated hot paths when a suitable cached representation is available.
+- Do not intern or persistently hash every temporary diagnostic string without a concrete requirement.
+- Avoid unnecessary conversions among string types, particularly in frequently executed operations.
+- String representations **MUST** preserve the encoding and comparison semantics required by their consumers.
+- Do not assume that all string representations guarantee NUL termination.
+
+#### Borrowed String Inputs
+
+**Prefer:**
+
+```cpp
+xiiResult LoadDocument(xiiStringView sPath);
+```
+
+This permits callers to supply compatible string storage without requiring ownership transfer at the function boundary.
+
+If the implementation needs to retain the path beyond the call, it must copy or otherwise safely acquire the required storage.
+
+#### String Construction
+
+**Prefer:**
+
+```cpp
+xiiStringBuilder sResourcePath;
+
+sResourcePath.Append(sDirectory);
+sResourcePath.AppendPath(sResourceName);
+```
+
+This is appropriate when a mutable string is being assembled from several components and the path operations match the filesystem abstraction's requirements.
+
+Do not introduce a builder when a simple string value or view already satisfies the operation.
+
+#### Hashed String Lookup
+
+**Example:**
+
+```cpp
+xiiHashedString m_sResourceName;
+
+xiiUInt32 uiResourceIndex = 0U;
+
+if (!m_ResourceLookup.TryGetValue(xiiTempHashedString(sName), uiResourceIndex))
+{
+  return XII_FAILURE;
+}
+```
+
+The temporary hashed representation avoids unnecessarily constructing a persistent hashed-string object for an immediate lookup, assuming the table's key and heterogeneous lookup contracts support the operation.
+
+The actual hashing and equality guarantees depend on the XII string and container implementations.
+
+**Guiding principle:**
+
+> Use owned strings for retained data, views for borrowed access, builders for construction, and hashed strings where identity-oriented lookup justifies them.
+
+### 11.2 Distinguish Names, Identifiers, and Display Labels
+
+A textual name does not automatically represent a unique object identity.
+
+XII subsystems **MUST** distinguish between names used for identification, labels used for presentation, and handles used for authoritative resource identity.
+
+#### General Requirements
+
+- Names used as identifiers **MUST** have documented uniqueness and comparison semantics.
+- Display names **SHOULD NOT** determine object identity unless the subsystem explicitly defines that behavior.
+- Resource identity **SHOULD** remain stable independently of diagnostic or user-facing names when the subsystem requires renaming.
+- Do not assume that identical display labels identify the same object.
+- Do not assume that distinct strings necessarily identify distinct objects when normalization or case-insensitive comparison is applied.
+- Name-based registries **MUST** define how duplicate names are handled.
+- Rename operations **MUST** preserve registry consistency and the documented identity contract.
+- Names used for serialization or persistent references **MUST** have defined stability and compatibility requirements.
+- Avoid maintaining redundant names and identifiers unless they serve distinct responsibilities.
+
+**Example:**
+
+```cpp
+struct xiiNamedResource
+{
+  xiiHashedString   m_sName;
+  xiiResourceHandle m_hResource;
+};
+```
+
+The name provides a lookup or descriptive identity within a particular namespace, while the handle identifies the registered resource according to its manager's rules.
+
+The two values should not be treated as interchangeable.
+
+#### Identity Scope
+
+Name uniqueness must be defined within an explicit scope.
+
+Possible scopes include:
+
+- A single object.
+- A document or scene.
+- A resource registry.
+- A loaded plugin.
+- An application instance.
+- A persistent asset database.
+
+A name unique within one scene is not necessarily unique across the entire engine.
+
+Do not introduce global uniqueness requirements when a smaller namespace satisfies the actual consumer requirements.
+
+#### Duplicate Names
+
+A registry **MUST** define whether duplicate names are:
+
+1. Rejected.
+2. Replacements for existing registrations.
+3. Permitted under different owning contexts.
+4. Represented as multiple entries.
+5. Resolved through an explicit namespace or qualification mechanism.
+
+The selected behavior must be consistent across creation, lookup, renaming, serialization, and destruction.
+
+**Guiding principle:**
+
+> A name describes or locates an object within a defined namespace. An authoritative identifier establishes which object is being referenced.
+
+### 11.3 String Ownership, Conversion, and Lifetime
+
+String APIs **MUST** make ownership and lifetime requirements clear.
+
+A function that accepts `xiiStringView` receives borrowed access to text. It does not automatically receive ownership of the backing storage.
+
+The borrowing rules established in §6.3 and §6.8 apply to all non-owning string representations.
+
+#### General Requirements
+
+- A function retaining text beyond its invocation **MUST** establish ownership or a valid externally guaranteed lifetime.
+- Do not retain `xiiStringView` objects that reference temporary strings.
+- Do not assume that converting a string into a view extends the original string's lifetime.
+- Avoid returning views into temporary builders or locally owned strings.
+- Do not retain pointers to string storage across mutations that may reallocate or invalidate that storage.
+- String conversions **MUST** preserve required encoding and representation semantics.
+- Do not assume that string views are NUL-terminated.
+- Interfaces requiring NUL-terminated strings **MUST** receive storage that satisfies that requirement.
+- Asynchronous operations **MUST** own or otherwise guarantee the lifetime of text retained across execution boundaries.
+
+#### Safe Ownership Transfer
+
+**Prefer:**
+
+```cpp
+class xiiDocument
+{
+public:
+  void SetName(xiiStringView sName)
+  {
+    m_sName = sName;
+  }
+
+private:
+  xiiString m_sName;
+};
+```
+
+The document stores an owning copy of the provided text.
+
+The caller may destroy or modify its original string after `SetName()` returns without invalidating the document's stored name.
+
+#### Unsafe Borrowing
+
+**Avoid:**
+
+```cpp
+class xiiDocument
+{
+public:
+  void SetName(xiiStringView sName)
+  {
+    m_sName = sName;
+  }
+
+private:
+  xiiStringView m_sName;
+};
+```
+
+This implementation stores a borrowed view without establishing that the caller's backing storage will remain valid.
+
+It may be correct only when the lifetime dependency is explicitly documented and enforced.
+
+#### NUL-Terminated Strings
+
+C-compatible APIs often require pointers to NUL-terminated character sequences.
+
+A string view representing an arbitrary substring does not necessarily satisfy this requirement.
+
+Do not pass a string view's underlying pointer to such an API unless its termination contract is guaranteed.
+
+When necessary, construct an appropriately terminated owning or temporary string representation at the integration boundary.
+
+**Guiding principle:**
+
+> String ownership must follow the duration of use. A borrowed view is an access mechanism, not a storage or lifetime guarantee.
+
+### 11.4 Hashing and Hash-Based Lookup
+
+Hashing **SHOULD** be used when it provides an appropriate representation for lookup, comparison, caching, or indexing.
+
+A hash is a derived value and must not automatically be treated as a globally unique identifier.
+
+#### General Requirements
+
+- Hash functions **MUST** produce consistent results for equivalent keys under the defined comparison contract.
+- Hash-table equality semantics **MUST** be compatible with the selected hash function.
+- Hash collisions **MUST** be handled according to the container or identifier system's documented contract.
+- Do not assume that a hash value uniquely identifies arbitrary input data.
+- Do not persist implementation-dependent hash values as stable identifiers unless their algorithm and representation are explicitly part of the persistent format.
+- Avoid repeatedly hashing unchanged values in performance-critical lookup paths when cached hashes are appropriate.
+- Do not introduce persistent hash storage when its maintenance cost exceeds its demonstrated benefit.
+- Hash-based lookup **MUST** preserve the required string comparison and normalization semantics.
+- Do not use ordinary non-cryptographic hashes to establish security or authenticity.
+- Hash-table iteration order **MUST NOT** be treated as deterministic unless the container explicitly guarantees it.
+
+#### Hash Equality and Identity
+
+A hash function maps a potentially large input domain into a finite range.
+
+Different inputs can therefore produce the same hash value.
+
+When exact identity matters, the implementation must either:
+
+- Compare the original values following a hash match.
+- Use an established string interning mechanism with documented identity guarantees.
+- Use a registry-managed identifier that resolves collisions correctly.
+- Explicitly define and accept the collision semantics of the representation.
+
+Do not assume that a 32-bit or 64-bit hash is collision-free merely because collisions are uncommon for representative workloads.
+
+#### Persistent Hashes
+
+A hash value used in a persistent format requires a stable contract.
+
+That contract should specify:
+
+- Hash algorithm.
+- Input encoding.
+- Normalization rules.
+- Case sensitivity.
+- Width and representation.
+- Versioning requirements.
+- Collision handling.
+
+Changing any of these properties may invalidate stored identifiers or serialized references.
+
+#### Hashing and Performance
+
+Hashing reduces some comparison costs but introduces its own computation and storage overhead.
+
+For small collections, direct comparisons or linear scans may outperform a hash table because of locality and reduced indirection.
+
+Container selection should follow §10.1 and the evidence-based performance requirements of §1.5.
+
+**Guiding principle:**
+
+> Hashes accelerate lookup and comparison; they do not inherently provide collision-free identity, deterministic ordering, or persistent compatibility.
+
+### 11.5 Generation-Checked Handles
+
+Handles **SHOULD** be used for objects whose identity and lifetime are managed independently by a registry, manager, or subsystem.
+
+A handle represents a logical reference rather than a direct memory address.
+
+Generation checking can detect stale references when registry slots are reused.
+
+#### General Requirements
+
+- Handle types **MUST** represent clearly defined resource categories or identity domains.
+- Prefer distinct handle types for semantically different resources, even when their underlying representations are identical.
+- Handle validity **MUST** be determined according to the authoritative registry's rules.
+- Handles **MUST NOT** imply ownership unless explicitly documented.
+- Reusable registry slots **SHOULD** employ generation tracking or another appropriate stale-reference detection mechanism.
+- Handle construction and invalidation **MUST** preserve the representation's invariants.
+- Invalid handles **MUST** have a defined representation or validity-checking mechanism.
+- Generation exhaustion or wraparound **MUST** be considered when the handle format permits repeated slot reuse.
+- Handle validation **MUST NOT** be confused with lifetime protection during concurrent access.
+- Do not expose underlying handle bit fields unnecessarily through public interfaces.
+
+#### Illustrative Handle Definition
+
+```cpp
+using xiiSimulationId = xiiGenericId<24, 8>;
+
+class XII_CORE_DLL xiiSimulationHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiSimulationHandle, xiiSimulationId);
+};
+```
+
+This example illustrates the use of a typed handle and an underlying identifier representation.
+
+The actual handle declaration, identifier widths, friend declarations, storage layout, and generation policy must follow the owning subsystem's implementation.
+
+The example does not prescribe a universal 24-bit index or 8-bit generation format.
+
+#### Stale Handles
+
+A generation-checked handle typically identifies both a slot and a particular lifetime of that slot.
+
+When the object is destroyed and its slot is reused, the generation changes according to the registry's rules.
+
+A stale handle can then be rejected instead of resolving to the new object.
+
+However, generation checking does not guarantee permanent protection.
+
+A finite-width generation counter can eventually wrap, potentially recreating an earlier encoded identifier if the slot is reused sufficiently many times.
+
+The acceptable generation width and reuse policy must reflect the expected object churn and lifetime requirements.
+
+#### Typed Handles
+
+**Prefer:**
+
+```cpp
+xiiSimulationHandle hSimulation;
+xiiResourceHandle   hResource;
+```
+
+**Avoid:**
+
+```cpp
+xiiUInt32 uiSimulationId;
+xiiUInt32 uiResourceId;
+```
+
+Distinct handle types make accidental cross-subsystem usage more difficult and allow the compiler to enforce meaningful interface distinctions.
+
+**Guiding principle:**
+
+> Handles provide typed logical identity and permit validation. Their safety depends on the registry's generation, lifetime, and synchronization contracts.
+
+### 11.6 Handle Ownership Domains and Context Identity
+
+A handle's underlying numeric representation does not automatically identify its owning subsystem, manager, or execution context.
+
+Where handles are valid only within a particular ownership domain, that relationship **MUST** be established and enforced.
+
+#### General Requirements
+
+- Every handle type **MUST** have a defined authority responsible for its validity.
+- The scope of handle uniqueness **MUST** be documented when multiple registries or contexts can create the same handle type.
+- Do not assume that a globally accessible handle type implies globally unique identifiers.
+- Cross-context handle access **MUST** be validated when the API permits references from multiple contexts.
+- Handle ownership **MAY** be represented through encoded identifiers, registry metadata, or an explicit context parameter.
+- Do not increase handle width or introduce additional identifier fields without a demonstrated requirement.
+- Resource lookup **MUST** use the correct authoritative registry.
+- Handle transfer between contexts **MUST** be explicitly supported or rejected.
+- Context destruction **MUST** invalidate or retire resources according to the context's ownership contract.
+
+#### Contextual Identity
+
+Consider a system supporting multiple independently managed simulation worlds.
+
+A handle allocated by one world may have the same underlying index and generation as a handle allocated by another world.
+
+If those handles share a type, the implementation must prevent accidental cross-world resolution when such access is invalid.
+
+Possible approaches include:
+
+1. Encoding an owner or context identifier into the handle.
+2. Recording the owner in authoritative registry metadata.
+3. Requiring an explicit owning context during lookup.
+4. Using globally allocated identifiers with documented uniqueness guarantees.
+
+No single strategy is universally preferable.
+
+The selected approach should reflect the actual lifetime, lookup, and cross-context requirements.
+
+#### Avoid Hidden Ownership Assumptions
+
+Do not infer ownership from unrelated properties such as:
+
+- A handle's numeric magnitude.
+- The order in which resources were created.
+- The currently active frame.
+- The currently active device.
+- The global registry that happens to be accessible.
+- A resource's display name.
+
+Such assumptions are fragile unless they form part of an explicitly enforced contract.
+
+**Guiding principle:**
+
+> A handle identifies a resource only within the domain that defines its meaning. Ownership context must be represented or validated explicitly.
+
+### 11.7 Authoritative Registries and Mapping Consistency
+
+Systems maintaining names, handles, indices, or resource relationships **MUST** define which representation is authoritative.
+
+Secondary mappings are useful for lookup and iteration but introduce consistency requirements.
+
+#### General Requirements
+
+- Each resource **MUST** have one clearly defined authoritative ownership or registration mechanism.
+- Secondary lookup tables **MUST** remain consistent with authoritative state.
+- Registration **MUST** preserve uniqueness and identity requirements.
+- Resource destruction **MUST** remove or invalidate associated secondary mappings according to the lifecycle contract.
+- Renaming **MUST** update affected name-based mappings consistently.
+- Partial registration failures **MUST** leave the system in a documented valid state.
+- Avoid duplicating complete resource state across multiple containers without a demonstrated need.
+- Multi-container updates **MUST** be coordinated through appropriate synchronization or rollback mechanisms.
+- Readers **MUST NOT** observe inconsistent intermediate states when the subsystem's concurrency contract prohibits them.
+- Do not introduce global registries merely to simplify access to otherwise locally owned resources.
+
+#### Authoritative and Secondary Mappings
+
+A subsystem may use:
+
+- A handle table as the authoritative identity registry.
+- A name-to-handle table for lookup.
+- A list of handles for ordered iteration.
+- A context-to-handle table for membership.
+- A cache for reusable derived data.
+
+These structures serve different responsibilities.
+
+Only one should be considered authoritative for each particular ownership or identity fact unless the system explicitly maintains a stronger consistency model.
+
+#### Registration Failure
+
+When registration requires modifying several structures, failure must not leave partially published resources.
+
+**Prefer conceptually:**
+
+```cpp
+xiiResult RegisterResource(xiiStringView sName)
+{
+  if (m_NameLookup.Contains(sName))
+    return XII_FAILURE;
+
+  // Prepare and validate the required resource state.
+  // Publish the resource only when registration can
+  // satisfy the subsystem's consistency contract.
+
+  return CommitRegistration(sName);
+}
+```
+
+This example illustrates the required separation between validation and commitment.
+
+It does not prescribe a specific transaction mechanism.
+
+If publishing a resource requires multiple allocations or container updates, the implementation must provide rollback or another safe method of preserving consistency when an intermediate operation fails.
+
+#### Concurrency
+
+Consistency may require a lock spanning multiple registry updates, a staged publication mechanism, or another synchronization strategy.
+
+Do not assume that individually thread-safe containers make a multi-container operation atomic.
+
+Likewise, registry synchronization does not automatically protect the lifetime of objects returned from a lookup.
+
+See §6.5 for lifetime-safe access requirements.
+
+**Guiding principle:**
+
+> Maintain one authority for each resource fact. Every secondary mapping must remain consistent with it across creation, mutation, failure, and destruction.
+
+### 11.8 String Comparison, Normalization, and Equality
+
+String comparison semantics **MUST** match the meaning of the data being compared.
+
+Byte equality, case-insensitive equality, normalized path equality, and logical identifier equality are not interchangeable.
+
+#### General Requirements
+
+- String comparisons **MUST** use semantics appropriate to the domain.
+- Do not assume that byte equality implies logical equivalence for every text representation.
+- Do not introduce case-insensitive comparisons merely for user convenience when case sensitivity is part of the identifier contract.
+- Unicode normalization **MUST** be considered when the application requires canonical textual equivalence.
+- Name-based lookup and name-based insertion **MUST** use compatible comparison rules.
+- Hashing **MUST** follow the same equivalence rules used by equality comparisons.
+- Do not normalize identifiers in a way that silently merges previously distinct valid values.
+- Public identifier comparison rules **SHOULD** remain stable across versions when persistent compatibility is required.
+- Do not assume ASCII-only transformations are sufficient for arbitrary Unicode text.
+
+#### Comparison Categories
+
+| Comparison | Meaning | Typical use |
+|---|---|---|
+| Byte comparison | Exact encoded-byte equality | Binary identifiers, explicitly byte-oriented protocols |
+| Case-sensitive text comparison | Text comparison preserving case distinctions | Case-sensitive resource names |
+| Case-insensitive comparison | Equality under a defined case-mapping rule | Explicitly case-insensitive identifiers |
+| Normalized text comparison | Equality after a defined normalization process | Text systems requiring canonical equivalence |
+| Normalized path comparison | Equality according to a defined path model | Virtual filesystem or resource path handling |
+| Hashed lookup | Lookup using a hash compatible with the equality relation | Name registries and associative containers |
+
+A hashed lookup must preserve the same equality semantics as the corresponding non-hashed representation.
+
+#### Hash and Equality Consistency
+
+If two keys compare equal, they must produce compatible hash values according to the hash table's contract.
+
+For example, a case-insensitive equality function cannot safely be paired with a case-sensitive hash that produces different values for keys considered equivalent.
+
+#### Unicode and Normalization
+
+Unicode strings may contain different encoded representations of text that appears visually identical.
+
+Whether those representations should compare equal depends on the subsystem's contract.
+
+Do not apply Unicode normalization automatically to every engine identifier.
+
+For identifiers used in persistent formats, normalization policy changes may alter lookup results and compatibility.
+
+**Guiding principle:**
+
+> Equality is a domain contract. Hashing, lookup, normalization, and serialization must agree on what constitutes the same identifier.
+
+### 11.9 Paths, Virtual Filesystems, and Resource Identifiers
+
+Filesystem paths, virtual filesystem paths, resource identifiers, and display names **MUST** be treated as distinct concepts when their semantics differ.
+
+XII operates across platforms with different filesystem conventions and must not assume that one platform's path representation applies universally.
+
+#### General Requirements
+
+- Prefer established XII path and filesystem utilities for path construction and manipulation.
+- Do not concatenate filesystem paths using arbitrary string operations when a path-aware API is available.
+- Do not assume that all platforms use identical path separators.
+- Do not assume that all filesystems are case-sensitive or case-insensitive.
+- Do not assume that drive letters, root paths, or volume representations are universally available.
+- Relative paths **MUST** be interpreted against a defined base or virtual filesystem context.
+- Do not assume lexical path normalization proves that two paths refer to the same physical file.
+- Resource identifiers **SHOULD** remain independent of physical filesystem paths when the resource system supports virtualized lookup.
+- User-facing labels **SHOULD NOT** be treated as authoritative filesystem identifiers.
+- Paths received from external sources **MUST** be validated according to the filesystem and security boundaries of the receiving subsystem.
+- Path comparison and hashing **MUST** use compatible normalization and equality semantics.
+
+#### Path Categories
+
+| Category | Meaning |
 |---|---|
-| `xiiString` | Owned, dynamically constructed text |
-| `xiiStringBuilder` | Efficient text construction and mutable concatenation |
-| `xiiStringView` | Borrowed, non-owning text input |
-| `xiiHashedString` | Stable, frequently compared or indexed name |
-| `xiiTempHashedString` | Temporary hashed lookup key, when the target API supports it |
+| Physical filesystem path | Refers to a location interpreted by the host filesystem |
+| Virtual filesystem path | Refers to a location resolved through an engine-managed filesystem abstraction |
+| Resource identifier | Identifies an asset or resource through the resource-management system |
+| Display name | Human-readable text used for presentation or diagnostics |
+| Relative path | A path interpreted against an explicitly defined base |
+| Canonical path | A path resolved or normalized according to a particular filesystem or path contract |
 
-Do not intern every debugging string without a reason. Conversely, do not repeatedly hash the same immutable identity in a hot lookup path.
+These representations may contain similar text but do not necessarily have equivalent meanings.
 
-### 11.2 Name identity versus display labels
+#### Path Construction
 
-If names are identifiers, document uniqueness, case sensitivity, hashing, collision handling, and whether the name can change. If names exist only for diagnostics, do not make name equality govern object identity unnecessarily.
+**Prefer:**
 
 ```cpp
-struct xiiNamedGraph
+xiiStringBuilder sPath = sDirectory;
+sPath.AppendPath(sFileName);
+```
+
+**Avoid:**
+
+```cpp
+xiiStringBuilder sPath;
+
+sPath.Append(sDirectory);
+sPath.Append("/");
+sPath.Append(sFileName);
+```
+
+The preferred example delegates path separator handling to a path-aware operation.
+
+The specific semantics of `AppendPath()` and the applicable virtual or physical filesystem rules must still be respected.
+
+#### Path Normalization
+
+Normalization may include:
+
+- Separator normalization.
+- Removal of redundant separators.
+- Resolution of `.` components.
+- Lexical handling of `..` components.
+- Case normalization under a defined policy.
+- Resolution relative to a known base.
+
+Lexical normalization does not necessarily resolve symbolic links, filesystem aliases, mount points, or physical file identity.
+
+Do not use string normalization alone as proof that a path is safe or contained within a permitted filesystem root.
+
+#### Security Boundaries
+
+Paths originating from plugins, user configuration, network requests, or other untrusted sources may require additional validation.
+
+Validation **MUST** follow the actual filesystem operation and trust boundary.
+
+In particular, string-prefix comparisons are not sufficient to establish secure filesystem containment when path traversal, symbolic links, or filesystem resolution can change the target location.
+
+**Guiding principle:**
+
+> Paths describe locations under a filesystem contract; resource identifiers describe engine-managed identity. Preserve the distinction and use platform-aware resolution.
+
+### 11.10 Persistent and Serialized Identifiers
+
+Identifiers used in serialized data, asset databases, network protocols, or other persistent formats require stronger stability guarantees than temporary runtime identifiers.
+
+A runtime handle **MUST NOT** automatically be treated as a persistent identifier.
+
+#### General Requirements
+
+- Persistent identifiers **MUST** have documented uniqueness and stability requirements.
+- Do not serialize runtime handles as durable references unless their representation and resolution semantics explicitly support persistence.
+- Generation counters and registry indices **SHOULD** be treated as runtime implementation details unless otherwise documented.
+- Persistent identifier formats **MUST** have defined encoding and versioning requirements.
+- Identifier changes **MUST** consider migration and compatibility with existing data.
+- Do not use process-local pointer values as persistent identifiers.
+- Hash-derived persistent identifiers **MUST** define their hashing and collision policies.
+- Deserialization **MUST** validate identifiers before resolving them to runtime resources.
+- Resource resolution **MUST** distinguish missing, invalid, and unavailable resources where those states require different behavior.
+- Identifier representations **SHOULD** remain independent of memory layout and process-specific allocation behavior.
+
+#### Runtime Versus Persistent Identity
+
+A runtime handle may contain an index and generation used to locate an object within the current process.
+
+That representation may change when:
+
+- The application restarts.
+- Resources load in a different order.
+- A registry is reconstructed.
+- Resources are destroyed and recreated.
+- An asset is loaded into another context.
+
+A persistent resource identifier must retain its intended meaning across the operations and environments defined by its contract.
+
+#### Serialization Boundaries
+
+When loading persistent references, resolve them through an authoritative resource system rather than assuming that stored numeric values remain valid runtime handles.
+
+**Guiding principle:**
+
+> Runtime handles identify objects within an active ownership system. Persistent identifiers must survive the lifecycle and compatibility boundaries they are designed to cross.
+
+### 11.11 Handle Validation and Resource Access
+
+Handle validation **MUST** be performed by the subsystem that owns the associated identity and lifetime contract.
+
+A handle's local validity representation is not necessarily sufficient to establish that its resource still exists.
+
+#### General Requirements
+
+- Distinguish structurally valid handles from handles that currently resolve to live resources.
+- Resource lookup **MUST** reject handles that are invalid according to the authoritative registry.
+- Stale-generation checks **MUST** occur where required by the registry contract.
+- A successful lookup **MUST NOT** be assumed to extend resource lifetime beyond the documented access boundary.
+- Concurrent destruction **MUST** be coordinated with resource access.
+- Do not expose unchecked handle-to-pointer conversions through general public interfaces.
+- Handle invalidation **SHOULD** occur after successful release where supported.
+- Invalidating one handle variable **MUST NOT** be assumed to revoke copies held by other consumers.
+- Do not introduce repeated registry lookups within critical paths without considering their cost and alternatives.
+- Optimization of handle access **MUST NOT** bypass required validation or lifetime guarantees.
+
+#### Structural Versus Registry Validity
+
+A handle may encode a value that is not the designated invalid representation while still referring to a destroyed resource.
+
+For example:
+
+```cpp
+if (!hResource.IsInvalidated())
 {
-  xiiHashedString m_sName;
-  xiiRenderGraphHandle m_hGraph;
-};
+  // The handle is not locally marked invalid.
+  // The owning registry must still determine whether it
+  // refers to a currently valid resource.
+}
 ```
 
-### 11.3 Avoid hidden conversions and lifetime traps
+The exact validity methods depend on the handle implementation.
+
+#### Scoped Access
+
+When resource destruction may occur concurrently, prefer scoped access mechanisms that preserve validity for the duration of the operation.
+
+A registry lookup protected by a short-lived mutex is insufficient if the returned pointer may be destroyed immediately after the mutex is released.
+
+See §6.5 for the supported lifetime strategies.
+
+**Guiding principle:**
+
+> A handle is meaningful only through its authoritative registry. Validation establishes current identity; safe access additionally requires lifetime and synchronization guarantees.
+
+### 11.12 Identifier and Hash Diagnostics
+
+Identifiers and hashes frequently appear in logs, assertions, diagnostic tools, and debugging interfaces.
+
+Diagnostic output **SHOULD** provide enough context to identify the affected resource without confusing implementation values with user-facing identity.
+
+#### General Requirements
+
+- Diagnostics **SHOULD** include meaningful resource names or identifiers when available.
+- Do not rely exclusively on opaque hash values when a descriptive name can be reported.
+- Handle diagnostics **SHOULD** distinguish the resource category and owning context when relevant.
+- Do not assume that a raw numeric identifier is globally unique.
+- Logging **MUST NOT** dereference invalid resources merely to obtain descriptive information.
+- Diagnostic helpers **SHOULD** remain safe during failure handling and subsystem shutdown.
+- Do not retain unnecessary diagnostic strings in performance-critical data structures without a demonstrated requirement.
+- Diagnostic formatting **SHOULD** use established XII formatting and logging facilities.
+- Error messages **MUST** avoid implying that a handle is valid merely because its encoded value is nonzero.
+
+#### Diagnostic Context
+
+**Prefer:**
 
 ```cpp
-// Safe concept: the owner copies or interns the name.
-[[nodiscard]] xiiRenderGraphHandle CreateGraph(xiiStringView sName);
+xiiLog::Error("Failed to resolve resource '{0}' in simulation context {1}.", sResourceName, uiContextId);
 ```
 
-An API that stores the caller's `xiiStringView` without copying it must document the backing storage's lifetime; otherwise a temporary name can create a dangling reference.
-
-### 11.4 Generation-checked handles
-
-Use an engine handle for objects owned by a manager and referenced by clients. Keep handle types distinct even when they share an underlying ID representation.
+**Avoid:**
 
 ```cpp
-using xiiRenderGraphId = xiiGenericId<24, 8>;
-
-class XII_GRAPHICSCORE_DLL xiiRenderGraphHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphHandle, xiiRenderGraphId);
-};
+xiiLog::Error("Resource lookup failed.");
 ```
 
-**Illustrative:** verify the appropriate ID widths, wraparound policy, and friend declarations in the actual implementation. An eight-bit generation counter eventually wraps; generation checking reduces stale-handle risk but is not mathematically permanent protection against arbitrary reuse.
+The preferred diagnostic identifies the relevant operation and lookup context.
 
-### 11.5 Handles cannot reveal arbitrary ownership automatically
+When name storage is unavailable or unsafe to access, reporting a validated handle representation or other available context may be appropriate.
 
-If a graph handle must identify an owning context, either encode that relationship in the handle format or record it in a registry entry. Do not assume a global ID inherently contains a context ID.
+#### Hash Diagnostics
 
-### 11.6 One authoritative mapping
+A hash value may be useful for debugging lookup behavior, but it should not be presented as definitive proof of resource identity unless the identifier system explicitly guarantees that interpretation.
 
-Prefer a single authoritative registration table and explicit membership/ownership lists. If both a context and a global graph table must be updated, update them atomically under the lifecycle synchronization contract or implement rollback.
+**Guiding principle:**
 
-### 11.7 String comparison semantics
+> Diagnostics should describe the resource and its context, not merely expose an opaque implementation value.
 
-Know whether the operation is a byte comparison, case-folded comparison, a normalized file path comparison, or hashed identity comparison. A hashed value alone may not be sufficient as a unique identifier unless the implementation checks full identity or otherwise defines collision handling.
+### 11.13 Identifier Design and Review
 
-### 11.8 Paths and user-facing strings
+New identifier and handle types **SHOULD** be introduced only when they establish a meaningful distinction in ownership, identity, or validity.
 
-Use platform/path APIs for path construction and normalization. Never assume slash semantics, case sensitivity, or drive letters across Windows, Linux, and macOS. Prefer a clear separation between paths, virtual file-system identifiers, resource identifiers, and user-visible names.
+Do not create additional identifier layers merely to rename existing integer values.
 
----
+#### Design Considerations
+
+Before introducing a new identifier or handle type, determine:
+
+1. **Identity:** What exactly does the identifier represent?
+2. **Authority:** Which subsystem creates and validates it?
+3. **Scope:** Within which registry, context, process, or persistent domain is it unique?
+4. **Lifetime:** When does the identifier become invalid?
+5. **Reuse:** Can the underlying identifier value be reassigned?
+6. **Generation:** Is stale-reference detection required?
+7. **Ownership:** Does possession of the identifier confer ownership or only access?
+8. **Concurrency:** Can lookup and destruction occur concurrently?
+9. **Persistence:** Must the identifier survive process or registry reconstruction?
+10. **Compatibility:** Is the representation part of a public binary or serialized contract?
+
+The selected representation **MUST** satisfy the actual answers to these questions.
+
+Avoid encoding unrelated properties into handles merely because spare bits are available.
+
+Similarly, do not expose internal identifier fields unless consumers have a legitimate need to inspect them.
+
+**Guiding principle:**
+
+> An identifier is an architectural contract. Its type, scope, authority, lifetime, and reuse semantics must be deliberate and consistently enforced.
 
 ## 12. Errors, assertions, diagnostics, and logging
 
@@ -7218,9 +7942,7 @@ Do this where invalid input can reach release builds. Never depend on debug-only
 A diagnostic should say which operation failed, on what object, and with which relevant values. Avoid logging only `"Failed"` or emitting noisy success messages every frame.
 
 ```cpp
-xiiLog::Error(
-  "Failed to compile render graph '{0}' for frame {1}: {2}",
-  sGraphName, uiFrameIndex, sError);
+xiiLog::Error("Failed to compile render graph '{0}' for frame {1}: {2}", sGraphName, uiFrameIndex, sError);
 ```
 
 Use the actual signature of XII's formatting and logging APIs. Do not log secrets, excessive object dumps, or pointers as though they were stable identities.
