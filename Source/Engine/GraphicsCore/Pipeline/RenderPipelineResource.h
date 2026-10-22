@@ -169,7 +169,9 @@ public:
   };
   /// Resolve only definitions reachable from the root. Each independently authored resource is
   /// acquired once, before compilation, so definition recursion cannot deadlock resource loading.
-  static xiiResult ResolveDefinitions(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderPipelineResourceDescriptor& out_resolved, xiiDynamicArray<DefinitionDependency>* out_dependencies = nullptr, xiiStringBuilder* out_error = nullptr);
+  /// Optional editor-side resolution of asset identifiers to compiled resource paths.
+  using ResourceResolver = xiiDelegate<xiiString(xiiStringView)>;
+  static xiiResult ResolveDefinitions(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderPipelineResourceDescriptor& out_resolved, xiiDynamicArray<DefinitionDependency>* out_dependencies = nullptr, xiiStringBuilder* out_error = nullptr, ResourceResolver resourceResolver = {});
 
 private:
   xiiResourceLoadDescription                     UnloadData(Unload whatToUnload) override;

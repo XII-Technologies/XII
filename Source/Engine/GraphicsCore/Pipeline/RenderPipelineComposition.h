@@ -17,12 +17,13 @@ public:
   xiiVariantDictionary                      m_Parameters;
   xiiDynamicArray<xiiGraphPropertyOverride> m_Overrides;
   void                                      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
+  void                                      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiRenderPipelineResource::ResourceResolver resourceResolver) const;
   xiiResult                                 Build(xiiRenderPipelinePassContext&) override { return XII_FAILURE; }
 };
 
 /// Authoring interface node. External inputs have an output pin inside the document; external
 /// outputs have an input pin. Ordinary editor connections define the internal boundary mappings.
-class XII_GRAPHICSCORE_DLL xiiRenderPipelineInterfacePass final : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineInterfacePass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineInterfacePass, xiiRenderPipelinePass);
 
@@ -36,8 +37,23 @@ public:
   xiiResult                     Build(xiiRenderPipelinePassContext&) override { return XII_FAILURE; }
 
 private:
-  xiiStringView GetDataTypeName() const;
-  void          SetDataTypeName(xiiStringView sTypeName);
+  xiiEnum<xiiRenderPipelinePinType> GetResourceType() const { return static_cast<xiiRenderPipelinePinType::Enum>(m_uiResourceType); }
+  void                              SetResourceType(xiiEnum<xiiRenderPipelinePinType> type) { m_uiResourceType = type.GetValue(); }
+  xiiStringView                     GetDataTypeName() const;
+  void                              SetDataTypeName(xiiStringView sTypeName);
+};
+
+/// Compiled input boundary with an internal default. Selects the parent's resource when supplied;
+/// otherwise forwards Default. The editor lowers an interface node to this pass only when its
+/// Default input is connected. Resource creation remains owned by the default's producing pass.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineInputDefaultPass final : public xiiRenderPipelineInterfacePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineInputDefaultPass, xiiRenderPipelineInterfacePass);
+
+public:
+  xiiResult Configure(const xiiVariantDictionary& properties) override;
+  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
+  xiiResult Build(xiiRenderPipelinePassContext& context) override;
 };
 
 /// Infer the external schema from configured reflected internal pass pins, including nested

@@ -135,7 +135,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     const auto* type = definition.m_pType;
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
       return fail("Unknown or abstract render pipeline pass type.");
-    if (type->IsDerivedFrom<xiiRenderPipelineSubgraphPass>() || type->IsDerivedFrom<xiiRenderPipelineInterfacePass>())
+    if (type->IsDerivedFrom<xiiRenderPipelineSubgraphPass>() || type == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
       return fail("Authoring interface and subgraph nodes must be lowered to definition references before compilation.");
     xiiRenderPipelinePass* prototype = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     prototypes.PushBack(prototype);

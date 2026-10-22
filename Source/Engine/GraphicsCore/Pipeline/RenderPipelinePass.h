@@ -55,9 +55,11 @@ public:
   xiiResult GetProperties(xiiVariantDictionary& out_properties) const;
   /// Static pins are discovered from typed XII_MEMBER_PROPERTY members. Only
   /// authoring interfaces whose topology comes from another definition are dynamic.
-  virtual void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const;
-  xiiResult                                           InitializePinBindings(xiiArrayPtr<const xiiRenderPipelinePin> pins) const;
-  xiiResult                                           GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
+  virtual void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const;
+  xiiResult    InitializePinBindings(xiiArrayPtr<const xiiRenderPipelinePin> pins) const;
+  xiiResult    GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
+  /// Apply the same authored contracts to declarations resolved by an external authoring context.
+  xiiResult                                           GetConfiguredPins(xiiArrayPtr<const xiiRenderPipelinePin> declarations, xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
   virtual xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const { return {}; }
   virtual xiiBitflags<xiiRenderExtractionCategory>    GetExtractionRequirements() const { return {}; }
   virtual xiiBitflags<xiiRenderPipelineFeature>       GetRuntimeFeatures() const { return {}; }

@@ -92,6 +92,13 @@ xiiResult xiiRenderPipelinePass::GetConfiguredPins(xiiDynamicArray<xiiRenderPipe
 {
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   GetPins(pins);
+  return GetConfiguredPins(pins.GetArrayPtr(), out_pins, out_error);
+}
+
+xiiResult xiiRenderPipelinePass::GetConfiguredPins(xiiArrayPtr<const xiiRenderPipelinePin> declarations, xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error) const
+{
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pins = declarations;
   if (m_PinConfigurations.GetCount() > 256)
     return XII_FAILURE;
   xiiHashSet<xiiString> configured;

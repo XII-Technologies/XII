@@ -2,6 +2,7 @@
 
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -72,6 +73,80 @@ namespace
     return configuration;
   }
 } // namespace
+
+XII_CREATE_SIMPLE_TEST(Pipeline, DefaultedPipelineInput)
+{
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Default resource", xiiGetStaticRTTI<xiiContractPipelinePass>());
+  xiiVariantDictionary properties;
+  properties.Insert("Format", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA16Float));
+  definition.AddPass("Input boundary", xiiGetStaticRTTI<xiiRenderPipelineInputDefaultPass>(), properties);
+  XII_TEST_RESULT(definition.Connect(0, "Texture", 1, "Default"));
+  definition.m_Interface.PushBack({"Color", true, definition.m_Passes[1].m_Id, "Override"});
+  definition.m_Interface.PushBack({"Color", false, definition.m_Passes[1].m_Id, "Value"});
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, compiled)))
+    return;
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  const auto input  = compiled->FindInterface("Color", true);
+  const auto output = compiled->FindInterface("Color", false);
+  XII_TEST_BOOL(compiled->GetInterface()[input].m_Pin.m_bOptional);
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  for (xiiUInt32 frame = 0; frame < 3; ++frame)
+  {
+    graph.BeginSetup(frame);
+    xiiHybridArray<xiiRenderPipelineInputBinding, 1> inputs;
+    xiiRenderGraphTextureHandle                      external;
+    if (frame == 1)
+    {
+      struct Data
+      {
+        xiiRenderGraphTextureHandle m_Texture;
+      };
+      const auto emitted = graph.AddPass<Data>("Parent resource", xiiGALCommandQueueFlags::Compute, [](Data& data, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription description;
+        description.m_Type = xiiGALResourceDimension::Texture2D;
+        description.m_Size = {32, 16};
+        description.m_Format = xiiGALResourceFormat::RGBA16Float;
+        description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+        data.m_Texture = builder.WriteTexture("Parent", description, xiiGALResourceStateFlags::UnorderedAccess); }, [](const Data&, xiiRenderGraphPassContext&) {});
+      external           = emitted.first->m_Texture;
+      inputs.PushBack({graph, input, external});
+    }
+    XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard, {}, inputs));
+    const auto* binding = instance.GetInterfaceBinding(output);
+    if (XII_TEST_BOOL(binding && graph.GetTextureDescription(binding->m_hTexture)))
+    {
+      XII_TEST_INT(graph.GetTextureDescription(binding->m_hTexture)->m_Size.width, frame == 1 ? 32 : 16);
+      if (frame == 1)
+        XII_TEST_BOOL(binding->m_hTexture == external);
+    }
+    graph.EndSetup();
+  }
+
+  const auto                          childId = definition.m_Id;
+  const auto                          child   = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("DefaultInputChild", std::move(definition));
+  xiiRenderPipelineResourceDescriptor middle;
+  middle.AddSubgraph("Nested", childId);
+  middle.m_References.PushBack({childId, "UnresolvedChildAsset"});
+  middle.m_Interface.PushBack({"Color", true, middle.m_Passes[0].m_Id, "Color"});
+  middle.m_Interface.PushBack({"Color", false, middle.m_Passes[0].m_Id, "Color"});
+  const auto                    nested = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("DefaultInputNested", std::move(middle));
+  xiiRenderPipelineSubgraphPass occurrence;
+  occurrence.m_sResource = "UnresolvedNestedAsset";
+  const auto resolve     = [&](xiiStringView id) -> xiiString {
+    if (id == "UnresolvedChildAsset")
+      return child.GetResourceID();
+    if (id == "UnresolvedNestedAsset")
+      return nested.GetResourceID();
+    return xiiString(id);
+  };
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  occurrence.GetPins(pins, resolve);
+  XII_TEST_INT(pins.GetCount(), 2);
+}
 
 XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinContracts)
 {
