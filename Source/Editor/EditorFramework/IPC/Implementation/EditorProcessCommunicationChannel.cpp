@@ -2,11 +2,62 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Communication/IpcChannel.h>
 #include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/System/Process.h>
+#include <QEventLoop>
+#include <QThread>
+
+xiiResult xiiEditorProcessCommunicationChannel::WaitForStartup(const xiiRTTI* pResponseType)
+{
+  XII_ASSERT_DEV(QThread::currentThread() == qApp->thread(), "Interactive startup waits require the GUI thread.");
+  if (!m_pChannel || !m_pClientProcess)
+    return XII_FAILURE;
+  QEventLoop loop;
+  auto*      pEditor = xiiQtEditorApp::GetSingleton();
+  QObject::connect(pEditor, &xiiQtEditorApp::StartupQuitRequested, &loop, &QEventLoop::quit);
+  // IPC broadcasts may originate on its I/O thread. Subscription teardown joins broadcasts,
+  // and receiver-bound invocations disappear before the stack-owned loop can be destroyed.
+  xiiEvent<const xiiIpcChannelEvent&, xiiMutex>::Unsubscriber channelSubscription;
+  m_pChannel->m_Events.AddEventHandler([&loop](const xiiIpcChannelEvent&) {
+    QMetaObject::invokeMethod(&loop, "quit", Qt::QueuedConnection);
+  },
+                                       channelSubscription);
+  QObject::connect(m_pClientProcess, &QProcess::finished, &loop, &QEventLoop::quit);
+  QObject::connect(m_pClientProcess, &QProcess::errorOccurred, &loop, &QEventLoop::quit);
+  bool                                 bReceived = false;
+  xiiEvent<const Event&>::Unsubscriber messageSubscription;
+  if (pResponseType)
+  {
+    m_Events.AddEventHandler([&](const Event& e) {
+      if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom(pResponseType))
+        bReceived = true;
+    },
+                             messageSubscription);
+  }
+  while (IsClientAlive())
+  {
+    if (pEditor->WasStartupQuitRequested())
+      return XII_FAILURE;
+    if (pResponseType)
+    {
+      ProcessMessages();
+      if (bReceived)
+        return XII_SUCCESS;
+      if (!IsConnected())
+        return XII_FAILURE;
+    }
+    else if (IsConnected())
+      return XII_SUCCESS;
+    // Existing waits are unbounded. Keep that contract, but service expose, timers and IPC
+    // notifications while editing commands remain excluded. No polling or artificial delay.
+    loop.exec(QEventLoop::ExcludeUserInputEvents);
+  }
+  return XII_FAILURE;
+}
 
 xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(const char* szProcess, const QStringList& args, bool bRemote, const xiiRTTI* pFirstAllowedMessageType, xiiUInt32 uiMemSize)
 {

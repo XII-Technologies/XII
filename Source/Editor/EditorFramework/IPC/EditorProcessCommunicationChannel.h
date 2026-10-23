@@ -19,6 +19,10 @@ public:
 
   bool IsClientAlive() const;
 
+  /// Event-driven GUI-thread wait used only during interactive Editor startup. A null type waits
+  /// for connection; otherwise dispatches IPC until the requested response or disconnection.
+  xiiResult WaitForStartup(const xiiRTTI* pResponseType = nullptr);
+
   void CloseConnection();
 
   xiiString GetStdoutContents();

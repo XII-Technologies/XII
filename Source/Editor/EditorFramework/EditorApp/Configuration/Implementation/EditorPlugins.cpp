@@ -180,6 +180,9 @@ void xiiQtEditorApp::DetectAvailablePluginBundles(xiiStringView sSearchDirectory
     xiiFileSystemIterator fsit;
     for (fsit.StartSearch(sSearch.GetData(), xiiFileSystemIteratorFlags::ReportFiles); fsit.IsValid(); fsit.Next())
     {
+      UpdateStartupProgress(QStringLiteral("Discovering plugin bundles"), xiiMakeQString(fsit.GetStats().m_sName));
+      if (m_bStartupInProgress && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::Background | StartupFlags::UnitTest))
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
       sPlugin = fsit.GetStats().m_sName;
       sPlugin.RemoveFileExtension();
 

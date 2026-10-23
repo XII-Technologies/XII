@@ -379,9 +379,12 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
 
   xiiLog::Dev("Waiting for IPC connection");
 
-  if (m_IPC.WaitForConnection(xiiTime()).Failed())
+  auto*      pEditor             = xiiQtEditorApp::GetSingleton();
+  const bool bInteractiveStartup = pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsBackgroundMode() && !pEditor->IsInUnitTestMode();
+  if ((bInteractiveStartup ? m_IPC.WaitForStartup() : m_IPC.WaitForConnection(xiiTime())).Failed())
   {
-    xiiLog::Error("Engine process did not connect. Engine process output:\n{}", m_IPC.GetStdoutContents());
+    if (!pEditor->WasStartupQuitRequested())
+      xiiLog::Error("Engine process did not connect. Engine process output:\n{}", m_IPC.GetStdoutContents());
     ShutdownProcess();
     return XII_FAILURE;
   }
@@ -400,9 +403,10 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
 
   xiiLog::Dev("Waiting for Engine Process response");
 
-  if (WaitForMessage(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>(), xiiTime()).Failed())
+  if ((bInteractiveStartup ? m_IPC.WaitForStartup(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>()) : WaitForMessage(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>(), xiiTime())).Failed())
   {
-    xiiLog::Error("Failed to restart the engine process. Engine Process Output:\n", m_IPC.GetStdoutContents());
+    if (!pEditor->WasStartupQuitRequested())
+      xiiLog::Error("Failed to restart the engine process. Engine Process Output:\n", m_IPC.GetStdoutContents());
     ShutdownProcess();
     return XII_FAILURE;
   }

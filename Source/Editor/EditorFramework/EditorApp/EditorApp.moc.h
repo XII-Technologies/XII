@@ -33,7 +33,7 @@ class QList;
 using QStringList = QList<QString>;
 class xiiTranslatorFromFiles;
 class xiiDynamicStringEnum;
-class QSplashScreen;
+class xiiQtEditorSplashScreen;
 class xiiQtVersionChecker;
 class xiiQtEditorSystemTray;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
@@ -138,6 +138,11 @@ public:
   /// Returns true if the editor is started in run in background mode.
   bool IsBackgroundMode() const { return m_StartupFlags.IsSet(StartupFlags::Background); }
 
+  /// Startup remains on the GUI thread. Event-driven waits may service Qt without allowing editing.
+  bool IsStartingUp() const { return m_bStartupInProgress; }
+  bool WasStartupQuitRequested() const { return m_bStartupQuitRequested; }
+  void UpdateStartupProgress(const QString& sStage, const QString& sDetail = {}, xiiUInt32 uiCompleted = 0, xiiUInt32 uiTotal = 0);
+
   const xiiPluginBundleSet& GetPluginBundles() const { return m_PluginBundles; }
   xiiPluginBundleSet&       GetPluginBundles() { return m_PluginBundles; }
 
@@ -241,6 +246,7 @@ public:
 
 Q_SIGNALS:
   void IdleEvent();
+  void StartupQuitRequested();
 
   /// External tools and C++ builds have no reliable percentage. Each start has one matching finish,
   /// including failures, with the same copied display label. An empty label denotes an unspecified tool.
@@ -256,6 +262,8 @@ Q_SIGNALS:
 private:
   friend struct xiiEditorSystemTrayTest;
   friend struct xiiWindowsNotificationsTest;
+  friend struct xiiEditorSplashScreenTest;
+  bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 
   xiiString BuildDocumentTypeFileFilter(bool bForCreation);
 
@@ -309,6 +317,8 @@ private:
   bool m_bAnyProjectOpened         = false;
   bool m_bWroteCrashIndicatorFile  = false;
   bool m_bIsRunning                = false;
+  bool m_bStartupInProgress        = false;
+  bool m_bStartupQuitRequested     = false;
 
   xiiBitflags<StartupFlags>  m_StartupFlags;
   xiiDynamicArray<xiiString> m_DocumentsToOpen;
@@ -331,8 +341,8 @@ private:
   xiiEditorEngineProcessConnection* m_pEngineViewProcess;
   QTimer*                           m_pTimer = nullptr;
 
-  QSplashScreen* m_pSplashScreen = nullptr;
-  QTimer*        m_pAutoSaveTimer;
+  xiiQtEditorSplashScreen* m_pSplashScreen = nullptr;
+  QTimer*                  m_pAutoSaveTimer;
 
   xiiLogWriter::HTML m_LogHTML;
 
