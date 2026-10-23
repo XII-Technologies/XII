@@ -29,6 +29,7 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QWindow>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 #include <ads/DockManager.h>
 #include <ads/DockWidget.h>
@@ -71,13 +72,19 @@ public:
 
   bool eventFilter(QObject* pObject, QEvent* pEvent) override
   {
-    if (m_bDismissDiagnostics && pEvent->type() == QEvent::Show)
+    if ((m_bDismissDiagnostics || m_bIgnoreProjectQuestions) && pEvent->type() == QEvent::Show)
     {
       if (auto* pDialog = qobject_cast<QMessageBox*>(pObject))
       {
         ++m_uiDiagnosticShows;
         XII_TEST_BOOL(!xiiQtContainerWindow::GetContainerWindow()->isVisible());
-        QTimer::singleShot(0, pDialog, &QDialog::accept);
+        if (m_bIgnoreProjectQuestions)
+        {
+          XII_TEST_BOOL(pDialog->standardButtons().testFlag(QMessageBox::Ignore));
+          QTimer::singleShot(0, pDialog, [pDialog]() { pDialog->done(QMessageBox::Ignore); });
+        }
+        else
+          QTimer::singleShot(0, pDialog, &QDialog::accept);
       }
     }
     const bool bContainer = qobject_cast<xiiQtContainerWindow*>(pObject) != nullptr;
@@ -99,11 +106,12 @@ public:
     return false;
   }
 
-  bool      m_bAllowPresentation  = false;
-  bool      m_bDismissDiagnostics = false;
-  xiiUInt32 m_uiDiagnosticShows   = 0;
-  xiiUInt32 m_uiContainerShows    = 0;
-  xiiUInt32 m_uiFloatingShows     = 0;
+  bool      m_bAllowPresentation      = false;
+  bool      m_bDismissDiagnostics     = false;
+  bool      m_bIgnoreProjectQuestions = false;
+  xiiUInt32 m_uiDiagnosticShows       = 0;
+  xiiUInt32 m_uiContainerShows        = 0;
+  xiiUInt32 m_uiFloatingShows         = 0;
 };
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorSplash);
@@ -383,14 +391,15 @@ XII_CREATE_SIMPLE_TEST(EditorStartupVisibility, DeferredWorkspace)
   XII_TEST_INT(observer.m_uiContainerShows, 1);
 }
 
-static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = false)
+static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = false, bool bInteractive = false)
 {
   StartupWindowObserver observer;
-  observer.m_bAllowPresentation  = true;
-  observer.m_bDismissDiagnostics = bOpenMissingProject;
-  auto&           editor         = *xiiQtEditorApp::GetSingleton();
-  auto*           pApplication   = xiiApplication::GetApplicationInstance();
-  const xiiString sName          = pApplication->GetApplicationName();
+  observer.m_bAllowPresentation      = true;
+  observer.m_bDismissDiagnostics     = bOpenMissingProject;
+  observer.m_bIgnoreProjectQuestions = bInteractive;
+  auto&           editor             = *xiiQtEditorApp::GetSingleton();
+  auto*           pApplication       = xiiApplication::GetApplicationInstance();
+  const xiiString sName              = pApplication->GetApplicationName();
   pApplication->SetApplicationName("xiiEditor");
   XII_SCOPE_EXIT(pApplication->SetApplicationName(sName));
   xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/StartupVisibilityPreferences");
@@ -399,12 +408,23 @@ static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = f
   auto  arguments = command.GetCommandLineArray();
   XII_SCOPE_EXIT(command.SetCommandLine(arguments));
   const xiiStringBuilder project(preferences, bOpenMissingProject ? "/MissingProject/xiiProject" : "/StartupProject/xiiProject");
+  const bool             bRestoreRecentProject = bInteractive && xiiOSFile::ExistsFile(xiiStringBuilder(preferences, "/Settings/RecentProjects.txt"));
+  if (bInteractive && !xiiOSFile::ExistsFile(project))
+  {
+    // Prepare an existing empty project through ToolsFoundation. A default scene would
+    // exercise asset transformation/rendering rather than the startup IPC handshake.
+    XII_TEST_BOOL(xiiToolsProject::CreateProject(project).Succeeded());
+    xiiToolsProject::CloseProject();
+  }
   if (bOpenMissingProject || bOpenProject)
   {
     xiiDynamicArray<xiiString> projectArguments;
     projectArguments.PushBack("xiiEditor");
-    projectArguments.PushBack(bOpenProject && !xiiOSFile::ExistsFile(project) ? "-newproject" : "-project");
-    projectArguments.PushBack(project);
+    if (!bRestoreRecentProject)
+    {
+      projectArguments.PushBack(bOpenProject && !xiiOSFile::ExistsFile(project) ? "-newproject" : "-project");
+      projectArguments.PushBack(project);
+    }
     command.SetCommandLine(projectArguments);
   }
   QPointer<xiiQtEditorSplashScreen>                splash;
@@ -415,7 +435,8 @@ static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = f
     auto* pWindow = xiiQtContainerWindow::GetContainerWindow();
     XII_TEST_BOOL(!pWindow->isVisible());
     XII_TEST_BOOL(!pWindow->IsWindowPresentationEnabled());
-    xiiEditorSplashScreenTest::Attach(editor);
+    if (!xiiEditorSplashScreenTest::Splash(editor))
+      xiiEditorSplashScreenTest::Attach(editor);
     splash = xiiEditorSplashScreenTest::Splash(editor);
     splash->SetEditorWindow(pWindow);
     splash->show();
@@ -448,8 +469,40 @@ static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = f
     }
   },
                                            subscription);
-  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent, preferences);
+  class StartupLog : public xiiTestLogInterface
+  {
+  public:
+    void HandleLogMessage(const xiiLoggingEventData& e) override
+    {
+      if (e.m_EventType == xiiLogMsgType::WarningMsg && e.m_sText.FindSubString("Ignored send message of type xiiSyncWithProcessMsgToEngine"))
+        ++m_uiRejectedSyncMessages;
+      xiiTestLogInterface::HandleLogMessage(e);
+    }
+    xiiUInt32 m_uiRejectedSyncMessages = 0;
+  } log;
+  xiiTestLogSystemScope                                                  logScope(&log);
+  xiiUInt32                                                              uiStartupTicks = 0;
+  xiiEvent<const xiiEditorEngineProcessConnection::Event&>::Unsubscriber engineSubscription;
+  if (bInteractive)
+  {
+    xiiEditorEngineProcessConnection::s_Events.AddEventHandler([&](const xiiEditorEngineProcessConnection::Event& e) {
+      if (e.m_Type != xiiEditorEngineProcessConnection::Event::Type::ProcessStarted)
+        return;
+      XII_TEST_BOOL(editor.IsStartingUp());
+      XII_TEST_BOOL(!editor.IsInUnitTestMode());
+      XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup());
+      // Exercise a redraw tick before setup deterministically, as well as real queued ticks
+      // during the interactive connection/project-ready waits. Never wait on a rejected sync.
+      xiiQtUiServices::TickEvent tick;
+      tick.m_Type = xiiQtUiServices::TickEvent::Type::EndFrame;
+      xiiQtUiServices::s_TickEvent.Broadcast(tick);
+      ++uiStartupTicks;
+    },
+                                                               engineSubscription);
+  }
+  editor.StartupEditor(bInteractive ? xiiBitflags<xiiQtEditorApp::StartupFlags>(xiiQtEditorApp::StartupFlags::Default) : xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent, preferences);
   XII_SCOPE_EXIT(editor.ShutdownEditor());
+  XII_TEST_INT(log.m_uiRejectedSyncMessages, 0);
   auto* pWindow = xiiQtContainerWindow::GetContainerWindow();
   XII_TEST_BOOL(!editor.IsStartingUp());
   XII_TEST_BOOL(splash.isNull());
@@ -459,10 +512,30 @@ static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = f
   {
     XII_TEST_BOOL(xiiToolsProject::IsProjectOpen());
     XII_TEST_BOOL(xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup());
+    XII_TEST_STRING(xiiToolsProject::GetSingleton()->GetProjectFile(), project);
+    if (bInteractive)
+    {
+      XII_TEST_INT(uiStartupTicks, 1);
+      auto&                                                                channel       = xiiEditorEngineProcessConnection::GetSingleton()->GetCommunicationChannel();
+      bool                                                                 bSynchronized = false;
+      xiiEvent<const xiiProcessCommunicationChannel::Event&>::Unsubscriber syncSubscription;
+      channel.m_Events.AddEventHandler([&](const xiiProcessCommunicationChannel::Event& e) {
+        if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiSyncWithProcessMsgToEditor>())
+          bSynchronized = true;
+      },
+                                       syncSubscription);
+      xiiQtUiServices::TickEvent tick;
+      tick.m_Type = xiiQtUiServices::TickEvent::Type::EndFrame;
+      xiiQtUiServices::s_TickEvent.Broadcast(tick);
+      if (!bSynchronized)
+        XII_TEST_RESULT(channel.WaitForMessage(xiiGetStaticRTTI<xiiSyncWithProcessMsgToEditor>(), xiiTime::MakeFromSeconds(5)));
+      XII_TEST_BOOL(bSynchronized);
+    }
   }
   XII_TEST_INT(observer.m_uiContainerShows, 1);
   XII_TEST_INT(observer.m_uiFloatingShows, 1);
-  XII_TEST_INT(observer.m_uiDiagnosticShows, bOpenMissingProject ? 1 : 0);
+  if (!bInteractive)
+    XII_TEST_INT(observer.m_uiDiagnosticShows, bOpenMissingProject ? 1 : 0);
   QApplication::processEvents();
   XII_TEST_INT(observer.m_uiContainerShows, 1);
   pWindow->SaveWindowLayout();
@@ -486,4 +559,13 @@ XII_CREATE_SIMPLE_TEST_GROUP(EditorProjectStartupVisibility);
 XII_CREATE_SIMPLE_TEST(EditorProjectStartupVisibility, ProjectLoading)
 {
   RunStartupVisibility(false, true);
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorInteractiveProjectStartup);
+
+XII_CREATE_SIMPLE_TEST(EditorInteractiveProjectStartup, ProjectLoading)
+{
+  // First run opens an existing project. A second fresh process with the same output directory
+  // reopens it from the real recent-project history, without explicit project arguments.
+  RunStartupVisibility(false, true, true);
 }
