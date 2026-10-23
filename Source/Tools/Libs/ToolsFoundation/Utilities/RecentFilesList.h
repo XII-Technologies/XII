@@ -35,6 +35,9 @@ public:
   /// Moves the inserted file to the front with the given container ID.
   void Insert(xiiStringView sFile, xiiInt32 iContainerWindow);
 
+  /// Removes a file without changing the order of the remaining entries. Returns whether it was present.
+  bool Remove(xiiStringView sFile);
+
   /// Returns all files in the list.
   const xiiDeque<RecentFile>& GetFileList() const { return m_Files; }
 
