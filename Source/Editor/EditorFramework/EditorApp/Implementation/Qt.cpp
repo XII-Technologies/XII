@@ -10,6 +10,8 @@
 
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 
+#include <QIcon>
+
 #ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
 
 int lua_SetColor(lua_State* s)
@@ -109,6 +111,8 @@ void xiiQtEditorApp::InitQt(xiiInt32 iArgc, char** pArgv)
     m_iArgc          = iArgc;
     m_pQtApplication = new QApplication(m_iArgc, pArgv);
     m_pQtApplication->setProperty("Shared", QVariant::fromValue((xiiInt32)1));
+    // Set the default icon before creating splash screens, dialogs, or editor windows.
+    m_pQtApplication->setWindowIcon(QIcon(QStringLiteral(":/GuiFoundation/XII-Logo.svg")));
 
     // Locale fixes required by various third party libraries like RmlGui.
     QLocale::setDefault(QLocale::C);
