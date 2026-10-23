@@ -21,6 +21,7 @@
 #include <ToolsFoundation/Utilities/RecentFilesList.h>
 
 #include <QApplication>
+#include <QString>
 
 class QMainWindow;
 class QWidget;
@@ -34,6 +35,7 @@ class xiiTranslatorFromFiles;
 class xiiDynamicStringEnum;
 class QSplashScreen;
 class xiiQtVersionChecker;
+class xiiQtEditorSystemTray;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 class xiiWindowsTaskbar;
 #endif
@@ -236,14 +238,17 @@ public:
 Q_SIGNALS:
   void IdleEvent();
 
-  /// External tools and C++ builds have no reliable percentage. Each start has one matching finish, including failures.
-  void ToolExecutionStarted();
-  void ToolExecutionFinished(bool bSucceeded);
+  /// External tools and C++ builds have no reliable percentage. Each start has one matching finish,
+  /// including failures, with the same copied display label. An empty label denotes an unspecified tool.
+  void ToolExecutionStarted(const QString& sOperation = {});
+  void ToolExecutionFinished(bool bSucceeded, const QString& sOperation = {});
 
   /// Reports actionable configuration changes, independently of log history and informational status text.
   void RequiredActionsChanged(bool bRestartRequired, bool bReloadProjectRequired);
 
 private:
+  friend struct xiiEditorSystemTrayTest;
+
   xiiString BuildDocumentTypeFileFilter(bool bForCreation);
 
   void GuiCreateOrOpenDocument(bool bCreate);
@@ -335,8 +340,9 @@ public:
   bool IsProgressBarProcessingEvents() const;
 
 private:
-  xiiProgress*      m_pProgressbar   = nullptr;
-  xiiQtProgressbar* m_pQtProgressbar = nullptr;
+  xiiProgress*           m_pProgressbar   = nullptr;
+  xiiQtProgressbar*      m_pQtProgressbar = nullptr;
+  xiiQtEditorSystemTray* m_pSystemTray    = nullptr;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   xiiWindowsTaskbar* m_pTaskbar = nullptr;
 #endif

@@ -832,10 +832,11 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
 
   XII_LOG_BLOCK("Compile C++ Plugin");
 
-  auto* pEditor    = xiiQtEditorApp::GetSingleton();
-  bool  bSucceeded = false;
-  Q_EMIT pEditor->ToolExecutionStarted();
-  XII_SCOPE_EXIT(Q_EMIT pEditor->ToolExecutionFinished(bSucceeded));
+  auto*         pEditor    = xiiQtEditorApp::GetSingleton();
+  bool          bSucceeded = false;
+  const QString sOperation = QStringLiteral("Building C++ project");
+  Q_EMIT pEditor->ToolExecutionStarted(sOperation);
+  XII_SCOPE_EXIT(Q_EMIT pEditor->ToolExecutionFinished(bSucceeded, sOperation));
 
   xiiStringBuilder sBuildOutput;
   xiiMutex         outputMutex;

@@ -19,6 +19,7 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/EditorApp/StackTraceLogParser.h>
 #include <EditorFramework/GUI/DynamicDefaultStateProvider.h>
+#include <EditorFramework/GUI/EditorSystemTray.h>
 #include <EditorFramework/GUI/ExposedParametersDefaultStateProvider.h>
 #include <EditorFramework/Manipulators/BoneManipulatorAdapter.h>
 #include <EditorFramework/Manipulators/BoxManipulatorAdapter.h>
@@ -316,6 +317,10 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
     m_pTaskbar = XII_DEFAULT_NEW(xiiWindowsTaskbar, *this, *pContainer, *m_pProgressbar);
 #endif
+#if QT_CONFIG(systemtrayicon)
+    if (m_StartupFlags.AreNoneSet(StartupFlags::UnitTest | StartupFlags::Background))
+      m_pSystemTray = XII_DEFAULT_NEW(xiiQtEditorSystemTray, *this, *pContainer, *m_pProgressbar);
+#endif
     // Observe progress before the dialog can pump nested Qt events.
     m_pQtProgressbar->SetProgressbar(m_pProgressbar);
     pContainer->show();
@@ -493,6 +498,11 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 void xiiQtEditorApp::ShutdownEditor()
 {
   m_bIsRunning = false;
+
+#if QT_CONFIG(systemtrayicon)
+  // Remove the tray entry and its commands before shutdown can pump nested UI events.
+  XII_DEFAULT_DELETE(m_pSystemTray);
+#endif
 
   xiiStackTraceLogParser::Unregister();
 
