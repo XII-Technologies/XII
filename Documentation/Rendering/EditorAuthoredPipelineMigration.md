@@ -1054,3 +1054,20 @@ The full goal remains active. Meshlet culling, Hi-Z, LOD feedback, indirect work
 authored native visibility assets, geometry/lighting/shadow paths and complete
 renderer graphs are still pending. No legacy runtime or compatibility pipeline was
 restored to make these tests pass.
+
+Texture output pins own a reflected `Resolution` policy: `Viewport` uses the
+view's native viewport, `RenderResolution` uses its scaled internal extent,
+`Input` uses a connected texture (optionally named), and `Fixed` uses authored
+width and height. A positive proportional scale applies after selecting the base
+extent, rounding up to cover odd dimensions. `Unspecified` retains the operation's
+native domain and imposes no input extent requirement. Width/height connection
+requirements validate existing resources; they never resize inputs or allocate.
+
+Resolution is resolved during graph construction. The compiled pipeline stores
+only policies, remains immutable and can be shared by differently sized views.
+Viewport/internal extent changes invalidate instance-local history before previous
+resources are published. Imported textures retain their descriptions. Lookup
+textures, shadow layouts and matrix-driven offscreen dimensions remain algorithm
+owned. Presentation uses the view viewport within its imported output target.
+Creation, clearing, depth allocation and upscaling use pin settings directly;
+there are no legacy size aliases or document migration fixtures.

@@ -80,6 +80,7 @@ namespace
       pin.m_bOptional              = schema.m_bOptional;
       pin.m_bTemporalHistoryOutput = schema.m_bTemporalHistory;
       pin.m_Constraints            = configuration->m_Constraints;
+      pin.m_Resolution             = configuration->m_Resolution;
       pin.m_sDisplayName           = configuration->m_sDisplayName;
       pin.m_SourceId               = configuration->m_Id;
       out_pins.PushBack(pin);
@@ -120,6 +121,15 @@ namespace
   {
     const auto* object = event.m_pObject;
     auto&       states = *event.m_pPropertyStates;
+    if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelineTextureResolution>())
+    {
+      const auto mode              = object->GetTypeAccessor().GetValue("Mode").ConvertTo<xiiUInt32>();
+      const bool dimensions        = mode == xiiRenderPipelineTextureResolutionMode::Fixed;
+      states["Width"].m_Visibility = states["Height"].m_Visibility = dimensions ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Input"].m_Visibility                                 = mode == xiiRenderPipelineTextureResolutionMode::Input ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Scale"].m_Visibility                                 = mode == xiiRenderPipelineTextureResolutionMode::Unspecified ? xiiPropertyUiState::Invisible : xiiPropertyUiState::Default;
+      return;
+    }
     if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelinePinMetadata>())
     {
       const auto kind                       = object->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
@@ -164,6 +174,7 @@ namespace
     {
       states["RequiredFormat"].m_Visibility = editableTexture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
       states["Requirements"].m_Visibility   = editableTexture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Resolution"].m_Visibility     = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
     }
   }
 
@@ -290,7 +301,7 @@ void xiiRenderPipelineNodeManager::AssetCuratorEventHandler(const xiiAssetCurato
       }
       const auto& previous = static_cast<const xiiPipelineEditorPin*>(current)->m_Schema;
       changed |= previous.m_Type != pin.m_Type || previous.m_Format != pin.m_Format || previous.m_pDataType != pin.m_pDataType || previous.m_bOptional != pin.m_bOptional ||
-        previous.m_Access != pin.m_Access || previous.m_bTemporalHistoryOutput != pin.m_bTemporalHistoryOutput ||
+        previous.m_Resolution != pin.m_Resolution || previous.m_Access != pin.m_Access || previous.m_bTemporalHistoryOutput != pin.m_bTemporalHistoryOutput ||
         previous.m_Constraints.m_Dimension != pin.m_Constraints.m_Dimension || previous.m_Constraints.m_uiSamples != pin.m_Constraints.m_uiSamples ||
         previous.m_Constraints.m_uiWidth != pin.m_Constraints.m_uiWidth || previous.m_Constraints.m_uiHeight != pin.m_Constraints.m_uiHeight ||
         previous.m_Constraints.m_RequiredBindFlags != pin.m_Constraints.m_RequiredBindFlags || previous.m_sDisplayName != pin.m_sDisplayName;
@@ -547,6 +558,7 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
       requirements.m_Id          = node->GetGuid();
       requirements.m_Format      = pin.m_Format;
       requirements.m_Constraints = pin.m_Constraints;
+      requirements.m_Resolution  = pin.m_Resolution;
       if (native.m_Type != pin.m_Type || (pin.m_pDataType && native.m_pDataType != pin.m_pDataType) || native.Apply(requirements).Failed())
       {
         xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
@@ -558,6 +570,7 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
       {
         requirements.m_Format      = native.m_Format;
         requirements.m_Constraints = native.m_Constraints;
+        requirements.m_Resolution  = native.m_Resolution;
         if (!pin.IsCompatibleWith(native) || pin.Apply(requirements).Failed())
           xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
         pin.m_bOptional &= native.m_bOptional;
@@ -574,6 +587,7 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
     configuration->m_Metadata                        = pin.GetMetadata();
     configuration->m_Format                          = pin.m_Format;
     configuration->m_Constraints                     = pin.m_Constraints;
+    configuration->m_Resolution                      = pin.m_Resolution;
     configuration->m_sDisplayName                    = pin.m_sDisplayName;
     bool merged                                      = false;
     for (auto* existing : metadata->m_Pins)
@@ -586,6 +600,7 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
         {
           existing->m_Format      = combined.m_Format;
           existing->m_Constraints = combined.m_Constraints;
+          existing->m_Resolution  = combined.m_Resolution;
           existing->m_Metadata.m_bOptional &= pin.m_bOptional;
         }
         merged = true;
@@ -725,6 +740,7 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
         configuration->m_Metadata                        = pin.GetMetadata();
         configuration->m_Format                          = pin.m_Format;
         configuration->m_Constraints                     = pin.m_Constraints;
+        configuration->m_Resolution                      = pin.m_Resolution;
         configuration->m_sDisplayName                    = pin.m_sDisplayName;
         pass->m_PinConfigurations.PushBack(configuration);
       }
