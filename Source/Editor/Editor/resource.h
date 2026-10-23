@@ -4,7 +4,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by Editor.rc
 //
-#define IDI_ICON1 101
+// Keep IDI_ICON1 as a named resource: Qt loads it by name for native window icons.
 
 // Next default values for new objects
 //
