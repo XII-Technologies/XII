@@ -10,7 +10,7 @@
 #include <Foundation/Strings/StringUtils.h>
 #include <FoundationTest/IO/JSONTestHelpers.h>
 
-static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData);
+static xiiVariant CreateVariant(xiiVariant::Type::Enum type);
 
 XII_CREATE_SIMPLE_TEST(IO, DdlUtils)
 {
@@ -901,18 +901,10 @@ TempHashedString $v14 { uint64 { 2720389094277464445 } }\
   // This test also covers all the types that Variant supports.
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreVariant")
   {
-    alignas(alignof(float)) xiiUInt8 rawData[sizeof(float) * 16]; // Enough for mat4
-
-    for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(rawData); ++i)
-    {
-      rawData[i] = i + 33;
-    }
-
-    rawData[XII_ARRAY_SIZE(rawData) - 1] = 0; // string terminator
-
     for (xiiUInt32 t = xiiVariant::Type::FirstStandardType + 1; t < xiiVariant::Type::LastStandardType; ++t)
     {
-      const xiiVariant var = CreateVariant((xiiVariant::Type::Enum)t, rawData);
+      const xiiVariant var = CreateVariant(static_cast<xiiVariant::Type::Enum>(t));
+      XII_TEST_INT(var.GetType(), t == xiiVariant::Type::StringView ? xiiVariant::Type::String : t);
 
       xiiDefaultMemoryStreamStorage storage;
       xiiMemoryStreamWriter         writer(&storage);
@@ -925,129 +917,126 @@ TempHashedString $v14 { uint64 { 2720389094277464445 } }\
       xiiOpenDdlUtils::StoreVariant(js, var, "bla");
 
       xiiOpenDdlReader doc;
-      XII_TEST_BOOL(doc.ParseDocument(reader).Succeeded());
+      if (!XII_TEST_RESULT(doc.ParseDocument(reader)))
+        continue;
 
-      const auto pVarElem = doc.GetRootElement()->FindChild("bla");
+      const auto* pVarElem = doc.GetRootElement()->FindChild("bla");
 
       xiiVariant result;
-      xiiOpenDdlUtils::ConvertToVariant(pVarElem, result).IgnoreResult();
+      if (!XII_TEST_RESULT_MSG(xiiOpenDdlUtils::ConvertToVariant(pVarElem, result), "Variant type %u.", t))
+        continue;
 
-      XII_TEST_BOOL(var == result);
+      XII_TEST_BOOL_MSG(var == result, "Variant type %u did not round-trip.", t);
     }
   }
 }
 
-static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData)
+static xiiVariant CreateVariant(xiiVariant::Type::Enum type)
 {
-  switch (t)
+  // Construct real typed values rather than interpreting arbitrary byte storage as objects.
+  switch (type)
   {
     case xiiVariant::Type::Bool:
-      return xiiVariant(*(xiiInt8*)pData != 0);
+      return xiiVariant(true);
     case xiiVariant::Type::Int8:
-      return xiiVariant(*((xiiInt8*)pData));
+      return xiiVariant(static_cast<xiiInt8>(-64));
     case xiiVariant::Type::UInt8:
-      return xiiVariant(*((xiiUInt8*)pData));
+      return xiiVariant(static_cast<xiiUInt8>(192));
     case xiiVariant::Type::Int16:
-      return xiiVariant(*((xiiInt16*)pData));
+      return xiiVariant(static_cast<xiiInt16>(-12345));
     case xiiVariant::Type::UInt16:
-      return xiiVariant(*((xiiUInt16*)pData));
+      return xiiVariant(static_cast<xiiUInt16>(54321));
     case xiiVariant::Type::Int32:
-      return xiiVariant(*((xiiInt32*)pData));
+      return xiiVariant(static_cast<xiiInt32>(-123456789));
     case xiiVariant::Type::UInt32:
-      return xiiVariant(*((xiiUInt32*)pData));
+      return xiiVariant(static_cast<xiiUInt32>(3456789012U));
     case xiiVariant::Type::Int64:
-      return xiiVariant(*((xiiInt64*)pData));
+      return xiiVariant(static_cast<xiiInt64>(-0x123456789ABCDEFLL));
     case xiiVariant::Type::UInt64:
-      return xiiVariant(*((xiiUInt64*)pData));
+      return xiiVariant(static_cast<xiiUInt64>(0xFEDCBA9876543210ULL));
     case xiiVariant::Type::Float:
-      return xiiVariant(*((float*)pData));
+      return xiiVariant(-1.2345678f);
     case xiiVariant::Type::Double:
-      return xiiVariant(*((double*)pData));
+      return xiiVariant(-1.2345678901234567);
     case xiiVariant::Type::Color:
-      return xiiVariant(*((xiiColor*)pData));
+      return xiiVariant(xiiColor(0.12345678f, 0.5f, 0.75f, 1.0f));
     case xiiVariant::Type::Vector2:
-      return xiiVariant(*((xiiVec2*)pData));
+      return xiiVariant(xiiVec2(1.2345678f, -2.5f));
     case xiiVariant::Type::Vector2d:
-      return xiiVariant(*((xiiVec2d*)pData));
+      return xiiVariant(xiiVec2d(1.2345678901234567, -2.5));
     case xiiVariant::Type::Vector3:
-      return xiiVariant(*((xiiVec3*)pData));
+      return xiiVariant(xiiVec3(1.2345678f, -2.5f, 3.75f));
     case xiiVariant::Type::Vector3d:
-      return xiiVariant(*((xiiVec3d*)pData));
+      return xiiVariant(xiiVec3d(1.2345678901234567, -2.5, 3.75));
     case xiiVariant::Type::Vector4:
-      return xiiVariant(*((xiiVec4*)pData));
+      return xiiVariant(xiiVec4(1.2345678f, -2.5f, 3.75f, -4.5f));
     case xiiVariant::Type::Vector4d:
-      return xiiVariant(*((xiiVec4d*)pData));
+      return xiiVariant(xiiVec4d(1.2345678901234567, -2.5, 3.75, -4.5));
     case xiiVariant::Type::Vector2I:
-      return xiiVariant(*((xiiVec2I32*)pData));
+      return xiiVariant(xiiVec2I32(1, -2));
     case xiiVariant::Type::Vector2I64:
-      return xiiVariant(*((xiiVec2I64*)pData));
+      return xiiVariant(xiiVec2I64(0x123456789LL, -0x23456789ALL));
     case xiiVariant::Type::Vector3I:
-      return xiiVariant(*((xiiVec3I32*)pData));
+      return xiiVariant(xiiVec3I32(1, -2, 3));
     case xiiVariant::Type::Vector3I64:
-      return xiiVariant(*((xiiVec3I64*)pData));
+      return xiiVariant(xiiVec3I64(0x123456789LL, -0x23456789ALL, 0x3456789ABLL));
     case xiiVariant::Type::Vector4I:
-      return xiiVariant(*((xiiVec4I32*)pData));
+      return xiiVariant(xiiVec4I32(1, -2, 3, -4));
     case xiiVariant::Type::Vector4I64:
-      return xiiVariant(*((xiiVec4I64*)pData));
+      return xiiVariant(xiiVec4I64(0x123456789LL, -0x23456789ALL, 0x3456789ABLL, -0x456789ABCLL));
     case xiiVariant::Type::Vector2U:
-      return xiiVariant(*((xiiVec2U32*)pData));
+      return xiiVariant(xiiVec2U32(1, 2));
     case xiiVariant::Type::Vector2U64:
-      return xiiVariant(*((xiiVec2U64*)pData));
+      return xiiVariant(xiiVec2U64(0x123456789ULL, 0x23456789AULL));
     case xiiVariant::Type::Vector3U:
-      return xiiVariant(*((xiiVec3U32*)pData));
+      return xiiVariant(xiiVec3U32(1, 2, 3));
     case xiiVariant::Type::Vector3U64:
-      return xiiVariant(*((xiiVec3U64*)pData));
+      return xiiVariant(xiiVec3U64(0x123456789ULL, 0x23456789AULL, 0x3456789ABULL));
     case xiiVariant::Type::Vector4U:
-      return xiiVariant(*((xiiVec4U32*)pData));
+      return xiiVariant(xiiVec4U32(1, 2, 3, 4));
     case xiiVariant::Type::Vector4U64:
-      return xiiVariant(*((xiiVec4U64*)pData));
+      return xiiVariant(xiiVec4U64(0x123456789ULL, 0x23456789AULL, 0x3456789ABULL, 0x456789ABCULL));
     case xiiVariant::Type::Quaternion:
-      return xiiVariant(*((xiiQuat*)pData));
+      return xiiVariant(xiiQuat(1.2345678f, 2, 3, 4));
     case xiiVariant::Type::Quaterniond:
-      return xiiVariant(*((xiiQuatd*)pData));
+      return xiiVariant(xiiQuatd(1.2345678901234567, 2, 3, 4));
     case xiiVariant::Type::Matrix3:
-      return xiiVariant(*((xiiMat3*)pData));
+      return xiiVariant(xiiMat3(1.2345678f, 2, 3, 4, 5, 6, 7, 8, 9));
     case xiiVariant::Type::Matrix3d:
-      return xiiVariant(*((xiiMat3d*)pData));
+      return xiiVariant(xiiMat3d(1.2345678901234567, 2, 3, 4, 5, 6, 7, 8, 9));
     case xiiVariant::Type::Matrix4:
-      return xiiVariant(*((xiiMat4*)pData));
+      return xiiVariant(xiiMat4(1.2345678f, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
     case xiiVariant::Type::Matrix4d:
-      return xiiVariant(*((xiiMat4d*)pData));
+      return xiiVariant(xiiMat4d(1.2345678901234567, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
     case xiiVariant::Type::Transform:
-      return xiiVariant(*((xiiTransform*)pData));
+      return xiiVariant(xiiTransform(xiiVec3(1.2345678f, 2, 3), xiiQuat(4, 5, 6, 7), xiiVec3(8, 9, 10)));
     case xiiVariant::Type::Transformd:
-      return xiiVariant(*((xiiTransformd*)pData));
+      return xiiVariant(xiiTransformd(xiiVec3d(1.2345678901234567, 2, 3), xiiQuatd(4, 5, 6, 7), xiiVec3d(8, 9, 10)));
     case xiiVariant::Type::String:
-    case xiiVariant::Type::StringView: // String Views are stored as full strings as well
-      return xiiVariant((const char*)pData);
+    case xiiVariant::Type::StringView: // String views are serialized as owning strings.
+      return xiiVariant("Variant \"round-trip\"\\\n");
     case xiiVariant::Type::HashedString:
-    {
-      xiiHashedString s;
-      s.Assign((const char*)pData);
-      return xiiVariant(s);
-    }
+      return xiiVariant(xiiMakeHashedString("Hashed round-trip"));
     case xiiVariant::Type::TempHashedString:
-      return xiiVariant(xiiTempHashedString((const char*)pData));
+      return xiiVariant(xiiTempHashedString("Temporary hashed round-trip"));
+    case xiiVariant::Type::Time:
+      return xiiVariant(xiiTime::MakeFromSeconds(12.345678901234567));
+    case xiiVariant::Type::Uuid:
+      return xiiVariant(xiiUuid(0x123456789ABCDEF0ULL, 0xFEDCBA9876543210ULL));
+    case xiiVariant::Type::Angle:
+      return xiiVariant(xiiAngle::MakeFromRadian(0.12345678f));
+    case xiiVariant::Type::Angled:
+      return xiiVariant(xiiAngled::MakeFromRadian(0.12345678901234567));
+    case xiiVariant::Type::ColorGamma:
+      return xiiVariant(xiiColorGammaUB(16, 64, 128, 255));
     case xiiVariant::Type::DataBuffer:
     {
-      xiiDataBuffer db;
-      db.SetCountUninitialized(sizeof(float) * 16);
-      for (xiiUInt32 i = 0; i < db.GetCount(); ++i)
-        db[i] = ((xiiUInt8*)pData)[i];
-
-      return xiiVariant(db);
+      xiiDataBuffer data;
+      data.SetCountUninitialized(64);
+      for (xiiUInt32 i = 0; i < data.GetCount(); ++i)
+        data[i] = static_cast<xiiUInt8>(i * 4);
+      return xiiVariant(data);
     }
-    case xiiVariant::Type::Time:
-      return xiiVariant(*((xiiTime*)pData));
-    case xiiVariant::Type::Uuid:
-      return xiiVariant(*((xiiUuid*)pData));
-    case xiiVariant::Type::Angle:
-      return xiiVariant(*((xiiAngle*)pData));
-    case xiiVariant::Type::Angled:
-      return xiiVariant(*((xiiAngled*)pData));
-    case xiiVariant::Type::ColorGamma:
-      return xiiVariant(*((xiiColorGammaUB*)pData));
-
     default:
       XII_REPORT_FAILURE("Unknown type");
   }
