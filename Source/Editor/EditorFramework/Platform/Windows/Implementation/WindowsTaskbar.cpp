@@ -176,6 +176,12 @@ void xiiWindowsTaskbar::Update()
   {
     if (auto* pCurator = xiiAssetCurator::GetSingleton())
     {
+      if (pCurator->IsCheckingFileSystem())
+      {
+        State scan;
+        scan.m_Progress = ProgressState::Indeterminate;
+        states.PushBack(scan);
+      }
       xiiUInt32                                                      uiTotal = 0;
       xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT> counts;
       pCurator->GetAssetTransformStats(uiTotal, counts);

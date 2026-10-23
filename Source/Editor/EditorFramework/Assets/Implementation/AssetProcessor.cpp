@@ -424,13 +424,15 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
 
   auto* processor = xiiAssetProcessor::GetSingleton();
   auto* curator   = xiiAssetCurator::GetSingleton();
+  m_bRequested    = false;
+  if (curator->IsCheckingFileSystem())
+    return false; // Keep reservations for running work; dispatch new work after the rescan.
   // Manager-wide outputs are rebuilt after ordinary assets and their in-flight writes.
   if (processor->m_TransformRequests.IsEmpty() && curator->m_Updating.IsEmpty() && !processor->m_FinalTransformRequests.IsEmpty())
   {
     processor->m_TransformRequests.PushBack(std::move(processor->m_FinalTransformRequests.PeekFront()));
     processor->m_FinalTransformRequests.PopFront();
   }
-  m_bRequested = false;
   for (xiiUInt32 i = 0; i < processor->m_TransformRequests.GetCount(); ++i)
   {
     auto&              request = processor->m_TransformRequests[i];

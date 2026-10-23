@@ -25,6 +25,7 @@
 #include <ToolsFoundation/FileSystem/DataDirPath.h>
 #include <ToolsFoundation/FileSystem/Declarations.h>
 
+#include <atomic>
 #include <tuple>
 
 class xiiUpdateTask;
@@ -134,6 +135,7 @@ struct xiiAssetCuratorEvent
     AssetUpdated,
     AssetListReset,
     ActivePlatformChanged,
+    FileSystemCheckStarted,
   };
 
   xiiUuid            m_AssetGuid;
@@ -339,6 +341,11 @@ public:
   /// Checks file system for any changes. Call in case the file system watcher does not pick up certain changes.
   void CheckFileSystem();
 
+  /// GUI-thread request for an interactive rescan. Repeated requests coalesce.
+  /// The existing file-access task pool scans; the GUI tick publishes completion.
+  void QueueCheckFileSystem();
+  bool IsCheckingFileSystem() const { return m_bCheckingFileSystem; }
+
   void NeedsReloadResources(const xiiUuid& assetGuid);
 
   void InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState state);
@@ -439,6 +446,7 @@ private:
   /// \name Check File System Helper
   ///@{
   void        SetAllAssetStatusUnknown();
+  void        WaitForFileSystemCheck();
   void        LoadCaches(xiiMap<xiiDataDirPath, xiiFileStatus, xiiCompareDataDirPath>& out_referencedFiles, xiiMap<xiiDataDirPath, xiiFileStatus::Status, xiiCompareDataDirPath>& out_referencedFolders);
   void        SaveCaches(const xiiMap<xiiDataDirPath, xiiFileStatus, xiiCompareDataDirPath>& referencedFiles, const xiiMap<xiiDataDirPath, xiiFileStatus::Status, xiiCompareDataDirPath>& referencedFolders);
   static void BuildFileExtensionSet(xiiSet<xiiString>& AllExtensions);
@@ -464,6 +472,8 @@ private:
 
   mutable xiiCuratorMutex m_CuratorMutex; // Global lock
   xiiTaskGroupID          m_InitializeCuratorTaskID;
+  xiiTaskGroupID          m_CheckFileSystemTaskID; ///< GUI-thread owned; joined before file-model teardown.
+  std::atomic<bool>       m_bCheckingFileSystem = false;
 
   xiiUInt32 m_uiActiveAssetProfile = 0;
 

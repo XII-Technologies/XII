@@ -30,6 +30,7 @@ private Q_SLOTS:
 
 private:
   void ScheduleUpdateTransformStats();
+  void UpdateProgress();
   void AssetCuratorEvents(const xiiAssetCuratorEvent& e);
   void AssetProcessorEvents(const xiiAssetProcessorEvent& e);
   void ProjectEvents(const xiiToolsProjectEvent& e);

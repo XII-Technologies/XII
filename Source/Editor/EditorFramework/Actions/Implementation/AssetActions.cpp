@@ -125,8 +125,7 @@ void xiiAssetAction::Execute(const xiiVariant& value)
 
     case xiiAssetAction::ButtonType::CheckFileSystem:
     {
-      xiiAssetCurator::GetSingleton()->CheckFileSystem();
-      xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
+      xiiAssetCurator::GetSingleton()->QueueCheckFileSystem();
     }
     break;
 

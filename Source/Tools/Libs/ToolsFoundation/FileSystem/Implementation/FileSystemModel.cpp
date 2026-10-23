@@ -15,7 +15,6 @@
 #  include <Foundation/IO/OSFile.h>
 #  include <Foundation/Logging/Log.h>
 #  include <Foundation/Time/Stopwatch.h>
-#  include <Foundation/Utilities/Progress.h>
 
 XII_IMPLEMENT_SINGLETON(xiiFileSystemModel);
 
@@ -226,19 +225,12 @@ void xiiFileSystemModel::CheckFileSystem()
 
   XII_PROFILE_SCOPE("CheckFileSystem");
 
-  xiiUniquePtr<xiiProgressRange> range = nullptr;
-  if (xiiThreadUtils::IsMainThread())
-    range = XII_DEFAULT_NEW(xiiProgressRange, "Check File-System for Assets", m_FileSystemConfig.m_DataDirs.GetCount(), false);
-
   {
     SetAllStatusUnknown();
 
     // check every data directory
     for (xiiUInt32 i = 0; i < m_FileSystemConfig.m_DataDirs.GetCount(); i++)
     {
-      auto& dd = m_FileSystemConfig.m_DataDirs[i];
-      if (xiiThreadUtils::IsMainThread())
-        range->BeginNextStep(dd.m_sDataDirSpecialPath);
       if (!m_DataDirRoots[i].IsEmpty())
       {
         CheckFolder(m_DataDirRoots[i]);
@@ -246,11 +238,6 @@ void xiiFileSystemModel::CheckFileSystem()
     }
 
     RemoveStaleFileInfos();
-  }
-
-  if (xiiThreadUtils::IsMainThread())
-  {
-    range = nullptr;
   }
 
   FireFileChangedEvent({}, {}, xiiFileChangedEvent::Type::ModelReset);

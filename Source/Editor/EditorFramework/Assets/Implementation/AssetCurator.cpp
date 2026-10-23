@@ -218,6 +218,7 @@ void xiiAssetCurator::Deinitialize()
 {
   XII_PROFILE_SCOPE("Deinitialize");
 
+  WaitForFileSystemCheck();
   ShutdownUpdateTask();
   xiiAssetProcessor::GetSingleton()->StopProcessTask(true);
   xiiFileSystemModel*            pFiles = xiiFileSystemModel::GetSingleton();
@@ -274,6 +275,22 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
     return;
 
   bReentry = true;
+
+  if (m_bCheckingFileSystem)
+  {
+    if (!bTopLevel || !xiiTaskSystem::IsTaskGroupFinished(m_CheckFileSystemTaskID))
+    {
+      bReentry = false;
+      return;
+    }
+    WaitForFileSystemCheck();
+    xiiAssetCuratorEvent event;
+    event.m_Type  = xiiAssetCuratorEvent::Type::AssetListReset;
+    event.m_pInfo = nullptr;
+    m_Events.Broadcast(event);
+    if (WriteAssetTables().Failed())
+      xiiLog::Error("Failed to write asset tables after checking assets.");
+  }
 
   // Apply worker-generated source changes before taking the curator lock. Processor
   // lifecycle locking precedes the curator mutex, including during shutdown.
@@ -1114,6 +1131,8 @@ void xiiAssetCurator::UpdateAssetLastAccessTime(const xiiUuid& assetGuid)
 
 void xiiAssetCurator::CheckFileSystem()
 {
+  if (xiiThreadUtils::IsMainThread())
+    WaitForFileSystemCheck();
   XII_PROFILE_SCOPE("CheckFileSystem");
   xiiStopwatch sw;
 
@@ -1139,6 +1158,31 @@ void xiiAssetCurator::CheckFileSystem()
   RestartUpdateTask();
 
   xiiLog::Debug("Asset Curator Refresh Time: {0} ms", xiiArgF(sw.GetRunningTotal().GetMilliseconds(), 3));
+}
+
+void xiiAssetCurator::QueueCheckFileSystem()
+{
+  XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "Request asset rescans on the editor thread.");
+  // Startup already owns a complete scan and publishes its reset in WaitForInitialize.
+  if (m_bCheckingFileSystem || m_InitializeCuratorTaskID.IsValid() || !xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
+    return;
+  m_bCheckingFileSystem                    = true;
+  xiiSharedPtr<xiiDelegateTask<void>> task = XII_DEFAULT_NEW(xiiDelegateTask<void>, "CheckAssets", xiiTaskNesting::Maybe, [this]() { CheckFileSystem(); });
+  m_CheckFileSystemTaskID                  = xiiTaskSystem::StartSingleTask(task, xiiTaskPriority::FileAccessHighPriority);
+  xiiAssetCuratorEvent event;
+  event.m_Type  = xiiAssetCuratorEvent::Type::FileSystemCheckStarted;
+  event.m_pInfo = nullptr;
+  m_Events.Broadcast(event);
+}
+
+void xiiAssetCurator::WaitForFileSystemCheck()
+{
+  // Never hold the curator mutex while joining the scanner. Its callbacks update
+  // this model, and no GUI callback is needed for the worker to finish.
+  if (m_CheckFileSystemTaskID.IsValid())
+    xiiTaskSystem::WaitForGroup(m_CheckFileSystemTaskID);
+  m_CheckFileSystemTaskID.Invalidate();
+  m_bCheckingFileSystem = false;
 }
 
 void xiiAssetCurator::NeedsReloadResources(const xiiUuid& assetGuid)
