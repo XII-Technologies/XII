@@ -103,7 +103,6 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
   m_bLoadingProjectInProgress = true;
   XII_SCOPE_EXIT(m_bLoadingProjectInProgress = false;);
 
-
   xiiStringBuilder sProjectFile = sFile;
   sProjectFile.MakeCleanPath();
 
@@ -208,7 +207,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     return XII_FAILURE;
   }
 
-  if (m_StartupFlags.AreNoneSet(StartupFlags::SafeMode | StartupFlags::Headless))
+  if (!m_bStartupQuitRequested && m_StartupFlags.AreNoneSet(StartupFlags::SafeMode | StartupFlags::Headless))
   {
     UpdateStartupProgress(QStringLiteral("Restoring project documents"));
     xiiStringBuilder sAbsPath;
@@ -300,7 +299,7 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
         if (!m_bStartupQuitRequested)
         {
           xiiLog::Error("Failed to start the engine process. Project loading incomplete.");
-          if (m_bStartupInProgress)
+          if (m_bStartupInProgress && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::Background | StartupFlags::UnitTest))
           {
             CloseSplashScreen();
             xiiQtUiServices::MessageBoxWarning("The rendering process could not start. Project loading is incomplete. See the Editor log for details.");

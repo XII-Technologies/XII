@@ -189,7 +189,7 @@ void xiiAssetCurator::WaitForInitialize()
 {
   XII_PROFILE_SCOPE("WaitForInitialize");
   const auto* pEditor = xiiQtEditorApp::GetSingleton();
-  if (pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsInUnitTestMode())
+  if (pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsBackgroundMode() && !pEditor->IsInUnitTestMode())
   {
     QEventLoop loop;
     const auto finished = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::FileAccessHighPriority, [&loop](xiiTaskGroupID) {

@@ -380,7 +380,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
   xiiLog::Dev("Waiting for IPC connection");
 
   auto*      pEditor             = xiiQtEditorApp::GetSingleton();
-  const bool bInteractiveStartup = pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsInUnitTestMode();
+  const bool bInteractiveStartup = pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsBackgroundMode() && !pEditor->IsInUnitTestMode();
   if ((bInteractiveStartup ? m_IPC.WaitForStartup() : m_IPC.WaitForConnection(xiiTime())).Failed())
   {
     if (!pEditor->WasStartupQuitRequested())

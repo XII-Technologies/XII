@@ -627,7 +627,7 @@ void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
   for (const xiiApplicationPluginConfig::PluginConfig& it : order)
   {
     UpdateStartupProgress(QStringLiteral("Loading project plugins"), xiiMakeQString(it.m_sAppDirRelativePath), uiCompleted, order.GetCount());
-    if (m_bStartupInProgress)
+    if (m_bStartupInProgress && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::Background | StartupFlags::UnitTest))
       QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     if (xiiPlugin::LoadPlugin(it.m_sAppDirRelativePath, it.m_bLoadCopy ? xiiPluginLoadFlags::LoadCopy : xiiPluginLoadFlags::Default).Failed())
     {
