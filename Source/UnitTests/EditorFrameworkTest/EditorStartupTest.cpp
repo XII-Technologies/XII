@@ -16,6 +16,7 @@
 #include <Core/Physics/SurfaceResource.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
@@ -195,6 +196,170 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
 
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundTransforms);
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundImports);
+
+XII_CREATE_SIMPLE_TEST(EditorBackgroundImports, MeshAndSkeleton)
+{
+  auto&           editor       = *xiiQtEditorApp::GetSingleton();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/ImportPreferences");
+  const xiiStringBuilder project(preferences, "/Project/xiiProject");
+  XII_TEST_BOOL(xiiToolsProject::CreateProject(project).Succeeded());
+  xiiToolsProject::CloseProject();
+  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor.ShutdownEditor());
+  if (!XII_TEST_RESULT(editor.CreateOrOpenProject(false, project)))
+    return;
+  auto* processor = xiiAssetProcessor::GetSingleton();
+  auto* curator   = xiiAssetCurator::GetSingleton();
+  class ReservationLog : public xiiTestLogInterface
+  {
+    void HandleLogMessage(const xiiLoggingEventData& e) override
+    {
+      // UnitTest mode retains synchronous after-save transforms. The real
+      // background reservation must reject that additional legacy attempt.
+      if (e.m_EventType != xiiLogMsgType::ErrorMsg || !e.m_sText.FindSubString("Asset is being transformed in the background") || !e.m_sText.FindSubString("Triangle.xiiSkeletonAsset"))
+        xiiTestLogInterface::HandleLogMessage(e);
+    }
+  } reservationLog;
+  xiiTestLogSystemScope  logScope(&reservationLog);
+  const xiiStringBuilder source(preferences, "/Project/Triangle.obj");
+  {
+    xiiOSFile           file;
+    const xiiStringView geometry = "o Triangle\nv 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n";
+    XII_TEST_RESULT(file.Open(source, xiiFileOpenMode::Write));
+    XII_TEST_RESULT(file.Write(geometry.GetStartPointer(), geometry.GetElementCount()));
+  }
+  class ModalObserver : public QObject
+  {
+  public:
+    bool eventFilter(QObject* object, QEvent* event) override
+    {
+      if (event->type() == QEvent::Show && qobject_cast<QProgressDialog*>(object))
+        ++m_uiDialogs;
+      return false;
+    }
+    xiiUInt32 m_uiDialogs = 0;
+  } observer;
+  qApp->installEventFilter(&observer);
+  XII_SCOPE_EXIT(qApp->removeEventFilter(&observer));
+  xiiHybridArray<xiiAssetDocumentGenerator*, 16> generators;
+  xiiAssetDocumentGenerator::CreateGenerators(generators);
+  XII_SCOPE_EXIT(xiiAssetDocumentGenerator::DestroyGenerators(generators));
+  xiiAssetDocumentGenerator* meshGenerator = nullptr;
+  for (auto* generator : generators)
+    if (generator->GetDocumentExtension() == "xiiMeshAsset")
+      meshGenerator = generator;
+  if (!XII_TEST_BOOL(meshGenerator != nullptr))
+    return;
+  xiiStringBuilder meshPath(source);
+  meshPath.ChangeFileExtension("xiiMeshAsset");
+  xiiOSFile::FindFreeFilename(meshPath);
+  XII_TEST_STATUS(meshGenerator->Import(source, "MeshImport.NoMaterials", false));
+  auto* mesh = xiiDynamicCast<xiiAssetDocument*>(editor.OpenDocument(meshPath, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(mesh != nullptr))
+    return;
+  auto* skeleton = xiiDynamicCast<xiiAssetDocument*>(editor.CreateDocument(xiiStringBuilder(preferences, "/Project/Triangle.xiiSkeletonAsset"), xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(skeleton != nullptr))
+    return;
+  auto* skeletonAccessor = skeleton->GetObjectAccessor();
+  skeletonAccessor->StartTransaction("Set import source");
+  XII_TEST_STATUS(skeletonAccessor->SetValueByName(skeleton->GetObjectManager()->GetRootObject()->GetChildren()[0], "File", source.GetView()));
+  skeletonAccessor->FinishTransaction();
+  XII_TEST_STATUS(skeleton->SaveDocument());
+  const xiiUuid assets[] = {mesh->GetGuid(), skeleton->GetGuid()};
+  QLineEdit     editing;
+  QTimer        heartbeat;
+  xiiUInt32     heartbeats = 0;
+  QObject::connect(&heartbeat, &QTimer::timeout, &editing, [&]() {
+    editing.setText(QString::number(++heartbeats));
+    XII_TEST_BOOL(QApplication::activeModalWidget() == nullptr);
+    XII_TEST_BOOL(!editor.IsProgressBarProcessingEvents());
+  });
+  heartbeat.start(5);
+  auto wait = [&]() {
+    QElapsedTimer timeout;
+    timeout.start();
+    while ((processor->GetTransformProgress().m_bActive || processor->GetProcessTaskState() != xiiAssetProcessor::ProcessTaskState::Stopped) && timeout.elapsed() < 90000)
+    {
+      QApplication::processEvents(QEventLoop::AllEvents, 20);
+      curator->MainThreadTick(true);
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+    }
+    XII_TEST_BOOL(!processor->GetTransformProgress().m_bActive);
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+  };
+  XII_TEST_STATUS(processor->QueueTransformAssets(assets, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform));
+  wait();
+  XII_TEST_INT(processor->GetTransformProgress().m_uiFailed, 0);
+  XII_TEST_INT(processor->GetTransformProgress().m_uiNeedsImport, 0);
+  XII_TEST_BOOL(heartbeats > 0);
+  XII_TEST_INT(observer.m_uiDialogs, 0);
+  XII_TEST_BOOL(mesh->GetObjectAccessor()->GetCountByName(mesh->GetObjectManager()->GetRootObject()->GetChildren()[0], "Materials") > 0);
+  XII_TEST_BOOL(skeletonAccessor->GetCountByName(skeleton->GetObjectManager()->GetRootObject()->GetChildren()[0], "Children") > 0);
+  for (const auto& guid : assets)
+    XII_TEST_BOOL(!curator->IsAssetBeingTransformed(guid));
+  // A live edit must survive an in-flight import. Defer reconciliation until saved.
+  auto* accessor = mesh->GetObjectAccessor();
+  accessor->StartTransaction("Clear mesh slots for reimport");
+  auto* properties = mesh->GetObjectManager()->GetRootObject()->GetChildren()[0];
+  XII_TEST_STATUS(accessor->ClearByName(properties, "Materials"));
+  XII_TEST_STATUS(accessor->SetValueByName(properties, "ImportMaterials", true));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(mesh->SaveDocument());
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets, 1), xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform));
+  QElapsedTimer reserved;
+  reserved.start();
+  while (!curator->IsAssetBeingTransformed(assets[0]) && reserved.elapsed() < 5000)
+  {
+    QApplication::processEvents();
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+  accessor->StartTransaction("Edit while importing");
+  XII_TEST_STATUS(accessor->SetValueByName(properties, "UniformScaling", 2.0f));
+  accessor->FinishTransaction();
+  wait();
+  xiiVariant scaling;
+  XII_TEST_STATUS(accessor->GetValueByName(properties, "UniformScaling", scaling));
+  XII_TEST_FLOAT(scaling.Get<float>(), 2.0f, 0.0f);
+  XII_TEST_BOOL(mesh->IsModified());
+  XII_TEST_INT(accessor->GetCountByName(properties, "Materials"), 0);
+  XII_TEST_STATUS(mesh->SaveDocument());
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets, 1)));
+  wait();
+  XII_TEST_BOOL(accessor->GetCountByName(properties, "Materials") > 0);
+  XII_TEST_INT(processor->GetTransformProgress().m_uiFailed, 0);
+  const auto* slot = accessor->GetChildObjectByName(properties, "Materials", 0);
+  if (XII_TEST_BOOL(slot != nullptr))
+  {
+    xiiVariant material;
+    XII_TEST_STATUS(accessor->GetValueByName(slot, "Resource", material));
+    XII_TEST_BOOL(!material.Get<xiiString>().IsEmpty());
+    XII_TEST_BOOL(curator->FindSubAsset(material.Get<xiiString>()).isValid());
+  }
+  // Closing with an import in flight must not wait for the GUI's next tick.
+  accessor->StartTransaction("Request import before shutdown");
+  XII_TEST_STATUS(accessor->ClearByName(properties, "Materials"));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(mesh->SaveDocument());
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets, 1), xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform));
+  reserved.restart();
+  while (!curator->IsAssetBeingTransformed(assets[0]) && reserved.elapsed() < 5000)
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  XII_TEST_BOOL(curator->IsAssetBeingTransformed(assets[0]));
+  processor->StopProcessTask(false, true);
+  XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+  XII_TEST_BOOL(!curator->IsAssetBeingTransformed(assets[0]));
+  XII_TEST_INT(accessor->GetCountByName(properties, "Materials"), 0);
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets, 1)));
+  wait();
+  XII_TEST_BOOL(accessor->GetCountByName(properties, "Materials") > 0);
+  XII_TEST_INT(observer.m_uiDialogs, 0);
+}
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorAssetProcessor);
 

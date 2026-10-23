@@ -181,15 +181,15 @@ void xiiWindowsTaskbar::Update()
       pCurator->GetAssetTransformStats(uiTotal, counts);
       State           assets;
       const xiiUInt32 uiErrors  = counts[xiiAssetInfo::TransformError] + counts[xiiAssetInfo::MissingTransformDependency] + counts[xiiAssetInfo::MissingThumbnailDependency] + counts[xiiAssetInfo::MissingPackageDependency] + counts[xiiAssetInfo::CircularDependency];
-      const xiiUInt32 uiPending = counts[xiiAssetInfo::NeedsTransform] + counts[xiiAssetInfo::NeedsThumbnail] + counts[xiiAssetInfo::Unknown];
+      const xiiUInt32 uiPending = counts[xiiAssetInfo::NeedsImport] + counts[xiiAssetInfo::NeedsTransform] + counts[xiiAssetInfo::NeedsThumbnail] + counts[xiiAssetInfo::Unknown];
       assets.m_Overlay          = uiErrors > 0 ? Overlay::Error : (counts[xiiAssetInfo::NeedsImport] > 0 ? Overlay::Warning : Overlay::None);
       if ((uiPending > 0 || uiErrors > 0) && uiTotal > 0)
       {
         const auto* pProcessor = xiiAssetProcessor::GetSingleton();
         const bool  bRunning   = pProcessor && pProcessor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running;
-        assets.m_Progress      = bRunning ? (counts[xiiAssetInfo::Unknown] > 0 ? ProgressState::Indeterminate : ProgressState::Normal) : ProgressState::Paused;
+        assets.m_Progress      = bRunning ? (counts[xiiAssetInfo::Unknown] > 0 || counts[xiiAssetInfo::NeedsImport] > 0 ? ProgressState::Indeterminate : ProgressState::Normal) : ProgressState::Paused;
         assets.m_fCompletion   = static_cast<double>(counts[xiiAssetInfo::UpToDate]) / uiTotal;
-        assets.m_bHasValue     = counts[xiiAssetInfo::Unknown] == 0;
+        assets.m_bHasValue     = counts[xiiAssetInfo::Unknown] == 0 && counts[xiiAssetInfo::NeedsImport] == 0;
       }
       if (const auto* processor = xiiAssetProcessor::GetSingleton())
       {

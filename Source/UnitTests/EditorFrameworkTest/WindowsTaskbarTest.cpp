@@ -498,7 +498,9 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, AssetImportProgress)
   xiiUInt32              uiImports = 0;
   generator.m_OnGenerate           = [&]() {
     ++uiImports;
-    XII_TEST_BOOL(Test::GetState(taskbar).m_Progress == Test::Progress::Indeterminate);
+    // Source-document preparation no longer starts a global/modal progress
+    // range. Actual import activity comes from the existing asset processor.
+    XII_TEST_BOOL(Test::GetState(taskbar).m_Progress == Test::Progress::Inactive);
   };
   XII_TEST_STATUS(generator.Import("Fixture.taskbarinput", "Test", false));
   XII_TEST_INT(uiImports, 1);
