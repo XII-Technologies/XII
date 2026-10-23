@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -58,24 +59,19 @@ xiiRenderGraphBufferHandle xiiRenderPassUtils::Constants(xiiRenderGraphBuilder& 
   return builder.WriteBuffer(name, description, xiiGALResourceStateFlags::ConstantBuffer);
 }
 
-xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiUInt32 width, xiiUInt32 height, xiiSizeU32& out_size, bool useViewport)
+xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& context, const xiiRenderPipelineTextureOutputPin& output, xiiRenderGraphTextureHandle input, xiiSizeU32& out_size, xiiRenderPipelineTextureResolutionMode::Enum defaultMode)
 {
-  const auto* description = context.m_Graph.GetTextureDescription(input);
-  if (!description)
-    return XII_FAILURE;
-  if (context.m_pView && useViewport)
-  {
-    const auto viewport = context.m_pView->GetViewport();
-    if (!xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width > 65536 || viewport.height > 65536)
-      return XII_FAILURE;
-    out_size = {width ? width : static_cast<xiiUInt32>(xiiMath::Max(viewport.width, 1.0f)), height ? height : static_cast<xiiUInt32>(xiiMath::Max(viewport.height, 1.0f))};
-  }
-  else
-    out_size = {width ? width : description->m_Size.width, height ? height : description->m_Size.height};
-  return out_size.width && out_size.height ? XII_SUCCESS : XII_FAILURE;
+  return context.ResolveTextureSize(output, input, out_size, defaultMode);
 }
 
-
+xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiSizeU32& out_size)
+{
+  const auto* description = context.m_Graph.GetTextureDescription(input);
+  if (!description || !description->m_Size.HasNonZeroArea())
+    return context.ReportFailure("Texture operation requires a nonempty input extent.");
+  out_size = description->m_Size;
+  return XII_SUCCESS;
+}
 
 xiiResult xiiRenderPassUtils::DisplayConfiguration::Resolve(const xiiRenderPipelinePassContext& context, const xiiDisplayOutputSettings& authored, bool useViewDefaults)
 {

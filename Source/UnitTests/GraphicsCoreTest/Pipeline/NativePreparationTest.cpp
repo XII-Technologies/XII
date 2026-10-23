@@ -604,7 +604,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitDepthTargetAndProjection)
   const auto* allocated = graph.GetTextureDescription(bindings[dynamicTarget.m_Depth.GetBindingIndex()].m_hTexture);
   if (XII_TEST_BOOL(allocated != nullptr))
     XII_TEST_INT(allocated->m_Size.width, 64);
-  XII_TEST_INT(dynamicTarget.m_uiWidth, 0); // Runtime dimensions do not change authored properties.
+  XII_TEST_INT(dynamicTarget.m_Depth.GetResolution().m_uiWidth, 0); // Runtime dimensions do not change authored properties.
   graph.EndSetup();
 }
 

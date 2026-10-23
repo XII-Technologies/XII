@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <Foundation/Math/Size.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Variant.h>
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
@@ -93,6 +94,13 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   /// Build-only diagnostic sink; execute delegates must not retain this context.
   xiiStringBuilder* m_pBuildError = nullptr;
   xiiResult         ReportFailure(xiiStringView reason) const;
+
+  /// Resolve a concrete frame-local extent without changing the compiled pin or an input texture.
+  xiiResult ResolveTextureSize(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size,
+                               xiiRenderPipelineTextureResolutionMode::Enum defaultMode = xiiRenderPipelineTextureResolutionMode::Input) const;
+  xiiResult ResolveTextureSize(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size,
+                               xiiRenderPipelineTextureResolutionMode::Enum defaultMode = xiiRenderPipelineTextureResolutionMode::Input) const;
+  xiiResult ValidateTexture(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle texture) const;
 
   xiiUInt32                                      FindPin(xiiStringView name, bool input) const;
   xiiRenderGraphTextureHandle                    GetInputTexture(xiiStringView name) const;

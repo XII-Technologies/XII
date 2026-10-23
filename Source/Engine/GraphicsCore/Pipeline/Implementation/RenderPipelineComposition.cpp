@@ -301,6 +301,10 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
           continue;
         if (!external.IsCompatibleWith(pin))
           return fail("Interface fan-out maps incompatible reflected pin types.");
+        if (external.m_Resolution.IsDefault())
+          external.m_Resolution = pin.m_Resolution;
+        else if (!pin.m_Resolution.IsDefault() && external.m_Resolution != pin.m_Resolution)
+          return fail("Interface fan-out maps conflicting texture resolution policies.");
         if (external.m_Format == xiiGALResourceFormat::Unknown)
           external.m_Format = pin.m_Format;
         if (external.m_Constraints.m_Dimension == xiiGALResourceDimension::Undefined)

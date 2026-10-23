@@ -109,7 +109,10 @@ xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
   const auto depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal);
   const auto camera = context.GetInputBuffer(m_Camera), global = context.GetInputBuffer(m_Global);
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, depth, 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_Output, depth, size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(depth);
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   const auto* normalDescription = context.m_Graph.GetTextureDescription(normal);
   const auto* cameraDescription = context.m_Graph.GetBufferDescription(camera);
   const auto* globalDescription = context.m_Graph.GetBufferDescription(global);

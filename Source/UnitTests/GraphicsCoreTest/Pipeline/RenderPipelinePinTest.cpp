@@ -4,6 +4,9 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
@@ -313,4 +316,77 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinContracts)
     xiiDynamicArray<xiiRenderPipelinePin> external;
     XII_TEST_BOOL(xiiGetRenderPipelineInterface(fanout, external, &error).Failed());
   }
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, RelativeTextureResolutionAndConstraints)
+{
+  using Mode = xiiRenderPipelineTextureResolutionMode;
+  xiiRenderPipelineResourceDescriptor definition;
+  xiiCreateTexturePass                source;
+  xiiRenderPipelineTextureResolution  fixed;
+  fixed.m_Mode     = Mode::Fixed;
+  fixed.m_uiWidth  = 19;
+  fixed.m_uiHeight = 11;
+  source.m_OutputTexture.SetResolution(fixed);
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(source.GetProperties(properties));
+  definition.AddPass("Fixed", xiiGetStaticRTTI<xiiCreateTexturePass>(), properties);
+  xiiClearTexturePass                half;
+  xiiRenderPipelineTextureResolution relative;
+  relative.m_Mode   = Mode::Input;
+  relative.m_sInput = "Reference";
+  relative.m_fScale = 0.5f;
+  half.m_OutputTexture.SetResolution(relative);
+  properties.Clear();
+  XII_TEST_RESULT(half.GetProperties(properties));
+  definition.AddPass("Half input", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
+  XII_TEST_RESULT(definition.Connect(0, "Texture", 1, "Reference"));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, compiled)))
+    return;
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  graph.BeginSetup(0);
+  XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+  const auto* output = instance.GetOutputBinding(1, "Texture");
+  if (XII_TEST_BOOL(output != nullptr))
+    XII_TEST_BOOL(graph.GetTextureDescription(output->m_hTexture)->m_Size == xiiSizeU32(10, 6));
+  const auto                   input = instance.GetOutputBinding(0, "Texture")->m_hTexture;
+  xiiVariantDictionary         parameters;
+  xiiRenderPipelinePassContext context{nullptr, graph, blackboard, parameters, {}, {}, "Resolution validation"};
+  xiiRenderPipelinePin         contract;
+  contract.m_bInput                = true;
+  contract.m_Resolution.m_Mode     = Mode::Fixed;
+  contract.m_Resolution.m_uiWidth  = 10;
+  contract.m_Resolution.m_uiHeight = 6;
+  XII_TEST_BOOL(context.ValidateTexture(contract, input).Failed());
+  XII_TEST_BOOL(graph.GetTextureDescription(input)->m_Size == xiiSizeU32(19, 11));
+  contract.m_Resolution = fixed;
+  XII_TEST_RESULT(context.ValidateTexture(contract, input));
+  xiiSizeU32 size;
+  contract.m_Resolution.m_Mode    = Mode::Viewport;
+  contract.m_Resolution.m_uiWidth = contract.m_Resolution.m_uiHeight = 0;
+  XII_TEST_BOOL(context.ResolveTextureSize(contract, input, size).Failed());
+  contract.m_Resolution          = fixed;
+  contract.m_Resolution.m_fScale = xiiMath::Infinity<float>();
+  XII_TEST_BOOL(context.ResolveTextureSize(contract, input, size).Failed());
+  contract.m_Resolution           = fixed;
+  contract.m_Resolution.m_fScale  = 16;
+  contract.m_Resolution.m_uiWidth = 65536;
+  XII_TEST_BOOL(context.ResolveTextureSize(contract, input, size).Failed());
+  xiiDepthTargetPass depth;
+  depth.m_Depth.SetResolution({Mode::Fixed, 4, 4});
+  xiiDynamicArray<xiiRenderPipelinePin> depthPins;
+  depth.GetPins(depthPins);
+  XII_TEST_RESULT(depth.InitializePinBindings(depthPins));
+  xiiDynamicArray<xiiRenderPipelineBinding> depthBindings;
+  depthBindings.SetCount(depthPins.GetCount());
+  parameters.Insert("RasterWidth", 64U);
+  parameters.Insert("RasterHeight", 16U);
+  xiiRenderPipelinePassContext depthContext{nullptr, graph, blackboard, parameters, depthPins, depthBindings, "Fixed depth"};
+  XII_TEST_RESULT(depth.Build(depthContext));
+  XII_TEST_BOOL(graph.GetTextureDescription(depthBindings[depth.m_Depth.GetBindingIndex()].m_hTexture)->m_Size == xiiSizeU32(4, 4));
+  graph.EndSetup();
 }

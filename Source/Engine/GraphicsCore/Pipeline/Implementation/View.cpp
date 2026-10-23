@@ -252,6 +252,12 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
 
 void xiiView::UpdateRenderResolutionState() const
 {
+  if (!xiiMath::IsFinite(m_DynamicResolution.m_fRenderScale) || !xiiMath::IsFinite(m_DynamicResolution.m_fSmoothedScale))
+  {
+    m_Data.m_fRenderResolutionScale  = 0;
+    m_Data.m_uiRenderResolutionWidth = m_Data.m_uiRenderResolutionHeight = 0;
+    return;
+  }
   const float fRenderScale = xiiMath::Clamp(m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
 
   float fDynamicMin = 0.1f;
@@ -261,7 +267,18 @@ void xiiView::UpdateRenderResolutionState() const
   const float fDynamicScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   m_Data.m_fRenderResolutionScale = xiiMath::Clamp(fDynamicScale * fRenderScale, 0.1f, 1.0f);
+  if (!xiiMath::IsFinite(m_Data.m_fRenderResolutionScale))
+  {
+    m_Data.m_uiRenderResolutionWidth = m_Data.m_uiRenderResolutionHeight = 0;
+    return;
+  }
 
+  if (!xiiMath::IsFinite(m_Data.m_ViewPortRect.width) || !xiiMath::IsFinite(m_Data.m_ViewPortRect.height) ||
+      m_Data.m_ViewPortRect.width <= 0 || m_Data.m_ViewPortRect.height <= 0 || m_Data.m_ViewPortRect.width > 65536 || m_Data.m_ViewPortRect.height > 65536)
+  {
+    m_Data.m_uiRenderResolutionWidth = m_Data.m_uiRenderResolutionHeight = 0;
+    return;
+  }
   const xiiUInt32 uiNativeWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
   const xiiUInt32 uiNativeHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
 

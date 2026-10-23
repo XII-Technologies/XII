@@ -105,10 +105,9 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
     root.m_Passes[source].m_Properties.Insert("Phase", phase);
     const auto clear = [&](xiiStringView name, xiiVec4 value, bool mismatch = false) {
       xiiClearTexturePass p;
-      p.m_uiWidth  = mismatch && phase == 7 ? 8 : 9;
-      p.m_uiHeight = 11;
-      p.m_Format   = mismatch && phase == 14 ? xiiGALResourceFormat::RGBA32UInt : xiiGALResourceFormat::RGBA32Float;
-      p.m_Color    = xiiColor(value.x, value.y, value.z, value.w);
+      p.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, mismatch && phase == 7 ? 8U : 9U, 11});
+      p.m_OutputTexture.SetFormat(mismatch && phase == 14 ? xiiGALResourceFormat::RGBA32UInt : xiiGALResourceFormat::RGBA32Float);
+      p.m_Color = xiiColor(value.x, value.y, value.z, value.w);
       xiiVariantDictionary properties;
       XII_TEST_RESULT(p.GetProperties(properties));
       return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);

@@ -115,21 +115,26 @@ XII_CREATE_SIMPLE_TEST(NativeDirectionalMesh, RepeatedAuthoredRasterAndRetainedC
   commandProperties.Insert("MeshGroupCountY", 1U);
   const auto           commands = root.AddPass("Supplied work dimensions", xiiGetStaticRTTI<xiiMeshDrawCommandsPass>(), commandProperties);
   xiiVariantDictionary shadowProperties;
-  shadowProperties.Insert("Width", 16U);
-  shadowProperties.Insert("Height", 16U);
+  xiiDepthTargetPass   shadowTarget;
+  shadowTarget.m_Depth.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 16, 16});
+  XII_TEST_RESULT(shadowTarget.GetProperties(shadowProperties));
   const auto shadow = root.AddPass("Empty ordinary shadow", xiiGetStaticRTTI<xiiDepthTargetPass>(), shadowProperties);
   for (xiiStringView name : {"VisibleMeshlets", "VisibleMeshletCount"})
     root.m_Interface.PushBack({name, true, root.m_Passes[commands].m_Id, name});
   for (xiiUInt32 branch = 0; branch < 2; ++branch)
   {
-    xiiVariantDictionary image;
-    image.Insert("Width", branch ? 16U : 32U);
-    image.Insert("Height", branch ? 32U : 16U);
-    image.Insert("Format", xiiUInt32(xiiGALResourceFormat::RGBA32Float));
-    image.Insert("Color", xiiColor(0, 0, 0.25f, 1));
+    xiiVariantDictionary                     image;
+    const xiiRenderPipelineTextureResolution resolution{xiiRenderPipelineTextureResolutionMode::Fixed, branch ? 16U : 32U, branch ? 32U : 16U};
+    xiiClearTexturePass                      target;
+    target.m_OutputTexture.SetResolution(resolution);
+    target.m_OutputTexture.SetFormat(xiiGALResourceFormat::RGBA32Float);
+    target.m_Color = xiiColor(0, 0, 0.25f, 1);
+    XII_TEST_RESULT(target.GetProperties(image));
     const auto color = root.AddPass(branch ? "Green target" : "Red target", xiiGetStaticRTTI<xiiClearTexturePass>(), image);
-    image.Remove("Format");
-    image.Remove("Color");
+    image.Clear();
+    xiiDepthTargetPass depthTarget;
+    depthTarget.m_Depth.SetResolution(resolution);
+    XII_TEST_RESULT(depthTarget.GetProperties(image));
     const auto depth     = root.AddPass(branch ? "Green depth" : "Red depth", xiiGetStaticRTTI<xiiDepthTargetPass>(), image);
     const auto node      = root.AddSubgraph(branch ? "Green mesh" : "Red mesh", authored->m_Descriptor.m_Id);
     auto&      constants = root.m_Passes[node].m_Overrides.ExpandAndGetRef();

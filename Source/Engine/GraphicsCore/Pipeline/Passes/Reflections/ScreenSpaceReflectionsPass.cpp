@@ -87,7 +87,10 @@ xiiResult xiiScreenSpaceReflectionsPass::Build(xiiRenderPipelinePassContext& con
   XII_SUCCEED_OR_RETURN(LinearClampSampler(m_pState->m_Linear));
   XII_SUCCEED_OR_RETURN(PointClampSampler(m_pState->m_Point));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, m_OutputSSRRawTerm, context.GetInputTexture(m_InputHDRSceneColor), size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHDRSceneColor));
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputSceneDepth)); !desc || desc->m_Size != size)
     return XII_FAILURE;
   if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputGBufferNormal)); !desc || desc->m_Size != size)

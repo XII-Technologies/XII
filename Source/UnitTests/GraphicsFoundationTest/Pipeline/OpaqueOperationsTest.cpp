@@ -94,8 +94,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   xiiRenderPipelineResourceDescriptor leaf;
   const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format = xiiGALResourceFormat::RGBA16Float) {
     xiiClearTexturePass pass;
-    pass.m_Color  = color;
-    pass.m_Format = format;
+    pass.m_Color = color;
+    pass.m_OutputTexture.SetFormat(format);
     xiiVariantDictionary properties;
     XII_TEST_RESULT(pass.GetProperties(properties));
     return leaf.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
@@ -277,10 +277,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentWeightedTransparencyResolve
   xiiRenderPipelineResourceDescriptor descriptor;
   const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format) {
     xiiClearTexturePass pass;
-    pass.m_uiWidth  = 9;
-    pass.m_uiHeight = 11;
-    pass.m_Color    = color;
-    pass.m_Format   = format;
+    pass.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 9, 11});
+    pass.m_Color = color;
+    pass.m_OutputTexture.SetFormat(format);
     xiiVariantDictionary properties;
     XII_TEST_RESULT(pass.GetProperties(properties));
     return descriptor.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
@@ -376,8 +375,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
   xiiRenderPipelineResourceDescriptor leaf;
   const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format) {
     xiiClearTexturePass pass;
-    pass.m_Color  = color;
-    pass.m_Format = format;
+    pass.m_Color = color;
+    pass.m_OutputTexture.SetFormat(format);
     xiiVariantDictionary properties;
     XII_TEST_RESULT(pass.GetProperties(properties));
     return leaf.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
@@ -419,8 +418,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
   auto&      override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
   override.m_Path.PushBack(leaf.m_Passes[signal].m_Id);
   xiiClearTexturePass changed;
-  changed.m_Format = xiiGALResourceFormat::R8UNormalized;
-  changed.m_Color  = {0.75f, 0, 0, 0};
+  changed.m_OutputTexture.SetFormat(xiiGALResourceFormat::R8UNormalized);
+  changed.m_Color = {0.75f, 0, 0, 0};
   XII_TEST_RESULT(changed.GetProperties(override.m_Properties));
   const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("AO instance histories", std::move(root));
   xiiWorldDescription description("AO without world extraction");
@@ -604,8 +603,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentIrradianceGathers)
   xiiRenderPipelineResourceDescriptor leaf;
   const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format) {
     xiiClearTexturePass pass;
-    pass.m_Color  = color;
-    pass.m_Format = format;
+    pass.m_Color = color;
+    pass.m_OutputTexture.SetFormat(format);
     xiiVariantDictionary properties;
     XII_TEST_RESULT(pass.GetProperties(properties));
     return leaf.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
@@ -774,10 +773,9 @@ XII_CREATE_SIMPLE_TEST(NativeRadianceComposition, IndependentWeightsFogRangeAndR
     root.m_References.PushBack({authored->m_Descriptor.m_Id, asset.GetResourceID()});
     const auto source = [&](xiiStringView name, xiiColor color, bool mismatch = false) {
       xiiClearTexturePass clear;
-      clear.m_uiWidth  = mismatch ? 8 : 9;
-      clear.m_uiHeight = 11;
-      clear.m_Format   = xiiGALResourceFormat::RGBA32Float;
-      clear.m_Color    = color;
+      clear.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, mismatch ? 8U : 9U, 11});
+      clear.m_OutputTexture.SetFormat(xiiGALResourceFormat::RGBA32Float);
+      clear.m_Color = color;
       xiiVariantDictionary properties;
       XII_TEST_RESULT(clear.GetProperties(properties));
       return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);

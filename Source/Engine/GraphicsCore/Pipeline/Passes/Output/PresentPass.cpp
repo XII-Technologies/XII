@@ -24,6 +24,7 @@ struct xiiPresentPass::Data
   xiiGALGraphicsPipelineStateCreationDescription m_Pipeline;
   xiiSharedPtr<xiiGALSampler>                    m_Sampler;
   xiiSizeU32                                     m_Size;
+  xiiVec2U32                                     m_vOffset;
 };
 
 struct xiiPresentPass::State
@@ -98,13 +99,20 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   const auto& description = texture->GetDescription();
   if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 || description.m_uiSampleCount != 1 || !description.m_Size.width || !description.m_Size.height || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || (target && (target->GetDescription().m_ViewType != xiiGALTextureViewType::RenderTarget || target->GetDescription().m_Format != description.m_Format || target->GetDescription().m_uiMostDetailedMip || target->GetDescription().m_uiFirstArrayOrDepthSlice || target->GetDescription().m_uiArrayOrDepthSlicesCount != 1)))
     return context.ReportFailure("Presentation requires a full single-sample 2D render target.");
+  const auto& viewport = context.m_pView->GetViewport();
+  if (!xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) ||
+      viewport.x < 0 || viewport.y < 0 || viewport.width < 1 || viewport.height < 1 ||
+      static_cast<double>(viewport.x) + viewport.width > description.m_Size.width || static_cast<double>(viewport.y) + viewport.height > description.m_Size.height)
+    return context.ReportFailure("The presentation viewport must fit inside its output target.");
   const auto                                    handle = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/FinalBlit.xiiShader"), {}, false);
   xiiResourceLock<xiiShaderPermutationResource> shader(handle, xiiResourceAcquireMode::BlockTillLoaded);
   if (!shader.IsValid() || !shader->IsShaderValid())
     return context.ReportFailure("The presentation shader is unavailable.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_hDisplayLinear = builder.ReadTexture(input, xiiGALResourceStateFlags::ShaderResource);
-    data.m_hBackbuffer = builder.WriteTexture(builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
+    const auto imported = builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState());
+    const bool partial = viewport.x != 0 || viewport.y != 0 || viewport.width != description.m_Size.width || viewport.height != description.m_Size.height;
+    data.m_hBackbuffer = partial ? builder.ReadWriteTexture(imported, xiiGALResourceStateFlags::RenderTarget) : builder.WriteTexture(imported, xiiGALResourceStateFlags::RenderTarget);
     builder.ExportTexture(data.m_hBackbuffer, swapchain ? xiiGALResourceStateFlags::Present : description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::RenderTarget);
     data.m_hConstants = Constants(builder, "Final Blit Constants", sizeof(data.m_Constants));
     const auto& display = m_pState->m_Display.m_Settings;
@@ -112,7 +120,8 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
     data.m_Constants.ApplySRGBTransfer = xiiGALResourceFormat::IsSrgb(description.m_Format) ? 0U : 1U;
     data.m_Constants.PaperWhiteNits = display.m_fPaperWhiteNits;
     data.m_Constants.MaximumDisplayNits = display.m_fMaximumDisplayNits;
-    data.m_Size = description.m_Size;
+    data.m_Size = {static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height)};
+    data.m_vOffset = {static_cast<xiiUInt32>(viewport.x), static_cast<xiiUInt32>(viewport.y)};
     data.m_Sampler = m_pState->m_PointSampler;
     data.m_Pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
     data.m_Pipeline.m_pVertexShader = shader->GetGALShader(xiiGALShaderType::Vertex);
@@ -152,8 +161,8 @@ void xiiPresentPass::Execute(const Data& data, xiiRenderGraphPassContext& contex
     return;
   }
   auto& commands = context.GetCommandList();
-  commands.SetViewport({0, 0, float(data.m_Size.width), float(data.m_Size.height), 0, 1});
-  commands.SetScissorRect({0, 0, data.m_Size.width, data.m_Size.height});
+  commands.SetViewport({float(data.m_vOffset.x), float(data.m_vOffset.y), float(data.m_Size.width), float(data.m_Size.height), 0, 1});
+  commands.SetScissorRect({data.m_vOffset.x, data.m_vOffset.y, data.m_Size.width, data.m_Size.height});
   commands.SetPipelineState(pipeline.Borrow());
   commands.ResolveAndSetSampler("PointClampSampler", data.m_Sampler.Borrow());
   commands.ResolveAndSetConstantBuffer("xiiFinalBlitConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Pixel);

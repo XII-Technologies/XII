@@ -31,9 +31,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiUpscalePass, 1, xiiRTTIDefaultAllocator<xiiU
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("TAAResolved", m_InputTAAResolved)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("UpscaledColor", m_OutputUpscaledColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("Width", m_uiWidth)->AddAttributes(new xiiDefaultValueAttribute(0U)),
-    XII_MEMBER_PROPERTY("Height", m_uiHeight)->AddAttributes(new xiiDefaultValueAttribute(0U)),
+    XII_MEMBER_PROPERTY("UpscaledColor", m_OutputUpscaledColor),
+
+
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -49,7 +49,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiResult xiiUpscalePass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  if (m_uiWidth > 65536 || m_uiHeight > 65536)
+  if (m_OutputUpscaledColor.GetResolution().Validate().Failed())
     return XII_FAILURE;
   return XII_SUCCESS;
 }
@@ -61,7 +61,7 @@ xiiResult xiiUpscalePass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/CASUpscale.xiiShader"));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_pState->m_Sampler));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture(m_InputTAAResolved), m_uiWidth, m_uiHeight, size, true));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputUpscaledColor, context.GetInputTexture(m_InputTAAResolved), size, xiiRenderPipelineTextureResolutionMode::Viewport));
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_hTAAIn=context.GetInputTexture(m_InputTAAResolved);

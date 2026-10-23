@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Composition/ConfidenceRadiancePass.h>
 #include <GraphicsCore/Pipeline/Passes/Composition/RadianceAddPass.h>
@@ -8,7 +10,6 @@
 #include <GraphicsCore/Pipeline/Passes/Reflections/ScreenSpaceReflectionsTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredOpaqueComposition)
@@ -30,7 +31,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredOpaqueComposition)
   XII_TEST_BOOL(temporal.Configure(properties).Failed());
   xiiClearTexturePass clear;
   properties.Clear();
-  properties.Insert("Format", static_cast<xiiInt64>(xiiGALResourceFormat::D32Float));
+  clear.m_OutputTexture.SetFormat(xiiGALResourceFormat::D32Float);
   XII_TEST_BOOL(clear.Configure(properties).Failed());
 
   const auto                                 resource = xiiLoadPipelineLibraryResource("OpaqueComposition");

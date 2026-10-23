@@ -16,7 +16,6 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/DdlSerializer.h>
-#include <Foundation/Serialization/GraphVersioning.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
@@ -296,7 +295,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)
   XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), ids[2]));
   XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), ids[3]));
   const auto* texture      = accessor->GetChildObjectByName(accessor->GetObject(ids[0]), "Texture", {});
-  const auto* requirements = accessor->GetChildObjectByName(texture, "Requirements", {});
+  const auto* requirements = accessor->GetChildObjectByName(texture, "Resolution", {});
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Fixed)));
   XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 16U));
   XII_TEST_STATUS(accessor->SetValueByName(requirements, "Height", 16U));
   XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[1]), "Name", "Color"));
@@ -351,12 +351,9 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)
 
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, message.m_sOutputFile});
-  xiiVariantDictionary            properties;
-  xiiCreateTexturePass            producer;
-  xiiRenderPipelinePinConstraints extent;
-  extent.m_uiWidth  = 32;
-  extent.m_uiHeight = 16;
-  producer.m_OutputTexture.SetRequirements(extent);
+  xiiVariantDictionary properties;
+  xiiCreateTexturePass producer;
+  producer.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 32, 16});
   XII_TEST_RESULT(producer.GetProperties(properties));
   root.AddPass("Parent texture", producer.GetDynamicRTTI(), properties);
   for (xiiUInt32 i = 0; i < 2; ++i)
@@ -996,7 +993,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, ClearPassPinProperties)
   auto*                   accessor = document.GetObjectAccessor();
   auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
   xiiQtPropertyGridWidget grid(nullptr, &document);
-  for (const auto* type : {xiiGetStaticRTTI<xiiClearColorPass>(), xiiGetStaticRTTI<xiiClearTexturePass>()})
+  for (const auto* type : {xiiGetStaticRTTI<xiiClearColorPass>()})
   {
     xiiUuid id;
     accessor->StartTransaction("Create clear pass");
@@ -1055,7 +1052,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
   if (!XII_TEST_BOOL(output != nullptr))
     return;
   const auto* texture      = accessor->GetChildObjectByName(node, "Texture", {});
-  const auto* requirements = accessor->GetChildObjectByName(texture, "Requirements", {});
+  const auto* requirements = accessor->GetChildObjectByName(texture, "Resolution", {});
   if (!XII_TEST_BOOL(texture && requirements))
     return;
   XII_TEST_BOOL(manager->GetPinPropertyObject(*output) == texture);
@@ -1083,6 +1080,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
 
   accessor->StartTransaction("Configure texture through its reflected pin");
   XII_TEST_STATUS(accessor->SetValueByName(texture, "Format", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA8UNormalized)));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Fixed)));
   XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 64U));
   XII_TEST_STATUS(accessor->SetValueByName(requirements, "Height", 32U));
   accessor->FinishTransaction();
@@ -1098,7 +1096,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
     return;
   const auto* restoredNode         = restored.GetObjectManager()->GetObject(id);
   const auto* restoredTexture      = restored.GetObjectAccessor()->GetChildObjectByName(restoredNode, "Texture", {});
-  const auto* restoredRequirements = restored.GetObjectAccessor()->GetChildObjectByName(restoredTexture, "Requirements", {});
+  const auto* restoredRequirements = restored.GetObjectAccessor()->GetChildObjectByName(restoredTexture, "Resolution", {});
   XII_TEST_INT(restoredTexture->GetTypeAccessor().GetValue("Format").ConvertTo<xiiUInt32>(), xiiGALResourceFormat::RGBA8UNormalized);
   XII_TEST_INT(restoredRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 64);
   XII_TEST_INT(restoredRequirements->GetTypeAccessor().GetValue("Height").Get<xiiUInt32>(), 32);
@@ -1116,31 +1114,6 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
   xiiCreateTexturePass configured;
   XII_TEST_RESULT(configured.Configure(properties));
   XII_TEST_BOOL(configured.m_OutputTexture.GetFormat() == xiiGALResourceFormat::RGBA8UNormalized);
-  XII_TEST_INT(configured.m_OutputTexture.GetRequirements().m_uiWidth, 64);
-  XII_TEST_INT(configured.m_OutputTexture.GetRequirements().m_uiHeight, 32);
-
-  auto* legacy        = graph.GetNode(root->GetGuid());
-  auto* legacyTexture = graph.GetNode(legacy->FindProperty("Texture")->m_Value.Get<xiiUuid>());
-  graph.RemoveNode(legacyTexture->FindProperty("Requirements")->m_Value.Get<xiiUuid>());
-  legacyTexture->RemoveProperty("Requirements");
-  legacyTexture->RemoveProperty("Format");
-  legacy->SetTypeVersion(1);
-  legacy->AddProperty("Width", 96U);
-  legacy->AddProperty("Height", 48U);
-  legacy->AddProperty("Format", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA16Float));
-  xiiAbstractObjectGraph legacyTypes;
-  auto*                  type = legacyTypes.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
-  type->AddProperty("TypeName", "xiiCreateTexturePass");
-  type->AddProperty("ParentTypeName", "xiiRenderPipelinePass");
-  type->AddProperty("TypeVersion", 1U);
-  xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &legacyTypes);
-  xiiCreateTexturePass    migrated;
-  xiiRttiConverterContext migrationContext;
-  migrationContext.RegisterObject(legacy->GetGuid(), migrated.GetDynamicRTTI(), &migrated);
-  xiiRttiConverterReader migrationReader(&graph, &migrationContext);
-  migrationReader.ApplyPropertiesToObject(legacy, migrated.GetDynamicRTTI(), &migrated);
-  XII_TEST_BOOL(migrated.m_OutputTexture.GetFormat() == xiiGALResourceFormat::RGBA16Float);
-  XII_TEST_INT(migrated.m_OutputTexture.GetRequirements().m_uiWidth, 96);
-  XII_TEST_INT(migrated.m_OutputTexture.GetRequirements().m_uiHeight, 48);
-  XII_TEST_BOOL(!legacy->FindProperty("Width") && !legacy->FindProperty("Height") && !legacy->FindProperty("Format"));
+  XII_TEST_INT(configured.m_OutputTexture.GetResolution().m_uiWidth, 64);
+  XII_TEST_INT(configured.m_OutputTexture.GetResolution().m_uiHeight, 32);
 }

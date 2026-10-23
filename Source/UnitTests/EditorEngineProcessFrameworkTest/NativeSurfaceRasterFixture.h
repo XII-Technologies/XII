@@ -166,8 +166,7 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
     if (!sceneDepth.IsValid())
     {
       xiiDepthTargetPass target;
-      target.m_uiWidth  = raster.m_uiWidth;
-      target.m_uiHeight = raster.m_uiHeight;
+      target.m_Depth.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, raster.m_uiWidth, raster.m_uiHeight});
       xiiDynamicArray<xiiRenderPipelinePin> pins;
       target.GetPins(pins);
       XII_SUCCEED_OR_RETURN(target.InitializePinBindings(pins));

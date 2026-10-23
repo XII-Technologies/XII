@@ -105,7 +105,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
           {
             const auto* properties = nodes->GetPinPropertyObject(*pin);
             XII_TEST_BOOL(properties != nullptr);
-            if (properties)
+            if (properties && properties->GetType()->IsDerivedFrom<xiiRenderPipelinePinConfiguration>())
               XII_TEST_BOOL(properties->GetTypeAccessor().GetValue("Id").Get<xiiUuid>() == properties->GetGuid());
           }
         };

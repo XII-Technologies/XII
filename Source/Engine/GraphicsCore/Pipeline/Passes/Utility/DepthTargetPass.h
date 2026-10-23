@@ -12,8 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiDepthTargetPass final : public xiiRenderPipelinePa
 public:
   xiiRenderPipelineTextureInputPin  m_Reference{xiiGALResourceFormat::Unknown, true};
   xiiRenderPipelineTextureOutputPin m_Depth{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1};
-  xiiUInt32                         m_uiWidth = 0, m_uiHeight = 0;
   float                             m_fDepth = 0;
-  xiiResult                         Configure(const xiiVariantDictionary& properties) override;
-  xiiResult                         Build(xiiRenderPipelinePassContext& context) override;
+
+  xiiResult Configure(const xiiVariantDictionary& properties) override;
+  xiiResult Build(xiiRenderPipelinePassContext& context) override;
 };

@@ -207,9 +207,23 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
   for (xiiUInt32 branch = 0; branch < 2; ++branch)
   {
     xiiVariantDictionary upscale, bloom;
-    upscale.Insert("Width", branch ? 16U : 8U);
-    upscale.Insert("Height", branch ? 16U : 8U);
-    const auto scale = descriptor.AddPass(branch ? "Large upscale" : "Small upscale", xiiGetStaticRTTI<xiiUpscalePass>(), upscale);
+    xiiUpscalePass       upscalePass;
+    upscalePass.m_OutputUpscaledColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, branch ? 16U : 8U, branch ? 16U : 8U});
+    XII_TEST_RESULT(upscalePass.GetProperties(upscale));
+    const auto   scale = descriptor.AddPass(branch ? "Large upscale" : "Small upscale", xiiGetStaticRTTI<xiiUpscalePass>(), upscale);
+    xiiBloomPass bloomPass;
+    if (!branch)
+    {
+      xiiRenderPipelinePinConfiguration* sizing = XII_DEFAULT_NEW(xiiRenderPipelinePinConfiguration);
+      sizing->m_Id                              = xiiUuid::MakeUuid();
+      sizing->m_Metadata.m_sName                = "BloomTexture";
+      sizing->m_Metadata.m_bInput               = false;
+      sizing->m_Resolution.m_Mode               = xiiRenderPipelineTextureResolutionMode::Input;
+      sizing->m_Resolution.m_sInput             = "UpscaledColor";
+      sizing->m_Resolution.m_fScale             = 0.5f;
+      bloomPass.m_PinConfigurations.PushBack(sizing);
+    }
+    XII_TEST_RESULT(bloomPass.GetProperties(bloom));
     bloom.Insert("UseViewDefaults", false);
     bloom.Insert("Threshold", branch ? 100.0f : 0.0f);
     const auto effect = descriptor.AddPass(branch ? "High threshold" : "Low threshold", xiiGetStaticRTTI<xiiBloomPass>(), bloom);
@@ -249,8 +263,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
     for (xiiUInt32 branch = 0; branch < 2; ++branch)
     {
       const auto texture = branch ? right : left;
-      // Bloom keeps the input extent; the two authored upscalers have independent allocations.
-      XII_TEST_INT(texture->GetDescription().m_Size.width, branch ? 16 : 8);
+      // Bloom independently chooses half-input or full-input resolution.
+      XII_TEST_INT(texture->GetDescription().m_Size.width, branch ? 16 : 4);
       xiiGALTextureReadback readback(environment.GetDevice());
       const auto            commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
       commands->Begin();

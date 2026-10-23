@@ -64,10 +64,9 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
     root.m_References.PushBack({reflection->GetAuthoring()->m_Descriptor.m_Id, resource.GetResourceID()});
     const auto clear = [&](xiiStringView name, xiiVec4 color, bool invalid = false) {
       xiiClearTexturePass pass;
-      pass.m_uiWidth  = invalid && phase == 5 ? 8 : 9;
-      pass.m_uiHeight = 11;
-      pass.m_Format   = invalid && phase == 6 ? xiiGALResourceFormat::R32UInt : xiiGALResourceFormat::RGBA32Float;
-      pass.m_Color    = xiiColor(color.x, color.y, color.z, color.w);
+      pass.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, invalid && phase == 5 ? 8U : 9U, 11});
+      pass.m_OutputTexture.SetFormat(invalid && phase == 6 ? xiiGALResourceFormat::R32UInt : xiiGALResourceFormat::RGBA32Float);
+      pass.m_Color = xiiColor(color.x, color.y, color.z, color.w);
       xiiVariantDictionary properties;
       XII_TEST_RESULT(pass.GetProperties(properties));
       return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);

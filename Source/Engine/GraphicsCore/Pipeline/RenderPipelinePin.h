@@ -46,8 +46,40 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinType);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinAccess);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinCardinality);
 
+/// Unspecified leaves allocation to the native pass and imposes no input extent requirement.
+struct xiiRenderPipelineTextureResolutionMode
+{
+  using StorageType = xiiUInt8;
+  enum Enum : StorageType
+  {
+    Unspecified,
+    Viewport,
+    RenderResolution,
+    Input,
+    Fixed,
+    Default = Unspecified
+  };
+};
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineTextureResolutionMode);
+
+/// Resolution-independent allocation policy. Input pins use this only to validate a resource.
+/// Relative dimensions round up, with a minimum of one texel. Fixed dimensions may also be scaled.
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineTextureResolution
+{
+  xiiEnum<xiiRenderPipelineTextureResolutionMode> m_Mode;
+  xiiUInt32                                       m_uiWidth  = 0;
+  xiiUInt32                                       m_uiHeight = 0;
+  float                                           m_fScale   = 1.0f;
+  xiiString                                       m_sInput; ///< Optional input pin name; otherwise the pass supplies its reference texture.
+
+  xiiResult Validate() const;
+  bool      IsDefault() const;
+  bool      operator==(const xiiRenderPipelineTextureResolution& other) const = default;
+};
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineTextureResolution);
+
 /// Authored requirements. Zero/Undefined accepts the producer's description.
-/// These constrain connections. A resource creation pass can use its editable output pin's requirements to allocate the resource.
+/// These constrain connections. Extents validate resources; allocation extents come from the resolution policy.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePinConstraints
 {
   xiiEnum<xiiGALResourceDimension> m_Dimension = xiiGALResourceDimension::Undefined;
@@ -84,11 +116,12 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePinConfiguration : public xiiReflect
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePinConfiguration, xiiReflectedClass);
 
 public:
-  xiiUuid                         m_Id; ///< Persistent document identity, never a graph-owned handle.
-  xiiRenderPipelinePinMetadata    m_Metadata;
-  xiiString                       m_sDisplayName;
-  xiiEnum<xiiGALResourceFormat>   m_Format = xiiGALResourceFormat::Unknown;
-  xiiRenderPipelinePinConstraints m_Constraints;
+  xiiUuid                            m_Id; ///< Persistent document identity, never a graph-owned handle.
+  xiiRenderPipelinePinMetadata       m_Metadata;
+  xiiString                          m_sDisplayName;
+  xiiEnum<xiiGALResourceFormat>      m_Format = xiiGALResourceFormat::Unknown;
+  xiiRenderPipelinePinConstraints    m_Constraints;
+  xiiRenderPipelineTextureResolution m_Resolution;
 };
 
 struct xiiGALTextureCreationDescription;
@@ -114,6 +147,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   xiiUuid                             m_Id; ///< Compiled occurrence identity, scoped by its pipeline definition.
   xiiString                           m_sDisplayName;
   const xiiRTTI*                      m_pDataType = nullptr; ///< Immutable native schema, never an authored runtime value.
+  xiiRenderPipelineTextureResolution  m_Resolution;
 
   xiiRenderPipelinePinMetadata GetMetadata() const;
   xiiResult                    Apply(const xiiRenderPipelinePinConfiguration& configuration, xiiStringBuilder* out_error = nullptr);
@@ -167,10 +201,12 @@ public:
                                              xiiGALResourceDimension::Enum dimension = xiiGALResourceDimension::Undefined, xiiUInt32 samples = 0,
                                              xiiRenderPipelinePinAccess::Enum access = xiiRenderPipelinePinAccess::Automatic, bool temporal = false);
 
-  xiiEnum<xiiGALResourceFormat>          GetFormat() const { return GetDeclaration().m_Format; }
-  void                                   SetFormat(xiiEnum<xiiGALResourceFormat> format) { GetDeclaration().m_Format = format; }
-  const xiiRenderPipelinePinConstraints& GetRequirements() const { return GetDeclaration().m_Constraints; }
-  void                                   SetRequirements(const xiiRenderPipelinePinConstraints& requirements) { GetDeclaration().m_Constraints = requirements; }
+  xiiEnum<xiiGALResourceFormat>             GetFormat() const { return GetDeclaration().m_Format; }
+  void                                      SetFormat(xiiEnum<xiiGALResourceFormat> format) { GetDeclaration().m_Format = format; }
+  const xiiRenderPipelinePinConstraints&    GetRequirements() const { return GetDeclaration().m_Constraints; }
+  void                                      SetRequirements(const xiiRenderPipelinePinConstraints& requirements) { GetDeclaration().m_Constraints = requirements; }
+  const xiiRenderPipelineTextureResolution& GetResolution() const { return GetDeclaration().m_Resolution; }
+  void                                      SetResolution(const xiiRenderPipelineTextureResolution& resolution) { GetDeclaration().m_Resolution = resolution; }
 };
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineBufferInputPin : public xiiRenderPipelinePinHandle
 {

@@ -74,7 +74,7 @@ xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context
   authored.m_Exposure.m_fMaximumLogLuminance = m_fMaximumLogLuminance;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), size));
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;

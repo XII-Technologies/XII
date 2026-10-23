@@ -168,10 +168,9 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
     root.m_References.PushBack({diffuse->GetAuthoring()->m_Descriptor.m_Id, diffuseAsset.GetResourceID()});
     const auto clear = [&](xiiStringView name, xiiVec4 color, xiiGALResourceFormat::Enum format = xiiGALResourceFormat::RGBA32Float, bool mismatch = false) {
       xiiClearTexturePass pass;
-      pass.m_uiWidth  = mismatch ? 8 : 9;
-      pass.m_uiHeight = 11;
-      pass.m_Format   = format;
-      pass.m_Color    = xiiColor(color.x, color.y, color.z, color.w);
+      pass.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, mismatch ? 8U : 9U, 11});
+      pass.m_OutputTexture.SetFormat(format);
+      pass.m_Color = xiiColor(color.x, color.y, color.z, color.w);
       xiiVariantDictionary p;
       XII_TEST_RESULT(pass.GetProperties(p));
       return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), p);

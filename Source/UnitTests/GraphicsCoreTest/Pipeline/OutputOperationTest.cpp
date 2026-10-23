@@ -12,16 +12,17 @@
 XII_CREATE_SIMPLE_TEST(Pipeline, OutputOperationComposition)
 {
   xiiUpscalePass authored;
-  authored.m_uiWidth  = 128;
-  authored.m_uiHeight = 64;
+  authored.m_OutputUpscaledColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 128, 64});
   xiiVariantDictionary properties;
   XII_TEST_RESULT(authored.GetProperties(properties));
   xiiUpscalePass copy;
   XII_TEST_RESULT(copy.Configure(properties));
-  XII_TEST_INT(copy.m_uiWidth, 128);
-  XII_TEST_INT(copy.m_uiHeight, 64);
-  properties.Insert("Width", 65537U);
-  XII_TEST_BOOL(copy.Configure(properties).Failed());
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  XII_TEST_RESULT(copy.GetConfiguredPins(pins));
+  XII_TEST_INT(pins[1].m_Resolution.m_uiWidth, 128);
+  XII_TEST_INT(pins[1].m_Resolution.m_uiHeight, 64);
+  copy.m_OutputUpscaledColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 65537, 64});
+  XII_TEST_BOOL(copy.GetConfiguredPins(pins).Failed());
   xiiBloomPass bloom;
   properties.Clear();
   properties.Insert("Radius", -1.0f);

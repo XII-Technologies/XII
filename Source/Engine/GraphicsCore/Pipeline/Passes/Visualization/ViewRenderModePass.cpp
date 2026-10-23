@@ -122,7 +122,10 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
       data.m_Texture = builder.WriteTexture("Empty identities", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Empty& data, xiiRenderGraphPassContext& execute) { ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(data.m_Texture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); }).first->m_Texture;
   }
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, input, 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, m_OutputDisplayLinearColor, input, size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(input);
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   struct Data
   {
     xiiRenderGraphTextureHandle m_Source, m_Depth, m_Objects, m_Output;

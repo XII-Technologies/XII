@@ -94,7 +94,10 @@ xiiResult xiiScreenSpaceReflectionsTemporalPass::Build(xiiRenderPipelinePassCont
 {
   xiiRenderPassResourceScope scope(context);
   xiiSizeU32                 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputSSRRawTerm), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, m_OutputSSRTerm, context.GetInputTexture(m_InputSSRRawTerm), size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputSSRRawTerm));
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputSSRRawTerm)); !desc || desc->m_Size != size)
     return XII_FAILURE;
   if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputSceneDepth)); !desc || desc->m_Size != size)

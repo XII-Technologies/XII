@@ -1075,8 +1075,11 @@ namespace
       return xiiStatus("Could not author shadow map nodes.");
     if (target)
     {
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(target, "Width", 2048U));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(target, "Height", 2048U));
+      const auto* pin        = accessor->GetChildObjectByName(target, "DepthTarget", {});
+      const auto* resolution = accessor->GetChildObjectByName(pin, "Resolution", {});
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Fixed)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Width", 2048U));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Height", 2048U));
     }
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(depth, "Resource", "RenderPipelines/ShadowDepth.xiiBinRenderPipeline"));
     auto overrideId = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/Mesh Shader Override"));
@@ -1580,7 +1583,7 @@ namespace
       const auto* depth = add("Clear Depth", "xiiDepthTargetPass", {600, 300});
       if (!color || !depth)
         return xiiStatus("Missing target initialization nodes.");
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(color, "Format", xiiInt64(xiiGALResourceFormat::RGBA8UNormalizedSRGB)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(accessor->GetChildObjectByName(color, "Texture", {}), "Format", xiiInt64(xiiGALResourceFormat::RGBA8UNormalizedSRGB)));
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(color, "Color", xiiColor(0.008f, 0.012f, 0.025f)));
       XII_SUCCEED_OR_RETURN(boundary(color, "Texture", "Color", false, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::RGBA8UNormalizedSRGB, 0));
       XII_SUCCEED_OR_RETURN(boundary(depth, "DepthTarget", "Depth", false, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::D32Float, 300));

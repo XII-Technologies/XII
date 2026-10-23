@@ -11,9 +11,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthTargetPass, 1, xiiRTTIDefaultAllocator<
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Reference", m_Reference)->AddFlags(xiiPropertyFlags::ReadOnly),
-    XII_MEMBER_PROPERTY("DepthTarget", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
-    XII_MEMBER_PROPERTY("Width", m_uiWidth)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 65536U)),
-    XII_MEMBER_PROPERTY("Height", m_uiHeight)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 65536U)),
+    XII_MEMBER_PROPERTY("DepthTarget", m_Depth),
+
+
     XII_MEMBER_PROPERTY("Depth", m_fDepth)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Utility") } XII_END_ATTRIBUTES;
@@ -22,19 +22,22 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthTargetPass, 1, xiiRTTIDefaultAllocator<
 xiiResult xiiDepthTargetPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return m_uiWidth <= 65536 && m_uiHeight <= 65536 && xiiMath::IsFinite(m_fDepth) && m_fDepth >= 0 && m_fDepth <= 1 ? XII_SUCCESS : XII_FAILURE;
+  return m_Depth.GetResolution().Validate().Succeeded() && xiiMath::IsFinite(m_fDepth) && m_fDepth >= 0 && m_fDepth <= 1 ? XII_SUCCESS : XII_FAILURE;
 }
 xiiResult xiiDepthTargetPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto* reference = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_Reference));
-  xiiSizeU32  size{m_uiWidth ? m_uiWidth : reference ? reference->m_Size.width :
-                     context.m_pView                 ? context.m_pView->GetRenderResolutionWidth() :
-                                                       0,
-                   m_uiHeight ? m_uiHeight : reference ? reference->m_Size.height :
-                     context.m_pView                   ? context.m_pView->GetRenderResolutionHeight() :
-                                                         0};
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterWidth", size.width));
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterHeight", size.height));
+  xiiSizeU32 size;
+  const auto index = m_Depth.GetBindingIndex();
+  if (index >= context.m_Pins.GetCount())
+    return context.ReportFailure("Depth target has no configured output pin.");
+  auto output = context.m_Pins[index];
+  if (output.m_Resolution.IsDefault() && (context.m_Parameters.Contains("RasterWidth") || context.m_Parameters.Contains("RasterHeight")))
+  {
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterWidth", output.m_Resolution.m_uiWidth));
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterHeight", output.m_Resolution.m_uiHeight));
+    output.m_Resolution.m_Mode = xiiRenderPipelineTextureResolutionMode::Fixed;
+  }
+  XII_SUCCEED_OR_RETURN(context.ResolveTextureSize(output, context.GetInputTexture(m_Reference), size));
   if (!size.width || !size.height || size.width > 65536 || size.height > 65536)
     return context.ReportFailure("Depth target requires a nonempty explicit, reference or view size.");
   xiiRenderPassResourceScope scope(context);

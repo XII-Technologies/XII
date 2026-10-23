@@ -154,10 +154,9 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
   xiiRenderPipelineResourceDescriptor definition;
   const auto                          clear = [&](xiiStringView name, xiiGALResourceFormat::Enum format, xiiColor color) {
     xiiClearTexturePass pass;
-    pass.m_uiWidth  = 16;
-    pass.m_uiHeight = 16;
-    pass.m_Format   = format;
-    pass.m_Color    = color;
+    pass.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 16, 16});
+    pass.m_OutputTexture.SetFormat(format);
+    pass.m_Color = color;
     xiiVariantDictionary properties;
     XII_TEST_RESULT(pass.GetProperties(properties));
     return definition.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);

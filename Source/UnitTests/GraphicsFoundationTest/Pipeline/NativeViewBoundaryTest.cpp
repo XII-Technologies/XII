@@ -104,6 +104,16 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
   }
   for (xiiUInt32 phase = 0; phase < 3; ++phase)
   {
+    if (phase == 2)
+      for (xiiUInt32 v = 0; v < 2; ++v)
+      {
+        xiiResourceLock<xiiRenderPipelineResource> current(targetRoots[v], xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+        auto                                       changed = current->GetAuthoring()->m_Descriptor;
+        changed.m_Id                                       = xiiUuid::MakeUuid();
+        changed.m_Passes[0].m_Overrides[0].m_Properties.Insert("Color", v ? xiiColor(1, 0, 0) : xiiColor(0, 0, 1));
+        targetRoots[v] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(xiiStringBuilder("Partial viewport targets ", v ? "B" : "A"), std::move(changed));
+        views[v]->SetViewport({2, 2, 4, 4});
+      }
     xiiRenderGraphFrame frame;
     if (!XII_TEST_RESULT(frame.Begin(3)))
       return;
@@ -159,11 +169,21 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
       xiiColorGammaUB       source, result;
       float                 depth = 1;
       xiiFinalBlitConstants constants;
-      xiiUInt32             counter = 0;
-      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(colorHandles[v]).Borrow(), 1, 1, source) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), target.Borrow(), 1, 1, result) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(depthHandles[v]).Borrow(), 1, 1, depth) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(constantHandles[v]).Borrow(), 0, constants) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(counterHandles[v]).Borrow(), 0, counter))
+      xiiUInt32             counter     = 0;
+      const xiiUInt32       outputPixel = phase == 2 ? 3U : 1U;
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(colorHandles[v]).Borrow(), 1, 1, source) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), target.Borrow(), outputPixel, outputPixel, result) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(depthHandles[v]).Borrow(), 1, 1, depth) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(constantHandles[v]).Borrow(), 0, constants) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(counterHandles[v]).Borrow(), 0, counter))
         return;
-      XII_TEST_INT(source.r, v ? 0 : 255);
-      XII_TEST_INT(source.b, v ? 255 : 0);
+      const bool blue = (v != 0) != (phase == 2);
+      XII_TEST_INT(source.r, blue ? 0 : 255);
+      XII_TEST_INT(source.b, blue ? 255 : 0);
+      if (phase == 2)
+      {
+        xiiColorGammaUB outside;
+        if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), target.Borrow(), 1, 1, outside))
+          return;
+        XII_TEST_INT(outside.r, v ? 0 : 255);
+        XII_TEST_INT(outside.b, v ? 255 : 0);
+      }
       XII_TEST_INT(result.r, source.r);
       XII_TEST_INT(result.g, 0);
       XII_TEST_INT(result.b, source.b);

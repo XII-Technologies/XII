@@ -4,6 +4,9 @@
 
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineFrameData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -138,6 +141,9 @@ xiiResult xiiRenderPipelinePass::GetConfiguredPins(xiiArrayPtr<const xiiRenderPi
       return XII_FAILURE;
     }
   }
+  for (const auto& pin : pins)
+    if (pin.m_Resolution.Validate().Failed() || (pin.m_Type != xiiRenderPipelinePin::Texture && !pin.m_Resolution.IsDefault()))
+      return XII_FAILURE;
   out_pins = std::move(pins);
   return XII_SUCCESS;
 }
@@ -148,6 +154,82 @@ xiiUInt32 xiiRenderPipelinePassContext::FindPin(xiiStringView name, bool input) 
     if (m_Pins[i].m_bInput == input && m_Pins[i].m_sName == name)
       return i;
   return xiiInvalidIndex;
+}
+
+xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size, xiiRenderPipelineTextureResolutionMode::Enum defaultMode) const
+{
+  const auto index = pin.GetBindingIndex();
+  if (index >= m_Pins.GetCount() || m_Pins[index].m_bInput)
+    return ReportFailure("Texture sizing requires a configured output pin.");
+  return ResolveTextureSize(m_Pins[index], reference, out_size, defaultMode);
+}
+
+xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size, xiiRenderPipelineTextureResolutionMode::Enum defaultMode) const
+{
+  using Mode             = xiiRenderPipelineTextureResolutionMode;
+  out_size               = {0, 0};
+  const auto& resolution = pin.m_Resolution;
+  if (pin.m_Type != xiiRenderPipelinePin::Texture || resolution.Validate().Failed())
+    return ReportFailure("Invalid texture resolution policy.");
+  if (!resolution.m_sInput.IsEmpty())
+    reference = GetInputTexture(resolution.m_sInput);
+  const bool automatic = resolution.m_Mode == Mode::Unspecified;
+  const auto mode      = automatic ? defaultMode : resolution.m_Mode.GetValue();
+  if (!reference.IsValid() && resolution.m_sInput.IsEmpty() && mode == Mode::Input)
+    for (xiiUInt32 i = 0; i < m_Pins.GetCount(); ++i)
+      if (m_Pins[i].m_bInput && m_Pins[i].m_Type == xiiRenderPipelinePin::Texture && m_Bindings[i].m_hTexture.IsValid())
+      {
+        reference = m_Bindings[i].m_hTexture;
+        break;
+      }
+  const auto* input = m_Graph.GetTextureDescription(reference);
+  xiiSizeU32  size(0, 0);
+  if (mode == Mode::Input && input)
+    size = input->m_Size;
+  else if (mode == Mode::Fixed)
+    size = {resolution.m_uiWidth, resolution.m_uiHeight};
+  else if (m_pView && (mode == Mode::Viewport || mode == Mode::RenderResolution || (automatic && mode == Mode::Input)))
+  {
+    const auto& viewport = m_pView->GetViewport();
+    if (!xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 || viewport.width > 65536 || viewport.height > 65536)
+      return ReportFailure("Texture sizing requires a finite, nonempty viewport of at most 65536 texels per dimension.");
+    size = mode == Mode::Viewport ? xiiSizeU32(static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height)) :
+                                    xiiSizeU32(m_pView->GetRenderResolutionWidth(), m_pView->GetRenderResolutionHeight());
+  }
+  else if (automatic && input)
+    size = input->m_Size; // Viewless/offscreen upscaling keeps the supplied target extent.
+  const double width  = xiiMath::Ceil(static_cast<double>(size.width) * resolution.m_fScale);
+  const double height = xiiMath::Ceil(static_cast<double>(size.height) * resolution.m_fScale);
+  if (!size.width || !size.height || width > 65536 || height > 65536)
+    return ReportFailure("Texture resolution requires a view, an available input or explicit dimensions, and must fit within 65536 texels per dimension.");
+  if (xiiGALDevice::HasDefaultDevice())
+  {
+    const auto& limits  = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties;
+    const auto  maximum = pin.m_Constraints.m_Dimension == xiiGALResourceDimension::Texture3D                                                             ? limits.m_uiMaxTexture3DDimension :
+      pin.m_Constraints.m_Dimension == xiiGALResourceDimension::TextureCube || pin.m_Constraints.m_Dimension == xiiGALResourceDimension::TextureCubeArray ? limits.m_uiMaxTextureCubeDimension :
+                                                                                                                                                            limits.m_uiMaxTexture2DDimension;
+    if (maximum && (width > maximum || height > maximum))
+      return ReportFailure("Resolved texture extent exceeds the device's texture dimension limit.");
+  }
+  out_size = {xiiMath::Max(1U, static_cast<xiiUInt32>(width)), xiiMath::Max(1U, static_cast<xiiUInt32>(height))};
+  return XII_SUCCESS;
+}
+
+xiiResult xiiRenderPipelinePassContext::ValidateTexture(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle texture) const
+{
+  const auto* description = m_Graph.GetTextureDescription(texture);
+  if (!description || !pin.Accepts(*description))
+    return XII_FAILURE;
+  const auto mode = pin.m_Resolution.m_Mode;
+  if (mode != xiiRenderPipelineTextureResolutionMode::Unspecified &&
+      !(mode == xiiRenderPipelineTextureResolutionMode::Input && m_bTemporalHistoryPhase))
+  {
+    xiiSizeU32 expected;
+    XII_SUCCEED_OR_RETURN(ResolveTextureSize(pin, {}, expected));
+    if (expected != description->m_Size)
+      return ReportFailure("Texture extent does not match the pin's resolution contract.");
+  }
+  return XII_SUCCESS;
 }
 xiiRenderGraphTextureHandle xiiRenderPipelinePassContext::GetInputTexture(xiiStringView name) const
 {
@@ -175,7 +257,7 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineTexture
   if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::Texture || m_Pins[i].m_bTemporalHistoryOutput != m_bTemporalHistoryPhase)
     return XII_FAILURE;
   const auto* description = m_Graph.GetTextureDescription(texture);
-  if (!description || !m_Pins[i].Accepts(*description))
+  if (!description || ValidateTexture(m_Pins[i], texture).Failed())
     return XII_FAILURE;
   m_Bindings[i].m_hTexture = texture;
   return XII_SUCCESS;
@@ -241,7 +323,7 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderG
   if (m_Pins[i].m_bTemporalHistoryOutput != m_bTemporalHistoryPhase)
     return XII_FAILURE;
   const auto* description = m_Graph.GetTextureDescription(texture);
-  if (!description || !m_Pins[i].Accepts(*description))
+  if (!description || ValidateTexture(m_Pins[i], texture).Failed())
     return XII_FAILURE;
   m_Bindings[i].m_hTexture = texture;
   return XII_SUCCESS;
