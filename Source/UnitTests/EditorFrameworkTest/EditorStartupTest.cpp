@@ -20,10 +20,12 @@
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Panels/AssetBrowserPanel/CuratorControl.moc.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
@@ -35,6 +37,7 @@
 #include <QElapsedTimer>
 #include <QLineEdit>
 #include <QPointer>
+#include <QProgressBar>
 #include <QProgressDialog>
 #include <QTimer>
 #include <QTreeView>
@@ -42,6 +45,7 @@
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
@@ -198,6 +202,126 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
 XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundTransforms);
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundImports);
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundAssetChecks);
+
+XII_CREATE_SIMPLE_TEST(EditorBackgroundAssetChecks, ResponsiveRescanAndShutdown)
+{
+  auto&           editor       = *xiiQtEditorApp::GetSingleton();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/CheckPreferences");
+  const xiiStringBuilder project(preferences, "/Project/xiiProject");
+  XII_TEST_BOOL(xiiToolsProject::CreateProject(project).Succeeded());
+  xiiToolsProject::CloseProject();
+  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor.ShutdownEditor());
+  if (!XII_TEST_RESULT(editor.CreateOrOpenProject(false, project)))
+    return;
+  auto* curator   = xiiAssetCurator::GetSingleton();
+  auto* processor = xiiAssetProcessor::GetSingleton();
+  auto* files     = xiiFileSystemModel::GetSingleton();
+  class ModalObserver : public QObject
+  {
+  public:
+    bool eventFilter(QObject* object, QEvent* event) override
+    {
+      if (event->type() == QEvent::Show && qobject_cast<QProgressDialog*>(object))
+        ++m_uiDialogs;
+      return false;
+    }
+    xiiUInt32 m_uiDialogs = 0;
+  } observer;
+  qApp->installEventFilter(&observer);
+  XII_SCOPE_EXIT(qApp->removeEventFilter(&observer));
+  xiiThreadSignal   release;
+  std::atomic<bool> entered      = false;
+  auto              subscription = files->m_FileChangedEvents.AddEventHandler([&](const xiiFileChangedEvent& event) {
+    if (event.m_Type == xiiFileChangedEvent::Type::ModelReset && !xiiThreadUtils::IsMainThread() && !entered.exchange(true))
+    {
+      release.WaitForSignal(xiiTime::MakeFromSeconds(10));
+    }
+  });
+  XII_SCOPE_EXIT(release.RaiseSignal(); editor.CloseProject(); files->m_FileChangedEvents.RemoveEventHandler(subscription));
+  xiiUInt32 started = 0, finished = 0;
+  auto      curatorSubscription = curator->m_Events.AddEventHandler([&](const xiiAssetCuratorEvent& event) {
+    if (event.m_Type == xiiAssetCuratorEvent::Type::FileSystemCheckStarted)
+    {
+      XII_TEST_BOOL(xiiThreadUtils::IsMainThread());
+      ++started;
+    }
+    if (event.m_Type == xiiAssetCuratorEvent::Type::AssetListReset && !curator->IsCheckingFileSystem())
+    {
+      XII_TEST_BOOL(xiiThreadUtils::IsMainThread());
+      ++finished;
+    }
+  });
+  XII_SCOPE_EXIT(curator->m_Events.RemoveEventHandler(curatorSubscription));
+  const xiiStringBuilder source(preferences, "/Project/CheckFixture.txt");
+  {
+    xiiOSFile file;
+    XII_TEST_RESULT(file.Open(source, xiiFileOpenMode::Write));
+    XII_TEST_RESULT(file.Write("fixture", 7));
+  }
+  xiiQtCuratorControl control(nullptr);
+  // Exercise the actual Start Background Processing button, including its rescan.
+  XII_TEST_BOOL(QMetaObject::invokeMethod(&control, "BackgroundProcessClicked", Qt::DirectConnection, Q_ARG(bool, true)));
+  XII_TEST_BOOL(curator->IsCheckingFileSystem());
+  curator->QueueCheckFileSystem();
+  XII_TEST_INT(started, 1);                // Coalesce repeated requests while the first scan is active.
+  processor->StopProcessTask(false, true); // Stop remains responsive while scanning.
+  QLineEdit editing;
+  QTimer    heartbeat;
+  xiiUInt32 heartbeats = 0;
+  QObject::connect(&heartbeat, &QTimer::timeout, &editing, [&]() {
+    editing.setText(QString::number(++heartbeats));
+    XII_TEST_BOOL(QApplication::activeModalWidget() == nullptr);
+    XII_TEST_BOOL(!editor.IsProgressBarProcessingEvents());
+    if (entered && heartbeats >= 3)
+      release.RaiseSignal();
+  });
+  heartbeat.start(5);
+  auto*         progress = control.findChild<QProgressBar*>();
+  QElapsedTimer timeout;
+  timeout.start();
+  while (curator->IsCheckingFileSystem() && timeout.elapsed() < 15000)
+  {
+    QApplication::processEvents(QEventLoop::AllEvents, 20);
+    if (progress && curator->IsCheckingFileSystem())
+    {
+      XII_TEST_BOOL(!progress->isHidden());
+      XII_TEST_INT(progress->maximum(), 0);
+    }
+    curator->MainThreadTick(true);
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+  QApplication::processEvents();
+  XII_TEST_BOOL(entered);
+  XII_TEST_BOOL(!curator->IsCheckingFileSystem());
+  XII_TEST_BOOL(heartbeats >= 3 && !editing.text().isEmpty());
+  XII_TEST_INT(finished, 1);
+  XII_TEST_BOOL(progress && progress->isHidden());
+  XII_TEST_INT(observer.m_uiDialogs, 0);
+  xiiFileStatus status;
+  XII_TEST_RESULT(files->FindFile(source, status));
+  XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+  // A direct synchronous caller must also stay free of global modal progress.
+  curator->CheckFileSystem();
+  XII_TEST_INT(observer.m_uiDialogs, 0);
+  // Closing the project joins a queued scan before destroying its file model.
+  curator->QueueCheckFileSystem();
+  editor.CloseProject();
+  timeout.restart();
+  while (xiiToolsProject::IsProjectOpen() && timeout.elapsed() < 15000)
+  {
+    QApplication::processEvents(QEventLoop::AllEvents, 20);
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+  XII_TEST_BOOL(!curator->IsCheckingFileSystem());
+  XII_TEST_BOOL(!xiiToolsProject::IsProjectOpen());
+}
 
 XII_CREATE_SIMPLE_TEST(EditorBackgroundImports, MeshAndSkeleton)
 {
