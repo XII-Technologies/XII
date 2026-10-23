@@ -1,8 +1,15 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Application/Application.h>
+#include <Foundation/Communication/IpcChannel.h>
+#include <Foundation/Communication/IpcProcessMessageProtocol.h>
+#include <Foundation/Threading/ThreadSignal.h>
+#include <Foundation/Types/UniquePtr.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <TestFramework/Utilities/TestSetup.h>
 
 // Production asset plugins resolve application data during subsystem startup.
@@ -27,6 +34,33 @@ public:
 
   Execution Run() override
   {
+    // A real pipe/protocol peer exercises startup response delivery without creating a GPU
+    // device or adding a simulated operation to the Editor. Only the test executable uses it.
+    auto* pCommand = xiiCommandLineUtils::GetGlobalInstance();
+    if (pCommand->HasOption("-splashIpcTestPeer"))
+    {
+      xiiUniquePtr<xiiIpcChannel>                                 peer = xiiIpcChannel::CreatePipeChannel(pCommand->GetStringOption("-IPC"), xiiIpcChannel::Mode::Client);
+      xiiThreadSignal                                             connected;
+      xiiThreadSignal                                             disconnected;
+      xiiEvent<const xiiIpcChannelEvent&, xiiMutex>::Unsubscriber subscription;
+      peer->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& e) {
+        if (e.m_Type == xiiIpcChannelEvent::Connected)
+          connected.RaiseSignal();
+        else if (e.m_Type == xiiIpcChannelEvent::Disconnected)
+          disconnected.RaiseSignal();
+      },
+                                     subscription);
+      xiiIpcProcessMessageProtocol protocol(peer.Borrow());
+      peer->Connect();
+      if (!peer->IsConnected())
+        connected.WaitForSignal(xiiTime::MakeFromSeconds(5));
+      xiiProjectReadyMsgToEditor response;
+      const bool                 bSent = peer->IsConnected() && protocol.Send(&response);
+      if (bSent)
+        disconnected.WaitForSignal(xiiTime::MakeFromSeconds(5));
+      SetReturnCode(bSent ? 0 : 1);
+      return Execution::Quit;
+    }
     xiiTestSetup::InitTestFramework("EditorFrameworkTest", "Editor Framework Tests", GetArgumentCount(), GetArgumentsArray());
     while (xiiTestSetup::RunTests() == xiiTestAppRun::Continue)
     {

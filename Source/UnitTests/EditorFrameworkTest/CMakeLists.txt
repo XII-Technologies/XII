@@ -8,7 +8,7 @@ xii_create_target(APPLICATION ${PROJECT_NAME})
 # Exercise the production scene and pipeline plugins instead of compiling implementation copies.
 target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorFramework SharedPluginScene SharedPluginAssets EditorPluginScene EditorPluginAssets EnginePluginAssets)
 # Native test widgets need the same Qt Debug RTTI settings as production widgets.
-xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets)
+xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets Svg)
 if(XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME} PRIVATE Ole32.lib Uuid.lib Shell32.lib RuntimeObject.lib)
 endif()
