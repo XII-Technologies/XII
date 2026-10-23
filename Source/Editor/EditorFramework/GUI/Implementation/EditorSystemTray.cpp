@@ -113,8 +113,10 @@ void xiiQtEditorSystemTray::ProgressEventHandler(const xiiProgressEvent& e)
     UpdateToolTip(); }, Qt::AutoConnection);
 }
 
-void xiiQtEditorSystemTray::ProcessorEventHandler(const xiiAssetProcessorEvent&)
+void xiiQtEditorSystemTray::ProcessorEventHandler(const xiiAssetProcessorEvent& e)
 {
+  if (e.m_Type != xiiAssetProcessorEvent::Type::ProcessTaskStateChanged)
+    return;
   const auto state = m_pProcessor->GetProcessTaskState();
   QMetaObject::invokeMethod(this, [this, state]() {
     switch (state)
@@ -190,18 +192,7 @@ void xiiQtEditorSystemTray::RefreshMenu()
 
 void xiiQtEditorSystemTray::ShowEditor()
 {
-  if (!m_pWindow)
-    return;
-  m_pWindow->setWindowState(m_pWindow->windowState() & ~Qt::WindowMinimized);
-  m_pWindow->show();
-  QWidget* pTarget = QApplication::activeModalWidget();
-  if (pTarget == nullptr)
-    pTarget = m_pWindow;
-  pTarget->raise();
-  pTarget->activateWindow();
-  // Qt follows Windows foreground restrictions; requesting attention is the fallback.
-  if (!pTarget->isActiveWindow())
-    QApplication::alert(pTarget);
+  xiiQtEditorApp::ShowEditorWindow(m_pWindow);
 }
 
 void xiiQtEditorSystemTray::RefreshIcon()

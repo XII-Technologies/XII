@@ -37,14 +37,22 @@ void xiiLongOpControllerManager::ProcessCommunicationChannelEventHandler(const x
 
     if (auto pOpInfo = GetOperation(pMsg->m_OperationGuid))
     {
+      if (!pOpInfo->m_bIsRunning)
+        return;
+
       pOpInfo->m_bIsRunning      = false;
       pOpInfo->m_StartOrDuration = xiiTime::Now() - pOpInfo->m_StartOrDuration;
       pOpInfo->m_fCompletion     = 0.0f;
 
       pOpInfo->m_pProxyOp->Finalize(pMsg->m_bSuccess ? XII_SUCCESS : XII_FAILURE, pMsg->m_ResultData);
 
-      // TODO: show success/failure in UI
+      xiiLongOpControllerEvent result;
+      result.m_Type          = xiiLongOpControllerEvent::Type::OpFinished;
+      result.m_OperationGuid = pMsg->m_OperationGuid;
+      result.m_bSucceeded    = pMsg->m_bSuccess;
+      result.m_bCanceled     = pOpInfo->m_bCancelRequested;
       BroadcastProgress(*pOpInfo);
+      m_Events.Broadcast(result);
     }
   }
 }
@@ -58,8 +66,9 @@ void xiiLongOpControllerManager::StartOperation(xiiUuid opGuid)
   if (pOpInfo == nullptr || pOpInfo->m_bIsRunning)
     return;
 
-  pOpInfo->m_StartOrDuration = xiiTime::Now();
-  pOpInfo->m_bIsRunning      = true;
+  pOpInfo->m_StartOrDuration  = xiiTime::Now();
+  pOpInfo->m_bIsRunning       = true;
+  pOpInfo->m_bCancelRequested = false;
 
   ReplicateToWorkerProcess(*pOpInfo);
 
@@ -76,6 +85,7 @@ void xiiLongOpControllerManager::CancelOperation(xiiUuid opGuid)
     return;
 
   // send a cancel message to the processor
+  pOpInfo->m_bCancelRequested = true;
   xiiLongOpResultMsg msg;
   msg.m_OperationGuid = opGuid;
   msg.m_bSuccess      = false;
