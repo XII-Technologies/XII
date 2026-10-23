@@ -15,6 +15,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessAssetMsg, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("PackageHash", m_PackageHash),
     XII_MEMBER_PROPERTY("AssetPath", m_sAssetPath),
     XII_MEMBER_PROPERTY("Platform", m_sPlatform),
+    XII_BITFLAGS_MEMBER_PROPERTY("TransformFlags", xiiTransformFlags, m_TransformFlags),
     XII_ARRAY_MEMBER_PROPERTY("DepRefHull", m_DepRefHull),
   }
   XII_END_PROPERTIES;

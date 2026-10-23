@@ -125,9 +125,9 @@ public:
             xiiLog::Warning("Asset '{}' of state '{}' in processor with hashes '{}|{}|{}' differs from the state in the editor with hashes '{}|{}|{}'.", pMsg->m_sAssetPath, (int)state, uiAssetHash, uiThumbHash, uiPackageHash, pMsg->m_AssetHash, pMsg->m_ThumbHash, pMsg->m_PackageHash);
           }
 
-          if (state == xiiAssetInfo::NeedsThumbnail || state == xiiAssetInfo::NeedsTransform)
+          if (state == xiiAssetInfo::NeedsThumbnail || state == xiiAssetInfo::NeedsTransform || pMsg->m_TransformFlags.IsSet(xiiTransformFlags::ForceTransform))
           {
-            msg.m_Status = xiiAssetCurator::GetSingleton()->TransformAsset(pMsg->m_AssetGuid, xiiTransformFlags::BackgroundProcessing, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform));
+            msg.m_Status = xiiAssetCurator::GetSingleton()->TransformAsset(pMsg->m_AssetGuid, pMsg->m_TransformFlags | xiiTransformFlags::BackgroundProcessing, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform));
 
             if (msg.m_Status.Failed())
             {
@@ -139,6 +139,11 @@ public:
               msg.m_sWhatToDo = "FreeGalResources";
               xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
             }
+          }
+          else if (state == xiiAssetInfo::NeedsImport)
+          {
+            msg.m_Status.m_Result   = xiiTransformResult::NeedsImport;
+            msg.m_Status.m_sMessage = "Asset requires import in the editor before background transformation.";
           }
           else if (state == xiiAssetInfo::UpToDate)
           {

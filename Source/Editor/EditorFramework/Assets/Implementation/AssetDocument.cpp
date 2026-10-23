@@ -5,6 +5,7 @@
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -120,6 +121,15 @@ void xiiAssetDocument::InternalAfterSaveDocument()
 
   if (flags.IsAnySet(xiiAssetDocumentFlags::AutoTransformOnSave))
   {
+    auto* editor = xiiQtEditorApp::GetSingleton();
+    if (!editor->IsBackgroundMode() && !editor->IsInHeadlessMode() && !editor->IsInUnitTestMode())
+    {
+      const xiiUuid guid = GetGuid();
+      QMetaObject::invokeMethod(editor, [guid]() {
+        if (xiiToolsProject::IsProjectOpen() && !xiiToolsProject::IsProjectClosing())
+          xiiAssetProcessor::GetSingleton()->QueueTransformAssets(xiiMakeArrayPtr(&guid, 1), xiiTransformFlags::None).LogFailure(); }, Qt::QueuedConnection);
+      return;
+    }
     // If we request an engine connection but the mirror is not set up yet we are still
     // creating the document and TransformAsset will most likely fail.
     if (m_EngineConnectionType == xiiAssetDocEngineConnection::None || m_pEngineConnection)
@@ -318,6 +328,8 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
 xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
 {
   XII_PROFILE_SCOPE("TransformAsset");
+  if (xiiAssetCurator::GetSingleton()->IsAssetBeingTransformed(GetGuid()))
+    return xiiTransformStatus("Asset is being transformed in the background. Retry after it finishes.");
 
   if (!transformFlags.IsSet(xiiTransformFlags::ForceTransform))
   {

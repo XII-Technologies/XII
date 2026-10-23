@@ -7,6 +7,7 @@
 #include <EditorFramework/Assets/AssetProcessorMessages.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Configuration/SubSystem.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
@@ -82,7 +83,14 @@ xiiAssetProcessor::~xiiAssetProcessor()
 
 void xiiAssetProcessor::StartProcessTask()
 {
+  StartProcessTask(true);
+}
+
+void xiiAssetProcessor::StartProcessTask(bool bAutomatic)
+{
   XII_LOCK(m_ProcessorMutex);
+  if (bAutomatic)
+    m_bAutomatic = true;
   if (m_ProcessTaskState != ProcessTaskState::Stopped)
   {
     return;
@@ -143,6 +151,12 @@ void xiiAssetProcessor::StopProcessTask(bool bForce, bool bWait)
     }
   }
 
+  {
+    XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+    m_TransformProgress.m_bCancelRequested = true;
+    BroadcastTransformProgress();
+  }
+
   if (bForce)
     m_bForceStop = true;
   if ((bForce || bWait) && m_pThread)
@@ -171,7 +185,31 @@ void xiiAssetProcessor::Run()
     {
       m_ProcessTasks[i].Tick(true);
     }
+    if (!m_bAutomatic)
+    {
+      XII_LOCK(m_ProcessorMutex);
+      XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+      if (m_RequestedAssets.IsEmpty())
+      {
+        m_ProcessTaskState = ProcessTaskState::Stopping;
+        break;
+      }
+    }
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
+  }
+
+  {
+    XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+    m_TransformProgress.m_bCancelRequested = !m_RequestedAssets.IsEmpty();
+    m_TransformProgress.m_uiCanceled += m_TransformRequests.GetCount();
+    m_TransformProgress.m_uiCanceled += m_FinalTransformRequests.GetCount();
+    for (const auto& request : m_TransformRequests)
+      m_RequestedAssets.Remove(request.m_AssetGuid);
+    m_TransformRequests.Clear();
+    for (const auto& request : m_FinalTransformRequests)
+      m_RequestedAssets.Remove(request.m_AssetGuid);
+    m_FinalTransformRequests.Clear();
+    BroadcastTransformProgress();
   }
 
   while (true)
@@ -192,10 +230,16 @@ void xiiAssetProcessor::Run()
       break;
   }
 
+  {
+    XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+    BroadcastTransformProgress(true);
+  }
+
   XII_LOCK(m_ProcessorMutex);
   m_ProcessTasks.Clear();
   m_ProcessTaskState = ProcessTaskState::Stopped;
   m_bForceStop       = false;
+  m_bAutomatic       = false;
   {
     xiiAssetProcessorEvent e;
     e.m_Type = xiiAssetProcessorEvent::Type::ProcessTaskStateChanged;
@@ -296,6 +340,11 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
     {
       if (xiiAssetInfo* pFileInfo = xiiAssetCurator::GetSingleton()->GetAssetInfo(sFile))
       {
+        if (xiiAssetCurator::GetSingleton()->m_Updating.Contains(pFileInfo->m_Info->m_DocumentID))
+        {
+          bComplete = false;
+          continue;
+        }
         switch (pFileInfo->m_TransformState)
         {
           case xiiAssetInfo::TransformState::Unknown:
@@ -355,6 +404,52 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
 {
   XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
 
+  auto* processor = xiiAssetProcessor::GetSingleton();
+  auto* curator   = xiiAssetCurator::GetSingleton();
+  // Manager-wide outputs are rebuilt after ordinary assets and their in-flight writes.
+  if (processor->m_TransformRequests.IsEmpty() && curator->m_Updating.IsEmpty() && !processor->m_FinalTransformRequests.IsEmpty())
+  {
+    processor->m_TransformRequests.PushBack(std::move(processor->m_FinalTransformRequests.PeekFront()));
+    processor->m_FinalTransformRequests.PopFront();
+  }
+  m_bRequested = false;
+  for (xiiUInt32 i = 0; i < processor->m_TransformRequests.GetCount(); ++i)
+  {
+    auto&              request = processor->m_TransformRequests[i];
+    xiiProcessAssetMsg fresh;
+    if (xiiAssetProcessor::PrepareAssetRequest(request.m_AssetGuid, fresh, request.m_sPlatform).Succeeded())
+    {
+      fresh.m_sPlatform      = request.m_sPlatform;
+      fresh.m_TransformFlags = request.m_TransformFlags;
+      request                = std::move(fresh);
+    }
+    xiiDynamicArray<xiiUuid> reserved;
+    reserved.PushBack(request.m_AssetGuid);
+    for (const auto& dependency : request.m_DepRefHull)
+    {
+      auto asset = curator->FindSubAsset(dependency);
+      if (asset.isValid() && !reserved.Contains(asset->m_pAssetInfo->m_Info->m_DocumentID))
+        reserved.PushBack(asset->m_pAssetInfo->m_Info->m_DocumentID);
+    }
+    bool bBusy = false;
+    for (const auto& guid : reserved)
+      bBusy |= curator->m_Updating.Contains(guid);
+    if (bBusy)
+      continue;
+
+    m_Request = request;
+    processor->m_TransformRequests.RemoveAtAndCopy(i);
+    m_ReservedAssets = std::move(reserved);
+    for (const auto& guid : m_ReservedAssets)
+      curator->m_Updating.Insert(guid);
+    m_bRequested = true;
+    out_guid     = m_Request.m_AssetGuid;
+    out_path     = curator->GetAssetInfo(out_guid) ? curator->GetAssetInfo(out_guid)->m_Path : xiiDataDirPath();
+    return true;
+  }
+  if (!processor->m_bAutomatic)
+    return false;
+
   for (auto it = xiiAssetCurator::GetSingleton()->m_TransformState[xiiAssetInfo::TransformState::NeedsTransform].GetIterator(); it.IsValid(); ++it)
   {
     xiiAssetInfo* pInfo = xiiAssetCurator::GetSingleton()->GetAssetInfo(it.Key());
@@ -384,6 +479,8 @@ void xiiProcessTask::OnProcessCrashed(xiiStringView message)
 {
   ShutdownProcess();
   m_Status = xiiStatus(message);
+  if (xiiAssetProcessor::GetSingleton()->m_bForceStop)
+    return; // Deliberate termination is cancellation, not a failed asset diagnostic.
   xiiLogEntryDelegate logger([this](xiiLogEntry& ref_entry) { m_LogEntries.PushBack(std::move(ref_entry)); });
   xiiLog::Error(&logger, message);
   xiiLog::Error(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, message);
@@ -397,7 +494,7 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
     {
       case State::LookingForWork:
       {
-        if (!bStartNewWork)
+        if (!bStartNewWork || xiiAssetProcessor::GetSingleton()->GetProcessTaskState() != xiiAssetProcessor::ProcessTaskState::Running)
           return false; // don't call later
 
         m_LogEntries.Clear();
@@ -420,11 +517,23 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
             return bStartNewWork; // call again if we should be looking for new work
           }
 
-          if (xiiAssetProcessor::PrepareAssetRequest(m_AssetGuid, m_Request).Failed())
+          if (!m_bRequested && xiiAssetProcessor::PrepareAssetRequest(m_AssetGuid, m_Request).Failed())
           {
             m_Status = xiiTransformStatus("Asset disappeared while preparing its background processing request.");
             m_State  = State::ReportResult;
             break;
+          }
+          if (m_bRequested && !m_Request.m_TransformFlags.IsSet(xiiTransformFlags::ForceTransform))
+          {
+            auto*           curator = xiiAssetCurator::GetSingleton();
+            xiiUInt64       hash = 0, thumbnail = 0, package = 0;
+            const xiiString profileName(m_Request.m_sPlatform);
+            const auto      index = curator->FindAssetProfileByName(profileName);
+            if (index != xiiInvalidIndex && curator->IsAssetUpToDate(m_AssetGuid, curator->GetAssetProfile(index), nullptr, hash, thumbnail, package) == xiiAssetInfo::UpToDate)
+            {
+              m_State = State::ReportResult;
+              break;
+            }
           }
         }
 
@@ -460,6 +569,8 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
         {
           m_State = State::Ready;
         }
+        else
+          return true;
       }
       break;
       case State::Ready:
@@ -485,16 +596,23 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           OnProcessCrashed("Asset Processor crashed during processing");
           m_State = State::ReportResult;
         }
+        else if (m_State == State::Processing)
+          return true;
       }
       break;
       case State::ReportResult:
       {
-        if (m_Status.Succeeded())
+        XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+        const bool         bCanceled = xiiAssetProcessor::GetSingleton()->m_bForceStop;
+        xiiProcessAssetMsg current;
+        const bool         bChanged = m_bRequested && !bCanceled && xiiAssetProcessor::PrepareAssetRequest(m_AssetGuid, current, m_Request.m_sPlatform).Succeeded() &&
+          (current.m_AssetHash != m_Request.m_AssetHash || current.m_ThumbHash != m_Request.m_ThumbHash || current.m_PackageHash != m_Request.m_PackageHash);
+        if (m_Status.Succeeded() && !bCanceled && !bChanged)
         {
           xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(m_AssetGuid);
           xiiAssetCurator::GetSingleton()->NeedsReloadResources(m_AssetGuid);
         }
-        else
+        else if (!bCanceled && !bChanged)
         {
           if (m_Status.m_Result == xiiTransformResult::NeedsImport)
           {
@@ -510,12 +628,46 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
         {
           XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
           xiiAssetCurator::GetSingleton()->m_Updating.Remove(m_AssetGuid);
+          for (const auto& guid : m_ReservedAssets)
+          {
+            xiiAssetCurator::GetSingleton()->m_Updating.Remove(guid);
+            if (guid != m_AssetGuid)
+              xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(guid);
+          }
+          if (bCanceled || bChanged)
+            xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(m_AssetGuid);
+          m_ReservedAssets.Clear();
+          if (m_bRequested)
+          {
+            auto* processor = xiiAssetProcessor::GetSingleton();
+            processor->m_RequestedAssets.Remove(m_AssetGuid);
+            auto& progress = processor->m_TransformProgress;
+            if (bCanceled)
+              ++progress.m_uiCanceled;
+            else
+            {
+              ++progress.m_uiCompleted;
+              progress.m_uiFailed += m_Status.m_Result == xiiTransformResult::Failure ? 1 : 0;
+              progress.m_uiNeedsImport += m_Status.m_Result == xiiTransformResult::NeedsImport ? 1 : 0;
+            }
+            if (bChanged && processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running)
+            {
+              current.m_TransformFlags = m_Request.m_TransformFlags;
+              current.m_sPlatform      = m_Request.m_sPlatform;
+              processor->m_TransformRequests.PushBack(std::move(current));
+              processor->m_RequestedAssets.Insert(m_AssetGuid);
+              ++progress.m_uiTotal;
+            }
+            processor->BroadcastTransformProgress(processor->m_RequestedAssets.IsEmpty());
+          }
         }
 
         xiiAssetProcessorEvent result;
         result.m_Type       = xiiAssetProcessorEvent::Type::AssetProcessed;
         result.m_Result     = m_Status.m_Result;
         result.m_sAssetPath = m_AssetPath.GetDataDirRelativePath();
+        result.m_bRequested = m_bRequested;
+        result.m_bCanceled  = bCanceled;
         xiiAssetProcessor::GetSingleton()->m_Events.Broadcast(result);
 
         m_State = State::LookingForWork;

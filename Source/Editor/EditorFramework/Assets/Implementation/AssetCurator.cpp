@@ -494,6 +494,13 @@ xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xii
   return res;
 }
 
+bool xiiAssetCurator::IsAssetBeingTransformed(const xiiUuid& assetGuid) const
+{
+  XII_LOCK(m_CuratorMutex);
+  const auto* info = GetAssetInfo(assetGuid);
+  return m_Updating.Contains(info ? info->m_Info->m_DocumentID : assetGuid);
+}
+
 xiiTransformStatus xiiAssetCurator::CreateThumbnail(const xiiUuid& assetGuid)
 {
   XII_LOCK(m_CuratorMutex);
@@ -1151,6 +1158,8 @@ xiiCommandLineOptionEnum opt_AssetThumbnails("_Editor", "-AssetThumbnails", "Whe
 
 xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags)
 {
+  if (m_Updating.Contains(pAssetInfo->m_Info->m_DocumentID))
+    return xiiTransformStatus("Asset is being transformed in the background. Retry after it finishes.");
   if (transformFlags.IsSet(xiiTransformFlags::ForceTransform))
     xiiLog::Dev("Asset transform forced.");
 
@@ -1836,7 +1845,8 @@ void xiiAssetCurator::SaveCaches(const xiiFileSystemModel::FilesMap& referencedF
 
 void xiiAssetCurator::ClearAssetCaches(xiiAssetDocumentManager::OutputReliability threshold)
 {
-  const bool bWasRunning = xiiAssetProcessor::GetSingleton()->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running;
+  const bool bWasRunning       = xiiAssetProcessor::GetSingleton()->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running;
+  const bool bRestartAutomatic = xiiAssetProcessor::GetSingleton()->IsAutomaticProcessingEnabled();
 
   if (bWasRunning)
   {
@@ -1905,9 +1915,9 @@ void xiiAssetCurator::ClearAssetCaches(xiiAssetDocumentManager::OutputReliabilit
 
   xiiAssetCurator::ProcessAllCoreAssets();
 
-  if (bWasRunning)
+  if (bRestartAutomatic)
   {
-    // restart background asset processing
+    // Restore automatic processing, without turning a one-shot request into a permanent mode.
     xiiAssetProcessor::GetSingleton()->StartProcessTask();
   }
 }

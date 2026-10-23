@@ -8,6 +8,8 @@
 #include <EditorFramework/Assets/Declarations.h>
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Containers/Deque.h>
+#include <Foundation/Containers/Set.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/LogEntry.h>
 #include <Foundation/Threading/AtomicInteger.h>
@@ -22,6 +24,20 @@
 struct xiiAssetCuratorEvent;
 class xiiTask;
 struct xiiAssetInfo;
+
+/// One coalesced set of explicit requests, shared by all editor progress surfaces.
+struct xiiAssetTransformProgress
+{
+  xiiUInt32 m_uiTotal          = 0;
+  xiiUInt32 m_uiCompleted      = 0;
+  xiiUInt32 m_uiFailed         = 0;
+  xiiUInt32 m_uiNeedsImport    = 0;
+  xiiUInt32 m_uiCanceled       = 0;
+  bool      m_bActive          = false;
+  bool      m_bCancelRequested = false;
+  bool      m_bAllAssets       = false;
+  xiiTime   m_Duration;
+};
 
 /// Log for all background processing results
 class xiiAssetProcessorLog : public xiiLogInterface
@@ -39,12 +55,17 @@ struct xiiAssetProcessorEvent
   enum class Type
   {
     ProcessTaskStateChanged,
-    AssetProcessed ///< A background request reached its final result; not an arbitrary log message.
+    AssetProcessed, ///< A background request reached its final result; not an arbitrary log message.
+    TransformProgress,
+    TransformsFinished
   };
 
-  Type                     m_Type;
-  xiiTransformResult::Enum m_Result = xiiTransformResult::Success;
-  xiiString                m_sAssetPath; ///< Copied by listeners before returning to the processing thread.
+  Type                      m_Type;
+  xiiTransformResult::Enum  m_Result = xiiTransformResult::Success;
+  xiiString                 m_sAssetPath; ///< Copied by listeners before returning to the processing thread.
+  bool                      m_bRequested = false;
+  bool                      m_bCanceled  = false;
+  xiiAssetTransformProgress m_Progress;
 };
 
 
@@ -97,6 +118,8 @@ private:
   xiiEditorProcessCommunicationChannel* m_pIPC;
   xiiTransformStatus                    m_Status;
   xiiDynamicArray<xiiLogEntry>          m_LogEntries;
+  bool                                  m_bRequested = false;
+  xiiDynamicArray<xiiUuid>              m_ReservedAssets;
 };
 
 /// Background asset processing is handled by this class.
@@ -117,6 +140,13 @@ public:
   ~xiiAssetProcessor();
 
   void StartProcessTask();
+  bool IsAutomaticProcessingEnabled() const { return m_bAutomatic; }
+
+  /// GUI-thread entry points. Save modified inputs before requesting; no widgets or documents
+  /// are accessed by the process thread. Duplicate requests coalesce until their result arrives.
+  xiiStatus                 QueueTransformAssets(xiiArrayPtr<const xiiUuid> assets, xiiBitflags<xiiTransformFlags> flags = xiiTransformFlags::TriggeredManually);
+  xiiStatus                 QueueTransformAllAssets();
+  xiiAssetTransformProgress GetTransformProgress() const;
   /// Stops dispatching jobs. Force cancels running processes; wait joins the processor thread
   /// after outstanding jobs finish. Waiting must not hold the asset-curator mutex.
   void             StopProcessTask(bool bForce, bool bWait = false);
@@ -131,7 +161,7 @@ public:
   /// Captures a known asset's owner, hashes, active profile and all dependency categories for IPC.
   /// The output is unchanged on failure. The processor independently validates the transform state.
   /// The captured profile remains associated with the request if the editor later changes profiles.
-  static xiiResult PrepareAssetRequest(xiiUuid assetGuid, xiiProcessAssetMsg& out_request);
+  static xiiResult PrepareAssetRequest(xiiUuid assetGuid, xiiProcessAssetMsg& out_request, xiiStringView sProfile = {});
 
 public:
   // Worker broadcasts and GUI listener teardown must be serialized. GUI listeners must queue their updates.
@@ -142,7 +172,10 @@ private:
   friend class xiiProcessThread;
   friend class xiiAssetCurator;
 
-  void Run();
+  void      Run();
+  void      StartProcessTask(bool bAutomatic);
+  void      BroadcastTransformProgress(bool bFinished = false);
+  xiiStatus QueueTransforms(xiiArrayPtr<const xiiUuid> assets, xiiBitflags<xiiTransformFlags> flags, bool bAllAssets);
 
 private:
   xiiAssetProcessorLog m_CuratorLog;
@@ -157,4 +190,12 @@ private:
 
   // Data owned by the process thread.
   xiiDynamicArray<xiiProcessTask> m_ProcessTasks;
+
+  // Explicit requests and their aggregate are protected by the existing curator mutex.
+  xiiDeque<xiiProcessAssetMsg> m_TransformRequests;
+  xiiDeque<xiiProcessAssetMsg> m_FinalTransformRequests;
+  xiiSet<xiiUuid>              m_RequestedAssets;
+  xiiAssetTransformProgress    m_TransformProgress;
+  xiiTime                      m_TransformStart;
+  std::atomic<bool>            m_bAutomatic = false;
 };

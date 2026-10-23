@@ -241,6 +241,7 @@ public:
   /// Transforms all assets and writes the lookup tables. If the given platform is empty, the active platform is used.
   xiiStatus          TransformAllAssets(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
+  bool               IsAssetBeingTransformed(const xiiUuid& assetGuid) const;
   xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
 
   /// Plans a deterministic dependency-first resave of the selected path subtree. Empty prefix selects
