@@ -204,10 +204,12 @@ void xiiAssetProcessor::Run()
     m_TransformProgress.m_uiCanceled += m_TransformRequests.GetCount();
     m_TransformProgress.m_uiCanceled += m_FinalTransformRequests.GetCount();
     for (const auto& request : m_TransformRequests)
-      m_RequestedAssets.Remove(request.m_AssetGuid);
+      if (--m_RequestedAssets[request.m_AssetGuid] == 0)
+        m_RequestedAssets.Remove(request.m_AssetGuid);
     m_TransformRequests.Clear();
     for (const auto& request : m_FinalTransformRequests)
-      m_RequestedAssets.Remove(request.m_AssetGuid);
+      if (--m_RequestedAssets[request.m_AssetGuid] == 0)
+        m_RequestedAssets.Remove(request.m_AssetGuid);
     m_FinalTransformRequests.Clear();
     BroadcastTransformProgress();
   }
@@ -447,7 +449,7 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
     out_path     = curator->GetAssetInfo(out_guid) ? curator->GetAssetInfo(out_guid)->m_Path : xiiDataDirPath();
     return true;
   }
-  if (!processor->m_bAutomatic)
+  if (!processor->m_bAutomatic || !processor->m_FinalTransformRequests.IsEmpty())
     return false;
 
   for (auto it = xiiAssetCurator::GetSingleton()->m_TransformState[xiiAssetInfo::TransformState::NeedsTransform].GetIterator(); it.IsValid(); ++it)
@@ -640,22 +642,23 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           if (m_bRequested)
           {
             auto* processor = xiiAssetProcessor::GetSingleton();
-            processor->m_RequestedAssets.Remove(m_AssetGuid);
+            if (--processor->m_RequestedAssets[m_AssetGuid] == 0)
+              processor->m_RequestedAssets.Remove(m_AssetGuid);
             auto& progress = processor->m_TransformProgress;
             if (bCanceled)
               ++progress.m_uiCanceled;
             else
             {
               ++progress.m_uiCompleted;
-              progress.m_uiFailed += m_Status.m_Result == xiiTransformResult::Failure ? 1 : 0;
-              progress.m_uiNeedsImport += m_Status.m_Result == xiiTransformResult::NeedsImport ? 1 : 0;
+              progress.m_uiFailed += !bChanged && m_Status.m_Result == xiiTransformResult::Failure ? 1 : 0;
+              progress.m_uiNeedsImport += !bChanged && m_Status.m_Result == xiiTransformResult::NeedsImport ? 1 : 0;
             }
             if (bChanged && processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running)
             {
               current.m_TransformFlags = m_Request.m_TransformFlags;
               current.m_sPlatform      = m_Request.m_sPlatform;
               processor->m_TransformRequests.PushBack(std::move(current));
-              processor->m_RequestedAssets.Insert(m_AssetGuid);
+              ++processor->m_RequestedAssets[m_AssetGuid];
               ++progress.m_uiTotal;
             }
             processor->BroadcastTransformProgress(processor->m_RequestedAssets.IsEmpty());

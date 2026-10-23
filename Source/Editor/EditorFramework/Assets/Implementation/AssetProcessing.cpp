@@ -57,10 +57,28 @@ xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, 
       const auto owner = info->m_Info->m_DocumentID;
       if (m_RequestedAssets.Contains(owner))
       {
-        for (auto& queued : m_TransformRequests)
+        const bool bFinal     = finalTypes.Contains(info->m_Info->m_sAssetsDocumentTypeName);
+        bool       bCoalesced = false;
+        auto&      pending    = bFinal ? m_FinalTransformRequests : m_TransformRequests;
+        for (auto& queued : pending)
+        {
           if (queued.m_AssetGuid == owner)
+          {
             queued.m_TransformFlags.Add(flags);
-        continue;
+            bCoalesced = true;
+          }
+        }
+        if (!bFinal && !bCoalesced)
+        {
+          for (const auto& task : m_ProcessTasks)
+            if (task.m_bRequested && task.m_Request.m_AssetGuid == owner &&
+                (task.m_Request.m_TransformFlags.GetValue() & flags.GetValue()) == flags.GetValue())
+              bCoalesced = true;
+        }
+        if (bCoalesced)
+          continue;
+        // Stronger flags cannot alter a message already sent. Queue one additional pass;
+        // full-batch finalization likewise must follow ordinary in-flight transformations.
       }
       xiiProcessAssetMsg request;
       // Hashing and dependency discovery belong to the processor thread, not a GUI batch loop.
@@ -75,7 +93,7 @@ xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, 
       }
       else
         m_TransformRequests.PushBack(std::move(request));
-      m_RequestedAssets.Insert(owner);
+      ++m_RequestedAssets[owner];
       ++m_TransformProgress.m_uiTotal;
       m_TransformProgress.m_bActive = true;
     }

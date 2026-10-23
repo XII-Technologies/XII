@@ -9,6 +9,7 @@
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/Set.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/LogEntry.h>
@@ -105,6 +106,7 @@ public:
   void ShutdownProcess();
 
 private:
+  friend class xiiAssetProcessor;
   void EventHandlerIPC(const xiiProcessCommunicationChannel::Event& e);
 
   bool GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_guid, xiiDataDirPath& out_path);
@@ -194,7 +196,7 @@ private:
   // Explicit requests and their aggregate are protected by the existing curator mutex.
   xiiDeque<xiiProcessAssetMsg> m_TransformRequests;
   xiiDeque<xiiProcessAssetMsg> m_FinalTransformRequests;
-  xiiSet<xiiUuid>              m_RequestedAssets;
+  xiiMap<xiiUuid, xiiUInt32>   m_RequestedAssets; ///< Pending and in-flight requests per asset.
   xiiAssetTransformProgress    m_TransformProgress;
   xiiTime                      m_TransformStart;
   std::atomic<bool>            m_bAutomatic = false;
