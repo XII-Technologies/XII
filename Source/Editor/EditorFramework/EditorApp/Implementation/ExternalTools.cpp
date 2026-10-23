@@ -5,6 +5,7 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
 xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
@@ -60,9 +61,11 @@ xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arg
   // this block is supposed to be in the global log, not the given log interface
   XII_LOG_BLOCK("Executing Tool", szTool);
 
-  bool bSucceeded = false;
-  Q_EMIT ToolExecutionStarted();
-  XII_SCOPE_EXIT(Q_EMIT ToolExecutionFinished(bSucceeded));
+  bool                bSucceeded = false;
+  const xiiStringView sToolName  = xiiStringView(szTool).GetFileName();
+  const QString       sOperation = sToolName.IsEqual_NoCase("xiiShaderCompilerTool") ? QStringLiteral("Compiling shaders") : QStringLiteral("Running %1").arg(xiiMakeQString(sToolName));
+  Q_EMIT ToolExecutionStarted(sOperation);
+  XII_SCOPE_EXIT(Q_EMIT ToolExecutionFinished(bSucceeded, sOperation));
 
   xiiStringBuilder toolExe = szTool;
 

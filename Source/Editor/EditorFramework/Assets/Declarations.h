@@ -10,6 +10,7 @@
 #include <Foundation/Time/Timestamp.h>
 #include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/Uuid.h>
+#include <ToolsFoundation/Document/Document.h>
 
 class xiiImage;
 class xiiAssetFileHeader;
