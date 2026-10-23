@@ -58,6 +58,9 @@ void xiiQtEditorApp::SlotQueuedOpenProject(QString sProject)
 
 xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0)
 {
+  UpdateStartupProgress(bCreate ? QStringLiteral("Creating project") : QStringLiteral("Opening project"), xiiMakeQString(sFile0));
+  // All exits (including declined prompts and failures) return ownership to the editor/dashboard.
+  XII_SCOPE_EXIT(CloseSplashScreen());
   xiiStringBuilder sFile = sFile0;
   if (!bCreate)
   {
@@ -100,7 +103,6 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
   m_bLoadingProjectInProgress = true;
   XII_SCOPE_EXIT(m_bLoadingProjectInProgress = false;);
 
-  CloseSplashScreen();
 
   xiiStringBuilder sProjectFile = sFile;
   sProjectFile.MakeCleanPath();
@@ -191,12 +193,14 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
         LoadPluginBundleDlls(sProjectFile);
       }
 
+      UpdateStartupProgress(QStringLiteral("Opening project"), xiiMakeQString(sProjectFile));
       res = xiiToolsProject::OpenProject(sProjectFile);
     }
   }
 
   if (res.Failed())
   {
+    CloseSplashScreen();
     xiiStringBuilder s;
     s.SetFormat("Failed to open project:\n'{0}'", sProjectFile);
 
@@ -206,6 +210,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
 
   if (m_StartupFlags.AreNoneSet(StartupFlags::SafeMode | StartupFlags::Headless))
   {
+    UpdateStartupProgress(QStringLiteral("Restoring project documents"));
     xiiStringBuilder sAbsPath;
 
     if (!m_DocumentsToOpen.IsEmpty())
@@ -270,6 +275,7 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
     {
       XII_PROFILE_SCOPE("ProjectOpened");
       xiiDynamicStringEnum::s_RequestUnknownCallback = xiiMakeDelegate(&xiiQtEditorApp::OnDemandDynamicStringEnumLoad, this);
+      UpdateStartupProgress(QStringLiteral("Loading project configuration"));
       LoadProjectPreferences();
       SetupDataDirectories();
       ReadTagRegistry();
@@ -285,12 +291,23 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
       xiiEditorEngineProcessConnection::GetSingleton()->SetFileSystemConfig(m_FileSystemConfig);
       xiiEditorEngineProcessConnection::GetSingleton()->SetPluginConfig(GetRuntimePluginConfig(true));
 
+      UpdateStartupProgress(QStringLiteral("Registering project asset types"), QStringLiteral("Loading asset profiles and cached file metadata"));
       xiiAssetCurator::GetSingleton()->StartInitialize(m_FileSystemConfig);
+      UpdateStartupProgress(QStringLiteral("Initializing the rendering process"), QStringLiteral("Loading project plugins and configuring the engine"));
       if (xiiEditorEngineProcessConnection::GetSingleton()->RestartProcess().Failed())
       {
         XII_PROFILE_SCOPE("ErrorLog");
-        xiiLog::Error("Failed to start the engine process. Project loading incomplete.");
+        if (!m_bStartupQuitRequested)
+        {
+          xiiLog::Error("Failed to start the engine process. Project loading incomplete.");
+          if (m_bStartupInProgress)
+          {
+            CloseSplashScreen();
+            xiiQtUiServices::MessageBoxWarning("The rendering process could not start. Project loading is incomplete. See the Editor log for details.");
+          }
+        }
       }
+      UpdateStartupProgress(QStringLiteral("Indexing project assets"), QStringLiteral("Checking files and resolving asset metadata"));
       xiiAssetCurator::GetSingleton()->WaitForInitialize();
 
       m_sLastDocumentFolder = xiiToolsProject::GetSingleton()->GetProjectFile();

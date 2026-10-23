@@ -19,6 +19,7 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/EditorApp/StackTraceLogParser.h>
 #include <EditorFramework/GUI/DynamicDefaultStateProvider.h>
+#include <EditorFramework/GUI/EditorSplashScreen.h>
 #include <EditorFramework/GUI/EditorSystemTray.h>
 #include <EditorFramework/GUI/ExposedParametersDefaultStateProvider.h>
 #include <EditorFramework/Manipulators/BoneManipulatorAdapter.h>
@@ -71,7 +72,6 @@
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
 #include <GuiFoundation/UIServices/QtProgressbar.h>
-#include <QSvgRenderer>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Document/PrefabCache.h>
 #include <ToolsFoundation/Document/PrefabUtils.h>
@@ -278,7 +278,11 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   QCoreApplication::setApplicationName(xiiMakeQString(xiiApplication::GetApplicationInstance()->GetApplicationName()));
   QCoreApplication::setApplicationVersion(xiiMakeQString(sb));
 
-  m_StartupFlags = startupFlags;
+  m_StartupFlags          = startupFlags;
+  m_bStartupInProgress    = true;
+  m_bStartupQuitRequested = false;
+  qApp->installEventFilter(this);
+  XII_SCOPE_EXIT(m_bStartupInProgress = false; qApp->removeEventFilter(this));
 
   xiiCommandLineUtils* pCmd = xiiCommandLineUtils::GetGlobalInstance();
 
@@ -312,6 +316,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   if (!IsInHeadlessMode())
   {
     XII_PROFILE_SCOPE("xiiQtContainerWindow");
+    UpdateStartupProgress(QStringLiteral("Preparing the editor workspace"));
     SetStyleSheet();
 
     xiiQtContainerWindow* pContainer = new xiiQtContainerWindow();
@@ -325,8 +330,11 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
       m_pSystemTray = XII_DEFAULT_NEW(xiiQtEditorSystemTray, *this, *pContainer, *m_pProgressbar);
 #endif
     // Observe progress before the dialog can pump nested Qt events.
-    m_pQtProgressbar->SetProgressbar(m_pProgressbar);
+    if (m_pSplashScreen == nullptr)
+      m_pQtProgressbar->SetProgressbar(m_pProgressbar);
     pContainer->show();
+    if (m_pSplashScreen)
+      m_pSplashScreen->SetEditorWindow(pContainer);
   }
 
   xiiDocumentManager::s_Requests.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::DocumentManagerRequestHandler, this));
@@ -337,6 +345,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   xiiEditorEngineProcessConnection::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::EngineProcessMsgHandler, this));
   xiiQtUiServices::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::UiServicesEvents, this));
 
+  UpdateStartupProgress(QStringLiteral("Initializing editor subsystems"), QStringLiteral("Registering actions, document types, and asset services"));
   xiiStartup::StartupCoreSystems();
 
   // prevent restoration of window layouts when in safe mode
@@ -352,6 +361,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
   {
     XII_PROFILE_SCOPE("Filesystem");
+    UpdateStartupProgress(QStringLiteral("Loading configuration"), QStringLiteral("Preparing application and user data directories"));
     xiiFileSystem::DetectSdkRootDirectory().IgnoreResult();
 
     const xiiString sAppDir   = xiiApplicationServices::GetSingleton()->GetApplicationDataFolder();
@@ -398,6 +408,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   // xiiTranslationLookup::AddTranslator(XII_DEFAULT_NEW(xiiTranslatorLogMissing));
   xiiTranslationLookup::AddTranslator(std::move(pTranslatorEn));
 
+  UpdateStartupProgress(QStringLiteral("Loading editor preferences"), QStringLiteral("Keyboard shortcuts, tools, and recent projects"));
   LoadEditorPreferences();
   xiiCppProject::LoadPreferences();
 
@@ -411,6 +422,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
     ShowSettingsDocument();
 
+    UpdateStartupProgress(QStringLiteral("Creating the editor workspace"), QStringLiteral("Asset browser, diagnostics, and operation panels"));
     CreatePanels();
 
     if (!IsInUnitTestMode())
@@ -422,8 +434,8 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     }
   }
 
+  UpdateStartupProgress(QStringLiteral("Discovering editor plugins"));
   LoadEditorPlugins();
-  CloseSplashScreen();
 
   m_bIsRunning = true;
   {
@@ -434,7 +446,11 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
   xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
 
-  if (pCmd->GetStringOptionArguments("-newproject") > 0)
+  if (m_bStartupQuitRequested)
+  {
+    CloseSplashScreen();
+  }
+  else if (pCmd->GetStringOptionArguments("-newproject") > 0)
   {
     CreateOrOpenProject(true, pCmd->GetAbsolutePathOption("-newproject")).IgnoreResult();
   }
@@ -490,17 +506,20 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     });
   }
 
-  if (m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::UnitTest) && !xiiToolsProject::GetSingleton()->IsProjectOpen())
+  if (!m_bStartupQuitRequested && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::UnitTest) && !xiiToolsProject::GetSingleton()->IsProjectOpen())
   {
+    CloseSplashScreen();
     GuiOpenDashboard();
   }
 
+  CloseSplashScreen();
   xiiStackTraceLogParser::Register();
 }
 
 void xiiQtEditorApp::ShutdownEditor()
 {
   m_bIsRunning = false;
+  CloseSplashScreen();
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   // Stop native callbacks before closing projects or processing nested shutdown events.
@@ -627,7 +646,7 @@ void xiiQtEditorApp::SetupAndShowSplashScreen()
 {
   XII_ASSERT_DEV(m_pSplashScreen == nullptr, "Splash screen shouldn't exist already.");
 
-  if (m_StartupFlags.IsAnySet(xiiQtEditorApp::StartupFlags::UnitTest))
+  if (m_StartupFlags.IsAnySet(StartupFlags::UnitTest | StartupFlags::Headless | StartupFlags::Background))
     return;
 
   if (opt_NoSplashScreen.GetOptionValue(xiiCommandLineOption::LogMode::Never))
@@ -646,47 +665,49 @@ void xiiQtEditorApp::SetupAndShowSplashScreen()
   if (!bShowSplashScreen)
     return;
 
-  // QSvgRenderer svgRenderer(QString(":/Splash/Splash/splash.svg"));
-
-  // const qreal PixelRatio = qApp->primaryScreen()->devicePixelRatio();
-
-  //// TODO: When migrating to Qt 5.15 or newer this should have a fixed square size and
-  //// let the aspect ratio mode of the svg renderer handle the difference
-  // QPixmap splashPixmap(QSize(187, 256) * PixelRatio);
-  // splashPixmap.fill(Qt::transparent);
-  //{
-  //   QPainter painter;
-  //   painter.begin(&splashPixmap);
-  //   svgRenderer.render(&painter);
-  //   painter.end();
-  // }
-
-  QPixmap splashPixmap(QString(":/Splash/Splash/splash.png"));
-
-  // splashPixmap.setDevicePixelRatio(PixelRatio);
-
-  m_pSplashScreen = new QSplashScreen(splashPixmap);
-  m_pSplashScreen->setMask(splashPixmap.mask());
-
-  // Don't set always on top if a debugger is attached to prevent it being stuck over the debugger.
-  if (!xiiSystemInformation::IsDebuggerAttached())
-  {
-    m_pSplashScreen->setWindowFlag(Qt::WindowStaysOnTopHint, true);
-  }
+  m_pSplashScreen = new xiiQtEditorSplashScreen();
   m_pSplashScreen->show();
+  // Process the initial expose before doing work; later updates use explicit safe boundaries.
+  QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
-
 void xiiQtEditorApp::CloseSplashScreen()
 {
   if (!m_pSplashScreen)
     return;
 
   XII_ASSERT_DEBUG(QThread::currentThread() == this->thread(), "CloseSplashScreen must be called from the main thread");
-  QSplashScreen* pLocalSplashScreen = m_pSplashScreen;
-  m_pSplashScreen                   = nullptr;
+  auto* pSplash   = m_pSplashScreen;
+  m_pSplashScreen = nullptr;
+  // QWidget close is immediate: no QSplashScreen::finish wait/expose loop or implicit activation.
+  pSplash->hide();
+  delete pSplash;
+  if (m_pQtProgressbar && m_pProgressbar)
+    m_pQtProgressbar->SetProgressbar(m_pProgressbar);
+}
 
-  pLocalSplashScreen->finish(xiiQtContainerWindow::GetContainerWindow());
-  // if the deletion is done 'later', the splashscreen can end up as the parent window of other things
-  // like messageboxes, and then the deletion will make the app crash
-  delete pLocalSplashScreen;
+void xiiQtEditorApp::UpdateStartupProgress(const QString& sStage, const QString& sDetail, xiiUInt32 uiCompleted, xiiUInt32 uiTotal)
+{
+  if (m_pSplashScreen)
+    m_pSplashScreen->SetStage(m_bStartupQuitRequested ? QStringLiteral("Finishing startup before closing") : sStage, sDetail, uiCompleted, uiTotal);
+}
+
+bool xiiQtEditorApp::eventFilter(QObject* pObject, QEvent* pEvent)
+{
+  if (m_bStartupInProgress && ((pObject == qApp && pEvent->type() == QEvent::Quit) || (pObject == xiiQtContainerWindow::GetContainerWindow() && pEvent->type() == QEvent::Close)))
+  {
+    // Initialization owns partially constructed subsystems. Defer normal shutdown until that
+    // initialization scope returns; never tear down documents/plugins from a nested event loop.
+    if (!m_bStartupQuitRequested)
+    {
+      m_bStartupQuitRequested = true;
+      Q_EMIT StartupQuitRequested();
+    }
+    UpdateStartupProgress(QStringLiteral("Finishing startup before closing"));
+    if (pEvent->type() == QEvent::Close)
+      pEvent->ignore();
+    else
+      pEvent->accept();
+    return true;
+  }
+  return QObject::eventFilter(pObject, pEvent);
 }

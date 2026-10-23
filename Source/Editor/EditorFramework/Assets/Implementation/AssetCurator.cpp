@@ -15,6 +15,7 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
+#include <QEventLoop>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
@@ -187,6 +188,18 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
 void xiiAssetCurator::WaitForInitialize()
 {
   XII_PROFILE_SCOPE("WaitForInitialize");
+  const auto* pEditor = xiiQtEditorApp::GetSingleton();
+  if (pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsInUnitTestMode())
+  {
+    QEventLoop loop;
+    const auto finished = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::FileAccessHighPriority, [&loop](xiiTaskGroupID) {
+      QMetaObject::invokeMethod(&loop, "quit", Qt::QueuedConnection);
+    });
+    xiiTaskSystem::AddTaskGroupDependency(finished, m_InitializeCuratorTaskID);
+    xiiTaskSystem::StartTaskGroup(finished);
+    loop.exec(QEventLoop::ExcludeUserInputEvents);
+    xiiTaskSystem::WaitForGroup(finished);
+  }
   xiiTaskSystem::WaitForGroup(m_InitializeCuratorTaskID);
   m_InitializeCuratorTaskID.Invalidate();
 

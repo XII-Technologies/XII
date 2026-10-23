@@ -23,16 +23,18 @@ public:
 
 protected:
   void paintEvent(QPaintEvent* pEvent) override;
+  void showEvent(QShowEvent* pEvent) override;
   void mousePressEvent(QMouseEvent* pEvent) override;
   void keyPressEvent(QKeyEvent* pEvent) override;
   bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 
 private:
   friend struct xiiEditorSplashScreenTest;
-  QSvgRenderer m_Logo;
-  QProgressBar m_Progress;
-  QString      m_sStage;
-  QString      m_sDetail;
-  QString      m_sBuild;
-  QString      m_sRevision;
+  QSvgRenderer      m_Logo;
+  QProgressBar      m_Progress;
+  QPointer<QWidget> m_pEditorWindow;
+  QString           m_sStage;
+  QString           m_sDetail;
+  QString           m_sBuild;
+  QString           m_sRevision;
 };

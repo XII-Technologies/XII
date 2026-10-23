@@ -104,8 +104,6 @@
   </qresource>
   <qresource prefix="Splash">
     <file>Splash/Logo.svg</file>
-    <file>Splash/splash.svg</file>
-    <file>Splash/splash.png</file>
   </qresource>
   <qresource prefix="AssetIcons">
     <file>Icons/AllAssets.svg</file>

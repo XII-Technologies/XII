@@ -45,6 +45,8 @@ xiiQtEditorApp::~xiiQtEditorApp()
 
 xiiInt32 xiiQtEditorApp::RunEditor()
 {
+  if (m_bStartupQuitRequested)
+    return 0;
   xiiInt32 ret = m_pQtApplication->exec();
   return ret;
 }
@@ -77,7 +79,8 @@ void xiiQtEditorApp::SlotTimedUpdate()
   xiiTaskSystem::FinishFrameTasks();
 
   // Close the splash screen when we get to the first idle event
-  CloseSplashScreen();
+  if (!m_bStartupInProgress)
+    CloseSplashScreen();
 
   Q_EMIT IdleEvent();
 
@@ -133,11 +136,9 @@ void xiiQtEditorApp::SlotAutoSave()
 
 void xiiQtEditorApp::SlotVersionCheckCompleted(bool bNewVersionReleased, bool bForced)
 {
-  // Close the splash screen so it doesn't become the parent window of our message boxes.
-  CloseSplashScreen();
-
   if (bForced || bNewVersionReleased)
   {
+    CloseSplashScreen();
     if (m_pVersionChecker->IsLatestNewer())
     {
       xiiQtUiServices::GetSingleton()->MessageBoxInformation(xiiFmt("<html>A new version is available: {}<br><br>Your version is: {}<br><br>Please check the <A href=\"https://github.com/xiiEngine/xiiEngine/releases\">Releases</A> for details.</html>", m_pVersionChecker->GetKnownLatestVersion(), m_pVersionChecker->GetOwnVersion()));
@@ -622,12 +623,17 @@ void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
   }
 
   xiiSet<xiiString> NotLoaded;
+  xiiUInt32         uiCompleted = 0;
   for (const xiiApplicationPluginConfig::PluginConfig& it : order)
   {
+    UpdateStartupProgress(QStringLiteral("Loading project plugins"), xiiMakeQString(it.m_sAppDirRelativePath), uiCompleted, order.GetCount());
+    if (m_bStartupInProgress)
+      QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     if (xiiPlugin::LoadPlugin(it.m_sAppDirRelativePath, it.m_bLoadCopy ? xiiPluginLoadFlags::LoadCopy : xiiPluginLoadFlags::Default).Failed())
     {
       NotLoaded.Insert(it.m_sAppDirRelativePath);
     }
+    ++uiCompleted;
   }
 
   if (!NotLoaded.IsEmpty())

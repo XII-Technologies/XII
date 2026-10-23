@@ -55,8 +55,18 @@ xiiQtEditorSplashScreen::xiiQtEditorSplashScreen(QScreen* pScreen) :
 
 void xiiQtEditorSplashScreen::SetEditorWindow(QWidget* pWindow)
 {
-  if (pWindow && windowHandle())
-    windowHandle()->setTransientParent(pWindow->windowHandle());
+  m_pEditorWindow = pWindow;
+  if (windowHandle())
+    windowHandle()->setTransientParent(pWindow ? pWindow->windowHandle() : nullptr);
+  // Stay above our own active container, without a global topmost flag or repeated raising.
+  if (isVisible() && pWindow && pWindow->isActiveWindow())
+    raise();
+}
+
+void xiiQtEditorSplashScreen::showEvent(QShowEvent* pEvent)
+{
+  QWidget::showEvent(pEvent);
+  SetEditorWindow(m_pEditorWindow);
 }
 
 void xiiQtEditorSplashScreen::SetStage(const QString& sStage, const QString& sDetail, xiiUInt32 uiCompleted, xiiUInt32 uiTotal)
