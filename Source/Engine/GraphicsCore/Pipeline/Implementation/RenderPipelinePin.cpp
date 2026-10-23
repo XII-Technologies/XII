@@ -8,11 +8,56 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
+xiiStringView xiiRenderPipelinePinMetadata::GetDataTypeName() const
+{
+  return m_pDataType ? m_pDataType->GetTypeName() : "";
+}
+
+void xiiRenderPipelinePinMetadata::SetDataTypeName(xiiStringView sTypeName)
+{
+  m_pDataType = xiiRTTI::FindTypeByName(sTypeName);
+}
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinType, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::Order, xiiRenderPipelinePinType::AccelerationStructure, xiiRenderPipelinePinType::FrameData)
+  XII_ENUM_CONSTANTS(xiiRenderPipelinePinType::Texture, xiiRenderPipelinePinType::Buffer, xiiRenderPipelinePinType::AccelerationStructure, xiiRenderPipelinePinType::FrameData)
 XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelineTextureResolutionMode, 1)
+  XII_ENUM_CONSTANTS(xiiRenderPipelineTextureResolutionMode::Viewport,
+                     xiiRenderPipelineTextureResolutionMode::RenderResolution, xiiRenderPipelineTextureResolutionMode::Input, xiiRenderPipelineTextureResolutionMode::Fixed)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureInputAttribute, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureInputAttribute>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineTextureResolution, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureResolution>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_ENUM_MEMBER_PROPERTY("Mode", xiiRenderPipelineTextureResolutionMode, m_Mode),
+      XII_MEMBER_PROPERTY("Width", m_uiWidth)->AddAttributes(new xiiClampValueAttribute(0U, 65536U)),
+      XII_MEMBER_PROPERTY("Height", m_uiHeight)->AddAttributes(new xiiClampValueAttribute(0U, 65536U)),
+      XII_MEMBER_PROPERTY("Scale", m_fScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 16.0f)),
+      XII_MEMBER_PROPERTY("Input", m_sInput)->AddAttributes(new xiiRenderPipelineTextureInputAttribute()),
+    } XII_END_PROPERTIES;
+  }
+XII_END_STATIC_REFLECTED_TYPE;
+
+xiiResult xiiRenderPipelineTextureResolution::Validate() const
+{
+  return m_Mode <= xiiRenderPipelineTextureResolutionMode::Fixed && xiiMath::IsFinite(m_fScale) && m_fScale > 0 && m_fScale <= 16 &&
+      m_uiWidth <= 65536 && m_uiHeight <= 65536 &&
+      (m_Mode != xiiRenderPipelineTextureResolutionMode::Fixed || (m_uiWidth && m_uiHeight)) ?
+    XII_SUCCESS :
+    XII_FAILURE;
+}
+
+bool xiiRenderPipelineTextureResolution::IsDefault() const
+{
+  return *this == xiiRenderPipelineTextureResolution{};
+}
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinAccess, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelinePinAccess::Automatic, xiiRenderPipelinePinAccess::Read, xiiRenderPipelinePinAccess::Write, xiiRenderPipelinePinAccess::ReadWrite, xiiRenderPipelinePinAccess::Ordering)
+  XII_ENUM_CONSTANTS(xiiRenderPipelinePinAccess::Automatic, xiiRenderPipelinePinAccess::Read, xiiRenderPipelinePinAccess::Write, xiiRenderPipelinePinAccess::ReadWrite)
 XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinCardinality, 1)
   XII_ENUM_CONSTANTS(xiiRenderPipelinePinCardinality::Single, xiiRenderPipelinePinCardinality::Multiple)
@@ -42,7 +87,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelinePinMetadata, xiiNoBase, 1, xiiR
       XII_MEMBER_PROPERTY("Optional", m_bOptional)->AddAttributes(new xiiReadOnlyAttribute()),
       XII_MEMBER_PROPERTY("TemporalHistory", m_bTemporalHistory)->AddAttributes(new xiiReadOnlyAttribute()),
       XII_ENUM_MEMBER_PROPERTY("DeclaredFormat", xiiGALResourceFormat, m_DeclaredFormat)->AddAttributes(new xiiReadOnlyAttribute()),
-      XII_MEMBER_PROPERTY("DataType", m_sDataType)->AddAttributes(new xiiReadOnlyAttribute()),
+      XII_ACCESSOR_PROPERTY("DataType", GetDataTypeName, SetDataTypeName)->AddAttributes(new xiiReadOnlyAttribute()),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -50,11 +95,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinConfiguration, 1, xiiRTTIDe
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("Id", m_Id)->AddAttributes(new xiiReadOnlyAttribute()),
-      XII_MEMBER_PROPERTY("Metadata", m_Metadata)->AddAttributes(new xiiReadOnlyAttribute()),
+      XII_MEMBER_PROPERTY("Id", m_Id)->AddAttributes(new xiiReadOnlyAttribute(), new xiiHiddenAttribute()),
+      XII_MEMBER_PROPERTY("Metadata", m_Metadata)->AddAttributes(new xiiReadOnlyAttribute(), new xiiHiddenAttribute()),
       XII_MEMBER_PROPERTY("DisplayName", m_sDisplayName),
       XII_ENUM_MEMBER_PROPERTY("RequiredFormat", xiiGALResourceFormat, m_Format),
       XII_MEMBER_PROPERTY("Requirements", m_Constraints),
+      XII_MEMBER_PROPERTY("Resolution", m_Resolution),
+      XII_MEMBER_PROPERTY("OverrideResolution", m_bOverrideResolution),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -67,6 +114,14 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureOutputPin>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_ENUM_ACCESSOR_PROPERTY("Format", xiiGALResourceFormat, GetFormat, SetFormat),
+      XII_ACCESSOR_PROPERTY("Requirements", GetRequirements, SetRequirements),
+      XII_ACCESSOR_PROPERTY("Resolution", GetResolution, SetResolution),
+    } XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineBufferInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineBufferInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -76,13 +131,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAccelerationStructureInputPin,
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAccelerationStructureOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineAccelerationStructureOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderInputPin>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineDataInputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineDataInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineDataOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineDataOutputPin>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineOrderOutputPin, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineOrderOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinNameAttribute, 1, xiiRTTIDefaultAllocator<xiiRenderPipelinePinNameAttribute>)
   {
@@ -150,10 +201,6 @@ xiiRenderPipelineDataInputPin::xiiRenderPipelineDataInputPin(const xiiRTTI* type
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::FrameData, true, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) { SetDataType(type); }
 xiiRenderPipelineDataOutputPin::xiiRenderPipelineDataOutputPin(const xiiRTTI* type, bool optional) :
   xiiRenderPipelinePinHandle(xiiRenderPipelinePin::FrameData, false, optional, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read, false) { SetDataType(type); }
-xiiRenderPipelineOrderInputPin::xiiRenderPipelineOrderInputPin() :
-  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, true, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
-xiiRenderPipelineOrderOutputPin::xiiRenderPipelineOrderOutputPin() :
-  xiiRenderPipelinePinHandle(xiiRenderPipelinePin::Order, false, true, xiiGALResourceFormat::Unknown, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Automatic, false) {}
 
 xiiRenderPipelinePinMetadata xiiRenderPipelinePin::GetMetadata() const
 {
@@ -163,13 +210,12 @@ xiiRenderPipelinePinMetadata xiiRenderPipelinePin::GetMetadata() const
   metadata.m_Type   = m_Type;
   metadata.m_Access = m_Access;
   if (metadata.m_Access == xiiRenderPipelinePinAccess::Automatic)
-    metadata.m_Access = m_Type == Order ? xiiRenderPipelinePinAccess::Ordering : m_bInput || m_bTemporalHistoryOutput ? xiiRenderPipelinePinAccess::Read :
-                                                                                                                        xiiRenderPipelinePinAccess::Write;
-  metadata.m_Cardinality      = !m_bInput || m_Type == Order ? xiiRenderPipelinePinCardinality::Multiple : xiiRenderPipelinePinCardinality::Single;
+    metadata.m_Access = m_bInput || m_bTemporalHistoryOutput ? xiiRenderPipelinePinAccess::Read : xiiRenderPipelinePinAccess::Write;
+  metadata.m_Cardinality      = !m_bInput ? xiiRenderPipelinePinCardinality::Multiple : xiiRenderPipelinePinCardinality::Single;
   metadata.m_bOptional        = m_bOptional;
   metadata.m_bTemporalHistory = m_bTemporalHistoryOutput;
   metadata.m_DeclaredFormat   = m_Format;
-  metadata.m_sDataType        = m_pDataType ? m_pDataType->GetTypeName() : "";
+  metadata.m_pDataType        = m_pDataType;
   return metadata;
 }
 
@@ -181,19 +227,24 @@ xiiResult xiiRenderPipelinePin::Apply(const xiiRenderPipelinePinConfiguration& c
     return XII_FAILURE;
   };
   const auto& limits = configuration.m_Constraints;
+  if (configuration.m_Resolution.Validate().Failed() || (m_Type != Texture && (configuration.m_bOverrideResolution || !configuration.m_Resolution.IsDefault())))
+    return fail("invalid texture resolution policy.");
   if (!configuration.m_Id.IsValid())
     return fail("configuration has no persistent document identity.");
   if (configuration.m_Format.GetValue() >= xiiGALResourceFormat::ENUM_COUNT || limits.m_Dimension.GetValue() >= xiiGALResourceDimension::ENUM_COUNT || (limits.m_uiSamples && (limits.m_uiSamples > 64 || !xiiMath::IsPowerOf2(limits.m_uiSamples))))
     return fail("invalid format, dimension or sample count.");
   if (m_Type != Texture && (configuration.m_Format != xiiGALResourceFormat::Unknown || limits.m_Dimension != xiiGALResourceDimension::Undefined || limits.m_uiSamples || limits.m_uiWidth || limits.m_uiHeight))
     return fail("texture requirements are not valid on this resource kind.");
-  if ((m_Type == Order || m_Type == AccelerationStructure || m_Type == FrameData) && limits.m_RequiredBindFlags.IsAnyFlagSet())
-    return fail("ordering, acceleration-structure and frame-data pins cannot require texture/buffer binding flags.");
+  if ((m_Type == AccelerationStructure || m_Type == FrameData) && limits.m_RequiredBindFlags.IsAnyFlagSet())
+    return fail("acceleration-structure and frame-data pins cannot require texture/buffer binding flags.");
   if (m_Type == Texture && limits.m_Dimension == xiiGALResourceDimension::Buffer)
     return fail("a texture pin cannot require a buffer dimension.");
   if (xiiReflectionUtils::MakeEnumerationValid(xiiGetStaticRTTI<xiiGALBindFlags>(), limits.m_RequiredBindFlags.GetValue()) != limits.m_RequiredBindFlags.GetValue())
     return fail("unknown required resource binding flags.");
   auto combined = *this;
+  if (m_Type == Texture && configuration.m_bOverrideResolution)
+    combined.m_Resolution = configuration.m_Resolution;
+  combined.m_bConstrainResolution |= configuration.m_bOverrideResolution;
   if (configuration.m_Format != xiiGALResourceFormat::Unknown)
   {
     if (combined.m_Format != xiiGALResourceFormat::Unknown && combined.m_Format != configuration.m_Format)

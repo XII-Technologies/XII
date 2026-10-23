@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include <SharedPluginScene/SharedPluginSceneDLL.h>
+
 #include <Core/World/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-#include <SharedPluginScene/SharedPluginSceneDLL.h>
 
 class xiiSceneShapeIconPicking;
 

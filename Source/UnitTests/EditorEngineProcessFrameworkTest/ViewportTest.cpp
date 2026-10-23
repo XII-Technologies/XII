@@ -63,10 +63,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
           ++executions[i]; }, true);
     });
   }
-  xiiUInt64                             registeredFrame = 0;
-  xiiRenderGraphRegistrationDescription registration;
-  registration.m_sName  = "Interleaved registered frame";
-  const auto registered = xiiRenderGraphManager::RegisterGraph(registration, [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
+  xiiUInt64  registeredFrame = 0;
+  const auto registered      = xiiRenderGraphManager::CreateGraph("Interleaved registered frame", [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
     struct Stamp
     {
       xiiRenderGraphBufferHandle m_Buffer;
@@ -83,11 +81,12 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
       data.m_uiFrame = graph.GetFrameIndex(); }, [&](const Stamp& data, xiiRenderGraphPassContext& context) {
       registeredFrame = context.GetFrameIndex();
       context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_Buffer), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&data.m_uiFrame), sizeof(data.m_uiFrame))); });
+    return XII_SUCCESS;
   });
-  XII_SCOPE_EXIT(xiiRenderGraphManager::UnregisterGraph(registered));
+  XII_SCOPE_EXIT(xiiRenderGraphManager::DestroyGraph(registered).AssertSuccess());
   xiiRenderGraphFrame inactive;
   XII_TEST_BOOL(inactive.Begin(0).Failed());
-  XII_TEST_BOOL(xiiRenderGraphManager::ExecuteFrame(inactive, nullptr).Failed());
+  XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(inactive, registered, nullptr).Failed());
   xiiUInt64 previousFrame = 0;
   for (xiiUInt32 iteration = 0; iteration < 8; ++iteration)
   {
@@ -110,7 +109,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
       xiiRenderGraphFrame nested;
       XII_TEST_BOOL(nested.Begin().Failed());
       XII_TEST_BOOL(frame.Begin().Failed());
-      XII_TEST_RESULT(xiiRenderGraphManager::ExecuteFrame(frame, nullptr));
+      XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, registered, nullptr));
       XII_TEST_INT(registeredFrame, previousFrame + 1);
     }
     auto*     graph         = xiiRenderGraphManager::GetGraph(registered);
@@ -130,10 +129,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
   }
   // A later graph can fail compilation after an earlier graph submitted GPU work.
   // The automatic frame scope must still capture it and release the recording lock.
-  xiiRenderGraphRegistrationDescription invalidRegistration;
-  invalidRegistration.m_sName     = "Cyclic registered frame";
-  invalidRegistration.m_iPriority = 1;
-  const auto cyclic               = xiiRenderGraphManager::RegisterGraph(invalidRegistration, [](xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
+  const auto cyclic = xiiRenderGraphManager::CreateGraph("Cyclic registered frame", [](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
     struct Data
     {
       xiiRenderGraphBufferHandle m_Buffer;
@@ -148,19 +144,26 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     graph.AddPass<Data>("Read both physical versions", xiiGALCommandQueueFlags::Graphics, [original, newer](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Buffer = builder.ReadBuffer(original, xiiGALResourceStateFlags::CopySource);
       data.m_Buffer = builder.ReadBuffer(newer, xiiGALResourceStateFlags::CopySource); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
+    return XII_SUCCESS;
   });
-  XII_SCOPE_EXIT(xiiRenderGraphManager::UnregisterGraph(cyclic));
+  XII_SCOPE_EXIT(if (xiiRenderGraphManager::GetGraph(cyclic) != nullptr) xiiRenderGraphManager::DestroyGraph(cyclic).AssertSuccess());
   xiiStringBuilder error;
-  XII_TEST_BOOL(xiiRenderGraphManager::ExecuteFrame(nullptr, 1, {}, &error).Failed());
+  {
+    xiiRenderGraphFrame failed;
+    if (!XII_TEST_RESULT(failed.Begin(1)))
+      return;
+    XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(failed, registered, nullptr));
+    XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(failed, cyclic, nullptr, {}, &error).Failed());
+  }
   XII_TEST_BOOL(error.FindSubString("dependency cycle") != nullptr);
   XII_TEST_INT(registeredFrame, ++previousFrame);
-  XII_TEST_BOOL(xiiRenderGraphManager::UnregisterGraph(cyclic));
+  XII_TEST_RESULT(xiiRenderGraphManager::DestroyGraph(cyclic));
   {
     xiiRenderGraphFrame recovery;
     XII_TEST_RESULT(recovery.Begin(1));
     XII_TEST_INT(recovery.GetFrameIndex(), previousFrame + 1);
     XII_TEST_BOOL(recovery.GetCompletedFrame() >= previousFrame);
-    XII_TEST_RESULT(xiiRenderGraphManager::ExecuteFrame(recovery, nullptr));
+    XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(recovery, registered, nullptr));
     previousFrame = registeredFrame;
   }
   worlds[0].Clear();

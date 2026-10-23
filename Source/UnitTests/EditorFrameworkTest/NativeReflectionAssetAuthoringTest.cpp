@@ -22,13 +22,11 @@ namespace
     XII_SUCCEED_OR_RETURN(author.Init());
     const auto* traced = author.Add("Traced Detail Over Environment", "xiiConfidenceBlendPass", {0, 0});
     const auto* screen = author.Add("Screen Detail Over Traced Result", "xiiConfidenceBlendPass", {700, 0});
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, traced, "Before", xiiRenderPipelinePin::Order));
     XII_SUCCEED_OR_RETURN(author.Boundary("EnvironmentSpecular", true, traced, "Background"));
     XII_SUCCEED_OR_RETURN(author.Boundary("RTFinalReflections", true, traced, "Layer"));
     XII_SUCCEED_OR_RETURN(author.Connect(traced, "Radiance", screen, "Background"));
     XII_SUCCEED_OR_RETURN(author.Boundary("SSRTerm", true, screen, "Layer"));
     XII_SUCCEED_OR_RETURN(author.Boundary("SelectedReflection", false, screen, "Radiance"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, screen, "After", xiiRenderPipelinePin::Order));
     return author.Save(path);
   }
   xiiStatus AuthorReflectionComposition(xiiStringView path)
@@ -37,7 +35,6 @@ namespace
     XII_SUCCEED_OR_RETURN(author.Init());
     const auto* select  = author.Reference("Reflection Priority", "ReflectionSelection", {0, 0});
     const auto* replace = author.Add("Replace Environment Contribution", "xiiRadianceReplacePass", {900, 0});
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, select, "Before", xiiRenderPipelinePin::Order));
     for (const xiiStringView input : {"EnvironmentSpecular", "RTFinalReflections", "SSRTerm"})
       XII_SUCCEED_OR_RETURN(author.Boundary(input, true, select, input));
     XII_SUCCEED_OR_RETURN(author.Boundary("HDRSceneColor", true, replace, "Scene"));
@@ -45,7 +42,6 @@ namespace
     XII_SUCCEED_OR_RETURN(author.Connect(select, "SelectedReflection", replace, "Replacement"));
     XII_SUCCEED_OR_RETURN(author.Boundary("SelectedReflection", false, select, "SelectedReflection"));
     XII_SUCCEED_OR_RETURN(author.Boundary("HDRSceneColor", false, replace, "Radiance"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, replace, "After", xiiRenderPipelinePin::Order));
     return author.Save(path);
   }
   xiiStatus AuthorOpaqueComposition(xiiStringView path)
@@ -59,7 +55,6 @@ namespace
     const auto* temporal  = author.Add("Resolve Temporal Reflections", "xiiScreenSpaceReflectionsTemporalPass", {2800, 0});
     const auto* resolved  = author.Add("Select Resolved Reflections", "xiiTextureSelectionPass", {3500, 0});
     const auto* composite = author.Reference("Compose Reflection Contributions", "ReflectionComposition", {4200, 0});
-    XII_SUCCEED_OR_RETURN(author.Boundary("Before", true, opaque, "Before", xiiRenderPipelinePin::Order));
     for (const xiiStringView pin : {"DirectLighting", "IndirectLighting", "GBufferEmissive", "RTFinalGI", "VolumetricScattering"})
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, true, opaque, pin));
     XII_SUCCEED_OR_RETURN(author.Boundary("HDRSceneColor", true, scene, "Primary"));
@@ -88,7 +83,6 @@ namespace
     XII_SUCCEED_OR_RETURN(author.Boundary("RTFinalReflections", true, composite, "RTFinalReflections"));
     XII_SUCCEED_OR_RETURN(author.Boundary("HDRSceneColor", false, composite, "HDRSceneColor"));
     XII_SUCCEED_OR_RETURN(author.Boundary("SelectedReflection", false, composite, "SelectedReflection"));
-    XII_SUCCEED_OR_RETURN(author.Boundary("After", false, composite, "After", xiiRenderPipelinePin::Order));
     XII_SUCCEED_OR_RETURN(author.Boundary("SSRRawTerm", false, raw, "Texture"));
     XII_SUCCEED_OR_RETURN(author.Boundary("SSRTerm", false, resolved, "Texture"));
     XII_SUCCEED_OR_RETURN(author.Boundary("PreviousReflection", false, temporal, "PreviousReflection"));

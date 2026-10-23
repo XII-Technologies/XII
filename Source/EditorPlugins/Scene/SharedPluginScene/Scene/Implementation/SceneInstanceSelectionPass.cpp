@@ -1,12 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <SharedPluginScene/SharedPluginScenePCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <SharedPluginScene/Scene/SceneInstanceSelectionPass.h>
-#include <SharedPluginScene/SharedPluginScenePCH.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneInstanceSelectionPass, 1, xiiRTTIDefaultAllocator<xiiSceneInstanceSelectionPass>)

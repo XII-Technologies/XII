@@ -50,7 +50,9 @@ XII_ALWAYS_INLINE xiiHashedString xiiRenderGraphPassContext::GetPassName() const
 
 XII_ALWAYS_INLINE xiiGALTexture* xiiRenderGraphPassContext::GetTexture(xiiRenderGraphTextureHandle hTexture) const
 {
-  XII_ASSERT_DEV(hTexture.IsValid(), "Invalid texture handle passed to GetTexture().");
+  XII_ASSERT_DEV(m_pGraph != nullptr && m_pGraph->GetTextureDescription(hTexture) != nullptr, "Texture handle belongs to another graph setup or resource domain.");
+  if (m_pGraph == nullptr || m_pGraph->GetTextureDescription(hTexture) == nullptr)
+    return nullptr;
   const xiiUInt32 uiResourceIndex = hTexture.GetInternalID().m_InstanceIndex;
   XII_ASSERT_DEV(uiResourceIndex < static_cast<xiiUInt32>(m_ResolvedTextures.GetCount()), "Texture handle index {} is out of range (max {}).", uiResourceIndex, m_ResolvedTextures.GetCount());
 
@@ -62,7 +64,9 @@ XII_ALWAYS_INLINE xiiGALTexture* xiiRenderGraphPassContext::GetTexture(xiiRender
 
 XII_ALWAYS_INLINE xiiGALBuffer* xiiRenderGraphPassContext::GetBuffer(xiiRenderGraphBufferHandle hBuffer) const
 {
-  XII_ASSERT_DEV(hBuffer.IsValid(), "Invalid buffer handle passed to GetBuffer().");
+  XII_ASSERT_DEV(m_pGraph != nullptr && m_pGraph->GetBufferDescription(hBuffer) != nullptr, "Buffer handle belongs to another graph setup or resource domain.");
+  if (m_pGraph == nullptr || m_pGraph->GetBufferDescription(hBuffer) == nullptr)
+    return nullptr;
   const xiiUInt32 uiResourceIndex = hBuffer.GetInternalID().m_InstanceIndex;
   XII_ASSERT_DEV(uiResourceIndex < static_cast<xiiUInt32>(m_ResolvedBuffers.GetCount()), "Buffer handle index {} is out of range (max {}).", uiResourceIndex, m_ResolvedBuffers.GetCount());
 
@@ -82,8 +86,7 @@ std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStrin
   const xiiUInt32 uiPassIndex = m_Passes.GetCount();
 
   PassEntry& passEntry        = m_Passes.ExpandAndGetRef();
-  passEntry.m_Id.m_uiValue    = xiiHashingUtils::xxHash64String(sName, m_Id.m_uiValue);
-  passEntry.m_Id.m_uiValue    = xiiHashingUtils::xxHash64(&uiPassIndex, sizeof(uiPassIndex), passEntry.m_Id.m_uiValue);
+  passEntry.m_Id              = xiiRenderGraphId(uiPassIndex, m_uiSetupSerial);
   passEntry.m_QueueFlags      = queueFlags;
   passEntry.m_bHasSideEffects = bHasSideEffects;
   passEntry.m_bAllowMerge     = true;
@@ -107,7 +110,7 @@ std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStrin
 
   m_bIsCompiled = false; // Invalidate any previous compile.
 
-  const xiiRenderGraphPassHandle hPass(xiiRenderGraphPassHandleId(uiPassIndex, 0U), passEntry.m_Id);
+  const xiiRenderGraphPassHandle hPass(passEntry.m_Id);
   return {pPassData, hPass};
 }
 
@@ -141,7 +144,7 @@ XII_ALWAYS_INLINE bool xiiRenderGraph::IsCompiled() const
   return m_bIsCompiled;
 }
 
-XII_ALWAYS_INLINE xiiRenderGraphGraphId xiiRenderGraph::GetId() const
+XII_ALWAYS_INLINE xiiRenderGraphId xiiRenderGraph::GetId() const
 {
   return m_Id;
 }
@@ -161,21 +164,20 @@ XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> xi
   return m_ResourceVersions;
 }
 
-XII_ALWAYS_INLINE const xiiRenderGraphIdTable& xiiRenderGraph::GetIdTable() const
-{
-  return m_IdTable;
-}
-
 XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> xiiRenderGraph::GetExportedTexture(xiiRenderGraphTextureHandle hTexture) const
 {
+  if (GetTextureDescription(hTexture) == nullptr)
+    return {};
   xiiSharedPtr<xiiGALTexture> pTexture;
-  m_ExportedTextures.TryGetValue(hTexture.m_Id.m_uiValue, pTexture);
+  m_ExportedTextures.TryGetValue(hTexture.GetResourceId().m_Data, pTexture);
   return pTexture;
 }
 
 XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> xiiRenderGraph::GetExportedBuffer(xiiRenderGraphBufferHandle hBuffer) const
 {
+  if (GetBufferDescription(hBuffer) == nullptr)
+    return {};
   xiiSharedPtr<xiiGALBuffer> pBuffer;
-  m_ExportedBuffers.TryGetValue(hBuffer.m_Id.m_uiValue, pBuffer);
+  m_ExportedBuffers.TryGetValue(hBuffer.GetResourceId().m_Data, pBuffer);
   return pBuffer;
 }

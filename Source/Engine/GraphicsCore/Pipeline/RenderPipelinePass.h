@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Math/Size.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Variant.h>
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
@@ -53,9 +56,11 @@ public:
   xiiResult GetProperties(xiiVariantDictionary& out_properties) const;
   /// Static pins are discovered from typed XII_MEMBER_PROPERTY members. Only
   /// authoring interfaces whose topology comes from another definition are dynamic.
-  virtual void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const;
-  xiiResult                                           InitializePinBindings(xiiArrayPtr<const xiiRenderPipelinePin> pins) const;
-  xiiResult                                           GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
+  virtual void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const;
+  xiiResult    InitializePinBindings(xiiArrayPtr<const xiiRenderPipelinePin> pins) const;
+  xiiResult    GetConfiguredPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
+  /// Apply the same authored contracts to declarations resolved by an external authoring context.
+  xiiResult                                           GetConfiguredPins(xiiArrayPtr<const xiiRenderPipelinePin> declarations, xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiStringBuilder* out_error = nullptr) const;
   virtual xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const { return {}; }
   virtual xiiBitflags<xiiRenderExtractionCategory>    GetExtractionRequirements() const { return {}; }
   virtual xiiBitflags<xiiRenderPipelineFeature>       GetRuntimeFeatures() const { return {}; }
@@ -69,9 +74,6 @@ public:
   virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }
   /// Clears view-local history after camera cuts and configuration changes.
   virtual void InvalidateTemporalHistory() {}
-
-  xiiRenderPipelineOrderInputPin  m_Before;
-  xiiRenderPipelineOrderOutputPin m_After;
 };
 
 /// Bindings use the pass schema's flat pin indices. Input bindings are resolved before Build;
@@ -92,6 +94,11 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   /// Build-only diagnostic sink; execute delegates must not retain this context.
   xiiStringBuilder* m_pBuildError = nullptr;
   xiiResult         ReportFailure(xiiStringView reason) const;
+
+  /// Resolve a concrete frame-local extent without changing the compiled pin or an input texture.
+  xiiResult ResolveTextureSize(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size) const;
+  xiiResult ResolveTextureSize(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size) const;
+  xiiResult ValidateTexture(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle texture) const;
 
   xiiUInt32                                      FindPin(xiiStringView name, bool input) const;
   xiiRenderGraphTextureHandle                    GetInputTexture(xiiStringView name) const;

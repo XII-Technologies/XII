@@ -2,13 +2,30 @@
 
 #pragma once
 
-#include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorPluginAssets/EditorPluginAssetsDLL.h>
+
+#include <EditorFramework/Assets/AssetDocument.h>
+#include <GraphicsCore/Pipeline/RenderPipelinePin.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
+
+struct xiiAssetCuratorEvent;
+
+/// Published asset-header interface, available without loading a compiled GPU resource.
+class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineAssetInterface : public xiiReflectedClass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineAssetInterface, xiiReflectedClass);
+
+public:
+  ~xiiRenderPipelineAssetInterface() override;
+  /// Owned reflected pin declarations, serialized with the asset document header.
+  xiiDynamicArray<xiiRenderPipelinePinConfiguration*> m_Pins;
+};
 
 class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineNodeManager : public xiiDocumentNodeManager
 {
 public:
+  xiiRenderPipelineNodeManager();
+  ~xiiRenderPipelineNodeManager();
   const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const override;
   /// Creates/removes owned pin settings using the document's current undo transaction.
   xiiStatus    SynchronizePinConfigurations(const xiiDocumentObject* node);
@@ -22,6 +39,7 @@ public:
   bool              InternalCanConnectToSelf(const xiiPin& source, const xiiPin& target) const override;
 
 private:
+  void AssetCuratorEventHandler(const xiiAssetCuratorEvent& e);
 };
 
 class XII_EDITORPLUGINASSETS_DLL xiiRenderPipelineAssetDocument : public xiiAssetDocument
@@ -40,6 +58,7 @@ public:
   xiiStatus ExpandSubgraph(const xiiDocumentObject* object);
 
 protected:
+  void                       UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
   void                       InitializeAfterLoading(bool bFirstTimeCreation) override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;

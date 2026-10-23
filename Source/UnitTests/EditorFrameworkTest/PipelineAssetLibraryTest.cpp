@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
-#include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <EnginePluginAssets/RenderPipelineAsset/RenderPipelineContext.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -72,7 +73,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLibraryTest", "PipelineLibrary", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
-  for (const xiiStringView name : {"AmbientOcclusion", "TransparencyResolve", "OpaqueComposition", "DebugVisualization", "ScreenEffects", "InstanceVisibility", "MeshletVisibility", "VertexPullDraws", "SurfaceQuery", "EditorMeshPicking", "DepthOnly", "GBuffer", "DepthPyramid", "InstanceOcclusion", "MeshletOcclusion", "GeometryLodFeedback", "ShadowDepth", "MatrixInstanceVisibility", "MatrixMeshletVisibility", "WorldMeshDraws", "ShadowMap", "ShadowMeshDepth", "ShadowCascades", "VirtualShadowTables", "VirtualShadowRasterWork", "VirtualShadowPagePublish", "VirtualShadowFeedback", "TexturePreview", "TextureCubePreview", "SceneTargets", "ViewPresentation", "BufferExport", "DepthSensor", "RgbSensor", "InfraredSensor", "LidarSensor", "DepthSensorDiagnostic", "DirectionalMesh", "DirectionalMeshConstants", "VirtualShadowSamplingConstants", "SceneRayProbe", "WorldRayProbe", "LightClusterView", "ClusterBounds", "ClusterListClear", "ClusterLightAssignment", "ClusterLightLists", "ClusterLightSampling", "WorldLightsUpload", "WorldDirectionalLight", "EnvironmentLightConstants", "DDGIProbeSchedule", "DDGIProbeUpload", "DDGIAtlasPrepare", "DDGIEnvironmentSeed", "DDGIEnvironmentProbes", "SparseVoxelSchedule", "SparseVoxelUpload", "SparseVoxelPoolPrepare", "SparseVoxelEnvironmentSeed", "SparseVoxelEnvironment", "DirectionalSurfaceLighting", "ClusteredLocalSurfaceLighting", "WorldSurfaceLighting", "RadianceAdd", "ConfidenceRadiance", "VolumetricComposite", "SurfaceRadianceComposition", "IrradianceLayer", "DiffuseSurfaceLighting", "EnvironmentSpecular", "LayeredDiffuseLighting", "SurfaceIndirectLighting", "WorldDeferredLighting", "HdrDisplay", "DeferredOpaque", "ConfidenceBlend", "RadianceReplace", "ReflectionSelection", "ReflectionComposition", "ScreenIrradiance", "ScreenDiffuseLighting", "ScreenRefractionTrace", "ScreenRefraction", "AtmosphereApply", "AtmosphereConstants", "AtmosphereTransmittance", "AtmosphereMultiScatter", "AtmosphereLookup", "WorldAtmosphereView"})
+  // Export dependencies first so resource references resolve to the freshly rebuilt library in the output directory.
+  for (const xiiStringView name : {"AmbientOcclusion", "AtmosphereApply", "AtmosphereConstants", "AtmosphereMultiScatter", "AtmosphereTransmittance", "AtmosphereLookup", "BufferExport", "ClusterBounds", "ClusterLightAssignment", "ClusterLightLists", "ClusterLightSampling", "ClusterListClear", "ClusteredLocalSurfaceLighting", "ConfidenceBlend", "ConfidenceRadiance", "DDGIAtlasPrepare", "DDGIEnvironmentProbes", "DDGIEnvironmentSeed", "DDGIProbeSchedule", "DDGIProbeUpload", "DebugVisualization", "HdrDisplay", "WorldDirectionalLight", "EnvironmentLightConstants", "WorldLightsUpload", "WorldSurfaceLighting", "InstanceVisibility", "MeshletVisibility", "VertexPullDraws", "GBuffer", "WorldDeferredLighting", "DeferredOpaque", "DepthOnly", "DepthPyramid", "DepthSensor", "DepthSensorDiagnostic", "DiffuseSurfaceLighting", "DirectionalMesh", "DirectionalMeshConstants", "DirectionalSurfaceLighting", "SurfaceQuery", "EditorMeshPicking", "EnvironmentSpecular", "GeometryLodFeedback", "InfraredSensor", "InstanceOcclusion", "IrradianceLayer", "LayeredDiffuseLighting", "LidarSensor", "LightClusterView", "MatrixInstanceVisibility", "MatrixMeshletVisibility", "MeshletOcclusion", "ReflectionSelection", "ReflectionComposition", "SurfaceRadianceComposition", "OpaqueComposition", "RadianceAdd", "RadianceReplace", "RgbSensor", "SceneRayProbe", "SceneTargets", "ScreenIrradiance", "ScreenDiffuseLighting", "ScreenRefractionTrace", "ScreenRefraction", "ScreenEffects", "ShadowCascades", "ShadowDepth", "ShadowMap", "ShadowMeshDepth", "SparseVoxelEnvironment", "SparseVoxelEnvironmentSeed", "SparseVoxelPoolPrepare", "SparseVoxelSchedule", "SparseVoxelUpload", "SurfaceIndirectLighting", "TextureCubePreview", "TexturePreview", "TransparencyResolve", "ViewPresentation", "VirtualShadowFeedback", "VirtualShadowPagePublish", "VirtualShadowRasterWork", "VirtualShadowSamplingConstants", "VirtualShadowTables", "VolumetricComposite", "WorldAtmosphereView", "WorldMeshDraws", "WorldRayProbe"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     PipelineLibraryDocument storage(source);
@@ -103,7 +105,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
           {
             const auto* properties = nodes->GetPinPropertyObject(*pin);
             XII_TEST_BOOL(properties != nullptr);
-            if (properties)
+            if (properties && properties->GetType()->IsDerivedFrom<xiiRenderPipelinePinConfiguration>())
               XII_TEST_BOOL(properties->GetTypeAccessor().GetValue("Id").Get<xiiUuid>() == properties->GetGuid());
           }
         };
@@ -128,7 +130,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     if (!XII_TEST_RESULT(context.Import(*document)))
       return;
     xiiExportDocumentMsgToEngine message;
-    message.m_sOutputFile = xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/", name, ".xiiBinRenderPipeline");
+    message.m_sOutputFile = xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/RenderPipelines/", name, ".xiiBinRenderPipeline");
     message.m_uiAssetHash = 1;
     message.m_uiVersion   = 7;
     auto exported         = context.ExportDocument(&message);

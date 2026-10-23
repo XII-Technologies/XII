@@ -127,7 +127,17 @@ namespace
           out_value = std::move(values);
         }
         else
-          return XII_FAILURE;
+        {
+          const auto* type = property->GetSpecificType();
+          if (!type->GetAllocator()->CanAllocate())
+            return XII_FAILURE;
+          void* temporary = type->GetAllocator()->Allocate<void>();
+          XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(temporary));
+          member->GetValuePtr(object, temporary);
+          xiiVariantDictionary values;
+          XII_SUCCEED_OR_RETURN(ReadObject(temporary, type, values, depth));
+          out_value = std::move(values);
+        }
         return XII_SUCCESS;
       }
       if (property->GetCategory() == xiiPropertyCategory::Array)
@@ -249,8 +259,19 @@ namespace
             xiiReflectionUtils::DeleteObject(previous, property);
           return XII_SUCCESS;
         }
-        void* child = member->GetPropertyPointer(object);
-        return child && value.IsA<xiiVariantDictionary>() ? WriteObject(child, property->GetSpecificType(), value.Get<xiiVariantDictionary>(), depth) : XII_FAILURE;
+        if (!value.IsA<xiiVariantDictionary>())
+          return XII_FAILURE;
+        if (void* child = member->GetPropertyPointer(object))
+          return WriteObject(child, property->GetSpecificType(), value.Get<xiiVariantDictionary>(), depth);
+        const auto* type = property->GetSpecificType();
+        if (!type->GetAllocator()->CanAllocate())
+          return XII_FAILURE;
+        void* child = type->GetAllocator()->Allocate<void>();
+        XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(child));
+        member->GetValuePtr(object, child);
+        XII_SUCCEED_OR_RETURN(WriteObject(child, type, value.Get<xiiVariantDictionary>(), depth));
+        member->SetValuePtr(object, child);
+        return XII_SUCCESS;
       }
       if (property->GetCategory() == xiiPropertyCategory::Array)
       {

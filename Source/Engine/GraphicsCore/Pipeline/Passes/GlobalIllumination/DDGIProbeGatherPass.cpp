@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
@@ -18,7 +19,10 @@ struct xiiDDGIProbeGatherPass::State
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Point;
 };
-xiiDDGIProbeGatherPass::xiiDDGIProbeGatherPass()  = default;
+xiiDDGIProbeGatherPass::xiiDDGIProbeGatherPass()
+{
+  m_Output.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiDDGIProbeGatherPass::~xiiDDGIProbeGatherPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeGatherPass, 1, xiiRTTIDefaultAllocator<xiiDDGIProbeGatherPass>)
@@ -49,7 +53,10 @@ xiiResult xiiDDGIProbeGatherPass::Build(xiiRenderPipelinePassContext& context)
   const auto depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal);
   const auto camera = context.GetInputBuffer(m_Camera);
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, depth, 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_Output, depth, size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(depth);
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   const auto* normalDescription = context.m_Graph.GetTextureDescription(normal);
   const auto* cameraDescription = context.m_Graph.GetBufferDescription(camera);
   if (!normalDescription || normalDescription->m_Size != size || !cameraDescription || cameraDescription->m_uiSize < sizeof(xiiFrameCameraConstants))

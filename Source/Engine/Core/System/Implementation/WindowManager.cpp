@@ -37,7 +37,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Core, xiiWindowManager)
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
-
 // clang-format on
 
 //////////////////////////////////////////////////////////////////////////

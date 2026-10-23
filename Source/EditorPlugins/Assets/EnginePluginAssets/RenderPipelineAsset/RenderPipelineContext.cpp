@@ -67,7 +67,18 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
     descriptor.m_Settings = *settings[0];
   xiiHashTable<xiiUuid, xiiUInt32>                             passUuidToIndex;
   xiiHashTable<xiiUuid, const xiiRenderPipelineInterfacePass*> interfaces;
-  xiiDynamicArray<xiiUInt32>                                   sortedPasses;
+  xiiHashSet<xiiUuid>                                          defaultInputs;
+  for (xiiUInt32 i = 0; i < passes.GetCount(); ++i)
+    if (passes[i]->GetDynamicRTTI() == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
+    {
+      const auto* boundary = static_cast<const xiiRenderPipelineInterfacePass*>(passes[i]);
+      interfaces.Insert(passUuids[i], boundary);
+      if (boundary->m_bInput)
+        for (const auto* connection : toolConnections)
+          if (connection->m_Target == passUuids[i] && connection->m_TargetPin == "Default")
+            defaultInputs.Insert(passUuids[i]);
+    }
+  xiiDynamicArray<xiiUInt32> sortedPasses;
   for (xiiUInt32 i = 0; i < passes.GetCount(); ++i)
     sortedPasses.PushBack(i);
   sortedPasses.Sort([&](xiiUInt32 a, xiiUInt32 b) { return passUuids[a] < passUuids[b]; });
@@ -75,9 +86,18 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
   {
     xiiStringBuilder name;
     xiiConversionUtils::ToString(passUuids[i], name);
-    if (passes[i]->IsInstanceOf<xiiRenderPipelineInterfacePass>())
+    if (passes[i]->GetDynamicRTTI() == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
     {
-      interfaces.Insert(passUuids[i], static_cast<const xiiRenderPipelineInterfacePass*>(passes[i]));
+      if (defaultInputs.Contains(passUuids[i]))
+      {
+        xiiVariantDictionary properties;
+        if (passes[i]->GetProperties(properties).Failed())
+          return xiiStatus("Cannot serialize default input boundary.");
+        const auto index                = descriptor.AddPass(name, xiiGetStaticRTTI<xiiRenderPipelineInputDefaultPass>(), properties);
+        descriptor.m_Passes[index].m_Id = passUuids[i];
+        passUuidToIndex.Insert(passUuids[i], index);
+        descriptor.m_Interface.PushBack({interfaces[passUuids[i]]->m_sName, true, passUuids[i], "Override"});
+      }
       continue;
     }
     if (passes[i]->IsInstanceOf<xiiRenderPipelineSubgraphPass>())
@@ -114,7 +134,7 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
     xiiVariantDictionary settings;
     if (passes[i]->GetProperties(settings).Failed())
       return xiiStatus(xiiFmt("Cannot serialize reflected configuration for pass '{}'.", name));
-    const auto index                        = descriptor.AddPass(name, passes[i]->GetDynamicRTTI()->GetTypeName(), settings);
+    const auto index                        = descriptor.AddPass(name, passes[i]->GetDynamicRTTI(), settings);
     descriptor.m_Passes[index].m_Id         = passUuids[i];
     descriptor.m_Passes[index].m_Parameters = passes[i]->m_ParameterOverrides;
     passUuidToIndex.Insert(passUuids[i], index);
@@ -127,14 +147,14 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
   {
     const auto*                           connection = toolConnections[connectionIndex];
     const xiiRenderPipelineInterfacePass* boundary   = nullptr;
-    if (interfaces.TryGetValue(connection->m_Source, boundary))
+    if (interfaces.TryGetValue(connection->m_Source, boundary) && !defaultInputs.Contains(connection->m_Source))
     {
       if (!boundary->m_bInput || !passUuidToIndex.Contains(connection->m_Target))
         return xiiStatus("External input must connect to an internal pass input.");
       descriptor.m_Interface.PushBack({boundary->m_sName, true, connection->m_Target, connection->m_TargetPin});
       continue;
     }
-    if (interfaces.TryGetValue(connection->m_Target, boundary))
+    if (interfaces.TryGetValue(connection->m_Target, boundary) && !defaultInputs.Contains(connection->m_Target))
     {
       if (boundary->m_bInput || !passUuidToIndex.Contains(connection->m_Source))
         return xiiStatus("External output must connect to an internal pass output.");

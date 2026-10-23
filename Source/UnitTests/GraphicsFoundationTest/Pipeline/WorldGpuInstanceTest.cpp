@@ -1,5 +1,16 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
+#include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MatrixVisibilityViewPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -22,8 +33,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
@@ -119,7 +130,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     else
     {
       xiiRayTracingFrameResources resources[2];
-      xiiRenderGraphContext       context;
+      xiiRenderGraphTestContext   context;
       XII_TEST_RESULT(context.Initialize("Independent extracted TLAS"));
       xiiRenderGraphFrame gpuFrame;
       XII_TEST_RESULT(gpuFrame.Begin());
@@ -166,21 +177,21 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two cameras share sparse uploads; warmed unchanged frames upload zero bytes")
   {
     xiiRenderPipelineResourceDescriptor uploadDefinition;
-    uploadDefinition.AddPass("World data", "xiiWorldInstancesUploadPass");
-    uploadDefinition.AddPass("Repeated world data", "xiiWorldInstancesUploadPass");
-    uploadDefinition.AddPass("Device geometry", "xiiGeometryUploadPass");
-    uploadDefinition.AddPass("Device materials", "xiiMaterialUploadPass");
+    uploadDefinition.AddPass("World data", xiiGetStaticRTTI<xiiWorldInstancesUploadPass>());
+    uploadDefinition.AddPass("Repeated world data", xiiGetStaticRTTI<xiiWorldInstancesUploadPass>());
+    uploadDefinition.AddPass("Device geometry", xiiGetStaticRTTI<xiiGeometryUploadPass>());
+    uploadDefinition.AddPass("Device materials", xiiGetStaticRTTI<xiiMaterialUploadPass>());
     xiiVariantDictionary cullingProperties;
     cullingProperties.Insert("UseViewSelection", false);
     cullingProperties.Insert("VisibilityMask", 0x42U);
-    uploadDefinition.AddPass("Camera culling inputs", "xiiVisibilityViewPass", cullingProperties);
-    uploadDefinition.AddPass("Empty work", "xiiCounterResetPass");
+    uploadDefinition.AddPass("Camera culling inputs", xiiGetStaticRTTI<xiiVisibilityViewPass>(), cullingProperties);
+    uploadDefinition.AddPass("Empty work", xiiGetStaticRTTI<xiiCounterResetPass>());
     xiiVariantDictionary counterProperties;
     counterProperties.Insert("Value", 17U);
-    uploadDefinition.AddPass("Seeded work", "xiiCounterResetPass", counterProperties);
-    uploadDefinition.AddPass("Matrix query", "xiiMatrixVisibilityViewPass");
-    uploadDefinition.AddPass("Repeated geometry", "xiiGeometryUploadPass");
-    uploadDefinition.AddPass("Repeated materials", "xiiMaterialUploadPass");
+    uploadDefinition.AddPass("Seeded work", xiiGetStaticRTTI<xiiCounterResetPass>(), counterProperties);
+    uploadDefinition.AddPass("Matrix query", xiiGetStaticRTTI<xiiMatrixVisibilityViewPass>());
+    uploadDefinition.AddPass("Repeated geometry", xiiGetStaticRTTI<xiiGeometryUploadPass>());
+    uploadDefinition.AddPass("Repeated materials", xiiGetStaticRTTI<xiiMaterialUploadPass>());
     xiiCamera cullingCamera;
     cullingCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
 
@@ -191,7 +202,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     for (auto& instance : uploadInstances)
       if (!XII_TEST_RESULT(instance.Initialize(compiledUpload)))
         return;
-    xiiRenderGraphContext graphs[2];
+    xiiRenderGraphTestContext graphs[2];
     XII_TEST_RESULT(graphs[0].Initialize("World upload camera A"));
     XII_TEST_RESULT(graphs[1].Initialize("World upload camera B"));
     xiiUInt32 viewTokens[2] = {0, 0};
@@ -358,7 +369,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     xiiVariantDictionary properties;
     properties.Insert("Categories", static_cast<xiiUInt32>(xiiRenderExtractionCategory::Geometry));
     xiiRenderPipelineResourceDescriptor pipeline;
-    pipeline.AddPass("Collect", "xiiExtractionDemandPass", properties);
+    pipeline.AddPass("Collect", xiiGetStaticRTTI<xiiExtractionDemandPass>(), properties);
     const auto resource = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("SharedStaticMeshPipeline", std::move(pipeline));
     xiiCamera  camera;
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
@@ -550,7 +561,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_RESULT(module->UpdateGpuInstances(extracted, 1));
     XII_TEST_INT(module->GetGpuInstanceData()->GetInstanceCount(), 1);
     XII_TEST_BOOL(module->GetGpuInstanceData()->GetInstances()[0].m_uiObjectId != identity);
-    xiiRenderGraphContext context;
+    xiiRenderGraphTestContext context;
     XII_TEST_RESULT(context.Initialize("World upload after renderer restart"));
     xiiRenderGraphFrame gpuFrame;
     XII_TEST_RESULT(gpuFrame.Begin());

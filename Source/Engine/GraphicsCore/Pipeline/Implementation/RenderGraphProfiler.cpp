@@ -5,21 +5,13 @@
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-xiiRenderGraphTimestampProfiler::xiiRenderGraphTimestampProfiler() = default;
+xiiRenderGraphTimestampProfiler::xiiRenderGraphTimestampProfiler(xiiSharedPtr<xiiGALDevice> pDevice) :
+  m_pDevice(std::move(pDevice))
+{
+  XII_ASSERT_DEV(m_pDevice != nullptr, "Render graph profiler must be initialized with a valid device.");
+}
 
 xiiRenderGraphTimestampProfiler::~xiiRenderGraphTimestampProfiler()
-{
-  Shutdown();
-}
-
-void xiiRenderGraphTimestampProfiler::Initialize(xiiSharedPtr<xiiGALDevice> pDevice)
-{
-  XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
-
-  m_pDevice = pDevice;
-}
-
-void xiiRenderGraphTimestampProfiler::Shutdown()
 {
   for (xiiUInt32 i = 0U; i < s_uiRingFrameCount; ++i)
   {
@@ -33,6 +25,7 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
   m_pDevice = nullptr;
 
   XII_LOCK(m_ResultMutex);
+
   m_ResolvedDurationsMs.Clear();
   m_ResolvedGraphDurationsMs.Clear();
   m_ResolvedQueueDurationsMs.Clear();
@@ -49,8 +42,31 @@ bool xiiRenderGraphTimestampProfiler::SupportsDurationQueries(const xiiGALComman
   return !bTransferOnly || m_pDevice->GetFeatures().m_TransferQueueTimestampQueries == xiiGALDeviceFeatureState::Enabled;
 }
 
+void xiiRenderGraphTimestampProfiler::OnFrameBegin(xiiUInt64 uiFrameIndex)
+{
+  if (m_uiRecordingFrameIndex == uiFrameIndex)
+    return;
+
+  if (m_uiRecordingFrameIndex != xiiInvalidIndex)
+    m_uiCurrentRingSlot = (m_uiCurrentRingSlot + 1U) % s_uiRingFrameCount;
+
+  FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
+  if (frame.m_uiFrameIndex != xiiInvalidIndex)
+    ReadbackFrame(frame);
+  frame.m_uiFrameIndex    = uiFrameIndex;
+  m_uiRecordingFrameIndex = uiFrameIndex;
+}
+
+void xiiRenderGraphTimestampProfiler::SetGraphInstance(xiiUInt64 uiInstanceId)
+{
+  m_uiRecordingGraphId      = uiInstanceId;
+  const FrameData& frame    = m_FrameRing[m_uiCurrentRingSlot];
+  m_uiPassQueryOffset       = frame.m_PassQueries.GetCount();
+  m_uiSubmissionQueryOffset = frame.m_SubmissionDurationQueries.GetCount();
+}
 void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
+  uiSubmissionIndex += m_uiSubmissionQueryOffset;
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
@@ -90,6 +106,7 @@ void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandLis
 
 void xiiRenderGraphTimestampProfiler::OnGraphEnd(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
+  uiSubmissionIndex += m_uiSubmissionQueryOffset;
   XII_IGNORE_UNUSED(uiGraphId);
   XII_IGNORE_UNUSED(uiQueueIndex);
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
@@ -113,12 +130,13 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
 
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
 
-  if (uiPassIndex >= frame.m_PassQueries.GetCount())
+  const xiiUInt32 uiQueryIndex = uiPassIndex + m_uiPassQueryOffset;
+  if (uiQueryIndex >= frame.m_PassQueries.GetCount())
   {
-    frame.m_PassQueries.SetCount(uiPassIndex + 1U);
+    frame.m_PassQueries.SetCount(uiQueryIndex + 1U);
   }
 
-  PassQueries& pass = frame.m_PassQueries[uiPassIndex];
+  PassQueries& pass = frame.m_PassQueries[uiQueryIndex];
   pass.m_bActive    = SupportsDurationQueries(commandList);
   pass.m_sPassName.Assign(sPassName);
   pass.m_uiGraphId   = m_uiRecordingGraphId;
@@ -147,10 +165,11 @@ void xiiRenderGraphTimestampProfiler::OnPassEnd(xiiGALCommandList& commandList, 
 
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
 
-  if (uiPassIndex >= frame.m_PassQueries.GetCount())
+  const xiiUInt32 uiQueryIndex = uiPassIndex + m_uiPassQueryOffset;
+  if (uiQueryIndex >= frame.m_PassQueries.GetCount())
     return;
 
-  PassQueries& pass = frame.m_PassQueries[uiPassIndex];
+  PassQueries& pass = frame.m_PassQueries[uiQueryIndex];
   if (pass.m_pDurationQuery != nullptr && pass.m_bActive)
   {
     commandList.EndQuery(pass.m_pDurationQuery);
@@ -159,30 +178,20 @@ void xiiRenderGraphTimestampProfiler::OnPassEnd(xiiGALCommandList& commandList, 
 
 void xiiRenderGraphTimestampProfiler::OnFrameEnd(xiiUInt64 uiFrameIndex)
 {
-  m_FrameRing[m_uiCurrentRingSlot].m_uiFrameIndex = uiFrameIndex;
-  m_uiCurrentRingSlot                             = (m_uiCurrentRingSlot + 1U) % s_uiRingFrameCount;
-
-  // Attempt readback on the oldest slot (2-frame delay minimum before read).
-  FrameData& oldestFrame = m_FrameRing[m_uiCurrentRingSlot];
-  if (oldestFrame.m_uiFrameIndex != xiiInvalidIndex)
-  {
-    ReadbackFrame(oldestFrame);
-  }
+  XII_IGNORE_UNUSED(uiFrameIndex);
+  XII_ASSERT_DEV(m_uiRecordingFrameIndex == uiFrameIndex, "Profiler frame must match the recorded graph.");
+  // Keep this slot open for the remaining graphs in the same GPU frame.
 }
 
 void xiiRenderGraphTimestampProfiler::OnFrameAbort()
 {
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
-  for (PassQueries& pass : frame.m_PassQueries)
-    pass.m_bActive = false;
-  for (xiiUInt32 i = 0; i < frame.m_SubmissionQueryActive.GetCount(); ++i)
+  for (xiiUInt32 i = m_uiPassQueryOffset; i < frame.m_PassQueries.GetCount(); ++i)
+    frame.m_PassQueries[i].m_bActive = false;
+  for (xiiUInt32 i = m_uiSubmissionQueryOffset; i < frame.m_SubmissionQueryActive.GetCount(); ++i)
     frame.m_SubmissionQueryActive[i] = false;
-
-  // Earlier submissions may still use these queries. Advance through the normal ring without
-  // publishing an incomplete frame or immediately recycling its GPU resources.
-  OnFrameEnd(xiiInvalidIndex);
+  // Retain query objects until the normal frame ring retires their GPU submissions.
 }
-
 void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
 {
   XII_LOCK(m_ResultMutex);

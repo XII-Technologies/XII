@@ -1,9 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Vec4.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 class xiiView;
 

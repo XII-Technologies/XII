@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
@@ -36,7 +38,6 @@
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativePreparation);
 XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedDataProducers)
@@ -69,9 +70,9 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedDataProducers)
   properties.Insert("LodHysteresis", 1.0f);
   XII_TEST_BOOL(copy.Configure(properties).Failed());
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Instances", "xiiWorldInstancesUploadPass");
-  leaf.AddPass("Geometry", "xiiGeometryUploadPass");
-  leaf.AddPass("Materials", "xiiMaterialUploadPass");
+  leaf.AddPass("Instances", xiiGetStaticRTTI<xiiWorldInstancesUploadPass>());
+  leaf.AddPass("Geometry", xiiGetStaticRTTI<xiiGeometryUploadPass>());
+  leaf.AddPass("Materials", xiiGetStaticRTTI<xiiMaterialUploadPass>());
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
   xiiRenderPipelineResourceDescriptor root;
@@ -132,8 +133,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitLodHistoryTopology)
     XII_TEST_BOOL(pass->GetDynamicRTTI()->FindPropertyByName("Stage") == nullptr);
   }
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Cull supplied instances", "xiiInstanceCullPass");
-  definition.AddPass("Retain LOD choices", "xiiBufferHistoryPass");
+  definition.AddPass("Cull supplied instances", xiiGetStaticRTTI<xiiInstanceCullPass>());
+  definition.AddPass("Retain LOD choices", xiiGetStaticRTTI<xiiBufferHistoryPass>());
   XII_TEST_RESULT(definition.Connect(0, "LodHistory", 1, "Buffer"));
   XII_TEST_RESULT(definition.Connect(1, "PreviousBuffer", 0, "PreviousLodHistory"));
   xiiDynamicArray<xiiRenderPipelinePin> pins;
@@ -171,8 +172,8 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedMeshletWorkPreparation)
   XII_TEST_RESULT(dispatch.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[dispatch.m_Arguments.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Reduce selected LODs", "xiiMeshletDispatchBoundsPass");
-  definition.AddPass("Prepare indirect work", "xiiMeshletDispatchPass");
+  definition.AddPass("Reduce selected LODs", xiiGetStaticRTTI<xiiMeshletDispatchBoundsPass>());
+  definition.AddPass("Prepare indirect work", xiiGetStaticRTTI<xiiMeshletDispatchPass>());
   XII_TEST_RESULT(definition.Connect(0, "MaximumMeshletGroups", 1, "MaximumMeshletGroups"));
   for (xiiUInt32 index = 0; index < 2; ++index)
   {
@@ -352,11 +353,11 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentInstanceOcclusion)
   XII_TEST_BOOL(pins[pass.m_Depth.GetBindingIndex()].m_Format == xiiGALResourceFormat::R32Float);
   XII_TEST_BOOL(pins[pass.m_Count.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::ReadWrite);
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Occlusion", "xiiInstanceOcclusionPass");
-  definition.AddPass("Reset", "xiiCounterResetPass");
+  definition.AddPass("Occlusion", xiiGetStaticRTTI<xiiInstanceOcclusionPass>());
+  definition.AddPass("Reset", xiiGetStaticRTTI<xiiCounterResetPass>());
   XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+    if (pin.m_sName != "InitialCount")
       definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[0].m_Id, pin.m_sName});
   xiiGraphDefinition reusable;
   XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
@@ -369,7 +370,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentInstanceOcclusion)
     override.m_Path.PushBack(definition.m_Passes[0].m_Id);
     override.m_Properties.Insert("DepthBias", instance ? 0.0f : 0.0005f);
     for (const auto& pin : pins)
-      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+      if (pin.m_bInput && pin.m_sName != "InitialCount")
         root.m_Interface.PushBack({xiiStringBuilder(instance ? "Strict/" : "Biased/", pin.m_sName), true, root.m_Passes[node].m_Id, pin.m_sName});
   }
   xiiSharedPtr<const xiiRenderPipeline> compiled;
@@ -404,11 +405,11 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshletOcclusion)
   XII_TEST_BOOL(pins[pass.m_Depth.GetBindingIndex()].m_Format == xiiGALResourceFormat::R32Float);
   XII_TEST_BOOL(pins[pass.m_Count.GetBindingIndex()].m_Access == xiiRenderPipelinePinAccess::ReadWrite);
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Occlusion", "xiiMeshletOcclusionPass");
-  definition.AddPass("Reset", "xiiCounterResetPass");
+  definition.AddPass("Occlusion", xiiGetStaticRTTI<xiiMeshletOcclusionPass>());
+  definition.AddPass("Reset", xiiGetStaticRTTI<xiiCounterResetPass>());
   XII_TEST_RESULT(definition.Connect(1, "Counter", 0, "InitialCount"));
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+    if (pin.m_sName != "InitialCount")
       definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[0].m_Id, pin.m_sName});
   xiiGraphDefinition reusable;
   XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
@@ -421,7 +422,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentMeshletOcclusion)
     override.m_Path.PushBack(definition.m_Passes[0].m_Id);
     override.m_Properties.Insert("DepthBias", instance ? 0.0f : 0.0005f);
     for (const auto& pin : pins)
-      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitialCount")
+      if (pin.m_bInput && pin.m_sName != "InitialCount")
         root.m_Interface.PushBack({xiiStringBuilder(instance ? "Strict/" : "Biased/", pin.m_sName), true, root.m_Passes[node].m_Id, pin.m_sName});
   }
   xiiSharedPtr<const xiiRenderPipeline> compiled;
@@ -472,15 +473,15 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentGeometryStreamingFeedback)
   }
   XII_TEST_BOOL(xiiGpuGeometryLodRequest().GetGeometry().IsInvalidated());
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Initialize", "xiiGeometryLodFeedbackResetPass");
-  definition.AddPass("Generate", "xiiGeometryLodFeedbackPass");
-  definition.AddPass("Readback", "xiiGeometryLodFeedbackReadbackPass");
+  definition.AddPass("Initialize", xiiGetStaticRTTI<xiiGeometryLodFeedbackResetPass>());
+  definition.AddPass("Generate", xiiGetStaticRTTI<xiiGeometryLodFeedbackPass>());
+  definition.AddPass("Readback", xiiGetStaticRTTI<xiiGeometryLodFeedbackReadbackPass>());
   XII_TEST_RESULT(definition.Connect(0, "Requests", 1, "InitializedRequests"));
   XII_TEST_RESULT(definition.Connect(1, "Requests", 2, "Requests"));
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   generate.GetPins(pins);
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitializedRequests")
+    if (pin.m_sName != "InitializedRequests")
       definition.m_Interface.PushBack({pin.m_sName, pin.m_bInput, definition.m_Passes[1].m_Id, pin.m_sName});
   xiiGraphDefinition reusable;
   XII_TEST_RESULT(definition.MakeGraphDefinition(reusable));
@@ -493,7 +494,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentGeometryStreamingFeedback)
     override.m_Path.PushBack(definition.m_Passes[1].m_Id);
     override.m_Properties.Insert("PriorityTier", i ? 3U : 1U);
     for (const auto& pin : pins)
-      if (pin.m_bInput && pin.m_Type != xiiRenderPipelinePin::Order && pin.m_sName != "InitializedRequests")
+      if (pin.m_bInput && pin.m_sName != "InitializedRequests")
         root.m_Interface.PushBack({pin.m_sName, true, root.m_Passes[node].m_Id, pin.m_sName});
   }
   xiiContiguousMemoryStreamStorage storage;
@@ -591,19 +592,14 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitDepthTargetAndProjection)
   bindings.Clear();
   bindings.SetCount(pins.GetCount());
   parameters.Clear();
-  parameters.Insert("RasterWidth", 64.0f);
-  parameters.Insert("RasterHeight", 16U);
-  xiiRenderPipelinePassContext targetContext{nullptr, graph, blackboard, parameters, pins, bindings, "Runtime depth target"};
-  targetContext.m_pBuildError = &error;
-  error.Clear();
-  XII_TEST_BOOL(dynamicTarget.Build(targetContext).Failed());
-  XII_TEST_BOOL(error.FindSubString("RasterWidth") != nullptr);
-  parameters.Insert("RasterWidth", 64U);
+  pins[dynamicTarget.m_Depth.GetBindingIndex()].m_Resolution       = {xiiRenderPipelineTextureResolutionMode::Input};
+  bindings[dynamicTarget.m_Reference.GetBindingIndex()].m_hTexture = *image.first;
+  xiiRenderPipelinePassContext targetContext{nullptr, graph, blackboard, parameters, pins, bindings, "Input-relative depth target"};
   XII_TEST_RESULT(dynamicTarget.Build(targetContext));
   const auto* allocated = graph.GetTextureDescription(bindings[dynamicTarget.m_Depth.GetBindingIndex()].m_hTexture);
   if (XII_TEST_BOOL(allocated != nullptr))
-    XII_TEST_INT(allocated->m_Size.width, 64);
-  XII_TEST_INT(dynamicTarget.m_uiWidth, 0); // Runtime dimensions do not change authored properties.
+    XII_TEST_BOOL(allocated->m_Size == graph.GetTextureDescription(*image.first)->m_Size);
+  XII_TEST_INT(dynamicTarget.m_Depth.GetResolution().m_uiWidth, 0); // Runtime dimensions do not change authored properties.
   graph.EndSetup();
 }
 
@@ -664,9 +660,9 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowFeedback)
   XII_TEST_RESULT(readback.Configure(properties));
   XII_TEST_INT(readback.GetStats().m_uiSourceFrame, 0);
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Initialize", "xiiVirtualShadowFeedbackResetPass");
-  leaf.AddPass("Generate", "xiiVirtualShadowFeedbackPass");
-  leaf.AddPass("Readback", "xiiVirtualShadowFeedbackReadbackPass");
+  leaf.AddPass("Initialize", xiiGetStaticRTTI<xiiVirtualShadowFeedbackResetPass>());
+  leaf.AddPass("Generate", xiiGetStaticRTTI<xiiVirtualShadowFeedbackPass>());
+  leaf.AddPass("Readback", xiiGetStaticRTTI<xiiVirtualShadowFeedbackReadbackPass>());
   XII_TEST_RESULT(leaf.Connect(0, "Requests", 1, "InitializedRequests"));
   XII_TEST_RESULT(leaf.Connect(1, "Requests", 2, "Requests"));
   leaf.m_Interface.PushBack({"SceneDepth", true, leaf.m_Passes[1].m_Id, "SceneDepth"});
@@ -728,7 +724,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDirectionalCascades)
   properties.Insert("LightDirection", xiiVec3(1, 0, -1));
   XII_TEST_RESULT(pass.Configure(properties));
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Stabilized cascades", "xiiShadowCascadePass", properties);
+  leaf.AddPass("Stabilized cascades", xiiGetStaticRTTI<xiiShadowCascadePass>(), properties);
   leaf.m_Interface.PushBack({"CascadeConstants", false, leaf.m_Passes[0].m_Id, "CascadeConstants"});
   xiiGraphDefinition definition;
   XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));
@@ -765,7 +761,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowTables)
   XII_TEST_BOOL(pass.GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(pass.GetRuntimeFeatures() == xiiRenderPipelineFeature::VirtualShadows);
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Device page residency", "xiiVirtualShadowTablesPass");
+  definition.AddPass("Device page residency", xiiGetStaticRTTI<xiiVirtualShadowTablesPass>());
   xiiSharedPtr<const xiiRenderPipeline> pipeline;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, pipeline));
   xiiRenderPipelineInstance instance;
@@ -819,7 +815,6 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVirtualShadowWorkAndPublica
   XII_TEST_BOOL(copy.Build(context).Failed());
   XII_TEST_BOOL(error.FindSubString("current GPU frame") != nullptr);
   for (const auto& pin : pins)
-    if (pin.m_Type != xiiRenderPipelinePin::Order)
-      XII_TEST_BOOL(pin.m_Type == xiiRenderPipelinePin::FrameData && pin.m_pDataType != nullptr);
+    XII_TEST_BOOL(pin.m_Type == xiiRenderPipelinePin::FrameData && pin.m_pDataType != nullptr);
   graph.EndSetup();
 }

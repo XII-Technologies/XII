@@ -3,6 +3,8 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/BinarySerializer.h>
@@ -11,9 +13,16 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
+#include <QComboBox>
+#include <QHBoxLayout>
+#include <QSignalBlocker>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
+#include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -22,8 +31,160 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAssetDocument, 7, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAssetInterface, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineAssetInterface>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_ARRAY_MEMBER_PROPERTY("Pins", m_Pins)->AddFlags(xiiPropertyFlags::PointerOwner),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiRenderPipelineAssetInterface::~xiiRenderPipelineAssetInterface()
+{
+  for (auto* pin : m_Pins)
+    pin->GetDynamicRTTI()->GetAllocator()->Deallocate(pin);
+}
+
 namespace
 {
+  xiiString ResolvePipelineResource(xiiStringView resource)
+  {
+    // The editor uses the curator, rather than the engine process's asset lookup table.
+    if (const auto* curator = xiiAssetCurator::GetSingleton())
+    {
+      auto asset = curator->FindSubAsset(resource);
+      if (asset)
+      {
+        auto* info = asset->m_pAssetInfo;
+        return info->GetManager()->GetAbsoluteOutputFileName(info->m_pDocumentTypeDescriptor, info->m_Path, {});
+      }
+    }
+    return xiiString(resource);
+  }
+
+  bool GetAssetInterfacePins(xiiStringView resource, xiiDynamicArray<xiiRenderPipelinePin>& out_pins)
+  {
+    const auto* curator = xiiAssetCurator::GetSingleton();
+    if (!curator)
+      return false;
+    const auto  asset    = curator->FindSubAsset(resource);
+    const auto* metadata = asset ? asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiRenderPipelineAssetInterface>() : nullptr;
+    if (!metadata)
+      return false;
+    for (const auto* configuration : metadata->m_Pins)
+    {
+      const auto&          schema = configuration->m_Metadata;
+      xiiRenderPipelinePin pin;
+      pin.m_sName                  = schema.m_sName;
+      pin.m_bInput                 = schema.m_bInput;
+      pin.m_Type                   = schema.m_Type;
+      pin.m_Format                 = configuration->m_Format;
+      pin.m_pDataType              = schema.m_pDataType;
+      pin.m_Access                 = schema.m_Access;
+      pin.m_bOptional              = schema.m_bOptional;
+      pin.m_bTemporalHistoryOutput = schema.m_bTemporalHistory;
+      pin.m_Constraints            = configuration->m_Constraints;
+      pin.m_Resolution             = configuration->m_Resolution;
+      pin.m_bConstrainResolution   = pin.m_bInput && configuration->m_bOverrideResolution;
+      pin.m_sDisplayName           = configuration->m_sDisplayName;
+      pin.m_SourceId               = configuration->m_Id;
+      out_pins.PushBack(pin);
+    }
+    return true;
+  }
+
+  const xiiAbstractProperty* GetTexturePinProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
+  {
+    if (!pNode)
+      return nullptr;
+    const auto*                                    pinType = bInput ? xiiGetStaticRTTI<xiiRenderPipelineTextureInputPin>() : xiiGetStaticRTTI<xiiRenderPipelineTextureOutputPin>();
+    xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+    pNode->GetType()->GetAllProperties(properties);
+    for (const auto* property : properties)
+    {
+      if (property->GetCategory() != xiiPropertyCategory::Member || !property->GetSpecificType()->IsDerivedFrom(pinType))
+        continue;
+      const auto* alias = property->GetAttributeByType<xiiRenderPipelinePinNameAttribute>();
+      if (sPinName == (alias ? alias->m_sName.GetView() : property->GetPropertyName()))
+        return property;
+    }
+    return nullptr;
+  }
+
+  bool IsReadOnly(const xiiAbstractProperty* property)
+  {
+    return property && (property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) || property->GetAttributeByType<xiiReadOnlyAttribute>());
+  }
+
+  const xiiAbstractProperty* GetEditableOutputProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
+  {
+    const auto* property = bInput ? nullptr : GetTexturePinProperty(pNode, sPinName, false);
+    return IsReadOnly(property) ? nullptr : property;
+  }
+
+  void PinPropertyMetaState(xiiPropertyMetaStateEvent& event)
+  {
+    const auto* object = event.m_pObject;
+    auto&       states = *event.m_pPropertyStates;
+    if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelineTextureResolution>())
+    {
+      const auto mode              = object->GetTypeAccessor().GetValue("Mode").ConvertTo<xiiUInt32>();
+      const bool dimensions        = mode == xiiRenderPipelineTextureResolutionMode::Fixed;
+      states["Width"].m_Visibility = states["Height"].m_Visibility = dimensions ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Input"].m_Visibility                                 = mode == xiiRenderPipelineTextureResolutionMode::Input ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      return;
+    }
+    if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelinePinMetadata>())
+    {
+      const auto kind                       = object->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
+      const bool hasFormat                  = kind == xiiRenderPipelinePin::Texture && object->GetTypeAccessor().GetValue("DeclaredFormat").ConvertTo<xiiUInt32>() != xiiGALResourceFormat::Unknown;
+      states["DeclaredFormat"].m_Visibility = hasFormat ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["DataType"].m_Visibility       = kind == xiiRenderPipelinePin::FrameData ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      return;
+    }
+    if (object->GetType()->IsDerivedFrom<xiiRenderPipelinePass>())
+    {
+      if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
+      {
+        const auto kind                 = object->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
+        states["Format"].m_Visibility   = kind == xiiRenderPipelinePin::Texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+        states["DataType"].m_Visibility = kind == xiiRenderPipelinePin::FrameData ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      }
+      if (object->GetTypeAccessor().GetCount("PinConfigurations") == 0)
+        states["PinConfigurations"].m_Visibility = xiiPropertyUiState::Invisible;
+      return;
+    }
+    const bool  requirements  = object->GetType() == xiiGetStaticRTTI<xiiRenderPipelinePinConstraints>();
+    const auto* configuration = requirements ? object->GetParent() : object;
+    if (!configuration || !configuration->GetType()->IsDerivedFrom<xiiRenderPipelinePinConfiguration>())
+      return;
+    const auto  metadataId = configuration->GetTypeAccessor().GetValue("Metadata");
+    const auto* metadata   = metadataId.IsA<xiiUuid>() ? object->GetDocumentObjectManager()->GetObject(metadataId.Get<xiiUuid>()) : nullptr;
+    if (!metadata)
+      return;
+    const auto  kind           = metadata->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>();
+    const bool  texture        = kind == xiiRenderPipelinePin::Texture;
+    const bool  buffer         = kind == xiiRenderPipelinePin::Buffer;
+    const auto* nativeProperty = texture ? GetTexturePinProperty(configuration->GetParent(), metadata->GetTypeAccessor().GetValue("Name").Get<xiiString>(), metadata->GetTypeAccessor().GetValue("Input").Get<bool>()) : nullptr;
+    // Generated configurations must not make a read-only native pin's texture schema editable.
+    const bool editableTexture = texture && !IsReadOnly(nativeProperty);
+    if (requirements)
+    {
+      for (const char* property : {"Dimension", "Samples", "Width", "Height"})
+        states[property].m_Visibility = editableTexture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["RequiredBindFlags"].m_Visibility = editableTexture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    }
+    else
+    {
+      states["RequiredFormat"].m_Visibility        = editableTexture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Requirements"].m_Visibility          = editableTexture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["OverrideResolution"].m_Visibility    = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["OverrideResolution"].m_sNewLabelText = metadata->GetTypeAccessor().GetValue("Input").Get<bool>() ? "Constrain Resolution" : "Override Resolution";
+      states["Resolution"].m_Visibility            = texture && configuration->GetTypeAccessor().GetValue("OverrideResolution").Get<bool>() ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    }
+  }
+
   class xiiPipelineCommandAccessor : public xiiNodeCommandAccessor
   {
   public:
@@ -65,6 +226,17 @@ namespace
     context.RegisterObject(root->GetGuid(), type, pass);
     xiiRttiConverterReader reader(&graph, &context);
     reader.ApplyPropertiesToObject(root, type, pass);
+    if (pass->IsInstanceOf<xiiRenderPipelineSubgraphPass>())
+    {
+      xiiDynamicArray<xiiRenderPipelinePin> declarations;
+      const auto*                           subgraph = static_cast<const xiiRenderPipelineSubgraphPass*>(pass);
+      if (!GetAssetInterfacePins(subgraph->m_sResource, declarations))
+        subgraph->GetPins(declarations, ResolvePipelineResource);
+      if (configured && pass->GetConfiguredPins(declarations.GetArrayPtr(), pins).Succeeded())
+        return XII_SUCCESS;
+      pins = std::move(declarations);
+      return XII_SUCCESS;
+    }
     // Preserve pins and connections while an authored property is temporarily invalid.
     // Configuration validation belongs to asset compilation, not editor pin discovery.
     if (configured && pass->GetConfiguredPins(pins).Succeeded())
@@ -74,6 +246,76 @@ namespace
     pass->GetPins(pins);
     return XII_SUCCESS;
   }
+
+  class xiiQtRenderPipelineTextureInputWidget final : public xiiQtStandardPropertyWidget
+  {
+  public:
+    xiiQtRenderPipelineTextureInputWidget()
+    {
+      auto* layout = new QHBoxLayout(this);
+      layout->setContentsMargins(0, 0, 0, 0);
+      m_pInputs = new QComboBox(this);
+      m_pInputs->setObjectName("RenderPipelineTextureResolutionInput");
+      m_pInputs->setToolTip("Choose the texture input whose dimensions are multiplied by Scale. Pass reference texture uses the input supplied by the native pass.");
+      layout->addWidget(m_pInputs);
+      connect(m_pInputs, &QComboBox::activated, this, [this](int index) {
+        const auto value = m_pInputs->itemData(index).toString().toUtf8();
+        BroadcastValueChanged(xiiString(value.constData()));
+      });
+    }
+
+  protected:
+    void OnInit() override {}
+    void InternalSetValue(const xiiVariant& value) override
+    {
+      const QSignalBlocker blocker(m_pInputs);
+      m_pInputs->clear();
+      xiiDynamicArray<xiiRenderPipelinePin> choices;
+      bool                                  first = true;
+      for (const auto& item : m_Items)
+      {
+        const auto* node = item.m_pObject;
+        while (node && !node->GetType()->IsDerivedFrom<xiiRenderPipelinePass>())
+          node = node->GetParent();
+        xiiDynamicArray<xiiRenderPipelinePin> pins;
+        if (!node || (GetNativePins(node, pins, true).Failed() && GetNativePins(node, pins, false).Failed()))
+          pins.Clear();
+        if (first)
+        {
+          for (const auto& pin : pins)
+            if (pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture)
+              choices.PushBack(pin);
+          first = false;
+        }
+        else
+        {
+          for (xiiUInt32 i = choices.GetCount(); i-- > 0;)
+          {
+            bool found = false;
+            for (const auto& pin : pins)
+              found |= pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_sName == choices[i].m_sName;
+            if (!found)
+              choices.RemoveAtAndCopy(i);
+          }
+        }
+      }
+      m_pInputs->addItem(choices.IsEmpty() ? "No texture inputs available" : "Pass reference texture", QString());
+      for (const auto& pin : choices)
+        m_pInputs->addItem(xiiMakeQString(pin.m_sDisplayName.IsEmpty() ? pin.m_sName : pin.m_sDisplayName), xiiMakeQString(pin.m_sName));
+      const auto selected = value.IsValid() ? xiiMakeQString(value.Get<xiiString>()) : QString();
+      int        index    = m_pInputs->findData(selected);
+      if (index < 0)
+      {
+        m_pInputs->addItem(selected + " (Unavailable)", selected);
+        index = m_pInputs->count() - 1;
+      }
+      m_pInputs->setCurrentIndex(value.IsValid() ? index : -1);
+      m_pInputs->setEnabled(!choices.IsEmpty());
+    }
+
+  private:
+    QComboBox* m_pInputs = nullptr;
+  };
 
   class xiiPipelineEditorPin : public xiiPin
   {
@@ -93,8 +335,91 @@ namespace
   };
 } // namespace
 
+xiiRenderPipelineNodeManager::xiiRenderPipelineNodeManager()
+{
+  if (auto* curator = xiiAssetCurator::GetSingleton())
+    curator->m_Events.AddEventHandler(xiiMakeDelegate(&xiiRenderPipelineNodeManager::AssetCuratorEventHandler, this));
+}
+
+xiiRenderPipelineNodeManager::~xiiRenderPipelineNodeManager()
+{
+  if (auto* curator = xiiAssetCurator::GetSingleton())
+    curator->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiRenderPipelineNodeManager::AssetCuratorEventHandler, this));
+}
+
+void xiiRenderPipelineNodeManager::AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
+{
+  if (!GetDocument() || (e.m_Type != xiiAssetCuratorEvent::Type::AssetAdded && e.m_Type != xiiAssetCuratorEvent::Type::AssetUpdated))
+    return;
+  auto* history = GetDocument()->GetCommandHistory();
+  if (history->IsInUndoRedo())
+    return;
+  xiiHybridArray<const xiiDocumentObject*, 8> references;
+  for (const auto* node : GetRootObject()->GetChildren())
+    if (node->GetType()->IsDerivedFrom<xiiRenderPipelineSubgraphPass>())
+    {
+      const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(node->GetTypeAccessor().GetValue("Resource").Get<xiiString>());
+      if (asset && asset->m_pAssetInfo->m_Info->m_DocumentID == e.m_AssetGuid)
+        references.PushBack(node);
+    }
+  for (const auto* node : references)
+  {
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    if (GetNativePins(node, pins, true).Failed())
+      continue;
+    bool changed = pins.GetCount() != GetInputPins(node).GetCount() + GetOutputPins(node).GetCount();
+    for (const auto& pin : pins)
+    {
+      const auto* current = pin.m_bInput ? GetInputPinByName(node, pin.m_sName) : GetOutputPinByName(node, pin.m_sName);
+      if (!current)
+      {
+        changed = true;
+        break;
+      }
+      const auto& previous = static_cast<const xiiPipelineEditorPin*>(current)->m_Schema;
+      changed |= previous.m_Type != pin.m_Type || previous.m_Format != pin.m_Format || previous.m_pDataType != pin.m_pDataType || previous.m_bOptional != pin.m_bOptional ||
+        previous.m_Resolution != pin.m_Resolution || previous.m_bConstrainResolution != pin.m_bConstrainResolution || previous.m_Access != pin.m_Access || previous.m_bTemporalHistoryOutput != pin.m_bTemporalHistoryOutput ||
+        previous.m_Constraints.m_Dimension != pin.m_Constraints.m_Dimension || previous.m_Constraints.m_uiSamples != pin.m_Constraints.m_uiSamples ||
+        previous.m_Constraints.m_uiWidth != pin.m_Constraints.m_uiWidth || previous.m_Constraints.m_uiHeight != pin.m_Constraints.m_uiHeight ||
+        previous.m_Constraints.m_RequiredBindFlags != pin.m_Constraints.m_RequiredBindFlags || previous.m_sDisplayName != pin.m_sDisplayName;
+    }
+    if (!changed)
+      continue;
+    history->StartTransaction("Update Render Pipeline Interface");
+    auto* accessor = static_cast<xiiNodeCommandAccessor*>(GetDocument()->GetObjectAccessor());
+    auto  result   = accessor->RefreshPins(node);
+    if (result.Succeeded())
+      result = SynchronizePinConfigurations(node);
+    if (result.Succeeded())
+      history->FinishTransaction();
+    else
+    {
+      history->CancelTransaction();
+      result.LogFailure();
+    }
+  }
+}
+
+XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, RenderPipelinePropertyGrid)
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "PropertyMetaState"
+  END_SUBSYSTEM_DEPENDENCIES
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(PinPropertyMetaState);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiRenderPipelineTextureInputAttribute>(), [](const xiiRTTI*) -> xiiQtPropertyWidget* { return new xiiQtRenderPipelineTextureInputWidget(); });
+  }
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiRenderPipelineTextureInputAttribute>());
+    xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(PinPropertyMetaState);
+  }
+XII_END_SUBSYSTEM_DECLARATION;
+
 const xiiDocumentObject* xiiRenderPipelineNodeManager::GetPinPropertyObject(const xiiPin& pin) const
 {
+  if (const auto* property = GetEditableOutputProperty(pin.GetParent(), pin.GetName(), pin.GetType() == xiiPin::Type::Input))
+    return GetDocument()->GetObjectAccessor()->GetChildObjectByName(pin.GetParent(), property->GetPropertyName(), {});
   for (const auto* child : pin.GetParent()->GetChildren())
   {
     if (child->GetParentProperty() != "PinConfigurations")
@@ -123,6 +448,9 @@ xiiStatus xiiRenderPipelineNodeManager::SynchronizePinConfigurations(const xiiDo
   xiiHashSet<xiiUuid> retained;
   for (const auto& pin : pins)
   {
+    // Editable reflected output members already own their schema; do not mirror it in a second configuration.
+    if (GetEditableOutputProperty(node, pin.m_sName, pin.m_bInput))
+      continue;
     const xiiDocumentObject* configuration = nullptr;
     for (const auto* child : node->GetChildren())
     {
@@ -157,7 +485,7 @@ xiiStatus xiiRenderPipelineNodeManager::SynchronizePinConfigurations(const xiiDo
     XII_SUCCEED_OR_RETURN(set(object, "Optional", metadata.m_bOptional));
     XII_SUCCEED_OR_RETURN(set(object, "TemporalHistory", metadata.m_bTemporalHistory));
     XII_SUCCEED_OR_RETURN(set(object, "DeclaredFormat", static_cast<xiiInt64>(metadata.m_DeclaredFormat.GetValue())));
-    XII_SUCCEED_OR_RETURN(set(object, "DataType", metadata.m_sDataType));
+    XII_SUCCEED_OR_RETURN(set(object, "DataType", metadata.m_pDataType ? metadata.m_pDataType->GetTypeName() : ""));
   }
   xiiDynamicArray<const xiiDocumentObject*> obsolete;
   for (const auto* child : node->GetChildren())
@@ -175,6 +503,20 @@ void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiN
   GetCreateableTypes(types);
   for (const auto* type : types)
   {
+    if (type == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
+    {
+      static const xiiNodePropertyValue inputProperties[]  = {{xiiMakeHashedString("Input"), true}, {xiiMakeHashedString("Name"), "Input"}};
+      static const xiiNodePropertyValue outputProperties[] = {{xiiMakeHashedString("Input"), false}, {xiiMakeHashedString("Name"), "Output"}};
+      for (const bool input : {true, false})
+      {
+        auto& entry       = out_templates.ExpandAndGetRef();
+        entry.m_pType     = type;
+        entry.m_sTypeName = input ? "Pipeline Input" : "Pipeline Output";
+        entry.m_sCategory.Assign("Interface");
+        entry.m_PropertyValues = input ? xiiMakeArrayPtr(inputProperties) : xiiMakeArrayPtr(outputProperties);
+      }
+      continue;
+    }
     auto& entry       = out_templates.ExpandAndGetRef();
     entry.m_pType     = type;
     entry.m_sTypeName = type->GetTypeName();
@@ -215,7 +557,7 @@ void xiiRenderPipelineNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRT
   xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiRenderPipelinePass>(), types);
   ref_types.Clear();
   for (const auto* type : types)
-    if (!type->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && type->GetAllocator()->CanAllocate())
+    if (!type->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && type->GetAllocator()->CanAllocate() && !type->GetAttributeByType<xiiHiddenAttribute>())
       ref_types.PushBack(type);
 }
 
@@ -254,7 +596,7 @@ xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source,
       }
     }
   }
-  out_result = input.m_Type == xiiRenderPipelinePin::Order ? CanConnectResult::ConnectNtoN : CanConnectResult::ConnectNto1;
+  out_result = CanConnectResult::ConnectNto1;
   return XII_SUCCESS;
 }
 
@@ -267,6 +609,94 @@ xiiRenderPipelineAssetDocument::xiiRenderPipelineAssetDocument(xiiStringView sDo
 }
 
 xiiRenderPipelineAssetDocument::~xiiRenderPipelineAssetDocument() = default;
+
+void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const
+{
+  SUPER::UpdateAssetDocumentInfo(pInfo);
+  xiiRenderPipelineAssetInterface* metadata = XII_DEFAULT_NEW(xiiRenderPipelineAssetInterface);
+  pInfo->m_MetaInfo.PushBack(metadata);
+  const auto* manager = static_cast<const xiiRenderPipelineNodeManager*>(GetObjectManager());
+  for (const auto* node : manager->GetRootObject()->GetChildren())
+  {
+    if (node->GetType() != xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
+      continue;
+    const auto& accessor = node->GetTypeAccessor();
+    const bool  input    = accessor.GetValue("Input").Get<bool>();
+    const auto* value    = input ? manager->GetOutputPinByName(node, "Value") : manager->GetInputPinByName(node, "Value");
+    if (!value)
+      continue;
+    auto       pin           = static_cast<const xiiPipelineEditorPin*>(value)->m_Schema;
+    const auto connections   = manager->GetConnections(*value);
+    bool       firstEndpoint = true;
+    for (const auto* connection : connections)
+    {
+      // Publish the native endpoint contract, not only the interface node's defaults.
+      const auto&                       endpoint = input ? connection->GetTargetPin() : connection->GetSourcePin();
+      auto                              native   = static_cast<const xiiPipelineEditorPin&>(endpoint).m_Schema;
+      xiiRenderPipelinePinConfiguration requirements;
+      requirements.m_Id                  = node->GetGuid();
+      requirements.m_Format              = pin.m_Format;
+      requirements.m_Constraints         = pin.m_Constraints;
+      requirements.m_Resolution          = pin.m_Resolution;
+      requirements.m_bOverrideResolution = pin.m_bConstrainResolution;
+      if (native.m_Type != pin.m_Type || (pin.m_pDataType && native.m_pDataType != pin.m_pDataType) || native.Apply(requirements).Failed())
+      {
+        xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
+        continue;
+      }
+      if (firstEndpoint)
+        pin = native;
+      else
+      {
+        requirements.m_Format              = native.m_Format;
+        requirements.m_Constraints         = native.m_Constraints;
+        requirements.m_Resolution          = native.m_Resolution;
+        requirements.m_bOverrideResolution = native.m_bConstrainResolution;
+        if (!pin.IsCompatibleWith(native) || pin.Apply(requirements).Failed())
+          xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
+        pin.m_bOptional &= native.m_bOptional;
+      }
+      firstEndpoint = false;
+    }
+    pin.m_sName  = accessor.GetValue("Name").Get<xiiString>();
+    pin.m_bInput = input;
+    if (input)
+      if (const auto* fallback = manager->GetInputPinByName(node, "Default"))
+        pin.m_bOptional |= !manager->GetConnections(*fallback).IsEmpty();
+    xiiRenderPipelinePinConfiguration* configuration = XII_DEFAULT_NEW(xiiRenderPipelinePinConfiguration);
+    configuration->m_Id                              = node->GetGuid();
+    configuration->m_Metadata                        = pin.GetMetadata();
+    configuration->m_Format                          = pin.m_Format;
+    configuration->m_Constraints                     = pin.m_Constraints;
+    configuration->m_Resolution                      = pin.m_Resolution;
+    configuration->m_bOverrideResolution             = !pin.m_bInput || pin.m_bConstrainResolution;
+    configuration->m_sDisplayName                    = pin.m_sDisplayName;
+    bool merged                                      = false;
+    for (auto* existing : metadata->m_Pins)
+      if (existing->m_Metadata.m_sName == pin.m_sName && existing->m_Metadata.m_bInput == input)
+      {
+        xiiRenderPipelinePin combined = pin;
+        if (combined.m_Type != existing->m_Metadata.m_Type || combined.m_pDataType != existing->m_Metadata.m_pDataType || combined.Apply(*existing).Failed())
+          xiiLog::Error("Incompatible declarations of pipeline interface '{}'.", pin.m_sName);
+        else
+        {
+          existing->m_Format              = combined.m_Format;
+          existing->m_Constraints         = combined.m_Constraints;
+          existing->m_Resolution          = combined.m_Resolution;
+          existing->m_bOverrideResolution = combined.m_bConstrainResolution;
+          existing->m_Metadata.m_bOptional &= pin.m_bOptional;
+        }
+        merged = true;
+        break;
+      }
+    if (merged)
+    {
+      XII_DEFAULT_DELETE(configuration);
+      continue;
+    }
+    metadata->m_Pins.PushBack(configuration);
+  }
+}
 
 xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject* object)
 {
@@ -282,7 +712,7 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
   objectReader.ApplyPropertiesToObject(objectNode, instance.GetDynamicRTTI(), &instance);
   if (instance.m_sResource.IsEmpty())
     return xiiStatus("Subgraph has no definition resource.");
-  const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(instance.m_sResource);
+  const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(ResolvePipelineResource(instance.m_sResource));
   xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   const auto                                 authoring = acquired.IsValid() ? acquired->GetAuthoring() : xiiSharedPtr<const xiiRenderPipelineAuthoring>();
   if (!authoring)
@@ -308,7 +738,7 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
   }
   xiiRenderPipelineResourceDescriptor resolved;
   xiiStringBuilder                    error;
-  if (xiiRenderPipelineResource::ResolveDefinitions(wrapper, resolved, nullptr, &error).Failed())
+  if (xiiRenderPipelineResource::ResolveDefinitions(wrapper, resolved, nullptr, &error, ResolvePipelineResource).Failed())
     return xiiStatus(error.GetView());
   xiiGraphDefinition root;
   XII_SUCCEED_OR_RETURN(resolved.MakeGraphDefinition(root));
@@ -393,6 +823,8 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
         configuration->m_Metadata                        = pin.GetMetadata();
         configuration->m_Format                          = pin.m_Format;
         configuration->m_Constraints                     = pin.m_Constraints;
+        configuration->m_Resolution                      = pin.m_Resolution;
+        configuration->m_bOverrideResolution             = !pin.m_bInput || pin.m_bConstrainResolution;
         configuration->m_sDisplayName                    = pin.m_sDisplayName;
         pass->m_PinConfigurations.PushBack(configuration);
       }
@@ -538,6 +970,13 @@ void xiiRenderPipelineAssetDocument::InitializeAfterLoading(bool bFirstTimeCreat
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
   GetCommandHistory()->StartTransaction("Initialize Render Pipeline Settings");
   auto result = EnsureSettingsObject();
+  if (result.Succeeded())
+    for (const auto* node : GetObjectManager()->GetRootObject()->GetChildren())
+    {
+      result = static_cast<xiiRenderPipelineNodeManager*>(GetObjectManager())->SynchronizePinConfigurations(node);
+      if (result.Failed())
+        break;
+    }
   if (result.Succeeded())
     GetCommandHistory()->FinishTransaction();
   else

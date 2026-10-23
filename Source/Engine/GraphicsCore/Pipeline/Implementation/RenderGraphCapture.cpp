@@ -37,7 +37,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.BeginObject();
   writer.AddVariableUInt32("version", 1);
   writer.AddVariableString("kind", "renderGraph");
-  WriteId(writer, "id", graph.GetId().m_uiValue);
+  WriteId(writer, "id", graph.GetId().m_Data);
   WriteId(writer, "instance", graph.GetInstanceId());
   WriteId(writer, "frame", event.m_uiFrameIndex);
   writer.AddVariableString("name", graph.GetName());
@@ -68,7 +68,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   for (const auto& pass : graph.GetCompiledPasses())
   {
     writer.BeginObject();
-    WriteId(writer, "id", pass.m_Id.m_uiValue);
+    WriteId(writer, "id", pass.m_Id.m_Data);
     writer.AddVariableString("name", pass.m_sName.GetView());
     writer.AddVariableUInt32("index", pass.m_uiPassIndex);
     writer.AddVariableUInt32("queue", pass.m_uiQueueIndex);
@@ -100,7 +100,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   for (const auto& resource : graph.GetResourceDescriptions())
   {
     writer.BeginObject();
-    WriteId(writer, "id", resource.m_Id.m_uiValue);
+    WriteId(writer, "id", resource.m_Id.m_Data);
     writer.AddVariableString("name", resource.m_sName.GetView());
     writer.AddVariableBool("texture", resource.m_bIsTexture);
     writer.AddVariableUInt32("flags", resource.m_Flags.GetValue());
@@ -128,9 +128,9 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   for (const auto& version : graph.GetResourceVersions())
   {
     writer.BeginObject();
-    WriteId(writer, "id", version.m_Id.m_uiValue);
-    WriteId(writer, "resource", version.m_ResourceId.m_uiValue);
-    WriteId(writer, "producer", version.m_ProducerPassId.m_uiValue);
+    WriteId(writer, "id", version.m_Id.m_Data);
+    WriteId(writer, "resource", version.m_ResourceId.m_Data);
+    WriteId(writer, "producer", version.m_ProducerPassId.m_Data);
     writer.AddVariableUInt32("version", version.m_uiVersion);
     writer.AddVariableUInt32("parent", version.m_uiParentVersion);
     writer.AddVariableUInt32("first", version.m_uiFirstUsePassIndex);

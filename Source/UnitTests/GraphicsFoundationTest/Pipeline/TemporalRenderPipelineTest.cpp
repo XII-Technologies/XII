@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -9,7 +11,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 namespace TemporalPipelineTest
 {
@@ -110,7 +111,7 @@ XII_CREATE_SIMPLE_TEST(PipelineTemporal, InstanceHistory)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Self feedback reads previous-frame GPU resources per occurrence and view")
   {
     xiiRenderPipelineResourceDescriptor leaf;
-    leaf.AddPass("Counter", "xiiPipelineTemporalCounter");
+    leaf.AddPass("Counter", xiiGetStaticRTTI<xiiPipelineTemporalCounter>());
     XII_TEST_RESULT(leaf.Connect(0, "History", 0, "Previous"));
     xiiGraphDefinition definition;
     XII_TEST_RESULT(leaf.MakeGraphDefinition(definition));

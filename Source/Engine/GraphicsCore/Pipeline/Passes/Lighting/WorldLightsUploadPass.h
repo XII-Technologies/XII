@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 /// Publishes shared world light/IES uploads and this view's explicit candidate stream.
 /// Consumers must apply Candidates rather than assuming every union light belongs to the view.

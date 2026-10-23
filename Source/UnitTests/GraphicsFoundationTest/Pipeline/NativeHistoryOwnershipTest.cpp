@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -7,8 +12,8 @@
 #include <GraphicsCore/Pipeline/Passes/Temporal/TextureHistoryPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <type_traits>
 
@@ -26,12 +31,14 @@ XII_CREATE_SIMPLE_TEST(NativeHistoryOwnership, RepeatedOccurrencesSurviveOwnerRe
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   xiiRenderPipelineResourceDescriptor leaf;
-  const auto                          depth = leaf.AddPass("Depth source", "xiiDepthTargetPass");
-  leaf.m_Passes[depth].m_Properties.Insert("Width", 4U);
-  leaf.m_Passes[depth].m_Properties.Insert("Height", 4U);
-  const auto counter        = leaf.AddPass("Counter source", "xiiCounterResetPass");
-  const auto textureHistory = leaf.AddPass("Private image history", "xiiTextureHistoryPass");
-  const auto bufferHistory  = leaf.AddPass("Private counter history", "xiiBufferHistoryPass");
+  xiiDepthTargetPass                  target;
+  target.m_Depth.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 4, 4});
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(target.GetProperties(properties));
+  const auto depth          = leaf.AddPass("Depth source", xiiGetStaticRTTI<xiiDepthTargetPass>(), properties);
+  const auto counter        = leaf.AddPass("Counter source", xiiGetStaticRTTI<xiiCounterResetPass>());
+  const auto textureHistory = leaf.AddPass("Private image history", xiiGetStaticRTTI<xiiTextureHistoryPass>());
+  const auto bufferHistory  = leaf.AddPass("Private counter history", xiiGetStaticRTTI<xiiBufferHistoryPass>());
   XII_TEST_RESULT(leaf.Connect(depth, "DepthTarget", textureHistory, "Texture"));
   XII_TEST_RESULT(leaf.Connect(counter, "Counter", bufferHistory, "Buffer"));
   leaf.m_Interface.PushBack({"PreviousDepth", false, leaf.m_Passes[textureHistory].m_Id, "PreviousTexture"});
@@ -54,7 +61,7 @@ XII_CREATE_SIMPLE_TEST(NativeHistoryOwnership, RepeatedOccurrencesSurviveOwnerRe
     root.m_Interface.PushBack({i ? "ValueB" : "ValueA", false, root.m_Passes[node].m_Id, "PreviousValue"});
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Retained native history occurrences", std::move(root));
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(contexts[i].Initialize("Retained native histories")) || !XII_TEST_RESULT(instances[i].Synchronize(resource)))

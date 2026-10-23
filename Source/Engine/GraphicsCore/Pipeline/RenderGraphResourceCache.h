@@ -35,14 +35,8 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphResourceCache
 {
 public:
-  xiiRenderGraphResourceCache();
+  xiiRenderGraphResourceCache(xiiSharedPtr<xiiGALDevice> pDevice);
   ~xiiRenderGraphResourceCache();
-
-  /// Initializes the cache with the GAL device used to create resources.
-  void Initialize(xiiSharedPtr<xiiGALDevice> pDevice);
-
-  /// Releases all pooled and active resources and nulls the device reference.
-  void Shutdown();
 
   /// Called once at the start of a frame before Execute(). Uses a conservative three-frame
   /// retirement window for callers that do not expose an exact completed-frame index.

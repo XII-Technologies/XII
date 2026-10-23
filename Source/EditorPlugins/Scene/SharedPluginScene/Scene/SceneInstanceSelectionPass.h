@@ -1,8 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+
 #include <SharedPluginScene/SharedPluginSceneDLL.h>
+
+#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Filters the current view's world-derived candidate indices. No visibility or raster execution.
 /// Editor.SelectedObjects contains full game-object handle IDs; it is never a renderer registry.

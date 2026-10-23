@@ -33,7 +33,7 @@ const xiiGALTextureCreationDescription* xiiRenderGraph::GetTextureDescription(xi
   if (!texture.IsValid() || id.m_InstanceIndex >= m_Resources.GetCount())
     return nullptr;
   const auto& resource = m_Resources[id.m_InstanceIndex];
-  return resource.m_bIsTexture && resource.m_Id == texture.m_Id && id.m_Generation < resource.m_Versions.GetCount() ? &resource.m_TextureDescription : nullptr;
+  return resource.m_bIsTexture && resource.m_Id == texture.GetResourceId() && id.m_Generation < resource.m_Versions.GetCount() ? &resource.m_TextureDescription : nullptr;
 }
 const xiiGALBufferCreationDescription* xiiRenderGraph::GetBufferDescription(xiiRenderGraphBufferHandle buffer) const
 {
@@ -41,7 +41,7 @@ const xiiGALBufferCreationDescription* xiiRenderGraph::GetBufferDescription(xiiR
   if (!buffer.IsValid() || id.m_InstanceIndex >= m_Resources.GetCount())
     return nullptr;
   const auto& resource = m_Resources[id.m_InstanceIndex];
-  return !resource.m_bIsTexture && resource.m_Id == buffer.m_Id && id.m_Generation < resource.m_Versions.GetCount() ? &resource.m_BufferDescription : nullptr;
+  return !resource.m_bIsTexture && resource.m_Id == buffer.GetResourceId() && id.m_Generation < resource.m_Versions.GetCount() ? &resource.m_BufferDescription : nullptr;
 }
 xiiRenderGraphTextureHandle xiiRenderGraph::FindTexture(xiiStringView name) const
 {

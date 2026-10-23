@@ -2,7 +2,9 @@
 
 #pragma once
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityResources.h>
@@ -27,7 +29,7 @@ struct xiiTestNativeVisibility
       return XII_FAILURE;
     auto definition = loaded->GetAuthoring()->m_Descriptor;
     for (auto& pass : definition.m_Passes)
-      if (pass.m_sType == "xiiMeshletCullPass")
+      if (pass.m_pType == xiiGetStaticRTTI<xiiMeshletCullPass>())
         pass.m_Properties.Insert("MaxVisibleMeshlets", capacity);
     xiiStringBuilder name;
     name.SetFormat("Native visibility fixture {}", capacity);

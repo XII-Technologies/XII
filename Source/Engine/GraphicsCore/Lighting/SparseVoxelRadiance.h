@@ -124,16 +124,16 @@ public:
   ~xiiSparseVoxelRadianceContext();
 
   /// Initialize CPU scheduling. Invalid settings preserve the current configuration.
-  [[nodiscard]] xiiResult Initialize(const xiiSparseVoxelRadianceSettings& settings = {});
-  void                    Shutdown();
-  [[nodiscard]] bool      IsInitialized() const;
+  xiiResult          Initialize(const xiiSparseVoxelRadianceSettings& settings = {});
+  void               Shutdown();
+  [[nodiscard]] bool IsInitialized() const;
   /// Discard accumulated lighting without reallocating storage or disturbing another view.
   void InvalidateHistory();
 
   /// Frames must be nonzero and strictly increasing; the entire clipmap must fit its cell coordinates.
   /// Non-finite or out-of-range positions and invalid frames fail without changing state.
-  [[nodiscard]] xiiResult BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
-  void                    CommitBrickUpdate(xiiUInt32 uiPhysicalBrick, xiiUInt64 uiPackedKey, bool bValid);
+  xiiResult BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
+  void      CommitBrickUpdate(xiiUInt32 uiPhysicalBrick, xiiUInt64 uiPackedKey, bool bValid);
 
   [[nodiscard]] xiiArrayPtr<const xiiSparseVoxelBrickState>  GetBricks() const;
   [[nodiscard]] xiiArrayPtr<const xiiSparseVoxelBrickUpdate> GetScheduledUpdates() const;

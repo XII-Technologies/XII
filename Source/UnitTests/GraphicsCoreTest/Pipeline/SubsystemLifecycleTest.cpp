@@ -50,20 +50,20 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiParticleSystemManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiGALPipelineCache::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiGALRenderPassCache::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiRenderGraphManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiRenderGraphManager::GetResourceCache() == nullptr);
     XII_TEST_BOOL(xiiViewRenderResourceManager::IsSubsystemInitialized());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Context handles are inert before allocation")
   {
-    const xiiRenderGraphContextHandle        renderGraphHandle;
+    const xiiRenderGraphHandle               renderGraphHandle;
     const xiiParticleSystemRuntimeHandle     particleHandle;
     const xiiViewRenderResourceContextHandle viewResourceHandle;
 
     XII_TEST_BOOL(renderGraphHandle.IsInvalidated());
     XII_TEST_BOOL(particleHandle.IsInvalidated());
     XII_TEST_BOOL(viewResourceHandle.IsInvalidated());
-    XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
+    XII_TEST_BOOL(xiiRenderGraphManager::GetGraph(renderGraphHandle) == nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiParticleSystemRuntimeHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiViewRenderResourceContextHandle>() != nullptr);
   }

@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -221,7 +222,7 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, AllocationFailureAndRecovery)
   XII_TEST_RESULT(view->SetSensorProfile(Profile(16, 16)));
   // Exercise the real native pass's allocation precondition with valid graph
   // inputs; do not manufacture a wrapper pass or replace production resource owners.
-  xiiRenderGraphContext testContext;
+  xiiRenderGraphTestContext testContext;
   if (!XII_TEST_RESULT(testContext.Initialize("Sensor allocation precondition")))
     return;
   auto& graph = testContext.GetGraph();

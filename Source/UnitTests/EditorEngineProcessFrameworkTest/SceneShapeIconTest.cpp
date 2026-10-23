@@ -204,12 +204,12 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
   auto linearTexture = makeTexture("Editor/ShapeIcons/IconLinearComponent.dds", false);
 
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("Source", IconTestSource::GetStaticRTTI()->GetTypeName());
+  definition.AddPass("Source", xiiGetStaticRTTI<IconTestSource>());
   xiiVariantDictionary settings;
   settings.Insert("Size", 4.0f);
   settings.Insert("MaxScreenSize", 32.0f);
-  definition.AddPass("Icons", xiiSceneShapeIconPass::GetStaticRTTI()->GetTypeName(), settings);
-  definition.AddPass("Publish", IconTestPublish::GetStaticRTTI()->GetTypeName());
+  definition.AddPass("Icons", xiiGetStaticRTTI<xiiSceneShapeIconPass>(), settings);
+  definition.AddPass("Publish", xiiGetStaticRTTI<IconTestPublish>());
   XII_TEST_RESULT(definition.Connect(0, "Color", 1, "Color"));
   XII_TEST_RESULT(definition.Connect(0, "SceneDepth", 1, "SceneDepth"));
   XII_TEST_RESULT(definition.Connect(1, "Color", 2, "Color"));

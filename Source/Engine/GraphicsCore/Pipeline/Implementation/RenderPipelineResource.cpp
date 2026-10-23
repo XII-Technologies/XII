@@ -59,7 +59,7 @@ xiiSharedPtr<const xiiRenderPipelineAuthoring> xiiRenderPipelineResource::GetAut
   return m_pAuthoring;
 }
 
-xiiResult xiiRenderPipelineResource::ResolveDefinitions(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderPipelineResourceDescriptor& out_resolved, xiiDynamicArray<DefinitionDependency>* out_dependencies, xiiStringBuilder* out_error)
+xiiResult xiiRenderPipelineResource::ResolveDefinitions(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderPipelineResourceDescriptor& out_resolved, xiiDynamicArray<DefinitionDependency>* out_dependencies, xiiStringBuilder* out_error, ResourceResolver resourceResolver)
 {
   const auto fail = [&](xiiStringView message) {
     if (out_error)
@@ -109,6 +109,8 @@ xiiResult xiiRenderPipelineResource::ResolveDefinitions(const xiiRenderPipelineR
       xiiString resourceName;
       if (!references.TryGetValue(id, resourceName))
         return fail("Missing referenced render pipeline definition.");
+      if (resourceResolver.IsValid())
+        resourceName = resourceResolver(resourceName);
       const auto                                 handle = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(resourceName);
       xiiResourceLock<xiiRenderPipelineResource> acquired(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
       const auto                                 snapshot = acquired.IsValid() ? acquired->GetAuthoring() : xiiSharedPtr<const xiiRenderPipelineAuthoring>();

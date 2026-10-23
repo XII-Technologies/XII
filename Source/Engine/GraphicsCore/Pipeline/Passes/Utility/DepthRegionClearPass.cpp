@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/DepthRegionClearPass.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>

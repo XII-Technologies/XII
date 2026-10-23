@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -27,7 +28,10 @@ struct xiiBloomPass::State
   xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
-xiiBloomPass::xiiBloomPass()  = default;
+xiiBloomPass::xiiBloomPass()
+{
+  m_OutputBloomTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiBloomPass::~xiiBloomPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 1, xiiRTTIDefaultAllocator<xiiBloomPass>)
@@ -78,7 +82,7 @@ xiiResult xiiBloomPass::Build(xiiRenderPipelinePassContext& context)
   settings.m_fBloomRadius    = m_fRadius;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture(m_InputUpscaledColor), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputBloomTexture, context.GetInputTexture(m_InputUpscaledColor), size));
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;

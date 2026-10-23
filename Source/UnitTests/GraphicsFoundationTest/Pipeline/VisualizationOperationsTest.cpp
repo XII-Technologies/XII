@@ -1,11 +1,17 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/DebugOverlayPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
@@ -16,7 +22,6 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 class xiiVisualizationTestExport : public xiiRenderPipelinePass
 {
@@ -56,21 +61,21 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentVisualizationModes)
   xiiVariantDictionary                properties;
   properties.Insert("Depth", 0.5f);
   properties.Insert("Attributes", xiiColor(0.25f, 0.5f, 0.75f, 1));
-  const auto          source = leaf.AddPass("Inputs", "xiiScreenEffectTestSource", properties);
-  const auto          camera = leaf.AddPass("Camera", "xiiViewConstantsPass");
+  const auto          source = leaf.AddPass("Inputs", xiiGetStaticRTTI<xiiScreenEffectTestSource>(), properties);
+  const auto          camera = leaf.AddPass("Camera", xiiGetStaticRTTI<xiiViewConstantsPass>());
   xiiSurfaceQueryPass surface;
   surface.m_bOnlyViewWireframe = true;
   XII_TEST_RESULT(surface.GetProperties(properties));
-  leaf.AddPass("Inactive wireframe", "xiiSurfaceQueryPass", properties);
+  leaf.AddPass("Inactive wireframe", xiiGetStaticRTTI<xiiSurfaceQueryPass>(), properties);
   xiiViewRenderModePass visualization;
   visualization.m_Mode = xiiViewRenderMode::BaseColor;
   XII_TEST_RESULT(visualization.GetProperties(properties));
-  const auto          inspect = leaf.AddPass("Inspect channels", "xiiViewRenderModePass", properties);
+  const auto          inspect = leaf.AddPass("Inspect channels", xiiGetStaticRTTI<xiiViewRenderModePass>(), properties);
   xiiDebugOverlayPass overlay;
   overlay.m_bEnabled = false;
   XII_TEST_RESULT(overlay.GetProperties(properties));
-  const auto drawing = leaf.AddPass("Optional overlays", "xiiDebugOverlayPass", properties);
-  const auto output  = leaf.AddPass("Read visualization", "xiiVisualizationTestExport");
+  const auto drawing = leaf.AddPass("Optional overlays", xiiGetStaticRTTI<xiiDebugOverlayPass>(), properties);
+  const auto output  = leaf.AddPass("Read visualization", xiiGetStaticRTTI<xiiVisualizationTestExport>());
   XII_TEST_RESULT(leaf.Connect(source, "Color", inspect, "DisplayLinearColor"));
   XII_TEST_RESULT(leaf.Connect(source, "Depth", inspect, "SceneDepth"));
   XII_TEST_RESULT(leaf.Connect(source, "Depth", drawing, "SceneDepth"));

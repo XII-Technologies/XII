@@ -45,7 +45,8 @@ bool xiiSelectionManager::RecursiveRemoveFromSelection(const xiiDocumentObject* 
 
   for (const xiiDocumentObject* pChild : pObject->GetChildren())
   {
-    bRemoved = bRemoved || RecursiveRemoveFromSelection(pChild);
+    // Visit every child even if this object or a previous child was selected.
+    bRemoved = RecursiveRemoveFromSelection(pChild) || bRemoved;
   }
   return bRemoved;
 }

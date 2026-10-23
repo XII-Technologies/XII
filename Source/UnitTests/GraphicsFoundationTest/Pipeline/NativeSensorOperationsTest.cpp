@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
@@ -16,7 +18,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 namespace
@@ -72,7 +74,7 @@ XII_CREATE_SIMPLE_TEST(NativeSensors, SpecializedCalibratedOutputsAndRollingShut
   camera.LookAt(xiiVec3::MakeZero(), xiiVec3(0, 0, -1), xiiVec3(0, 1, 0));
   view->SetCamera(&camera);
   view->SetViewport({0, 0, 4, 4});
-  xiiRenderGraphContext context;
+  xiiRenderGraphTestContext context;
   if (!XII_TEST_RESULT(context.Initialize("Specialized sensors")))
     return;
   for (xiiUInt32 rolling = 0; rolling < 2; ++rolling)

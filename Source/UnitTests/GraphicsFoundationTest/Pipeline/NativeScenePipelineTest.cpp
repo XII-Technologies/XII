@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Lighting/DiffuseSurfaceLightingPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Foundation/Math/Float16.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
@@ -24,8 +29,8 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeScenePipeline);
@@ -40,7 +45,7 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposur
   const auto                  resource = xiiLoadPipelineLibraryResource("HdrDisplay");
   xiiWorldDescription         worldDescription("Display recording owners");
   xiiUniquePtr<xiiWorld>      world = XII_DEFAULT_NEW(xiiWorld, worldDescription);
-  xiiRenderGraphContext       contexts[2];
+  xiiRenderGraphTestContext   contexts[2];
   xiiRenderPipelineInstance   instances[2];
   xiiCamera                   cameras[2];
   xiiView*                    views[2];
@@ -210,7 +215,7 @@ namespace
     }
     bool changed = false;
     for (auto& pass : descriptor.m_Passes)
-      if (pass.m_sType == "xiiDiffuseSurfaceLightingPass")
+      if (pass.m_pType == xiiGetStaticRTTI<xiiDiffuseSurfaceLightingPass>())
       {
         pass.m_Properties.Insert("Scale", 0.5f);
         changed = true;
@@ -249,13 +254,13 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
   const auto scene = root.AddSubgraph("Authored opaque scene", loaded->GetAuthoring()->m_Descriptor.m_Id);
   for (const xiiStringView name : {"HDRSceneColor", "DirectLighting", "AmbientLighting", "ObjectId", "Albedo", "Emissive"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), "xiiScenePipelineTestExport");
+    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiGetStaticRTTI<xiiScenePipelineTestExport>());
     XII_TEST_RESULT(root.Connect(scene, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }
   for (const xiiStringView name : {"CurrentExposure", "LightListOverflow", "VisibleMeshletOverflow"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), "xiiBufferExportPass");
+    const auto sink = root.AddPass(xiiStringBuilder("Capture ", name), xiiGetStaticRTTI<xiiBufferExportPass>());
     XII_TEST_RESULT(root.Connect(scene, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }

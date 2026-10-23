@@ -1,14 +1,17 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
+
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <type_traits>
 
@@ -60,8 +63,6 @@ public:
   {
     pins.PushBack({"Data", xiiRenderPipelinePin::Buffer, false});
     pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, false, true, m_bUnknownTextureFormat ? xiiGALResourceFormat::Unknown : xiiGALResourceFormat::RGBA8UNormalized});
-    pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
-    pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
   }
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
@@ -107,7 +108,6 @@ public:
   {
     pins.PushBack({"Input", xiiRenderPipelinePin::Buffer, true});
     pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, true, true, xiiGALResourceFormat::RGBA16Float});
-    pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
   }
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
@@ -130,10 +130,10 @@ namespace PipelineResourceTest
   {
     xiiRenderPipelineResourceDescriptor descriptor;
     // Insert consumer first to prove compilation follows dependencies rather than asset order.
-    descriptor.AddPass("Consumer", "xiiPipelineTestSink");
+    descriptor.AddPass("Consumer", xiiGetStaticRTTI<xiiPipelineTestSink>());
     xiiVariantDictionary properties;
     properties.Insert("Value", 4U);
-    descriptor.AddPass("Producer", "xiiPipelineTestSource", properties);
+    descriptor.AddPass("Producer", xiiGetStaticRTTI<xiiPipelineTestSource>(), properties);
     descriptor.Connect(1, "Data", 0, "Input").IgnoreResult();
     descriptor.m_Parameters.Insert("Exposure", 1.0f);
     return descriptor;
@@ -183,14 +183,14 @@ XII_CREATE_SIMPLE_TEST(Pipeline, TemporalDependencyPolicy)
   {
     auto invalid = PipelineResourceTest::MakeDefinition();
     invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[0].m_Id, "Texture"});
-    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[1].m_Id, "Before"});
+    invalid.m_Interface.PushBack({"Unused", true, invalid.m_Passes[0].m_Id, "Input"});
     xiiSharedPtr<const xiiRenderPipeline> rejected;
     xiiStringBuilder                      diagnostic;
     XII_TEST_BOOL(xiiRenderPipeline::Compile(invalid, rejected, &diagnostic).Failed());
     XII_TEST_BOOL(diagnostic.FindSubString("fan-out") != nullptr);
   }
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Feedback", "xiiPipelineTestHistory");
+  descriptor.AddPass("Feedback", xiiGetStaticRTTI<xiiPipelineTestHistory>());
   XII_TEST_RESULT(descriptor.Connect(0, "History", 0, "Previous"));
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
@@ -350,8 +350,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
     root.m_Definitions.PushBack(nestedGraph);
     root.AddSubgraph("A", nested.m_Id);
     root.AddSubgraph("B", nested.m_Id);
-    root.AddPass("Sink A", "xiiPipelineTestSink");
-    root.AddPass("Sink B", "xiiPipelineTestSink");
+    root.AddPass("Sink A", xiiGetStaticRTTI<xiiPipelineTestSink>());
+    root.AddPass("Sink B", xiiGetStaticRTTI<xiiPipelineTestSink>());
     XII_TEST_RESULT(root.Connect(0, "Output", 2, "Input"));
     XII_TEST_RESULT(root.Connect(1, "Output", 3, "Input"));
     root.m_Passes[1].m_Parameters.Insert("Exposure", 2.0f);
@@ -463,7 +463,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_INT(descriptor.m_Connections.GetCount(), 0);
     XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
     XII_TEST_BOOL(descriptor.RemovePass(9).Failed());
-    descriptor.m_Passes[0].m_sType = "MissingType";
+    descriptor.m_Passes[0].m_pType = nullptr;
     XII_TEST_BOOL(xiiRenderPipeline::Compile(descriptor, compiled).Failed());
     descriptor = PipelineResourceTest::MakeDefinition();
     descriptor.m_Connections.Clear();
@@ -531,6 +531,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_RESULT(loaded.Deserialize(reader));
     XII_TEST_INT(loaded.m_Passes.GetCount(), 2);
     XII_TEST_INT(loaded.m_Connections.GetCount(), 1);
+    XII_TEST_BOOL(loaded.m_Passes[0].m_pType == descriptor.m_Passes[0].m_pType);
+    XII_TEST_BOOL(loaded.m_Passes[1].m_pType == descriptor.m_Passes[1].m_pType);
     XII_TEST_INT(loaded.m_Passes[1].m_Properties["Value"].ConvertTo<xiiUInt32>(), 4);
     xiiSharedPtr<const xiiRenderPipeline> pipeline;
     XII_TEST_RESULT(xiiRenderPipeline::Compile(loaded, pipeline));
@@ -542,6 +544,31 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     {
       xiiRawMemoryStreamReader truncated(bytes.GetData(), length);
       XII_TEST_BOOL(loaded.Deserialize(truncated).Failed());
+      XII_TEST_INT(loaded.m_Passes.GetCount(), 2);
+    }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Dynamic pass RTTI is preserved and invalid serialized types do not replace descriptors")
+  {
+    xiiPipelineTestSource               source;
+    const xiiRenderPipelinePass&        pass = source;
+    xiiRenderPipelineResourceDescriptor descriptor;
+    const auto                          index = descriptor.AddPass("Dynamic source", pass.GetDynamicRTTI());
+    XII_TEST_BOOL(descriptor.m_Passes[index].m_pType == source.GetDynamicRTTI());
+    xiiSharedPtr<const xiiRenderPipeline> compiled;
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
+    XII_TEST_BOOL(compiled->GetDescriptor().m_Passes[index].m_pType == pass.GetDynamicRTTI());
+
+    for (const xiiRTTI* pInvalidType : {static_cast<const xiiRTTI*>(nullptr), xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>()})
+    {
+      descriptor.m_Passes[index].m_pType = pInvalidType;
+      xiiDefaultMemoryStreamStorage storage;
+      xiiMemoryStreamWriter         writer(&storage);
+      XII_TEST_RESULT(descriptor.Serialize(writer));
+      auto                  loaded     = PipelineResourceTest::MakeDefinition();
+      const auto            originalId = loaded.m_Id;
+      xiiMemoryStreamReader reader(&storage);
+      XII_TEST_BOOL(loaded.Deserialize(reader).Failed());
+      XII_TEST_BOOL(loaded.m_Id == originalId);
       XII_TEST_INT(loaded.m_Passes.GetCount(), 2);
     }
   }
@@ -660,8 +687,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), pipeline->GetTopology().GetVertexCount());
     XII_TEST_BOOL(pipeline->GetHeapMemoryUsage() > pipeline->GetDescriptor().m_Passes.GetHeapMemoryUsage());
     auto descriptor = resource->GetAuthoring()->m_Descriptor;
-    descriptor.AddPass("Extra camera constants", "xiiViewConstantsPass");
-    descriptor.AddPass("Independent camera constants", "xiiViewConstantsPass");
+    descriptor.AddPass("Extra camera constants", xiiGetStaticRTTI<xiiViewConstantsPass>());
+    descriptor.AddPass("Independent camera constants", xiiGetStaticRTTI<xiiViewConstantsPass>());
     xiiSharedPtr<const xiiRenderPipeline> edited;
     XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
     xiiContiguousMemoryStreamStorage bytes;

@@ -1,6 +1,14 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
+#include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
+
 #include <Core/World/World.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
@@ -8,13 +16,14 @@
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 // Test-only sink preserving the uniform-buffer contract of atmosphere parameters.
@@ -127,29 +136,28 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   fallbackOverride.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.AtmosphereLookup/Physical Atmosphere Parameters"));
   XII_TEST_RESULT(fallback.GetProperties(fallbackOverride.m_Properties));
   xiiClearTexturePass clear;
-  clear.m_uiWidth  = 9;
-  clear.m_uiHeight = 11;
-  clear.m_Format   = xiiGALResourceFormat::RGBA32Float;
-  clear.m_Color    = xiiColor(1, 2, 3, 0.4f);
+  clear.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 9, 11});
+  clear.m_OutputTexture.SetFormat(xiiGALResourceFormat::RGBA32Float);
+  clear.m_Color = xiiColor(1, 2, 3, 0.4f);
   xiiVariantDictionary properties;
   XII_TEST_RESULT(clear.GetProperties(properties));
-  const auto color = root.AddPass("Independent scene radiance", "xiiClearTexturePass", properties);
-  clear.m_Format   = xiiGALResourceFormat::R32Float;
-  clear.m_Color    = xiiColor::MakeZero();
+  const auto color = root.AddPass("Independent scene radiance", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
+  clear.m_OutputTexture.SetFormat(xiiGALResourceFormat::R32Float);
+  clear.m_Color = xiiColor::MakeZero();
   XII_TEST_RESULT(clear.GetProperties(properties));
-  const auto depth  = root.AddPass("Sky depth", "xiiClearTexturePass", properties);
-  const auto camera = root.AddPass("View camera", "xiiViewConstantsPass"), light = root.AddPass("No direct sun", "xiiEnvironmentLightConstantsPass");
+  const auto depth  = root.AddPass("Sky depth", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
+  const auto camera = root.AddPass("View camera", xiiGetStaticRTTI<xiiViewConstantsPass>()), light = root.AddPass("No direct sun", xiiGetStaticRTTI<xiiEnvironmentLightConstantsPass>());
   XII_TEST_RESULT(root.Connect(color, "Texture", atmosphere, "Radiance"));
   XII_TEST_RESULT(root.Connect(depth, "Texture", atmosphere, "Depth"));
   XII_TEST_RESULT(root.Connect(camera, "PerFrameCamera", atmosphere, "Camera"));
   XII_TEST_RESULT(root.Connect(light, "EnvironmentLight", atmosphere, "EnvironmentLight"));
   for (const xiiStringView name : {"Radiance", "Transmittance", "MultiScatter"})
   {
-    const auto sink = root.AddPass(xiiStringBuilder("Read ", name), "xiiIndirectTestExport");
+    const auto sink = root.AddPass(xiiStringBuilder("Read ", name), xiiGetStaticRTTI<xiiIndirectTestExport>());
     XII_TEST_RESULT(root.Connect(atmosphere, name, sink, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
   }
-  const auto parameters = root.AddPass("Read atmosphere parameters", "xiiAtmosphereTestUniformExport");
+  const auto parameters = root.AddPass("Read atmosphere parameters", xiiGetStaticRTTI<xiiAtmosphereTestUniformExport>());
   XII_TEST_RESULT(root.Connect(atmosphere, "Atmosphere", parameters, "Input"));
   root.m_Interface.PushBack({"Atmosphere", false, root.m_Passes[parameters].m_Id, "Output"});
   for (const xiiStringView name : {"Solar Transmittance", "Multiple Scattering"})
@@ -281,7 +289,7 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   for (const xiiStringView pin : {"Transmittance", "MultiScatter"})
     standalone.m_Interface.PushBack({pin, false, standalone.m_Passes[occurrence].m_Id, pin});
   const auto                standaloneResource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Retired authored atmosphere lookup", std::move(standalone));
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   xiiRenderPipelineInstance instance;
   if (!XII_TEST_RESULT(context.Initialize("Retired atmosphere lookup")) || !XII_TEST_RESULT(instance.Synchronize(standaloneResource)))
     return;
@@ -306,4 +314,149 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   frame.End();
   environment.GetDevice()->WaitIdle();
   CheckAtmosphereLookups(*environment.GetDevice(), graph.GetExportedTexture(transmission), graph.GetExportedTexture(multiple), fallback.m_Settings);
+}
+
+class xiiResolutionHistoryTestPass : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiResolutionHistoryTestPass, xiiRenderPipelinePass);
+
+public:
+  xiiUInt32 m_uiResets          = 0;
+  xiiUInt32 m_uiPublishedResets = 0;
+  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  {
+    xiiRenderPipelinePin pin;
+    pin.m_sName                  = "History";
+    pin.m_bInput                 = false;
+    pin.m_bOptional              = true;
+    pin.m_bTemporalHistoryOutput = true;
+    pins.PushBack(pin);
+  }
+  void      InvalidateTemporalHistory() override { ++m_uiResets; }
+  xiiResult BuildTemporalHistory(xiiRenderPipelinePassContext&) override
+  {
+    m_uiPublishedResets = m_uiResets;
+    return XII_SUCCESS;
+  }
+  xiiResult Build(xiiRenderPipelinePassContext&) override { return XII_SUCCESS; }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiResolutionHistoryTestPass, 1, xiiRTTIDefaultAllocator<xiiResolutionHistoryTestPass>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST_GROUP(TextureResolution);
+XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  using Mode = xiiRenderPipelineTextureResolutionMode;
+  xiiWorldDescription description("Pipeline resolution");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*    module     = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiView* firstView  = nullptr;
+  xiiView* secondView = nullptr;
+  module->CreateView("First", firstView);
+  module->CreateView("Second", secondView);
+  firstView->SetViewport({0, 0, 1920, 1080});
+  firstView->SetRenderScale(0.5f);
+  secondView->SetViewport({0, 0, 1280, 720});
+  secondView->SetRenderScale(0.75f);
+  xiiRenderPipelineResourceDescriptor definition;
+  for (auto mode : {Mode::RenderResolution, Mode::Viewport, Mode::Fixed})
+  {
+    xiiCreateTexturePass               pass;
+    xiiRenderPipelineTextureResolution resolution;
+    if (mode != Mode::Viewport)
+      resolution.m_Mode = mode; // Viewport must also work through the default policy.
+    resolution.m_fScale = 0.5f;
+    if (mode == Mode::Fixed)
+    {
+      resolution.m_uiWidth  = 19;
+      resolution.m_uiHeight = 11;
+    }
+    pass.m_OutputTexture.SetResolution(resolution);
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(pass.GetProperties(properties));
+    definition.AddPass(mode == Mode::Fixed ? "Fixed texture" : mode == Mode::Viewport ? "Viewport texture" :
+                                                                                        "Internal texture",
+                       xiiGetStaticRTTI<xiiCreateTexturePass>(), properties);
+  }
+  definition.AddPass("History invalidation", xiiGetStaticRTTI<xiiResolutionHistoryTestPass>());
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(definition, compiled)))
+    return;
+  xiiRenderPipelineInstance first, second;
+  XII_TEST_RESULT(first.Initialize(compiled));
+  XII_TEST_RESULT(second.Initialize(compiled));
+  xiiRenderGraph           a, b;
+  xiiRenderGraphBlackboard blackboardA, blackboardB;
+  const auto               check = [&](xiiView* view, xiiRenderPipelineInstance& instance, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, xiiUInt32 frame) {
+    graph.BeginSetup(frame);
+    XII_TEST_RESULT(instance.Build(view, graph, blackboard));
+    for (xiiUInt32 i = 0; i < 3; ++i)
+    {
+      const auto* binding = instance.GetOutputBinding(i, "Texture");
+      const auto* texture = binding ? graph.GetTextureDescription(binding->m_hTexture) : nullptr;
+      if (!XII_TEST_BOOL(texture != nullptr))
+        continue;
+      const xiiSizeU32 expected = i == 0 ? xiiSizeU32((view->GetRenderResolutionWidth() + 1) / 2, (view->GetRenderResolutionHeight() + 1) / 2) :
+                      i == 1                           ? xiiSizeU32(static_cast<xiiUInt32>(view->GetViewport().width) / 2, static_cast<xiiUInt32>(view->GetViewport().height) / 2) :
+                                                         xiiSizeU32(10, 6);
+      XII_TEST_BOOL(texture->m_Size == expected);
+    }
+    graph.EndSetup();
+  };
+  check(firstView, first, a, blackboardA, 0);
+  check(secondView, second, b, blackboardB, 0);
+  const auto* history = static_cast<const xiiResolutionHistoryTestPass*>(first.GetPass(3));
+  XII_TEST_INT(history->m_uiResets, 1);
+  check(firstView, first, a, blackboardA, 1);
+  XII_TEST_INT(history->m_uiResets, 1);
+  firstView->SetRenderScale(1.0f);
+  check(firstView, first, a, blackboardA, 2);
+  XII_TEST_INT(history->m_uiResets, 2);
+  XII_TEST_INT(history->m_uiPublishedResets, 2);
+  firstView->SetViewport({0, 0, 800, 600});
+  check(firstView, first, a, blackboardA, 3);
+  XII_TEST_INT(history->m_uiResets, 3);
+  XII_TEST_INT(static_cast<const xiiResolutionHistoryTestPass*>(second.GetPass(3))->m_uiResets, 1);
+  XII_TEST_BOOL(first.GetPipeline() == second.GetPipeline() && first.GetPipeline() == compiled.Borrow());
+  XII_TEST_BOOL(compiled->GetPins(0)[0].m_Resolution.m_Mode == Mode::RenderResolution);
+  xiiDefaultMemoryStreamStorage storage;
+  xiiMemoryStreamWriter         writer(&storage);
+  XII_TEST_RESULT(definition.Serialize(writer));
+  xiiMemoryStreamReader               reader(&storage);
+  xiiRenderPipelineResourceDescriptor restored;
+  XII_TEST_RESULT(restored.Deserialize(reader));
+  xiiSharedPtr<const xiiRenderPipeline> roundtrip;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, roundtrip));
+  XII_TEST_BOOL(roundtrip->GetPins(0)[0].m_Resolution == compiled->GetPins(0)[0].m_Resolution);
+  firstView->SetViewport({0, 0, xiiMath::NaN<float>(), 10});
+  a.BeginSetup(4);
+  XII_TEST_BOOL(first.Build(firstView, a, blackboardA).Failed());
+  a.EndSetup();
+  xiiGALTextureCreationDescription importedDescription;
+  importedDescription.m_Type      = xiiGALResourceDimension::Texture2D;
+  importedDescription.m_Size      = {37, 23};
+  importedDescription.m_Format    = xiiGALResourceFormat::RGBA16Float;
+  importedDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
+  auto imported                   = environment.GetDevice()->CreateTexture(importedDescription);
+  if (!XII_TEST_BOOL(imported != nullptr))
+    return;
+  a.BeginSetup(5);
+  const auto                   handle = a.AddPass<xiiRenderGraphTextureHandle>("Imported resolution", xiiGALCommandQueueFlags::Graphics, [&](auto& resource, xiiRenderGraphBuilder& builder) { resource = builder.ImportTexture("Offscreen texture", imported, imported->GetResourceState()); }, [](const auto&, xiiRenderGraphPassContext&) {});
+  xiiVariantDictionary         parameters;
+  xiiRenderPipelinePassContext context{nullptr, a, blackboardA, parameters, {}, {}, "Imported extent"};
+  xiiRenderPipelinePin         pin;
+  pin.m_Resolution.m_Mode   = Mode::Input;
+  pin.m_Resolution.m_fScale = 0.5f;
+  xiiSizeU32 extent;
+  XII_TEST_RESULT(context.ResolveTextureSize(pin, *handle.first, extent));
+  XII_TEST_BOOL(extent == xiiSizeU32(19, 12));
+  XII_TEST_BOOL(imported->GetDescription().m_Size == xiiSizeU32(37, 23));
+  a.EndSetup();
 }

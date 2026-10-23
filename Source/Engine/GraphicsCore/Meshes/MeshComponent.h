@@ -309,7 +309,7 @@ public:
 
   /// Sets finite affine mesh-space skinning matrices and refreshes spatial bounds. Empty restores
   /// bind pose. Invalid palettes fail without changing the current pose. Input may alias the current palette.
-  [[nodiscard]] xiiResult SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
+  xiiResult SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
 
   /// Applies an evaluated skeleton pose in this mesh's bone palette order. Acquires current mesh/skeleton definitions.
   /// Failure clears stale skinning matrices without changing morph weights. Scratch capacity is reused.

@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include <SharedPluginScene/SharedPluginSceneDLL.h>
+
 #include <Foundation/Math/Rect.h>
 #include <GraphicsCore/Meshes/GpuInstanceTypes.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <SharedPluginScene/SharedPluginSceneDLL.h>
 
 class xiiSceneMeshPickingState;
 

@@ -112,8 +112,7 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, TAAResizeReleasesOldHistory)
   xiiRenderGraphBlackboard    blackboard;
   xiiVariantDictionary        parameters;
   xiiSharedPtr<xiiGALTexture> original;
-  xiiRenderGraphResourceCache cache;
-  cache.Initialize(environment.GetDeviceShared());
+  xiiRenderGraphResourceCache cache(environment.GetDeviceShared());
   for (xiiUInt32 iteration = 0; iteration < 64; ++iteration)
   {
     xiiRenderGraphFrame frame;
@@ -255,7 +254,7 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedAllocationInvalidatesView)
   view->SetRenderTargetView(texture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   {
     xiiRenderPipelineResourceDescriptor definition;
-    definition.AddPass("Allocation failure", "xiiTemporalAllocationTestPass");
+    definition.AddPass("Allocation failure", xiiGetStaticRTTI<xiiTemporalAllocationTestPass>());
     auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Temporal allocation failure", std::move(definition));
     view->SetRenderPipelineResource(pipeline);
     {

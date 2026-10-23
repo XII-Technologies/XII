@@ -1,5 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
+#include <GraphicsCore/Pipeline/Passes/Composition/ConfidenceBlendPass.h>
+
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -7,7 +13,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeReflectionComposition);
@@ -23,7 +29,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
   xiiResourceLock<xiiRenderPipelineResource> reflection(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), selection(selectionResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(reflection.IsValid() && selection.IsValid() && reflection->GetAuthoring() && selection->GetAuthoring()))
     return;
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   for (auto& context : contexts)
     if (!XII_TEST_RESULT(context.Initialize("Independent reflection replacement")))
@@ -58,13 +64,12 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
     root.m_References.PushBack({reflection->GetAuthoring()->m_Descriptor.m_Id, resource.GetResourceID()});
     const auto clear = [&](xiiStringView name, xiiVec4 color, bool invalid = false) {
       xiiClearTexturePass pass;
-      pass.m_uiWidth  = invalid && phase == 5 ? 8 : 9;
-      pass.m_uiHeight = 11;
-      pass.m_Format   = invalid && phase == 6 ? xiiGALResourceFormat::R32UInt : xiiGALResourceFormat::RGBA32Float;
-      pass.m_Color    = xiiColor(color.x, color.y, color.z, color.w);
+      pass.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, invalid && phase == 5 ? 8U : 9U, 11});
+      pass.m_OutputTexture.SetFormat(invalid && phase == 6 ? xiiGALResourceFormat::R32UInt : xiiGALResourceFormat::RGBA32Float);
+      pass.m_Color = xiiColor(color.x, color.y, color.z, color.w);
       xiiVariantDictionary properties;
       XII_TEST_RESULT(pass.GetProperties(properties));
-      return root.AddPass(name, "xiiClearTexturePass", properties);
+      return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
     };
     const auto base = clear("Original scene", scene), env = clear("Environment contribution", environmentTerm), ray = clear("Traced detail", traced);
     const auto firstScreen = clear("Screen detail A", screen, true);
@@ -75,7 +80,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
       XII_TEST_RESULT(root.Connect(from, output, to, input));
     };
     const auto capture = [&](xiiUInt32 from, xiiStringView output, xiiStringView name) {
-      const auto sink = root.AddPass(name, "xiiOpaqueTestExport");
+      const auto sink = root.AddPass(name, xiiGetStaticRTTI<xiiOpaqueTestExport>());
       connect(from, output, sink, "Input");
       root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
     };
@@ -91,7 +96,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
         const auto screenLayer = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ReflectionSelection/Screen Detail Over Traced Result");
         bool       found       = false;
         for (const auto& pass : selection->GetAuthoring()->m_Descriptor.m_Passes)
-          found |= pass.m_Id == screenLayer && pass.m_sType == "xiiConfidenceBlendPass";
+          found |= pass.m_Id == screenLayer && pass.m_pType == xiiGetStaticRTTI<xiiConfidenceBlendPass>();
         if (!XII_TEST_BOOL(found && override.m_Path.GetCount() == 1))
           return;
         override.m_Path.PushBack(screenLayer);

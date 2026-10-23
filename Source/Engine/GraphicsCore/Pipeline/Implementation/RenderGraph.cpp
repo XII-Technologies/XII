@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Foundation/Threading/AtomicInteger.h>
 
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/Deque.h>
@@ -31,7 +32,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderGraphId, xiiNoBase, 1, xiiRTTIDefaultAl
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("Value", m_uiValue),
+      XII_MEMBER_PROPERTY("Value", m_Data),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -71,11 +72,9 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 namespace
 {
-  xiiRenderGraphVersionId MakeVersionId(xiiRenderGraphResourceId resourceId, xiiUInt16 uiVersion)
+  xiiRenderGraphId MakeVersionId(xiiRenderGraphId resourceId, xiiUInt16 uiVersion)
   {
-    xiiRenderGraphVersionId id;
-    id.m_uiValue = xiiHashingUtils::xxHash64(&uiVersion, sizeof(uiVersion), resourceId.m_uiValue);
-    return id;
+    return xiiRenderGraphId(resourceId.m_InstanceIndex, uiVersion);
   }
 
   bool HasValidOwnedLifetimeFlags(xiiBitflags<xiiRenderGraphResourceFlags> flags)
@@ -85,40 +84,6 @@ namespace
     return bTransient != bPersistent && !flags.IsSet(xiiRenderGraphResourceFlags::External);
   }
 } // namespace
-
-void xiiRenderGraphIdTable::Clear()
-{
-  m_Passes.Clear();
-  m_Resources.Clear();
-  m_Versions.Clear();
-}
-
-void                  xiiRenderGraphIdTable::SetGraphId(xiiRenderGraphGraphId id) { m_GraphId = id; }
-void                  xiiRenderGraphIdTable::RegisterPass(xiiRenderGraphPassId id, xiiUInt32 uiIndex) { m_Passes.Insert(id.m_uiValue, uiIndex); }
-void                  xiiRenderGraphIdTable::RegisterResource(xiiRenderGraphResourceId id, xiiUInt32 uiIndex) { m_Resources.Insert(id.m_uiValue, uiIndex); }
-void                  xiiRenderGraphIdTable::RegisterVersion(xiiRenderGraphVersionId id, xiiUInt32 uiIndex) { m_Versions.Insert(id.m_uiValue, uiIndex); }
-xiiRenderGraphGraphId xiiRenderGraphIdTable::GetGraphId() const { return m_GraphId; }
-
-xiiUInt32 xiiRenderGraphIdTable::FindPass(xiiRenderGraphPassId id) const
-{
-  xiiUInt32 uiIndex = xiiInvalidIndex;
-  m_Passes.TryGetValue(id.m_uiValue, uiIndex);
-  return uiIndex;
-}
-
-xiiUInt32 xiiRenderGraphIdTable::FindResource(xiiRenderGraphResourceId id) const
-{
-  xiiUInt32 uiIndex = xiiInvalidIndex;
-  m_Resources.TryGetValue(id.m_uiValue, uiIndex);
-  return uiIndex;
-}
-
-xiiUInt32 xiiRenderGraphIdTable::FindVersion(xiiRenderGraphVersionId id) const
-{
-  xiiUInt32 uiIndex = xiiInvalidIndex;
-  m_Versions.TryGetValue(id.m_uiValue, uiIndex);
-  return uiIndex;
-}
 
 xiiRenderGraphBuilder::xiiRenderGraphBuilder(xiiRenderGraph& graph, xiiUInt32 uiPassIndex) :
   m_Graph(graph), m_uiPassIndex(uiPassIndex)
@@ -153,7 +118,7 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView 
   entry.m_TextureDescription           = description;
 
   entry.m_sName.Assign(sName);
-  entry.m_Id.m_uiValue                         = xiiHashingUtils::xxHash64String(sName, m_Graph.m_Id.m_uiValue);
+  entry.m_Id                                   = xiiRenderGraphId(uiTextureResourceIndex, m_Graph.m_uiSetupSerial);
   xiiRenderGraph::VersionEntry& initialVersion = entry.m_Versions.ExpandAndGetRef();
   initialVersion.m_Id                          = MakeVersionId(entry.m_Id, 0U);
   m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiTextureResourceIndex);
@@ -192,7 +157,7 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
     entry.m_CurrentState                 = currentState;
 
     entry.m_sName.Assign(sName);
-    entry.m_Id.m_uiValue                         = xiiHashingUtils::xxHash64String(sName, m_Graph.m_Id.m_uiValue);
+    entry.m_Id                                   = xiiRenderGraphId(uiTextureResourceIndex, m_Graph.m_uiSetupSerial);
     xiiRenderGraph::VersionEntry& initialVersion = entry.m_Versions.ExpandAndGetRef();
     initialVersion.m_Id                          = MakeVersionId(entry.m_Id, 0U);
     initialVersion.m_CurrentState                = currentState;
@@ -208,6 +173,10 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  XII_ASSERT_DEV(m_Graph.GetTextureDescription(hTexture) != nullptr, "Handle belongs to another graph setup or resource domain.");
+  if (m_Graph.GetTextureDescription(hTexture) == nullptr)
+    return {};
+
   XII_ASSERT_DEV(hTexture.IsValid(), "Invalid texture handle.");
   const xiiRenderGraphResourceHandleId id = hTexture.GetInternalID();
   XII_ASSERT_DEV(id.m_InstanceIndex < m_Graph.m_Resources.GetCount(), "Handle index out of range.");
@@ -251,12 +220,19 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiStringView sNa
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::WriteTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  XII_ASSERT_DEV(m_Graph.GetTextureDescription(hTexture) != nullptr, "Handle belongs to another graph setup or resource domain.");
+  if (m_Graph.GetTextureDescription(hTexture) == nullptr)
+    return {};
+
   XII_ASSERT_DEV(hTexture.IsValid(), "Invalid texture handle.");
   const xiiRenderGraphResourceHandleId id = hTexture.GetInternalID();
   XII_ASSERT_DEV(id.m_InstanceIndex < m_Graph.m_Resources.GetCount(), "Handle index out of range.");
 
   xiiRenderGraph::ResourceEntry& resourceEntry = m_Graph.m_Resources[id.m_InstanceIndex];
-  resourceEntry.m_uiCurrentProducerPassIdx     = m_uiPassIndex;
+  XII_ASSERT_DEV(resourceEntry.m_uiCurrentVersion < xiiMath::MaxValue<xiiUInt16>(), "Resource version counter exhausted.");
+  if (resourceEntry.m_uiCurrentVersion == xiiMath::MaxValue<xiiUInt16>())
+    return {};
+  resourceEntry.m_uiCurrentProducerPassIdx = m_uiPassIndex;
   ++resourceEntry.m_uiCurrentVersion;
 
   xiiRenderGraph::VersionEntry& version = resourceEntry.m_Versions.ExpandAndGetRef();
@@ -296,6 +272,10 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::WriteTexture(xiiStringView sN
 
 void xiiRenderGraphBuilder::ExportTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> finalState)
 {
+  XII_ASSERT_DEV(m_Graph.GetTextureDescription(hTexture) != nullptr, "Handle belongs to another graph setup or resource domain.");
+  if (m_Graph.GetTextureDescription(hTexture) == nullptr)
+    return;
+
   const xiiRenderGraphResourceHandleId id = hTexture.GetInternalID();
   XII_ASSERT_DEV(hTexture.IsValid() && id.m_InstanceIndex < m_Graph.m_Resources.GetCount(), "Invalid texture export handle.");
   XII_ASSERT_DEV(finalState != xiiGALResourceStateFlags::Unknown, "An exported texture requires a concrete final state.");
@@ -333,7 +313,7 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
   entry.m_BufferDescription            = description;
 
   entry.m_sName.Assign(sName);
-  entry.m_Id.m_uiValue                         = xiiHashingUtils::xxHash64String(sName, m_Graph.m_Id.m_uiValue);
+  entry.m_Id                                   = xiiRenderGraphId(uiBufferResourceIndex, m_Graph.m_uiSetupSerial);
   xiiRenderGraph::VersionEntry& initialVersion = entry.m_Versions.ExpandAndGetRef();
   initialVersion.m_Id                          = MakeVersionId(entry.m_Id, 0U);
   m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiBufferResourceIndex);
@@ -372,7 +352,7 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
     entry.m_CurrentState                 = currentState;
 
     entry.m_sName.Assign(sName);
-    entry.m_Id.m_uiValue                         = xiiHashingUtils::xxHash64String(sName, m_Graph.m_Id.m_uiValue);
+    entry.m_Id                                   = xiiRenderGraphId(uiBufferResourceIndex, m_Graph.m_uiSetupSerial);
     xiiRenderGraph::VersionEntry& initialVersion = entry.m_Versions.ExpandAndGetRef();
     initialVersion.m_Id                          = MakeVersionId(entry.m_Id, 0U);
     initialVersion.m_CurrentState                = currentState;
@@ -388,6 +368,10 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  XII_ASSERT_DEV(m_Graph.GetBufferDescription(hBuffer) != nullptr, "Handle belongs to another graph setup or resource domain.");
+  if (m_Graph.GetBufferDescription(hBuffer) == nullptr)
+    return {};
+
   XII_ASSERT_DEV(hBuffer.IsValid(), "Invalid buffer handle.");
   const xiiRenderGraphResourceHandleId id = hBuffer.GetInternalID();
 
@@ -430,11 +414,18 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiStringView sName
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiRenderGraphBufferHandle handle, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  XII_ASSERT_DEV(m_Graph.GetBufferDescription(handle) != nullptr, "Handle belongs to another graph setup or resource domain.");
+  if (m_Graph.GetBufferDescription(handle) == nullptr)
+    return {};
+
   XII_ASSERT_DEV(handle.IsValid(), "Invalid buffer handle.");
   const xiiRenderGraphResourceHandleId id = handle.GetInternalID();
 
   xiiRenderGraph::ResourceEntry& resourceEntry = m_Graph.m_Resources[id.m_InstanceIndex];
-  resourceEntry.m_uiCurrentProducerPassIdx     = m_uiPassIndex;
+  XII_ASSERT_DEV(resourceEntry.m_uiCurrentVersion < xiiMath::MaxValue<xiiUInt16>(), "Resource version counter exhausted.");
+  if (resourceEntry.m_uiCurrentVersion == xiiMath::MaxValue<xiiUInt16>())
+    return {};
+  resourceEntry.m_uiCurrentProducerPassIdx = m_uiPassIndex;
   ++resourceEntry.m_uiCurrentVersion;
 
   xiiRenderGraph::VersionEntry& version = resourceEntry.m_Versions.ExpandAndGetRef();
@@ -470,6 +461,10 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadWriteBuffer(xiiRenderGraph
 
 void xiiRenderGraphBuilder::ExportBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> finalState)
 {
+  XII_ASSERT_DEV(m_Graph.GetBufferDescription(hBuffer) != nullptr, "Handle belongs to another graph setup or resource domain.");
+  if (m_Graph.GetBufferDescription(hBuffer) == nullptr)
+    return;
+
   const xiiRenderGraphResourceHandleId id = hBuffer.GetInternalID();
   XII_ASSERT_DEV(hBuffer.IsValid() && id.m_InstanceIndex < m_Graph.m_Resources.GetCount(), "Invalid buffer export handle.");
   XII_ASSERT_DEV(finalState != xiiGALResourceStateFlags::Unknown, "An exported buffer requires a concrete final state.");
@@ -527,12 +522,8 @@ xiiRenderGraph::xiiRenderGraph(xiiStringView sName)
   static xiiAtomicInteger64 s_uiNextInstanceId;
   m_uiInstanceId = s_uiNextInstanceId.Increment();
   m_sName.Assign(sName);
-  m_Id.m_uiValue = xiiHashingUtils::xxHash64String(sName);
-  if (!m_Id.IsValid())
-  {
-    m_Id.m_uiValue = 1ULL;
-  }
-  m_IdTable.SetGraphId(m_Id);
+  XII_ASSERT_RELEASE(m_uiInstanceId < xiiRenderGraphId::INVALID_INSTANCE_INDEX, "Render graph instance IDs exhausted.");
+  m_Id = xiiRenderGraphId(m_uiInstanceId, 0U);
 }
 
 xiiRenderGraph::~xiiRenderGraph()
@@ -563,6 +554,12 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
 
   m_Passes.Clear();
   m_Resources.Clear();
+  m_CompiledPasses.Clear();
+  m_Barriers.Clear();
+  m_MergeGroups.Clear();
+  m_QueueSubmissions.Clear();
+  m_ResourceDescriptions.Clear();
+  m_ResourceVersions.Clear();
   m_ResourceNameIndex.Clear();
   m_ImportedTextureIndices.Clear();
   m_ImportedBufferIndices.Clear();
@@ -572,11 +569,12 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_ExportedTextures.Clear();
   m_ExportedBuffers.Clear();
 
-  static xiiAtomicInteger64 setupSerial;
-  m_uiSetupSerial = static_cast<xiiUInt64>(setupSerial.Increment());
-  m_uiFrameIndex  = uiFrameIndex;
-  m_bIsSetupOpen  = true;
-  m_bIsCompiled   = false;
+  static xiiAtomicInteger64 s_uiNextSetupSerial;
+  m_uiSetupSerial = static_cast<xiiUInt64>(s_uiNextSetupSerial.Increment());
+  XII_ASSERT_RELEASE(m_uiSetupSerial <= 0x7FFFFFFFULL, "Render graph setup generations exhausted.");
+  m_uiFrameIndex = uiFrameIndex;
+  m_bIsSetupOpen = true;
+  m_bIsCompiled  = false;
 }
 
 void xiiRenderGraph::EndSetup()
@@ -604,18 +602,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   m_QueueSubmissions.Clear();
   m_ResourceDescriptions.Clear();
   m_ResourceVersions.Clear();
-  m_IdTable.Clear();
-  m_IdTable.SetGraphId(m_Id);
-  for (xiiUInt32 i = 0U; i < m_Passes.GetCount(); ++i)
-    m_IdTable.RegisterPass(m_Passes[i].m_Id, i);
-  xiiUInt32 uiVersionIndex = 0U;
-  for (xiiUInt32 i = 0U; i < m_Resources.GetCount(); ++i)
-  {
-    m_IdTable.RegisterResource(m_Resources[i].m_Id, i);
-    for (const VersionEntry& version : m_Resources[i].m_Versions)
-      m_IdTable.RegisterVersion(version.m_Id, uiVersionIndex++);
-  }
   m_Statistics.m_uiRegisteredPassCount = m_Passes.GetCount();
+
 
   // Phase B: topological sort + culling.
   xiiDynamicArray<xiiUInt32> sortedIndices;
@@ -1719,15 +1707,18 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
     {
       if (resourceEntry.m_bIsTexture && resolvedTextures[i] != nullptr)
-        m_ExportedTextures.Insert(resourceEntry.m_Id.m_uiValue, resolvedTextures[i]);
+        m_ExportedTextures.Insert(resourceEntry.m_Id.m_Data, resolvedTextures[i]);
       else if (!resourceEntry.m_bIsTexture && resolvedBuffers[i] != nullptr)
-        m_ExportedBuffers.Insert(resourceEntry.m_Id.m_uiValue, resolvedBuffers[i]);
+        m_ExportedBuffers.Insert(resourceEntry.m_Id.m_Data, resolvedBuffers[i]);
     }
   }
 
   const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
   if (bEnableGpuProfiling)
+  {
+    pProfiler->OnFrameBegin(m_uiFrameIndex);
     pProfiler->SetGraphInstance(m_uiInstanceId);
+  }
 
   // One general fence per producer submission that has cross-queue consumers. Fences are created
   // per Execute call so frame overlap cannot accidentally reuse an in-flight timeline value.
@@ -1777,7 +1768,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     if (bEnableGpuProfiling)
     {
-      pProfiler->OnGraphBegin(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
+      pProfiler->OnGraphBegin(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
     }
 
     // Emit cross-queue waits.
@@ -1799,7 +1790,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       if (bInsideRenderPass)
         pCommandList->EndRenderPass();
       if (bEnableGpuProfiling)
-        pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
+        pProfiler->OnGraphEnd(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
       pCommandList->End();
       pQueue->Submit(pCommandList);
       if (bEnableGpuProfiling)
@@ -1837,7 +1828,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
           }
           resolvedTextures[uiResourceIndex] = pAliasTexture;
           if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
-            m_ExportedTextures.Insert(resourceEntry.m_Id.m_uiValue, pAliasTexture);
+            m_ExportedTextures.Insert(resourceEntry.m_Id.m_Data, pAliasTexture);
 
           if (resolvedTextures[uiResourceIndex])
           {
@@ -1862,7 +1853,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
           }
           resolvedBuffers[uiResourceIndex] = pAliasBuffer;
           if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
-            m_ExportedBuffers.Insert(resourceEntry.m_Id.m_uiValue, pAliasBuffer);
+            m_ExportedBuffers.Insert(resourceEntry.m_Id.m_Data, pAliasBuffer);
 
           if (resolvedBuffers[uiResourceIndex])
           {
@@ -1914,6 +1905,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         preparationContext.m_pView            = pView;
         preparationContext.m_uiFrameIndex     = m_uiFrameIndex;
         preparationContext.m_sPassName        = compiledPass.m_sName;
+        preparationContext.m_pGraph           = this;
         preparationContext.m_ResolvedTextures = resolvedTextures;
         preparationContext.m_ResolvedBuffers  = resolvedBuffers;
         compiledPass.m_PrepareDelegate(preparationContext);
@@ -1969,6 +1961,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       context.m_pView            = pView;
       context.m_uiFrameIndex     = m_uiFrameIndex;
       context.m_sPassName        = compiledPass.m_sName;
+      context.m_pGraph           = this;
       context.m_ResolvedTextures = resolvedTextures;
       context.m_ResolvedBuffers  = resolvedBuffers;
 
@@ -2079,7 +2072,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     if (bEnableGpuProfiling)
     {
-      pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
+      pProfiler->OnGraphEnd(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
     }
 
     pCommandList->End();

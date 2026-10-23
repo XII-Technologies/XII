@@ -79,7 +79,7 @@ namespace
 {
   constexpr float s_fLodReferenceViewportHeight = 1080.0f;
 
-  [[nodiscard]] xiiResult BuildMeshGeometryDescription(const xiiMeshResource& mesh, xiiGeometryDescription& out_description)
+  xiiResult BuildMeshGeometryDescription(const xiiMeshResource& mesh, xiiGeometryDescription& out_description)
   {
     const xiiMeshBufferResourceHandle& hMeshBuffer = mesh.GetMeshBuffer();
     if (!hMeshBuffer.IsValid())

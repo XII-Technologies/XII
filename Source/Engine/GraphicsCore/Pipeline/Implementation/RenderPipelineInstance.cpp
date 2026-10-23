@@ -1,11 +1,12 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -25,6 +26,7 @@ void xiiRenderPipelineInstance::Clear()
   m_uiPreparedSetup = m_uiBuiltSetup = 0;
   m_pPreparedView                    = nullptr;
   m_pPreparedBlackboard              = nullptr;
+  m_vResolution                      = xiiVec4U32::MakeZero();
   for (auto* pass : m_Passes)
     pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass);
   m_Passes.Clear();
@@ -91,7 +93,7 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     Clear();
     return XII_FAILURE;
   }
-  xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
   auto                                       pipeline = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
   if (out_changed)
     *out_changed = pipeline != m_pPipeline;
@@ -101,9 +103,18 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
 {
   if (!m_pPipeline)
     return XII_FAILURE;
+  xiiVec4U32 resolution = xiiVec4U32::MakeZero();
+  if (view)
+  {
+    const auto& viewport = view->GetViewport();
+    // Buffer-only and explicitly sized pipelines need no viewport. View-relative
+    // texture policies validate dimensions when they actually resolve their extent.
+    if (xiiMath::IsFinite(viewport.width) && xiiMath::IsFinite(viewport.height) && viewport.width >= 1 && viewport.height >= 1 && viewport.width <= 65536 && viewport.height <= 65536)
+      resolution = xiiVec4U32(static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height), view->GetRenderResolutionWidth(), view->GetRenderResolutionHeight());
+  }
   if (m_uiPreparedSetup != 0 && m_uiPreparedSetup == graph.GetSetupSerial())
   {
-    if (m_pPreparedView != view || m_pPreparedBlackboard != &blackboard || m_Overrides != overrides)
+    if (m_pPreparedView != view || m_pPreparedBlackboard != &blackboard || m_Overrides != overrides || m_vResolution != resolution)
     {
       m_sBuildError = "A prepared pipeline frame cannot change its view, blackboard or parameters within the same graph setup.";
       return XII_FAILURE;
@@ -111,6 +122,9 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
     return XII_SUCCESS;
   }
   m_uiPreparedSetup = 0;
+  if (m_vResolution != resolution || m_pPreparedView != view)
+    InvalidateTemporalHistory();
+  m_vResolution = resolution;
   m_sBuildError.Clear();
   const auto&                      settings = m_pPipeline->m_Descriptor.m_Settings;
   const auto                       device   = settings.m_RequiredDeviceFeatures.IsAnyFlagSet() && xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : xiiSharedPtr<xiiGALDevice>();
@@ -198,7 +212,7 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
       if (pin.m_Type == xiiRenderPipelinePin::Texture)
       {
         const auto* description = graph.GetTextureDescription(binding.m_hTexture);
-        if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || !pin.Accepts(*description)))
+        if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || history.ValidateTexture(pin, binding.m_hTexture).Failed()))
           return XII_FAILURE;
       }
       else if (pin.m_Type == xiiRenderPipelinePin::Buffer && (binding.m_hBuffer.IsValid() || !pin.m_bOptional))
@@ -253,9 +267,6 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
       case xiiRenderPipelinePin::AccelerationStructure:
         valid = !binding.m_pFrameData && !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() &&
           (binding.m_AccelerationStructure.IsValid() ? graph.GetBufferDescription(binding.m_AccelerationStructure.m_Dependency) != nullptr : external.m_Pin.m_bOptional && binding.m_AccelerationStructure.IsEmpty());
-        break;
-      case xiiRenderPipelinePin::Order:
-        valid = !binding.m_pFrameData && !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty();
         break;
       case xiiRenderPipelinePin::FrameData:
         valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
@@ -312,7 +323,7 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         if (pin.m_Type == xiiRenderPipelinePin::Texture)
         {
           const auto* description = graph.GetTextureDescription(binding.m_hTexture);
-          if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || !pin.Accepts(*description)))
+          if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || context.ValidateTexture(pin, binding.m_hTexture).Failed()))
           {
             error.SetFormat("Pass '{}' (type '{}', instance '{}'), {} texture pin '{}': resource is missing or violates its compiled contract.", context.m_sPassName, pass.m_pType->GetTypeName(), context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
             m_sBuildError = error;

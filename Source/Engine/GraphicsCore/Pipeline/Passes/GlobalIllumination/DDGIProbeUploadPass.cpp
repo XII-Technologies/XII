@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeUploadPass.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>

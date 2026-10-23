@@ -1,5 +1,22 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Preparation/WorldInstancesUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/BufferHistoryPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/InstanceCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/LodHistoryResetPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchBoundsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletDispatchPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -20,8 +37,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <bit>
 
@@ -263,10 +280,10 @@ namespace
   };
   MeshletWork AddMeshletWork(xiiRenderPipelineResourceDescriptor& definition, xiiStringView label, xiiUInt32 prepared, xiiUInt32 culled)
   {
-    const auto reset    = definition.AddPass(xiiStringBuilder(label, " Reset"), "xiiCounterResetPass");
-    const auto bounds   = definition.AddPass(xiiStringBuilder(label, " Bound"), "xiiMeshletDispatchBoundsPass");
-    const auto dispatch = definition.AddPass(xiiStringBuilder(label, " Dispatch"), "xiiMeshletDispatchPass");
-    const auto output   = definition.AddPass(xiiStringBuilder(label, " Export"), "xiiNativeMeshletWorkExport");
+    const auto reset    = definition.AddPass(xiiStringBuilder(label, " Reset"), xiiGetStaticRTTI<xiiCounterResetPass>());
+    const auto bounds   = definition.AddPass(xiiStringBuilder(label, " Bound"), xiiGetStaticRTTI<xiiMeshletDispatchBoundsPass>());
+    const auto dispatch = definition.AddPass(xiiStringBuilder(label, " Dispatch"), xiiGetStaticRTTI<xiiMeshletDispatchPass>());
+    const auto output   = definition.AddPass(xiiStringBuilder(label, " Export"), xiiGetStaticRTTI<xiiNativeMeshletWorkExport>());
     for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
       XII_TEST_RESULT(definition.Connect(prepared, pin, bounds, pin));
     for (auto pin : {"VisibleInstances", "VisibleInstanceCount", "LodHistory"})
@@ -278,9 +295,9 @@ namespace
     XII_TEST_RESULT(definition.Connect(culled, "VisibleInstanceCount", dispatch, "VisibleInstanceCount"));
     XII_TEST_RESULT(definition.Connect(dispatch, "DispatchArguments", output, "Arguments"));
     XII_TEST_RESULT(definition.Connect(bounds, "MaximumMeshletGroups", output, "Maximum"));
-    const auto countReset    = definition.AddPass(xiiStringBuilder(label, " Count Reset"), "xiiCounterResetPass");
-    const auto overflowReset = definition.AddPass(xiiStringBuilder(label, " Overflow Reset"), "xiiCounterResetPass");
-    const auto meshlet       = definition.AddPass(xiiStringBuilder(label, " Cull"), "xiiMeshletCullPass");
+    const auto countReset    = definition.AddPass(xiiStringBuilder(label, " Count Reset"), xiiGetStaticRTTI<xiiCounterResetPass>());
+    const auto overflowReset = definition.AddPass(xiiStringBuilder(label, " Overflow Reset"), xiiGetStaticRTTI<xiiCounterResetPass>());
+    const auto meshlet       = definition.AddPass(xiiStringBuilder(label, " Cull"), xiiGetStaticRTTI<xiiMeshletCullPass>());
     definition.m_Passes[meshlet].m_Properties.Insert("MaxVisibleMeshlets", 16384U);
     for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
       XII_TEST_RESULT(definition.Connect(prepared, pin, meshlet, pin));
@@ -292,14 +309,14 @@ namespace
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", output, "Meshlets"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", output, "Count"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletOverflow", output, "Overflow"));
-    const auto draw = definition.AddPass(xiiStringBuilder(label, " Draw Commands"), "xiiVertexPullDrawCommandsPass");
+    const auto draw = definition.AddPass(xiiStringBuilder(label, " Draw Commands"), xiiGetStaticRTTI<xiiVertexPullDrawCommandsPass>());
     for (auto pin : {"SceneInstances", "GeometryMetadata", "MeshletMetadata", "VisibilityView"})
       XII_TEST_RESULT(definition.Connect(prepared, pin, draw, pin));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", draw, "VisibleMeshlets"));
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshletCount", draw, "VisibleMeshletCount"));
     XII_TEST_RESULT(definition.Connect(draw, "DrawCommands", output, "DrawCommands"));
     XII_TEST_RESULT(definition.Connect(draw, "DrawCommandCount", output, "DrawCount"));
-    const auto meshDraw = definition.AddPass(xiiStringBuilder(label, " Mesh Draw Commands"), "xiiMeshDrawCommandsPass");
+    const auto meshDraw = definition.AddPass(xiiStringBuilder(label, " Mesh Draw Commands"), xiiGetStaticRTTI<xiiMeshDrawCommandsPass>());
     definition.m_Passes[meshDraw].m_Properties.Insert("MeshGroupCountX", 4U);
     definition.m_Passes[meshDraw].m_Properties.Insert("MeshGroupCountY", 2U);
     XII_TEST_RESULT(definition.Connect(meshlet, "VisibleMeshlets", meshDraw, "VisibleMeshlets"));
@@ -320,12 +337,12 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Input snapshots", "xiiNativeCullSource");
-  leaf.AddPass("Invalidate current LOD", "xiiLodHistoryResetPass");
-  leaf.AddPass("Reset visible count", "xiiCounterResetPass");
-  leaf.AddPass("Cull instances", "xiiInstanceCullPass");
-  leaf.AddPass("Retain LOD history", "xiiBufferHistoryPass");
-  leaf.AddPass("Read back", "xiiNativeCullExport");
+  leaf.AddPass("Input snapshots", xiiGetStaticRTTI<xiiNativeCullSource>());
+  leaf.AddPass("Invalidate current LOD", xiiGetStaticRTTI<xiiLodHistoryResetPass>());
+  leaf.AddPass("Reset visible count", xiiGetStaticRTTI<xiiCounterResetPass>());
+  leaf.AddPass("Cull instances", xiiGetStaticRTTI<xiiInstanceCullPass>());
+  leaf.AddPass("Retain LOD history", xiiGetStaticRTTI<xiiBufferHistoryPass>());
+  leaf.AddPass("Read back", xiiGetStaticRTTI<xiiNativeCullExport>());
   for (auto pin : {"SceneInstances", "GeometryMetadata", "VisibilityView", "Candidates"})
     XII_TEST_RESULT(leaf.Connect(0, pin, 3, pin));
   XII_TEST_RESULT(leaf.Connect(0, "SceneInstances", 1, "SceneInstances"));
@@ -365,7 +382,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
     return;
   XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet() && compiled->GetExtractionRequirements().IsNoFlagSet());
   xiiRenderPipelineInstance instances[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     if (!XII_TEST_RESULT(instances[i].Initialize(compiled)) || !XII_TEST_RESULT(contexts[i].Initialize("Native culling view")))
@@ -605,21 +622,21 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
   {
     const auto& pass   = nested->GetDescriptor().m_Passes[i];
     const auto& source = nested->GetProvenance()[i];
-    if (pass.m_sType == "xiiInstanceCullPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiInstanceCullPass>())
       cullId = source.m_Element;
-    if (pass.m_sType == "xiiWorldInstancesUploadPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiWorldInstancesUploadPass>())
       uploadId = source.m_Element;
-    if (pass.m_sType == "xiiMeshletDispatchPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiMeshletDispatchPass>())
       dispatchId = source.m_Element;
-    if (pass.m_sType == "xiiMeshletCullPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiMeshletCullPass>())
       meshletId = source.m_Element;
-    if (pass.m_sType == "xiiVertexPullDrawCommandsPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVertexPullDrawCommandsPass>())
       drawId = source.m_Element;
-    if (pass.m_sType == (depthOnly ? "xiiDepthRasterPass" : "xiiSurfaceQueryPass"))
+    if (pass.m_pType == (depthOnly ? xiiGetStaticRTTI<xiiDepthRasterPass>() : xiiGetStaticRTTI<xiiSurfaceQueryPass>()))
       surfaceId = source.m_Element;
-    if (pass.m_sType == "xiiGBufferRasterPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiGBufferRasterPass>())
       materialId = source.m_Element;
-    if (pass.m_sType == "xiiVisibilityViewPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVisibilityViewPass>())
     {
       viewPath = source.m_InstancePath;
       viewPath.PushBack(source.m_Element);
@@ -639,7 +656,7 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
   override.m_Properties.Insert("VisibilityMask", 0U);
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
-    const auto pixels = root.AddPass(i == 0 ? "Visible surface readback" : "Filtered surface readback", "xiiNativeSurfaceExport");
+    const auto pixels = root.AddPass(i == 0 ? "Visible surface readback" : "Filtered surface readback", xiiGetStaticRTTI<xiiNativeSurfaceExport>());
     if (!depthOnly)
     {
       XII_TEST_RESULT(root.Connect(i, "Surface", pixels, "Surface"));
@@ -648,14 +665,14 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
     if (materialTargets)
       for (auto pin : {"Albedo", "Normal", "Material", "Emissive", "NormalRoughness", "Velocity", "ObjectId"})
         XII_TEST_RESULT(root.Connect(i, pin, pixels, pin));
-    const auto work = root.AddPass(i == 0 ? "Visible meshlet readback" : "Filtered meshlet readback", "xiiNativeMeshletWorkExport");
+    const auto work = root.AddPass(i == 0 ? "Visible meshlet readback" : "Filtered meshlet readback", xiiGetStaticRTTI<xiiNativeMeshletWorkExport>());
     XII_TEST_RESULT(root.Connect(i, "DispatchArguments", work, "Arguments"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshlets", work, "Meshlets"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshletCount", work, "Count"));
     XII_TEST_RESULT(root.Connect(i, "VisibleMeshletOverflow", work, "Overflow"));
     XII_TEST_RESULT(root.Connect(i, "DrawCommands", work, "DrawCommands"));
     XII_TEST_RESULT(root.Connect(i, "DrawCommandCount", work, "DrawCount"));
-    const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", "xiiNativeCullExport");
+    const auto sink = root.AddPass(i == 0 ? "Visible readback" : "Filtered readback", xiiGetStaticRTTI<xiiNativeCullExport>());
     XII_TEST_RESULT(root.Connect(i, "VisibleInstances", sink, "Visible"));
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
     XII_TEST_RESULT(root.Connect(i, "LodHistory", sink, "Lod"));

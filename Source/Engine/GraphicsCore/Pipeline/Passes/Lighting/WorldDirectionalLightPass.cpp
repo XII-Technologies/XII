@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/World/World.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/WorldDirectionalLightPass.h>
@@ -12,7 +13,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldDirectionalLightPass, 1, xiiRTTIDefaultAllocator<xiiWorldDirectionalLightPass>)
 {
-  XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("DirectionalLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly), } XII_END_PROPERTIES;
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("DirectionalLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly),
+  } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Lighting") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

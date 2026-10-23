@@ -1,5 +1,16 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MatrixRasterConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/VertexPullDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthRegionClearPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -11,7 +22,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 namespace
 {
@@ -68,29 +79,31 @@ static void TestReusableShadowRegions(bool meshShaders)
   xiiUuid    rasterId, clearId, constantsId;
   for (const auto& pass : authoring->m_Descriptor.m_Passes)
   {
-    if (pass.m_sType == "xiiDepthRasterPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDepthRasterPass>())
       rasterId = pass.m_Id;
-    if (pass.m_sType == "xiiDepthRegionClearPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDepthRegionClearPass>())
       clearId = pass.m_Id;
-    if (pass.m_sType == "xiiMatrixRasterConstantsPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiMatrixRasterConstantsPass>())
       constantsId = pass.m_Id;
   }
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authoring->m_Descriptor.m_Id, asset.GetResourceID()});
   xiiVariantDictionary targetProperties;
-  targetProperties.Insert("Width", 32U);
-  targetProperties.Insert("Height", 16U);
-  targetProperties.Insert("Depth", 0.9f);
-  const auto           target    = root.AddPass("Atlas allocation", "xiiDepthTargetPass", targetProperties);
-  const auto           geometry  = root.AddPass("Shared geometry", "xiiGeometryUploadPass");
-  const auto           materials = root.AddPass("Shared materials", "xiiMaterialUploadPass");
+  xiiDepthTargetPass   targetPass;
+  targetPass.m_Depth.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+  targetPass.m_fDepth = 0.9f;
+  XII_TEST_RESULT(targetPass.GetProperties(targetProperties));
+  const auto target = root.AddPass("Atlas allocation", xiiGetStaticRTTI<xiiDepthTargetPass>(), targetProperties);
+  root.m_Interface.PushBack({"Extent", true, root.m_Passes[target].m_Id, "Reference"});
+  const auto           geometry  = root.AddPass("Shared geometry", xiiGetStaticRTTI<xiiGeometryUploadPass>());
+  const auto           materials = root.AddPass("Shared materials", xiiGetStaticRTTI<xiiMaterialUploadPass>());
   xiiVariantDictionary commandProperties;
   if (meshShaders)
   {
     commandProperties.Insert("MeshGroupCountX", 1U);
     commandProperties.Insert("MeshGroupCountY", 1U);
   }
-  const auto commands = root.AddPass("Explicit draw commands", meshShaders ? "xiiMeshDrawCommandsPass" : "xiiVertexPullDrawCommandsPass", commandProperties);
+  const auto commands = root.AddPass("Explicit draw commands", meshShaders ? xiiGetStaticRTTI<xiiMeshDrawCommandsPass>() : xiiGetStaticRTTI<xiiVertexPullDrawCommandsPass>(), commandProperties);
   for (const xiiStringView name : {"VisibleMeshlets", "VisibleMeshletCount"})
     root.m_Interface.PushBack({name, true, root.m_Passes[commands].m_Id, name});
   if (!meshShaders)
@@ -152,7 +165,7 @@ static void TestReusableShadowRegions(bool meshShaders)
   root.m_Interface.PushBack({"Atlas", false, root.m_Passes[previous].m_Id, "ShadowDepth"});
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(meshShaders ? "Native mesh shadow atlas regions" : "Native vertex-pull shadow atlas regions", std::move(root));
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(pipelines[i].Synchronize(resource)) || !XII_TEST_RESULT(contexts[i].Initialize("Native atlas")))
       return;
@@ -201,6 +214,14 @@ static void TestReusableShadowRegions(bool meshShaders)
       inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("VisibilityView", true), snapshot));
     inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("VisibleMeshlets", true), visible));
     inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("VisibleMeshletCount", true), visibleCount));
+    const auto extent = graph.AddPass<xiiRenderGraphTextureHandle>("Atlas extent", xiiGALCommandQueueFlags::Graphics, [&](auto& handle, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription image;
+        image.m_Type = xiiGALResourceDimension::Texture2D;
+        image.m_Size = {frameNumber >= 4 ? 48U : 32U, 16};
+        image.m_Format = xiiGALResourceFormat::RGBA16Float;
+        image.m_BindFlags = xiiGALBindFlags::ShaderResource;
+        handle = builder.DeclareTexture("Reference extent", image); }, [](const auto&, xiiRenderGraphPassContext&) {});
+    inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface("Extent", true), *extent.first));
     xiiVariantDictionary runtime;
     if (frameNumber >= 4)
     {
@@ -214,7 +235,7 @@ static void TestReusableShadowRegions(bool meshShaders)
       runtime.Insert("RasterMeshGroupCountX", 1U);
       runtime.Insert("RasterMeshGroupCountY", 1U);
     }
-    if (!XII_TEST_RESULT(pipeline.Build(nullptr, graph, context.GetBlackboard(), runtime, inputs)))
+    if (!XII_TEST_RESULT_MSG(pipeline.Build(nullptr, graph, context.GetBlackboard(), runtime, inputs), "%s", pipeline.GetLastBuildError().GetStartPointer()))
       return;
     const auto atlas = pipeline.GetInterfaceBinding(compiled->FindInterface("Atlas", false))->m_hTexture;
     graph.AddPass<xiiUInt32>("Export shadow atlas", xiiGALCommandQueueFlags::Graphics, [atlas](auto&, xiiRenderGraphBuilder& builder) { builder.ExportTexture(builder.ReadTexture(atlas, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
@@ -236,7 +257,7 @@ static void TestReusableShadowRegions(bool meshShaders)
     XII_TEST_INT(image->GetDescription().m_Size.width, frameNumber >= 4 ? 48 : 32);
     XII_TEST_BOOL(pipeline.GetPipeline() == compiled);
     for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
-      if (compiled->GetDescriptor().m_Passes[i].m_sType == "xiiMatrixRasterConstantsPass")
+      if (compiled->GetDescriptor().m_Passes[i].m_pType == xiiGetStaticRTTI<xiiMatrixRasterConstantsPass>())
       {
         xiiVariantDictionary authored;
         XII_TEST_RESULT(pipeline.GetPass(i)->GetProperties(authored));

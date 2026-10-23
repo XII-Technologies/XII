@@ -1,10 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 class xiiRayPinContractSource : public xiiRenderPipelinePass
 {
@@ -71,7 +72,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedAccelerationStructurePins)
   // Existing serialized resource kinds retain their numeric values.
   XII_TEST_INT(xiiRenderPipelinePin::Texture, 0);
   XII_TEST_INT(xiiRenderPipelinePin::Buffer, 1);
-  XII_TEST_INT(xiiRenderPipelinePin::Order, 2);
+  XII_TEST_INT(xiiRenderPipelinePin::AccelerationStructure, 3);
+  XII_TEST_INT(xiiRenderPipelinePin::FrameData, 4);
   xiiRayPinContractSource               source;
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   source.GetPins(pins);
@@ -90,8 +92,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedAccelerationStructurePins)
   XII_TEST_RESULT(source.GetProperties(properties));
   XII_TEST_BOOL(properties.GetValue("Scene") == nullptr);
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("Producer", "xiiRayPinContractSource");
-  leaf.AddPass("Consumer", "xiiRayPinContractConsumer");
+  leaf.AddPass("Producer", xiiGetStaticRTTI<xiiRayPinContractSource>());
+  leaf.AddPass("Consumer", xiiGetStaticRTTI<xiiRayPinContractConsumer>());
   XII_TEST_RESULT(leaf.Connect(0, "Scene", 1, "Scene"));
   leaf.m_Interface.PushBack({"Scene", false, leaf.m_Passes[0].m_Id, "Scene"});
   xiiGraphDefinition definition;
@@ -124,7 +126,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedAccelerationStructurePins)
   XII_TEST_RESULT(restored.Deserialize(reader));
   xiiSharedPtr<const xiiRenderPipeline> repeated;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, repeated));
-  XII_TEST_BOOL(compiled->GetPins(0)[2].m_Id == repeated->GetPins(0)[2].m_Id);
+  XII_TEST_BOOL(compiled->GetPins(0)[0].m_Id == repeated->GetPins(0)[0].m_Id);
 
   auto incompatible                      = leaf;
   incompatible.m_Connections[0].m_sInput = "Buffer";

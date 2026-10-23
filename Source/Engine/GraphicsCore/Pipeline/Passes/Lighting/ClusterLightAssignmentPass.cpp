@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/ClusterLightAssignmentPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterPassUtils.h>
@@ -48,7 +49,7 @@ xiiResult xiiClusterLightAssignmentPass::Build(xiiRenderPipelinePassContext& con
   }
   const auto lightCount = xiiUInt32(lightDescription->m_uiSize / sizeof(xiiGpuLightData));
   const auto flags      = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-  if (!Buffer(context, lights, sizeof(xiiGpuLightData), lightCount, xiiGALBindFlags::ShaderResource) || !Buffer(context, clusters, sizeof(xiiGpuClusterBounds), snapshot.ClusterCounts.w, xiiGALBindFlags::ShaderResource) || !Buffer(context, grid, sizeof(xiiVec2U32), snapshot.ClusterCounts.w, flags) || !Buffer(context, indices, sizeof(xiiUInt32), snapshot.Work.y, flags) || !Buffer(context, overflow, sizeof(xiiUInt32), 1, flags) || grid.m_Id == indices.m_Id || grid.m_Id == overflow.m_Id || indices.m_Id == overflow.m_Id)
+  if (!Buffer(context, lights, sizeof(xiiGpuLightData), lightCount, xiiGALBindFlags::ShaderResource) || !Buffer(context, clusters, sizeof(xiiGpuClusterBounds), snapshot.ClusterCounts.w, xiiGALBindFlags::ShaderResource) || !Buffer(context, grid, sizeof(xiiVec2U32), snapshot.ClusterCounts.w, flags) || !Buffer(context, indices, sizeof(xiiUInt32), snapshot.Work.y, flags) || !Buffer(context, overflow, sizeof(xiiUInt32), 1, flags) || grid.GetResourceId() == indices.GetResourceId() || grid.GetResourceId() == overflow.GetResourceId() || indices.GetResourceId() == overflow.GetResourceId())
     return context.ReportFailure("Cluster list resources must match the layout and have distinct writable allocations.");
   xiiGALDispatchComputeDescription dispatch;
   if (Dispatch(snapshot, snapshot.Work.x, dispatch).Failed())

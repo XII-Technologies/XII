@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterViewPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
@@ -20,8 +25,8 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 class xiiNativeSurfaceInputs : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiNativeSurfaceInputs, xiiRenderPipelinePass);
@@ -152,14 +157,14 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
   const auto surfaceDefinition = reference("WorldSurfaceLighting"), clusterDefinition = reference("ClusterLightLists", false), directionalDefinition = reference("DirectionalSurfaceLighting");
   if (!surfaceDefinition || !clusterDefinition || !directionalDefinition)
     return;
-  const auto inputs  = root.AddPass("Exact single pixel surface", "xiiNativeSurfaceInputs");
+  const auto inputs  = root.AddPass("Exact single pixel surface", xiiGetStaticRTTI<xiiNativeSurfaceInputs>());
   const auto surface = root.AddSubgraph("Authored world surface lighting", surfaceDefinition->m_Descriptor.m_Id);
   xiiUuid    clusterNode, layoutNode;
   for (const auto& node : surfaceDefinition->m_Descriptor.m_Passes)
     if (node.m_Definition == clusterDefinition->m_Descriptor.m_Id)
       clusterNode = node.m_Id;
   for (const auto& node : clusterDefinition->m_Descriptor.m_Passes)
-    if (node.m_sType == "xiiLightClusterViewPass")
+    if (node.m_pType == xiiGetStaticRTTI<xiiLightClusterViewPass>())
       layoutNode = node.m_Id;
   if (!XII_TEST_BOOL(clusterNode.IsValid() && layoutNode.IsValid()))
     return;
@@ -177,13 +182,13 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
   for (const xiiStringView pin : {"Depth", "Normal", "Albedo", "Material", "Emissive", "Camera", "Visibility"})
     XII_TEST_RESULT(root.Connect(inputs, pin, surface, pin));
   const auto expose = [&](xiiUInt32 operation, xiiStringView pin, xiiStringView name) {
-    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), "xiiNativeSurfaceRetain");
+    const auto retain = root.AddPass(xiiStringBuilder("Retain ", name), xiiGetStaticRTTI<xiiNativeSurfaceRetain>());
     XII_TEST_RESULT(root.Connect(operation, pin, retain, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[retain].m_Id, "Output"});
   };
   expose(surface, "DirectionalLighting", "SunA");
   expose(surface, "LocalLighting", "Local");
-  const auto overflow = root.AddPass("Retain overflow", "xiiBufferExportPass");
+  const auto overflow = root.AddPass("Retain overflow", xiiGetStaticRTTI<xiiBufferExportPass>());
   XII_TEST_RESULT(root.Connect(surface, "Overflow", overflow, "Input"));
   root.m_Interface.PushBack({"Overflow", false, root.m_Passes[overflow].m_Id, "Output"});
   const auto secondSun = root.AddSubgraph("Second sun evaluator", directionalDefinition->m_Descriptor.m_Id);
@@ -307,7 +312,7 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
     }
   }
   // Queued recording retains the independent evaluator resources after instances and views retire.
-  xiiRenderGraphContext     queued;
+  xiiRenderGraphTestContext queued;
   xiiRenderPipelineInstance detached;
   if (!XII_TEST_RESULT(queued.Initialize("Retired native surface recording")) || !XII_TEST_RESULT(detached.Synchronize(resource)))
     return;

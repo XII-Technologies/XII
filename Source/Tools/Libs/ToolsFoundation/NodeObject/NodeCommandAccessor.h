@@ -1,6 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 
 class XII_TOOLSFOUNDATION_DLL xiiNodeCommandAccessor : public xiiObjectCommandAccessor
@@ -10,6 +13,12 @@ class XII_TOOLSFOUNDATION_DLL xiiNodeCommandAccessor : public xiiObjectCommandAc
 public:
   xiiNodeCommandAccessor(xiiCommandHistory* pHistory);
   ~xiiNodeCommandAccessor();
+
+  /// Temporary pin edits must notify the node manager when restoring the previous schema.
+  void BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands = false) override;
+
+  /// Refresh a dependency-derived schema in the caller's transaction, retaining compatible connections.
+  xiiStatus RefreshPins(const xiiDocumentObject* pObject);
 
   virtual xiiStatus SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index = xiiVariant()) override;
 

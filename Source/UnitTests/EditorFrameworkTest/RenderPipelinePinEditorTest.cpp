@@ -4,27 +4,42 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
+#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <EnginePluginAssets/RenderPipelineAsset/RenderPipelineContext.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowRasterWorkPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearColorPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
+#include <QApplication>
+#include <QComboBox>
 #include <QGraphicsSceneMouseEvent>
+#include <QKeyEvent>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
+#include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
 class xiiEditorPinTestPass : public xiiRenderPipelinePass
@@ -78,6 +93,15 @@ namespace
   class PinScene : public xiiQtNodeScene
   {
   public:
+    void DeleteSelection()
+    {
+      QGraphicsSceneMouseEvent move(QEvent::GraphicsSceneMouseMove);
+      move.setScenePos(QPointF(-10000, -10000));
+      mouseMoveEvent(&move);
+      QKeyEvent remove(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
+      keyPressEvent(&remove);
+    }
+
     void Click(const xiiPin& native)
     {
       xiiQtPin* visual = nullptr;
@@ -129,6 +153,278 @@ namespace
     xiiDynamicArray<xiiUuid> m_Objects;
   };
 } // namespace
+
+XII_CREATE_SIMPLE_TEST_GROUP(PipelineEditor);
+XII_CREATE_SIMPLE_TEST(PipelineEditor, SubgraphPinsFromSourceAsset)
+{
+  auto* editor = xiiQtEditorApp::GetSingleton();
+  xiiStartup::StartupCoreSystems();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const auto             output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  const xiiStringBuilder preferences(output, "/SubgraphPreferences");
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(preferences));
+  editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor->CloseProject(); QApplication::processEvents(); editor->ShutdownEditor());
+  const xiiStringBuilder project(output, "/SubgraphProject/xiiProject");
+  if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
+    return;
+
+  const xiiStringBuilder path(project.GetFileDirectory(), "/Child.xiiRenderPipelineAsset");
+  PinDocument            child(path);
+  auto*                  commands = child.GetObjectAccessor();
+  auto*                  nodes    = static_cast<xiiRenderPipelineNodeManager*>(child.GetObjectManager());
+  xiiUuid                input, pass, outputNode;
+  commands->StartTransaction("Create referenced pipeline interface");
+  XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), input));
+  XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), pass));
+  XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), outputNode));
+  XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(input), "Name", "Color"));
+  XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(outputNode), "Input", false));
+  XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(outputNode), "Name", "Result"));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(child.GetCommandHistory(), nodes->GetConnectionType(), *nodes->GetOutputPinByName(commands->GetObject(input), "Value"), *nodes->GetInputPinByName(commands->GetObject(pass), "Texture")));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(child.GetCommandHistory(), nodes->GetConnectionType(), *nodes->GetOutputPinByName(commands->GetObject(pass), "Texture"), *nodes->GetInputPinByName(commands->GetObject(outputNode), "Value")));
+  commands->FinishTransaction();
+  XII_TEST_STATUS(child.SaveDocument(true));
+  auto* curator = xiiAssetCurator::GetSingleton();
+  curator->NotifyOfFileChange(path);
+  curator->MainThreadTick(false);
+  xiiString compiledPath;
+  {
+    const auto asset = curator->GetSubAsset(child.GetGuid());
+    if (!XII_TEST_BOOL(static_cast<bool>(asset)))
+      return;
+    compiledPath = asset->m_pAssetInfo->GetManager()->GetAbsoluteOutputFileName(asset->m_pAssetInfo->m_pDocumentTypeDescriptor, path, {});
+  }
+  XII_TEST_BOOL(!xiiOSFile::ExistsFile(compiledPath));
+
+  PinDocument parent(xiiStringBuilder(project.GetFileDirectory(), "/Parent.xiiRenderPipelineAsset"));
+  auto*       accessor = parent.GetObjectAccessor();
+  auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(parent.GetObjectManager());
+  PinScene    scene;
+  scene.InitScene(manager);
+  const auto visiblePinCount = [&scene]() {
+    xiiUInt32 count = 0;
+    for (const auto* item : scene.items())
+      count += item->type() == xiiQtNodeScene::Pin ? 1 : 0;
+    return count;
+  };
+  xiiUuid          id;
+  xiiStringBuilder reference;
+  xiiConversionUtils::ToString(child.GetGuid(), reference);
+  accessor->StartTransaction("Reference pipeline source by asset identifier");
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineSubgraphPass>(), id));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(id), "Resource", reference.GetView()));
+  accessor->FinishTransaction();
+  XII_TEST_BOOL(manager->GetInputPinByName(accessor->GetObject(id), "Color") != nullptr);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "Result") != nullptr);
+  XII_TEST_INT(visiblePinCount(), 2);
+  XII_TEST_BOOL(!xiiOSFile::ExistsFile(compiledPath));
+  XII_TEST_STATUS(parent.SaveDocument(true));
+  PinDocument restored(parent.GetDocumentPath());
+  XII_TEST_STATUS(restored.LoadDocument());
+  auto*       restoredManager = static_cast<xiiRenderPipelineNodeManager*>(restored.GetObjectManager());
+  const auto* restoredNode    = restoredManager->GetObject(id);
+  if (XII_TEST_BOOL(restoredNode != nullptr))
+  {
+    XII_TEST_BOOL(restoredManager->GetInputPinByName(restoredNode, "Color") != nullptr);
+    XII_TEST_BOOL(restoredManager->GetOutputPinByName(restoredNode, "Result") != nullptr);
+  }
+  auto* live = xiiDynamicCast<xiiRenderPipelineAssetDocument*>(editor->OpenDocument(path, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(live != nullptr))
+    return;
+  XII_SCOPE_EXIT(live->GetDocumentManager()->CloseDocument(live));
+  auto*   liveAccessor = live->GetObjectAccessor();
+  xiiUuid producerId, consumerId;
+  accessor->StartTransaction("Connect parent resources to the existing instance");
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), producerId));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), consumerId));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(parent.GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(producerId), "Texture"), *manager->GetInputPinByName(accessor->GetObject(id), "Color")));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(parent.GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(id), "Result"), *manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture")));
+  accessor->FinishTransaction();
+  const auto connectionId = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"))[0]->GetParent()->GetGuid();
+  xiiUuid    additionalOutput;
+  liveAccessor->StartTransaction("Extend published pipeline interface");
+  XII_TEST_STATUS(liveAccessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), additionalOutput));
+  XII_TEST_STATUS(liveAccessor->SetValueByName(liveAccessor->GetObject(additionalOutput), "Input", false));
+  XII_TEST_STATUS(liveAccessor->SetValueByName(liveAccessor->GetObject(additionalOutput), "Name", "LiveResult"));
+  auto* liveNodes = static_cast<xiiRenderPipelineNodeManager*>(live->GetObjectManager());
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(live->GetCommandHistory(), liveNodes->GetConnectionType(), *liveNodes->GetOutputPinByName(liveAccessor->GetObject(pass), "Texture"), *liveNodes->GetInputPinByName(liveAccessor->GetObject(additionalOutput), "Value")));
+  liveAccessor->FinishTransaction();
+  XII_TEST_STATUS(live->SaveDocument());
+  curator->MainThreadTick(false);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") != nullptr);
+  XII_TEST_BOOL(restoredManager->GetOutputPinByName(restoredNode, "LiveResult") != nullptr);
+  XII_TEST_INT(visiblePinCount(), 6);
+  auto connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
+  if (XII_TEST_INT(connections.GetCount(), 1))
+    XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+  XII_TEST_STATUS(parent.GetCommandHistory()->Undo());
+  XII_TEST_STATUS(parent.GetCommandHistory()->Redo());
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") != nullptr);
+  connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
+  if (XII_TEST_INT(connections.GetCount(), 1))
+    XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+  liveAccessor->StartTransaction("Remove an unconnected published output");
+  XII_TEST_STATUS(liveAccessor->RemoveObject(liveAccessor->GetObject(additionalOutput)));
+  liveAccessor->FinishTransaction();
+  XII_TEST_STATUS(live->SaveDocument());
+  curator->MainThreadTick(false);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") == nullptr);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "Result") != nullptr);
+  XII_TEST_INT(visiblePinCount(), 5);
+  connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
+  if (XII_TEST_INT(connections.GetCount(), 1))
+    XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)
+{
+  const auto directory = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(directory, "DefaultSubgraphInputs", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DefaultSubgraphInputs"));
+  PinDocument child(xiiStringBuilder(directory, "/DefaultChild.xiiRenderPipelineAsset"));
+  auto*       accessor = child.GetObjectAccessor();
+  auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(child.GetObjectManager());
+  xiiUuid     ids[4];
+  accessor->StartTransaction("Author defaulted pipeline input");
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), ids[0]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), ids[1]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), ids[2]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), ids[3]));
+  const auto* texture      = accessor->GetChildObjectByName(accessor->GetObject(ids[0]), "Texture", {});
+  const auto* requirements = accessor->GetChildObjectByName(texture, "Resolution", {});
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Fixed)));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 16U));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Height", 16U));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[1]), "Name", "Color"));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[3]), "Input", false));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[3]), "Name", "Color"));
+  const auto connect = [&](xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input) {
+    return xiiNodeCommands::AddAndConnectCommand(child.GetCommandHistory(), manager->GetConnectionType(),
+                                                 *manager->GetOutputPinByName(accessor->GetObject(ids[source]), output), *manager->GetInputPinByName(accessor->GetObject(ids[target]), input));
+  };
+  XII_TEST_STATUS(connect(0, "Texture", 1, "Default"));
+  XII_TEST_STATUS(connect(1, "Value", 2, "Texture"));
+  XII_TEST_STATUS(connect(2, "Texture", 3, "Value"));
+  accessor->FinishTransaction();
+  PinScene childScene;
+  childScene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &child);
+  child.GetSelectionManager()->SetSelection(accessor->GetObject(ids[1]));
+  PinCompiler compiler;
+  if (!XII_TEST_RESULT(compiler.Import(child)))
+    return;
+  xiiExportDocumentMsgToEngine message;
+  message.m_sOutputFile = xiiStringBuilder(directory, "/DefaultChild.xiiBinRenderPipeline");
+  message.m_uiAssetHash = 1;
+  message.m_uiVersion   = 7;
+  const auto exported   = compiler.ExportDocument(&message);
+  XII_TEST_STATUS(exported);
+  if (exported.Failed())
+    return;
+  const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+  xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(loaded && loaded->GetPipeline()))
+    return;
+  const auto compiledChild = loaded->GetPipeline();
+  const auto inputIndex    = compiledChild->FindInterface("Color", true);
+  XII_TEST_BOOL(inputIndex != xiiInvalidIndex && compiledChild->GetInterface()[inputIndex].m_Pin.m_bOptional);
+
+  PinDocument parent(xiiStringBuilder(directory, "/DefaultParent.xiiRenderPipelineAsset"));
+  auto*       commands = parent.GetObjectAccessor();
+  auto*       objects  = static_cast<xiiRenderPipelineNodeManager*>(parent.GetObjectManager());
+  xiiUuid     instances[2];
+  commands->StartTransaction("Include repeated defaulted pipelines");
+  for (auto& id : instances)
+  {
+    XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineSubgraphPass>(), id));
+    XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(id), "Resource", message.m_sOutputFile));
+    XII_TEST_BOOL(objects->GetInputPinByName(commands->GetObject(id), "Color") != nullptr);
+    XII_TEST_BOOL(objects->GetOutputPinByName(commands->GetObject(id), "Color") != nullptr);
+  }
+  commands->FinishTransaction();
+  PinScene parentScene;
+  parentScene.InitScene(objects);
+
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, message.m_sOutputFile});
+  xiiVariantDictionary properties;
+  xiiCreateTexturePass producer;
+  producer.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 32, 16});
+  XII_TEST_RESULT(producer.GetProperties(properties));
+  root.AddPass("Parent texture", producer.GetDynamicRTTI(), properties);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    const auto index = root.AddSubgraph(i ? "Defaulted" : "Overridden", loaded->GetAuthoring()->m_Descriptor.m_Id);
+    root.m_Interface.PushBack({i ? "Defaulted" : "Overridden", false, root.m_Passes[index].m_Id, "Color"});
+  }
+  XII_TEST_RESULT(root.Connect(0, "Texture", 1, "Color"));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  xiiStringBuilder                      error;
+  if (!XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled, &error)))
+    return;
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  for (xiiUInt32 frame = 1; frame <= 2; ++frame)
+  {
+    graph.BeginSetup(frame);
+    XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+    for (const bool overridden : {false, true})
+    {
+      const auto* binding = instance.GetInterfaceBinding(compiled->FindInterface(overridden ? "Overridden" : "Defaulted", false));
+      if (XII_TEST_BOOL(binding && graph.GetTextureDescription(binding->m_hTexture)))
+        XII_TEST_INT(graph.GetTextureDescription(binding->m_hTexture)->m_Size.width, overridden ? 32 : 16);
+    }
+    graph.EndSetup();
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, DeleteRenderPipelineNodes)
+{
+  const xiiStringBuilder path(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/DeleteNodes.xiiRenderPipelineAsset");
+  PinDocument            document(path);
+  auto*                  accessor = document.GetObjectAccessor();
+  auto*                  manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid                nodes[2];
+  accessor->StartTransaction("Create connected pipeline");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), nodes[0]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), nodes[1]));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(),
+                                                        *manager->GetOutputPinByName(accessor->GetObject(nodes[0]), "Texture"), *manager->GetInputPinByName(accessor->GetObject(nodes[1]), "Texture")));
+  accessor->FinishTransaction();
+
+  PinScene scene;
+  scene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  for (xiiUInt32 iteration = 0; iteration < 2; ++iteration)
+  {
+    xiiDeque<const xiiDocumentObject*> selection;
+    for (const auto& id : nodes)
+      selection.PushBack(accessor->GetObject(id));
+    if (iteration == 1)
+    {
+      // Selecting a node and its editable pin also exercises nested property widgets.
+      selection.PushBack(manager->GetPinPropertyObject(*manager->GetOutputPinByName(accessor->GetObject(nodes[0]), "Texture")));
+      selection.PushBack(manager->GetPinPropertyObject(*manager->GetInputPinByName(accessor->GetObject(nodes[1]), "Texture")));
+    }
+    document.GetSelectionManager()->SetSelection(selection);
+    scene.DeleteSelection();
+    XII_TEST_BOOL(document.GetSelectionManager()->IsSelectionEmpty());
+    for (const auto& id : nodes)
+      XII_TEST_BOOL(accessor->GetObject(id) == nullptr);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    for (const auto& id : nodes)
+      XII_TEST_BOOL(accessor->GetObject(id) != nullptr);
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
 {
@@ -186,10 +482,17 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     return;
   scene.Click(*pin);
   XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == settings);
-  bool formatWidget = false;
+  bool formatWidget = false, metadataWidget = false;
   for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
-    formatWidget |= widget->GetProperty() && widget->GetProperty()->GetPropertyName() == "RequiredFormat";
-  XII_TEST_BOOL(formatWidget);
+    if (const auto* property = widget->GetProperty())
+    {
+      formatWidget |= property->GetPropertyName() == "RequiredFormat" && !widget->isHidden();
+      metadataWidget |= property->GetPropertyName() == "Metadata";
+    }
+  XII_TEST_BOOL(!formatWidget);
+  XII_TEST_BOOL(!metadataWidget);
+  const auto* metadataProperty = settings->GetType()->FindPropertyByName("Metadata");
+  XII_TEST_BOOL(metadataProperty && metadataProperty->GetAttributeByType<xiiHiddenAttribute>());
   accessor->StartTransaction("Set reflected pin requirements");
   XII_TEST_STATUS(accessor->SetValueByName(settings, "RequiredFormat", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA16Float)));
   XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 16U));
@@ -215,6 +518,39 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
   XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
   const auto* sourceSettings     = manager->GetPinPropertyObject(*manager->GetOutputPinByName(source, "Output"));
   const auto* sourceRequirements = accessor->GetChildObjectByName(sourceSettings, "Requirements", {});
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Live pin edits restore connections between updates and support undo")
+  {
+    const auto undoCount = document.GetCommandHistory()->GetUndoStackSize();
+    accessor->BeginTemporaryCommands("Resize connected texture");
+    for (xiiUInt32 width : {32U, 16U})
+    {
+      accessor->StartTransaction("Update texture width");
+      XII_TEST_STATUS(accessor->SetValueByName(sourceRequirements, "Width", width));
+      accessor->FinishTransaction();
+      const auto connections = manager->GetConnections(*manager->GetInputPinByName(target, "Input"));
+      if (width == 32)
+        XII_TEST_BOOL(connections.IsEmpty());
+      else if (XII_TEST_INT(connections.GetCount(), 1))
+        XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+    }
+    accessor->FinishTemporaryCommands();
+    XII_TEST_INT(document.GetCommandHistory()->GetUndoStackSize(), undoCount + 1);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_INT(sourceRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 0);
+    XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+    XII_TEST_INT(sourceRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 16);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
+
+    accessor->BeginTemporaryCommands("Cancel connected texture resize");
+    accessor->StartTransaction("Invalidate the connection");
+    XII_TEST_STATUS(accessor->SetValueByName(sourceRequirements, "Width", 32U));
+    accessor->FinishTransaction();
+    XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input")).IsEmpty());
+    accessor->CancelTemporaryCommands();
+    XII_TEST_INT(sourceRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 0);
+    XII_TEST_BOOL(manager->GetConnections(*manager->GetInputPinByName(target, "Input"))[0]->GetParent()->GetGuid() == connectionId);
+  }
   accessor->StartTransaction("Reject incompatible connected extents");
   XII_TEST_STATUS(accessor->SetValueByName(sourceRequirements, "Width", 32U));
   accessor->FinishTransaction();
@@ -349,8 +685,13 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
       }
       if (node->GetType() == "xiiRenderPipelineSettings")
         obsolete.PushBack(node->GetGuid());
-      if (node->GetType() == "xiiRenderPipelinePinConfiguration" || node->GetType() == "xiiRenderPipelinePinMetadata" || node->GetType() == "xiiRenderPipelinePinConstraints")
+      if (node->GetType() == "xiiRenderPipelinePinConfiguration")
+      {
         obsolete.PushBack(node->GetGuid());
+        for (const char* propertyName : {"Metadata", "Requirements"})
+          if (const auto* property = node->FindProperty(propertyName); property && property->m_Value.IsA<xiiUuid>())
+            obsolete.PushBack(property->m_Value.Get<xiiUuid>());
+      }
     }
     for (const auto& id : obsolete)
       objects->RemoveNode(id);
@@ -377,7 +718,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     xiiRenderPipelineResourceDescriptor child;
     xiiVariantDictionary                leafProperties;
     leafProperties.Insert("Extra", true);
-    child.AddPass("Leaf", "xiiEditorPinTestPass", leafProperties);
+    child.AddPass("Leaf", xiiGetStaticRTTI<xiiEditorPinTestPass>(), leafProperties);
     child.m_Interface.PushBack({"Output", false, child.m_Passes[0].m_Id, "Output"});
     const auto  reusable = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("RenderPinEditorReusable", std::move(child));
     PinDocument composition(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/Composition.xiiRenderPipelineAsset"));
@@ -391,6 +732,10 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, RenderPinProperties)
     const auto* boundary = objects->GetPinPropertyObject(*objects->GetOutputPinByName(instance, "Output"));
     if (!XII_TEST_BOOL(boundary != nullptr))
       return;
+    xiiMap<xiiString, xiiPropertyUiState> boundaryStates;
+    xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(boundary, boundaryStates);
+    XII_TEST_BOOL(boundaryStates["RequiredFormat"].m_Visibility == xiiPropertyUiState::Default);
+    XII_TEST_BOOL(boundaryStates["Requirements"].m_Visibility == xiiPropertyUiState::Default);
     const auto  boundaryId = boundary->GetGuid();
     const auto* limits     = commands->GetChildObjectByName(boundary, "Requirements", {});
     XII_TEST_STATUS(commands->SetValueByName(limits, "Width", 32U));
@@ -477,6 +822,14 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, AccelerationStructurePinProperties)
   if (!XII_TEST_BOOL(metadata != nullptr))
     return;
   XII_TEST_INT(metadata->GetTypeAccessor().GetValue("ResourceType").ConvertTo<xiiUInt32>(), xiiRenderPipelinePin::AccelerationStructure);
+  xiiMap<xiiString, xiiPropertyUiState> states;
+  xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(metadata, states);
+  XII_TEST_BOOL(states["DeclaredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+  XII_TEST_BOOL(states["DataType"].m_Visibility == xiiPropertyUiState::Invisible);
+  states.Clear();
+  xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(settings, states);
+  XII_TEST_BOOL(states["RequiredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+  XII_TEST_BOOL(states["Requirements"].m_Visibility == xiiPropertyUiState::Invisible);
   const auto settingsId = settings->GetGuid();
   scene.Click(*output);
   XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == settings);
@@ -584,6 +937,10 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, FrameDataPinInspector)
   if (!XII_TEST_BOOL(configuration && metadata))
     return;
   XII_TEST_STRING(metadata->GetTypeAccessor().GetValue("DataType").Get<xiiString>(), "xiiShadowCascadeSnapshot");
+  xiiMap<xiiString, xiiPropertyUiState> states;
+  xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(metadata, states);
+  XII_TEST_BOOL(states["DeclaredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+  XII_TEST_BOOL(states["DataType"].m_Visibility == xiiPropertyUiState::Default);
   const auto* typeProperty = metadata->GetType()->FindPropertyByName("DataType");
   XII_TEST_BOOL(typeProperty && typeProperty->GetAttributeByType<xiiReadOnlyAttribute>());
   PinScene scene;
@@ -628,4 +985,193 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, FrameDataPinInspector)
   XII_TEST_INT(restoredManager->GetConnections(*restoredOutput).GetCount(), 1);
   const auto* restoredMetadata = restored.GetObjectAccessor()->GetChildObjectByName(restoredConfig, "Metadata", {});
   XII_TEST_STRING(restoredMetadata->GetTypeAccessor().GetValue("DataType").Get<xiiString>(), "xiiShadowCascadeSnapshot");
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, ClearPassPinProperties)
+{
+  const xiiStringBuilder  path(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/ClearPassPins.xiiRenderPipelineAsset");
+  PinDocument             document(path);
+  auto*                   accessor = document.GetObjectAccessor();
+  auto*                   manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  for (const auto* type : {xiiGetStaticRTTI<xiiClearColorPass>()})
+  {
+    xiiUuid id;
+    accessor->StartTransaction("Create clear pass");
+    XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, type, id));
+    accessor->FinishTransaction();
+    const auto*   node      = accessor->GetObject(id);
+    const char*   inputName = type == xiiGetStaticRTTI<xiiClearColorPass>() ? "Texture" : "Reference";
+    const xiiPin* pins[]    = {manager->GetInputPinByName(node, inputName), manager->GetOutputPinByName(node, "Texture")};
+    for (const auto* pin : pins)
+    {
+      if (!XII_TEST_BOOL(pin != nullptr))
+        return;
+      const auto* settings = manager->GetPinPropertyObject(*pin);
+      if (!XII_TEST_BOOL(settings != nullptr))
+        return;
+      xiiMap<xiiString, xiiPropertyUiState> states;
+      xiiPropertyMetaState::GetSingleton()->GetTypePropertiesState(settings, states);
+      XII_TEST_BOOL(states["RequiredFormat"].m_Visibility == xiiPropertyUiState::Invisible);
+      XII_TEST_BOOL(states["Requirements"].m_Visibility == xiiPropertyUiState::Invisible);
+      XII_TEST_BOOL(states["DisplayName"].m_Visibility == xiiPropertyUiState::Default);
+      document.GetSelectionManager()->SetSelection(settings);
+      bool labelVisible = false;
+      for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+        if (const auto* property = widget->GetProperty())
+        {
+          if (property->GetPropertyName() == "RequiredFormat" || property->GetPropertyName() == "Requirements")
+            XII_TEST_BOOL(widget->isHidden());
+          labelVisible |= property->GetPropertyName() == "DisplayName" && !widget->isHidden();
+        }
+      XII_TEST_BOOL(labelVisible);
+    }
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
+{
+  const auto directory = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(directory, "CreateTexturePinProperties", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("CreateTexturePinProperties"));
+  const xiiStringBuilder path(directory, "/CreateTexture.xiiRenderPipelineAsset");
+  PinDocument            document(path);
+  auto*                  accessor = document.GetObjectAccessor();
+  auto*                  manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid                id;
+  accessor->StartTransaction("Create reflected texture output");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), id));
+  accessor->FinishTransaction();
+  const auto* node = accessor->GetObject(id);
+  if (!XII_TEST_BOOL(node != nullptr))
+    return;
+  XII_TEST_BOOL(manager->GetInputPins(node).IsEmpty());
+  XII_TEST_INT(manager->GetOutputPins(node).GetCount(), 1);
+  const auto* output = manager->GetOutputPinByName(node, "Texture");
+  if (!XII_TEST_BOOL(output != nullptr))
+    return;
+  const auto* texture      = accessor->GetChildObjectByName(node, "Texture", {});
+  const auto* requirements = accessor->GetChildObjectByName(texture, "Resolution", {});
+  if (!XII_TEST_BOOL(texture && requirements))
+    return;
+  XII_TEST_BOOL(manager->GetPinPropertyObject(*output) == texture);
+  XII_TEST_INT(node->GetTypeAccessor().GetCount("PinConfigurations"), 0);
+  const auto* property = node->GetType()->FindPropertyByName("Texture");
+  XII_TEST_BOOL(property && !property->GetAttributeByType<xiiHiddenAttribute>() && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly));
+  for (const char* name : {"Width", "Height", "Format"})
+    XII_TEST_BOOL(node->GetType()->FindPropertyByName(name) == nullptr);
+
+  PinScene scene;
+  scene.InitScene(manager);
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  document.GetSelectionManager()->SetSelection(node);
+  bool textureWidget = false, formatWidget = false, widthWidget = false;
+  for (const auto* widget : grid.findChildren<xiiQtPropertyWidget*>())
+    if (const auto* reflected = widget->GetProperty())
+    {
+      textureWidget |= reflected->GetPropertyName() == "Texture";
+      formatWidget |= reflected->GetPropertyName() == "Format";
+      widthWidget |= reflected->GetPropertyName() == "Width";
+    }
+  XII_TEST_BOOL(textureWidget && formatWidget && widthWidget);
+  scene.Click(*output);
+  XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == texture);
+
+  accessor->StartTransaction("Configure texture through its reflected pin");
+  XII_TEST_STATUS(accessor->SetValueByName(texture, "Format", static_cast<xiiInt64>(xiiGALResourceFormat::RGBA8UNormalized)));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Fixed)));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Width", 64U));
+  XII_TEST_STATUS(accessor->SetValueByName(requirements, "Height", 32U));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_INT(requirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 0);
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  XII_TEST_STATUS(document.SaveDocument(true));
+
+  PinDocument restored(path);
+  const auto  status = restored.LoadDocument();
+  XII_TEST_STATUS(status);
+  if (status.Failed())
+    return;
+  const auto* restoredNode         = restored.GetObjectManager()->GetObject(id);
+  const auto* restoredTexture      = restored.GetObjectAccessor()->GetChildObjectByName(restoredNode, "Texture", {});
+  const auto* restoredRequirements = restored.GetObjectAccessor()->GetChildObjectByName(restoredTexture, "Resolution", {});
+  XII_TEST_INT(restoredTexture->GetTypeAccessor().GetValue("Format").ConvertTo<xiiUInt32>(), xiiGALResourceFormat::RGBA8UNormalized);
+  XII_TEST_INT(restoredRequirements->GetTypeAccessor().GetValue("Width").Get<xiiUInt32>(), 64);
+  XII_TEST_INT(restoredRequirements->GetTypeAccessor().GetValue("Height").Get<xiiUInt32>(), 32);
+  xiiAbstractObjectGraph           graph;
+  xiiDocumentObjectConverterWriter writer(&graph, restored.GetObjectManager());
+  const auto*                      root = writer.AddObjectToGraph(restoredNode, "root");
+  xiiCreateTexturePass             pass;
+  xiiRttiConverterContext          context;
+  context.RegisterObject(root->GetGuid(), pass.GetDynamicRTTI(), &pass);
+  xiiRttiConverterReader reader(&graph, &context);
+  reader.ApplyPropertiesToObject(root, pass.GetDynamicRTTI(), &pass);
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  XII_TEST_BOOL(properties.Contains("Texture") && !properties.Contains("Width") && !properties.Contains("Format"));
+  xiiCreateTexturePass configured;
+  XII_TEST_RESULT(configured.Configure(properties));
+  XII_TEST_BOOL(configured.m_OutputTexture.GetFormat() == xiiGALResourceFormat::RGBA8UNormalized);
+  XII_TEST_INT(configured.m_OutputTexture.GetResolution().m_uiWidth, 64);
+  XII_TEST_INT(configured.m_OutputTexture.GetResolution().m_uiHeight, 32);
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, TextureResolutionInputSelector)
+{
+  PinDocument document(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/ResolutionInput.xiiRenderPipelineAsset"));
+  auto*       accessor = document.GetObjectAccessor();
+  auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid     id;
+  accessor->StartTransaction("Create texture reference choices");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearTexturePass>(), id));
+  accessor->FinishTransaction();
+  const auto* node       = accessor->GetObject(id);
+  const auto* output     = accessor->GetChildObjectByName(node, "Texture", {});
+  const auto* resolution = accessor->GetChildObjectByName(output, "Resolution", {});
+  XII_TEST_INT(resolution->GetTypeAccessor().GetValue("Mode").ConvertTo<xiiUInt32>(), xiiRenderPipelineTextureResolutionMode::Viewport);
+  accessor->StartTransaction("Use an input extent");
+  XII_TEST_STATUS(accessor->SetValueByName(resolution, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Input)));
+  accessor->FinishTransaction();
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  document.GetSelectionManager()->SetSelection(output);
+  auto* combo = grid.findChild<QComboBox*>("RenderPipelineTextureResolutionInput");
+  if (!XII_TEST_BOOL(combo != nullptr))
+    return;
+  XII_TEST_BOOL(!combo->isEditable());
+  XII_TEST_INT(combo->count(), 2);
+  XII_TEST_BOOL(combo->findData(QString("Reference")) >= 0);
+  XII_TEST_BOOL(combo->findData(QString("Texture")) < 0);
+  const auto index = combo->findData(QString("Reference"));
+  combo->setCurrentIndex(index);
+  combo->activated(index);
+  XII_TEST_STRING(resolution->GetTypeAccessor().GetValue("Input").Get<xiiString>(), "Reference");
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_STRING(resolution->GetTypeAccessor().GetValue("Input").Get<xiiString>(), "");
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  XII_TEST_STRING(resolution->GetTypeAccessor().GetValue("Input").Get<xiiString>(), "Reference");
+
+  // The same reflected selector also works inside persistent pin configurations.
+  accessor->StartTransaction("Create configured output");
+  xiiUuid other;
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiEditorPinTestPass>(), other));
+  accessor->FinishTransaction();
+  const auto* configured = manager->GetPinPropertyObject(*manager->GetOutputPinByName(accessor->GetObject(other), "Output"));
+  const auto* policy     = accessor->GetChildObjectByName(configured, "Resolution", {});
+  accessor->StartTransaction("Configure output resolution");
+  XII_TEST_STATUS(accessor->SetValueByName(configured, "OverrideResolution", true));
+  XII_TEST_STATUS(accessor->SetValueByName(policy, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Input)));
+  accessor->FinishTransaction();
+  document.GetSelectionManager()->SetSelection(configured);
+  xiiQtPropertyGridWidget configurationGrid(nullptr, &document);
+  configurationGrid.SetSelection(document.GetSelectionManager()->GetSelection());
+  combo = configurationGrid.findChild<QComboBox*>("RenderPipelineTextureResolutionInput");
+  if (!XII_TEST_BOOL(combo != nullptr))
+    return;
+  XII_TEST_INT(combo->count(), 2);
+  XII_TEST_BOOL(combo->findData(QString("Input")) >= 0);
+  XII_TEST_BOOL(combo->findData(QString("Extra")) < 0); // Disabled native pins are not candidates.
 }

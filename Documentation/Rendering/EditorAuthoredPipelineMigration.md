@@ -268,6 +268,13 @@ deterministic occurrence identities; runtime pass objects omit authoring pin obj
 Expanding a subgraph in the editor applies a structured object-graph diff through
 the existing accessor, preserving leaf arrays/maps/settings and interface contracts.
 
+Render pipeline documents publish their input/output contracts in reflected asset
+header metadata, using the same curator mechanism as exposed asset parameters.
+Subgraph nodes discover these ports before a compiled resource exists. Saving a
+referenced pipeline publishes its updated interface; curator notifications refresh
+existing nodes in open parent documents and retain compatible connection objects
+and identities. Pin discovery does not parse source files or open documents.
+
 All four SDK pipeline source assets and compiled binaries have been regenerated
 with the production serializer/compiler. Document, node, connection and layout
 identities are retained. Loading older sources without configurations initializes
@@ -1047,3 +1054,23 @@ The full goal remains active. Meshlet culling, Hi-Z, LOD feedback, indirect work
 authored native visibility assets, geometry/lighting/shadow paths and complete
 renderer graphs are still pending. No legacy runtime or compatibility pipeline was
 restored to make these tests pass.
+
+Texture output pins own a reflected `Resolution` policy: `Viewport` uses the
+view's native viewport, `RenderResolution` uses its scaled internal extent,
+`Input` uses a connected texture (optionally named), and `Fixed` uses authored
+width and height. A positive proportional scale applies after selecting the base
+extent, rounding up to cover odd dimensions. `Viewport` is the default policy.
+Operations that inherit an input extent declare `Input` explicitly. The input
+selector lists texture inputs on the owning pass; an empty selection uses the
+pass-provided reference texture. Pin configurations opt into resolution overrides;
+on inputs these are extent constraints, never resizing operations. Width/height
+connection requirements also validate existing resources without allocating.
+
+Resolution is resolved during graph construction. The compiled pipeline stores
+only policies, remains immutable and can be shared by differently sized views.
+Viewport/internal extent changes invalidate instance-local history before previous
+resources are published. Imported textures retain their descriptions. Lookup
+textures, shadow layouts and matrix-driven offscreen dimensions remain algorithm
+owned. Presentation uses the view viewport within its imported output target.
+Creation, clearing, depth allocation and upscaling use pin settings directly;
+there are no legacy size aliases or document migration fixtures.

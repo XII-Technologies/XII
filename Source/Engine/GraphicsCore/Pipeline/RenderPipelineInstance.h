@@ -1,6 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Math/Vec4.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 /// An explicitly supplied root resource input. Resolve its interface index again after a compilation changes.
@@ -48,8 +52,9 @@ private:
   xiiString                                                       m_sScopeParent;
   xiiDynamicArray<xiiString>                                      m_ExecutionScopes;
   xiiUInt64                                                       m_uiPreparedSetup = 0, m_uiBuiltSetup = 0;
-  const xiiView*                                                  m_pPreparedView       = nullptr; // Compared only during the same setup, never owned.
+  const xiiView*                                                  m_pPreparedView       = nullptr; // Borrowed view identity for frame preparation and history invalidation, never dereferenced.
   const xiiRenderGraphBlackboard*                                 m_pPreparedBlackboard = nullptr;
+  xiiVec4U32                                                      m_vResolution         = xiiVec4U32::MakeZero(); ///< Viewport and internal extents of the last prepared frame.
   xiiDynamicArray<xiiRenderPipelineBinding>                       m_HistoryBindings;
   xiiString                                                       m_sBuildError;
   xiiSharedPtr<const xiiRenderPipeline>                           m_pPipeline;

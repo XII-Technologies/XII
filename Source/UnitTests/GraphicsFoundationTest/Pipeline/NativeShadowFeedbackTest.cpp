@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowFeedbackResetPass.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -10,8 +15,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeShadowFeedback);
@@ -38,11 +43,11 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
   xiiUuid    resetId, generateId, readbackId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
   {
-    if (pass.m_sType == "xiiVirtualShadowFeedbackResetPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVirtualShadowFeedbackResetPass>())
       resetId = pass.m_Id;
-    if (pass.m_sType == "xiiVirtualShadowFeedbackPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVirtualShadowFeedbackPass>())
       generateId = pass.m_Id;
-    if (pass.m_sType == "xiiVirtualShadowFeedbackReadbackPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVirtualShadowFeedbackReadbackPass>())
       readbackId = pass.m_Id;
   }
   xiiRenderPipelineResourceDescriptor root;
@@ -84,7 +89,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
   if (!XII_TEST_BOOL(readbacks[0] != xiiInvalidIndex && readbacks[1] != xiiInvalidIndex))
     return;
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(pipelines[i].Initialize(compiled)) || !XII_TEST_RESULT(contexts[i].Initialize("Shadow demand view")))
       return;

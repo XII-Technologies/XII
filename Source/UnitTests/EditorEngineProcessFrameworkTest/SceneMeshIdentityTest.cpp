@@ -28,6 +28,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 
@@ -198,7 +199,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
   {
     if (environment.GetDevice()->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled)
     {
-      xiiRenderGraphContext graphContext;
+      xiiRenderGraphTestContext graphContext;
       if (!XII_TEST_RESULT(graphContext.Initialize("Mesh identity raster")))
         return;
       xiiTestNativeVisibility visibilityPipeline;
@@ -460,7 +461,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
   {
     if (environment.GetDevice()->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled)
     {
-      xiiRenderGraphContext graphContext;
+      xiiRenderGraphTestContext graphContext;
       if (!XII_TEST_RESULT(graphContext.Initialize("Material coverage queries")))
         return;
       xiiTestNativeVisibility visibilityPipeline;

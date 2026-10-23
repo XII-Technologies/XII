@@ -1,5 +1,12 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
+#include <GraphicsCore/Pipeline/Passes/Lighting/DiffuseSurfaceLightingPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
+
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
@@ -11,7 +18,7 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 class xiiIndirectTestCameraLut : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiIndirectTestCameraLut, xiiRenderPipelinePass);
@@ -47,22 +54,7 @@ public:
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiIndirectTestCameraLut,1,xiiRTTIDefaultAllocator<xiiIndirectTestCameraLut>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Camera",m_Camera)->AddFlags(xiiPropertyFlags::ReadOnly), XII_MEMBER_PROPERTY("BRDFLut",m_Lut)->AddFlags(xiiPropertyFlags::ReadOnly), } XII_END_PROPERTIES; } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-class xiiIndirectTestExport : public xiiRenderPipelinePass
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiIndirectTestExport, xiiRenderPipelinePass);
 
-public:
-  xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::RGBA32Float, false, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read};
-  xiiResult                         Build(xiiRenderPipelinePassContext& context) override
-  {
-    const auto pass = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {data=builder.ReadTexture(context.GetInputTexture(m_Input),xiiGALResourceStateFlags::ShaderResource);builder.ExportTexture(data,xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
-    return context.SetOutput(m_Output, *pass.first);
-  }
-};
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiIndirectTestExport,1,xiiRTTIDefaultAllocator<xiiIndirectTestExport>)
-{ XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Input",m_Input)->AddFlags(xiiPropertyFlags::ReadOnly), XII_MEMBER_PROPERTY("Output",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly), } XII_END_PROPERTIES; } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 namespace
 {
@@ -125,11 +117,11 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       specularInstance = node.m_Id;
   }
   for (const auto& node : la->m_Descriptor.m_Passes)
-    if (node.m_sType == "xiiDiffuseSurfaceLightingPass")
+    if (node.m_pType == xiiGetStaticRTTI<xiiDiffuseSurfaceLightingPass>())
       diffuseNode = node.m_Id;
   if (!XII_TEST_BOOL(diffuseInstance.IsValid() && specularInstance.IsValid() && diffuseNode.IsValid()))
     return;
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   for (auto& context : contexts)
     if (!XII_TEST_RESULT(context.Initialize("Explicit indirect surface view")))
@@ -176,16 +168,15 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
     root.m_References.PushBack({diffuse->GetAuthoring()->m_Descriptor.m_Id, diffuseAsset.GetResourceID()});
     const auto clear = [&](xiiStringView name, xiiVec4 color, xiiGALResourceFormat::Enum format = xiiGALResourceFormat::RGBA32Float, bool mismatch = false) {
       xiiClearTexturePass pass;
-      pass.m_uiWidth  = mismatch ? 8 : 9;
-      pass.m_uiHeight = 11;
-      pass.m_Format   = format;
-      pass.m_Color    = xiiColor(color.x, color.y, color.z, color.w);
+      pass.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, mismatch ? 8U : 9U, 11});
+      pass.m_OutputTexture.SetFormat(format);
+      pass.m_Color = xiiColor(color.x, color.y, color.z, color.w);
       xiiVariantDictionary p;
       XII_TEST_RESULT(pass.GetProperties(p));
-      return root.AddPass(name, "xiiClearTexturePass", p);
+      return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), p);
     };
     const auto depth = clear("Depth", xiiVec4(phase == 4 ? 0.0f : 0.5f, 0, 0, 0), xiiGALResourceFormat::R32Float), normal = clear("Normal", xiiVec4(0.5f, 0.5f, 0, 0), xiiGALResourceFormat::RG32Float), a = clear("Albedo", albedo), m = clear("Material", material), e = clear("Emissive", emission), c = clear("Coarse irradiance", coarse, xiiGALResourceFormat::RGBA32Float, phase == 5), d = clear("Detail irradiance", detail), r = clear("Filtered environment radiance", radiance);
-    const auto camera = root.AddPass("Analytic camera and lookup", "xiiIndirectTestCameraLut"), env = root.AddPass("Ambient coefficient", "xiiEnvironmentLightConstantsPass");
+    const auto camera = root.AddPass("Analytic camera and lookup", xiiGetStaticRTTI<xiiIndirectTestCameraLut>()), env = root.AddPass("Ambient coefficient", xiiGetStaticRTTI<xiiEnvironmentLightConstantsPass>());
     root.m_Passes[env].m_Properties.Insert("AmbientRadiance", xiiVec3(0.2f, 0.4f, 0.6f));
     const auto first = root.AddSubgraph("First indirect", sa->m_Descriptor.m_Id), second = root.AddSubgraph("Second indirect", sa->m_Descriptor.m_Id);
     auto&      diffuseWeight = root.m_Passes[second].m_Overrides.ExpandAndGetRef();
@@ -200,7 +191,7 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       XII_TEST_RESULT(root.Connect(source, output, target, input));
     };
     const auto exportImage = [&](xiiUInt32 source, xiiStringView pin, xiiStringView name) {
-      const auto output = root.AddPass(name, "xiiIndirectTestExport");
+      const auto output = root.AddPass(name, xiiGetStaticRTTI<xiiIndirectTestExport>());
       connect(source, pin, output, "Input");
       root.m_Interface.PushBack({name, false, root.m_Passes[output].m_Id, "Output"});
     };

@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <SharedPluginScene/SharedPluginSceneDLL.h>
+
+#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Composites selected mesh surfaces onto display-linear scene color. SelectionSurface is the
 /// native RGBA32UInt nearest-surface output from a selected-only scene mesh query. Comparing its

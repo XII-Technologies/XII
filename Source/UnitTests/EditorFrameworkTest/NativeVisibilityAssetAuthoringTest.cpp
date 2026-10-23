@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
-#include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 #include <EditorFrameworkTest/PipelineAuthoringTestUtils.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <EnginePluginAssets/RenderPipelineAsset/RenderPipelineContext.h>
@@ -571,7 +572,7 @@ namespace
     xiiUInt32 row = 0;
     for (const auto& pin : pins)
     {
-      if (!pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
+      if (!pin.m_bInput)
         continue;
       const auto* boundary = add(xiiStringBuilder("Input/", pin.m_sName), "xiiRenderPipelineInterfacePass", {0, float(row++ * 150)});
       if (!boundary)
@@ -932,7 +933,7 @@ namespace
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
-      if (pin.m_Type == xiiRenderPipelinePin::Order || pin.m_sName == "InitialCount")
+      if (pin.m_sName == "InitialCount")
         continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150)});
       if (!boundary)
@@ -1009,7 +1010,7 @@ namespace
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
-      if (pin.m_Type == xiiRenderPipelinePin::Order || pin.m_sName == "RasterConstants")
+      if (pin.m_sName == "RasterConstants")
         continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150)});
       if (!boundary)
@@ -1074,8 +1075,11 @@ namespace
       return xiiStatus("Could not author shadow map nodes.");
     if (target)
     {
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(target, "Width", 2048U));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(target, "Height", 2048U));
+      const auto* pin        = accessor->GetChildObjectByName(target, "DepthTarget", {});
+      const auto* resolution = accessor->GetChildObjectByName(pin, "Resolution", {});
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Fixed)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Width", 2048U));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Height", 2048U));
     }
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(depth, "Resource", "RenderPipelines/ShadowDepth.xiiBinRenderPipeline"));
     auto overrideId = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/Mesh Shader Override"));
@@ -1105,7 +1109,7 @@ namespace
       xiiVariant resourceType, format;
       XII_SUCCEED_OR_RETURN(accessor->GetValueByName(metadata, "ResourceType", resourceType));
       XII_SUCCEED_OR_RETURN(accessor->GetValueByName(metadata, "DeclaredFormat", format));
-      if ((!externalTarget && pin->GetName() == "DepthTarget") || resourceType.ConvertTo<xiiUInt32>() == xiiRenderPipelinePin::Order)
+      if (!externalTarget && pin->GetName() == "DepthTarget")
         continue;
       const auto* boundary = add(xiiStringBuilder("Input/", pin->GetName()), "xiiRenderPipelineInterfacePass", {-600, float(row++ * 150)});
       if (!boundary)
@@ -1191,7 +1195,7 @@ namespace
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
-      if (pin.m_Type == xiiRenderPipelinePin::Order || pin.m_sName == "InitializedRequests")
+      if (pin.m_sName == "InitializedRequests")
         continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150 + 300)});
       if (!boundary)
@@ -1268,7 +1272,7 @@ namespace
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
-      if (pin.m_Type == xiiRenderPipelinePin::Order || pin.m_sName == "InitializedRequests")
+      if (pin.m_sName == "InitializedRequests")
         continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150 + 300)});
       if (!boundary)
@@ -1347,8 +1351,6 @@ namespace
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
-      if (pin.m_Type == xiiRenderPipelinePin::Order)
-        continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150 + 300)});
       if (!boundary)
         return xiiStatus("Could not create directional cascades boundary.");
@@ -1421,8 +1423,6 @@ namespace
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
-      if (pin.m_Type == xiiRenderPipelinePin::Order)
-        continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150 + 300)});
       if (!boundary)
         return xiiStatus("Could not create virtual shadow tables boundary.");
@@ -1508,8 +1508,6 @@ namespace
     xiiUInt32 inputRow = 0, outputRow = 0;
     for (const auto& pin : pins)
     {
-      if (pin.m_Type == xiiRenderPipelinePin::Order)
-        continue;
       const auto* boundary = add(xiiStringBuilder(pin.m_bInput ? "Input/" : "Output/", pin.m_sName), "xiiRenderPipelineInterfacePass", {pin.m_bInput ? 0.0f : 1800.0f, float((pin.m_bInput ? inputRow++ : outputRow++) * 150 + 300)});
       if (!boundary)
         return xiiStatus("Could not create native operation boundary.");
@@ -1538,7 +1536,7 @@ namespace
     if (!loaded.IsValid() || !loaded->GetPipeline() || !loaded->GetAuthoring())
       return xiiStatus("Native operation asset did not compile.");
     XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 1);
-    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), pins.GetCount() - 2);
+    XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Interface.GetCount(), pins.GetCount());
     XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements() == prototype->GetExtractionRequirements() && loaded->GetPipeline()->GetRuntimeFeatures() == features);
     return XII_SUCCESS;
   }
@@ -1585,7 +1583,7 @@ namespace
       const auto* depth = add("Clear Depth", "xiiDepthTargetPass", {600, 300});
       if (!color || !depth)
         return xiiStatus("Missing target initialization nodes.");
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(color, "Format", xiiInt64(xiiGALResourceFormat::RGBA8UNormalizedSRGB)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(accessor->GetChildObjectByName(color, "Texture", {}), "Format", xiiInt64(xiiGALResourceFormat::RGBA8UNormalizedSRGB)));
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(color, "Color", xiiColor(0.008f, 0.012f, 0.025f)));
       XII_SUCCEED_OR_RETURN(boundary(color, "Texture", "Color", false, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::RGBA8UNormalizedSRGB, 0));
       XII_SUCCEED_OR_RETURN(boundary(depth, "DepthTarget", "Depth", false, xiiRenderPipelinePin::Texture, xiiGALResourceFormat::D32Float, 300));
@@ -1756,7 +1754,7 @@ namespace
       prototype->GetPins(pins);
       for (const auto& pin : pins)
       {
-        if (pin.m_Type == xiiRenderPipelinePin::Order || (node == raster && pin.m_bInput && (pin.m_sName == "Constants" || pin.m_sName == "VirtualShadowConstants" || pin.m_sName == "RasterConstants")))
+        if ((node == raster && pin.m_bInput && (pin.m_sName == "Constants" || pin.m_sName == "VirtualShadowConstants" || pin.m_sName == "RasterConstants")))
           continue;
         const xiiStringView external = node == constants && !pin.m_bInput ? xiiStringView("RasterConstants") : node == sampling && !pin.m_bInput ? xiiStringView("SamplingConstants") :
                                                                                                                                                    xiiStringView(pin.m_sName);
@@ -2219,7 +2217,7 @@ namespace
         return xiiStatus("Missing surface radiance interface.");
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Name", label));
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "Input", input));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(pin == "Before" || pin == "After" ? xiiRenderPipelinePin::Order : xiiRenderPipelinePin::Texture)));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(node, "ResourceType", xiiUInt32(xiiRenderPipelinePin::Texture)));
       XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(node));
       return input ? connect(node, "Value", target, pin) : connect(target, pin, node, "Value");
     };
@@ -2229,10 +2227,6 @@ namespace
     XII_SUCCEED_OR_RETURN(boundary("RTFinalGI", true, confidence, "Signal", 600));
     XII_SUCCEED_OR_RETURN(boundary("VolumetricScattering", true, fog, "ScatteringOpacity", 800));
     XII_SUCCEED_OR_RETURN(boundary("HDRSceneColor", false, fog, "Radiance", 0));
-    XII_SUCCEED_OR_RETURN(boundary("Before", true, directIndirect, "Before", 1000));
-    const auto* before = accessor->GetObject(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SurfaceRadianceComposition/Before"));
-    XII_SUCCEED_OR_RETURN(connect(before, "Value", confidence, "Before"));
-    XII_SUCCEED_OR_RETURN(boundary("After", false, fog, "After", 200));
     accessor->FinishTransaction();
     finished = true;
     XII_SUCCEED_OR_RETURN(document.SaveDocument(true));

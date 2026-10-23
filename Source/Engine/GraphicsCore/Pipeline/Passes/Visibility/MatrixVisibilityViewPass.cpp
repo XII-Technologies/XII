@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Foundation/Math/Frustum.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MatrixVisibilityViewPass.h>

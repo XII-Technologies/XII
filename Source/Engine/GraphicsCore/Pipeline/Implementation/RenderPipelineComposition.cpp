@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 
 // clang-format off
@@ -22,37 +23,101 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineInterfacePass, 1, xiiRTTIDefau
   {
     XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("Input")),
     XII_MEMBER_PROPERTY("Input", m_bInput)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("ResourceType", m_uiResourceType),
+    XII_ENUM_ACCESSOR_PROPERTY("ResourceType", xiiRenderPipelinePinType, GetResourceType, SetResourceType),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiGALResourceFormat, m_Format),
-    XII_MEMBER_PROPERTY("DataType", m_sDataType),
+    XII_ACCESSOR_PROPERTY("DataType", GetDataTypeName, SetDataTypeName),
   } XII_END_PROPERTIES;
+} XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineInputDefaultPass, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineInputDefaultPass>)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiHiddenAttribute(),
+  } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
+xiiStringView xiiRenderPipelineInterfacePass::GetDataTypeName() const
+{
+  return m_pDataType ? m_pDataType->GetTypeName() : "";
+}
+
+void xiiRenderPipelineInterfacePass::SetDataTypeName(xiiStringView sTypeName)
+{
+  m_pDataType = xiiRTTI::FindTypeByName(sTypeName);
+}
+
 void xiiRenderPipelineInterfacePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
-  if (m_uiResourceType <= xiiRenderPipelinePin::FrameData && !m_sName.IsEmpty())
+  if ((m_uiResourceType == xiiRenderPipelinePin::Texture || m_uiResourceType == xiiRenderPipelinePin::Buffer || m_uiResourceType == xiiRenderPipelinePin::AccelerationStructure || m_uiResourceType == xiiRenderPipelinePin::FrameData) && !m_sName.IsEmpty())
   {
     auto& pin       = out_pins.ExpandAndGetRef();
     pin.m_sName     = "Value";
     pin.m_Type      = static_cast<xiiRenderPipelinePin::Type>(m_uiResourceType);
     pin.m_bInput    = !m_bInput;
     pin.m_Format    = m_Format;
-    pin.m_pDataType = pin.m_Type == xiiRenderPipelinePin::FrameData ? xiiRTTI::FindTypeByName(m_sDataType) : nullptr;
+    pin.m_pDataType = pin.m_Type == xiiRenderPipelinePin::FrameData ? m_pDataType : nullptr;
+    if (m_bInput)
+    {
+      auto fallback        = pin;
+      fallback.m_sName     = "Default";
+      fallback.m_bInput    = true;
+      fallback.m_bOptional = true;
+      out_pins.PushBack(fallback);
+    }
   }
+}
+
+xiiResult xiiRenderPipelineInputDefaultPass::Configure(const xiiVariantDictionary& properties)
+{
+  XII_SUCCEED_OR_RETURN(xiiRenderPipelineInterfacePass::Configure(properties));
+  return m_bInput ? XII_SUCCESS : XII_FAILURE;
+}
+
+void xiiRenderPipelineInputDefaultPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  const auto first = out_pins.GetCount();
+  xiiRenderPipelineInterfacePass::GetPins(out_pins);
+  if (out_pins.GetCount() != first + 2)
+    return;
+  // A compiled default boundary always has an internal producer.
+  out_pins[first + 1].m_bOptional = false;
+  auto overridePin                = out_pins[first + 1];
+  overridePin.m_sName             = "Override";
+  overridePin.m_bOptional         = true;
+  out_pins.PushBack(overridePin);
+}
+
+xiiResult xiiRenderPipelineInputDefaultPass::Build(xiiRenderPipelinePassContext& context)
+{
+  const auto overrideIndex = context.FindPin("Override", true);
+  const auto defaultIndex  = context.FindPin("Default", true);
+  const auto outputIndex   = context.FindPin("Value", false);
+  if (overrideIndex == xiiInvalidIndex || defaultIndex == xiiInvalidIndex || outputIndex == xiiInvalidIndex)
+    return context.ReportFailure("Invalid default input boundary schema.");
+  const auto& supplied            = context.m_Bindings[overrideIndex];
+  const bool  hasOverride         = supplied.m_hTexture.IsValid() || supplied.m_hBuffer.IsValid() || supplied.m_pFrameData != nullptr || supplied.m_AccelerationStructure.IsValid();
+  context.m_Bindings[outputIndex] = hasOverride ? supplied : context.m_Bindings[defaultIndex];
+  return XII_SUCCESS;
 }
 
 void xiiRenderPipelineSubgraphPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
 {
+  GetPins(out_pins, {});
+}
+
+void xiiRenderPipelineSubgraphPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins, xiiRenderPipelineResource::ResourceResolver resourceResolver) const
+{
   if (m_sResource.IsEmpty())
     return;
-  const auto                                 handle = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(m_sResource);
+  const xiiString                            resource = resourceResolver.IsValid() ? resourceResolver(m_sResource) : m_sResource;
+  const auto                                 handle   = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(resource);
   xiiResourceLock<xiiRenderPipelineResource> acquired(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   const auto                                 source = acquired.IsValid() ? acquired->GetAuthoring() : xiiSharedPtr<const xiiRenderPipelineAuthoring>();
   if (!source)
     return;
   xiiRenderPipelineResourceDescriptor descriptor;
-  if (xiiRenderPipelineResource::ResolveDefinitions(source->m_Descriptor, descriptor).Failed())
+  if (xiiRenderPipelineResource::ResolveDefinitions(source->m_Descriptor, descriptor, nullptr, nullptr, resourceResolver).Failed())
     return;
   xiiGraphDefinition definition;
   if (descriptor.MakeGraphDefinition(definition).Failed())
@@ -208,7 +273,7 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
     const auto* type = xiiRTTI::FindTypeByName(node.m_sType);
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
       return fail("Interface maps to an unknown reflected pass type.");
-    if (node.m_sType == "xiiRenderPipelineSubgraphPass" || node.m_sType == "xiiRenderPipelineInterfacePass")
+    if (type->IsDerivedFrom<xiiRenderPipelineSubgraphPass>() || type == xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
       return fail("Interface maps to an authoring node that was not lowered to a definition reference.");
     xiiRenderPipelinePass* pass = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(pass));
@@ -236,6 +301,11 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
           continue;
         if (!external.IsCompatibleWith(pin))
           return fail("Interface fan-out maps incompatible reflected pin types.");
+        if (pin.m_bConstrainResolution && !external.m_bConstrainResolution)
+          external.m_Resolution = pin.m_Resolution;
+        else if (pin.m_bConstrainResolution && external.m_Resolution != pin.m_Resolution)
+          return fail("Interface fan-out maps conflicting texture resolution policies.");
+        external.m_bConstrainResolution |= pin.m_bConstrainResolution;
         if (external.m_Format == xiiGALResourceFormat::Unknown)
           external.m_Format = pin.m_Format;
         if (external.m_Constraints.m_Dimension == xiiGALResourceDimension::Undefined)

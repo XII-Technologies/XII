@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Containers/HashSet.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Lighting/WorldLightData.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>

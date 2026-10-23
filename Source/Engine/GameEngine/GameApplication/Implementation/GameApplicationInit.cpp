@@ -20,6 +20,9 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Particles/ParticleGraph.h>
+#include <GraphicsCore/Pipeline/Passes/Output/PresentPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearColorPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
@@ -81,6 +84,22 @@ void xiiGameApplication::Init_SetupDefaultResources()
   SUPER::Init_SetupDefaultResources();
 
   xiiResourceManager::SetIncrementalUnloadForResourceType<xiiShaderPermutationResource>(false);
+
+  // Render pipelines
+  {
+    xiiRenderPipelineResourceDescriptor desc;
+    const xiiUInt32                     uiCreateTexture = desc.AddPass("Create Texture", xiiGetStaticRTTI<xiiCreateTexturePass>());
+    xiiVariantDictionary                clearProperties;
+    clearProperties.Insert("Color", xiiColor::Black);
+    const xiiUInt32 uiClearColor = desc.AddPass("Clear Color", xiiGetStaticRTTI<xiiClearColorPass>(), clearProperties);
+    const xiiUInt32 uiPresent    = desc.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>());
+    desc.Connect(uiCreateTexture, "Texture", uiClearColor, "Texture").AssertSuccess();
+    desc.Connect(uiClearColor, "Texture", uiPresent, "GradedColor").AssertSuccess();
+
+    const auto hFallbackPipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("FallbackRenderPipeline", std::move(desc), "Clear color fallback render pipeline");
+    xiiResourceManager::SetResourceTypeLoadingFallback<xiiRenderPipelineResource>(hFallbackPipeline);
+    xiiResourceManager::SetResourceTypeMissingFallback<xiiRenderPipelineResource>(hFallbackPipeline);
+  }
 
   // Shaders
   {

@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
@@ -21,7 +23,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
 #include <bit>
 
@@ -208,8 +210,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   xiiVariantDictionary                rayProperties;
   rayProperties.Insert("UseViewSelection", false);
   rayProperties.Insert("RequireHardwareRayTracing", true);
-  rayLeaf.AddPass("Ray scene", "xiiRayTracingScenePass", rayProperties);
-  rayLeaf.AddPass("Typed scene consumer", "xiiRaySceneBindingRelay");
+  rayLeaf.AddPass("Ray scene", xiiGetStaticRTTI<xiiRayTracingScenePass>(), rayProperties);
+  rayLeaf.AddPass("Typed scene consumer", xiiGetStaticRTTI<xiiRaySceneBindingRelay>());
   XII_TEST_RESULT(rayLeaf.Connect(0, "Scene", 1, "Scene"));
   XII_TEST_RESULT(rayLeaf.Connect(0, "Materials", 1, "Materials"));
   XII_TEST_RESULT(rayLeaf.Connect(0, "Geometry", 1, "Geometry"));
@@ -225,7 +227,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   xiiRenderPipelineInstance rayScenes;
   if (!XII_TEST_RESULT(rayScenes.Initialize(rayCompiled)))
     return;
-  xiiRenderGraphContext context;
+  xiiRenderGraphTestContext context;
   XII_TEST_RESULT(context.Initialize("Skinned and morphed ray trace regression"));
   xiiUInt32 ids[2] = {};
   struct Capture

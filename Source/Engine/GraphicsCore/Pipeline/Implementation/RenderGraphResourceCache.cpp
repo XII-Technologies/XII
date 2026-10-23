@@ -6,21 +6,13 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
-xiiRenderGraphResourceCache::xiiRenderGraphResourceCache() = default;
+xiiRenderGraphResourceCache::xiiRenderGraphResourceCache(xiiSharedPtr<xiiGALDevice> pDevice) :
+  m_pDevice(std::move(pDevice))
+{
+  XII_ASSERT_DEV(m_pDevice != nullptr, "Render graph resource cache must be initialized with a valid device.");
+}
 
 xiiRenderGraphResourceCache::~xiiRenderGraphResourceCache()
-{
-  Shutdown();
-}
-
-void xiiRenderGraphResourceCache::Initialize(xiiSharedPtr<xiiGALDevice> pDevice)
-{
-  XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
-
-  m_pDevice = pDevice;
-}
-
-void xiiRenderGraphResourceCache::Shutdown()
 {
   XII_LOCK(m_Mutex);
 
@@ -30,6 +22,7 @@ void xiiRenderGraphResourceCache::Shutdown()
   m_RetiredBuffers.Clear();
   m_TexturePool.Clear();
   m_BufferPool.Clear();
+
   m_pDevice          = nullptr;
   m_uiCurrentFrame   = 0;
   m_uiCompletedFrame = 0;
@@ -38,6 +31,7 @@ void xiiRenderGraphResourceCache::Shutdown()
 void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex)
 {
   const xiiUInt64 uiConservativeCompletedFrame = uiFrameIndex > 3ULL ? uiFrameIndex - 3ULL : 0ULL;
+
   BeginFrame(uiFrameIndex, uiConservativeCompletedFrame);
 }
 

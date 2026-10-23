@@ -1,10 +1,12 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
-#include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Types/TagRegistry.h>
@@ -17,6 +19,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <SharedPluginScene/Scene/SceneInstanceSelectionPass.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
 
 namespace
@@ -36,13 +39,13 @@ namespace
     xiiRenderPipelineResourceDescriptor definition;
     definition.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, surface.GetResourceID()});
     definition.AddSubgraph("Authored surface", loaded->GetAuthoring()->m_Descriptor.m_Id);
-    const auto second = definition.AddPass("Second capture", "xiiSceneMeshPickingPass");
+    const auto second = definition.AddPass("Second capture", xiiGetStaticRTTI<xiiSceneMeshPickingPass>());
     XII_TEST_RESULT(definition.Connect(0, "Surface", second, "Surface"));
     if (selectionOnly)
     {
       auto& property = definition.m_Passes[0].m_Overrides.ExpandAndGetRef();
       for (const auto& node : loaded->GetAuthoring()->m_Descriptor.m_Passes)
-        if (node.m_sType == "xiiSceneInstanceSelectionPass")
+        if (node.m_pType == xiiGetStaticRTTI<xiiSceneInstanceSelectionPass>())
           property.m_Path.PushBack(node.m_Id);
       XII_TEST_INT(property.m_Path.GetCount(), 1);
       property.m_Properties.Insert("SelectionOnly", true);

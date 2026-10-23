@@ -1,10 +1,16 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/Exposure/AutoExposurePass.h>
+#include <GraphicsCore/Pipeline/Passes/Exposure/LuminanceHistogramPass.h>
+#include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
+#include <GraphicsCore/Pipeline/Passes/Output/UpscalePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -13,7 +19,6 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 class xiiOutputOperationSource : public xiiRenderPipelinePass
 {
@@ -111,14 +116,14 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableExposureOperations)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor leaf;
-  leaf.AddPass("HDR", "xiiOutputOperationSource");
-  leaf.AddPass("Meter", "xiiLuminanceHistogramPass");
+  leaf.AddPass("HDR", xiiGetStaticRTTI<xiiOutputOperationSource>());
+  leaf.AddPass("Meter", xiiGetStaticRTTI<xiiLuminanceHistogramPass>());
   xiiAutoExposurePass authored;
   authored.m_Settings.m_Mode = xiiExposureMode::Manual;
   xiiVariantDictionary properties;
   XII_TEST_RESULT(authored.GetProperties(properties));
-  leaf.AddPass("Adapt", "xiiAutoExposurePass", properties);
-  leaf.AddPass("Read exposure", "xiiExposureOperationReadback");
+  leaf.AddPass("Adapt", xiiGetStaticRTTI<xiiAutoExposurePass>(), properties);
+  leaf.AddPass("Read exposure", xiiGetStaticRTTI<xiiExposureOperationReadback>());
   XII_TEST_RESULT(leaf.Connect(0, "Color", 1, "HDRSceneColor"));
   XII_TEST_RESULT(leaf.Connect(1, "LuminanceHistogram", 2, "LuminanceHistogram"));
   XII_TEST_RESULT(leaf.Connect(2, "CurrentExposure", 3, "Exposure"));
@@ -198,20 +203,35 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown(););
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("HDR source", "xiiOutputOperationSource");
+  descriptor.AddPass("HDR source", xiiGetStaticRTTI<xiiOutputOperationSource>());
   for (xiiUInt32 branch = 0; branch < 2; ++branch)
   {
     xiiVariantDictionary upscale, bloom;
-    upscale.Insert("Width", branch ? 16U : 8U);
-    upscale.Insert("Height", branch ? 16U : 8U);
-    const auto scale = descriptor.AddPass(branch ? "Large upscale" : "Small upscale", "xiiUpscalePass", upscale);
+    xiiUpscalePass       upscalePass;
+    upscalePass.m_OutputUpscaledColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, branch ? 16U : 8U, branch ? 16U : 8U});
+    XII_TEST_RESULT(upscalePass.GetProperties(upscale));
+    const auto   scale = descriptor.AddPass(branch ? "Large upscale" : "Small upscale", xiiGetStaticRTTI<xiiUpscalePass>(), upscale);
+    xiiBloomPass bloomPass;
+    if (!branch)
+    {
+      xiiRenderPipelinePinConfiguration* sizing = XII_DEFAULT_NEW(xiiRenderPipelinePinConfiguration);
+      sizing->m_Id                              = xiiUuid::MakeUuid();
+      sizing->m_Metadata.m_sName                = "BloomTexture";
+      sizing->m_Metadata.m_bInput               = false;
+      sizing->m_bOverrideResolution             = true;
+      sizing->m_Resolution.m_Mode               = xiiRenderPipelineTextureResolutionMode::Input;
+      sizing->m_Resolution.m_sInput             = "UpscaledColor";
+      sizing->m_Resolution.m_fScale             = 0.5f;
+      bloomPass.m_PinConfigurations.PushBack(sizing);
+    }
+    XII_TEST_RESULT(bloomPass.GetProperties(bloom));
     bloom.Insert("UseViewDefaults", false);
     bloom.Insert("Threshold", branch ? 100.0f : 0.0f);
-    const auto effect = descriptor.AddPass(branch ? "High threshold" : "Low threshold", "xiiBloomPass", bloom);
+    const auto effect = descriptor.AddPass(branch ? "High threshold" : "Low threshold", xiiGetStaticRTTI<xiiBloomPass>(), bloom);
     XII_TEST_RESULT(descriptor.Connect(0, "Color", scale, "TAAResolved"));
     XII_TEST_RESULT(descriptor.Connect(scale, "UpscaledColor", effect, "UpscaledColor"));
   }
-  const auto sink = descriptor.AddPass("Read branches", "xiiOutputOperationExport");
+  const auto sink = descriptor.AddPass("Read branches", xiiGetStaticRTTI<xiiOutputOperationExport>());
   XII_TEST_RESULT(descriptor.Connect(2, "BloomTexture", sink, "Left"));
   XII_TEST_RESULT(descriptor.Connect(4, "BloomTexture", sink, "Right"));
   const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Independent output algorithms", std::move(descriptor));
@@ -244,8 +264,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
     for (xiiUInt32 branch = 0; branch < 2; ++branch)
     {
       const auto texture = branch ? right : left;
-      // Bloom keeps the input extent; the two authored upscalers have independent allocations.
-      XII_TEST_INT(texture->GetDescription().m_Size.width, branch ? 16 : 8);
+      // Bloom independently chooses half-input or full-input resolution.
+      XII_TEST_INT(texture->GetDescription().m_Size.width, branch ? 16 : 4);
       xiiGALTextureReadback readback(environment.GetDevice());
       const auto            commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
       commands->Begin();

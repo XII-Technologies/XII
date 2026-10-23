@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Lighting/ClusterListClearPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterViewPass.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -9,8 +14,8 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 XII_DEFINE_AS_POD_TYPE(xiiGpuClusterBounds);
 namespace
 {
@@ -112,13 +117,13 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, ExplicitProjectionAssignmentOverflow
   const auto authored = loaded->GetAuthoring();
   xiiUuid    layoutNode;
   for (const auto& node : authored->m_Descriptor.m_Passes)
-    if (node.m_sType == "xiiLightClusterViewPass")
+    if (node.m_pType == xiiGetStaticRTTI<xiiLightClusterViewPass>())
       layoutNode = node.m_Id;
   if (!XII_TEST_BOOL(layoutNode.IsValid()))
     return;
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authored->m_Descriptor.m_Id, asset.GetResourceID()});
-  const auto lights = root.AddPass("Explicit synthetic light stream", "xiiNativeClusterLightsSource");
+  const auto lights = root.AddPass("Explicit synthetic light stream", xiiGetStaticRTTI<xiiNativeClusterLightsSource>());
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     const auto node      = root.AddSubgraph(i ? "Small lists" : "Large lists", authored->m_Descriptor.m_Id);
@@ -138,7 +143,7 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, ExplicitProjectionAssignmentOverflow
       root.m_Interface.PushBack({xiiStringBuilder(i ? "B" : "A", pin), false, root.m_Passes[node].m_Id, pin});
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Repeated authored cluster lists", std::move(root));
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
   for (xiiUInt32 view = 0; view < 2; ++view)
     if (!XII_TEST_RESULT(contexts[view].Initialize("Native clustered lighting")) || !XII_TEST_RESULT(instances[view].Synchronize(resource)))
@@ -310,7 +315,7 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, LargeListDispatchAndPrivateInitializ
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   constexpr xiiUInt32                 count = 2049U * 2048U;
   xiiRenderPipelineResourceDescriptor descriptor;
-  const auto                          layout     = descriptor.AddPass("Large explicit layout", "xiiLightClusterViewPass");
+  const auto                          layout     = descriptor.AddPass("Large explicit layout", xiiGetStaticRTTI<xiiLightClusterViewPass>());
   auto&                               properties = descriptor.m_Passes[layout].m_Properties;
   properties.Insert("UseViewCamera", false);
   properties.Insert("Width", 2049U);
@@ -320,12 +325,12 @@ XII_CREATE_SIMPLE_TEST(NativeLightClusters, LargeListDispatchAndPrivateInitializ
   properties.Insert("MaxLightsPerCluster", 1U);
   properties.Insert("MaximumClusters", 8388608U);
   properties.Insert("MaximumIndices", 8388608U);
-  const auto clear = descriptor.AddPass("Large list initialization", "xiiClusterListClearPass");
+  const auto clear = descriptor.AddPass("Large list initialization", xiiGetStaticRTTI<xiiClusterListClearPass>());
   XII_TEST_RESULT(descriptor.Connect(layout, "Layout", clear, "Layout"));
   for (const xiiStringView name : {"LightGrid", "LightIndices", "Overflow"})
     descriptor.m_Interface.PushBack({name, false, descriptor.m_Passes[clear].m_Id, name});
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Large explicit cluster initialization", std::move(descriptor));
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   xiiRenderPipelineInstance instance;
   if (!XII_TEST_RESULT(context.Initialize("Large cluster dispatch")) || !XII_TEST_RESULT(instance.Synchronize(resource)))
     return;

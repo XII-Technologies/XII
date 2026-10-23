@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Output/ColorGradingPass.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -27,7 +28,10 @@ struct xiiColorGradingPass::State
   xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
-xiiColorGradingPass::xiiColorGradingPass()  = default;
+xiiColorGradingPass::xiiColorGradingPass()
+{
+  m_OutputGradedColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiColorGradingPass::~xiiColorGradingPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiColorGradingPass, 1, xiiRTTIDefaultAllocator<xiiColorGradingPass>)
@@ -73,7 +77,10 @@ xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
   settings.m_ColorGrading = m_Settings;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, context.GetInputTexture(m_InputDisplayLinearColor), 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputGradedColor, context.GetInputTexture(m_InputDisplayLinearColor), size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputDisplayLinearColor));
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;

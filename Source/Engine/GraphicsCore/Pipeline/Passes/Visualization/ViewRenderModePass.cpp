@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -15,7 +16,10 @@ struct xiiViewRenderModePass::State
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Point;
 };
-xiiViewRenderModePass::xiiViewRenderModePass()  = default;
+xiiViewRenderModePass::xiiViewRenderModePass()
+{
+  m_OutputDisplayLinearColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiViewRenderModePass::~xiiViewRenderModePass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRenderModePass, 1, xiiRTTIDefaultAllocator<xiiViewRenderModePass>)
@@ -121,7 +125,10 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
       data.m_Texture = builder.WriteTexture("Empty identities", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Empty& data, xiiRenderGraphPassContext& execute) { ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(data.m_Texture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); }).first->m_Texture;
   }
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(OutputSize(context, input, 0, 0, size));
+  XII_SUCCEED_OR_RETURN(OutputSize(context, m_OutputDisplayLinearColor, input, size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(input);
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   struct Data
   {
     xiiRenderGraphTextureHandle m_Source, m_Depth, m_Objects, m_Output;

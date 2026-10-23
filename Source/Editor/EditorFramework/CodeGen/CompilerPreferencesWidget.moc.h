@@ -6,6 +6,8 @@
 
 #include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>
 
+struct xiiPropertyMetaStateEvent;
+
 class XII_EDITORFRAMEWORK_DLL xiiQtCompilerPreferencesWidget : public xiiQtPropertyTypeWidget
 {
   Q_OBJECT;
@@ -18,6 +20,8 @@ public:
   virtual ~xiiQtCompilerPreferencesWidget();
 
   virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+
+  static void PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 
 protected:
   QComboBox* m_pCompilerPreset;

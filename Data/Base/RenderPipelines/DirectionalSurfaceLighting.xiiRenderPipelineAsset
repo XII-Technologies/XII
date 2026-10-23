@@ -29,8 +29,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{12673525702869085667,11544981011093707055}}
-		Uuid %Before{u4{4875082324781579940,10720691203092196999}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -90,13 +88,7 @@ o
 		u3 %Width{0}
 	}
 }
-o
-{
-	Uuid %id{u4{16579372027950567375,1538123639173039980}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{7309550923185575491,1539452668092186323}}
@@ -133,13 +125,7 @@ o
 		b %TemporalHistory{0}
 	}
 }
-o
-{
-	Uuid %id{u4{1995100855872086007,2073350662641996304}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{14458275834381770257,2181553226365456582}}
@@ -147,10 +133,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{7019560746959513465,13852633648106083914}}
 		Uuid %Albedo{u4{10929954445667427256,17527941357554414175}}
 		b %AsyncCompute{0}
-		Uuid %Before{u4{12533344696391182200,15859437942772062354}}
 		Uuid %Camera{u4{1049662389959094026,18366834082735195482}}
 		Uuid %Depth{u4{4350077129755267910,7783438484944310542}}
 		Uuid %Emissive{u4{13215872268505631039,3570776715511865391}}
@@ -162,8 +146,6 @@ o
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
-			Uuid{u4{6203674614591814920,2711841758115389070}}
-			Uuid{u4{5823407760564542386,14372656882081861859}}
 			Uuid{u4{11661543487551537181,17768893812815759910}}
 			Uuid{u4{6436807588782506421,12654251083168929721}}
 			Uuid{u4{3505351357551924826,5829204049633629447}}
@@ -242,20 +224,7 @@ o
 		b %TemporalHistory{0}
 	}
 }
-o
-{
-	Uuid %id{u4{6203674614591814920,2711841758115389070}}
-	s %t{"xiiRenderPipelinePinConfiguration"}
-	u3 %v{1}
-	p
-	{
-		s %DisplayName{""}
-		Uuid %Id{u4{6203674614591814920,2711841758115389070}}
-		Uuid %Metadata{u4{3344371270677540952,10729403271615416269}}
-		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
-		Uuid %Requirements{u4{11323350809025085034,4180986467909117696}}
-	}
-}
+
 o
 {
 	Uuid %id{u4{10684044348244574112,3168917263194937391}}
@@ -263,8 +232,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{15326597325319068035,15260533706330961537}}
-		Uuid %Before{u4{1944864684463264243,13612393990973970666}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -320,20 +287,7 @@ o
 	u3 %v{1}
 	p{}
 }
-o
-{
-	Uuid %id{u4{11323350809025085034,4180986467909117696}}
-	s %t{"xiiRenderPipelinePinConstraints"}
-	u3 %v{1}
-	p
-	{
-		s %Dimension{"xiiGALResourceDimension::Undefined"}
-		u3 %Height{0}
-		s %RequiredBindFlags{""}
-		u3 %Samples{0}
-		u3 %Width{0}
-	}
-}
+
 o
 {
 	Uuid %id{u4{4616613359480742217,4181335405808916844}}
@@ -348,13 +302,7 @@ o
 		Uuid %Requirements{u4{17805701807354979813,18252534642882335093}}
 	}
 }
-o
-{
-	Uuid %id{u4{12440507613270673104,4326028919059419069}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{16342740393279969663,4329624066718549310}}
@@ -382,13 +330,7 @@ o
 		s %TargetPin{"Material"}
 	}
 }
-o
-{
-	Uuid %id{u4{9854055164339382955,4739171831730558804}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{14950776216682349218,4996570941159755374}}
@@ -625,8 +567,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{8346042075093846406,14174762812018695939}}
-		Uuid %Before{u4{16866644460888181186,10970664321405248909}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -676,13 +616,7 @@ o
 		b %TemporalHistory{0}
 	}
 }
-o
-{
-	Uuid %id{u4{751397628578632113,7343925415742059951}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{4350077129755267910,7783438484944310542}}
@@ -690,20 +624,7 @@ o
 	u3 %v{1}
 	p{}
 }
-o
-{
-	Uuid %id{u4{15357411597257763378,7828906508743629389}}
-	s %t{"xiiRenderPipelinePinConstraints"}
-	u3 %v{1}
-	p
-	{
-		s %Dimension{"xiiGALResourceDimension::Undefined"}
-		u3 %Height{0}
-		s %RequiredBindFlags{""}
-		u3 %Samples{0}
-		u3 %Width{0}
-	}
-}
+
 o
 {
 	Uuid %id{u4{1631748540825211649,8347354629339191979}}
@@ -743,13 +664,7 @@ o
 		Uuid %Requirements{u4{5993946412404725705,10120282756328640227}}
 	}
 }
-o
-{
-	Uuid %id{u4{4082503333342335241,8829724827128355186}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{15362627590332743910,9017703039233001280}}
@@ -840,8 +755,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{9854055164339382955,4739171831730558804}}
-		Uuid %Before{u4{13251528349488339074,11699774202044255320}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -940,31 +853,7 @@ o
 		b %TemporalHistory{0}
 	}
 }
-o
-{
-	Uuid %id{u4{4875082324781579940,10720691203092196999}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{3344371270677540952,10729403271615416269}}
-	s %t{"xiiRenderPipelinePinMetadata"}
-	u3 %v{1}
-	p
-	{
-		s %Access{"xiiRenderPipelinePinAccess::Ordering"}
-		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
-		s %DataType{""}
-		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
-		b %Input{1}
-		s %Name{"Before"}
-		b %Optional{1}
-		s %ResourceType{"xiiRenderPipelinePinType::Order"}
-		b %TemporalHistory{0}
-	}
-}
+
 o
 {
 	Uuid %id{u4{8725289422314868049,10831273035138628301}}
@@ -993,20 +882,7 @@ o
 		Uuid %Requirements{u4{1098427241611796625,10167677423748339466}}
 	}
 }
-o
-{
-	Uuid %id{u4{16866644460888181186,10970664321405248909}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{2668452975747283133,11032438792136134299}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{2628737925810151029,11118462415938111691}}
@@ -1039,20 +915,7 @@ o
 		Uuid %Requirements{u4{1153516281629014394,11876454395300848667}}
 	}
 }
-o
-{
-	Uuid %id{u4{12673525702869085667,11544981011093707055}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{13251528349488339074,11699774202044255320}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{1153516281629014394,11876454395300848667}}
@@ -1067,24 +930,7 @@ o
 		u3 %Width{0}
 	}
 }
-o
-{
-	Uuid %id{u4{2663758198855729626,12147467317348271585}}
-	s %t{"xiiRenderPipelinePinMetadata"}
-	u3 %v{1}
-	p
-	{
-		s %Access{"xiiRenderPipelinePinAccess::Ordering"}
-		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
-		s %DataType{""}
-		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
-		b %Input{0}
-		s %Name{"After"}
-		b %Optional{1}
-		s %ResourceType{"xiiRenderPipelinePinType::Order"}
-		b %TemporalHistory{0}
-	}
-}
+
 o
 {
 	Uuid %id{u4{6358363314787903517,12303303073895522545}}
@@ -1138,27 +984,7 @@ o
 	u3 %v{1}
 	p{}
 }
-o
-{
-	Uuid %id{u4{1944864684463264243,13612393990973970666}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{8024540483411328458,13679875255450664379}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{7019560746959513465,13852633648106083914}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{11722726002304276824,13968535926700015135}}
@@ -1166,8 +992,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{2668452975747283133,11032438792136134299}}
-		Uuid %Before{u4{15160288869032236034,15128069170784017283}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -1188,8 +1012,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{10504194031755258080,14696203864347832891}}
-		Uuid %Before{u4{751397628578632113,7343925415742059951}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -1203,13 +1025,7 @@ o
 		u3 %ResourceType{1}
 	}
 }
-o
-{
-	Uuid %id{u4{8346042075093846406,14174762812018695939}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{3014207601262659642,14221210558952129141}}
@@ -1224,20 +1040,7 @@ o
 		u3 %Width{0}
 	}
 }
-o
-{
-	Uuid %id{u4{5823407760564542386,14372656882081861859}}
-	s %t{"xiiRenderPipelinePinConfiguration"}
-	u3 %v{1}
-	p
-	{
-		s %DisplayName{""}
-		Uuid %Id{u4{5823407760564542386,14372656882081861859}}
-		Uuid %Metadata{u4{2663758198855729626,12147467317348271585}}
-		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
-		Uuid %Requirements{u4{15357411597257763378,7828906508743629389}}
-	}
-}
+
 o
 {
 	Uuid %id{u4{13273322547067870299,14536353145627687191}}
@@ -1245,8 +1048,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{1995100855872086007,2073350662641996304}}
-		Uuid %Before{u4{16912170355214474990,17938420167108847748}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -1274,13 +1075,7 @@ o
 		Uuid %Requirements{u4{18391193492337993249,16080742710617866956}}
 	}
 }
-o
-{
-	Uuid %id{u4{10504194031755258080,14696203864347832891}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{4519601034372433385,14813722869937071886}}
@@ -1309,13 +1104,7 @@ o
 		Uuid %Requirements{u4{16342740393279969663,4329624066718549310}}
 	}
 }
-o
-{
-	Uuid %id{u4{15160288869032236034,15128069170784017283}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{1244443052814385151,15138529761536109935}}
@@ -1330,13 +1119,7 @@ o
 		u3 %Width{0}
 	}
 }
-o
-{
-	Uuid %id{u4{15326597325319068035,15260533706330961537}}
-	s %t{"xiiRenderPipelineOrderOutputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{7193188118442448068,15336324429229031077}}
@@ -1365,13 +1148,7 @@ o
 		u3 %Width{0}
 	}
 }
-o
-{
-	Uuid %id{u4{12533344696391182200,15859437942772062354}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{18391193492337993249,16080742710617866956}}
@@ -1439,8 +1216,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{8024540483411328458,13679875255450664379}}
-		Uuid %Before{u4{12440507613270673104,4326028919059419069}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
@@ -1479,8 +1254,6 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %After{u4{16579372027950567375,1538123639173039980}}
-		Uuid %Before{u4{4082503333342335241,8829724827128355186}}
 		s %DataType{""}
 		s %Format{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{0}
@@ -1515,13 +1288,7 @@ o
 		Uuid %Requirements{u4{16060610310282649518,1156518443116569850}}
 	}
 }
-o
-{
-	Uuid %id{u4{16912170355214474990,17938420167108847748}}
-	s %t{"xiiRenderPipelineOrderInputPin"}
-	u3 %v{1}
-	p{}
-}
+
 o
 {
 	Uuid %id{u4{17805701807354979813,18252534642882335093}}
@@ -1563,40 +1330,7 @@ o
 		u3 %TypeVersion{1}
 	}
 }
-o
-{
-	Uuid %id{u4{18176714388387828864,500547229236535608}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelinePinHandle"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiRenderPipelineOrderOutputPin"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{16585783900094348567,560381436835020329}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelinePinHandle"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiRenderPipelineOrderInputPin"}
-		u3 %TypeVersion{1}
-	}
-}
+
 o
 {
 	Uuid %id{u4{1806006595755264957,1330264583885842403}}

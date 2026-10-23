@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Core/World/World.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Core/World/World.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>

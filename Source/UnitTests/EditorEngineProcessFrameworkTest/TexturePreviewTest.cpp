@@ -164,7 +164,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TexturePreview)
       xiiRenderPipelineResourceDescriptor descriptor;
       xiiVariantDictionary                properties;
       properties.Insert("Cube", cubePreview);
-      descriptor.AddPass("Inspection", "xiiTexturePreviewPass", properties);
+      descriptor.AddPass("Inspection", xiiGetStaticRTTI<xiiTexturePreviewPass>(), properties);
       xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
       xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
       stream << "EditorTexturePreviewReload.xiiBinRenderPipeline";

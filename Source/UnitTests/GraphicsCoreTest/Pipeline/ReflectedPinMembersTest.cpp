@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
@@ -19,7 +21,6 @@
 #include <GraphicsCore/Pipeline/Passes/Temporal/TemporalAntiAliasingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 class xiiMemberPinSource : public xiiRenderPipelinePass
@@ -76,13 +77,16 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
 {
   // No GetPins implementation or parallel type table exists on either type.
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Source", "xiiMemberPinSource");
-  descriptor.AddPass("Sink", "xiiMemberPinSink");
+  descriptor.AddPass("Source", xiiGetStaticRTTI<xiiMemberPinSource>());
+  descriptor.AddPass("Sink", xiiGetStaticRTTI<xiiMemberPinSink>());
   XII_TEST_RESULT(descriptor.Connect(0, "Color", 1, "Color"));
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
   if (!compiled)
     return;
+  XII_TEST_INT(compiled->GetPins(0).GetCount(), 1);
+  XII_TEST_INT(compiled->GetPins(1).GetCount(), 1);
+  XII_TEST_BOOL(!compiled->GetPins(0)[0].m_bInput && compiled->GetPins(1)[0].m_bInput);
   xiiRenderPipelineInstance instance;
   XII_TEST_RESULT(instance.Initialize(compiled));
   xiiRenderGraph graph("Reflected member bindings");
@@ -97,7 +101,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   bloom.GetPins(pins);
   XII_TEST_RESULT(bloom.InitializePinBindings(pins));
-  XII_TEST_INT(pins.GetCount(), 4);
+  XII_TEST_INT(pins.GetCount(), 2);
+  XII_TEST_BOOL(bloom.GetDynamicRTTI()->FindPropertyByName("Before") == nullptr);
+  XII_TEST_BOOL(bloom.GetDynamicRTTI()->FindPropertyByName("After") == nullptr);
   XII_TEST_STRING(pins[bloom.m_InputUpscaledColor.GetBindingIndex()].m_sName, "UpscaledColor");
   XII_TEST_BOOL(pins[bloom.m_OutputBloomTexture.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA16Float);
   const auto* property = bloom.GetDynamicRTTI()->FindPropertyByName("BloomTexture");
@@ -109,10 +115,10 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   XII_TEST_BOOL(bloom.Configure(properties).Failed()); // Runtime binding indices are never authorable.
   auto inspection = pins;
   bloom.GetPins(inspection); // Appending an editor query must not alter runtime indices.
-  XII_TEST_INT(bloom.m_InputUpscaledColor.GetBindingIndex(), 2);
-  XII_TEST_INT(bloom.m_OutputBloomTexture.GetBindingIndex(), 3);
+  XII_TEST_INT(bloom.m_InputUpscaledColor.GetBindingIndex(), 0);
+  XII_TEST_INT(bloom.m_OutputBloomTexture.GetBindingIndex(), 1);
   auto changed       = pins;
-  changed[2].m_sName = "Stale schema";
+  changed[0].m_sName = "Stale schema";
   XII_TEST_BOOL(bloom.InitializePinBindings(changed).Failed());
   XII_TEST_INT(bloom.m_InputUpscaledColor.GetBindingIndex(), xiiInvalidIndex);
 
@@ -152,7 +158,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinMembers)
   if (repeated)
   {
     XII_TEST_BOOL(compiled->GetDescriptor().m_Passes[0].m_Id == repeated->GetDescriptor().m_Passes[0].m_Id);
-    XII_TEST_BOOL(compiled->GetPins(0)[2].m_Id == repeated->GetPins(0)[2].m_Id);
+    XII_TEST_BOOL(compiled->GetPins(0)[0].m_Id == repeated->GetPins(0)[0].m_Id);
   }
 }
 
@@ -202,8 +208,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionMemberPins)
   xiiRenderPipelineResourceDescriptor leaf;
   properties.Clear();
   properties.Insert("UseRayTracing", false);
-  leaf.AddPass("Visibility", "xiiAmbientOcclusionPass", properties);
-  leaf.AddPass("Filter", "xiiAmbientOcclusionTemporalPass");
+  leaf.AddPass("Visibility", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), properties);
+  leaf.AddPass("Filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
   XII_TEST_RESULT(leaf.Connect(0, "RawAO", 1, "RawAO"));
   for (xiiUInt32 index = 0; index < 2; ++index)
   {
@@ -313,8 +319,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_CREATE_SIMPLE_TEST(Pipeline, CompiledRootBoundaryBindings)
 {
   xiiRenderPipelineResourceDescriptor descriptor;
-  descriptor.AddPass("Forward", "xiiMemberPinForward");
-  descriptor.AddPass("Sink", "xiiMemberPinSink");
+  descriptor.AddPass("Forward", xiiGetStaticRTTI<xiiMemberPinForward>());
+  descriptor.AddPass("Sink", xiiGetStaticRTTI<xiiMemberPinSink>());
   descriptor.m_Interface.PushBack({"Color", true, descriptor.m_Passes[0].m_Id, "Input"});
   descriptor.m_Interface.PushBack({"Color", true, descriptor.m_Passes[1].m_Id, "Color"});
   descriptor.m_Interface.PushBack({"Result", false, descriptor.m_Passes[0].m_Id, "Output"});

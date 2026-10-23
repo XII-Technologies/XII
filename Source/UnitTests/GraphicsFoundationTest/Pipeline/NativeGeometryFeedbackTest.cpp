@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackPass.h>
+#include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackResetPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -10,8 +15,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
@@ -72,11 +77,11 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
   xiiUuid resetId, generateId, readbackId;
   for (const auto& pass : authoring->m_Descriptor.m_Passes)
   {
-    if (pass.m_sType == "xiiGeometryLodFeedbackResetPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiGeometryLodFeedbackResetPass>())
       resetId = pass.m_Id;
-    if (pass.m_sType == "xiiGeometryLodFeedbackPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiGeometryLodFeedbackPass>())
       generateId = pass.m_Id;
-    if (pass.m_sType == "xiiGeometryLodFeedbackReadbackPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiGeometryLodFeedbackReadbackPass>())
       readbackId = pass.m_Id;
   }
   xiiUuid instances[2];
@@ -100,7 +105,7 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Native authored geometry feedback", std::move(root));
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 view = 0; view < 2; ++view)
     if (!XII_TEST_RESULT(pipelines[view].Synchronize(resource)) || !XII_TEST_RESULT(contexts[view].Initialize("Native geometry streaming")))
       return;
@@ -213,7 +218,7 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
       requests[i] = pipeline.GetInterfaceBinding(compiled->FindInterface(i ? "Camera/Requests" : "Shadow/Requests", false))->m_hBuffer;
       graph.AddPass<xiiUInt32>(i ? "Export camera demand" : "Export shadow demand", xiiGALCommandQueueFlags::Graphics, [&, i](auto&, xiiRenderGraphBuilder& builder) { builder.ExportBuffer(builder.ReadBuffer(requests[i], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     }
-    XII_TEST_BOOL(requests[0].m_Id != requests[1].m_Id);
+    XII_TEST_BOOL(requests[0].GetResourceId() != requests[1].GetResourceId());
     graph.EndSetup();
     xiiStringBuilder error;
     if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()))

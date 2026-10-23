@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -13,8 +15,7 @@ public:
 
   xiiUpscalePass();
   ~xiiUpscalePass();
-  xiiUInt32 m_uiWidth  = 0;
-  xiiUInt32 m_uiHeight = 0;
+
 
   xiiResult Configure(const xiiVariantDictionary& properties) override;
 

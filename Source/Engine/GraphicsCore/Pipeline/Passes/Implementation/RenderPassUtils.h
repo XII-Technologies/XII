@@ -49,7 +49,8 @@ namespace xiiRenderPassUtils
   void                                      ClearDepthPreservingState(xiiGALCommandList& commands, xiiGALTextureView* view, bool depth, bool stencil, float value, xiiUInt8 stencilValue);
   xiiResult                                 LinearClampSampler(xiiSharedPtr<xiiGALSampler>& sampler);
   xiiRenderGraphBufferHandle                Constants(xiiRenderGraphBuilder& builder, xiiStringView name, xiiUInt32 size);
-  xiiResult                                 OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiUInt32 width, xiiUInt32 height, xiiSizeU32& out_size, bool useViewport = false);
+  xiiResult                                 OutputSize(const xiiRenderPipelinePassContext& context, const xiiRenderPipelineTextureOutputPin& output, xiiRenderGraphTextureHandle input, xiiSizeU32& out_size);
+  xiiResult                                 OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiSizeU32& out_size);
   /// Per-pass cache, invalidated by authored configuration, view defaults or parameter changes.
   struct DisplayConfiguration
   {

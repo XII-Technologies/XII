@@ -13,6 +13,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
 
@@ -83,7 +84,7 @@ XII_CREATE_SIMPLE_TEST(NativeDepthBoundary, InterleavedAuthoredHiZ)
 
   const auto                resource = xiiLoadPipelineLibraryResource("DepthPyramid");
   xiiRenderPipelineInstance histories[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   xiiUInt32                 depthInterface[2], historyInterface[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
@@ -287,7 +288,7 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, FailedRecordingInvalidatesHistory)
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   xiiRenderPipelineResourceDescriptor definition;
-  definition.AddPass("History failure regression", "xiiPipelineHistoryFailure");
+  definition.AddPass("History failure regression", xiiGetStaticRTTI<xiiPipelineHistoryFailure>());
   const auto          pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Recoverable history failure", std::move(definition));
   xiiWorldDescription description("Failed recording recovery");
   xiiWorld            world(description);

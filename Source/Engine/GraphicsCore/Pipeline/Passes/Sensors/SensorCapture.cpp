@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>

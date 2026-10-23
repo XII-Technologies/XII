@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
@@ -16,8 +18,8 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 
 /// Test readback root with an explicit uniform-buffer contract.
@@ -67,12 +69,12 @@ XII_CREATE_SIMPLE_TEST(NativeEnvironmentLight, RepeatedAuthoredEmittersRetireBef
     properties.m_Properties.Insert("Direction", i ? xiiVec3(0, 2, 0) : xiiVec3(0, 0, -3));
     properties.m_Properties.Insert("Color", i ? xiiVec3(0.1f, 0.5f, 1) : xiiVec3(1, 0.5f, 0.1f));
     properties.m_Properties.Insert("AmbientRadiance", i ? xiiVec3(0.6f, 0.4f, 0.2f) : xiiVec3(0.2f, 0.4f, 0.6f));
-    const auto retain = root.AddPass(i ? "Retain second environment" : "Retain first environment", "xiiEnvironmentTestRetain");
+    const auto retain = root.AddPass(i ? "Retain second environment" : "Retain first environment", xiiGetStaticRTTI<xiiEnvironmentTestRetain>());
     XII_TEST_RESULT(root.Connect(node, "EnvironmentLight", retain, "Input"));
     root.m_Interface.PushBack({i ? "Second" : "First", false, root.m_Passes[retain].m_Id, "Output"});
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Independent environment snapshots", std::move(root));
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   xiiRenderPipelineInstance instance;
   if (!XII_TEST_RESULT(context.Initialize("Independent illumination")) || !XII_TEST_RESULT(instance.Synchronize(resource)))
     return;
@@ -130,7 +132,7 @@ XII_CREATE_SIMPLE_TEST(NativeEnvironmentLight, WorldSelectionTagsLifecycleAndMin
   authored.m_Path.PushBack(constantsDefinition->m_Descriptor.m_Passes[0].m_Id);
   authored.m_Properties.Insert("Illuminance", 9999.0f); // A connected world snapshot wins, including an empty world.
   authored.m_Properties.Insert("AmbientRadiance", xiiVec3(0.3f, 0.4f, 0.5f));
-  const auto retain = root.AddPass("Retain environment", "xiiEnvironmentTestRetain");
+  const auto retain = root.AddPass("Retain environment", xiiGetStaticRTTI<xiiEnvironmentTestRetain>());
   XII_TEST_RESULT(root.Connect(source, "DirectionalLight", constants, "DirectionalLight"));
   XII_TEST_RESULT(root.Connect(constants, "EnvironmentLight", retain, "Input"));
   root.m_Interface.PushBack({"EnvironmentLight", false, root.m_Passes[retain].m_Id, "Output"});

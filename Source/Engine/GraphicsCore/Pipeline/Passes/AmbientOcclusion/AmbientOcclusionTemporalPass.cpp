@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
@@ -27,7 +28,10 @@ struct xiiAmbientOcclusionTemporalPass::State
   xiiUInt64                                m_uiLastReadyValue = 0;
   bool                                     m_bHistoryValid    = false;
 };
-xiiAmbientOcclusionTemporalPass::xiiAmbientOcclusionTemporalPass()  = default;
+xiiAmbientOcclusionTemporalPass::xiiAmbientOcclusionTemporalPass()
+{
+  m_Output.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiAmbientOcclusionTemporalPass::~xiiAmbientOcclusionTemporalPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionTemporalPass, 1, xiiRTTIDefaultAllocator<xiiAmbientOcclusionTemporalPass>)
@@ -89,7 +93,10 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
   const auto raw = context.GetInputTexture(m_Raw), depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal), velocity = context.GetInputTexture(m_Velocity);
   const auto camera = context.GetInputBuffer(m_Camera), global = context.GetInputBuffer(m_Global);
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, raw, 0, 0, size));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_Output, raw, size));
+  const auto* sizingInput = context.m_Graph.GetTextureDescription(raw);
+  if (!sizingInput || sizingInput->m_Size != size)
+    return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   for (auto handle : {depth, normal, velocity})
   {
     const auto* description = context.m_Graph.GetTextureDescription(handle);

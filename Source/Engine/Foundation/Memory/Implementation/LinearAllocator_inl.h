@@ -4,7 +4,7 @@ template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
 xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::xiiLinearAllocator(xiiStringView sName, xiiAllocator* pParent, xiiUInt32 uiInitialSize) :
   SUPER(sName, pParent), m_DestructData(pParent), m_PtrToDestructDataIndexTable(pParent)
 {
-  this->m_allocator.SetNextBucketSize(uiInitialSize);
+  this->m_Allocator.SetNextBucketSize(uiInitialSize);
 }
 
 template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
@@ -18,19 +18,19 @@ void* xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::Allocate(size_t 
 {
   XII_LOCK(m_Mutex);
 
-  void* ptr = SUPER::Allocate(uiSize, uiAlign, destructorFunc);
+  void* pPtr = SUPER::Allocate(uiSize, uiAlign, destructorFunc);
 
   if (destructorFunc != nullptr)
   {
     xiiUInt32 uiIndex = m_DestructData.GetCount();
-    m_PtrToDestructDataIndexTable.Insert(ptr, uiIndex);
+    m_PtrToDestructDataIndexTable.Insert(pPtr, uiIndex);
 
     auto& data  = m_DestructData.ExpandAndGetRef();
     data.m_Func = destructorFunc;
-    data.m_Ptr  = ptr;
+    data.m_Ptr  = pPtr;
   }
 
-  return ptr;
+  return pPtr;
 }
 
 template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
@@ -72,7 +72,7 @@ void xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::Reset()
   m_DestructData.Clear();
   m_PtrToDestructDataIndexTable.Clear();
 
-  this->m_allocator.Reset();
+  this->m_Allocator.Reset();
   if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
     xiiMemoryTracker::RemoveAllAllocations(this->m_Id);
@@ -80,7 +80,7 @@ void xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::Reset()
   else if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
   {
     xiiAllocator::Stats stats;
-    this->m_allocator.FillStats(stats);
+    this->m_Allocator.FillStats(stats);
 
     xiiMemoryTracker::SetAllocatorStats(this->m_Id, stats);
   }

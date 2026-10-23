@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/DirectionalLightFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 

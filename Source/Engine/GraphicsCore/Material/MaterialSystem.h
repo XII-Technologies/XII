@@ -50,7 +50,7 @@ private:
 
   [[nodiscard]] xiiMaterialGpuStorage::UploadHandles AddUploadPasses(xiiRenderGraph& graph);
   [[nodiscard]] xiiRenderGraphBufferHandle           AddUploadPass(xiiRenderGraph& graph);
-  [[nodiscard]] xiiResult                            ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const;
+  xiiResult                                          ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const;
 
   [[nodiscard]] xiiMaterialGpuStorage&       GetGpuStorage() { return m_GpuStorage; }
   [[nodiscard]] const xiiMaterialGpuStorage& GetGpuStorage() const { return m_GpuStorage; }

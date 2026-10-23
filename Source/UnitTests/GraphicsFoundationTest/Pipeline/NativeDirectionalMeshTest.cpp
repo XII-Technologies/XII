@@ -1,5 +1,17 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Geometry/DirectionalMeshConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MatrixRasterConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Residency/MaterialUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowSamplingConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -14,8 +26,8 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <Shaders/Pipeline/Passes/Geometry/DirectionalMeshConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
@@ -84,41 +96,46 @@ XII_CREATE_SIMPLE_TEST(NativeDirectionalMesh, RepeatedAuthoredRasterAndRetainedC
   xiiUuid    constantsId, samplingId, geometryConstantsId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
   {
-    if (pass.m_sType == "xiiDirectionalMeshConstantsPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiDirectionalMeshConstantsPass>())
       constantsId = pass.m_Id;
-    if (pass.m_sType == "xiiVirtualShadowSamplingConstantsPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiVirtualShadowSamplingConstantsPass>())
       samplingId = pass.m_Id;
-    if (pass.m_sType == "xiiMatrixRasterConstantsPass")
+    if (pass.m_pType == xiiGetStaticRTTI<xiiMatrixRasterConstantsPass>())
       geometryConstantsId = pass.m_Id;
   }
   if (!XII_TEST_BOOL(constantsId.IsValid() && samplingId.IsValid() && geometryConstantsId.IsValid()))
     return;
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authored->m_Descriptor.m_Id, asset.GetResourceID()});
-  const auto           geometry       = root.AddPass("Device geometry", "xiiGeometryUploadPass");
-  const auto           materialUpload = root.AddPass("Device material residency", "xiiMaterialUploadPass");
-  const auto           tables         = root.AddPass("Device shadow tables", "xiiVirtualShadowTablesPass");
+  const auto           geometry       = root.AddPass("Device geometry", xiiGetStaticRTTI<xiiGeometryUploadPass>());
+  const auto           materialUpload = root.AddPass("Device material residency", xiiGetStaticRTTI<xiiMaterialUploadPass>());
+  const auto           tables         = root.AddPass("Device shadow tables", xiiGetStaticRTTI<xiiVirtualShadowTablesPass>());
   xiiVariantDictionary commandProperties;
   commandProperties.Insert("MeshGroupCountX", 1U);
   commandProperties.Insert("MeshGroupCountY", 1U);
-  const auto           commands = root.AddPass("Supplied work dimensions", "xiiMeshDrawCommandsPass", commandProperties);
+  const auto           commands = root.AddPass("Supplied work dimensions", xiiGetStaticRTTI<xiiMeshDrawCommandsPass>(), commandProperties);
   xiiVariantDictionary shadowProperties;
-  shadowProperties.Insert("Width", 16U);
-  shadowProperties.Insert("Height", 16U);
-  const auto shadow = root.AddPass("Empty ordinary shadow", "xiiDepthTargetPass", shadowProperties);
+  xiiDepthTargetPass   shadowTarget;
+  shadowTarget.m_Depth.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 16, 16});
+  XII_TEST_RESULT(shadowTarget.GetProperties(shadowProperties));
+  const auto shadow = root.AddPass("Empty ordinary shadow", xiiGetStaticRTTI<xiiDepthTargetPass>(), shadowProperties);
   for (xiiStringView name : {"VisibleMeshlets", "VisibleMeshletCount"})
     root.m_Interface.PushBack({name, true, root.m_Passes[commands].m_Id, name});
   for (xiiUInt32 branch = 0; branch < 2; ++branch)
   {
-    xiiVariantDictionary image;
-    image.Insert("Width", branch ? 16U : 32U);
-    image.Insert("Height", branch ? 32U : 16U);
-    image.Insert("Format", xiiUInt32(xiiGALResourceFormat::RGBA32Float));
-    image.Insert("Color", xiiColor(0, 0, 0.25f, 1));
-    const auto color = root.AddPass(branch ? "Green target" : "Red target", "xiiClearTexturePass", image);
-    image.Remove("Format");
-    image.Remove("Color");
-    const auto depth     = root.AddPass(branch ? "Green depth" : "Red depth", "xiiDepthTargetPass", image);
+    xiiVariantDictionary                     image;
+    const xiiRenderPipelineTextureResolution resolution{xiiRenderPipelineTextureResolutionMode::Fixed, branch ? 16U : 32U, branch ? 32U : 16U};
+    xiiClearTexturePass                      target;
+    target.m_OutputTexture.SetResolution(resolution);
+    target.m_OutputTexture.SetFormat(xiiGALResourceFormat::RGBA32Float);
+    target.m_Color = xiiColor(0, 0, 0.25f, 1);
+    XII_TEST_RESULT(target.GetProperties(image));
+    const auto color = root.AddPass(branch ? "Green target" : "Red target", xiiGetStaticRTTI<xiiClearTexturePass>(), image);
+    image.Clear();
+    xiiDepthTargetPass depthTarget;
+    depthTarget.m_Depth.SetResolution(resolution);
+    XII_TEST_RESULT(depthTarget.GetProperties(image));
+    const auto depth     = root.AddPass(branch ? "Green depth" : "Red depth", xiiGetStaticRTTI<xiiDepthTargetPass>(), image);
     const auto node      = root.AddSubgraph(branch ? "Green mesh" : "Red mesh", authored->m_Descriptor.m_Id);
     auto&      constants = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
     constants.m_Path.PushBack(constantsId);
@@ -154,7 +171,7 @@ XII_CREATE_SIMPLE_TEST(NativeDirectionalMesh, RepeatedAuthoredRasterAndRetainedC
   }
   const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Repeated authored directional mesh", std::move(root));
   xiiRenderPipelineInstance pipeline;
-  xiiRenderGraphContext     context;
+  xiiRenderGraphTestContext context;
   if (!XII_TEST_RESULT(pipeline.Synchronize(resource)) || !XII_TEST_RESULT(context.Initialize("Directional mesh readback")))
     return;
   for (xiiUInt32 phase = 0; phase < 4; ++phase)

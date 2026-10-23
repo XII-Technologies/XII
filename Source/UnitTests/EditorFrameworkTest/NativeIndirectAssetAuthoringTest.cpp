@@ -22,8 +22,7 @@ namespace
     xiiDynamicArray<xiiRenderPipelinePin> pins;
     prototype->GetPins(pins);
     for (const auto& pin : pins)
-      if (pin.m_Type != xiiRenderPipelinePin::Order)
-        XII_SUCCEED_OR_RETURN(author.Boundary(pin.m_sName, pin.m_bInput, node, pin.m_sName, pin.m_Type));
+      XII_SUCCEED_OR_RETURN(author.Boundary(pin.m_sName, pin.m_bInput, node, pin.m_sName, pin.m_Type));
     return author.Save(directory);
   }
   xiiStatus AuthorLayeredDiffuse(xiiStringView directory)

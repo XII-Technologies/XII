@@ -1,5 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+#include <GraphicsCore/Pipeline/Passes/Visibility/DepthPyramidPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/InstanceOcclusionPass.h>
+#include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -10,8 +16,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
-#include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
@@ -42,9 +48,9 @@ namespace
     root.m_References.PushBack({authoring.m_Descriptor.m_Id, asset.GetResourceID()});
     xiiUuid filterId;
     for (const auto& pass : authoring.m_Descriptor.m_Passes)
-      if (pass.m_sType == (meshlets ? "xiiMeshletOcclusionPass" : "xiiInstanceOcclusionPass"))
+      if (pass.m_pType == (meshlets ? xiiGetStaticRTTI<xiiMeshletOcclusionPass>() : xiiGetStaticRTTI<xiiInstanceOcclusionPass>()))
         filterId = pass.m_Id;
-    const auto reduce = pyramid ? root.AddPass("Reduce supplied depth", "xiiDepthPyramidPass") : xiiInvalidIndex;
+    const auto reduce = pyramid ? root.AddPass("Reduce supplied depth", xiiGetStaticRTTI<xiiDepthPyramidPass>()) : xiiInvalidIndex;
     if (pyramid)
       root.m_Interface.PushBack({"DepthPyramid", true, root.m_Passes[reduce].m_Id, "SceneDepth"});
     xiiDynamicArray<xiiRenderPipelinePin> pins;
@@ -58,8 +64,6 @@ namespace
       override.m_Properties.Insert("AsyncCompute", i == 0);
       for (const auto& pin : pins)
       {
-        if (pin.m_Type == xiiRenderPipelinePin::Order)
-          continue;
         if (pyramid && pin.m_bInput && pin.m_sName == "DepthPyramid")
         {
           root.Connect(reduce, "DepthPyramid", node, pin.m_sName).AssertSuccess();
@@ -88,7 +92,7 @@ static void RunConservativeOcclusion(bool meshlets)
   const auto                full       = MakeOcclusionGraph(true, meshlets, asset, *loaded->GetAuthoring());
   const auto                incomplete = MakeOcclusionGraph(false, meshlets, asset, *loaded->GetAuthoring());
   xiiRenderPipelineInstance pipelines[2];
-  xiiRenderGraphContext     contexts[2];
+  xiiRenderGraphTestContext contexts[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
     if (!XII_TEST_RESULT(pipelines[i].Synchronize(i ? incomplete : full)) || !XII_TEST_RESULT(contexts[i].Initialize("Native occlusion regression")))
       return;
@@ -216,7 +220,7 @@ static void RunConservativeOcclusion(bool meshlets)
         builder.ExportBuffer(builder.ReadBuffer(visible[i], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(counts[i], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
     }
-    XII_TEST_BOOL(visible[0].m_Id != visible[1].m_Id && counts[0].m_Id != counts[1].m_Id);
+    XII_TEST_BOOL(visible[0].GetResourceId() != visible[1].GetResourceId() && counts[0].GetResourceId() != counts[1].GetResourceId());
     graph.EndSetup();
     xiiStringBuilder error;
     if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))

@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIEnvironmentSeedPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbePassUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -38,7 +39,7 @@ xiiResult xiiDDGIEnvironmentSeedPass::Build(xiiRenderPipelinePassContext& contex
   const auto  irradiance = context.GetInputTexture(m_IrradianceInput), distance = context.GetInputTexture(m_DistanceInput);
   const auto* a = context.m_Graph.GetTextureDescription(irradiance);
   const auto* b = context.m_Graph.GetTextureDescription(distance);
-  if (!c || c->m_uiSize != sizeof(xiiDDGIProbeConstants) || !e || e->m_uiSize != sizeof(xiiEnvironmentLightConstants) || !xiiDDGIProbePassUtils::Buffer(context, updates, sizeof(xiiGpuDDGIProbeUpdate), snapshot->m_Updates.GetCount(), xiiGALBindFlags::ShaderResource) || !xiiDDGIProbePassUtils::Buffer(context, states, sizeof(xiiGpuDDGIProbeState), snapshot->m_Probes.GetCount(), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess) || !a || !b || a->m_Size != snapshot->m_AtlasSize || b->m_Size != snapshot->m_AtlasSize || irradiance.m_Id == distance.m_Id)
+  if (!c || c->m_uiSize != sizeof(xiiDDGIProbeConstants) || !e || e->m_uiSize != sizeof(xiiEnvironmentLightConstants) || !xiiDDGIProbePassUtils::Buffer(context, updates, sizeof(xiiGpuDDGIProbeUpdate), snapshot->m_Updates.GetCount(), xiiGALBindFlags::ShaderResource) || !xiiDDGIProbePassUtils::Buffer(context, states, sizeof(xiiGpuDDGIProbeState), snapshot->m_Probes.GetCount(), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess) || !a || !b || a->m_Size != snapshot->m_AtlasSize || b->m_Size != snapshot->m_AtlasSize || irradiance.GetResourceId() == distance.GetResourceId())
     return context.ReportFailure("DDGI seed resources must exactly match the scheduling snapshot and have distinct atlas allocations.");
   xiiHashSet<xiiUInt32> seen;
   for (const auto& update : snapshot->m_Updates)

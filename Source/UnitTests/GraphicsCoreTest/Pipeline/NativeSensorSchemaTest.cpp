@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -8,7 +10,6 @@
 #include <GraphicsCore/Pipeline/Passes/Sensors/LidarSensorPass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/RgbSensorPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 XII_CREATE_SIMPLE_TEST(Pipeline, NativeSensorSchemas)
 {
@@ -20,6 +21,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, NativeSensorSchemas)
     bool hasRadiance = false, hasNormal = false, hasAlbedo = false;
     for (const auto& pin : pins)
     {
+      XII_TEST_BOOL(pin.m_sName != "Before" && pin.m_sName != "After");
       hasRadiance |= pin.m_sName == "Radiance";
       hasNormal |= pin.m_sName == "Normal";
       hasAlbedo |= pin.m_sName == "Albedo";
@@ -44,13 +46,13 @@ XII_CREATE_SIMPLE_TEST(Pipeline, NativeSensorSchemas)
     XII_TEST_BOOL(sensor.GetExtractionRequirements().IsNoFlagSet() && sensor.GetRuntimeFeatures().IsNoFlagSet());
   };
   xiiDepthSensorPass depth;
-  check(depth, 8, false, false);
+  check(depth, 6, false, false);
   xiiRgbSensorPass rgb;
-  check(rgb, 9, true, false);
+  check(rgb, 7, true, false);
   xiiInfraredSensorPass infrared;
-  check(infrared, 9, true, false);
+  check(infrared, 7, true, false);
   xiiLidarSensorPass lidar;
-  check(lidar, 10, false, true);
+  check(lidar, 8, false, true);
 }
 
 XII_CREATE_SIMPLE_TEST(Pipeline, SensorCalibrationReflectionRoundtrip)

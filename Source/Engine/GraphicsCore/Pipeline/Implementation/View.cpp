@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
@@ -78,9 +79,28 @@ xiiView::xiiView(xiiWorld* pWorld) :
 
   m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext();
   XII_ASSERT_DEV(!m_hPipelineRuntime.IsInvalidated(), "Failed to create the view render-resource context.");
-  XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
+  m_hRenderGraph = xiiRenderGraphManager::CreateGraph("View Render Graph", xiiMakeDelegate(&xiiView::BuildRenderGraph, this));
+  XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create the view render graph.");
 
   UpdateRenderResolutionState();
+}
+
+xiiResult xiiView::BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView)
+{
+  XII_ASSERT_DEV(pView == this, "A view must execute its own render graph.");
+  XII_IGNORE_UNUSED(pView);
+  blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(graph.GetFrameIndex()));
+
+  if (m_RenderGraphBuilder.IsValid())
+  {
+    m_RenderGraphBuilder(*this, graph, blackboard);
+  }
+  else if (BuildRenderPipeline(graph, blackboard).Failed())
+  {
+    xiiLog::Error("Failed to build render pipeline for view '{}': {}", GetName(), GetRenderPipelineInstance().GetLastBuildError());
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings)
@@ -107,7 +127,7 @@ xiiView::~xiiView()
 {
   m_InternalId.Invalidate();
 
-  m_RenderGraphContext.Shutdown();
+  xiiRenderGraphManager::DestroyGraph(m_hRenderGraph).AssertSuccess("Failed to destroy the view render graph.");
   xiiViewRenderResourceManager::DestroyContext(m_hPipelineRuntime);
   m_hPipelineRuntime = {};
 }
@@ -232,6 +252,12 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
 
 void xiiView::UpdateRenderResolutionState() const
 {
+  if (!xiiMath::IsFinite(m_DynamicResolution.m_fRenderScale) || !xiiMath::IsFinite(m_DynamicResolution.m_fSmoothedScale))
+  {
+    m_Data.m_fRenderResolutionScale  = 0;
+    m_Data.m_uiRenderResolutionWidth = m_Data.m_uiRenderResolutionHeight = 0;
+    return;
+  }
   const float fRenderScale = xiiMath::Clamp(m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
 
   float fDynamicMin = 0.1f;
@@ -241,7 +267,18 @@ void xiiView::UpdateRenderResolutionState() const
   const float fDynamicScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   m_Data.m_fRenderResolutionScale = xiiMath::Clamp(fDynamicScale * fRenderScale, 0.1f, 1.0f);
+  if (!xiiMath::IsFinite(m_Data.m_fRenderResolutionScale))
+  {
+    m_Data.m_uiRenderResolutionWidth = m_Data.m_uiRenderResolutionHeight = 0;
+    return;
+  }
 
+  if (!xiiMath::IsFinite(m_Data.m_ViewPortRect.width) || !xiiMath::IsFinite(m_Data.m_ViewPortRect.height) ||
+      m_Data.m_ViewPortRect.width <= 0 || m_Data.m_ViewPortRect.height <= 0 || m_Data.m_ViewPortRect.width > 65536 || m_Data.m_ViewPortRect.height > 65536)
+  {
+    m_Data.m_uiRenderResolutionWidth = m_Data.m_uiRenderResolutionHeight = 0;
+    return;
+  }
   const xiiUInt32 uiNativeWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
   const xiiUInt32 uiNativeHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
 
@@ -253,7 +290,7 @@ void xiiView::RunDynamicResolutionPID()
 {
   // Try the GPU profiler's resolved duration from 2 frames ago.
   // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
-  float fGpuTimeMs = m_RenderGraphContext.GetProfiler().GetFrameDurationMs();
+  float fGpuTimeMs = GetProfiler().GetGraphDurationMs(GetRenderGraph()->GetId().m_Data);
   if (fGpuTimeMs <= 0.0f)
   {
     fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
