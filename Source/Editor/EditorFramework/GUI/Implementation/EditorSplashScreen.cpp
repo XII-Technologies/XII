@@ -158,7 +158,14 @@ void xiiQtEditorSplashScreen::keyPressEvent(QKeyEvent* pEvent)
 
 bool xiiQtEditorSplashScreen::eventFilter(QObject* pObject, QEvent* pEvent)
 {
-  if (pEvent->type() == QEvent::Show && qobject_cast<QDialog*>(pObject))
-    hide();
+  if (auto* pDialog = qobject_cast<QDialog*>(pObject))
+  {
+    // Some platform plugins still select a splash as QApplication::activeWindow(). Repair
+    // that borrowed dialog parent before native presentation, preserving the dialog's flags.
+    if (pEvent->type() == QEvent::Polish && pDialog->parentWidget() == this)
+      pDialog->setParent(m_pEditorWindow, pDialog->windowFlags());
+    if (pEvent->type() == QEvent::Show)
+      hide();
+  }
   return false;
 }

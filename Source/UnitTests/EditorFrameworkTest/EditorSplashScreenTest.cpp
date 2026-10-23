@@ -123,6 +123,9 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, ModalAndDismissal)
   splash.SetEditorWindow(&editor);
   splash.show();
   XII_TEST_BOOL(splash.windowHandle()->transientParent() == editor.windowHandle());
+  QDialog accidentalParent(&splash);
+  accidentalParent.ensurePolished();
+  XII_TEST_BOOL(accidentalParent.parentWidget() == &editor);
   QDialog dialog(&editor);
   dialog.setModal(true);
   dialog.show();
