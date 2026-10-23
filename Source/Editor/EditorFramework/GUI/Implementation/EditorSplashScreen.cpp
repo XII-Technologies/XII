@@ -78,7 +78,7 @@ void xiiQtEditorSplashScreen::SetStage(const QString& sStage, const QString& sDe
     m_Progress.setRange(0, static_cast<int>(uiTotal));
     m_Progress.setValue(static_cast<int>(qMin(uiCompleted, uiTotal)));
     m_Progress.setAccessibleDescription(QStringLiteral("%1 of %2 items completed").arg(qMin(uiCompleted, uiTotal)).arg(uiTotal));
-    m_sDetail += QStringLiteral("  —  %1 of %2 complete").arg(qMin(uiCompleted, uiTotal)).arg(uiTotal);
+    m_sDetail += QStringLiteral("  %1 of %2 complete").arg(qMin(uiCompleted, uiTotal)).arg(uiTotal);
   }
   else
   {
