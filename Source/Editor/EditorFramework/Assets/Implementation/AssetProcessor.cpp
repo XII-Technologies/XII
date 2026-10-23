@@ -512,6 +512,12 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           xiiAssetCurator::GetSingleton()->m_Updating.Remove(m_AssetGuid);
         }
 
+        xiiAssetProcessorEvent result;
+        result.m_Type       = xiiAssetProcessorEvent::Type::AssetProcessed;
+        result.m_Result     = m_Status.m_Result;
+        result.m_sAssetPath = m_AssetPath.GetDataDirRelativePath();
+        xiiAssetProcessor::GetSingleton()->m_Events.Broadcast(result);
+
         m_State = State::LookingForWork;
       }
       break;

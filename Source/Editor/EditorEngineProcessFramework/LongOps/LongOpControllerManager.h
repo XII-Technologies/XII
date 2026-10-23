@@ -14,10 +14,13 @@ struct xiiLongOpControllerEvent
     OpAdded,    ///< A new long op has been added / registered.
     OpRemoved,  ///< A long op has been deleted. The GUID is sent, but it cannot be resolved anymore.
     OpProgress, ///< The completion progress of a long op has changed.
+    OpFinished, ///< A worker result was received. Cancellation is reported separately from failure.
   };
 
   Type    m_Type;
-  xiiUuid m_OperationGuid; ///< Use xiiLongOpControllerManager::GetOperation() to resolve the GUID to the actual long op.
+  xiiUuid m_OperationGuid;      ///< Use xiiLongOpControllerManager::GetOperation() to resolve the GUID to the actual long op.
+  bool    m_bSucceeded = false; ///< Only meaningful for OpFinished.
+  bool    m_bCanceled  = false; ///< Only meaningful for OpFinished.
 };
 
 /// The LongOp controller is active in the editor process and manages which long ops are available, running, etc.
@@ -47,8 +50,9 @@ public:
                                                   ///< disappears as well.
     xiiTime m_StartOrDuration;                    ///< While m_bIsRunning is true, this is the time the long op started, once m_bIsRunning it holds the last
                                                   ///< duration of the long op execution.
-    float m_fCompletion = 0.0f;                   ///< [0; 1] range for the progress.
-    bool  m_bIsRunning  = false;                  ///< Whether the long op is currently being executed.
+    float m_fCompletion      = 0.0f;              ///< [0; 1] range for the progress.
+    bool  m_bIsRunning       = false;             ///< Whether the long op is currently being executed.
+    bool  m_bCancelRequested = false;
   };
 
   /// Events about the state of all available long ops.

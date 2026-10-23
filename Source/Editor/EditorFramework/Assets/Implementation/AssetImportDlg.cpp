@@ -95,6 +95,8 @@ void xiiQtAssetImportDlg::on_ButtonImport_clicked()
   setEnabled(false);
   XII_SCOPE_EXIT(setEnabled(true));
   xiiProgressRange progress("Importing Assets", uiImports, false);
+  const xiiTime    start    = xiiTime::Now();
+  xiiUInt32        uiFailed = 0;
   for (auto& data : m_AllImports)
   {
     if (data.m_iSelectedOption < 0)
@@ -105,8 +107,12 @@ void xiiQtAssetImportDlg::on_ButtonImport_clicked()
 
     const auto& option = data.m_ImportOptions[data.m_iSelectedOption];
 
-    option.m_pGenerator->Import(data.m_sInputFileAbsolute, option.m_sName, false).LogFailure();
+    xiiStatus result = option.m_pGenerator->Import(data.m_sInputFileAbsolute, option.m_sName, false);
+    if (result.Failed())
+      ++uiFailed;
+    result.LogFailure();
   }
 
   accept();
+  Q_EMIT xiiQtEditorApp::GetSingleton()->AssetImportFinished(uiImports - uiFailed, uiFailed, (xiiTime::Now() - start).GetSeconds());
 }

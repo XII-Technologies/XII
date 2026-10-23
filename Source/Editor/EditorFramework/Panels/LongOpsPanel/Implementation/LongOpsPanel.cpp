@@ -61,6 +61,9 @@ xiiQtLongOpsPanel::~xiiQtLongOpsPanel()
 
 void xiiQtLongOpsPanel::LongOpsEventHandler(const xiiLongOpControllerEvent& e)
 {
+  // OpProgress already refreshed the final row; the result event is for outcome consumers.
+  if (e.m_Type == xiiLongOpControllerEvent::Type::OpFinished)
+    return;
   if (e.m_Type == xiiLongOpControllerEvent::Type::OpProgress)
   {
     m_bUpdateTable = true;

@@ -262,11 +262,16 @@ xiiStatus xiiAssetDocumentGenerator::Import(xiiStringView sInputFileAbs, xiiStri
   xiiHybridArray<xiiDocument*, 16> pGeneratedDocs;
   XII_SUCCEED_OR_RETURN(Generate(sInputFileAbs, sMode, pGeneratedDocs));
 
+  xiiStatus result = XII_SUCCESS;
+
   for (xiiDocument* pDoc : pGeneratedDocs)
   {
     const xiiString sDocPath = pDoc->GetDocumentPath();
 
-    pDoc->SaveDocument(true).LogFailure();
+    xiiStatus saveResult = pDoc->SaveDocument(true);
+    if (saveResult.Failed())
+      result = saveResult;
+    saveResult.LogFailure();
     pDoc->GetDocumentManager()->CloseDocument(pDoc);
 
     if (bOpenDocument)
@@ -275,5 +280,5 @@ xiiStatus xiiAssetDocumentGenerator::Import(xiiStringView sInputFileAbs, xiiStri
     }
   }
 
-  return XII_SUCCESS;
+  return result;
 }

@@ -19,5 +19,5 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 if(XII_CMAKE_PLATFORM_WINDOWS)
-  target_link_libraries(${PROJECT_NAME} PRIVATE Ole32.lib Uuid.lib User32.lib Shell32.lib Propsys.lib)
+  target_link_libraries(${PROJECT_NAME} PRIVATE Ole32.lib Uuid.lib User32.lib Shell32.lib Propsys.lib RuntimeObject.lib Advapi32.lib)
 endif()

@@ -38,10 +38,13 @@ struct xiiAssetProcessorEvent
 {
   enum class Type
   {
-    ProcessTaskStateChanged
+    ProcessTaskStateChanged,
+    AssetProcessed ///< A background request reached its final result; not an arbitrary log message.
   };
 
-  Type m_Type;
+  Type                     m_Type;
+  xiiTransformResult::Enum m_Result = xiiTransformResult::Success;
+  xiiString                m_sAssetPath; ///< Copied by listeners before returning to the processing thread.
 };
 
 

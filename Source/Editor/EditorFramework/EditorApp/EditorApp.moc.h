@@ -38,6 +38,7 @@ class xiiQtVersionChecker;
 class xiiQtEditorSystemTray;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 class xiiWindowsTaskbar;
+class xiiWindowsNotifications;
 #endif
 
 struct XII_EDITORFRAMEWORK_DLL xiiEditorAppEvent
@@ -235,6 +236,9 @@ public:
   void RestartEngineProcessIfPluginsChanged(bool bForce);
   void SetStyleSheet();
 
+  /// Restores a borrowed editor window and activates its modal dialog if present. GUI thread only.
+  static void ShowEditorWindow(QWidget* pWindow);
+
 Q_SIGNALS:
   void IdleEvent();
 
@@ -243,11 +247,15 @@ Q_SIGNALS:
   void ToolExecutionStarted(const QString& sOperation = {});
   void ToolExecutionFinished(bool bSucceeded, const QString& sOperation = {});
 
+  /// One result per explicit import batch, after all selected generators have returned.
+  void AssetImportFinished(xiiUInt32 uiSucceeded, xiiUInt32 uiFailed, double fSeconds);
+
   /// Reports actionable configuration changes, independently of log history and informational status text.
   void RequiredActionsChanged(bool bRestartRequired, bool bReloadProjectRequired);
 
 private:
   friend struct xiiEditorSystemTrayTest;
+  friend struct xiiWindowsNotificationsTest;
 
   xiiString BuildDocumentTypeFileFilter(bool bForCreation);
 
@@ -344,7 +352,8 @@ private:
   xiiQtProgressbar*      m_pQtProgressbar = nullptr;
   xiiQtEditorSystemTray* m_pSystemTray    = nullptr;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-  xiiWindowsTaskbar* m_pTaskbar = nullptr;
+  xiiWindowsTaskbar*       m_pTaskbar       = nullptr;
+  xiiWindowsNotifications* m_pNotifications = nullptr;
 #endif
 
   // *** Localization ***

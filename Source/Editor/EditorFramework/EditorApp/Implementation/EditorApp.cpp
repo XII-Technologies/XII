@@ -49,6 +49,22 @@ xiiInt32 xiiQtEditorApp::RunEditor()
   return ret;
 }
 
+void xiiQtEditorApp::ShowEditorWindow(QWidget* pWindow)
+{
+  if (pWindow == nullptr)
+    return;
+  pWindow->setWindowState(pWindow->windowState() & ~Qt::WindowMinimized);
+  pWindow->show();
+  QWidget* pTarget = QApplication::activeModalWidget();
+  if (pTarget == nullptr)
+    pTarget = pWindow;
+  pTarget->raise();
+  pTarget->activateWindow();
+  // Qt follows Windows foreground restrictions; requesting attention is the fallback.
+  if (!pTarget->isActiveWindow())
+    QApplication::alert(pTarget);
+}
+
 void xiiQtEditorApp::SlotTimedUpdate()
 {
   if (xiiToolsProject::IsProjectOpen())
