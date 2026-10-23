@@ -103,6 +103,7 @@
     <file>xiiTranslateGizmoEditTool.svg</file>
   </qresource>
   <qresource prefix="Splash">
+    <file>Splash/Logo.svg</file>
     <file>Splash/splash.svg</file>
     <file>Splash/splash.png</file>
   </qresource>
