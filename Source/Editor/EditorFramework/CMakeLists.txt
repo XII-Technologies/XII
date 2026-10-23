@@ -17,3 +17,7 @@ target_link_libraries(${PROJECT_NAME}
   GuiFoundation
   EditorEngineProcessFramework
 )
+
+if(XII_CMAKE_PLATFORM_WINDOWS)
+  target_link_libraries(${PROJECT_NAME} PRIVATE Ole32.lib Uuid.lib User32.lib)
+endif()

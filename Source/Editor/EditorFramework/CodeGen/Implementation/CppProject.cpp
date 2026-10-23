@@ -12,6 +12,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/System/Process.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/UIServices/DynamicEnums.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
@@ -831,6 +832,11 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
 
   XII_LOG_BLOCK("Compile C++ Plugin");
 
+  auto* pEditor    = xiiQtEditorApp::GetSingleton();
+  bool  bSucceeded = false;
+  Q_EMIT pEditor->ToolExecutionStarted();
+  XII_SCOPE_EXIT(Q_EMIT pEditor->ToolExecutionFinished(bSucceeded));
+
   xiiStringBuilder sBuildOutput;
   xiiMutex         outputMutex;
   xiiInt32         iReturnCode = 0;
@@ -882,6 +888,7 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
       return XII_FAILURE;
     }
     xiiLog::Success("Compiled C++ code.");
+    bSucceeded = true;
     return XII_SUCCESS;
   }
 
