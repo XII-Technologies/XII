@@ -268,6 +268,13 @@ deterministic occurrence identities; runtime pass objects omit authoring pin obj
 Expanding a subgraph in the editor applies a structured object-graph diff through
 the existing accessor, preserving leaf arrays/maps/settings and interface contracts.
 
+Render pipeline documents publish their input/output contracts in reflected asset
+header metadata, using the same curator mechanism as exposed asset parameters.
+Subgraph nodes discover these ports before a compiled resource exists. Saving a
+referenced pipeline publishes its updated interface; curator notifications refresh
+existing nodes in open parent documents and retain compatible connection objects
+and identities. Pin discovery does not parse source files or open documents.
+
 All four SDK pipeline source assets and compiled binaries have been regenerated
 with the production serializer/compiler. Document, node, connection and layout
 identities are retained. Loading older sources without configurations initializes

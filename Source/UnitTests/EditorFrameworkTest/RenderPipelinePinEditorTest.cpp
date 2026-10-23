@@ -4,16 +4,22 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
+#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
 #include <EnginePluginAssets/RenderPipelineAsset/RenderPipelineContext.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/GraphVersioning.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracing/RayTracingScenePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadePass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowRasterWorkPass.h>
@@ -27,11 +33,13 @@
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
+#include <QApplication>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
+#include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
 class xiiEditorPinTestPass : public xiiRenderPipelinePass
@@ -145,6 +153,132 @@ namespace
     xiiDynamicArray<xiiUuid> m_Objects;
   };
 } // namespace
+
+XII_CREATE_SIMPLE_TEST_GROUP(PipelineEditor);
+XII_CREATE_SIMPLE_TEST(PipelineEditor, SubgraphPinsFromSourceAsset)
+{
+  auto* editor = xiiQtEditorApp::GetSingleton();
+  xiiStartup::StartupCoreSystems();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const auto             output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  const xiiStringBuilder preferences(output, "/SubgraphPreferences");
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(preferences));
+  editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor->CloseProject(); QApplication::processEvents(); editor->ShutdownEditor());
+  const xiiStringBuilder project(output, "/SubgraphProject/xiiProject");
+  if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
+    return;
+
+  const xiiStringBuilder path(project.GetFileDirectory(), "/Child.xiiRenderPipelineAsset");
+  PinDocument            child(path);
+  auto*                  commands = child.GetObjectAccessor();
+  auto*                  nodes    = static_cast<xiiRenderPipelineNodeManager*>(child.GetObjectManager());
+  xiiUuid                input, pass, outputNode;
+  commands->StartTransaction("Create referenced pipeline interface");
+  XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), input));
+  XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), pass));
+  XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), outputNode));
+  XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(input), "Name", "Color"));
+  XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(outputNode), "Input", false));
+  XII_TEST_STATUS(commands->SetValueByName(commands->GetObject(outputNode), "Name", "Result"));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(child.GetCommandHistory(), nodes->GetConnectionType(), *nodes->GetOutputPinByName(commands->GetObject(input), "Value"), *nodes->GetInputPinByName(commands->GetObject(pass), "Texture")));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(child.GetCommandHistory(), nodes->GetConnectionType(), *nodes->GetOutputPinByName(commands->GetObject(pass), "Texture"), *nodes->GetInputPinByName(commands->GetObject(outputNode), "Value")));
+  commands->FinishTransaction();
+  XII_TEST_STATUS(child.SaveDocument(true));
+  auto* curator = xiiAssetCurator::GetSingleton();
+  curator->NotifyOfFileChange(path);
+  curator->MainThreadTick(false);
+  xiiString compiledPath;
+  {
+    const auto asset = curator->GetSubAsset(child.GetGuid());
+    if (!XII_TEST_BOOL(static_cast<bool>(asset)))
+      return;
+    compiledPath = asset->m_pAssetInfo->GetManager()->GetAbsoluteOutputFileName(asset->m_pAssetInfo->m_pDocumentTypeDescriptor, path, {});
+  }
+  XII_TEST_BOOL(!xiiOSFile::ExistsFile(compiledPath));
+
+  PinDocument parent(xiiStringBuilder(project.GetFileDirectory(), "/Parent.xiiRenderPipelineAsset"));
+  auto*       accessor = parent.GetObjectAccessor();
+  auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(parent.GetObjectManager());
+  PinScene    scene;
+  scene.InitScene(manager);
+  const auto visiblePinCount = [&scene]() {
+    xiiUInt32 count = 0;
+    for (const auto* item : scene.items())
+      count += item->type() == xiiQtNodeScene::Pin ? 1 : 0;
+    return count;
+  };
+  xiiUuid          id;
+  xiiStringBuilder reference;
+  xiiConversionUtils::ToString(child.GetGuid(), reference);
+  accessor->StartTransaction("Reference pipeline source by asset identifier");
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineSubgraphPass>(), id));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(id), "Resource", reference.GetView()));
+  accessor->FinishTransaction();
+  XII_TEST_BOOL(manager->GetInputPinByName(accessor->GetObject(id), "Color") != nullptr);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "Result") != nullptr);
+  XII_TEST_INT(visiblePinCount(), 2);
+  XII_TEST_BOOL(!xiiOSFile::ExistsFile(compiledPath));
+  XII_TEST_STATUS(parent.SaveDocument(true));
+  PinDocument restored(parent.GetDocumentPath());
+  XII_TEST_STATUS(restored.LoadDocument());
+  auto*       restoredManager = static_cast<xiiRenderPipelineNodeManager*>(restored.GetObjectManager());
+  const auto* restoredNode    = restoredManager->GetObject(id);
+  if (XII_TEST_BOOL(restoredNode != nullptr))
+  {
+    XII_TEST_BOOL(restoredManager->GetInputPinByName(restoredNode, "Color") != nullptr);
+    XII_TEST_BOOL(restoredManager->GetOutputPinByName(restoredNode, "Result") != nullptr);
+  }
+  auto* live = xiiDynamicCast<xiiRenderPipelineAssetDocument*>(editor->OpenDocument(path, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(live != nullptr))
+    return;
+  XII_SCOPE_EXIT(live->GetDocumentManager()->CloseDocument(live));
+  auto*   liveAccessor = live->GetObjectAccessor();
+  xiiUuid producerId, consumerId;
+  accessor->StartTransaction("Connect parent resources to the existing instance");
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), producerId));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), consumerId));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(parent.GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(producerId), "Texture"), *manager->GetInputPinByName(accessor->GetObject(id), "Color")));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(parent.GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(id), "Result"), *manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture")));
+  accessor->FinishTransaction();
+  const auto connectionId = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"))[0]->GetParent()->GetGuid();
+  xiiUuid    additionalOutput;
+  liveAccessor->StartTransaction("Extend published pipeline interface");
+  XII_TEST_STATUS(liveAccessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), additionalOutput));
+  XII_TEST_STATUS(liveAccessor->SetValueByName(liveAccessor->GetObject(additionalOutput), "Input", false));
+  XII_TEST_STATUS(liveAccessor->SetValueByName(liveAccessor->GetObject(additionalOutput), "Name", "LiveResult"));
+  auto* liveNodes = static_cast<xiiRenderPipelineNodeManager*>(live->GetObjectManager());
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(live->GetCommandHistory(), liveNodes->GetConnectionType(), *liveNodes->GetOutputPinByName(liveAccessor->GetObject(pass), "Texture"), *liveNodes->GetInputPinByName(liveAccessor->GetObject(additionalOutput), "Value")));
+  liveAccessor->FinishTransaction();
+  XII_TEST_STATUS(live->SaveDocument());
+  curator->MainThreadTick(false);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") != nullptr);
+  XII_TEST_BOOL(restoredManager->GetOutputPinByName(restoredNode, "LiveResult") != nullptr);
+  XII_TEST_INT(visiblePinCount(), 6);
+  auto connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
+  if (XII_TEST_INT(connections.GetCount(), 1))
+    XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+  XII_TEST_STATUS(parent.GetCommandHistory()->Undo());
+  XII_TEST_STATUS(parent.GetCommandHistory()->Redo());
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") != nullptr);
+  connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
+  if (XII_TEST_INT(connections.GetCount(), 1))
+    XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+  liveAccessor->StartTransaction("Remove an unconnected published output");
+  XII_TEST_STATUS(liveAccessor->RemoveObject(liveAccessor->GetObject(additionalOutput)));
+  liveAccessor->FinishTransaction();
+  XII_TEST_STATUS(live->SaveDocument());
+  curator->MainThreadTick(false);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") == nullptr);
+  XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "Result") != nullptr);
+  XII_TEST_INT(visiblePinCount(), 5);
+  connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
+  if (XII_TEST_INT(connections.GetCount(), 1))
+    XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+}
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)
 {

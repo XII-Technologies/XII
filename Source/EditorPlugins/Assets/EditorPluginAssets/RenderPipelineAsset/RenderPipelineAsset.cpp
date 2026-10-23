@@ -17,6 +17,7 @@
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
+#include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -24,6 +25,21 @@
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAssetDocument, 7, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAssetInterface, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineAssetInterface>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_ARRAY_MEMBER_PROPERTY("Pins", m_Pins)->AddFlags(xiiPropertyFlags::PointerOwner),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiRenderPipelineAssetInterface::~xiiRenderPipelineAssetInterface()
+{
+  for (auto* pin : m_Pins)
+    pin->GetDynamicRTTI()->GetAllocator()->Deallocate(pin);
+}
 
 namespace
 {
@@ -40,6 +56,35 @@ namespace
       }
     }
     return xiiString(resource);
+  }
+
+  bool GetAssetInterfacePins(xiiStringView resource, xiiDynamicArray<xiiRenderPipelinePin>& out_pins)
+  {
+    const auto* curator = xiiAssetCurator::GetSingleton();
+    if (!curator)
+      return false;
+    const auto  asset    = curator->FindSubAsset(resource);
+    const auto* metadata = asset ? asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiRenderPipelineAssetInterface>() : nullptr;
+    if (!metadata)
+      return false;
+    for (const auto* configuration : metadata->m_Pins)
+    {
+      const auto&          schema = configuration->m_Metadata;
+      xiiRenderPipelinePin pin;
+      pin.m_sName                  = schema.m_sName;
+      pin.m_bInput                 = schema.m_bInput;
+      pin.m_Type                   = schema.m_Type;
+      pin.m_Format                 = configuration->m_Format;
+      pin.m_pDataType              = schema.m_pDataType;
+      pin.m_Access                 = schema.m_Access;
+      pin.m_bOptional              = schema.m_bOptional;
+      pin.m_bTemporalHistoryOutput = schema.m_bTemporalHistory;
+      pin.m_Constraints            = configuration->m_Constraints;
+      pin.m_sDisplayName           = configuration->m_sDisplayName;
+      pin.m_SourceId               = configuration->m_Id;
+      out_pins.PushBack(pin);
+    }
+    return true;
   }
 
   const xiiAbstractProperty* GetTexturePinProperty(const xiiDocumentObject* pNode, xiiStringView sPinName, bool bInput)
@@ -166,7 +211,9 @@ namespace
     if (pass->IsInstanceOf<xiiRenderPipelineSubgraphPass>())
     {
       xiiDynamicArray<xiiRenderPipelinePin> declarations;
-      static_cast<const xiiRenderPipelineSubgraphPass*>(pass)->GetPins(declarations, ResolvePipelineResource);
+      const auto*                           subgraph = static_cast<const xiiRenderPipelineSubgraphPass*>(pass);
+      if (!GetAssetInterfacePins(subgraph->m_sResource, declarations))
+        subgraph->GetPins(declarations, ResolvePipelineResource);
       if (configured && pass->GetConfiguredPins(declarations.GetArrayPtr(), pins).Succeeded())
         return XII_SUCCESS;
       pins = std::move(declarations);
@@ -199,6 +246,71 @@ namespace
     xiiStringView        GetDisplayName() const override { return m_Schema.m_sDisplayName.IsEmpty() ? m_Schema.m_sName.GetView() : m_Schema.m_sDisplayName.GetView(); }
   };
 } // namespace
+
+xiiRenderPipelineNodeManager::xiiRenderPipelineNodeManager()
+{
+  if (auto* curator = xiiAssetCurator::GetSingleton())
+    curator->m_Events.AddEventHandler(xiiMakeDelegate(&xiiRenderPipelineNodeManager::AssetCuratorEventHandler, this));
+}
+
+xiiRenderPipelineNodeManager::~xiiRenderPipelineNodeManager()
+{
+  if (auto* curator = xiiAssetCurator::GetSingleton())
+    curator->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiRenderPipelineNodeManager::AssetCuratorEventHandler, this));
+}
+
+void xiiRenderPipelineNodeManager::AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
+{
+  if (!GetDocument() || (e.m_Type != xiiAssetCuratorEvent::Type::AssetAdded && e.m_Type != xiiAssetCuratorEvent::Type::AssetUpdated))
+    return;
+  auto* history = GetDocument()->GetCommandHistory();
+  if (history->IsInUndoRedo())
+    return;
+  xiiHybridArray<const xiiDocumentObject*, 8> references;
+  for (const auto* node : GetRootObject()->GetChildren())
+    if (node->GetType()->IsDerivedFrom<xiiRenderPipelineSubgraphPass>())
+    {
+      const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(node->GetTypeAccessor().GetValue("Resource").Get<xiiString>());
+      if (asset && asset->m_pAssetInfo->m_Info->m_DocumentID == e.m_AssetGuid)
+        references.PushBack(node);
+    }
+  for (const auto* node : references)
+  {
+    xiiDynamicArray<xiiRenderPipelinePin> pins;
+    if (GetNativePins(node, pins, true).Failed())
+      continue;
+    bool changed = pins.GetCount() != GetInputPins(node).GetCount() + GetOutputPins(node).GetCount();
+    for (const auto& pin : pins)
+    {
+      const auto* current = pin.m_bInput ? GetInputPinByName(node, pin.m_sName) : GetOutputPinByName(node, pin.m_sName);
+      if (!current)
+      {
+        changed = true;
+        break;
+      }
+      const auto& previous = static_cast<const xiiPipelineEditorPin*>(current)->m_Schema;
+      changed |= previous.m_Type != pin.m_Type || previous.m_Format != pin.m_Format || previous.m_pDataType != pin.m_pDataType || previous.m_bOptional != pin.m_bOptional ||
+        previous.m_Access != pin.m_Access || previous.m_bTemporalHistoryOutput != pin.m_bTemporalHistoryOutput ||
+        previous.m_Constraints.m_Dimension != pin.m_Constraints.m_Dimension || previous.m_Constraints.m_uiSamples != pin.m_Constraints.m_uiSamples ||
+        previous.m_Constraints.m_uiWidth != pin.m_Constraints.m_uiWidth || previous.m_Constraints.m_uiHeight != pin.m_Constraints.m_uiHeight ||
+        previous.m_Constraints.m_RequiredBindFlags != pin.m_Constraints.m_RequiredBindFlags || previous.m_sDisplayName != pin.m_sDisplayName;
+    }
+    if (!changed)
+      continue;
+    history->StartTransaction("Update Render Pipeline Interface");
+    auto* accessor = static_cast<xiiNodeCommandAccessor*>(GetDocument()->GetObjectAccessor());
+    auto  result   = accessor->RefreshPins(node);
+    if (result.Succeeded())
+      result = SynchronizePinConfigurations(node);
+    if (result.Succeeded())
+      history->FinishTransaction();
+    else
+    {
+      history->CancelTransaction();
+      result.LogFailure();
+    }
+  }
+}
 
 XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, RenderPipelinePropertyGrid)
   BEGIN_SUBSYSTEM_DEPENDENCIES
@@ -407,6 +519,86 @@ xiiRenderPipelineAssetDocument::xiiRenderPipelineAssetDocument(xiiStringView sDo
 }
 
 xiiRenderPipelineAssetDocument::~xiiRenderPipelineAssetDocument() = default;
+
+void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const
+{
+  SUPER::UpdateAssetDocumentInfo(pInfo);
+  xiiRenderPipelineAssetInterface* metadata = XII_DEFAULT_NEW(xiiRenderPipelineAssetInterface);
+  pInfo->m_MetaInfo.PushBack(metadata);
+  const auto* manager = static_cast<const xiiRenderPipelineNodeManager*>(GetObjectManager());
+  for (const auto* node : manager->GetRootObject()->GetChildren())
+  {
+    if (node->GetType() != xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>())
+      continue;
+    const auto& accessor = node->GetTypeAccessor();
+    const bool  input    = accessor.GetValue("Input").Get<bool>();
+    const auto* value    = input ? manager->GetOutputPinByName(node, "Value") : manager->GetInputPinByName(node, "Value");
+    if (!value)
+      continue;
+    auto       pin           = static_cast<const xiiPipelineEditorPin*>(value)->m_Schema;
+    const auto connections   = manager->GetConnections(*value);
+    bool       firstEndpoint = true;
+    for (const auto* connection : connections)
+    {
+      // Publish the native endpoint contract, not only the interface node's defaults.
+      const auto&                       endpoint = input ? connection->GetTargetPin() : connection->GetSourcePin();
+      auto                              native   = static_cast<const xiiPipelineEditorPin&>(endpoint).m_Schema;
+      xiiRenderPipelinePinConfiguration requirements;
+      requirements.m_Id          = node->GetGuid();
+      requirements.m_Format      = pin.m_Format;
+      requirements.m_Constraints = pin.m_Constraints;
+      if (native.m_Type != pin.m_Type || (pin.m_pDataType && native.m_pDataType != pin.m_pDataType) || native.Apply(requirements).Failed())
+      {
+        xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
+        continue;
+      }
+      if (firstEndpoint)
+        pin = native;
+      else
+      {
+        requirements.m_Format      = native.m_Format;
+        requirements.m_Constraints = native.m_Constraints;
+        if (!pin.IsCompatibleWith(native) || pin.Apply(requirements).Failed())
+          xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
+        pin.m_bOptional &= native.m_bOptional;
+      }
+      firstEndpoint = false;
+    }
+    pin.m_sName  = accessor.GetValue("Name").Get<xiiString>();
+    pin.m_bInput = input;
+    if (input)
+      if (const auto* fallback = manager->GetInputPinByName(node, "Default"))
+        pin.m_bOptional |= !manager->GetConnections(*fallback).IsEmpty();
+    xiiRenderPipelinePinConfiguration* configuration = XII_DEFAULT_NEW(xiiRenderPipelinePinConfiguration);
+    configuration->m_Id                              = node->GetGuid();
+    configuration->m_Metadata                        = pin.GetMetadata();
+    configuration->m_Format                          = pin.m_Format;
+    configuration->m_Constraints                     = pin.m_Constraints;
+    configuration->m_sDisplayName                    = pin.m_sDisplayName;
+    bool merged                                      = false;
+    for (auto* existing : metadata->m_Pins)
+      if (existing->m_Metadata.m_sName == pin.m_sName && existing->m_Metadata.m_bInput == input)
+      {
+        xiiRenderPipelinePin combined = pin;
+        if (combined.m_Type != existing->m_Metadata.m_Type || combined.m_pDataType != existing->m_Metadata.m_pDataType || combined.Apply(*existing).Failed())
+          xiiLog::Error("Incompatible declarations of pipeline interface '{}'.", pin.m_sName);
+        else
+        {
+          existing->m_Format      = combined.m_Format;
+          existing->m_Constraints = combined.m_Constraints;
+          existing->m_Metadata.m_bOptional &= pin.m_bOptional;
+        }
+        merged = true;
+        break;
+      }
+    if (merged)
+    {
+      XII_DEFAULT_DELETE(configuration);
+      continue;
+    }
+    metadata->m_Pins.PushBack(configuration);
+  }
+}
 
 xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject* object)
 {
