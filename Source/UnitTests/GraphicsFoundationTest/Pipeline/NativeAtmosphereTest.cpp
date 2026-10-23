@@ -404,8 +404,8 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
       if (!XII_TEST_BOOL(texture != nullptr))
         continue;
       const xiiSizeU32 expected = i == 0 ? xiiSizeU32((view->GetRenderResolutionWidth() + 1) / 2, (view->GetRenderResolutionHeight() + 1) / 2) :
-        i == 1                           ? xiiSizeU32(static_cast<xiiUInt32>(view->GetViewport().width) / 2, static_cast<xiiUInt32>(view->GetViewport().height) / 2) :
-                                           xiiSizeU32(10, 6);
+                      i == 1                           ? xiiSizeU32(static_cast<xiiUInt32>(view->GetViewport().width) / 2, static_cast<xiiUInt32>(view->GetViewport().height) / 2) :
+                                                         xiiSizeU32(10, 6);
       XII_TEST_BOOL(texture->m_Size == expected);
     }
     graph.EndSetup();

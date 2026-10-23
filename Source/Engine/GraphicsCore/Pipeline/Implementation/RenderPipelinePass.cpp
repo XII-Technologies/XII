@@ -216,9 +216,9 @@ xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipeli
   if (xiiGALDevice::HasDefaultDevice())
   {
     const auto& limits  = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties;
-    const auto  maximum = pin.m_Constraints.m_Dimension == xiiGALResourceDimension::Texture3D                                                             ? limits.m_uiMaxTexture3DDimension :
-      pin.m_Constraints.m_Dimension == xiiGALResourceDimension::TextureCube || pin.m_Constraints.m_Dimension == xiiGALResourceDimension::TextureCubeArray ? limits.m_uiMaxTextureCubeDimension :
-                                                                                                                                                            limits.m_uiMaxTexture2DDimension;
+    const auto  maximum = pin.m_Constraints.m_Dimension == xiiGALResourceDimension::Texture3D                                                              ? limits.m_uiMaxTexture3DDimension :
+       pin.m_Constraints.m_Dimension == xiiGALResourceDimension::TextureCube || pin.m_Constraints.m_Dimension == xiiGALResourceDimension::TextureCubeArray ? limits.m_uiMaxTextureCubeDimension :
+                                                                                                                                                             limits.m_uiMaxTexture2DDimension;
     if (maximum && (width > maximum || height > maximum))
       return ReportFailure("Resolved texture extent exceeds the device's texture dimension limit.");
   }
