@@ -13,18 +13,31 @@
 #include <EditorFrameworkTest/RenderPipelineSettingsEditorTest.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
+#include <Core/Physics/SurfaceResource.h>
+#include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
+#include <GuiFoundation/UIServices/QtProgressbar.h>
 #include <QApplication>
 #include <QElapsedTimer>
+#include <QLineEdit>
 #include <QPointer>
+#include <QProgressDialog>
+#include <QTimer>
 #include <QTreeView>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
@@ -178,4 +191,249 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     pump();
     XII_TEST_BOOL(!xiiToolsProject::IsProjectOpen());
   }
+}
+
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundTransforms);
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorAssetProcessor);
+
+XII_CREATE_SIMPLE_TEST(EditorAssetProcessor, ProtocolAndProfiles)
+{
+  auto&           editor       = *xiiQtEditorApp::GetSingleton();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/ProcessorPreferences");
+  const xiiStringBuilder project(preferences, "/Project/xiiProject");
+  XII_TEST_BOOL(xiiToolsProject::CreateProject(project).Succeeded());
+  xiiToolsProject::CloseProject();
+  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor.ShutdownEditor());
+  if (XII_TEST_RESULT(editor.CreateOrOpenProject(false, project)))
+    TestAssetProcessor(editor, project.GetFileDirectory());
+}
+
+XII_CREATE_SIMPLE_TEST(EditorBackgroundTransforms, BatchFailureAndCancellation)
+{
+  auto&           editor       = *xiiQtEditorApp::GetSingleton();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/BackgroundPreferences");
+  const xiiStringBuilder project(preferences, "/Project/xiiProject");
+  const xiiStringBuilder previousFailure(preferences, "/Project/Batch/Failure.xiiSurfaceAsset");
+  if (xiiOSFile::ExistsFile(previousFailure))
+    XII_TEST_RESULT(xiiOSFile::DeleteFile(previousFailure));
+  XII_TEST_BOOL(xiiToolsProject::CreateProject(project).Succeeded());
+  xiiToolsProject::CloseProject();
+  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor.ShutdownEditor());
+  if (!XII_TEST_RESULT(editor.CreateOrOpenProject(false, project)))
+    return;
+  auto*                    processor = xiiAssetProcessor::GetSingleton();
+  auto*                    curator   = xiiAssetCurator::GetSingleton();
+  xiiDynamicArray<xiiUuid> assets;
+  for (xiiUInt32 i = 0; i < 32; ++i)
+  {
+    xiiStringBuilder path(preferences);
+    path.AppendFormat("/Project/Batch/Surface{}.xiiSurfaceAsset", i);
+    auto* document = xiiDynamicCast<xiiAssetDocument*>(editor.CreateDocument(path, xiiDocumentFlags::None));
+    if (!XII_TEST_BOOL(document != nullptr))
+      return;
+    XII_TEST_STATUS(document->SaveDocument());
+    assets.PushBack(document->GetGuid());
+    document->GetDocumentManager()->CloseDocument(document);
+  }
+  const xiiStringBuilder firstPath(preferences, "/Project/Batch/Surface0.xiiSurfaceAsset");
+  auto*                  dependent = xiiDynamicCast<xiiAssetDocument*>(editor.OpenDocument(firstPath, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(dependent != nullptr))
+    return;
+  xiiStringBuilder dependencyId;
+  xiiConversionUtils::ToString(assets.PeekBack(), dependencyId);
+  auto* dependencyAccessor = dependent->GetObjectAccessor();
+  dependencyAccessor->StartTransaction("Set shared background dependency");
+  XII_TEST_STATUS(dependencyAccessor->SetValueByName(dependent->GetObjectManager()->GetRootObject()->GetChildren()[0], "BaseSurface", dependencyId.GetView()));
+  dependencyAccessor->FinishTransaction();
+  XII_TEST_STATUS(dependent->SaveDocument());
+  dependent->GetDocumentManager()->CloseDocument(dependent);
+  class ModalObserver : public QObject
+  {
+  public:
+    bool eventFilter(QObject* object, QEvent* event) override
+    {
+      if (event->type() == QEvent::Show && qobject_cast<QProgressDialog*>(object))
+        ++m_uiDialogs;
+      return false;
+    }
+    xiiUInt32 m_uiDialogs = 0;
+  } observer;
+  qApp->installEventFilter(&observer);
+  XII_SCOPE_EXIT(qApp->removeEventFilter(&observer));
+  QLineEdit editing;
+  QTimer    heartbeat;
+  xiiUInt32 uiHeartbeats = 0;
+  QObject::connect(&heartbeat, &QTimer::timeout, &editing, [&]() {
+    ++uiHeartbeats;
+    editing.setText(QString::number(uiHeartbeats));
+    XII_TEST_BOOL(QApplication::activeModalWidget() == nullptr);
+    XII_TEST_BOOL(!editor.IsProgressBarProcessingEvents());
+  });
+  heartbeat.start(5);
+  auto wait = [&]() {
+    QElapsedTimer timeout;
+    timeout.start();
+    while ((processor->GetTransformProgress().m_bActive || processor->GetProcessTaskState() != xiiAssetProcessor::ProcessTaskState::Stopped) && timeout.elapsed() < 90000)
+    {
+      QApplication::processEvents(QEventLoop::AllEvents, 20);
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+    }
+    QApplication::processEvents();
+    XII_TEST_BOOL(!processor->GetTransformProgress().m_bActive);
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+  };
+  XII_TEST_STATUS(processor->QueueTransformAssets(assets, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform));
+  XII_TEST_STATUS(processor->QueueTransformAssets(assets)); // Coalesce duplicate submissions.
+  XII_TEST_INT(processor->GetTransformProgress().m_uiTotal, assets.GetCount());
+  wait();
+  auto progress = processor->GetTransformProgress();
+  XII_TEST_INT(progress.m_uiCompleted, assets.GetCount());
+  XII_TEST_INT(progress.m_uiFailed, 0);
+  XII_TEST_BOOL(uiHeartbeats > 0 && !editing.text().isEmpty());
+  XII_TEST_INT(observer.m_uiDialogs, 0);
+  for (const auto& guid : assets)
+  {
+    XII_TEST_BOOL(!curator->IsAssetBeingTransformed(guid));
+    xiiProcessAssetMsg request;
+    XII_TEST_RESULT(xiiAssetProcessor::PrepareAssetRequest(guid, request));
+    xiiUInt64 hash = 0, thumb = 0, package = 0;
+    XII_TEST_BOOL(curator->IsAssetUpToDate(guid, curator->GetActiveAssetProfile(), nullptr, hash, thumb, package, true) == xiiAssetInfo::UpToDate);
+  }
+  // A saved edit after reservation must trigger another request before publishing/reloading.
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets.GetData(), 1), xiiTransformFlags::ForceTransform | xiiTransformFlags::TriggeredManually));
+  QElapsedTimer editTimeout;
+  editTimeout.start();
+  while (!curator->IsAssetBeingTransformed(assets[0]) && editTimeout.elapsed() < 5000)
+  {
+    QApplication::processEvents(QEventLoop::AllEvents, 20);
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+  XII_TEST_BOOL(curator->IsAssetBeingTransformed(assets[0]));
+  auto* edited = xiiDynamicCast<xiiAssetDocument*>(editor.OpenDocument(firstPath, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(edited != nullptr))
+    return;
+  auto* editAccessor = edited->GetObjectAccessor();
+  editAccessor->StartTransaction("Edit while transforming");
+  XII_TEST_STATUS(editAccessor->SetValueByName(edited->GetObjectManager()->GetRootObject()->GetChildren()[0], "Restitution", 0.75f));
+  editAccessor->FinishTransaction();
+  class ReservationLog : public xiiTestLogInterface
+  {
+    void HandleLogMessage(const xiiLoggingEventData& e) override
+    {
+      // Unit-test save mode retains its legacy synchronous auto-transform task. Its
+      // attempted concurrent transform must be rejected by the production reservation.
+      if (e.m_EventType != xiiLogMsgType::ErrorMsg || !e.m_sText.FindSubString("Asset is being transformed in the background"))
+        xiiTestLogInterface::HandleLogMessage(e);
+    }
+  } reservationLog;
+  {
+    xiiTestLogSystemScope scope(&reservationLog);
+    XII_TEST_STATUS(edited->SaveDocument());
+    edited->GetDocumentManager()->CloseDocument(edited);
+    wait();
+  }
+  progress = processor->GetTransformProgress();
+  XII_TEST_BOOL(progress.m_uiTotal >= 2);
+  XII_TEST_INT(progress.m_uiFailed, 0);
+  const xiiDocumentTypeDescriptor* descriptor = nullptr;
+  XII_TEST_RESULT(xiiDocumentManager::FindDocumentTypeFromPath(firstPath, false, descriptor));
+  const auto*   assetDescriptor = static_cast<const xiiAssetDocumentTypeDescriptor*>(descriptor);
+  const auto*   manager         = static_cast<const xiiAssetDocumentManager*>(descriptor->m_pManager);
+  const auto    output          = manager->GetAbsoluteOutputFileName(assetDescriptor, firstPath, "");
+  xiiFileReader reader;
+  XII_TEST_RESULT(reader.Open(output));
+  xiiAssetFileHeader header;
+  XII_TEST_RESULT(header.Read(reader));
+  xiiSurfaceResourceDescriptor surface;
+  surface.Load(reader);
+  XII_TEST_FLOAT(surface.m_fPhysicsRestitution, 0.75f, 0.0001f);
+  reader.Close();
+
+  // A stronger request arriving after dispatch needs one additional pass. Identical
+  // pending requests still coalesce, and completion waits for both passes of the asset.
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets.GetData(), 1), xiiTransformFlags::ForceTransform));
+  QElapsedTimer upgradeTimeout;
+  upgradeTimeout.start();
+  while (!curator->IsAssetBeingTransformed(assets[0]) && upgradeTimeout.elapsed() < 5000)
+  {
+    QApplication::processEvents(QEventLoop::AllEvents, 20);
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+  XII_TEST_BOOL(curator->IsAssetBeingTransformed(assets[0]));
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets.GetData(), 1), xiiTransformFlags::ForceTransform | xiiTransformFlags::TriggeredManually));
+  XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(assets.GetData(), 1), xiiTransformFlags::ForceTransform | xiiTransformFlags::TriggeredManually));
+  XII_TEST_INT(processor->GetTransformProgress().m_uiTotal, 2);
+  wait();
+  XII_TEST_INT(processor->GetTransformProgress().m_uiCompleted, 2);
+  XII_TEST_INT(processor->GetTransformProgress().m_uiFailed, 0);
+
+  // A missing dependency produces a stored diagnostic and one batch outcome, with no dialog.
+  class MissingDependencyLog : public xiiTestLogInterface
+  {
+  public:
+    void HandleLogMessage(const xiiLoggingEventData& e) override
+    {
+      if (e.m_EventType == xiiLogMsgType::ErrorMsg &&
+          (e.m_sText.FindSubString("11111111-2222-3333-4444-555555555555") || e.m_sText.FindSubString("Failure.xiiSurfaceAsset")))
+        ++m_uiDiagnostics;
+      else
+        xiiTestLogInterface::HandleLogMessage(e);
+    }
+    std::atomic<xiiUInt32> m_uiDiagnostics = 0;
+  } failureLog;
+  xiiTestLogSystemScope failureScope(&failureLog, true);
+  failureLog.ExpectMessage("Asset transformation:", xiiLogMsgType::ErrorMsg);
+  const xiiStringBuilder badPath(preferences, "/Project/Batch/Failure.xiiSurfaceAsset");
+  auto*                  bad = xiiDynamicCast<xiiAssetDocument*>(editor.CreateDocument(badPath, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(bad != nullptr))
+    return;
+  auto* accessor = bad->GetObjectAccessor();
+  accessor->StartTransaction("Set missing dependency");
+  XII_TEST_STATUS(accessor->SetValueByName(bad->GetObjectManager()->GetRootObject()->GetChildren()[0], "BaseSurface", "{ 11111111-2222-3333-4444-555555555555 }"));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(bad->SaveDocument());
+  const xiiUuid badGuid = bad->GetGuid();
+  bad->GetDocumentManager()->CloseDocument(bad);
+  {
+    XII_TEST_STATUS(processor->QueueTransformAssets(xiiMakeArrayPtr(&badGuid, 1)));
+    wait();
+    XII_TEST_INT(processor->GetTransformProgress().m_uiFailed, 1);
+    XII_TEST_BOOL(failureLog.m_uiDiagnostics > 0);
+  }
+  XII_TEST_STATUS(processor->QueueTransformAssets(assets, xiiTransformFlags::ForceTransform | xiiTransformFlags::TriggeredManually));
+  processor->StopProcessTask(false); // Nonblocking cancellation; drain active requests.
+  wait();
+  progress = processor->GetTransformProgress();
+  XII_TEST_BOOL(progress.m_uiCanceled > 0);
+  XII_TEST_INT(progress.m_uiCompleted + progress.m_uiCanceled, progress.m_uiTotal);
+  XII_TEST_INT(progress.m_uiFailed, 0);
+  for (const auto& guid : assets)
+    XII_TEST_BOOL(!curator->IsAssetBeingTransformed(guid));
+  XII_TEST_INT(observer.m_uiDialogs, 0);
+  // A forced shutdown must also release all reservations before the project is destroyed.
+  XII_TEST_STATUS(processor->QueueTransformAssets(assets, xiiTransformFlags::ForceTransform));
+  QElapsedTimer activeTimeout;
+  activeTimeout.start();
+  while (!curator->IsAssetBeingTransformed(assets[0]) && activeTimeout.elapsed() < 5000)
+  {
+    QApplication::processEvents(QEventLoop::AllEvents, 20);
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+  XII_TEST_BOOL(curator->IsAssetBeingTransformed(assets[0]));
+  processor->StopProcessTask(true);
+  XII_TEST_BOOL(!processor->GetTransformProgress().m_bActive);
+  for (const auto& guid : assets)
+    XII_TEST_BOOL(!curator->IsAssetBeingTransformed(guid));
 }

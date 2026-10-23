@@ -1,0 +1,27 @@
+# Background Asset Transformation
+
+Interactive Transform Asset, Transform All Assets, Asset Browser selection/icon transforms, status-indicator transforms, post-startup transform requests, and automatic transforms after saving use the existing `xiiAssetProcessor` worker pool. They enqueue saved asset identities and return; they do not create a progress range on the editor GUI thread or call `processEvents()` to simulate responsiveness. The shared Qt progress-dialog adapter remains available to synchronous operations with different contracts.
+
+## Execution and ownership
+
+`QueueTransformAssets` accepts requests on the editor thread. Explicit individual requests save the selected modified documents first; automatic save requests use already saved inputs. Queue admission does not hash a large batch. The existing process thread discovers dependencies and hashes before dispatch and uses the existing EditorProcessor executable, IPC protocol, asset profiles, transform implementation, and deferred output writers. Workers never access the parent editor's widgets or live documents.
+
+One queue and aggregate belong to the existing processor. Duplicate pending requests coalesce and retain stronger transform flags. Stronger requests arriving after dispatch schedule one additional pass; per-asset request counts prevent premature completion when the same asset has pending and in-flight work. Ordinary independent requests can occupy different processor slots. A request reserves its complete dependency hull under the curator mutex, sharing the existing `m_Updating` set with automatic processing. Work with overlapping reservations waits; unrelated work can proceed. Synchronous transforms reject a reserved asset instead of racing a background write. Existing last-good outputs remain available; outputs are published through their existing deferred-write contracts, and resource reload requests follow successful results.
+
+Requested profiles are captured by name and retained across profile selection changes. The process reloads profile definitions through the existing path. Results are checked against current source/dependency hashes; saved changes made while a request runs trigger a fresh request before resource reload. Missing/deleted inputs and processor failures use existing transform diagnostics. Importers that need to modify source documents retain the existing `NeedsImport` background result rather than overwriting an editor document from another process.
+
+Transform All also schedules manager-declared final transforms, such as Collections, after ordinary requests and in-flight writes have finished. The editor publishes lookup tables after completion and records a full-transform date only for a successful, uncanceled full batch. Existing synchronous `TransformAsset`/`TransformAllAssets` contracts remain available to command-line processors and export/build code that requires an immediate result before consuming outputs; they are not changed into falsely successful fire-and-forget APIs.
+
+## Progress, diagnostics, and cancellation
+
+Copied snapshots extend existing processor events. The Asset Browser provides a measured processed/total progress bar and Cancel button. Existing taskbar aggregation uses the same snapshot while a requested batch is active, including paused presentation during cancellation; existing curator diagnostics still determine warning/error overlays. The tray tooltip describes the aggregate. Unmeasured automatic work continues using existing curator/processor state.
+
+The editor queues completion publication, logging, and status-bar text onto the Qt thread. Windows notifications consume one aggregate outcome and suppress per-asset request notifications, cancellations, foreground activity, short successes, and bursts through the existing notification policy. No new notification system or polling loop is added. Errors and import requirements remain inspectable in the Asset Curator and logs.
+
+Cancel stops dispatch and cancels queued requests while active subprocesses finish their current request. Forced stop terminates the processor children and releases reservations without treating cancellation as a transform error. The existing project-close/deinitialization path stops and joins the processor before destroying the curator, file-system model, and profiles. IPC ticks return to the existing processor scheduling loop while waiting for connection or responses, so all slots and stop requests can advance.
+
+## Validation
+
+`EditorBackgroundTransforms/BatchFailureAndCancellation` uses real saved Surface assets and EditorProcessor children. It checks a 32-asset batch with a shared dependency, coalesced requests, stronger requests after dispatch, actual up-to-date outputs, a saved edit during transformation and the resulting binary contents, unrelated GUI timer/edit updates, absence of progress dialogs, a missing-dependency failure, graceful cancellation, forced stop of an active child, and reservation cleanup. Run this group in a separate process because a complete Editor lifecycle owns plugin registration. `EditorAssetProcessor/ProtocolAndProfiles` exposes the existing processor IPC, profile reload, and command-line failure regressions as an isolated lifecycle test. Existing startup, taskbar, tray, notification, and asset diagnostics tests remain applicable.
+
+Native Linux/macOS desktop acceptance and very large production-project performance should be checked on those platforms; Windows tests do not certify them.
