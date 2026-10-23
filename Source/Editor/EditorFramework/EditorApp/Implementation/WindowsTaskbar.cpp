@@ -11,6 +11,9 @@
 #  include <EditorFramework/Assets/AssetProcessor.h>
 #  include <EditorFramework/EditorApp/EditorApp.moc.h>
 #  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+#  include <Foundation/Containers/HybridArray.h>
+#  include <Foundation/Math/Math.h>
+#  include <Foundation/Threading/Lock.h>
 #  include <Foundation/Types/ScopeExit.h>
 #  include <QEvent>
 #  include <QThread>
@@ -64,6 +67,7 @@ xiiWindowsTaskbar::xiiWindowsTaskbar(xiiQtEditorApp& editor, QWidget& window, xi
   m_bTaskbarReady = window.isVisible();
   m_Progress.m_Events.AddEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::ProgressEventHandler, this));
   xiiQtUiServices::s_Events.AddEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::UiServicesEventHandler, this));
+  xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::ProjectEventHandler, this));
 
   connect(&editor, &xiiQtEditorApp::ToolExecutionStarted, this, [this]() {
     if (m_uiToolCount == 0)
@@ -89,6 +93,7 @@ xiiWindowsTaskbar::~xiiWindowsTaskbar()
   m_UpdateTimer.stop();
   m_Progress.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::ProgressEventHandler, this));
   xiiQtUiServices::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::UiServicesEventHandler, this));
+  xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::ProjectEventHandler, this));
   qApp->removeNativeEventFilter(this);
   if (m_pWindow)
     m_pWindow->removeEventFilter(this);
@@ -146,13 +151,22 @@ void xiiWindowsTaskbar::UiServicesEventHandler(const xiiQtUiServices::Event& e)
     Update(); }, Qt::AutoConnection);
 }
 
+void xiiWindowsTaskbar::ProjectEventHandler(const xiiToolsProjectEvent& e)
+{
+  if (e.m_Type != xiiToolsProjectEvent::Type::ProjectClosed)
+    return;
+  QMetaObject::invokeMethod(this, [this]() {
+    m_bToolError = false;
+    Update(); }, Qt::AutoConnection);
+}
+
 void xiiWindowsTaskbar::Update()
 {
   XII_ASSERT_DEV(QThread::currentThread() == qApp->thread(), "Taskbar snapshots must be collected on the GUI thread.");
   xiiHybridArray<State, 8> states;
   states.PushBack(m_Foreground);
   State tools;
-  tools.m_Progress = m_uiToolCount > 0 ? ProgressState::Indeterminate : ProgressState::Inactive;
+  tools.m_Progress = m_bToolError ? ProgressState::Error : (m_uiToolCount > 0 ? ProgressState::Indeterminate : ProgressState::Inactive);
   tools.m_Overlay  = m_bToolError || m_bGlobalError ? Overlay::Error : m_StatusOverlay;
   states.PushBack(tools);
 
@@ -167,7 +181,7 @@ void xiiWindowsTaskbar::Update()
       const xiiUInt32 uiErrors  = counts[xiiAssetInfo::TransformError] + counts[xiiAssetInfo::MissingTransformDependency] + counts[xiiAssetInfo::MissingThumbnailDependency] + counts[xiiAssetInfo::MissingPackageDependency] + counts[xiiAssetInfo::CircularDependency];
       const xiiUInt32 uiPending = counts[xiiAssetInfo::NeedsTransform] + counts[xiiAssetInfo::NeedsThumbnail] + counts[xiiAssetInfo::Unknown];
       assets.m_Overlay          = uiErrors > 0 ? Overlay::Error : (counts[xiiAssetInfo::NeedsImport] > 0 ? Overlay::Warning : Overlay::None);
-      if (uiPending > 0 && uiTotal > 0)
+      if ((uiPending > 0 || uiErrors > 0) && uiTotal > 0)
       {
         const auto* pProcessor = xiiAssetProcessor::GetSingleton();
         const bool  bRunning   = pProcessor && pProcessor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running;

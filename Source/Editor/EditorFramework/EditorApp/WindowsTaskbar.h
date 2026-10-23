@@ -18,6 +18,7 @@
 
 struct ITaskbarList3;
 class xiiQtEditorApp;
+struct xiiToolsProjectEvent;
 
 /// Editor-owned taskbar presentation. Construct and destroy on the GUI thread, before the progress source is destroyed.
 /// The window and progress source are borrowed; Qt alone owns and creates the native window.
@@ -60,6 +61,7 @@ private:
   static State Combine(xiiArrayPtr<const State> states);
   void         ProgressEventHandler(const xiiProgressEvent& e);
   void         UiServicesEventHandler(const xiiQtUiServices::Event& e);
+  void         ProjectEventHandler(const xiiToolsProjectEvent& e);
   void         Update();
   void         Apply();
   void         ReleaseTaskbar();
