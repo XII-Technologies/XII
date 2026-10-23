@@ -47,7 +47,7 @@ xiiQtEditorSplashScreen::xiiQtEditorSplashScreen(QScreen* pScreen) :
   m_sRevision        = QStringLiteral("Build %1").arg(QStringLiteral(XII_PP_STRINGIFY(XII_GIT_COMMIT_HASH_SHORT)));
   m_Progress.setTextVisible(false);
   m_Progress.setAccessibleName(QStringLiteral("Current startup stage progress"));
-  m_Progress.setStyleSheet(QStringLiteral("QProgressBar { border: 0; border-radius: 2px; background: #2c353f; } QProgressBar::chunk { background: #79c6c8; border-radius: 2px; }"));
+  m_Progress.setStyleSheet(QStringLiteral("QProgressBar { border: 0; border-radius: 2px; background: rgba(255, 255, 255, 25); } QProgressBar::chunk { background: #6da9f7; border-radius: 2px; }"));
   SetStage(QStringLiteral("Preparing the editor"));
   // Never let a splash become a modal dialog's parent or obscure an actionable failure prompt.
   qApp->installEventFilter(this);
@@ -78,7 +78,7 @@ void xiiQtEditorSplashScreen::SetStage(const QString& sStage, const QString& sDe
     m_Progress.setRange(0, static_cast<int>(uiTotal));
     m_Progress.setValue(static_cast<int>(qMin(uiCompleted, uiTotal)));
     m_Progress.setAccessibleDescription(QStringLiteral("%1 of %2 items completed").arg(qMin(uiCompleted, uiTotal)).arg(uiTotal));
-    m_sDetail += QStringLiteral("  —  %1 of %2 complete").arg(qMin(uiCompleted, uiTotal)).arg(uiTotal);
+    m_sDetail += QStringLiteral("  %1 of %2 complete").arg(qMin(uiCompleted, uiTotal)).arg(uiTotal);
   }
   else
   {
@@ -95,10 +95,10 @@ void xiiQtEditorSplashScreen::paintEvent(QPaintEvent*)
   painter.setRenderHint(QPainter::Antialiasing);
   const qreal scale = width() / 720.0;
   painter.scale(scale, scale);
-  painter.fillRect(QRectF(0, 0, 720, 412), QColor("#151b22"));
-  painter.setPen(QColor("#35414c"));
+  painter.fillRect(QRectF(0, 0, 720, 412), Qt::black);
+  painter.setPen(QColor(255, 255, 255, 38));
   painter.drawRect(QRectF(0.5, 0.5, 719, 411));
-  painter.fillRect(QRectF(36, 0, 64, 3), QColor("#79c6c8"));
+  painter.fillRect(QRectF(36, 0, 64, 3), QColor("#6da9f7"));
 
   auto text = [&](int iSize, QFont::Weight weight, QColor color, const QRectF& rect, const QString& sText, int flags = Qt::AlignLeft | Qt::AlignVCenter) {
     QFont font = this->font();
@@ -108,39 +108,39 @@ void xiiQtEditorSplashScreen::paintEvent(QPaintEvent*)
     painter.setPen(color);
     painter.drawText(rect, flags, sText);
   };
-  text(12, QFont::DemiBold, QColor("#a6bac4"), QRectF(36, 28, 450, 24), QStringLiteral("XII ENGINE  /  DEVELOPMENT TOOLS"));
-  text(43, QFont::DemiBold, QColor("#f1f5f7"), QRectF(34, 85, 450, 64), QStringLiteral("XII Editor"));
-  text(15, QFont::Normal, QColor("#a6b1bc"), QRectF(36, 153, 440, 26), QStringLiteral("Real-time development environment"));
-  text(14, QFont::Medium, QColor("#79c6c8"), QRectF(36, 203, 420, 24), QStringLiteral("Version %1").arg(QCoreApplication::applicationVersion()));
+  text(12, QFont::DemiBold, QColor("#b8b8b8"), QRectF(36, 28, 450, 24), QStringLiteral("XII ENGINE  /  DEVELOPMENT TOOLS"));
+  text(43, QFont::DemiBold, Qt::white, QRectF(34, 85, 450, 64), QStringLiteral("XII Editor"));
+  text(15, QFont::Normal, QColor("#b8b8b8"), QRectF(36, 153, 440, 26), QStringLiteral("Real-time development environment"));
+  text(14, QFont::Medium, QColor("#dedede"), QRectF(36, 203, 420, 24), QStringLiteral("Version %1").arg(QCoreApplication::applicationVersion()));
 
   // Restrained construction lines frame the existing wordmark, without another rendering dependency.
-  painter.setPen(QPen(QColor("#2a3742"), 1));
+  painter.setPen(QPen(QColor(255, 255, 255, 32), 1));
   painter.drawLine(QPointF(507, 72), QPointF(667, 72));
   painter.drawLine(QPointF(507, 214), QPointF(667, 214));
   painter.drawLine(QPointF(507, 72), QPointF(507, 214));
   painter.drawLine(QPointF(667, 72), QPointF(667, 214));
-  painter.setPen(QPen(QColor("#607b86"), 2));
+  painter.setPen(QPen(QColor(255, 255, 255, 96), 2));
   painter.drawLine(QPointF(507, 72), QPointF(525, 72));
   painter.drawLine(QPointF(507, 72), QPointF(507, 90));
   painter.drawLine(QPointF(649, 214), QPointF(667, 214));
   painter.drawLine(QPointF(667, 196), QPointF(667, 214));
   m_Logo.render(&painter, QRectF(525, 117, 124, 52));
 
-  painter.setPen(QColor("#2c353f"));
+  painter.setPen(QColor(255, 255, 255, 25));
   painter.drawLine(QPointF(36, 250), QPointF(684, 250));
   QFont statusFont = font();
   statusFont.setPixelSize(15);
   statusFont.setWeight(QFont::Medium);
   const QFontMetrics statusMetrics(statusFont);
-  text(15, QFont::Medium, QColor("#e2eaf0"), QRectF(36, 266, 648, 28), statusMetrics.elidedText(m_sStage, Qt::ElideRight, 648));
+  text(15, QFont::Medium, Qt::white, QRectF(36, 266, 648, 28), statusMetrics.elidedText(m_sStage, Qt::ElideRight, 648));
   QFont detailFont = font();
   detailFont.setPixelSize(12);
   const QFontMetrics details(detailFont);
-  text(12, QFont::Normal, QColor("#9cabb8"), QRectF(36, 294, 648, 22), details.elidedText(m_sDetail, Qt::ElideMiddle, 648));
+  text(12, QFont::Normal, QColor("#aaaaaa"), QRectF(36, 294, 648, 22), details.elidedText(m_sDetail, Qt::ElideMiddle, 648));
   m_Progress.setGeometry(qRound(36 * scale), qRound(327 * scale), qRound(648 * scale), qMax(3, qRound(4 * scale)));
-  text(11, QFont::Normal, QColor("#8c9ba7"), QRectF(36, 356, 540, 20), m_sBuild);
-  text(11, QFont::Normal, QColor("#8c9ba7"), QRectF(36, 376, 540, 20), QStringLiteral("© Theophilus Eriata. All rights reserved."));
-  text(11, QFont::Normal, QColor("#8c9ba7"), QRectF(540, 356, 144, 20), m_sRevision, Qt::AlignRight | Qt::AlignVCenter);
+  text(11, QFont::Normal, QColor("#909090"), QRectF(36, 356, 540, 20), m_sBuild);
+  text(11, QFont::Normal, QColor("#909090"), QRectF(36, 376, 540, 20), QStringLiteral("© Theophilus Eriata. All rights reserved."));
+  text(11, QFont::Normal, QColor("#909090"), QRectF(540, 356, 144, 20), m_sRevision, Qt::AlignRight | Qt::AlignVCenter);
 }
 
 void xiiQtEditorSplashScreen::mousePressEvent(QMouseEvent*)

@@ -88,7 +88,7 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, AppearanceAndScaling)
       image.setDevicePixelRatio(fScale);
       image.fill(Qt::transparent);
       splash.render(&image);
-      XII_TEST_BOOL(image.pixelColor(qRound(8 * fScale), qRound(8 * fScale)) == QColor("#151b22"));
+      XII_TEST_BOOL(image.pixelColor(qRound(8 * fScale), qRound(8 * fScale)) == Qt::black);
       const QString sName = QStringLiteral("/%1-%2x.png").arg(bDark ? QStringLiteral("dark") : QStringLiteral("light")).arg(fScale);
       XII_TEST_BOOL(image.save(sOutput + sName));
     }
