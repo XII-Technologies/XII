@@ -275,6 +275,11 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
 
   bReentry = true;
 
+  // Apply worker-generated source changes before taking the curator lock. Processor
+  // lifecycle locking precedes the curator mutex, including during shutdown.
+  if (bTopLevel)
+    xiiAssetProcessor::GetSingleton()->ApplyImportResults();
+
   xiiFileSystemModel::GetSingleton()->MainThreadTick();
 
   XII_LOCK(m_CuratorMutex);
@@ -355,7 +360,10 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
 
   RunNextUpdateTask();
 
-  if (bTopLevel && !m_TransformState[xiiAssetInfo::TransformState::NeedsImport].IsEmpty())
+  // Interactive imports are handled by AssetProcessor, including its cancellation
+  // and automatic-processing preference. Only synchronous tools import here.
+  auto* editor = xiiQtEditorApp::GetSingleton();
+  if (bTopLevel && (editor->IsBackgroundMode() || editor->IsInHeadlessMode()) && !m_TransformState[xiiAssetInfo::TransformState::NeedsImport].IsEmpty())
   {
     const xiiUuid assetToImport = *m_TransformState[xiiAssetInfo::TransformState::NeedsImport].GetIterator();
 

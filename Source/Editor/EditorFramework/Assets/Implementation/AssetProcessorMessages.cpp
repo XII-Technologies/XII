@@ -16,6 +16,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessAssetMsg, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("AssetPath", m_sAssetPath),
     XII_MEMBER_PROPERTY("Platform", m_sPlatform),
     XII_BITFLAGS_MEMBER_PROPERTY("TransformFlags", xiiTransformFlags, m_TransformFlags),
+    XII_MEMBER_PROPERTY("Import", m_bImport),
     XII_ARRAY_MEMBER_PROPERTY("DepRefHull", m_DepRefHull),
   }
   XII_END_PROPERTIES;
@@ -28,6 +29,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessAssetResponseMsg, 1, xiiRTTIDefaultAl
   {
     XII_MEMBER_PROPERTY("Status", m_Status),
     XII_ARRAY_MEMBER_PROPERTY("LogEntries", m_LogEntries),
+    XII_MEMBER_PROPERTY("ImportBefore", m_sImportBefore),
+    XII_MEMBER_PROPERTY("ImportAfter", m_sImportAfter),
   }
   XII_END_PROPERTIES;
 }

@@ -7,15 +7,19 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessCommunicationChannel.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/Assets/AssetProcessorMessages.h>
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/CodeGen/CppSettings.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Application/Application.h>
+#include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/System/CrashHandler.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <GuiFoundation/Action/ActionManager.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
+#include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
 xiiCommandLineOptionPath   opt_OutputDir("_EditorProcessor", "-outputDir", "Output directory", "");
 xiiCommandLineOptionBool   opt_SaveProfilingData("_EditorProcessor", "-profiling", "Saves performance profiling information into the output folder.", false);
@@ -125,7 +129,32 @@ public:
             xiiLog::Warning("Asset '{}' of state '{}' in processor with hashes '{}|{}|{}' differs from the state in the editor with hashes '{}|{}|{}'.", pMsg->m_sAssetPath, (int)state, uiAssetHash, uiThumbHash, uiPackageHash, pMsg->m_AssetHash, pMsg->m_ThumbHash, pMsg->m_PackageHash);
           }
 
-          if (state == xiiAssetInfo::NeedsThumbnail || state == xiiAssetInfo::NeedsTransform || pMsg->m_TransformFlags.IsSet(xiiTransformFlags::ForceTransform))
+          if (pMsg->m_bImport)
+          {
+            auto* document = xiiDynamicCast<xiiAssetDocument*>(xiiQtEditorApp::GetSingleton()->OpenDocument(pMsg->m_sAssetPath, xiiDocumentFlags::None));
+            if (document == nullptr)
+              msg.m_Status = xiiTransformStatus("Could not open asset for background import.");
+            else
+            {
+              XII_SCOPE_EXIT(document->GetDocumentManager()->CloseDocument(document));
+              auto capture = [document](xiiString& text) {
+                xiiAbstractObjectGraph           graph;
+                xiiDocumentObjectConverterWriter writer(&graph, document->GetObjectManager(), [](const xiiDocumentObject*, const xiiAbstractProperty* property) {
+                  return property->GetAttributeByType<xiiTemporaryAttribute>() == nullptr;
+                });
+                writer.AddObjectToGraph(document->GetObjectManager()->GetRootObject(), "ObjectTree");
+                xiiContiguousMemoryStreamStorage storage;
+                xiiMemoryStreamWriter            stream(&storage);
+                xiiAbstractGraphDdlSerializer::Write(stream, &graph);
+                text = xiiStringView(reinterpret_cast<const char*>(storage.GetData()), storage.GetStorageSize32());
+              };
+              capture(msg.m_sImportBefore);
+              msg.m_Status = document->TransformAssetForImport(curator->GetAssetProfile(uiPlatform));
+              if (msg.m_Status.Succeeded())
+                capture(msg.m_sImportAfter);
+            }
+          }
+          else if (state == xiiAssetInfo::NeedsThumbnail || state == xiiAssetInfo::NeedsTransform || pMsg->m_TransformFlags.IsSet(xiiTransformFlags::ForceTransform))
           {
             msg.m_Status = xiiAssetCurator::GetSingleton()->TransformAsset(pMsg->m_AssetGuid, pMsg->m_TransformFlags | xiiTransformFlags::BackgroundProcessing, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform));
 

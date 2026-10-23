@@ -20,6 +20,7 @@ public:
   xiiString                      m_sAssetPath;
   xiiString                      m_sPlatform;
   xiiBitflags<xiiTransformFlags> m_TransformFlags;
+  bool                           m_bImport = false; ///< Compute source-document changes without saving the source in the child process.
   xiiDynamicArray<xiiString>     m_DepRefHull;
 };
 
@@ -30,6 +31,8 @@ class XII_EDITORFRAMEWORK_DLL xiiProcessAssetResponseMsg : public xiiProcessMess
 public:
   xiiTransformStatus                   m_Status;
   mutable xiiDynamicArray<xiiLogEntry> m_LogEntries;
+  xiiString                            m_sImportBefore;
+  xiiString                            m_sImportAfter;
 };
 
 class XII_EDITORFRAMEWORK_DLL xiiFreeAllResourcesMsg : public xiiProcessMessage

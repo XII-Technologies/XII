@@ -319,13 +319,32 @@ void xiiProcessTask::EventHandlerIPC(const xiiProcessCommunicationChannel::Event
   {
     XII_ASSERT_DEV(m_State == State::Processing, "Message handling should only happen when currently processing");
     m_Status = pMsg->m_Status;
-    m_State  = State::ReportResult;
     m_LogEntries.Swap(pMsg->m_LogEntries);
+    if (m_Status.m_Result == xiiTransformResult::NeedsImport && !m_Request.m_bImport)
+    {
+      // Keep the same reservation and aggregate request while the isolated child
+      // computes the changes that used to trigger a modal main-thread import.
+      m_Request.m_bImport = true;
+      m_State             = State::WaitingForImport;
+    }
+    else if (m_Request.m_bImport && m_Status.Succeeded())
+    {
+      XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+      m_sImportBefore  = pMsg->m_sImportBefore;
+      m_sImportAfter   = pMsg->m_sImportAfter;
+      m_bImportPending = true;
+      m_bImportApplied = false;
+      m_State          = State::ApplyingImport;
+    }
+    else
+      m_State = State::ReportResult;
   }
 }
 
 bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_guid, xiiDataDirPath& out_path)
 {
+  if (xiiAssetProcessor::GetSingleton()->m_DeferredImports.Contains(pInfo->m_Info->m_DocumentID))
+    return false;
   bool bComplete = true;
 
   const xiiDocumentTypeDescriptor* pTypeDesc = nullptr;
@@ -361,15 +380,12 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
           }
           case xiiAssetInfo::TransformState::NeedsTransform:
           case xiiAssetInfo::TransformState::NeedsThumbnail:
+          case xiiAssetInfo::TransformState::NeedsImport:
           {
             bComplete = false;
             return pFileInfo;
           }
           case xiiAssetInfo::TransformState::UpToDate:
-            continue;
-
-          case xiiAssetInfo::TransformState::NeedsImport:
-            // the main processor has to do this itself
             continue;
 
             XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -423,6 +439,7 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
     {
       fresh.m_sPlatform      = request.m_sPlatform;
       fresh.m_TransformFlags = request.m_TransformFlags;
+      fresh.m_bImport        = request.m_bImport;
       request                = std::move(fresh);
     }
     xiiDynamicArray<xiiUuid> reserved;
@@ -452,24 +469,11 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
   if (!processor->m_bAutomatic || !processor->m_FinalTransformRequests.IsEmpty())
     return false;
 
-  for (auto it = xiiAssetCurator::GetSingleton()->m_TransformState[xiiAssetInfo::TransformState::NeedsTransform].GetIterator(); it.IsValid(); ++it)
+  for (auto state : {xiiAssetInfo::NeedsImport, xiiAssetInfo::NeedsTransform, xiiAssetInfo::NeedsThumbnail})
   {
-    xiiAssetInfo* pInfo = xiiAssetCurator::GetSingleton()->GetAssetInfo(it.Key());
-    if (pInfo)
+    for (auto it = curator->m_TransformState[state].GetIterator(); it.IsValid(); ++it)
     {
-      bool bRes = GetNextAssetToProcess(pInfo, out_guid, out_path);
-      if (bRes)
-        return true;
-    }
-  }
-
-  for (auto it = xiiAssetCurator::GetSingleton()->m_TransformState[xiiAssetInfo::TransformState::NeedsThumbnail].GetIterator(); it.IsValid(); ++it)
-  {
-    xiiAssetInfo* pInfo = xiiAssetCurator::GetSingleton()->GetAssetInfo(it.Key());
-    if (pInfo)
-    {
-      bool bRes = GetNextAssetToProcess(pInfo, out_guid, out_path);
-      if (bRes)
+      if (auto* info = curator->GetAssetInfo(it.Key()); info && GetNextAssetToProcess(info, out_guid, out_path))
         return true;
     }
   }
@@ -602,19 +606,54 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           return true;
       }
       break;
+      case State::WaitingForImport:
+      {
+        auto* processor = xiiAssetProcessor::GetSingleton();
+        if (processor->GetProcessTaskState() != xiiAssetProcessor::ProcessTaskState::Running)
+        {
+          m_State = State::ReportResult;
+          break;
+        }
+        // Source imports can discover new sidecar assets outside the known
+        // dependency hull. Serialize these passes to avoid competing creators.
+        for (const auto& task : processor->m_ProcessTasks)
+          if (&task != this && task.m_Request.m_bImport &&
+              (task.m_State == State::Ready || task.m_State == State::Processing || task.m_State == State::ApplyingImport))
+            return true;
+        m_State = State::Ready;
+      }
+      break;
+      case State::ApplyingImport:
+      {
+        XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+        if (xiiAssetProcessor::GetSingleton()->GetProcessTaskState() != xiiAssetProcessor::ProcessTaskState::Running)
+        {
+          // A GUI-thread join cannot wait for its own next tick. Discard an
+          // unapplied graph on stop; the child never saved the source document.
+          m_bImportPending = false;
+          m_Status         = xiiTransformStatus(xiiTransformResult::NeedsImport);
+        }
+        else if (!m_bImportApplied)
+          return true;
+        m_sImportBefore.Clear();
+        m_sImportAfter.Clear();
+        m_State = State::ReportResult;
+      }
+      break;
       case State::ReportResult:
       {
         XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
-        const bool         bCanceled = xiiAssetProcessor::GetSingleton()->m_bForceStop;
+        const bool bCanceled = xiiAssetProcessor::GetSingleton()->m_bForceStop ||
+          (m_Request.m_bImport && m_Status.m_Result == xiiTransformResult::NeedsImport && xiiAssetProcessor::GetSingleton()->GetProcessTaskState() != xiiAssetProcessor::ProcessTaskState::Running);
         xiiProcessAssetMsg current;
         const bool         bChanged = m_bRequested && !bCanceled && xiiAssetProcessor::PrepareAssetRequest(m_AssetGuid, current, m_Request.m_sPlatform).Succeeded() &&
           (current.m_AssetHash != m_Request.m_AssetHash || current.m_ThumbHash != m_Request.m_ThumbHash || current.m_PackageHash != m_Request.m_PackageHash);
-        if (m_Status.Succeeded() && !bCanceled && !bChanged)
+        if (m_Status.Succeeded() && !bCanceled && !bChanged && !m_Request.m_bImport)
         {
           xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(m_AssetGuid);
           xiiAssetCurator::GetSingleton()->NeedsReloadResources(m_AssetGuid);
         }
-        else if (!bCanceled && !bChanged)
+        else if (m_Status.Failed() && !bCanceled && !bChanged)
         {
           if (m_Status.m_Result == xiiTransformResult::NeedsImport)
           {
@@ -622,6 +661,12 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           }
           else
           {
+            if (m_LogEntries.IsEmpty() && !m_Status.m_sMessage.IsEmpty())
+            {
+              auto& entry  = m_LogEntries.ExpandAndGetRef();
+              entry.m_Type = xiiLogMsgType::ErrorMsg;
+              entry.m_sMsg = m_Status.m_sMessage;
+            }
             xiiAssetCurator::GetSingleton()->UpdateAssetTransformLog(m_AssetGuid, m_LogEntries);
             xiiAssetCurator::GetSingleton()->UpdateAssetTransformState(m_AssetGuid, xiiAssetInfo::TransformState::TransformError);
           }
@@ -653,10 +698,12 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
               progress.m_uiFailed += !bChanged && m_Status.m_Result == xiiTransformResult::Failure ? 1 : 0;
               progress.m_uiNeedsImport += !bChanged && m_Status.m_Result == xiiTransformResult::NeedsImport ? 1 : 0;
             }
-            if (bChanged && processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running)
+            if ((bChanged || (m_Request.m_bImport && m_Status.Succeeded())) && processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running)
             {
               current.m_TransformFlags = m_Request.m_TransformFlags;
-              current.m_sPlatform      = m_Request.m_sPlatform;
+              if (m_Request.m_bImport && m_Status.Succeeded())
+                current.m_TransformFlags.Remove(xiiTransformFlags::ForceTransform);
+              current.m_sPlatform = m_Request.m_sPlatform;
               processor->m_TransformRequests.PushBack(std::move(current));
               ++processor->m_RequestedAssets[m_AssetGuid];
               ++progress.m_uiTotal;

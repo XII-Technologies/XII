@@ -90,6 +90,8 @@ public:
     WaitingForConnection,
     Ready,
     Processing,
+    WaitingForImport,
+    ApplyingImport,
     ReportResult
   };
 
@@ -122,6 +124,11 @@ private:
   xiiDynamicArray<xiiLogEntry>          m_LogEntries;
   bool                                  m_bRequested = false;
   xiiDynamicArray<xiiUuid>              m_ReservedAssets;
+  // Protected by the curator mutex; consumed by the existing GUI-thread curator tick.
+  bool      m_bImportPending = false;
+  bool      m_bImportApplied = false;
+  xiiString m_sImportBefore;
+  xiiString m_sImportAfter;
 };
 
 /// Background asset processing is handled by this class.
@@ -177,6 +184,7 @@ private:
   void      Run();
   void      StartProcessTask(bool bAutomatic);
   void      BroadcastTransformProgress(bool bFinished = false);
+  void      ApplyImportResults();
   xiiStatus QueueTransforms(xiiArrayPtr<const xiiUuid> assets, xiiBitflags<xiiTransformFlags> flags, bool bAllAssets);
 
 private:
@@ -197,6 +205,7 @@ private:
   xiiDeque<xiiProcessAssetMsg> m_TransformRequests;
   xiiDeque<xiiProcessAssetMsg> m_FinalTransformRequests;
   xiiMap<xiiUuid, xiiUInt32>   m_RequestedAssets; ///< Pending and in-flight requests per asset.
+  xiiSet<xiiUuid>              m_DeferredImports; ///< Live edits awaiting save/close; checked only by the GUI tick.
   xiiAssetTransformProgress    m_TransformProgress;
   xiiTime                      m_TransformStart;
   std::atomic<bool>            m_bAutomatic = false;

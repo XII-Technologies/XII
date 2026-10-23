@@ -300,7 +300,7 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
       xiiTransformStatus ret         = InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
 
       // if writing failed, make sure the output file does not exist
-      if (ret.Failed())
+      if (ret.m_Result == xiiTransformResult::Failure)
       {
         xiiFileSystem::DeleteFile(sTargetFile);
       }
@@ -345,13 +345,27 @@ xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlag
 
   const xiiTransformStatus res = DoTransformAsset(pAssetProfile, transformFlags);
 
-  if (transformFlags.IsSet(xiiTransformFlags::TriggeredManually))
+  if (transformFlags.IsSet(xiiTransformFlags::TriggeredManually) && !transformFlags.IsSet(xiiTransformFlags::BackgroundProcessing))
   {
     SaveDocument().LogFailure();
     xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(GetGuid());
   }
 
   return res;
+}
+
+xiiTransformStatus xiiAssetDocument::TransformAssetForImport(const xiiPlatformProfile* pAssetProfile)
+{
+  XII_ASSERT_DEV(xiiQtEditorApp::GetSingleton()->IsBackgroundMode(), "Import source changes in an isolated EditorProcessor.");
+  // Import computes graph changes only. Publishing a resource with the pre-import
+  // source hash could make uncommitted material references appear up to date.
+  class ImportStream final : public xiiStreamWriter
+  {
+    xiiResult WriteBytes(const void*, xiiUInt64) override { return XII_SUCCESS; }
+  } stream;
+  xiiAssetFileHeader header;
+  header.SetFileHashAndVersion(0, GetAssetTypeVersion());
+  return InternalTransformAsset(stream, "", pAssetProfile, header, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform);
 }
 
 xiiTransformStatus xiiAssetDocument::CreateThumbnail()

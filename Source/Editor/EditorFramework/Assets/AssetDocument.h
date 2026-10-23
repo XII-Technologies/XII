@@ -98,6 +98,10 @@ public:
   /// If xiiTransformFlags::BackgroundProcessing is set and transforming the asset would require re-saving it, nothing is done.
   xiiTransformStatus TransformAsset(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
 
+  /// EditorProcessor-only import pass. Updates this process's document graph without saving the
+  /// source file. The editor validates and applies the returned graph on its GUI thread.
+  xiiTransformStatus TransformAssetForImport(const xiiPlatformProfile* pAssetProfile);
+
   /// Updates the thumbnail of the asset.
   ///   Should never be called manually. Called only by the curator which takes care of dependencies first.
   xiiTransformStatus CreateThumbnail();
