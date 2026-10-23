@@ -6,6 +6,7 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/GUI/EditorSplashScreen.h>
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
+#include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -16,7 +17,11 @@
 #include <QCloseEvent>
 #include <QDialog>
 #include <QDir>
+#include <QEventLoop>
+#include <QFile>
 #include <QImage>
+#include <QLabel>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QScreen>
@@ -24,6 +29,10 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QWindow>
+#include <ToolsFoundation/Project/ToolsProject.h>
+#include <ads/DockManager.h>
+#include <ads/DockWidget.h>
+#include <ads/FloatingDockContainer.h>
 
 struct xiiEditorSplashScreenTest
 {
@@ -52,6 +61,49 @@ struct xiiEditorSplashScreenTest
     else
       qApp->removeEventFilter(&editor);
   }
+};
+
+class StartupWindowObserver : public QObject
+{
+public:
+  StartupWindowObserver() { qApp->installEventFilter(this); }
+  ~StartupWindowObserver() { qApp->removeEventFilter(this); }
+
+  bool eventFilter(QObject* pObject, QEvent* pEvent) override
+  {
+    if (m_bDismissDiagnostics && pEvent->type() == QEvent::Show)
+    {
+      if (auto* pDialog = qobject_cast<QMessageBox*>(pObject))
+      {
+        ++m_uiDiagnosticShows;
+        XII_TEST_BOOL(!xiiQtContainerWindow::GetContainerWindow()->isVisible());
+        QTimer::singleShot(0, pDialog, &QDialog::accept);
+      }
+    }
+    const bool bContainer = qobject_cast<xiiQtContainerWindow*>(pObject) != nullptr;
+    const bool bFloating  = qobject_cast<ads::CFloatingDockContainer*>(pObject) != nullptr;
+    if ((bContainer || bFloating) && (pEvent->type() == QEvent::Show || pEvent->type() == QEvent::WindowActivate))
+    {
+      if (!m_bAllowPresentation)
+        xiiTestFramework::Output(xiiTestOutput::Details, "Premature %s event %d, visible=%d", pObject->metaObject()->className(), static_cast<int>(pEvent->type()), static_cast<QWidget*>(pObject)->isVisible());
+      XII_TEST_BOOL(m_bAllowPresentation);
+      XII_TEST_BOOL(!xiiQtEditorApp::GetSingleton()->IsStartingUp());
+      if (pEvent->type() == QEvent::Show)
+      {
+        if (bContainer)
+          ++m_uiContainerShows;
+        else
+          ++m_uiFloatingShows;
+      }
+    }
+    return false;
+  }
+
+  bool      m_bAllowPresentation  = false;
+  bool      m_bDismissDiagnostics = false;
+  xiiUInt32 m_uiDiagnosticShows   = 0;
+  xiiUInt32 m_uiContainerShows    = 0;
+  xiiUInt32 m_uiFloatingShows     = 0;
 };
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorSplash);
@@ -122,7 +174,7 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, ModalAndDismissal)
   xiiQtEditorSplashScreen splash;
   splash.SetEditorWindow(&editor);
   splash.show();
-  XII_TEST_BOOL(splash.windowHandle()->transientParent() == editor.windowHandle());
+  XII_TEST_BOOL(splash.windowHandle()->transientParent() == nullptr);
   QDialog accidentalParent(&splash);
   accidentalParent.ensurePolished();
   XII_TEST_BOOL(accidentalParent.parentWidget() == &editor);
@@ -144,12 +196,16 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, ModalAndDismissal)
     }
   });
   xiiQtUiServices::MessageBoxWarning("Startup diagnostic handoff test.");
-  XII_TEST_BOOL(!splash.isVisible());
+  XII_TEST_BOOL(splash.isVisible());
   splash.show();
   QMouseEvent click(QEvent::MouseButtonPress, QPointF(10, 10), QPointF(10, 10), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
   QApplication::sendEvent(&splash, &click);
   XII_TEST_BOOL(!splash.isVisible());
   splash.SetStage(QStringLiteral("Continuing initialization"));
+  XII_TEST_BOOL(!splash.isVisible());
+  QDialog laterDialog(&editor);
+  laterDialog.show();
+  laterDialog.accept();
   XII_TEST_BOOL(!splash.isVisible());
   XII_TEST_BOOL(editor.isVisible());
 }
@@ -196,9 +252,10 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, StartupPolicy)
 
 XII_CREATE_SIMPLE_TEST(EditorSplash, StartupAndQuit)
 {
-  auto&           editor       = *xiiQtEditorApp::GetSingleton();
-  auto*           pApplication = xiiApplication::GetApplicationInstance();
-  const xiiString sName        = pApplication->GetApplicationName();
+  StartupWindowObserver observer;
+  auto&                 editor       = *xiiQtEditorApp::GetSingleton();
+  auto*                 pApplication = xiiApplication::GetApplicationInstance();
+  const xiiString       sName        = pApplication->GetApplicationName();
   pApplication->SetApplicationName("xiiEditor");
   XII_SCOPE_EXIT(pApplication->SetApplicationName(sName));
   // Reuse this preference directory on the next process launch to exercise warm startup.
@@ -227,6 +284,7 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, StartupAndQuit)
   editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::SafeMode | xiiQtEditorApp::StartupFlags::NoRecent, preferences);
   XII_TEST_BOOL(!editor.IsStartingUp());
   XII_TEST_BOOL(splash.isNull());
+  XII_TEST_INT(observer.m_uiContainerShows, 0);
   XII_TEST_INT(editor.RunEditor(), 0); // A quit before exec must not be lost.
   QApplication::processEvents();
   xiiActionManager::SaveShortcutAssignment();
@@ -276,4 +334,156 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, StartupIpcResponse)
   XII_TEST_RESULT(channel.WaitForStartup());
   // Includes a response already queued before the GUI starts waiting, avoiding a lost wakeup.
   XII_TEST_RESULT(channel.WaitForStartup(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>()));
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorStartupVisibility);
+
+XII_CREATE_SIMPLE_TEST(EditorStartupVisibility, DeferredWorkspace)
+{
+  StartupWindowObserver observer;
+  xiiQtContainerWindow  window;
+  window.SetWindowPresentationEnabled(false);
+  const QPointer<QWindow> focusWindow = QGuiApplication::focusWindow();
+  QWidget*                pBase       = &window;
+  pBase->show();
+  QMetaObject::invokeMethod(&window, "show", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(&window, "SlotRestoreLayout", Qt::QueuedConnection);
+  QApplication::processEvents();
+  XII_TEST_BOOL(!window.isVisible());
+  XII_TEST_BOOL(QGuiApplication::focusWindow() == focusWindow);
+  XII_TEST_INT(observer.m_uiContainerShows, 0);
+
+  auto* pManager = window.GetDockManager();
+  auto* pDock    = new ads::CDockWidget(pManager, QStringLiteral("Startup floating fixture"));
+  pDock->setObjectName(QStringLiteral("StartupFloatingFixture"));
+  pDock->setWidget(new QLabel(QStringLiteral("Restored tool panel")));
+  auto* pFloating = pManager->addDockWidgetFloating(pDock);
+  pFloating->show();
+  XII_TEST_BOOL(!pFloating->isVisible());
+  const QByteArray state = pManager->saveState(1);
+  XII_TEST_BOOL(pManager->restoreState(state, 1));
+  QApplication::processEvents();
+  for (auto* pWindow : pManager->floatingWidgets())
+    XII_TEST_BOOL(!pWindow->isVisible());
+  XII_TEST_INT(observer.m_uiFloatingShows, 0);
+
+  // Pending floating entries must not survive their Qt-owned window's destruction.
+  auto* pDiscarded = new ads::CFloatingDockContainer(pManager);
+  pDiscarded->show();
+  delete pDiscarded;
+  window.setWindowState(Qt::WindowNoState);
+  observer.m_bAllowPresentation = true;
+  window.SetWindowPresentationEnabled(true);
+  window.show();
+  QApplication::processEvents();
+  XII_TEST_INT(observer.m_uiContainerShows, 1);
+  XII_TEST_INT(observer.m_uiFloatingShows, 1);
+  XII_TEST_BOOL(pManager->floatingWidgets().front()->isVisible());
+  QApplication::processEvents();
+  XII_TEST_INT(observer.m_uiContainerShows, 1);
+}
+
+static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = false)
+{
+  StartupWindowObserver observer;
+  observer.m_bAllowPresentation  = true;
+  observer.m_bDismissDiagnostics = bOpenMissingProject;
+  auto&           editor         = *xiiQtEditorApp::GetSingleton();
+  auto*           pApplication   = xiiApplication::GetApplicationInstance();
+  const xiiString sName          = pApplication->GetApplicationName();
+  pApplication->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(pApplication->SetApplicationName(sName));
+  xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/StartupVisibilityPreferences");
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(preferences));
+  auto& command   = *xiiCommandLineUtils::GetGlobalInstance();
+  auto  arguments = command.GetCommandLineArray();
+  XII_SCOPE_EXIT(command.SetCommandLine(arguments));
+  const xiiStringBuilder project(preferences, bOpenMissingProject ? "/MissingProject/xiiProject" : "/StartupProject/xiiProject");
+  if (bOpenMissingProject || bOpenProject)
+  {
+    xiiDynamicArray<xiiString> projectArguments;
+    projectArguments.PushBack("xiiEditor");
+    projectArguments.PushBack(bOpenProject && !xiiOSFile::ExistsFile(project) ? "-newproject" : "-project");
+    projectArguments.PushBack(project);
+    command.SetCommandLine(projectArguments);
+  }
+  QPointer<xiiQtEditorSplashScreen>                splash;
+  xiiEvent<const xiiEditorAppEvent&>::Unsubscriber subscription;
+  xiiQtEditorApp::m_Events.AddEventHandler([&](const xiiEditorAppEvent& e) {
+    if (e.m_Type != xiiEditorAppEvent::Type::EditorStarted)
+      return;
+    auto* pWindow = xiiQtContainerWindow::GetContainerWindow();
+    XII_TEST_BOOL(!pWindow->isVisible());
+    XII_TEST_BOOL(!pWindow->IsWindowPresentationEnabled());
+    xiiEditorSplashScreenTest::Attach(editor);
+    splash = xiiEditorSplashScreenTest::Splash(editor);
+    splash->SetEditorWindow(pWindow);
+    splash->show();
+    xiiQtEditorApp::ShowEditorWindow(pWindow); // Tray/notification activation cannot bypass startup.
+    pWindow->ScheduleRestoreWindowLayout();
+    pWindow->ScheduleRestoreWindowLayout();
+    QMetaObject::invokeMethod(pWindow, "show", Qt::QueuedConnection);
+    QMetaObject::invokeMethod(pWindow, "SlotRestoreLayout", Qt::QueuedConnection);
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    XII_TEST_BOOL(!pWindow->isVisible());
+    XII_TEST_BOOL(splash->isVisible());
+    XII_TEST_INT(observer.m_uiContainerShows, 0);
+
+    // A real saved ADS workspace with a floating tool must be restored before presentation.
+    auto* pDock = new ads::CDockWidget(pWindow->GetDockManager(), QStringLiteral("Startup tool"));
+    pDock->setObjectName(QStringLiteral("StartupTool"));
+    pDock->setWidget(new QLabel(QStringLiteral("Session restoration fixture")));
+    pWindow->GetDockManager()->addDockWidgetFloating(pDock);
+    const QString sLayout = QString::fromUtf8(preferences.GetData()) + QStringLiteral("/layout.settings");
+    if (!QFile::exists(sLayout))
+    {
+      QWidget geometry;
+      geometry.setGeometry(60, 60, 1100, 700);
+      geometry.setWindowState(Qt::WindowMaximized);
+      QSettings settings(sLayout, QSettings::IniFormat);
+      settings.beginGroup(QStringLiteral("ContainerWnd_xiiEditor"));
+      settings.setValue(QStringLiteral("WindowGeometry"), geometry.saveGeometry());
+      settings.setValue(QStringLiteral("WindowState"), pWindow->saveState());
+      settings.setValue(QStringLiteral("DockManagerState"), pWindow->GetDockManager()->saveState(1));
+    }
+  },
+                                           subscription);
+  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent, preferences);
+  XII_SCOPE_EXIT(editor.ShutdownEditor());
+  auto* pWindow = xiiQtContainerWindow::GetContainerWindow();
+  XII_TEST_BOOL(!editor.IsStartingUp());
+  XII_TEST_BOOL(splash.isNull());
+  XII_TEST_BOOL(pWindow->isVisible());
+  XII_TEST_BOOL(pWindow->isMaximized());
+  if (bOpenProject)
+  {
+    XII_TEST_BOOL(xiiToolsProject::IsProjectOpen());
+    XII_TEST_BOOL(xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup());
+  }
+  XII_TEST_INT(observer.m_uiContainerShows, 1);
+  XII_TEST_INT(observer.m_uiFloatingShows, 1);
+  XII_TEST_INT(observer.m_uiDiagnosticShows, bOpenMissingProject ? 1 : 0);
+  QApplication::processEvents();
+  XII_TEST_INT(observer.m_uiContainerShows, 1);
+  pWindow->SaveWindowLayout();
+  xiiActionManager::SaveShortcutAssignment();
+}
+
+XII_CREATE_SIMPLE_TEST(EditorStartupVisibility, StartupRevealsOnce)
+{
+  RunStartupVisibility(false);
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorStartupFailureVisibility);
+
+XII_CREATE_SIMPLE_TEST(EditorStartupFailureVisibility, MissingProject)
+{
+  RunStartupVisibility(true);
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorProjectStartupVisibility);
+
+XII_CREATE_SIMPLE_TEST(EditorProjectStartupVisibility, ProjectLoading)
+{
+  RunStartupVisibility(false, true);
 }

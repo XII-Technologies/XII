@@ -23,7 +23,6 @@ public:
 
 protected:
   void paintEvent(QPaintEvent* pEvent) override;
-  void showEvent(QShowEvent* pEvent) override;
   void mousePressEvent(QMouseEvent* pEvent) override;
   void keyPressEvent(QKeyEvent* pEvent) override;
   bool eventFilter(QObject* pObject, QEvent* pEvent) override;

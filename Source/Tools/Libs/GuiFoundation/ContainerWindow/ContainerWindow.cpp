@@ -8,6 +8,7 @@
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 #include <QCloseEvent>
 #include <QLabel>
+#include <QLayout>
 #include <QSettings>
 #include <QStatusBar>
 #include <QTabBar>
@@ -133,6 +134,11 @@ void xiiQtContainerWindow::UpdateWindowTitle()
 
 void xiiQtContainerWindow::ScheduleRestoreWindowLayout()
 {
+  if (!m_bWindowPresentationEnabled)
+  {
+    m_iWindowLayoutRestoreScheduled = 1;
+    return;
+  }
   m_iWindowLayoutRestoreScheduled++;
   QTimer::singleShot(0, this, SLOT(SlotRestoreLayout()));
 }
@@ -141,7 +147,20 @@ void xiiQtContainerWindow::SlotRestoreLayout()
 {
   XII_LOG_BLOCK("DocumentSlotRestoreLayout");
 
+  if (!m_bWindowPresentationEnabled)
+  {
+    m_iWindowLayoutRestoreScheduled = 1;
+    return;
+  }
   RestoreWindowLayout();
+}
+
+void xiiQtContainerWindow::setVisible(bool bVisible)
+{
+  // Reject indirect QWidget/queued show requests before any native mapping can occur.
+  if (bVisible && !m_bWindowPresentationEnabled)
+    return;
+  QMainWindow::setVisible(bVisible);
 }
 
 void xiiQtContainerWindow::closeEvent(QCloseEvent* e)
@@ -182,7 +201,7 @@ void xiiQtContainerWindow::closeEvent(QCloseEvent* e)
 
 void xiiQtContainerWindow::SaveWindowLayout()
 {
-  if (!m_pDockManager)
+  if (!m_pDockManager || !m_bWindowPresentationEnabled)
     return;
 
   xiiStringBuilder sFile;
@@ -211,18 +230,23 @@ void xiiQtContainerWindow::SaveWindowLayout()
 
 void xiiQtContainerWindow::SaveDocumentLayouts()
 {
+  if (!m_bWindowPresentationEnabled)
+    return;
   for (xiiUInt32 i = 0; i < m_DocumentWindows.GetCount(); ++i)
     m_DocumentWindows[i]->SaveWindowLayout();
 }
 
 void xiiQtContainerWindow::RestoreWindowLayout()
 {
-  --m_iWindowLayoutRestoreScheduled;
+  if (m_iWindowLayoutRestoreScheduled > 0)
+    --m_iWindowLayoutRestoreScheduled;
   if (m_iWindowLayoutRestoreScheduled > 0)
     return;
 
   bool bCreteDefaultLayout = true;
-  XII_SCOPE_EXIT(bCreteDefaultLayout ? showMaximized() : show(););
+  // Restoring geometry must never imply presentation. In particular, startup restores the
+  // complete workspace before the application deliberately shows the container once.
+  XII_SCOPE_EXIT(if (bCreteDefaultLayout) setWindowState(Qt::WindowMaximized));
 
   xiiStringBuilder sFile;
   if (!GetProjectLayoutPath(sFile, false))
@@ -294,6 +318,17 @@ void xiiQtContainerWindow::RestoreWindowLayout()
   // The window may be too small at this time, and the layout restoration may thus resize the document widgets to the bare minimum and destroy the layout.
 
   m_bWindowLayoutRestored = true;
+}
+
+void xiiQtContainerWindow::RestoreDocumentLayouts()
+{
+  // Size the hidden workspace before document layouts use their available dock geometry.
+  layout()->activate();
+  for (auto* pWindow : m_DocumentWindows)
+  {
+    pWindow->layout()->activate();
+    pWindow->RestoreWindowLayout(false);
+  }
 }
 
 void xiiQtContainerWindow::SlotUpdateWindowDecoration(void* pDocWindow)
@@ -492,6 +527,12 @@ xiiResult xiiQtContainerWindow::EnsureVisible(xiiQtDocumentWindow* pDocWindow)
 
   ads::CDockWidget* dock = m_DocumentDocks[uiListIndex];
 
+  if (!m_bWindowPresentationEnabled)
+  {
+    if (auto* pArea = dock->dockAreaWidget())
+      pArea->setCurrentDockWidget(dock);
+    return XII_SUCCESS;
+  }
   dock->toggleView(true);
   return XII_SUCCESS;
 }
@@ -510,6 +551,13 @@ xiiResult xiiQtContainerWindow::EnsureVisible(xiiQtApplicationPanel* pPanel)
 {
   if (m_ApplicationPanels.IndexOf(pPanel) == xiiInvalidIndex)
     return XII_FAILURE;
+
+  if (!m_bWindowPresentationEnabled)
+  {
+    if (auto* pArea = pPanel->dockAreaWidget())
+      pArea->setCurrentDockWidget(pPanel);
+    return XII_SUCCESS;
+  }
 
   if (pPanel->isClosed())
   {

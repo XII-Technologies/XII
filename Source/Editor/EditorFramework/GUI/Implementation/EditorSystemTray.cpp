@@ -161,7 +161,7 @@ void xiiQtEditorSystemTray::UpdateToolTip()
 
 bool xiiQtEditorSystemTray::CanChangeProject() const
 {
-  return m_pWindow && m_pWindow->isEnabled() && QApplication::activeModalWidget() == nullptr &&
+  return !m_Editor.IsStartingUp() && m_pWindow && m_pWindow->isEnabled() && QApplication::activeModalWidget() == nullptr &&
     !m_bProgressActive && m_Tools.isEmpty() && !m_Editor.IsProgressBarProcessingEvents();
 }
 

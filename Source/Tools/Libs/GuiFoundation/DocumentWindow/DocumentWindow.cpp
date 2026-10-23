@@ -352,16 +352,22 @@ void xiiQtDocumentWindow::FinishWindowCreation()
 
 void xiiQtDocumentWindow::ScheduleRestoreWindowLayout()
 {
+  if (!m_pContainerWindow->IsWindowPresentationEnabled())
+    return;
   QTimer::singleShot(0, this, SLOT(SlotRestoreLayout()));
 }
 
 void xiiQtDocumentWindow::SlotRestoreLayout()
 {
+  if (!m_pContainerWindow->IsWindowPresentationEnabled())
+    return;
   RestoreWindowLayout(false);
 }
 
 void xiiQtDocumentWindow::SaveWindowLayout()
 {
+  if (!m_pContainerWindow->IsWindowPresentationEnabled())
+    return;
   if (GetDocument() == nullptr)
     return;
 

@@ -56,17 +56,6 @@ xiiQtEditorSplashScreen::xiiQtEditorSplashScreen(QScreen* pScreen) :
 void xiiQtEditorSplashScreen::SetEditorWindow(QWidget* pWindow)
 {
   m_pEditorWindow = pWindow;
-  if (windowHandle())
-    windowHandle()->setTransientParent(pWindow ? pWindow->windowHandle() : nullptr);
-  // Stay above our own active container, without a global topmost flag or repeated raising.
-  if (isVisible() && pWindow && pWindow->isActiveWindow())
-    raise();
-}
-
-void xiiQtEditorSplashScreen::showEvent(QShowEvent* pEvent)
-{
-  QWidget::showEvent(pEvent);
-  SetEditorWindow(m_pEditorWindow);
 }
 
 void xiiQtEditorSplashScreen::SetStage(const QString& sStage, const QString& sDetail, xiiUInt32 uiCompleted, xiiUInt32 uiTotal)
@@ -163,9 +152,14 @@ bool xiiQtEditorSplashScreen::eventFilter(QObject* pObject, QEvent* pEvent)
     // Some platform plugins still select a splash as QApplication::activeWindow(). Repair
     // that borrowed dialog parent before native presentation, preserving the dialog's flags.
     if (pEvent->type() == QEvent::Polish && pDialog->parentWidget() == this)
-      pDialog->setParent(m_pEditorWindow, pDialog->windowFlags());
-    if (pEvent->type() == QEvent::Show)
+      pDialog->setParent(m_pEditorWindow && m_pEditorWindow->isVisible() ? m_pEditorWindow.data() : nullptr, pDialog->windowFlags());
+    if (pEvent->type() == QEvent::Show && isVisible())
+    {
       hide();
+      // Required startup questions temporarily replace the splash. A dismissed splash stays
+      // dismissed; a live splash resumes progress when the dialog completes.
+      connect(pDialog, &QDialog::finished, this, [this](int) { show(); }, Qt::SingleShotConnection);
+    }
   }
   return false;
 }

@@ -222,6 +222,8 @@ public:
 	 */
 	~CFloatingDockContainer() override;
 
+	void setVisible(bool Visible) override;
+
 	/**
 	 * Access function for the internal dock container
 	 */

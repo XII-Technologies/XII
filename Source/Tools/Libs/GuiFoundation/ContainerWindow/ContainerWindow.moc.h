@@ -50,8 +50,15 @@ public:
   void SaveWindowLayout();
   void SaveDocumentLayouts();
   void RestoreWindowLayout();
+  void RestoreDocumentLayouts();
 
   void ScheduleRestoreWindowLayout();
+
+  /// Startup may construct docks and restore layouts while presentation is disabled.
+  /// Enabling presentation does not show the window; the application owns that transition.
+  void SetWindowPresentationEnabled(bool bEnabled) { m_bWindowPresentationEnabled = bEnabled; }
+  bool IsWindowPresentationEnabled() const { return m_bWindowPresentationEnabled; }
+  void setVisible(bool bVisible) override;
 
 protected:
   virtual bool eventFilter(QObject* obj, QEvent* e) override;
@@ -66,6 +73,7 @@ private:
 
   bool     m_bWindowLayoutRestored;
   xiiInt32 m_iWindowLayoutRestoreScheduled;
+  bool     m_bWindowPresentationEnabled = true;
 
 private Q_SLOTS:
   void SlotDocumentTabCloseRequested();
