@@ -61,7 +61,9 @@ void xiiEditorEngineProcessConnection::UIServicesTickEventHandler(const xiiQtUiS
 {
   if (e.m_Type == xiiQtUiServices::TickEvent::Type::EndFrame)
   {
-    if (!IsProcessCrashed())
+    // Interactive startup pumps UI ticks before the setup/project-ready handshake completes.
+    // A rejected redraw sync cannot be acknowledged and must not start a blocking wait.
+    if (IsEngineSetup() && !IsProcessCrashed())
     {
       xiiSyncWithProcessMsgToEngine sm;
       sm.m_uiRedrawCount = m_uiRedrawCountSent + 1;
