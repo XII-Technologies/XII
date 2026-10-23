@@ -110,9 +110,9 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("The presentation shader is unavailable.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_hDisplayLinear = builder.ReadTexture(input, xiiGALResourceStateFlags::ShaderResource);
-    const auto imported = builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState());
-    const bool partial = viewport.x != 0 || viewport.y != 0 || viewport.width != description.m_Size.width || viewport.height != description.m_Size.height;
-    data.m_hBackbuffer = partial ? builder.ReadWriteTexture(imported, xiiGALResourceStateFlags::RenderTarget) : builder.WriteTexture(imported, xiiGALResourceStateFlags::RenderTarget);
+    const auto imported   = builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState());
+    const bool partial    = viewport.x != 0 || viewport.y != 0 || viewport.width != description.m_Size.width || viewport.height != description.m_Size.height;
+    data.m_hBackbuffer    = partial ? builder.ReadWriteTexture(imported, xiiGALResourceStateFlags::RenderTarget) : builder.WriteTexture(imported, xiiGALResourceStateFlags::RenderTarget);
     builder.ExportTexture(data.m_hBackbuffer, swapchain ? xiiGALResourceStateFlags::Present : description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::RenderTarget);
     data.m_hConstants = Constants(builder, "Final Blit Constants", sizeof(data.m_Constants));
     const auto& display = m_pState->m_Display.m_Settings;
@@ -120,8 +120,8 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
     data.m_Constants.ApplySRGBTransfer = xiiGALResourceFormat::IsSrgb(description.m_Format) ? 0U : 1U;
     data.m_Constants.PaperWhiteNits = display.m_fPaperWhiteNits;
     data.m_Constants.MaximumDisplayNits = display.m_fMaximumDisplayNits;
-    data.m_Size = {static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height)};
-    data.m_vOffset = {static_cast<xiiUInt32>(viewport.x), static_cast<xiiUInt32>(viewport.y)};
+    data.m_Size                                             = {static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height)};
+    data.m_vOffset                                          = {static_cast<xiiUInt32>(viewport.x), static_cast<xiiUInt32>(viewport.y)};
     data.m_Sampler = m_pState->m_PointSampler;
     data.m_Pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
     data.m_Pipeline.m_pVertexShader = shader->GetGALShader(xiiGALShaderType::Vertex);

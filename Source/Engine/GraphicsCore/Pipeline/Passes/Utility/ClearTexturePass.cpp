@@ -44,7 +44,7 @@ xiiResult xiiClearTexturePass::Build(xiiRenderPipelinePassContext& context)
     xiiGALTextureCreationDescription description;
     description.m_Type = xiiGALResourceDimension::Texture2D;
     description.m_Size = size;
-    description.m_Format = context.m_Pins[m_OutputTexture.GetBindingIndex()].m_Format;
+    description.m_Format    = context.m_Pins[m_OutputTexture.GetBindingIndex()].m_Format;
     description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
     data.m_Texture = builder.WriteTexture("Cleared image", description, xiiGALResourceStateFlags::RenderTarget);
     data.m_Color = m_Color; }, [](const Data& data, xiiRenderGraphPassContext& execute) { xiiRenderPassUtils::ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(data.m_Texture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), data.m_Color); });
