@@ -18,7 +18,6 @@
 #include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/EditorApp/StackTraceLogParser.h>
-#include <EditorFramework/EditorApp/WindowsTaskbar.h>
 #include <EditorFramework/GUI/DynamicDefaultStateProvider.h>
 #include <EditorFramework/GUI/ExposedParametersDefaultStateProvider.h>
 #include <EditorFramework/Manipulators/BoneManipulatorAdapter.h>
@@ -35,6 +34,7 @@
 #include <EditorFramework/Panels/CVarPanel/CVarPanel.moc.h>
 #include <EditorFramework/Panels/LogPanel/LogPanel.moc.h>
 #include <EditorFramework/Panels/LongOpsPanel/LongOpsPanel.moc.h>
+#include <EditorFramework/Platform/Windows/WindowsTaskbar.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <EditorFramework/PropertyGrid/AssetBrowserPropertyWidget.moc.h>
 #include <EditorFramework/PropertyGrid/DynamicEnumPropertyWidget.moc.h>
@@ -235,6 +235,8 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 xiiCommandLineOptionBool opt_Safe("_Editor", "-safe", "In safe-mode the editor minimizes the risk of crashing, for instance by not loading previous projects and scenes.", false);
 xiiCommandLineOptionBool opt_NoRecent("_Editor", "-noRecent", "Disables automatic loading of recent projects and documents.", false);
+xiiCommandLineOptionBool opt_CreateProjectDialog("_Editor", "-createProject", "Show the project creation dialog instead of reopening the last project.", false);
+xiiCommandLineOptionBool opt_OpenProjectDialog("_Editor", "-openProject", "Show the project browser instead of reopening the last project.", false);
 
 void xiiQtEditorApp::StartupEditor()
 {
@@ -436,6 +438,14 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     }
 
     CreateOrOpenProject(false, pCmd->GetAbsolutePathOption("-project")).IgnoreResult();
+  }
+  else if (!IsInHeadlessMode() && opt_CreateProjectDialog.GetOptionValue(xiiCommandLineOption::LogMode::Never))
+  {
+    GuiCreateProject();
+  }
+  else if (!IsInHeadlessMode() && opt_OpenProjectDialog.GetOptionValue(xiiCommandLineOption::LogMode::Never))
+  {
+    GuiOpenDashboard();
   }
   else if (!bNoRecent && pPreferences->m_bLoadLastProjectAtStartup)
   {

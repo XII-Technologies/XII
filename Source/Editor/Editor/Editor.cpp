@@ -5,6 +5,10 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  include <EditorFramework/Platform/Windows/WindowsJumpList.h>
+#endif
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <shellscalingapi.h>
 #endif
@@ -27,6 +31,10 @@ public:
 
   virtual xiiResult BeforeCoreSystemsStartup() override
   {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+    // Establish identity before QApplication, splash screens, or native taskbar windows exist.
+    xiiWindowsJumpList::ConfigureAppId().IgnoreResult();
+#endif
     xiiStartup::AddApplicationTag("tool");
     xiiStartup::AddApplicationTag("editor");
     xiiStartup::AddApplicationTag("editorapp");

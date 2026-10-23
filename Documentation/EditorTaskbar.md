@@ -1,6 +1,6 @@
 # Windows Editor Taskbar Integration
 
-`EditorFramework` owns one `xiiWindowsTaskbar` for the main Qt container window. It is created before that window is shown, observes the Editor's existing progress and status sources, and is destroyed before the window and progress source. Headless editor processors do not create a taskbar controller. Linux and macOS do not compile the native implementation or link the Windows COM libraries.
+`EditorFramework/Platform/Windows` owns native taskbar presentation. One `xiiWindowsTaskbar` serves the main Qt container window. It is created before that window is shown, observes the Editor's existing progress and status sources, and is destroyed before the window and progress source. Headless editor processors do not create a taskbar controller. Linux and macOS do not compile the native implementation or link the Windows COM libraries.
 
 ## Operation Sources
 
@@ -33,14 +33,32 @@ The controller borrows Qt's existing `HWND` through `internalWinId()` and observ
 
 COM initialization and all interface calls/releases stay on the GUI thread. Successful `CoInitializeEx` calls, including `S_FALSE`, have matching `CoUninitialize` calls. An existing incompatible apartment is not uninitialized by the controller. Native messages dispatched during a COM call defer interface resets until the call returns. Destruction removes observers and native event filters, clears presentation when possible, and drops queued Qt callbacks. COM or taskbar failures retain the desired state for a later retry and do not fail the underlying operation.
 
+## Jump Lists
+
+The Editor executable establishes the version-independent AppUserModelID `XII.Technologies.Editor` before constructing Qt or showing UI. The destination list and Shell links use the same identity. The existing Qt window icon, progress, and overlay controller retain their ownership and behavior. Shortcuts distributed for this executable should use this identity as well; shortcuts pinned before explicit identity was introduced may need to be pinned again. See Microsoft's [application identity guidance](https://learn.microsoft.com/en-us/windows/win32/shell/appids).
+
+The native `ICustomDestinationList` builder uses `IObjectCollection` and Unicode `IShellLinkW` objects. Its **Recent Projects** category follows the existing `xiiRecentFilesList` order, excluding missing files, directories, non-project entries, inaccessible files, duplicates, and destinations removed through the Windows UI. The Shell's available destination slots determine how many valid entries are submitted. Existing project history loads and changes trigger updates; document saves, progress ticks, and unchanged project-save events do not rebuild the list. Unit tests, background/headless processors, and `-noRecent` sessions do not publish the Editor's list.
+
+Windows clears its removed-destination records after a successful commit. Removed project paths are therefore pruned from XII's authoritative recent-project history after commit and persisted through the existing history file, preserving all remaining entries' order. Opening a project again puts it back through normal history insertion. Failed transactions abort and retain history for a later update. Privacy settings that reject custom categories still allow the common task entries to be committed. See the Shell's [removal contract](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-beginlist) and [privacy behavior](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-appendcategory).
+
+Recent-project links target the actual Editor executable and use the existing `-project` startup argument. Windows argument quoting preserves spaces, Unicode, quotes, and trailing backslashes without `MAX_PATH` argument buffers. The existing OS command-line parser supplies UTF-8 paths to the normal project-opening flow. Links inherit the executable directory as their working directory. XII currently uses separate Editor processes for project lifetimes; Jump List activation follows that behavior and adds no single-instance protocol.
+
+The native Tasks section contains **Create New Project** (`-createProject`) and **Open Project** (`-openProject`). These startup requests select the existing queued project-creation dialog and project dashboard respectively, taking precedence over automatic last-project loading. Explicit `-newproject <path>` or `-project <path>` requests retain precedence over those dialogs. Cancelling a task's dialog leaves a normal empty Editor window. These options do not disable subsequent history updates.
+
+Jump List updates reuse the taskbar controller's GUI-thread COM apartment and serialize reentrant history requests. Every native interface and property value is released locally; successful commits persist in the Shell across Explorer restarts, independently of the window's progress/overlay replay. Native failures produce a diagnostic and preserve normal Editor operation. No new history store, timer, configuration preference, or window procedure is introduced.
+
 ## Verification
 
 Build `Editor` and `EditorFrameworkTest`, then run the focused suite:
 
 ```powershell
 EditorFrameworkTest.exe -noGui -filter EditorTaskbar -outputDir <test-output-folder>
+EditorFrameworkTest.exe -noGui -filter EditorJumpList -outputDir <test-output-folder>
+ToolsFoundationTest.exe -noGui -filter RecentFilesList -outputDir <test-output-folder>
 ```
 
 The tests cover arbitration, value/state ordering, actionable overlay priority and fallback, ignored log history, successful retries, Qt resource rendering, native icon validity during the call and destruction afterward (including failed calls), actual successful/failed child processes, concurrent worker-thread notifications, cancellation, COM failure recovery, native handle recreation, badge replay after shell notifications, reentrant shell notifications, and shutdown with queued updates. A native shell smoke test checks actual COM calls against a Qt window when Explorer is present. It needs access to shell COM; a restricted sandbox can deny that access even while Explorer is running. The smoke test is skipped when Explorer is absent. Shell restart tests send the registered messages to the controller without restarting the user's Explorer process.
 
 For visual acceptance, use real Editor operations: transform/import assets, compile a material shader, and build a project's C++ plugin. Verify overlap, processor pause/resume, failed builds, resolved asset issues, and status acknowledgement. Verify state restoration after an actual Explorer restart and Qt native window recreation. Native API success alone does not certify taskbar appearance, high-contrast behavior, or every taskbar grouping setting.
+
+Jump List tests round-trip Shell-link arguments through Windows and the engine parser, exercise Unicode and long project paths, preserve history order and removals across commits/reload, inject transaction failures/privacy restrictions, and verify the actual creation/dashboard dialogs through startup. A native transaction smoke test uses a temporary test identity and deletes its list afterward. For visual acceptance, right-click the Editor's taskbar icon, open a recent project and both common tasks, remove a project and trigger a history update/restart, then reopen it explicitly. Verify current and newly pinned shortcuts, cancellation, and launch paths containing spaces and Unicode without disturbing existing progress/overlay presentation.

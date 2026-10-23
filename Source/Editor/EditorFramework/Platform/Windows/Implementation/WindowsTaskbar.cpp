@@ -2,7 +2,7 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <EditorFramework/EditorApp/WindowsTaskbar.h>
+#include <EditorFramework/Platform/Windows/WindowsTaskbar.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 
@@ -10,6 +10,7 @@
 #  include <EditorFramework/Assets/AssetCurator.h>
 #  include <EditorFramework/Assets/AssetProcessor.h>
 #  include <EditorFramework/EditorApp/EditorApp.moc.h>
+#  include <EditorFramework/Platform/Windows/WindowsJumpList.h>
 #  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #  include <Foundation/Containers/HybridArray.h>
 #  include <Foundation/Math/Math.h>
@@ -267,6 +268,28 @@ void xiiWindowsTaskbar::ReleaseTaskbar()
     m_pTaskbar = nullptr;
   }
   m_bApplied = false;
+}
+
+void xiiWindowsTaskbar::UpdateJumpList(xiiRecentFilesList& recentProjects, bool& out_bHistoryChanged)
+{
+  XII_ASSERT_DEV(QThread::currentThread() == qApp->thread(), "Jump Lists must be updated on the GUI thread.");
+  out_bHistoryChanged = false;
+  if (!m_bComUsable)
+    return;
+  // Shell calls can dispatch messages. Serialize transactions and replay any history change
+  // delivered during a transaction against the latest authoritative history.
+  m_bJumpListUpdatePending = true;
+  if (m_bUpdatingJumpList)
+    return;
+  m_bUpdatingJumpList = true;
+  XII_SCOPE_EXIT(m_bUpdatingJumpList = false);
+  do
+  {
+    m_bJumpListUpdatePending = false;
+    bool bHistoryChanged     = false;
+    xiiWindowsJumpList::Update(recentProjects, bHistoryChanged).IgnoreResult();
+    out_bHistoryChanged |= bHistoryChanged;
+  } while (m_bJumpListUpdatePending);
 }
 
 void xiiWindowsTaskbar::Apply()

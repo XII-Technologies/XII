@@ -18,6 +18,7 @@
 
 struct ITaskbarList3;
 class xiiQtEditorApp;
+class xiiRecentFilesList;
 struct xiiToolsProjectEvent;
 
 /// Editor-owned taskbar presentation. Construct and destroy on the GUI thread, before the progress source is destroyed.
@@ -27,6 +28,9 @@ class XII_EDITORFRAMEWORK_DLL xiiWindowsTaskbar final : public QObject, public Q
 public:
   xiiWindowsTaskbar(xiiQtEditorApp& editor, QWidget& window, xiiProgress& progress);
   ~xiiWindowsTaskbar();
+
+  /// Uses this controller's GUI-thread COM apartment; no polling or native window changes.
+  void UpdateJumpList(xiiRecentFilesList& recentProjects, bool& out_bHistoryChanged);
 
 private:
   friend struct xiiWindowsTaskbarTest;
@@ -89,6 +93,8 @@ private:
   bool                m_bApplied               = false;
   bool                m_bApplying              = false;
   bool                m_bResetTaskbar          = false;
+  bool                m_bUpdatingJumpList      = false;
+  bool                m_bJumpListUpdatePending = false;
 };
 
 #endif

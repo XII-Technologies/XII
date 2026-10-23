@@ -31,6 +31,19 @@ void xiiRecentFilesList::Insert(xiiStringView sFile, xiiInt32 iContainerWindow)
     m_Files.SetCount(m_uiMaxElements);
 }
 
+bool xiiRecentFilesList::Remove(xiiStringView sFile)
+{
+  for (xiiUInt32 i = 0; i < m_Files.GetCount(); ++i)
+  {
+    if (m_Files[i].m_File == sFile)
+    {
+      m_Files.RemoveAtAndCopy(i);
+      return true;
+    }
+  }
+  return false;
+}
+
 void xiiRecentFilesList::Save(xiiStringView sFile)
 {
   xiiDeferredFileWriter File;

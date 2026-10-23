@@ -8,7 +8,7 @@
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <EditorFramework/EditorApp/WindowsJumpList.h>
+#  include <EditorFramework/Platform/Windows/WindowsTaskbar.h>
 #endif
 
 void xiiQtEditorApp::SaveRecentFiles()
@@ -18,17 +18,28 @@ void xiiQtEditorApp::SaveRecentFiles()
 
   m_RecentProjects.Save(":appdata/Settings/RecentProjects.txt");
   m_RecentDocuments.Save(":appdata/Settings/RecentDocuments.txt");
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-  // Update Windows taskbar jump list with recent projects.
-  xiiWindowsJumpList::UpdateJumpList(m_RecentProjects);
-#endif
 }
 
 void xiiQtEditorApp::LoadRecentFiles()
 {
   m_RecentProjects.Load(":appdata/Settings/RecentProjects.txt");
   m_RecentDocuments.Load(":appdata/Settings/RecentDocuments.txt");
+  UpdateRecentProjects();
+}
+
+void xiiQtEditorApp::UpdateRecentProjects()
+{
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  if (m_pTaskbar && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::UnitTest | StartupFlags::Background | StartupFlags::NoRecent))
+  {
+    bool bHistoryChanged = false;
+    m_pTaskbar->UpdateJumpList(m_RecentProjects, bHistoryChanged);
+    // Windows clears its removal records after a successful commit. Persist the pruned
+    // authoritative history so the next update cannot resurrect a removed destination.
+    if (bHistoryChanged)
+      m_RecentProjects.Save(":appdata/Settings/RecentProjects.txt");
+  }
+#endif
 }
 
 void xiiQtEditorApp::SaveOpenDocumentsList()
