@@ -34,6 +34,9 @@ class xiiTranslatorFromFiles;
 class xiiDynamicStringEnum;
 class QSplashScreen;
 class xiiQtVersionChecker;
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+class xiiWindowsTaskbar;
+#endif
 
 struct XII_EDITORFRAMEWORK_DLL xiiEditorAppEvent
 {
@@ -233,6 +236,10 @@ public:
 Q_SIGNALS:
   void IdleEvent();
 
+  /// External tools and C++ builds have no reliable percentage. Each start has one matching finish, including failures.
+  void ToolExecutionStarted();
+  void ToolExecutionFinished(bool bSucceeded);
+
 private:
   xiiString BuildDocumentTypeFileFilter(bool bForCreation);
 
@@ -326,6 +333,9 @@ public:
 private:
   xiiProgress*      m_pProgressbar   = nullptr;
   xiiQtProgressbar* m_pQtProgressbar = nullptr;
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  xiiWindowsTaskbar* m_pTaskbar = nullptr;
+#endif
 
   // *** Localization ***
   xiiTranslatorFromFiles* m_pTranslatorFromFiles = nullptr;

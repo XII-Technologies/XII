@@ -4,6 +4,7 @@
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
 xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
@@ -58,6 +59,10 @@ xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arg
 {
   // this block is supposed to be in the global log, not the given log interface
   XII_LOG_BLOCK("Executing Tool", szTool);
+
+  bool bSucceeded = false;
+  Q_EMIT ToolExecutionStarted();
+  XII_SCOPE_EXIT(Q_EMIT ToolExecutionFinished(bSucceeded));
 
   xiiStringBuilder toolExe = szTool;
 
@@ -185,6 +190,7 @@ xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arg
     return xiiStatus(xiiFmt("{0} returned error code {1}", szTool, proc.exitCode()));
   }
 
+  bSucceeded = true;
   return XII_SUCCESS;
 }
 

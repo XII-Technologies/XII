@@ -6,6 +6,7 @@
 #include <EditorFramework/Assets/AssetImportDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Utilities/Progress.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetDocumentGenerator, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -257,6 +258,7 @@ xiiStatus xiiAssetDocumentGenerator::Import(xiiStringView sInputFileAbs, xiiStri
   if (!m_SupportedFileTypes.Contains(ext))
     return xiiStatus(xiiFmt("Files of type '{}' cannot be imported as '{}' documents.", ext, GetDocumentExtension()));
 
+  xiiProgressRange                 progress("Importing Asset", false);
   xiiHybridArray<xiiDocument*, 16> pGeneratedDocs;
   XII_SUCCEED_OR_RETURN(Generate(sInputFileAbs, sMode, pGeneratedDocs));
 

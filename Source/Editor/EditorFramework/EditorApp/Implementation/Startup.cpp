@@ -18,6 +18,7 @@
 #include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/EditorApp/StackTraceLogParser.h>
+#include <EditorFramework/EditorApp/WindowsTaskbar.h>
 #include <EditorFramework/GUI/DynamicDefaultStateProvider.h>
 #include <EditorFramework/GUI/ExposedParametersDefaultStateProvider.h>
 #include <EditorFramework/Manipulators/BoneManipulatorAdapter.h>
@@ -285,7 +286,6 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     m_pQtProgressbar = XII_DEFAULT_NEW(xiiQtProgressbar);
 
     xiiProgress::SetGlobalProgressbar(m_pProgressbar);
-    m_pQtProgressbar->SetProgressbar(m_pProgressbar);
   }
 
   // Custom command line arguments.
@@ -311,6 +311,11 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     SetStyleSheet();
 
     xiiQtContainerWindow* pContainer = new xiiQtContainerWindow();
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+    m_pTaskbar = XII_DEFAULT_NEW(xiiWindowsTaskbar, *this, *pContainer, *m_pProgressbar);
+#endif
+    // Observe progress before the dialog can pump nested Qt events.
+    m_pQtProgressbar->SetProgressbar(m_pProgressbar);
     pContainer->show();
   }
 
@@ -500,6 +505,10 @@ void xiiQtEditorApp::ShutdownEditor()
   xiiQtUiServices::GetSingleton()->SaveState();
 
   CloseSettingsDocument();
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  XII_DEFAULT_DELETE(m_pTaskbar);
+#endif
 
   if (!IsInHeadlessMode())
   {
