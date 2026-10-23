@@ -53,4 +53,5 @@ void xiiQtEditorApp::UpdateGlobalStatusBarMessage()
     sText.Append("Reload the project to apply changes.   ");
 
   xiiQtUiServices::ShowGlobalStatusBarMessage(sText);
+  Q_EMIT RequiredActionsChanged(!m_RestartRequiredReasons.IsEmpty(), !m_ReloadProjectRequiredReasons.IsEmpty());
 }

@@ -240,6 +240,9 @@ Q_SIGNALS:
   void ToolExecutionStarted();
   void ToolExecutionFinished(bool bSucceeded);
 
+  /// Reports actionable configuration changes, independently of log history and informational status text.
+  void RequiredActionsChanged(bool bRestartRequired, bool bReloadProjectRequired);
+
 private:
   xiiString BuildDocumentTypeFileFilter(bool bForCreation);
 

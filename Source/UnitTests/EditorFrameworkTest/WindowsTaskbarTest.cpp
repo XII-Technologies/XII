@@ -15,6 +15,7 @@
 #  include <Foundation/Utilities/Progress.h>
 #  include <QApplication>
 #  include <QElapsedTimer>
+#  include <QImage>
 #  include <QStandardPaths>
 #  include <QThread>
 #  include <ToolsFoundation/Project/ToolsProject.h>
@@ -80,25 +81,30 @@ namespace
       return m_Result;
     }
 
-    HRESULT STDMETHODCALLTYPE SetOverlayIcon(HWND hWindow, HICON hIcon, LPCWSTR) override
+    HRESULT STDMETHODCALLTYPE SetOverlayIcon(HWND hWindow, HICON hIcon, LPCWSTR szDescription) override
     {
       m_sCalls.Append("overlay;");
-      m_hOverlay = hIcon;
-      m_hWindow  = hWindow;
+      m_hOverlay            = hIcon;
+      m_OverlayImage        = hIcon ? QImage::fromHICON(hIcon) : QImage();
+      m_sOverlayDescription = QString::fromWCharArray(szDescription);
+      m_hWindow             = hWindow;
       XII_TEST_BOOL(QThread::currentThread() == qApp->thread());
-      return m_Result;
+      return m_OverlayResult;
     }
 
     xiiStringBuilder    m_sCalls;
     xiiDelegate<void()> m_OnProgressState;
-    TBPFLAG             m_State        = TBPF_NOPROGRESS;
-    HRESULT             m_Result       = S_OK;
-    HWND                m_hWindow      = nullptr;
-    HICON               m_hOverlay     = nullptr;
-    ULONGLONG           m_uiCompleted  = 0;
-    ULONGLONG           m_uiTotal      = 0;
-    ULONG               m_uiReferences = 1;
-    ULONG               m_uiReleases   = 0;
+    QImage              m_OverlayImage;
+    QString             m_sOverlayDescription;
+    TBPFLAG             m_State         = TBPF_NOPROGRESS;
+    HRESULT             m_Result        = S_OK;
+    HRESULT             m_OverlayResult = S_OK;
+    HWND                m_hWindow       = nullptr;
+    HICON               m_hOverlay      = nullptr;
+    ULONGLONG           m_uiCompleted   = 0;
+    ULONGLONG           m_uiTotal       = 0;
+    ULONG               m_uiReferences  = 1;
+    ULONG               m_uiReleases    = 0;
   };
 
   class TaskbarTestWindow : public QWidget
@@ -110,6 +116,18 @@ namespace
       winId();
     }
   };
+
+  bool IsIconValid(HICON hIcon)
+  {
+    ICONINFO info = {};
+    if (!GetIconInfo(hIcon, &info))
+      return false;
+    if (info.hbmColor)
+      DeleteObject(info.hbmColor);
+    if (info.hbmMask)
+      DeleteObject(info.hbmMask);
+    return true;
+  }
 
   class TaskbarImportGenerator : public xiiAssetDocumentGenerator
   {
@@ -140,7 +158,13 @@ struct xiiWindowsTaskbarTest
   static bool      IsReady(const xiiWindowsTaskbar& taskbar) { return taskbar.m_bTaskbarReady; }
   static bool      IsApplied(const xiiWindowsTaskbar& taskbar) { return taskbar.m_bApplied; }
   static bool      HasBackend(const xiiWindowsTaskbar& taskbar) { return taskbar.m_pTaskbar != nullptr; }
-  static void      CloseProject(xiiWindowsTaskbar& taskbar)
+  static void      Acknowledge()
+  {
+    xiiQtUiServices::Event event;
+    event.m_Type = xiiQtUiServices::Event::ClickedDocumentPermanentStatusBarText;
+    xiiQtUiServices::s_Events.Broadcast(event);
+  }
+  static void CloseProject(xiiWindowsTaskbar& taskbar)
   {
     xiiToolsProjectEvent event;
     event.m_Type = xiiToolsProjectEvent::Type::ProjectClosed;
@@ -235,9 +259,11 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, NativePresentationAndRecovery)
   XII_TEST_INT(recorder.m_State, TBPF_INDETERMINATE);
 
   // Exercise the registered shell messages without restarting the user's Explorer.
+  Q_EMIT xiiQtEditorApp::GetSingleton()->RequiredActionsChanged(true, false);
   xiiProgressRange range("Recovery test operation", false, &progress);
-  state                  = Test::GetState(taskbar);
-  const ULONG uiReleases = recorder.m_uiReleases;
+  state                     = Test::GetState(taskbar);
+  const QImage warningImage = recorder.m_OverlayImage;
+  const ULONG  uiReleases   = recorder.m_uiReleases;
   Test::ShellMessage(taskbar, false);
   QApplication::processEvents();
   XII_TEST_BOOL(!Test::IsReady(taskbar));
@@ -250,12 +276,14 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, NativePresentationAndRecovery)
   XII_TEST_BOOL(Test::GetState(taskbar) == state);
 
   window.RecreateNativeWindow();
+  XII_TEST_BOOL(recorder.m_OverlayImage == warningImage);
   XII_TEST_BOOL(!Test::IsReady(taskbar));
   Test::ShellMessage(taskbar, true);
   Test::Attach(taskbar, recorder);
   QApplication::processEvents();
   XII_TEST_BOOL(recorder.m_hWindow == reinterpret_cast<HWND>(window.winId()));
 
+  XII_TEST_BOOL(recorder.m_OverlayImage == warningImage);
   recorder.m_Result = E_FAIL;
   state.m_Progress  = Test::Progress::Normal;
   Test::Apply(taskbar, state);
@@ -280,6 +308,7 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, NativePresentationAndRecovery)
   XII_TEST_BOOL(!Test::IsApplied(taskbar));
   QApplication::processEvents();
   XII_TEST_BOOL(!Test::HasBackend(taskbar));
+  Q_EMIT xiiQtEditorApp::GetSingleton()->RequiredActionsChanged(false, false);
 }
 
 XII_CREATE_SIMPLE_TEST(EditorTaskbar, ProgressToolsAndGuiThread)
@@ -312,16 +341,16 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, ProgressToolsAndGuiThread)
     XII_TEST_INT(recorder.m_State, TBPF_ERROR);
     Q_EMIT editor.ToolExecutionFinished(true);
     XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Error);
-    xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage({}, xiiQtUiServices::Event::Info);
+    Test::Acknowledge();
     XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::None);
     progress.UserClickedCancel();
     XII_TEST_INT(recorder.m_State, TBPF_PAUSED);
   }
   XII_TEST_INT(recorder.m_State, TBPF_NOPROGRESS);
   xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Warning", xiiQtUiServices::Event::Warning);
-  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Warning);
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::None);
   xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Error", xiiQtUiServices::Event::Error);
-  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Error);
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::None);
   xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage({}, xiiQtUiServices::Event::Info);
   XII_TEST_BOOL(recorder.m_hOverlay == nullptr);
 
@@ -344,9 +373,116 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, ProgressToolsAndGuiThread)
   XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
   xiiQtUiServices::ShowGlobalStatusBarMessage("Application condition");
   Test::CloseProject(taskbar);
-  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Error);
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::None);
   xiiQtUiServices::ShowGlobalStatusBarMessage({});
   XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
+}
+
+XII_CREATE_SIMPLE_TEST(EditorTaskbar, ActionableOverlays)
+{
+  using Test               = xiiWindowsTaskbarTest;
+  auto&             editor = *xiiQtEditorApp::GetSingleton();
+  TaskbarRecorder   recorder;
+  QWidget           window;
+  xiiProgress       progress;
+  xiiWindowsTaskbar taskbar(editor, window, progress);
+  window.winId();
+  Test::Attach(taskbar, recorder);
+  Test::Apply(taskbar, {});
+
+  xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Old warning", xiiQtUiServices::Event::Warning);
+  xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Old error", xiiQtUiServices::Event::Error);
+  xiiQtUiServices::ShowGlobalStatusBarMessage("New version available");
+  XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
+
+  Q_EMIT editor.RequiredActionsChanged(false, true);
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Warning);
+  XII_TEST_INT(recorder.m_State, TBPF_NOPROGRESS);
+  const QImage warning = recorder.m_OverlayImage;
+  {
+    xiiProgressRange range("Overlay progress regression", false, &progress);
+    range.SetCompletion(0.625);
+    Q_EMIT editor.RequiredActionsChanged(false, false);
+    XII_TEST_INT(recorder.m_State, TBPF_NORMAL);
+    XII_TEST_INT(recorder.m_uiCompleted, 625);
+    XII_TEST_BOOL(recorder.m_hOverlay == nullptr);
+    Q_EMIT editor.RequiredActionsChanged(false, true);
+    XII_TEST_INT(recorder.m_State, TBPF_NORMAL);
+    XII_TEST_INT(recorder.m_uiCompleted, 625);
+    XII_TEST_BOOL(recorder.m_OverlayImage == warning);
+  }
+  Q_EMIT editor.ToolExecutionStarted();
+  Q_EMIT editor.ToolExecutionFinished(false);
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Error);
+  XII_TEST_BOOL(recorder.m_OverlayImage != warning);
+  xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage({}, xiiQtUiServices::Event::Info);
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Error);
+  Test::Acknowledge();
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Warning);
+  XII_TEST_BOOL(recorder.m_OverlayImage == warning);
+  recorder.m_sCalls.Clear();
+  Q_EMIT editor.RequiredActionsChanged(true, false);
+  XII_TEST_BOOL(recorder.m_sCalls.IsEmpty());
+  Q_EMIT editor.RequiredActionsChanged(false, false);
+  XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
+  XII_TEST_BOOL(recorder.m_hOverlay == nullptr);
+
+  Q_EMIT editor.ToolExecutionStarted();
+  Q_EMIT editor.ToolExecutionFinished(false);
+  Q_EMIT editor.ToolExecutionStarted();
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::None);
+  Q_EMIT editor.ToolExecutionFinished(true);
+  xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Historical error", xiiQtUiServices::Event::Error);
+  XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
+
+  std::thread worker([&]() { Q_EMIT editor.RequiredActionsChanged(true, false); });
+  worker.join();
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::None);
+  QApplication::processEvents();
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Warning);
+  Test::CloseProject(taskbar);
+  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Warning);
+  Q_EMIT editor.RequiredActionsChanged(false, false);
+  XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
+}
+
+XII_CREATE_SIMPLE_TEST(EditorTaskbar, OverlayIconOwnership)
+{
+  using Test = xiiWindowsTaskbarTest;
+  TaskbarRecorder   recorder;
+  QWidget           window;
+  xiiProgress       progress;
+  xiiWindowsTaskbar taskbar(*xiiQtEditorApp::GetSingleton(), window, progress);
+  window.winId();
+  Test::Attach(taskbar, recorder);
+  Test::Apply(taskbar, {Test::Progress::Inactive, Test::Overlay::Warning});
+  XII_TEST_BOOL(!recorder.m_OverlayImage.isNull());
+  XII_TEST_BOOL(!IsIconValid(recorder.m_hOverlay));
+  XII_TEST_BOOL(recorder.m_OverlayImage.size() == QSize(16, 16) * window.devicePixelRatioF());
+  XII_TEST_BOOL(!recorder.m_sOverlayDescription.isEmpty());
+  bool bVisible = false;
+  for (int y = 0; y < recorder.m_OverlayImage.height(); ++y)
+  {
+    for (int x = 0; x < recorder.m_OverlayImage.width(); ++x)
+      bVisible |= recorder.m_OverlayImage.pixelColor(x, y).alpha() != 0;
+  }
+  XII_TEST_BOOL(bVisible);
+
+  recorder.m_OverlayResult = E_FAIL;
+  const Test::State error{Test::Progress::Inactive, Test::Overlay::Error};
+  Test::Apply(taskbar, error);
+  XII_TEST_BOOL(!recorder.m_OverlayImage.isNull());
+  XII_TEST_BOOL(!IsIconValid(recorder.m_hOverlay));
+  XII_TEST_BOOL(!Test::HasBackend(taskbar));
+  XII_TEST_BOOL(Test::GetState(taskbar) == error);
+  recorder.m_OverlayResult = S_OK;
+  Test::Attach(taskbar, recorder);
+  Test::Apply(taskbar, error);
+  XII_TEST_BOOL(Test::IsApplied(taskbar));
+  XII_TEST_BOOL(!IsIconValid(recorder.m_hOverlay));
+  Test::Apply(taskbar, {});
+  XII_TEST_BOOL(recorder.m_hOverlay == nullptr);
+  XII_TEST_BOOL(recorder.m_OverlayImage.isNull());
 }
 
 XII_CREATE_SIMPLE_TEST(EditorTaskbar, AssetImportProgress)
@@ -428,11 +564,13 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, NativeShell)
     XII_TEST_BOOL(Test::IsApplied(taskbar));
     progress.UserClickedCancel();
     XII_TEST_BOOL(Test::IsApplied(taskbar));
-    xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Native shell test warning", xiiQtUiServices::Event::Warning);
+    Q_EMIT xiiQtEditorApp::GetSingleton()->RequiredActionsChanged(true, false);
     XII_TEST_BOOL(Test::IsApplied(taskbar));
-    xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Native shell test error", xiiQtUiServices::Event::Error);
+    Q_EMIT xiiQtEditorApp::GetSingleton()->ToolExecutionStarted();
+    Q_EMIT xiiQtEditorApp::GetSingleton()->ToolExecutionFinished(false);
     XII_TEST_BOOL(Test::IsApplied(taskbar));
-    xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage({}, xiiQtUiServices::Event::Info);
+    Test::Acknowledge();
+    Q_EMIT xiiQtEditorApp::GetSingleton()->RequiredActionsChanged(false, false);
   }
   XII_TEST_BOOL(Test::IsApplied(taskbar));
   XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
