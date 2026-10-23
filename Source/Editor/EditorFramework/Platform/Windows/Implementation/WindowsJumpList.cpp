@@ -221,7 +221,7 @@ HRESULT xiiWindowsJumpList::BuildList(ICustomDestinationList& destinations, cons
   {
     IShellLinkW* pLink = nullptr;
     hr                 = CreateLink(sExecutable, bCreate ? QStringLiteral("-createProject") : QStringLiteral("-openProject"),
-                                    bCreate ? QStringLiteral("Create New Project") : QStringLiteral("Open Project"), pLink);
+                    bCreate ? QStringLiteral("Create New Project") : QStringLiteral("Open Project"), pLink);
     if (FAILED(hr))
       return hr;
     XII_SCOPE_EXIT(pLink->Release());
