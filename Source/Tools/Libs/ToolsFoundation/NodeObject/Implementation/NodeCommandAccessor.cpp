@@ -51,6 +51,18 @@ xiiStatus xiiNodeCommandAccessor::SetValue(const xiiDocumentObject* pObject, con
   return xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index);
 }
 
+xiiStatus xiiNodeCommandAccessor::RefreshPins(const xiiDocumentObject* pObject)
+{
+  XII_ASSERT_DEV(IsNode(pObject), "Only nodes have a dependency-derived pin schema.");
+  XII_ASSERT_DEV(m_pHistory->IsInTransaction(), "Pin refresh requires an active transaction.");
+  xiiHybridArray<ConnectionInfo, 16> connections;
+  XII_SUCCEED_OR_RETURN(DisconnectAllPins(pObject, connections));
+  auto* manager = static_cast<xiiDocumentNodeManager*>(const_cast<xiiDocumentObjectManager*>(pObject->GetDocumentObjectManager()));
+  if (!manager->TryRecreatePins(pObject))
+    return xiiStatus("Could not refresh the node's dependency-derived pins.");
+  return TryReconnectAllPins(pObject, connections);
+}
+
 xiiStatus xiiNodeCommandAccessor::InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   if (IsDynamicPinProperty(pObject, pProp))

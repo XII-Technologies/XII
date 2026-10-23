@@ -190,6 +190,9 @@ public:
   void Disconnect(const xiiDocumentObject* pObject);
   void MoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos);
 
+  /// Rebuild a derived schema after callers have disconnected its pins.
+  virtual bool TryRecreatePins(const xiiDocumentObject* pObject);
+
   void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& ref_graph) const;
   void RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable);
 
@@ -207,7 +210,6 @@ protected:
   xiiResult ResolveConnection(const xiiUuid& sourceObject, const xiiUuid& targetObject, xiiStringView sourcePin, xiiStringView targetPin, const xiiPin*& out_pSourcePin, const xiiPin*& out_pTargetPin) const;
 
   virtual void GetDynamicPinNames(const xiiDocumentObject* pObject, xiiStringView sPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const;
-  virtual bool TryRecreatePins(const xiiDocumentObject* pObject);
 
   struct NodeInternal
   {

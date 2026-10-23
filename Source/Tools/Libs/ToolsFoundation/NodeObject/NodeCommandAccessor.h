@@ -17,6 +17,9 @@ public:
   /// Temporary pin edits must notify the node manager when restoring the previous schema.
   void BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands = false) override;
 
+  /// Refresh a dependency-derived schema in the caller's transaction, retaining compatible connections.
+  xiiStatus RefreshPins(const xiiDocumentObject* pObject);
+
   virtual xiiStatus SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index = xiiVariant()) override;
 
   virtual xiiStatus InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index = xiiVariant()) override;
