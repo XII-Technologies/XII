@@ -11,6 +11,7 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/LogEntry.h>
 #include <Foundation/Threading/AtomicInteger.h>
+#include <Foundation/Threading/Mutex.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Threading/Thread.h>
 #include <Foundation/Types/UniquePtr.h>
@@ -130,8 +131,8 @@ public:
   static xiiResult PrepareAssetRequest(xiiUuid assetGuid, xiiProcessAssetMsg& out_request);
 
 public:
-  // Can be called from worker threads!
-  xiiEvent<const xiiAssetProcessorEvent&> m_Events;
+  // Worker broadcasts and GUI listener teardown must be serialized. GUI listeners must queue their updates.
+  xiiEvent<const xiiAssetProcessorEvent&, xiiMutex> m_Events;
 
 private:
   friend class xiiProcessTask;
