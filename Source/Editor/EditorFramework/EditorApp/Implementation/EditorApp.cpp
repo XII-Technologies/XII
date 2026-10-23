@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
@@ -21,6 +22,30 @@
 XII_IMPLEMENT_SINGLETON(xiiQtEditorApp);
 
 xiiEvent<const xiiEditorAppEvent&> xiiQtEditorApp::m_Events;
+
+void xiiQtEditorApp::AssetProcessorEventHandler(const xiiAssetProcessorEvent& e)
+{
+  if (e.m_Type != xiiAssetProcessorEvent::Type::TransformsFinished)
+    return;
+  const auto progress = e.m_Progress;
+  QMetaObject::invokeMethod(this, [this, progress]() {
+    if (!m_bIsRunning || !xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
+      return;
+    if (xiiAssetCurator::GetSingleton()->WriteAssetTables().Failed())
+      xiiLog::Error("Failed to publish asset lookup tables after background transformation.");
+    if (progress.m_bAllAssets && progress.m_uiFailed == 0 && progress.m_uiNeedsImport == 0 && progress.m_uiCanceled == 0)
+      xiiAssetCurator::GetSingleton()->StoreFullTransformDate();
+    xiiStringBuilder text;
+    text.SetFormat("Asset transformation: {} processed, {} failed, {} need import, {} canceled. See Asset Curator for details.",
+      progress.m_uiCompleted, progress.m_uiFailed, progress.m_uiNeedsImport, progress.m_uiCanceled);
+    xiiQtUiServices::ShowAllDocumentsTemporaryStatusBarMessage(text, xiiTime::MakeFromSeconds(10));
+    if (progress.m_uiFailed > 0)
+      xiiLog::Error("{}", text);
+    else if (progress.m_uiNeedsImport > 0)
+      xiiLog::Warning("{}", text);
+    else
+      xiiLog::Info("{}", text); }, Qt::QueuedConnection);
+}
 
 xiiQtEditorApp::xiiQtEditorApp() :
   m_SingletonRegistrar(this), m_RecentProjects(20), m_RecentDocuments(100)

@@ -8,6 +8,7 @@
 #include <EditorFramework/Assets/AssetBrowserWidget.moc.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentGenerator.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <Foundation/Strings/TranslationLookup.h>
@@ -1102,26 +1103,14 @@ void xiiQtAssetBrowserWidget::OnTransform()
 {
   QModelIndexList selection = ListAssets->selectionModel()->selectedRows();
 
-  xiiProgressRange range("Transforming Assets", 1 + selection.length(), true);
-
-  for (auto& index : selection)
+  xiiDynamicArray<xiiUuid> assets;
+  for (const auto& index : selection)
   {
-    if (range.WasCanceled())
-      break;
-
-    xiiUuid guid  = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AssetGuid).value<xiiUuid>();
-    QString sPath = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString();
-    range.BeginNextStep(sPath.toUtf8());
-    xiiTransformStatus res = xiiAssetCurator::GetSingleton()->TransformAsset(guid, xiiTransformFlags::TriggeredManually);
-    if (res.Failed())
-    {
-      xiiLog::Error("{0} ({1})", res.m_sMessage, sPath.toUtf8().data());
-    }
+    const xiiUuid guid = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AssetGuid).value<xiiUuid>();
+    if (guid.IsValid())
+      assets.PushBack(guid);
   }
-
-  range.BeginNextStep("Writing Lookup Tables");
-
-  xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
+  xiiAssetProcessor::GetSingleton()->QueueTransformAssets(assets).LogFailure();
 }
 
 void xiiQtAssetBrowserWidget::OnListOpenExplorer()

@@ -27,6 +27,7 @@ class QMainWindow;
 class QWidget;
 class xiiProgress;
 class xiiQtProgressbar;
+struct xiiAssetProcessorEvent;
 class xiiQtEditorApp;
 template <typename T>
 class QList;
@@ -291,6 +292,7 @@ private:
   void ProjectRequestHandler(xiiToolsProjectRequest& r);
   void ProjectEventHandler(const xiiToolsProjectEvent& r);
   void EngineProcessMsgHandler(const xiiEditorEngineProcessConnection::Event& e);
+  void AssetProcessorEventHandler(const xiiAssetProcessorEvent& e);
   void UiServicesEvents(const xiiQtUiServices::Event& e);
 
   void SetupNewProject();

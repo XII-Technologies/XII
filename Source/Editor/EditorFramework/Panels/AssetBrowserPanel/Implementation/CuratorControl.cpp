@@ -6,6 +6,7 @@
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/CuratorControl.moc.h>
+#include <QProgressBar>
 
 xiiQtCuratorControl::xiiQtCuratorControl(QWidget* pParent) :
   QWidget(pParent)
@@ -16,6 +17,16 @@ xiiQtCuratorControl::xiiQtCuratorControl(QWidget* pParent) :
   m_pBackgroundProcess = new QToolButton(this);
   pLayout->addWidget(m_pBackgroundProcess);
   connect(m_pBackgroundProcess, &QAbstractButton::clicked, this, &xiiQtCuratorControl::BackgroundProcessClicked);
+  m_pTransformProgress = new QProgressBar(this);
+  m_pTransformProgress->setFormat(QStringLiteral("Transforming assets: %v/%m (%p%)"));
+  m_pTransformProgress->hide();
+  pLayout->addWidget(m_pTransformProgress);
+  m_pCancelTransforms = new QToolButton(this);
+  m_pCancelTransforms->setText(QStringLiteral("Cancel"));
+  m_pCancelTransforms->setToolTip(QStringLiteral("Cancel queued transformations; finish active assets"));
+  m_pCancelTransforms->hide();
+  pLayout->addWidget(m_pCancelTransforms);
+  connect(m_pCancelTransforms, &QAbstractButton::clicked, this, []() { xiiAssetProcessor::GetSingleton()->StopProcessTask(false); });
   pLayout->addSpacing(200);
 
   UpdateBackgroundProcessState();
@@ -168,6 +179,17 @@ void xiiQtCuratorControl::AssetCuratorEvents(const xiiAssetCuratorEvent& e)
 
 void xiiQtCuratorControl::AssetProcessorEvents(const xiiAssetProcessorEvent& e)
 {
+  if (e.m_Type == xiiAssetProcessorEvent::Type::TransformProgress || e.m_Type == xiiAssetProcessorEvent::Type::TransformsFinished)
+  {
+    const auto progress = e.m_Progress;
+    QMetaObject::invokeMethod(this, [this, progress]() {
+      m_pTransformProgress->setRange(0, static_cast<int>(progress.m_uiTotal));
+      m_pTransformProgress->setValue(static_cast<int>(progress.m_uiCompleted + progress.m_uiCanceled));
+      m_pTransformProgress->setVisible(progress.m_bActive);
+      m_pCancelTransforms->setVisible(progress.m_bActive);
+      m_pCancelTransforms->setEnabled(!progress.m_bCancelRequested); }, Qt::QueuedConnection);
+    return;
+  }
   switch (e.m_Type)
   {
     case xiiAssetProcessorEvent::Type::ProcessTaskStateChanged:

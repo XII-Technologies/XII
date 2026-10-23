@@ -148,8 +148,11 @@ void xiiQtAssetStatusIndicator::onClick(bool)
       [[fallthrough]];
 
     case Action::Transform:
-      m_pAsset->TransformAsset(xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform);
-      break;
+    {
+      const xiiUuid guid = m_pAsset->GetGuid();
+      xiiAssetProcessor::GetSingleton()->QueueTransformAssets(xiiMakeArrayPtr(&guid, 1), xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform).LogFailure();
+    }
+    break;
 
     case Action::ShowErrors:
     {

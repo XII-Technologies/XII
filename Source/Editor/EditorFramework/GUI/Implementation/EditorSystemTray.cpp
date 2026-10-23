@@ -115,22 +115,21 @@ void xiiQtEditorSystemTray::ProgressEventHandler(const xiiProgressEvent& e)
 
 void xiiQtEditorSystemTray::ProcessorEventHandler(const xiiAssetProcessorEvent& e)
 {
-  if (e.m_Type != xiiAssetProcessorEvent::Type::ProcessTaskStateChanged)
+  if (e.m_Type != xiiAssetProcessorEvent::Type::ProcessTaskStateChanged &&
+      e.m_Type != xiiAssetProcessorEvent::Type::TransformProgress && e.m_Type != xiiAssetProcessorEvent::Type::TransformsFinished)
     return;
-  const auto state = m_pProcessor->GetProcessTaskState();
-  QMetaObject::invokeMethod(this, [this, state]() {
-    switch (state)
-    {
-      case xiiAssetProcessor::ProcessTaskState::Stopped:
-        m_sBackground.clear();
-        break;
-      case xiiAssetProcessor::ProcessTaskState::Running:
-        m_sBackground = QStringLiteral("Background asset processing enabled");
-        break;
-      case xiiAssetProcessor::ProcessTaskState::Stopping:
-        m_sBackground = QStringLiteral("Finishing background assets");
-        break;
-    }
+  QMetaObject::invokeMethod(this, [this]() {
+    if (!m_pProcessor)
+      return;
+    // Read the current snapshot on the GUI thread so a queued state-change event cannot
+    // replace a newer requested batch's detailed status with a generic running label.
+    const auto progress = m_pProcessor->GetTransformProgress();
+    if (progress.m_bActive)
+      m_sBackground = QStringLiteral("Transforming assets: %1/%2%3").arg(progress.m_uiCompleted).arg(progress.m_uiTotal).arg(progress.m_bCancelRequested ? QStringLiteral(" (canceling)") : QString());
+    else if (m_pProcessor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopping)
+      m_sBackground = QStringLiteral("Finishing background assets");
+    else
+      m_sBackground = m_pProcessor->IsAutomaticProcessingEnabled() ? QStringLiteral("Background asset processing enabled") : QString();
     UpdateToolTip(); }, Qt::QueuedConnection);
 }
 

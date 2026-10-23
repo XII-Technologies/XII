@@ -191,6 +191,16 @@ void xiiWindowsTaskbar::Update()
         assets.m_fCompletion   = static_cast<double>(counts[xiiAssetInfo::UpToDate]) / uiTotal;
         assets.m_bHasValue     = counts[xiiAssetInfo::Unknown] == 0;
       }
+      if (const auto* processor = xiiAssetProcessor::GetSingleton())
+      {
+        const auto progress = processor->GetTransformProgress();
+        if (progress.m_bActive)
+        {
+          assets.m_Progress    = progress.m_bCancelRequested ? ProgressState::Paused : ProgressState::Normal;
+          assets.m_fCompletion = progress.m_uiTotal > 0 ? static_cast<double>(progress.m_uiCompleted + progress.m_uiCanceled) / progress.m_uiTotal : 0.0;
+          assets.m_bHasValue   = progress.m_uiTotal > 0;
+        }
+      }
       states.PushBack(assets);
     }
   }

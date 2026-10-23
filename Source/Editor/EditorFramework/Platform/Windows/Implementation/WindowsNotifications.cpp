@@ -347,7 +347,19 @@ bool xiiWindowsNotifications::ToolFinished(bool bSucceeded, const QString& sOper
 
 void xiiWindowsNotifications::ProcessorEventHandler(const xiiAssetProcessorEvent& e)
 {
-  if (e.m_Type != xiiAssetProcessorEvent::Type::AssetProcessed || e.m_Result != xiiTransformResult::Failure)
+  if (e.m_Type == xiiAssetProcessorEvent::Type::TransformsFinished)
+  {
+    const auto progress   = e.m_Progress;
+    const auto generation = m_uiProjectGeneration.load();
+    QMetaObject::invokeMethod(this, [this, progress, generation]() {
+      if (generation != m_uiProjectGeneration.load() || progress.m_bCancelRequested || progress.m_uiCanceled > 0 ||
+          !IsEligible(IsForeground(), progress.m_Duration.GetSeconds(), progress.m_uiFailed == 0 && progress.m_uiNeedsImport == 0, true))
+        return;
+      Notify({progress.m_uiFailed > 0 ? QStringLiteral("Asset transformation failed") : (progress.m_uiNeedsImport > 0 ? QStringLiteral("Assets require import") : QStringLiteral("Asset transformation complete")),
+        QStringLiteral("%1 completed; %2 failed; %3 need import. Return to XII Editor for details.").arg(progress.m_uiCompleted).arg(progress.m_uiFailed).arg(progress.m_uiNeedsImport)}); }, Qt::QueuedConnection);
+    return;
+  }
+  if (e.m_Type != xiiAssetProcessorEvent::Type::AssetProcessed || e.m_Result != xiiTransformResult::Failure || e.m_bRequested || e.m_bCanceled)
     return;
   const QString sAsset              = xiiMakeQString(e.m_sAssetPath);
   const auto    uiProjectGeneration = m_uiProjectGeneration.load();
