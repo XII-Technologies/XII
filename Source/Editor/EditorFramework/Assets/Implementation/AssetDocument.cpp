@@ -5,6 +5,7 @@
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -120,6 +121,15 @@ void xiiAssetDocument::InternalAfterSaveDocument()
 
   if (flags.IsAnySet(xiiAssetDocumentFlags::AutoTransformOnSave))
   {
+    auto* editor = xiiQtEditorApp::GetSingleton();
+    if (!editor->IsBackgroundMode() && !editor->IsInHeadlessMode() && !editor->IsInUnitTestMode())
+    {
+      const xiiUuid guid = GetGuid();
+      QMetaObject::invokeMethod(editor, [guid]() {
+        if (xiiToolsProject::IsProjectOpen() && !xiiToolsProject::IsProjectClosing())
+          xiiAssetProcessor::GetSingleton()->QueueTransformAssets(xiiMakeArrayPtr(&guid, 1), xiiTransformFlags::None).LogFailure(); }, Qt::QueuedConnection);
+      return;
+    }
     // If we request an engine connection but the mirror is not set up yet we are still
     // creating the document and TransformAsset will most likely fail.
     if (m_EngineConnectionType == xiiAssetDocEngineConnection::None || m_pEngineConnection)
@@ -290,7 +300,7 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
       xiiTransformStatus ret         = InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
 
       // if writing failed, make sure the output file does not exist
-      if (ret.Failed())
+      if (ret.m_Result == xiiTransformResult::Failure)
       {
         xiiFileSystem::DeleteFile(sTargetFile);
       }
@@ -318,6 +328,8 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
 xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
 {
   XII_PROFILE_SCOPE("TransformAsset");
+  if (xiiAssetCurator::GetSingleton()->IsAssetBeingTransformed(GetGuid()))
+    return xiiTransformStatus("Asset is being transformed in the background. Retry after it finishes.");
 
   if (!transformFlags.IsSet(xiiTransformFlags::ForceTransform))
   {
@@ -333,13 +345,27 @@ xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlag
 
   const xiiTransformStatus res = DoTransformAsset(pAssetProfile, transformFlags);
 
-  if (transformFlags.IsSet(xiiTransformFlags::TriggeredManually))
+  if (transformFlags.IsSet(xiiTransformFlags::TriggeredManually) && !transformFlags.IsSet(xiiTransformFlags::BackgroundProcessing))
   {
     SaveDocument().LogFailure();
     xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(GetGuid());
   }
 
   return res;
+}
+
+xiiTransformStatus xiiAssetDocument::TransformAssetForImport(const xiiPlatformProfile* pAssetProfile)
+{
+  XII_ASSERT_DEV(xiiQtEditorApp::GetSingleton()->IsBackgroundMode(), "Import source changes in an isolated EditorProcessor.");
+  // Import computes graph changes only. Publishing a resource with the pre-import
+  // source hash could make uncommitted material references appear up to date.
+  class ImportStream final : public xiiStreamWriter
+  {
+    xiiResult WriteBytes(const void*, xiiUInt64) override { return XII_SUCCESS; }
+  } stream;
+  xiiAssetFileHeader header;
+  header.SetFileHashAndVersion(0, GetAssetTypeVersion());
+  return InternalTransformAsset(stream, "", pAssetProfile, header, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform);
 }
 
 xiiTransformStatus xiiAssetDocument::CreateThumbnail()

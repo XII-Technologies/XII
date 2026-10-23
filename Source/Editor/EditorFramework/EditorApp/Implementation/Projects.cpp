@@ -379,7 +379,7 @@ Explanation: For assets to work properly, they must be <a href='https://xiiengin
           }
 
           // check whether the project needs to be transformed
-          QTimer::singleShot(2000, this, [this]() { xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::Default).IgnoreResult(); });
+          QTimer::singleShot(2000, this, [this]() { xiiAssetProcessor::GetSingleton()->QueueTransformAllAssets().LogFailure(); });
         }
       }
 

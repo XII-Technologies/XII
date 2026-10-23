@@ -5,6 +5,7 @@
 #include <EditorFramework/Assets/AssetBrowserModel.moc.h>
 #include <EditorFramework/Assets/AssetBrowserView.moc.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <Foundation/IO/OSFile.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 
@@ -299,17 +300,7 @@ bool xiiQtIconViewDelegate::mouseReleaseEvent(QMouseEvent* pEvent, const QStyleO
   {
     xiiUuid guid = index.data(xiiQtAssetBrowserModel::UserRoles::AssetGuid).value<xiiUuid>();
 
-    xiiTransformStatus ret = xiiAssetCurator::GetSingleton()->TransformAsset(guid, xiiTransformFlags::TriggeredManually);
-
-    if (ret.Failed())
-    {
-      QString path = index.data(xiiQtAssetBrowserModel::UserRoles::RelativePath).toString();
-      xiiLog::Error("Transform failed: '{0}' ({1})", ret.m_sMessage, path.toUtf8().data());
-    }
-    else
-    {
-      xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
-    }
+    xiiAssetProcessor::GetSingleton()->QueueTransformAssets(xiiMakeArrayPtr(&guid, 1)).LogFailure();
 
     pEvent->accept();
     return true;

@@ -80,6 +80,7 @@ struct xiiTransformFlags
   };
 };
 XII_DECLARE_FLAGS_OPERATORS(xiiTransformFlags);
+XII_DECLARE_REFLECTABLE_TYPE(XII_EDITORFRAMEWORK_DLL, xiiTransformFlags);
 
 struct xiiSubAssetData
 {

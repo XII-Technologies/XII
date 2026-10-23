@@ -6,6 +6,7 @@
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/CuratorControl.moc.h>
+#include <QProgressBar>
 
 xiiQtCuratorControl::xiiQtCuratorControl(QWidget* pParent) :
   QWidget(pParent)
@@ -16,6 +17,16 @@ xiiQtCuratorControl::xiiQtCuratorControl(QWidget* pParent) :
   m_pBackgroundProcess = new QToolButton(this);
   pLayout->addWidget(m_pBackgroundProcess);
   connect(m_pBackgroundProcess, &QAbstractButton::clicked, this, &xiiQtCuratorControl::BackgroundProcessClicked);
+  m_pTransformProgress = new QProgressBar(this);
+  m_pTransformProgress->setFormat(QStringLiteral("Transforming assets: %v/%m (%p%)"));
+  m_pTransformProgress->hide();
+  pLayout->addWidget(m_pTransformProgress);
+  m_pCancelTransforms = new QToolButton(this);
+  m_pCancelTransforms->setText(QStringLiteral("Cancel"));
+  m_pCancelTransforms->setToolTip(QStringLiteral("Cancel queued transformations; finish active assets"));
+  m_pCancelTransforms->hide();
+  pLayout->addWidget(m_pCancelTransforms);
+  connect(m_pCancelTransforms, &QAbstractButton::clicked, this, []() { xiiAssetProcessor::GetSingleton()->StopProcessTask(false); });
   pLayout->addSpacing(200);
 
   UpdateBackgroundProcessState();
@@ -112,7 +123,7 @@ void xiiQtCuratorControl::BackgroundProcessClicked(bool checked)
 
   if (state == xiiAssetProcessor::ProcessTaskState::Stopped)
   {
-    xiiAssetCurator::GetSingleton()->CheckFileSystem();
+    xiiAssetCurator::GetSingleton()->QueueCheckFileSystem();
     xiiAssetProcessor::GetSingleton()->StartProcessTask();
   }
   else
@@ -161,6 +172,10 @@ void xiiQtCuratorControl::AssetCuratorEvents(const xiiAssetCuratorEvent& e)
     case xiiAssetCuratorEvent::Type::AssetUpdated:
       ScheduleUpdateTransformStats();
       break;
+    case xiiAssetCuratorEvent::Type::FileSystemCheckStarted:
+    case xiiAssetCuratorEvent::Type::AssetListReset:
+      QMetaObject::invokeMethod(this, [this]() { UpdateProgress(); ScheduleUpdateTransformStats(); }, Qt::QueuedConnection);
+      break;
     default:
       break;
   }
@@ -168,6 +183,11 @@ void xiiQtCuratorControl::AssetCuratorEvents(const xiiAssetCuratorEvent& e)
 
 void xiiQtCuratorControl::AssetProcessorEvents(const xiiAssetProcessorEvent& e)
 {
+  if (e.m_Type == xiiAssetProcessorEvent::Type::TransformProgress || e.m_Type == xiiAssetProcessorEvent::Type::TransformsFinished)
+  {
+    QMetaObject::invokeMethod(this, [this]() { UpdateProgress(); }, Qt::QueuedConnection);
+    return;
+  }
   switch (e.m_Type)
   {
     case xiiAssetProcessorEvent::Type::ProcessTaskStateChanged:
@@ -178,6 +198,27 @@ void xiiQtCuratorControl::AssetProcessorEvents(const xiiAssetProcessorEvent& e)
     default:
       break;
   }
+}
+
+void xiiQtCuratorControl::UpdateProgress()
+{
+  const auto progress = xiiAssetProcessor::GetSingleton()->GetTransformProgress();
+  const bool checking = xiiAssetCurator::GetSingleton()->IsCheckingFileSystem();
+  if (progress.m_bActive)
+  {
+    m_pTransformProgress->setFormat(QStringLiteral("Transforming assets: %v/%m (%p%)"));
+    m_pTransformProgress->setRange(0, static_cast<int>(progress.m_uiTotal));
+    m_pTransformProgress->setValue(static_cast<int>(progress.m_uiCompleted + progress.m_uiCanceled));
+  }
+  else if (checking)
+  {
+    m_pTransformProgress->setFormat(QStringLiteral("Checking assets..."));
+    m_pTransformProgress->setRange(0, 0);
+  }
+  m_pTransformProgress->setVisible(progress.m_bActive || checking);
+  m_pTransformProgress->setToolTip(checking ? QStringLiteral("Checking files and resolving asset metadata") : QString());
+  m_pCancelTransforms->setVisible(progress.m_bActive);
+  m_pCancelTransforms->setEnabled(!progress.m_bCancelRequested);
 }
 
 void xiiQtCuratorControl::ProjectEvents(const xiiToolsProjectEvent& e)

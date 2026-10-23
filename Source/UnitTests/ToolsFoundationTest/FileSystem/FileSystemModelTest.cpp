@@ -11,6 +11,7 @@
 #  include <Foundation/IO/FileSystem/FileSystem.h>
 #  include <Foundation/IO/FileSystem/FileWriter.h>
 #  include <Foundation/Threading/ThreadUtils.h>
+#  include <Foundation/Utilities/Progress.h>
 #  include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(FileSystem);
@@ -1256,7 +1257,17 @@ XII_CREATE_SIMPLE_TEST(FileSystem, ExplicitSubtreeChanges)
   auto* model                            = xiiFileSystemModel::GetSingleton();
   model->Initialize(config, {}, {});
   XII_SCOPE_EXIT(model->Deinitialize(); xiiOSFile::DeleteFolder(root).IgnoreResult());
+  xiiProgress progress;
+  auto*       previousProgress = xiiProgress::GetGlobalProgressbar();
+  xiiProgress::SetGlobalProgressbar(&progress);
+  XII_SCOPE_EXIT(xiiProgress::SetGlobalProgressbar(previousProgress));
+  xiiUInt32 progressStarts = 0;
+  progress.m_Events.AddEventHandler([&](const xiiProgressEvent& event) {
+    if (event.m_Type == xiiProgressEvent::Type::ProgressStarted)
+      ++progressStarts;
+  });
   model->CheckFileSystem();
+  XII_TEST_INT(progressStarts, 0); // File discovery must not create application-modal progress.
   XII_TEST_INT(model->GetFolders()->GetCount(), 5);
   XII_TEST_INT(model->GetFiles()->GetCount(), 1);
 

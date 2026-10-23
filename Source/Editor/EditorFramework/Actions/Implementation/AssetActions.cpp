@@ -4,6 +4,7 @@
 
 #include <EditorFramework/Actions/AssetActions.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 
 xiiActionDescriptorHandle xiiAssetActions::s_hAssetCategory;
@@ -111,30 +112,20 @@ void xiiAssetAction::Execute(const xiiVariant& value)
         }
       }
 
-      xiiTransformStatus ret = xiiAssetCurator::GetSingleton()->TransformAsset(m_Context.m_pDocument->GetGuid(), xiiTransformFlags::ForceTransform | xiiTransformFlags::TriggeredManually);
-
-      if (ret.Failed())
-      {
-        xiiLog::Error("Transform failed: '{0}' ({1})", ret.m_sMessage, m_Context.m_pDocument->GetDocumentPath());
-      }
-      else
-      {
-        xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
-      }
+      const xiiUuid guid = m_Context.m_pDocument->GetGuid();
+      xiiAssetProcessor::GetSingleton()->QueueTransformAssets(xiiMakeArrayPtr(&guid, 1), xiiTransformFlags::ForceTransform | xiiTransformFlags::TriggeredManually).LogFailure();
     }
     break;
 
     case xiiAssetAction::ButtonType::TransformAllAssets:
     {
-      xiiAssetCurator::GetSingleton()->CheckFileSystem();
-      xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::None).IgnoreResult();
+      xiiAssetProcessor::GetSingleton()->QueueTransformAllAssets().LogFailure();
     }
     break;
 
     case xiiAssetAction::ButtonType::CheckFileSystem:
     {
-      xiiAssetCurator::GetSingleton()->CheckFileSystem();
-      xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
+      xiiAssetCurator::GetSingleton()->QueueCheckFileSystem();
     }
     break;
 

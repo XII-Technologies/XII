@@ -176,7 +176,7 @@ xiiStatus xiiAssetCurator::ApplyAssetProfiles(xiiArrayPtr<const xiiPlatformProfi
   }
 
   auto*      processor        = xiiAssetProcessor::GetSingleton();
-  const bool restartProcessor = processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running;
+  const bool restartProcessor = processor->IsAutomaticProcessingEnabled();
   processor->StopProcessTask(false, true);
   XII_SCOPE_EXIT(if (restartProcessor) processor->StartProcessTask());
   ShutdownUpdateTask();

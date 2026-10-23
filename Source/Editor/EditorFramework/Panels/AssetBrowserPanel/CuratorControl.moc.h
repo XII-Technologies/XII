@@ -10,6 +10,7 @@ struct xiiAssetCuratorEvent;
 struct xiiToolsProjectEvent;
 struct xiiAssetProcessorEvent;
 class QToolButton;
+class QProgressBar;
 
 /// \brief
 class XII_EDITORFRAMEWORK_DLL xiiQtCuratorControl : public QWidget
@@ -29,10 +30,13 @@ private Q_SLOTS:
 
 private:
   void ScheduleUpdateTransformStats();
+  void UpdateProgress();
   void AssetCuratorEvents(const xiiAssetCuratorEvent& e);
   void AssetProcessorEvents(const xiiAssetProcessorEvent& e);
   void ProjectEvents(const xiiToolsProjectEvent& e);
 
-  bool         m_bScheduled         = false;
-  QToolButton* m_pBackgroundProcess = nullptr;
+  bool          m_bScheduled         = false;
+  QToolButton*  m_pBackgroundProcess = nullptr;
+  QProgressBar* m_pTransformProgress = nullptr;
+  QToolButton*  m_pCancelTransforms  = nullptr;
 };

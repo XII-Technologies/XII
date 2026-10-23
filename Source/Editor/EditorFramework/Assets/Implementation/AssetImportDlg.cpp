@@ -5,7 +5,6 @@
 #include <EditorFramework/Assets/AssetImportDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <Foundation/Utilities/Progress.h>
 
 enum Columns
 {
@@ -91,18 +90,17 @@ void xiiQtAssetImportDlg::on_ButtonImport_clicked()
     return;
   }
 
-  // The progress dialog pumps Qt events. Prevent another import or selection changes during this batch.
+  // This dialog collects the user's import choices. Expensive transformation and
+  // source-document reconciliation run through AssetProcessor after creation.
   setEnabled(false);
   XII_SCOPE_EXIT(setEnabled(true));
-  xiiProgressRange progress("Importing Assets", uiImports, false);
-  const xiiTime    start    = xiiTime::Now();
-  xiiUInt32        uiFailed = 0;
+  const xiiTime start    = xiiTime::Now();
+  xiiUInt32     uiFailed = 0;
   for (auto& data : m_AllImports)
   {
     if (data.m_iSelectedOption < 0)
       continue;
 
-    progress.BeginNextStep(data.m_sInputFileRelative);
     XII_LOG_BLOCK("Asset Import", data.m_sInputFileRelative);
 
     const auto& option = data.m_ImportOptions[data.m_iSelectedOption];

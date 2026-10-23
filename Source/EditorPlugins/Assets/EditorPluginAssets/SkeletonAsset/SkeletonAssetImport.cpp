@@ -69,7 +69,10 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalTransformAsset(xiiStreamWri
       XII_SUCCEED_OR_RETURN(WriteResource(stream, *GetProperties()));
 
       // merge the new data with the actual asset document
+      const xiiUInt64 beforeImport = GetDocumentHash();
       ApplyNativePropertyChangesToObjectManager(true);
+      if (transformFlags.IsSet(xiiTransformFlags::BackgroundProcessing) && beforeImport != GetDocumentHash())
+        return xiiTransformStatus(xiiTransformResult::NeedsImport);
     }
   }
 

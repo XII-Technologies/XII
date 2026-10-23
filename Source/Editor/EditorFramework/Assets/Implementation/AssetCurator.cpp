@@ -218,6 +218,7 @@ void xiiAssetCurator::Deinitialize()
 {
   XII_PROFILE_SCOPE("Deinitialize");
 
+  WaitForFileSystemCheck();
   ShutdownUpdateTask();
   xiiAssetProcessor::GetSingleton()->StopProcessTask(true);
   xiiFileSystemModel*            pFiles = xiiFileSystemModel::GetSingleton();
@@ -274,6 +275,27 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
     return;
 
   bReentry = true;
+
+  if (m_bCheckingFileSystem)
+  {
+    if (!bTopLevel || !xiiTaskSystem::IsTaskGroupFinished(m_CheckFileSystemTaskID))
+    {
+      bReentry = false;
+      return;
+    }
+    WaitForFileSystemCheck();
+    xiiAssetCuratorEvent event;
+    event.m_Type  = xiiAssetCuratorEvent::Type::AssetListReset;
+    event.m_pInfo = nullptr;
+    m_Events.Broadcast(event);
+    if (WriteAssetTables().Failed())
+      xiiLog::Error("Failed to write asset tables after checking assets.");
+  }
+
+  // Apply worker-generated source changes before taking the curator lock. Processor
+  // lifecycle locking precedes the curator mutex, including during shutdown.
+  if (bTopLevel)
+    xiiAssetProcessor::GetSingleton()->ApplyImportResults();
 
   xiiFileSystemModel::GetSingleton()->MainThreadTick();
 
@@ -355,7 +377,10 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
 
   RunNextUpdateTask();
 
-  if (bTopLevel && !m_TransformState[xiiAssetInfo::TransformState::NeedsImport].IsEmpty())
+  // Interactive imports are handled by AssetProcessor, including its cancellation
+  // and automatic-processing preference. Only synchronous tools import here.
+  auto* editor = xiiQtEditorApp::GetSingleton();
+  if (bTopLevel && (editor->IsBackgroundMode() || editor->IsInHeadlessMode()) && !m_TransformState[xiiAssetInfo::TransformState::NeedsImport].IsEmpty())
   {
     const xiiUuid assetToImport = *m_TransformState[xiiAssetInfo::TransformState::NeedsImport].GetIterator();
 
@@ -492,6 +517,13 @@ xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xii
   }
   xiiLog::Info("Transform asset time: {0}s", xiiArgF(timer.GetRunningTotal().GetSeconds(), 2));
   return res;
+}
+
+bool xiiAssetCurator::IsAssetBeingTransformed(const xiiUuid& assetGuid) const
+{
+  XII_LOCK(m_CuratorMutex);
+  const auto* info = GetAssetInfo(assetGuid);
+  return m_Updating.Contains(info ? info->m_Info->m_DocumentID : assetGuid);
 }
 
 xiiTransformStatus xiiAssetCurator::CreateThumbnail(const xiiUuid& assetGuid)
@@ -1099,6 +1131,8 @@ void xiiAssetCurator::UpdateAssetLastAccessTime(const xiiUuid& assetGuid)
 
 void xiiAssetCurator::CheckFileSystem()
 {
+  if (xiiThreadUtils::IsMainThread())
+    WaitForFileSystemCheck();
   XII_PROFILE_SCOPE("CheckFileSystem");
   xiiStopwatch sw;
 
@@ -1126,6 +1160,31 @@ void xiiAssetCurator::CheckFileSystem()
   xiiLog::Debug("Asset Curator Refresh Time: {0} ms", xiiArgF(sw.GetRunningTotal().GetMilliseconds(), 3));
 }
 
+void xiiAssetCurator::QueueCheckFileSystem()
+{
+  XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "Request asset rescans on the editor thread.");
+  // Startup already owns a complete scan and publishes its reset in WaitForInitialize.
+  if (m_bCheckingFileSystem || m_InitializeCuratorTaskID.IsValid() || !xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
+    return;
+  m_bCheckingFileSystem                    = true;
+  xiiSharedPtr<xiiDelegateTask<void>> task = XII_DEFAULT_NEW(xiiDelegateTask<void>, "CheckAssets", xiiTaskNesting::Maybe, [this]() { CheckFileSystem(); });
+  m_CheckFileSystemTaskID                  = xiiTaskSystem::StartSingleTask(task, xiiTaskPriority::FileAccessHighPriority);
+  xiiAssetCuratorEvent event;
+  event.m_Type  = xiiAssetCuratorEvent::Type::FileSystemCheckStarted;
+  event.m_pInfo = nullptr;
+  m_Events.Broadcast(event);
+}
+
+void xiiAssetCurator::WaitForFileSystemCheck()
+{
+  // Never hold the curator mutex while joining the scanner. Its callbacks update
+  // this model, and no GUI callback is needed for the worker to finish.
+  if (m_CheckFileSystemTaskID.IsValid())
+    xiiTaskSystem::WaitForGroup(m_CheckFileSystemTaskID);
+  m_CheckFileSystemTaskID.Invalidate();
+  m_bCheckingFileSystem = false;
+}
+
 void xiiAssetCurator::NeedsReloadResources(const xiiUuid& assetGuid)
 {
   if (m_pAssetTableWriter)
@@ -1151,6 +1210,8 @@ xiiCommandLineOptionEnum opt_AssetThumbnails("_Editor", "-AssetThumbnails", "Whe
 
 xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags)
 {
+  if (m_Updating.Contains(pAssetInfo->m_Info->m_DocumentID))
+    return xiiTransformStatus("Asset is being transformed in the background. Retry after it finishes.");
   if (transformFlags.IsSet(xiiTransformFlags::ForceTransform))
     xiiLog::Dev("Asset transform forced.");
 
@@ -1836,7 +1897,8 @@ void xiiAssetCurator::SaveCaches(const xiiFileSystemModel::FilesMap& referencedF
 
 void xiiAssetCurator::ClearAssetCaches(xiiAssetDocumentManager::OutputReliability threshold)
 {
-  const bool bWasRunning = xiiAssetProcessor::GetSingleton()->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running;
+  const bool bWasRunning       = xiiAssetProcessor::GetSingleton()->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running;
+  const bool bRestartAutomatic = xiiAssetProcessor::GetSingleton()->IsAutomaticProcessingEnabled();
 
   if (bWasRunning)
   {
@@ -1905,9 +1967,9 @@ void xiiAssetCurator::ClearAssetCaches(xiiAssetDocumentManager::OutputReliabilit
 
   xiiAssetCurator::ProcessAllCoreAssets();
 
-  if (bWasRunning)
+  if (bRestartAutomatic)
   {
-    // restart background asset processing
+    // Restore automatic processing, without turning a one-shot request into a permanent mode.
     xiiAssetProcessor::GetSingleton()->StartProcessTask();
   }
 }

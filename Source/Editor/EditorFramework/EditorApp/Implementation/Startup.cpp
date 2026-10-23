@@ -12,6 +12,7 @@
 #include <EditorFramework/Actions/TransformGizmoActions.h>
 #include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/Actions/ViewLightActions.h>
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/CodeGen/CodeEditorPreferencesWidget.moc.h>
 #include <EditorFramework/CodeGen/CompilerPreferencesWidget.moc.h>
 #include <EditorFramework/CodeGen/CppProject.h>
@@ -345,6 +346,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
   UpdateStartupProgress(QStringLiteral("Initializing editor subsystems"), QStringLiteral("Registering actions, document types, and asset services"));
   xiiStartup::StartupCoreSystems();
+  xiiAssetProcessor::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::AssetProcessorEventHandler, this));
 
   // prevent restoration of window layouts when in safe mode
   xiiQtDocumentWindow::s_bAllowRestoreWindowLayout = !IsInSafeMode();
@@ -558,6 +560,7 @@ void xiiQtEditorApp::ShutdownEditor()
   m_LongOpControllerManager.Shutdown();
 
   xiiEditorEngineProcessConnection::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::EngineProcessMsgHandler, this));
+  xiiAssetProcessor::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::AssetProcessorEventHandler, this));
   xiiToolsProject::s_Requests.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::ProjectRequestHandler, this));
   xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::ProjectEventHandler, this));
   xiiDocument::s_EventsAny.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::DocumentEventHandler, this));

@@ -5,6 +5,12 @@
 #include <EditorFramework/Assets/Declarations.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiTransformFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiTransformFlags::TriggeredManually),
+  XII_BITFLAGS_CONSTANT(xiiTransformFlags::ForceTransform),
+  XII_BITFLAGS_CONSTANT(xiiTransformFlags::BackgroundProcessing),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTransformResult, 1)
   XII_ENUM_CONSTANT(xiiTransformResult::Success),
   XII_ENUM_CONSTANT(xiiTransformResult::Failure),
