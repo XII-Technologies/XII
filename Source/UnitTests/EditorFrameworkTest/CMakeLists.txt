@@ -10,7 +10,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorFramework Share
 # Native test widgets need the same Qt Debug RTTI settings as production widgets.
 xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets)
 if(XII_CMAKE_PLATFORM_WINDOWS)
-  target_link_libraries(${PROJECT_NAME} PRIVATE Ole32.lib Uuid.lib Shell32.lib)
+  target_link_libraries(${PROJECT_NAME} PRIVATE Ole32.lib Uuid.lib Shell32.lib RuntimeObject.lib)
 endif()
 add_dependencies(${PROJECT_NAME} EditorProcessor)
 xii_ci_add_test(${PROJECT_NAME})

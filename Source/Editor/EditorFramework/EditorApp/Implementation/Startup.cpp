@@ -35,6 +35,7 @@
 #include <EditorFramework/Panels/CVarPanel/CVarPanel.moc.h>
 #include <EditorFramework/Panels/LogPanel/LogPanel.moc.h>
 #include <EditorFramework/Panels/LongOpsPanel/LongOpsPanel.moc.h>
+#include <EditorFramework/Platform/Windows/WindowsNotifications.h>
 #include <EditorFramework/Platform/Windows/WindowsTaskbar.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <EditorFramework/PropertyGrid/AssetBrowserPropertyWidget.moc.h>
@@ -316,6 +317,8 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     xiiQtContainerWindow* pContainer = new xiiQtContainerWindow();
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
     m_pTaskbar = XII_DEFAULT_NEW(xiiWindowsTaskbar, *this, *pContainer, *m_pProgressbar);
+    if (m_StartupFlags.AreNoneSet(StartupFlags::UnitTest | StartupFlags::Background))
+      m_pNotifications = XII_DEFAULT_NEW(xiiWindowsNotifications, *this, *pContainer);
 #endif
 #if QT_CONFIG(systemtrayicon)
     if (m_StartupFlags.AreNoneSet(StartupFlags::UnitTest | StartupFlags::Background))
@@ -498,6 +501,11 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 void xiiQtEditorApp::ShutdownEditor()
 {
   m_bIsRunning = false;
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  // Stop native callbacks before closing projects or processing nested shutdown events.
+  XII_DEFAULT_DELETE(m_pNotifications);
+#endif
 
 #if QT_CONFIG(systemtrayicon)
   // Remove the tray entry and its commands before shutdown can pump nested UI events.
