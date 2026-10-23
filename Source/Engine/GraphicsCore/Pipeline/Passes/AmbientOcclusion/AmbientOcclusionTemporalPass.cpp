@@ -28,7 +28,10 @@ struct xiiAmbientOcclusionTemporalPass::State
   xiiUInt64                                m_uiLastReadyValue = 0;
   bool                                     m_bHistoryValid    = false;
 };
-xiiAmbientOcclusionTemporalPass::xiiAmbientOcclusionTemporalPass()  = default;
+xiiAmbientOcclusionTemporalPass::xiiAmbientOcclusionTemporalPass()
+{
+  m_Output.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiAmbientOcclusionTemporalPass::~xiiAmbientOcclusionTemporalPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionTemporalPass, 1, xiiRTTIDefaultAllocator<xiiAmbientOcclusionTemporalPass>)

@@ -23,9 +23,12 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelineTextureResolutionMode, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelineTextureResolutionMode::Unspecified, xiiRenderPipelineTextureResolutionMode::Viewport,
+  XII_ENUM_CONSTANTS(xiiRenderPipelineTextureResolutionMode::Viewport,
                      xiiRenderPipelineTextureResolutionMode::RenderResolution, xiiRenderPipelineTextureResolutionMode::Input, xiiRenderPipelineTextureResolutionMode::Fixed)
 XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineTextureInputAttribute, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureInputAttribute>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineTextureResolution, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineTextureResolution>)
   {
@@ -35,7 +38,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineTextureResolution, xiiNoBase, 1
       XII_MEMBER_PROPERTY("Width", m_uiWidth)->AddAttributes(new xiiClampValueAttribute(0U, 65536U)),
       XII_MEMBER_PROPERTY("Height", m_uiHeight)->AddAttributes(new xiiClampValueAttribute(0U, 65536U)),
       XII_MEMBER_PROPERTY("Scale", m_fScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 16.0f)),
-      XII_MEMBER_PROPERTY("Input", m_sInput),
+      XII_MEMBER_PROPERTY("Input", m_sInput)->AddAttributes(new xiiRenderPipelineTextureInputAttribute()),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -44,16 +47,14 @@ xiiResult xiiRenderPipelineTextureResolution::Validate() const
 {
   return m_Mode <= xiiRenderPipelineTextureResolutionMode::Fixed && xiiMath::IsFinite(m_fScale) && m_fScale > 0 && m_fScale <= 16 &&
       m_uiWidth <= 65536 && m_uiHeight <= 65536 &&
-      (m_Mode != xiiRenderPipelineTextureResolutionMode::Fixed || (m_uiWidth && m_uiHeight)) &&
-      (m_Mode == xiiRenderPipelineTextureResolutionMode::Fixed || (!m_uiWidth && !m_uiHeight)) &&
-      (m_Mode != xiiRenderPipelineTextureResolutionMode::Unspecified || (m_fScale == 1.0f && m_sInput.IsEmpty())) ?
+      (m_Mode != xiiRenderPipelineTextureResolutionMode::Fixed || (m_uiWidth && m_uiHeight)) ?
     XII_SUCCESS :
     XII_FAILURE;
 }
 
 bool xiiRenderPipelineTextureResolution::IsDefault() const
 {
-  return m_Mode == xiiRenderPipelineTextureResolutionMode::Unspecified && !m_uiWidth && !m_uiHeight && m_fScale == 1.0f && m_sInput.IsEmpty();
+  return *this == xiiRenderPipelineTextureResolution{};
 }
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePinAccess, 1)
   XII_ENUM_CONSTANTS(xiiRenderPipelinePinAccess::Automatic, xiiRenderPipelinePinAccess::Read, xiiRenderPipelinePinAccess::Write, xiiRenderPipelinePinAccess::ReadWrite)
@@ -100,6 +101,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePinConfiguration, 1, xiiRTTIDe
       XII_ENUM_MEMBER_PROPERTY("RequiredFormat", xiiGALResourceFormat, m_Format),
       XII_MEMBER_PROPERTY("Requirements", m_Constraints),
       XII_MEMBER_PROPERTY("Resolution", m_Resolution),
+      XII_MEMBER_PROPERTY("OverrideResolution", m_bOverrideResolution),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -225,7 +227,7 @@ xiiResult xiiRenderPipelinePin::Apply(const xiiRenderPipelinePinConfiguration& c
     return XII_FAILURE;
   };
   const auto& limits = configuration.m_Constraints;
-  if (configuration.m_Resolution.Validate().Failed() || (m_Type != Texture && !configuration.m_Resolution.IsDefault()))
+  if (configuration.m_Resolution.Validate().Failed() || (m_Type != Texture && (configuration.m_bOverrideResolution || !configuration.m_Resolution.IsDefault())))
     return fail("invalid texture resolution policy.");
   if (!configuration.m_Id.IsValid())
     return fail("configuration has no persistent document identity.");
@@ -240,8 +242,9 @@ xiiResult xiiRenderPipelinePin::Apply(const xiiRenderPipelinePinConfiguration& c
   if (xiiReflectionUtils::MakeEnumerationValid(xiiGetStaticRTTI<xiiGALBindFlags>(), limits.m_RequiredBindFlags.GetValue()) != limits.m_RequiredBindFlags.GetValue())
     return fail("unknown required resource binding flags.");
   auto combined = *this;
-  if (!configuration.m_Resolution.IsDefault())
+  if (m_Type == Texture && configuration.m_bOverrideResolution)
     combined.m_Resolution = configuration.m_Resolution;
+  combined.m_bConstrainResolution |= configuration.m_bOverrideResolution;
   if (configuration.m_Format != xiiGALResourceFormat::Unknown)
   {
     if (combined.m_Format != xiiGALResourceFormat::Unknown && combined.m_Format != configuration.m_Format)

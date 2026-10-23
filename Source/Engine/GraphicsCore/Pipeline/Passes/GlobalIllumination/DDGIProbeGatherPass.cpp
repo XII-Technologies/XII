@@ -19,7 +19,10 @@ struct xiiDDGIProbeGatherPass::State
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Point;
 };
-xiiDDGIProbeGatherPass::xiiDDGIProbeGatherPass()  = default;
+xiiDDGIProbeGatherPass::xiiDDGIProbeGatherPass()
+{
+  m_Output.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiDDGIProbeGatherPass::~xiiDDGIProbeGatherPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeGatherPass, 1, xiiRTTIDefaultAllocator<xiiDDGIProbeGatherPass>)

@@ -61,7 +61,7 @@ xiiResult xiiUpscalePass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/CASUpscale.xiiShader"));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_pState->m_Sampler));
   xiiSizeU32 size;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputUpscaledColor, context.GetInputTexture(m_InputTAAResolved), size, xiiRenderPipelineTextureResolutionMode::Viewport));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputUpscaledColor, context.GetInputTexture(m_InputTAAResolved), size));
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_hTAAIn=context.GetInputTexture(m_InputTAAResolved);

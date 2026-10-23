@@ -19,6 +19,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthTargetPass, 1, xiiRTTIDefaultAllocator<
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Utility") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+xiiDepthTargetPass::xiiDepthTargetPass()
+{
+  m_Depth.SetResolution({xiiRenderPipelineTextureResolutionMode::RenderResolution});
+}
+
 xiiResult xiiDepthTargetPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
@@ -30,13 +35,7 @@ xiiResult xiiDepthTargetPass::Build(xiiRenderPipelinePassContext& context)
   const auto index = m_Depth.GetBindingIndex();
   if (index >= context.m_Pins.GetCount())
     return context.ReportFailure("Depth target has no configured output pin.");
-  auto output = context.m_Pins[index];
-  if (output.m_Resolution.IsDefault() && (context.m_Parameters.Contains("RasterWidth") || context.m_Parameters.Contains("RasterHeight")))
-  {
-    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterWidth", output.m_Resolution.m_uiWidth));
-    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterHeight", output.m_Resolution.m_uiHeight));
-    output.m_Resolution.m_Mode = xiiRenderPipelineTextureResolutionMode::Fixed;
-  }
+  const auto& output = context.m_Pins[index];
   XII_SUCCEED_OR_RETURN(context.ResolveTextureSize(output, context.GetInputTexture(m_Reference), size));
   if (!size.width || !size.height || size.width > 65536 || size.height > 65536)
     return context.ReportFailure("Depth target requires a nonempty explicit, reference or view size.");

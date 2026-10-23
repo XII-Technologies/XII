@@ -40,7 +40,10 @@ struct xiiTemporalAntiAliasingPass::State
   bool                                     m_bHistoryValid = false;
 };
 
-xiiTemporalAntiAliasingPass::xiiTemporalAntiAliasingPass()  = default;
+xiiTemporalAntiAliasingPass::xiiTemporalAntiAliasingPass()
+{
+  m_OutputTAAResolved.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiTemporalAntiAliasingPass::~xiiTemporalAntiAliasingPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporalAntiAliasingPass, 1, xiiRTTIDefaultAllocator<xiiTemporalAntiAliasingPass>)

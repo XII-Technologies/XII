@@ -51,7 +51,7 @@ xiiResult xiiCreateTexturePass::Build(xiiRenderPipelinePassContext& context)
   description.m_Type       = requirements.m_Dimension;
   if (description.m_Type == xiiGALResourceDimension::Undefined)
     description.m_Type = xiiGALResourceDimension::Texture2D;
-  XII_SUCCEED_OR_RETURN(context.ResolveTextureSize(m_OutputTexture, {}, description.m_Size, xiiRenderPipelineTextureResolutionMode::RenderResolution));
+  XII_SUCCEED_OR_RETURN(context.ResolveTextureSize(m_OutputTexture, {}, description.m_Size));
   description.m_Format        = output.m_Format == xiiGALResourceFormat::Unknown ? xiiGALResourceFormat::RGBA16Float : output.m_Format;
   description.m_BindFlags     = requirements.m_RequiredBindFlags | xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
   description.m_uiSampleCount = requirements.m_uiSamples ? requirements.m_uiSamples : 1;

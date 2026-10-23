@@ -1059,9 +1059,12 @@ Texture output pins own a reflected `Resolution` policy: `Viewport` uses the
 view's native viewport, `RenderResolution` uses its scaled internal extent,
 `Input` uses a connected texture (optionally named), and `Fixed` uses authored
 width and height. A positive proportional scale applies after selecting the base
-extent, rounding up to cover odd dimensions. `Unspecified` retains the operation's
-native domain and imposes no input extent requirement. Width/height connection
-requirements validate existing resources; they never resize inputs or allocate.
+extent, rounding up to cover odd dimensions. `Viewport` is the default policy.
+Operations that inherit an input extent declare `Input` explicitly. The input
+selector lists texture inputs on the owning pass; an empty selection uses the
+pass-provided reference texture. Pin configurations opt into resolution overrides;
+on inputs these are extent constraints, never resizing operations. Width/height
+connection requirements also validate existing resources without allocating.
 
 Resolution is resolved during graph construction. The compiled pipeline stores
 only policies, remains immutable and can be shared by differently sized views.

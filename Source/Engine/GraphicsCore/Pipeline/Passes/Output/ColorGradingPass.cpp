@@ -28,7 +28,10 @@ struct xiiColorGradingPass::State
   xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
-xiiColorGradingPass::xiiColorGradingPass()  = default;
+xiiColorGradingPass::xiiColorGradingPass()
+{
+  m_OutputGradedColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiColorGradingPass::~xiiColorGradingPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiColorGradingPass, 1, xiiRTTIDefaultAllocator<xiiColorGradingPass>)

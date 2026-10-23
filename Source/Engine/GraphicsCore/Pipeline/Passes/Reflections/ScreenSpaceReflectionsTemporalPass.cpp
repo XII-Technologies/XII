@@ -41,7 +41,10 @@ struct xiiScreenSpaceReflectionsTemporalPass::Data
   xiiSSRTemporalConstants    m_Constants;
   xiiRenderGraphBufferHandle m_hPerFrameCamera;
 };
-xiiScreenSpaceReflectionsTemporalPass::xiiScreenSpaceReflectionsTemporalPass()  = default;
+xiiScreenSpaceReflectionsTemporalPass::xiiScreenSpaceReflectionsTemporalPass()
+{
+  m_OutputSSRTerm.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiScreenSpaceReflectionsTemporalPass::~xiiScreenSpaceReflectionsTemporalPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceReflectionsTemporalPass, 1, xiiRTTIDefaultAllocator<xiiScreenSpaceReflectionsTemporalPass>)

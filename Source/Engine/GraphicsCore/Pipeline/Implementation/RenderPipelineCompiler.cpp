@@ -236,10 +236,11 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
             return fail("Subgraph interface fan-out maps incompatible reflected resource pins.");
           if (existing->m_Format == xiiGALResourceFormat::Unknown)
             existing->m_Format = pin.m_Format;
-          if (existing->m_Resolution.IsDefault())
+          if (pin.m_bConstrainResolution && !existing->m_bConstrainResolution)
             existing->m_Resolution = pin.m_Resolution;
-          else if (!pin.m_Resolution.IsDefault() && existing->m_Resolution != pin.m_Resolution)
+          else if (pin.m_bConstrainResolution && existing->m_Resolution != pin.m_Resolution)
             return fail("Interface fan-out maps conflicting texture resolution policies.");
+          existing->m_bConstrainResolution |= pin.m_bConstrainResolution;
           if (existing->m_Constraints.m_Dimension == xiiGALResourceDimension::Undefined)
             existing->m_Constraints.m_Dimension = pin.m_Constraints.m_Dimension;
           if (!existing->m_Constraints.m_uiSamples)

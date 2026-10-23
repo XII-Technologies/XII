@@ -96,10 +96,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   xiiResult         ReportFailure(xiiStringView reason) const;
 
   /// Resolve a concrete frame-local extent without changing the compiled pin or an input texture.
-  xiiResult ResolveTextureSize(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size,
-                               xiiRenderPipelineTextureResolutionMode::Enum defaultMode = xiiRenderPipelineTextureResolutionMode::Input) const;
-  xiiResult ResolveTextureSize(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size,
-                               xiiRenderPipelineTextureResolutionMode::Enum defaultMode = xiiRenderPipelineTextureResolutionMode::Input) const;
+  xiiResult ResolveTextureSize(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size) const;
+  xiiResult ResolveTextureSize(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size) const;
   xiiResult ValidateTexture(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle texture) const;
 
   xiiUInt32                                      FindPin(xiiStringView name, bool input) const;

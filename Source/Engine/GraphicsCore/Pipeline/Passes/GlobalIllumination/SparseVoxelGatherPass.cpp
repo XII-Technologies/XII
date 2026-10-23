@@ -18,7 +18,10 @@ struct xiiSparseVoxelGatherPass::State
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Point;
 };
-xiiSparseVoxelGatherPass::xiiSparseVoxelGatherPass()  = default;
+xiiSparseVoxelGatherPass::xiiSparseVoxelGatherPass()
+{
+  m_Output.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiSparseVoxelGatherPass::~xiiSparseVoxelGatherPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSparseVoxelGatherPass, 1, xiiRTTIDefaultAllocator<xiiSparseVoxelGatherPass>)

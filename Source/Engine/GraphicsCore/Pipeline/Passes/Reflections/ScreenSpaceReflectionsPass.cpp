@@ -35,7 +35,10 @@ struct xiiScreenSpaceReflectionsPass::State
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Linear, m_Point;
 };
-xiiScreenSpaceReflectionsPass::xiiScreenSpaceReflectionsPass()  = default;
+xiiScreenSpaceReflectionsPass::xiiScreenSpaceReflectionsPass()
+{
+  m_OutputSSRRawTerm.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiScreenSpaceReflectionsPass::~xiiScreenSpaceReflectionsPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceReflectionsPass, 1, xiiRTTIDefaultAllocator<xiiScreenSpaceReflectionsPass>)

@@ -59,9 +59,9 @@ xiiRenderGraphBufferHandle xiiRenderPassUtils::Constants(xiiRenderGraphBuilder& 
   return builder.WriteBuffer(name, description, xiiGALResourceStateFlags::ConstantBuffer);
 }
 
-xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& context, const xiiRenderPipelineTextureOutputPin& output, xiiRenderGraphTextureHandle input, xiiSizeU32& out_size, xiiRenderPipelineTextureResolutionMode::Enum defaultMode)
+xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& context, const xiiRenderPipelineTextureOutputPin& output, xiiRenderGraphTextureHandle input, xiiSizeU32& out_size)
 {
-  return context.ResolveTextureSize(output, input, out_size, defaultMode);
+  return context.ResolveTextureSize(output, input, out_size);
 }
 
 xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& context, xiiRenderGraphTextureHandle input, xiiSizeU32& out_size)

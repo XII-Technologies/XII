@@ -370,7 +370,8 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
   {
     xiiCreateTexturePass               pass;
     xiiRenderPipelineTextureResolution resolution;
-    resolution.m_Mode   = mode;
+    if (mode != Mode::Viewport)
+      resolution.m_Mode = mode; // Viewport must also work through the default policy.
     resolution.m_fScale = 0.5f;
     if (mode == Mode::Fixed)
     {

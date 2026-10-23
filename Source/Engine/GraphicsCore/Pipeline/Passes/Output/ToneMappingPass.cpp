@@ -29,7 +29,10 @@ struct xiiToneMappingPass::State
   xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
-xiiToneMappingPass::xiiToneMappingPass()  = default;
+xiiToneMappingPass::xiiToneMappingPass()
+{
+  m_OutputDisplayLinearColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiToneMappingPass::~xiiToneMappingPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiToneMappingPass, 1, xiiRTTIDefaultAllocator<xiiToneMappingPass>)

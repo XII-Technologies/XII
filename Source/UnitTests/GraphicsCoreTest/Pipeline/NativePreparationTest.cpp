@@ -592,18 +592,13 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ExplicitDepthTargetAndProjection)
   bindings.Clear();
   bindings.SetCount(pins.GetCount());
   parameters.Clear();
-  parameters.Insert("RasterWidth", 64.0f);
-  parameters.Insert("RasterHeight", 16U);
-  xiiRenderPipelinePassContext targetContext{nullptr, graph, blackboard, parameters, pins, bindings, "Runtime depth target"};
-  targetContext.m_pBuildError = &error;
-  error.Clear();
-  XII_TEST_BOOL(dynamicTarget.Build(targetContext).Failed());
-  XII_TEST_BOOL(error.FindSubString("RasterWidth") != nullptr);
-  parameters.Insert("RasterWidth", 64U);
+  pins[dynamicTarget.m_Depth.GetBindingIndex()].m_Resolution       = {xiiRenderPipelineTextureResolutionMode::Input};
+  bindings[dynamicTarget.m_Reference.GetBindingIndex()].m_hTexture = *image.first;
+  xiiRenderPipelinePassContext targetContext{nullptr, graph, blackboard, parameters, pins, bindings, "Input-relative depth target"};
   XII_TEST_RESULT(dynamicTarget.Build(targetContext));
   const auto* allocated = graph.GetTextureDescription(bindings[dynamicTarget.m_Depth.GetBindingIndex()].m_hTexture);
   if (XII_TEST_BOOL(allocated != nullptr))
-    XII_TEST_INT(allocated->m_Size.width, 64);
+    XII_TEST_BOOL(allocated->m_Size == graph.GetTextureDescription(*image.first)->m_Size);
   XII_TEST_INT(dynamicTarget.m_Depth.GetResolution().m_uiWidth, 0); // Runtime dimensions do not change authored properties.
   graph.EndSetup();
 }

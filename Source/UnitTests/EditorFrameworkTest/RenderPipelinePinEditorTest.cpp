@@ -33,6 +33,7 @@
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <QApplication>
+#include <QComboBox>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
 #include <ToolsFoundation/Command/NodeCommands.h>
@@ -1116,4 +1117,61 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
   XII_TEST_BOOL(configured.m_OutputTexture.GetFormat() == xiiGALResourceFormat::RGBA8UNormalized);
   XII_TEST_INT(configured.m_OutputTexture.GetResolution().m_uiWidth, 64);
   XII_TEST_INT(configured.m_OutputTexture.GetResolution().m_uiHeight, 32);
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, TextureResolutionInputSelector)
+{
+  PinDocument document(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/ResolutionInput.xiiRenderPipelineAsset"));
+  auto*       accessor = document.GetObjectAccessor();
+  auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid     id;
+  accessor->StartTransaction("Create texture reference choices");
+  XII_TEST_STATUS(document.EnsureSettingsObject());
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearTexturePass>(), id));
+  accessor->FinishTransaction();
+  const auto* node       = accessor->GetObject(id);
+  const auto* output     = accessor->GetChildObjectByName(node, "Texture", {});
+  const auto* resolution = accessor->GetChildObjectByName(output, "Resolution", {});
+  XII_TEST_INT(resolution->GetTypeAccessor().GetValue("Mode").ConvertTo<xiiUInt32>(), xiiRenderPipelineTextureResolutionMode::Viewport);
+  accessor->StartTransaction("Use an input extent");
+  XII_TEST_STATUS(accessor->SetValueByName(resolution, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Input)));
+  accessor->FinishTransaction();
+  xiiQtPropertyGridWidget grid(nullptr, &document);
+  document.GetSelectionManager()->SetSelection(output);
+  auto* combo = grid.findChild<QComboBox*>("RenderPipelineTextureResolutionInput");
+  if (!XII_TEST_BOOL(combo != nullptr))
+    return;
+  XII_TEST_BOOL(!combo->isEditable());
+  XII_TEST_INT(combo->count(), 2);
+  XII_TEST_BOOL(combo->findData(QString("Reference")) >= 0);
+  XII_TEST_BOOL(combo->findData(QString("Texture")) < 0);
+  const auto index = combo->findData(QString("Reference"));
+  combo->setCurrentIndex(index);
+  combo->activated(index);
+  XII_TEST_STRING(resolution->GetTypeAccessor().GetValue("Input").Get<xiiString>(), "Reference");
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_STRING(resolution->GetTypeAccessor().GetValue("Input").Get<xiiString>(), "");
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  XII_TEST_STRING(resolution->GetTypeAccessor().GetValue("Input").Get<xiiString>(), "Reference");
+
+  // The same reflected selector also works inside persistent pin configurations.
+  accessor->StartTransaction("Create configured output");
+  xiiUuid other;
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiEditorPinTestPass>(), other));
+  accessor->FinishTransaction();
+  const auto* configured = manager->GetPinPropertyObject(*manager->GetOutputPinByName(accessor->GetObject(other), "Output"));
+  const auto* policy     = accessor->GetChildObjectByName(configured, "Resolution", {});
+  accessor->StartTransaction("Configure output resolution");
+  XII_TEST_STATUS(accessor->SetValueByName(configured, "OverrideResolution", true));
+  XII_TEST_STATUS(accessor->SetValueByName(policy, "Mode", xiiInt64(xiiRenderPipelineTextureResolutionMode::Input)));
+  accessor->FinishTransaction();
+  document.GetSelectionManager()->SetSelection(configured);
+  xiiQtPropertyGridWidget configurationGrid(nullptr, &document);
+  configurationGrid.SetSelection(document.GetSelectionManager()->GetSelection());
+  combo = configurationGrid.findChild<QComboBox*>("RenderPipelineTextureResolutionInput");
+  if (!XII_TEST_BOOL(combo != nullptr))
+    return;
+  XII_TEST_INT(combo->count(), 2);
+  XII_TEST_BOOL(combo->findData(QString("Input")) >= 0);
+  XII_TEST_BOOL(combo->findData(QString("Extra")) < 0); // Disabled native pins are not candidates.
 }

@@ -16,7 +16,10 @@ struct xiiViewRenderModePass::State
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Point;
 };
-xiiViewRenderModePass::xiiViewRenderModePass()  = default;
+xiiViewRenderModePass::xiiViewRenderModePass()
+{
+  m_OutputDisplayLinearColor.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiViewRenderModePass::~xiiViewRenderModePass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRenderModePass, 1, xiiRTTIDefaultAllocator<xiiViewRenderModePass>)

@@ -46,21 +46,26 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinType);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinAccess);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePinCardinality);
 
-/// Unspecified leaves allocation to the native pass and imposes no input extent requirement.
+/// Reference extent used to allocate an output texture or validate an input constraint.
 struct xiiRenderPipelineTextureResolutionMode
 {
   using StorageType = xiiUInt8;
   enum Enum : StorageType
   {
-    Unspecified,
-    Viewport,
+    Viewport = 0U,
     RenderResolution,
     Input,
     Fixed,
-    Default = Unspecified
+    Default = Viewport
   };
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineTextureResolutionMode);
+
+/// Selects a texture input from the owning pass in the property grid.
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineTextureInputAttribute : public xiiTypeWidgetAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineTextureInputAttribute, xiiTypeWidgetAttribute);
+};
 
 /// Resolution-independent allocation policy. Input pins use this only to validate a resource.
 /// Relative dimensions round up, with a minimum of one texel. Fixed dimensions may also be scaled.
@@ -122,6 +127,7 @@ public:
   xiiEnum<xiiGALResourceFormat>      m_Format = xiiGALResourceFormat::Unknown;
   xiiRenderPipelinePinConstraints    m_Constraints;
   xiiRenderPipelineTextureResolution m_Resolution;
+  bool                               m_bOverrideResolution = false; ///< Override an output allocation policy or constrain an input extent.
 };
 
 struct xiiGALTextureCreationDescription;
@@ -148,6 +154,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   xiiString                           m_sDisplayName;
   const xiiRTTI*                      m_pDataType = nullptr; ///< Immutable native schema, never an authored runtime value.
   xiiRenderPipelineTextureResolution  m_Resolution;
+  bool                                m_bConstrainResolution = false;
 
   xiiRenderPipelinePinMetadata GetMetadata() const;
   xiiResult                    Apply(const xiiRenderPipelinePinConfiguration& configuration, xiiStringBuilder* out_error = nullptr);

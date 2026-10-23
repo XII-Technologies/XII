@@ -218,6 +218,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
       sizing->m_Id                              = xiiUuid::MakeUuid();
       sizing->m_Metadata.m_sName                = "BloomTexture";
       sizing->m_Metadata.m_bInput               = false;
+      sizing->m_bOverrideResolution             = true;
       sizing->m_Resolution.m_Mode               = xiiRenderPipelineTextureResolutionMode::Input;
       sizing->m_Resolution.m_sInput             = "UpscaledColor";
       sizing->m_Resolution.m_fScale             = 0.5f;

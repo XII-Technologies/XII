@@ -63,7 +63,10 @@ struct xiiAmbientOcclusionPass::State
     return XII_SUCCESS;
   }
 };
-xiiAmbientOcclusionPass::xiiAmbientOcclusionPass()  = default;
+xiiAmbientOcclusionPass::xiiAmbientOcclusionPass()
+{
+  m_Output.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiAmbientOcclusionPass::~xiiAmbientOcclusionPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionPass, 1, xiiRTTIDefaultAllocator<xiiAmbientOcclusionPass>)

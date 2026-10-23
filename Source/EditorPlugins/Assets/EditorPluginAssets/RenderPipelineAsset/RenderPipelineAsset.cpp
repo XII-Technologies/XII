@@ -13,7 +13,12 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
+#include <QComboBox>
+#include <QHBoxLayout>
+#include <QSignalBlocker>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -81,6 +86,7 @@ namespace
       pin.m_bTemporalHistoryOutput = schema.m_bTemporalHistory;
       pin.m_Constraints            = configuration->m_Constraints;
       pin.m_Resolution             = configuration->m_Resolution;
+      pin.m_bConstrainResolution   = pin.m_bInput && configuration->m_bOverrideResolution;
       pin.m_sDisplayName           = configuration->m_sDisplayName;
       pin.m_SourceId               = configuration->m_Id;
       out_pins.PushBack(pin);
@@ -127,7 +133,6 @@ namespace
       const bool dimensions        = mode == xiiRenderPipelineTextureResolutionMode::Fixed;
       states["Width"].m_Visibility = states["Height"].m_Visibility = dimensions ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
       states["Input"].m_Visibility                                 = mode == xiiRenderPipelineTextureResolutionMode::Input ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-      states["Scale"].m_Visibility                                 = mode == xiiRenderPipelineTextureResolutionMode::Unspecified ? xiiPropertyUiState::Invisible : xiiPropertyUiState::Default;
       return;
     }
     if (object->GetType() == xiiGetStaticRTTI<xiiRenderPipelinePinMetadata>())
@@ -172,9 +177,11 @@ namespace
     }
     else
     {
-      states["RequiredFormat"].m_Visibility = editableTexture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-      states["Requirements"].m_Visibility   = editableTexture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-      states["Resolution"].m_Visibility     = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["RequiredFormat"].m_Visibility        = editableTexture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["Requirements"].m_Visibility          = editableTexture || buffer ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["OverrideResolution"].m_Visibility    = texture ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+      states["OverrideResolution"].m_sNewLabelText = metadata->GetTypeAccessor().GetValue("Input").Get<bool>() ? "Constrain Resolution" : "Override Resolution";
+      states["Resolution"].m_Visibility            = texture && configuration->GetTypeAccessor().GetValue("OverrideResolution").Get<bool>() ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
     }
   }
 
@@ -240,6 +247,76 @@ namespace
     return XII_SUCCESS;
   }
 
+  class xiiQtRenderPipelineTextureInputWidget final : public xiiQtStandardPropertyWidget
+  {
+  public:
+    xiiQtRenderPipelineTextureInputWidget()
+    {
+      auto* layout = new QHBoxLayout(this);
+      layout->setContentsMargins(0, 0, 0, 0);
+      m_pInputs = new QComboBox(this);
+      m_pInputs->setObjectName("RenderPipelineTextureResolutionInput");
+      m_pInputs->setToolTip("Choose the texture input whose dimensions are multiplied by Scale. Pass reference texture uses the input supplied by the native pass.");
+      layout->addWidget(m_pInputs);
+      connect(m_pInputs, &QComboBox::activated, this, [this](int index) {
+        const auto value = m_pInputs->itemData(index).toString().toUtf8();
+        BroadcastValueChanged(xiiString(value.constData()));
+      });
+    }
+
+  protected:
+    void OnInit() override {}
+    void InternalSetValue(const xiiVariant& value) override
+    {
+      const QSignalBlocker blocker(m_pInputs);
+      m_pInputs->clear();
+      xiiDynamicArray<xiiRenderPipelinePin> choices;
+      bool                                  first = true;
+      for (const auto& item : m_Items)
+      {
+        const auto* node = item.m_pObject;
+        while (node && !node->GetType()->IsDerivedFrom<xiiRenderPipelinePass>())
+          node = node->GetParent();
+        xiiDynamicArray<xiiRenderPipelinePin> pins;
+        if (!node || (GetNativePins(node, pins, true).Failed() && GetNativePins(node, pins, false).Failed()))
+          pins.Clear();
+        if (first)
+        {
+          for (const auto& pin : pins)
+            if (pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture)
+              choices.PushBack(pin);
+          first = false;
+        }
+        else
+        {
+          for (xiiUInt32 i = choices.GetCount(); i-- > 0;)
+          {
+            bool found = false;
+            for (const auto& pin : pins)
+              found |= pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_sName == choices[i].m_sName;
+            if (!found)
+              choices.RemoveAtAndCopy(i);
+          }
+        }
+      }
+      m_pInputs->addItem(choices.IsEmpty() ? "No texture inputs available" : "Pass reference texture", QString());
+      for (const auto& pin : choices)
+        m_pInputs->addItem(xiiMakeQString(pin.m_sDisplayName.IsEmpty() ? pin.m_sName : pin.m_sDisplayName), xiiMakeQString(pin.m_sName));
+      const auto selected = value.IsValid() ? xiiMakeQString(value.Get<xiiString>()) : QString();
+      int        index    = m_pInputs->findData(selected);
+      if (index < 0)
+      {
+        m_pInputs->addItem(selected + " (Unavailable)", selected);
+        index = m_pInputs->count() - 1;
+      }
+      m_pInputs->setCurrentIndex(value.IsValid() ? index : -1);
+      m_pInputs->setEnabled(!choices.IsEmpty());
+    }
+
+  private:
+    QComboBox* m_pInputs = nullptr;
+  };
+
   class xiiPipelineEditorPin : public xiiPin
   {
   public:
@@ -301,7 +378,7 @@ void xiiRenderPipelineNodeManager::AssetCuratorEventHandler(const xiiAssetCurato
       }
       const auto& previous = static_cast<const xiiPipelineEditorPin*>(current)->m_Schema;
       changed |= previous.m_Type != pin.m_Type || previous.m_Format != pin.m_Format || previous.m_pDataType != pin.m_pDataType || previous.m_bOptional != pin.m_bOptional ||
-        previous.m_Resolution != pin.m_Resolution || previous.m_Access != pin.m_Access || previous.m_bTemporalHistoryOutput != pin.m_bTemporalHistoryOutput ||
+        previous.m_Resolution != pin.m_Resolution || previous.m_bConstrainResolution != pin.m_bConstrainResolution || previous.m_Access != pin.m_Access || previous.m_bTemporalHistoryOutput != pin.m_bTemporalHistoryOutput ||
         previous.m_Constraints.m_Dimension != pin.m_Constraints.m_Dimension || previous.m_Constraints.m_uiSamples != pin.m_Constraints.m_uiSamples ||
         previous.m_Constraints.m_uiWidth != pin.m_Constraints.m_uiWidth || previous.m_Constraints.m_uiHeight != pin.m_Constraints.m_uiHeight ||
         previous.m_Constraints.m_RequiredBindFlags != pin.m_Constraints.m_RequiredBindFlags || previous.m_sDisplayName != pin.m_sDisplayName;
@@ -330,9 +407,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, RenderPipelinePropertyGrid)
   ON_CORESYSTEMS_STARTUP
   {
     xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(PinPropertyMetaState);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiRenderPipelineTextureInputAttribute>(), [](const xiiRTTI*) -> xiiQtPropertyWidget* { return new xiiQtRenderPipelineTextureInputWidget(); });
   }
   ON_CORESYSTEMS_SHUTDOWN
   {
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiRenderPipelineTextureInputAttribute>());
     xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(PinPropertyMetaState);
   }
 XII_END_SUBSYSTEM_DECLARATION;
@@ -555,10 +634,11 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
       const auto&                       endpoint = input ? connection->GetTargetPin() : connection->GetSourcePin();
       auto                              native   = static_cast<const xiiPipelineEditorPin&>(endpoint).m_Schema;
       xiiRenderPipelinePinConfiguration requirements;
-      requirements.m_Id          = node->GetGuid();
-      requirements.m_Format      = pin.m_Format;
-      requirements.m_Constraints = pin.m_Constraints;
-      requirements.m_Resolution  = pin.m_Resolution;
+      requirements.m_Id                  = node->GetGuid();
+      requirements.m_Format              = pin.m_Format;
+      requirements.m_Constraints         = pin.m_Constraints;
+      requirements.m_Resolution          = pin.m_Resolution;
+      requirements.m_bOverrideResolution = pin.m_bConstrainResolution;
       if (native.m_Type != pin.m_Type || (pin.m_pDataType && native.m_pDataType != pin.m_pDataType) || native.Apply(requirements).Failed())
       {
         xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
@@ -568,9 +648,10 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
         pin = native;
       else
       {
-        requirements.m_Format      = native.m_Format;
-        requirements.m_Constraints = native.m_Constraints;
-        requirements.m_Resolution  = native.m_Resolution;
+        requirements.m_Format              = native.m_Format;
+        requirements.m_Constraints         = native.m_Constraints;
+        requirements.m_Resolution          = native.m_Resolution;
+        requirements.m_bOverrideResolution = native.m_bConstrainResolution;
         if (!pin.IsCompatibleWith(native) || pin.Apply(requirements).Failed())
           xiiLog::Error("Incompatible resource contracts for pipeline interface '{}'.", accessor.GetValue("Name").Get<xiiString>());
         pin.m_bOptional &= native.m_bOptional;
@@ -588,6 +669,7 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
     configuration->m_Format                          = pin.m_Format;
     configuration->m_Constraints                     = pin.m_Constraints;
     configuration->m_Resolution                      = pin.m_Resolution;
+    configuration->m_bOverrideResolution             = !pin.m_bInput || pin.m_bConstrainResolution;
     configuration->m_sDisplayName                    = pin.m_sDisplayName;
     bool merged                                      = false;
     for (auto* existing : metadata->m_Pins)
@@ -598,9 +680,10 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
           xiiLog::Error("Incompatible declarations of pipeline interface '{}'.", pin.m_sName);
         else
         {
-          existing->m_Format      = combined.m_Format;
-          existing->m_Constraints = combined.m_Constraints;
-          existing->m_Resolution  = combined.m_Resolution;
+          existing->m_Format              = combined.m_Format;
+          existing->m_Constraints         = combined.m_Constraints;
+          existing->m_Resolution          = combined.m_Resolution;
+          existing->m_bOverrideResolution = combined.m_bConstrainResolution;
           existing->m_Metadata.m_bOptional &= pin.m_bOptional;
         }
         merged = true;
@@ -741,6 +824,7 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
         configuration->m_Format                          = pin.m_Format;
         configuration->m_Constraints                     = pin.m_Constraints;
         configuration->m_Resolution                      = pin.m_Resolution;
+        configuration->m_bOverrideResolution             = !pin.m_bInput || pin.m_bConstrainResolution;
         configuration->m_sDisplayName                    = pin.m_sDisplayName;
         pass->m_PinConfigurations.PushBack(configuration);
       }

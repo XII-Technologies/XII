@@ -28,7 +28,10 @@ struct xiiBloomPass::State
   xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
-xiiBloomPass::xiiBloomPass()  = default;
+xiiBloomPass::xiiBloomPass()
+{
+  m_OutputBloomTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
+}
 xiiBloomPass::~xiiBloomPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 1, xiiRTTIDefaultAllocator<xiiBloomPass>)

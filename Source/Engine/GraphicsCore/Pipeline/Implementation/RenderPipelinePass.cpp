@@ -142,8 +142,22 @@ xiiResult xiiRenderPipelinePass::GetConfiguredPins(xiiArrayPtr<const xiiRenderPi
     }
   }
   for (const auto& pin : pins)
+  {
     if (pin.m_Resolution.Validate().Failed() || (pin.m_Type != xiiRenderPipelinePin::Texture && !pin.m_Resolution.IsDefault()))
       return XII_FAILURE;
+    if (pin.m_Resolution.m_Mode == xiiRenderPipelineTextureResolutionMode::Input && !pin.m_Resolution.m_sInput.IsEmpty())
+    {
+      bool found = false;
+      for (const auto& input : pins)
+        found |= input.m_bInput && input.m_Type == xiiRenderPipelinePin::Texture && input.m_sName == pin.m_Resolution.m_sInput;
+      if (!found)
+      {
+        if (out_error)
+          out_error->SetFormat("Pin '{}': resolution reference '{}' is not a texture input on this pass.", pin.m_sName, pin.m_Resolution.m_sInput);
+        return XII_FAILURE;
+      }
+    }
+  }
   out_pins = std::move(pins);
   return XII_SUCCESS;
 }
@@ -156,15 +170,15 @@ xiiUInt32 xiiRenderPipelinePassContext::FindPin(xiiStringView name, bool input) 
   return xiiInvalidIndex;
 }
 
-xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size, xiiRenderPipelineTextureResolutionMode::Enum defaultMode) const
+xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipelineTextureOutputPin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size) const
 {
   const auto index = pin.GetBindingIndex();
   if (index >= m_Pins.GetCount() || m_Pins[index].m_bInput)
     return ReportFailure("Texture sizing requires a configured output pin.");
-  return ResolveTextureSize(m_Pins[index], reference, out_size, defaultMode);
+  return ResolveTextureSize(m_Pins[index], reference, out_size);
 }
 
-xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size, xiiRenderPipelineTextureResolutionMode::Enum defaultMode) const
+xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipelinePin& pin, xiiRenderGraphTextureHandle reference, xiiSizeU32& out_size) const
 {
   using Mode             = xiiRenderPipelineTextureResolutionMode;
   out_size               = {0, 0};
@@ -173,8 +187,7 @@ xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipeli
     return ReportFailure("Invalid texture resolution policy.");
   if (!resolution.m_sInput.IsEmpty())
     reference = GetInputTexture(resolution.m_sInput);
-  const bool automatic = resolution.m_Mode == Mode::Unspecified;
-  const auto mode      = automatic ? defaultMode : resolution.m_Mode.GetValue();
+  const auto mode = resolution.m_Mode.GetValue();
   if (!reference.IsValid() && resolution.m_sInput.IsEmpty() && mode == Mode::Input)
     for (xiiUInt32 i = 0; i < m_Pins.GetCount(); ++i)
       if (m_Pins[i].m_bInput && m_Pins[i].m_Type == xiiRenderPipelinePin::Texture && m_Bindings[i].m_hTexture.IsValid())
@@ -188,7 +201,7 @@ xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipeli
     size = input->m_Size;
   else if (mode == Mode::Fixed)
     size = {resolution.m_uiWidth, resolution.m_uiHeight};
-  else if (m_pView && (mode == Mode::Viewport || mode == Mode::RenderResolution || (automatic && mode == Mode::Input)))
+  else if (m_pView && (mode == Mode::Viewport || mode == Mode::RenderResolution))
   {
     const auto& viewport = m_pView->GetViewport();
     if (!xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 || viewport.width > 65536 || viewport.height > 65536)
@@ -196,8 +209,6 @@ xiiResult xiiRenderPipelinePassContext::ResolveTextureSize(const xiiRenderPipeli
     size = mode == Mode::Viewport ? xiiSizeU32(static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height)) :
                                     xiiSizeU32(m_pView->GetRenderResolutionWidth(), m_pView->GetRenderResolutionHeight());
   }
-  else if (automatic && input)
-    size = input->m_Size; // Viewless/offscreen upscaling keeps the supplied target extent.
   const double width  = xiiMath::Ceil(static_cast<double>(size.width) * resolution.m_fScale);
   const double height = xiiMath::Ceil(static_cast<double>(size.height) * resolution.m_fScale);
   if (!size.width || !size.height || width > 65536 || height > 65536)
@@ -221,7 +232,7 @@ xiiResult xiiRenderPipelinePassContext::ValidateTexture(const xiiRenderPipelineP
   if (!description || !pin.Accepts(*description))
     return XII_FAILURE;
   const auto mode = pin.m_Resolution.m_Mode;
-  if (mode != xiiRenderPipelineTextureResolutionMode::Unspecified &&
+  if (pin.m_bConstrainResolution &&
       !(mode == xiiRenderPipelineTextureResolutionMode::Input && m_bTemporalHistoryPhase))
   {
     xiiSizeU32 expected;

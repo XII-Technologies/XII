@@ -321,6 +321,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ReflectedPinContracts)
 XII_CREATE_SIMPLE_TEST(Pipeline, RelativeTextureResolutionAndConstraints)
 {
   using Mode = xiiRenderPipelineTextureResolutionMode;
+  XII_TEST_BOOL(xiiRenderPipelineTextureResolution{}.m_Mode == Mode::Viewport);
   xiiRenderPipelineResourceDescriptor definition;
   xiiCreateTexturePass                source;
   xiiRenderPipelineTextureResolution  fixed;
@@ -334,8 +335,12 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RelativeTextureResolutionAndConstraints)
   xiiClearTexturePass                half;
   xiiRenderPipelineTextureResolution relative;
   relative.m_Mode   = Mode::Input;
-  relative.m_sInput = "Reference";
+  relative.m_sInput = "Missing";
   relative.m_fScale = 0.5f;
+  half.m_OutputTexture.SetResolution(relative);
+  xiiDynamicArray<xiiRenderPipelinePin> invalidPins;
+  XII_TEST_BOOL(half.GetConfiguredPins(invalidPins).Failed());
+  relative.m_sInput = "Reference";
   half.m_OutputTexture.SetResolution(relative);
   properties.Clear();
   XII_TEST_RESULT(half.GetProperties(properties));
@@ -357,7 +362,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RelativeTextureResolutionAndConstraints)
   xiiVariantDictionary         parameters;
   xiiRenderPipelinePassContext context{nullptr, graph, blackboard, parameters, {}, {}, "Resolution validation"};
   xiiRenderPipelinePin         contract;
-  contract.m_bInput                = true;
+  contract.m_bInput = true;
+  XII_TEST_RESULT(context.ValidateTexture(contract, input)); // Default viewport allocation does not constrain an input.
+  contract.m_bConstrainResolution  = true;
   contract.m_Resolution.m_Mode     = Mode::Fixed;
   contract.m_Resolution.m_uiWidth  = 10;
   contract.m_Resolution.m_uiHeight = 6;
