@@ -111,6 +111,9 @@ protected:
 	 */
 	void registerFloatingWidget(CFloatingDockContainer* FloatingWidget);
 
+	// Reuse the pending-floating list until the owning application window is shown.
+	bool deferFloatingWidgetShow(CFloatingDockContainer* FloatingWidget);
+
 	/**
 	 * Remove the given floating widget from the list of registered floating
 	 * widgets

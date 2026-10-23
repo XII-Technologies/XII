@@ -720,7 +720,7 @@ bool CDockManager::eventFilter(QObject *obj, QEvent *e)
 				_window->setWindowState(_window->windowState() & (~Qt::WindowMinimized));
 			}
 		}
-		if (!window()->isMinimized())
+		if (window()->isVisible() && !window()->isMinimized())
 		{
 			QApplication::setActiveWindow(window());
 		}
@@ -772,8 +772,23 @@ void CDockManager::registerFloatingWidget(CFloatingDockContainer* FloatingWidget
 //============================================================================
 void CDockManager::removeFloatingWidget(CFloatingDockContainer* FloatingWidget)
 {
+	d->UninitializedFloatingWidgets.removeAll(FloatingWidget);
 	int removed = d->FloatingWidgets.removeAll(FloatingWidget);
 	Q_ASSERT(removed == 1);
+}
+
+//============================================================================
+bool CDockManager::deferFloatingWidgetShow(CFloatingDockContainer* FloatingWidget)
+{
+	if (window()->isVisible())
+	{
+		return false;
+	}
+	if (!d->UninitializedFloatingWidgets.contains(FloatingWidget))
+	{
+		d->UninitializedFloatingWidgets.append(FloatingWidget);
+	}
+	return true;
 }
 
 //============================================================================
@@ -943,7 +958,10 @@ void CDockManager::showEvent(QShowEvent *event)
 		// manager is shown
 		if (FloatingWidget->dockContainer()->hasOpenDockAreas())
 		{
+			const bool ShowWithoutActivating = FloatingWidget->testAttribute(Qt::WA_ShowWithoutActivating);
+			FloatingWidget->setAttribute(Qt::WA_ShowWithoutActivating);
 			FloatingWidget->show();
+			FloatingWidget->setAttribute(Qt::WA_ShowWithoutActivating, ShowWithoutActivating);
 		}
 	}
 	d->UninitializedFloatingWidgets.clear();

@@ -1024,11 +1024,21 @@ void CFloatingDockContainer::hideEvent(QHideEvent *event)
 
 
 //============================================================================
+void CFloatingDockContainer::setVisible(bool Visible)
+{
+	if (Visible && d->DockManager->deferFloatingWidgetShow(this))
+	{
+		return;
+	}
+	Super::setVisible(Visible);
+}
+
+//============================================================================
 void CFloatingDockContainer::showEvent(QShowEvent *event)
 {
 	Super::showEvent(event);
 #if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
-    if (CDockManager::testConfigFlag(CDockManager::FocusHighlighting))
+    if (CDockManager::testConfigFlag(CDockManager::FocusHighlighting) && !testAttribute(Qt::WA_ShowWithoutActivating))
     {
         this->window()->activateWindow();
     }

@@ -51,6 +51,9 @@ void xiiQtApplicationPanel::EnsureVisible()
     dockAreaWidget()->setCurrentDockWidget(this);
   }
 
+  if (!m_pContainerWindow->IsWindowPresentationEnabled())
+    return;
+
   while (pThis)
   {
     pThis->raise();
