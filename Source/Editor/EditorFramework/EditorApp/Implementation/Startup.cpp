@@ -293,6 +293,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     m_pProgressbar   = XII_DEFAULT_NEW(xiiProgress);
     m_pQtProgressbar = XII_DEFAULT_NEW(xiiQtProgressbar);
 
+    // Keep the general progress dialog detached while the splash owns startup presentation.
     xiiProgress::SetGlobalProgressbar(m_pProgressbar);
   }
 
@@ -320,6 +321,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     SetStyleSheet();
 
     xiiQtContainerWindow* pContainer = new xiiQtContainerWindow();
+    pContainer->SetWindowPresentationEnabled(false);
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
     m_pTaskbar = XII_DEFAULT_NEW(xiiWindowsTaskbar, *this, *pContainer, *m_pProgressbar);
     if (m_StartupFlags.AreNoneSet(StartupFlags::UnitTest | StartupFlags::Background))
@@ -329,10 +331,6 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     if (m_StartupFlags.AreNoneSet(StartupFlags::UnitTest | StartupFlags::Background))
       m_pSystemTray = XII_DEFAULT_NEW(xiiQtEditorSystemTray, *this, *pContainer, *m_pProgressbar);
 #endif
-    // Observe progress before the dialog can pump nested Qt events.
-    if (m_pSplashScreen == nullptr)
-      m_pQtProgressbar->SetProgressbar(m_pProgressbar);
-    pContainer->show();
     if (m_pSplashScreen)
       m_pSplashScreen->SetEditorWindow(pContainer);
   }
@@ -506,14 +504,32 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     });
   }
 
-  if (!m_bStartupQuitRequested && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::UnitTest) && !xiiToolsProject::GetSingleton()->IsProjectOpen())
+  if (!m_bStartupQuitRequested && !IsInHeadlessMode())
   {
-    CloseSplashScreen();
-    GuiOpenDashboard();
+    UpdateStartupProgress(QStringLiteral("Restoring the editor workspace"));
+    auto* pContainer = xiiQtContainerWindow::GetContainerWindow();
+    if (!IsInSafeMode())
+      pContainer->RestoreWindowLayout();
+    pContainer->RestoreDocumentLayouts();
   }
 
-  CloseSplashScreen();
   xiiStackTraceLogParser::Register();
+  // No initialization or event pumping follows the reveal. Release the visibility gate only
+  // after layouts and project documents are ready, and never reveal on an early quit.
+  m_bStartupInProgress = false;
+  CloseSplashScreen();
+  if (!m_bStartupQuitRequested && m_pQtProgressbar && m_pProgressbar)
+    m_pQtProgressbar->SetProgressbar(m_pProgressbar);
+  if (!m_bStartupQuitRequested && !IsInHeadlessMode())
+  {
+    auto* pContainer = xiiQtContainerWindow::GetContainerWindow();
+    pContainer->SetWindowPresentationEnabled(true);
+    ShowEditorWindow(pContainer);
+  }
+  if (!m_bStartupQuitRequested && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::UnitTest) && !xiiToolsProject::GetSingleton()->IsProjectOpen())
+  {
+    GuiOpenDashboard();
+  }
 }
 
 void xiiQtEditorApp::ShutdownEditor()
@@ -637,7 +653,7 @@ void xiiQtEditorApp::CreatePanels()
   pCVarPanel->toggleView(false);
   pLongOpsPanel->toggleView(false);
 
-  pAssetBrowserPanel->raise();
+  pAssetBrowserPanel->EnsureVisible();
 }
 
 xiiCommandLineOptionBool opt_NoSplashScreen("_Editor", "-NoSplash", "Disables the editor splash-screen", false);
@@ -681,8 +697,6 @@ void xiiQtEditorApp::CloseSplashScreen()
   // QWidget close is immediate: no QSplashScreen::finish wait/expose loop or implicit activation.
   pSplash->hide();
   delete pSplash;
-  if (m_pQtProgressbar && m_pProgressbar)
-    m_pQtProgressbar->SetProgressbar(m_pProgressbar);
 }
 
 void xiiQtEditorApp::UpdateStartupProgress(const QString& sStage, const QString& sDetail, xiiUInt32 uiCompleted, xiiUInt32 uiTotal)

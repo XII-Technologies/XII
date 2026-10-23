@@ -53,7 +53,7 @@ xiiInt32 xiiQtEditorApp::RunEditor()
 
 void xiiQtEditorApp::ShowEditorWindow(QWidget* pWindow)
 {
-  if (pWindow == nullptr)
+  if (pWindow == nullptr || GetSingleton()->IsStartingUp())
     return;
   pWindow->setWindowState(pWindow->windowState() & ~Qt::WindowMinimized);
   pWindow->show();
@@ -136,6 +136,12 @@ void xiiQtEditorApp::SlotAutoSave()
 
 void xiiQtEditorApp::SlotVersionCheckCompleted(bool bNewVersionReleased, bool bForced)
 {
+  if (m_bStartupInProgress)
+  {
+    // Optional update UI must not dismiss startup presentation or activate another window.
+    connect(this, &xiiQtEditorApp::IdleEvent, this, [this, bNewVersionReleased, bForced]() { SlotVersionCheckCompleted(bNewVersionReleased, bForced); }, Qt::SingleShotConnection);
+    return;
+  }
   if (bForced || bNewVersionReleased)
   {
     CloseSplashScreen();

@@ -59,8 +59,8 @@ void xiiQtEditorApp::SlotQueuedOpenProject(QString sProject)
 xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0)
 {
   UpdateStartupProgress(bCreate ? QStringLiteral("Creating project") : QStringLiteral("Opening project"), xiiMakeQString(sFile0));
-  // All exits (including declined prompts and failures) return ownership to the editor/dashboard.
-  XII_SCOPE_EXIT(CloseSplashScreen());
+  // A project opened during startup shares the application's splash lifetime.
+  XII_SCOPE_EXIT(if (!m_bStartupInProgress) CloseSplashScreen());
   xiiStringBuilder sFile = sFile0;
   if (!bCreate)
   {
@@ -199,7 +199,8 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
 
   if (res.Failed())
   {
-    CloseSplashScreen();
+    if (!m_bStartupInProgress)
+      CloseSplashScreen();
     xiiStringBuilder s;
     s.SetFormat("Failed to open project:\n'{0}'", sProjectFile);
 
@@ -301,7 +302,6 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
           xiiLog::Error("Failed to start the engine process. Project loading incomplete.");
           if (m_bStartupInProgress && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::Background | StartupFlags::UnitTest))
           {
-            CloseSplashScreen();
             xiiQtUiServices::MessageBoxWarning("The rendering process could not start. Project loading is incomplete. See the Editor log for details.");
           }
         }
