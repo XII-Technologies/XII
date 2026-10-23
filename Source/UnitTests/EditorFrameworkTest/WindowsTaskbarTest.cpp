@@ -2,7 +2,7 @@
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 
-#include <EditorFramework/EditorApp/WindowsTaskbar.h>
+#include <EditorFramework/Platform/Windows/WindowsTaskbar.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 

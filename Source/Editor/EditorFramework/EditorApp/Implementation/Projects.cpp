@@ -296,7 +296,11 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
       m_sLastDocumentFolder = xiiToolsProject::GetSingleton()->GetProjectFile();
       m_sLastProjectFolder  = xiiToolsProject::GetSingleton()->GetProjectFile();
 
-      m_RecentProjects.Insert(xiiToolsProject::GetSingleton()->GetProjectFile(), 0);
+      if (m_RecentProjects.GetFileList().IsEmpty() || m_RecentProjects.GetFileList()[0].m_File != xiiToolsProject::GetSingleton()->GetProjectFile())
+      {
+        m_RecentProjects.Insert(xiiToolsProject::GetSingleton()->GetProjectFile(), 0);
+        UpdateRecentProjects();
+      }
 
       xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
 
@@ -368,7 +372,11 @@ Explanation: For assets to work properly, they must be <a href='https://xiiengin
 
     case xiiToolsProjectEvent::Type::ProjectSaveState:
     {
-      m_RecentProjects.Insert(xiiToolsProject::GetSingleton()->GetProjectFile(), 0);
+      if (m_RecentProjects.GetFileList().IsEmpty() || m_RecentProjects.GetFileList()[0].m_File != xiiToolsProject::GetSingleton()->GetProjectFile())
+      {
+        m_RecentProjects.Insert(xiiToolsProject::GetSingleton()->GetProjectFile(), 0);
+        UpdateRecentProjects();
+      }
       SaveSettings();
       break;
     }

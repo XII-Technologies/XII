@@ -307,6 +307,7 @@ private:
 
   void SaveRecentFiles();
   void LoadRecentFiles();
+  void UpdateRecentProjects();
 
   xiiRecentFilesList m_RecentProjects;
   xiiRecentFilesList m_RecentDocuments;
