@@ -75,10 +75,9 @@ private:
   State             m_Foreground;
   State             m_State;
   State             m_AppliedState;
-  Overlay           m_StatusOverlay = Overlay::None;
-  xiiUInt32         m_uiToolCount   = 0;
-  bool              m_bToolError    = false;
-  bool              m_bGlobalError  = false;
+  xiiUInt32         m_uiToolCount     = 0;
+  bool              m_bToolError      = false;
+  bool              m_bActionRequired = false;
 
   ITaskbarList3*      m_pTaskbar               = nullptr;
   xiiMinWindows::HWND m_hWindow                = nullptr;

@@ -16,6 +16,9 @@
 #  include <Foundation/Threading/Lock.h>
 #  include <Foundation/Types/ScopeExit.h>
 #  include <QEvent>
+#  include <QIcon>
+#  include <QImage>
+#  include <QPixmap>
 #  include <QThread>
 #  include <ToolsFoundation/Project/ToolsProject.h>
 #  include <objbase.h>
@@ -68,6 +71,12 @@ xiiWindowsTaskbar::xiiWindowsTaskbar(xiiQtEditorApp& editor, QWidget& window, xi
   m_Progress.m_Events.AddEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::ProgressEventHandler, this));
   xiiQtUiServices::s_Events.AddEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::UiServicesEventHandler, this));
   xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiWindowsTaskbar::ProjectEventHandler, this));
+
+  m_bActionRequired = !editor.GetRestartRequiredReasons().IsEmpty() || !editor.GetReloadProjectRequiredReason().IsEmpty();
+  connect(&editor, &xiiQtEditorApp::RequiredActionsChanged, this, [this](bool bRestartRequired, bool bReloadProjectRequired) {
+    m_bActionRequired = bRestartRequired || bReloadProjectRequired;
+    Update();
+  });
 
   connect(&editor, &xiiQtEditorApp::ToolExecutionStarted, this, [this]() {
     if (m_uiToolCount == 0)
@@ -134,20 +143,12 @@ void xiiWindowsTaskbar::ProgressEventHandler(const xiiProgressEvent& e)
 
 void xiiWindowsTaskbar::UiServicesEventHandler(const xiiQtUiServices::Event& e)
 {
-  if (e.m_Type != xiiQtUiServices::Event::ShowDocumentPermanentStatusBarText && e.m_Type != xiiQtUiServices::Event::ShowGlobalStatusBarText)
+  // Log counts and arbitrary status text are not unresolved application diagnostics.
+  // Reuse the existing status-bar acknowledgement gesture only for a failed tool batch.
+  if (e.m_Type != xiiQtUiServices::Event::ClickedDocumentPermanentStatusBarText)
     return;
-  const bool bGlobal = e.m_Type == xiiQtUiServices::Event::ShowGlobalStatusBarText;
-  const bool bEmpty  = e.m_sText.IsEmpty();
-  const auto type    = e.m_TextType;
-  QMetaObject::invokeMethod(this, [this, bGlobal, bEmpty, type]() {
-    if (bGlobal)
-      m_bGlobalError = !bEmpty;
-    else
-    {
-      m_StatusOverlay = bEmpty ? Overlay::None : (type == xiiQtUiServices::Event::Error ? Overlay::Error : (type == xiiQtUiServices::Event::Warning ? Overlay::Warning : Overlay::None));
-      if (bEmpty)
-        m_bToolError = false;
-    }
+  QMetaObject::invokeMethod(this, [this]() {
+    m_bToolError = false;
     Update(); }, Qt::AutoConnection);
 }
 
@@ -167,7 +168,7 @@ void xiiWindowsTaskbar::Update()
   states.PushBack(m_Foreground);
   State tools;
   tools.m_Progress = m_bToolError ? ProgressState::Error : (m_uiToolCount > 0 ? ProgressState::Indeterminate : ProgressState::Inactive);
-  tools.m_Overlay  = m_bToolError || m_bGlobalError ? Overlay::Error : m_StatusOverlay;
+  tools.m_Overlay  = m_bToolError ? Overlay::Error : (m_bActionRequired ? Overlay::Warning : Overlay::None);
   states.PushBack(tools);
 
   if (xiiToolsProject::IsProjectOpen())
@@ -323,20 +324,22 @@ void xiiWindowsTaskbar::Apply()
     hr = m_pTaskbar->SetProgressState(hWindow, progress);
   if (SUCCEEDED(hr) && (!m_bApplied || state.m_Overlay != m_AppliedState.m_Overlay))
   {
-    // Stock icons are shared system resources, borrowed for this call; do not destroy them.
     HICON          hIcon         = nullptr;
     const wchar_t* szDescription = L"";
-    if (state.m_Overlay == Overlay::Error)
+    if (state.m_Overlay != Overlay::None)
     {
-      hIcon         = LoadIconW(nullptr, IDI_ERROR);
-      szDescription = L"Editor errors or asset processing failures";
+      const bool   bError            = state.m_Overlay == Overlay::Error;
+      const auto&  icon              = xiiQtUiServices::GetCachedIconResource(bError ? ":/GuiFoundation/Icons/Error.svg" : ":/GuiFoundation/Icons/Warning.svg");
+      const qreal  fDevicePixelRatio = m_pWindow ? m_pWindow->devicePixelRatioF() : 1.0;
+      const QImage image             = icon.pixmap(QSize(16, 16), fDevicePixelRatio).toImage();
+      if (!image.isNull())
+        hIcon = image.toHICON();
+      szDescription = bError ? L"Failed Editor operation or unresolved asset errors" : L"Assets require import or configuration changes require restart/reload";
     }
-    else if (state.m_Overlay == Overlay::Warning)
-    {
-      hIcon         = LoadIconW(nullptr, IDI_WARNING);
-      szDescription = L"Editor warnings or assets requiring import";
-    }
-    hr = m_pTaskbar->SetOverlayIcon(hWindow, hIcon, szDescription);
+    // Qt creates an owned icon. The taskbar copies it during SetOverlayIcon, including on retry paths.
+    XII_SCOPE_EXIT(if (hIcon != nullptr) DestroyIcon(hIcon));
+    // Never turn resource/conversion failure into a successful request to clear an existing badge.
+    hr = state.m_Overlay != Overlay::None && hIcon == nullptr ? E_FAIL : m_pTaskbar->SetOverlayIcon(hWindow, hIcon, szDescription);
   }
   if (FAILED(hr))
   {
