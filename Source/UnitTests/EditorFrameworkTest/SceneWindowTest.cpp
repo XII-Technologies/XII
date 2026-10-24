@@ -8,16 +8,21 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Gizmos/DragToPositionGizmo.h>
+#include <EditorFramework/Gizmos/RotateGizmo.h>
+#include <EditorFramework/Gizmos/ScaleGizmo.h>
 #include <EditorFramework/Preferences/ScenePreferences.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
+#include <Foundation/Utilities/GraphicsUtils.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QApplication>
 #include <QElapsedTimer>
 #include <QImage>
+#include <QMouseEvent>
 #include <QPointer>
 #include <QThread>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -37,6 +42,182 @@ namespace
       QThread::msleep(1);
     }
     return predicate();
+  }
+
+  class SurfacePlacementGizmo : public xiiDragToPositionGizmo
+  {
+  public:
+    xiiEngineGizmoHandle* GetHandle(xiiUInt32 index)
+    {
+      xiiEngineGizmoHandle* handles[] = {&m_hBobble, &m_hAlignPX, &m_hAlignNX, &m_hAlignPY, &m_hAlignNY, &m_hAlignPZ, &m_hAlignNZ};
+      return handles[index];
+    }
+  };
+
+  void TestSurfacePlacement(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& window, xiiQtEngineViewWidget& view, const xiiUuid& target)
+  {
+    const auto* previousBlock = xiiTestFramework::s_szTestBlockName;
+    XII_SCOPE_EXIT(xiiTestFramework::s_szTestBlockName = previousBlock);
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Surface placement ignores visible handles and consumes the release query")
+    {
+      SurfacePlacementGizmo tool;
+      tool.SetOwner(&window, &view);
+      auto transform = xiiTransform::MakeIdentity();
+      transform.m_vPosition.Set(2, 0, 0);
+      tool.SetTransformation(transform);
+      tool.SetVisible(true);
+      scene.SyncObjectsToEngine();
+      const auto ratio  = view.devicePixelRatio();
+      const int  center = int(128 / ratio);
+      XII_TEST_BOOL(view.PickObject(center, center, true).m_PickedOther == tool.GetHandle(0)->GetGuid());
+      xiiUInt32 begins = 0, interactions = 0, ends = 0;
+      tool.m_GizmoEvents.AddEventHandler([&](const xiiGizmoEvent& event) {
+        begins += event.m_Type == xiiGizmoEvent::Type::BeginInteractions;
+        interactions += event.m_Type == xiiGizmoEvent::Type::Interaction;
+        ends += event.m_Type == xiiGizmoEvent::Type::EndInteractions;
+      });
+      XII_SCOPE_EXIT(if (tool.IsActiveInputContext()) { tool.FocusLost(true); xiiEditorInputContext::SetActiveInputContext(nullptr); });
+      const xiiVec3 axes[] = {xiiVec3::MakeZero(), xiiVec3::MakeAxisX(), -xiiVec3::MakeAxisX(), xiiVec3::MakeAxisY(), -xiiVec3::MakeAxisY(), xiiVec3::MakeAxisZ(), -xiiVec3::MakeAxisZ()};
+      for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(axes); ++i)
+      {
+        tool.SetTransformation(transform);
+        tool.ConfigureInteraction(tool.GetHandle(i), &view.m_pViewConfig->m_Camera, transform.m_vPosition, xiiVec2I32(int(256 / ratio)));
+        QMouseEvent press(QEvent::MouseButtonPress, QPointF(center, center), QPointF(500, 400), Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
+        XII_TEST_BOOL(tool.MousePressEvent(&press) == xiiEditorInput::WasExclusivelyHandled);
+        const auto hit = view.PickObject(center, center, true);
+        XII_TEST_BOOL(hit.m_PickedObject == target);
+        XII_TEST_BOOL(!hit.m_PickedOther.IsValid());
+        XII_TEST_BOOL(hit.m_vPickedNormal.IsValid() && !hit.m_vPickedNormal.IsZero());
+        QMouseEvent move(QEvent::MouseMove, QPointF(center, center), QPointF(500, 400), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+        tool.MouseMoveEvent(&move);
+        XII_TEST_VEC3(tool.GetTransformation().m_vPosition, hit.m_vPickedPosition, 0.001f);
+        XII_TEST_BOOL(tool.ModifiesRotation() == (i != 0));
+        if (i != 0)
+          XII_TEST_VEC3(tool.GetRotationResult() * axes[i], hit.m_vPickedNormal, 0.001f);
+
+        const auto releaseHit = view.PickObject(center + 4, center, true);
+        XII_TEST_BOOL(releaseHit.m_PickedObject == target);
+        view.PickObject(0, 0, true); // A stale miss must not swallow the final movement.
+        QMouseEvent release(QEvent::MouseButtonRelease, QPointF(center + 4, center), QPointF(504, 400), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+        tool.MouseReleaseEvent(&release);
+        XII_TEST_VEC3(tool.GetTransformation().m_vPosition, releaseHit.m_vPickedPosition, 0.001f);
+        XII_TEST_BOOL(!xiiEditorInputContext::IsAnyInputContextActive());
+      }
+      XII_TEST_INT(begins, 7);
+      XII_TEST_INT(ends, 7);
+      XII_TEST_INT(interactions, 14);
+    }
+    scene.SyncObjectsToEngine();
+  }
+
+  class DirectionalScaleGizmo : public xiiScaleGizmo
+  {
+  public:
+    xiiEngineGizmoHandle* GetHandle(xiiUInt32 index)
+    {
+      xiiEngineGizmoHandle* handles[] = {&m_hAxisX, &m_hAxisY, &m_hAxisZ};
+      return handles[index];
+    }
+  };
+
+  void TestScaleDirections(xiiQtEngineDocumentWindow& window, xiiQtEngineViewWidget& view)
+  {
+    const auto* previousBlock = xiiTestFramework::s_szTestBlockName;
+    XII_SCOPE_EXIT(xiiTestFramework::s_szTestBlockName = previousBlock);
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Axis scaling follows screen direction from either camera side")
+    {
+      DirectionalScaleGizmo tool;
+      tool.SetOwner(&window, &view);
+      const xiiVec3 axes[] = {xiiVec3::MakeAxisX(), xiiVec3::MakeAxisY(), xiiVec3::MakeAxisZ()};
+      for (auto mode : {xiiCameraMode::PerspectiveFixedFovY, xiiCameraMode::OrthoFixedHeight})
+      {
+        for (float side : {-1.0f, 1.0f})
+        {
+          xiiCamera camera;
+          camera.SetCameraMode(mode, mode == xiiCameraMode::OrthoFixedHeight ? 8.0f : 60.0f, 0.1f, 100.0f);
+          camera.LookAt(xiiVec3(4, -6, 3) * side, xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+          xiiMat4 projection;
+          camera.GetProjectionMatrix(1.0f, projection);
+          const auto viewProjection = projection * camera.GetViewMatrix();
+          for (float rotation : {0.0f, 70.0f})
+          {
+            auto transform        = xiiTransform::MakeIdentity();
+            transform.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(rotation));
+            tool.SetTransformation(transform);
+            for (xiiUInt32 axis = 0; axis < XII_ARRAY_SIZE(axes); ++axis)
+            {
+              tool.ConfigureInteraction(tool.GetHandle(axis), &camera, transform.m_vPosition, xiiVec2I32(256, 256));
+              xiiVec3 start, end;
+              XII_TEST_RESULT(xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, 256, 256, xiiVec3::MakeZero(), start));
+              XII_TEST_RESULT(xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, 256, 256, transform.m_qRotation * axes[axis] * 0.01f, end));
+              const auto    direction = xiiVec2(end.x - start.x, end.y - start.y).GetNormalized();
+              const QPointF delta(xiiMath::Round(direction.x * 20), xiiMath::Round(direction.y * 20));
+              QMouseEvent   press(QEvent::MouseButtonPress, QPointF(128, 128), QPointF(500, 400), Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
+              XII_TEST_BOOL(tool.MousePressEvent(&press) == xiiEditorInput::WasExclusivelyHandled);
+              QMouseEvent move(QEvent::MouseMove, QPointF(128, 128) + delta, QPointF(500, 400) + delta, Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+              tool.MouseMoveEvent(&move);
+              XII_TEST_BOOL(tool.GetScalingResult().Dot(axes[axis]) > 1.1f);
+              // Crossing the press position toward the pivot must shrink the same axis.
+              QMouseEvent release(QEvent::MouseButtonRelease, QPointF(128, 128) - delta, QPointF(500, 400) - delta, Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+              tool.MouseReleaseEvent(&release);
+              XII_TEST_BOOL(tool.GetScalingResult().Dot(axes[axis]) < 0.9f);
+              for (xiiUInt32 other = 0; other < XII_ARRAY_SIZE(axes); ++other)
+                if (other != axis)
+                  XII_TEST_FLOAT(tool.GetScalingResult().Dot(axes[other]), 1, 0.001f);
+              XII_TEST_BOOL(!xiiEditorInputContext::IsAnyInputContextActive());
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void TestRotationDirection(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& window, xiiQtEngineViewWidget& view)
+  {
+    const auto* previousBlock = xiiTestFramework::s_szTestBlockName;
+    XII_SCOPE_EXIT(xiiTestFramework::s_szTestBlockName = previousBlock);
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Vertical rotation gestures follow the displayed ring")
+    {
+      xiiRotateGizmo tool;
+      tool.SetOwner(&window, &view);
+      auto transform = xiiTransform::MakeIdentity();
+      transform.m_vPosition.Set(2, 0, 0);
+      transform.m_vScale.Set(0.5f);
+      tool.SetTransformation(transform);
+      tool.SetVisible(true);
+      scene.SyncObjectsToEngine();
+      const auto    ratio = view.devicePixelRatio();
+      const QPointF local(128 / ratio - 45, 128 / ratio - 45);
+      const auto    hit    = view.PickObject(xiiUInt16(local.x()), xiiUInt16(local.y()), true);
+      auto*         handle = xiiDynamicCast<xiiEngineGizmoHandle*>(scene.FindSyncObject(hit.m_PickedOther));
+      if (!XII_TEST_BOOL(handle != nullptr && handle->GetOwnerGizmo() == &tool))
+        return;
+      const auto& camera = view.m_pViewConfig->m_Camera;
+      tool.ConfigureInteraction(handle, &camera, transform.m_vPosition, xiiVec2I32(int(256 / ratio)));
+      xiiMat4 projection;
+      camera.GetProjectionMatrix(1.0f, projection);
+      const auto viewProjection = projection * camera.GetViewMatrix();
+      xiiVec3    rayStart, rayDirection, point;
+      XII_TEST_RESULT(xiiGraphicsUtils::ConvertScreenPosToWorldPos(viewProjection.GetInverse(), 0, 0, int(256 / ratio), int(256 / ratio), xiiVec3(float(local.x()), float(local.y()), 0), rayStart, &rayDirection));
+      XII_TEST_BOOL(xiiPlane::MakeFromNormalAndPoint(xiiVec3::MakeAxisX(), transform.m_vPosition).GetRayIntersection(rayStart, rayDirection, nullptr, &point));
+      xiiVec3 before;
+      XII_TEST_RESULT(xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, 256, 256, point, before));
+      QMouseEvent press(QEvent::MouseButtonPress, local, QPointF(500, 400), Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
+      XII_TEST_BOOL(tool.MousePressEvent(&press) == xiiEditorInput::WasExclusivelyHandled);
+      for (float vertical : {-20.0f, 20.0f})
+      {
+        QMouseEvent move(QEvent::MouseMove, local + QPointF(0, vertical), QPointF(500, 400 + vertical), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+        tool.MouseMoveEvent(&move);
+        const auto rotated = transform.m_vPosition + tool.GetRotationResult() * (point - transform.m_vPosition);
+        xiiVec3    after;
+        XII_TEST_RESULT(xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, 256, 256, rotated, after));
+        XII_TEST_BOOL((after.y - before.y) * vertical > 0);
+      }
+      QMouseEvent release(QEvent::MouseButtonRelease, local + QPointF(0, 20), QPointF(500, 420), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+      tool.MouseReleaseEvent(&release);
+      XII_TEST_BOOL(!xiiEditorInputContext::IsAnyInputContextActive());
+    }
+    scene.SyncObjectsToEngine();
   }
 } // namespace
 
@@ -153,6 +334,17 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       }
       if (!XII_TEST_BOOL(pickedObject == sphereID))
         return;
+
+      // A click must consume its own response, even if an earlier hover hit is
+      // still queued. Ordinary hover remains asynchronous.
+      const auto pixelRatio = view->devicePixelRatio();
+      XII_TEST_BOOL(view->PickObject(xiiUInt16(128 / pixelRatio), xiiUInt16(128 / pixelRatio), true).m_PickedObject == sphereID);
+      XII_TEST_BOOL(view->PickObject(0, 0, true).m_PickedObject != sphereID);
+      XII_TEST_BOOL(view->PickObject(xiiUInt16(128 / pixelRatio), xiiUInt16(128 / pixelRatio), true).m_PickedObject == sphereID);
+
+      TestSurfacePlacement(*scene, *window, *view, sphereID);
+      TestScaleDirections(*window, *view);
+      TestRotationDirection(*scene, *window, *view);
 
       // A completed native pick confirms that the transformed scene has reached the GPU.
       // Capture only after that readiness boundary; a startup delay cannot establish it.

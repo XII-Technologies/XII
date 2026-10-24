@@ -8,6 +8,7 @@
 #include <EditorFramework/Gizmos/ScaleGizmo.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
+#include <Foundation/Utilities/GraphicsUtils.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScaleGizmo, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -19,10 +20,10 @@ xiiScaleGizmo::xiiScaleGizmo()
   const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
   const xiiColor coly = xiiColorScheme::LightUI(xiiColorScheme::Gray);
 
-  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowX.obj");
-  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowY.obj");
-  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowZ.obj");
-  m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleXYZ.obj");
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleAxis, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleAxis, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleAxis, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleUniform, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -53,8 +54,11 @@ void xiiScaleGizmo::OnVisibleChanged(bool bVisible)
 void xiiScaleGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
   m_hAxisX.SetTransformation(transform);
-  m_hAxisY.SetTransformation(transform);
-  m_hAxisZ.SetTransformation(transform);
+  auto axis        = transform;
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3::MakeAxisY());
+  m_hAxisY.SetTransformation(axis);
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3::MakeAxisZ());
+  m_hAxisZ.SetTransformation(axis);
   m_hAxisXYZ.SetTransformation(transform);
 }
 
@@ -105,18 +109,32 @@ xiiEditorInput xiiScaleGizmo::DoMousePressEvent(QMouseEvent* e)
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
 
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  const auto pressPosition = e->globalPosition().toPoint();
+  m_vLastMousePos.Set(pressPosition.x(), pressPosition.y());
 
   m_vScalingResult.Set(1.0f);
   m_vScaleMouseMove.SetZero();
 
-  xiiMat4 mView = m_pCamera->GetViewMatrix();
-  xiiMat4 mProj;
-  m_pCamera->GetProjectionMatrix((float)m_vViewport.x / (float)m_vViewport.y, mProj);
-  xiiMat4 mViewProj = mProj * mView;
-  m_mInvViewProj    = mViewProj.GetInverse();
-
-  m_LastInteraction = xiiTime::Now();
+  // Uniform scaling keeps the right/up gesture. Axis scaling follows the displayed
+  // local axis, including cameras looking from the opposite side of the gizmo.
+  m_vScreenAxis.Set(1, -1);
+  if (m_pInteractionGizmoHandle != &m_hAxisXYZ)
+  {
+    xiiMat4 projection;
+    m_pCamera->GetProjectionMatrix((float)m_vViewport.x / (float)m_vViewport.y, projection);
+    const xiiMat4 viewProjection = projection * m_pCamera->GetViewMatrix();
+    const auto&   transform      = GetTransformation();
+    const float   distance       = xiiMath::Max(1.0f, (transform.m_vPosition - m_pCamera->GetCenterPosition()).GetLength()) * 0.01f;
+    const xiiVec3 axis           = transform.m_qRotation * m_vMoveAxis;
+    xiiVec3       start, end;
+    if (xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, m_vViewport.x, m_vViewport.y, transform.m_vPosition, start).Succeeded() &&
+        xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, m_vViewport.x, m_vViewport.y, transform.m_vPosition + axis * distance, end).Succeeded())
+    {
+      m_vScreenAxis.Set(end.x - start.x, end.y - start.y);
+      m_vScreenAxis.NormalizeIfNotZero(xiiVec2(1, -1).GetNormalized()).IgnoreResult();
+    }
+  }
 
   SetActiveInputContext(this);
 
@@ -136,6 +154,9 @@ xiiEditorInput xiiScaleGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -147,13 +168,6 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
 
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
-
   const QPoint mousePosition = e->globalPosition().toPoint();
 
   const xiiVec2I32 vNewMousePos = xiiVec2I32(mousePosition.x(), mousePosition.y());
@@ -161,8 +175,7 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   m_vLastMousePos = UpdateMouseMode(e);
 
-  m_vScaleMouseMove += m_vMoveAxis * (float)vDiff.x;
-  m_vScaleMouseMove -= m_vMoveAxis * (float)vDiff.y;
+  m_vScaleMouseMove += m_vMoveAxis * m_vScreenAxis.Dot(xiiVec2((float)vDiff.x, (float)vDiff.y));
 
   m_vScalingResult.Set(1.0f);
 
@@ -188,6 +201,9 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
     xiiSnapProvider::SnapScale(m_vScalingResult);
 
   GetOwnerWindow()->SetPermanentStatusBarMsg(xiiFmt("Scale: {}, {}, {}", xiiArgF(m_vScalingResult.x, 2), xiiArgF(m_vScalingResult.y, 2), xiiArgF(m_vScalingResult.z, 2)));
+  xiiStringBuilder feedback;
+  feedback.SetFormat("Scale   X {}x  Y {}x  Z {}x", xiiArgF(m_vScalingResult.x, 2), xiiArgF(m_vScalingResult.y, 2), xiiArgF(m_vScalingResult.z, 2));
+  static_cast<xiiEngineGizmoHandle*>(m_pInteractionGizmoHandle)->SetInteractionText(feedback);
 
   xiiGizmoEvent ev;
   ev.m_pGizmo = this;
@@ -209,9 +225,10 @@ xiiManipulatorScaleGizmo::xiiManipulatorScaleGizmo()
   const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
 
   // Overwrite axis to be boxes.
-  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, xiiColorScheme::LightUI(xiiColorScheme::Yellow), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
 }
 
 void xiiManipulatorScaleGizmo::OnTransformationChanged(const xiiTransform& transform)

@@ -32,7 +32,7 @@ protected:
   virtual void          SetCamera(const xiiViewRedrawMsgToEngine* pMsg) override;
   virtual xiiViewHandle CreateView() override;
 
-  void PickObjectAt(xiiUInt16 x, xiiUInt16 y);
+  void PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID, bool bPickGizmos);
   void MarqueePickObjects(const xiiViewMarqueePickingMsgToEngine* pMsg);
 
 private:

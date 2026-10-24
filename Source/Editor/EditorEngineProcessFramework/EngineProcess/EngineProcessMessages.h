@@ -267,6 +267,7 @@ public:
   xiiUInt64 m_uiHWND;
   xiiUInt16 m_uiWindowWidth;
   xiiUInt16 m_uiWindowHeight;
+  float     m_fDevicePixelRatio = 1.0f;
   bool      m_bUpdatePickingData;
   bool      m_bEnablePickingSelected;
   bool      m_bEnablePickTransparent;
@@ -354,8 +355,10 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewPickingMsgToEngine : public xi
   XII_ADD_DYNAMIC_REFLECTION(xiiViewPickingMsgToEngine, xiiEditorEngineViewMsg);
 
 public:
+  xiiUInt64 m_uiRequestID = 0;
   xiiUInt16 m_uiPickPosX;
   xiiUInt16 m_uiPickPosY;
+  bool      m_bPickGizmos = true; ///< False queries scene surfaces beneath editor handles and icons.
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewPickingResultMsgToEditor : public xiiEditorEngineViewMsg
@@ -363,6 +366,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewPickingResultMsgToEditor : pub
   XII_ADD_DYNAMIC_REFLECTION(xiiViewPickingResultMsgToEditor, xiiEditorEngineViewMsg);
 
 public:
+  xiiUInt64 m_uiRequestID = 0;
   xiiUuid   m_ObjectGuid;
   xiiUuid   m_ComponentGuid;
   xiiUuid   m_OtherGuid;

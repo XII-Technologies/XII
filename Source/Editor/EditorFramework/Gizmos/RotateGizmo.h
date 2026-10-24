@@ -35,10 +35,10 @@ private:
   xiiQuat  m_qStartRotation;
   xiiQuat  m_qCurrentRotation;
   xiiAngle m_Rotation;
+  float    m_fArcStart = 0;
 
   xiiVec2I32 m_vLastMousePos;
 
-  xiiTime m_LastInteraction;
   xiiVec3 m_vRotationAxis;
   xiiMat4 m_mInvViewProj;
   xiiVec2 m_vScreenTangent;

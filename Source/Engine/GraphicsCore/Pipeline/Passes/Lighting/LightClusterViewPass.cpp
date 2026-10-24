@@ -35,7 +35,7 @@ xiiResult xiiLightClusterViewPass::Configure(const xiiVariantDictionary& propert
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   return m_InverseViewProjection.IsValid() && m_CameraPosition.IsValid() && m_CameraForward.IsValid() && m_CameraForward.GetLengthSquared() > 1e-12f &&
-      xiiMath::IsFinite(m_fNearDistance) && xiiMath::IsFinite(m_fFarDistance) && m_fNearDistance > 0 && m_fFarDistance > m_fNearDistance &&
+      xiiMath::IsFinite(m_fNearDistance) && xiiMath::IsFinite(m_fFarDistance) && (!m_bLogarithmicDepth || m_fNearDistance > 0) && m_fFarDistance > m_fNearDistance &&
       m_uiWidth <= 65536 && m_uiHeight <= 65536 && m_uiTileSize >= 1 && m_uiTileSize <= 1024 && m_uiDepthSlices >= 1 && m_uiDepthSlices <= 256 &&
       m_uiMaxLightsPerCluster >= 1 && m_uiMaxLightsPerCluster <= 1024 && m_uiMaximumClusters >= 1 && m_uiMaximumClusters <= 16777216 && m_uiMaximumIndices >= 1 && m_uiMaximumIndices <= 16777216 ?
     XII_SUCCESS :
@@ -47,6 +47,7 @@ xiiResult xiiLightClusterViewPass::Build(xiiRenderPipelinePassContext& context)
   auto position = m_CameraPosition, forward = m_CameraForward;
   auto nearDistance = m_fNearDistance, farDistance = m_fFarDistance;
   auto width = m_uiWidth, height = m_uiHeight;
+  bool logarithmic = m_bLogarithmicDepth;
   if (m_bUseViewCamera)
   {
     if (!context.m_pView || !context.m_pView->GetCamera())
@@ -58,6 +59,7 @@ xiiResult xiiLightClusterViewPass::Build(xiiRenderPipelinePassContext& context)
     forward            = camera.GetDirForwards();
     nearDistance       = camera.GetNearPlane();
     farDistance        = camera.GetFarPlane();
+    logarithmic &= !camera.IsOrthographic();
     if (!width)
       width = view.GetRenderResolutionWidth();
     if (!height)
@@ -71,7 +73,7 @@ xiiResult xiiLightClusterViewPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ClusterNear", nearDistance));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ClusterFar", farDistance));
   auto projection = matrix;
-  if (!matrix.IsValid() || projection.Invert().Failed() || !position.IsValid() || !forward.IsValid() || forward.NormalizeIfNotZero(xiiVec3(0, 0, 1)).Failed() || !xiiMath::IsFinite(nearDistance) || !xiiMath::IsFinite(farDistance) || nearDistance <= 0 || farDistance <= nearDistance || !xiiMath::IsFinite(farDistance / nearDistance) || !width || !height || width > 65536 || height > 65536)
+  if (!matrix.IsValid() || projection.Invert().Failed() || !position.IsValid() || !forward.IsValid() || forward.NormalizeIfNotZero(xiiVec3(0, 0, 1)).Failed() || !xiiMath::IsFinite(nearDistance) || !xiiMath::IsFinite(farDistance) || farDistance <= nearDistance || (logarithmic && (nearDistance <= 0 || !xiiMath::IsFinite(farDistance / nearDistance))) || !width || !height || width > 65536 || height > 65536)
     return context.ReportFailure("Invalid cluster projection, camera, resolution or finite depth range.");
   // Validate finite rays at interior NDC depths, including orthographic and finite/infinite perspective projections.
   float referenceW = 0, referenceDepthDirection = 0;
@@ -104,7 +106,7 @@ xiiResult xiiLightClusterViewPass::Build(xiiRenderPipelinePassContext& context)
   constants.ViewProjection        = projection;
   constants.ClusterCounts         = xiiVec4U32(xiiUInt32(columns), xiiUInt32(rows), m_uiDepthSlices, xiiUInt32(count));
   constants.Viewport              = xiiVec4U32(width, height, m_uiTileSize, m_uiMaxLightsPerCluster);
-  constants.DepthRange            = xiiVec4(nearDistance, farDistance, xiiMath::Log2(farDistance / nearDistance), m_bLogarithmicDepth ? 1.0f : 0.0f);
+  constants.DepthRange            = xiiVec4(nearDistance, farDistance, logarithmic ? xiiMath::Log2(farDistance / nearDistance) : 0.0f, logarithmic ? 1.0f : 0.0f);
   constants.CameraPosition        = xiiVec4(position, 1);
   constants.CameraForward         = xiiVec4(forward, 0);
   constants.Work                  = xiiVec4U32(0, xiiUInt32(indices), 0, 0);

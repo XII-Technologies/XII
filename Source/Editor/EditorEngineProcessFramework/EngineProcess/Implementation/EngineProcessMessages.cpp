@@ -271,6 +271,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("HWND", m_uiHWND),
     XII_MEMBER_PROPERTY("WindowWidth", m_uiWindowWidth),
     XII_MEMBER_PROPERTY("WindowHeight", m_uiWindowHeight),
+    XII_MEMBER_PROPERTY("DevicePixelRatio", m_fDevicePixelRatio),
     XII_MEMBER_PROPERTY("UpdatePickingData", m_bUpdatePickingData),
     XII_MEMBER_PROPERTY("EnablePickSelected", m_bEnablePickingSelected),
     XII_MEMBER_PROPERTY("EnablePickTransparent", m_bEnablePickTransparent),
@@ -387,8 +388,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewPickingMsgToEngine, 1, xiiRTTIDefaultAll
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestID", m_uiRequestID),
     XII_MEMBER_PROPERTY("PickPosX", m_uiPickPosX),
     XII_MEMBER_PROPERTY("PickPosY", m_uiPickPosY),
+    XII_MEMBER_PROPERTY("PickGizmos", m_bPickGizmos),
   }
   XII_END_PROPERTIES;
 }
@@ -398,6 +401,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewPickingResultMsgToEditor, 1, xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestID", m_uiRequestID),
     XII_MEMBER_PROPERTY("ObjectGuid", m_ObjectGuid),
     XII_MEMBER_PROPERTY("ComponentGuid", m_ComponentGuid),
     XII_MEMBER_PROPERTY("OtherGuid", m_OtherGuid),

@@ -17,7 +17,7 @@ xiiConeAngleGizmo::xiiConeAngleGizmo()
 
   m_ManipulateMode = ManipulateMode::None;
 
-  m_hConeAngle.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 0, 128), xiiGizmoFlags::Pickable);
+  m_hConeAngle.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 0, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -77,9 +77,9 @@ xiiEditorInput xiiConeAngleGizmo::DoMousePressEvent(QMouseEvent* e)
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
 
-  m_LastInteraction = xiiTime::Now();
-
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  const auto pressPosition = e->globalPosition().toPoint();
+  m_vLastMousePos.Set(pressPosition.x(), pressPosition.y());
 
   SetActiveInputContext(this);
 
@@ -99,6 +99,9 @@ xiiEditorInput xiiConeAngleGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -109,13 +112,6 @@ xiiEditorInput xiiConeAngleGizmo::DoMouseMoveEvent(QMouseEvent* e)
 {
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
-
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
 
   const QPoint mousePosition = e->globalPosition().toPoint();
 

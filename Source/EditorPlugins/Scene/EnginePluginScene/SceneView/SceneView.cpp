@@ -54,7 +54,7 @@ void xiiSceneViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
   {
     const xiiViewPickingMsgToEngine* pMsg2 = static_cast<const xiiViewPickingMsgToEngine*>(pMsg);
 
-    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY);
+    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY, pMsg2->m_uiRequestID, pMsg2->m_bPickGizmos);
   }
   else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewMarqueePickingMsgToEngine>())
   {
@@ -108,7 +108,7 @@ void xiiSceneViewContext::Redraw(bool bRenderEditorGizmos)
   UpdateCameraPreview(bRenderEditorGizmos);
   if (xiiView* pView = GetView())
   {
-    if (bRenderEditorGizmos && DrawGrid(m_pSceneContext->GetGridDensity(), m_pSceneContext->GetGridTransform(), m_pSceneContext->IsGridInGlobalSpace()).Failed())
+    if (DrawGrid(bRenderEditorGizmos ? m_pSceneContext->GetGridDensity() : 0.0f, m_pSceneContext->GetGridTransform(), m_pSceneContext->IsGridInGlobalSpace()).Failed())
       xiiLog::Warning("Could not build the scene grid.");
     xiiVariantArray selection;
     selection.Reserve(m_pSceneContext->GetSelectionWithChildren().GetCount());

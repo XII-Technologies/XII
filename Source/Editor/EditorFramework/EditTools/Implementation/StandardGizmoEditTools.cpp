@@ -179,69 +179,11 @@ void xiiTranslateGizmoEditTool::GetGridSettings(xiiGridSettingsMsgToEngine& ref_
 
   if (pPreferences->GetShowGrid() && translateGizmo.IsVisible())
   {
-    ref_msg.m_vGridCenter = translateGizmo.GetStartPosition();
+    // Keep one stable plane throughout a gesture, including Ctrl camera-follow.
+    ref_msg.m_vGridCenter = pSceneDoc->GetGizmoWorldSpace() ? xiiVec3::MakeZero() : translateGizmo.GetStartPosition();
 
-    switch (translateGizmo.GetLastHandleInteraction())
-    {
-      case xiiTranslateGizmo::HandleInteraction::AxisX:
-        if (m_GridPlane == GridPlane::X)
-          ref_msg.m_vGridCenter = translateGizmo.GetTransformation().m_vPosition;
-        break;
-      case xiiTranslateGizmo::HandleInteraction::AxisY:
-        if (m_GridPlane == GridPlane::Y)
-          ref_msg.m_vGridCenter = translateGizmo.GetTransformation().m_vPosition;
-        break;
-      case xiiTranslateGizmo::HandleInteraction::AxisZ:
-        if (m_GridPlane == GridPlane::Z)
-          ref_msg.m_vGridCenter = translateGizmo.GetTransformation().m_vPosition;
-        break;
-      case xiiTranslateGizmo::HandleInteraction::PlaneX:
-        m_GridPlane = GridPlane::X;
-        break;
-      case xiiTranslateGizmo::HandleInteraction::PlaneY:
-        m_GridPlane = GridPlane::Y;
-        break;
-      case xiiTranslateGizmo::HandleInteraction::PlaneZ:
-        m_GridPlane = GridPlane::Z;
-        break;
-      case xiiTranslateGizmo::HandleInteraction::None:
-        break;
-    }
-
-    if (pSceneDoc->GetGizmoWorldSpace())
-    {
-      switch (m_GridPlane)
-      {
-        case GridPlane::X:
-          ref_msg.m_vGridCenter.y = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.y, xiiSnapProvider::GetTranslationSnapValue() * 10);
-          ref_msg.m_vGridCenter.z = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.z, xiiSnapProvider::GetTranslationSnapValue() * 10);
-          break;
-        case GridPlane::Y:
-          ref_msg.m_vGridCenter.x = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.x, xiiSnapProvider::GetTranslationSnapValue() * 10);
-          ref_msg.m_vGridCenter.z = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.z, xiiSnapProvider::GetTranslationSnapValue() * 10);
-          break;
-        case GridPlane::Z:
-          ref_msg.m_vGridCenter.x = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.x, xiiSnapProvider::GetTranslationSnapValue() * 10);
-          ref_msg.m_vGridCenter.y = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.y, xiiSnapProvider::GetTranslationSnapValue() * 10);
-          break;
-      }
-    }
-
-    switch (m_GridPlane)
-    {
-      case GridPlane::X:
-        ref_msg.m_vGridTangent1 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 1, 0);
-        ref_msg.m_vGridTangent2 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 0, 1);
-        break;
-      case GridPlane::Y:
-        ref_msg.m_vGridTangent1 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(1, 0, 0);
-        ref_msg.m_vGridTangent2 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 0, 1);
-        break;
-      case GridPlane::Z:
-        ref_msg.m_vGridTangent1 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(1, 0, 0);
-        ref_msg.m_vGridTangent2 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 1, 0);
-        break;
-    }
+    ref_msg.m_vGridTangent1 = translateGizmo.GetTransformation().m_qRotation * xiiVec3::MakeAxisX();
+    ref_msg.m_vGridTangent2 = translateGizmo.GetTransformation().m_qRotation * xiiVec3::MakeAxisY();
   }
 }
 
@@ -536,8 +478,9 @@ void xiiDragToPositionGizmoEditTool::TransformationGizmoEventHandlerImpl(const x
 
       if (e.m_pGizmo == &m_DragToPosGizmo)
       {
-        const xiiVec3 vTranslate = m_DragToPosGizmo.GetTranslationResult();
-        const xiiQuat qRot       = m_DragToPosGizmo.GetRotationResult();
+        const xiiVec3  vTranslate = m_DragToPosGizmo.GetTranslationResult();
+        const xiiQuat  qRot       = m_DragToPosGizmo.GetRotationResult();
+        const xiiUInt8 changes    = m_DragToPosGizmo.ModifiesRotation() ? TransformationChanges::Translation | TransformationChanges::Rotation : TransformationChanges::Translation;
 
         for (xiiUInt32 sel = 0; sel < m_GizmoSelection.GetCount(); ++sel)
         {
@@ -552,9 +495,9 @@ void xiiDragToPositionGizmoEditTool::TransformationGizmoEventHandlerImpl(const x
           }
 
           if (GetDocument()->GetGizmoMoveParentOnly())
-            pDocument->SetGlobalTransformParentOnly(obj.m_pObject, tNew, TransformationChanges::Rotation | TransformationChanges::Translation);
+            pDocument->SetGlobalTransformParentOnly(obj.m_pObject, tNew, changes);
           else
-            pDocument->SetGlobalTransform(obj.m_pObject, tNew, TransformationChanges::Translation | TransformationChanges::Rotation);
+            pDocument->SetGlobalTransform(obj.m_pObject, tNew, changes);
         }
       }
 

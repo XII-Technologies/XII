@@ -8,6 +8,8 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
+#include <EditorEngineProcessFramework/Rendering/ScenePreviewPipeline.h>
 #include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
@@ -40,6 +42,7 @@ xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiEditorRenderPipe
         out_pipeline = xiiTexturePreviewPass::GetPipelineResource(usage == xiiEditorRenderPipelineUsage::CubeTexturePreview);
         return XII_SUCCESS;
       case xiiEditorRenderPipelineUsage::Main:
+      case xiiEditorRenderPipelineUsage::ScenePreview:
         break;
     }
   }
@@ -47,6 +50,8 @@ xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiEditorRenderPipe
   const auto       result = xiiRenderPipelineProfileConfig::ResolveResource(m_sPipelineReference, m_pPipelineProfile, out_pipeline, &error);
   if (result.Failed())
     xiiLog::Error("Cannot select the editor view pipeline: {}", error);
+  else if (usage == xiiEditorRenderPipelineUsage::ScenePreview)
+    out_pipeline = xiiScenePreviewPipeline::GetResource(out_pipeline);
   return result;
 }
 
@@ -257,6 +262,9 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         else
         {
           pView->m_ExcludeTags.Set(editorTag);
+          pView->RemovePipelineParameter("Editor.Grid");
+          pView->RemovePipelineParameter("Editor.Gizmos");
+          pView->RemovePipelineParameter("Editor.GizmoMeshes");
         }
       }
     }
@@ -282,9 +290,7 @@ xiiResult xiiEngineProcessViewContext::DrawGrid(float fSpacing, const xiiTransfo
   auto* view = GetView();
   if (!view)
     return XII_FAILURE;
-  XII_SUCCEED_OR_RETURN(m_Grid.Build(*view, fSpacing, transform, bGlobal));
-  xiiDebugRenderer::DrawLines(*view, m_Grid.GetLines(), xiiColor::White);
-  return XII_SUCCESS;
+  return xiiInfiniteGridPass::ConfigureView(*view, fSpacing, transform, bGlobal);
 }
 
 xiiResult xiiEngineProcessViewContext::PickGizmoAtPixel(xiiUInt32 x, xiiUInt32 y, xiiViewPickingResultMsgToEditor& out_result) const
@@ -362,6 +368,8 @@ void xiiEngineProcessViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg
         UpdateRenderPipeline(*pView);
 
         pView->SetViewRenderMode(pMsg->m_RenderMode);
+        if (xiiMath::IsFinite(pMsg->m_fDevicePixelRatio) && pMsg->m_fDevicePixelRatio > 0 && pMsg->m_fDevicePixelRatio <= 8)
+          pView->SetPipelineParameter("Editor.DevicePixelRatio", pMsg->m_fDevicePixelRatio);
 
         if (m_Camera.GetCameraMode() != xiiCameraMode::Stereo)
         {

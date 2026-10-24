@@ -14,7 +14,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiClickGizmo::xiiClickGizmo()
 {
-  m_hShape.ConfigureHandle(this, xiiEngineGizmoHandleType::Sphere, xiiColor::White, xiiGizmoFlags::Pickable);
+  m_hShape.ConfigureHandle(this, xiiEngineGizmoHandleType::Sphere, xiiColor::White, xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());

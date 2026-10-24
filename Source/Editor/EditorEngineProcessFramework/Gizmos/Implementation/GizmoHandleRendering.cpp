@@ -3,7 +3,8 @@
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
-#include <Foundation/Containers/HashSet.h>
+#include <EditorEngineProcessFramework/Rendering/Implementation/EditorViewportUtils.h>
+
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
 
@@ -41,7 +42,15 @@ xiiResult xiiEngineGizmoHandle::ComputeViewTransform(const xiiView& view, xiiMat
     return XII_FAILURE;
 
   xiiMat4 transform = m_Transformation.GetAsMat4();
-  xiiVec3 scale(m_bConstantSize ? 128.0f * s_fGizmoScale * fWorldUnitsPerPixel : 1.0f);
+  if (m_iHandleType == static_cast<xiiInt32>(xiiEngineGizmoHandleType::ScaleUniform))
+  {
+    transform = view.GetViewMatrix(xiiCameraEye::Left).GetInverse();
+    transform.SetTranslationVector(m_Transformation.m_vPosition);
+    XII_SUCCEED_OR_RETURN(transform.SetScalingFactors(m_Transformation.m_vScale.Abs()));
+  }
+  float ratio;
+  XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::PixelRatio(view, ratio));
+  xiiVec3 scale(m_bConstantSize ? 128.0f * ratio * s_fGizmoScale * fWorldUnitsPerPixel : 1.0f);
   if (m_bFaceCamera)
   {
     xiiMat4 inverse = transform;
@@ -72,56 +81,76 @@ xiiResult xiiEngineGizmoHandle::EnsureGeometry()
   m_GeometryResult   = XII_FAILURE;
   m_iBuiltHandleType = m_iHandleType;
   m_sBuiltMesh       = m_sGizmoHandleMesh;
-  m_bBuiltVisualizer = m_bVisualizer;
-  m_pWireGeometry.Clear();
-  if (m_iHandleType < 0 || m_iHandleType > static_cast<xiiInt32>(xiiEngineGizmoHandleType::FromFile))
+
+  if (m_iHandleType < 0 || m_iHandleType > static_cast<xiiInt32>(xiiEngineGizmoHandleType::ScaleUniform))
     return XII_FAILURE;
   if (!m_pGeometry)
     m_pGeometry = XII_DEFAULT_NEW(xiiGizmoGeometry);
   XII_SUCCEED_OR_RETURN(m_pGeometry->Build(static_cast<xiiEngineGizmoHandleType>(m_iHandleType), m_sGizmoHandleMesh));
-  if (m_bVisualizer)
-  {
-    m_pWireGeometry = XII_DEFAULT_NEW(xiiGeometry, m_pGeometry->GetGeometry());
-    xiiHashSet<xiiUInt64> edges;
-    for (const auto& line : m_pWireGeometry->GetLines())
-      edges.Insert((static_cast<xiiUInt64>(xiiMath::Min(line.m_uiStartVertex, line.m_uiEndVertex)) << 32) | xiiMath::Max(line.m_uiStartVertex, line.m_uiEndVertex));
-    for (const auto& triangle : m_pWireGeometry->GetPolygons())
-    {
-      for (xiiUInt32 i = 0; i < 3; ++i)
-      {
-        const xiiUInt32 a = triangle.m_Vertices[i];
-        const xiiUInt32 b = triangle.m_Vertices[(i + 1) % 3];
-        if (!edges.Insert((static_cast<xiiUInt64>(xiiMath::Min(a, b)) << 32) | xiiMath::Max(a, b)))
-          m_pWireGeometry->AddLine(a, b);
-      }
-    }
-    m_pWireGeometry->GetPolygons().Clear();
-  }
   m_GeometryResult = XII_SUCCESS;
   return XII_SUCCESS;
 }
 
-xiiResult xiiEngineGizmoHandle::Draw(const xiiView& view, xiiUInt32 uiHighlightID)
+xiiResult xiiEngineGizmoHandle::AppendRenderData(const xiiView& view, xiiUInt32 highlight, xiiDynamicArray<xiiEditorGizmoInstance>& instances, xiiVariantArray& customMeshes) const
 {
-  if (!m_bVisible || (view.GetCamera() && view.GetCamera()->IsOrthographic() && !m_bShowInOrtho))
+  if (!m_bVisible || m_Color.a <= 0 || (view.GetCamera() && view.GetCamera()->IsOrthographic() && !m_bShowInOrtho))
     return XII_SUCCESS;
   if (view.GetCamera() && !view.GetCamera()->IsOrthographic() && m_Transformation.IsValid() && (m_Transformation.m_vPosition - view.GetCamera()->GetCenterPosition()).Dot(view.GetCamera()->GetCenterDirForwards()) <= 0)
     return XII_SUCCESS;
+  if (m_iHandleType < 0 || m_iHandleType > static_cast<xiiInt32>(xiiEngineGizmoHandleType::ScaleUniform) || m_iVisualState < 0 || m_iVisualState > static_cast<xiiInt32>(xiiGizmoVisualState::Disabled) || !m_vArc.IsValid() || !m_vDragOrigin.IsValid())
+    return XII_FAILURE;
   xiiMat4 transform;
-  float   fPixelSize;
-  XII_SUCCEED_OR_RETURN(ComputeViewTransform(view, transform, fPixelSize));
-  XII_SUCCEED_OR_RETURN(EnsureGeometry());
-  const xiiColor color = m_uiPickingID != 0 && m_uiPickingID == uiHighlightID ? xiiColor(0.9f, 0.9f, 0.1f, m_Color.a) : m_Color;
-  return xiiDebugRenderer::DrawGeometry(view, m_bVisualizer ? *m_pWireGeometry : m_pGeometry->GetGeometry(), color, transform, m_bAlwaysOnTop ? xiiDebugRendererDepthMode::Overlay : xiiDebugRendererDepthMode::DepthTested);
+  float   pixel;
+  XII_SUCCEED_OR_RETURN(ComputeViewTransform(view, transform, pixel));
+  const auto camera   = view.GetCamera()->GetCenterPosition();
+  const auto position = transform.GetTranslationVector();
+  transform.SetTranslationVector(xiiVec3(float(double(position.x) - camera.x), float(double(position.y) - camera.y), float(double(position.z) - camera.z)));
+  xiiEditorGizmoInstance instance = {};
+  instance.Transform              = transform;
+  instance.Color                  = xiiVec4(m_Color.r, m_Color.g, m_Color.b, m_Color.a);
+  xiiUInt32 flags                 = m_bAlwaysOnTop ? XII_EDITOR_GIZMO_ON_TOP : 0;
+  if (m_bVisualizer)
+    flags |= XII_EDITOR_GIZMO_WIRE;
+  if (m_iVisualState == static_cast<xiiInt32>(xiiGizmoVisualState::Active))
+    flags |= XII_EDITOR_GIZMO_ACTIVE;
+  if (m_iVisualState == static_cast<xiiInt32>(xiiGizmoVisualState::Selected))
+    flags |= XII_EDITOR_GIZMO_SELECTED;
+  if (m_iVisualState == static_cast<xiiInt32>(xiiGizmoVisualState::Disabled))
+    flags |= XII_EDITOR_GIZMO_DISABLED;
+  if (m_uiPickingID && m_uiPickingID == highlight)
+    flags |= XII_EDITOR_GIZMO_HOVER;
+  instance.Identity   = xiiVec4U32(m_iHandleType, flags, m_uiPickingID, 0);
+  instance.GuideStart = xiiVec4(float(double(m_vDragOrigin.x) - camera.x), float(double(m_vDragOrigin.y) - camera.y), float(double(m_vDragOrigin.z) - camera.z), 0);
+  instance.Parameters = xiiVec4(flags & XII_EDITOR_GIZMO_ACTIVE ? 2.8f : flags & XII_EDITOR_GIZMO_HOVER ? 2.5f :
+                                                                                                          2.0f,
+                                m_vArc.x, m_vArc.y, 1);
+  XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::PixelRatio(view, instance.Parameters.w));
+  instances.PushBack(instance);
+  customMeshes.PushBack(m_sGizmoHandleMesh);
+  if ((flags & XII_EDITOR_GIZMO_ACTIVE) && !m_sInteractionText.IsEmpty())
+  {
+    xiiVec3 screen;
+    if (view.ComputeScreenSpacePos(m_Transformation.m_vPosition, screen).Succeeded())
+    {
+      const auto&      viewport = view.GetViewport();
+      const auto       size     = static_cast<xiiUInt32>(16 * instance.Parameters.w);
+      const xiiVec2I32 label(static_cast<xiiInt32>(screen.x * viewport.width + 24 * instance.Parameters.w), static_cast<xiiInt32>(screen.y * viewport.height - 28 * instance.Parameters.w));
+      xiiDebugRenderer::Draw2DText(view, m_sInteractionText.GetView(), label + xiiVec2I32(1, 1), xiiColor::Black, size);
+      xiiDebugRenderer::Draw2DText(view, m_sInteractionText.GetView(), label, xiiColor::White, size);
+    }
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiEngineGizmoHandle::PickRay(const xiiView& view, const xiiVec3& vStart, const xiiVec3& vDirection, float& out_fRayTime)
 {
-  if (!m_bIsPickable || m_bVisualizer || !m_Color.IsValid())
+  if (!m_bIsPickable || m_bVisualizer || !m_Color.IsValid() || m_Color.a <= 0 || m_iVisualState == static_cast<xiiInt32>(xiiGizmoVisualState::Disabled))
     return XII_FAILURE;
   xiiMat4 transform;
   float   fPixelSize;
   XII_SUCCEED_OR_RETURN(ComputeViewTransform(view, transform, fPixelSize));
   XII_SUCCEED_OR_RETURN(EnsureGeometry());
-  return m_pGeometry->PickRay(transform, vStart, vDirection, 4.0f * fPixelSize, out_fRayTime);
+  float ratio;
+  XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::PixelRatio(view, ratio));
+  return m_pGeometry->PickRay(transform, vStart, vDirection, 4.0f * ratio * fPixelSize, out_fRayTime);
 }

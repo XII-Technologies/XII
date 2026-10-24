@@ -1,0 +1,432 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+
+#include <Core/World/GameObject.h>
+#include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
+#include <EditorFramework/DocumentWindow/GameObjectDocumentWindow.moc.h>
+#include <EditorFramework/EditTools/StandardGizmoEditTools.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Gizmos/TranslateGizmo.h>
+#include <EditorPluginScene/Scene/SceneDocument.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/OSFile.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
+#include <QApplication>
+#include <QElapsedTimer>
+#include <QMouseEvent>
+#include <QPointer>
+#include <QThread>
+#include <ToolsFoundation/CommandHistory/CommandHistory.h>
+#include <ToolsFoundation/Object/ObjectAccessorBase.h>
+
+namespace
+{
+  class PlacementDocumentWindow : public xiiQtGameObjectDocumentWindow, public xiiGameObjectGizmoInterface
+  {
+  public:
+    explicit PlacementDocumentWindow(xiiSceneDocument* document) : xiiQtGameObjectDocumentWindow(document) { FinishWindowCreation(); }
+    xiiStringView          GetWindowLayoutGroupName() const override { return "PlacementDocumentTest"; }
+    xiiObjectAccessorBase* GetObjectAccessor() override { return GetGameObjectDocument()->GetObjectAccessor(); }
+    bool                   CanDuplicateSelection() const override { return false; }
+    void                   DuplicateSelection() override { XII_TEST_BOOL_MSG(false, "This test does not request duplication."); }
+    void                   SendGrid()
+    {
+      auto grid = GetGridSettings();
+      GetEditorEngineConnection()->SendMessage(&grid);
+    }
+  };
+
+  class PlacementTestView : public xiiQtEngineViewWidget
+  {
+  public:
+    using xiiQtEngineViewWidget::xiiQtEngineViewWidget;
+    ~PlacementTestView()
+    {
+      if (s_InteractionContext.m_pLastHoveredViewWidget == this)
+        s_InteractionContext = {};
+    }
+    void SetSurfaceSize()
+    {
+      const int logicalSize = int(256 / devicePixelRatio());
+      m_pViewportWidget->setFixedSize(logicalSize, logicalSize);
+      resize(logicalSize, logicalSize);
+    }
+    void Move(QMouseEvent* event) { mouseMoveEvent(event); }
+  };
+} // namespace
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorViewportInteraction);
+XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, HandleFeedback)
+{
+  xiiTranslateGizmo    tool;
+  xiiEngineGizmoHandle handle;
+  handle.ConfigureHandle(&tool, xiiEngineGizmoHandleType::TranslationAxis, xiiColor::Red, xiiGizmoFlags::Pickable);
+  const auto* type = handle.GetDynamicRTTI();
+  const auto  read = [&](const char* name) {
+    return xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(type->FindPropertyByName(name)), &handle);
+  };
+  auto transform        = xiiTransform::MakeIdentity();
+  transform.m_vPosition = xiiVec3(2, 3, 4);
+  tool.SetTransformation(transform);
+  tool.ConfigureInteraction(&handle, nullptr, transform.m_vPosition, xiiVec2I32(800, 600));
+  for (auto end : {xiiGizmoEvent::Type::EndInteractions, xiiGizmoEvent::Type::CancelInteractions})
+  {
+    tool.m_GizmoEvents.Broadcast({&tool, xiiGizmoEvent::Type::BeginInteractions});
+    XII_TEST_INT(read("VisualState").Get<xiiInt32>(), static_cast<xiiInt32>(xiiGizmoVisualState::Active));
+    XII_TEST_VEC3(read("DragOrigin").Get<xiiVec3>(), transform.m_vPosition, 0);
+    handle.SetVisualParameters(1, 2);
+    handle.SetInteractionText("12.50 units");
+    XII_TEST_STRING(read("InteractionText").Get<xiiString>(), "12.50 units");
+    tool.m_GizmoEvents.Broadcast({&tool, end});
+    XII_TEST_INT(read("VisualState").Get<xiiInt32>(), static_cast<xiiInt32>(xiiGizmoVisualState::Normal));
+    XII_TEST_VEC2(read("RotationArc").Get<xiiVec2>(), xiiVec2::MakeZero(), 0);
+    XII_TEST_BOOL(read("InteractionText").Get<xiiString>().IsEmpty());
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
+{
+  // The command/undo checks run without a render surface. On Windows a hidden
+  // Vulkan viewport also exercises real surface queries and mouse-move routing.
+  // Neither case injects desktop input, presents a window or moves the cursor.
+  auto* editor = xiiQtEditorApp::GetSingleton();
+  xiiStartup::StartupCoreSystems();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  xiiStringBuilder directory = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  directory.AppendPath("PlacementDocument");
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(directory));
+  editor->StartupEditor(xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, directory);
+  XII_SCOPE_EXIT(editor->ShutdownEditor());
+  xiiQtContainerWindow container;
+  container.SetWindowPresentationEnabled(false);
+  xiiStringBuilder project = directory;
+  project.AppendPath("Project", "xiiProject");
+  if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
+    return;
+  xiiStringBuilder path = project.GetFileDirectory();
+  path.AppendPath("Placement.xiiScene");
+  auto* scene = xiiDynamicCast<xiiSceneDocument*>(editor->CreateDocument(path, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(scene != nullptr))
+    return;
+  QPointer<PlacementDocumentWindow> window = new PlacementDocumentWindow(scene);
+  XII_SCOPE_EXIT({
+    scene->GetDocumentManager()->CloseDocument(scene);
+    QElapsedTimer elapsed;
+    elapsed.start();
+    while (!window.isNull() && elapsed.elapsed() < 2000)
+    {
+      QApplication::processEvents(QEventLoop::AllEvents, 20);
+      QThread::msleep(1);
+    }
+    XII_TEST_BOOL(window.isNull());
+  });
+  scene->SetEditToolConfigDelegate([&](xiiGameObjectEditTool* tool) { tool->ConfigureTool(scene, window, window); });
+  auto* accessor = scene->GetObjectAccessor();
+  accessor->StartTransaction("Placement source");
+  xiiUuid source;
+  XII_TEST_STATUS(accessor->AddObjectByName(scene->GetObjectManager()->GetRootObject(), "Children", -1, xiiGetStaticRTTI<xiiGameObject>(), source));
+  const auto* object = accessor->GetObject(source);
+  XII_TEST_STATUS(accessor->SetValueByName(object, "LocalPosition", xiiVec3(2, 3, 4)));
+  const auto sourceRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisX(), xiiAngle::MakeFromDegree(30));
+  XII_TEST_STATUS(accessor->SetValueByName(object, "LocalRotation", sourceRotation));
+  accessor->FinishTransaction();
+  scene->GetSelectionManager()->SetSelection(object);
+  scene->SetActiveEditTool(xiiGetStaticRTTI<xiiDragToPositionGizmoEditTool>());
+  auto* handle = xiiDynamicCast<xiiEngineGizmoHandle*>(scene->FindSyncObject(xiiGetStaticRTTI<xiiEngineGizmoHandle>()));
+  auto* gizmo  = handle ? xiiDynamicCast<xiiDragToPositionGizmo*>(handle->GetOwnerGizmo()) : nullptr;
+  if (!XII_TEST_BOOL(gizmo != nullptr))
+    return;
+  auto*      history   = scene->GetCommandHistory();
+  const auto undoCount = history->GetUndoStackSize();
+  const auto original  = scene->GetGlobalTransform(object);
+  gizmo->ConfigureInteraction(handle, nullptr, original.m_vPosition, xiiVec2I32(800, 600));
+  QMouseEvent press(QEvent::MouseButtonPress, QPointF(128, 128), QPointF(500, 400), Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
+  XII_TEST_BOOL(gizmo->MousePressEvent(&press) == xiiEditorInput::WasExclusivelyHandled);
+  XII_SCOPE_EXIT(if (gizmo->IsActiveInputContext()) { gizmo->FocusLost(true); xiiEditorInputContext::SetActiveInputContext(nullptr); });
+  for (const xiiVec3 target : {xiiVec3(5, 7, 9), xiiVec3(-2, 1, 6)})
+  {
+    auto placement        = gizmo->GetTransformation();
+    placement.m_vPosition = target;
+    gizmo->SetTransformation(placement);
+    gizmo->m_GizmoEvents.Broadcast({gizmo, xiiGizmoEvent::Type::Interaction});
+    XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, target, 0.001f);
+    XII_TEST_VEC3(accessor->GetByName<xiiVec3>(object, "LocalPosition"), target, 0.001f);
+  }
+  gizmo->FocusLost(false);
+  xiiEditorInputContext::SetActiveInputContext(nullptr);
+  XII_TEST_INT(history->GetUndoStackSize(), undoCount + 1);
+  XII_TEST_STATUS(history->Undo());
+  XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, original.m_vPosition, 0.001f);
+  XII_TEST_STATUS(history->Redo());
+  XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, xiiVec3(-2, 1, 6), 0.001f);
+
+  if (QGuiApplication::platformName() == "windows")
+  {
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Hidden viewport moves selected mesh onto another mesh")
+    {
+      XII_TEST_STATUS(history->Undo());
+      history->ClearRedoHistory();
+      accessor->StartTransaction("Placement geometry");
+      const xiiDocumentObject* target = nullptr;
+      for (const auto* child : scene->GetObjectManager()->GetRootObject()->GetChildren())
+        if (child->GetType()->IsDerivedFrom<xiiGameObject>() && accessor->GetByName<xiiString>(child, "Name") == "Sphere")
+          target = child;
+      if (!XII_TEST_BOOL(target != nullptr))
+        return;
+      XII_TEST_STATUS(accessor->SetValueByName(target, "LocalPosition", xiiVec3(6, 3, 4)));
+      xiiUuid mesh;
+      XII_TEST_STATUS(accessor->AddObjectByName(object, "Components", -1, xiiGetStaticRTTI<xiiMeshComponent>(), mesh));
+      XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(mesh), "Mesh", "{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"));
+      accessor->FinishTransaction();
+      const auto asset = xiiConversionUtils::ConvertStringToUuid("{ 618ee743-ed04-4fac-bf5f-572939db2f1d }");
+      XII_TEST_BOOL(xiiAssetCurator::GetSingleton()->TransformAsset(asset, xiiTransformFlags::TriggeredManually).Succeeded());
+      XII_TEST_RESULT(xiiAssetCurator::GetSingleton()->WriteAssetTables(nullptr, true));
+      auto* connection = xiiEditorEngineProcessConnection::GetSingleton();
+      XII_TEST_RESULT(connection->RestartProcess());
+      XII_TEST_STATUS(scene->WaitForEngineStatusLoaded(xiiTime::MakeFromSeconds(10)));
+      xiiEngineViewConfig config;
+      config.m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 70, 0.1f, 100);
+      config.m_Camera.LookAt(xiiVec3(0, 3, 4), xiiVec3(6, 3, 4), xiiVec3::MakeAxisZ());
+      auto* view = new PlacementTestView(window, window, &config);
+      window->AddViewWidget(view);
+      view->SetSurfaceSize();
+      XII_SCOPE_EXIT(delete view);
+      scene->SyncObjectsToEngine();
+      scene->SendObjectSelection();
+      const int   center = int(128 / view->devicePixelRatio());
+      QMouseEvent hover(QEvent::MouseMove, QPointF(center, center), QPointF(500, 400), Qt::NoButton, Qt::NoButton, Qt::ShiftModifier);
+      view->Move(&hover);
+      gizmo->ConfigureInteraction(handle, &config.m_Camera, original.m_vPosition, xiiVec2I32(256, 256));
+      gizmo->MousePressEvent(&press);
+      xiiUInt32     frame = 0;
+      QElapsedTimer elapsed;
+      elapsed.start();
+      bool moved = false;
+      while (!moved && elapsed.elapsed() < 10000)
+      {
+        // Captured drags still need surface updates when hover-based picking is off.
+        view->SetEnablePicking(false);
+        view->SyncToEngine();
+        xiiQtUiServices::TickEvent tick;
+        tick.m_Type    = xiiQtUiServices::TickEvent::Type::EndFrame;
+        tick.m_uiFrame = frame++;
+        tick.m_Time    = xiiTime::Now();
+        xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        const auto  hit = view->PickObject(center, center, true);
+        QMouseEvent move(QEvent::MouseMove, QPointF(center, center), QPointF(500, 400), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+        view->Move(&move);
+        moved = !scene->GetGlobalTransform(object).m_vPosition.IsEqual(original.m_vPosition, 0.001f);
+        if (moved)
+        {
+          XII_TEST_BOOL(hit.m_PickedObject == target->GetGuid());
+          XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, hit.m_vPickedPosition, 0.001f);
+        }
+      }
+      XII_TEST_BOOL_MSG(moved, "Dragging the selected mesh must change its document position, not just its handle.");
+      gizmo->FocusLost(false);
+      xiiEditorInputContext::SetActiveInputContext(nullptr);
+
+      const auto meshPosition = scene->GetGlobalTransform(object).m_vPosition;
+      XII_TEST_STATUS(history->Undo());
+      XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, original.m_vPosition, 0.001f);
+      XII_TEST_STATUS(history->Redo());
+      XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, meshPosition, 0.001f);
+
+      window->SendGrid();
+      gizmo->ConfigureInteraction(handle, &config.m_Camera, meshPosition, xiiVec2I32(256, 256));
+      gizmo->MousePressEvent(&press);
+      elapsed.restart();
+      bool      placedOnGrid = false;
+      const int lower        = int(220 / view->devicePixelRatio());
+      while (!placedOnGrid && elapsed.elapsed() < 10000)
+      {
+        view->SyncToEngine();
+        xiiQtUiServices::TickEvent tick;
+        tick.m_Type    = xiiQtUiServices::TickEvent::Type::EndFrame;
+        tick.m_uiFrame = frame++;
+        tick.m_Time    = xiiTime::Now();
+        xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        const auto  hit = view->PickObject(center, lower, true);
+        QMouseEvent move(QEvent::MouseMove, QPointF(center, lower), QPointF(500, 490), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+        view->Move(&move);
+        placedOnGrid = !hit.m_PickedObject.IsValid() && !hit.m_vPickedNormal.IsZero() && xiiMath::Abs(scene->GetGlobalTransform(object).m_vPosition.z) < 0.001f;
+        if (placedOnGrid)
+          XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, hit.m_vPickedPosition, 0.001f);
+      }
+      XII_TEST_BOOL_MSG(placedOnGrid, "Empty grid space must be a valid placement surface without selecting a scene object.");
+      const auto  gridPosition = scene->GetGlobalTransform(object).m_vPosition;
+      QMouseEvent release(QEvent::MouseButtonRelease, QPointF(center, lower), QPointF(500, 490), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+      gizmo->MouseReleaseEvent(&release);
+      XII_TEST_BOOL(!xiiEditorInputContext::IsAnyInputContextActive());
+      XII_TEST_STATUS(history->Undo());
+      XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, meshPosition, 0.001f);
+      XII_TEST_STATUS(history->Redo());
+      XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, gridPosition, 0.001f);
+
+      // The grid shader changes global orthographic planes to face the camera;
+      // local planes must retain the authored transform instead.
+      config.m_Camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 12, 0.1f, 100);
+      config.m_Camera.LookAt(xiiVec3(-10, 3, 4), xiiVec3(0, 3, 4), xiiVec3::MakeAxisZ());
+      for (bool local : {false, true})
+      {
+        xiiGridSettingsMsgToEngine grid;
+        grid.m_fGridDensity  = local ? -1.0f : 1.0f;
+        grid.m_vGridCenter   = local ? xiiVec3(7, 0, 0) : xiiVec3::MakeZero();
+        grid.m_vGridTangent1 = local ? xiiVec3::MakeAxisY() : xiiVec3::MakeAxisX();
+        grid.m_vGridTangent2 = local ? xiiVec3::MakeAxisZ() : xiiVec3::MakeAxisY();
+        scene->SendMessageToEngine(&grid);
+        const auto beforeGrid = scene->GetGlobalTransform(object).m_vPosition;
+        const auto beforeUndo = history->GetUndoStackSize();
+        gizmo->ConfigureInteraction(handle, &config.m_Camera, beforeGrid, xiiVec2I32(256, 256));
+        gizmo->MousePressEvent(&press);
+        elapsed.restart();
+        bool placed = false;
+        while (!placed && elapsed.elapsed() < 10000)
+        {
+          view->SyncToEngine();
+          xiiQtUiServices::TickEvent tick;
+          tick.m_Type    = xiiQtUiServices::TickEvent::Type::EndFrame;
+          tick.m_uiFrame = frame++;
+          tick.m_Time    = xiiTime::Now();
+          xiiQtUiServices::s_TickEvent.Broadcast(tick);
+          const auto  hit = view->PickObject(center, lower, true);
+          QMouseEvent move(QEvent::MouseMove, QPointF(center, lower), QPointF(500, 490), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+          view->Move(&move);
+          placed = !hit.m_PickedObject.IsValid() && !hit.m_vPickedNormal.IsZero() && xiiMath::Abs(hit.m_vPickedPosition.x - (local ? 7.0f : 0.0f)) < 0.001f;
+          if (placed)
+          {
+            XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, hit.m_vPickedPosition, 0.001f);
+            XII_TEST_VEC3(hit.m_vPickedNormal, -xiiVec3::MakeAxisX(), 0.001f);
+          }
+        }
+        XII_TEST_BOOL_MSG(placed, "Grid placement must match global and local orthographic grid planes.");
+        gizmo->FocusLost(true);
+        xiiEditorInputContext::SetActiveInputContext(nullptr);
+        XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, beforeGrid, 0.001f);
+        XII_TEST_INT(history->GetUndoStackSize(), beforeUndo);
+      }
+
+      // An invisible grid must not become an invisible placement surface.
+      xiiGridSettingsMsgToEngine hiddenGrid;
+      hiddenGrid.m_fGridDensity = 0;
+      hiddenGrid.m_vGridCenter.SetZero();
+      hiddenGrid.m_vGridTangent1.SetZero();
+      hiddenGrid.m_vGridTangent2.SetZero();
+      scene->SendMessageToEngine(&hiddenGrid);
+      const auto beforeHidden = scene->GetGlobalTransform(object).m_vPosition;
+      gizmo->ConfigureInteraction(handle, &config.m_Camera, beforeHidden, xiiVec2I32(256, 256));
+      gizmo->MousePressEvent(&press);
+      for (xiiUInt32 i = 0; i < 5; ++i)
+      {
+        view->SyncToEngine();
+        xiiQtUiServices::TickEvent tick;
+        tick.m_Type    = xiiQtUiServices::TickEvent::Type::EndFrame;
+        tick.m_uiFrame = frame++;
+        tick.m_Time    = xiiTime::Now();
+        xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        const auto hit = view->PickObject(center, lower, true);
+        XII_TEST_BOOL(!hit.m_PickedObject.IsValid() && hit.m_vPickedNormal.IsZero());
+        QMouseEvent move(QEvent::MouseMove, QPointF(center, lower), QPointF(500, 490), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+        view->Move(&move);
+        XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, beforeHidden, 0.001f);
+      }
+      gizmo->FocusLost(true);
+      xiiEditorInputContext::SetActiveInputContext(nullptr);
+
+      // A signed handle may align to geometry, but a background grid normal
+      // must not rotate the document object or discard its last mesh alignment.
+      const auto orientationStart = scene->GetGlobalTransform(object);
+      config.m_Camera.LookAt(orientationStart.m_vPosition - xiiVec3(10, 0, 0), orientationStart.m_vPosition, xiiVec3::MakeAxisZ());
+      const auto advanceFrame = [&]() {
+        scene->SyncObjectsToEngine();
+        scene->SendObjectSelection();
+        view->SyncToEngine();
+        xiiQtUiServices::TickEvent tick;
+        tick.m_Type    = xiiQtUiServices::TickEvent::Type::EndFrame;
+        tick.m_uiFrame = frame++;
+        tick.m_Time    = xiiTime::Now();
+        xiiQtUiServices::s_TickEvent.Broadcast(tick);
+      };
+      xiiGridSettingsMsgToEngine orientationGrid;
+      orientationGrid.m_fGridDensity = 1;
+      orientationGrid.m_vGridCenter.SetZero();
+      orientationGrid.m_vGridTangent1 = xiiVec3::MakeAxisX();
+      orientationGrid.m_vGridTangent2 = xiiVec3::MakeAxisY();
+      scene->SendMessageToEngine(&orientationGrid);
+      advanceFrame();
+      const auto axis       = orientationStart.m_qRotation * xiiVec3::MakeAxisZ();
+      const int  axisX      = center + int(xiiMath::Round(32 * config.m_Camera.GetCenterDirRight().Dot(axis)));
+      const int  axisY      = center - int(xiiMath::Round(32 * config.m_Camera.GetCenterDirUp().Dot(axis)));
+      const auto axisPick   = view->PickObject(axisX, axisY, true);
+      auto*      axisHandle = xiiDynamicCast<xiiEngineGizmoHandle*>(scene->FindSyncObject(axisPick.m_PickedOther));
+      if (!XII_TEST_BOOL(axisHandle != nullptr && axisHandle != handle && axisHandle->GetOwnerGizmo() == gizmo))
+        return;
+      XII_TEST_VEC3(axisHandle->GetTransformation().m_qRotation * xiiVec3::MakeAxisX(), axis, 0.001f);
+      const auto orientationUndo = history->GetUndoStackSize();
+      gizmo->ConfigureInteraction(axisHandle, &config.m_Camera, orientationStart.m_vPosition, xiiVec2I32(256, 256));
+      gizmo->MousePressEvent(&press);
+      auto place = [&](int x, int y, bool meshSurface) {
+        elapsed.restart();
+        xiiObjectPickingResult hit;
+        while (elapsed.elapsed() < 10000)
+        {
+          advanceFrame();
+          hit = view->PickObject(x, y, true);
+          if (!hit.m_vPickedNormal.IsZero() && (meshSurface ? hit.m_PickedObject == target->GetGuid() : !hit.m_PickedObject.IsValid()))
+          {
+            QMouseEvent move(QEvent::MouseMove, QPointF(x, y), QPointF(500, 400), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+            view->Move(&move);
+            XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, hit.m_vPickedPosition, 0.001f);
+            return hit;
+          }
+        }
+        XII_TEST_BOOL_MSG(false, "The orientation gesture must receive a valid placement surface.");
+        return hit;
+      };
+      place(center, center, false);
+      XII_TEST_BOOL(!gizmo->ModifiesRotation());
+      XII_TEST_BOOL(accessor->GetByName<xiiQuat>(object, "LocalRotation").IsEqualRotation(sourceRotation, 0.001f));
+
+      // The target sphere is four units above the orthographic camera's center.
+      const int  sphereY         = center - int(xiiMath::Round(4.0f / 12.0f * 256 / view->devicePixelRatio()));
+      const auto meshAlignment   = place(center, sphereY, true);
+      const auto alignedRotation = scene->GetGlobalTransform(object).m_qRotation;
+      XII_TEST_BOOL(gizmo->ModifiesRotation());
+      XII_TEST_VEC3(alignedRotation * xiiVec3::MakeAxisZ(), meshAlignment.m_vPickedNormal, 0.001f);
+      orientationGrid.m_fGridDensity  = -1;
+      orientationGrid.m_vGridTangent1 = xiiVec3::MakeAxisY();
+      orientationGrid.m_vGridTangent2 = xiiVec3(1, 0, 1).GetNormalized();
+      scene->SendMessageToEngine(&orientationGrid);
+      const auto finalGrid = place(center, center, false);
+      XII_TEST_BOOL(!finalGrid.m_vPickedNormal.IsEqual(meshAlignment.m_vPickedNormal, 0.1f));
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).m_qRotation.IsEqualRotation(alignedRotation, 0.001f));
+      QMouseEvent orientationRelease(QEvent::MouseButtonRelease, QPointF(center, center), QPointF(500, 400), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+      gizmo->MouseReleaseEvent(&orientationRelease);
+      XII_TEST_INT(history->GetUndoStackSize(), orientationUndo + 1);
+      XII_TEST_STATUS(history->Undo());
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).IsEqual(orientationStart, 0.001f));
+      XII_TEST_STATUS(history->Redo());
+      XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, finalGrid.m_vPickedPosition, 0.001f);
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).m_qRotation.IsEqualRotation(alignedRotation, 0.001f));
+      gizmo->ConfigureInteraction(axisHandle, &config.m_Camera, finalGrid.m_vPickedPosition, xiiVec2I32(256, 256));
+      gizmo->MousePressEvent(&press);
+      XII_TEST_BOOL(!gizmo->ModifiesRotation());
+      place(center, center, false);
+      XII_TEST_BOOL(!gizmo->ModifiesRotation());
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).m_qRotation.IsEqualRotation(alignedRotation, 0.001f));
+      gizmo->FocusLost(true);
+      xiiEditorInputContext::SetActiveInputContext(nullptr);
+    }
+  }
+}

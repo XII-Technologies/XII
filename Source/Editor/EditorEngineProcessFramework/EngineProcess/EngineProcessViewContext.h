@@ -7,14 +7,14 @@
 #include <Core/Graphics/Camera.h>
 #include <Core/System/Window.h>
 #include <Core/System/WindowManager.h>
-#include <EditorEngineProcessFramework/Rendering/EditorGrid.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
-/// Engine-owned view purposes; only Main uses the asset profile's pipeline selection.
+/// Engine-owned view purposes. Main and scene previews use the asset profile's pipeline selection.
 enum class xiiEditorRenderPipelineUsage
 {
   Main,
+  ScenePreview,
   EditorScene,
   TexturePreview,
   CubeTexturePreview
@@ -100,7 +100,7 @@ protected:
   xiiView*  GetView() const;
   xiiResult ResolveRenderPipeline(xiiEditorRenderPipelineUsage usage, xiiRenderPipelineResourceHandle& out_pipeline);
   void      UpdateRenderPipeline(xiiView& view);
-  /// Submits reusable grid geometry to this view's regular debug-render passes.
+  /// Publishes the procedural grid settings consumed by the Editor grid operation.
   xiiResult DrawGrid(float fSpacing, const xiiTransform& transform = xiiTransform::MakeIdentity(), bool bGlobal = true);
   /// Picks synchronized handles at a window pixel center, accounting for viewport offsets.
   /// Clears all hit fields on failure; document and view routing fields remain unchanged.
@@ -123,7 +123,6 @@ protected:
 
 private:
   xiiEngineProcessDocumentContext* m_pDocumentContext;
-  xiiEditorGrid                    m_Grid;
   const xiiPlatformProfile*        m_pPipelineProfile = nullptr;
   xiiString                        m_sPipelineReference;
   xiiEditorRenderPipelineUsage     m_PipelineUsage           = xiiEditorRenderPipelineUsage::Main;

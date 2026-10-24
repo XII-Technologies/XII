@@ -19,9 +19,9 @@ xiiRotateGizmo::xiiRotateGizmo()
   const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
   const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
 
-  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneX.obj");
-  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneY.obj");
-  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneZ.obj");
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::RotationRing, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::RotationRing, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::RotationRing, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -48,8 +48,11 @@ void xiiRotateGizmo::OnVisibleChanged(bool bVisible)
 
 void xiiRotateGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
-  m_hAxisX.SetTransformation(transform);
-  m_hAxisY.SetTransformation(transform);
+  auto axis        = transform;
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisZ(), xiiVec3::MakeAxisX());
+  m_hAxisX.SetTransformation(axis);
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisZ(), xiiVec3::MakeAxisY());
+  m_hAxisY.SetTransformation(axis);
   m_hAxisZ.SetTransformation(transform);
 }
 
@@ -99,7 +102,9 @@ xiiEditorInput xiiRotateGizmo::DoMousePressEvent(QMouseEvent* e)
 
   m_Rotation = xiiAngle();
 
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  const auto pressPosition = e->globalPosition().toPoint();
+  m_vLastMousePos.Set(pressPosition.x(), pressPosition.y());
 
   m_qStartRotation = GetTransformation().m_qRotation;
 
@@ -128,7 +133,9 @@ xiiEditorInput xiiRotateGizmo::DoMousePressEvent(QMouseEvent* e)
     }
 
     xiiVec3 vDirWS = vPointOnGizmoWS - vGizmoPosWS;
-    vDirWS.NormalizeIfNotZero(xiiVec3(1, 0, 0)).IgnoreResult();
+    vDirWS.NormalizeIfNotZero(vAxisWS.GetOrthogonalVector().GetNormalized()).IgnoreResult();
+    const auto local = m_pInteractionGizmoHandle->GetTransformation().m_qRotation.GetInverse() * vDirWS;
+    m_fArcStart      = xiiMath::ATan2(local.y, local.x).GetRadian();
 
     xiiVec3 vTangentWS = vAxisWS.CrossRH(vDirWS);
     vTangentWS.Normalize();
@@ -140,15 +147,12 @@ xiiEditorInput xiiRotateGizmo::DoMousePressEvent(QMouseEvent* e)
     xiiGraphicsUtils::ConvertWorldPosToScreenPos(mViewProj, 0, 0, m_vViewport.x, m_vViewport.y, vTangentEndWS, vTangentEndSS).IgnoreResult();
     vTangentEndSS.z = 0;
 
+    // ConvertWorldPosToScreenPos already returns window coordinates with Y down,
+    // matching Qt mouse deltas. Flipping again reverses vertical ring gestures.
     const xiiVec3 vTangentSS = vTangentEndSS - vMousePos;
     m_vScreenTangent.Set(vTangentSS.x, vTangentSS.y);
     m_vScreenTangent.NormalizeIfNotZero(xiiVec2(1, 0)).IgnoreResult();
-
-    // because window coordinates are flipped along Y
-    m_vScreenTangent.y = -m_vScreenTangent.y;
   }
-
-  m_LastInteraction = xiiTime::Now();
 
   SetActiveInputContext(this);
 
@@ -168,6 +172,9 @@ xiiEditorInput xiiRotateGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -178,13 +185,6 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 {
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
-
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
 
   const QPoint mousePosition = e->globalPosition().toPoint();
 
@@ -208,6 +208,10 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
   mTrans.m_qRotation  = m_qCurrentRotation * m_qStartRotation;
 
   SetTransformation(mTrans);
+  static_cast<xiiEngineGizmoHandle*>(m_pInteractionGizmoHandle)->SetVisualParameters(m_fArcStart - rot.GetRadian(), rot.GetRadian());
+  xiiStringBuilder feedback;
+  feedback.SetFormat("{} deg", xiiArgF(rot.GetDegree(), 2));
+  static_cast<xiiEngineGizmoHandle*>(m_pInteractionGizmoHandle)->SetInteractionText(feedback);
 
   GetOwnerWindow()->SetPermanentStatusBarMsg(xiiFmt("Rotation: {}", rot));
 

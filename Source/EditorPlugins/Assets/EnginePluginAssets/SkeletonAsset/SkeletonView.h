@@ -20,7 +20,7 @@ protected:
 
   virtual void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg) override;
 
-  void PickObjectAt(xiiUInt16 x, xiiUInt16 y);
+  void PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID, bool bPickGizmos);
 
   xiiSkeletonContext* m_pContext = nullptr;
 };

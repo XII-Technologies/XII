@@ -64,6 +64,9 @@ public:
 
   virtual bool IsPickingSelectedAllowed() const { return true; }
 
+  /// Surface placement tools must pick the scene beneath their visible handles.
+  virtual bool IsPickingGizmosAllowed() const { return true; }
+
   /// How the mouse position is updated when the mouse cursor reaches the screen borders.
   enum class MouseMode
   {
@@ -108,7 +111,7 @@ private:
   xiiQtEngineViewWidget*     m_pOwnerView;
   bool                       m_bDisableShortcuts;
   bool                       m_bJustWrappedMouse;
-  MouseMode                  m_MouseMode;
+  MouseMode                  m_MouseMode = MouseMode::Normal;
   xiiVec2I32                 m_vMouseRestorePosition;
   xiiVec2I32                 m_vMousePosBeforeWrap;
   xiiVec2I32                 m_vExpectedMousePosition;

@@ -9,6 +9,7 @@
 #include <Core/World/WorldDesc.h>
 #include <EditorEngineProcessFramework/Animation/AnimationPreview.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 
@@ -192,8 +193,24 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
       xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
       XII_TEST_RESULT(replacement.Serialize(stream));
       xiiResourceManager::UpdateResourceWithCustomLoader(hReloadableClip, std::move(loader));
-      xiiResourceLock<xiiAnimationClipResource> loaded(hReloadableClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-      XII_TEST_BOOL(loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final);
+      // A custom payload may be queued behind the previous loader's closing
+      // task. A Final acquisition can still contain that previous payload.
+      const auto deadline  = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+      bool       published = false;
+      do
+      {
+        {
+          xiiResourceLock<xiiAnimationClipResource> loaded(hReloadableClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+          if (loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final)
+          {
+            const auto& tracks = loaded->GetDescriptor().m_JointTracks;
+            published          = tracks.GetCount() == 1 && !tracks[0].m_PositionKeys.IsEmpty() && tracks[0].m_PositionKeys.PeekBack().m_Value.x == endPosition;
+          }
+        }
+        if (!published)
+          xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+      } while (!published && xiiTime::Now() < deadline);
+      XII_TEST_BOOL(published);
     };
     PublishClip(4);
     XII_TEST_RESULT(preview.UpdateMesh(*component, hReloadableClip, 0.5));

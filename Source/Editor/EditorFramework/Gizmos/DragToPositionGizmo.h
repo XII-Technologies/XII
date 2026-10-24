@@ -17,8 +17,9 @@ public:
   const xiiQuat GetRotationResult() const { return GetTransformation().m_qRotation; }
 
   virtual bool IsPickingSelectedAllowed() const override { return false; }
+  virtual bool IsPickingGizmosAllowed() const override { return false; }
 
-  /// Returns true if any of the 'align with' handles is selected, and thus the rotation of the dragged object should be modified as well
+  /// True after an axis handle aligns to a mesh in this gesture. Later grid hits retain that orientation.
   bool ModifiesRotation() const { return m_bModifiesRotation; }
 
   virtual void UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow) override;
@@ -43,7 +44,6 @@ protected:
   xiiEngineGizmoHandle m_hAlignNZ;
 
   bool    m_bModifiesRotation;
-  xiiTime m_LastInteraction;
   xiiVec3 m_vStartPosition;
   xiiQuat m_qStartOrientation;
 };

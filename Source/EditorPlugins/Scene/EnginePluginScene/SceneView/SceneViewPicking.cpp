@@ -2,10 +2,13 @@
 
 #include <EnginePluginScene/EnginePluginScenePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
+#include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
 #include <EnginePluginScene/SceneView/SceneView.h>
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
@@ -44,13 +47,53 @@ namespace
     }
     return false;
   }
+
+  bool PickGridPlane(const xiiSceneContext& scene, const xiiView& view, float u, float v, xiiViewPickingResultMsgToEditor& result)
+  {
+    xiiEditorGridConstants settings;
+    if (xiiInfiniteGridPass::ComputeSettings(view, scene.GetGridDensity(), scene.GetGridTransform(), scene.IsGridInGlobalSpace(), settings).Failed())
+      return false;
+
+    // Use the shader's camera-relative projection and plane, including its
+    // orthographic/global-space convention. No finite grid geometry is needed.
+    auto rotationView = view.GetViewMatrix(xiiCameraEye::Left);
+    rotationView.SetTranslationVector(xiiVec3::MakeZero());
+    const auto projection = view.GetProjectionMatrix(xiiCameraEye::Left) * rotationView;
+    auto       inverse    = projection;
+    if (inverse.Invert(0).Failed())
+      return false;
+    xiiVec3 start, end;
+    if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(inverse, xiiVec3(u, v, 1), start, nullptr, xiiClipSpaceDepthRange::ZeroToOne).Failed() ||
+        xiiGraphicsUtils::ConvertScreenPosToWorldPos(inverse, xiiVec3(u, v, 0.0001f), end, nullptr, xiiClipSpaceDepthRange::ZeroToOne).Failed())
+      return false;
+    xiiVec3 direction = end - start;
+    if (direction.NormalizeIfNotZero().Failed())
+      return false;
+    const xiiVec3 normal      = settings.Plane.GetAsVec3();
+    const float   denominator = normal.Dot(direction);
+    if (xiiMath::Abs(denominator) < 1e-7f)
+      return false;
+    const float time = (settings.Plane.w - normal.Dot(start)) / denominator;
+    if (!xiiMath::IsFinite(time) || time < 0)
+      return false;
+    const xiiVec3 hit  = start + direction * time;
+    const auto    clip = projection * hit.GetAsVec4(1);
+    if (!hit.IsValid() || !clip.IsValid() || clip.w <= 0 || clip.z < 0 || clip.z > clip.w)
+      return false;
+    const auto cameraPosition         = view.GetCamera()->GetCenterPosition();
+    result.m_vPickedPosition          = cameraPosition + hit;
+    result.m_vPickedNormal            = denominator < 0 ? normal : -normal;
+    result.m_vPickingRayStartPosition = cameraPosition + start;
+    return true;
+  }
 } // namespace
 
-void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
+void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID, bool bPickGizmos)
 {
   if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
     return;
   xiiViewPickingResultMsgToEditor result;
+  result.m_uiRequestID = uiRequestID;
   result.m_uiPartIndex = 0;
   result.m_vPickedPosition.SetZero();
   result.m_vPickedNormal.SetZero();
@@ -64,7 +107,7 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
   const float              u        = (static_cast<float>(x) + 0.5f - viewport.x) / viewport.width;
   const float              v        = (static_cast<float>(y) + 0.5f - viewport.y) / viewport.height;
   xiiEditorGizmoPickResult gizmo;
-  const bool               hasGizmo     = GetDocumentContext()->PickGizmo(*view, u, v, gizmo).Succeeded();
+  const bool               hasGizmo     = bPickGizmos && GetDocumentContext()->PickGizmo(*view, u, v, gizmo).Succeeded();
   const auto               publishGizmo = [&]() {
     result.m_OtherGuid                = gizmo.m_HandleGuid;
     result.m_vPickedPosition          = gizmo.m_vPosition;
@@ -85,7 +128,7 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
     publishGizmo();
     return;
   }
-  if (const auto* icons = FindScenePass<xiiSceneShapeIconPass>(*view))
+  if (const auto* icons = bPickGizmos ? FindScenePass<xiiSceneShapeIconPass>(*view) : nullptr)
   {
     xiiSceneShapeIconPass::PickingResult hit;
     if (icons->PickIcon(*view, x, y, hit).Succeeded() && !hit.m_hObject.IsInvalidated() && ResolveGuids(*m_pSceneContext, hit.m_hObject, hit.m_hComponent, result))
@@ -102,6 +145,12 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
     result.m_vPickedPosition          = meshHit.m_vWorldPosition;
     result.m_vPickedNormal            = meshHit.m_vWorldNormal;
     result.m_vPickingRayStartPosition = meshHit.m_vRayStart;
+  }
+  else if (!bPickGizmos && meshAvailable && meshHit.m_Source.m_hOwnerObject.IsInvalidated())
+  {
+    // A confirmed background hit may place onto the visible grid. An unavailable
+    // or stale mesh capture must not be disguised as a grid hit.
+    PickGridPlane(*m_pSceneContext, *view, u, v, result);
   }
 }
 

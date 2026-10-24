@@ -16,7 +16,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGizmoHandle, 1, xiiRTTINoAllocator)
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEngineGizmoHandle, 1, xiiRTTIDefaultAllocator<xiiEngineGizmoHandle>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEngineGizmoHandle, 2, xiiRTTIDefaultAllocator<xiiEngineGizmoHandle>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -29,6 +29,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEngineGizmoHandle, 1, xiiRTTIDefaultAllocato
     XII_MEMBER_PROPERTY("Ortho", m_bShowInOrtho),
     XII_MEMBER_PROPERTY("Pickable", m_bIsPickable),
     XII_MEMBER_PROPERTY("FaceCam", m_bFaceCamera),
+    XII_MEMBER_PROPERTY("VisualState", m_iVisualState),
+    XII_MEMBER_PROPERTY("RotationArc", m_vArc),
+    XII_MEMBER_PROPERTY("DragOrigin", m_vDragOrigin),
+    XII_MEMBER_PROPERTY("InteractionText", m_sInteractionText),
   }
   XII_END_PROPERTIES;
 }
@@ -83,6 +87,39 @@ void xiiEngineGizmoHandle::SetColor(const xiiColor& color)
   SetModified();
 }
 
+void xiiEngineGizmoHandle::SetVisualState(xiiGizmoVisualState state)
+{
+  if (m_iVisualState == static_cast<xiiInt32>(state))
+    return;
+  m_iVisualState = static_cast<xiiInt32>(state);
+  SetModified();
+}
+
+void xiiEngineGizmoHandle::SetVisualParameters(float start, float delta)
+{
+  const xiiVec2 arc(start, delta);
+  if (m_vArc == arc)
+    return;
+  m_vArc = arc;
+  SetModified();
+}
+
+void xiiEngineGizmoHandle::SetDragOrigin(const xiiVec3& origin)
+{
+  if (m_vDragOrigin == origin)
+    return;
+  m_vDragOrigin = origin;
+  SetModified();
+}
+
+void xiiEngineGizmoHandle::SetInteractionText(xiiStringView text)
+{
+  if (m_sInteractionText == text)
+    return;
+  m_sInteractionText = text;
+  SetModified();
+}
+
 bool xiiEngineGizmoHandle::SetupForEngine(xiiWorld*, xiiUInt32 uiNextComponentPickingID)
 {
   if (m_uiPickingID != 0 || uiNextComponentPickingID == 0)
@@ -93,5 +130,5 @@ bool xiiEngineGizmoHandle::SetupForEngine(xiiWorld*, xiiUInt32 uiNextComponentPi
 
 void xiiEngineGizmoHandle::UpdateForEngine(xiiWorld*)
 {
-  m_bGeometryDirty |= m_GeometryResult.Failed() || m_iBuiltHandleType != m_iHandleType || m_sBuiltMesh != m_sGizmoHandleMesh || m_bBuiltVisualizer != m_bVisualizer;
+  m_bGeometryDirty |= m_GeometryResult.Failed() || m_iBuiltHandleType != m_iHandleType || m_sBuiltMesh != m_sGizmoHandleMesh;
 }

@@ -16,8 +16,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoGeometry)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "All procedural shapes have valid triangulated geometry")
   {
-    for (xiiUInt32 i = 0; i < static_cast<xiiUInt32>(xiiEngineGizmoHandleType::FromFile); ++i)
+    for (xiiUInt32 i = 0; i <= static_cast<xiiUInt32>(xiiEngineGizmoHandleType::ScaleUniform); ++i)
     {
+      if (i == static_cast<xiiUInt32>(xiiEngineGizmoHandleType::FromFile))
+        continue;
       XII_TEST_BOOL(geometry.Build(static_cast<xiiEngineGizmoHandleType>(i)).Succeeded());
       XII_TEST_BOOL(geometry.GetBounds().IsValid());
       const auto& mesh = geometry.GetGeometry();
@@ -35,6 +37,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoGeometry)
         XII_TEST_BOOL(line.m_uiEndVertex < mesh.GetVertices().GetCount());
       }
     }
+    XII_TEST_RESULT(geometry.Build(xiiEngineGizmoHandleType::TranslationAxis));
+    XII_TEST_FLOAT(geometry.GetBounds().m_vMax.x, 1.0f, 0.0001f);
+    bool tip = false;
+    for (const auto& vertex : geometry.GetGeometry().GetVertices())
+      if (vertex.m_vPosition.IsEqual(xiiVec3::MakeAxisX(), 0.0001f))
+        tip = true;
+    XII_TEST_BOOL(tip);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Triangle hits preserve ray time across rotation and non-uniform scaling")

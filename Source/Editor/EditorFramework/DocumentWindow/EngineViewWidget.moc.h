@@ -90,7 +90,8 @@ public:
   void OpenContextMenu(QPoint globalPos);
 
   /// Starts a picking operation for the given pixel position in this view. Returns the most recent picking information in the meantime.
-  const xiiObjectPickingResult& PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY) const;
+  /// Clicks may request a fresh CPU hit; hover remains asynchronous. The bounded IPC wait never triggers GPU readback.
+  const xiiObjectPickingResult& PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY, bool bWaitForResult = false) const;
 
   /// Similar to PickObject, but computes the intersection with the given plane instead.
   xiiResult PickPlane(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY, const xiiPlane& plane, xiiVec3& out_vPosition) const;
@@ -163,6 +164,7 @@ protected:
   QWidget*     m_pViewportWidget = nullptr;
 
   mutable xiiObjectPickingResult m_LastPickingResult;
+  mutable xiiUInt64              m_uiPickingRequestID = 0;
 
   static InteractionContext s_InteractionContext;
 };
