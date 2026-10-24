@@ -304,7 +304,7 @@ const xiiAnimationClipResourceDescriptor& xiiAnimationClipResource::GetDescripto
   return m_Descriptor;
 }
 
-void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skeleton, xiiTime sampleTime, xiiAnimationPose& ref_pose) const
+void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skeleton, xiiTime sampleTime, xiiAnimationPose& ref_pose, bool bApplyLooping) const
 {
   ref_pose.ResetToRestPose(skeleton);
   if (m_Descriptor.m_bAdditive)
@@ -322,7 +322,7 @@ void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skelet
     if (fOzzDuration > 0.0f)
     {
       float fSampleSeconds = sampleTime.AsFloatInSeconds();
-      if (m_Descriptor.m_bLooping)
+      if (m_Descriptor.m_bLooping && bApplyLooping)
       {
         fSampleSeconds = xiiMath::Mod(fSampleSeconds, fOzzDuration);
         if (fSampleSeconds < 0.0f)
@@ -362,7 +362,9 @@ void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skelet
   float        fTime     = sampleTime.AsFloatInSeconds();
   if (fDuration > 0.0)
   {
-    fTime = m_Descriptor.m_bLooping ? static_cast<float>(xiiMath::Mod(sampleTime.GetSeconds(), fDuration)) : xiiMath::Clamp(fTime, 0.0f, static_cast<float>(fDuration));
+    fTime = m_Descriptor.m_bLooping && bApplyLooping ? static_cast<float>(xiiMath::Mod(sampleTime.GetSeconds(), fDuration)) : xiiMath::Clamp(fTime, 0.0f, static_cast<float>(fDuration));
+    if (fTime < 0)
+      fTime += static_cast<float>(fDuration);
   }
 
   for (const xiiAnimationClipJointTrack& track : m_Descriptor.m_JointTracks)

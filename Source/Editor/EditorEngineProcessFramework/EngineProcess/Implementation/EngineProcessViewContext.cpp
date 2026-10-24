@@ -344,7 +344,8 @@ bool xiiEngineProcessViewContext::FocusCameraOnObject(xiiCamera& inout_camera, c
     if (!vNewCameraPos.IsValid())
       return false;
 
-    inout_camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, fFov, 0.1f, 1000.0f);
+    const float radius = xiiMath::Max(0.001f, objectBounds.GetSphere().m_fRadius);
+    inout_camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, fFov, xiiMath::Max(0.0001f, radius * 0.001f), xiiMath::Max(1.0f, fDistance + radius * 4.0f));
     inout_camera.LookAt(vNewCameraPos, vCenterPosition, xiiVec3(0.0f, 0.0f, 1.0f));
   }
 

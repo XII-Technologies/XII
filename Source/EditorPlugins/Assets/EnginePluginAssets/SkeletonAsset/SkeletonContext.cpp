@@ -160,7 +160,12 @@ xiiResult xiiSkeletonContext::UpdatePreview()
   {
     xiiResourceLock<xiiMeshResource> mesh(pMesh->GetMesh(), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
     if (!mesh || mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
-      return XII_FAILURE;
+    {
+      // A preview mesh is optional, including while a newly imported group is
+      // still transforming. The native skeleton can already be framed and drawn.
+      success = true;
+      return XII_SUCCESS;
+    }
     if (m_uiMeshChangeCounter != mesh->GetCurrentResourceChangeCounter())
     {
       pMesh->ClearMaterialOverrides();
