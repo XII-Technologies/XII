@@ -4,7 +4,20 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <EditorEngineProcessFramework/Rendering/Implementation/EditorViewportUtils.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+
+xiiResult xiiEditorViewportUtils::PixelRatio(const xiiView& view, float& ratio)
+{
+  ratio = 1;
+  if (const auto* value = view.GetPipelineParameters().GetValue("Editor.DevicePixelRatio"))
+  {
+    if (!value->IsA<float>())
+      return XII_FAILURE;
+    ratio = value->Get<float>();
+  }
+  return xiiMath::IsFinite(ratio) && ratio > 0 && ratio <= 8 ? XII_SUCCESS : XII_FAILURE;
+}
 
 xiiResult xiiEditorViewportUtils::LoadPipeline(xiiStringView shader, xiiGALGraphicsPipelineStateCreationDescription& pipeline)
 {

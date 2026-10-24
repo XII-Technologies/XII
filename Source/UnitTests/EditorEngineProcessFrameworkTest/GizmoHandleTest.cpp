@@ -118,6 +118,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoHandles)
     camera.SetCameraMode(xiiCameraMode::OrthoFixedWidth, 8, -100, 100);
     CheckSize(192);
     XII_TEST_RESULT(xiiEngineGizmoHandle::SetGizmoScale(1));
+    view->SetPipelineParameter("Editor.DevicePixelRatio", 2.0f);
+    CheckSize(256);
+    view->RemovePipelineParameter("Editor.DevicePixelRatio");
     view->SetViewport({0, 0, 512, 512});
   }
 
@@ -155,6 +158,38 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoHandles)
     XII_TEST_BOOL(handle.ComputeViewTransform(*view, matrix, fPixelSize).Failed());
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shader descriptions and picking share ring, plane and DPI transforms")
+  {
+    camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 4, 0.1f, 100);
+    camera.LookAt(xiiVec3(0, 0, 5), xiiVec3::MakeZero(), xiiVec3::MakeAxisY());
+    handle.SetTransformation(xiiTransform::MakeIdentity());
+    handle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::RotationRing, xiiColor::Red, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho);
+    xiiMat4 transform;
+    float   pixel, time = -1;
+    XII_TEST_RESULT(handle.ComputeViewTransform(*view, transform, pixel));
+    const auto edge = transform.TransformPosition(xiiVec3::MakeAxisX());
+    XII_TEST_RESULT(handle.PickRay(*view, edge + xiiVec3(0, 0, 5), -xiiVec3::MakeAxisZ(), time));
+    XII_TEST_BOOL(handle.PickRay(*view, xiiVec3(0, 0, 5), -xiiVec3::MakeAxisZ(), time).Failed());
+    handle.SetVisualState(xiiGizmoVisualState::Active);
+    handle.SetVisualParameters(0.2f, 1.3f);
+    handle.SetDragOrigin(xiiVec3(1, 2, 0));
+    xiiDynamicArray<xiiEditorGizmoInstance> instances;
+    xiiVariantArray                         files;
+    XII_TEST_RESULT(handle.AppendRenderData(*view, 0, instances, files));
+    XII_TEST_INT(instances.GetCount(), 1);
+    XII_TEST_INT(instances[0].Identity.x, static_cast<xiiUInt32>(xiiEngineGizmoHandleType::RotationRing));
+    XII_TEST_BOOL((instances[0].Identity.y & XII_EDITOR_GIZMO_ACTIVE) != 0);
+    XII_TEST_FLOAT(instances[0].Parameters.y, 0.2f, 0);
+    XII_TEST_FLOAT(instances[0].Parameters.z, 1.3f, 0);
+    XII_TEST_VEC4(instances[0].GuideStart, xiiVec4(1, 2, -5, 0), 0);
+    handle.SetVisualState(xiiGizmoVisualState::Disabled);
+    XII_TEST_BOOL(handle.PickRay(*view, edge + xiiVec3(0, 0, 5), -xiiVec3::MakeAxisZ(), time).Failed());
+    handle.SetVisualState(xiiGizmoVisualState::Normal);
+    handle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::TranslationPlane, xiiColor::Blue, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho);
+    const auto center = transform.TransformPosition(xiiVec3(0.36f, 0.36f, 0));
+    XII_TEST_RESULT(handle.PickRay(*view, center + xiiVec3(0, 0, 5), -xiiVec3::MakeAxisZ(), time));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IPC updates preserve identity, change topology, and remove picking registrations")
   {
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
@@ -181,6 +216,31 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoHandles)
     farHandle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::Sphere, xiiColor::Red, xiiGizmoFlags::Pickable);
     document.SendHandle(farHandle);
     XII_TEST_INT(document.GetContext().m_OtherPickingMap.GetHandle(farHandle.GetGuid()), farID);
+    farHandle.SetVisualState(xiiGizmoVisualState::Active);
+    farHandle.SetVisualParameters(0.5f, 1.0f);
+    document.SendHandle(farHandle);
+    XII_TEST_RESULT(document.DrawGizmos(*view));
+    const auto* snapshot = view->GetPipelineParameters().GetValue("Editor.Gizmos");
+    XII_TEST_BOOL(snapshot && snapshot->IsA<xiiDataBuffer>());
+    if (snapshot && snapshot->IsA<xiiDataBuffer>())
+    {
+      const auto& bytes  = snapshot->Get<xiiDataBuffer>();
+      bool        active = false;
+      for (xiiUInt32 offset = 0; offset < bytes.GetCount(); offset += sizeof(xiiEditorGizmoInstance))
+      {
+        xiiEditorGizmoInstance instance;
+        xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&instance), bytes.GetData() + offset, sizeof(instance));
+        if (instance.Identity.z == farID)
+        {
+          active = (instance.Identity.y & XII_EDITOR_GIZMO_ACTIVE) != 0;
+          XII_TEST_FLOAT(instance.Parameters.y, 0.5f, 0);
+          XII_TEST_FLOAT(instance.Parameters.z, 1.0f, 0);
+        }
+      }
+      XII_TEST_BOOL(active);
+    }
+    farHandle.SetVisualState(xiiGizmoVisualState::Normal);
+    document.SendHandle(farHandle);
     XII_TEST_RESULT(document.PickGizmo(*view, 0.5f, 0.5f, result));
     XII_TEST_BOOL(result.m_HandleGuid == nearHandle.GetGuid());
     nearHandle.SetVisible(false);

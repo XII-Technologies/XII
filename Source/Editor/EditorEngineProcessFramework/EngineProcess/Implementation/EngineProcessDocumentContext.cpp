@@ -11,6 +11,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
+#include <EditorEngineProcessFramework/Rendering/EditorGizmoPass.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -1004,15 +1005,19 @@ void xiiEngineProcessDocumentContext::UpdateSyncObjects()
   }
 }
 
-xiiResult xiiEngineProcessDocumentContext::DrawGizmos(const xiiView& view)
+xiiResult xiiEngineProcessDocumentContext::DrawGizmos(xiiView& view)
 {
   if (!m_pWorld || view.GetWorld() != m_pWorld)
     return XII_FAILURE;
   xiiResult result = XII_SUCCESS;
+  m_GizmoInstances.Clear();
+  m_GizmoMeshes.Clear();
   for (auto it : m_SyncObjects)
     if (auto* handle = xiiDynamicCast<xiiEngineGizmoHandle*>(it.Value()))
-      if (handle->Draw(view, GetContext().m_uiHighlightID).Failed())
+      if (handle->AppendRenderData(view, GetContext().m_uiHighlightID, m_GizmoInstances, m_GizmoMeshes).Failed())
         result = XII_FAILURE;
+  if (xiiEditorGizmoPass::Submit(view, m_GizmoInstances, m_GizmoMeshes).Failed())
+    result = XII_FAILURE;
   return result;
 }
 

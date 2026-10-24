@@ -140,6 +140,43 @@ xiiResult xiiGizmoGeometry::Build(xiiEngineGizmoHandleType type, xiiStringView s
         return XII_FAILURE;
       }
       break;
+    case xiiEngineGizmoHandleType::TranslationAxis:
+    case xiiEngineGizmoHandleType::ScaleAxis:
+      options.m_MainAxis  = xiiBasisAxis::PositiveX;
+      options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.4f, 0, 0));
+      m_Geometry.AddCylinderOnePiece(0.014f, 0.014f, 0.4f, 0.4f, 16, options);
+      options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.8f, 0, 0));
+      if (type == xiiEngineGizmoHandleType::TranslationAxis)
+      {
+        options.m_MainAxis  = xiiBasisAxis::PositiveZ;
+        options.m_Transform = options.m_Transform * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisZ(), xiiVec3::MakeAxisX()).GetAsMat4();
+        m_Geometry.AddCone(0.065f, 0.2f, true, 24, options);
+      }
+      else
+      {
+        options.m_MainAxis  = xiiBasisAxis::PositiveZ;
+        options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.9f, 0, 0));
+        m_Geometry.AddBox(xiiVec3(0.13f), false, options);
+      }
+      break;
+    case xiiEngineGizmoHandleType::TranslationPlane:
+      options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.36f, 0.36f, 0));
+      m_Geometry.AddRect(xiiVec2(0.28f), 1, 1, options);
+      for (xiiUInt32 i = 0; i < 4; ++i)
+        m_Geometry.AddLine(i, (i + 1) % 4);
+      break;
+    case xiiEngineGizmoHandleType::RotationRing:
+      for (xiiUInt32 i = 0; i < 128; ++i)
+      {
+        const auto angle = xiiAngle::MakeFromDegree(360.0f * i / 128);
+        m_Geometry.AddVertex(xiiVec3(xiiMath::Cos(angle), xiiMath::Sin(angle), 0), xiiVec3::MakeAxisZ());
+      }
+      for (xiiUInt32 i = 0; i < 128; ++i)
+        m_Geometry.AddLine(i, (i + 1) % 128);
+      break;
+    case xiiEngineGizmoHandleType::ScaleUniform:
+      m_Geometry.AddBox(xiiVec3(0.15f), false);
+      break;
     default:
       return XII_FAILURE;
   }

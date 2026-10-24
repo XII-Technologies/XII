@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <Core/Graphics/Geometry.h>
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+
+#include <Core/Graphics/Geometry.h>
 #include <Foundation/Math/BoundingBox.h>
 
 /// Shapes consumed by the Editor's manipulators and component visualizers.
@@ -22,10 +23,16 @@ enum class xiiEngineGizmoHandleType : xiiUInt8
   Cone,
   Frustum,
   FromFile,
+  TranslationAxis,
+  TranslationPlane,
+  RotationRing,
+  ScaleAxis,
+  ScaleUniform,
 };
 
-/// Reusable local geometry for Editor handles. Uses Core geometry generation and the Utilities OBJ loader.
-/// Rendering and picking consume the same vertices; this object owns no world objects or GPU resources.
+/// Local picking geometry and one-time GPU template source for Editor handles.
+/// Procedural ring strokes use the same radius and subdivisions in the shader.
+/// This object owns no world objects or GPU resources; custom meshes use the Utilities OBJ loader.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiGizmoGeometry
 {
 public:

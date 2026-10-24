@@ -8,6 +8,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/WorldRttiConverterContext.h>
 #include <Foundation/Types/Uuid.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
+#include <Shaders/Editor/EditorGizmoData.h>
 
 class xiiEditorEngineSyncObjectMsg;
 class xiiEditorEngineSyncObject;
@@ -111,7 +112,7 @@ public:
 
   /// Submits this document's synchronized handles to the view's normal debug-render graph passes.
   /// Requires exclusive document/world access. A view from another world is rejected.
-  xiiResult DrawGizmos(const xiiView& view);
+  xiiResult DrawGizmos(xiiView& view);
   /// Picks document handles at normalized viewport coordinates. Overlay handles take priority, then
   /// nearest forward ray time; equal hits follow sync GUID order. Misses leave the output unchanged.
   /// Scene geometry occlusion is evaluated by the scene picking consumer using the returned ray time.
@@ -209,6 +210,9 @@ protected:
   xiiHybridArray<xiiEngineProcessViewContext*, 4> m_ViewContexts;
 
   xiiMap<xiiUuid, xiiEditorEngineSyncObject*> m_SyncObjects;
+  // Reused submission scratch under the document world's write marker. Each view owns its snapshot.
+  xiiDynamicArray<xiiEditorGizmoInstance> m_GizmoInstances;
+  xiiVariantArray                         m_GizmoMeshes;
 
 private:
   enum Constants

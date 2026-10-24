@@ -271,6 +271,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("HWND", m_uiHWND),
     XII_MEMBER_PROPERTY("WindowWidth", m_uiWindowWidth),
     XII_MEMBER_PROPERTY("WindowHeight", m_uiWindowHeight),
+    XII_MEMBER_PROPERTY("DevicePixelRatio", m_fDevicePixelRatio),
     XII_MEMBER_PROPERTY("UpdatePickingData", m_bUpdatePickingData),
     XII_MEMBER_PROPERTY("EnablePickSelected", m_bEnablePickingSelected),
     XII_MEMBER_PROPERTY("EnablePickTransparent", m_bEnablePickTransparent),

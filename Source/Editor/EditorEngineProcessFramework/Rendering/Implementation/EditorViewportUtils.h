@@ -3,11 +3,24 @@
 #pragma once
 
 #include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsFoundation/Shader/Types.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
+class xiiView;
+
 namespace xiiEditorViewportUtils
 {
+  inline bool IsFinite(const xiiShaderMat4& matrix)
+  {
+    float elements[16];
+    xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(elements), reinterpret_cast<const xiiUInt8*>(&matrix), sizeof(elements));
+    for (float element : elements)
+      if (!xiiMath::IsFinite(element))
+        return false;
+    return true;
+  }
+  xiiResult PixelRatio(const xiiView& view, float& out_ratio);
   xiiResult LoadPipeline(xiiStringView shader, xiiGALGraphicsPipelineStateCreationDescription& out_pipeline);
   xiiResult ValidateTargets(const xiiRenderGraph& graph, xiiRenderGraphTextureHandle color, xiiRenderGraphTextureHandle depth);
 

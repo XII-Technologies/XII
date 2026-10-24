@@ -6,9 +6,18 @@
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <Foundation/Math/Transform.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <Shaders/Editor/EditorGizmoData.h>
 
 class xiiGizmo;
 class xiiView;
+
+enum class xiiGizmoVisualState : xiiInt32
+{
+  Normal,
+  Selected,
+  Active,
+  Disabled,
+};
 
 struct xiiGizmoFlags
 {
@@ -55,8 +64,8 @@ protected:
   xiiTransform m_Transformation = xiiTransform::MakeIdentity();
 };
 
-/// A synchronized Editor handle, drawn through GraphicsCore debug batches and picked against the same CPU
-/// geometry and view transform. Owns no world objects, components, materials, or GPU resources.
+/// A synchronized Editor handle. Compact view-local descriptions feed the dedicated gizmo
+/// operation; immediate CPU picking uses matching primitive definitions and view transforms.
 /// Access and global scale changes require exclusive Editor/engine-process access, as with other sync objects.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineGizmoHandle : public xiiGizmoHandle
 {
@@ -68,6 +77,9 @@ public:
 
   void      ConfigureHandle(xiiGizmo* pOwner, xiiEngineGizmoHandleType type, const xiiColor& color, xiiBitflags<xiiGizmoFlags> flags, const char* szCustomMesh = nullptr);
   void      SetColor(const xiiColor& color);
+  void      SetVisualState(xiiGizmoVisualState state);
+  void      SetVisualParameters(float fArcStart, float fArcDelta);
+  void      SetDragOrigin(const xiiVec3& vOrigin);
   bool      IsAlwaysOnTop() const { return m_bAlwaysOnTop; }
   xiiUInt32 GetPickingID() const { return m_uiPickingID; }
 
@@ -76,7 +88,7 @@ public:
   /// Invalidates CPU geometry after an IPC update. No world access or allocation is needed here.
   void UpdateForEngine(xiiWorld* pWorld) override;
 
-  /// Positive finite user preference; one local unit occupies 128 pixels when ConstantSize is enabled.
+  /// Positive finite user preference; one local unit occupies 128 logical pixels when ConstantSize is enabled.
   static xiiResult SetGizmoScale(float fScale);
   static float     GetGizmoScale();
 
@@ -84,8 +96,8 @@ public:
   /// center behind the camera. Outputs are unchanged on failure. Camera-facing planes flip local axes
   /// toward the camera, preserving the manipulator's axes instead of rotating them into a billboard.
   xiiResult ComputeViewTransform(const xiiView& view, xiiMat4& out_transform, float& out_fWorldUnitsPerPixel) const;
-  /// Hidden/excluded handles emit nothing successfully. Invalid geometry/settings report failure.
-  xiiResult Draw(const xiiView& view, xiiUInt32 uiHighlightID);
+  /// Hidden/excluded handles emit nothing. Color/transform/state updates never rebuild render geometry.
+  xiiResult AppendRenderData(const xiiView& view, xiiUInt32 uiHighlightID, xiiDynamicArray<xiiEditorGizmoInstance>& instances, xiiVariantArray& customMeshes) const;
   /// Misses and non-pickable visualizers return failure without changing out_fRayTime.
   /// Lines have a four-pixel world-space tolerance. No allocation after geometry has been built.
   xiiResult PickRay(const xiiView& view, const xiiVec3& vStart, const xiiVec3& vDirection, float& out_fRayTime);
@@ -93,7 +105,10 @@ public:
 private:
   xiiResult EnsureGeometry();
 
-  xiiInt32  m_iHandleType = -1;
+  xiiInt32  m_iHandleType  = -1;
+  xiiInt32  m_iVisualState = 0;
+  xiiVec2   m_vArc         = xiiVec2::MakeZero();
+  xiiVec3   m_vDragOrigin  = xiiVec3::MakeZero();
   xiiString m_sGizmoHandleMesh;
   xiiColor  m_Color         = xiiColor::CornflowerBlue;
   bool      m_bConstantSize = false;
@@ -105,10 +120,8 @@ private:
 
   xiiUInt32                      m_uiPickingID = 0;
   xiiUniquePtr<xiiGizmoGeometry> m_pGeometry;
-  xiiUniquePtr<xiiGeometry>      m_pWireGeometry;
   bool                           m_bGeometryDirty   = true;
   xiiResult                      m_GeometryResult   = XII_FAILURE;
   xiiInt32                       m_iBuiltHandleType = -1;
   xiiString                      m_sBuiltMesh;
-  bool                           m_bBuiltVisualizer = false;
 };

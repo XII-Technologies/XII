@@ -1,0 +1,34 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[RENDERSTATE]
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_One
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha0 = BlendFactor_Zero
+DestinationBlendAlpha0 = BlendFactor_One
+DepthEnable = false
+DepthWriteEnable = false
+CullMode = CullMode_None
+
+[VERTEX_SHADER]
+struct VS_OUT { float4 Position : SV_Position; float2 UV : TEXCOORD0; };
+VS_OUT main(uint vertex : SV_VertexID)
+{
+  VS_OUT result;
+  result.UV = float2((vertex << 1) & 2, vertex & 2);
+  result.Position = float4(result.UV * float2(2, -2) + float2(-1, 1), 0, 1);
+  return result;
+}
+
+[PIXEL_SHADER]
+Texture2D<float4> GizmoOverlay;
+float4 main(float4 position : SV_Position, float2 uv : TEXCOORD0) : SV_Target0
+{
+  uint width, height;
+  GizmoOverlay.GetDimensions(width, height);
+  uint2 pixel = min(uint2(saturate(uv) * float2(width, height)), uint2(width - 1, height - 1));
+  return GizmoOverlay.Load(int3(pixel, 0));
+}

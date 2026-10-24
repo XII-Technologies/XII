@@ -12,8 +12,10 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiEditorGridConstants)
   FLOAT4(AxisV);
   FLOAT4(Spacing);
   FLOAT4(Appearance);
+  FLOAT4(AxisColorU);
+  FLOAT4(AxisColorV);
 };
 
 #if XII_DISABLED(XII_SHADER_PLATFORM)
-static_assert(sizeof(xiiEditorGridConstants) == 208);
+static_assert(sizeof(xiiEditorGridConstants) == 240);
 #endif

@@ -267,6 +267,7 @@ public:
   xiiUInt64 m_uiHWND;
   xiiUInt16 m_uiWindowWidth;
   xiiUInt16 m_uiWindowHeight;
+  float     m_fDevicePixelRatio = 1.0f;
   bool      m_bUpdatePickingData;
   bool      m_bEnablePickingSelected;
   bool      m_bEnablePickTransparent;

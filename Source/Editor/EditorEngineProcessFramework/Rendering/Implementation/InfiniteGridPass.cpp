@@ -47,15 +47,24 @@ xiiResult xiiInfiniteGridPass::ComputeSettings(const xiiView& view, float spacin
   if (!relative.IsValid() || !xiiMath::IsFinite(projection) || projection <= 0)
     return XII_FAILURE;
   const double pixel = 2 * (camera->IsOrthographic() ? 1.0 : xiiMath::Max(xiiMath::Abs(distance), double(camera->GetNearPlane()))) / (projection * viewport.height);
-  const double level = xiiMath::Max(0.0, xiiMath::Log10(xiiMath::Max(pixel * 8 / spacing, 1.0)));
+  float        ratio;
+  XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::PixelRatio(view, ratio));
+  const double level = xiiMath::Max(0.0, xiiMath::Log10(xiiMath::Max(pixel * ratio * 8 / spacing, 1.0)));
   const double step  = double(spacing) * xiiMath::Pow(10.0, xiiMath::Floor(level));
   if (!xiiMath::IsFinite(step) || step <= 0 || step > xiiMath::MaxValue<float>() / 100)
     return XII_FAILURE;
-  const double alongU = relative.Dot(xiiVec3d(u.x, u.y, u.z));
-  const double alongV = relative.Dot(xiiVec3d(v.x, v.y, v.z));
-  settings.Plane      = xiiVec4(normal.x, normal.y, normal.z, static_cast<float>(-distance));
-  settings.AxisU      = xiiVec4(u.x, u.y, u.z, static_cast<float>(alongU));
-  settings.AxisV      = xiiVec4(v.x, v.y, v.z, static_cast<float>(alongV));
+  const double alongU  = relative.Dot(xiiVec3d(u.x, u.y, u.z));
+  const double alongV  = relative.Dot(xiiVec3d(v.x, v.y, v.z));
+  settings.Plane       = xiiVec4(normal.x, normal.y, normal.z, static_cast<float>(-distance));
+  settings.AxisU       = xiiVec4(u.x, u.y, u.z, static_cast<float>(alongU));
+  settings.AxisV       = xiiVec4(v.x, v.y, v.z, static_cast<float>(alongV));
+  const auto axisColor = [](const xiiVec3& direction) {
+    const auto axis = direction.Abs();
+    return axis.x >= axis.y && axis.x >= axis.z ? xiiVec4(0.48f, 0.12f, 0.10f, 1) : axis.y >= axis.z ? xiiVec4(0.12f, 0.38f, 0.18f, 1) :
+                                                                                                       xiiVec4(0.12f, 0.22f, 0.48f, 1);
+  };
+  settings.AxisColorU = axisColor(global ? u : xiiVec3::MakeAxisX());
+  settings.AxisColorV = axisColor(global ? v : xiiVec3::MakeAxisY());
   // Periodic phases are reduced before converting to floats. Shader frac never
   // receives huge world coordinates, even for small snap steps far from the origin.
   settings.Spacing  = xiiVec4(static_cast<float>(step), static_cast<float>(level - xiiMath::Floor(level)), static_cast<float>(xiiMath::Mod(alongU, step * 100) / step), static_cast<float>(xiiMath::Mod(alongV, step * 100) / step));
@@ -107,9 +116,18 @@ xiiResult xiiInfiniteGridPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Invalid Editor grid snapshot.");
   xiiEditorGridConstants settings;
   xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&settings), parameter->Get<xiiDataBuffer>().GetData(), sizeof(settings));
+  if (!xiiEditorViewportUtils::IsFinite(settings.RelativeViewProjection) || !xiiEditorViewportUtils::IsFinite(settings.InverseRelativeViewProjection) || !settings.Plane.IsValid() || !settings.AxisU.IsValid() || !settings.AxisV.IsValid() || !settings.Spacing.IsValid() || settings.Spacing.x <= 0)
+    return context.ReportFailure("Invalid Editor grid description.");
   if (!xiiMath::IsFinite(m_fLineWidth) || m_fLineWidth <= 0 || !xiiMath::IsFinite(m_fMinorOpacity) || !xiiMath::IsFinite(m_fMajorOpacity) || m_fMinorOpacity < 0 || m_fMinorOpacity > 1 || m_fMajorOpacity < 0 || m_fMajorOpacity > 1)
     return XII_FAILURE;
-  settings.Appearance = xiiVec4(m_fLineWidth, m_fMinorOpacity, m_fMajorOpacity, 0);
+  float ratio;
+  if (!context.m_pView)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::PixelRatio(*context.m_pView, ratio));
+  const auto* output = context.m_Graph.GetTextureDescription(color);
+  if (!output || context.m_pView->GetViewport().height <= 0)
+    return XII_FAILURE;
+  settings.Appearance = xiiVec4(m_fLineWidth * ratio * output->m_Size.height / context.m_pView->GetViewport().height, m_fMinorOpacity, m_fMajorOpacity, 0);
   auto depth          = context.GetInputTexture(m_InputDepth);
   XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::ValidateTargets(context.m_Graph, color, depth));
   xiiGALGraphicsPipelineStateCreationDescription pipeline;

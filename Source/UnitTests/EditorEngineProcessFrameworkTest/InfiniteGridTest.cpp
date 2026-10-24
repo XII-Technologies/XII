@@ -4,8 +4,12 @@
 
 #include <Core/World/World.h>
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
+#include <EditorEngineProcessFramework/Gizmos/GizmoGeometry.h>
+#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
+#include <EditorEngineProcessFramework/Rendering/EditorGizmoPass.h>
 #include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/Output/PresentPass.h>
@@ -28,10 +32,13 @@ namespace
     settings.Insert("Depth", occluded ? 1.0f : 0.0f);
     descriptor.AddPass("Depth", xiiGetStaticRTTI<xiiDepthTargetPass>(), settings);
     descriptor.AddPass("Grid", xiiGetStaticRTTI<xiiInfiniteGridPass>());
+    descriptor.AddPass("Gizmos", xiiGetStaticRTTI<xiiEditorGizmoPass>());
     descriptor.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>());
     descriptor.Connect(0, "Texture", 2, "Color").AssertSuccess();
     descriptor.Connect(1, "DepthTarget", 2, "SceneDepth").AssertSuccess();
-    descriptor.Connect(2, "Color", 3, "GradedColor").AssertSuccess();
+    descriptor.Connect(2, "Color", 3, "Color").AssertSuccess();
+    descriptor.Connect(1, "DepthTarget", 3, "SceneDepth").AssertSuccess();
+    descriptor.Connect(3, "Color", 4, "GradedColor").AssertSuccess();
     return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(occluded ? "GridTest/Occluded" : "GridTest/Visible", std::move(descriptor));
   }
 
@@ -121,5 +128,131 @@ XII_CREATE_SIMPLE_TEST(EditorViewportVisualization, InfiniteGrid)
     XII_TEST_BOOL(reference.GetByteBlobPtr() == large.GetByteBlobPtr());
     XII_TEST_BOOL(xiiInfiniteGridPass::ConfigureView(*view, -1).Failed());
     XII_TEST_BOOL(!view->GetPipelineParameters().Contains("Editor.Grid"));
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Dedicated gizmo primitives, states, rings and scene-depth policies")
+  {
+    camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 4, 0.1f, 100);
+    camera.LookAt(xiiVec3(0, 0, 5), xiiVec3::MakeZero(), xiiVec3::MakeAxisY());
+    xiiEditorGizmoInstance instance = {};
+    instance.Transform              = xiiMat4::MakeTranslation(xiiVec3(0, 0, -5));
+    instance.Color                  = xiiVec4(0.4f, 0.1f, 0.05f, 1);
+    instance.Parameters             = xiiVec4(2, 0, 1.2f, 1);
+    instance.GuideStart             = xiiVec4::MakeZero();
+    instance.Identity               = xiiVec4U32(xiiUInt32(xiiEngineGizmoHandleType::Box), 0, 42, 0);
+    xiiVariantArray files;
+    files.PushBack(xiiString());
+    auto submit = [&]() {
+      XII_TEST_RESULT(xiiEditorGizmoPass::Submit(*view, xiiArrayPtr<const xiiEditorGizmoInstance>(&instance, 1), files));
+    };
+    submit();
+    const auto normal = draw(0, "Gizmo-Box");
+    XII_TEST_BOOL(VisiblePixels(normal) > 1000);
+    instance.Identity.y = XII_EDITOR_GIZMO_HOVER;
+    submit();
+    const auto hover = draw(0, "Gizmo-Hover");
+    XII_TEST_BOOL(hover.GetPixelPointer<xiiUInt8>(0, 0, 0, 256, 192)[0] > normal.GetPixelPointer<xiiUInt8>(0, 0, 0, 256, 192)[0]);
+    instance.Identity.y = XII_EDITOR_GIZMO_ACTIVE;
+    submit();
+    const auto active = draw(0, "Gizmo-Active");
+    XII_TEST_BOOL(active.GetPixelPointer<xiiUInt8>(0, 0, 0, 256, 192)[0] > hover.GetPixelPointer<xiiUInt8>(0, 0, 0, 256, 192)[0]);
+    view->SetRenderPipelineResource(GridPipeline(true));
+    XII_TEST_INT(VisiblePixels(draw(0, nullptr)), 0);
+    instance.Identity.y = XII_EDITOR_GIZMO_ON_TOP;
+    submit();
+    XII_TEST_BOOL(VisiblePixels(draw(0, "Gizmo-Occluded")) > 1000);
+    view->SetRenderPipelineResource(GridPipeline(false));
+    for (xiiUInt32 shape = 0; shape <= xiiUInt32(xiiEngineGizmoHandleType::ScaleUniform); ++shape)
+    {
+      if (shape == xiiUInt32(xiiEngineGizmoHandleType::FromFile))
+        continue;
+      instance.Identity.x = shape;
+      instance.Identity.y = 0;
+      submit();
+      const auto image = draw(0, shape == XII_EDITOR_GIZMO_RING ? "Gizmo-Ring" : nullptr);
+      XII_TEST_BOOL_MSG(VisiblePixels(image) > 0, "Missing gizmo shape {}", shape);
+      if (shape == XII_EDITOR_GIZMO_RING)
+      {
+        XII_TEST_INT(image.GetPixelPointer<xiiUInt8>(0, 0, 0, 256, 192)[0], 0);
+        instance.Identity.y = XII_EDITOR_GIZMO_ACTIVE;
+        submit();
+        XII_TEST_BOOL(VisiblePixels(draw(0, "Gizmo-RotationDelta")) > 0);
+      }
+    }
+    XII_TEST_RESULT(xiiEditorGizmoPass::Submit(*view, {}, {}));
+    XII_TEST_INT(VisiblePixels(draw(0, nullptr)), 0);
+    XII_TEST_INT(world.GetObjectCount(), 0);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Synchronized transform handles, picking, custom meshes and view isolation")
+  {
+    const xiiColor colors[] = {xiiColor(0.6f, 0.12f, 0.1f), xiiColor(0.1f, 0.5f, 0.18f), xiiColor(0.12f, 0.25f, 0.7f)};
+    for (bool ortho : {false, true})
+    {
+      camera.SetCameraMode(ortho ? xiiCameraMode::OrthoFixedHeight : xiiCameraMode::PerspectiveFixedFovY, ortho ? 5.0f : 60.0f, 0.1f, 100);
+      camera.LookAt(xiiVec3(4, -6, 4), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+      for (auto shape : {xiiEngineGizmoHandleType::TranslationAxis, xiiEngineGizmoHandleType::RotationRing, xiiEngineGizmoHandleType::ScaleAxis})
+      {
+        xiiDynamicArray<xiiEditorGizmoInstance> instances;
+        xiiVariantArray                         files;
+        for (xiiUInt32 axis = 0; axis < 3; ++axis)
+        {
+          xiiEngineGizmoHandle handle;
+          handle.ConfigureHandle(nullptr, shape, colors[axis], xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+          handle.SetVisible(true);
+          auto          transform = xiiTransform::MakeIdentity();
+          const xiiVec3 direction = axis == 0 ? xiiVec3::MakeAxisX() : axis == 1 ? xiiVec3::MakeAxisY() :
+                                                                                   xiiVec3::MakeAxisZ();
+          transform.m_qRotation   = xiiQuat::MakeShortestRotation(shape == xiiEngineGizmoHandleType::RotationRing ? xiiVec3::MakeAxisZ() : xiiVec3::MakeAxisX(), direction);
+          handle.SetTransformation(transform);
+          XII_TEST_RESULT(handle.AppendRenderData(*view, 0, instances, files));
+          xiiMat4 matrix;
+          float   pixel, time;
+          XII_TEST_RESULT(handle.ComputeViewTransform(*view, matrix, pixel));
+          const auto point            = matrix.TransformPosition(shape == xiiEngineGizmoHandleType::RotationRing ? xiiVec3::MakeAxisX() : xiiVec3(0.5f, 0, 0));
+          const auto directionToPoint = (point - camera.GetCenterPosition()).GetNormalized();
+          XII_TEST_RESULT(handle.PickRay(*view, camera.GetCenterPosition(), directionToPoint, time));
+        }
+        XII_TEST_RESULT(xiiEditorGizmoPass::Submit(*view, instances, files));
+        xiiStringBuilder name;
+        name.SetFormat("Gizmo-{}-{}", shape == xiiEngineGizmoHandleType::TranslationAxis ? "Translation" : shape == xiiEngineGizmoHandleType::RotationRing ? "Rotation" :
+                                                                                                                                                             "Scale",
+                       ortho ? "Orthographic" : "Perspective");
+        const auto image = draw(0.25f, name);
+        XII_TEST_BOOL(VisiblePixels(image) > 1000);
+        XII_TEST_BOOL(image.GetByteBlobPtr() == draw(0.25f, nullptr).GetByteBlobPtr());
+      }
+    }
+    xiiView* independent = nullptr;
+    world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Independent Editor viewport", independent);
+    independent->SetCamera(&camera);
+    independent->SetViewport({0, 0, 512, 384});
+    independent->SetRenderPipelineResource(GridPipeline(false));
+    auto otherOutput = environment.GetDevice()->CreateTexture(target);
+    independent->SetRenderTargetView(otherOutput->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    const auto reference = draw(0, nullptr);
+    xiiImage   other;
+    XII_TEST_RESULT(xiiCaptureThumbnail(otherOutput, target.m_Size, other));
+    XII_TEST_INT(VisiblePixels(other), 0);
+    XII_TEST_BOOL(VisiblePixels(reference) > 0);
+    world.GetOrCreateModule<xiiRenderWorldModule>()->DestroyView(independent->GetHandle());
+    {
+      xiiFileWriter file;
+      XII_TEST_RESULT(file.Open(":ViewportCaptures/CustomGizmo.obj"));
+      const xiiStringView mesh = "v -0.5 -0.5 0\nv 0.5 -0.5 0\nv 0 0.5 0\nf 1 2 3\n";
+      XII_TEST_RESULT(file.WriteBytes(mesh.GetStartPointer(), mesh.GetElementCount()));
+    }
+    xiiEngineGizmoHandle custom;
+    custom.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::FromFile, xiiColor::Orange, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho, ":ViewportCaptures/CustomGizmo.obj");
+    custom.SetVisible(true);
+    xiiDynamicArray<xiiEditorGizmoInstance> instances;
+    xiiVariantArray                         files;
+    XII_TEST_RESULT(custom.AppendRenderData(*view, 0, instances, files));
+    XII_TEST_RESULT(xiiEditorGizmoPass::Submit(*view, instances, files));
+    XII_TEST_BOOL(VisiblePixels(draw(0, "Gizmo-Custom")) > 100);
+    target.m_Size = {320, 240};
+    output        = environment.GetDevice()->CreateTexture(target);
+    view->SetRenderTargetView(output->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    view->SetViewport({0, 0, 320, 240});
+    XII_TEST_BOOL(VisiblePixels(draw(0.25f, "Grid-Gizmo-Resized")) > 100);
+    XII_TEST_RESULT(xiiEditorGizmoPass::Submit(*view, {}, {}));
   }
 }
