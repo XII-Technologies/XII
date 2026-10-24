@@ -1,0 +1,83 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[RENDERSTATE]
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_SourceAlpha
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha0 = BlendFactor_Zero
+DestinationBlendAlpha0 = BlendFactor_One
+DepthEnable = false
+DepthWriteEnable = false
+CullMode = CullMode_None
+
+[VERTEX_SHADER]
+struct VS_OUT { float4 Position : SV_Position; float2 UV : TEXCOORD0; };
+VS_OUT main(uint vertex : SV_VertexID)
+{
+  VS_OUT result;
+  result.UV = float2((vertex << 1) & 2, vertex & 2);
+  result.Position = float4(result.UV * float2(2, -2) + float2(-1, 1), 0, 1);
+  return result;
+}
+
+[PIXEL_SHADER]
+#include <Shaders/Editor/EditorGridConstants.h>
+Texture2D<float> SceneDepth;
+
+float2 DerivativeLength(float2 uv)
+{
+  float2 dx = ddx(uv), dy = ddy(uv);
+  return max(float2(length(float2(dx.x, dy.x)), length(float2(dx.y, dy.y))), 1e-7);
+}
+
+float GridCoverage(float2 uv, float pixelWidth)
+{
+  // Derivatives precede frac. Minimum pixel footprints retain proportional coverage;
+  // unresolved periods converge to their area before fading out. Filtering principles:
+  // https://bgolus.medium.com/the-best-darn-grid-shader-yet-727f9278b9d8 (issue #168).
+  float2 footprint = DerivativeLength(uv);
+  float2 intended = min(footprint * pixelWidth, 0.035);
+  float2 drawn = min(max(intended, footprint), 0.5);
+  float2 distance = 1 - abs(frac(uv) * 2 - 1);
+  float2 coverage = 1 - smoothstep(drawn - footprint * 1.5, drawn + footprint * 1.5, distance);
+  coverage *= intended / max(drawn, 1e-7);
+  coverage = lerp(coverage, intended, saturate(footprint * 2 - 1));
+  coverage *= 1 - smoothstep(0.4, 2.0, footprint);
+  return 1 - (1 - coverage.x) * (1 - coverage.y);
+}
+
+float4 main(float4 pixel : SV_Position, float2 uv : TEXCOORD0) : SV_Target0
+{
+  float2 ndc = uv * float2(2, -2) + float2(-1, 1);
+  float4 nearH = mul(InverseRelativeViewProjection, float4(ndc, 1, 1));
+  float4 farH = mul(InverseRelativeViewProjection, float4(ndc, 0.0001, 1));
+  float3 start = nearH.xyz / nearH.w;
+  float3 ray = normalize(farH.xyz / farH.w - start);
+  float denominator = dot(Plane.xyz, ray);
+  float safeDenominator = (denominator < 0 ? -1 : 1) * max(abs(denominator), 1e-7);
+  float time = clamp((Plane.w - dot(Plane.xyz, start)) / safeDenominator, -1e12, 1e12);
+  float3 hit = start + ray * time;
+  float2 planeUV = float2(dot(hit, AxisU.xyz), dot(hit, AxisV.xyz));
+  float2 periodic = planeUV / Spacing.x + Spacing.zw;
+  float blend = Spacing.y;
+  float fine = GridCoverage(periodic, Appearance.x) * Appearance.y * (1 - blend);
+  float medium = GridCoverage(periodic / 10, Appearance.x) * lerp(Appearance.z, Appearance.y, blend);
+  float coarse = GridCoverage(periodic / 100, Appearance.x) * Appearance.z * blend;
+  float coverage = 1 - (1 - fine) * (1 - medium) * (1 - coarse);
+  float2 axisPosition = planeUV + float2(AxisU.w, AxisV.w);
+  float2 footprint = DerivativeLength(planeUV);
+  float2 axis = 1 - smoothstep(footprint * 0.4, footprint * 1.6, abs(axisPosition));
+  float3 color = lerp(float3(0.28, 0.30, 0.33), float3(0.48, 0.12, 0.10), axis.y);
+  color = lerp(color, float3(0.12, 0.38, 0.18), axis.x);
+  coverage = max(coverage, max(axis.x, axis.y) * 0.65);
+  float4 clip = mul(RelativeViewProjection, float4(hit, 1));
+  float depth = clip.z / clip.w;
+  uint width, height;
+  SceneDepth.GetDimensions(width, height);
+  uint2 depthPixel = min(uint2(saturate(uv) * float2(width, height)), uint2(width - 1, height - 1));
+  if (abs(denominator) < 1e-7 || time < 0 || clip.w <= 0 || depth < 0 || depth > 1 || depth + 1e-6 < SceneDepth.Load(int3(depthPixel, 0))) discard;
+  return float4(color, coverage);
+}
