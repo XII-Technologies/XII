@@ -40,7 +40,7 @@ private:
   xiiVec2I32 m_vLastMousePos;
 
   xiiVec3 m_vMoveAxis;
-  xiiMat4 m_mInvViewProj;
+  xiiVec2 m_vScreenAxis;
 };
 
 /// Scale gizmo version that only uses boxes that can be composited with

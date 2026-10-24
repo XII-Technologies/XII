@@ -8,6 +8,7 @@
 #include <EditorFramework/Gizmos/ScaleGizmo.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
+#include <Foundation/Utilities/GraphicsUtils.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScaleGizmo, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -115,11 +116,25 @@ xiiEditorInput xiiScaleGizmo::DoMousePressEvent(QMouseEvent* e)
   m_vScalingResult.Set(1.0f);
   m_vScaleMouseMove.SetZero();
 
-  xiiMat4 mView = m_pCamera->GetViewMatrix();
-  xiiMat4 mProj;
-  m_pCamera->GetProjectionMatrix((float)m_vViewport.x / (float)m_vViewport.y, mProj);
-  xiiMat4 mViewProj = mProj * mView;
-  m_mInvViewProj    = mViewProj.GetInverse();
+  // Uniform scaling keeps the right/up gesture. Axis scaling follows the displayed
+  // local axis, including cameras looking from the opposite side of the gizmo.
+  m_vScreenAxis.Set(1, -1);
+  if (m_pInteractionGizmoHandle != &m_hAxisXYZ)
+  {
+    xiiMat4 projection;
+    m_pCamera->GetProjectionMatrix((float)m_vViewport.x / (float)m_vViewport.y, projection);
+    const xiiMat4 viewProjection = projection * m_pCamera->GetViewMatrix();
+    const auto&   transform      = GetTransformation();
+    const float   distance       = xiiMath::Max(1.0f, (transform.m_vPosition - m_pCamera->GetCenterPosition()).GetLength()) * 0.01f;
+    const xiiVec3 axis           = transform.m_qRotation * m_vMoveAxis;
+    xiiVec3       start, end;
+    if (xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, m_vViewport.x, m_vViewport.y, transform.m_vPosition, start).Succeeded() &&
+        xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, m_vViewport.x, m_vViewport.y, transform.m_vPosition + axis * distance, end).Succeeded())
+    {
+      m_vScreenAxis.Set(end.x - start.x, end.y - start.y);
+      m_vScreenAxis.NormalizeIfNotZero(xiiVec2(1, -1).GetNormalized()).IgnoreResult();
+    }
+  }
 
   SetActiveInputContext(this);
 
@@ -160,8 +175,7 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   m_vLastMousePos = UpdateMouseMode(e);
 
-  m_vScaleMouseMove += m_vMoveAxis * (float)vDiff.x;
-  m_vScaleMouseMove -= m_vMoveAxis * (float)vDiff.y;
+  m_vScaleMouseMove += m_vMoveAxis * m_vScreenAxis.Dot(xiiVec2((float)vDiff.x, (float)vDiff.y));
 
   m_vScalingResult.Set(1.0f);
 

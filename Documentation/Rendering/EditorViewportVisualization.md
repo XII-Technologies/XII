@@ -76,6 +76,17 @@ There is no handle GPU readback or readback dependency during dragging.
 Hover highlighting follows the current asynchronous picking reply. A click uses
 a request identity and a bounded 50 ms IPC wait for its own result, instead of
 starting a drag from the previous cursor position. A timeout yields no hit.
+Drag-to-position requests scene surfaces beneath visible handles and icons. The
+active input context controls this per request and view; ordinary hover picking
+retains handle priority. Movement queries remain asynchronous, while release
+waits for its matching surface query before ending the document interaction.
+
+Rotation tangents use the window coordinates returned by the projection helpers,
+including their existing Y inversion. Axis scaling projects the rotated local
+axis at the gesture origin: moving toward its tip grows that axis, and moving
+toward the pivot shrinks it from either camera side. Uniform scaling retains the
+right/up gesture. Snapping and the Begin/Interaction/End transaction events are
+unchanged.
 
 The global grid remains anchored to world zero during translation and Ctrl
 camera-follow; local grids retain their gesture origin. Axis coverage fades when
@@ -114,10 +125,20 @@ the authored Scene and Editor resources. Generated pipeline binaries remain in
 the ignored asset cache and are never committed.
 
 The native `EditorIntegration/Startup` run exercises click request matching,
-wireframe output, grid visibility and resizing through the real Editor IPC path.
+surface placement with all seven handles, surface-normal alignment and release
+queries after stale misses. It checks axis scaling in both camera projections,
+from opposite camera sides, with rotated local axes, and vertical rotation
+gestures through production input handlers. It also covers wireframe output,
+grid visibility and resizing through the real Editor IPC path.
 Its default-scene blue-atmosphere assertion still fails: the canonical Scene does
 not currently provide that atmosphere output. This limitation is retained as a
 failing acceptance check, not hidden by a fallback or a weakened assertion.
+
+The drag-to-position/direction follow-up rebuilt Editor and both Editor test
+targets in Windows Debug. All new native input assertions passed, including
+seven placement handles and 24 axis-scale gestures. The existing atmosphere
+assertion was the native suite's only failing assertion. All 48 Vulkan
+`EditorViews` subtests and `EditorViewportInteraction/HandleFeedback` passed.
 
 Windows Vulkan validation passed all 76 engine-process subtests, the authored
 asset export tests, Editor document tests and handle-state feedback tests. Native

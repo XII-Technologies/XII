@@ -147,12 +147,11 @@ xiiEditorInput xiiRotateGizmo::DoMousePressEvent(QMouseEvent* e)
     xiiGraphicsUtils::ConvertWorldPosToScreenPos(mViewProj, 0, 0, m_vViewport.x, m_vViewport.y, vTangentEndWS, vTangentEndSS).IgnoreResult();
     vTangentEndSS.z = 0;
 
+    // ConvertWorldPosToScreenPos already returns window coordinates with Y down,
+    // matching Qt mouse deltas. Flipping again reverses vertical ring gestures.
     const xiiVec3 vTangentSS = vTangentEndSS - vMousePos;
     m_vScreenTangent.Set(vTangentSS.x, vTangentSS.y);
     m_vScreenTangent.NormalizeIfNotZero(xiiVec2(1, 0)).IgnoreResult();
-
-    // because window coordinates are flipped along Y
-    m_vScreenTangent.y = -m_vScreenTangent.y;
   }
 
   SetActiveInputContext(this);
