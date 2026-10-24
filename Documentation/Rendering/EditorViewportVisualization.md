@@ -78,7 +78,13 @@ a request identity and a bounded 50 ms IPC wait for its own result, instead of
 starting a drag from the previous cursor position. A timeout yields no hit.
 Drag-to-position requests scene surfaces beneath visible handles and icons. The
 active input context controls this per request and view; ordinary hover picking
-retains handle priority. Movement queries remain asynchronous, while release
+retains handle priority. The active placement view continues capturing surfaces
+when hover-based picking is disabled, and selected-object exclusions apply only
+to that view. Mesh surfaces take priority. A confirmed background hit may
+intersect the visible grid plane using the shader's camera-relative settings;
+the grid supplies a position and normal without a selectable object identity.
+Hidden grids, out-of-range intersections and unavailable mesh captures do not
+produce grid hits. Movement queries remain asynchronous, while release
 waits for its matching surface query before ending the document interaction.
 
 Rotation tangents use the window coordinates returned by the projection helpers,
@@ -139,6 +145,18 @@ targets in Windows Debug. All new native input assertions passed, including
 seven placement handles and 24 axis-scale gestures. The existing atmosphere
 assertion was the native suite's only failing assertion. All 48 Vulkan
 `EditorViews` subtests and `EditorViewportInteraction/HandleFeedback` passed.
+
+`EditorViewportInteraction/PlacementDocument` exercises the production edit tool
+and document commands, including repeated updates and undo/redo. On Windows it
+also renders two real meshes through a hidden Vulkan viewport, drives mouse-move
+handlers and checks the selected object's document position. Its capture-disabled
+mesh case and empty-grid case both failed before their respective fixes. It covers
+perspective-grid placement, global/local orthographic planes, cancellation and
+hidden-grid rejection without presenting windows or injecting desktop input.
+Windows Debug builds and the focused placement tests passed. All 48 Vulkan
+`EditorViews` subtests passed on repeat; the first broader run hit the unchanged
+`AnimationGraphAsset` identical-descriptor reload assertion (root position 4
+instead of 1). The Vulkan infinite-grid rendering/readback test also passed.
 
 Windows Vulkan validation passed all 76 engine-process subtests, the authored
 asset export tests, Editor document tests and handle-state feedback tests. Native

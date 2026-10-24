@@ -176,9 +176,8 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
   // Movement uses asynchronous surface queries; release must consume its own position.
   const xiiObjectPickingResult& res = GetOwnerView()->PickObject(e->pos().x(), e->pos().y(), e->type() == QEvent::MouseButtonRelease);
 
-  if (!res.m_PickedObject.IsValid())
-    return xiiEditorInput::WasExclusivelyHandled;
-
+  // The procedural grid supplies a surface position/normal without a selectable
+  // object identity. Handles, misses and unavailable captures have no normal.
   if (!res.m_vPickedPosition.IsValid() || !res.m_vPickedNormal.IsValid() || res.m_vPickedNormal.IsZero())
     return xiiEditorInput::WasExclusivelyHandled;
 
