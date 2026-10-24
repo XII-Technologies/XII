@@ -102,7 +102,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshImportGeometry)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Generated LODs use native sections and meshlet ranges")
   {
-    options = {};
+    options                   = {};
     options.m_uiGeneratedLODs = 2;
     xiiModelMeshImport lodMesh;
     if (!XII_TEST_RESULT(xiiModelMeshImport::ReadFile(source, options, lodMesh, &error)))

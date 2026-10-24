@@ -2,11 +2,12 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Math/Quat.h>
 #include <Foundation/Time/Time.h>
 #include <GraphicsCore/AnimationSystem/AnimationPose.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 using xiiAnimationClipResourceHandle = xiiTypedResourceHandle<class xiiAnimationClipResource>;
 

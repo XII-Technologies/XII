@@ -365,9 +365,27 @@ void xiiMeshResourceDescriptor::ComputeBounds()
 
 xiiResult xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives)
 {
-  // Existing buffers already own their clusters. Preserve explicitly supplied section ranges.
+  // Existing buffers already own their clusters. A whole-buffer wrapper still
+  // needs explicit ranges: residency treats an authored zero-count LOD as empty.
   if (m_hMeshBuffer.IsValid())
+  {
+    xiiResourceLock<xiiMeshBufferResource> buffer(m_hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!buffer || buffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      return XII_FAILURE;
+    if (m_LODs.GetCount() == 1 && m_Sections.GetCount() == 1 && m_LODs[0].m_Sections.GetCount() == 1 &&
+        m_LODs[0].m_uiMeshletCount == 0 && m_Sections[0].m_uiFirstPrimitive == 0 &&
+        m_Sections[0].m_uiPrimitiveCount == buffer->GetPrimitiveCount())
+    {
+      const auto count               = buffer->GetMeshletCount();
+      m_Sections[0].m_uiFirstMeshlet = 0;
+      m_Sections[0].m_uiMeshletCount = count;
+      m_LODs[0].m_uiFirstMeshlet     = 0;
+      m_LODs[0].m_uiMeshletCount     = count;
+      m_LODs[0].m_Sections[0]        = m_Sections[0];
+      m_UsageFlags.AddOrRemove(xiiMeshResourceUsageFlags::MeshShaderReady, count > 0);
+    }
     return XII_SUCCESS;
+  }
 
   m_UsageFlags.Remove(xiiMeshResourceUsageFlags::MeshShaderReady);
   for (auto& section : m_Sections)

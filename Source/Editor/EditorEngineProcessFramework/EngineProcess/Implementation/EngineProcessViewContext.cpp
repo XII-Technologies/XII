@@ -230,6 +230,17 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain
   }
   if (auto* view = GetView())
   {
+    if (pRenderTargetView != nullptr && m_PipelineUsage == xiiEditorRenderPipelineUsage::ScenePreview)
+    {
+      // A short thumbnail capture cannot adapt exposure reliably against its
+      // mostly black background. Use stable studio exposure for asset inspection.
+      xiiVariantDictionary exposure;
+      exposure.Insert("Mode", static_cast<xiiInt32>(xiiExposureMode::Manual));
+      exposure.Insert("ExposureCompensation", 0.0f);
+      xiiVariantDictionary display;
+      display.Insert("Exposure", exposure);
+      view->SetPipelineParameter("DisplayOutput", display);
+    }
     view->SetSwapChain(pSwapChain.Borrow());
     view->SetRenderTargetView(pRenderTargetView);
     view->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(uiWidth), static_cast<float>(uiHeight)));
@@ -250,6 +261,9 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
 
+        // Thumbnail views have no camera messages. Retry resource-dependent
+        // pipeline composition here as well once the scene resource has loaded.
+        UpdateRenderPipeline(*pView);
         pView->SetRenderEnabled(true);
         const xiiTag& editorTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
 

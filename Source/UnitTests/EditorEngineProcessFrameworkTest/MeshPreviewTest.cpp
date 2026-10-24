@@ -83,8 +83,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   xiiConversionUtils::ToString(documentId, meshId);
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
+  xiiMeshBufferResourceDescriptor sharedBuffer;
+  sharedBuffer.AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList);
+  const auto                sharedBufferHandle = xiiResourceManager::CreateResource<xiiMeshBufferResource>("MeshPreview/SharedBuffer", std::move(sharedBuffer));
   xiiMeshResourceDescriptor descriptor;
-  descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, false);
+  descriptor.UseExistingMeshBuffer(sharedBufferHandle);
   descriptor.AddSection(12, 0, 0);
   descriptor.ComputeBounds();
   const auto importSource = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-importModel");

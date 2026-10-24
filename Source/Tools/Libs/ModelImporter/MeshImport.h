@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include <ModelImporter/ModelImporterDLL.h>
+
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
-#include <ModelImporter/ModelImporterDLL.h>
 
 /// Color conversion applied before packing imported vertex colors into native linear bytes.
 struct XII_MODELIMPORTER_DLL xiiModelVertexColorConversion

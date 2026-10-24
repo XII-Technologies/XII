@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <ModelImporter/ModelImporterDLL.h>
+
+#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 
 class xiiStringBuilder;
 
