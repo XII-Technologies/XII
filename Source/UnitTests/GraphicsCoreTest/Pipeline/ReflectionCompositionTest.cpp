@@ -30,11 +30,11 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredReflectionComposition)
   XII_TEST_BOOL(pins[replace.m_Scene.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::ShaderResource));
   XII_TEST_BOOL(!pins[replace.m_Scene.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
   XII_TEST_BOOL(pins[replace.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA32Float);
-  const auto                                 resource = xiiLoadPipelineLibraryResource("ReflectionComposition");
+  const auto                                 resource = xiiCreateReflectionCompositionTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
-  XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 2);
+  XII_TEST_INT(loaded->GetAuthoring()->m_Descriptor.m_Passes.GetCount(), 3);
   XII_TEST_INT(loaded->GetPipeline()->GetExecutionOrder().GetCount(), 3);
   XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet() && loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
   xiiRenderPipelineResourceDescriptor root;

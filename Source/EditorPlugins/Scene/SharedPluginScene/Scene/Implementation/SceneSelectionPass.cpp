@@ -51,8 +51,7 @@ xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
   const auto* output     = context.m_Graph.GetTextureDescription(color);
   const auto* sceneDepth = context.m_Graph.GetTextureDescription(depth);
   const auto* surface    = context.m_Graph.GetTextureDescription(selection);
-  const auto& viewport   = context.m_pView->GetViewport();
-  if (!output || !sceneDepth || !surface || output->m_Type != xiiGALResourceDimension::Texture2D || sceneDepth->m_Type != xiiGALResourceDimension::Texture2D || surface->m_Type != xiiGALResourceDimension::Texture2D || output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || surface->m_uiSampleCount != 1 || !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !surface->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) || viewport.x < 0 || viewport.y < 0 || viewport.x + viewport.width > output->m_Size.width || viewport.y + viewport.height > output->m_Size.height)
+  if (!output || !sceneDepth || !surface || output->m_Type != xiiGALResourceDimension::Texture2D || sceneDepth->m_Type != xiiGALResourceDimension::Texture2D || surface->m_Type != xiiGALResourceDimension::Texture2D || output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || surface->m_uiSampleCount != 1 || !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !surface->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) || !output->m_Size.HasNonZeroArea())
     return XII_FAILURE;
   auto shader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Editor/SceneSelection.xiiShader");
   auto permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
@@ -123,8 +122,8 @@ xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
       return;
     }
     auto& commands = execution.GetCommandList();
-    const auto& viewport = execution.GetView()->GetViewport();
-    commands.SetViewport({viewport.x, viewport.y, viewport.width, viewport.height, 0, 1});
+    const auto size     = execution.GetTexture(data.m_Color)->GetDescription().m_Size;
+    commands.SetViewport({0, 0, float(size.width), float(size.height), 0, 1});
     commands.SetPipelineState(state.Borrow());
     commands.ResolveAndSetConstantBuffer("xiiSceneSelectionConstants", execution.GetBuffer(data.m_Constants), xiiGALShaderType::Pixel);
     commands.ResolveAndSetShaderResourceTextureView("SceneDepth", execution.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);

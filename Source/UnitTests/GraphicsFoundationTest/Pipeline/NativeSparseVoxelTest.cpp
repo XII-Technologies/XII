@@ -100,7 +100,7 @@ XII_CREATE_SIMPLE_TEST(NativeSparseVoxel, IndependentResidencyPagesBudgetsRefres
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("SparseVoxelEnvironment");
+  const auto                                 asset = xiiMakeReloadablePipelineTestResource(xiiCreateSparseVoxelEnvironmentTestResource(), "Reloadable sparse fixture");
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
@@ -297,7 +297,7 @@ XII_CREATE_SIMPLE_TEST(NativeSparseVoxel, AuthoritativeWorldAndIndependentCamera
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 directionalAsset = xiiLoadPipelineLibraryResource("WorldDirectionalLight"), environmentAsset = xiiLoadPipelineLibraryResource("EnvironmentLightConstants"), probesAsset = xiiLoadPipelineLibraryResource("SparseVoxelEnvironment");
+  const auto                                 directionalAsset = xiiCreateWorldDirectionalLightTestResource(), environmentAsset = xiiCreateEnvironmentLightConstantsTestResource(), probesAsset = xiiCreateSparseVoxelEnvironmentTestResource();
   xiiResourceLock<xiiRenderPipelineResource> directional(directionalAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), illumination(environmentAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), probes(probesAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(directional.IsValid() && illumination.IsValid() && probes.IsValid() && directional->GetAuthoring() && illumination->GetAuthoring() && probes->GetAuthoring()))
     return;

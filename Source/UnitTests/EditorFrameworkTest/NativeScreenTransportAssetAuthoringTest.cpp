@@ -26,7 +26,7 @@ namespace
   {
     xiiPipelineTestAuthor author(path, "ScreenDiffuseLighting");
     XII_SUCCEED_OR_RETURN(author.Init());
-    const auto* trace       = author.Reference("Gather Incident Irradiance", "ScreenIrradiance", {0, 0});
+    const auto* trace       = author.Reference("Gather Incident Irradiance", xiiCreateScreenIrradianceTestResource(), {0, 0});
     const auto* environment = author.Add("No Additional Ambient Baseline", "xiiEnvironmentLightConstantsPass", {700, 1000});
     const auto* diffuse     = author.Add("Evaluate Diffuse Material", "xiiDiffuseSurfaceLightingPass", {1400, 0});
     XII_SUCCEED_OR_RETURN(author.Set(environment, "AmbientRadiance", xiiVec3::MakeZero()));
@@ -47,7 +47,7 @@ namespace
   {
     xiiPipelineTestAuthor author(path, "ScreenRefraction");
     XII_SUCCEED_OR_RETURN(author.Init());
-    const auto* trace  = author.Reference("Sample Background Refraction", "ScreenRefractionTrace", {0, 0});
+    const auto* trace  = author.Reference("Sample Background Refraction", xiiCreateScreenRefractionTraceTestResource(), {0, 0});
     const auto* weight = author.Add("Apply Transmission Weight", "xiiConfidenceRadiancePass", {700, 0});
     const auto* sum    = author.Add("Add Transmitted Radiance", "xiiRadianceAddPass", {1400, 0});
     for (const xiiStringView pin : {"Depth", "Normal", "Material", "Emissive"})
@@ -66,13 +66,13 @@ namespace
   {
     xiiPipelineTestAuthor author(path, "ScreenEffects");
     XII_SUCCEED_OR_RETURN(author.Init());
-    const auto* diffuse          = author.Reference("Screen Diffuse Lighting", "ScreenDiffuseLighting", {0, 0});
+    const auto* diffuse          = author.Reference("Screen Diffuse Lighting", xiiCreateScreenDiffuseLightingTestResource(), {0, 0});
     const auto* selectGI         = author.Add("Select Screen Lighting", "xiiTextureSelectionPass", {700, 0});
     const auto* sum              = author.Add("Add Screen Lighting", "xiiRadianceAddPass", {1400, 0});
     const auto* selectBackground = author.Add("Select Refraction Background", "xiiTextureSelectionPass", {2100, 0});
-    const auto* refract          = author.Reference("Screen Refraction", "ScreenRefraction", {2800, 0});
+    const auto* refract          = author.Reference("Screen Refraction", xiiCreateScreenRefractionTestResource(), {2800, 0});
     const auto* settings         = author.Add("World Atmosphere Parameters", "xiiAtmosphereConstantsPass", {2800, 1200});
-    const auto* atmosphere       = author.Reference("Atmospheric View", "AtmosphereApply", {3700, 0});
+    const auto* atmosphere       = author.Reference("Atmospheric View", xiiCreateAtmosphereApplyTestResource(), {3700, 0});
     XII_SUCCEED_OR_RETURN(author.Set(settings, "UseWorldAtmosphere", true));
     for (const xiiStringView pin : {"Depth", "Normal", "Material", "Emissive"})
     {

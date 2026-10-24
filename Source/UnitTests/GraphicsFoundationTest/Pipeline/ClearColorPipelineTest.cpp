@@ -9,7 +9,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/Passes/Output/PresentPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearColorPass.h>
-#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -36,7 +36,7 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid texture and color properties are rejected without GPU work")
   {
-    xiiCreateTexturePass create;
+    xiiClearTexturePass  create;
     xiiVariantDictionary properties;
     create.m_OutputTexture.SetFormat(xiiGALResourceFormat::D32Float);
     XII_TEST_RESULT(create.GetProperties(properties));
@@ -56,23 +56,24 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
   }
 
   xiiRenderPipelineResourceDescriptor descriptor;
-  const auto                          uiCreate = descriptor.AddPass("Create Texture", xiiGetStaticRTTI<xiiCreateTexturePass>());
   xiiVariantDictionary                properties;
   properties.Insert("Color", xiiColor::Red);
-  const auto uiClear   = descriptor.AddPass("Clear Color", xiiGetStaticRTTI<xiiClearColorPass>(), properties);
+  const auto uiClear   = descriptor.AddPass("Clear Color", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
   const auto uiPresent = descriptor.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>());
-  if (!XII_TEST_RESULT(descriptor.Connect(uiCreate, "Texture", uiClear, "Texture")) ||
-      !XII_TEST_RESULT(descriptor.Connect(uiClear, "Texture", uiPresent, "GradedColor")))
+  descriptor.m_Interface.PushBack({"ViewTarget", true, descriptor.m_Passes[uiPresent].m_Id, "Target"});
+  if (!XII_TEST_RESULT(descriptor.Connect(uiClear, "Texture", uiPresent, "GradedColor")))
     return;
 
-  auto                 fixedDescriptor = descriptor;
-  xiiCreateTexturePass fixedTexture;
+  auto                fixedDescriptor = descriptor;
+  xiiClearTexturePass fixedTexture;
+  fixedTexture.m_Color = xiiColor::Red;
   fixedTexture.m_OutputTexture.SetFormat(xiiGALResourceFormat::RGBA8UNormalized);
   auto fixedRequirements       = fixedTexture.m_OutputTexture.GetRequirements();
   fixedRequirements.m_uiWidth  = 8;
   fixedRequirements.m_uiHeight = 12;
   fixedTexture.m_OutputTexture.SetRequirements(fixedRequirements);
-  XII_TEST_RESULT(fixedTexture.GetProperties(fixedDescriptor.m_Passes[uiCreate].m_Properties));
+  fixedTexture.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 8, 12});
+  XII_TEST_RESULT(fixedTexture.GetProperties(fixedDescriptor.m_Passes[uiClear].m_Properties));
   const auto hFixed                   = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Explicit texture pin pipeline", std::move(fixedDescriptor));
   const auto hFallback                = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Clear color pipeline test fallback", std::move(descriptor));
   const auto hPreviousLoadingFallback = xiiResourceManager::GetResourceTypeLoadingFallback<xiiRenderPipelineResource>();
@@ -88,6 +89,7 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
     xiiTestLogInterface   log;
     xiiTestLogSystemScope logScope(&log, true);
     log.ExpectMessage("Missing Resource of Type 'xiiRenderPipelineResource'", xiiLogMsgType::SeriousWarningMsg);
+    log.ExpectMessage("is missing or failed to compile", xiiLogMsgType::ErrorMsg);
     xiiRenderPipelineInstance loadingInstance;
     XII_TEST_RESULT(loadingInstance.Synchronize(hMissing));
     XII_TEST_BOOL(loadingInstance.GetPipeline() != nullptr);
@@ -108,6 +110,9 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
   pView->SetCamera(&camera);
   pView->SetRenderPipelineResource(hMissing);
 
+  xiiTestLogInterface   fallbackLog;
+  xiiTestLogSystemScope fallbackLogScope(&fallbackLog, true);
+  fallbackLog.ExpectMessage("is missing or failed to compile", xiiLogMsgType::ErrorMsg);
   xiiUInt32 uiFrame = 0;
   for (const xiiSizeU32 size : {xiiSizeU32(16, 24), xiiSizeU32(32, 16), xiiSizeU32(24, 24)})
   {
@@ -130,10 +135,10 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
     const auto& instance = pView->GetRenderPipelineInstance();
     if (!XII_TEST_BOOL(instance.GetPipeline() != nullptr))
       return;
-    XII_TEST_INT(instance.GetPipeline()->GetExecutionOrder().GetCount(), 3);
+    XII_TEST_INT(instance.GetPipeline()->GetExecutionOrder().GetCount(), 2);
     XII_TEST_BOOL(instance.GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
     XII_TEST_INT(pView->GetRenderGraph()->GetStatistics().m_uiCompiledPassCount, 2);
-    const auto* pCreated = instance.GetOutputBinding(uiCreate, "Texture");
+    const auto* pCreated = instance.GetOutputBinding(uiClear, "Texture");
     if (XII_TEST_BOOL(pCreated != nullptr))
     {
       const auto* pDescription = pView->GetRenderGraph()->GetTextureDescription(pCreated->m_hTexture);

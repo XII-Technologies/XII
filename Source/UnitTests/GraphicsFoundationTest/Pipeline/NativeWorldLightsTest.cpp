@@ -74,7 +74,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("WorldLightsUpload");
+  const auto                                 asset = xiiCreateWorldLightsUploadTestResource();
   xiiResourceLock<xiiRenderPipelineResource> source(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(source.IsValid() && source->GetAuthoring() && source->GetPipeline()))
     return;
@@ -88,7 +88,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
     XII_TEST_RESULT(root.Connect(upload, name, retain, "Input"));
     root.m_Interface.PushBack({name, false, root.m_Passes[retain].m_Id, "Output"});
   }
-  const auto                                 clusterAsset = xiiLoadPipelineLibraryResource("ClusterLightLists");
+  const auto                                 clusterAsset = xiiCreateClusterLightListsTestResource();
   xiiResourceLock<xiiRenderPipelineResource> clusterDefinition(clusterAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(clusterDefinition.IsValid() && clusterDefinition->GetAuthoring()))
     return;

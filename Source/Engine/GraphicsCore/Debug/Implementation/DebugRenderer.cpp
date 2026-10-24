@@ -2611,7 +2611,8 @@ void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData
 
   cmd.BeginDebugGroup("DebugVisualization");
   {
-    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(uiViewportWidth), static_cast<float>(uiViewportHeight), 0.0f, 1.0f});
+    const auto targetSize = pSceneColor->GetDescription().m_Size;
+    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(targetSize.width), static_cast<float>(targetSize.height), 0.0f, 1.0f});
     DrawWorldSpaceContext(drawState, pPreparedViewData->m_WorldContext);
     DrawWorldSpaceContext(drawState, pPreparedViewData->m_ViewContext);
     DrawOverlayContext(drawState, pPreparedViewData->m_WorldContext);

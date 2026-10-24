@@ -639,6 +639,7 @@ void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext
     view.m_ExtractionRequirements = {};
     view.m_RuntimeFeatures        = {};
     view.m_ExtractionStatistics   = {};
+    view.m_LastRenderResult       = XII_FAILURE;
     if (view.IsRenderEnabled() && view.IsValid() && view.SynchronizeRenderPipeline().Succeeded())
     {
       detail.m_bPrepared = true;
@@ -901,7 +902,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     compileSettings.m_bEnableCompileCache = true;
 
     xiiStringBuilder graphError;
-    if (xiiRenderGraphManager::ExecuteGraph(frame, viewDetail.m_pView->m_hRenderGraph, viewDetail.m_pView.Borrow(), compileSettings, &graphError).Failed())
+    viewDetail.m_pView->m_LastRenderResult = xiiRenderGraphManager::ExecuteGraph(frame, viewDetail.m_pView->m_hRenderGraph, viewDetail.m_pView.Borrow(), compileSettings, &graphError);
+    if (viewDetail.m_pView->m_LastRenderResult.Failed())
     {
       viewDetail.m_pView->InvalidateTemporalHistory();
       xiiLog::Error("Failed to execute render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);

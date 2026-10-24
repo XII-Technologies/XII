@@ -1,5 +1,8 @@
 # Editor-authored rendering migration
 
+> Historical migration record. Current defaults, retired assets and validation
+> boundaries are documented in [SceneRenderer.md](SceneRenderer.md).
+
 ## Audit baseline
 
 Branch `TE/RenderPipelinePasses` starts at `0172d45c7`. This document tracks the

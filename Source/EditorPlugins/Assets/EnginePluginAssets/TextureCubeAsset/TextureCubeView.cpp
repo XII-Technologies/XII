@@ -20,7 +20,7 @@ xiiTextureCubeViewContext::~xiiTextureCubeViewContext() = default;
 xiiViewHandle xiiTextureCubeViewContext::CreateView()
 {
   xiiRenderPipelineResourceHandle pipeline;
-  if (ResolveRenderPipeline(xiiRenderPipelineUsage::CubeTexturePreview, pipeline).Failed())
+  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::CubeTexturePreview, pipeline).Failed())
     return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("TextureCube Editor - View", pView);

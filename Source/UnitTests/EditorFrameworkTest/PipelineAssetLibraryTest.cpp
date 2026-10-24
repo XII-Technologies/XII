@@ -13,6 +13,7 @@
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
@@ -26,7 +27,14 @@ namespace
     explicit PipelineLibraryDocument(xiiStringView path) : xiiRenderPipelineAssetDocument(path, xiiAssetDocEngineConnection::None)
     {
       m_pDocumentInfo = CreateDocumentInfo();
+      static xiiAssetDocumentTypeDescriptor descriptor;
+      descriptor.m_sDocumentTypeName  = "RenderPipeline";
+      descriptor.m_AssetDocumentFlags = xiiAssetDocumentFlags::DisableTransform;
+      m_pTypeDescriptor               = &descriptor;
     }
+
+  protected:
+    void InternalAfterSaveDocument() override {}
   };
   class PipelineLibraryContext : public xiiRenderPipelineContext
   {
@@ -68,13 +76,16 @@ namespace
   }
 } // namespace
 
-XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
+void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene);
+
+XII_CREATE_SIMPLE_TEST_GROUP(RendererAssets);
+XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
 {
-  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLibraryTest", "PipelineLibrary", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLibraryTest", "PipelineLibrary", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base/AssetCache/Common", "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
   // Export dependencies first so resource references resolve to the freshly rebuilt library in the output directory.
-  for (const xiiStringView name : {"AmbientOcclusion", "AtmosphereApply", "AtmosphereConstants", "AtmosphereMultiScatter", "AtmosphereTransmittance", "AtmosphereLookup", "BufferExport", "ClusterBounds", "ClusterLightAssignment", "ClusterLightLists", "ClusterLightSampling", "ClusterListClear", "ClusteredLocalSurfaceLighting", "ConfidenceBlend", "ConfidenceRadiance", "DDGIAtlasPrepare", "DDGIEnvironmentProbes", "DDGIEnvironmentSeed", "DDGIProbeSchedule", "DDGIProbeUpload", "DebugVisualization", "HdrDisplay", "WorldDirectionalLight", "EnvironmentLightConstants", "WorldLightsUpload", "WorldSurfaceLighting", "InstanceVisibility", "MeshletVisibility", "VertexPullDraws", "GBuffer", "WorldDeferredLighting", "DeferredOpaque", "DepthOnly", "DepthPyramid", "DepthSensor", "DepthSensorDiagnostic", "DiffuseSurfaceLighting", "DirectionalMesh", "DirectionalMeshConstants", "DirectionalSurfaceLighting", "SurfaceQuery", "EditorMeshPicking", "EnvironmentSpecular", "GeometryLodFeedback", "InfraredSensor", "InstanceOcclusion", "IrradianceLayer", "LayeredDiffuseLighting", "LidarSensor", "LightClusterView", "MatrixInstanceVisibility", "MatrixMeshletVisibility", "MeshletOcclusion", "ReflectionSelection", "ReflectionComposition", "SurfaceRadianceComposition", "OpaqueComposition", "RadianceAdd", "RadianceReplace", "RgbSensor", "SceneRayProbe", "SceneTargets", "ScreenIrradiance", "ScreenDiffuseLighting", "ScreenRefractionTrace", "ScreenRefraction", "ScreenEffects", "ShadowCascades", "ShadowDepth", "ShadowMap", "ShadowMeshDepth", "SparseVoxelEnvironment", "SparseVoxelEnvironmentSeed", "SparseVoxelPoolPrepare", "SparseVoxelSchedule", "SparseVoxelUpload", "SurfaceIndirectLighting", "TextureCubePreview", "TexturePreview", "TransparencyResolve", "ViewPresentation", "VirtualShadowFeedback", "VirtualShadowPagePublish", "VirtualShadowRasterWork", "VirtualShadowSamplingConstants", "VirtualShadowTables", "VolumetricComposite", "WorldAtmosphereView", "WorldMeshDraws", "WorldRayProbe"})
+  for (const xiiStringView name : {"Scene", "Editor"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     PipelineLibraryDocument storage(source);
@@ -83,6 +94,13 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     XII_TEST_STATUS(opened);
     if (opened.Failed())
       return;
+    const auto* info = static_cast<const xiiAssetDocumentInfo*>(document->GetDocumentInfo());
+    XII_TEST_BOOL(info->GetMetaInfo<xiiRenderPipelineAssetInterface>() != nullptr);
+    if (name == "Editor")
+    {
+      XII_TEST_BOOL(info->m_TransformDependencies.Contains(xiiRenderPipelineProfileConfig::s_szScenePipeline));
+      XII_TEST_BOOL(info->m_PackageDependencies.Contains(xiiRenderPipelineProfileConfig::s_szScenePipeline));
+    }
     XII_TEST_BOOL(storage.GetSettingsObject() != nullptr);
     XII_TEST_BOOL(document->IsInstanceOf<xiiRenderPipelineAssetDocument>());
     auto*     nodes     = static_cast<const xiiDocumentNodeManager*>(document->GetObjectManager());
@@ -130,7 +148,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     if (!XII_TEST_RESULT(context.Import(*document)))
       return;
     xiiExportDocumentMsgToEngine message;
-    message.m_sOutputFile = xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/RenderPipelines/", name, ".xiiBinRenderPipeline");
+    message.m_sOutputFile = xiiStringBuilder(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", name, ".xiiBinRenderPipeline");
     message.m_uiAssetHash = 1;
     message.m_uiVersion   = 7;
     auto exported         = context.ExportDocument(&message);
@@ -141,21 +159,24 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, PipelineAssetLibrary)
     xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
       return;
-    const auto authoring  = loaded->GetAuthoring();
-    const bool preview    = name == "TexturePreview" || name == "TextureCubePreview";
-    const bool viewOutput = preview || name == "HdrDisplay" || name == "DeferredOpaque";
-    XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, viewOutput ? 1 : 0);
-    XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute) == (!preview && name != "ShadowDepth" && name != "ShadowCascades" && name != "VirtualShadowTables" && name != "VirtualShadowRasterWork" && name != "VirtualShadowPagePublish" && name != "SceneTargets" && name != "ViewPresentation" && name != "AtmosphereConstants" && name != "BufferExport" && name != "DirectionalMesh" && name != "DirectionalMeshConstants" && name != "VirtualShadowSamplingConstants" && name != "LightClusterView" && name != "WorldLightsUpload" && name != "WorldDirectionalLight" && name != "EnvironmentLightConstants" && name != "DDGIProbeSchedule" && name != "DDGIProbeUpload" && name != "DDGIAtlasPrepare" && name != "SparseVoxelSchedule" && name != "SparseVoxelUpload"));
+    if (name == "Scene")
+      xiiCheckAuthoredSceneContract(*loaded.operator->());
+    const auto*      identity = name == "Scene" ? xiiRenderPipelineProfileConfig::s_szScenePipeline : xiiRenderPipelineProfileConfig::s_szEditorPipeline;
+    xiiStringBuilder documentIdentity;
+    xiiConversionUtils::ToString(document->GetGuid(), documentIdentity);
+    XII_TEST_STRING(documentIdentity, identity);
+    xiiResourceManager::RegisterNamedResource(identity, message.m_sOutputFile);
+    const auto authoring = loaded->GetAuthoring();
+    XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, 1);
+    XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute));
     XII_TEST_BOOL(authoring->m_Descriptor.m_Id == document->GetGuid());
     XII_TEST_INT(authoring->m_Descriptor.m_Passes.GetCount(), passCount);
     XII_TEST_INT(authoring->m_Descriptor.m_Connections.GetCount(), internalConnectionCount);
     for (const auto& pass : authoring->m_Descriptor.m_Passes)
       XII_TEST_BOOL(nodes->GetObject(pass.m_Id) != nullptr);
-    xiiContiguousMemoryStreamStorage packaged, rebuilt, repeated;
-    const xiiStringBuilder           package(":PipelineLibrary/RenderPipelines/", name, ".xiiBinRenderPipeline");
-    if (!ReadBytes(package, packaged) || !ReadBytes(message.m_sOutputFile, rebuilt))
+    xiiContiguousMemoryStreamStorage rebuilt, repeated;
+    if (!ReadBytes(message.m_sOutputFile, rebuilt))
       return;
-    XII_TEST_BOOL(xiiMakeArrayPtr(packaged.GetData(), packaged.GetStorageSize32()) == xiiMakeArrayPtr(rebuilt.GetData(), rebuilt.GetStorageSize32()));
     exported = context.ExportDocument(&message);
     XII_TEST_STATUS(exported);
     if (exported.Failed() || !ReadBytes(message.m_sOutputFile, repeated))

@@ -7,7 +7,6 @@ xiiRenderPipelineInterfacePass::Format;Texture Format;Optional texture format co
 xiiRenderPipelineInterfacePass::DataType;Snapshot Type;Reflected frame-data snapshot type accepted by this interface.
 xiiRenderPipelineSubgraphPass::Resource;Render Pipeline;Reusable pipeline definition. Its declared inputs and outputs appear as pins on this node. Parent connections override internal input defaults for this instance.
 
-xiiCreateTexturePass::Texture;Texture;Configure the texture to create through this output pin. Connect it to a writer such as Clear Color before reading it.
 xiiRenderPipelineTextureOutputPin::Format;Format;Texture format. Create Texture uses RGBA16 Float when Unknown is selected.
 xiiRenderPipelineTextureOutputPin::Requirements;Texture Properties;Create Texture allocates from these pin properties. Zero width or height follows the view's render resolution. Undefined dimension uses 2D and zero samples uses one sample.
 

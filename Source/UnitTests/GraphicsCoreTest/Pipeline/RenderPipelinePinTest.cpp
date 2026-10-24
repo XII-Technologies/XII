@@ -5,7 +5,6 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
-#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -323,7 +322,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RelativeTextureResolutionAndConstraints)
   using Mode = xiiRenderPipelineTextureResolutionMode;
   XII_TEST_BOOL(xiiRenderPipelineTextureResolution{}.m_Mode == Mode::Viewport);
   xiiRenderPipelineResourceDescriptor definition;
-  xiiCreateTexturePass                source;
+  xiiClearTexturePass                 source;
   xiiRenderPipelineTextureResolution  fixed;
   fixed.m_Mode     = Mode::Fixed;
   fixed.m_uiWidth  = 19;
@@ -331,7 +330,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RelativeTextureResolutionAndConstraints)
   source.m_OutputTexture.SetResolution(fixed);
   xiiVariantDictionary properties;
   XII_TEST_RESULT(source.GetProperties(properties));
-  definition.AddPass("Fixed", xiiGetStaticRTTI<xiiCreateTexturePass>(), properties);
+  definition.AddPass("Fixed", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
   xiiClearTexturePass                half;
   xiiRenderPipelineTextureResolution relative;
   relative.m_Mode   = Mode::Input;

@@ -379,8 +379,8 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, OffscreenRendering)
     view->SetCamera(&camera);
     view->SetViewport(xiiRectFloat(0, 0, 32, 32));
     view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow());
-    const auto                                 targets      = xiiLoadPipelineLibraryResource("SceneTargets");
-    const auto                                 presentation = xiiLoadPipelineLibraryResource("ViewPresentation");
+    const auto                                 targets      = xiiCreateSceneTargetsTestResource();
+    const auto                                 presentation = xiiCreateViewPresentationTestResource();
     xiiResourceLock<xiiRenderPipelineResource> targetSource(targets, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     xiiResourceLock<xiiRenderPipelineResource> outputSource(presentation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(targetSource.IsValid() && outputSource.IsValid() && targetSource->GetAuthoring() && outputSource->GetAuthoring()))

@@ -25,8 +25,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClearTexturePass, 1, xiiRTTIDefaultAllocator
 xiiResult xiiClearTexturePass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  const auto format = m_OutputTexture.GetFormat();
-  if (m_OutputTexture.GetResolution().Validate().Failed() || format == xiiGALResourceFormat::Unknown || format.GetValue() >= xiiGALResourceFormat::ENUM_COUNT || xiiGALResourceFormat::IsDepthFormat(format) || xiiGALResourceFormat::IsTypeless(format) || xiiGALResourceFormat::IsMultiplanar(format) || xiiGALTextureUtilities::GetResourceFormatProperties(format).IsCompressed() || !xiiMath::IsFinite(m_Color.r) || !xiiMath::IsFinite(m_Color.g) || !xiiMath::IsFinite(m_Color.b) || !xiiMath::IsFinite(m_Color.a))
+  const auto  format       = m_OutputTexture.GetFormat();
+  const auto& requirements = m_OutputTexture.GetRequirements();
+  if (requirements.m_uiWidth > 65536 || requirements.m_uiHeight > 65536 || requirements.m_uiSamples > 1 ||
+      (requirements.m_Dimension != xiiGALResourceDimension::Undefined && requirements.m_Dimension != xiiGALResourceDimension::Texture2D))
+    return XII_FAILURE;
+  if (m_OutputTexture.GetResolution().Validate().Failed() || format.GetValue() >= xiiGALResourceFormat::ENUM_COUNT || xiiGALResourceFormat::IsDepthFormat(format) || xiiGALResourceFormat::IsTypeless(format) || xiiGALResourceFormat::IsMultiplanar(format) || xiiGALTextureUtilities::GetResourceFormatProperties(format).IsCompressed() || !xiiMath::IsFinite(m_Color.r) || !xiiMath::IsFinite(m_Color.g) || !xiiMath::IsFinite(m_Color.b) || !xiiMath::IsFinite(m_Color.a))
     return XII_FAILURE;
   return XII_SUCCESS;
 }
@@ -45,6 +49,8 @@ xiiResult xiiClearTexturePass::Build(xiiRenderPipelinePassContext& context)
     description.m_Type = xiiGALResourceDimension::Texture2D;
     description.m_Size = size;
     description.m_Format    = context.m_Pins[m_OutputTexture.GetBindingIndex()].m_Format;
+    if (description.m_Format == xiiGALResourceFormat::Unknown)
+      description.m_Format = xiiGALResourceFormat::RGBA16Float;
     description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
     data.m_Texture = builder.WriteTexture("Cleared image", description, xiiGALResourceStateFlags::RenderTarget);
     data.m_Color = m_Color; }, [](const Data& data, xiiRenderGraphPassContext& execute) { xiiRenderPassUtils::ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(data.m_Texture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), data.m_Color); });

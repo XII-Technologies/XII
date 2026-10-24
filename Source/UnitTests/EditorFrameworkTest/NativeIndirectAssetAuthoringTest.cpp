@@ -45,8 +45,8 @@ namespace
   {
     xiiPipelineTestAuthor author(directory, "SurfaceIndirectLighting");
     XII_SUCCEED_OR_RETURN(author.Init());
-    const auto* diffuse  = author.Reference("Layered Diffuse", "LayeredDiffuseLighting", {0, 0});
-    const auto* specular = author.Reference("Environment Specular", "EnvironmentSpecular", {0, 900});
+    const auto* diffuse  = author.Reference("Layered Diffuse", xiiCreateLayeredDiffuseLightingTestResource(), {0, 0});
+    const auto* specular = author.Reference("Environment Specular", xiiCreateEnvironmentSpecularTestResource(), {0, 900});
     const auto* sum      = author.Add("Combine Indirect Contributions", "xiiRadianceAddPass", {1400, 0});
     XII_SUCCEED_OR_RETURN(author.Connect(diffuse, "DiffuseLighting", sum, "A"));
     XII_SUCCEED_OR_RETURN(author.Connect(specular, "Lighting", sum, "B"));

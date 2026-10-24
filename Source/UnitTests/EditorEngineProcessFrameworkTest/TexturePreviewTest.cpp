@@ -62,7 +62,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TexturePreview)
   outputDescription.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
   auto output                   = environment.GetDevice()->CreateTexture(outputDescription);
   view->SetRenderTargetView(output->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  view->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("TexturePreview"));
+  view->SetRenderPipelineResource(xiiTexturePreviewPass::GetPipelineResource(false));
   view->SetPipelineParameter("Texture", hTexture.GetResourceID());
   view->SetPipelineParameter("Mip", 0);
 
@@ -80,7 +80,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TexturePreview)
   };
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Resource-driven channel, alpha, coverage, and mip selection")
   {
-    XII_TEST_BOOL(xiiLoadPipelineLibraryResource("TexturePreview") == view->GetRenderPipelineResource());
+    XII_TEST_BOOL(xiiTexturePreviewPass::GetPipelineResource(false) == view->GetRenderPipelineResource());
     view->SetPipelineParameter("Channel", 1);
     CheckCenter(32, 96, 160);
     view->SetPipelineParameter("Channel", 2);
@@ -147,7 +147,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TexturePreview)
     cube.m_TextureDescription.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
     cube.m_InitialContent                          = faceContent;
     auto hCube                                     = xiiResourceManager::CreateResource<xiiTextureCubeResource>("EditorCubePreviewTest", std::move(cube));
-    view->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("TextureCubePreview"));
+    view->SetRenderPipelineResource(xiiTexturePreviewPass::GetPipelineResource(true));
     view->SetPipelineParameter("Texture", hCube.GetResourceID());
     view->SetPipelineParameter("Mip", -1);
     view->SetPipelineParameter("Channel", 1);
@@ -189,7 +189,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TexturePreview)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid settings fail graph construction")
   {
     xiiRenderPipelineInstance instance;
-    XII_TEST_RESULT(instance.Synchronize(xiiLoadPipelineLibraryResource("TexturePreview")));
+    XII_TEST_RESULT(instance.Synchronize(xiiTexturePreviewPass::GetPipelineResource(false)));
     xiiRenderGraph           graph("Invalid texture preview");
     xiiRenderGraphBlackboard blackboard;
     xiiVariantDictionary     parameters;

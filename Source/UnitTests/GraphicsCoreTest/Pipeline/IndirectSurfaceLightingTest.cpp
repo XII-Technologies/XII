@@ -45,12 +45,12 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentIndirectSurfaceSchemas)
 }
 XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredIndirectSurfaceComposition)
 {
-  const auto                                 asset = xiiLoadPipelineLibraryResource("SurfaceIndirectLighting");
+  const auto                                 asset = xiiCreateSurfaceIndirectLightingTestResource();
   xiiResourceLock<xiiRenderPipelineResource> source(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(source.IsValid() && source->GetAuthoring() && source->GetPipeline()))
     return;
   const auto authoring = source->GetAuthoring();
-  XII_TEST_INT(authoring->m_Descriptor.m_Passes.GetCount(), 3);
+  XII_TEST_INT(authoring->m_Descriptor.m_Passes.GetCount(), 4);
   XII_TEST_INT(source->GetPipeline()->GetExecutionOrder().GetCount(), 4);
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authoring->m_Descriptor.m_Id, asset.GetResourceID()});

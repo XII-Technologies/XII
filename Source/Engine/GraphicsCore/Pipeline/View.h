@@ -134,6 +134,10 @@ public:
 
   bool IsValid() const;
 
+  /// Result of the world's last attempt to build and submit this view. Success does
+  /// not imply GPU completion; inspect the instance acquire result for fallback use.
+  xiiResult GetLastRenderResult() const { return m_LastRenderResult; }
+
   /// Controls render-data extraction and graph execution by the owning world module.
   /// Disabled views retain their camera, targets, pipeline instance, and cached resources.
   /// This does not change IsValid(). Call InvalidateTemporalHistory() when resuming after a camera cut.
@@ -290,6 +294,7 @@ private:
   xiiViewRenderResourceContextHandle       m_hPipelineRuntime;
   xiiRenderPipelineResourceHandle          m_hRenderPipeline;
   bool                                     m_bPipelineSynchronizationFailed = false;
+  xiiResult                                m_LastRenderResult               = XII_FAILURE;
   xiiVariantDictionary                     m_PipelineParameters;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderExtractionCategory> m_CustomExtractionRequirements = xiiRenderExtractionCategory::All;

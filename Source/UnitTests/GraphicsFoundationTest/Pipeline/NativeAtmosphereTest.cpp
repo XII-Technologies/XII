@@ -16,7 +16,6 @@
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
-#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -117,7 +116,7 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("WorldAtmosphereView");
+  const auto                                 asset = xiiCreateWorldAtmosphereViewTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
@@ -132,8 +131,7 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, asset.GetResourceID()});
   const auto atmosphere       = root.AddSubgraph("Authored world atmosphere", loaded->GetAuthoring()->m_Descriptor.m_Id);
   auto&      fallbackOverride = root.m_Passes[atmosphere].m_Overrides.ExpandAndGetRef();
-  fallbackOverride.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.WorldAtmosphereView/World Atmosphere Lookup"));
-  fallbackOverride.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.AtmosphereLookup/Physical Atmosphere Parameters"));
+  fallbackOverride.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiAtmosphereConstantsPass"));
   XII_TEST_RESULT(fallback.GetProperties(fallbackOverride.m_Properties));
   xiiClearTexturePass clear;
   clear.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 9, 11});
@@ -163,9 +161,7 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   for (const xiiStringView name : {"Solar Transmittance", "Multiple Scattering"})
   {
     auto& override = root.m_Passes[atmosphere].m_Overrides.ExpandAndGetRef();
-    override.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.WorldAtmosphereView/World Atmosphere Lookup"));
-    override.m_Path.PushBack(xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.AtmosphereLookup/", name)));
-    override.m_Path.PushBack(xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name == "Solar Transmittance" ? "AtmosphereTransmittance" : "AtmosphereMultiScatter", "/Operation")));
+    override.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, name == "Solar Transmittance" ? "xiiAtmosphereTransmittancePass" : "xiiAtmosphereMultiScatterPass"));
     override.m_Properties.Insert("Width", name == "Solar Transmittance" ? 33U : 13U);
     override.m_Properties.Insert("Height", name == "Solar Transmittance" ? 17U : 9U);
   }
@@ -275,7 +271,7 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
     XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
   }
   // Independent authored lookup recordings retain no world, pass object or global cache.
-  const auto                                 lookupAsset = xiiLoadPipelineLibraryResource("AtmosphereLookup");
+  const auto                                 lookupAsset = xiiCreateAtmosphereLookupTestResource();
   xiiResourceLock<xiiRenderPipelineResource> lookup(lookupAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(lookup.IsValid() && lookup->GetAuthoring()))
     return;
@@ -284,7 +280,7 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   const auto occurrence          = standalone.AddSubgraph("Retired lookup", lookup->GetAuthoring()->m_Descriptor.m_Id);
   fallback.m_bUseWorldAtmosphere = false;
   auto& authored                 = standalone.m_Passes[occurrence].m_Overrides.ExpandAndGetRef();
-  authored.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.AtmosphereLookup/Physical Atmosphere Parameters"));
+  authored.m_Path.PushBack(xiiFindPipelineTestPass(lookup->GetAuthoring()->m_Descriptor, "xiiAtmosphereConstantsPass"));
   XII_TEST_RESULT(fallback.GetProperties(authored.m_Properties));
   for (const xiiStringView pin : {"Transmittance", "MultiScatter"})
     standalone.m_Interface.PushBack({pin, false, standalone.m_Passes[occurrence].m_Id, pin});
@@ -368,7 +364,7 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
   xiiRenderPipelineResourceDescriptor definition;
   for (auto mode : {Mode::RenderResolution, Mode::Viewport, Mode::Fixed})
   {
-    xiiCreateTexturePass               pass;
+    xiiClearTexturePass                pass;
     xiiRenderPipelineTextureResolution resolution;
     if (mode != Mode::Viewport)
       resolution.m_Mode = mode; // Viewport must also work through the default policy.
@@ -383,7 +379,7 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
     XII_TEST_RESULT(pass.GetProperties(properties));
     definition.AddPass(mode == Mode::Fixed ? "Fixed texture" : mode == Mode::Viewport ? "Viewport texture" :
                                                                                         "Internal texture",
-                       xiiGetStaticRTTI<xiiCreateTexturePass>(), properties);
+                       xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
   }
   definition.AddPass("History invalidation", xiiGetStaticRTTI<xiiResolutionHistoryTestPass>());
   xiiSharedPtr<const xiiRenderPipeline> compiled;
@@ -425,7 +421,14 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
   XII_TEST_INT(history->m_uiResets, 3);
   XII_TEST_INT(static_cast<const xiiResolutionHistoryTestPass*>(second.GetPass(3))->m_uiResets, 1);
   XII_TEST_BOOL(first.GetPipeline() == second.GetPipeline() && first.GetPipeline() == compiled.Borrow());
-  XII_TEST_BOOL(compiled->GetPins(0)[0].m_Resolution.m_Mode == Mode::RenderResolution);
+  const auto textureResolution = [](const xiiRenderPipeline& pipeline) {
+    for (const auto& pin : pipeline.GetPins(0))
+      if (!pin.m_bInput && pin.m_sName == "Texture")
+        return pin.m_Resolution;
+    XII_TEST_BOOL(false);
+    return xiiRenderPipelineTextureResolution();
+  };
+  XII_TEST_BOOL(textureResolution(*compiled).m_Mode == Mode::RenderResolution);
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamWriter         writer(&storage);
   XII_TEST_RESULT(definition.Serialize(writer));
@@ -434,7 +437,7 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
   XII_TEST_RESULT(restored.Deserialize(reader));
   xiiSharedPtr<const xiiRenderPipeline> roundtrip;
   XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, roundtrip));
-  XII_TEST_BOOL(roundtrip->GetPins(0)[0].m_Resolution == compiled->GetPins(0)[0].m_Resolution);
+  XII_TEST_BOOL(textureResolution(*roundtrip) == textureResolution(*compiled));
   firstView->SetViewport({0, 0, xiiMath::NaN<float>(), 10});
   a.BeginSetup(4);
   XII_TEST_BOOL(first.Build(firstView, a, blackboardA).Failed());

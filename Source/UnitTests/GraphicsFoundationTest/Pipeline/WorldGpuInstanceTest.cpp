@@ -205,6 +205,16 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     xiiRenderGraphTestContext graphs[2];
     XII_TEST_RESULT(graphs[0].Initialize("World upload camera A"));
     XII_TEST_RESULT(graphs[1].Initialize("World upload camera B"));
+    xiiView*      views[2] = {};
+    xiiViewHandle handles[2];
+    for (xiiUInt32 camera = 0; camera < 2; ++camera)
+    {
+      handles[camera] = module->CreateView("Native world upload", views[camera]);
+      views[camera]->SetRenderEnabled(false); // This fixture records its pipeline instances directly.
+      views[camera]->SetCamera(&cullingCamera);
+      views[camera]->SetViewport({0, 0, 16, 16});
+    }
+    XII_SCOPE_EXIT(for (auto handle : handles) module->DestroyView(handle));
     xiiUInt32 viewTokens[2] = {0, 0};
     auto      render        = [&](xiiUInt32 camera, const xiiRenderGraphFrame& gpuFrame) -> xiiSharedPtr<xiiGALBuffer> {
       auto& graph = graphs[camera].GetGraph();
@@ -212,11 +222,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
       XII_SCOPE_EXIT(cache.EndFrame());
       graph.BeginSetup(gpuFrame.GetFrameIndex());
-      xiiView*   view   = nullptr;
-      const auto handle = module->CreateView("Native world upload", view);
-      XII_SCOPE_EXIT(module->DestroyView(handle));
-      view->SetCamera(&cullingCamera);
-      view->SetViewport({0, 0, 16, 16});
+      auto*                view = views[camera];
       xiiVariantDictionary query;
       const auto           queryMatrix = xiiMat4::MakeScaling(xiiVec3(float(camera + 1)));
       query.Insert("CullingViewProjection", queryMatrix);

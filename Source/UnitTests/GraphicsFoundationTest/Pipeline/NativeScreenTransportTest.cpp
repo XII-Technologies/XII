@@ -85,7 +85,7 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 resource = xiiLoadPipelineLibraryResource("ScreenEffects");
+  const auto                                 resource = xiiCreateScreenEffectsTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring()))
     return;
@@ -130,20 +130,15 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
     {
       const auto node   = root.AddSubgraph(branch ? "Second transport" : "First transport", loaded->GetAuthoring()->m_Descriptor.m_Id);
       auto&      gather = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
-      gather.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenEffects/Screen Diffuse Lighting"));
-      gather.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenDiffuseLighting/Gather Incident Irradiance"));
-      gather.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenIrradiance/Operation"));
+      gather.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiScreenIrradianceTracePass"));
       gather.m_Properties.Insert("RayLength", phase >= 9 ? 0.0f : 0.01f);
       gather.m_Properties.Insert("Thickness", 10.0f);
       gather.m_Properties.Insert("StepCount", 1U);
       auto& response = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
-      response.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenEffects/Screen Diffuse Lighting"));
-      response.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenDiffuseLighting/Evaluate Diffuse Material"));
+      response.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiDiffuseSurfaceLightingPass"));
       response.m_Properties.Insert("Scale", branch ? 0.5f : 0.25f);
       auto& refraction = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
-      refraction.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenEffects/Screen Refraction"));
-      refraction.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenRefraction/Sample Background Refraction"));
-      refraction.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenRefractionTrace/Operation"));
+      refraction.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiScreenRefractionTracePass"));
       refraction.m_Properties.Insert("PerturbScale", 0.5f);
       refraction.m_Properties.Insert("MaximumDistance", 0.2f);
       refraction.m_Properties.Insert("Chromatic", 0.1f);
@@ -154,7 +149,7 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
       atmosphere.m_Settings.m_vMieAbsorption.SetZero();
       atmosphere.m_Settings.m_vOzoneAbsorption.SetZero();
       auto& parameters = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
-      parameters.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenEffects/World Atmosphere Parameters"));
+      parameters.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiAtmosphereConstantsPass"));
       XII_TEST_RESULT(atmosphere.GetProperties(parameters.m_Properties));
       for (const xiiStringView pin : {"Depth", "Radiance", "Camera", "EnvironmentLight"})
         connect(source, pin, node, pin);

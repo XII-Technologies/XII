@@ -39,7 +39,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     xiiTestFramework::Output(xiiTestOutput::Message, "Scene probe requires hardware ray tracing.");
     return;
   }
-  const auto                                 asset = xiiLoadPipelineLibraryResource("WorldRayProbe");
+  const auto                                 asset = xiiCreateWorldRayProbeTestResource();
   xiiResourceLock<xiiRenderPipelineResource> source(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(source.IsValid() && source->GetAuthoring() && source->GetPipeline()))
     return;

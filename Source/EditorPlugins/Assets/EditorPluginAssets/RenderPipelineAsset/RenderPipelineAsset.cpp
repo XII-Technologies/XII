@@ -669,7 +669,7 @@ void xiiRenderPipelineAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInf
     configuration->m_Format                          = pin.m_Format;
     configuration->m_Constraints                     = pin.m_Constraints;
     configuration->m_Resolution                      = pin.m_Resolution;
-    configuration->m_bOverrideResolution             = !pin.m_bInput || pin.m_bConstrainResolution;
+    configuration->m_bOverrideResolution             = pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_bConstrainResolution;
     configuration->m_sDisplayName                    = pin.m_sDisplayName;
     bool merged                                      = false;
     for (auto* existing : metadata->m_Pins)
@@ -824,7 +824,7 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
         configuration->m_Format                          = pin.m_Format;
         configuration->m_Constraints                     = pin.m_Constraints;
         configuration->m_Resolution                      = pin.m_Resolution;
-        configuration->m_bOverrideResolution             = !pin.m_bInput || pin.m_bConstrainResolution;
+        configuration->m_bOverrideResolution             = pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_bConstrainResolution;
         configuration->m_sDisplayName                    = pin.m_sDisplayName;
         pass->m_PinConfigurations.PushBack(configuration);
       }

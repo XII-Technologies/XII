@@ -43,7 +43,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentVisualizationComposition)
   commands.m_uiMeshGroupCountX = xiiMath::MaxValue<xiiUInt32>();
   XII_TEST_BOOL(commands.Configure({}).Failed());
 
-  const auto                                 resource = xiiLoadPipelineLibraryResource("DebugVisualization");
+  const auto                                 resource = xiiCreateDebugVisualizationTestResource();
   xiiResourceLock<xiiRenderPipelineResource> child(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(child.IsValid() && child->GetPipeline()))
     return;

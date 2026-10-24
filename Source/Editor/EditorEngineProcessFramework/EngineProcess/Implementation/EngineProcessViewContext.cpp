@@ -1,12 +1,14 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Core/GameApplication/GameApplicationBase.h>
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
+
+#include <Core/GameApplication/GameApplicationBase.h>
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -22,12 +24,27 @@ xiiEngineProcessViewContext::xiiEngineProcessViewContext(xiiEngineProcessDocumen
     m_pPipelineProfile = &application->GetPlatformProfile();
 }
 
-xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_pipeline)
+xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiEditorRenderPipelineUsage usage, xiiRenderPipelineResourceHandle& out_pipeline)
 {
   m_PipelineUsage           = usage;
   m_bPipelinePolicySelected = true;
+  if (m_sPipelineReference.IsEmpty())
+  {
+    switch (usage)
+    {
+      case xiiEditorRenderPipelineUsage::EditorScene:
+        out_pipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szEditorPipeline);
+        return XII_SUCCESS;
+      case xiiEditorRenderPipelineUsage::TexturePreview:
+      case xiiEditorRenderPipelineUsage::CubeTexturePreview:
+        out_pipeline = xiiTexturePreviewPass::GetPipelineResource(usage == xiiEditorRenderPipelineUsage::CubeTexturePreview);
+        return XII_SUCCESS;
+      case xiiEditorRenderPipelineUsage::Main:
+        break;
+    }
+  }
   xiiStringBuilder error;
-  const auto       result = xiiRenderPipelineProfileConfig::ResolveResource(m_sPipelineReference, m_pPipelineProfile, usage, out_pipeline, &error);
+  const auto       result = xiiRenderPipelineProfileConfig::ResolveResource(m_sPipelineReference, m_pPipelineProfile, out_pipeline, &error);
   if (result.Failed())
     xiiLog::Error("Cannot select the editor view pipeline: {}", error);
   return result;

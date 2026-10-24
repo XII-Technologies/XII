@@ -23,7 +23,7 @@ struct xiiTestNativeVisibility
   xiiResult Initialize(xiiUInt32 capacity = 1024)
   {
     m_uiCapacity                                        = capacity;
-    const auto                                 resource = xiiLoadPipelineLibraryResource("MatrixMeshletVisibility");
+    const auto                                 resource = xiiCreateMatrixMeshletVisibilityTestResource();
     xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!loaded.IsValid() || !loaded->GetAuthoring())
       return XII_FAILURE;

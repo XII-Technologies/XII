@@ -7,7 +7,6 @@
 #include <Foundation/Math/BoundingBox.h>
 #include <Foundation/Math/Color.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -47,22 +46,14 @@ public:
   /// Publishes capacity policies before high-level startup so manager subsystems allocate once.
   [[nodiscard]] static xiiResult ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration);
   xiiResult                      Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration);
-  void                           Shutdown(xiiUInt64 uiLastSubmittedFrame);
-  void                           Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime);
+  void                           Shutdown();
+  void                           Update(xiiTime deltaTime);
 
-  const xiiGpuInstanceData& GetGpuInstances() const
-  {
-    XII_LOCK(m_World->GetReadMarker());
-    return *static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->GetGpuInstanceData();
-  }
-  xiiView*                             GetRenderView() const;
-  [[nodiscard]] xiiGpuDrivenSceneLight GetSunLight() const;
-  [[nodiscard]] xiiBoundingBox         GetAnimatedShadowBounds() const;
+  xiiView* GetRenderView() const;
 
 private:
   struct GeometryAsset
   {
-    xiiGeometryHandle     m_hGeometry;
     xiiMeshResourceHandle m_hMesh;
   };
 
@@ -79,6 +70,5 @@ private:
   xiiGameObjectHandle                        m_hAssemblyRoot;
   xiiDynamicArray<xiiGameObjectHandle>       m_Objects;
   xiiDynamicArray<xiiVec3>                   m_BasePositions;
-  xiiBoundingBox                             m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
   float                                      m_fAnimationTime                   = 0.0f;
 };

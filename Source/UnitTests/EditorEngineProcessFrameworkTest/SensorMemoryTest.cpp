@@ -136,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto          pipeline = xiiLoadPipelineLibraryResource("DepthSensorDiagnostic");
+  const auto          pipeline = xiiCreateDepthSensorDiagnosticTestResource();
   xiiWorldDescription description("Sensor retention");
   xiiWorld            world(description);
   XII_LOCK(world.GetWriteMarker());
@@ -261,7 +261,7 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, AllocationFailureAndRecovery)
   }
   graph.EndSetup();
   XII_TEST_BOOL(view->GetSensorOutputTexture() == nullptr);
-  view->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("DepthSensorDiagnostic"));
+  view->SetRenderPipelineResource(xiiCreateDepthSensorDiagnosticTestResource());
   world.Update();
   environment.GetDevice()->WaitIdle();
   const auto output = view->GetSensorOutputTexture();

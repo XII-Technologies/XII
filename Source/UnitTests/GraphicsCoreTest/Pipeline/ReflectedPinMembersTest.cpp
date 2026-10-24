@@ -260,7 +260,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionMemberPins)
 
 XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredAmbientOcclusion)
 {
-  const auto                                 resource = xiiLoadPipelineLibraryResource("AmbientOcclusion");
+  const auto                                 resource = xiiCreateAmbientOcclusionTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetPipeline() && loaded->GetAuthoring()))
     return;

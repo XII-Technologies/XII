@@ -71,7 +71,7 @@ static void TestReusableShadowRegions(bool meshShaders)
     return;
   xiiGeometryResidencyManager::RequestResidency(handle, 0, 0);
   XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(handle, 0));
-  const auto                                 asset = xiiLoadPipelineLibraryResource("ShadowDepth");
+  const auto                                 asset = xiiCreateShadowDepthTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;

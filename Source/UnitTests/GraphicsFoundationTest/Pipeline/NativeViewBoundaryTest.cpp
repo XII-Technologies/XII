@@ -32,9 +32,9 @@ XII_CREATE_SIMPLE_TEST(NativeViewBoundary, PrivateTargetsAndRetainedOutputSnapsh
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 targetAsset = xiiLoadPipelineLibraryResource("SceneTargets");
-  const auto                                 outputAsset = xiiLoadPipelineLibraryResource("ViewPresentation");
-  const auto                                 exportAsset = xiiLoadPipelineLibraryResource("BufferExport");
+  const auto                                 targetAsset = xiiCreateSceneTargetsTestResource();
+  const auto                                 outputAsset = xiiCreateViewPresentationTestResource();
+  const auto                                 exportAsset = xiiCreateBufferExportTestResource();
   xiiResourceLock<xiiRenderPipelineResource> targetSource(targetAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   xiiResourceLock<xiiRenderPipelineResource> outputSource(outputAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   xiiResourceLock<xiiRenderPipelineResource> exportSource(exportAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
