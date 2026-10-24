@@ -7,9 +7,9 @@
 
 namespace
 {
-  constexpr double s_fColumnGap    = 120.0;
-  constexpr double s_fRowGap       = 60.0;
-  constexpr double s_fComponentGap = 120.0;
+  constexpr double s_fColumnGap    = xiiNodeLayout::HorizontalSpacing;
+  constexpr double s_fRowGap       = xiiNodeLayout::VerticalSpacing;
+  constexpr double s_fComponentGap = xiiNodeLayout::ComponentSpacing;
 
   struct LayoutNode
   {
@@ -58,7 +58,7 @@ xiiResult xiiNodeLayout::Compute(xiiArrayPtr<const QRectF> bounds, xiiArrayPtr<c
 {
   out_positions.Clear();
   if (bounds.IsEmpty())
-    return XII_SUCCESS;
+    return connections.IsEmpty() ? XII_SUCCESS : XII_FAILURE;
 
   QRectF                                original;
   xiiGraph                              graph;
@@ -118,6 +118,17 @@ xiiResult xiiNodeLayout::Compute(xiiArrayPtr<const QRectF> bounds, xiiArrayPtr<c
       auto& rank = ranks[dag.GetVertexIndex(dag.GetTarget(edge.GetHandle()))];
       rank       = xiiMath::Max(rank, ranks[dag.GetVertexIndex(group)] + 1);
     }
+  // Place short side branches near their first consumer instead of leaving every
+  // source at the far-left edge with a wire crossing the entire graph.
+  for (xiiUInt32 i = order.GetCount(); i > 0; --i)
+  {
+    const auto group  = order[i - 1];
+    xiiUInt32  latest = xiiInvalidIndex;
+    for (auto edge = dag.GetOutgoingEdges(group); edge.IsValid(); ++edge)
+      latest = xiiMath::Min(latest, ranks[dag.GetVertexIndex(dag.GetTarget(edge.GetHandle()))] - 1);
+    if (latest != xiiInvalidIndex)
+      ranks[dag.GetVertexIndex(group)] = latest;
+  }
   for (xiiUInt32 i = 0; i < nodes.GetCount(); ++i)
     nodes[i].m_uiRank = ranks[component[i]];
 
@@ -168,8 +179,8 @@ xiiResult xiiNodeLayout::Compute(xiiArrayPtr<const QRectF> bounds, xiiArrayPtr<c
           {
             const auto& edge     = connections[edgeIndex];
             auto        neighbor = forward ? edge.m_uiSource : edge.m_uiTarget;
-            if (nodes[neighbor].m_uiRank == nodes[index].m_uiRank)
-              continue;
+            // Feedback members still attract each other vertically. Ignoring them
+            // leaves history/state nodes stranded at their initial column offsets.
             desired += nodes[neighbor].m_fY + (forward ? edge.m_fSourceY - edge.m_fTargetY : edge.m_fTargetY - edge.m_fSourceY);
             ++count;
           }
@@ -247,6 +258,9 @@ xiiResult xiiNodeLayout::Compute(xiiArrayPtr<const QRectF> bounds, xiiArrayPtr<c
     shelfHeight = xiiMath::Max(shelfHeight, size.height());
     x += size.width() + s_fComponentGap;
   }
+  for (const auto& position : positions)
+    if (!position.IsValid())
+      return XII_FAILURE;
   out_positions = std::move(positions);
   return XII_SUCCESS;
 }

@@ -15,7 +15,10 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GuiFoundation/NodeEditor/Node.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
+#include <QImage>
+#include <QPainter>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
@@ -183,4 +186,45 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
       return;
     XII_TEST_BOOL(xiiMakeArrayPtr(rebuilt.GetData(), rebuilt.GetStorageSize32()) == xiiMakeArrayPtr(repeated.GetData(), repeated.GetStorageSize32()));
   }
+}
+
+XII_CREATE_SIMPLE_TEST(NodeLayout, CanonicalScene)
+{
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLayoutTest", "PipelineLayout", xiiDataDirUsage::ReadOnly)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLayoutTest"));
+  PipelineLibraryDocument document(xiiStringBuilder(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/Scene.xiiRenderPipelineAsset"));
+  XII_TEST_STATUS(document.LoadDocument());
+  auto*          manager = static_cast<xiiDocumentNodeManager*>(document.GetObjectManager());
+  xiiQtNodeScene scene;
+  scene.InitScene(manager);
+  XII_TEST_STATUS(scene.ArrangeNodes(xiiQtNodeScene::NodeArrangement::Format, true));
+  xiiDynamicArray<QRectF>                   bounds;
+  xiiDynamicArray<xiiVec2>                  positions;
+  xiiDynamicArray<const xiiDocumentObject*> objects;
+  for (auto* item : scene.items())
+  {
+    if (item->type() != xiiQtNodeScene::Node)
+      continue;
+    auto* node = static_cast<xiiQtNode*>(item);
+    bounds.PushBack(node->mapRectToScene(node->boundingRect().united(node->childrenBoundingRect())));
+    objects.PushBack(node->GetObject());
+    positions.PushBack(manager->GetNodePos(node->GetObject()));
+  }
+  XII_TEST_BOOL(!bounds.IsEmpty());
+  for (xiiUInt32 i = 0; i < bounds.GetCount(); ++i)
+    for (xiiUInt32 j = 0; j < i; ++j)
+      XII_TEST_BOOL(!bounds[i].intersects(bounds[j]));
+  const auto count = document.GetCommandHistory()->GetUndoStackSize();
+  XII_TEST_STATUS(scene.ArrangeNodes(xiiQtNodeScene::NodeArrangement::Format, true));
+  XII_TEST_INT(document.GetCommandHistory()->GetUndoStackSize(), count);
+  for (xiiUInt32 i = 0; i < objects.GetCount(); ++i)
+    XII_TEST_BOOL(manager->GetNodePos(objects[i]).IsEqual(positions[i], 0.01f));
+  QImage image(3000, 1800, QImage::Format_ARGB32_Premultiplied);
+  image.fill(QColor(32, 34, 38));
+  QPainter painter(&image);
+  painter.setRenderHint(QPainter::Antialiasing);
+  scene.render(&painter, QRectF(20, 20, 2960, 1760), scene.itemsBoundingRect().adjusted(-30, -30, 30, 30), Qt::KeepAspectRatio);
+  painter.end();
+  XII_TEST_BOOL(image.save(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/NodeLayout-Scene.png").GetData()));
 }

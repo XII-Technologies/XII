@@ -22,6 +22,10 @@ struct xiiNodeLayoutConnection
 class XII_GUIFOUNDATION_DLL xiiNodeLayout
 {
 public:
+  static constexpr double HorizontalSpacing = 120.0;
+  static constexpr double VerticalSpacing   = 60.0;
+  static constexpr double ComponentSpacing  = 120.0;
+
   /// Returns bounding-box top-left positions in input order. Input order is the stable tie-breaker;
   /// callers should sort nodes by persistent identity. Original positions only determine the anchor.
   /// Cycles share a column; disconnected components are packed separately. Invalid input fails

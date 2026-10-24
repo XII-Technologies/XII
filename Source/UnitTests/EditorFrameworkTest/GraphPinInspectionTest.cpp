@@ -7,13 +7,17 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/NodeEditor/Connection.h>
 #include <GuiFoundation/NodeEditor/Node.h>
+#include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <QApplication>
 #include <QDoubleSpinBox>
 #include <QGraphicsSceneMouseEvent>
+#include <QImage>
 #include <QKeyEvent>
 #include <QLineEdit>
+#include <QMenu>
+#include <QPainter>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -64,6 +68,7 @@ class xiiInspectorGraphNode : public xiiReflectedClass
 public:
   bool                     m_bHasInput = true;
   xiiString                m_sLabel;
+  xiiString                m_sName;
   xiiInspectorPinSettings* m_pSettings = nullptr;
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInspectorGraphNode, 1, xiiRTTIDefaultAllocator<xiiInspectorGraphNode>)
@@ -72,6 +77,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInspectorGraphNode, 1, xiiRTTIDefaultAllocat
     {
       XII_MEMBER_PROPERTY("HasInput", m_bHasInput)->AddAttributes(new xiiDefaultValueAttribute(true)),
       XII_MEMBER_PROPERTY("Label", m_sLabel),
+      XII_MEMBER_PROPERTY("Name", m_sName),
       XII_MEMBER_PROPERTY("Settings", m_pSettings)->AddFlags(xiiPropertyFlags::PointerOwner),
     } XII_END_PROPERTIES;
   }
@@ -82,6 +88,7 @@ namespace
   class InspectorNodeManager : public xiiDocumentNodeManager
   {
   public:
+    xiiUuid                  m_RejectMove;
     const xiiRTTI*           GetConnectionType() const override { return xiiGetStaticRTTI<xiiInspectorGraphConnection>(); }
     const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const override
     {
@@ -91,6 +98,10 @@ namespace
     }
 
   private:
+    xiiStatus InternalCanMoveNode(const xiiDocumentObject* object, const xiiVec2&) const override
+    {
+      return object->GetGuid() == m_RejectMove ? xiiStatus("Movement rejected by test graph.") : xiiStatus(XII_SUCCESS);
+    }
     bool InternalIsNode(const xiiDocumentObject* object) const override { return object->GetType()->IsDerivedFrom<xiiInspectorGraphNode>(); }
     bool InternalIsDynamicPinProperty(const xiiDocumentObject*, const xiiAbstractProperty* property) const override
     {
@@ -134,6 +145,11 @@ namespace
   class InspectorScene : public xiiQtNodeScene
   {
   public:
+    QRectF Bounds(const xiiDocumentObject* object) const
+    {
+      auto* node = m_Nodes.Find(object).Value();
+      return node->mapRectToScene(node->boundingRect().united(node->childrenBoundingRect()));
+    }
     xiiQtPin* FindPin(const xiiDocumentObject* object, bool input)
     {
       auto node = m_Nodes.Find(object);
@@ -343,5 +359,207 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     loadedScene.InitScene(static_cast<const InspectorNodeManager*>(loaded.GetObjectManager()));
     loaded.GetSelectionManager()->SetSelection(loadedProperties);
     XII_TEST_BOOL(loadedScene.FindPin(loaded.GetObjectManager()->GetObject(nodes[1]), true)->isSelected());
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(NodeLayout, DocumentCommands)
+{
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "NodeLayoutTest", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("NodeLayoutTest"));
+  xiiStringBuilder  path(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/NodeLayout.xiiGraph");
+  InspectorDocument document(path);
+  auto*             accessor    = document.GetObjectAccessor();
+  auto*             manager     = static_cast<InspectorNodeManager*>(document.GetObjectManager());
+  auto*             history     = document.GetCommandHistory();
+  const char*       names[]     = {"World Extraction", "Depth", "Opaque Surfaces", "Directional and Local Lighting", "Output Conversion", "Present", "Independent Utility"};
+  const xiiVec2     scattered[] = {{700, 200}, {70, 90}, {80, 90}, {-100, 400}, {900, 40}, {180, -100}, {700, 100}};
+  xiiUuid           ids[XII_ARRAY_SIZE(names)];
+  accessor->StartTransaction("Create layout fixture");
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(names); ++i)
+  {
+    ids[i] = xiiUuid::MakeStableUuidFromString(names[i]);
+    XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiInspectorGraphNode>(), ids[i]));
+    XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(ids[i]), "Name", names[i]));
+    xiiMoveNodeCommand move;
+    move.m_Object = ids[i];
+    move.m_NewPos = scattered[i];
+    XII_TEST_STATUS(history->AddCommand(move));
+  }
+  accessor->FinishTransaction();
+  InspectorScene scene;
+  scene.InitScene(manager);
+  const xiiUInt32 pairs[][2] = {{0, 1}, {0, 2}, {1, 3}, {2, 3}, {3, 4}, {4, 5}};
+  accessor->StartTransaction("Connect layout fixture");
+  for (const auto& pair : pairs)
+  {
+    XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(history, manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(ids[pair[0]]), "Value"), *manager->GetInputPinByName(accessor->GetObject(ids[pair[1]]), "Value")));
+  }
+  accessor->FinishTransaction();
+  using Arrangement = xiiQtNodeScene::NodeArrangement;
+  auto snapshot     = [&]() {
+    xiiDynamicArray<xiiVec2> result;
+    for (const auto& id : ids)
+      result.PushBack(manager->GetNodePos(accessor->GetObject(id)));
+    return result;
+  };
+  auto checkPositions = [&](xiiArrayPtr<const xiiVec2> expected) {
+    const auto actual = snapshot();
+    for (xiiUInt32 i = 0; i < actual.GetCount(); ++i)
+      XII_TEST_BOOL(actual[i].IsEqual(expected[i], 0.01f));
+  };
+  auto render = [&](const char* name) {
+    QImage image(1600, 850, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(32, 34, 38));
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    scene.render(&painter, QRectF(20, 20, 1560, 810), scene.itemsBoundingRect().adjusted(-30, -30, 30, 30), Qt::KeepAspectRatio);
+    painter.end();
+    XII_TEST_BOOL(image.save(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/", name).GetData()));
+  };
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Whole graph layout is a single persistent undoable edit")
+  {
+    render("NodeLayout-Before.png");
+    const auto    before = snapshot();
+    const auto    count  = history->GetUndoStackSize();
+    xiiQtNodeView view;
+    view.SetScene(&scene);
+    QAction* format = nullptr;
+    for (auto* action : view.actions())
+      if (action->text() == "Format Graph")
+        format = action;
+    if (!XII_TEST_BOOL(format != nullptr))
+      return;
+    XII_TEST_BOOL(format->shortcut() == QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+    XII_TEST_INT(format->shortcutContext(), Qt::WidgetWithChildrenShortcut);
+    format->trigger();
+    XII_TEST_INT(history->GetUndoStackSize(), count + 1);
+    const auto formatted = snapshot();
+    for (const auto& pair : pairs)
+      XII_TEST_BOOL(scene.Bounds(accessor->GetObject(ids[pair[0]])).right() < scene.Bounds(accessor->GetObject(ids[pair[1]])).left());
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(ids); ++i)
+      for (xiiUInt32 j = 0; j < i; ++j)
+        XII_TEST_BOOL(!scene.Bounds(accessor->GetObject(ids[i])).intersects(scene.Bounds(accessor->GetObject(ids[j]))));
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::Format, true));
+    checkPositions(formatted);
+    XII_TEST_INT(history->GetUndoStackSize(), count + 1);
+    XII_TEST_STATUS(history->Undo());
+    checkPositions(before);
+    XII_TEST_STATUS(history->Redo());
+    checkPositions(formatted);
+    render("NodeLayout-After.png");
+    XII_TEST_STATUS(document.SaveDocument(true));
+    InspectorDocument loaded(path);
+    XII_TEST_STATUS(loaded.LoadDocument());
+    auto* loadedManager = static_cast<InspectorNodeManager*>(loaded.GetObjectManager());
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(ids); ++i)
+      XII_TEST_BOOL(loadedManager->GetNodePos(loadedManager->GetObject(ids[i])).IsEqual(formatted[i], 0.01f));
+    XII_TEST_INT(loadedManager->GetConnections(*loadedManager->GetInputPinByName(loadedManager->GetObject(ids[3]), "Value")).GetCount(), 2);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Selection formatting respects external wires and fixed nodes")
+  {
+    xiiDeque<const xiiDocumentObject*> selection;
+    selection.PushBack(accessor->GetObject(ids[1]));
+    selection.PushBack(accessor->GetObject(ids[2]));
+    selection.PushBack(accessor->GetObject(ids[3]));
+    document.GetSelectionManager()->SetSelection(selection);
+    const auto before = snapshot();
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::Format));
+    const auto after = snapshot();
+    for (auto i : {0, 4, 5, 6})
+      XII_TEST_BOOL(before[i] == after[i]);
+    const auto count = history->GetUndoStackSize();
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::Format));
+    checkPositions(after);
+    XII_TEST_INT(history->GetUndoStackSize(), count);
+    for (xiiUInt32 i = 0; i < 3; ++i)
+      for (auto fixed : {0, 4, 5, 6})
+        XII_TEST_BOOL(!scene.Bounds(selection[i]).intersects(scene.Bounds(accessor->GetObject(ids[fixed]))));
+    XII_TEST_BOOL((after[1] - before[1]).GetLength() < 1000);
+    XII_TEST_INT(document.GetSelectionManager()->GetSelection().GetCount(), 3);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "All six alignments use visible bounds and undo precisely")
+  {
+    for (auto operation : {Arrangement::AlignLeft, Arrangement::AlignHorizontalCenter, Arrangement::AlignRight, Arrangement::AlignTop, Arrangement::AlignVerticalCenter, Arrangement::AlignBottom})
+    {
+      const auto before = snapshot();
+      const auto count  = history->GetUndoStackSize();
+      XII_TEST_STATUS(scene.ArrangeNodes(operation));
+      auto value = [&](const QRectF& rect) {
+        switch (operation)
+        {
+          case Arrangement::AlignLeft:
+            return rect.left();
+          case Arrangement::AlignHorizontalCenter:
+            return rect.center().x();
+          case Arrangement::AlignRight:
+            return rect.right();
+          case Arrangement::AlignTop:
+            return rect.top();
+          case Arrangement::AlignVerticalCenter:
+            return rect.center().y();
+          default:
+            return rect.bottom();
+        }
+      };
+      for (auto i : {2, 3})
+        XII_TEST_FLOAT(value(scene.Bounds(accessor->GetObject(ids[1]))), value(scene.Bounds(accessor->GetObject(ids[i]))), 0.01);
+      if (history->GetUndoStackSize() != count)
+      {
+        XII_TEST_STATUS(history->Undo());
+        checkPositions(before);
+      }
+    }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Equal gaps account for sizes; outer anchors stay fixed when space permits")
+  {
+    for (bool horizontal : {false, true})
+    {
+      history->StartTransaction("Space test nodes");
+      for (xiiUInt32 i = 1; i <= 3; ++i)
+      {
+        xiiMoveNodeCommand move;
+        move.m_Object = ids[i];
+        move.m_NewPos = horizontal ? xiiVec2(i * i * 500.0f, 0) : xiiVec2(0, i * i * 500.0f);
+        XII_TEST_STATUS(history->AddCommand(move));
+      }
+      history->FinishTransaction();
+      const auto before = snapshot();
+      XII_TEST_STATUS(scene.ArrangeNodes(horizontal ? Arrangement::DistributeHorizontally : Arrangement::DistributeVertically));
+      const auto a = scene.Bounds(accessor->GetObject(ids[1])), b = scene.Bounds(accessor->GetObject(ids[2])), c = scene.Bounds(accessor->GetObject(ids[3]));
+      XII_TEST_FLOAT(horizontal ? b.left() - a.right() : b.top() - a.bottom(), horizontal ? c.left() - b.right() : c.top() - b.bottom(), 0.01);
+      const auto after = snapshot();
+      XII_TEST_BOOL(before[1] == after[1]);
+      XII_TEST_BOOL(before[3] == after[3]);
+    }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Movement restrictions fail atomically without history; too-small selections do nothing")
+  {
+    // The previous distribution left the group far from its external neighbors.
+    // Formatting must not approach them in a succession of clamped steps.
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::Format));
+    const auto stableSelection = snapshot();
+    const auto selectionCount  = history->GetUndoStackSize();
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::Format));
+    checkPositions(stableSelection);
+    XII_TEST_INT(history->GetUndoStackSize(), selectionCount);
+    manager->m_RejectMove = ids[3];
+    const auto before     = snapshot();
+    const auto count      = history->GetUndoStackSize();
+    XII_TEST_BOOL(scene.ArrangeNodes(Arrangement::Format, true).Failed());
+    checkPositions(before);
+    XII_TEST_INT(history->GetUndoStackSize(), count);
+    manager->m_RejectMove = {};
+    document.GetSelectionManager()->SetSelection(accessor->GetObject(ids[0]));
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::Format));
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::DistributeVertically));
+    XII_TEST_INT(history->GetUndoStackSize(), count);
+    QMenu menu;
+    scene.AddArrangementActions(menu);
+    XII_TEST_BOOL(menu.actions()[0]->isEnabled());
+    XII_TEST_BOOL(!menu.actions()[1]->isEnabled());
+    document.GetSelectionManager()->Clear();
+    XII_TEST_STATUS(scene.ArrangeNodes(Arrangement::Format, true));
   }
 }

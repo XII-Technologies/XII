@@ -64,6 +64,15 @@ XII_CREATE_SIMPLE_TEST(NodeLayout, TopologyAndGeometry)
     for (xiiUInt32 i = 0; i < positions.GetCount(); ++i)
       XII_TEST_BOOL((positions[i] + xiiVec2(100, -200)).IsEqual(repeat[i], 0.01f));
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Short side branches stay near their consumers")
+  {
+    bounds.SetCount(5, QRectF(0, 0, 180, 90));
+    Assign(edges, {{0, 1, 50, 50}, {1, 2, 50, 50}, {2, 3, 50, 50}, {4, 3, 50, 50}});
+    XII_TEST_RESULT(xiiNodeLayout::Compute(bounds, edges, positions));
+    XII_TEST_FLOAT(positions[4].x + bounds[4].width() / 2, positions[2].x + bounds[2].width() / 2, 0.01);
+    CheckNoOverlap(bounds, positions);
+    CheckRepeat(bounds, edges, positions);
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Cycles, self loops, parallel wires and isolated components")
   {
     Assign(bounds, {QRectF(0, 0, 120, 90), QRectF(0, 0, 300, 200), QRectF(0, 0, 120, 90), QRectF(0, 0, 180, 150), QRectF(0, 0, 250, 50), QRectF(0, 0, 60, 60)});
@@ -104,5 +113,19 @@ XII_CREATE_SIMPLE_TEST(NodeLayout, TopologyAndGeometry)
     bounds[0].setWidth(-1);
     XII_TEST_BOOL(xiiNodeLayout::Compute(bounds, {}, positions).Failed());
     XII_TEST_BOOL(positions.IsEmpty());
+    XII_TEST_BOOL(xiiNodeLayout::Compute({}, edges, positions).Failed());
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Many isolated nodes are packed compactly")
+  {
+    bounds.Clear();
+    bounds.SetCount(64, QRectF(0, 0, 180, 90));
+    XII_TEST_RESULT(xiiNodeLayout::Compute(bounds, {}, positions));
+    CheckNoOverlap(bounds, positions);
+    QRectF packed;
+    for (auto position : positions)
+      packed = packed.united(QRectF(position.x, position.y, 180, 90));
+    XII_TEST_BOOL(packed.width() > 180);
+    XII_TEST_BOOL(packed.height() < 64 * 90);
+    CheckRepeat(bounds, {}, positions);
   }
 }

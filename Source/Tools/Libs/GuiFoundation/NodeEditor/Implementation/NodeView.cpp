@@ -4,6 +4,7 @@
 
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QMouseEvent>
 
 xiiQtNodeView::xiiQtNodeView(QWidget* pParent) :
@@ -16,14 +17,37 @@ xiiQtNodeView::xiiQtNodeView(QWidget* pParent) :
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   m_ViewPos   = QPointF(0, 0);
   m_ViewScale = QPointF(1, 1);
+
+  auto addFormat = [&](const char* label, QKeySequence shortcut, bool whole) {
+    auto* action = new QAction(label, this);
+    action->setShortcut(shortcut);
+    action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    addAction(action);
+    connect(action, &QAction::triggered, this, [this, whole]() {
+      if (m_pScene)
+        xiiQtUiServices::GetSingleton()->MessageBoxStatus(m_pScene->ArrangeNodes(xiiQtNodeScene::NodeArrangement::Format, whole), "Could not arrange nodes.");
+    });
+  };
+  addFormat("Format Graph", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L), true);
+  addFormat("Format Selection", QKeySequence(Qt::CTRL | Qt::Key_L), false);
 }
 
 xiiQtNodeView::~xiiQtNodeView() = default;
 
 void xiiQtNodeView::SetScene(xiiQtNodeScene* pScene)
 {
+  if (m_pScene)
+    disconnect(m_pScene, nullptr, this, nullptr);
   m_pScene = pScene;
   setScene(pScene);
+
+  connect(pScene, &xiiQtNodeScene::GraphFormatted, this, [this](QRectF bounds) {
+    bounds.adjust(-60, -60, 60, 60);
+    const double scale = xiiMath::Clamp(xiiMath::Min(viewport()->width() / bounds.width(), viewport()->height() / bounds.height()), 0.01, 1.0);
+    m_ViewScale        = QPointF(scale, scale);
+    m_ViewPos          = bounds.center() - QPointF(width() / (2 * scale), height() / (2 * scale));
+    UpdateView();
+  });
 
   QRectF sceneRect = m_pScene->sceneRect();
   m_ViewPos        = sceneRect.topLeft();
