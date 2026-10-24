@@ -24,6 +24,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuInstanceFlags
     Transparent       = XII_BIT(6),
     SensorVisible     = XII_BIT(7),
     RayTracingVisible = XII_BIT(8),
+    TwoSided          = XII_BIT(9), ///< Back faces may render; normal-cone rejection is invalid.
 
     Default = Enabled | CastShadows | ReceiveShadows
   };
@@ -39,6 +40,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuInstanceFlags
     StorageType Transparent : 1;
     StorageType SensorVisible : 1;
     StorageType RayTracingVisible : 1;
+    StorageType TwoSided : 1;
   };
 };
 

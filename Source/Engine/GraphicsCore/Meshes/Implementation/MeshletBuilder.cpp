@@ -104,6 +104,7 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
     for (size_t i = 0; i < count; ++i)
     {
       const auto& source = optimizedMeshlets[static_cast<xiiUInt32>(i)];
+      meshopt_optimizeMeshlet(optimizedVertices.GetData() + source.vertex_offset, optimizedTriangles.GetData() + source.triangle_offset, source.triangle_count, source.vertex_count);
       if (source.vertex_count > xiiMath::MaxValue<xiiUInt32>() - m_MeshletVertexRemap.GetCount() || source.triangle_count * 3 > xiiMath::MaxValue<xiiUInt32>() - m_MeshletPrimitiveIndices.GetCount() || m_Meshlets.GetCount() == xiiMath::MaxValue<xiiUInt32>())
       {
         clear();

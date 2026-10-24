@@ -91,11 +91,12 @@ void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID)
   float tolerance = max(max(diagonal.x, max(diagonal.y, diagonal.z)), 0.00000001f) * 0.001f;
   bool uniformScale = max(diagonal.x, max(diagonal.y, diagonal.z)) - min(diagonal.x, min(diagonal.y, diagonal.z)) <= tolerance &&
                  max(offDiagonal.x, max(offDiagonal.y, offDiagonal.z)) <= tolerance;
-  if (!posed && meshlet.Cone.w >= 0.0f && uniformScale && dot(c0, cross(c1, c2)) > 0.0f)
+  if (!posed && (instance.Flags & (1u << 9u)) == 0u && meshlet.Cone.w >= 0.0f && uniformScale && dot(c0, cross(c1, c2)) > 0.0f)
   {
     float3 axis = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
-    float3 toCamera = normalize(view.CameraPosition.xyz - center);
-    if (dot(axis, toCamera) <= -sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w))) return;
+    float3 toCamera = view.CameraPosition.xyz - center;
+    // Include the bounding sphere radius for conservative rejection near a surface.
+    if (dot(axis, toCamera) <= -sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w)) * length(toCamera) - radius) return;
   }
   uint destination;
   if (ReserveMeshlet(destination)) g_VisibleMeshlets[destination] = uint2(index, meshletIndex);

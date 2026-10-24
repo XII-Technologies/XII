@@ -85,6 +85,9 @@ public:
     if (phase == 7)
       for (xiiUInt32 i = 0; i < capacity; ++i)
         records[i].m_uiSkinningCount = 1;
+    if (phase == 8)
+      for (xiiUInt32 i = 0; i < capacity; ++i)
+        records[i].m_uiFlags |= xiiGpuInstanceFlags::TwoSided;
     xiiGpuGeometryRecord geometry;
     geometry.m_uiGeneration                      = phase >= 2 ? 8 : 7;
     geometry.m_uiLodCount                        = 2;
@@ -116,6 +119,8 @@ public:
       metadata[base + 1].m_Bounds      = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(1, 0, 0), 0.1f);
       metadata[base + 1].m_vConeAxis   = xiiVec3(1, 0, 0);
       metadata[base + 1].m_fConeCutoff = 1;
+      if (phase == 9)
+        metadata[base + 1].m_Bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(0.05f, 0, 0), 0.1f);
     }
     xiiGpuVisibilityView view;
     view.m_ViewProjectionMatrix          = xiiMat4::MakeIdentity();
@@ -388,7 +393,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
     if (!XII_TEST_RESULT(instances[i].Initialize(compiled)) || !XII_TEST_RESULT(contexts[i].Initialize("Native culling view")))
       return;
   }
-  for (xiiUInt32 phase = 0; phase < 8; ++phase)
+  for (xiiUInt32 phase = 0; phase < 10; ++phase)
   {
     if (phase == 4)
       instances[0].InvalidateTemporalHistory();
@@ -450,6 +455,8 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
             expected += selected ? 1 : 4;
           if (phase == 7)
             expected = visible * 129;
+          if (phase == 8 || phase == 9)
+            expected = visible * 128;
           const xiiUInt32 capacity = selected ? 16 : 16384;
           XII_TEST_INT(count, xiiMath::Min(expected, capacity));
           XII_TEST_INT(overflow, expected > capacity ? 1 : 0);
@@ -469,7 +476,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
               if (phase != 7)
               {
                 XII_TEST_BOOL(local != 0 || (phase == 6 && pair.x == 3));
-                XII_TEST_BOOL(local != 1 || (phase == 6 && (pair.x == 0 || pair.x == 1 || pair.x == 3)));
+                XII_TEST_BOOL(local != 1 || phase == 8 || phase == 9 || (phase == 6 && (pair.x == 0 || pair.x == 1 || pair.x == 3)));
               }
               if (phase == 2 && pair.x == 0)
                 XII_TEST_BOOL(local >= 5 && local < 8);
