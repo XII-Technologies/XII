@@ -48,15 +48,20 @@ namespace
     return mapping;
   }
 
-  void BakeUVMapping(const xiiModelMaterialTexture& mapping, xiiArrayPtr<xiiMeshPackedVertex> vertices)
+  void BakeUVMapping(const xiiModelMaterialTexture& mapping, bool bGltf, xiiArrayPtr<xiiMeshPackedVertex> vertices)
   {
     const auto  angle  = xiiAngle::MakeFromRadian(mapping.m_fUVRotation);
     const float cosine = xiiMath::Cos(angle);
     const float sine   = xiiMath::Sin(angle);
     for (auto& vertex : vertices)
     {
-      const auto uv       = (mapping.m_uiUVChannel == 1 ? vertex.m_vTexCoord1 : vertex.m_vTexCoord0).CompMul(mapping.m_vUVScale);
-      vertex.m_vTexCoord0 = mapping.m_vUVOffset + xiiVec2(cosine * uv.x - sine * uv.y, sine * uv.x + cosine * uv.y);
+      auto uv = mapping.m_uiUVChannel == 1 ? vertex.m_vTexCoord1 : vertex.m_vTexCoord0;
+      if (bGltf)
+        uv = uv.CompMul(mapping.m_vUVScale);
+      uv = xiiVec2(cosine * uv.x - sine * uv.y, sine * uv.x + cosine * uv.y);
+      if (!bGltf)
+        uv = uv.CompMul(mapping.m_vUVScale);
+      vertex.m_vTexCoord0 = mapping.m_vUVOffset + uv;
     }
   }
 
@@ -251,7 +256,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
     return Fail(out_pError, "Mesh import settings contain an invalid transform, color conversion or simplification value.");
 
   Assimp::Importer importer;
-  unsigned int     flags = aiProcess_Triangulate | aiProcess_ValidateDataStructure | aiProcess_GenSmoothNormals | aiProcess_SortByPType;
+  unsigned int     flags = aiProcess_Triangulate | aiProcess_ValidateDataStructure | aiProcess_GenSmoothNormals | aiProcess_GenUVCoords | aiProcess_SortByPType;
   importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
   unsigned int removed = 0;
   if (options.m_bRecalculateNormals)
@@ -313,7 +318,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
         material                = result.m_Materials.GetCount();
         auto&            output = result.m_Materials.ExpandAndGetRef();
         xiiStringBuilder materialError;
-        if (ReadMaterial(*scene, *scene->mMaterials[mesh.mMaterialIndex], output, result.m_EmbeddedTextures, &materialError).Failed())
+        if (ReadMaterial(*scene, *scene->mMaterials[mesh.mMaterialIndex], sAbsoluteFile.HasExtension("gltf") || sAbsoluteFile.HasExtension("glb"), options.m_bFlipTextureV, output, result.m_EmbeddedTextures, &materialError).Failed())
         {
           const xiiString name(output.m_sName);
           output         = xiiModelMeshMaterial();
@@ -326,7 +331,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
       }
       XII_SUCCEED_OR_RETURN(ReadVertices(mesh, transform, options, localVertices, out_pError));
       XII_SUCCEED_OR_RETURN(ReadIndices(mesh, transform.GetRotationalPart().GetDeterminant() < 0, localIndices, out_pError));
-      BakeUVMapping(materialMappings[material], localVertices);
+      BakeUVMapping(materialMappings[material], sAbsoluteFile.HasExtension("gltf") || sAbsoluteFile.HasExtension("glb"), localVertices);
       if (options.m_bImportSkinning)
         XII_SUCCEED_OR_RETURN(ReadSkin(mesh, node->mName.C_Str(), transform, options, result.m_Mesh, localVertices, out_pError));
       if (options.m_bRecalculateTangents || options.m_bRecalculateNormals || !mesh.HasTangentsAndBitangents() || materialMappings[material].m_uiUVChannel != 0 || materialMappings[material].m_vUVScale != xiiVec2(1) || materialMappings[material].m_fUVRotation != 0)

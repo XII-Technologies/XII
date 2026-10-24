@@ -10,18 +10,16 @@
 
 namespace
 {
-  xiiStatus ValidateTextures(const xiiModelMeshMaterial& material)
+  bool CanUseTexture(const xiiModelMeshMaterial& material, const xiiModelMaterialTexture& texture)
   {
-    xiiHashSet<xiiUInt32> usages;
-    for (const auto& texture : material.m_Textures)
+    if (texture.m_uiUVChannel != 0 || texture.m_vUVOffset != xiiVec2::MakeZero() || texture.m_vUVScale != xiiVec2(1) || texture.m_fUVRotation != 0)
     {
-      if (usages.Contains(static_cast<xiiUInt32>(texture.m_Usage)))
-        return xiiStatus(xiiFmt("Material '{}' uses layered textures. The native material renderer has one texture per slot.", material.m_sName));
-      usages.Insert(static_cast<xiiUInt32>(texture.m_Usage));
-      if (texture.m_uiUVChannel != 0 || texture.m_vUVOffset != xiiVec2::MakeZero() || texture.m_vUVScale != xiiVec2(1) || texture.m_fUVRotation != 0 || texture.m_fBlend != 1 || texture.m_Operation != xiiModelMaterialTexture::Operation::Multiply)
-        return xiiStatus(xiiFmt("Material '{}' requires per-texture UV mapping or layered blending that the native renderer does not expose. Assign a custom material or import geometry without materials.", material.m_sName));
+      xiiLog::Warning("Material '{}', texture '{}': independent UV mappings require a custom material. Retaining the scalar material property.", material.m_sName, texture.m_sPath);
+      return false;
     }
-    return XII_SUCCESS;
+    if (texture.m_fBlend != 1 || texture.m_Operation != xiiModelMaterialTexture::Operation::Multiply)
+      xiiLog::Warning("Material '{}', texture '{}': native materials use the first texture layer without layered blending.", material.m_sName, texture.m_sPath);
+    return true;
   }
 
   xiiStatus ConfigureMaterial(xiiMaterialAssetDocument& document, const xiiModelMeshMaterial& material, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory)
@@ -41,6 +39,13 @@ namespace
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Metallic", material.m_fMetallic));
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Roughness", material.m_fRoughness));
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "AlphaCutoff", material.m_fAlphaCutoff));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "ClearCoat", material.m_fClearCoat));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "ClearCoatRoughness", material.m_fClearCoatRoughness));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Transmission", material.m_fTransmission));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Thickness", material.m_fThickness));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "IndexOfRefraction", material.m_fIndexOfRefraction));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Anisotropy", material.m_fAnisotropy));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "SheenRoughness", material.m_fSheenRoughness));
     const auto alpha = material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Mask ? xiiMaterialAlphaMode::Mask :
                                                                                        (material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Blend ? xiiMaterialAlphaMode::Blend : xiiMaterialAlphaMode::Opaque);
     const auto blend = material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Mask ? xiiMaterialBlendMode::Masked :
@@ -52,8 +57,16 @@ namespace
     XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Features", static_cast<xiiInt64>(flags.GetValue())));
     const xiiModelMaterialTexture* roughness = nullptr;
     const xiiModelMaterialTexture* metallic  = nullptr;
+    xiiHashSet<xiiUInt32>          usages;
     for (const auto& texture : material.m_Textures)
     {
+      if (!CanUseTexture(material, texture))
+        continue;
+      if (usages.Insert(static_cast<xiiUInt32>(texture.m_Usage)))
+      {
+        xiiLog::Warning("Material '{}': additional texture layer '{}' is not represented by the native material. Using the first layer.", material.m_sName, texture.m_sPath);
+        continue;
+      }
       if (texture.m_Usage == xiiModelTextureUsage::Roughness)
       {
         roughness = &texture;
@@ -94,15 +107,23 @@ namespace
         default:
           return xiiStatus("Unsupported native material texture usage.");
       }
-      xiiString asset;
-      XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::ImportTexture(texture, imported, sourceDirectory, targetDirectory, usage, texture.m_Usage == xiiModelTextureUsage::BaseColor, asset));
+      xiiString  asset;
+      const auto status = xiiMeshImportUtils::ImportTexture(texture, imported, sourceDirectory, targetDirectory, usage, texture.m_Usage == xiiModelTextureUsage::BaseColor, asset);
+      if (status.Failed())
+      {
+        xiiLog::Warning("Material '{}', texture '{}': {} Using the material factor until the texture is repaired.", material.m_sName, texture.m_sPath, status.GetMessageString());
+        continue;
+      }
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, property, asset));
     }
     if (roughness != nullptr || metallic != nullptr)
     {
-      xiiString asset;
-      XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::ImportMetallicRoughnessTexture(roughness, metallic, imported, sourceDirectory, targetDirectory, asset));
-      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "MetallicRoughnessTexture", asset));
+      xiiString  asset;
+      const auto status = xiiMeshImportUtils::ImportMetallicRoughnessTexture(roughness, metallic, imported, sourceDirectory, targetDirectory, asset);
+      if (status.Succeeded())
+        XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "MetallicRoughnessTexture", asset));
+      else
+        xiiLog::Warning("Material '{}', metallic/roughness textures: {} Using scalar factors.", material.m_sName, status.GetMessageString());
     }
     accessor->FinishTransaction();
     committed = true;
@@ -132,10 +153,6 @@ xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMateria
 {
   if (inout_slots.GetCount() != imported.m_Materials.GetCount())
     return xiiStatus("Native mesh material slot count does not match imported material definitions.");
-  // Validate the whole pending import before creating any documents.
-  for (xiiUInt32 i = 0; i < inout_slots.GetCount(); ++i)
-    if (inout_slots[i].m_sResource.IsEmpty())
-      XII_SUCCEED_OR_RETURN(ValidateTextures(imported.m_Materials[i]));
   xiiStringBuilder targetDirectory(documentPath);
   targetDirectory.RemoveFileExtension();
   targetDirectory.Append("_data");
@@ -174,14 +191,11 @@ xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMateria
       usedNames.Insert(key);
     }
     path.Set(targetDirectory, "/", name, ".xiiMaterialAsset");
-    xiiStringBuilder id;
-    if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(path))
+    if (xiiOSFile::ExistsFile(path))
     {
-      materialSlots[i].m_sResource = xiiConversionUtils::ToString(asset->m_Data.m_Guid, id);
+      XII_SUCCEED_OR_RETURN(ResolveAssetReference(path, materialSlots[i].m_sResource));
       continue;
     }
-    if (xiiOSFile::ExistsFile(path))
-      return xiiStatus(xiiFmt("Material asset exists but is not indexed yet: '{}'. Retry after asset discovery.", path));
     auto* document = xiiDynamicCast<xiiMaterialAssetDocument*>(xiiQtEditorApp::GetSingleton()->CreateDocument(path, xiiDocumentFlags::None));
     if (document == nullptr)
       return xiiStatus(xiiFmt("Could not create material asset '{}'.", path));
@@ -190,7 +204,9 @@ xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMateria
       document->GetDocumentManager()->CloseDocument(document);
       if (!saved) { if (xiiOSFile::DeleteFile(path).Failed()) xiiLog::Error("Could not remove failed imported asset: '{}'.", path); xiiAssetCurator::GetSingleton()->NotifyOfFileChange(path); });
     XII_SUCCEED_OR_RETURN(ConfigureMaterial(*document, imported.m_Materials[i], imported, sourceDirectory, targetDirectory));
-    saved                        = true;
+    saved = true;
+    xiiAssetCurator::GetSingleton()->NotifyOfFileChange(path);
+    xiiStringBuilder id;
     materialSlots[i].m_sResource = xiiConversionUtils::ToString(document->GetGuid(), id);
   }
   inout_slots = std::move(materialSlots);
@@ -199,6 +215,12 @@ xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMateria
 
 xiiTransformStatus xiiMeshImportUtils::PrepareMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, bool importMaterials, bool allowImport, xiiStringView documentPath, xiiStringView sourceFile, const xiiModelMeshImport& imported)
 {
+  if (importMaterials)
+  {
+    const auto extracted = PrepareEmbeddedTextures(imported, documentPath, allowImport);
+    if (!extracted.Succeeded())
+      return extracted;
+  }
   auto materialSlots = inout_slots;
   SetMeshAssetMaterialSlots(materialSlots, imported);
   bool pendingMaterials = false;

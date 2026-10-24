@@ -49,6 +49,10 @@ static FileSuffixToUsage suffixToUsageMap[] = {
   {"occlusion", xiiTextureConverterUsage::Linear}, //
 
   {"_alpha", xiiTextureConverterUsage::Linear}, //
+  {"_orm", xiiTextureConverterUsage::Linear},
+  {"_rma", xiiTextureConverterUsage::Linear},
+  {"metallicroughness", xiiTextureConverterUsage::Linear},
+  {"basecolor", xiiTextureConverterUsage::Color},
 };
 
 
@@ -180,8 +184,10 @@ xiiResult xiiTextureConverterProcessor::AdjustUsage(xiiStringView sFilename, con
 
   if (inout_Usage == xiiTextureConverterUsage::Auto)
   {
-    xiiLog::Error("Failed to deduce target format.");
-    return XII_FAILURE;
+    // Ambiguous images are still usable. Explicit material-slot usage always wins;
+    // standalone imports default to color and can be changed in the texture asset.
+    inout_Usage = xiiTextureConverterUsage::Color;
+    xiiLog::Info("Texture '{}' has no recognized usage; importing as color. Select Linear for data textures.", sFilename);
   }
 
   return XII_SUCCESS;

@@ -12,7 +12,7 @@
 
 namespace
 {
-  xiiStatus ResolveSource(const xiiModelMaterialTexture& texture, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory, xiiStringBuilder& out_path)
+  xiiStatus ResolveSource(const xiiModelMaterialTexture& texture, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory, xiiStringBuilder& out_path, bool bWrite = true)
   {
     for (const auto& embedded : imported.m_EmbeddedTextures)
     {
@@ -21,8 +21,9 @@ namespace
       if (embedded.m_Data.IsEmpty())
         return xiiStatus("Embedded model texture has no image data.");
       xiiStringBuilder name;
-      const xiiUInt32  dimensions[] = {embedded.m_uiWidth, embedded.m_uiHeight};
-      const auto       hash         = xiiHashingUtils::xxHash64(embedded.m_Data.GetData(), embedded.m_Data.GetCount(), xiiHashingUtils::xxHash64(dimensions, sizeof(dimensions)));
+      // Source keys, rather than image bytes, keep generated Input1 paths and
+      // material identities stable when a GLB's embedded image is edited.
+      const auto hash = xiiHashingUtils::StringHash(embedded.m_sKey);
       name.SetFormat("Embedded_{}", xiiArgU(hash, 16, true, 16));
       out_path.Set(targetDirectory, "/", name);
       if (embedded.m_uiHeight != 0)
@@ -30,6 +31,16 @@ namespace
         if (embedded.m_uiWidth == 0 || xiiUInt64(embedded.m_uiWidth) * embedded.m_uiHeight * 4 != embedded.m_Data.GetCount())
           return xiiStatus("Invalid embedded RGBA image dimensions.");
         out_path.Append(".dds");
+        if (xiiOSFile::ExistsFile(out_path))
+        {
+          xiiImage existing;
+          if (existing.LoadFrom(out_path).Succeeded() && existing.GetWidth() == embedded.m_uiWidth && existing.GetHeight() == embedded.m_uiHeight &&
+              existing.GetByteBlobPtr() == xiiConstByteBlobPtr(embedded.m_Data.GetData(), embedded.m_Data.GetCount()))
+            return XII_SUCCESS;
+        }
+        if (!bWrite)
+          return xiiStatus("Embedded texture needs extraction.");
+        XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(targetDirectory));
         xiiGALTextureCreationDescription description;
         description.m_Type   = xiiGALResourceDimension::Texture2D;
         description.m_Size   = {embedded.m_uiWidth, embedded.m_uiHeight};
@@ -38,6 +49,7 @@ namespace
         image.ResetAndViewExternalStorage(description, xiiConstByteBlobPtr(embedded.m_Data.GetData(), embedded.m_Data.GetCount()));
         if (image.SaveTo(out_path).Failed())
           return xiiStatus(xiiFmt("Could not extract embedded texture '{}'.", out_path));
+        xiiAssetCurator::GetSingleton()->NotifyOfFileChange(out_path);
         return XII_SUCCESS;
       }
       xiiHybridArray<xiiString, 16> extensions;
@@ -45,20 +57,95 @@ namespace
       if (embedded.m_sFileExtension.IsEmpty() || !extensions.Contains(embedded.m_sFileExtension))
         return xiiStatus(xiiFmt("Unsupported embedded image format '{}'.", embedded.m_sFileExtension));
       out_path.Append(".", embedded.m_sFileExtension);
+      {
+        xiiOSFile file;
+        if (xiiOSFile::ExistsFile(out_path) && file.Open(out_path, xiiFileOpenMode::Read).Succeeded() && file.GetFileSize() == embedded.m_Data.GetCount())
+        {
+          xiiDynamicArray<xiiUInt8> bytes;
+          if (file.ReadAll(bytes) == embedded.m_Data.GetCount() && bytes == embedded.m_Data)
+            return XII_SUCCESS;
+        }
+      }
+      if (!bWrite)
+        return xiiStatus("Embedded texture needs extraction.");
+      XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(targetDirectory));
       xiiDeferredFileWriter file;
       file.SetOutput(out_path, true);
       XII_SUCCEED_OR_RETURN(file.WriteBytes(embedded.m_Data.GetData(), embedded.m_Data.GetCount()));
-      return file.Close();
+      XII_SUCCEED_OR_RETURN(file.Close());
+      xiiAssetCurator::GetSingleton()->NotifyOfFileChange(out_path);
+      return XII_SUCCESS;
     }
     out_path = texture.m_sPath;
+    out_path.ReplaceAll("\\", "/");
     if (!out_path.IsAbsolutePath())
       out_path.Prepend(sourceDirectory, "/");
     out_path.MakeCleanPath();
     if (!xiiOSFile::ExistsFile(out_path))
-      return xiiStatus(xiiFmt("Model texture does not exist: '{}'.", out_path));
+    {
+      // Exporters often retain an absolute DCC path or move maps next to the model.
+      // Search only conventional folders adjacent to this model, never a global tree.
+      xiiStringBuilder sourcePath(texture.m_sPath);
+      sourcePath.ReplaceAll("\\", "/");
+      const xiiString  filename(sourcePath.GetFileNameAndExtension());
+      xiiStringBuilder resolved;
+      for (const char* folder : {"", "textures", "Textures", "maps", "Maps"})
+      {
+        xiiStringBuilder candidate(sourceDirectory);
+        candidate.AppendPath(folder, filename);
+        candidate.MakeCleanPath();
+        if (xiiOSFile::ExistsFile(candidate))
+        {
+          if (!resolved.IsEmpty() &&
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+              !resolved.IsEqual_NoCase(candidate)
+#else
+              resolved != candidate
+#endif
+          )
+          {
+            xiiLog::Warning("Texture '{}' matches multiple adjacent files ('{}', '{}'). Remap Input1 in the generated texture asset.", texture.m_sPath, resolved, candidate);
+            return XII_SUCCESS;
+          }
+          resolved = candidate;
+        }
+      }
+      if (!resolved.IsEmpty())
+      {
+        out_path = resolved;
+        return XII_SUCCESS;
+      }
+      // Keep a real texture document and its source dependency. The material remains
+      // inspectable and the user can remap Input1, or restore the missing file later.
+      xiiLog::Warning("Model texture '{}' is missing (resolved to '{}'). Restore the file or remap Input1 in the generated texture asset.", texture.m_sPath, out_path);
+    }
     return XII_SUCCESS;
   }
 } // namespace
+
+xiiTransformStatus xiiMeshImportUtils::PrepareEmbeddedTextures(const xiiModelMeshImport& imported, xiiStringView sDocumentPath, bool bAllowImport)
+{
+  xiiStringBuilder directory(sDocumentPath);
+  directory.RemoveFileExtension();
+  directory.Append("_data");
+  for (const auto& embedded : imported.m_EmbeddedTextures)
+  {
+    if (embedded.m_uiHeight == 0)
+    {
+      xiiHybridArray<xiiString, 16> extensions;
+      xiiStringView(xiiFileBrowserAttribute::ImagesLdrAndHdr).Split(false, extensions, ";", "*", ".");
+      if (!extensions.Contains(embedded.m_sFileExtension))
+        continue; // Optional unsupported images are diagnosed by material conversion.
+    }
+    xiiModelMaterialTexture texture;
+    texture.m_sPath = embedded.m_sKey;
+    xiiStringBuilder path;
+    const auto       result = ResolveSource(texture, imported, {}, directory, path, bAllowImport);
+    if (result.Failed())
+      return bAllowImport ? xiiTransformStatus(result) : xiiTransformStatus(xiiTransformResult::NeedsImport);
+  }
+  return XII_SUCCESS;
+}
 
 namespace
 {
@@ -72,15 +159,8 @@ namespace
     xiiStringBuilder name, path;
     xiiPathUtils::MakeValidFilename(source.GetFileName(), '_', name);
     path.SetFormat("{}/{}_{}.xiiTextureAsset", targetDirectory, name, xiiArgU(hash, 16, true, 16));
-    if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(path))
-    {
-      xiiStringBuilder id;
-      out_asset = xiiConversionUtils::ToString(asset->m_Data.m_Guid, id);
-      return XII_SUCCESS;
-    }
-    // Never overwrite authored files that have not yet been indexed by the curator.
     if (xiiOSFile::ExistsFile(path))
-      return xiiStatus(xiiFmt("Texture asset exists but is not indexed yet: '{}'. Retry after asset discovery.", path));
+      return xiiMeshImportUtils::ResolveAssetReference(path, out_asset);
     auto* document = xiiDynamicCast<xiiTextureAssetDocument*>(xiiQtEditorApp::GetSingleton()->CreateDocument(path, xiiDocumentFlags::None));
     if (document == nullptr)
       return xiiStatus(xiiFmt("Could not create texture asset '{}'.", path));
@@ -113,12 +193,38 @@ namespace
     committed = true;
     XII_SUCCEED_OR_RETURN(document->SaveDocument());
     saved = true;
+    xiiAssetCurator::GetSingleton()->NotifyOfFileChange(path);
     xiiStringBuilder id;
     out_asset = xiiConversionUtils::ToString(document->GetGuid(), id);
     return XII_SUCCESS;
   }
 
 } // namespace
+
+xiiStatus xiiMeshImportUtils::ResolveAssetReference(xiiStringView sAbsolutePath, xiiString& out_sAsset)
+{
+  if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sAbsolutePath))
+  {
+    xiiStringBuilder id;
+    out_sAsset = xiiConversionUtils::ToString(asset->m_Data.m_Guid, id);
+    return XII_SUCCESS;
+  }
+  const xiiDocumentTypeDescriptor* type = nullptr;
+  if (xiiDocumentManager::FindDocumentTypeFromPath(sAbsolutePath, false, type).Failed() || type == nullptr)
+    return xiiStatus(xiiFmt("Cannot identify generated asset '{}'.", sAbsolutePath));
+  auto*      document    = type->m_pManager->GetDocumentByPath(sAbsolutePath);
+  const bool alreadyOpen = document != nullptr;
+  if (!alreadyOpen)
+    document = xiiQtEditorApp::GetSingleton()->OpenDocument(sAbsolutePath, xiiDocumentFlags::None);
+  if (document == nullptr)
+    return xiiStatus(xiiFmt("Cannot read existing asset '{}'.", sAbsolutePath));
+  xiiStringBuilder id;
+  out_sAsset = xiiConversionUtils::ToString(document->GetGuid(), id);
+  if (!alreadyOpen)
+    document->GetDocumentManager()->CloseDocument(document);
+  xiiAssetCurator::GetSingleton()->NotifyOfFileChange(sAbsolutePath);
+  return XII_SUCCESS;
+}
 
 xiiStatus xiiMeshImportUtils::ImportTexture(const xiiModelMaterialTexture& texture, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory, xiiTextureConverterUsage::Enum usage, bool alpha, xiiString& out_asset)
 {

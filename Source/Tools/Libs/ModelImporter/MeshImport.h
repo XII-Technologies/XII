@@ -67,14 +67,21 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshMaterial
   };
 
   xiiString                                m_sName;
-  xiiColor                                 m_BaseColor     = xiiColor::White;
-  xiiColor                                 m_EmissiveColor = xiiColor::Black;
-  float                                    m_fMetallic     = 0;
-  float                                    m_fRoughness    = 1;
-  float                                    m_fOpacity      = 1; ///< Independent opacity multiplier; glTF alpha is already in m_BaseColor.a.
-  float                                    m_fAlphaCutoff  = 0.5f;
-  bool                                     m_bTwoSided     = false;
-  AlphaMode                                m_AlphaMode     = AlphaMode::Opaque;
+  xiiColor                                 m_BaseColor           = xiiColor::White;
+  xiiColor                                 m_EmissiveColor       = xiiColor::Black;
+  float                                    m_fMetallic           = 0;
+  float                                    m_fRoughness          = 1;
+  float                                    m_fOpacity            = 1; ///< Independent opacity multiplier; glTF alpha is already in m_BaseColor.a.
+  float                                    m_fAlphaCutoff        = 0.5f;
+  float                                    m_fClearCoat          = 0;
+  float                                    m_fClearCoatRoughness = 0;
+  float                                    m_fTransmission       = 0;
+  float                                    m_fThickness          = 0;
+  float                                    m_fIndexOfRefraction  = 1.5f;
+  float                                    m_fAnisotropy         = 0;
+  float                                    m_fSheenRoughness     = 0.5f;
+  bool                                     m_bTwoSided           = false;
+  AlphaMode                                m_AlphaMode           = AlphaMode::Opaque;
   xiiDynamicArray<xiiModelMaterialTexture> m_Textures;
 };
 

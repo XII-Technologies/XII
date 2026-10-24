@@ -305,7 +305,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshImport)
     invalid = s_szSource;
     invalid.ReplaceAll("\"TEXCOORD_1\":4", "\"TEXCOORD_2\":4");
     XII_TEST_RESULT(WriteSource(source, invalid));
-    expectFailure();
+    expectFailure(); // glTF requires contiguous texture-coordinate accessor indices.
+    invalid = s_szSource;
+    invalid.ReplaceAll("\"TEXCOORD_1\":4", "\"TEXCOORD_1\":4,\"TEXCOORD_2\":4");
+    XII_TEST_RESULT(WriteSource(source, invalid));
+    const auto optionalUVResult = xiiModelMeshImport::ReadFile(source, options, imported, &error);
+    XII_TEST_RESULT_MSG(optionalUVResult, "%s", error.GetData());
+    XII_TEST_BOOL(!imported.m_Mesh.GetMeshBufferDescriptor().GetVertexData().IsEmpty());
     XII_TEST_RESULT(WriteSource(source, "not a model"));
     expectFailure();
     XII_TEST_BOOL(xiiModelMeshImport::ReadFile("Relative.gltf", options, imported, &error).Failed());

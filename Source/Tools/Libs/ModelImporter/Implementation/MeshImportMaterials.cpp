@@ -74,78 +74,87 @@ namespace
   {
     for (xiiUInt32 i = 0; i < material.GetTextureCount(type); ++i)
     {
-      auto& texture   = output.m_Textures.ExpandAndGetRef();
+      xiiModelMaterialTexture texture;
       texture.m_Usage = usage;
-      aiString         path;
-      aiTextureMapping mapping    = aiTextureMapping_UV;
-      aiTextureMapMode address[3] = {aiTextureMapMode_Wrap, aiTextureMapMode_Wrap, aiTextureMapMode_Wrap};
-      aiTextureOp      operation  = aiTextureOp_Multiply;
-      if (material.GetTexture(type, i, &path, &mapping, &texture.m_uiUVChannel, &texture.m_fBlend, &operation, address) != AI_SUCCESS || path.length == 0 || !xiiUnicodeUtils::IsValidUtf8(path.C_Str()) || mapping != aiTextureMapping_UV || texture.m_uiUVChannel > 1 || !xiiMath::IsFinite(texture.m_fBlend) || operation < aiTextureOp_Multiply || operation > aiTextureOp_SignedAdd)
-        return Fail(error, "Source material contains invalid texture metadata or unsupported UV mapping.");
-      texture.m_sPath = path.C_Str();
-      if (usage == xiiModelTextureUsage::Normal)
-        material.Get(AI_MATKEY_GLTF_TEXTURE_SCALE(type, i), texture.m_fStrength);
-      else if (usage == xiiModelTextureUsage::Occlusion)
-        material.Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(type, i), texture.m_fStrength);
-      if (!xiiMath::IsFinite(texture.m_fStrength))
-        return Fail(error, "Source texture uses a non-finite strength.");
-      texture.m_Operation          = static_cast<xiiModelMaterialTexture::Operation>(operation);
-      texture.m_Sampler.m_AddressU = ConvertAddress(address[0]);
-      texture.m_Sampler.m_AddressV = ConvertAddress(address[1]);
-      texture.m_Sampler.m_AddressW = ConvertAddress(address[2]);
-      if (texture.m_Sampler.m_AddressU == xiiGALTextureAddressMode::Unknown || texture.m_Sampler.m_AddressV == xiiGALTextureAddressMode::Unknown || texture.m_Sampler.m_AddressW == xiiGALTextureAddressMode::Unknown)
-        return Fail(error, "Source texture uses an unknown address mode.");
-      aiUVTransform uv;
-      if (material.Get(AI_MATKEY_UVTRANSFORM(type, i), uv) == AI_SUCCESS)
-      {
-        texture.m_vUVOffset   = xiiVec2(uv.mTranslation.x, uv.mTranslation.y);
-        texture.m_vUVScale    = xiiVec2(uv.mScaling.x, uv.mScaling.y);
-        texture.m_fUVRotation = uv.mRotation;
-        if (!texture.m_vUVOffset.IsValid() || !texture.m_vUVScale.IsValid() || !xiiMath::IsFinite(texture.m_fUVRotation))
-          return Fail(error, "Source texture uses a non-finite UV transform.");
-      }
-      int filter;
-      if (material.Get(AI_MATKEY_GLTF_MAPPINGFILTER_MAG(type, i), filter) == AI_SUCCESS)
-      {
-        if (filter != 9728 && filter != 9729)
-          return Fail(error, "Source texture uses an invalid magnification filter.");
-        texture.m_Sampler.m_MagFilter = filter == 9728 ? xiiGALFilterType::Point : xiiGALFilterType::Linear;
-      }
-      if (material.Get(AI_MATKEY_GLTF_MAPPINGFILTER_MIN(type, i), filter) == AI_SUCCESS)
-      {
-        if (filter == 9728 || filter == 9729)
-          texture.m_Sampler.m_fMaxLOD = 0; // glTF non-mipmapped filters sample the base level only.
-        switch (filter)
+      xiiStringBuilder textureError;
+      const auto       read = [&]() -> xiiResult {
+        auto*            error = &textureError;
+        aiString         path;
+        aiTextureMapping mapping    = aiTextureMapping_UV;
+        aiTextureMapMode address[3] = {aiTextureMapMode_Wrap, aiTextureMapMode_Wrap, aiTextureMapMode_Wrap};
+        aiTextureOp      operation  = aiTextureOp_Multiply;
+        if (material.GetTexture(type, i, &path, &mapping, &texture.m_uiUVChannel, &texture.m_fBlend, &operation, address) != AI_SUCCESS || path.length == 0 || !xiiUnicodeUtils::IsValidUtf8(path.C_Str()) || mapping != aiTextureMapping_UV || texture.m_uiUVChannel > 1 || !xiiMath::IsFinite(texture.m_fBlend) || operation < aiTextureOp_Multiply || operation > aiTextureOp_SignedAdd)
+          return Fail(error, "Source material contains invalid texture metadata or unsupported UV mapping.");
+        texture.m_sPath = path.C_Str();
+        if (usage == xiiModelTextureUsage::Normal)
+          material.Get(AI_MATKEY_GLTF_TEXTURE_SCALE(type, i), texture.m_fStrength);
+        else if (usage == xiiModelTextureUsage::Occlusion)
+          material.Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(type, i), texture.m_fStrength);
+        if (!xiiMath::IsFinite(texture.m_fStrength))
+          return Fail(error, "Source texture uses a non-finite strength.");
+        texture.m_Operation          = static_cast<xiiModelMaterialTexture::Operation>(operation);
+        texture.m_Sampler.m_AddressU = ConvertAddress(address[0]);
+        texture.m_Sampler.m_AddressV = ConvertAddress(address[1]);
+        texture.m_Sampler.m_AddressW = ConvertAddress(address[2]);
+        if (texture.m_Sampler.m_AddressU == xiiGALTextureAddressMode::Unknown || texture.m_Sampler.m_AddressV == xiiGALTextureAddressMode::Unknown || texture.m_Sampler.m_AddressW == xiiGALTextureAddressMode::Unknown)
+          return Fail(error, "Source texture uses an unknown address mode.");
+        aiUVTransform uv;
+        if (material.Get(AI_MATKEY_UVTRANSFORM(type, i), uv) == AI_SUCCESS)
         {
-          case 9728:
-          case 9984:
-            texture.m_Sampler.m_MinFilter = xiiGALFilterType::Point;
-            texture.m_Sampler.m_MipFilter = xiiGALFilterType::Point;
-            break;
-          case 9729:
-          case 9985:
-            texture.m_Sampler.m_MinFilter = xiiGALFilterType::Linear;
-            texture.m_Sampler.m_MipFilter = xiiGALFilterType::Point;
-            break;
-          case 9986:
-            texture.m_Sampler.m_MinFilter = xiiGALFilterType::Point;
-            texture.m_Sampler.m_MipFilter = xiiGALFilterType::Linear;
-            break;
-          case 9987:
-            texture.m_Sampler.m_MinFilter = xiiGALFilterType::Linear;
-            texture.m_Sampler.m_MipFilter = xiiGALFilterType::Linear;
-            break;
-          default:
-            return Fail(error, "Source texture uses an invalid minification filter.");
+          texture.m_vUVOffset   = xiiVec2(uv.mTranslation.x, uv.mTranslation.y);
+          texture.m_vUVScale    = xiiVec2(uv.mScaling.x, uv.mScaling.y);
+          texture.m_fUVRotation = uv.mRotation;
+          if (!texture.m_vUVOffset.IsValid() || !texture.m_vUVScale.IsValid() || !xiiMath::IsFinite(texture.m_fUVRotation))
+            return Fail(error, "Source texture uses a non-finite UV transform.");
         }
-      }
-      XII_SUCCEED_OR_RETURN(ReadEmbedded(scene, texture.m_sPath, embedded, error));
+        int filter;
+        if (material.Get(AI_MATKEY_GLTF_MAPPINGFILTER_MAG(type, i), filter) == AI_SUCCESS)
+        {
+          if (filter != 9728 && filter != 9729)
+            return Fail(error, "Source texture uses an invalid magnification filter.");
+          texture.m_Sampler.m_MagFilter = filter == 9728 ? xiiGALFilterType::Point : xiiGALFilterType::Linear;
+        }
+        if (material.Get(AI_MATKEY_GLTF_MAPPINGFILTER_MIN(type, i), filter) == AI_SUCCESS)
+        {
+          if (filter == 9728 || filter == 9729)
+            texture.m_Sampler.m_fMaxLOD = 0; // glTF non-mipmapped filters sample the base level only.
+          switch (filter)
+          {
+            case 9728:
+            case 9984:
+              texture.m_Sampler.m_MinFilter = xiiGALFilterType::Point;
+              texture.m_Sampler.m_MipFilter = xiiGALFilterType::Point;
+              break;
+            case 9729:
+            case 9985:
+              texture.m_Sampler.m_MinFilter = xiiGALFilterType::Linear;
+              texture.m_Sampler.m_MipFilter = xiiGALFilterType::Point;
+              break;
+            case 9986:
+              texture.m_Sampler.m_MinFilter = xiiGALFilterType::Point;
+              texture.m_Sampler.m_MipFilter = xiiGALFilterType::Linear;
+              break;
+            case 9987:
+              texture.m_Sampler.m_MinFilter = xiiGALFilterType::Linear;
+              texture.m_Sampler.m_MipFilter = xiiGALFilterType::Linear;
+              break;
+            default:
+              return Fail(error, "Source texture uses an invalid minification filter.");
+          }
+        }
+        XII_SUCCEED_OR_RETURN(ReadEmbedded(scene, texture.m_sPath, embedded, error));
+        return XII_SUCCESS;
+      };
+      if (read().Failed())
+        xiiLog::Warning("Material '{}', texture type {} layer {} ('{}'): {} Skipping this texture.", output.m_sName, static_cast<xiiUInt32>(type), i, texture.m_sPath, textureError);
+      else
+        output.m_Textures.PushBack(std::move(texture));
     }
     return XII_SUCCESS;
   }
 } // namespace
 
-xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMaterial& material, xiiModelMeshMaterial& out_material, xiiDynamicArray<xiiModelEmbeddedTexture>& inout_textures, xiiStringBuilder* error)
+xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMaterial& material, bool bGltf, bool bFlipTextureV, xiiModelMeshMaterial& out_material, xiiDynamicArray<xiiModelEmbeddedTexture>& inout_textures, xiiStringBuilder* error)
 {
   aiString name;
   material.Get(AI_MATKEY_NAME, name);
@@ -170,6 +179,16 @@ xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMate
   material.Get(AI_MATKEY_ROUGHNESS_FACTOR, out_material.m_fRoughness);
   material.Get(AI_MATKEY_OPACITY, out_material.m_fOpacity);
   material.Get(AI_MATKEY_GLTF_ALPHACUTOFF, out_material.m_fAlphaCutoff);
+  material.Get(AI_MATKEY_CLEARCOAT_FACTOR, out_material.m_fClearCoat);
+  material.Get(AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, out_material.m_fClearCoatRoughness);
+  material.Get(AI_MATKEY_TRANSMISSION_FACTOR, out_material.m_fTransmission);
+  material.Get(AI_MATKEY_VOLUME_THICKNESS_FACTOR, out_material.m_fThickness);
+  material.Get(AI_MATKEY_REFRACTI, out_material.m_fIndexOfRefraction);
+  material.Get(AI_MATKEY_ANISOTROPY_FACTOR, out_material.m_fAnisotropy);
+  material.Get(AI_MATKEY_SHEEN_ROUGHNESS_FACTOR, out_material.m_fSheenRoughness);
+  for (float value : {out_material.m_fClearCoat, out_material.m_fClearCoatRoughness, out_material.m_fTransmission, out_material.m_fThickness, out_material.m_fIndexOfRefraction, out_material.m_fAnisotropy, out_material.m_fSheenRoughness})
+    if (!xiiMath::IsFinite(value))
+      return Fail(error, "Source material contains non-finite PBR layer properties.");
   int twoSided = 0;
   material.Get(AI_MATKEY_TWOSIDED, twoSided);
   out_material.m_bTwoSided = twoSided != 0;
@@ -213,6 +232,31 @@ xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMate
   {
     XII_SUCCEED_OR_RETURN(ReadTextures(scene, material, aiTextureType_DIFFUSE_ROUGHNESS, xiiModelTextureUsage::Roughness, out_material, inout_textures, error));
     XII_SUCCEED_OR_RETURN(ReadTextures(scene, material, aiTextureType_METALNESS, xiiModelTextureUsage::Metallic, out_material, inout_textures, error));
+  }
+  for (auto& texture : out_material.m_Textures)
+  {
+    if (bGltf)
+    {
+      // Undo Assimp glTF's image-center/vertical-origin conversion (and the
+      // optional FlipUVs postprocess) to recover KHR_texture_transform exactly.
+      // Native mappings rotate scaled coordinates about the texture origin.
+      const float   rotation   = bFlipTextureV ? texture.m_fUVRotation : -texture.m_fUVRotation;
+      const float   cosine     = xiiMath::Cos(xiiAngle::MakeFromRadian(rotation));
+      const float   sine       = xiiMath::Sin(xiiAngle::MakeFromRadian(rotation));
+      const auto    scale      = texture.m_vUVScale;
+      const float   canonicalY = bFlipTextureV ? -texture.m_vUVOffset.y : texture.m_vUVOffset.y;
+      const xiiVec2 offset(texture.m_vUVOffset.x - 0.5f * scale.x * (-cosine + sine + 1),
+                           0.5f * scale.y * (sine + cosine - 1) + 1 - scale.y - canonicalY);
+      texture.m_fUVRotation = bFlipTextureV ? rotation : -rotation;
+      texture.m_vUVOffset   = bFlipTextureV ? offset : xiiVec2(offset.x - sine * scale.y, 1 - cosine * scale.y - offset.y);
+    }
+    else
+    {
+      const float cosine  = xiiMath::Cos(xiiAngle::MakeFromRadian(texture.m_fUVRotation));
+      const float sine    = xiiMath::Sin(xiiAngle::MakeFromRadian(texture.m_fUVRotation));
+      const auto  offset  = texture.m_vUVOffset - xiiVec2(0.5f);
+      texture.m_vUVOffset = xiiVec2(0.5f) + xiiVec2(cosine * offset.x - sine * offset.y, sine * offset.x + cosine * offset.y).CompMul(texture.m_vUVScale);
+    }
   }
   return XII_SUCCESS;
 }
