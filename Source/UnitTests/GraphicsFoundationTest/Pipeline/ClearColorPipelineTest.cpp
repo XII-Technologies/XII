@@ -60,6 +60,7 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
   properties.Insert("Color", xiiColor::Red);
   const auto uiClear   = descriptor.AddPass("Clear Color", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
   const auto uiPresent = descriptor.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>());
+  descriptor.m_Interface.PushBack({"ViewTarget", true, descriptor.m_Passes[uiPresent].m_Id, "Target"});
   if (!XII_TEST_RESULT(descriptor.Connect(uiClear, "Texture", uiPresent, "GradedColor")))
     return;
 

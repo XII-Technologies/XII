@@ -28,6 +28,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
@@ -204,8 +205,8 @@ namespace
   };
   bool ReloadOpaqueAmbient()
   {
-    // This is the exact nested resource ID serialized by DeferredOpaque, not a rooted test alias.
-    const auto                          resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>("RenderPipelines/WorldDeferredLighting.xiiBinRenderPipeline");
+    // Reload the canonical resource shared by the capture wrapper and ordinary views.
+    const auto                          resource = xiiLoadPipelineLibraryResource("Scene");
     xiiRenderPipelineResourceDescriptor descriptor;
     {
       xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -245,7 +246,7 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("DeferredOpaque");
+  const auto                                 asset = xiiLoadPipelineLibraryResource("Scene");
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
@@ -537,8 +538,41 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
         return;
       for (xiiUInt32 c = 0; c < 3; ++c)
         XII_TEST_FLOAT(float((pixel >> (8 * c)) & 255), float((finalPixels[v] >> (8 * c)) & 255), 1.0f);
-      const auto& statistics = remaining.m_Views[v]->GetRenderGraph()->GetStatistics();
-      xiiTestFramework::Output(xiiTestOutput::Details, "Unmodified DeferredOpaque view %u: %u operations, %u submissions, %u barriers.", v, statistics.m_uiCompiledPassCount, statistics.m_uiQueueSubmissionCount, statistics.m_uiTotalBarrierCount);
+      const auto& statistics     = remaining.m_Views[v]->GetRenderGraph()->GetStatistics();
+      const auto& instance       = remaining.m_Views[v]->GetRenderPipelineInstance();
+      const auto* externalTarget = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("ViewTarget", true));
+      XII_TEST_BOOL(externalTarget && externalTarget->m_hTexture.IsValid());
+      xiiTestFramework::Output(xiiTestOutput::Details, "Unmodified Scene view %u: %u operations, %u submissions, %u barriers.", v, statistics.m_uiCompiledPassCount, statistics.m_uiQueueSubmissionCount, statistics.m_uiTotalBarrierCount);
+    }
+    // Scene attachments are view-local. Presentation applies the window offset once,
+    // scales the rendered image, and preserves pixels outside the view's rectangle.
+    xiiGALCommandListCreationDescription commandsDescription;
+    commandsDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+    auto commands                    = environment.GetDevice()->CreateCommandList(commandsDescription);
+    commands->Begin();
+    for (xiiUInt32 v = 0; v < 2; ++v)
+    {
+      target(remaining, v, 96, 64);
+      remaining.m_Views[v]->SetViewport({8, 12, 64, 32});
+      remaining.m_Views[v]->SetRenderScale(0.5f);
+      commands->ClearRenderTargetView(remaining.m_Targets[v]->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Blue);
+    }
+    commands->End();
+    auto* queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+    queue->WaitForFenceValue(queue->Submit(commands.Borrow()));
+    remaining.m_World->Update();
+    environment.GetDevice()->WaitIdle();
+    for (xiiUInt32 v = 0; v < 2; ++v)
+    {
+      XII_TEST_INT(remaining.m_Views[v]->GetRenderResolutionWidth(), 32);
+      XII_TEST_INT(remaining.m_Views[v]->GetRenderResolutionHeight(), 16);
+      xiiUInt32 center = 0, outside = 0;
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), remaining.m_Targets[v].Borrow(), 40, 28, center) ||
+          !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), remaining.m_Targets[v].Borrow(), 0, 0, outside))
+        return;
+      XII_TEST_INT(outside, 0xFFFF0000U);
+      for (xiiUInt32 c = 0; c < 3; ++c)
+        XII_TEST_FLOAT(float((center >> (8 * c)) & 255), float((finalPixels[v] >> (8 * c)) & 255), 2.0f);
     }
   }
   XII_TEST_BOOL(sawResident);

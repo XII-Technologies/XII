@@ -41,6 +41,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPresentPass, 1, xiiRTTIDefaultAllocator<xiiP
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("GradedColorInput", m_InputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GradedColor")),
+    XII_MEMBER_PROPERTY("Target", m_InputTarget)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("FinalBlitConstants", m_OutputFinalBlitConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("Final Blit Constants")),
     XII_MEMBER_PROPERTY("GradedColorOutput", m_OutputGradedColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("GradedColor")),
     XII_MEMBER_PROPERTY("ViewOutput", m_OutputViewOutput)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -75,6 +77,8 @@ xiiResult xiiPresentPass::Configure(const xiiVariantDictionary& properties)
 
 xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (!m_bEnabled)
+    return context.SetOutput(m_OutputGradedColor, context.GetInputTexture(m_InputGradedColor));
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
@@ -90,13 +94,17 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   const auto* source = context.m_Graph.GetTextureDescription(input);
   if (!source || source->m_Type != xiiGALResourceDimension::Texture2D || source->m_uiArraySizeOrDepth != 1 || source->m_uiSampleCount != 1 || !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || xiiGALResourceFormat::IsDepthFormat(source->m_Format))
     return context.ReportFailure("Presentation requires one shader-readable, single-sample color image.");
-  const auto                        target    = context.m_pView->GetRenderTargetView();
-  const auto                        swapchain = target ? nullptr : context.m_pView->GetSwapChain();
-  const xiiSharedPtr<xiiGALTexture> texture   = target ? target->GetTexture() : swapchain ? swapchain->GetBackBufferTexture() :
-                                                                                            xiiSharedPtr<xiiGALTexture>();
-  if (!texture)
+  const auto                        target      = context.m_pView->GetRenderTargetView();
+  const auto                        boundTarget = context.GetInputTexture(m_InputTarget);
+  const auto                        swapchain   = target ? nullptr : context.m_pView->GetSwapChain();
+  const xiiSharedPtr<xiiGALTexture> texture     = target ? target->GetTexture() : swapchain ? swapchain->GetBackBufferTexture() :
+                                                                                              xiiSharedPtr<xiiGALTexture>();
+  if (!texture && !boundTarget.IsValid())
     return context.ReportFailure("Presentation has no configured view target or acquired swapchain image.");
-  const auto& description = texture->GetDescription();
+  const auto* targetDescription = boundTarget.IsValid() ? context.m_Graph.GetTextureDescription(boundTarget) : &texture->GetDescription();
+  if (!targetDescription)
+    return context.ReportFailure("Presentation received an invalid target binding.");
+  const auto& description = *targetDescription;
   if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 || description.m_uiSampleCount != 1 || !description.m_Size.width || !description.m_Size.height || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || (target && (target->GetDescription().m_ViewType != xiiGALTextureViewType::RenderTarget || target->GetDescription().m_Format != description.m_Format || target->GetDescription().m_uiMostDetailedMip || target->GetDescription().m_uiFirstArrayOrDepthSlice || target->GetDescription().m_uiArrayOrDepthSlicesCount != 1)))
     return context.ReportFailure("Presentation requires a full single-sample 2D render target.");
   const auto& viewport = context.m_pView->GetViewport();
@@ -110,7 +118,7 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("The presentation shader is unavailable.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_hDisplayLinear = builder.ReadTexture(input, xiiGALResourceStateFlags::ShaderResource);
-    const auto imported   = builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState());
+    const auto imported   = boundTarget.IsValid() ? boundTarget : builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState());
     const bool partial    = viewport.x != 0 || viewport.y != 0 || viewport.width != description.m_Size.width || viewport.height != description.m_Size.height;
     data.m_hBackbuffer    = partial ? builder.ReadWriteTexture(imported, xiiGALResourceStateFlags::RenderTarget) : builder.WriteTexture(imported, xiiGALResourceStateFlags::RenderTarget);
     builder.ExportTexture(data.m_hBackbuffer, swapchain ? xiiGALResourceStateFlags::Present : description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::RenderTarget);

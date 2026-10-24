@@ -12,6 +12,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Graphics.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
@@ -422,7 +423,24 @@ xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlac
 {
   auto* runtime = GetPipelineInstance();
   RunDynamicResolutionPID();
-  const xiiResult result = runtime->Build(this, graph, blackboard, m_PipelineParameters);
+  xiiHybridArray<xiiRenderPipelineInputBinding, 1> inputs;
+  if (const auto* pipeline = runtime->GetPipeline())
+  {
+    // Only this explicit root interface has view-owned semantics. Other root inputs
+    // remain available to callers of the ordinary pipeline instance API.
+    const auto targetInterface = pipeline->FindInterface("ViewTarget", true);
+    if (targetInterface != xiiInvalidIndex)
+    {
+      const auto target = m_pRenderTargetView ? m_pRenderTargetView->GetTexture() : m_pSwapChain ? m_pSwapChain->GetBackBufferTexture() :
+                                                                                                   xiiSharedPtr<xiiGALTexture>();
+      if (target)
+      {
+        const auto imported = graph.AddPass<xiiRenderGraphTextureHandle>("View target interface", xiiGALCommandQueueFlags::Graphics, [&](xiiRenderGraphTextureHandle& handle, xiiRenderGraphBuilder& builder) { handle = builder.ImportTexture("ViewTarget", target, target->GetResourceState()); }, [](const xiiRenderGraphTextureHandle&, xiiRenderGraphPassContext&) {});
+        inputs.PushBack(xiiRenderPipelineInputBinding(graph, targetInterface, *imported.first));
+      }
+    }
+  }
+  const xiiResult result = runtime->Build(this, graph, blackboard, m_PipelineParameters, inputs);
   if (result.Failed())
     InvalidateTemporalHistory();
   return result;
