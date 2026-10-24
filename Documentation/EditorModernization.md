@@ -458,8 +458,10 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   plugin still fails on removed extractor, shadow-pool, animation declaration,
   and global render-world interfaces (`Workspace/editor-process-scene-build.log`);
   its viewport features require migration, not replacement API shims.
-- Scene and asset-preview grids now share `xiiEditorGrid` CPU geometry and the
-  standard debug-render graph passes. The removed grid extractor, renderer,
+- Scene and asset-preview grids initially shared `xiiEditorGrid` CPU geometry and the
+  standard debug-render graph passes. This intermediate path is now replaced by
+  the [shader-driven infinite grid and dedicated gizmos](Rendering/EditorViewportVisualization.md).
+  The removed grid extractor, renderer,
   mutable GPU buffer, shader/layout setup, and render-data class are deleted.
   Local/global placement, ten-step major lines, orthographic camera alignment,
   and zoom-dependent spacing remain; orthographic grids now account for camera

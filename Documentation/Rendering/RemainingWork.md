@@ -11,8 +11,9 @@ orchestration descriptions do not describe the current defaults.
 - Complete a full interactive Editor session: ordinary imported scene, lights,
   cameras, materials, selection/picking, gizmos, previews, profile editing,
   asset transformation and hot reload. Engine/Editor GPU tests cover these paths
-  selectively, not every desktop interaction. Computer-use window access was
-  unavailable during this validation run.
+  selectively, not every desktop interaction. Native viewport validation and
+  the grid/handle architecture are recorded in
+  [EditorViewportVisualization.md](EditorViewportVisualization.md).
 - Exercise D3D12 and other supported platforms, stereo cameras and representative
   large worlds. Current end-to-end output evidence is from the configured Windows
   Vulkan backend. Budget checks are explicit; no cross-backend certification or
