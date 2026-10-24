@@ -278,7 +278,11 @@ xiiResult xiiGetRenderPipelineInterface(const xiiRenderPipelineResourceDescripto
     xiiRenderPipelinePass* pass = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(pass));
     if (pass->Configure(node.m_Properties).Failed())
-      return fail("Invalid interface pass configuration.");
+    {
+      xiiStringBuilder message;
+      message.SetFormat("Invalid interface pass configuration for type '{}'.", node.m_sType);
+      return fail(message);
+    }
     XII_SUCCEED_OR_RETURN(pass->GetConfiguredPins(schemas[index], out_error));
     pinSchemas.PushBack(schemas[index].GetArrayPtr());
   }

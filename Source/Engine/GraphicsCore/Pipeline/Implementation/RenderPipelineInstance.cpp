@@ -22,6 +22,7 @@ xiiRenderPipelineInstance::xiiRenderPipelineInstance()
 xiiRenderPipelineInstance::~xiiRenderPipelineInstance() { Clear(); }
 void xiiRenderPipelineInstance::Clear()
 {
+  m_ResourceAcquireResult = xiiResourceAcquireResult::None;
   m_sBuildError.Clear();
   m_uiPreparedSetup = m_uiBuiltSetup = 0;
   m_pPreparedView                    = nullptr;
@@ -94,10 +95,15 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     return XII_FAILURE;
   }
   xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
-  auto                                       pipeline = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
+  auto                                       pipeline      = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
+  const auto                                 acquireResult = acquired.GetAcquireResult();
+  if (acquireResult == xiiResourceAcquireResult::MissingFallback && (m_ResourceAcquireResult != acquireResult || pipeline != m_pPipeline))
+    xiiLog::Error("Render pipeline '{}' is missing or failed to compile. Rendering its missing-resource fallback.", resource.GetResourceID());
   if (out_changed)
     *out_changed = pipeline != m_pPipeline;
-  return Initialize(std::move(pipeline));
+  const auto result       = Initialize(std::move(pipeline));
+  m_ResourceAcquireResult = acquireResult;
+  return result;
 }
 xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides)
 {

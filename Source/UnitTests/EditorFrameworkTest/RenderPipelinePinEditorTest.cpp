@@ -24,7 +24,6 @@
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowRasterWorkPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearColorPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
-#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
@@ -239,7 +238,7 @@ XII_CREATE_SIMPLE_TEST(PipelineEditor, SubgraphPinsFromSourceAsset)
   auto*   liveAccessor = live->GetObjectAccessor();
   xiiUuid producerId, consumerId;
   accessor->StartTransaction("Connect parent resources to the existing instance");
-  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), producerId));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearTexturePass>(), producerId));
   XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), consumerId));
   XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(parent.GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(producerId), "Texture"), *manager->GetInputPinByName(accessor->GetObject(id), "Color")));
   XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(parent.GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(id), "Result"), *manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture")));
@@ -291,7 +290,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)
   auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(child.GetObjectManager());
   xiiUuid     ids[4];
   accessor->StartTransaction("Author defaulted pipeline input");
-  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), ids[0]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearTexturePass>(), ids[0]));
   XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), ids[1]));
   XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), ids[2]));
   XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), ids[3]));
@@ -353,7 +352,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, message.m_sOutputFile});
   xiiVariantDictionary properties;
-  xiiCreateTexturePass producer;
+  xiiClearTexturePass  producer;
   producer.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 32, 16});
   XII_TEST_RESULT(producer.GetProperties(properties));
   root.AddPass("Parent texture", producer.GetDynamicRTTI(), properties);
@@ -394,7 +393,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, DeleteRenderPipelineNodes)
   xiiUuid                nodes[2];
   accessor->StartTransaction("Create connected pipeline");
   XII_TEST_STATUS(document.EnsureSettingsObject());
-  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), nodes[0]));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearTexturePass>(), nodes[0]));
   XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearColorPass>(), nodes[1]));
   XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(),
                                                         *manager->GetOutputPinByName(accessor->GetObject(nodes[0]), "Texture"), *manager->GetInputPinByName(accessor->GetObject(nodes[1]), "Texture")));
@@ -1042,12 +1041,12 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
   xiiUuid                id;
   accessor->StartTransaction("Create reflected texture output");
   XII_TEST_STATUS(document.EnsureSettingsObject());
-  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiCreateTexturePass>(), id));
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearTexturePass>(), id));
   accessor->FinishTransaction();
   const auto* node = accessor->GetObject(id);
   if (!XII_TEST_BOOL(node != nullptr))
     return;
-  XII_TEST_BOOL(manager->GetInputPins(node).IsEmpty());
+  XII_TEST_INT(manager->GetInputPins(node).GetCount(), 1);
   XII_TEST_INT(manager->GetOutputPins(node).GetCount(), 1);
   const auto* output = manager->GetOutputPinByName(node, "Texture");
   if (!XII_TEST_BOOL(output != nullptr))
@@ -1057,7 +1056,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
   if (!XII_TEST_BOOL(texture && requirements))
     return;
   XII_TEST_BOOL(manager->GetPinPropertyObject(*output) == texture);
-  XII_TEST_INT(node->GetTypeAccessor().GetCount("PinConfigurations"), 0);
+  XII_TEST_INT(node->GetTypeAccessor().GetCount("PinConfigurations"), 1);
   const auto* property = node->GetType()->FindPropertyByName("Texture");
   XII_TEST_BOOL(property && !property->GetAttributeByType<xiiHiddenAttribute>() && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly));
   for (const char* name : {"Width", "Height", "Format"})
@@ -1104,7 +1103,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
   xiiAbstractObjectGraph           graph;
   xiiDocumentObjectConverterWriter writer(&graph, restored.GetObjectManager());
   const auto*                      root = writer.AddObjectToGraph(restoredNode, "root");
-  xiiCreateTexturePass             pass;
+  xiiClearTexturePass              pass;
   xiiRttiConverterContext          context;
   context.RegisterObject(root->GetGuid(), pass.GetDynamicRTTI(), &pass);
   xiiRttiConverterReader reader(&graph, &context);
@@ -1112,7 +1111,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, CreateTexturePinProperties)
   xiiVariantDictionary properties;
   XII_TEST_RESULT(pass.GetProperties(properties));
   XII_TEST_BOOL(properties.Contains("Texture") && !properties.Contains("Width") && !properties.Contains("Format"));
-  xiiCreateTexturePass configured;
+  xiiClearTexturePass configured;
   XII_TEST_RESULT(configured.Configure(properties));
   XII_TEST_BOOL(configured.m_OutputTexture.GetFormat() == xiiGALResourceFormat::RGBA8UNormalized);
   XII_TEST_INT(configured.m_OutputTexture.GetResolution().m_uiWidth, 64);

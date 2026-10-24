@@ -16,7 +16,6 @@
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
-#include <GraphicsCore/Pipeline/Passes/Utility/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -368,7 +367,7 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
   xiiRenderPipelineResourceDescriptor definition;
   for (auto mode : {Mode::RenderResolution, Mode::Viewport, Mode::Fixed})
   {
-    xiiCreateTexturePass               pass;
+    xiiClearTexturePass                pass;
     xiiRenderPipelineTextureResolution resolution;
     if (mode != Mode::Viewport)
       resolution.m_Mode = mode; // Viewport must also work through the default policy.
@@ -383,7 +382,7 @@ XII_CREATE_SIMPLE_TEST(TextureResolution, ViewLocalTextureResolution)
     XII_TEST_RESULT(pass.GetProperties(properties));
     definition.AddPass(mode == Mode::Fixed ? "Fixed texture" : mode == Mode::Viewport ? "Viewport texture" :
                                                                                         "Internal texture",
-                       xiiGetStaticRTTI<xiiCreateTexturePass>(), properties);
+                       xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
   }
   definition.AddPass("History invalidation", xiiGetStaticRTTI<xiiResolutionHistoryTestPass>());
   xiiSharedPtr<const xiiRenderPipeline> compiled;
