@@ -19,6 +19,9 @@
 #include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
+#include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
+#include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
+#include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/CuratorControl.moc.h>
 #include <Foundation/Application/Application.h>
@@ -29,6 +32,7 @@
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
@@ -204,6 +208,116 @@ XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundTransforms);
 XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundImports);
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorBackgroundAssetChecks);
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorWindowGeometry);
+
+XII_CREATE_SIMPLE_TEST(EditorWindowGeometry, SceneSessionRestoration)
+{
+  auto&           editor       = *xiiQtEditorApp::GetSingleton();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/GeometryPreferences");
+  const xiiStringBuilder project(preferences, "/Project/xiiProject");
+  const xiiStringBuilder scenePath(preferences, "/Project/Geometry.xiiScene");
+  const bool             restoring = xiiOSFile::ExistsFile(scenePath);
+  auto&                  command   = *xiiCommandLineUtils::GetGlobalInstance();
+  auto                   arguments = command.GetCommandLineArray();
+  XII_SCOPE_EXIT(command.SetCommandLine(arguments));
+  if (restoring)
+  {
+    xiiDynamicArray<xiiString> startup;
+    startup.PushBack("xiiEditor");
+    startup.PushBack("-project");
+    startup.PushBack(project);
+    startup.PushBack("-documents");
+    startup.PushBack(scenePath);
+    command.SetCommandLine(startup);
+  }
+  XII_TEST_BOOL(xiiToolsProject::CreateProject(project).Succeeded());
+  xiiToolsProject::CloseProject();
+  class GeometryLog : public xiiTestLogInterface
+  {
+  public:
+    void HandleLogMessage(const xiiLoggingEventData& event) override
+    {
+      if (event.m_EventType == xiiLogMsgType::WarningMsg && event.m_sText.FindSubString("QWindowsWindow::setGeometry"))
+      {
+        ++m_uiGeometryWarnings;
+      }
+      xiiTestLogInterface::HandleLogMessage(event);
+    }
+    xiiUInt32 m_uiGeometryWarnings = 0;
+  } log;
+  xiiTestLogSystemScope logScope(&log);
+  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent, preferences);
+  XII_SCOPE_EXIT(editor.ShutdownEditor());
+  if (!restoring && !XII_TEST_RESULT(editor.CreateOrOpenProject(false, project)))
+    return;
+  if (restoring)
+  {
+    // A second fresh process restores the saved scene during StartupEditor,
+    // before the container is shown. This reproduced the exact 0x480 warning.
+    bool restored = false;
+    for (auto* restoredWindow : xiiQtDocumentWindow::GetAllDocumentWindows())
+      restored |= restoredWindow->GetDocument() != nullptr && restoredWindow->GetDocument()->GetDocumentPath() == scenePath;
+    XII_TEST_BOOL(restored);
+  }
+  auto* container = xiiQtContainerWindow::GetContainerWindow();
+  container->hide();
+  container->SetWindowPresentationEnabled(false);
+  auto* document = restoring ? editor.OpenDocument(scenePath, xiiDocumentFlags::RequestWindow) : editor.CreateDocument(scenePath, xiiDocumentFlags::RequestWindow);
+  if (!XII_TEST_BOOL(document != nullptr))
+    return;
+  QApplication::processEvents();
+  auto* window = xiiQtDocumentWindow::FindWindowByDocument(document);
+  if (!XII_TEST_BOOL(window != nullptr))
+    return;
+  auto* quad          = window->findChild<xiiQtQuadViewWidget*>();
+  auto  checkSurfaces = [&]() {
+    auto* engineWindow = qobject_cast<xiiQtEngineDocumentWindow*>(window);
+    if (!XII_TEST_BOOL(engineWindow != nullptr))
+      return;
+    for (auto* view : engineWindow->GetViewWidgets())
+    {
+      xiiUInt32 surfaces = 0;
+      for (auto* child : view->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly))
+      {
+        if (!child->testAttribute(Qt::WA_PaintOnScreen))
+          continue;
+        ++surfaces;
+        XII_TEST_BOOL(child->winId() != 0);
+        XII_TEST_BOOL(child->width() >= 64 && child->height() >= 64);
+      }
+      XII_TEST_INT(surfaces, 1);
+      XII_TEST_BOOL(view->internalWinId() == 0);
+    }
+  };
+  if (XII_TEST_BOOL(quad != nullptr))
+  {
+    checkSurfaces();
+    const auto initialViews = quad->GetActiveMainViews().GetCount();
+    auto*      view         = quad->findChild<xiiQtEngineViewWidget*>();
+    if (XII_TEST_BOOL(view != nullptr))
+      quad->ToggleViews(view);
+    QApplication::processEvents();
+    XII_TEST_INT(quad->GetActiveMainViews().GetCount(), initialViews == 4 ? 1 : 4);
+    checkSurfaces();
+    view = quad->findChild<xiiQtEngineViewWidget*>();
+    if (XII_TEST_BOOL(view != nullptr))
+      quad->ToggleViews(view);
+    XII_TEST_INT(quad->GetActiveMainViews().GetCount(), initialViews);
+    checkSurfaces();
+  }
+  container->SetWindowPresentationEnabled(true);
+  container->show();
+  QApplication::processEvents();
+  XII_TEST_STATUS(document->SaveDocument());
+  container->SaveDocumentLayouts();
+  document->GetDocumentManager()->CloseDocument(document);
+  XII_TEST_INT(log.m_uiGeometryWarnings, 0);
+}
 
 XII_CREATE_SIMPLE_TEST(EditorBackgroundAssetChecks, ResponsiveRescanAndShutdown)
 {
