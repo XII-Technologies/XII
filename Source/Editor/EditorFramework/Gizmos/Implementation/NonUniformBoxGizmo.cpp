@@ -171,8 +171,6 @@ modify:
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
 
-  m_LastInteraction = xiiTime::Now();
-
   m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::Normal);
 
   SetActiveInputContext(this);
@@ -195,6 +193,9 @@ xiiEditorInput xiiNonUniformBoxGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -205,13 +206,6 @@ xiiEditorInput xiiNonUniformBoxGizmo::DoMouseMoveEvent(QMouseEvent* e)
 {
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
-
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
 
   m_vNegSize = m_vStartNegSize;
   m_vPosSize = m_vStartPosSize;

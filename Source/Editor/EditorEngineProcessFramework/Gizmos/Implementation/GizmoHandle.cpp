@@ -32,6 +32,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEngineGizmoHandle, 2, xiiRTTIDefaultAllocato
     XII_MEMBER_PROPERTY("VisualState", m_iVisualState),
     XII_MEMBER_PROPERTY("RotationArc", m_vArc),
     XII_MEMBER_PROPERTY("DragOrigin", m_vDragOrigin),
+    XII_MEMBER_PROPERTY("InteractionText", m_sInteractionText),
   }
   XII_END_PROPERTIES;
 }
@@ -108,6 +109,14 @@ void xiiEngineGizmoHandle::SetDragOrigin(const xiiVec3& origin)
   if (m_vDragOrigin == origin)
     return;
   m_vDragOrigin = origin;
+  SetModified();
+}
+
+void xiiEngineGizmoHandle::SetInteractionText(xiiStringView text)
+{
+  if (m_sInteractionText == text)
+    return;
+  m_sInteractionText = text;
   SetModified();
 }
 

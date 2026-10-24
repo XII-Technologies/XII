@@ -4,6 +4,8 @@
 #include <Shaders/Common/ShaderResourceMacros.h>
 
 #define XII_EDITOR_GIZMO_RING     15
+#define XII_EDITOR_GIZMO_UNIFORM  17
+#define XII_EDITOR_GIZMO_PLANE    14
 #define XII_EDITOR_GIZMO_ON_TOP   1
 #define XII_EDITOR_GIZMO_WIRE     2
 #define XII_EDITOR_GIZMO_ACTIVE   4

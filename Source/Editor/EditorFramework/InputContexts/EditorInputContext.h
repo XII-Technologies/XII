@@ -108,7 +108,7 @@ private:
   xiiQtEngineViewWidget*     m_pOwnerView;
   bool                       m_bDisableShortcuts;
   bool                       m_bJustWrappedMouse;
-  MouseMode                  m_MouseMode;
+  MouseMode                  m_MouseMode = MouseMode::Normal;
   xiiVec2I32                 m_vMouseRestorePosition;
   xiiVec2I32                 m_vMousePosBeforeWrap;
   xiiVec2I32                 m_vExpectedMousePosition;

@@ -5,10 +5,12 @@
 #include <Core/Graphics/Camera.h>
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
+#include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Gizmos/TranslateGizmo.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
+#include <QCursor>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTranslateGizmo, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -22,13 +24,13 @@ xiiTranslateGizmo::xiiTranslateGizmo()
   const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
   const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
 
-  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowX.obj");
-  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowY.obj");
-  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/TranslateArrowZ.obj");
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
 
-  m_hPlaneYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneX.obj");
-  m_hPlaneXZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneY.obj");
-  m_hPlaneXY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneZ.obj");
+  m_hPlaneYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationPlane, xiiColor(colr.r, colr.g, colr.b, 0.18f), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho | xiiGizmoFlags::FaceCamera);
+  m_hPlaneXZ.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationPlane, xiiColor(colg.r, colg.g, colg.b, 0.18f), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho | xiiGizmoFlags::FaceCamera);
+  m_hPlaneXY.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationPlane, xiiColor(colb.r, colb.g, colb.b, 0.18f), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho | xiiGizmoFlags::FaceCamera);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -63,11 +65,16 @@ void xiiTranslateGizmo::OnVisibleChanged(bool bVisible)
 void xiiTranslateGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
   m_hAxisX.SetTransformation(transform);
-  m_hAxisY.SetTransformation(transform);
-  m_hAxisZ.SetTransformation(transform);
+  auto axis        = transform;
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3::MakeAxisY());
+  m_hAxisY.SetTransformation(axis);
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3::MakeAxisZ());
+  m_hAxisZ.SetTransformation(axis);
   m_hPlaneXY.SetTransformation(transform);
-  m_hPlaneYZ.SetTransformation(transform);
-  m_hPlaneXZ.SetTransformation(transform);
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisZ(), xiiVec3::MakeAxisX());
+  m_hPlaneYZ.SetTransformation(axis);
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisZ(), xiiVec3::MakeAxisY());
+  m_hPlaneXZ.SetTransformation(axis);
 
   if (!IsActiveInputContext())
   {
@@ -101,6 +108,7 @@ void xiiTranslateGizmo::DoFocusLost(bool bCancel)
 
   m_vStartPosition = GetTransformation().m_vPosition;
   m_vTotalMouseDiff.SetZero();
+  m_vMovementStartTranslation.SetZero();
 
   GetOwnerWindow()->SetPermanentStatusBarMsg("");
 }
@@ -170,13 +178,11 @@ xiiEditorInput xiiTranslateGizmo::DoMousePressEvent(QMouseEvent* e)
   m_vTotalMouseDiff.SetZero();
 
   xiiMat4 mView = m_pCamera->GetViewMatrix();
+  m_vMovementStartTranslation.SetZero();
   xiiMat4 mProj;
   m_pCamera->GetProjectionMatrix((float)m_vViewport.x / (float)m_vViewport.y, mProj);
   xiiMat4 mViewProj = mProj * mView;
   m_mInvViewProj    = mViewProj.GetInverse();
-
-
-  m_LastInteraction = xiiTime::Now();
 
   m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::WrapAtScreenBorders);
   SetActiveInputContext(this);
@@ -189,8 +195,6 @@ xiiEditorInput xiiTranslateGizmo::DoMousePressEvent(QMouseEvent* e)
   {
     GetPointOnPlane(e->pos().x(), e->pos().y(), m_vInteractionPivot).IgnoreResult();
   }
-
-  m_fStartScale = (m_vInteractionPivot - m_pCamera->GetPosition()).GetLength() * 0.125;
 
   xiiGizmoEvent ev;
   ev.m_pGizmo = this;
@@ -207,6 +211,9 @@ xiiEditorInput xiiTranslateGizmo::DoMouseReleaseEvent(QMouseEvent* e)
 
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
+
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
 
   FocusLost(false);
 
@@ -225,7 +232,7 @@ xiiResult xiiTranslateGizmo::GetPointOnPlane(xiiInt32 iScreenPosX, xiiInt32 iScr
   xiiPlane Plane = xiiPlane::MakeFromNormalAndPoint(m_vMoveAxis, m_vStartPosition);
 
   xiiVec3 vIntersection;
-  if (!Plane.GetRayIntersection(m_pCamera->GetPosition(), vRayDir, nullptr, &vIntersection))
+  if (!Plane.GetRayIntersection(vPos, vRayDir, nullptr, &vIntersection))
     return XII_FAILURE;
 
   out_Result = vIntersection;
@@ -240,13 +247,14 @@ xiiResult xiiTranslateGizmo::GetPointOnAxis(xiiInt32 iScreenPosX, xiiInt32 iScre
   if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_mInvViewProj, 0, 0, m_vViewport.x, m_vViewport.y, xiiVec3(iScreenPosX, iScreenPosY, 0), vPos, &vRayDir).Failed())
     return XII_FAILURE;
 
-  const xiiVec3 vPlaneTangent = m_vMoveAxis.CrossRH(m_pCamera->GetDirForwards()).GetNormalized();
-  const xiiVec3 vPlaneNormal  = m_vMoveAxis.CrossRH(vPlaneTangent);
+  xiiVec3 vPlaneTangent = m_vMoveAxis.CrossRH(m_pCamera->GetDirForwards());
+  XII_SUCCEED_OR_RETURN(vPlaneTangent.NormalizeIfNotZero());
+  const xiiVec3 vPlaneNormal = m_vMoveAxis.CrossRH(vPlaneTangent);
 
   xiiPlane Plane = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, m_vStartPosition);
 
   xiiVec3 vIntersection;
-  if (!Plane.GetRayIntersection(m_pCamera->GetPosition(), vRayDir, nullptr, &vIntersection))
+  if (!Plane.GetRayIntersection(vPos, vRayDir, nullptr, &vIntersection))
     return XII_FAILURE;
 
   const xiiVec3 vDirAlongRay     = vIntersection - m_vStartPosition;
@@ -261,16 +269,9 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
 
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
   const QPoint mousePosition = e->globalPosition().toPoint();
 
   const xiiVec2I32 CurMousePos(mousePosition.x(), mousePosition.y());
-
-  m_LastInteraction = tNow;
 
   xiiTransform mTrans = GetTransformation();
   xiiVec3      vTranslate(0);
@@ -296,13 +297,7 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
       }
     }
 
-
-    const float   fPerspectiveScale = (vCurrentInteractionPoint - m_pCamera->GetPosition()).GetLength() * 0.125;
-    const xiiVec3 vOffset           = (m_vInteractionPivot - m_vStartPosition);
-
-    const xiiVec3 vNewPos = vCurrentInteractionPoint - vOffset * fPerspectiveScale / m_fStartScale;
-
-    vTranslate = vNewPos - m_vStartPosition;
+    vTranslate = vCurrentInteractionPoint - m_vInteractionPivot;
   }
   else
   {
@@ -319,6 +314,7 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
     {
       vTranslate = m_vPlaneAxis[0] * (m_vPlaneAxis[0].Dot(vMouseDir)) * fSpeed + m_vPlaneAxis[1] * (m_vPlaneAxis[1].Dot(vMouseDir)) * fSpeed;
     }
+    vTranslate += m_vMovementStartTranslation;
   }
 
   m_vLastMousePos = UpdateMouseMode(e);
@@ -339,7 +335,10 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   // set statusbar message
   {
-    const xiiVec3 diff = GetTransformation().m_qRotation.GetInverse() * GetTranslationResult();
+    const xiiVec3    diff = GetTransformation().m_qRotation.GetInverse() * GetTranslationResult();
+    xiiStringBuilder feedback;
+    feedback.SetFormat("{} units   X {}  Y {}  Z {}", xiiArgF(GetTranslationResult().GetLength(), 2), xiiArgF(diff.x, 2), xiiArgF(diff.y, 2), xiiArgF(diff.z, 2));
+    static_cast<xiiEngineGizmoHandle*>(m_pInteractionGizmoHandle)->SetInteractionText(feedback);
     GetOwnerWindow()->SetPermanentStatusBarMsg(xiiFmt("Translation: {}, {}, {}", xiiArgF(diff.x, 2), xiiArgF(diff.y, 2), xiiArgF(diff.z, 2)));
   }
 
@@ -363,11 +362,21 @@ void xiiTranslateGizmo::SetMovementMode(MovementMode mode)
 
   if (m_MovementMode == MovementMode::MouseDiff)
   {
+    m_vMovementStartTranslation = GetTranslationResult();
+    m_vTotalMouseDiff.SetZero();
     m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
   }
   else
   {
     m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::WrapAtScreenBorders);
+    xiiMat4 projection;
+    m_pCamera->GetProjectionMatrix(float(m_vViewport.x) / m_vViewport.y, projection);
+    m_mInvViewProj   = (projection * m_pCamera->GetViewMatrix()).GetInverse();
+    const auto pixel = GetOwnerView()->mapFromGlobal(QCursor::pos());
+    xiiVec3    point;
+    const auto result = m_Mode == TranslateMode::Axis ? GetPointOnAxis(pixel.x(), pixel.y(), point) : GetPointOnPlane(pixel.x(), pixel.y(), point);
+    if (result.Succeeded())
+      m_vInteractionPivot = point - GetTranslationResult();
   }
 }
 

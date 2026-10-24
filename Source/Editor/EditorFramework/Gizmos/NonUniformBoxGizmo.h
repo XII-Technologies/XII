@@ -33,7 +33,6 @@ protected:
 private:
   xiiResult GetPointOnAxis(xiiInt32 iScreenPosX, xiiInt32 iScreenPosY, xiiVec3& out_Result) const;
 
-  xiiTime m_LastInteraction;
   xiiMat4 m_mInvViewProj;
 
   xiiVec2I32 m_vLastMousePos;

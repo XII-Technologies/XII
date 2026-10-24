@@ -84,6 +84,16 @@ VS_OUT main(uint vertex : SV_VertexID, uint instance : SV_InstanceID)
   result.Angle = angle;
   result.Stroke = 0;
   result.StrokeLength = 0;
+  if (kind == 5)
+  {
+    result.Normal = float3(0, 0, 1);
+    result.Position = mul(RelativeViewProjection, float4(handle.GuideStart.xyz, 1));
+    if ((handle.Identity.y & XII_EDITOR_GIZMO_ACTIVE) == 0) { result.Position = float4(0, 0, -1, 1); return result; }
+    float2 cornerPosition = float2((corner & 1) ? 1 : -1, (corner & 2) ? 1 : -1);
+    result.Position.xy += cornerPosition * 6 * handle.Parameters.w * Viewport.zw * 2 * result.Position.w;
+    result.Stroke = cornerPosition * 6;
+    return result;
+  }
   float4 world = worldSpace ? float4(a, 1) : mul(handle.Transform, float4(a, 1));
   result.Position = mul(RelativeViewProjection, world);
   result.Normal = normalize(mul((float3x3)handle.Transform, kind == 0 ? b : float3(0, 0, 1)));
@@ -126,9 +136,15 @@ float4 main(VS_OUT input) : SV_Target0
   else if ((flags & XII_EDITOR_GIZMO_ACTIVE) != 0) color = lerp(color, 1, 0.55);
   else if ((flags & XII_EDITOR_GIZMO_HOVER) != 0) color = lerp(color, 1, 0.35);
   else if ((flags & XII_EDITOR_GIZMO_SELECTED) != 0) color = lerp(color, 1, 0.2);
-  if (input.Kind != 0)
+  if (input.Kind == 5)
   {
-    if (handle.Identity.x == 14) alpha = max(alpha, 0.7);
+    float radius = length(input.Stroke);
+    alpha *= 1 - smoothstep(0.7, 1.4, abs(radius - 3.8));
+    color = lerp(color, 1, 0.4);
+  }
+  else if (input.Kind != 0)
+  {
+    if (handle.Identity.x == XII_EDITOR_GIZMO_PLANE) alpha = max(alpha, 0.7);
     float2 distance = float2(input.Stroke.x - clamp(input.Stroke.x, 0, input.StrokeLength), input.Stroke.y);
     float width = handle.Parameters.x * handle.Parameters.w * 0.5;
     alpha *= 1 - smoothstep(width - 0.75, width + 0.75, length(distance));
@@ -151,8 +167,11 @@ float4 main(VS_OUT input) : SV_Target0
   if (occluded)
   {
     if ((flags & XII_EDITOR_GIZMO_ON_TOP) == 0) discard;
-    alpha *= input.Kind == 0 ? 0.22 : (frac((input.Position.x + input.Position.y) / (8 * handle.Parameters.w)) > 0.5 ? 0.32 : 0.08);
+    // Uniform scaling is the central interaction target and must remain readable
+    // even when the pivot is inside a bright selected surface.
+    alpha *= handle.Identity.x == XII_EDITOR_GIZMO_UNIFORM ? 1 : input.Kind == 0 ? 0.35 : (frac((input.Position.x + input.Position.y) / (8 * handle.Parameters.w)) > 0.5 ? 0.55 : 0.18);
   }
+  if (handle.Identity.x == XII_EDITOR_GIZMO_UNIFORM && input.Kind != 0) color = float3(0.035, 0.04, 0.05);
   if (alpha < 0.001) discard;
   return float4(color * alpha, alpha);
 }

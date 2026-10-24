@@ -19,10 +19,10 @@ xiiScaleGizmo::xiiScaleGizmo()
   const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
   const xiiColor coly = xiiColorScheme::LightUI(xiiColorScheme::Gray);
 
-  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowX.obj");
-  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowY.obj");
-  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleArrowZ.obj");
-  m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleXYZ.obj");
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleAxis, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleAxis, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleAxis, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleUniform, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -53,8 +53,11 @@ void xiiScaleGizmo::OnVisibleChanged(bool bVisible)
 void xiiScaleGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
   m_hAxisX.SetTransformation(transform);
-  m_hAxisY.SetTransformation(transform);
-  m_hAxisZ.SetTransformation(transform);
+  auto axis        = transform;
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3::MakeAxisY());
+  m_hAxisY.SetTransformation(axis);
+  axis.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3::MakeAxisZ());
+  m_hAxisZ.SetTransformation(axis);
   m_hAxisXYZ.SetTransformation(transform);
 }
 
@@ -116,8 +119,6 @@ xiiEditorInput xiiScaleGizmo::DoMousePressEvent(QMouseEvent* e)
   xiiMat4 mViewProj = mProj * mView;
   m_mInvViewProj    = mViewProj.GetInverse();
 
-  m_LastInteraction = xiiTime::Now();
-
   SetActiveInputContext(this);
 
   xiiGizmoEvent ev;
@@ -136,6 +137,9 @@ xiiEditorInput xiiScaleGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -146,13 +150,6 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
 {
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
-
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
 
   const QPoint mousePosition = e->globalPosition().toPoint();
 
@@ -188,6 +185,9 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
     xiiSnapProvider::SnapScale(m_vScalingResult);
 
   GetOwnerWindow()->SetPermanentStatusBarMsg(xiiFmt("Scale: {}, {}, {}", xiiArgF(m_vScalingResult.x, 2), xiiArgF(m_vScalingResult.y, 2), xiiArgF(m_vScalingResult.z, 2)));
+  xiiStringBuilder feedback;
+  feedback.SetFormat("Scale   X {}x  Y {}x  Z {}x", xiiArgF(m_vScalingResult.x, 2), xiiArgF(m_vScalingResult.y, 2), xiiArgF(m_vScalingResult.z, 2));
+  static_cast<xiiEngineGizmoHandle*>(m_pInteractionGizmoHandle)->SetInteractionText(feedback);
 
   xiiGizmoEvent ev;
   ev.m_pGizmo = this;
@@ -209,9 +209,10 @@ xiiManipulatorScaleGizmo::xiiManipulatorScaleGizmo()
   const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
 
   // Overwrite axis to be boxes.
-  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, xiiColorScheme::LightUI(xiiColorScheme::Yellow), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
 }
 
 void xiiManipulatorScaleGizmo::OnTransformationChanged(const xiiTransform& transform)

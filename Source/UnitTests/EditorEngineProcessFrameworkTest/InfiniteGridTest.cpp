@@ -230,6 +230,15 @@ XII_CREATE_SIMPLE_TEST(EditorViewportVisualization, InfiniteGrid)
           const auto directionToPoint = (point - camera.GetCenterPosition()).GetNormalized();
           XII_TEST_RESULT(handle.PickRay(*view, camera.GetCenterPosition(), directionToPoint, time));
         }
+        if (shape == xiiEngineGizmoHandleType::ScaleAxis)
+        {
+          xiiEngineGizmoHandle uniform;
+          uniform.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::ScaleUniform, xiiColor::LightGray, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+          uniform.SetVisible(true);
+          float time;
+          XII_TEST_RESULT(uniform.PickRay(*view, camera.GetCenterPosition(), (xiiVec3::MakeZero() - camera.GetCenterPosition()).GetNormalized(), time));
+          XII_TEST_RESULT(uniform.AppendRenderData(*view, 0, instances, files));
+        }
         XII_TEST_RESULT(xiiEditorGizmoPass::Submit(*view, instances, files));
         xiiStringBuilder name;
         name.SetFormat("Gizmo-{}-{}", shape == xiiEngineGizmoHandleType::TranslationAxis ? "Translation" : shape == xiiEngineGizmoHandleType::RotationRing ? "Rotation" :

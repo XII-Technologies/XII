@@ -141,6 +141,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
   cam.m_uiHWND                 = (xiiUInt64)(m_pViewportWidget->winId());
   cam.m_uiWindowWidth          = m_pViewportWidget->width() * this->devicePixelRatio();
   cam.m_uiWindowHeight         = m_pViewportWidget->height() * this->devicePixelRatio();
+  cam.m_fDevicePixelRatio      = static_cast<float>(devicePixelRatio());
   cam.m_bUpdatePickingData     = m_bUpdatePickingData;
   cam.m_bEnablePickingSelected = IsPickingAgainstSelectionAllowed() && (!xiiEditorInputContext::IsAnyInputContextActive() || xiiEditorInputContext::GetActiveInputContext()->IsPickingSelectedAllowed());
   cam.m_bEnablePickTransparent = m_bPickTransparent;

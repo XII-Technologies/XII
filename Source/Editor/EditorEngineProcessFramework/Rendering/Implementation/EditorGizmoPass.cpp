@@ -11,6 +11,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 
 static_assert(static_cast<xiiUInt32>(xiiEngineGizmoHandleType::RotationRing) == XII_EDITOR_GIZMO_RING);
+static_assert(static_cast<xiiUInt32>(xiiEngineGizmoHandleType::ScaleUniform) == XII_EDITOR_GIZMO_UNIFORM);
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorGizmoPass, 1, xiiRTTIDefaultAllocator<xiiEditorGizmoPass>)
   {
@@ -128,6 +129,10 @@ namespace
       Stroke(vertices, xiiVec3::MakeZero(), xiiVec3::MakeZero());
       for (xiiUInt32 i = first; i < vertices.GetCount(); ++i)
         vertices[i].Position.w = 3;
+      const auto marker = vertices.GetCount();
+      Stroke(vertices, xiiVec3::MakeZero(), xiiVec3::MakeZero());
+      for (xiiUInt32 i = marker; i < vertices.GetCount(); ++i)
+        vertices[i].Position.w = 5;
     }
     if (type != xiiEngineGizmoHandleType::RotationRing)
       result.m_uiVertexCount = vertices.GetCount();

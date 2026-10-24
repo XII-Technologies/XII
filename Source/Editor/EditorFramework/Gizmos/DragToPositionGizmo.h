@@ -43,7 +43,6 @@ protected:
   xiiEngineGizmoHandle m_hAlignNZ;
 
   bool    m_bModifiesRotation;
-  xiiTime m_LastInteraction;
   xiiVec3 m_vStartPosition;
   xiiQuat m_qStartOrientation;
 };

@@ -39,7 +39,6 @@ private:
 
   xiiVec2I32 m_vLastMousePos;
 
-  xiiTime m_LastInteraction;
   xiiVec3 m_vMoveAxis;
   xiiMat4 m_mInvViewProj;
 };

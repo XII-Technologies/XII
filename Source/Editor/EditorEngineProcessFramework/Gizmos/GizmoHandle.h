@@ -80,6 +80,7 @@ public:
   void      SetVisualState(xiiGizmoVisualState state);
   void      SetVisualParameters(float fArcStart, float fArcDelta);
   void      SetDragOrigin(const xiiVec3& vOrigin);
+  void      SetInteractionText(xiiStringView text);
   bool      IsAlwaysOnTop() const { return m_bAlwaysOnTop; }
   xiiUInt32 GetPickingID() const { return m_uiPickingID; }
 
@@ -110,6 +111,7 @@ private:
   xiiVec2   m_vArc         = xiiVec2::MakeZero();
   xiiVec3   m_vDragOrigin  = xiiVec3::MakeZero();
   xiiString m_sGizmoHandleMesh;
+  xiiString m_sInteractionText;
   xiiColor  m_Color         = xiiColor::CornflowerBlue;
   bool      m_bConstantSize = false;
   bool      m_bAlwaysOnTop  = false;

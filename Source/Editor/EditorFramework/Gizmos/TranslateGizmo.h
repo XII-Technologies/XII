@@ -68,6 +68,7 @@ protected:
 private:
   xiiVec2I32 m_vLastMousePos;
   xiiVec2    m_vTotalMouseDiff;
+  xiiVec3    m_vMovementStartTranslation = xiiVec3::MakeZero();
 
   xiiVec3 m_vLastMoveDiff;
 
@@ -83,10 +84,8 @@ private:
   TranslateMode     m_Mode;
   HandleInteraction m_LastHandleInteraction;
 
-  float m_fStartScale;
   float m_fCameraSpeed;
 
-  xiiTime m_LastInteraction;
   xiiVec3 m_vMoveAxis;
   xiiVec3 m_vPlaneAxis[2];
   xiiVec3 m_vStartPosition;

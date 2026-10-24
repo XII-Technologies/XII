@@ -16,9 +16,9 @@ xiiCapsuleGizmo::xiiCapsuleGizmo()
 
   m_ManipulateMode = ManipulateMode::None;
 
-  m_hRadius.ConfigureHandle(this, xiiEngineGizmoHandleType::CylinderZ, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable);
-  m_hLengthTop.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfSphereZ, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable);
-  m_hLengthBottom.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfSphereZ, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable);
+  m_hRadius.ConfigureHandle(this, xiiEngineGizmoHandleType::CylinderZ, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho);
+  m_hLengthTop.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfSphereZ, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho);
+  m_hLengthBottom.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfSphereZ, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -107,8 +107,6 @@ xiiEditorInput xiiCapsuleGizmo::DoMousePressEvent(QMouseEvent* e)
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
 
-  m_LastInteraction = xiiTime::Now();
-
   m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
 
   SetActiveInputContext(this);
@@ -129,6 +127,9 @@ xiiEditorInput xiiCapsuleGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -139,13 +140,6 @@ xiiEditorInput xiiCapsuleGizmo::DoMouseMoveEvent(QMouseEvent* e)
 {
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
-
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
 
   QPoint mousePosition = e->globalPosition().toPoint();
 

@@ -5,7 +5,7 @@
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorEngineProcessFramework/Rendering/Implementation/EditorViewportUtils.h>
 
-
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 namespace
@@ -42,7 +42,13 @@ xiiResult xiiEngineGizmoHandle::ComputeViewTransform(const xiiView& view, xiiMat
     return XII_FAILURE;
 
   xiiMat4 transform = m_Transformation.GetAsMat4();
-  float   ratio;
+  if (m_iHandleType == static_cast<xiiInt32>(xiiEngineGizmoHandleType::ScaleUniform))
+  {
+    transform = view.GetViewMatrix(xiiCameraEye::Left).GetInverse();
+    transform.SetTranslationVector(m_Transformation.m_vPosition);
+    XII_SUCCEED_OR_RETURN(transform.SetScalingFactors(m_Transformation.m_vScale.Abs()));
+  }
+  float ratio;
   XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::PixelRatio(view, ratio));
   xiiVec3 scale(m_bConstantSize ? 128.0f * ratio * s_fGizmoScale * fWorldUnitsPerPixel : 1.0f);
   if (m_bFaceCamera)
@@ -75,7 +81,6 @@ xiiResult xiiEngineGizmoHandle::EnsureGeometry()
   m_GeometryResult   = XII_FAILURE;
   m_iBuiltHandleType = m_iHandleType;
   m_sBuiltMesh       = m_sGizmoHandleMesh;
-
 
   if (m_iHandleType < 0 || m_iHandleType > static_cast<xiiInt32>(xiiEngineGizmoHandleType::ScaleUniform))
     return XII_FAILURE;
@@ -122,6 +127,18 @@ xiiResult xiiEngineGizmoHandle::AppendRenderData(const xiiView& view, xiiUInt32 
   XII_SUCCEED_OR_RETURN(xiiEditorViewportUtils::PixelRatio(view, instance.Parameters.w));
   instances.PushBack(instance);
   customMeshes.PushBack(m_sGizmoHandleMesh);
+  if ((flags & XII_EDITOR_GIZMO_ACTIVE) && !m_sInteractionText.IsEmpty())
+  {
+    xiiVec3 screen;
+    if (view.ComputeScreenSpacePos(m_Transformation.m_vPosition, screen).Succeeded())
+    {
+      const auto&      viewport = view.GetViewport();
+      const auto       size     = static_cast<xiiUInt32>(16 * instance.Parameters.w);
+      const xiiVec2I32 label(static_cast<xiiInt32>(screen.x * viewport.width + 24 * instance.Parameters.w), static_cast<xiiInt32>(screen.y * viewport.height - 28 * instance.Parameters.w));
+      xiiDebugRenderer::Draw2DText(view, m_sInteractionText.GetView(), label + xiiVec2I32(1, 1), xiiColor::Black, size);
+      xiiDebugRenderer::Draw2DText(view, m_sInteractionText.GetView(), label, xiiColor::White, size);
+    }
+  }
   return XII_SUCCESS;
 }
 

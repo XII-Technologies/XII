@@ -175,7 +175,9 @@ xiiResult xiiGizmoGeometry::Build(xiiEngineGizmoHandleType type, xiiStringView s
         m_Geometry.AddLine(i, (i + 1) % 128);
       break;
     case xiiEngineGizmoHandleType::ScaleUniform:
-      m_Geometry.AddBox(xiiVec3(0.15f), false);
+      m_Geometry.AddRect(xiiVec2(0.16f), 1, 1);
+      for (xiiUInt32 i = 0; i < 4; ++i)
+        m_Geometry.AddLine(i, (i + 1) % 4);
       break;
     default:
       return XII_FAILURE;

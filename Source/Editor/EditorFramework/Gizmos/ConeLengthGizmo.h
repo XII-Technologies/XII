@@ -29,8 +29,6 @@ protected:
   virtual void OnTransformationChanged(const xiiTransform& transform) override;
 
 private:
-  xiiTime m_LastInteraction;
-
   xiiVec2I32 m_vLastMousePos;
 
   xiiEngineGizmoHandle m_hConeRadius;

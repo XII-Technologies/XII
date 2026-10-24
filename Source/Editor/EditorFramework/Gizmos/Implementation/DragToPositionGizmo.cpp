@@ -25,13 +25,13 @@ xiiDragToPositionGizmo::xiiDragToPositionGizmo()
   const xiiColor colb2 = xiiColorGammaUB(0, 125, 206);
   const xiiColor coly  = xiiColorGammaUB(128, 128, 0);
 
-  m_hBobble.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragCenter.obj");
-  m_hAlignPX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPX.obj");
-  m_hAlignNX.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colr2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNX.obj");
-  m_hAlignPY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPY.obj");
-  m_hAlignNY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colg2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNY.obj");
-  m_hAlignPZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowPZ.obj");
-  m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNZ.obj");
+  m_hBobble.ConfigureHandle(this, xiiEngineGizmoHandleType::ScaleUniform, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAlignPX.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colr1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAlignNX.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colr2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAlignPY.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colg1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAlignNY.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colg2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAlignPZ.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colb1, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+  m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::TranslationAxis, colb2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -88,11 +88,16 @@ void xiiDragToPositionGizmo::OnTransformationChanged(const xiiTransform& transfo
 {
   m_hBobble.SetTransformation(transform);
   m_hAlignPX.SetTransformation(transform);
-  m_hAlignNX.SetTransformation(transform);
-  m_hAlignPY.SetTransformation(transform);
-  m_hAlignNY.SetTransformation(transform);
-  m_hAlignPZ.SetTransformation(transform);
-  m_hAlignNZ.SetTransformation(transform);
+  auto oriented = [&](const xiiVec3& direction) {
+    auto result        = transform;
+    result.m_qRotation = transform.m_qRotation * xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), direction);
+    return result;
+  };
+  m_hAlignNX.SetTransformation(oriented(-xiiVec3::MakeAxisX()));
+  m_hAlignPY.SetTransformation(oriented(xiiVec3::MakeAxisY()));
+  m_hAlignNY.SetTransformation(oriented(-xiiVec3::MakeAxisY()));
+  m_hAlignPZ.SetTransformation(oriented(xiiVec3::MakeAxisZ()));
+  m_hAlignNZ.SetTransformation(oriented(-xiiVec3::MakeAxisZ()));
 }
 
 void xiiDragToPositionGizmo::DoFocusLost(bool bCancel)
@@ -142,8 +147,6 @@ xiiEditorInput xiiDragToPositionGizmo::DoMousePressEvent(QMouseEvent* e)
   m_vStartPosition    = GetTransformation().m_vPosition;
   m_qStartOrientation = GetTransformation().m_qRotation;
 
-  m_LastInteraction = xiiTime::Now();
-
   SetActiveInputContext(this);
 
   UpdateStatusBarText(nullptr);
@@ -164,6 +167,9 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -174,13 +180,6 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
 {
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
-
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
 
   const xiiObjectPickingResult& res = GetOwnerView()->PickObject(e->pos().x(), e->pos().y());
 

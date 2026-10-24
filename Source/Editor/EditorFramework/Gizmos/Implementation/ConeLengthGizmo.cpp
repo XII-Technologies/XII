@@ -16,7 +16,7 @@ xiiConeLengthGizmo::xiiConeLengthGizmo()
 
   m_ManipulateMode = ManipulateMode::None;
 
-  m_hConeRadius.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop); // this gizmo should be rendered very last so it is always on top
+  m_hConeRadius.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::ShowInOrtho | xiiGizmoFlags::OnTop); // this gizmo should be rendered very last so it is always on top
 
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
@@ -76,8 +76,6 @@ xiiEditorInput xiiConeLengthGizmo::DoMousePressEvent(QMouseEvent* e)
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
 
-  m_LastInteraction = xiiTime::Now();
-
   m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
 
   SetActiveInputContext(this);
@@ -98,6 +96,9 @@ xiiEditorInput xiiConeLengthGizmo::DoMouseReleaseEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::WasExclusivelyHandled;
 
+  // Commit the release position even if Qt coalesced the final mouse move.
+  DoMouseMoveEvent(e);
+
   FocusLost(false);
 
   SetActiveInputContext(nullptr);
@@ -108,13 +109,6 @@ xiiEditorInput xiiConeLengthGizmo::DoMouseMoveEvent(QMouseEvent* e)
 {
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
-
-  const xiiTime tNow = xiiTime::Now();
-
-  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
-    return xiiEditorInput::WasExclusivelyHandled;
-
-  m_LastInteraction = tNow;
 
   const QPoint mousePosition = e->globalPosition().toPoint();
 
