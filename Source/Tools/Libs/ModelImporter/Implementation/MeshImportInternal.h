@@ -8,6 +8,7 @@
 
 namespace xiiMeshImportInternal
 {
+  xiiResult GenerateTangents(xiiDynamicArray<xiiMeshPackedVertex>& vertices, xiiDynamicArray<xiiUInt32>& indices, xiiStringBuilder* error);
   using xiiModelImportInternal::Fail;
   using xiiModelImportInternal::ConvertMatrix;
 

@@ -99,4 +99,28 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshImportGeometry)
       XII_TEST_INT(simplified.m_Mesh.GetSubMeshes()[0].m_uiPrimitiveCount, reduced.GetPrimitiveCount());
     }
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Generated LODs use native sections and meshlet ranges")
+  {
+    options = {};
+    options.m_uiGeneratedLODs = 2;
+    xiiModelMeshImport lodMesh;
+    if (!XII_TEST_RESULT(xiiModelMeshImport::ReadFile(source, options, lodMesh, &error)))
+      return;
+    const auto lods = lodMesh.m_Mesh.GetLODs();
+    if (!XII_TEST_INT(lods.GetCount(), 3))
+      return;
+    for (xiiUInt32 i = 0; i < lods.GetCount(); ++i)
+    {
+      XII_TEST_INT(lods[i].m_Sections.GetCount(), 1);
+      XII_TEST_BOOL(lods[i].m_uiMeshletCount > 0);
+      if (i > 0)
+      {
+        XII_TEST_BOOL(lods[i].m_fScreenSize < lods[i - 1].m_fScreenSize);
+        XII_TEST_BOOL(lods[i].m_Sections[0].m_uiPrimitiveCount < lods[i - 1].m_Sections[0].m_uiPrimitiveCount);
+      }
+      for (xiiUInt32 m = lods[i].m_uiFirstMeshlet; m < lods[i].m_uiFirstMeshlet + lods[i].m_uiMeshletCount; ++m)
+        XII_TEST_INT(lodMesh.m_Mesh.GetMeshBufferDescriptor().m_Meshlets[m].m_uiLodIndex, i);
+    }
+  }
 }

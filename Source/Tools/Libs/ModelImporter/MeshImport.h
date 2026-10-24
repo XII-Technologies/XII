@@ -99,6 +99,7 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshImportOptions
   float                                  m_fSimplification           = 0;     ///< Fraction of triangles to remove, in [0, 1). Zero disables simplification.
   float                                  m_fMaxSimplificationError   = 0.05f; ///< Error relative to mesh extents, in [0, 1].
   bool                                   m_bAggressiveSimplification = false;
+  xiiUInt8                               m_uiGeneratedLODs           = 0; ///< Additional native LODs (0-4), each targeting half as many triangles.
 };
 
 /// Converts model files directly into native mesh descriptors. No scene/importer base classes or Qt.
@@ -106,7 +107,8 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshImportOptions
 /// Node/root transforms are baked into vertices, inverse-transpose normals and mirrored winding.
 /// Skinning uses a named mesh-local palette, up to four strongest influences per vertex, and native
 /// byte weights. The caller assigns the default skeleton resource and resolves material assets.
-/// Native packed vertices retain two UV sets and one color set; additional sets are rejected.
+/// Native packed vertices retain two UV sets and one color set; additional sets produce warnings.
+/// A shared material UV mapping is baked into UV0 for the native material renderer.
 /// Animated morph targets cannot be represented by the current native skinning path and are rejected.
 /// ReadFile clears output on failure and never exposes pointers into Assimp-owned storage.
 struct XII_MODELIMPORTER_DLL xiiModelMeshImport
