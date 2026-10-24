@@ -94,7 +94,7 @@ o
 			s{"{ d83bb009-7ef8-315a-1f96-12e7df0c90f7 }"}
 		}
 		Uuid %DocumentID{u4{9411489702903207356,7442935870891089778}}
-		u4 %Hash{8506838328236328535}
+		u4 %Hash{15654724705680641106}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{17290123325063352669,8931752141477233110}}
@@ -1166,7 +1166,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ViewOutput"}
-		Vec2 %Node::Pos{f{0x00688145,0x784EA043}}
+		Vec2 %Node::Pos{f{0x00A88945,0xF66BB643}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1269,7 +1269,7 @@ o
 	{
 		Uuid %Candidates{u4{6231691000277534112,9983690736428521696}}
 		b %Enabled{1}
-		Vec2 %Node::Pos{f{0x00C031C4,0x620DD344}}
+		Vec2 %Node::Pos{f{0x00C031C4,0x4A51B944}}
 		VarDict %ParameterOverrides{}
 		b %PickSelected{1}
 		b %PickTransparent{1}
@@ -1309,7 +1309,7 @@ o
 	p
 	{
 		b %Enabled{1}
-		Vec2 %Node::Pos{f{0x00402245,0x178FA844}}
+		Vec2 %Node::Pos{f{0x00402245,0xFED28E44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2921,7 +2921,7 @@ o
 		Uuid %DisplayLinearColorInput{u4{640030712897093095,12175997276958780071}}
 		Uuid %DisplayLinearColorOutput{u4{10314732905578124673,10273200786752278577}}
 		b %Enabled{1}
-		Vec2 %Node::Pos{f{0x00E05145,0xF09C5143}}
+		Vec2 %Node::Pos{f{0x00606245,0xECD77D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3990,7 +3990,7 @@ o
 		Uuid %DispatchArguments{u4{14601853477053427537,1372032824087904734}}
 		Uuid %MaximumMeshletGroups{u4{15239969730669134794,16786470256453423763}}
 		Uuid %MeshletMetadata{u4{2351994331416473380,13372191985478661956}}
-		Vec2 %Node::Pos{f{0x00807344,0x3C672944}}
+		Vec2 %Node::Pos{f{0x00807344,0xFB251844}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4012,7 +4012,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{7289014688318968086,14672363764880305833}}
-		Vec2 %Node::Pos{f{0x00A06E44,0x17AFEB44}}
+		Vec2 %Node::Pos{f{0x00A06E44,0xFEF2D144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4028,7 +4028,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x00C023C4,0x7F4C2A44}}
+		Vec2 %Node::Pos{f{0x00C023C4,0x00001F44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4153,7 +4153,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{3875981065481719753,17372877767995626045}}
-		Vec2 %Node::Pos{f{0x00002043,0x174F8E44}}
+		Vec2 %Node::Pos{f{0x00002043,0xA1056344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4171,7 +4171,7 @@ o
 	{
 		Uuid %GeometryMetadata{u4{2370552435730234270,5605562661219748602}}
 		Uuid %MeshletMetadata{u4{6062551220876160441,11068211958397927578}}
-		Vec2 %Node::Pos{f{0x0040B3C3,0x4525BB44}}
+		Vec2 %Node::Pos{f{0x0040B3C3,0x2C69A144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4346,7 +4346,7 @@ o
 		s %FillMode{"xiiGALFillMode::Solid"}
 		Uuid %GeometryMetadata{u4{4611247114928658369,7241161193235391391}}
 		Uuid %MeshletMetadata{u4{7048063775130491642,902389216365557556}}
-		Vec2 %Node::Pos{f{0x00E00945,0x178FA544}}
+		Vec2 %Node::Pos{f{0x00E00945,0xFED28B44}}
 		b %OnlyViewWireframe{0}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4588,7 +4588,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{11819743352091505831,9443038942193046509}}
-		Vec2 %Node::Pos{f{0x00508444,0x3CE75A44}}
+		Vec2 %Node::Pos{f{0x00508444,0xFBA54944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4758,7 +4758,7 @@ o
 		Uuid %DispatchArguments{u4{6640831625257286267,4485131084788076251}}
 		Uuid %MaximumMeshletGroups{u4{10281386287176739153,14624249948432607902}}
 		Uuid %MeshletMetadata{u4{15458031184437323913,15641165181569160044}}
-		Vec2 %Node::Pos{f{0x00805944,0x172FC344}}
+		Vec2 %Node::Pos{f{0x00805944,0xFE72A944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4797,7 +4797,7 @@ o
 		s %FillMode{"xiiGALFillMode::Solid"}
 		Uuid %GeometryMetadata{u4{1361779888248284321,10087586949653282628}}
 		Uuid %MeshletMetadata{u4{13841991154239568269,16479664962760245506}}
-		Vec2 %Node::Pos{f{0x00601145,0x784EDC43}}
+		Vec2 %Node::Pos{f{0x00601045,0xF66BAA43}}
 		b %OnlyViewWireframe{0}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4917,7 +4917,7 @@ o
 		Uuid %InputCandidates{u4{12580107840744431597,6877935021273982708}}
 		f %LodHysteresis{0xCDCCCC3D}
 		f %LodScreenScale{0x0000803F}
-		Vec2 %Node::Pos{f{0x00808BC3,0x93894844}}
+		Vec2 %Node::Pos{f{0x00808BC3,0x29C40A44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5075,7 +5075,7 @@ o
 	{
 		b %AsyncCopy{1}
 		Uuid %Buffer{u4{5474948613917191224,2509273372219812837}}
-		Vec2 %Node::Pos{f{0x00001E42,0xC785C344}}
+		Vec2 %Node::Pos{f{0x00001E42,0xAEC9A944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5106,7 +5106,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{13653060839166100702,12165112849207890486}}
-		Vec2 %Node::Pos{f{0x00006042,0xC805F544}}
+		Vec2 %Node::Pos{f{0x00006042,0xAE49DB44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5188,7 +5188,7 @@ o
 		Uuid %GeometryMetadata{u4{17291782158071522417,6651330628644458407}}
 		Uuid %InitializedLodHistory{u4{10704901703144601208,2655328771237973766}}
 		Uuid %LodHistory{u4{6970251052706559615,6295849223267509647}}
-		Vec2 %Node::Pos{f{0x0000A0C1,0xC745D344}}
+		Vec2 %Node::Pos{f{0x0000A0C1,0xAE89B944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5325,7 +5325,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{16603755060571043105,5201006932843570933}}
-		Vec2 %Node::Pos{f{0x00A06E44,0x17EFDB44}}
+		Vec2 %Node::Pos{f{0x00A06E44,0xFE32C244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5413,7 +5413,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x00A0F244,0x784EF143}}
+		Vec2 %Node::Pos{f{0x00A0F244,0xF62BDE43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5491,7 +5491,7 @@ o
 	{
 		Uuid %GeometryMetadata{u4{8111171176408869992,15050012265773523322}}
 		Uuid %MeshletMetadata{u4{9716671584749973217,5175375358335976703}}
-		Vec2 %Node::Pos{f{0x00807EC3,0x93092344}}
+		Vec2 %Node::Pos{f{0x00807EC3,0x5388CA43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5569,7 +5569,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{3818400629927105557,16127341593793050219}}
-		Vec2 %Node::Pos{f{0x00C0AAC3,0x45A5E044}}
+		Vec2 %Node::Pos{f{0x00C0AAC3,0x2CE9C644}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5791,7 +5791,7 @@ o
 		Uuid %LodHistory{u4{13304560036482905762,13606520107663571464}}
 		Uuid %MaximumMeshletGroups{u4{15390696960801899278,12160345508605507160}}
 		Uuid %MeshletMetadata{u4{150116112116899324,1657685635521991350}}
-		Vec2 %Node::Pos{f{0x0000CE43,0x172FCC44}}
+		Vec2 %Node::Pos{f{0x0000CE43,0xFE72B244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5916,7 +5916,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{6532187162396278984,17506547503993981176}}
-		Vec2 %Node::Pos{f{0x00508444,0x3C677A44}}
+		Vec2 %Node::Pos{f{0x00508444,0xFB256944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6051,7 +6051,7 @@ o
 		Uuid %InputCandidates{u4{14025924188549651930,11029279501348223112}}
 		f %LodHysteresis{0xCDCCCC3D}
 		f %LodScreenScale{0x0000803F}
-		Vec2 %Node::Pos{f{0x0080BFC3,0x45E5CD44}}
+		Vec2 %Node::Pos{f{0x0080BFC3,0x2C29B444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6123,7 +6123,7 @@ o
 		Uuid %LodHistory{u4{3880337497361231840,17625940674205819019}}
 		Uuid %MaximumMeshletGroups{u4{14587602083972331251,13222501508525560797}}
 		Uuid %MeshletMetadata{u4{6774157425811856037,10056211165231170399}}
-		Vec2 %Node::Pos{f{0x00000144,0x3C673B44}}
+		Vec2 %Node::Pos{f{0x00000144,0xFB252A44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6150,7 +6150,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x00A0E544,0x17CFAA44}}
+		Vec2 %Node::Pos{f{0x00A0E544,0xFE129144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6200,7 +6200,7 @@ o
 		Uuid %LodHistory{u4{12409155996779914708,5196313391521439916}}
 		u3 %MaxVisibleMeshlets{1048576}
 		Uuid %MeshletMetadata{u4{10925834162435059807,10608300210472673669}}
-		Vec2 %Node::Pos{f{0x00E0A444,0x17EFC044}}
+		Vec2 %Node::Pos{f{0x00E0A444,0xFE32A744}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6452,7 +6452,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x00C030C4,0x624DC044}}
+		Vec2 %Node::Pos{f{0x00C030C4,0x4A91A644}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6599,7 +6599,7 @@ o
 		Uuid %GeometryMetadata{u4{13413828681969300138,1764847234460058211}}
 		Uuid %InitializedLodHistory{u4{16774704475668151009,1065500705026806232}}
 		Uuid %LodHistory{u4{12279165573223638060,12335243285881102233}}
-		Vec2 %Node::Pos{f{0x0000A842,0x2E1E5944}}
+		Vec2 %Node::Pos{f{0x0000A842,0xA1050044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6672,7 +6672,7 @@ o
 		Uuid %DrawCommands{u4{10104073958395465777,15583183339902705010}}
 		Uuid %GeometryMetadata{u4{3446565011251845632,9048934214082117698}}
 		Uuid %MeshletMetadata{u4{17401434043975869890,274528806356320013}}
-		Vec2 %Node::Pos{f{0x00E0DC44,0x174FCA44}}
+		Vec2 %Node::Pos{f{0x00E0DC44,0xFE92B044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6753,7 +6753,7 @@ o
 	{
 		b %AsyncCopy{1}
 		Uuid %Buffer{u4{15903373147197423115,15738286885423266277}}
-		Vec2 %Node::Pos{f{0x00800F43,0x2E9E3944}}
+		Vec2 %Node::Pos{f{0x00800F43,0xA1854344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6946,7 +6946,7 @@ o
 	p
 	{
 		Uuid %LodHistory{u4{10853367388804577216,10038307982042645779}}
-		Vec2 %Node::Pos{f{0x0000BBC3,0x4565F044}}
+		Vec2 %Node::Pos{f{0x0000BBC3,0x2CA9D644}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6968,7 +6968,7 @@ o
 		Uuid %DrawCommands{u4{8613148018714193291,14318132524477752014}}
 		Uuid %GeometryMetadata{u4{12037539997702888934,2541046057877997475}}
 		Uuid %MeshletMetadata{u4{9680320099235095898,5378112494537543624}}
-		Vec2 %Node::Pos{f{0x00E0E944,0x3CA73744}}
+		Vec2 %Node::Pos{f{0x00E0E944,0xFB152E44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7107,7 +7107,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{15891257419665325962,2008304466184103637}}
-		Vec2 %Node::Pos{f{0x00806DC3,0x93096E44}}
+		Vec2 %Node::Pos{f{0x00806DC3,0x29443044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7226,7 +7226,7 @@ o
 	{
 		u3 %MeshGroupCountX{1}
 		u3 %MeshGroupCountY{1}
-		Vec2 %Node::Pos{f{0x0020E344,0x178FBA44}}
+		Vec2 %Node::Pos{f{0x0020E344,0xFED2A044}}
 		u3 %NormalOffset{12}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7286,7 +7286,7 @@ o
 	p
 	{
 		Uuid %LodHistory{u4{13412376734671908384,1542068906405921950}}
-		Vec2 %Node::Pos{f{0x000087C3,0xCAC48644}}
+		Vec2 %Node::Pos{f{0x000087C3,0x29C44F44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7400,7 +7400,7 @@ o
 	{
 		u3 %MeshGroupCountX{1}
 		u3 %MeshGroupCountY{1}
-		Vec2 %Node::Pos{f{0x0020F044,0x3C271844}}
+		Vec2 %Node::Pos{f{0x0020F044,0xFB950E44}}
 		u3 %NormalOffset{12}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7428,7 +7428,7 @@ o
 		Uuid %LodHistory{u4{5708319429022074945,2095769378140389876}}
 		u3 %MaxVisibleMeshlets{1048576}
 		Uuid %MeshletMetadata{u4{3850254977649847498,2914518876006176727}}
-		Vec2 %Node::Pos{f{0x00E0B144,0x3CE72444}}
+		Vec2 %Node::Pos{f{0x00E0B144,0xFBA51344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7962,7 +7962,7 @@ o
 		Uuid %ColorInput{u4{10837927733213171781,12420965915238644694}}
 		Uuid %ColorOutput{u4{15203761593706912362,8184782901603623166}}
 		f %FillOpacity{0xCDCCCC3D}
-		Vec2 %Node::Pos{f{0x00C02A45,0xF09C5143}}
+		Vec2 %Node::Pos{f{0x00C02845,0xECD77D43}}
 		Color %OccludedColor{f{0xCDCC4C3E,0xCDCCCC3E,0x0000803F,0x0000003F}}
 		u3 %OutlineWidth{1}
 		VarDict %ParameterOverrides{}
@@ -8264,7 +8264,7 @@ o
 	{
 		Uuid %ColorInput{u4{3978693322604799126,13175070446260693343}}
 		Uuid %ColorOutput{u4{1767574565342988601,13748106200253717672}}
-		Vec2 %Node::Pos{f{0x0000FA43,0x00004844}}
+		Vec2 %Node::Pos{f{0x00E04F45,0xECD77D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8332,7 +8332,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"ViewTarget"}
-		Vec2 %Node::Pos{f{0x00605645,0x78CEB343}}
+		Vec2 %Node::Pos{f{0x00E06645,0xF6EBC943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -9708,7 +9708,7 @@ o
 		Uuid %GBufferObjectId{u4{8290197558757369511,16266563542952824734}}
 		Uuid %IndirectLighting{u4{6756877797575353855,8648073120433274559}}
 		s %Mode{"xiiViewRenderMode::None"}
-		Vec2 %Node::Pos{f{0x00601045,0xEC3B2740}}
+		Vec2 %Node::Pos{f{0x00F0EA44,0x85FDCA40}}
 		VarDict %ParameterOverrides{}
 		Uuid %PerFrameCamera{u4{6828063752375297551,690861846566896513}}
 		VarArray %PinConfigurations
@@ -11236,7 +11236,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"SceneDepth"}
-		Vec2 %Node::Pos{f{0x000050C3,0xA3DEA242}}
+		Vec2 %Node::Pos{f{0x000050C3,0xD53BEC42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -12041,7 +12041,7 @@ o
 		Uuid %GradedColorInput{u4{7182078379753699574,17923052402591461198}}
 		Uuid %GradedColorOutput{u4{5490092443719802524,13487392064055283754}}
 		f %MaximumDisplayNits{0x00007A44}
-		Vec2 %Node::Pos{f{0x00906B45,0x784E8843}}
+		Vec2 %Node::Pos{f{0x00107C45,0xF66B9E43}}
 		s %OutputMode{"xiiDisplayOutputMode::SDRsRGB"}
 		f %PaperWhiteNits{0x00004B43}
 		VarDict %ParameterOverrides{}
@@ -13352,7 +13352,7 @@ o
 	{
 		Uuid %Candidates{u4{4976706574359709115,11772487706078262311}}
 		b %Enabled{1}
-		Vec2 %Node::Pos{f{0x00C024C4,0x7FCC4F44}}
+		Vec2 %Node::Pos{f{0x00C024C4,0x0000FF43}}
 		VarDict %ParameterOverrides{}
 		b %PickSelected{1}
 		b %PickTransparent{1}
@@ -13773,7 +13773,7 @@ o
 		f %LineWidth{0x0000803F}
 		f %MajorOpacity{0xB81E053F}
 		f %MinorOpacity{0x295C8F3E}
-		Vec2 %Node::Pos{f{0x0000AFC3,0x00004844}}
+		Vec2 %Node::Pos{f{0x00501345,0xECD73E43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -16720,7 +16720,7 @@ o
 		Uuid %ColorInput{u4{11185459398549949710,7459846765483686728}}
 		Uuid %ColorOutput{u4{12201000896051143385,430458331227294703}}
 		f %MaxScreenSize{0x00008042}
-		Vec2 %Node::Pos{f{0x00C03E45,0xF09C5143}}
+		Vec2 %Node::Pos{f{0x00C03C45,0xECD77D43}}
 		VarDict %ParameterOverrides{}
 		Uuid %Picking{u4{9293132011098797979,7769455481237163163}}
 		VarArray %PinConfigurations
@@ -18103,7 +18103,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ObjectId"}
-		Vec2 %Node::Pos{f{0x00004DC3,0x526F4F43}}
+		Vec2 %Node::Pos{f{0x00004DC3,0xEA1D7443}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -18719,7 +18719,7 @@ o
 		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
 		s %ParentTypeName{"xiiRenderPipelinePass"}
-		s %PluginName{"Static"}
+		s %PluginName{"xiiEditorPluginScene"}
 		VarArray %Properties{}
 		s %TypeName{"xiiSceneInstanceSelectionPass"}
 		u3 %TypeVersion{1}
@@ -18770,7 +18770,7 @@ o
 		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
 		s %ParentTypeName{"xiiRenderPipelinePass"}
-		s %PluginName{"Static"}
+		s %PluginName{"xiiEditorPluginScene"}
 		VarArray %Properties{}
 		s %TypeName{"xiiSceneSelectionPass"}
 		u3 %TypeVersion{1}
@@ -18906,7 +18906,7 @@ o
 		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
 		s %ParentTypeName{"xiiRenderPipelinePass"}
-		s %PluginName{"Static"}
+		s %PluginName{"xiiEditorPluginScene"}
 		VarArray %Properties{}
 		s %TypeName{"xiiSceneMeshPickingPass"}
 		u3 %TypeVersion{3}
@@ -19280,7 +19280,7 @@ o
 		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
 		s %ParentTypeName{"xiiRenderPipelinePass"}
-		s %PluginName{"Static"}
+		s %PluginName{"xiiEditorPluginScene"}
 		VarArray %Properties{}
 		s %TypeName{"xiiSceneShapeIconPass"}
 		u3 %TypeVersion{1}
