@@ -33,7 +33,7 @@ namespace
   {
     xiiPipelineTestAuthor author(path, "ReflectionComposition");
     XII_SUCCEED_OR_RETURN(author.Init());
-    const auto* select  = author.Reference("Reflection Priority", "ReflectionSelection", {0, 0});
+    const auto* select  = author.Reference("Reflection Priority", xiiCreateReflectionSelectionTestResource(), {0, 0});
     const auto* replace = author.Add("Replace Environment Contribution", "xiiRadianceReplacePass", {900, 0});
     for (const xiiStringView input : {"EnvironmentSpecular", "RTFinalReflections", "SSRTerm"})
       XII_SUCCEED_OR_RETURN(author.Boundary(input, true, select, input));
@@ -48,13 +48,13 @@ namespace
   {
     xiiPipelineTestAuthor author(path, "OpaqueComposition");
     XII_SUCCEED_OR_RETURN(author.Init());
-    const auto* opaque    = author.Reference("Opaque Surface Radiance", "SurfaceRadianceComposition", {0, 0});
+    const auto* opaque    = author.Reference("Opaque Surface Radiance", xiiCreateSurfaceRadianceCompositionTestResource(), {0, 0});
     const auto* scene     = author.Add("Select Scene Radiance", "xiiTextureSelectionPass", {700, 0});
     const auto* trace     = author.Add("Trace Screen Reflections", "xiiScreenSpaceReflectionsPass", {1400, 0});
     const auto* raw       = author.Add("Select Raw Reflections", "xiiTextureSelectionPass", {2100, 0});
     const auto* temporal  = author.Add("Resolve Temporal Reflections", "xiiScreenSpaceReflectionsTemporalPass", {2800, 0});
     const auto* resolved  = author.Add("Select Resolved Reflections", "xiiTextureSelectionPass", {3500, 0});
-    const auto* composite = author.Reference("Compose Reflection Contributions", "ReflectionComposition", {4200, 0});
+    const auto* composite = author.Reference("Compose Reflection Contributions", xiiCreateReflectionCompositionTestResource(), {4200, 0});
     for (const xiiStringView pin : {"DirectLighting", "IndirectLighting", "GBufferEmissive", "RTFinalGI", "VolumetricScattering"})
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, true, opaque, pin));
     XII_SUCCEED_OR_RETURN(author.Boundary("HDRSceneColor", true, scene, "Primary"));

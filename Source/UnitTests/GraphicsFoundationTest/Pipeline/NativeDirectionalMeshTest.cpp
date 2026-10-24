@@ -88,7 +88,7 @@ XII_CREATE_SIMPLE_TEST(NativeDirectionalMesh, RepeatedAuthoredRasterAndRetainedC
     return;
   XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(geometryHandle, 0));
   xiiGeometryResidencyManager::RequestResidency(geometryHandle, 0, 0);
-  const auto                                 asset = xiiLoadPipelineLibraryResource("DirectionalMesh");
+  const auto                                 asset = xiiCreateDirectionalMeshTestResource();
   xiiResourceLock<xiiRenderPipelineResource> source(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(source.IsValid() && source->GetAuthoring() && source->GetPipeline()))
     return;

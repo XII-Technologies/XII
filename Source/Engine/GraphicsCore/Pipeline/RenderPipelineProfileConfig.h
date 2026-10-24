@@ -29,9 +29,12 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineProfileConfig : public xiiProfileCon
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineProfileConfig, xiiProfileConfigData);
 
 public:
-  xiiString m_sScenePipeline        = "RenderPipelines/Scene.xiiBinRenderPipeline";
-  xiiString m_sEditorScenePipeline  = "RenderPipelines/Editor.xiiBinRenderPipeline";
-  xiiString m_sAssetPreviewPipeline = "RenderPipelines/Scene.xiiBinRenderPipeline";
+  static constexpr const char* s_szScenePipeline  = "{ d83bb009-7ef8-315a-1f96-12e7df0c90f7 }";
+  static constexpr const char* s_szEditorPipeline = "{ 7e79df72-9ebd-674a-bcd5-ca4405549c82 }";
+
+  xiiString m_sScenePipeline        = s_szScenePipeline;
+  xiiString m_sEditorScenePipeline  = s_szEditorPipeline;
+  xiiString m_sAssetPreviewPipeline = s_szScenePipeline;
   xiiString m_sTexturePreviewPipeline;
   xiiString m_sCubeTexturePreviewPipeline;
 

@@ -10,8 +10,8 @@ namespace
   {
     xiiPipelineTestAuthor author(directory, "WorldDeferredLighting");
     XII_SUCCEED_OR_RETURN(author.Init(xiiRenderPipelineDeviceFeature::Compute | xiiRenderPipelineDeviceFeature::BindlessResources));
-    const auto* geometry    = author.Reference("World GBuffer", "GBuffer", {0, 0});
-    const auto* direct      = author.Reference("World Analytical Lighting", "WorldSurfaceLighting", {800, 0});
+    const auto* geometry    = author.Reference("World GBuffer", xiiCreateGBufferTestResource(), {0, 0});
+    const auto* direct      = author.Reference("World Analytical Lighting", xiiCreateWorldSurfaceLightingTestResource(), {800, 0});
     const auto* camera      = author.Add("Camera Snapshot", "xiiViewConstantsPass", {0, 1500});
     const auto* ambient     = author.Add("Ambient Diffuse", "xiiDiffuseSurfaceLightingPass", {800, 1200});
     const auto* directSum   = author.Add("Add Directional And Local", "xiiRadianceAddPass", {1400, 0});
@@ -75,8 +75,8 @@ namespace
     xiiPipelineTestAuthor author(directory, "DeferredOpaque");
     XII_SUCCEED_OR_RETURN(author.Init(xiiRenderPipelineDeviceFeature::Compute | xiiRenderPipelineDeviceFeature::BindlessResources));
     XII_SUCCEED_OR_RETURN(author.Settings("OutputSamples", 1U));
-    const auto* world   = author.Reference("Opaque World Lighting", "WorldDeferredLighting", {0, 0});
-    const auto* display = author.Reference("Display Output", "HdrDisplay", {1200, 0});
+    const auto* world   = author.Reference("Opaque World Lighting", xiiCreateWorldDeferredLightingTestResource(), {0, 0});
+    const auto* display = author.Reference("Display Output", xiiCreateHdrDisplayTestResource(), {1200, 0});
     XII_SUCCEED_OR_RETURN(author.Connect(world, "HDRSceneColor", display, "HDRSceneColor"));
     XII_SUCCEED_OR_RETURN(author.Boundary("InputCandidates", true, world, "InputCandidates", xiiRenderPipelinePin::Buffer));
     for (const xiiStringView pin : {"HDRSceneColor", "DirectLighting", "AmbientLighting", "SceneDepth", "ObjectId", "Albedo", "Normal", "Material", "Emissive", "Velocity"})

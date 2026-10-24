@@ -144,8 +144,7 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   xiiRenderPipelineResourceDescriptor root;
-  const auto                          reference = [&](xiiStringView name, bool registerReference = true) {
-    const auto                                 asset = xiiLoadPipelineLibraryResource(name);
+  const auto                          reference = [&](const xiiRenderPipelineResourceHandle& asset, bool registerReference = true) {
     xiiResourceLock<xiiRenderPipelineResource> source(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(source.IsValid() && source->GetAuthoring()))
       return xiiSharedPtr<const xiiRenderPipelineAuthoring>();
@@ -154,22 +153,18 @@ XII_CREATE_SIMPLE_TEST(NativeSurfaceLighting, WorldViewsPhotometryTransmissionVi
       root.m_References.PushBack({authored->m_Descriptor.m_Id, asset.GetResourceID()});
     return authored;
   };
-  const auto surfaceDefinition = reference("WorldSurfaceLighting"), clusterDefinition = reference("ClusterLightLists", false), directionalDefinition = reference("DirectionalSurfaceLighting");
+  const auto surfaceDefinition = reference(xiiCreateWorldSurfaceLightingTestResource()), clusterDefinition = reference(xiiCreateClusterLightListsTestResource(), false), directionalDefinition = reference(xiiCreateDirectionalSurfaceLightingTestResource());
   if (!surfaceDefinition || !clusterDefinition || !directionalDefinition)
     return;
   const auto inputs  = root.AddPass("Exact single pixel surface", xiiGetStaticRTTI<xiiNativeSurfaceInputs>());
   const auto surface = root.AddSubgraph("Authored world surface lighting", surfaceDefinition->m_Descriptor.m_Id);
-  xiiUuid    clusterNode, layoutNode;
+  xiiUuid    layoutNode;
   for (const auto& node : surfaceDefinition->m_Descriptor.m_Passes)
-    if (node.m_Definition == clusterDefinition->m_Descriptor.m_Id)
-      clusterNode = node.m_Id;
-  for (const auto& node : clusterDefinition->m_Descriptor.m_Passes)
     if (node.m_pType == xiiGetStaticRTTI<xiiLightClusterViewPass>())
       layoutNode = node.m_Id;
-  if (!XII_TEST_BOOL(clusterNode.IsValid() && layoutNode.IsValid()))
+  if (!XII_TEST_BOOL(layoutNode.IsValid()))
     return;
   auto& layout = root.m_Passes[surface].m_Overrides.ExpandAndGetRef();
-  layout.m_Path.PushBack(clusterNode);
   layout.m_Path.PushBack(layoutNode);
   layout.m_Properties.Insert("UseViewCamera", false);
   layout.m_Properties.Insert("Width", 1U);

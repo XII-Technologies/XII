@@ -32,7 +32,7 @@ namespace
     xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
     xiiStartup::StartupHighLevelSystems();
     XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-    const auto                                 surface = xiiLoadPipelineLibraryResource("EditorMeshPicking");
+    const auto                                 surface = xiiCreateEditorMeshPickingTestResource();
     xiiResourceLock<xiiRenderPipelineResource> loaded(surface, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring()))
       return;

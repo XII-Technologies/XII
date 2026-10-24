@@ -671,8 +671,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native definitions are shared resources with pin-level topology")
   {
-    const auto a = xiiLoadPipelineLibraryResource("ScreenEffects");
-    const auto b = xiiLoadPipelineLibraryResource("ScreenEffects");
+    const auto a = xiiCreateScreenEffectsTestResource();
+    const auto b = xiiCreateScreenEffectsTestResource();
     XII_TEST_BOOL(a == b);
     xiiResourceLock<xiiRenderPipelineResource> resource(a, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(resource.IsValid()))

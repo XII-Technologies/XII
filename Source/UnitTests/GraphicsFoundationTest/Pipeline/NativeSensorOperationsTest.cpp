@@ -84,7 +84,9 @@ XII_CREATE_SIMPLE_TEST(NativeSensors, SpecializedCalibratedOutputsAndRollingShut
     xiiUInt32                           branch = 0;
     for (xiiStringView name : {"DepthSensor", "RgbSensor", "InfraredSensor", "LidarSensor"})
     {
-      assets[branch] = xiiLoadPipelineLibraryResource(name);
+      assets[branch] = name == "DepthSensor" ? xiiCreateDepthSensorTestResource() : name == "RgbSensor" ? xiiCreateRgbSensorTestResource() :
+        name == "InfraredSensor"                                                                        ? xiiCreateInfraredSensorTestResource() :
+                                                                                                          xiiCreateLidarSensorTestResource();
       xiiResourceLock<xiiRenderPipelineResource> source(assets[branch], xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
       if (!XII_TEST_BOOL(source.IsValid() && source->GetPipeline() && source->GetAuthoring()))
         return;

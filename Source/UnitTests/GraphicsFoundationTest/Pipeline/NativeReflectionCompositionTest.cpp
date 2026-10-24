@@ -25,7 +25,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 resource = xiiLoadPipelineLibraryResource("ReflectionComposition"), selectionResource = xiiLoadPipelineLibraryResource("ReflectionSelection");
+  const auto                                 resource = xiiCreateReflectionCompositionTestResource(), selectionResource = xiiCreateReflectionSelectionTestResource();
   xiiResourceLock<xiiRenderPipelineResource> reflection(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), selection(selectionResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(reflection.IsValid() && selection.IsValid() && reflection->GetAuthoring() && selection->GetAuthoring()))
     return;
@@ -90,16 +90,7 @@ XII_CREATE_SIMPLE_TEST(NativeReflectionComposition, PriorityReplacementReadOnlyI
       if (branch)
       {
         auto& override = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
-        for (const auto& pass : reflection->GetAuthoring()->m_Descriptor.m_Passes)
-          if (pass.m_Definition.IsValid())
-            override.m_Path.PushBack(pass.m_Id);
-        const auto screenLayer = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ReflectionSelection/Screen Detail Over Traced Result");
-        bool       found       = false;
-        for (const auto& pass : selection->GetAuthoring()->m_Descriptor.m_Passes)
-          found |= pass.m_Id == screenLayer && pass.m_pType == xiiGetStaticRTTI<xiiConfidenceBlendPass>();
-        if (!XII_TEST_BOOL(found && override.m_Path.GetCount() == 1))
-          return;
-        override.m_Path.PushBack(screenLayer);
+        override.m_Path.PushBack(xiiFindPipelineTestPass(reflection->GetAuthoring()->m_Descriptor, "xiiConfidenceBlendPass", 1));
         override.m_Properties.Insert("Opacity", 0.25f);
         override.m_Properties.Insert("AsyncCompute", true);
       }

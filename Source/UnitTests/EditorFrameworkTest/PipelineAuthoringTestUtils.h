@@ -7,6 +7,7 @@
 #include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsCoreTest/Pipeline/PipelineTestFixtures.h>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -96,6 +97,13 @@ public:
   {
     const auto* node = Add(label, "xiiRenderPipelineSubgraphPass", position);
     if (!node || m_Accessor->SetValueByName(node, "Resource", xiiStringBuilder("RenderPipelines/", name, ".xiiBinRenderPipeline").GetView()).Failed() || m_Nodes->SynchronizePinConfigurations(node).Failed())
+      return nullptr;
+    return node;
+  }
+  const xiiDocumentObject* Reference(xiiStringView label, const xiiRenderPipelineResourceHandle& resource, xiiVec2 position)
+  {
+    const auto* node = Add(label, "xiiRenderPipelineSubgraphPass", position);
+    if (!node || m_Accessor->SetValueByName(node, "Resource", resource.GetResourceID()).Failed() || m_Nodes->SynchronizePinConfigurations(node).Failed())
       return nullptr;
     return node;
   }

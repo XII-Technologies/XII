@@ -72,7 +72,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
   const auto geometryHandle                                 = xiiGeometryResidencyManager::RegisterGeometry(geometryDefinition);
   XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(geometryHandle, 0));
   xiiGeometryResidencyManager::RequestResidency(geometryHandle, 0, 0);
-  const auto                resource = xiiLoadPipelineLibraryResource("ShadowMeshDepth");
+  const auto                resource = xiiCreateShadowMeshDepthTestResource();
   xiiRenderPipelineInstance pipelines[2];
   xiiUInt64                 revisions[2] = {};
   for (auto& pipeline : pipelines)
@@ -88,13 +88,13 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
   commands.GetPins(commandPins);
   XII_TEST_RESULT(commands.InitializePinBindings(commandPins));
   xiiRenderPipelineInstance tables;
-  if (!XII_TEST_RESULT(tables.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowTables"))))
+  if (!XII_TEST_RESULT(tables.Synchronize(xiiCreateVirtualShadowTablesTestResource())))
     return;
   xiiRenderPipelineInstance workPipelines[2], publisher;
   for (auto& work : workPipelines)
-    if (!XII_TEST_RESULT(work.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowRasterWork"))))
+    if (!XII_TEST_RESULT(work.Synchronize(xiiCreateVirtualShadowRasterWorkTestResource())))
       return;
-  if (!XII_TEST_RESULT(publisher.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowPagePublish"))))
+  if (!XII_TEST_RESULT(publisher.Synchronize(xiiCreateVirtualShadowPagePublishTestResource())))
     return;
   xiiVirtualShadowRasterPage staleRecycled;
   for (xiiUInt32 phase = 0; phase < 5; ++phase)
@@ -250,7 +250,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
       invalidInputs.PushBackRange(xiiMakeArrayPtr(publicationInputs));
       invalidInputs[2].m_Binding.m_hBuffer = upload.m_hVirtualPageTable;
       xiiRenderPipelineInstance invalid;
-      XII_TEST_RESULT(invalid.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowPagePublish")));
+      XII_TEST_RESULT(invalid.Synchronize(xiiCreateVirtualShadowPagePublishTestResource()));
       XII_TEST_BOOL(invalid.Build(nullptr, graph, context.GetBlackboard(), {}, invalidInputs).Failed());
       XII_TEST_BOOL(invalid.GetLastBuildError().FindSubString("captured device allocations") != nullptr);
       invalid.Clear();
@@ -258,7 +258,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
       auto duplicate   = pages;
       duplicate.PushBack(pages[0]);
       invalidInputs[0].m_Binding.m_pFrameData = XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, graph.GetSetupSerial(), residency, std::move(duplicate));
-      XII_TEST_RESULT(invalid.Synchronize(xiiLoadPipelineLibraryResource("VirtualShadowPagePublish")));
+      XII_TEST_RESULT(invalid.Synchronize(xiiCreateVirtualShadowPagePublishTestResource()));
       XII_TEST_BOOL(invalid.Build(nullptr, graph, context.GetBlackboard(), {}, invalidInputs).Failed());
       XII_TEST_BOOL(invalid.GetLastBuildError().FindSubString("stale, duplicate") != nullptr);
       XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 2);

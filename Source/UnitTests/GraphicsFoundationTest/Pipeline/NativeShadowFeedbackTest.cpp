@@ -35,7 +35,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
   settings.m_uiMaxPageAllocations = 64;
   if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)))
     return;
-  const auto                                 asset = xiiLoadPipelineLibraryResource("VirtualShadowFeedback");
+  const auto                                 asset = xiiCreateVirtualShadowFeedbackTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring()))
     return;

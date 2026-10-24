@@ -31,8 +31,10 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  const auto  scenePipeline  = xiiLoadPipelineLibraryResource("Scene");
-  const auto  editorPipeline = xiiLoadPipelineLibraryResource("Editor");
+  const auto scenePipeline  = xiiLoadPipelineLibraryResource("Scene");
+  const auto editorPipeline = xiiLoadPipelineLibraryResource("Editor");
+  if (!XII_TEST_BOOL(scenePipeline.IsValid() && editorPipeline.IsValid()))
+    return;
   xiiGeometry geometry;
   geometry.AddBox(xiiVec3(1), true);
   xiiMeshResourceDescriptor meshDescription;

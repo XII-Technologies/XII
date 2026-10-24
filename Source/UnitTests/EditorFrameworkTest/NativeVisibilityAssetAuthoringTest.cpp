@@ -174,7 +174,7 @@ namespace
     const auto* cull      = add("Meshlet Culling", "xiiMeshletCullPass", {2400, 0});
     if (!instances || !maximum || !bounds || !dispatch || !count || !overflow || !cull)
       return xiiStatus("Could not create native meshlet visibility nodes.");
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", matrix ? "RenderPipelines/MatrixInstanceVisibility.xiiBinRenderPipeline" : "RenderPipelines/InstanceVisibility.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", matrix ? xiiCreateMatrixInstanceVisibilityTestResource().GetResourceID() : xiiCreateInstanceVisibilityTestResource().GetResourceID()));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
     const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
       const auto* out = manager->GetOutputPinByName(source, output);
@@ -280,7 +280,7 @@ namespace
     const auto* draw      = add("Vertex-pull Draw Commands", "xiiVertexPullDrawCommandsPass", {600, 0});
     if (!instances || !draw)
       return xiiStatus("Could not create native vertex-pull nodes.");
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/MeshletVisibility.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", xiiCreateMeshletVisibilityTestResource().GetResourceID()));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
     const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
       const auto* out = manager->GetOutputPinByName(source, output);
@@ -371,9 +371,9 @@ namespace
     const auto* feedback  = add("LOD Demand", "xiiRenderPipelineSubgraphPass", {600, 600});
     if (!instances || !draw || !feedback)
       return xiiStatus("Could not create world mesh draw nodes.");
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/MatrixMeshletVisibility.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", xiiCreateMatrixMeshletVisibilityTestResource().GetResourceID()));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(feedback, "Resource", "RenderPipelines/GeometryLodFeedback.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(feedback, "Resource", xiiCreateGeometryLodFeedbackTestResource().GetResourceID()));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(feedback));
     const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
       const auto* out = manager->GetOutputPinByName(source, output);
@@ -470,7 +470,7 @@ namespace
     const auto* surface   = add("Surface Raster", "xiiSurfaceQueryPass", {1200, 0});
     if (!instances || !materials || !constants || !surface)
       return xiiStatus("Could not create native surface nodes.");
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/VertexPullDraws.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", xiiCreateVertexPullDrawsTestResource().GetResourceID()));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
     const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
       const auto* out = manager->GetOutputPinByName(source, output);
@@ -652,7 +652,7 @@ namespace
     const auto* capture   = add("Surface Capture", "xiiSceneMeshPickingPass", {1200, 0});
     if (!instances || !selection || !capture)
       return xiiStatus("Could not create editor picking nodes.");
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/SurfaceQuery.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", xiiCreateSurfaceQueryTestResource().GetResourceID()));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
     const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
       const auto* out = manager->GetOutputPinByName(source, output);
@@ -737,7 +737,7 @@ namespace
     const auto* target    = add("Depth Target", "xiiDepthTargetPass", {600, 1500});
     if (!instances || !materials || !constants || !surface || !target)
       return xiiStatus("Could not create native surface nodes.");
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", "RenderPipelines/VertexPullDraws.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(instances, "Resource", xiiCreateVertexPullDrawsTestResource().GetResourceID()));
     XII_SUCCEED_OR_RETURN(manager->SynchronizePinConfigurations(instances));
     const auto connect = [&](const xiiDocumentObject* source, xiiStringView output, const xiiDocumentObject* target, xiiStringView input) -> xiiStatus {
       const auto* out = manager->GetOutputPinByName(source, output);
@@ -1081,7 +1081,7 @@ namespace
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Width", 2048U));
       XII_SUCCEED_OR_RETURN(accessor->SetValueByName(resolution, "Height", 2048U));
     }
-    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(depth, "Resource", "RenderPipelines/ShadowDepth.xiiBinRenderPipeline"));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(depth, "Resource", xiiCreateShadowDepthTestResource().GetResourceID()));
     auto overrideId = xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name, "/Mesh Shader Override"));
     XII_SUCCEED_OR_RETURN(accessor->AddObject(depth, depth->GetType()->FindPropertyByName("Overrides"), -1, xiiGetStaticRTTI<xiiGraphPropertyOverride>(), overrideId));
     const auto* overrideObject = accessor->GetObject(overrideId);
@@ -2116,10 +2116,10 @@ namespace
         return nullptr;
       return node;
     };
-    const auto* lights      = reference("World Analytical Lights", "RenderPipelines/WorldLightsUpload.xiiBinRenderPipeline", {0, 0});
-    const auto* sun         = reference("World Directional Selection", "RenderPipelines/WorldDirectionalLight.xiiBinRenderPipeline", {0, 600});
-    const auto* environment = reference("Environment Constants", "RenderPipelines/EnvironmentLightConstants.xiiBinRenderPipeline", {600, 600});
-    const auto* clusters    = reference("Camera Cluster Lists", "RenderPipelines/ClusterLightLists.xiiBinRenderPipeline", {600, 0});
+    const auto* lights      = reference("World Analytical Lights", xiiCreateWorldLightsUploadTestResource().GetResourceID(), {0, 0});
+    const auto* sun         = reference("World Directional Selection", xiiCreateWorldDirectionalLightTestResource().GetResourceID(), {0, 600});
+    const auto* environment = reference("Environment Constants", xiiCreateEnvironmentLightConstantsTestResource().GetResourceID(), {600, 600});
+    const auto* clusters    = reference("Camera Cluster Lists", xiiCreateClusterLightListsTestResource().GetResourceID(), {600, 0});
     const auto* directional = add("Directional Surface Evaluation", "xiiDirectionalSurfaceLightingPass", {1200, 600});
     const auto* local       = add("Local Surface Evaluation", "xiiClusteredLocalSurfaceLightingPass", {1200, 0});
     XII_SUCCEED_OR_RETURN(connect(lights, "Lights", clusters, "Lights"));

@@ -1,0 +1,132 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#pragma once
+
+#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+
+// Programmatic fixtures for operation and authoring tests. SDK applications use Scene or Editor.
+// These declarations do not register production defaults or load authored fragment assets.
+
+xiiRenderPipelineResourceHandle xiiCreateAmbientOcclusionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateAtmosphereApplyTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateAtmosphereLookupTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateAtmosphereMultiScatterTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateAtmosphereTransmittanceTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateBufferExportTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateClusterLightListsTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDDGIEnvironmentProbesTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDebugVisualizationTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDepthOnlyTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDepthPyramidTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDepthSensorTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDepthSensorDiagnosticTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDiffuseSurfaceLightingTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDirectionalMeshTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateDirectionalSurfaceLightingTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateEditorMeshPickingTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateEnvironmentLightConstantsTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateEnvironmentSpecularTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateGBufferTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateGeometryLodFeedbackTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateHdrDisplayTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateInfraredSensorTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateInstanceOcclusionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateInstanceVisibilityTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateIrradianceLayerTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateLayeredDiffuseLightingTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateLidarSensorTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateMatrixInstanceVisibilityTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateMatrixMeshletVisibilityTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateMeshletOcclusionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateMeshletVisibilityTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateOpaqueCompositionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateReflectionCompositionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateReflectionSelectionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateRgbSensorTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateSceneTargetsTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateScreenDiffuseLightingTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateScreenEffectsTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateScreenIrradianceTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateScreenRefractionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateScreenRefractionTraceTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateShadowCascadesTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateShadowDepthTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateShadowMeshDepthTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateSparseVoxelEnvironmentTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateSurfaceIndirectLightingTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateSurfaceQueryTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateSurfaceRadianceCompositionTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateTransparencyResolveTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateVertexPullDrawsTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateViewPresentationTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateVirtualShadowFeedbackTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateVirtualShadowPagePublishTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateVirtualShadowRasterWorkTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateVirtualShadowTablesTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateWorldAtmosphereViewTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateWorldDeferredLightingTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateWorldDirectionalLightTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateWorldLightsUploadTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateWorldRayProbeTestResource();
+
+xiiRenderPipelineResourceHandle xiiCreateWorldSurfaceLightingTestResource();

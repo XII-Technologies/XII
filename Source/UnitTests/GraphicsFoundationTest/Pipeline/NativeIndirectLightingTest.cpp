@@ -6,6 +6,7 @@
 
 #include <GraphicsCore/Pipeline/Passes/Lighting/DiffuseSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentSpecularPass.h>
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -103,23 +104,20 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 surfaceAsset = xiiLoadPipelineLibraryResource("SurfaceIndirectLighting"), layeredAsset = xiiLoadPipelineLibraryResource("LayeredDiffuseLighting"), specularAsset = xiiLoadPipelineLibraryResource("EnvironmentSpecular"), layerAsset = xiiLoadPipelineLibraryResource("IrradianceLayer"), diffuseAsset = xiiLoadPipelineLibraryResource("DiffuseSurfaceLighting");
+  const auto                                 surfaceAsset = xiiCreateSurfaceIndirectLightingTestResource(), layeredAsset = xiiCreateLayeredDiffuseLightingTestResource(), specularAsset = xiiCreateEnvironmentSpecularTestResource(), layerAsset = xiiCreateIrradianceLayerTestResource(), diffuseAsset = xiiCreateDiffuseSurfaceLightingTestResource();
   xiiResourceLock<xiiRenderPipelineResource> surface(surfaceAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), layered(layeredAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), specular(specularAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), layer(layerAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), diffuse(diffuseAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(surface.IsValid() && layered.IsValid() && specular.IsValid() && layer.IsValid() && diffuse.IsValid() && surface->GetAuthoring() && layered->GetAuthoring() && specular->GetAuthoring() && layer->GetAuthoring() && diffuse->GetAuthoring()))
     return;
-  const auto sa = surface->GetAuthoring(), la = layered->GetAuthoring(), ea = specular->GetAuthoring();
-  xiiUuid    diffuseInstance, specularInstance, diffuseNode;
+  const auto sa = surface->GetAuthoring();
+  xiiUuid    diffuseNode, specularNode;
   for (const auto& node : sa->m_Descriptor.m_Passes)
   {
-    if (node.m_Definition == la->m_Descriptor.m_Id)
-      diffuseInstance = node.m_Id;
-    if (node.m_Definition == ea->m_Descriptor.m_Id)
-      specularInstance = node.m_Id;
-  }
-  for (const auto& node : la->m_Descriptor.m_Passes)
     if (node.m_pType == xiiGetStaticRTTI<xiiDiffuseSurfaceLightingPass>())
       diffuseNode = node.m_Id;
-  if (!XII_TEST_BOOL(diffuseInstance.IsValid() && specularInstance.IsValid() && diffuseNode.IsValid()))
+    if (node.m_pType == xiiGetStaticRTTI<xiiEnvironmentSpecularPass>())
+      specularNode = node.m_Id;
+  }
+  if (!XII_TEST_BOOL(diffuseNode.IsValid() && specularNode.IsValid()))
     return;
   xiiRenderGraphTestContext contexts[2];
   xiiRenderPipelineInstance instances[2];
@@ -180,12 +178,10 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
     root.m_Passes[env].m_Properties.Insert("AmbientRadiance", xiiVec3(0.2f, 0.4f, 0.6f));
     const auto first = root.AddSubgraph("First indirect", sa->m_Descriptor.m_Id), second = root.AddSubgraph("Second indirect", sa->m_Descriptor.m_Id);
     auto&      diffuseWeight = root.m_Passes[second].m_Overrides.ExpandAndGetRef();
-    diffuseWeight.m_Path.PushBack(diffuseInstance);
     diffuseWeight.m_Path.PushBack(diffuseNode);
     diffuseWeight.m_Properties.Insert("Scale", 2.0f);
     auto& specularWeight = root.m_Passes[second].m_Overrides.ExpandAndGetRef();
-    specularWeight.m_Path.PushBack(specularInstance);
-    specularWeight.m_Path.PushBack(ea->m_Descriptor.m_Passes[0].m_Id);
+    specularWeight.m_Path.PushBack(specularNode);
     specularWeight.m_Properties.Insert("Scale", 0.5f);
     const auto connect = [&](xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input) {
       XII_TEST_RESULT(root.Connect(source, output, target, input));

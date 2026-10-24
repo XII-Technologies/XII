@@ -37,7 +37,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredTransparencyResolve)
       XII_TEST_BOOL(pin.m_bOptional);
   XII_TEST_BOOL(resolve.GetRequiredDeviceFeatures().IsNoFlagSet());
 
-  const auto                                 resource = xiiLoadPipelineLibraryResource("TransparencyResolve");
+  const auto                                 resource = xiiCreateTransparencyResolveTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;

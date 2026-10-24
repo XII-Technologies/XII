@@ -18,9 +18,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
   auto* config = profile.GetTypeConfig<xiiRenderPipelineProfileConfig>();
   if (!XII_TEST_BOOL(config != nullptr))
     return;
-  XII_TEST_STRING(config->m_sScenePipeline, "RenderPipelines/Scene.xiiBinRenderPipeline");
-  XII_TEST_STRING(config->m_sEditorScenePipeline, "RenderPipelines/Editor.xiiBinRenderPipeline");
-  XII_TEST_STRING(config->m_sAssetPreviewPipeline, "RenderPipelines/Scene.xiiBinRenderPipeline");
+  XII_TEST_STRING(config->m_sScenePipeline, xiiRenderPipelineProfileConfig::s_szScenePipeline);
+  XII_TEST_STRING(config->m_sEditorScenePipeline, xiiRenderPipelineProfileConfig::s_szEditorPipeline);
+  XII_TEST_STRING(config->m_sAssetPreviewPipeline, xiiRenderPipelineProfileConfig::s_szScenePipeline);
   config->m_sScenePipeline              = "Project/Simulation.xiiBinRenderPipeline";
   config->m_sEditorScenePipeline        = "Project/Scene.xiiBinRenderPipeline";
   config->m_sAssetPreviewPipeline       = "Project/Preview.xiiBinRenderPipeline";
@@ -105,9 +105,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
       migrated.LoadRuntimeData(input);
       input.EndStream();
       XII_TEST_BOOL(migrated.IsRuntimeDataValid());
-      XII_TEST_STRING(migrated.m_sScenePipeline, custom ? "Custom/Scene" : "RenderPipelines/Scene.xiiBinRenderPipeline");
-      XII_TEST_STRING(migrated.m_sEditorScenePipeline, "RenderPipelines/Editor.xiiBinRenderPipeline");
-      XII_TEST_STRING(migrated.m_sAssetPreviewPipeline, "RenderPipelines/Scene.xiiBinRenderPipeline");
+      XII_TEST_STRING(migrated.m_sScenePipeline, custom ? "Custom/Scene" : xiiRenderPipelineProfileConfig::s_szScenePipeline);
+      XII_TEST_STRING(migrated.m_sEditorScenePipeline, xiiRenderPipelineProfileConfig::s_szEditorPipeline);
+      XII_TEST_STRING(migrated.m_sAssetPreviewPipeline, xiiRenderPipelineProfileConfig::s_szScenePipeline);
       XII_TEST_STRING(migrated.m_sTexturePreviewPipeline, custom ? "Custom/Texture" : "");
       XII_TEST_BOOL(migrated.m_sCubeTexturePreviewPipeline.IsEmpty());
 

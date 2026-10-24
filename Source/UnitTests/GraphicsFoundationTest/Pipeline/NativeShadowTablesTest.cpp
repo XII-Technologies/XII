@@ -31,7 +31,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
   settings.m_uiFramesInFlight                                      = 2;
   if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)))
     return;
-  const auto                                 asset = xiiLoadPipelineLibraryResource("VirtualShadowTables");
+  const auto                                 asset = xiiCreateVirtualShadowTablesTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenPageMappingsRetireBeforePhysica
   settings.m_uiFramesInFlight                                      = 2;
   if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)))
     return;
-  const auto                                 asset = xiiLoadPipelineLibraryResource("VirtualShadowTables");
+  const auto                                 asset = xiiCreateVirtualShadowTablesTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetPipeline()))
     return;

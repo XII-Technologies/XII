@@ -27,8 +27,8 @@ namespace
     xiiPipelineTestAuthor author(path, "AtmosphereLookup");
     XII_SUCCEED_OR_RETURN(author.Init());
     const auto* parameters   = author.Add("Physical Atmosphere Parameters", "xiiAtmosphereConstantsPass", {0, 0});
-    const auto* transmission = author.Reference("Solar Transmittance", "AtmosphereTransmittance", {700, 0});
-    const auto* scattering   = author.Reference("Multiple Scattering", "AtmosphereMultiScatter", {1400, 0});
+    const auto* transmission = author.Reference("Solar Transmittance", xiiCreateAtmosphereTransmittanceTestResource(), {700, 0});
+    const auto* scattering   = author.Reference("Multiple Scattering", xiiCreateAtmosphereMultiScatterTestResource(), {1400, 0});
     XII_SUCCEED_OR_RETURN(author.Connect(parameters, "AtmosphereConstants", transmission, "Atmosphere"));
     XII_SUCCEED_OR_RETURN(author.Connect(parameters, "AtmosphereConstants", scattering, "Atmosphere"));
     XII_SUCCEED_OR_RETURN(author.Connect(transmission, "Transmittance", scattering, "Transmittance"));
@@ -41,10 +41,13 @@ namespace
   {
     xiiPipelineTestAuthor author(path, "WorldAtmosphereView");
     XII_SUCCEED_OR_RETURN(author.Init());
-    const auto*              lookup = author.Reference("World Atmosphere Lookup", "AtmosphereLookup", {0, 0});
-    const auto*              view   = author.Reference("Apply Atmospheric Radiance", "AtmosphereApply", {1200, 0});
+    const auto*                                lookup = author.Reference("World Atmosphere Lookup", xiiCreateAtmosphereLookupTestResource(), {0, 0});
+    const auto*                                view   = author.Reference("Apply Atmospheric Radiance", xiiCreateAtmosphereApplyTestResource(), {1200, 0});
     xiiGraphPropertyOverride override;
-    override.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.AtmosphereLookup/Physical Atmosphere Parameters"));
+    xiiResourceLock<xiiRenderPipelineResource> definition(xiiCreateAtmosphereLookupTestResource(), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    for (const auto& pass : definition->GetAuthoring()->m_Descriptor.m_Passes)
+      if (pass.m_pType->GetTypeName() == xiiStringView("xiiAtmosphereConstantsPass"))
+        override.m_Path.PushBack(pass.m_Id);
     override.m_Properties.Insert("UseWorldAtmosphere", true);
     // Instance overrides are stored through the same reflected command accessor as all other properties.
     XII_SUCCEED_OR_RETURN(author.Override(lookup, override));

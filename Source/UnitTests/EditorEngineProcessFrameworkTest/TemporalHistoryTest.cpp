@@ -82,7 +82,7 @@ XII_CREATE_SIMPLE_TEST(NativeDepthBoundary, InterleavedAuthoredHiZ)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  const auto                resource = xiiLoadPipelineLibraryResource("DepthPyramid");
+  const auto                resource = xiiCreateDepthPyramidTestResource();
   xiiRenderPipelineInstance histories[2];
   xiiRenderGraphTestContext contexts[2];
   xiiUInt32                 depthInterface[2], historyInterface[2];

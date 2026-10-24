@@ -13,6 +13,7 @@
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
 
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
@@ -43,7 +44,7 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposur
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                  resource = xiiLoadPipelineLibraryResource("HdrDisplay");
+  const auto                  resource = xiiCreateHdrDisplayTestResource();
   xiiWorldDescription         worldDescription("Display recording owners");
   xiiUniquePtr<xiiWorld>      world = XII_DEFAULT_NEW(xiiWorld, worldDescription);
   xiiRenderGraphTestContext   contexts[2];
@@ -206,7 +207,9 @@ namespace
   bool ReloadOpaqueAmbient()
   {
     // Reload the canonical resource shared by the capture wrapper and ordinary views.
-    const auto                          resource = xiiLoadPipelineLibraryResource("Scene");
+    const auto resource = xiiLoadPipelineLibraryResource("Scene");
+    if (!XII_TEST_BOOL(resource.IsValid()))
+      return false;
     xiiRenderPipelineResourceDescriptor descriptor;
     {
       xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -246,7 +249,9 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("Scene");
+  const auto asset = xiiLoadPipelineLibraryResource("Scene");
+  if (!XII_TEST_BOOL(asset.IsValid()))
+    return;
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
@@ -573,6 +578,47 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
       XII_TEST_INT(outside, 0xFFFF0000U);
       for (xiiUInt32 c = 0; c < 3; ++c)
         XII_TEST_FLOAT(float((center >> (8 * c)) & 255), float((finalPixels[v] >> (8 * c)) & 255), 2.0f);
+    }
+  }
+  // Exercise the actual bindless material texture path through the canonical Scene.
+  {
+    auto& remaining = scenes[1];
+    XII_LOCK(remaining.m_World->GetWriteMarker());
+    const xiiUInt8               texel[] = {32, 128, 224, 255};
+    xiiGALTextureSubResourceData content;
+    content.m_pData    = xiiConstByteBlobPtr(texel, sizeof(texel));
+    content.m_uiStride = content.m_uiDepthStride = sizeof(texel);
+    xiiTexture2DResourceDescriptor texture;
+    texture.m_TextureDescription.m_Size        = {1, 1};
+    texture.m_TextureDescription.m_uiMipLevels = 1;
+    texture.m_TextureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
+    texture.m_InitialContent                   = xiiMakeArrayPtr(&content, 1);
+    xiiMaterialResourceDescriptor textured;
+    textured.m_BaseColor                  = xiiColor::White;
+    textured.m_hBaseColorTexture          = xiiResourceManager::CreateResource<xiiTexture2DResource>("Scene.BaseColor", std::move(texture));
+    const auto              material      = xiiResourceManager::CreateResource<xiiMaterialResource>("Scene.TexturedMaterial", std::move(textured));
+    xiiStaticMeshComponent* meshComponent = nullptr;
+    if (!XII_TEST_BOOL(remaining.m_World->TryGetComponent(remaining.m_Mesh, meshComponent)))
+      return;
+    meshComponent->SetMaterialOverride(0, material);
+    for (auto* view : remaining.m_Views)
+      view->SetRenderPipelineResource(pipeline); // Retain the Albedo export for readback.
+    for (xiiUInt32 frame = 0; frame < 4; ++frame)
+      remaining.m_World->Update();
+    environment.GetDevice()->WaitIdle();
+    for (auto* view : remaining.m_Views)
+    {
+      XII_TEST_RESULT(view->GetLastRenderResult());
+      const auto& instance = view->GetRenderPipelineInstance();
+      const auto* binding  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Albedo", false));
+      const auto  image    = view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture);
+      if (!XII_TEST_BOOL(image != nullptr))
+        return;
+      xiiUInt32 pixel = 0;
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), image->GetDescription().m_Size.width / 2, image->GetDescription().m_Size.height / 2, pixel))
+        return;
+      for (xiiUInt32 channel = 0; channel < 4; ++channel)
+        XII_TEST_FLOAT(float((pixel >> (8 * channel)) & 255), float(texel[channel]), 1.0f);
     }
   }
   XII_TEST_BOOL(sawResident);

@@ -34,12 +34,12 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredOpaqueComposition)
   clear.m_OutputTexture.SetFormat(xiiGALResourceFormat::D32Float);
   XII_TEST_BOOL(clear.Configure(properties).Failed());
 
-  const auto                                 resource = xiiLoadPipelineLibraryResource("OpaqueComposition");
+  const auto                                 resource = xiiCreateOpaqueCompositionTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
   const auto descriptor = loaded->GetAuthoring()->m_Descriptor;
-  XII_TEST_INT(descriptor.m_Passes.GetCount(), 7);
+  XII_TEST_INT(descriptor.m_Passes.GetCount(), 13);
   XII_TEST_BOOL(loaded->GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(loaded->GetPipeline()->GetRuntimeFeatures().IsNoFlagSet());
   xiiDynamicArray<xiiRenderPipelinePin> interfacePins;

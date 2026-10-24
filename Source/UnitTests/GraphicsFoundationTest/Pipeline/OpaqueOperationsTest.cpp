@@ -113,7 +113,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   const auto                                 surface             = clear("Previous surface", xiiColor::MakeZero());
   const auto                                 objects             = clear("Object identity", xiiColor::MakeZero(), xiiGALResourceFormat::R32UInt);
   const auto                                 camera              = leaf.AddPass("Camera", xiiGetStaticRTTI<xiiViewConstantsPass>());
-  const auto                                 compositionResource = xiiLoadPipelineLibraryResource("OpaqueComposition");
+  const auto                                 compositionResource = xiiCreateOpaqueCompositionTestResource();
   xiiResourceLock<xiiRenderPipelineResource> composition(compositionResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(composition.IsValid() && composition->GetAuthoring()))
     return;
@@ -163,7 +163,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   // One occurrence uses the authored screen trace, the other an explicitly supplied raw signal.
   auto& rawOverride = root.m_Passes[0].m_Overrides.ExpandAndGetRef();
   rawOverride.m_Path.PushBack(leaf.m_Passes[opaque].m_Id);
-  rawOverride.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.OpaqueComposition/Select Raw Reflections"));
+  rawOverride.m_Path.PushBack(xiiFindPipelineTestPass(composition->GetAuthoring()->m_Descriptor, "xiiTextureSelectionPass"));
   rawOverride.m_Properties.Insert("PreferPrimary", false);
   auto& override = root.m_Passes[1].m_Overrides.ExpandAndGetRef();
   override.m_Path.PushBack(leaf.m_Passes[radiance].m_Id);
@@ -292,7 +292,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentWeightedTransparencyResolve
   XII_TEST_RESULT(descriptor.Connect(accumulation, "Texture", resolve, "OITAccumulate"));
   XII_TEST_RESULT(descriptor.Connect(revealage, "Texture", resolve, "OITReveal"));
   XII_TEST_RESULT(descriptor.Connect(hdr, "Texture", resolve, "HDRSceneColor"));
-  const auto                                 authoredResource = xiiLoadPipelineLibraryResource("TransparencyResolve");
+  const auto                                 authoredResource = xiiCreateTransparencyResolveTestResource();
   xiiResourceLock<xiiRenderPipelineResource> authored(authoredResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(authored.IsValid() && authored->GetAuthoring()))
     return;
@@ -735,7 +735,7 @@ XII_CREATE_SIMPLE_TEST(NativeRadianceComposition, IndependentWeightsFogRangeAndR
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("SurfaceRadianceComposition");
+  const auto                                 asset = xiiCreateSurfaceRadianceCompositionTestResource();
   xiiResourceLock<xiiRenderPipelineResource> composition(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(composition.IsValid() && composition->GetAuthoring()))
     return;

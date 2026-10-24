@@ -38,7 +38,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceComposition)
   atmosphere.m_bUseWorldAtmosphere = true;
   XII_TEST_BOOL(atmosphere.GetExtractionRequirements() == xiiRenderExtractionCategory::Atmosphere);
 
-  auto                                       childResource = xiiLoadPipelineLibraryResource("ScreenEffects");
+  auto                                       childResource = xiiCreateScreenEffectsTestResource();
   xiiResourceLock<xiiRenderPipelineResource> child(childResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(child.IsValid() && child->GetPipeline()))
     return;

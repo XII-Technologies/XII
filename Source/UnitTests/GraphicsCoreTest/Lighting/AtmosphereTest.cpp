@@ -154,7 +154,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AtmosphereLookupResourceContracts)
   multiple.GetPins(pins);
   XII_TEST_RESULT(multiple.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[multiple.m_Transmittance.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::ShaderResource));
-  const auto                                 lookup = xiiLoadPipelineLibraryResource("AtmosphereLookup"), world = xiiLoadPipelineLibraryResource("WorldAtmosphereView");
+  const auto                                 lookup = xiiCreateAtmosphereLookupTestResource(), world = xiiCreateWorldAtmosphereViewTestResource();
   xiiResourceLock<xiiRenderPipelineResource> plain(lookup, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), scene(world, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(plain.IsValid() && scene.IsValid() && plain->GetPipeline() && scene->GetPipeline()))
     return;

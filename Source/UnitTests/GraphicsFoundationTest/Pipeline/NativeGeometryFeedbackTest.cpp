@@ -67,7 +67,7 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
       return;
   }
   XII_SCOPE_EXIT(for (const auto handle : handles) xiiGeometryResidencyManager::UnregisterGeometry(handle, 0));
-  const auto                                 asset = xiiLoadPipelineLibraryResource("GeometryLodFeedback");
+  const auto                                 asset = xiiCreateGeometryLodFeedbackTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;

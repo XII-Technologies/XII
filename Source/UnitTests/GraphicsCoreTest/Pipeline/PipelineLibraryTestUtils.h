@@ -3,25 +3,67 @@
 #pragma once
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
+#include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsCoreTest/Pipeline/PipelineTestFixtures.h>
 #include <TestFramework/Framework/TestFramework.h>
 
-/// Test fixtures use the same authored resources as applications, never a C++ graph factory.
+/// End-to-end tests use the same canonical authored resources as applications.
 inline xiiRenderPipelineResourceHandle xiiLoadPipelineLibraryResource(xiiStringView name)
 {
-  if (!xiiFileSystem::FindDataDirectoryWithRoot("PipelineTestResources"))
-    if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineTestResources", "PipelineTestResources", xiiDataDirUsage::ReadOnly)))
+  // RendererAssets exports both authored sources through the production compiler.
+  // No generated pipeline bytes are checked into the SDK data directory.
+  for (const xiiStringView canonical : {"Scene", "Editor"})
+  {
+    xiiStringBuilder file(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", canonical, ".xiiBinRenderPipeline");
+    file.MakeCleanPath();
+    if (!XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(file), "Run EditorFrameworkTest -filter RendererAssets before GPU rendering tests."))
       return {};
-  const xiiStringBuilder path(":PipelineTestResources/RenderPipelines/", name, ".xiiBinRenderPipeline");
-  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(path);
+    xiiResourceManager::RegisterNamedResource(canonical == "Scene" ? xiiRenderPipelineProfileConfig::s_szScenePipeline : xiiRenderPipelineProfileConfig::s_szEditorPipeline, file);
+  }
+  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(name == "Scene" ? xiiRenderPipelineProfileConfig::s_szScenePipeline : xiiRenderPipelineProfileConfig::s_szEditorPipeline);
+}
+
+/// Resolve a leaf by its reflected operation rather than a retired asset hierarchy.
+inline xiiUuid xiiFindPipelineTestPass(const xiiRenderPipelineResourceDescriptor& descriptor, xiiStringView type, xiiUInt32 occurrence = 0)
+{
+  for (const auto& pass : descriptor.m_Passes)
+    if (pass.m_pType && pass.m_pType->GetTypeName() == type && occurrence-- == 0)
+      return pass.m_Id;
+  XII_TEST_BOOL_MSG(false, "Missing test operation '%s'", type.GetStartPointer());
+  return {};
+}
+
+/// A loaded memory-backed resource exercises reloads; CreateResource is intentionally non-reloadable.
+inline xiiRenderPipelineResourceHandle xiiMakeReloadablePipelineTestResource(const xiiRenderPipelineResourceHandle& source, xiiStringView identity)
+{
+  xiiResourceLock<xiiRenderPipelineResource> definition(source, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(definition.IsValid() && definition->GetAuthoring()))
+    return {};
+  xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+  xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
+  stream << xiiString("Fixture.xiiBinRenderPipeline");
+  xiiAssetFileHeader header;
+  if (!XII_TEST_RESULT(header.Write(stream)))
+    return {};
+  stream << xiiUInt8(3);
+  if (!XII_TEST_RESULT(definition->GetAuthoring()->m_Descriptor.Serialize(stream)))
+    return {};
+  auto resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(identity);
+  xiiResourceManager::UpdateResourceWithCustomLoader(resource, std::move(loader));
+  xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring());
+  return resource;
 }
 
 /// Give mutation fixtures a readable topological order. This is an explicit remapping of
 /// flattened document occurrence indices, not a reconstruction of the rendering stack.
-inline xiiResult xiiLoadPipelineLibraryDescriptor(xiiRenderPipelineResourceDescriptor& out_definition, xiiStringView name)
+inline xiiResult xiiLoadPipelineTestDescriptor(xiiRenderPipelineResourceDescriptor& out_definition, const xiiRenderPipelineResourceHandle& resource)
 {
-  const auto                                 resource = xiiLoadPipelineLibraryResource(name);
   xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return XII_FAILURE;

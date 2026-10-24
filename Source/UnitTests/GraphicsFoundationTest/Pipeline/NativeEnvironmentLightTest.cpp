@@ -53,7 +53,7 @@ XII_CREATE_SIMPLE_TEST(NativeEnvironmentLight, RepeatedAuthoredEmittersRetireBef
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource("EnvironmentLightConstants");
+  const auto                                 asset = xiiCreateEnvironmentLightConstantsTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring()))
     return;
@@ -118,7 +118,7 @@ XII_CREATE_SIMPLE_TEST(NativeEnvironmentLight, WorldSelectionTagsLifecycleAndMin
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 worldAsset = xiiLoadPipelineLibraryResource("WorldDirectionalLight"), constantsAsset = xiiLoadPipelineLibraryResource("EnvironmentLightConstants");
+  const auto                                 worldAsset = xiiCreateWorldDirectionalLightTestResource(), constantsAsset = xiiCreateEnvironmentLightConstantsTestResource();
   xiiResourceLock<xiiRenderPipelineResource> worldSource(worldAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), constantsSource(constantsAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(worldSource.IsValid() && worldSource->GetAuthoring() && constantsSource.IsValid() && constantsSource->GetAuthoring()))
     return;

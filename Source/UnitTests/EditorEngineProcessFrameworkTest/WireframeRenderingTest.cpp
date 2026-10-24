@@ -73,7 +73,7 @@ namespace
     // Rebuild this fixture from the explicitly selected native surface graph.
     // No default full-stack pipeline or automatic device-dependent path is involved.
     xiiRenderPipelineResourceDescriptor definition;
-    if (!XII_TEST_RESULT(xiiLoadPipelineLibraryDescriptor(definition, "EditorMeshPicking")))
+    if (!XII_TEST_RESULT(xiiLoadPipelineTestDescriptor(definition, xiiCreateEditorMeshPickingTestResource())))
       return;
     xiiUInt32 commands = xiiInvalidIndex;
     xiiUInt32 capture  = xiiInvalidIndex;

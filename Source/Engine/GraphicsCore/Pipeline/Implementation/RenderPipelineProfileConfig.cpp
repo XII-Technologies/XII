@@ -17,9 +17,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 2, xiiRTTIDefau
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("ScenePipeline", m_sScenePipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/Scene.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("EditorScenePipeline", m_sEditorScenePipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/Editor.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("AssetPreviewPipeline", m_sAssetPreviewPipeline)->AddAttributes(new xiiDefaultValueAttribute("RenderPipelines/Scene.xiiBinRenderPipeline"), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("ScenePipeline", m_sScenePipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szScenePipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("EditorScenePipeline", m_sEditorScenePipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szEditorPipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("AssetPreviewPipeline", m_sAssetPreviewPipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szScenePipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
       XII_MEMBER_PROPERTY("TexturePreviewPipeline", m_sTexturePreviewPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
       XII_MEMBER_PROPERTY("CubeTexturePreviewPipeline", m_sCubeTexturePreviewPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
     } XII_END_PROPERTIES;
@@ -55,11 +55,11 @@ void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& strea
   if (chunk.m_uiChunkVersion == 1)
   {
     if (references[0].IsEmpty())
-      references[0] = "RenderPipelines/Scene.xiiBinRenderPipeline";
+      references[0] = xiiRenderPipelineProfileConfig::s_szScenePipeline;
     if (references[1].IsEmpty())
-      references[1] = "RenderPipelines/Editor.xiiBinRenderPipeline";
+      references[1] = xiiRenderPipelineProfileConfig::s_szEditorPipeline;
     if (references[2].IsEmpty())
-      references[2] = "RenderPipelines/Scene.xiiBinRenderPipeline";
+      references[2] = xiiRenderPipelineProfileConfig::s_szScenePipeline;
     if (references[3] == "RenderPipelines/TexturePreview.xiiBinRenderPipeline")
       references[3].Clear();
     if (references[4] == "RenderPipelines/TextureCubePreview.xiiBinRenderPipeline")
@@ -127,7 +127,7 @@ namespace
       for (const auto property : {"ScenePipeline", "EditorScenePipeline", "AssetPreviewPipeline"})
         if (const auto* value = node->FindProperty(property))
           if (value->m_Value.IsA<xiiString>() && value->m_Value.Get<xiiString>().IsEmpty())
-            node->ChangeProperty(property, xiiString(property == xiiStringView("EditorScenePipeline") ? "RenderPipelines/Editor.xiiBinRenderPipeline" : "RenderPipelines/Scene.xiiBinRenderPipeline"));
+            node->ChangeProperty(property, xiiString(property == xiiStringView("EditorScenePipeline") ? xiiRenderPipelineProfileConfig::s_szEditorPipeline : xiiRenderPipelineProfileConfig::s_szScenePipeline));
       for (const auto property : {"TexturePreviewPipeline", "CubeTexturePreviewPipeline"})
         if (const auto* value = node->FindProperty(property))
           if (value->m_Value == xiiString("RenderPipelines/TexturePreview.xiiBinRenderPipeline") || value->m_Value == xiiString("RenderPipelines/TextureCubePreview.xiiBinRenderPipeline"))

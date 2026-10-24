@@ -609,8 +609,8 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  const auto                                 asset = xiiLoadPipelineLibraryResource(materialTargets ? "GBuffer" : depthOnly ? "DepthOnly" :
-                                                                                                                              "SurfaceQuery");
+  const auto                                 asset = materialTargets ? xiiCreateGBufferTestResource() : depthOnly ? xiiCreateDepthOnlyTestResource() :
+                                                                                                                    xiiCreateSurfaceQueryTestResource();
   xiiResourceLock<xiiRenderPipelineResource> loaded(asset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
     return;
@@ -644,7 +644,7 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
   }
   if (materialTargets && !XII_TEST_BOOL(materialId.IsValid()))
     return;
-  if (!XII_TEST_BOOL(cullId.IsValid() && uploadId.IsValid() && dispatchId.IsValid() && meshletId.IsValid() && drawId.IsValid() && surfaceId.IsValid() && viewPath.GetCount() == 4))
+  if (!XII_TEST_BOOL(cullId.IsValid() && uploadId.IsValid() && dispatchId.IsValid() && meshletId.IsValid() && drawId.IsValid() && surfaceId.IsValid() && viewPath.GetCount() == 1))
     return;
   xiiRenderPipelineResourceDescriptor root;
   root.m_References.PushBack({authoring->m_Descriptor.m_Id, asset.GetResourceID()});

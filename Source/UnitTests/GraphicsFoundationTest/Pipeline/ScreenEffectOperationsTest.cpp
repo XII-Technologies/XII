@@ -37,14 +37,14 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableScreenEffectsWithoutSceneServi
   const auto                                 source = leaf.AddPass("Synthetic inputs", xiiGetStaticRTTI<xiiScreenEffectTestSource>());
   const auto                                 camera = leaf.AddPass("Camera", xiiGetStaticRTTI<xiiViewConstantsPass>());
   xiiVariantDictionary                       properties;
-  const auto                                 diffuseAsset = xiiLoadPipelineLibraryResource("ScreenDiffuseLighting"), refractionAsset = xiiLoadPipelineLibraryResource("ScreenRefraction");
+  const auto                                 diffuseAsset = xiiCreateScreenDiffuseLightingTestResource(), refractionAsset = xiiCreateScreenRefractionTestResource();
   xiiResourceLock<xiiRenderPipelineResource> diffuse(diffuseAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), refractionDefinition(refractionAsset, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(diffuse.IsValid() && refractionDefinition.IsValid() && diffuse->GetAuthoring() && refractionDefinition->GetAuthoring()))
     return;
   leaf.m_References.PushBack({diffuse->GetAuthoring()->m_Descriptor.m_Id, diffuseAsset.GetResourceID()});
   leaf.m_References.PushBack({refractionDefinition->GetAuthoring()->m_Descriptor.m_Id, refractionAsset.GetResourceID()});
   const auto trace         = leaf.AddSubgraph("Authored screen diffuse", diffuse->GetAuthoring()->m_Descriptor.m_Id);
-  const auto response      = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.ScreenDiffuseLighting/Evaluate Diffuse Material");
+  const auto response      = xiiFindPipelineTestPass(diffuse->GetAuthoring()->m_Descriptor, "xiiDiffuseSurfaceLightingPass");
   auto&      responseScale = leaf.m_Passes[trace].m_Overrides.ExpandAndGetRef();
   responseScale.m_Path.PushBack(response);
   responseScale.m_Properties.Insert("Scale", 0.25f);
