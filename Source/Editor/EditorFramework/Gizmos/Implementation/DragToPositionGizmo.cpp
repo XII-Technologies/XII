@@ -138,6 +138,7 @@ xiiEditorInput xiiDragToPositionGizmo::DoMousePressEvent(QMouseEvent* e)
 
   m_vStartPosition    = GetTransformation().m_vPosition;
   m_qStartOrientation = GetTransformation().m_qRotation;
+  m_bModifiesRotation = false;
 
   SetActiveInputContext(this);
 
@@ -223,13 +224,9 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
     alignAxis.Set(0, 0, -1);
     orthoAxis.Set(1, 0, 0);
   }
-  else
-  {
-    m_bModifiesRotation = false;
-    rot.SetIdentity();
-  }
-
-  if (m_pInteractionGizmoHandle != &m_hBobble)
+  // A procedural grid hit has a normal for placement, but no mesh to align to.
+  // Keep the current orientation, including any earlier alignment in this drag.
+  if (m_pInteractionGizmoHandle != &m_hBobble && res.m_PickedObject.IsValid())
   {
     m_bModifiesRotation = true;
 
@@ -244,9 +241,9 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
     {
       rot = xiiQuat::MakeShortestRotation(alignAxis, res.m_vPickedNormal);
     }
+    mTrans.m_qRotation = rot * m_qStartOrientation;
   }
 
-  mTrans.m_qRotation = rot * m_qStartOrientation;
   SetTransformation(mTrans);
 
   xiiGizmoEvent ev;

@@ -84,7 +84,10 @@ to that view. Mesh surfaces take priority. A confirmed background hit may
 intersect the visible grid plane using the shader's camera-relative settings;
 the grid supplies a position and normal without a selectable object identity.
 Hidden grids, out-of-range intersections and unavailable mesh captures do not
-produce grid hits. Movement queries remain asynchronous, while release
+produce grid hits. Signed-axis handles align only to actual mesh hits. Grid
+placement preserves the current orientation, including a preceding mesh
+alignment in the same gesture. Grid-only gestures issue translation commands
+without rewriting rotation properties. Movement queries remain asynchronous, while release
 waits for its matching surface query before ending the document interaction.
 
 Rotation tangents use the window coordinates returned by the projection helpers,
@@ -153,6 +156,10 @@ handlers and checks the selected object's document position. Its capture-disable
 mesh case and empty-grid case both failed before their respective fixes. It covers
 perspective-grid placement, global/local orthographic planes, cancellation and
 hidden-grid rejection without presenting windows or injecting desktop input.
+The orientation regression starts with a rotated object and picks a real signed
+axis handle. It verifies grid-only rotation preservation, mesh alignment, moving
+from the mesh onto a differently oriented grid, undo/redo and fresh-gesture
+state. These document-rotation assertions failed before the orientation fix.
 Windows Debug builds and the focused placement tests passed. All 48 Vulkan
 `EditorViews` subtests passed on repeat; the first broader run hit the unchanged
 `AnimationGraphAsset` identical-descriptor reload assertion (root position 4

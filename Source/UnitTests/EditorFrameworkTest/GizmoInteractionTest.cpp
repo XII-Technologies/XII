@@ -138,6 +138,8 @@ XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
   XII_TEST_STATUS(accessor->AddObjectByName(scene->GetObjectManager()->GetRootObject(), "Children", -1, xiiGetStaticRTTI<xiiGameObject>(), source));
   const auto* object = accessor->GetObject(source);
   XII_TEST_STATUS(accessor->SetValueByName(object, "LocalPosition", xiiVec3(2, 3, 4)));
+  const auto sourceRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisX(), xiiAngle::MakeFromDegree(30));
+  XII_TEST_STATUS(accessor->SetValueByName(object, "LocalRotation", sourceRotation));
   accessor->FinishTransaction();
   scene->GetSelectionManager()->SetSelection(object);
   scene->SetActiveEditTool(xiiGetStaticRTTI<xiiDragToPositionGizmoEditTool>());
@@ -339,6 +341,90 @@ XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
         view->Move(&move);
         XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, beforeHidden, 0.001f);
       }
+      gizmo->FocusLost(true);
+      xiiEditorInputContext::SetActiveInputContext(nullptr);
+
+      // A signed handle may align to geometry, but a background grid normal
+      // must not rotate the document object or discard its last mesh alignment.
+      const auto orientationStart = scene->GetGlobalTransform(object);
+      config.m_Camera.LookAt(orientationStart.m_vPosition - xiiVec3(10, 0, 0), orientationStart.m_vPosition, xiiVec3::MakeAxisZ());
+      const auto advanceFrame = [&]() {
+        scene->SyncObjectsToEngine();
+        scene->SendObjectSelection();
+        view->SyncToEngine();
+        xiiQtUiServices::TickEvent tick;
+        tick.m_Type    = xiiQtUiServices::TickEvent::Type::EndFrame;
+        tick.m_uiFrame = frame++;
+        tick.m_Time    = xiiTime::Now();
+        xiiQtUiServices::s_TickEvent.Broadcast(tick);
+      };
+      xiiGridSettingsMsgToEngine orientationGrid;
+      orientationGrid.m_fGridDensity = 1;
+      orientationGrid.m_vGridCenter.SetZero();
+      orientationGrid.m_vGridTangent1 = xiiVec3::MakeAxisX();
+      orientationGrid.m_vGridTangent2 = xiiVec3::MakeAxisY();
+      scene->SendMessageToEngine(&orientationGrid);
+      advanceFrame();
+      const auto axis       = orientationStart.m_qRotation * xiiVec3::MakeAxisZ();
+      const int  axisX      = center + int(xiiMath::Round(32 * config.m_Camera.GetCenterDirRight().Dot(axis)));
+      const int  axisY      = center - int(xiiMath::Round(32 * config.m_Camera.GetCenterDirUp().Dot(axis)));
+      const auto axisPick   = view->PickObject(axisX, axisY, true);
+      auto*      axisHandle = xiiDynamicCast<xiiEngineGizmoHandle*>(scene->FindSyncObject(axisPick.m_PickedOther));
+      if (!XII_TEST_BOOL(axisHandle != nullptr && axisHandle != handle && axisHandle->GetOwnerGizmo() == gizmo))
+        return;
+      XII_TEST_VEC3(axisHandle->GetTransformation().m_qRotation * xiiVec3::MakeAxisX(), axis, 0.001f);
+      const auto orientationUndo = history->GetUndoStackSize();
+      gizmo->ConfigureInteraction(axisHandle, &config.m_Camera, orientationStart.m_vPosition, xiiVec2I32(256, 256));
+      gizmo->MousePressEvent(&press);
+      auto place = [&](int x, int y, bool meshSurface) {
+        elapsed.restart();
+        xiiObjectPickingResult hit;
+        while (elapsed.elapsed() < 10000)
+        {
+          advanceFrame();
+          hit = view->PickObject(x, y, true);
+          if (!hit.m_vPickedNormal.IsZero() && (meshSurface ? hit.m_PickedObject == target->GetGuid() : !hit.m_PickedObject.IsValid()))
+          {
+            QMouseEvent move(QEvent::MouseMove, QPointF(x, y), QPointF(500, 400), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+            view->Move(&move);
+            XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, hit.m_vPickedPosition, 0.001f);
+            return hit;
+          }
+        }
+        XII_TEST_BOOL_MSG(false, "The orientation gesture must receive a valid placement surface.");
+        return hit;
+      };
+      place(center, center, false);
+      XII_TEST_BOOL(!gizmo->ModifiesRotation());
+      XII_TEST_BOOL(accessor->GetByName<xiiQuat>(object, "LocalRotation").IsEqualRotation(sourceRotation, 0.001f));
+
+      // The target sphere is four units above the orthographic camera's center.
+      const int  sphereY         = center - int(xiiMath::Round(4.0f / 12.0f * 256 / view->devicePixelRatio()));
+      const auto meshAlignment   = place(center, sphereY, true);
+      const auto alignedRotation = scene->GetGlobalTransform(object).m_qRotation;
+      XII_TEST_BOOL(gizmo->ModifiesRotation());
+      XII_TEST_VEC3(alignedRotation * xiiVec3::MakeAxisZ(), meshAlignment.m_vPickedNormal, 0.001f);
+      orientationGrid.m_fGridDensity  = -1;
+      orientationGrid.m_vGridTangent1 = xiiVec3::MakeAxisY();
+      orientationGrid.m_vGridTangent2 = xiiVec3(1, 0, 1).GetNormalized();
+      scene->SendMessageToEngine(&orientationGrid);
+      const auto finalGrid = place(center, center, false);
+      XII_TEST_BOOL(!finalGrid.m_vPickedNormal.IsEqual(meshAlignment.m_vPickedNormal, 0.1f));
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).m_qRotation.IsEqualRotation(alignedRotation, 0.001f));
+      QMouseEvent orientationRelease(QEvent::MouseButtonRelease, QPointF(center, center), QPointF(500, 400), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+      gizmo->MouseReleaseEvent(&orientationRelease);
+      XII_TEST_INT(history->GetUndoStackSize(), orientationUndo + 1);
+      XII_TEST_STATUS(history->Undo());
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).IsEqual(orientationStart, 0.001f));
+      XII_TEST_STATUS(history->Redo());
+      XII_TEST_VEC3(scene->GetGlobalTransform(object).m_vPosition, finalGrid.m_vPickedPosition, 0.001f);
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).m_qRotation.IsEqualRotation(alignedRotation, 0.001f));
+      gizmo->ConfigureInteraction(axisHandle, &config.m_Camera, finalGrid.m_vPickedPosition, xiiVec2I32(256, 256));
+      gizmo->MousePressEvent(&press);
+      XII_TEST_BOOL(!gizmo->ModifiesRotation());
+      place(center, center, false);
+      XII_TEST_BOOL(!gizmo->ModifiesRotation());
+      XII_TEST_BOOL(scene->GetGlobalTransform(object).m_qRotation.IsEqualRotation(alignedRotation, 0.001f));
       gizmo->FocusLost(true);
       xiiEditorInputContext::SetActiveInputContext(nullptr);
     }

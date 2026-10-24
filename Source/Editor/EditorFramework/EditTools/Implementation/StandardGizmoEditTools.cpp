@@ -478,8 +478,9 @@ void xiiDragToPositionGizmoEditTool::TransformationGizmoEventHandlerImpl(const x
 
       if (e.m_pGizmo == &m_DragToPosGizmo)
       {
-        const xiiVec3 vTranslate = m_DragToPosGizmo.GetTranslationResult();
-        const xiiQuat qRot       = m_DragToPosGizmo.GetRotationResult();
+        const xiiVec3  vTranslate = m_DragToPosGizmo.GetTranslationResult();
+        const xiiQuat  qRot       = m_DragToPosGizmo.GetRotationResult();
+        const xiiUInt8 changes    = m_DragToPosGizmo.ModifiesRotation() ? TransformationChanges::Translation | TransformationChanges::Rotation : TransformationChanges::Translation;
 
         for (xiiUInt32 sel = 0; sel < m_GizmoSelection.GetCount(); ++sel)
         {
@@ -494,9 +495,9 @@ void xiiDragToPositionGizmoEditTool::TransformationGizmoEventHandlerImpl(const x
           }
 
           if (GetDocument()->GetGizmoMoveParentOnly())
-            pDocument->SetGlobalTransformParentOnly(obj.m_pObject, tNew, TransformationChanges::Rotation | TransformationChanges::Translation);
+            pDocument->SetGlobalTransformParentOnly(obj.m_pObject, tNew, changes);
           else
-            pDocument->SetGlobalTransform(obj.m_pObject, tNew, TransformationChanges::Translation | TransformationChanges::Rotation);
+            pDocument->SetGlobalTransform(obj.m_pObject, tNew, changes);
         }
       }
 
