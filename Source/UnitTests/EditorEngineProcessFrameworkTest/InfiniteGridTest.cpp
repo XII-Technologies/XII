@@ -105,6 +105,17 @@ XII_CREATE_SIMPLE_TEST(EditorViewportVisualization, InfiniteGrid)
     XII_TEST_BOOL(VisiblePixels(draw(1, "Grid-Distant")) > 1000);
     camera.LookAt(xiiVec3(0, -10, 0.25f), xiiVec3(0, 10, 0), xiiVec3::MakeAxisZ());
     XII_TEST_BOOL(VisiblePixels(draw(0.1f, "Grid-Shallow")) > 100);
+    const auto horizon = draw(0.1f, "Grid-HorizonFiltered");
+    for (xiiUInt32 y = 0; y < 384; ++y)
+    {
+      xiiUInt32 green = 0;
+      for (xiiUInt32 x = 0; x < 512; ++x)
+      {
+        const auto* pixel = horizon.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y);
+        green += pixel[1] > pixel[0] * 1.5f && pixel[1] > pixel[2] * 1.5f;
+      }
+      XII_TEST_BOOL(green < 256);
+    }
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Orthographic, rotated/local planes, disabled grids and scene depth")
   {
@@ -121,6 +132,14 @@ XII_CREATE_SIMPLE_TEST(EditorViewportVisualization, InfiniteGrid)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Large-world phase is stable and invalid input clears stale settings")
   {
+    camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 10000);
+    camera.LookAt(xiiVec3(4, -6, 5), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+    const auto stationary = draw(0.25f, nullptr);
+    auto       moved      = xiiTransform::MakeIdentity();
+    moved.m_vPosition     = xiiVec3(4, 2, 7);
+    XII_TEST_BOOL(stationary.GetByteBlobPtr() == draw(0.25f, nullptr, true, moved).GetByteBlobPtr());
+    XII_TEST_BOOL(stationary.GetByteBlobPtr() != draw(0.25f, nullptr, false, moved).GetByteBlobPtr());
+    camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 12, 0.1f, 1000);
     camera.LookAt(xiiVec3(1000, 1000, 10), xiiVec3(1000, 1000, 0), xiiVec3::MakeAxisY());
     const auto reference = draw(0.25f, nullptr);
     camera.LookAt(xiiVec3(1000000, 1000000, 10), xiiVec3(1000000, 1000000, 0), xiiVec3::MakeAxisY());

@@ -31,6 +31,8 @@ xiiResult xiiInfiniteGridPass::ComputeSettings(const xiiView& view, float spacin
   xiiVec3 u      = transform.m_qRotation * xiiVec3::MakeAxisX();
   xiiVec3 v      = transform.m_qRotation * xiiVec3::MakeAxisY();
   xiiVec3 origin = transform.m_vPosition;
+  if (global)
+    origin.SetZero();
   if (camera->IsOrthographic() && global)
   {
     u = camera->GetCenterDirRight();

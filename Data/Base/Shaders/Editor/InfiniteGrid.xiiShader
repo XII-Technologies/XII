@@ -70,9 +70,13 @@ float4 main(float4 pixel : SV_Position, float2 uv : TEXCOORD0) : SV_Target0
   float2 axisPosition = planeUV + float2(AxisU.w, AxisV.w);
   float2 footprint = DerivativeLength(planeUV);
   float2 axis = 1 - smoothstep(footprint * 0.4, footprint * 1.6, abs(axisPosition));
+  // A near-horizon derivative can span the origin even for a distant ray. Do
+  // not let that unresolved footprint turn an entire scanline into an axis.
+  axis *= 1 - smoothstep(0.05, 0.5, footprint / Spacing.x);
   float3 color = lerp(float3(0.28, 0.30, 0.33), AxisColorU.rgb, axis.y);
   color = lerp(color, AxisColorV.rgb, axis.x);
   coverage = max(coverage, max(axis.x, axis.y) * 0.65);
+  coverage *= smoothstep(0.002, 0.035, abs(denominator));
   float4 clip = mul(RelativeViewProjection, float4(hit, 1));
   float depth = clip.z / clip.w;
   uint width, height;
