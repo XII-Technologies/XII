@@ -138,12 +138,16 @@ void xiiQtEngineViewWidget::SyncToEngine()
   cam.m_ViewMatrix                  = m_pViewConfig->m_Camera.GetViewMatrix();
   m_pViewConfig->m_Camera.GetProjectionMatrix((float)m_pViewportWidget->width() / (float)m_pViewportWidget->height(), cam.m_ProjMatrix);
 
-  cam.m_uiHWND                 = (xiiUInt64)(m_pViewportWidget->winId());
-  cam.m_uiWindowWidth          = m_pViewportWidget->width() * this->devicePixelRatio();
-  cam.m_uiWindowHeight         = m_pViewportWidget->height() * this->devicePixelRatio();
-  cam.m_fDevicePixelRatio      = static_cast<float>(devicePixelRatio());
-  cam.m_bUpdatePickingData     = m_bUpdatePickingData;
-  cam.m_bEnablePickingSelected = IsPickingAgainstSelectionAllowed() && (!xiiEditorInputContext::IsAnyInputContextActive() || xiiEditorInputContext::GetActiveInputContext()->IsPickingSelectedAllowed());
+  const auto* activeContext = xiiEditorInputContext::GetActiveInputContext();
+  const bool  activeView    = activeContext && activeContext->GetOwnerView() == this;
+  cam.m_uiHWND              = (xiiUInt64)(m_pViewportWidget->winId());
+  cam.m_uiWindowWidth       = m_pViewportWidget->width() * this->devicePixelRatio();
+  cam.m_uiWindowHeight      = m_pViewportWidget->height() * this->devicePixelRatio();
+  cam.m_fDevicePixelRatio   = static_cast<float>(devicePixelRatio());
+  // A surface-placement interaction owns this view's queries even when ordinary
+  // hover picking stops (for example while the pointer is captured outside it).
+  cam.m_bUpdatePickingData     = m_bUpdatePickingData || (activeView && !activeContext->IsPickingGizmosAllowed());
+  cam.m_bEnablePickingSelected = IsPickingAgainstSelectionAllowed() && (!activeView || activeContext->IsPickingSelectedAllowed());
   cam.m_bEnablePickTransparent = m_bPickTransparent;
 
   if (s_FixedResolution.HasNonZeroArea())
