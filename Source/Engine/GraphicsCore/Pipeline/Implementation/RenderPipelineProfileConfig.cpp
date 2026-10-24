@@ -81,16 +81,31 @@ namespace
   class xiiRenderPipelineProfileConfigPatch_3 : public xiiGraphPatch
   {
   public:
-    xiiRenderPipelineProfileConfigPatch_3() : xiiGraphPatch("xiiRenderPipelineProfileConfig", 3) {}
-    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* node) const override
+    xiiRenderPipelineProfileConfigPatch_3(PatchType type) : xiiGraphPatch("xiiRenderPipelineProfileConfig", 3, type) {}
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph* graph, xiiAbstractObjectNode* node) const override
     {
-      node->RenameProperty(node->FindProperty("ScenePipeline") ? "ScenePipeline" : "GamePipeline", "MainRenderPipeline");
-      if (node->GetTypeVersion() == 1)
-        if (const auto* value = node->FindProperty("MainRenderPipeline"))
-          if (value->m_Value.IsA<xiiString>() && value->m_Value.Get<xiiString>().IsEmpty())
-            node->ChangeProperty("MainRenderPipeline", xiiString(xiiRenderPipelineProfileConfig::s_szScenePipeline));
-      for (const auto property : {"EditorScenePipeline", "AssetPreviewPipeline", "TexturePreviewPipeline", "CubeTexturePreviewPipeline"})
-        node->RemoveProperty(property);
+      if (node)
+        return; // The graph patch already migrated properties; advance explicit type-table versions normally.
+      // Profile DDL contains Objects without a Types table. A node patch can assume
+      // the current RTTI version in that format and skip the serialized version.
+      for (auto iterator = graph->GetAllNodes().GetIterator(); iterator.IsValid(); ++iterator)
+      {
+        auto* node = iterator.Value();
+        if (node->GetType() != "xiiRenderPipelineProfileConfig" || node->GetTypeVersion() >= 3)
+          continue;
+        const bool hadMain = node->FindProperty("MainRenderPipeline") != nullptr;
+        if (!hadMain)
+          node->RenameProperty(node->FindProperty("ScenePipeline") ? "ScenePipeline" : "GamePipeline", "MainRenderPipeline");
+        if (!hadMain && node->GetTypeVersion() == 1)
+          if (const auto* value = node->FindProperty("MainRenderPipeline"))
+            if (value->m_Value.IsA<xiiString>() && value->m_Value.Get<xiiString>().IsEmpty())
+              node->ChangeProperty("MainRenderPipeline", xiiString(xiiRenderPipelineProfileConfig::s_szScenePipeline));
+        for (const auto property : {"GamePipeline", "ScenePipeline", "EditorScenePipeline", "AssetPreviewPipeline", "TexturePreviewPipeline", "CubeTexturePreviewPipeline"})
+          node->RemoveProperty(property);
+        node->SetTypeVersion(3);
+      }
     }
-  } g_RenderPipelineProfileConfigPatch_3;
+  };
+  xiiRenderPipelineProfileConfigPatch_3 g_RenderPipelineProfileConfigGraphPatch_3(xiiGraphPatch::PatchType::GraphPatch);
+  xiiRenderPipelineProfileConfigPatch_3 g_RenderPipelineProfileConfigNodePatch_3(xiiGraphPatch::PatchType::NodePatch);
 } // namespace

@@ -6,6 +6,7 @@
 #include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/GraphVersioning.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
@@ -113,8 +114,36 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
         xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
         if (!XII_TEST_BOOL(node->FindProperty("MainRenderPipeline") != nullptr))
           return;
+        XII_TEST_INT(node->GetTypeVersion(), 3);
         XII_TEST_INT(node->GetProperties().GetCount(), 1);
         XII_TEST_STRING(node->FindProperty("MainRenderPipeline")->m_Value.Get<xiiString>(), expected);
+      }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Saved profile DDL migrates without a Types table")
+  {
+    for (xiiUInt32 version : {1U, 2U})
+      for (bool hasMain : {false, true})
+      {
+        xiiAbstractObjectGraph graph;
+        const auto             id   = xiiUuid::MakeUuid();
+        auto*                  node = graph.AddNode(id, "xiiRenderPipelineProfileConfig", version);
+        node->AddProperty(version == 1 ? "GamePipeline" : "ScenePipeline", xiiString("Custom/OldWorld"));
+        if (hasMain)
+          node->AddProperty("MainRenderPipeline", xiiString("Custom/ExistingMain"));
+        node->AddProperty("AssetPreviewPipeline", xiiString("Discarded/Preview"));
+        xiiDefaultMemoryStreamStorage storage;
+        xiiMemoryStreamWriter         writer(&storage);
+        xiiAbstractGraphDdlSerializer::Write(writer, &graph); // Same Objects-only form as AssetProfiles.ddl.
+        xiiMemoryStreamReader  reader(&storage);
+        xiiAbstractObjectGraph restored;
+        if (!XII_TEST_RESULT(xiiAbstractGraphDdlSerializer::Read(reader, &restored)))
+          return;
+        const auto* migrated = restored.GetNode(id);
+        if (!XII_TEST_BOOL(migrated && migrated->FindProperty("MainRenderPipeline")))
+          return;
+        XII_TEST_INT(migrated->GetTypeVersion(), 3);
+        XII_TEST_INT(migrated->GetProperties().GetCount(), 1);
+        XII_TEST_STRING(migrated->FindProperty("MainRenderPipeline")->m_Value.Get<xiiString>(), hasMain ? "Custom/ExistingMain" : "Custom/OldWorld");
       }
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unsupported and truncated runtime policy never silently select a default pipeline")

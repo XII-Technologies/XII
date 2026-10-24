@@ -103,7 +103,8 @@ Profile version 3 serializes only the main reference. Version-1 GamePipeline and
 version-2 ScenePipeline values migrate to MainRenderPipeline; the former empty
 version-1 world default selects Scene. Version-2 explicit empty selections remain
 empty. Retired Editor/preview profile selectors are discarded. An empty or invalid
-main selection remains diagnosable.
+main selection remains diagnosable. Migration handles Objects-only profile DDL
+as well as files carrying an explicit legacy type table.
 
 ## Consolidation and validation boundary
 
@@ -144,3 +145,9 @@ stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
 transformed assets or Editor dependency.
+
+If a preview reports a missing pipeline GUID, check **Main Render Pipeline** in
+Asset Profiles against the actual asset. Retired or deleted selections remain
+errors; they are not silently replaced by Scene. Applying the profile writes its
+matching runtime configuration. A stale runtime profile can otherwise retain an
+old selection even when the current profile schema has changed.
