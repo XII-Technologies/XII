@@ -76,6 +76,7 @@ public:
   xiiUInt32 m_uiTriangles = 0;
 
   bool     m_bSimplifyMesh             = false;
+  xiiUInt8 m_uiGeneratedLODs           = 0;
   bool     m_bAggressiveSimplification = false;
   xiiUInt8 m_uiMeshSimplification      = 50;
   xiiUInt8 m_uiMaxSimplificationError  = 5;

@@ -11,7 +11,7 @@
 #include <ModelImporter/MeshImport.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 13, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 14, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -211,6 +211,7 @@ xiiTransformStatus xiiMeshAssetDocument::CreateMeshFromFile(xiiMeshAssetProperti
 
   xiiModelMeshImportOptions options;
   options.m_bRecalculateNormals   = pProp->m_bRecalculateNormals;
+  options.m_uiGeneratedLODs       = pProp->m_uiGeneratedLODs;
   options.m_bRecalculateTangents  = pProp->m_bRecalculateTangents;
   options.m_VertexColorConversion = pProp->m_VertexColorConversion;
   options.m_RootTransform         = xiiMat4(CalculateTransformationMatrix(pProp), xiiVec3::MakeZero());

@@ -19,6 +19,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 5, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("UniformScaling", m_fUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 10000.0f)),
     XII_MEMBER_PROPERTY("RecalculateNormals", m_bRecalculateNormals),
+    XII_MEMBER_PROPERTY("GeneratedLODs", m_uiGeneratedLODs)->AddAttributes(new xiiDefaultValueAttribute(0), new xiiClampValueAttribute(0, 4)),
     XII_MEMBER_PROPERTY("RecalculateTangents", m_bRecalculateTangents)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("VertexColorConversion", xiiModelVertexColorConversion, m_VertexColorConversion),
     XII_MEMBER_PROPERTY("ImportMaterials", m_bImportMaterials)->AddAttributes(new xiiDefaultValueAttribute(true)),

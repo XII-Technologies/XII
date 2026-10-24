@@ -38,4 +38,7 @@ public:
   virtual xiiStringView GetDocumentExtension() const override { return "xiiAnimatedMeshAsset"; }
   virtual xiiStringView GetGeneratorGroup() const override { return "Meshes"; }
   virtual xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
+
+private:
+  xiiStatus GenerateComplete(xiiStringView sInputFileAbs, xiiDynamicArray<xiiDocument*>& out_generatedDocuments);
 };

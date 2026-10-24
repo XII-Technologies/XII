@@ -12,9 +12,13 @@ namespace
   xiiResult ExtractClipNames(const aiScene& scene, xiiDynamicArray<xiiString>& out_names, xiiStringBuilder* error)
   {
     using namespace xiiModelImportInternal;
-    if (scene.mNumAnimations == 0 || scene.mAnimations == nullptr)
-      return Fail(error, "Source file contains no animation clips.");
-    xiiHashSet<xiiString>      names;
+    if (scene.mNumAnimations != 0 && scene.mAnimations == nullptr)
+      return Fail(error, "Source file contains an invalid animation array.");
+    xiiHashSet<xiiString> names;
+    xiiHashSet<xiiString> reservedNames;
+    for (xiiUInt32 i = 0; i < scene.mNumAnimations; ++i)
+      if (scene.mAnimations[i] != nullptr)
+        reservedNames.Insert(scene.mAnimations[i]->mName.C_Str());
     xiiDynamicArray<xiiString> result;
     for (xiiUInt32 i = 0; i < scene.mNumAnimations; ++i)
     {
@@ -23,8 +27,16 @@ namespace
       xiiStringBuilder name(scene.mAnimations[i]->mName.C_Str());
       if (name.IsEmpty())
         name.SetFormat("Animation_{}", i);
-      if (names.Insert(name))
-        return Fail(error, "Source file contains ambiguous duplicate animation names.");
+      if (!xiiUnicodeUtils::IsValidUtf8(name.GetData()))
+        return Fail(error, "Source animation has an invalid UTF-8 name.");
+      if (names.Contains(name))
+      {
+        const xiiString base(name);
+        name.SetFormat("{}_{}", base, i);
+        while (names.Contains(name) || reservedNames.Contains(name))
+          name.AppendFormat("_{}", i);
+      }
+      names.Insert(name);
       result.PushBack(name);
     }
     out_names = std::move(result);
@@ -62,6 +74,8 @@ xiiResult xiiModelAnimationImport::ReadFile(xiiStringView sSourceFile, const xii
   if (scene == nullptr || scene->mRootNode == nullptr)
     return Fail(out_pError, importer.GetErrorString());
   XII_SUCCEED_OR_RETURN(ExtractClipNames(*scene, out_import.m_AvailableClips, out_pError));
+  if (out_import.m_AvailableClips.IsEmpty())
+    return Fail(out_pError, "Source file contains no animation clips.");
   xiiUInt32 selected = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < out_import.m_AvailableClips.GetCount(); ++i)
     if ((options.m_sClipName.IsEmpty() && i == 0) || out_import.m_AvailableClips[i] == options.m_sClipName)
@@ -106,6 +120,7 @@ xiiResult xiiModelAnimationImport::ReadFile(xiiStringView sSourceFile, const xii
   result.m_Duration    = xiiTime::MakeFromSeconds(end - begin);
   result.m_fSampleRate = options.m_fSampleRate;
   result.m_bAdditive   = options.m_bAdditive;
+  result.m_bLooping    = options.m_bLooping;
   xiiHashSet<xiiString> animated;
   xiiUInt64             totalKeys = 0;
   for (xiiUInt32 i = 0; i < animation.mNumChannels; ++i)

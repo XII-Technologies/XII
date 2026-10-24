@@ -267,9 +267,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationImport)
     duplicate.ReplaceAll("\"Other\"", "\"移动\"");
     if (!XII_TEST_RESULT(write(duplicate)))
       return;
-    XII_TEST_BOOL(xiiModelAnimationImport::ReadFile(source, options, imported, &error).Failed());
-    XII_TEST_BOOL(!error.IsEmpty() && imported.m_Clip.m_JointTracks.IsEmpty());
-    XII_TEST_BOOL(xiiModelAnimationImport::ReadClipNames(source, discovered, &error).Failed());
-    XII_TEST_BOOL(discovered.IsEmpty());
+    XII_TEST_RESULT(xiiModelAnimationImport::ReadFile(source, options, imported, &error));
+    XII_TEST_RESULT(xiiModelAnimationImport::ReadClipNames(source, discovered, &error));
+    XII_TEST_INT(discovered.GetCount(), 2);
+    XII_TEST_STRING(discovered[1], "移动_1");
+    options.m_sClipName = discovered[1];
+    XII_TEST_RESULT(xiiModelAnimationImport::ReadFile(source, options, imported, &error));
   }
 }
