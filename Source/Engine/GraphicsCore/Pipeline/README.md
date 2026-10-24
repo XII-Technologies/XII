@@ -13,14 +13,18 @@ auto resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(asse
 view.SetRenderPipelineResource(resource);
 ```
 
-Views start without a pipeline. Normal game and editor entry points resolve an
-explicit resource reference or the corresponding reflected
-`xiiRenderPipelineProfileConfig` policy in the application platform profile.
-An explicit view reference takes precedence. Empty policy, unavailable resources
-and invalid graphs fail with diagnostics; no fallback graph is constructed.
-Game, scene editor, asset preview, texture preview and cube preview policies select
-ordinary resources. Packaged editable sources and compiled SDK snapshots live in
-`Data/Base/RenderPipelines`; project assets use ordinary asset GUID/cache loading.
+Views start without a pipeline. Applications, remote views and scene-dependent
+previews resolve an explicit resource reference or the asset profile's single
+`MainRenderPipeline` selection, defaulting to Scene. Explicit view references take
+precedence. Editor scenes select the canonical Editor resource directly; fixed
+texture/cubemap previews use C++ descriptors. These internal view purposes do not
+add profile selectors. Empty main selection, unavailable resources and invalid
+graphs remain diagnosable.
+
+Only editable Scene and Editor sources live in `Data/Base/RenderPipelines`.
+Compiled resources are generated into the ignored asset cache and must not be
+committed. Version-1 GamePipeline and version-2 ScenePipeline selections migrate
+to the version-3 main reference; retired preview selectors are discarded.
 
 Pipeline assets have a reflected `xiiRenderPipelineSettings` document object.
 Clearing graph selection shows its properties in the existing inspector. Authored

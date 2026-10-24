@@ -9,28 +9,19 @@
 #include <Foundation/IO/ChunkStream.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelineUsage, 1)
-  XII_ENUM_CONSTANTS(xiiRenderPipelineUsage::Scene, xiiRenderPipelineUsage::EditorScene, xiiRenderPipelineUsage::AssetPreview, xiiRenderPipelineUsage::TexturePreview, xiiRenderPipelineUsage::CubeTexturePreview)
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 2, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 3, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("ScenePipeline", m_sScenePipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szScenePipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("EditorScenePipeline", m_sEditorScenePipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szEditorPipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("AssetPreviewPipeline", m_sAssetPreviewPipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szScenePipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("TexturePreviewPipeline", m_sTexturePreviewPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
-      XII_MEMBER_PROPERTY("CubeTexturePreviewPipeline", m_sCubeTexturePreviewPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("MainRenderPipeline", m_sMainRenderPipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szScenePipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& stream) const
 {
-  stream.BeginChunk("RenderPipelineReferences", 2);
-  for (const auto usage : {xiiRenderPipelineUsage::Scene, xiiRenderPipelineUsage::EditorScene, xiiRenderPipelineUsage::AssetPreview, xiiRenderPipelineUsage::TexturePreview, xiiRenderPipelineUsage::CubeTexturePreview})
-    stream << GetResourceReference(usage);
+  stream.BeginChunk("RenderPipelineReferences", 3);
+  stream << GetResourceReference();
   stream.EndChunk();
 }
 
@@ -40,68 +31,38 @@ void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& strea
   if (chunk.m_sChunkName != "RenderPipelineReferences")
     return;
   m_bRuntimeDataValid = false;
-  if (chunk.m_uiChunkVersion != 1 && chunk.m_uiChunkVersion != 2)
+  if (chunk.m_uiChunkVersion < 1 || chunk.m_uiChunkVersion > 3)
   {
     xiiLog::Error("Unsupported render pipeline profile version {}.", chunk.m_uiChunkVersion);
     return;
   }
   xiiString references[5];
-  for (auto& reference : references)
-    if (stream.ReadString(reference).Failed())
+  for (xiiUInt32 index = 0; index < (chunk.m_uiChunkVersion == 3 ? 1U : 5U); ++index)
+    if (stream.ReadString(references[index]).Failed())
     {
       xiiLog::Error("Invalid render pipeline references in the platform profile.");
       return;
     }
-  if (chunk.m_uiChunkVersion == 1)
-  {
-    if (references[0].IsEmpty())
-      references[0] = xiiRenderPipelineProfileConfig::s_szScenePipeline;
-    if (references[1].IsEmpty())
-      references[1] = xiiRenderPipelineProfileConfig::s_szEditorPipeline;
-    if (references[2].IsEmpty())
-      references[2] = xiiRenderPipelineProfileConfig::s_szScenePipeline;
-    if (references[3] == "RenderPipelines/TexturePreview.xiiBinRenderPipeline")
-      references[3].Clear();
-    if (references[4] == "RenderPipelines/TextureCubePreview.xiiBinRenderPipeline")
-      references[4].Clear();
-  }
-  m_sScenePipeline              = references[0];
-  m_sEditorScenePipeline        = references[1];
-  m_sAssetPreviewPipeline       = references[2];
-  m_sTexturePreviewPipeline     = references[3];
-  m_sCubeTexturePreviewPipeline = references[4];
-  m_bRuntimeDataValid           = true;
+  // Version one had an empty default world selection. Later versions preserve an explicit empty choice.
+  if (chunk.m_uiChunkVersion == 1 && references[0].IsEmpty())
+    references[0] = s_szScenePipeline;
+  m_sMainRenderPipeline = references[0];
+  m_bRuntimeDataValid   = true;
 }
 
-xiiStringView xiiRenderPipelineProfileConfig::GetResourceReference(xiiRenderPipelineUsage::Enum usage) const
+xiiStringView xiiRenderPipelineProfileConfig::GetResourceReference() const
 {
-  if (!m_bRuntimeDataValid)
-    return {};
-  switch (usage)
-  {
-    case xiiRenderPipelineUsage::Scene:
-      return m_sScenePipeline;
-    case xiiRenderPipelineUsage::EditorScene:
-      return m_sEditorScenePipeline;
-    case xiiRenderPipelineUsage::AssetPreview:
-      return m_sAssetPreviewPipeline;
-    case xiiRenderPipelineUsage::TexturePreview:
-      return m_sTexturePreviewPipeline;
-    case xiiRenderPipelineUsage::CubeTexturePreview:
-      return m_sCubeTexturePreviewPipeline;
-    default:
-      return {};
-  }
+  return m_bRuntimeDataValid ? m_sMainRenderPipeline.GetView() : xiiStringView();
 }
 
-xiiResult xiiRenderPipelineProfileConfig::ResolveResource(xiiStringView explicitReference, const xiiPlatformProfile* profile, xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_resource, xiiStringBuilder* out_error)
+xiiResult xiiRenderPipelineProfileConfig::ResolveResource(xiiStringView explicitReference, const xiiPlatformProfile* profile, xiiRenderPipelineResourceHandle& out_resource, xiiStringBuilder* out_error)
 {
   if (out_error)
     out_error->Clear();
   xiiStringView reference = explicitReference;
   if (reference.IsEmpty() && profile)
     if (const auto* config = profile->GetTypeConfig<xiiRenderPipelineProfileConfig>())
-      reference = config->GetResourceReference(usage);
+      reference = config->GetResourceReference();
   if (reference.IsEmpty())
   {
     out_resource.Invalidate();
@@ -117,21 +78,19 @@ XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPip
 
 namespace
 {
-  class xiiRenderPipelineProfileConfigPatch_1_2 : public xiiGraphPatch
+  class xiiRenderPipelineProfileConfigPatch_3 : public xiiGraphPatch
   {
   public:
-    xiiRenderPipelineProfileConfigPatch_1_2() : xiiGraphPatch("xiiRenderPipelineProfileConfig", 2) {}
+    xiiRenderPipelineProfileConfigPatch_3() : xiiGraphPatch("xiiRenderPipelineProfileConfig", 3) {}
     void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* node) const override
     {
-      node->RenameProperty("GamePipeline", "ScenePipeline");
-      for (const auto property : {"ScenePipeline", "EditorScenePipeline", "AssetPreviewPipeline"})
-        if (const auto* value = node->FindProperty(property))
+      node->RenameProperty(node->FindProperty("ScenePipeline") ? "ScenePipeline" : "GamePipeline", "MainRenderPipeline");
+      if (node->GetTypeVersion() == 1)
+        if (const auto* value = node->FindProperty("MainRenderPipeline"))
           if (value->m_Value.IsA<xiiString>() && value->m_Value.Get<xiiString>().IsEmpty())
-            node->ChangeProperty(property, xiiString(property == xiiStringView("EditorScenePipeline") ? xiiRenderPipelineProfileConfig::s_szEditorPipeline : xiiRenderPipelineProfileConfig::s_szScenePipeline));
-      for (const auto property : {"TexturePreviewPipeline", "CubeTexturePreviewPipeline"})
-        if (const auto* value = node->FindProperty(property))
-          if (value->m_Value == xiiString("RenderPipelines/TexturePreview.xiiBinRenderPipeline") || value->m_Value == xiiString("RenderPipelines/TextureCubePreview.xiiBinRenderPipeline"))
-            node->ChangeProperty(property, xiiString());
+            node->ChangeProperty("MainRenderPipeline", xiiString(xiiRenderPipelineProfileConfig::s_szScenePipeline));
+      for (const auto property : {"EditorScenePipeline", "AssetPreviewPipeline", "TexturePreviewPipeline", "CubeTexturePreviewPipeline"})
+        node->RemoveProperty(property);
     }
-  } g_RenderPipelineProfileConfigPatch_1_2;
+  } g_RenderPipelineProfileConfigPatch_3;
 } // namespace

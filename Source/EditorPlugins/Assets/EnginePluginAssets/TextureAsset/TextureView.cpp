@@ -20,7 +20,7 @@ xiiTextureViewContext::~xiiTextureViewContext() = default;
 xiiViewHandle xiiTextureViewContext::CreateView()
 {
   xiiRenderPipelineResourceHandle pipeline;
-  if (ResolveRenderPipeline(xiiRenderPipelineUsage::TexturePreview, pipeline).Failed())
+  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::TexturePreview, pipeline).Failed())
     return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Texture Editor - View", pView);

@@ -2,13 +2,23 @@
 
 #pragma once
 
+#include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/System/Window.h>
 #include <Core/System/WindowManager.h>
-#include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 #include <EditorEngineProcessFramework/Rendering/EditorGrid.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
+
+/// Engine-owned view purposes; only Main uses the asset profile's pipeline selection.
+enum class xiiEditorRenderPipelineUsage
+{
+  Main,
+  EditorScene,
+  TexturePreview,
+  CubeTexturePreview
+};
 
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
@@ -88,7 +98,7 @@ protected:
   /// Resolves the view through its owning document world. The caller must hold the world's access marker
   /// for the entire use of the returned non-owning pointer.
   xiiView*  GetView() const;
-  xiiResult ResolveRenderPipeline(xiiRenderPipelineUsage::Enum usage, xiiRenderPipelineResourceHandle& out_pipeline);
+  xiiResult ResolveRenderPipeline(xiiEditorRenderPipelineUsage usage, xiiRenderPipelineResourceHandle& out_pipeline);
   void      UpdateRenderPipeline(xiiView& view);
   /// Submits reusable grid geometry to this view's regular debug-render passes.
   xiiResult DrawGrid(float fSpacing, const xiiTransform& transform = xiiTransform::MakeIdentity(), bool bGlobal = true);
@@ -116,6 +126,6 @@ private:
   xiiEditorGrid                    m_Grid;
   const xiiPlatformProfile*        m_pPipelineProfile = nullptr;
   xiiString                        m_sPipelineReference;
-  xiiRenderPipelineUsage::Enum     m_PipelineUsage           = xiiRenderPipelineUsage::AssetPreview;
+  xiiEditorRenderPipelineUsage     m_PipelineUsage           = xiiEditorRenderPipelineUsage::Main;
   bool                             m_bPipelinePolicySelected = false;
 };

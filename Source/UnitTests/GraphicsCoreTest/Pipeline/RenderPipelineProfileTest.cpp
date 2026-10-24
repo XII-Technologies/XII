@@ -18,34 +18,27 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
   auto* config = profile.GetTypeConfig<xiiRenderPipelineProfileConfig>();
   if (!XII_TEST_BOOL(config != nullptr))
     return;
-  XII_TEST_STRING(config->m_sScenePipeline, xiiRenderPipelineProfileConfig::s_szScenePipeline);
-  XII_TEST_STRING(config->m_sEditorScenePipeline, xiiRenderPipelineProfileConfig::s_szEditorPipeline);
-  XII_TEST_STRING(config->m_sAssetPreviewPipeline, xiiRenderPipelineProfileConfig::s_szScenePipeline);
-  config->m_sScenePipeline              = "Project/Simulation.xiiBinRenderPipeline";
-  config->m_sEditorScenePipeline        = "Project/Scene.xiiBinRenderPipeline";
-  config->m_sAssetPreviewPipeline       = "Project/Preview.xiiBinRenderPipeline";
-  config->m_sTexturePreviewPipeline     = "Project/Texture.xiiBinRenderPipeline";
-  config->m_sCubeTexturePreviewPipeline = "Project/Cube.xiiBinRenderPipeline";
+  XII_TEST_STRING(config->m_sMainRenderPipeline, xiiRenderPipelineProfileConfig::s_szScenePipeline);
+  XII_TEST_INT(config->GetDynamicRTTI()->GetProperties().GetCount(), 1);
+  XII_TEST_STRING(config->GetDynamicRTTI()->GetProperties()[0]->GetPropertyName(), "MainRenderPipeline");
+  config->m_sMainRenderPipeline = "Project/Simulation.xiiBinRenderPipeline";
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Explicit view resource precedes project policy without graph construction")
   {
     xiiRenderPipelineResourceHandle resource;
     xiiStringBuilder                error;
-    XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource({}, &profile, xiiRenderPipelineUsage::Scene, resource, &error));
-    XII_TEST_STRING(resource.GetResourceID(), config->m_sScenePipeline);
-    XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource("Cameras/Depth.xiiBinRenderPipeline", &profile, xiiRenderPipelineUsage::Scene, resource, &error));
+    XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource({}, &profile, resource, &error));
+    XII_TEST_STRING(resource.GetResourceID(), config->m_sMainRenderPipeline);
+    XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource("Cameras/Depth.xiiBinRenderPipeline", &profile, resource, &error));
     XII_TEST_STRING(resource.GetResourceID(), "Cameras/Depth.xiiBinRenderPipeline");
-    XII_TEST_STRING(config->m_sScenePipeline, "Project/Simulation.xiiBinRenderPipeline");
-    XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource({}, &profile, xiiRenderPipelineUsage::EditorScene, resource, &error));
-    XII_TEST_STRING(resource.GetResourceID(), config->m_sEditorScenePipeline);
-    config->m_sEditorScenePipeline.Clear();
-    XII_TEST_BOOL(xiiRenderPipelineProfileConfig::ResolveResource({}, &profile, xiiRenderPipelineUsage::EditorScene, resource, &error).Failed());
+    XII_TEST_STRING(config->m_sMainRenderPipeline, "Project/Simulation.xiiBinRenderPipeline");
+    config->m_sMainRenderPipeline.Clear();
+    XII_TEST_BOOL(xiiRenderPipelineProfileConfig::ResolveResource({}, &profile, resource, &error).Failed());
     XII_TEST_BOOL(!resource.IsValid() && !error.IsEmpty());
-    XII_TEST_BOOL(xiiRenderPipelineProfileConfig::ResolveResource({}, nullptr, xiiRenderPipelineUsage::Scene, resource, &error).Failed());
-    XII_TEST_BOOL(!resource.IsValid());
-    XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource("Explicit.xiiBinRenderPipeline", nullptr, xiiRenderPipelineUsage::AssetPreview, resource, &error));
+    XII_TEST_BOOL(xiiRenderPipelineProfileConfig::ResolveResource({}, nullptr, resource, &error).Failed());
+    XII_TEST_RESULT(xiiRenderPipelineProfileConfig::ResolveResource("Explicit.xiiBinRenderPipeline", nullptr, resource, &error));
     XII_TEST_STRING(resource.GetResourceID(), "Explicit.xiiBinRenderPipeline");
-    config->m_sEditorScenePipeline = "Project/Scene.xiiBinRenderPipeline";
+    config->m_sMainRenderPipeline = "Project/Simulation.xiiBinRenderPipeline";
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Project configuration uses the existing reflected profile serializer")
   {
@@ -61,9 +54,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
     XII_TEST_BOOL(copied != nullptr);
     if (copied)
     {
-      XII_TEST_STRING(copied->m_sScenePipeline, config->m_sScenePipeline);
-      XII_TEST_STRING(copied->m_sEditorScenePipeline, config->m_sEditorScenePipeline);
-      XII_TEST_STRING(copied->m_sCubeTexturePreviewPipeline, config->m_sCubeTexturePreviewPipeline);
+      XII_TEST_STRING(copied->m_sMainRenderPipeline, config->m_sMainRenderPipeline);
     }
     type->GetAllocator()->Deallocate(decoded);
   }
@@ -81,58 +72,50 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
     xiiRenderPipelineProfileConfig copied;
     copied.LoadRuntimeData(input);
     input.EndStream();
-    for (const auto usage : {xiiRenderPipelineUsage::Scene, xiiRenderPipelineUsage::EditorScene, xiiRenderPipelineUsage::AssetPreview, xiiRenderPipelineUsage::TexturePreview, xiiRenderPipelineUsage::CubeTexturePreview})
-      XII_TEST_STRING(copied.GetResourceReference(usage), config->GetResourceReference(usage));
+    XII_TEST_STRING(copied.GetResourceReference(), config->GetResourceReference());
   }
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Version one profile migration retains custom resources")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Legacy profiles retain only their main world pipeline")
   {
-    for (bool custom : {false, true})
-    {
-      xiiDefaultMemoryStreamStorage storage;
-      xiiMemoryStreamWriter         writer(&storage);
-      xiiChunkStreamWriter          chunks(writer);
-      chunks.BeginStream(1);
-      chunks.BeginChunk("RenderPipelineReferences", 1);
-      chunks << xiiString(custom ? "Custom/Scene" : "") << xiiString() << xiiString();
-      chunks << xiiString(custom ? "Custom/Texture" : "RenderPipelines/TexturePreview.xiiBinRenderPipeline");
-      chunks << xiiString("RenderPipelines/TextureCubePreview.xiiBinRenderPipeline");
-      chunks.EndChunk();
-      chunks.EndStream();
-      xiiMemoryStreamReader reader(&storage);
-      xiiChunkStreamReader  input(reader);
-      input.BeginStream();
-      xiiRenderPipelineProfileConfig migrated;
-      migrated.LoadRuntimeData(input);
-      input.EndStream();
-      XII_TEST_BOOL(migrated.IsRuntimeDataValid());
-      XII_TEST_STRING(migrated.m_sScenePipeline, custom ? "Custom/Scene" : xiiRenderPipelineProfileConfig::s_szScenePipeline);
-      XII_TEST_STRING(migrated.m_sEditorScenePipeline, xiiRenderPipelineProfileConfig::s_szEditorPipeline);
-      XII_TEST_STRING(migrated.m_sAssetPreviewPipeline, xiiRenderPipelineProfileConfig::s_szScenePipeline);
-      XII_TEST_STRING(migrated.m_sTexturePreviewPipeline, custom ? "Custom/Texture" : "");
-      XII_TEST_BOOL(migrated.m_sCubeTexturePreviewPipeline.IsEmpty());
+    for (xiiUInt32 version : {1U, 2U})
+      for (bool custom : {false, true})
+      {
+        const xiiString               expected = custom ? "Custom/Main" : version == 1 ? xiiRenderPipelineProfileConfig::s_szScenePipeline :
+                                                                                         "";
+        xiiDefaultMemoryStreamStorage storage;
+        xiiMemoryStreamWriter         writer(&storage);
+        xiiChunkStreamWriter          chunks(writer);
+        chunks.BeginStream(1);
+        chunks.BeginChunk("RenderPipelineReferences", version);
+        chunks << xiiString(custom ? "Custom/Main" : "");
+        for (xiiUInt32 index = 0; index < 4; ++index)
+          chunks << xiiString("Discarded/UtilityPipeline");
+        chunks.EndChunk();
+        chunks.EndStream();
+        xiiMemoryStreamReader reader(&storage);
+        xiiChunkStreamReader  input(reader);
+        input.BeginStream();
+        xiiRenderPipelineProfileConfig migrated;
+        migrated.LoadRuntimeData(input);
+        input.EndStream();
+        XII_TEST_BOOL(migrated.IsRuntimeDataValid());
+        XII_TEST_STRING(migrated.GetResourceReference(), expected);
 
-      xiiAbstractObjectGraph graph;
-      auto*                  node = graph.AddNode(xiiUuid::MakeUuid(), "xiiRenderPipelineProfileConfig", 1);
-      node->AddProperty("GamePipeline", xiiString(custom ? "Custom/Scene" : ""));
-      node->AddProperty("EditorScenePipeline", xiiString());
-      node->AddProperty("AssetPreviewPipeline", xiiString());
-      node->AddProperty("TexturePreviewPipeline", xiiString(custom ? "Custom/Texture" : "RenderPipelines/TexturePreview.xiiBinRenderPipeline"));
-      node->AddProperty("CubeTexturePreviewPipeline", xiiString("RenderPipelines/TextureCubePreview.xiiBinRenderPipeline"));
-      xiiAbstractObjectGraph types;
-      auto*                  version = types.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
-      version->AddProperty("TypeName", xiiString("xiiRenderPipelineProfileConfig"));
-      version->AddProperty("ParentTypeName", xiiString("xiiProfileConfigData"));
-      version->AddProperty("TypeVersion", 1U);
-      xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
-      if (!XII_TEST_BOOL(node->FindProperty("ScenePipeline") != nullptr))
-        return;
-      XII_TEST_BOOL(node->FindProperty("GamePipeline") == nullptr);
-      XII_TEST_STRING(node->FindProperty("ScenePipeline")->m_Value.Get<xiiString>(), migrated.m_sScenePipeline);
-      XII_TEST_STRING(node->FindProperty("EditorScenePipeline")->m_Value.Get<xiiString>(), migrated.m_sEditorScenePipeline);
-      XII_TEST_STRING(node->FindProperty("AssetPreviewPipeline")->m_Value.Get<xiiString>(), migrated.m_sAssetPreviewPipeline);
-      XII_TEST_STRING(node->FindProperty("TexturePreviewPipeline")->m_Value.Get<xiiString>(), migrated.m_sTexturePreviewPipeline);
-      XII_TEST_STRING(node->FindProperty("CubeTexturePreviewPipeline")->m_Value.Get<xiiString>(), migrated.m_sCubeTexturePreviewPipeline);
-    }
+        xiiAbstractObjectGraph graph;
+        auto*                  node = graph.AddNode(xiiUuid::MakeUuid(), "xiiRenderPipelineProfileConfig", version);
+        node->AddProperty(version == 1 ? "GamePipeline" : "ScenePipeline", xiiString(custom ? "Custom/Main" : ""));
+        for (const auto property : {"EditorScenePipeline", "AssetPreviewPipeline", "TexturePreviewPipeline", "CubeTexturePreviewPipeline"})
+          node->AddProperty(property, xiiString("Discarded/UtilityPipeline"));
+        xiiAbstractObjectGraph types;
+        auto*                  type = types.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
+        type->AddProperty("TypeName", xiiString("xiiRenderPipelineProfileConfig"));
+        type->AddProperty("ParentTypeName", xiiString("xiiProfileConfigData"));
+        type->AddProperty("TypeVersion", version);
+        xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
+        if (!XII_TEST_BOOL(node->FindProperty("MainRenderPipeline") != nullptr))
+          return;
+        XII_TEST_INT(node->GetProperties().GetCount(), 1);
+        XII_TEST_STRING(node->FindProperty("MainRenderPipeline")->m_Value.Get<xiiString>(), expected);
+      }
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unsupported and truncated runtime policy never silently select a default pipeline")
   {
@@ -142,8 +125,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
       xiiMemoryStreamWriter         writer(&storage);
       xiiChunkStreamWriter          chunks(writer);
       chunks.BeginStream(1);
-      chunks.BeginChunk("RenderPipelineReferences", unsupported ? 3 : 2);
-      chunks << xiiString("Only one reference");
+      chunks.BeginChunk("RenderPipelineReferences", unsupported ? 4 : 3);
       chunks.EndChunk();
       chunks.EndStream();
       xiiMemoryStreamReader reader(&storage);
@@ -156,8 +138,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
       invalid.LoadRuntimeData(input);
       input.EndStream();
       XII_TEST_BOOL(!invalid.IsRuntimeDataValid());
-      XII_TEST_BOOL(invalid.GetResourceReference(xiiRenderPipelineUsage::Scene).IsEmpty());
-      XII_TEST_BOOL(invalid.GetResourceReference(xiiRenderPipelineUsage::AssetPreview).IsEmpty());
+      XII_TEST_BOOL(invalid.GetResourceReference().IsEmpty());
       // Re-saving a rejected runtime policy must not revive retained authored defaults.
       xiiDefaultMemoryStreamStorage saved;
       xiiMemoryStreamWriter         savedWriter(&saved);
@@ -171,8 +152,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ProjectPipelineReferences)
       xiiRenderPipelineProfileConfig restored;
       restored.LoadRuntimeData(savedInput);
       savedInput.EndStream();
-      for (const auto usage : {xiiRenderPipelineUsage::Scene, xiiRenderPipelineUsage::EditorScene, xiiRenderPipelineUsage::AssetPreview, xiiRenderPipelineUsage::TexturePreview, xiiRenderPipelineUsage::CubeTexturePreview})
-        XII_TEST_BOOL(restored.GetResourceReference(usage).IsEmpty());
+      XII_TEST_BOOL(restored.GetResourceReference().IsEmpty());
     }
   }
 }

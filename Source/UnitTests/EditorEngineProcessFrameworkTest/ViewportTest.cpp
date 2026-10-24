@@ -8,6 +8,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
+#include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Threading/TaskSystem.h>
@@ -378,22 +379,35 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
       configured.SetRenderPipelineProfile(&profile);
       xiiRenderPipelineResourceHandle selected;
       log.ExpectMessage("Cannot select the editor view pipeline", xiiLogMsgType::ErrorMsg, 2);
-      profile.GetTypeConfig<xiiRenderPipelineProfileConfig>()->m_sAssetPreviewPipeline.Clear();
-      XII_TEST_BOOL(configured.ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, selected).Failed());
-      policy->m_sAssetPreviewPipeline = xiiCreateInstanceVisibilityTestResource().GetResourceID();
-      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, selected));
-      XII_TEST_STRING(selected.GetResourceID(), policy->m_sAssetPreviewPipeline);
+      profile.GetTypeConfig<xiiRenderPipelineProfileConfig>()->m_sMainRenderPipeline.Clear();
+      XII_TEST_BOOL(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::Main, selected).Failed());
+      policy->m_sMainRenderPipeline = xiiCreateInstanceVisibilityTestResource().GetResourceID();
+      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::Main, selected));
+      XII_TEST_STRING(selected.GetResourceID(), policy->m_sMainRenderPipeline);
       configured.SetRenderPipelineResourceReference(xiiCreateInstanceVisibilityTestResource().GetResourceID());
       configured.UpdateRenderPipeline(*firstView);
       world.Update();
       XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
-      policy->m_sAssetPreviewPipeline.Clear();
+      policy->m_sMainRenderPipeline.Clear();
       configured.UpdateRenderPipeline(*firstView); // Explicit selection survives project changes.
       world.Update();
       XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
       configured.SetRenderPipelineResourceReference({});
       configured.UpdateRenderPipeline(*firstView);
       XII_TEST_BOOL(!firstView->GetRenderPipelineResource().IsValid());
+      // Editor and fixed utility pipelines do not add selectors to the profile.
+      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::EditorScene, selected));
+      XII_TEST_BOOL(selected == xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szEditorPipeline));
+      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::TexturePreview, selected));
+      XII_TEST_BOOL(selected == xiiTexturePreviewPass::GetPipelineResource(false));
+      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::CubeTexturePreview, selected));
+      XII_TEST_BOOL(selected == xiiTexturePreviewPass::GetPipelineResource(true));
+      configured.SetRenderPipelineResourceReference(xiiCreateInstanceVisibilityTestResource().GetResourceID());
+      for (auto usage : {xiiEditorRenderPipelineUsage::Main, xiiEditorRenderPipelineUsage::EditorScene, xiiEditorRenderPipelineUsage::TexturePreview, xiiEditorRenderPipelineUsage::CubeTexturePreview})
+      {
+        XII_TEST_RESULT(configured.ResolveRenderPipeline(usage, selected));
+        XII_TEST_BOOL(selected == xiiCreateInstanceVisibilityTestResource());
+      }
       firstView->SetRenderPipelineResource(xiiCreateInstanceVisibilityTestResource());
       world.Update();
       XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);

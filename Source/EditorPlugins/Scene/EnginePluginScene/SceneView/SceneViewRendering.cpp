@@ -19,7 +19,7 @@ xiiViewHandle xiiSceneViewContext::CreateView()
   auto* world = GetDocumentContext()->GetWorld();
   XII_LOCK(world->GetWriteMarker());
   xiiRenderPipelineResourceHandle pipeline;
-  if (ResolveRenderPipeline(xiiRenderPipelineUsage::EditorScene, pipeline).Failed())
+  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::EditorScene, pipeline).Failed())
     return {};
   xiiView* view = nullptr;
   world->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Editor - Scene", view);

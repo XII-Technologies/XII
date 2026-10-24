@@ -55,7 +55,7 @@ mesh picking and selected-only, including occluded, selection; material/depth
 visualization; shape icons and their asynchronous picking; and debug drawing.
 The final Editor operation presents after these overlays. Picking resolves captured
 GPU identities against live world object/component handles. Meshes and materials
-in scene-dependent previews use Scene through the AssetPreview profile selection.
+in scene-dependent previews use the asset profile's main pipeline selection.
 
 Display-linear color grading declares render-target usage as well as compute and
 sampling usage, allowing these overlays to compose on the actual Scene output.
@@ -89,13 +89,21 @@ CPU loading time, and native resolution preserves odd dimensions and one-pixel v
 
 Fixed texture and cubemap previews are registered from C++ by
 `xiiTexturePreviewPass::GetPipelineResource`. They use the normal resource compiler
-and view runtime. Optional project-authored overrides remain supported; no SDK
+and view runtime. Explicit per-view overrides remain supported; no SDK
 preview asset duplicates these definitions.
 
-Profile version 2 calls the default world usage Scene. Version-1 profiles migrate
-the GamePipeline property, the former empty scene defaults and the two former SDK
-texture-preview references. Explicit custom references remain explicit. A new empty
-Scene/Editor selection remains a selection error.
+The asset profile exposes one **Main Render Pipeline** reference, defaulting to
+Scene. Applications, remote views and scene-dependent previews use this selection.
+Interactive Editor scenes select the canonical Editor resource directly, and fixed
+texture/cubemap utilities use their C++ descriptors. Explicit view references still
+take precedence. Pipeline assets retain their authored Settings object and execution
+contracts.
+
+Profile version 3 serializes only the main reference. Version-1 GamePipeline and
+version-2 ScenePipeline values migrate to MainRenderPipeline; the former empty
+version-1 world default selects Scene. Version-2 explicit empty selections remain
+empty. Retired Editor/preview profile selectors are discarded. An empty or invalid
+main selection remains diagnosable.
 
 ## Consolidation and validation boundary
 

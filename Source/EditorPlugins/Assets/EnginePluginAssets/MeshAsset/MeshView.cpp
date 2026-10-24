@@ -29,7 +29,7 @@ bool xiiMeshViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& bound
 xiiViewHandle xiiMeshViewContext::CreateView()
 {
   xiiRenderPipelineResourceHandle pipeline;
-  if (ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, pipeline).Failed())
+  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::Main, pipeline).Failed())
     return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Mesh Editor - View", pView);

@@ -124,7 +124,7 @@ xiiViewHandle xiiRemoteEngineProcessViewContext::CreateView()
   if (!pWorld)
     return {};
   xiiRenderPipelineResourceHandle pipeline;
-  if (ResolveRenderPipeline(xiiRenderPipelineUsage::Scene, pipeline).Failed())
+  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::Main, pipeline).Failed())
     return {};
   XII_LOCK(pWorld->GetWriteMarker());
   xiiView*   pView  = nullptr;

@@ -192,7 +192,7 @@ xiiView* xiiGameState::CreateMainView()
   const auto*                     application = xiiGameApplicationBase::GetGameApplicationBaseInstance();
   xiiRenderPipelineResourceHandle pipeline;
   xiiStringBuilder                pipelineError;
-  if (!application || xiiRenderPipelineProfileConfig::ResolveResource({}, &application->GetPlatformProfile(), xiiRenderPipelineUsage::Scene, pipeline, &pipelineError).Failed())
+  if (!application || xiiRenderPipelineProfileConfig::ResolveResource({}, &application->GetPlatformProfile(), pipeline, &pipelineError).Failed())
   {
     xiiLog::Error("Cannot create the game view: {}", application ? pipelineError.GetView() : xiiStringView("No game application profile is available."));
     return nullptr;
