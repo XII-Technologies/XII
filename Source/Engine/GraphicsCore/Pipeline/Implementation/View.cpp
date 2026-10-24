@@ -16,15 +16,15 @@
 #include <GraphicsFoundation/Resources/TextureView.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Graphics.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
-xiiCVarFloat cvar_DynamicRenderingMinScale("Graphics.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
+xiiCVarFloat cvar_DynamicRenderingMinScale("Graphics.DynamicResolution.MinimumRenderScale", 1.0f, xiiCVarFlags::Default, "Minimum allowed render scale. Lower explicitly to enable dynamic resolution.");
 xiiCVarFloat cvar_DynamicRenderingMaxScale("Graphics.DynamicResolution.MaximumRenderScale", 1.0f, xiiCVarFlags::Default, "Maximum allowed render scale (1.0 = native resolution).");
 
 namespace
 {
   static xiiUInt32 ComputeDynamicResolutionDimension(xiiUInt32 uiNativeDimension, float fScale)
   {
-    const xiiUInt32 uiScaled = static_cast<xiiUInt32>(static_cast<float>(uiNativeDimension) * fScale) & ~1U;
-    return xiiMath::Max(uiScaled, 2U);
+    const xiiUInt32 uiScaled = static_cast<xiiUInt32>(xiiMath::Ceil(static_cast<float>(uiNativeDimension) * fScale));
+    return xiiMath::Max(uiScaled, 1U);
   }
   static void ComputeDynamicScaleBounds(float fRenderScale, float& out_fDynamicMin, float& out_fDynamicMax)
   {
@@ -289,12 +289,11 @@ void xiiView::UpdateRenderResolutionState() const
 
 void xiiView::RunDynamicResolutionPID()
 {
-  // Try the GPU profiler's resolved duration from 2 frames ago.
-  // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
+  // Unavailable GPU timing must not turn CPU loading stalls into a resolution change.
   float fGpuTimeMs = GetProfiler().GetGraphDurationMs(GetRenderGraph()->GetId().m_Data);
   if (fGpuTimeMs <= 0.0f)
   {
-    fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
+    return;
   }
 
 

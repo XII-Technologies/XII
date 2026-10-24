@@ -189,7 +189,12 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
   pEntry->m_pGraph->SetSetupBlackboard(&pEntry->m_Blackboard);
   const xiiResult buildResult = pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard, pView);
   pEntry->m_pGraph->EndSetup();
-  XII_SUCCEED_OR_RETURN(buildResult);
+  if (buildResult.Failed())
+  {
+    if (out_pError)
+      *out_pError = "The graph build delegate failed; see the preceding operation diagnostics.";
+    return XII_FAILURE;
+  }
 
   if (pEntry->m_pGraph->Compile(settings, out_pError).Failed())
     return XII_FAILURE;

@@ -107,7 +107,8 @@ void xiiColorGradingPass::Setup(Data& data, xiiRenderGraphBuilder& builder)
   description.m_Size.width  = uiOutputWidth;
   description.m_Size.height = uiOutputHeight;
   description.m_uiMipLevels = 1U;
-  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  // Display-linear color is also the composition surface for Editor overlays.
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hGraded            = builder.WriteTexture("GradedColor", description, xiiGALResourceStateFlags::UnorderedAccess);
 

@@ -6771,9 +6771,9 @@ o
 		Mat4 %InverseViewProjection{f{0x0000803F,0,0,0,0,0x0000803F,0,0,0,0,0x0000803F,0,0,0,0,0x0000803F}}
 		Uuid %Layout{u4{1599872168701447476,10755580832483715203}}
 		b %LogarithmicDepth{1}
-		u3 %MaxLightsPerCluster{128}
+		u3 %MaxLightsPerCluster{64}
 		u3 %MaximumClusters{262144}
-		u3 %MaximumIndices{4194304}
+		u3 %MaximumIndices{16777216}
 		f %NearDistance{0xCDCCCC3D}
 		Vec2 %Node::Pos{f{0x0000F043,0x00000C43}}
 		VarDict %ParameterOverrides{}
@@ -6781,7 +6781,7 @@ o
 		{
 			Uuid{u4{1399118200659786175,5591082709754950243}}
 		}
-		u3 %TileSize{16}
+		u3 %TileSize{64}
 		b %UseViewCamera{1}
 		u3 %Width{0}
 	}

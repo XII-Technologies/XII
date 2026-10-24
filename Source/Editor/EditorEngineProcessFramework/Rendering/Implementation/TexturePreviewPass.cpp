@@ -27,6 +27,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexturePreviewPass, 1, xiiRTTIDefaultAllocat
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+xiiRenderPipelineResourceHandle xiiTexturePreviewPass::GetPipelineResource(bool cube)
+{
+  const xiiStringView identity = cube ? "XII.Internal.CubemapPreview" : "XII.Internal.TexturePreview";
+  if (auto existing = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(identity); existing.IsValid())
+    return existing;
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.m_Settings.m_uiOutputSamples = 1;
+  xiiVariantDictionary properties;
+  properties.Insert("Cube", cube);
+  descriptor.AddPass(cube ? "Cubemap preview" : "Texture preview", xiiGetStaticRTTI<xiiTexturePreviewPass>(), properties);
+  return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(identity, std::move(descriptor));
+}
+
 namespace
 {
   struct PreviewData

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/Configuration/PlatformProfile.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
@@ -10,12 +12,12 @@ struct xiiRenderPipelineUsage
   using StorageType = xiiUInt8;
   enum Enum
   {
-    Game,
+    Scene,
     EditorScene,
     AssetPreview,
     TexturePreview,
     CubeTexturePreview,
-    Default = Game
+    Default = Scene
   };
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineUsage);
@@ -27,14 +29,15 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineProfileConfig : public xiiProfileCon
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineProfileConfig, xiiProfileConfigData);
 
 public:
-  xiiString m_sGamePipeline;
-  xiiString m_sEditorScenePipeline;
-  xiiString m_sAssetPreviewPipeline;
-  xiiString m_sTexturePreviewPipeline     = "RenderPipelines/TexturePreview.xiiBinRenderPipeline";
-  xiiString m_sCubeTexturePreviewPipeline = "RenderPipelines/TextureCubePreview.xiiBinRenderPipeline";
+  xiiString m_sScenePipeline        = "RenderPipelines/Scene.xiiBinRenderPipeline";
+  xiiString m_sEditorScenePipeline  = "RenderPipelines/Editor.xiiBinRenderPipeline";
+  xiiString m_sAssetPreviewPipeline = "RenderPipelines/Scene.xiiBinRenderPipeline";
+  xiiString m_sTexturePreviewPipeline;
+  xiiString m_sCubeTexturePreviewPipeline;
 
   void          SaveRuntimeData(xiiChunkStreamWriter& stream) const override;
   void          LoadRuntimeData(xiiChunkStreamReader& stream) override;
+  bool          IsRuntimeDataValid() const { return m_bRuntimeDataValid; }
   xiiStringView GetResourceReference(xiiRenderPipelineUsage::Enum usage) const;
 
   /// Explicit view references take precedence over the selected project policy. Empty

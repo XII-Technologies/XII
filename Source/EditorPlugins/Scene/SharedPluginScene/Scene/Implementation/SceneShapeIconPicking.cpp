@@ -58,9 +58,15 @@ xiiResult xiiSceneShapeIconPicking::Pick(const xiiView& view, xiiUInt32 x, xiiUI
 {
   out_hit = {};
   XII_SUCCEED_OR_RETURN(Poll());
-  if (!m_Readback.Matches(view) || x >= m_Readback.GetSize().width || y >= m_Readback.GetSize().height || !view.GetViewport().Contains(xiiVec2(static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f)))
+  if (!m_Readback.Matches(view) || !view.GetViewport().Contains(xiiVec2(static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f)))
     return XII_FAILURE;
-  Resolve(view, m_Readback.GetPixels()[y * m_Readback.GetSize().width + x], out_hit);
+  const auto& viewport = view.GetViewport();
+  const auto  size     = m_Readback.GetSize();
+  const auto  px       = static_cast<xiiUInt32>((float(x) + 0.5f - viewport.x) * size.width / viewport.width);
+  const auto  py       = static_cast<xiiUInt32>((float(y) + 0.5f - viewport.y) * size.height / viewport.height);
+  if (px >= size.width || py >= size.height)
+    return XII_FAILURE;
+  Resolve(view, m_Readback.GetPixels()[py * size.width + px], out_hit);
   return XII_SUCCESS;
 }
 
@@ -68,7 +74,10 @@ xiiResult xiiSceneShapeIconPicking::Marquee(const xiiView& view, const xiiRectU3
 {
   out_hits.Clear();
   XII_SUCCEED_OR_RETURN(Poll());
-  if (!m_Readback.Matches(view) || rectangle.x > m_Readback.GetSize().width || rectangle.y > m_Readback.GetSize().height || rectangle.width > m_Readback.GetSize().width - rectangle.x || rectangle.height > m_Readback.GetSize().height - rectangle.y)
+  const auto& viewport = view.GetViewport();
+  const auto  size     = m_Readback.GetSize();
+  if (!m_Readback.Matches(view) || rectangle.x < viewport.x || rectangle.y < viewport.y ||
+      double(rectangle.x) + rectangle.width > double(viewport.x) + viewport.width || double(rectangle.y) + rectangle.height > double(viewport.y) + viewport.height)
     return XII_FAILURE;
   xiiHashSet<xiiGameObjectHandle> seen;
   for (xiiUInt32 y = rectangle.y; y < rectangle.y + rectangle.height; ++y)
@@ -77,7 +86,11 @@ xiiResult xiiSceneShapeIconPicking::Marquee(const xiiView& view, const xiiRectU3
       if (!view.GetViewport().Contains(xiiVec2(static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f)))
         continue;
       xiiSceneShapeIconPass::PickingResult hit;
-      if (Resolve(view, m_Readback.GetPixels()[y * m_Readback.GetSize().width + x], hit) && !seen.Insert(hit.m_hObject))
+      const auto                           px = static_cast<xiiUInt32>((float(x) + 0.5f - viewport.x) * size.width / viewport.width);
+      const auto                           py = static_cast<xiiUInt32>((float(y) + 0.5f - viewport.y) * size.height / viewport.height);
+      if (px >= size.width || py >= size.height)
+        continue;
+      if (Resolve(view, m_Readback.GetPixels()[py * size.width + px], hit) && !seen.Insert(hit.m_hObject))
         out_hits.PushBack(hit);
     }
   return XII_SUCCESS;

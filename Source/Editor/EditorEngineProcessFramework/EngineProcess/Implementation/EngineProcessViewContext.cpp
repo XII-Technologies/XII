@@ -7,6 +7,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -26,6 +27,15 @@ xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiRenderPipelineUs
 {
   m_PipelineUsage           = usage;
   m_bPipelinePolicySelected = true;
+  if (m_sPipelineReference.IsEmpty() && (usage == xiiRenderPipelineUsage::TexturePreview || usage == xiiRenderPipelineUsage::CubeTexturePreview))
+  {
+    const auto* config = m_pPipelineProfile ? m_pPipelineProfile->GetTypeConfig<xiiRenderPipelineProfileConfig>() : nullptr;
+    if (!config || (config->IsRuntimeDataValid() && config->GetResourceReference(usage).IsEmpty()))
+    {
+      out_pipeline = xiiTexturePreviewPass::GetPipelineResource(usage == xiiRenderPipelineUsage::CubeTexturePreview);
+      return XII_SUCCESS;
+    }
+  }
   xiiStringBuilder error;
   const auto       result = xiiRenderPipelineProfileConfig::ResolveResource(m_sPipelineReference, m_pPipelineProfile, usage, out_pipeline, &error);
   if (result.Failed())

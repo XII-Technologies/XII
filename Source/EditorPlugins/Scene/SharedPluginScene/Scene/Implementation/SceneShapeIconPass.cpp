@@ -94,8 +94,7 @@ xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
   auto&       graph      = context.m_Graph;
   const auto* output     = graph.GetTextureDescription(color);
   const auto* sceneDepth = graph.GetTextureDescription(depth);
-  const auto& viewport   = context.m_pView->GetViewport();
-  if (!output || !sceneDepth || output->m_Type != xiiGALResourceDimension::Texture2D || sceneDepth->m_Type != xiiGALResourceDimension::Texture2D || !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) || output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || viewport.x < 0 || viewport.y < 0 || viewport.x + viewport.width > output->m_Size.width || viewport.y + viewport.height > output->m_Size.height)
+  if (!output || !sceneDepth || output->m_Type != xiiGALResourceDimension::Texture2D || sceneDepth->m_Type != xiiGALResourceDimension::Texture2D || !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) || output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || !output->m_Size.HasNonZeroArea())
   {
     m_Icons.Clear();
     return XII_FAILURE;
@@ -208,8 +207,8 @@ xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
         return;
       }
       auto& commands = execution.GetCommandList();
-      const auto& viewport = execution.GetView()->GetViewport();
-      commands.SetViewport({viewport.x, viewport.y, viewport.width, viewport.height, 0, 1});
+      const auto size     = execution.GetTexture(data.m_Color)->GetDescription().m_Size;
+      commands.SetViewport({0, 0, float(size.width), float(size.height), 0, 1});
       commands.SetPipelineState(state.Borrow());
       commands.ResolveAndSetShaderResourceBufferView("IconData", execution.GetBuffer(data.m_Instances)->GetDefaultView(xiiGALBufferViewType::ShaderResource).Borrow(), xiiGALShaderType::Vertex);
       commands.ResolveAndSetShaderResourceTextureView("SceneDepth", execution.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);

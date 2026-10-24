@@ -378,11 +378,12 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
       configured.SetRenderPipelineProfile(&profile);
       xiiRenderPipelineResourceHandle selected;
       log.ExpectMessage("Cannot select the editor view pipeline", xiiLogMsgType::ErrorMsg, 2);
+      profile.GetTypeConfig<xiiRenderPipelineProfileConfig>()->m_sAssetPreviewPipeline.Clear();
       XII_TEST_BOOL(configured.ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, selected).Failed());
-      policy->m_sAssetPreviewPipeline = xiiLoadPipelineLibraryResource("InstanceVisibility").GetResourceID();
+      policy->m_sAssetPreviewPipeline = xiiCreateInstanceVisibilityTestResource().GetResourceID();
       XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiRenderPipelineUsage::AssetPreview, selected));
       XII_TEST_STRING(selected.GetResourceID(), policy->m_sAssetPreviewPipeline);
-      configured.SetRenderPipelineResourceReference(xiiLoadPipelineLibraryResource("InstanceVisibility").GetResourceID());
+      configured.SetRenderPipelineResourceReference(xiiCreateInstanceVisibilityTestResource().GetResourceID());
       configured.UpdateRenderPipeline(*firstView);
       world.Update();
       XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
@@ -393,7 +394,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
       configured.SetRenderPipelineResourceReference({});
       configured.UpdateRenderPipeline(*firstView);
       XII_TEST_BOOL(!firstView->GetRenderPipelineResource().IsValid());
-      firstView->SetRenderPipelineResource(xiiLoadPipelineLibraryResource("InstanceVisibility"));
+      firstView->SetRenderPipelineResource(xiiCreateInstanceVisibilityTestResource());
       world.Update();
       XII_TEST_BOOL(firstView->GetRenderPipelineInstance().GetPipeline() != nullptr);
       firstView->SetRenderPipelineResource({});

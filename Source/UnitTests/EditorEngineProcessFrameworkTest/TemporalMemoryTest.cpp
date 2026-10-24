@@ -261,8 +261,10 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedAllocationInvalidatesView)
       xiiTestLogInterface   log;
       xiiTestLogSystemScope logScope(&log, true);
       log.ExpectMessage("Failed to build render pipeline", xiiLogMsgType::ErrorMsg);
+      log.ExpectMessage("The graph build delegate failed", xiiLogMsgType::ErrorMsg);
       world.Update();
       XII_TEST_BOOL(!view->GetRenderGraph()->FindTexture("TAAHistory").IsValid());
+      XII_TEST_BOOL(view->GetLastRenderResult().Failed());
     }
     const auto* pass = xiiDynamicCast<const xiiTemporalAllocationTestPass*>(view->GetRenderPipelineInstance().GetPass(0));
     if (!XII_TEST_BOOL(pass != nullptr))
@@ -276,4 +278,5 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, FailedAllocationInvalidatesView)
   environment.GetDevice()->WaitIdle();
   XII_TEST_BOOL(view->GetRenderGraph()->GetTextureDescription(pass->m_Output) != nullptr);
   XII_TEST_BOOL(pass != nullptr && pass->m_bHistoryValid && pass->m_uiInvalidations == 1);
+  XII_TEST_RESULT(view->GetLastRenderResult());
 }
