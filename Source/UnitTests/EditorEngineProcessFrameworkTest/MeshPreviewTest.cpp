@@ -6,6 +6,7 @@
 #include <Core/World/World.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <EditorEngineProcessFramework/Rendering/ScenePreviewPipeline.h>
 #include <EnginePluginAssets/MeshAsset/MeshContext.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -128,7 +129,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   }
   XII_TEST_RESULT(view->GetLastRenderResult());
   XII_TEST_BOOL(view->GetRenderPipelineInstance().GetResourceAcquireResult() == xiiResourceAcquireResult::Final);
-  XII_TEST_STRING(view->GetRenderPipelineResource().GetResourceID(), profile.GetTypeConfig<xiiRenderPipelineProfileConfig>()->m_sMainRenderPipeline);
+  const auto selected = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(profile.GetTypeConfig<xiiRenderPipelineProfileConfig>()->m_sMainRenderPipeline);
+  XII_TEST_BOOL(view->GetRenderPipelineResource() == xiiScenePreviewPipeline::GetResource(selected));
   xiiUInt32 before = 0, after = 0;
   if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), output.Borrow(), 32, 32, before))
     return;
@@ -140,4 +142,32 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), output.Borrow(), 32, 32, after))
     return;
   XII_TEST_BOOL(before != after);
+  world->GetOrCreateComponentManager<xiiMeshComponentManager>()->GetComponents()->SetActiveFlag(true);
+  xiiCamera                   orthographic[3];
+  xiiView*                    additional[3] = {};
+  xiiSharedPtr<xiiGALTexture> targets[3];
+  for (xiiUInt32 i = 0; i < 3; ++i)
+  {
+    orthographic[i].SetCameraMode(xiiCameraMode::OrthoFixedHeight, 8, -1000, 1000);
+    orthographic[i].LookAt(i == 0 ? xiiVec3(0, 0, 5) : i == 1 ? xiiVec3(0, -5, 0) :
+                                                                xiiVec3(5, 0, 0),
+                           xiiVec3::MakeZero(), i == 0 ? xiiVec3::MakeAxisY() : xiiVec3::MakeAxisZ());
+    world->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Orthographic Editor regression", additional[i]);
+    additional[i]->SetCamera(&orthographic[i]);
+    additional[i]->SetViewport({0, 0, 64, 64});
+    additional[i]->SetRenderPipelineResource(view->GetRenderPipelineResource());
+    targets[i] = environment.GetDevice()->CreateTexture(target);
+    additional[i]->SetRenderTargetView(targets[i]->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  }
+  context->Redraw(false);
+  world->Update();
+  environment.GetDevice()->WaitIdle();
+  for (xiiUInt32 i = 0; i < 3; ++i)
+  {
+    XII_TEST_RESULT(additional[i]->GetLastRenderResult());
+    xiiUInt32 pixel = 0;
+    XII_TEST_BOOL(xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[i].Borrow(), 32, 32, pixel));
+    XII_TEST_BOOL((pixel & 0x00FFFFFFU) != 0);
+    world->GetOrCreateModule<xiiRenderWorldModule>()->DestroyView(additional[i]->GetHandle());
+  }
 }
