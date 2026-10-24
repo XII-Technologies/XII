@@ -29,7 +29,7 @@ bool xiiMeshViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& bound
 xiiViewHandle xiiMeshViewContext::CreateView()
 {
   xiiRenderPipelineResourceHandle pipeline;
-  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::Main, pipeline).Failed())
+  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::ScenePreview, pipeline).Failed())
     return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Mesh Editor - View", pView);
@@ -44,11 +44,8 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 {
   XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
   xiiEngineProcessViewContext::SetCamera(pMsg);
-  if (m_pContext->m_bDisplayGrid)
-  {
-    if (DrawGrid(0.25f).Failed())
-      xiiLog::Warning("Could not build the mesh preview grid.");
-  }
+  if (DrawGrid(m_pContext->m_bDisplayGrid ? 0.25f : 0.0f).Failed())
+    xiiLog::Warning("Could not build the mesh preview grid.");
 
   auto hMesh = m_pContext->GetMesh();
   if (hMesh.IsValid())

@@ -85,11 +85,17 @@ xiiResult xiiInfiniteGridPass::ComputeSettings(const xiiView& view, float spacin
 
 xiiResult xiiInfiniteGridPass::ConfigureView(xiiView& view, float spacing, const xiiTransform& transform, bool global)
 {
-  view.RemovePipelineParameter("Editor.Grid");
   if (spacing == 0 || (transform.IsValid() && transform.m_vScale.IsZero(0)))
+  {
+    view.RemovePipelineParameter("Editor.Grid");
     return XII_SUCCESS;
+  }
   xiiEditorGridConstants settings;
-  XII_SUCCEED_OR_RETURN(ComputeSettings(view, spacing, transform, global, settings));
+  if (ComputeSettings(view, spacing, transform, global, settings).Failed())
+  {
+    view.RemovePipelineParameter("Editor.Grid");
+    return XII_FAILURE;
+  }
   xiiDataBuffer snapshot;
   snapshot.SetCountUninitialized(sizeof(settings));
   xiiMemoryUtils::Copy(snapshot.GetData(), reinterpret_cast<const xiiUInt8*>(&settings), sizeof(settings));

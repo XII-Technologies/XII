@@ -31,7 +31,7 @@ bool xiiSkeletonViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& b
 xiiViewHandle xiiSkeletonViewContext::CreateView()
 {
   xiiRenderPipelineResourceHandle pipeline;
-  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::Main, pipeline).Failed())
+  if (ResolveRenderPipeline(xiiEditorRenderPipelineUsage::ScenePreview, pipeline).Failed())
     return {};
   xiiView* pView = nullptr;
   GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Skeleton Editor - View", pView);
@@ -48,11 +48,8 @@ void xiiSkeletonViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
   xiiEngineProcessViewContext::SetCamera(pMsg);
   if (const auto* pView = GetView())
     m_pContext->DrawSkeleton(*pView).IgnoreResult(); // Resources may still be loading.
-  if (m_pContext->m_bDisplayGrid)
-  {
-    if (DrawGrid(0.25f).Failed())
-      xiiLog::Warning("Could not build the skeleton preview grid.");
-  }
+  if (DrawGrid(m_pContext->m_bDisplayGrid ? 0.25f : 0.0f).Failed())
+    xiiLog::Warning("Could not build the skeleton preview grid.");
 
   const xiiUInt32 viewHeight = pMsg->m_uiWindowHeight;
 
@@ -79,7 +76,7 @@ void xiiSkeletonViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMs
   {
     const xiiViewPickingMsgToEngine* pMsg2 = static_cast<const xiiViewPickingMsgToEngine*>(pMsg);
 
-    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY);
+    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY, pMsg2->m_uiRequestID);
   }
   else
   {
@@ -87,9 +84,10 @@ void xiiSkeletonViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMs
   }
 }
 
-void xiiSkeletonViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
+void xiiSkeletonViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID)
 {
   xiiViewPickingResultMsgToEditor result;
+  result.m_uiRequestID = uiRequestID;
   PickGizmoAtPixel(x, y, result).IgnoreResult();
   SendViewMessage(&result);
 }

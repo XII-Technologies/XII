@@ -4,6 +4,7 @@
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/World/World.h>
+#include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
@@ -184,4 +185,54 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   xiiSceneShapeIconPass::PickingResult iconHit;
   XII_TEST_RESULT(icons->PickIcon(*views[0], xiiUInt32(8 + icon.m_vScreenPosition.x * 64), xiiUInt32(12 + icon.m_vScreenPosition.y * 32), iconHit));
   XII_TEST_BOOL(iconHit.m_hObject == lightOwner);
+
+  // The native four-pane layout uses signed-depth orthographic cameras and
+  // wireframe visualization. Exercise the authored Editor, including its
+  // explicit camera and surface-query bindings, rather than only Scene.
+  xiiCamera                   orthographic[3];
+  xiiView*                    panes[3] = {};
+  xiiSharedPtr<xiiGALTexture> paneTargets[3];
+  views[0]->SetPipelineParameter("Editor.ShapeIcons", false);
+  views[0]->SetPipelineParameter("Editor.SelectionOverlay", false);
+  for (xiiUInt32 i = 0; i < 3; ++i)
+  {
+    orthographic[i].SetCameraMode(xiiCameraMode::OrthoFixedHeight, 4, -1000, 1000);
+    orthographic[i].LookAt(i == 0 ? xiiVec3(0, 0, 5) : i == 1 ? xiiVec3(0, -5, 0) :
+                                                                xiiVec3(-5, 0, 0),
+                           xiiVec3::MakeZero(), i == 0 ? xiiVec3::MakeAxisY() : xiiVec3::MakeAxisZ());
+    module->CreateView("Orthographic Editor pane", panes[i]);
+    panes[i]->SetCamera(&orthographic[i]);
+    panes[i]->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
+    panes[i]->SetViewport({0, 0, 64, 64});
+    panes[i]->SetViewRenderMode(xiiViewRenderMode::Wireframe);
+    panes[i]->SetRenderPipelineResource(editorPipeline);
+    panes[i]->SetPipelineParameter("Editor.ShapeIcons", false);
+    panes[i]->SetPipelineParameter("Editor.Picking", false);
+    panes[i]->SetPipelineParameter("Editor.PickSelected", false);
+    panes[i]->SetPipelineParameter("Editor.SelectionOverlay", false);
+    paneTargets[i] = environment.GetDevice()->CreateTexture(targets[0]->GetDescription());
+    panes[i]->SetRenderTargetView(paneTargets[i]->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  }
+  update(6);
+  for (xiiUInt32 i = 0; i < 3; ++i)
+  {
+    XII_TEST_RESULT(panes[i]->GetLastRenderResult());
+    xiiUInt32 litPixels = 0;
+    for (xiiUInt32 y = 30; y < 34; ++y)
+      for (xiiUInt32 x = 23; x < 26; ++x)
+      {
+        xiiUInt32 pixel = 0;
+        if (xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), paneTargets[i].Borrow(), x, y, pixel))
+          litPixels += (pixel & 0x00FFFFFFU) != 0;
+      }
+    XII_TEST_BOOL(litPixels > 0);
+    xiiUInt32 background = 0, grid = 0;
+    XII_TEST_BOOL(xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), paneTargets[i].Borrow(), 48, 48, background));
+    XII_TEST_RESULT(xiiInfiniteGridPass::ConfigureView(*panes[i], 0.25f));
+    update(1);
+    XII_TEST_RESULT(panes[i]->GetLastRenderResult());
+    XII_TEST_BOOL(xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), paneTargets[i].Borrow(), 48, 48, grid));
+    XII_TEST_BOOL(grid != background);
+    module->DestroyView(panes[i]->GetHandle());
+  }
 }
