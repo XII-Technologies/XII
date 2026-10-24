@@ -37,6 +37,9 @@ public:
     setMouseTracking(true);
     setMinimumSize(64, 64); // prevent the window from becoming zero sized, otherwise the rendering code may crash
 
+    // Only the render surface needs a native window. Dock ancestors can have
+    // zero-sized transitional layouts while restoring a hidden workspace.
+    setAttribute(Qt::WA_DontCreateNativeAncestors, true);
     setAttribute(Qt::WA_PaintOnScreen, true);
     setAttribute(Qt::WA_NativeWindow, true);
     setAttribute(Qt::WA_NoSystemBackground);
