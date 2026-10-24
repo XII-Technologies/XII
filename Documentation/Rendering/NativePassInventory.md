@@ -1,5 +1,8 @@
 # Native rendering pass rebuild
 
+> Historical migration record. Current defaults, retired assets and validation
+> boundaries are documented in [SceneRenderer.md](SceneRenderer.md).
+
 Current source inventory: **102 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real

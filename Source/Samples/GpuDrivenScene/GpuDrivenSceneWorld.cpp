@@ -7,10 +7,8 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
-#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneConfiguration>)
@@ -49,21 +47,7 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
   XII_SUCCEED_OR_RETURN(xiiMaterialManager::Configure(materialDescription));
 
-  xiiVirtualShadowMapSettings virtualShadowDescription;
-  virtualShadowDescription.m_uiVirtualResolution     = 16384U;
-  virtualShadowDescription.m_uiPageSize              = 128U;
-  virtualShadowDescription.m_uiPhysicalPageCount     = 1024U;
-  virtualShadowDescription.m_uiMaxFeedbackRequests   = 8192U;
-  virtualShadowDescription.m_uiMaxPageAllocations    = 128U;
-  virtualShadowDescription.m_uiMaxPageRasterizations = 16U;
-  virtualShadowDescription.m_uiFramesInFlight        = configuration.m_uiFramesInFlight;
-  XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::Configure(virtualShadowDescription));
-
-  xiiRayTracingResourceLimits rayTracingDescription;
-  rayTracingDescription.m_uiMaxGeometries  = 4U;
-  rayTracingDescription.m_uiMaxInstances   = configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U;
-  rayTracingDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
-  return xiiRayTracingResources::Configure(rayTracingDescription);
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
@@ -87,24 +71,17 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   m_hSunLight                         = xiiDirectionalLightComponent::CreateComponent(lightObject, light);
   light->SetLightColor(xiiColorGammaUB(sunlight.m_Color));
   light->SetIntensity(sunlight.m_fIntensity);
-  light->SetCastShadows(true);
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
   XII_SUCCEED_OR_RETURN(CreateGeometry());
   XII_SUCCEED_OR_RETURN(CreateSceneObjects());
   xiiView* view = nullptr;
   m_hRenderView = m_World->GetModule<xiiRenderWorldModule>()->CreateView("GPU-driven authored extraction", view);
-  if (view)
-    view->SetRenderEnabled(false); // The registered sample graph owns frame execution.
   return view ? XII_SUCCESS : XII_FAILURE;
 }
 
-void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
+void xiiGpuDrivenSceneWorld::Shutdown()
 {
-  for (GeometryAsset& asset : m_GeometryAssets)
-  {
-    xiiGeometryResidencyManager::ReleaseMeshGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
-  }
   m_hRenderView.Invalidate();
   m_World.Clear();
   m_GeometryAssets.Clear();
@@ -117,24 +94,12 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
 
 xiiView* xiiGpuDrivenSceneWorld::GetRenderView() const
 {
+  if (!m_World)
+    return nullptr;
   XII_LOCK(m_World->GetReadMarker());
   xiiView* view = nullptr;
   static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->TryGetView(m_hRenderView, view);
   return view;
-}
-
-xiiGpuDrivenSceneLight xiiGpuDrivenSceneWorld::GetSunLight() const
-{
-  XII_LOCK(m_World->GetReadMarker());
-  const xiiDirectionalLightComponent* light = nullptr;
-  xiiGpuDrivenSceneLight              result;
-  if (static_cast<const xiiWorld*>(m_World.Borrow())->TryGetComponent(m_hSunLight, light))
-  {
-    result.m_vDirection = light->GetOwner()->GetGlobalRotation() * xiiVec3::MakeAxisX();
-    result.m_Color      = light->GetLightColor();
-    result.m_fIntensity = light->GetIntensity();
-  }
-  return result;
 }
 
 xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
@@ -149,7 +114,6 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
   for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(colors); ++i)
   {
     xiiMaterialResourceDescriptor material;
-    material.m_hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Geometry/DirectionalMesh.xiiShader");
     material.m_BaseColor    = colors[i];
     material.m_FeatureFlags = xiiMaterialFeatureFlags::ReceivesLighting | xiiMaterialFeatureFlags::CastsShadows;
     xiiStringBuilder name;
@@ -192,18 +156,14 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     name.SetFormat("GpuDrivenScene.Mesh{}", i);
     auto& asset       = m_GeometryAssets[i];
     asset.m_hMesh     = xiiResourceManager::CreateResource<xiiMeshResource>(name, std::move(descriptor));
-    asset.m_hGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(asset.m_hMesh);
-    if (asset.m_hGeometry.IsInvalidated())
-      return XII_FAILURE;
   }
-  xiiGeometryResidencyManager::ProcessStreaming(0, 0, 128ULL * 1024ULL * 1024ULL);
   return XII_SUCCESS;
 }
 
 xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 {
   XII_LOCK(m_World->GetWriteMarker());
-  auto*                    render = m_World->GetOrCreateModule<xiiRenderWorldModule>();
+  m_World->GetOrCreateModule<xiiRenderWorldModule>();
   xiiGameObject*           root   = nullptr;
   xiiGameObjectDescription rootDescription;
   rootDescription.m_bDynamic = true;
@@ -227,35 +187,19 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       mesh->SetMaterialOverride(0, m_Materials[index % m_Materials.GetCount()]);
     }
   m_World->Update();
-  xiiExtractedRenderData  extracted;
-  xiiMsgExtractRenderData message;
-  message.m_pExtractedRenderData = &extracted;
-  for (const auto& handle : m_Objects)
-  {
-    xiiGameObject* object = nullptr;
-    if (m_World->TryGetObject(handle, object))
-      object->SendMessage(message);
-  }
-  extracted.SortAndBatches();
-  XII_SUCCEED_OR_RETURN(render->UpdateGpuInstances(extracted, 0));
-  if (GetGpuInstances().GetInstanceCount() != m_Objects.GetCount() * 2U)
-    return XII_FAILURE;
-  xiiLog::Info("Extracted {} GPU draw candidates from {} world mesh components.", GetGpuInstances().GetInstanceCount(), m_Objects.GetCount());
   return XII_SUCCESS;
 }
 
-void xiiGpuDrivenSceneWorld::Update(xiiUInt64 frame, xiiTime deltaTime)
+void xiiGpuDrivenSceneWorld::Update(xiiTime deltaTime)
 {
   XII_LOCK(m_World->GetWriteMarker());
   m_fAnimationTime += static_cast<float>(deltaTime.GetSeconds());
-  m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
   const auto animated                = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64);
   for (xiiUInt32 i = 0; i < animated; ++i)
   {
     xiiGameObject* object = nullptr;
     if (!m_World->TryGetObject(m_Objects[i], object))
       continue;
-    m_AnimatedShadowInvalidationBounds.ExpandToInclude(object->GetGlobalBounds().GetBox());
     xiiTransform transform = xiiTransform::MakeIdentity();
     transform.m_vPosition  = m_BasePositions[i];
     transform.m_vPosition.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + float(i) * 0.31f));
@@ -273,29 +217,4 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 frame, xiiTime deltaTime)
     root->SetLocalRotation(xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f)))));
   }
   m_World->Update();
-  xiiExtractedRenderData  extracted;
-  xiiMsgExtractRenderData message;
-  message.m_pExtractedRenderData = &extracted;
-  for (const auto& handle : m_Objects)
-  {
-    xiiGameObject* object = nullptr;
-    if (m_World->TryGetObject(handle, object))
-      object->SendMessage(message);
-  }
-  extracted.SortAndBatches();
-  m_World->GetModule<xiiRenderWorldModule>()->UpdateGpuInstances(extracted, frame).AssertSuccess();
-  for (const auto& record : GetGpuInstances().GetInstances())
-  {
-    const auto index = record.m_uiUserData;
-    if (index < animated)
-      m_AnimatedShadowInvalidationBounds.ExpandToInclude(xiiBoundingBox::MakeFromCenterAndHalfExtents(record.m_BoundsCenterRadius.GetAsVec3(), record.m_BoundsExtents.GetAsVec3()));
-  }
-  if (frame == 30)
-    for (const auto& asset : m_GeometryAssets)
-      xiiGeometryResidencyManager::RequestResidency(asset.m_hGeometry, 0, frame);
-}
-
-xiiBoundingBox xiiGpuDrivenSceneWorld::GetAnimatedShadowBounds() const
-{
-  return m_AnimatedShadowInvalidationBounds;
 }

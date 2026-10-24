@@ -136,9 +136,10 @@ Hot reload replaces the captured native revision; no scene object lifecycle or
 CPU transform hierarchy is introduced.
 
 The sample authors mesh, material, hierarchy, animation transforms and sunlight
-through a real world and components. Its low-level graph remains an integration
-sample for GPU algorithms; production pass order continues to come from reflected
-pipeline assets.
+through a real world and components. It now uses the ordinary world/view update
+and canonical Scene resource. Manual component extraction and the sample-owned
+render graph are removed; production pass order comes from the selected resource.
+See [SceneRenderer.md](SceneRenderer.md) for the current default contract.
 
 Mesh component serialization advances its base type to version 2 for the authored
 visibility mask. Version 1 loading retains the previous all-visible default.
