@@ -372,6 +372,9 @@ void xiiQtNodeScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* contextMen
     return;
   }
 
+  menu.addSeparator();
+  AddArrangementActions(menu);
+  ExtendContextMenu(menu, iType == Type::Node ? static_cast<xiiQtNode*>(pItem) : nullptr);
   menu.exec(contextMenuEvent->screenPos());
 }
 
@@ -827,6 +830,14 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
   QMenu                menu;
   xiiQtSearchableMenu* pSearchMenu = new xiiQtSearchableMenu(&menu);
   menu.addAction(pSearchMenu);
+
+  // Keep the focused search widget and one-click node creation. Layout lives below it.
+  if (!m_pTempConnection)
+  {
+    menu.addSeparator();
+    AddArrangementActions(menu);
+    ExtendContextMenu(menu, nullptr);
+  }
 
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, &xiiQtNodeScene::OnMenuItemTriggered);
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, [&menu]() { menu.close(); });

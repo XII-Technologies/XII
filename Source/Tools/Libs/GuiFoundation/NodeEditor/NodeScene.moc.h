@@ -12,6 +12,7 @@
 class xiiQtNode;
 class xiiQtPin;
 class xiiQtConnection;
+class QMenu;
 struct xiiSelectionManagerEvent;
 
 class XII_GUIFOUNDATION_DLL xiiQtNodeScene : public QGraphicsScene
@@ -32,6 +33,30 @@ public:
   const xiiDocumentNodeManager* GetDocumentNodeManager() const;
   const xiiDocument*            GetDocument() const;
 
+  enum class NodeArrangement
+  {
+    Format,
+    AlignLeft,
+    AlignHorizontalCenter,
+    AlignRight,
+    AlignTop,
+    AlignVerticalCenter,
+    AlignBottom,
+    DistributeHorizontally,
+    DistributeVertically,
+  };
+
+  /// Apply a single undoable operation to selected nodes. Format can also target the whole
+  /// graph. Selection formatting leaves other nodes untouched and avoids their bounds.
+  xiiStatus ArrangeNodes(NodeArrangement arrangement, bool bWholeGraph = false);
+  /// Add shared formatting and alignment actions to a graph menu.
+  void AddArrangementActions(QMenu& menu);
+
+Q_SIGNALS:
+  /// Emitted after a successful full-graph format so attached views can frame the result.
+  void GraphFormatted(const QRectF& bounds);
+
+public:
   static xiiRttiMappedObjectFactory<xiiQtNode>&       GetNodeFactory();
   static xiiRttiMappedObjectFactory<xiiQtPin>&        GetPinFactory();
   static xiiRttiMappedObjectFactory<xiiQtConnection>& GetConnectionFactory();
@@ -102,6 +127,8 @@ private:
   void OpenSearchMenu(QPoint screenPos);
 
 protected:
+  /// Extend the standard node/arrangement menu without replacing its shared actions.
+  virtual void      ExtendContextMenu(QMenu& menu, xiiQtNode* pNode) {}
   virtual xiiStatus RemoveNode(xiiQtNode* pNode);
   virtual void      RemoveSelectedNodesAction();
   virtual void      ConnectPinsAction(const xiiPin& sourcePin, const xiiPin& targetPin);

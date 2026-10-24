@@ -7,7 +7,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GuiFoundation/NodeEditor/Node.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
-#include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 
 xiiQtRenderPipelineAssetScene::xiiQtRenderPipelineAssetScene(QObject* pParent) :
@@ -17,26 +16,13 @@ xiiQtRenderPipelineAssetScene::xiiQtRenderPipelineAssetScene(QObject* pParent) :
 
 xiiQtRenderPipelineAssetScene::~xiiQtRenderPipelineAssetScene() = default;
 
-void xiiQtRenderPipelineAssetScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
+void xiiQtRenderPipelineAssetScene::ExtendContextMenu(QMenu& menu, xiiQtNode* pNode)
 {
-  for (auto* item : items(event->scenePos()))
-  {
-    while (item && item->type() != xiiQtNodeScene::Node)
-      item = item->parentItem();
-    if (!item)
-      continue;
-    const auto* object = static_cast<xiiQtNode*>(item)->GetObject();
-    if (!object->GetType()->IsDerivedFrom<xiiRenderPipelineSubgraphPass>())
-      break;
-    QMenu menu;
-    auto* expand = menu.addAction("Expand Subgraph");
-    if (menu.exec(event->screenPos()) == expand)
-    {
-      auto* document = const_cast<xiiRenderPipelineAssetDocument*>(static_cast<const xiiRenderPipelineAssetDocument*>(GetDocumentNodeManager()->GetDocument()));
-      xiiQtUiServices::GetSingleton()->MessageBoxStatus(document->ExpandSubgraph(object), "Could not expand render pipeline subgraph.");
-    }
-    event->accept();
+  if (!pNode || !pNode->GetObject()->GetType()->IsDerivedFrom<xiiRenderPipelineSubgraphPass>())
     return;
-  }
-  xiiQtNodeScene::contextMenuEvent(event);
+  menu.addSeparator();
+  connect(menu.addAction("Expand Subgraph"), &QAction::triggered, this, [this, object = pNode->GetObject()]() {
+    auto* document = const_cast<xiiRenderPipelineAssetDocument*>(static_cast<const xiiRenderPipelineAssetDocument*>(GetDocumentNodeManager()->GetDocument()));
+    xiiQtUiServices::GetSingleton()->MessageBoxStatus(document->ExpandSubgraph(object), "Could not expand render pipeline subgraph.");
+  });
 }

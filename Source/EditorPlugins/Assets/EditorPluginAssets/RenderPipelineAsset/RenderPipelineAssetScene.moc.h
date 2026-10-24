@@ -17,5 +17,5 @@ public:
   ~xiiQtRenderPipelineAssetScene();
 
 protected:
-  void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+  void ExtendContextMenu(QMenu& menu, xiiQtNode* pNode) override;
 };
