@@ -232,7 +232,7 @@ public:
 
   /// Allocator used for independently reference-counted GAL objects. It must outlive this device.
   /// Device-owned helpers use the internal tracking allocator instead.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator* GetAllocator() { return &m_Allocator; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator* GetAllocator() { return m_Allocator.GetParent(); }
 
   /// Retrieves a pointer to the compute queue if available, null otherwise.
   ///
