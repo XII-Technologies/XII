@@ -253,7 +253,7 @@ void xiiQtEngineViewWidget::OpenContextMenu(QPoint globalPos)
   OnOpenContextMenu(globalPos);
 }
 
-const xiiObjectPickingResult& xiiQtEngineViewWidget::PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY) const
+const xiiObjectPickingResult& xiiQtEngineViewWidget::PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY, bool bWaitForResult) const
 {
   if (!xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup())
   {
@@ -262,11 +262,22 @@ const xiiObjectPickingResult& xiiQtEngineViewWidget::PickObject(xiiUInt16 uiScre
   else
   {
     xiiViewPickingMsgToEngine msg;
-    msg.m_uiViewID   = GetViewID();
-    msg.m_uiPickPosX = uiScreenPosX * devicePixelRatio();
-    msg.m_uiPickPosY = uiScreenPosY * devicePixelRatio();
+    msg.m_uiRequestID = ++m_uiPickingRequestID;
+    msg.m_uiViewID    = GetViewID();
+    msg.m_uiPickPosX  = uiScreenPosX * devicePixelRatio();
+    msg.m_uiPickPosY  = uiScreenPosY * devicePixelRatio();
 
-    GetDocumentWindow()->GetDocument()->SendMessageToEngine(&msg);
+    const bool sent = GetDocumentWindow()->GetDocument()->SendMessageToEngine(&msg);
+    if (bWaitForResult)
+    {
+      xiiProcessCommunicationChannel::WaitForMessageCallback match = [&](xiiProcessMessage* message) {
+        const auto* result = static_cast<const xiiViewPickingResultMsgToEditor*>(message);
+        return result->m_uiViewID == GetViewID() && result->m_uiRequestID == msg.m_uiRequestID;
+      };
+      // Consume this click's result, never a cached hit from another cursor position.
+      if (!sent || xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetDocumentWindow()->GetDocument()->GetGuid(), xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromMilliseconds(50), &match).Failed())
+        m_LastPickingResult.Reset();
+    }
   }
 
   return m_LastPickingResult;
@@ -305,6 +316,14 @@ void xiiQtEngineViewWidget::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg
     m_LastPickingResult.m_vPickedPosition  = pFullMsg->m_vPickedPosition;
     m_LastPickingResult.m_vPickedNormal    = pFullMsg->m_vPickedNormal;
     m_LastPickingResult.m_vPickingRayStart = pFullMsg->m_vPickingRayStartPosition;
+
+    if (s_InteractionContext.m_pLastHoveredViewWidget == this && !xiiEditorInputContext::IsAnyInputContextActive() && pFullMsg->m_uiRequestID == m_uiPickingRequestID)
+    {
+      xiiViewHighlightMsgToEngine highlight;
+      highlight.m_HighlightObject = pFullMsg->m_ComponentGuid.IsValid() ? pFullMsg->m_ComponentGuid : pFullMsg->m_OtherGuid.IsValid() ? pFullMsg->m_OtherGuid :
+                                                                                                                                        pFullMsg->m_ObjectGuid;
+      GetDocumentWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&highlight);
+    }
 
     return;
   }

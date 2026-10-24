@@ -95,7 +95,9 @@ xiiEditorInput xiiSphereGizmo::DoMousePressEvent(QMouseEvent* e)
 
   // m_pInteractionGizmoHandle->SetVisible(true);
 
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  const auto pressPosition = e->globalPosition().toPoint();
+  m_vLastMousePos.Set(pressPosition.x(), pressPosition.y());
 
   SetActiveInputContext(this);
 

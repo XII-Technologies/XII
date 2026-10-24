@@ -171,7 +171,9 @@ modify:
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
 
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::Normal);
+  SetMouseMode(xiiEditorInputContext::MouseMode::Normal);
+  const auto pressPosition = e->globalPosition().toPoint();
+  m_vLastMousePos.Set(pressPosition.x(), pressPosition.y());
 
   SetActiveInputContext(this);
 

@@ -213,6 +213,15 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoHandles)
     XII_TEST_RESULT(document.PickGizmo(*view, 0.5f, 0.5f, result));
     XII_TEST_BOOL(result.m_HandleGuid == farHandle.GetGuid());
     XII_TEST_BOOL(result.m_bAlwaysOnTop);
+    {
+      xiiEngineGizmoHandle uniform;
+      uniform.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::ScaleUniform, xiiColor::LightGray, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop | xiiGizmoFlags::ShowInOrtho);
+      uniform.SetVisible(true);
+      document.SendHandle(uniform);
+      XII_TEST_RESULT(document.PickGizmo(*view, 0.5f, 0.5f, result));
+      XII_TEST_BOOL(result.m_HandleGuid == uniform.GetGuid());
+      document.RemoveHandle(uniform);
+    }
     farHandle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::Sphere, xiiColor::Red, xiiGizmoFlags::Pickable);
     document.SendHandle(farHandle);
     XII_TEST_INT(document.GetContext().m_OtherPickingMap.GetHandle(farHandle.GetGuid()), farID);

@@ -75,13 +75,16 @@ public:
   xiiEngineGizmoHandle();
   ~xiiEngineGizmoHandle();
 
-  void      ConfigureHandle(xiiGizmo* pOwner, xiiEngineGizmoHandleType type, const xiiColor& color, xiiBitflags<xiiGizmoFlags> flags, const char* szCustomMesh = nullptr);
-  void      SetColor(const xiiColor& color);
-  void      SetVisualState(xiiGizmoVisualState state);
-  void      SetVisualParameters(float fArcStart, float fArcDelta);
-  void      SetDragOrigin(const xiiVec3& vOrigin);
-  void      SetInteractionText(xiiStringView text);
-  bool      IsAlwaysOnTop() const { return m_bAlwaysOnTop; }
+  void ConfigureHandle(xiiGizmo* pOwner, xiiEngineGizmoHandleType type, const xiiColor& color, xiiBitflags<xiiGizmoFlags> flags, const char* szCustomMesh = nullptr);
+  void SetColor(const xiiColor& color);
+  void SetVisualState(xiiGizmoVisualState state);
+  void SetVisualParameters(float fArcStart, float fArcDelta);
+  void SetDragOrigin(const xiiVec3& vOrigin);
+  void SetInteractionText(xiiStringView text);
+  bool IsAlwaysOnTop() const { return m_bAlwaysOnTop; }
+  /// Matches the draw layers. The uniform-scale target stays accessible where end-on axes overlap it.
+  xiiUInt32 GetPickingPriority() const { return !m_bAlwaysOnTop ? 0U : m_iHandleType == static_cast<xiiInt32>(xiiEngineGizmoHandleType::ScaleUniform) ? 2U :
+                                                                                                                                                        1U; }
   xiiUInt32 GetPickingID() const { return m_uiPickingID; }
 
   /// Reserves an identity once, including for initially non-pickable handles whose flags can change via IPC.

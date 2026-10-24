@@ -388,6 +388,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewPickingMsgToEngine, 1, xiiRTTIDefaultAll
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestID", m_uiRequestID),
     XII_MEMBER_PROPERTY("PickPosX", m_uiPickPosX),
     XII_MEMBER_PROPERTY("PickPosY", m_uiPickPosY),
   }
@@ -399,6 +400,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewPickingResultMsgToEditor, 1, xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestID", m_uiRequestID),
     XII_MEMBER_PROPERTY("ObjectGuid", m_ObjectGuid),
     XII_MEMBER_PROPERTY("ComponentGuid", m_ComponentGuid),
     XII_MEMBER_PROPERTY("OtherGuid", m_OtherGuid),

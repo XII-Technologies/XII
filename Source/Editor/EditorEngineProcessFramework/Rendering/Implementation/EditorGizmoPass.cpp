@@ -252,12 +252,16 @@ xiiResult xiiEditorGizmoPass::Build(xiiRenderPipelinePassContext& context)
     auto& commands = execution.GetCommandList();
     commands.ClearRenderTargetView(execution.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
     commands.ClearDepthStencilView(execution.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0); });
-  for (xiiUInt32 layer = 0; layer < 2; ++layer)
+  for (xiiUInt32 layer = 0; layer < 3; ++layer)
   {
     xiiDynamicArray<xiiUInt32> order;
     for (xiiUInt32 i = 0; i < instances.GetCount(); ++i)
-      if (((instances[i].Identity.y & XII_EDITOR_GIZMO_ON_TOP) != 0) == (layer != 0))
+    {
+      const auto priority = !(instances[i].Identity.y & XII_EDITOR_GIZMO_ON_TOP) ? 0U : instances[i].Identity.x == XII_EDITOR_GIZMO_UNIFORM ? 2U :
+                                                                                                                                              1U;
+      if (priority == layer)
         order.PushBack(i);
+    }
     if (order.IsEmpty())
       continue;
     order.Sort([&](xiiUInt32 a, xiiUInt32 b) { return keys[a] == keys[b] ? instances[a].Identity.z < instances[b].Identity.z : keys[a] < keys[b]; });

@@ -108,7 +108,9 @@ xiiEditorInput xiiScaleGizmo::DoMousePressEvent(QMouseEvent* e)
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
 
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+  const auto pressPosition = e->globalPosition().toPoint();
+  m_vLastMousePos.Set(pressPosition.x(), pressPosition.y());
 
   m_vScalingResult.Set(1.0f);
   m_vScaleMouseMove.SetZero();

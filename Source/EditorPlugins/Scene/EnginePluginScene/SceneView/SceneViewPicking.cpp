@@ -46,11 +46,12 @@ namespace
   }
 } // namespace
 
-void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
+void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID)
 {
   if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
     return;
   xiiViewPickingResultMsgToEditor result;
+  result.m_uiRequestID = uiRequestID;
   result.m_uiPartIndex = 0;
   result.m_vPickedPosition.SetZero();
   result.m_vPickedNormal.SetZero();

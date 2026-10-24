@@ -162,8 +162,10 @@ xiiResult xiiGizmoGeometry::Build(xiiEngineGizmoHandleType type, xiiStringView s
     case xiiEngineGizmoHandleType::TranslationPlane:
       options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.36f, 0.36f, 0));
       m_Geometry.AddRect(xiiVec2(0.28f), 1, 1, options);
-      for (xiiUInt32 i = 0; i < 4; ++i)
-        m_Geometry.AddLine(i, (i + 1) % 4);
+      m_Geometry.AddLine(0, 1);
+      m_Geometry.AddLine(1, 3);
+      m_Geometry.AddLine(3, 2);
+      m_Geometry.AddLine(2, 0);
       break;
     case xiiEngineGizmoHandleType::RotationRing:
       for (xiiUInt32 i = 0; i < 128; ++i)
@@ -176,8 +178,10 @@ xiiResult xiiGizmoGeometry::Build(xiiEngineGizmoHandleType type, xiiStringView s
       break;
     case xiiEngineGizmoHandleType::ScaleUniform:
       m_Geometry.AddRect(xiiVec2(0.16f), 1, 1);
-      for (xiiUInt32 i = 0; i < 4; ++i)
-        m_Geometry.AddLine(i, (i + 1) % 4);
+      m_Geometry.AddLine(0, 1);
+      m_Geometry.AddLine(1, 3);
+      m_Geometry.AddLine(3, 2);
+      m_Geometry.AddLine(2, 0);
       break;
     default:
       return XII_FAILURE;

@@ -1027,7 +1027,8 @@ xiiResult xiiEngineProcessDocumentContext::PickGizmo(const xiiView& view, float 
     return XII_FAILURE;
   xiiVec3 start, direction;
   XII_SUCCEED_OR_RETURN(view.ComputePickingRay(fNormalizedX, fNormalizedY, start, direction));
-  bool                     found = false;
+  bool                     found           = false;
+  xiiUInt32                closestPriority = 0;
   xiiEditorGizmoPickResult closest;
   for (auto it : m_SyncObjects)
   {
@@ -1035,9 +1036,11 @@ xiiResult xiiEngineProcessDocumentContext::PickGizmo(const xiiView& view, float 
     float fTime;
     if (!handle || handle->PickRay(view, start, direction, fTime).Failed())
       continue;
-    const bool bOnTop = handle->IsAlwaysOnTop();
-    if (found && ((!bOnTop && closest.m_bAlwaysOnTop) || (bOnTop == closest.m_bAlwaysOnTop && fTime >= closest.m_fRayTime)))
+    const bool bOnTop   = handle->IsAlwaysOnTop();
+    const auto priority = handle->GetPickingPriority();
+    if (found && (priority < closestPriority || (priority == closestPriority && fTime >= closest.m_fRayTime)))
       continue;
+    closestPriority             = priority;
     closest.m_HandleGuid        = it.Key();
     closest.m_vRayStartPosition = start;
     closest.m_fRayTime          = fTime;

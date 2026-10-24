@@ -154,6 +154,13 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       if (!XII_TEST_BOOL(pickedObject == sphereID))
         return;
 
+      // A click must consume its own response, even if an earlier hover hit is
+      // still queued. Ordinary hover remains asynchronous.
+      const auto pixelRatio = view->devicePixelRatio();
+      XII_TEST_BOOL(view->PickObject(xiiUInt16(128 / pixelRatio), xiiUInt16(128 / pixelRatio), true).m_PickedObject == sphereID);
+      XII_TEST_BOOL(view->PickObject(0, 0, true).m_PickedObject != sphereID);
+      XII_TEST_BOOL(view->PickObject(xiiUInt16(128 / pixelRatio), xiiUInt16(128 / pixelRatio), true).m_PickedObject == sphereID);
+
       // A completed native pick confirms that the transformed scene has reached the GPU.
       // Capture only after that readiness boundary; a startup delay cannot establish it.
       xiiStringBuilder capture = sProjectDirectory;

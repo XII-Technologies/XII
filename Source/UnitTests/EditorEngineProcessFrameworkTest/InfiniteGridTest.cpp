@@ -207,7 +207,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportVisualization, InfiniteGrid)
     for (bool ortho : {false, true})
     {
       camera.SetCameraMode(ortho ? xiiCameraMode::OrthoFixedHeight : xiiCameraMode::PerspectiveFixedFovY, ortho ? 5.0f : 60.0f, 0.1f, 100);
-      camera.LookAt(xiiVec3(4, -6, 4), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+      camera.LookAt(ortho ? xiiVec3(0, 0, 5) : xiiVec3(4, -6, 4), xiiVec3::MakeZero(), ortho ? xiiVec3::MakeAxisY() : xiiVec3::MakeAxisZ());
       for (auto shape : {xiiEngineGizmoHandleType::TranslationAxis, xiiEngineGizmoHandleType::RotationRing, xiiEngineGizmoHandleType::ScaleAxis})
       {
         xiiDynamicArray<xiiEditorGizmoInstance> instances;
@@ -246,6 +246,11 @@ XII_CREATE_SIMPLE_TEST(EditorViewportVisualization, InfiniteGrid)
                        ortho ? "Orthographic" : "Perspective");
         const auto image = draw(0.25f, name);
         XII_TEST_BOOL(VisiblePixels(image) > 1000);
+        if (shape == xiiEngineGizmoHandleType::ScaleAxis)
+        {
+          const auto* center = image.GetPixelPointer<xiiUInt8>(0, 0, 0, 256, 192);
+          XII_TEST_BOOL(center[0] > 100 && xiiMath::Abs(int(center[0]) - int(center[1])) < 5 && xiiMath::Abs(int(center[0]) - int(center[2])) < 5);
+        }
         XII_TEST_BOOL(image.GetByteBlobPtr() == draw(0.25f, nullptr).GetByteBlobPtr());
       }
     }

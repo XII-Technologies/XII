@@ -184,7 +184,9 @@ xiiEditorInput xiiTranslateGizmo::DoMousePressEvent(QMouseEvent* e)
   xiiMat4 mViewProj = mProj * mView;
   m_mInvViewProj    = mViewProj.GetInverse();
 
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::WrapAtScreenBorders);
+  SetMouseMode(xiiEditorInputContext::MouseMode::WrapAtScreenBorders);
+  const auto pressPosition = e->globalPosition().toPoint();
+  m_vLastMousePos.Set(pressPosition.x(), pressPosition.y());
   SetActiveInputContext(this);
 
   if (m_Mode == TranslateMode::Axis)

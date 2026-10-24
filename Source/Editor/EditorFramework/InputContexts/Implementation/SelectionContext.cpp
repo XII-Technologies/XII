@@ -50,7 +50,7 @@ xiiEditorInput xiiSelectionContext::DoMousePressEvent(QMouseEvent* e)
 {
   if (e->button() == Qt::MouseButton::LeftButton)
   {
-    const xiiObjectPickingResult& res = GetOwnerView()->PickObject(e->pos().x(), e->pos().y());
+    const xiiObjectPickingResult& res = GetOwnerView()->PickObject(e->pos().x(), e->pos().y(), true);
 
     if (res.m_PickedOther.IsValid())
     {
@@ -254,22 +254,8 @@ xiiEditorInput xiiSelectionContext::DoMouseMoveEvent(QMouseEvent* e)
   }
   else
   {
-    xiiViewHighlightMsgToEngine msg;
-
-    {
-      const xiiObjectPickingResult& res = GetOwnerView()->PickObject(e->pos().x(), e->pos().y());
-
-      if (res.m_PickedComponent.IsValid())
-        msg.m_HighlightObject = res.m_PickedComponent;
-      else if (res.m_PickedOther.IsValid())
-        msg.m_HighlightObject = res.m_PickedOther;
-      else
-        msg.m_HighlightObject = res.m_PickedObject;
-    }
-
-    GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
-
-    // we only updated the highlight, so others may do additional stuff, if they like
+    // The view publishes hover highlighting when its current picking reply
+    // arrives. Sending the previous cached hit here lags behind cursor motion.
     return xiiEditorInput::MayBeHandledByOthers;
   }
 }
