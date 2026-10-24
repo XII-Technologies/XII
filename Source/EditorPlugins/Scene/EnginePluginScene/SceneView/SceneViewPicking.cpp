@@ -46,7 +46,7 @@ namespace
   }
 } // namespace
 
-void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID)
+void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID, bool bPickGizmos)
 {
   if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
     return;
@@ -65,7 +65,7 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiReq
   const float              u        = (static_cast<float>(x) + 0.5f - viewport.x) / viewport.width;
   const float              v        = (static_cast<float>(y) + 0.5f - viewport.y) / viewport.height;
   xiiEditorGizmoPickResult gizmo;
-  const bool               hasGizmo     = GetDocumentContext()->PickGizmo(*view, u, v, gizmo).Succeeded();
+  const bool               hasGizmo     = bPickGizmos && GetDocumentContext()->PickGizmo(*view, u, v, gizmo).Succeeded();
   const auto               publishGizmo = [&]() {
     result.m_OtherGuid                = gizmo.m_HandleGuid;
     result.m_vPickedPosition          = gizmo.m_vPosition;
@@ -86,7 +86,7 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiReq
     publishGizmo();
     return;
   }
-  if (const auto* icons = FindScenePass<xiiSceneShapeIconPass>(*view))
+  if (const auto* icons = bPickGizmos ? FindScenePass<xiiSceneShapeIconPass>(*view) : nullptr)
   {
     xiiSceneShapeIconPass::PickingResult hit;
     if (icons->PickIcon(*view, x, y, hit).Succeeded() && !hit.m_hObject.IsInvalidated() && ResolveGuids(*m_pSceneContext, hit.m_hObject, hit.m_hComponent, result))

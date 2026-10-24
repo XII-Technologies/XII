@@ -17,6 +17,7 @@ public:
   const xiiQuat GetRotationResult() const { return GetTransformation().m_qRotation; }
 
   virtual bool IsPickingSelectedAllowed() const override { return false; }
+  virtual bool IsPickingGizmosAllowed() const override { return false; }
 
   /// Returns true if any of the 'align with' handles is selected, and thus the rotation of the dragged object should be modified as well
   bool ModifiesRotation() const { return m_bModifiesRotation; }

@@ -391,6 +391,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewPickingMsgToEngine, 1, xiiRTTIDefaultAll
     XII_MEMBER_PROPERTY("RequestID", m_uiRequestID),
     XII_MEMBER_PROPERTY("PickPosX", m_uiPickPosX),
     XII_MEMBER_PROPERTY("PickPosY", m_uiPickPosY),
+    XII_MEMBER_PROPERTY("PickGizmos", m_bPickGizmos),
   }
   XII_END_PROPERTIES;
 }

@@ -76,7 +76,7 @@ void xiiSkeletonViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMs
   {
     const xiiViewPickingMsgToEngine* pMsg2 = static_cast<const xiiViewPickingMsgToEngine*>(pMsg);
 
-    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY, pMsg2->m_uiRequestID);
+    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY, pMsg2->m_uiRequestID, pMsg2->m_bPickGizmos);
   }
   else
   {
@@ -84,10 +84,18 @@ void xiiSkeletonViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMs
   }
 }
 
-void xiiSkeletonViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID)
+void xiiSkeletonViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiRequestID, bool bPickGizmos)
 {
   xiiViewPickingResultMsgToEditor result;
   result.m_uiRequestID = uiRequestID;
-  PickGizmoAtPixel(x, y, result).IgnoreResult();
+  if (bPickGizmos)
+    PickGizmoAtPixel(x, y, result).IgnoreResult();
+  else
+  {
+    result.m_uiPartIndex = 0;
+    result.m_vPickedPosition.SetZero();
+    result.m_vPickedNormal.SetZero();
+    result.m_vPickingRayStartPosition.SetZero();
+  }
   SendViewMessage(&result);
 }

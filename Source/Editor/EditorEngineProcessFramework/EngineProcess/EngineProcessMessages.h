@@ -358,6 +358,7 @@ public:
   xiiUInt64 m_uiRequestID = 0;
   xiiUInt16 m_uiPickPosX;
   xiiUInt16 m_uiPickPosY;
+  bool      m_bPickGizmos = true; ///< False queries scene surfaces beneath editor handles and icons.
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewPickingResultMsgToEditor : public xiiEditorEngineViewMsg

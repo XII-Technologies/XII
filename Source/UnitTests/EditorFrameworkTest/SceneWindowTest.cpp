@@ -8,6 +8,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Gizmos/DragToPositionGizmo.h>
 #include <EditorFramework/Preferences/ScenePreferences.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
@@ -18,6 +19,7 @@
 #include <QApplication>
 #include <QElapsedTimer>
 #include <QImage>
+#include <QMouseEvent>
 #include <QPointer>
 #include <QThread>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -38,6 +40,73 @@ namespace
     }
     return predicate();
   }
+
+  class SurfacePlacementGizmo : public xiiDragToPositionGizmo
+  {
+  public:
+    xiiEngineGizmoHandle* GetHandle(xiiUInt32 index)
+    {
+      xiiEngineGizmoHandle* handles[] = {&m_hBobble, &m_hAlignPX, &m_hAlignNX, &m_hAlignPY, &m_hAlignNY, &m_hAlignPZ, &m_hAlignNZ};
+      return handles[index];
+    }
+  };
+
+  void TestSurfacePlacement(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& window, xiiQtEngineViewWidget& view, const xiiUuid& target)
+  {
+    const auto* previousBlock = xiiTestFramework::s_szTestBlockName;
+    XII_SCOPE_EXIT(xiiTestFramework::s_szTestBlockName = previousBlock);
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Surface placement ignores visible handles and consumes the release query")
+    {
+      SurfacePlacementGizmo tool;
+      tool.SetOwner(&window, &view);
+      auto transform = xiiTransform::MakeIdentity();
+      transform.m_vPosition.Set(2, 0, 0);
+      tool.SetTransformation(transform);
+      tool.SetVisible(true);
+      scene.SyncObjectsToEngine();
+      const auto ratio  = view.devicePixelRatio();
+      const int  center = int(128 / ratio);
+      XII_TEST_BOOL(view.PickObject(center, center, true).m_PickedOther == tool.GetHandle(0)->GetGuid());
+      xiiUInt32 begins = 0, interactions = 0, ends = 0;
+      tool.m_GizmoEvents.AddEventHandler([&](const xiiGizmoEvent& event) {
+        begins += event.m_Type == xiiGizmoEvent::Type::BeginInteractions;
+        interactions += event.m_Type == xiiGizmoEvent::Type::Interaction;
+        ends += event.m_Type == xiiGizmoEvent::Type::EndInteractions;
+      });
+      XII_SCOPE_EXIT(if (tool.IsActiveInputContext()) { tool.FocusLost(true); xiiEditorInputContext::SetActiveInputContext(nullptr); });
+      const xiiVec3 axes[] = {xiiVec3::MakeZero(), xiiVec3::MakeAxisX(), -xiiVec3::MakeAxisX(), xiiVec3::MakeAxisY(), -xiiVec3::MakeAxisY(), xiiVec3::MakeAxisZ(), -xiiVec3::MakeAxisZ()};
+      for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(axes); ++i)
+      {
+        tool.SetTransformation(transform);
+        tool.ConfigureInteraction(tool.GetHandle(i), &view.m_pViewConfig->m_Camera, transform.m_vPosition, xiiVec2I32(int(256 / ratio)));
+        QMouseEvent press(QEvent::MouseButtonPress, QPointF(center, center), QPointF(500, 400), Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
+        XII_TEST_BOOL(tool.MousePressEvent(&press) == xiiEditorInput::WasExclusivelyHandled);
+        const auto hit = view.PickObject(center, center, true);
+        XII_TEST_BOOL(hit.m_PickedObject == target);
+        XII_TEST_BOOL(!hit.m_PickedOther.IsValid());
+        XII_TEST_BOOL(hit.m_vPickedNormal.IsValid() && !hit.m_vPickedNormal.IsZero());
+        QMouseEvent move(QEvent::MouseMove, QPointF(center, center), QPointF(500, 400), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+        tool.MouseMoveEvent(&move);
+        XII_TEST_VEC3(tool.GetTransformation().m_vPosition, hit.m_vPickedPosition, 0.001f);
+        XII_TEST_BOOL(tool.ModifiesRotation() == (i != 0));
+        if (i != 0)
+          XII_TEST_VEC3(tool.GetRotationResult() * axes[i], hit.m_vPickedNormal, 0.001f);
+
+        const auto releaseHit = view.PickObject(center + 4, center, true);
+        XII_TEST_BOOL(releaseHit.m_PickedObject == target);
+        view.PickObject(0, 0, true); // A stale miss must not swallow the final movement.
+        QMouseEvent release(QEvent::MouseButtonRelease, QPointF(center + 4, center), QPointF(504, 400), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+        tool.MouseReleaseEvent(&release);
+        XII_TEST_VEC3(tool.GetTransformation().m_vPosition, releaseHit.m_vPickedPosition, 0.001f);
+        XII_TEST_BOOL(!xiiEditorInputContext::IsAnyInputContextActive());
+      }
+      XII_TEST_INT(begins, 7);
+      XII_TEST_INT(ends, 7);
+      XII_TEST_INT(interactions, 14);
+    }
+    scene.SyncObjectsToEngine();
+  }
+
 } // namespace
 
 void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
@@ -160,6 +229,8 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       XII_TEST_BOOL(view->PickObject(xiiUInt16(128 / pixelRatio), xiiUInt16(128 / pixelRatio), true).m_PickedObject == sphereID);
       XII_TEST_BOOL(view->PickObject(0, 0, true).m_PickedObject != sphereID);
       XII_TEST_BOOL(view->PickObject(xiiUInt16(128 / pixelRatio), xiiUInt16(128 / pixelRatio), true).m_PickedObject == sphereID);
+
+      TestSurfacePlacement(*scene, *window, *view, sphereID);
 
       // A completed native pick confirms that the transformed scene has reached the GPU.
       // Capture only after that readiness boundary; a startup delay cannot establish it.

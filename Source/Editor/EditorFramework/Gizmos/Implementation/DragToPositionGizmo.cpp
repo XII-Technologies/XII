@@ -129,20 +129,12 @@ xiiEditorInput xiiDragToPositionGizmo::DoMousePressEvent(QMouseEvent* e)
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::MayBeHandledByOthers;
 
+  if (m_pInteractionGizmoHandle == nullptr)
+    return xiiEditorInput::MayBeHandledByOthers;
+
   xiiViewHighlightMsgToEngine msg;
   msg.m_HighlightObject = m_pInteractionGizmoHandle->GetGuid();
   GetOwnerWindow()->GetEditorEngineConnection()->SendHighlightObjectMessage(&msg);
-
-  // The gizmo is actually "hidden" somewhere else during dragging,
-  // because it musn't be rendered into the picking buffer, to avoid picking against the gizmo
-  // m_Bobble.SetVisible(false);
-  // m_AlignPX.SetVisible(false);
-  // m_AlignNX.SetVisible(false);
-  // m_AlignPY.SetVisible(false);
-  // m_AlignNY.SetVisible(false);
-  // m_AlignPZ.SetVisible(false);
-  // m_AlignNZ.SetVisible(false);
-  // m_pInteractionGizmoHandle->SetVisible(true);
 
   m_vStartPosition    = GetTransformation().m_vPosition;
   m_qStartOrientation = GetTransformation().m_qRotation;
@@ -181,12 +173,13 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
 
-  const xiiObjectPickingResult& res = GetOwnerView()->PickObject(e->pos().x(), e->pos().y());
+  // Movement uses asynchronous surface queries; release must consume its own position.
+  const xiiObjectPickingResult& res = GetOwnerView()->PickObject(e->pos().x(), e->pos().y(), e->type() == QEvent::MouseButtonRelease);
 
   if (!res.m_PickedObject.IsValid())
     return xiiEditorInput::WasExclusivelyHandled;
 
-  if (res.m_vPickedPosition.IsNaN() || res.m_vPickedNormal.IsNaN() || res.m_vPickedNormal.IsZero())
+  if (!res.m_vPickedPosition.IsValid() || !res.m_vPickedNormal.IsValid() || res.m_vPickedNormal.IsZero())
     return xiiEditorInput::WasExclusivelyHandled;
 
   xiiVec3 vSnappedPosition = res.m_vPickedPosition;

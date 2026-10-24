@@ -262,10 +262,12 @@ const xiiObjectPickingResult& xiiQtEngineViewWidget::PickObject(xiiUInt16 uiScre
   else
   {
     xiiViewPickingMsgToEngine msg;
-    msg.m_uiRequestID = ++m_uiPickingRequestID;
-    msg.m_uiViewID    = GetViewID();
-    msg.m_uiPickPosX  = uiScreenPosX * devicePixelRatio();
-    msg.m_uiPickPosY  = uiScreenPosY * devicePixelRatio();
+    msg.m_uiRequestID   = ++m_uiPickingRequestID;
+    msg.m_uiViewID      = GetViewID();
+    msg.m_uiPickPosX    = uiScreenPosX * devicePixelRatio();
+    msg.m_uiPickPosY    = uiScreenPosY * devicePixelRatio();
+    const auto* context = xiiEditorInputContext::GetActiveInputContext();
+    msg.m_bPickGizmos   = !context || context->GetOwnerView() != this || context->IsPickingGizmosAllowed();
 
     const bool sent = GetDocumentWindow()->GetDocument()->SendMessageToEngine(&msg);
     if (bWaitForResult)

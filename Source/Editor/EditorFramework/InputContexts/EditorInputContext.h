@@ -64,6 +64,9 @@ public:
 
   virtual bool IsPickingSelectedAllowed() const { return true; }
 
+  /// Surface placement tools must pick the scene beneath their visible handles.
+  virtual bool IsPickingGizmosAllowed() const { return true; }
+
   /// How the mouse position is updated when the mouse cursor reaches the screen borders.
   enum class MouseMode
   {

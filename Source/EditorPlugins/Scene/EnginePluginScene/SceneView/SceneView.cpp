@@ -54,7 +54,7 @@ void xiiSceneViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
   {
     const xiiViewPickingMsgToEngine* pMsg2 = static_cast<const xiiViewPickingMsgToEngine*>(pMsg);
 
-    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY, pMsg2->m_uiRequestID);
+    PickObjectAt(pMsg2->m_uiPickPosX, pMsg2->m_uiPickPosY, pMsg2->m_uiRequestID, pMsg2->m_bPickGizmos);
   }
   else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewMarqueePickingMsgToEngine>())
   {
