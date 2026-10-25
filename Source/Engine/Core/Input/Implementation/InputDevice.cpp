@@ -103,6 +103,20 @@ xiiUInt32 xiiInputDevice::RetrieveLastCharacterFromAllDevices()
   return '\0';
 }
 
+void xiiInputDevice::ReportInputCharacter(xiiUInt32 uiCodepoint)
+{
+  if (uiCodepoint == 0 || uiCodepoint > 0x10FFFF || (uiCodepoint >= 0xD800 && uiCodepoint <= 0xDFFF))
+    return;
+  m_uiLastCharacter = uiCodepoint;
+  m_TextInputEvents.Broadcast(uiCodepoint);
+}
+
+void xiiInputDevice::ReportInputSlotValue(xiiStringView sSlot, float fValue)
+{
+  m_InputSlotValues[sSlot] = fValue;
+  m_InputSlotEvents.Broadcast({sSlot, fValue});
+}
+
 float xiiInputDevice::GetInputSlotState(xiiStringView sSlot) const
 {
   return m_InputSlotValues.GetValueOrDefault(sSlot, 0.f);

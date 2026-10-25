@@ -4,6 +4,7 @@
 
 #include <Core/CoreDLL.h>
 #include <Core/Input/Declarations.h>
+#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/String.h>
@@ -51,6 +52,18 @@ public:
   /// Allows to query current input values for the given slot
   float GetInputSlotState(xiiStringView sSlot) const;
 
+  /// Every Unicode text codepoint from this device, synchronously during platform event processing.
+  /// Unlike RetrieveLastCharacter(), this retains source identity and does not discard bursts of input.
+  const xiiEvent<xiiUInt32>& GetTextInputEvents() const { return m_TextInputEvents; }
+
+  struct InputSlotEvent
+  {
+    xiiStringView m_sSlot;
+    float         m_fValue;
+  };
+  /// Source-local events preserve digital transitions between input-manager updates.
+  const xiiEvent<const InputSlotEvent&>& GetInputSlotEvents() const { return m_InputSlotEvents; }
+
   /// Returns true, if the device was 'used' during the last frame, ie. when it generated input due to some user interaction.
   ///
   /// This can be used to figure out which device the user is currently using, for example whether mouse/keyboard or a controller is in use.
@@ -82,6 +95,10 @@ private:
   static xiiUInt32 RetrieveLastCharacterFromAllDevices();
 
 protected:
+  /// Publishes text while retaining the last character for the legacy merged input API.
+  void ReportInputCharacter(xiiUInt32 uiCodepoint);
+  void ReportInputSlotValue(xiiStringView sSlot, float fValue);
+
   /// Calls RegisterInputSlot() on the xiiInputManager and passes the parameters through.
   static void RegisterInputSlot(xiiStringView sName, xiiStringView sDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags); // [tested]
 
@@ -101,7 +118,9 @@ protected:
 
   /// If this input device type handles character input, it should write the last typed character into this variable.
   /// The xiiInputManager calls RetrieveLastCharacter() to query what the user typed last.
-  xiiUInt32 m_uiLastCharacter; // [tested]
+  xiiUInt32                       m_uiLastCharacter; // [tested]
+  xiiEvent<xiiUInt32>             m_TextInputEvents;
+  xiiEvent<const InputSlotEvent&> m_InputSlotEvents;
 
   /// Override this if you need to do device specific initialization before the first use.
   virtual void InitializeDevice() = 0;

@@ -59,6 +59,8 @@ public:
   bool IsFocused() { return m_bIsFocused; }
 
 protected:
+  void SetFocused(bool bFocused) { m_bIsFocused = bFocused; }
+
   virtual void UpdateInputSlotValues() override;
 
   xiiTime         m_DoubleClickTime = xiiTime::MakeFromMilliseconds(500);
