@@ -6,6 +6,7 @@
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -82,6 +83,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionPass, 1, xiiRTTIDefaultAlloc
     XII_MEMBER_PROPERTY("RayTracingGeometryData", m_Geometry)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinEnabledAttribute("UseRayTracing"), new xiiRenderPipelinePinOptionalAttribute("AllowScreenSpace")),
     XII_MEMBER_PROPERTY("RawAO", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Constants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("UseRayTracing", m_bUseRayTracing)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("AllowScreenSpace", m_bAllowScreenSpace)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("Radius", m_fRadius)->AddAttributes(new xiiDefaultValueAttribute(2.0f), new xiiClampValueAttribute(0.01f, 10000.0f)),
@@ -105,10 +107,17 @@ xiiResult xiiAmbientOcclusionPass::Configure(const xiiVariantDictionary& propert
 }
 xiiBitflags<xiiRenderPipelineDeviceFeature> xiiAmbientOcclusionPass::GetRequiredDeviceFeatures() const
 {
+  if (!m_bEnabled)
+    return {};
   return m_bAllowScreenSpace ? xiiRenderPipelineDeviceFeature::Compute : xiiRenderPipelineDeviceFeature::RayTracing | xiiRenderPipelineDeviceFeature::BindlessResources;
 }
 xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (!m_bEnabled)
+    return XII_SUCCESS;
+  const auto device = xiiGALDevice::GetDefaultDevice();
+  if (!device || device->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled)
+    return context.ReportFailure("Ambient occlusion requires R8 storage-image support (TextureUAVExtendedFormats). Disable AO on unsupported devices.");
   const auto depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal);
   const auto camera = context.GetInputBuffer(m_Camera), global = context.GetInputBuffer(m_Global);
   xiiSizeU32 size;
@@ -119,7 +128,7 @@ xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
   const auto* normalDescription = context.m_Graph.GetTextureDescription(normal);
   const auto* cameraDescription = context.m_Graph.GetBufferDescription(camera);
   const auto* globalDescription = context.m_Graph.GetBufferDescription(global);
-  if (!normalDescription || normalDescription->m_Size != size || !cameraDescription || cameraDescription->m_uiSize < sizeof(xiiFrameCameraConstants) || !globalDescription || globalDescription->m_uiSize < sizeof(xiiFrameGlobalConstants))
+  if (!xiiScreenSpacePassUtils::Image(context, depth, 1, &size) || !normalDescription || !xiiScreenSpacePassUtils::Image(context, normal, 2, &size) || !cameraDescription || cameraDescription->m_uiSize != sizeof(xiiFrameCameraConstants) || !globalDescription || globalDescription->m_uiSize != sizeof(xiiFrameGlobalConstants))
     return context.ReportFailure("AO inputs have inconsistent extents or frame constant layouts.");
   const auto scene = m_bUseRayTracing ? context.GetInputAccelerationStructure(m_Scene) : xiiRenderPipelineAccelerationStructureBinding();
   const bool trace = scene.IsValid();
@@ -160,9 +169,17 @@ xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderPipelineAccelerationStructureBinding m_Scene;
     xiiAmbientOcclusionConstants                  m_Parameters;
     xiiSizeU32                                    m_Size;
+    xiiSharedPtr<xiiGALComputePipelineState>      m_ScreenPipeline;
+    xiiSharedPtr<xiiGALRayTracingPipelineState>   m_RayPipeline;
+    xiiSharedPtr<xiiGALSampler>                   m_Sampler;
+    xiiUInt64                                     m_uiRecordStride = 0;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, trace ? xiiGALCommandQueueFlags::Graphics : xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
+    data.m_ScreenPipeline = m_pState->m_ScreenPipeline;
+    data.m_RayPipeline = m_pState->m_RayPipeline;
+    data.m_Sampler = trace ? m_pState->m_Anisotropic : m_pState->m_Point;
+    data.m_uiRecordStride = m_pState->m_uiRecordStride;
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Normal = builder.ReadTexture(normal, xiiGALResourceStateFlags::ShaderResource);
     data.m_Camera = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
@@ -194,7 +211,7 @@ xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
     output.m_Size = size;
     output.m_Format = xiiGALResourceFormat::R8UNormalized;
     output.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-    data.m_Output = builder.WriteTexture("AO", output, xiiGALResourceStateFlags::UnorderedAccess); }, [this, trace](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Output = builder.WriteTexture("AO", output, xiiGALResourceStateFlags::UnorderedAccess); }, [trace](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     {
       xiiGALMapHelper<xiiAmbientOcclusionConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -203,7 +220,7 @@ xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
     // These uniforms are used by ray generation; requiring every ray stage
     // would exclude the reflected bindings optimized out of hit/miss shaders.
     const xiiBitflags<xiiGALShaderType> stages = trace ? xiiGALShaderType::RayGeneration : xiiGALShaderType::Compute;
-    if (trace) commands.SetPipelineState(m_pState->m_RayPipeline.Borrow()); else commands.SetPipelineState(m_pState->m_ScreenPipeline.Borrow());
+    if (trace) commands.SetPipelineState(data.m_RayPipeline.Borrow()); else commands.SetPipelineState(data.m_ScreenPipeline.Borrow());
     commands.ResolveAndSetConstantBuffer("PerFrameCamera", execute.GetBuffer(data.m_Camera), stages);
     commands.ResolveAndSetConstantBuffer("PerFrameGlobal", execute.GetBuffer(data.m_Global), stages);
     commands.ResolveAndSetConstantBuffer("xiiAmbientOcclusionConstants", execute.GetBuffer(data.m_Constants), stages);
@@ -215,18 +232,18 @@ xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
       commands.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_Scene.m_pStructure.Borrow(), xiiGALShaderType::RayGeneration);
       commands.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", execute.GetBuffer(data.m_Materials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
       commands.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
-      commands.ResolveAndSetSampler("g_sAnisotropicWrap", m_pState->m_Anisotropic.Borrow());
+      commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
       xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
       xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
       xiiGALBindlessResourceTable::BindSamplers(commands, "g_MaterialSamplers", xiiGALShaderType::RayAnyHit);
     }
-    else commands.ResolveAndSetSampler("g_sPointClamp", m_pState->m_Point.Borrow());
-    commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    else commands.ResolveAndSetSampler("g_sPointClamp", data.m_Sampler.Borrow());
+    commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
     if (trace)
     {
-      const auto stride = m_pState->m_uiRecordStride;
+      const auto stride = data.m_uiRecordStride;
       xiiGALUpdateSBTDescription update;
-      update.m_pPipelineState = m_pState->m_RayPipeline.Borrow();
+      update.m_pPipelineState = data.m_RayPipeline.Borrow();
       update.m_pShaderBindingTable = execute.GetBuffer(data.m_Sbt);
       update.m_RayGenerationTable = {0, stride, stride};
       update.m_MissTable = {stride, stride, stride};
