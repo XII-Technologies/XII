@@ -70,5 +70,5 @@ private:
   xiiGameObjectHandle                        m_hAssemblyRoot;
   xiiDynamicArray<xiiGameObjectHandle>       m_Objects;
   xiiDynamicArray<xiiVec3>                   m_BasePositions;
-  float                                      m_fAnimationTime                   = 0.0f;
+  float                                      m_fAnimationTime = 0.0f;
 };
