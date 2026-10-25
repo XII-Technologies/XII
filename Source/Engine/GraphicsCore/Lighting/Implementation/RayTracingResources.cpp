@@ -237,7 +237,7 @@ namespace
       inout_value = xiiVec4(vector3.x, vector3.y, vector3.z, inout_value.w);
   }
 
-  xiiUInt32 ResolveMaterialTexture(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName)
+  xiiUInt32 ResolveMaterialTexture(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName, bool bSampler = false)
   {
     if (snapshot.m_pSchema == nullptr)
       return xiiInvalidIndex;
@@ -246,7 +246,8 @@ namespace
     if (uiTextureIndex == xiiInvalidIndex || uiTextureIndex >= snapshot.m_ResourceBindings.GetCount())
       return xiiInvalidIndex;
 
-    return snapshot.m_ResourceBindings[uiTextureIndex].m_uiBindlessIndex;
+    const auto& binding = snapshot.m_ResourceBindings[uiTextureIndex];
+    return bSampler ? binding.m_uiSamplerIndex : binding.m_uiBindlessIndex;
   }
 
   xiiRayTracingMaterialData ResolveRayTracingMaterial(const xiiRayTracingInstanceInput& instance)
@@ -258,6 +259,8 @@ namespace
     result.Metadata                  = xiiVec4U32(instance.m_hMaterial.GetInternalID().m_InstanceIndex, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
     result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
     result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
+    result.SamplerIndices0           = xiiVec4U32(xiiInvalidIndex);
+    result.SamplerIndices1           = xiiVec4U32(xiiInvalidIndex);
     result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
     result.Rendering                 = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque), 0U, 0U);
 
@@ -289,6 +292,8 @@ namespace
     material->CreateSnapshot(snapshot);
     result.TextureIndices0 = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
     result.TextureIndices1 = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"), ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
+    result.SamplerIndices0 = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture", true), ResolveMaterialTexture(snapshot, "NormalTexture", true), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture", true), ResolveMaterialTexture(snapshot, "OcclusionTexture", true));
+    result.SamplerIndices1 = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture", true), ResolveMaterialTexture(snapshot, "HeightTexture", true), ResolveMaterialTexture(snapshot, "ClearCoatTexture", true), ResolveMaterialTexture(snapshot, "TransmissionTexture", true));
     return result;
   }
 

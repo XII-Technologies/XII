@@ -45,13 +45,16 @@ namespace
       inout_value = xiiVec4(vector3.x, vector3.y, vector3.z, inout_value.w);
   }
 
-  xiiUInt32 ResolveMaterialTexture(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName)
+  xiiUInt32 ResolveMaterialTexture(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName, bool bSampler = false)
   {
     if (snapshot.m_pSchema == nullptr)
       return xiiInvalidIndex;
 
     const xiiUInt32 uiTextureIndex = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(sName));
-    return uiTextureIndex != xiiInvalidIndex && uiTextureIndex < snapshot.m_ResourceBindings.GetCount() ? snapshot.m_ResourceBindings[uiTextureIndex].m_uiBindlessIndex : xiiInvalidIndex;
+    if (uiTextureIndex == xiiInvalidIndex || uiTextureIndex >= snapshot.m_ResourceBindings.GetCount())
+      return xiiInvalidIndex;
+    const auto& binding = snapshot.m_ResourceBindings[uiTextureIndex];
+    return bSampler ? binding.m_uiSamplerIndex : binding.m_uiBindlessIndex;
   }
 
   xiiGpuSurfaceMaterial ResolveSurfaceMaterial(const xiiMaterialInstance& material, const xiiMaterialInstanceSnapshot& snapshot)
@@ -86,6 +89,8 @@ namespace
     result.Metadata                             = xiiVec4U32(runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(), static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()), runtimeState.m_BlendMode.GetValue());
     result.TextureIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
     result.TextureIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"), ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
+    result.SamplerIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture", true), ResolveMaterialTexture(snapshot, "NormalTexture", true), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture", true), ResolveMaterialTexture(snapshot, "OcclusionTexture", true));
+    result.SamplerIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture", true), ResolveMaterialTexture(snapshot, "HeightTexture", true), ResolveMaterialTexture(snapshot, "ClearCoatTexture", true), ResolveMaterialTexture(snapshot, "TransmissionTexture", true));
     return result;
   }
 } // namespace
@@ -103,6 +108,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSurfaceMaterial, xiiNoBase, 1, xiiRTTIDefa
     XII_MEMBER_PROPERTY("TextureIndices1", TextureIndices1),
     XII_MEMBER_PROPERTY("Metadata", Metadata),
     XII_MEMBER_PROPERTY("AdvancedParameters", AdvancedParameters),
+    XII_MEMBER_PROPERTY("SamplerIndices0", SamplerIndices0),
+    XII_MEMBER_PROPERTY("SamplerIndices1", SamplerIndices1),
   }
   XII_END_PROPERTIES;
 }
