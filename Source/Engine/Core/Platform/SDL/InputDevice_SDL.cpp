@@ -7,11 +7,13 @@
 #  include <Core/CorePCH.h>
 #  include <Core/Input/InputManager.h>
 #  include <Core/Platform/SDL/InputDevice_SDL.h>
+#  include <Foundation/Strings/UnicodeUtils.h>
 
 #  include <SDL3/SDL_events.h>
 #  include <SDL3/SDL_keyboard.h>
 #  include <SDL3/SDL_keycode.h>
 #  include <SDL3/SDL_mouse.h>
+#  include <SDL3/SDL_video.h>
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #    include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
@@ -273,6 +275,7 @@ xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber, SDL_Win
   m_DoubleClickTime = xiiTime::MakeFromMilliseconds(GetDoubleClickTime());
 #  endif
 
+  SetFocused((SDL_GetWindowFlags(m_pWindow) & SDL_WINDOW_INPUT_FOCUS) != 0);
   SDL_StartTextInput(m_pWindow);
 }
 
@@ -294,8 +297,14 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
 
   switch (event.type)
   {
+    case SDL_EVENT_WINDOW_FOCUS_GAINED:
+    {
+      SetFocused(true);
+    }
+    break;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
     {
+      SetFocused(false);
       OnFocusLost();
     }
     break;
@@ -305,11 +314,11 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
 
       if (fMouseWheelDelta > 0.0f)
       {
-        m_InputSlotValues[xiiInputSlot_MouseWheelUp] = fMouseWheelDelta;
+        ReportInputSlotValue(xiiInputSlot_MouseWheelUp, fMouseWheelDelta);
       }
       else
       {
-        m_InputSlotValues[xiiInputSlot_MouseWheelDown] = fMouseWheelDelta;
+        ReportInputSlotValue(xiiInputSlot_MouseWheelDown, -fMouseWheelDelta);
       }
     }
     break;
@@ -364,11 +373,11 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
 
       if (szInputSlot)
       {
-        m_InputSlotValues[szInputSlot] = 1.0f;
+        ReportInputSlotValue(szInputSlot, 1.0f);
       }
       if (szDblClickInputSlot && event.button.clicks > 1)
       {
-        m_InputSlotValues[szInputSlot] = 1.0f;
+        ReportInputSlotValue(szDblClickInputSlot, 1.0f);
       }
     }
     break;
@@ -404,17 +413,19 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
 
       if (szInputSlot)
       {
-        m_InputSlotValues[szInputSlot] = 0.0f;
+        ReportInputSlotValue(szInputSlot, 0.0f);
       }
       if (szDblClickInputSlot && event.button.clicks > 1)
       {
-        m_InputSlotValues[szInputSlot] = 1.0f;
+        ReportInputSlotValue(szDblClickInputSlot, 1.0f);
       }
     }
     break;
     case SDL_EVENT_TEXT_INPUT:
     {
-      m_uiLastCharacter = event.text.text[0];
+      const char* text = event.text.text;
+      while (text && *text)
+        ReportInputCharacter(xiiUnicodeUtils::DecodeUtf8ToUtf32(text));
     }
     break;
     case SDL_EVENT_KEY_DOWN:
@@ -442,7 +453,7 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
 
       if (szInputSlotName)
       {
-        m_InputSlotValues[szInputSlotName] = 1.0f;
+        ReportInputSlotValue(szInputSlotName, 1.0f);
       }
       else
       {
@@ -456,7 +467,7 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
 
       if (szInputSlotName)
       {
-        m_InputSlotValues[szInputSlotName] = 0.0f;
+        ReportInputSlotValue(szInputSlotName, 0.0f);
       }
       else
       {

@@ -4,47 +4,45 @@ ALL
 [PERMUTATIONS]
 
 [RENDERSTATE]
-
 BlendEnable0 = true
-DestinationBlend0 = BlendFactor_InverseSourceAlpha
 SourceBlend0 = BlendFactor_SourceAlpha
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha0 = BlendFactor_One
 DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 ScissorEnable = true
 DepthEnable = false
 DepthWriteEnable = false
 CullMode = CullMode_None
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
+#include <Shaders/GUI/DearImguiConstants.h>
 
-#define USE_COLOR0
-#define USE_TEXCOORD0
-
-#include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Materials/MaterialInterpolator.h>
-
-VS_OUT main(VS_IN Input)
+struct VS_IN
 {
-  VS_OUT RetVal;
-
-  float2 screenPosition = (Input.Position.xy * ViewportSize.zw) * float2(2.0, -2.0) + float2(-1.0, 1.0);
-  RetVal.Position = float4(screenPosition, Input.Position.z, 1.0f);
-
-  RetVal.TexCoord0 = Input.TexCoord0;
-  RetVal.Color0 = Input.Color0;
-
-  return RetVal;
+  float2 Position : POSITION;
+  float2 UV : TEXCOORD0;
+  float4 Color : COLOR0;
+};
+struct VS_OUT
+{
+  float4 Position : SV_Position;
+  float2 UV : TEXCOORD0;
+  float4 Color : COLOR0;
+};
+VS_OUT main(VS_IN input)
+{
+  VS_OUT output;
+  output.Position = float4(input.Position * ScaleAndTranslation.xy + ScaleAndTranslation.zw, 0, 1);
+  output.UV = input.UV;
+  // ImGui's packed style colors are sRGB. Interpolate them in linear light.
+  output.Color = float4(select(input.Color.rgb <= 0.04045, input.Color.rgb / 12.92, pow((input.Color.rgb + 0.055) / 1.055, 2.4)), input.Color.a);
+  return output;
 }
 
-[PIXELSHADER]
-
-#define USE_COLOR0
-#define USE_TEXCOORD0
-
-#include <Shaders/Materials/MaterialInterpolator.h>
-
-DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(BaseTexture, Texture2D);
-
-float4 main(PS_IN Input) : SV_Target
+[PIXEL_SHADER]
+Texture2D<float4> UITexture;
+SamplerState UITextureSampler;
+float4 main(float4 position : SV_Position, float2 uv : TEXCOORD0, float4 color : COLOR0) : SV_Target0
 {
-  return BaseTexture.Sample(BaseTexture_AutoSampler, Input.TexCoord0.xy) * Input.Color0;
+  return UITexture.Sample(UITextureSampler, uv) * color;
 }

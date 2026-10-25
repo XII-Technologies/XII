@@ -43,7 +43,7 @@ namespace
     XII_SUCCEED_OR_RETURN(author.Init());
     const auto*                                lookup = author.Reference("World Atmosphere Lookup", xiiCreateAtmosphereLookupTestResource(), {0, 0});
     const auto*                                view   = author.Reference("Apply Atmospheric Radiance", xiiCreateAtmosphereApplyTestResource(), {1200, 0});
-    xiiGraphPropertyOverride override;
+    xiiGraphPropertyOverride                   override;
     xiiResourceLock<xiiRenderPipelineResource> definition(xiiCreateAtmosphereLookupTestResource(), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     for (const auto& pass : definition->GetAuthoring()->m_Descriptor.m_Passes)
       if (pass.m_pType->GetTypeName() == xiiStringView("xiiAtmosphereConstantsPass"))

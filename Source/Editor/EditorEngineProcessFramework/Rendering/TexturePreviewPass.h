@@ -22,8 +22,8 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiTexturePreviewPass : public xiiRen
 public:
   /// Fixed engine-owned previews use ordinary pipeline resources without SDK authoring assets.
   static xiiRenderPipelineResourceHandle GetPipelineResource(bool cube);
-  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
-  xiiResult Build(xiiRenderPipelinePassContext& context) override;
+  void                                   GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
+  xiiResult                              Build(xiiRenderPipelinePassContext& context) override;
 
   bool m_bCube = false;
 

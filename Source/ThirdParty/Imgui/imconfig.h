@@ -39,6 +39,8 @@
 
 extern thread_local struct ImGuiContext* g_ThreadLocalContext;
 #define GImGui g_ThreadLocalContext
+// XII text input carries Unicode scalar values, including supplementary planes.
+#define IMGUI_USE_WCHAR32
 // End XII edit
 //////////////////////////////////////////////////////////////////////////
 

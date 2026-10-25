@@ -266,6 +266,7 @@ public:
     xiiPlugin::UnloadAllPlugins();
     SUPER::BeforeCoreSystemsShutdown();
   }
+
 private:
   void UpdateSwapChain()
   {

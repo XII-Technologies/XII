@@ -154,8 +154,8 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     descriptor.ComputeBounds();
     xiiStringBuilder name;
     name.SetFormat("GpuDrivenScene.Mesh{}", i);
-    auto& asset       = m_GeometryAssets[i];
-    asset.m_hMesh     = xiiResourceManager::CreateResource<xiiMeshResource>(name, std::move(descriptor));
+    auto& asset   = m_GeometryAssets[i];
+    asset.m_hMesh = xiiResourceManager::CreateResource<xiiMeshResource>(name, std::move(descriptor));
   }
   return XII_SUCCESS;
 }
@@ -164,7 +164,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 {
   XII_LOCK(m_World->GetWriteMarker());
   m_World->GetOrCreateModule<xiiRenderWorldModule>();
-  xiiGameObject*           root   = nullptr;
+  xiiGameObject*           root = nullptr;
   xiiGameObjectDescription rootDescription;
   rootDescription.m_bDynamic = true;
   m_hAssemblyRoot            = m_World->CreateObject(rootDescription, root);
@@ -194,7 +194,7 @@ void xiiGpuDrivenSceneWorld::Update(xiiTime deltaTime)
 {
   XII_LOCK(m_World->GetWriteMarker());
   m_fAnimationTime += static_cast<float>(deltaTime.GetSeconds());
-  const auto animated                = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64);
+  const auto animated = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64);
   for (xiiUInt32 i = 0; i < animated; ++i)
   {
     xiiGameObject* object = nullptr;
