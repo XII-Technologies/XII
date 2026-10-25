@@ -22,6 +22,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
@@ -54,14 +55,23 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   const xiiString previousSceneId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szScenePipeline).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(xiiRenderPipelineProfileConfig::s_szScenePipeline);
   XII_SCOPE_EXIT(if (previousSceneId != xiiRenderPipelineProfileConfig::s_szScenePipeline) xiiResourceManager::RegisterNamedResource(xiiRenderPipelineProfileConfig::s_szScenePipeline, previousSceneId));
+  const auto      atmosphereId         = xiiPipelineLibraryTestIdentity("SceneAtmosphere");
+  const xiiString previousAtmosphereId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(atmosphereId).GetResourceID();
+  xiiResourceManager::UnregisterNamedResource(atmosphereId);
+  XII_SCOPE_EXIT(if (previousAtmosphereId != atmosphereId) xiiResourceManager::RegisterNamedResource(atmosphereId, previousAtmosphereId));
   xiiStringBuilder fixture(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/MeshPreview");
   xiiStringBuilder cache(fixture, "/AssetCache/Common");
   if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(cache)))
     return;
-  xiiStringBuilder source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/Scene.xiiBinRenderPipeline");
-  source.MakeCleanPath();
-  if (!XII_TEST_RESULT(xiiOSFile::CopyFile(source, xiiStringBuilder(cache, "/Scene.xiiBinRenderPipeline"))))
-    return;
+  xiiStringBuilder entries;
+  for (const xiiStringView name : {"SceneAtmosphere", "Scene"})
+  {
+    xiiStringBuilder source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", name, ".xiiBinRenderPipeline");
+    source.MakeCleanPath();
+    if (!XII_TEST_RESULT(xiiOSFile::CopyFile(source, xiiStringBuilder(cache, "/", name, ".xiiBinRenderPipeline"))))
+      return;
+    entries.AppendFormat("{};Common/{}.xiiBinRenderPipeline\n", xiiPipelineLibraryTestIdentity(name), name);
+  }
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(fixture, "MeshPreviewTest", "MeshPreviewTest", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("MeshPreviewTest"));
@@ -69,8 +79,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
     xiiFileWriter writer;
     if (!XII_TEST_RESULT(writer.Open(":MeshPreviewTest/AssetCache/MeshPreview.xiiAidlt")))
       return;
-    const xiiStringBuilder entry(xiiRenderPipelineProfileConfig::s_szScenePipeline, ";Common/Scene.xiiBinRenderPipeline\n");
-    if (!XII_TEST_RESULT(writer.WriteBytes(entry.GetData(), entry.GetElementCount())))
+    if (!XII_TEST_RESULT(writer.WriteBytes(entries.GetData(), entries.GetElementCount())))
       return;
   }
   xiiDataDirectory::FolderType::s_sRedirectionFile   = "AssetCache/MeshPreview.xiiAidlt";

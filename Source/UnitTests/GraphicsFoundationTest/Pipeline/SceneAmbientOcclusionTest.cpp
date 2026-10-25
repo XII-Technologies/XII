@@ -26,50 +26,6 @@
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <Texture/Image/Image.h>
 
-namespace
-{
-  template <typename T>
-  bool ReadAOImage(xiiGALDevice& device, const xiiSharedPtr<xiiGALTexture>& texture, xiiDynamicArray<T>& pixels)
-  {
-    if (!XII_TEST_BOOL(texture != nullptr))
-      return false;
-    xiiGALTextureReadback readback(&device);
-    auto                  commands = device.CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-    commands->Begin();
-    const auto                       previous = texture->GetResourceState();
-    const auto                       enqueued = readback.Enqueue(commands, {.m_pTexture = texture.Borrow()});
-    xiiGALStateTransitionDescription transition;
-    transition.m_pResource       = texture.Borrow();
-    transition.m_NewState        = previous;
-    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
-    commands->TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
-    commands->End();
-    if (!XII_TEST_RESULT(enqueued))
-      return false;
-    auto* queue = device.GetCommandQueue();
-    queue->WaitForFenceValue(queue->Submit(commands));
-    readback.WaitForNextCompleted();
-    const auto capture = readback.GetCompleted();
-    if (!XII_TEST_BOOL(static_cast<bool>(capture)))
-      return false;
-    XII_SCOPE_EXIT(readback.RecycleStagingTexture(capture.m_pStagingTexture));
-    if (!XII_TEST_INT(capture.m_uiBytesPerPixel, sizeof(T)))
-      return false;
-    pixels.SetCount(capture.m_uiWidth * capture.m_uiHeight);
-    commands->Begin();
-    xiiGALMappedTextureSubresource mapped;
-    const auto                     result = commands->MapTextureSubresource(capture.m_pStagingTexture, {}, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped);
-    if (result.Succeeded() && mapped.m_pData)
-    {
-      for (xiiUInt32 y = 0; y < capture.m_uiHeight; ++y)
-        xiiMemoryUtils::Copy(pixels.GetData() + y * capture.m_uiWidth, xiiMemoryUtils::AddByteOffset(static_cast<const T*>(mapped.m_pData), y * mapped.m_uiStride), capture.m_uiWidth);
-      commands->UnmapTextureSubresource(capture.m_pStagingTexture, {}).AssertSuccess();
-    }
-    commands->End();
-    return XII_TEST_RESULT(result) && XII_TEST_BOOL(mapped.m_pData != nullptr);
-  }
-} // namespace
-
 XII_CREATE_SIMPLE_TEST_GROUP(SceneAmbientOcclusion);
 XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, CanonicalGeometryLightingDisableResizeReloadAndWorldIsolation)
 {
@@ -216,7 +172,7 @@ XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, CanonicalGeometryLightingDisableRe
       };
       xiiDynamicArray<xiiUInt8> mask;
       masks[index] = image(0, "AmbientOcclusion");
-      if (!ReadAOImage(*environment.GetDevice(), masks[index], mask))
+      if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), masks[index], mask))
         return;
       XII_TEST_BOOL(image(1, "AmbientOcclusion") == nullptr);
       if (phase == 3)
@@ -226,7 +182,7 @@ XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, CanonicalGeometryLightingDisableRe
       xiiDynamicArray<float>     depth[2];
       xiiDynamicArray<xiiUInt32> output[2];
       for (xiiUInt32 view = 0; view < 2; ++view)
-        if (!ReadAOImage(*environment.GetDevice(), image(view, "AmbientLighting"), ambient[view]) || !ReadAOImage(*environment.GetDevice(), image(view, "DirectLighting"), direct[view]) || !ReadAOImage(*environment.GetDevice(), image(view, "HDRSceneColor"), hdr[view]) || !ReadAOImage(*environment.GetDevice(), image(view, "SceneDepth"), depth[view]) || !ReadAOImage(*environment.GetDevice(), world.m_Targets[view], output[view]))
+        if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "AmbientLighting"), ambient[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "DirectLighting"), direct[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "HDRSceneColor"), hdr[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "SceneDepth"), depth[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), world.m_Targets[view], output[view]))
           return;
       if (phase == 2 && index == 0)
       {

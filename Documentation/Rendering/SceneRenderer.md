@@ -1,7 +1,8 @@
 # Default Scene and Editor rendering
 
 `Data/Base/RenderPipelines` contains two default authored resources: **Scene** and
-**Editor**. They are defaults, not an enumeration of supported rendering workloads.
+**Editor**, plus the independently authored **SceneAtmosphere** workload composed
+by Scene. The two roots are defaults, not an enumeration of supported workloads.
 Applications can select any compatible resource or construct a resource descriptor
 in C++. Both paths use the same compiler, pipeline instances and render graph.
 
@@ -38,11 +39,13 @@ lifetime regression exercises the failure directly.
 Scene renders world mesh components through shared GPU instance extraction,
 view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
-lights, ambient diffuse and emission, exposure, tone mapping, color grading and
+lights, ambient diffuse and emission, spatial ambient visibility, optional world
+atmosphere, exposure, tone mapping, color grading and
 presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
 
-Scene resources are viewport-local images. The root `ViewTarget` input receives
+Scene surface images are viewport-local. Atmospheric lookup images have their
+own authored dimensions. The root `ViewTarget` input receives
 the view's external render target or current swapchain image. Presentation applies
 the window viewport offset, scales the rendered image and preserves pixels outside
 that rectangle. `InputCandidates` remains an optional geometry input. Outputs
@@ -125,7 +128,7 @@ visible/occluded selection and front-surface picking, switches resources, resize
 and checks icon picking. Fixed preview tests exercise real texture/cubemap output.
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
-These defaults intentionally exclude shadows, GI, reflections, atmospheric sky,
+These defaults intentionally exclude shadows, GI, reflections,
 transparent/particle rasterization and temporal antialiasing. Their retained
 operations and focused tests are not certification of complete production techniques.
 Custom material shader permutations beyond the canonical GPU surface model,
@@ -140,7 +143,7 @@ committed. The Editor transforms the authored sources into its normal
 subgraph reference use the source asset GUIDs through the existing lookup table.
 For standalone GPU tests/sample preparation, run `EditorFrameworkTest -noGui -run
 -close -all -filter RendererAssets -outputDir <project-local-test-output>`. This
-exports both sources with the production compiler into the ignored cache, checks
+exports all three sources with the production compiler into the ignored cache, checks
 stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
@@ -219,3 +222,81 @@ production RendererAssets export fixture on Vulkan. Repeated Scene/Editor export
 are byte-identical, their source identities are preserved and no compiled pipeline
 is tracked. Other backends, representative large-world performance and interactive
 desktop acceptance remain unverified.
+
+## World atmosphere
+
+`SceneAtmosphere.xiiRenderPipelineAsset` is a reusable physical atmosphere
+workload, referenced by its source GUID from Scene. Its four operations are world
+atmosphere constants, transmittance integration, approximate multiple scattering
+and per-pixel sky/aerial application. Scene supplies the actual depth, opaque HDR,
+camera snapshot and selected directional illumination. Its output replaces HDR
+before histogram/exposure, bloom, tone mapping and the public `HDRSceneColor`
+interface. Editor consumes this same Scene output before its overlays.
+Scene's public HDR interface retains its RGBA32Float SRV/UAV contract through an
+authored requirement on this subgraph occurrence. Other uses of the workload can
+retain the inactive application's input format.
+
+| Resource | Format and extent | Dependency |
+| --- | --- | --- |
+| AtmosphereConstants | Uniform buffer, optional | Selected world component and reflected physical settings |
+| Transmittance | RGBA32Float, authored 256 by 64 | AtmosphereConstants |
+| MultiScatter | RGBA32Float, authored 32 by 32 | AtmosphereConstants and transmittance SRV |
+| AtmosphereRadiance | RGBA32Float at input depth extent when active | Both lookup SRVs, camera/environment uniforms, immutable scene depth and radiance |
+
+Lookup images declare SRV/UAV usage and remain graph-owned, occurrence-local
+transients. They regenerate when the workload executes; no global LUT registry or
+content cache is introduced. Their default image footprint is 272 KiB per active
+occurrence before graph allocation overhead. Repeated views do not share mutable
+image contents. The four operations require compute, without mesh shaders or
+hardware ray tracing.
+
+The constants operation authors `UseWorldAtmosphere=true` and
+`RequireWorldAtmosphere=true`. World extraction and existing priority/stable-ID
+selection determine its component. With no selected component, or `Enabled=false`,
+it publishes no optional constants: both LUT operations emit no work and the
+application forwards radiance unchanged. Inactive application preserves its
+input format and resource instead of allocating a replacement. Existing authored
+fallback behavior remains the default for other uses of the constants operation.
+Valid constants with a missing or malformed LUT remain an explicit build failure.
+
+Component physical coefficients, planet/up/altitude, sun parameters and sample
+counts remain reflected. Lookup dimensions and queue selection remain independent
+pass properties. The implementation integrates Rayleigh/Mie scattering and
+absorption along sky and geometry segments, with ozone extinction and the existing
+solar disk. Orthographic cameras use parallel rays from their pixel's camera plane.
+This path does not supply environment convolution, atmospheric shadows, clouds or
+participating-volume lighting; approximate multiple scattering and bounded ray
+marching are explicit quality limits.
+
+Vulkan image acceptance uses a real material-bearing object about one kilometre
+from the camera and a world directional light. At 65 by 49, atmosphere changes
+3,104 sky HDR pixels, all 81 geometry HDR pixels and 1,895 final pixels. Depth and
+object identities remain identical. No-component, authored disable and component
+deletion restore exact input/output equality. Tests cover independent worlds and
+views, physical-setting mutation, odd resizing, camera-history invalidation,
+orthographic rays, component recreation and continued rendering after another
+world is destroyed. Reloading the referenced resource changes lookup extents to
+65 by 17 and 17 by 9, verifying actual dependency recompilation. Separate checks
+preserve RGBA16Float on inactive application and reject missing active LUTs.
+The native Editor test verifies visible sky through its Scene composition and
+restores its original geometry/background pixels after component deletion.
+
+The production export fixture writes the ordinary file-system asset redirection
+table `RenderPipelines/PipelineLibrary.xiiAidlt` beside the generated binaries.
+The standalone sample mounts that cache/table, so GUID dependencies resolve in a
+fresh process. Normal Editor/project packaging uses Scene's source-GUID transform
+and package dependency on SceneAtmosphere; the isolated preview test exercises a
+project asset table containing both resources. Generated binaries and lookup tables
+remain outside source control.
+
+Validation passed on Windows/MSVC Debug with Vulkan: all four CTest targets
+(RendererAssetPreparation, GraphicsCoreTest, GraphicsFoundationTest and
+EditorEngineProcessFrameworkTest), the EditorDocuments group and focused atmosphere,
+native transport and Editor view groups. The final public-HDR contract was exported
+again and exercised through atmosphere readbacks. A separate sample process rendered
+300 frames using the generated GUID table, without a world atmosphere component;
+active sky/aerial output is established by the GPU comparisons above. Initial broad
+regressions exposed an incomplete preview package and an inconsistent synthetic
+orthographic transport camera; both fixtures were corrected and passed. Other
+backends, interactive desktop acceptance and representative performance remain
+unverified.

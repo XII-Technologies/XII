@@ -8,6 +8,7 @@
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
+#include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -310,4 +311,49 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     else
       XII_TEST_INT(value, contact[i]);
   }
+
+  // A world-selected atmosphere reaches Editor through the same Scene HDR path.
+  // Removing its component restores the original geometry and background pixels.
+  views[0]->SetRenderPipelineResource(editorPipeline);
+  light->SetActiveFlag(false);
+  xiiGameObjectDescription skySunDescription;
+  skySunDescription.m_LocalRotation = xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), -xiiVec3::MakeAxisZ());
+  xiiGameObject* skySunObject       = nullptr;
+  world.CreateObject(skySunDescription, skySunObject);
+  xiiDirectionalLightComponent* skySun = nullptr;
+  xiiDirectionalLightComponent::CreateComponent(skySunObject, skySun);
+  skySun->SetIntensityUnit(xiiPhotometricUnit::Lux);
+  skySun->SetIntensity(4);
+  update(3);
+  xiiUInt32 beforeAtmosphere[2][2] = {};
+  for (xiiUInt32 view = 0; view < 2; ++view)
+    for (xiiUInt32 sample = 0; sample < 2; ++sample)
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[view].Borrow(), sample ? 65 : 0, sample ? 54 : 0, beforeAtmosphere[view][sample]))
+        return;
+  xiiGameObject*             atmosphereObject = nullptr;
+  const auto                 atmosphereOwner  = world.CreateObject({}, atmosphereObject);
+  xiiSkyAtmosphereComponent* atmosphere       = nullptr;
+  xiiSkyAtmosphereComponent::CreateComponent(atmosphereObject, atmosphere);
+  update(4);
+  xiiUInt32 atmospherePixels[2][2] = {};
+  for (xiiUInt32 view = 0; view < 2; ++view)
+  {
+    XII_TEST_RESULT(views[view]->GetLastRenderResult());
+    for (xiiUInt32 sample = 0; sample < 2; ++sample)
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[view].Borrow(), sample ? 65 : 0, sample ? 54 : 0, atmospherePixels[view][sample]))
+        return;
+    XII_TEST_BOOL(atmospherePixels[view][0] != beforeAtmosphere[view][0]);
+  }
+  for (xiiUInt32 sample = 0; sample < 2; ++sample)
+    XII_TEST_INT(atmospherePixels[0][sample], atmospherePixels[1][sample]);
+  world.DeleteObjectNow(atmosphereOwner);
+  update(3);
+  for (xiiUInt32 view = 0; view < 2; ++view)
+    for (xiiUInt32 sample = 0; sample < 2; ++sample)
+    {
+      xiiUInt32 value = 0;
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[view].Borrow(), sample ? 65 : 0, sample ? 54 : 0, value))
+        return;
+      XII_TEST_INT(value, beforeAtmosphere[view][sample]);
+    }
 }
