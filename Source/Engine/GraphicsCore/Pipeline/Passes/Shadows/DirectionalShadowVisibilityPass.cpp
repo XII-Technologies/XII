@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/Shadows/DirectionalShadowConstants.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionalShadowVisibilityPass, 1, xiiRTTIDefaultAllocator<xiiDirectionalShadowVisibilityPass>)
@@ -22,6 +23,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionalShadowVisibilityPass, 1, xiiRTTID
       XII_MEMBER_PROPERTY("Visibility", m_Visibility)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("DepthBias", m_fDepthBias)->AddAttributes(new xiiDefaultValueAttribute(0.0005f), new xiiClampValueAttribute(0.0f, 0.1f)),
       XII_MEMBER_PROPERTY("NormalBias", m_fNormalBias)->AddAttributes(new xiiDefaultValueAttribute(0.02f), new xiiClampValueAttribute(0.0f, 10.0f)),
+      XII_MEMBER_PROPERTY("NormalBiasTexels", m_fNormalBiasTexels)->AddAttributes(new xiiDefaultValueAttribute(1.5f), new xiiClampValueAttribute(0.0f, 4.0f)),
     } XII_END_PROPERTIES;
     XII_BEGIN_ATTRIBUTES
     {new xiiCategoryAttribute("Rendering/Shadows")} XII_END_ATTRIBUTES;
@@ -31,7 +33,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiResult xiiDirectionalShadowVisibilityPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return xiiMath::IsFinite(m_fDepthBias) && m_fDepthBias >= 0 && m_fDepthBias <= 0.1f && xiiMath::IsFinite(m_fNormalBias) && m_fNormalBias >= 0 && m_fNormalBias <= 10 ? XII_SUCCESS : XII_FAILURE;
+  return xiiMath::IsFinite(m_fDepthBias) && m_fDepthBias >= 0 && m_fDepthBias <= 0.1f && xiiMath::IsFinite(m_fNormalBias) && m_fNormalBias >= 0 && m_fNormalBias <= 10 && xiiMath::IsFinite(m_fNormalBiasTexels) && m_fNormalBiasTexels >= 0 && m_fNormalBiasTexels <= 4 ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiDirectionalShadowVisibilityPass::Build(xiiRenderPipelinePassContext& context)
@@ -48,6 +50,8 @@ xiiResult xiiDirectionalShadowVisibilityPass::Build(xiiRenderPipelinePassContext
   if (!cascades || cascades->m_Cascades.IsEmpty() || !surface || !xiiScreenSpacePassUtils::Image(context, normal, 2, &surface->m_Size) || !identities || identities->m_Size != surface->m_Size || !xiiScreenSpacePassUtils::Uniform(context, camera, sizeof(xiiFrameCameraConstants)) || !context.m_pView || !context.m_pView->GetGpuInstanceData() || !atlasDescription)
     return context.ReportFailure("Directional shadow visibility requires a completed atlas, matching surface images and authoritative receiver identities.");
   const auto       resolution = cascades->m_uiResolution;
+  if (!resolution || !xiiScreenSpacePassUtils::Uniform(context, cascades->m_hConstants, sizeof(xiiShadowCascadeConstants)))
+    return context.ReportFailure("Directional shadow sampling requires exact cascade constants and a positive resolution.");
   const xiiSizeU32 atlasSize(resolution * (cascades->m_Cascades.GetCount() > 1 ? 2U : 1U), resolution * (cascades->m_Cascades.GetCount() > 2 ? 2U : 1U));
   if (atlasDescription->m_Size != atlasSize)
     return context.ReportFailure("Published directional atlas does not match the cascade snapshot.");
@@ -74,7 +78,7 @@ xiiResult xiiDirectionalShadowVisibilityPass::Build(xiiRenderPipelinePassContext
       data.m_Flags.PushBack(xiiVec2U32(instance.m_uiObjectId, instance.m_uiFlags));
     data.m_Flags.Sort([](const xiiVec2U32& a, const xiiVec2U32& b) { return a.x < b.x; });
     data.m_Snapshot.ShadowExtent = xiiVec4U32(surface->m_Size.width, surface->m_Size.height, resolution, data.m_Flags.GetCount());
-    data.m_Snapshot.ShadowBias = xiiVec4(m_fDepthBias, m_fNormalBias, 0, 0);
+    data.m_Snapshot.ShadowBias   = xiiVec4(m_fDepthBias, m_fNormalBias, m_fNormalBiasTexels, 0);
     if (data.m_Flags.IsEmpty()) data.m_Flags.PushBack(xiiVec2U32(0, 0));
     xiiGALBufferCreationDescription receiver;
     receiver.m_uiSize = data.m_Flags.GetCount() * sizeof(xiiVec2U32);

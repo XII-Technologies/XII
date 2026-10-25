@@ -169,7 +169,11 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Velocity)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
       xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_ObjectId)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
       xiiResourceLock<xiiShaderPermutationResource> shader(data.m_Shader, xiiResourceAcquireMode::BlockTillLoaded);
-      if (!shader.IsValid() || !shader->IsShaderValid()) { xiiLog::Error("G-buffer raster shader became unavailable."); return; }
+      if (!shader.IsValid() || !shader->IsShaderValid())
+      {
+        execute.ReportFailure("G-buffer raster shader became unavailable.");
+        return;
+      }
       xiiGALGraphicsPipelineStateCreationDescription pipeline;
       pipeline.m_PipelineType = data.m_bMesh ? xiiGALPipelineType::Mesh : xiiGALPipelineType::Graphics;
       pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
@@ -183,7 +187,11 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       pipeline.m_GraphicsPipeline.m_uiSubpassIndex = static_cast<xiiUInt8>(execute.GetSubpassIndex());
       pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
       auto state = xiiGALPipelineCache::GetPipeline(pipeline);
-      if (!state) { xiiLog::Error("Could not create the explicit G-buffer raster pipeline."); return; }
+      if (!state)
+      {
+        execute.ReportFailure("Could not create the explicit G-buffer raster pipeline.");
+        return;
+      }
       commands.SetPipelineState(state);
       commands.SetViewport({0, 0, float(data.m_uiWidth), float(data.m_uiHeight), 0, 1});
       const auto stage = data.m_bMesh ? xiiGALShaderType::Mesh : xiiGALShaderType::Vertex;

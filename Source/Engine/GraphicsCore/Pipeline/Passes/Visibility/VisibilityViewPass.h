@@ -12,6 +12,8 @@ class XII_GRAPHICSCORE_DLL xiiVisibilityViewPass final : public xiiRenderPipelin
   XII_ADD_DYNAMIC_REFLECTION(xiiVisibilityViewPass, xiiRenderPipelinePass);
 
 public:
+  xiiVisibilityViewPass();
+  ~xiiVisibilityViewPass() override;
   /// Optional exact candidate stream. Empty selections use one invalid-index sentinel.
   xiiRenderPipelineBufferInputPin          m_InputCandidates{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_View{false, xiiGALBindFlags::ShaderResource};
@@ -24,10 +26,11 @@ public:
   bool                                     m_bUseViewSelection = true;
   xiiResult                                Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
-  void                                     InvalidateTemporalHistory() override { m_uiLastLodToken = 65534U; }
+  void                                     InvalidateTemporalHistory() override;
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Geometry; }
   xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override { return xiiRenderPipelineFeature::GpuScene; }
 
 private:
-  xiiUInt32 m_uiLastLodToken = 65534U;
+  struct State;
+  xiiSharedPtr<State> m_pState;
 };

@@ -47,7 +47,9 @@ void main(uint3 tid : SV_DispatchThreadID)
     if (cascade < ActiveCascadeCount)
     {
       const float3 normal = xiiScreenNormal(g_SceneNormal.Load(int3(tid.xy, 0)));
-      const float4 clipPosition = mul(CascadeViewProjection[cascade], float4(world + normal * ShadowBias.y, 1));
+      const float texelWorldSize = 2.0f * CascadeWorldRadii[cascade] / float(ShadowExtent.z);
+      const float normalBias = ShadowBias.y + texelWorldSize * ShadowBias.z;
+      const float4 clipPosition = mul(CascadeViewProjection[cascade], float4(world + normal * normalBias, 1));
       const float3 projection = clipPosition.xyz / clipPosition.w;
       const float2 localUV = float2(projection.x * 0.5f + 0.5f, 0.5f - projection.y * 0.5f);
       if (all(localUV >= 0) && all(localUV <= 1) && projection.z >= 0 && projection.z <= 1)

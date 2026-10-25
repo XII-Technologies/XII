@@ -26,10 +26,11 @@ xiiResult xiiShadowAtlasPass::Build(xiiRenderPipelinePassContext& context)
   if (!cascades || cascades->m_Cascades.IsEmpty() || !xiiGALDevice::HasDefaultDevice())
     return context.ReportFailure("Shadow atlas requires an active directional cascade set and device.");
   const auto       resolution = cascades->m_uiResolution;
-  const xiiSizeU32 size(resolution * (cascades->m_Cascades.GetCount() > 1 ? 2U : 1U), resolution * (cascades->m_Cascades.GetCount() > 2 ? 2U : 1U));
+  const xiiUInt32  columns = cascades->m_Cascades.GetCount() > 1 ? 2U : 1U, rows = cascades->m_Cascades.GetCount() > 2 ? 2U : 1U;
   const auto&      limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties;
-  if (!size.HasNonZeroArea() || size.width > limits.m_uiMaxTexture2DDimension || size.height > limits.m_uiMaxTexture2DDimension)
+  if (!resolution || resolution > limits.m_uiMaxTexture2DDimension / columns || resolution > limits.m_uiMaxTexture2DDimension / rows)
     return context.ReportFailure("Directional shadow atlas exceeds the device's 2D image limit; reduce authored resolution.");
+  const xiiSizeU32           size(resolution * columns, resolution * rows);
   xiiRenderPassResourceScope scope(context);
   const auto                 emitted = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
     xiiGALTextureCreationDescription description;

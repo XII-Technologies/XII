@@ -315,6 +315,10 @@ public:
   /// Returns the pass name for labeling / assertions.
   [[nodiscard]] xiiHashedString GetPassName() const;
 
+  /// Fail this recording and stop dependent passes. The graph submits the valid
+  /// command prefix so GAL's tracked states continue to describe real GPU work.
+  void ReportFailure(xiiStringView reason) const;
+
 private:
   friend class xiiRenderGraph;
 
@@ -329,6 +333,7 @@ private:
   xiiUInt64                      m_uiFrameIndex   = 0ULL;
   xiiUInt32                      m_uiSubpassIndex = 0U;
   xiiHashedString                m_sPassName;
+  xiiStringBuilder*              m_pExecutionError = nullptr;
 
   // Resource resolution tables is owned by the graph, borrowed for pass duration.
   xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> m_ResolvedTextures;

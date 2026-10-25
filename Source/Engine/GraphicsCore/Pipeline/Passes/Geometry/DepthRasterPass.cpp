@@ -188,7 +188,11 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
       pipeline.m_GraphicsPipeline.m_uiSubpassIndex = static_cast<xiiUInt8>(execute.GetSubpassIndex());
       pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
       auto state = xiiGALPipelineCache::GetPipeline(pipeline);
-      if (!state) { xiiLog::Error("Could not create the explicit depth raster pipeline."); return; }
+      if (!state)
+      {
+        execute.ReportFailure("Could not create the explicit depth raster pipeline.");
+        return;
+      }
       commands.SetPipelineState(state);
       commands.SetViewport({float(data.m_Viewport.x), float(data.m_Viewport.y), float(data.m_Viewport.z), float(data.m_Viewport.w), 0, 1});
       commands.SetScissorRect({data.m_Viewport.x, data.m_Viewport.y, data.m_Viewport.z, data.m_Viewport.w});

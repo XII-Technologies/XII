@@ -48,6 +48,8 @@ xiiResult xiiShadowCascadeViewPass::Build(xiiRenderPipelinePassContext& context)
   if (!context.m_pView || !context.m_pView->GetGpuInstanceData() || !xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Shadow view requires authoritative world extraction and device residency.");
   const auto&          cascade = cascades->m_Cascades[m_uiCascadeIndex];
+  if (!cascades->m_uiResolution || !cascade.m_mViewProjection.IsValid() || !xiiMath::IsFinite(cascade.m_fWorldRadius) || cascade.m_fWorldRadius <= 0)
+    return context.ReportFailure("Cascade visibility requires finite projection and positive world extent/resolution.");
   const auto           frustum = xiiFrustum::MakeFromMVP(cascade.m_mViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
   xiiGpuVisibilityView view{};
   view.m_ViewProjectionMatrix          = cascade.m_mViewProjection;
