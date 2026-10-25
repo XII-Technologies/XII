@@ -1,14 +1,14 @@
 PluginState
 {
-	string %ID{"FeatureLabPlugin"}
+	string %ID{"DearImgui"}
 	bool %Selected{true}
-	bool %LoadCopy{true}
+	bool %LoadCopy{false}
 }
 PluginState
 {
-	string %ID{"GameComponents"}
+	string %ID{"FeatureLabPlugin"}
 	bool %Selected{true}
-	bool %LoadCopy{false}
+	bool %LoadCopy{true}
 }
 PluginState
 {

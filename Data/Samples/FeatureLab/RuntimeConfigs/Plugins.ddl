@@ -2,10 +2,11 @@ Plugin
 {
 	string %Path{"FeatureLabPlugin"}
 	bool %LoadCopy{true}
+	string %PluginDirectory{">project/Output/Bin/Debug"}
 }
 Plugin
 {
-	string %Path{"xiiGameComponentsPlugin"}
+	string %Path{"xiiDearImguiPlugin"}
 	bool %LoadCopy{false}
 }
 Plugin
