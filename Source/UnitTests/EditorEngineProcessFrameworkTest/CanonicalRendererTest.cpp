@@ -356,4 +356,40 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
         return;
       XII_TEST_INT(value, beforeAtmosphere[view][sample]);
     }
+
+  // World shadow intent reaches both roots before Editor overlays. Compare full
+  // output images, including geometry pixels shared by Scene and Editor.
+  skySun->SetActiveFlag(false);
+  xiiGameObjectDescription shadowSunDescription;
+  shadowSunDescription.m_LocalRotation = xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3(-0.8f, -0.6f, -1).GetNormalized());
+  xiiGameObject* shadowSunObject       = nullptr;
+  world.CreateObject(shadowSunDescription, shadowSunObject);
+  xiiDirectionalLightComponent* shadowSun = nullptr;
+  xiiDirectionalLightComponent::CreateComponent(shadowSunObject, shadowSun);
+  shadowSun->SetIntensityUnit(xiiPhotometricUnit::Lux);
+  shadowSun->SetIntensity(0.1f);
+  xiiDynamicArray<xiiUInt32> shadowImages[2][3];
+  for (xiiUInt32 phase = 0; phase < 3; ++phase)
+  {
+    shadowSun->SetCastShadows(phase == 1);
+    update(3);
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      if (!XII_TEST_RESULT(views[view]->GetLastRenderResult()))
+        return;
+      if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], shadowImages[view][phase]))
+        return;
+    }
+  }
+  xiiUInt32 changed[2] = {}, matchingChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < shadowImages[0][0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_TEST_INT(shadowImages[view][0][pixel], shadowImages[view][2][pixel]);
+      changed[view] += shadowImages[view][0][pixel] != shadowImages[view][1][pixel];
+    }
+    matchingChanges += shadowImages[1][0][pixel] != shadowImages[1][1][pixel] && shadowImages[0][0][pixel] == shadowImages[1][0][pixel] && shadowImages[0][1][pixel] == shadowImages[1][1][pixel];
+  }
+  XII_TEST_BOOL(changed[0] > 8 && changed[1] > 8 && matchingChanges > 8);
 }

@@ -10,8 +10,11 @@
 > Scene now references the four-operation SceneAtmosphere workload for optional
 > world-selected sky/aerial rendering. Its production resource and GPU contracts
 > are documented in SceneRenderer.md; the old fragment history below is unchanged.
+> SceneDirectionalShadows now composes four occurrences of SceneShadowCascade,
+> publishes a real caster atlas and applies its visibility to directional lighting.
+> Local, virtual and ray shadows remain separate integration work.
 
-Current source inventory: **102 concrete reflected operation classes** in
+Current source inventory: **106 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -42,11 +45,11 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 1 | `xiiScreenRefractionTracePass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 4 | `xiiDepthSensorPass`, `xiiInfraredSensorPass`, `xiiLidarSensorPass`, `xiiRgbSensorPass` |
-| Shadows | 8 | `xiiShadowCascadePass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowPagePublishPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowTablesPass` |
+| Shadows | 11 | `xiiDirectionalShadowVisibilityPass`, `xiiShadowAtlasPass`, `xiiShadowCascadePass`, `xiiShadowCascadeViewPass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowPagePublishPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowTablesPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
-| Utility | 8 | `xiiBufferExportPass`, `xiiBufferForwardPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
+| Utility | 9 | `xiiBufferExportPass`, `xiiBufferForwardPass`, `xiiClearColorPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
 | Visibility | 10 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMatrixVisibilityViewPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiMeshletOcclusionPass`, `xiiVisibilityViewPass` |
 | Visualization | 3 | `xiiDebugOverlayPass`, `xiiSurfaceQueryPass`, `xiiViewRenderModePass` |
 

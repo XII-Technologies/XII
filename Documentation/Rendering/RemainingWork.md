@@ -21,11 +21,12 @@ orchestration descriptions do not describe the current defaults.
 - Extend material/shader coverage beyond the canonical GPU surface representation.
   Validate ordinary imported textured assets and supported custom permutations in
   representative projects before broad material compatibility claims.
-- Add transparent/particle rasterization, shadows, environment convolution, reflections,
+- Add transparent/particle rasterization, local/virtual/ray shadows, environment convolution, reflections,
   GI and temporal reconstruction only through complete, independently observable
   rendering paths. Existing operation classes and focused tests do not establish
   complete production implementations. Atmospheric sky/aerial perspective now
-  execute only with a selected world atmosphere; the remaining paths are not enabled.
+  execute only with a selected world atmosphere. Conventional directional cascades
+  execute only for the selected shadow-casting sun; the remaining paths are not enabled.
 - Establish representative CPU/GPU timing, queue/submission and memory baselines.
   Optimize from those measurements, including the repeated Editor query work.
   Do not add subgraphs or authored assets without a concrete reusable workload.
@@ -49,7 +50,7 @@ its own focused PR and production GPU comparisons before its status changes.
 | --- | --- | --- |
 | Ambient visibility | AO generation and spatial/temporal filtering | Temporal use needs real previous-camera matrices, motion and disocclusion acceptance; canonical spatial path is integrated |
 | Atmosphere and environment | World atmosphere constants, transmittance, multiple scattering and application | Canonical sky/aerial path integrated with GPU Scene/Editor acceptance; environment convolution, clouds, atmospheric shadows and content caching remain |
-| Directional shadows | Cascade preparation, explicit depth raster and virtual-page work/tables | World-selected caster rendering, complete atlas publication and consumption by surface lighting, enabled/disabled shadow readbacks |
+| Directional shadows | World-selected cascades, existing GPU caster culling/depth raster and PCF visibility | Canonical directional atlas/lighting path integrated with Scene/Editor GPU comparisons; local/virtual/ray shadows, cascade transitions, animated/cutout acceptance and performance remain |
 | Temporal reconstruction | TAA, buffer/texture history, G-buffer velocity | Previous-camera state, consistent jittered visibility/raster, valid motion including animation, depth/disocclusion rejection and independent-view resets |
 | Reflections | Screen-space trace/temporal filter, BRDF/environment specular and confidence composition | Scene depth pyramids and radiance producers, explicit miss/environment response, moving geometry and final glossy-surface acceptance |
 | Transparency and refraction | Weighted blended resolve and screen refraction trace | Transparent candidate/coverage contracts, actual accumulation/revealage raster producers, lighting, depth and format-compatible HDR composition |

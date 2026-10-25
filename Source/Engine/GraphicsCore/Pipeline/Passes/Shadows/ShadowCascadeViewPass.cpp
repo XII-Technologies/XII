@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Foundation/Math/Frustum.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -47,7 +48,7 @@ xiiResult xiiShadowCascadeViewPass::Build(xiiRenderPipelinePassContext& context)
     return XII_SUCCESS;
   if (!context.m_pView || !context.m_pView->GetGpuInstanceData() || !xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Shadow view requires authoritative world extraction and device residency.");
-  const auto&          cascade = cascades->m_Cascades[m_uiCascadeIndex];
+  const auto& cascade = cascades->m_Cascades[m_uiCascadeIndex];
   if (!cascades->m_uiResolution || !cascade.m_mViewProjection.IsValid() || !xiiMath::IsFinite(cascade.m_fWorldRadius) || cascade.m_fWorldRadius <= 0)
     return context.ReportFailure("Cascade visibility requires finite projection and positive world extent/resolution.");
   const auto           frustum = xiiFrustum::MakeFromMVP(cascade.m_mViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);

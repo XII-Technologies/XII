@@ -19,8 +19,8 @@ public:
   xiiRenderPipelineTextureInputPin            m_ObjectId{xiiGALResourceFormat::R32UInt, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin             m_Camera{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineTextureOutputPin           m_Visibility{xiiGALResourceFormat::R32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
-  float                                       m_fDepthBias  = 0.0005f;
-  float                                       m_fNormalBias = 0.02f;
+  float                                       m_fDepthBias        = 0.0005f;
+  float                                       m_fNormalBias       = 0.02f;
   float                                       m_fNormalBiasTexels = 1.5f;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;

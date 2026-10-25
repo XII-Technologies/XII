@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/DirectionalShadowVisibilityPass.h>
@@ -49,7 +50,7 @@ xiiResult xiiDirectionalShadowVisibilityPass::Build(xiiRenderPipelinePassContext
   const auto* identities       = context.m_Graph.GetTextureDescription(ids);
   if (!cascades || cascades->m_Cascades.IsEmpty() || !surface || !xiiScreenSpacePassUtils::Image(context, normal, 2, &surface->m_Size) || !identities || identities->m_Size != surface->m_Size || !xiiScreenSpacePassUtils::Uniform(context, camera, sizeof(xiiFrameCameraConstants)) || !context.m_pView || !context.m_pView->GetGpuInstanceData() || !atlasDescription)
     return context.ReportFailure("Directional shadow visibility requires a completed atlas, matching surface images and authoritative receiver identities.");
-  const auto       resolution = cascades->m_uiResolution;
+  const auto resolution = cascades->m_uiResolution;
   if (!resolution || !xiiScreenSpacePassUtils::Uniform(context, cascades->m_hConstants, sizeof(xiiShadowCascadeConstants)))
     return context.ReportFailure("Directional shadow sampling requires exact cascade constants and a positive resolution.");
   const xiiSizeU32 atlasSize(resolution * (cascades->m_Cascades.GetCount() > 1 ? 2U : 1U), resolution * (cascades->m_Cascades.GetCount() > 2 ? 2U : 1U));

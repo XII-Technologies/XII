@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowAtlasPass.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -25,9 +26,9 @@ xiiResult xiiShadowAtlasPass::Build(xiiRenderPipelinePassContext& context)
   const auto* cascades = xiiDynamicCast<const xiiShadowCascadeSnapshot*>(input.Borrow());
   if (!cascades || cascades->m_Cascades.IsEmpty() || !xiiGALDevice::HasDefaultDevice())
     return context.ReportFailure("Shadow atlas requires an active directional cascade set and device.");
-  const auto       resolution = cascades->m_uiResolution;
-  const xiiUInt32  columns = cascades->m_Cascades.GetCount() > 1 ? 2U : 1U, rows = cascades->m_Cascades.GetCount() > 2 ? 2U : 1U;
-  const auto&      limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties;
+  const auto      resolution = cascades->m_uiResolution;
+  const xiiUInt32 columns = cascades->m_Cascades.GetCount() > 1 ? 2U : 1U, rows = cascades->m_Cascades.GetCount() > 2 ? 2U : 1U;
+  const auto&     limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties;
   if (!resolution || resolution > limits.m_uiMaxTexture2DDimension / columns || resolution > limits.m_uiMaxTexture2DDimension / rows)
     return context.ReportFailure("Directional shadow atlas exceeds the device's 2D image limit; reduce authored resolution.");
   const xiiSizeU32           size(resolution * columns, resolution * rows);
