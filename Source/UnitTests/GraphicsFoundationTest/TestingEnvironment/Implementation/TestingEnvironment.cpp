@@ -42,7 +42,7 @@ xiiGPUTestingEnvironment::~xiiGPUTestingEnvironment()
   Shutdown();
 }
 
-xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders)
+xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders, bool bEnableExtendedTextureUAVFormats)
 {
   XII_SUCCEED_OR_RETURN(xiiConfigureGPUTestDataDirectories());
 
@@ -68,7 +68,7 @@ xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders)
   description.m_DeviceFeatures.m_TextureCompressionBC               = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics  = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_PixelUAVWritesAndAtomics           = xiiGALDeviceFeatureState::Optional;
-  description.m_DeviceFeatures.m_TextureUAVExtendedFormats          = xiiGALDeviceFeatureState::Optional;
+  description.m_DeviceFeatures.m_TextureUAVExtendedFormats          = bEnableExtendedTextureUAVFormats ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
   description.m_DeviceFeatures.m_ShaderFloat16                      = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_ResourceBuffer16BitAccess          = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_UniformBuffer16BitAccess           = xiiGALDeviceFeatureState::Optional;

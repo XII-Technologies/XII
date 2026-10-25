@@ -13,7 +13,7 @@ public:
 
   ~xiiGPUTestingEnvironment();
 
-  xiiResult Initialize(bool bEnableMeshShaders = true);
+  xiiResult Initialize(bool bEnableMeshShaders = true, bool bEnableExtendedTextureUAVFormats = true);
 
   void Shutdown();
 

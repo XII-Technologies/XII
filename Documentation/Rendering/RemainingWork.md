@@ -33,3 +33,31 @@ Preserve world-authoritative extraction, per-instance mutable state, explicit
 resource interfaces, graph/GAL allocation and synchronization, and observable
 resource/build failures. The SDK asset library must remain intentional; adding an
 operation or passing a compiler test is not rendering acceptance.
+
+## Feature audit and delivery order
+
+The first extension is spatial screen-space ambient visibility: actual Scene
+depth and normals produce a filtered R8 mask consumed by diffuse illumination.
+See `SceneRenderer.md` for topology, controls and resource contracts. Temporal AO
+and hardware ray-traced AO remain distinct acceptance work.
+
+The following order follows concrete producer dependencies. Each group requires
+its own focused PR and production GPU comparisons before its status changes.
+
+| Group | Existing operations | Missing production contract |
+| --- | --- | --- |
+| Ambient visibility | AO generation and spatial/temporal filtering | Temporal use needs real previous-camera matrices, motion and disocclusion acceptance; canonical spatial path is integrated |
+| Atmosphere and environment | World atmosphere constants, transmittance, multiple scattering and application | Optional world-selected Scene composition, geometry/sky final pixels, no-component behavior and Editor acceptance |
+| Directional shadows | Cascade preparation, explicit depth raster and virtual-page work/tables | World-selected caster rendering, complete atlas publication and consumption by surface lighting, enabled/disabled shadow readbacks |
+| Temporal reconstruction | TAA, buffer/texture history, G-buffer velocity | Previous-camera state, consistent jittered visibility/raster, valid motion including animation, depth/disocclusion rejection and independent-view resets |
+| Reflections | Screen-space trace/temporal filter, BRDF/environment specular and confidence composition | Scene depth pyramids and radiance producers, explicit miss/environment response, moving geometry and final glossy-surface acceptance |
+| Transparency and refraction | Weighted blended resolve and screen refraction trace | Transparent candidate/coverage contracts, actual accumulation/revealage raster producers, lighting, depth and format-compatible HDR composition |
+| Particles | Explicit particle-buffer integration | World extraction, renderable particle resources, billboards/materials and visible transparent composition; simulation is not rendering |
+| Global illumination | DDGI and sparse-voxel scheduling, upload, environment seed and gather; screen irradiance | Geometry-dependent transport and visibility, real radiance updates, bounded residency and final indirect-light acceptance; environment seeding is not scene GI |
+
+The historical native-pass inventory must not be used to close any of these
+production gaps. Sensor and optional hardware-ray pipelines stay separate from
+the ordinary Scene path. Bloom already has a producer and tone-mapping consumer
+in Scene; adding another node is not a missing-feature implementation. Its
+quality, thresholds and view controls need effect-specific acceptance alongside
+future world effects.

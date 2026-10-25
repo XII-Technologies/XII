@@ -2,6 +2,11 @@
 
 > Historical migration record. Current defaults, retired assets and validation
 > boundaries are documented in [SceneRenderer.md](SceneRenderer.md).
+> The current feature audit and focused delivery order are in
+> [RemainingWork.md](RemainingWork.md#feature-audit-and-delivery-order).
+> Operation-level history below does not certify Scene integration. Scene's
+> spatial AO extension reuses the two AO operations; temporal and ray-traced AO
+> remain separate acceptance work.
 
 Current source inventory: **102 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
