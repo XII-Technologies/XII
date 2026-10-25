@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Shaders/Materials/GpuSurfaceSampling.h>
+
 // Shared explicit-LOD material sampling for ray-tracing stages. Derivatives are
 // unavailable in closest-hit shaders, so callers provide doubled world/UV
 // triangle areas and the propagated world-space ray-cone width.
@@ -23,12 +25,12 @@ float xiiComputeRayTracingTextureMip(uint textureIndex, float worldTriangleArea,
                0.0f, (float)max(mipCount, 1u) - 1.0f);
 }
 
-float4 xiiSampleRayTracingMaterialTexture(uint textureIndex, float2 texCoord,
+float4 xiiSampleRayTracingMaterialTexture(uint textureIndex, uint samplerIndex, float2 texCoord,
                                           float worldTriangleArea, float uvTriangleArea,
                                           float rayConeWidth)
 {
   const uint  resourceIndex = NonUniformResourceIndex(textureIndex);
   const float mipLevel      = xiiComputeRayTracingTextureMip(textureIndex, worldTriangleArea,
                                                              uvTriangleArea, rayConeWidth);
-  return g_RayTracingTextures[resourceIndex].SampleLevel(g_sAnisotropicWrap, texCoord, mipLevel);
+  return xiiSampleSurfaceTextureLevel(g_RayTracingTextures[resourceIndex], samplerIndex, g_sAnisotropicWrap, texCoord, mipLevel);
 }

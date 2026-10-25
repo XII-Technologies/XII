@@ -45,13 +45,13 @@ bool xiiShouldIgnoreRayTracingHitInternal(uint instanceIndex, uint primitiveInde
       const float2 uvEdge0           = texCoord1 - texCoord0;
       const float2 uvEdge1           = texCoord2 - texCoord0;
       const float  uvTriangleArea    = abs(uvEdge0.x * uvEdge1.y - uvEdge0.y * uvEdge1.x);
-      alpha *= xiiSampleRayTracingMaterialTexture(material.TextureIndices0.x, texCoord, worldTriangleArea,
+      alpha *= xiiSampleRayTracingMaterialTexture(material.TextureIndices0.x, material.SamplerIndices0.x, texCoord, worldTriangleArea,
                                                   uvTriangleArea, max(rayConeWidth, 1e-6f))
                  .a;
     }
     else
     {
-      alpha *= g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).a;
+      alpha *= xiiSampleSurfaceTextureLevel(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)], material.SamplerIndices0.x, g_sAnisotropicWrap, texCoord, 0.0f).a;
     }
   }
 

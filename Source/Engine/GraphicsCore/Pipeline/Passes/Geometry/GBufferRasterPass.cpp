@@ -199,6 +199,7 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       commands.ResolveAndSetShaderResourceBufferView("g_SurfaceMaterials", execute.GetBuffer(data.m_Materials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
       xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", stage);
       xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_Textures", xiiGALShaderType::Pixel);
+      xiiGALBindlessResourceTable::BindSamplers(commands, "g_MaterialSamplers", xiiGALShaderType::Pixel);
       commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();
       if (data.m_bMesh) commands.DrawMeshIndirect({execute.GetBuffer(data.m_Arguments), 1, 0, xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)});
       else commands.DrawIndirect({execute.GetBuffer(data.m_Arguments), data.m_uiCapacity, 0, sizeof(xiiVec4U32), xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)}); });

@@ -218,6 +218,7 @@ xiiResult xiiAmbientOcclusionPass::Build(xiiRenderPipelinePassContext& context)
       commands.ResolveAndSetSampler("g_sAnisotropicWrap", m_pState->m_Anisotropic.Borrow());
       xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
       xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
+      xiiGALBindlessResourceTable::BindSamplers(commands, "g_MaterialSamplers", xiiGALShaderType::RayAnyHit);
     }
     else commands.ResolveAndSetSampler("g_sPointClamp", m_pState->m_Point.Borrow());
     commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
