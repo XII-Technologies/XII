@@ -11,5 +11,6 @@ xiiLodAnimatedMeshComponent;LOD Animated Mesh;;https://xiiengine.net/pages/docs/
 
 AnimatedMeshImport.NoMaterials;Animated Mesh
 AnimatedMeshImport.WithMaterials;Animated Mesh with Materials
+AnimatedMeshImport.Complete;Animated Mesh, Skeleton, Materials and All Animation Clips
 
 # Properties

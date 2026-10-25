@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <ModelImporter/ModelImporterDLL.h>
+
+#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 
 class xiiStringBuilder;
 
@@ -14,6 +15,7 @@ struct XII_MODELIMPORTER_DLL xiiModelAnimationImportOptions
   xiiUInt32 m_uiFirstFrame = 0;
   xiiUInt32 m_uiNumFrames  = 0;     ///< Zero imports all remaining frames; otherwise includes this many sample frames.
   bool      m_bAdditive    = false; ///< Store deltas relative to the first imported pose, including identity for unanimated joints.
+  bool      m_bLooping     = true;  ///< Runtime playback wraps at the clip duration; Editor scrubbing remains clamped.
 };
 
 struct XII_MODELIMPORTER_DLL xiiModelAnimationImport
@@ -21,7 +23,9 @@ struct XII_MODELIMPORTER_DLL xiiModelAnimationImport
   xiiAnimationClipResourceDescriptor m_Clip;
   xiiDynamicArray<xiiString>         m_AvailableClips;
 
-  /// Discover all source clip labels without baking any clip. Failure clears out_names.
+  /// Discover all source clip labels without baking any clip. An animation-free model
+  /// returns an empty list. Duplicate labels receive stable source-index suffixes.
+  /// Failure clears out_names.
   static xiiResult ReadClipNames(xiiStringView sSourceFile, xiiDynamicArray<xiiString>& out_names, xiiStringBuilder* out_pError = nullptr);
 
   /// Read named joint transform animation through the existing Assimp dependency.
@@ -32,7 +36,7 @@ struct XII_MODELIMPORTER_DLL xiiModelAnimationImport
   /// CONSTANT boundaries clamp; per-channel LINEAR extrapolation and REPEAT fail explicitly.
   /// Joint names resolve against the runtime skeleton; source-local joint indices are not persisted.
   /// Failure clears the clip. Discovered clip labels remain available on selection/conversion failure.
-  /// Morph/vertex animation, ambiguous joint or clip names, invalid TRS/keys and excessive
+  /// Morph/vertex animation, ambiguous joint names, invalid TRS/keys and excessive
   /// output (over one million samples per track or sixteen million keys per clip) fail explicitly.
   static xiiResult ReadFile(xiiStringView sSourceFile, const xiiModelAnimationImportOptions& options, xiiModelAnimationImport& out_import, xiiStringBuilder* out_pError = nullptr);
 };

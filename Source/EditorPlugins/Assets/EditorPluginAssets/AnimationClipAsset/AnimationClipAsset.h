@@ -39,6 +39,7 @@ public:
   xiiDynamicArray<xiiString>   m_AvailableClips;
   float                        m_fSampleRate  = 30.0f;
   bool                         m_bAdditive    = false;
+  bool                         m_bLooping     = true;
   xiiUInt32                    m_uiFirstFrame = 0;
   xiiUInt32                    m_uiNumFrames  = 0;
   xiiString                    m_sPreviewMesh;

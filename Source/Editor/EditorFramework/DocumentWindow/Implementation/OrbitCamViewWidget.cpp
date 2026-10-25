@@ -47,14 +47,10 @@ void xiiQtOrbitCamViewWidget::SetOrbitVolume(const xiiVec3& vCenterPos, const xi
 
   if (m_bSetDefaultCamPos)
   {
-    if (vHalfBoxSize != xiiVec3(0.1f))
-    {
-      // 0.1f is a hard-coded value for the bounding box, in case nothing is available yet
-      // not pretty, but somehow we need to know when the first 'proper' bounds are available
-
-      m_bSetDefaultCamPos = false;
-      m_pOrbitCameraContext->MoveCameraToDefaultPosition();
-    }
+    // Bounds replies are validated by their resource context. Small real assets
+    // must frame just like larger ones, including a box with exactly 0.1 extents.
+    m_bSetDefaultCamPos = false;
+    m_pOrbitCameraContext->MoveCameraToDefaultPosition();
   }
 }
 

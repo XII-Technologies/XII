@@ -11,7 +11,7 @@
 #include <ModelImporter/MeshImport.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 9, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 10, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -71,6 +71,7 @@ xiiTransformStatus xiiAnimatedMeshAssetDocument::CreateMeshFromFile(xiiAnimatedM
   options.m_bImportSkinning       = true;
   options.m_bNormalizeWeights     = pProp->m_bNormalizeWeights;
   options.m_bRecalculateNormals   = pProp->m_bRecalculateNormals;
+  options.m_uiGeneratedLODs       = pProp->m_uiGeneratedLODs;
   options.m_bRecalculateTangents  = pProp->m_bRecalculateTangents;
   options.m_VertexColorConversion = pProp->m_VertexColorConversion;
   if (pProp->m_bSimplifyMesh)
@@ -122,6 +123,12 @@ xiiAnimatedMeshAssetDocumentGenerator::~xiiAnimatedMeshAssetDocumentGenerator() 
 void xiiAnimatedMeshAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const
 {
   {
+    auto& info      = out_modes.ExpandAndGetRef();
+    info.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
+    info.m_sName    = "AnimatedMeshImport.Complete";
+    info.m_sIcon    = ":/AssetIcons/Animated_Mesh.svg";
+  }
+  {
     xiiAssetDocumentGenerator::ImportMode& info = out_modes.ExpandAndGetRef();
     info.m_Priority                             = xiiAssetDocGeneratorPriority::LowPriority;
     info.m_sName                                = "AnimatedMeshImport.WithMaterials";
@@ -138,6 +145,10 @@ void xiiAnimatedMeshAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInp
 
 xiiStatus xiiAnimatedMeshAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
+  if (sMode == "AnimatedMeshImport.Complete")
+    return GenerateComplete(sInputFileAbs, out_generatedDocuments);
+  if (sMode != "AnimatedMeshImport.WithMaterials" && sMode != "AnimatedMeshImport.NoMaterials")
+    return xiiStatus("Unknown animated mesh import mode.");
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
   xiiOSFile::FindFreeFilename(sOutFile);

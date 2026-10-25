@@ -764,6 +764,7 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs
   if (sMode == "TextureImport.Diffuse")
   {
     accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Color);
+    accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::RGBA1);
   }
   else if (sMode == "TextureImport.Normal")
   {

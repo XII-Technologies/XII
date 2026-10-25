@@ -93,6 +93,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
         if (!m_sAnimatedMeshToUse.IsEmpty())
         {
           m_hAnimMeshComponent = xiiSkinnedMeshComponent::CreateComponent(m_pGameObject, pMesh);
+          pMesh->SetActiveFlag(false);
           pMesh->SetMesh(xiiResourceManager::LoadResource<xiiMeshResource>(m_sAnimatedMeshToUse));
         }
       }
@@ -138,7 +139,10 @@ xiiResult xiiSkeletonContext::UpdatePreview()
   XII_SCOPE_EXIT(if (!success) {
     xiiSkinnedMeshComponent* pMesh = nullptr;
     if (m_pWorld->TryGetComponent(m_hAnimMeshComponent, pMesh))
+    {
       pMesh->ClearPose();
+      pMesh->SetActiveFlag(false);
+    }
     m_bMeshPoseDirty = true;
   });
   xiiResourceLock<xiiSkeletonResource> skeleton(m_hSkeleton, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
@@ -160,7 +164,13 @@ xiiResult xiiSkeletonContext::UpdatePreview()
   {
     xiiResourceLock<xiiMeshResource> mesh(pMesh->GetMesh(), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
     if (!mesh || mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
-      return XII_FAILURE;
+    {
+      pMesh->SetActiveFlag(false);
+      // A preview mesh is optional, including while a newly imported group is
+      // still transforming. The native skeleton can already be framed and drawn.
+      success = true;
+      return XII_SUCCESS;
+    }
     if (m_uiMeshChangeCounter != mesh->GetCurrentResourceChangeCounter())
     {
       pMesh->ClearMaterialOverrides();
@@ -175,6 +185,7 @@ xiiResult xiiSkeletonContext::UpdatePreview()
       XII_SUCCEED_OR_RETURN(m_AnimationPreview.UpdateMesh(*pMesh, {}, 0.0, m_hSkeleton));
       m_bMeshPoseDirty = false;
     }
+    pMesh->SetActiveFlag(true);
   }
   success = true;
   return XII_SUCCESS;
@@ -185,7 +196,7 @@ xiiResult xiiSkeletonContext::DrawSkeleton(const xiiView& view)
   if (view.GetWorld() != m_pWorld)
     return XII_FAILURE;
   XII_SUCCEED_OR_RETURN(UpdatePreview());
-  return xiiDebugRenderer::DrawGeometry(view, m_Preview.GetGeometry(), xiiColor::White);
+  return xiiDebugRenderer::DrawGeometry(view, m_Preview.GetGeometry(), xiiColor::White, xiiMat4::MakeIdentity(), xiiDebugRendererDepthMode::Overlay);
 }
 
 xiiBoundingBoxSphere xiiSkeletonContext::GetPreviewBounds()

@@ -13,6 +13,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetProperties, 3, xiiRTTIDefau
     XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::MeshesWithAnimations)),
     XII_MEMBER_PROPERTY("DefaultSkeleton", m_sDefaultSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton")),
     XII_MEMBER_PROPERTY("RecalculateNormals", m_bRecalculateNormals),
+    XII_MEMBER_PROPERTY("GeneratedLODs", m_uiGeneratedLODs)->AddAttributes(new xiiDefaultValueAttribute(0), new xiiClampValueAttribute(0, 4)),
     XII_MEMBER_PROPERTY("RecalculateTangents", m_bRecalculateTangents)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("VertexColorConversion", xiiModelVertexColorConversion, m_VertexColorConversion),
     XII_MEMBER_PROPERTY("NormalizeWeights", m_bNormalizeWeights)->AddAttributes(new xiiDefaultValueAttribute(true)),

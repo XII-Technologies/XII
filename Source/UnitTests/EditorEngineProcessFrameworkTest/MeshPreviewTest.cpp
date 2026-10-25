@@ -14,6 +14,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
@@ -24,6 +25,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
+#include <ModelImporter/MeshImport.h>
 #include <SharedPluginAssets/Common/Messages.h>
 
 namespace
@@ -33,6 +35,7 @@ namespace
   public:
     using xiiMeshContext::CreateViewContext;
     using xiiMeshContext::DestroyViewContext;
+    using xiiMeshContext::UpdateThumbnailViewContext;
   };
 } // namespace
 
@@ -80,10 +83,24 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   xiiConversionUtils::ToString(documentId, meshId);
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
+  xiiMeshBufferResourceDescriptor sharedBuffer;
+  sharedBuffer.AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList);
+  const auto                sharedBufferHandle = xiiResourceManager::CreateResource<xiiMeshBufferResource>("MeshPreview/SharedBuffer", std::move(sharedBuffer));
   xiiMeshResourceDescriptor descriptor;
-  descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, false);
+  descriptor.UseExistingMeshBuffer(sharedBufferHandle);
   descriptor.AddSection(12, 0, 0);
   descriptor.ComputeBounds();
+  const auto importSource = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-importModel");
+  if (!importSource.IsEmpty())
+  {
+    xiiModelMeshImport imported;
+    xiiStringBuilder   error;
+    if (!XII_TEST_RESULT_MSG(xiiModelMeshImport::ReadFile(importSource, {}, imported, &error), "%s", error.GetData()))
+      return;
+    xiiTestFramework::Output(xiiTestOutput::Details, "Imported '%s': %u vertices, %u triangles, %u materials, %u embedded textures.",
+                             xiiString(importSource).GetData(), imported.m_Mesh.GetMeshBufferDescriptor().GetVertexCount(), imported.m_Mesh.GetMeshBufferDescriptor().GetPrimitiveCount(), imported.m_Materials.GetCount(), imported.m_EmbeddedTextures.GetCount());
+    descriptor = std::move(imported.m_Mesh);
+  }
   const auto                    mesh = xiiResourceManager::CreateResource<xiiMeshResource>(meshId, std::move(descriptor));
   xiiMaterialResourceDescriptor materialDescription;
   materialDescription.m_BaseColor = xiiColor(0.8f, 0.1f, 0.05f);
@@ -105,6 +122,12 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   document.m_bDisplayGrid = false;
   xiiEditorEngineSetMaterialsMsg materials;
   materials.m_Materials.PushBack(material.GetResourceID());
+  if (!importSource.IsEmpty())
+  {
+    xiiResourceLock<xiiMeshResource> resource(mesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    for (xiiUInt32 i = 1; i < resource->GetDescriptor().GetMaterials().GetCount(); ++i)
+      materials.m_Materials.PushBack(material.GetResourceID());
+  }
   document.HandleMessage(&materials);
   xiiGALTextureCreationDescription target;
   target.m_Type      = xiiGALResourceDimension::Texture2D;
@@ -123,6 +146,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
     return;
   for (xiiUInt32 frame = 0; frame < 8; ++frame)
   {
+    if (!importSource.IsEmpty())
+      document.UpdateThumbnailViewContext(context);
     context->Redraw(false);
     world->Update();
     environment.GetDevice()->WaitIdle();
@@ -143,6 +168,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
     return;
   XII_TEST_BOOL(before != after);
   world->GetOrCreateComponentManager<xiiMeshComponentManager>()->GetComponents()->SetActiveFlag(true);
+  if (!importSource.IsEmpty())
+    return; // Fixed unit-box orthographic assertions below are unrelated to external model framing.
   xiiCamera                   orthographic[3];
   xiiView*                    additional[3] = {};
   xiiSharedPtr<xiiGALTexture> targets[3];

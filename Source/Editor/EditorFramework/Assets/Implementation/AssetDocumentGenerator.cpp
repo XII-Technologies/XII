@@ -260,22 +260,27 @@ xiiStatus xiiAssetDocumentGenerator::Import(xiiStringView sInputFileAbs, xiiStri
   xiiHybridArray<xiiDocument*, 16> pGeneratedDocs;
   XII_SUCCEED_OR_RETURN(Generate(sInputFileAbs, sMode, pGeneratedDocs));
 
-  xiiStatus result = XII_SUCCESS;
+  xiiStatus                     result = XII_SUCCESS;
+  xiiHybridArray<xiiString, 16> savedPaths;
 
   for (xiiDocument* pDoc : pGeneratedDocs)
   {
-    const xiiString sDocPath = pDoc->GetDocumentPath();
-
     xiiStatus saveResult = pDoc->SaveDocument(true);
     if (saveResult.Failed())
       result = saveResult;
+    else
+      savedPaths.PushBack(pDoc->GetDocumentPath());
     saveResult.LogFailure();
+  }
+  // A generated group can contain mutual Editor preview references. Keep all
+  // configured documents alive until every source document has been persisted.
+  for (xiiDocument* pDoc : pGeneratedDocs)
     pDoc->GetDocumentManager()->CloseDocument(pDoc);
 
-    if (bOpenDocument)
-    {
+  if (bOpenDocument)
+  {
+    for (const auto& sDocPath : savedPaths)
       xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(sDocPath);
-    }
   }
 
   return result;

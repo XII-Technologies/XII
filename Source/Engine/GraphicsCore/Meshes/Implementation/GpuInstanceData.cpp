@@ -1,10 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/World/World.h>
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
@@ -59,6 +60,7 @@ namespace
       if (material.GetAcquireResult() == xiiResourceAcquireResult::Final)
       {
         const auto& state = material->GetRuntimeState();
+        flags.AddOrRemove(xiiGpuInstanceFlags::TwoSided, state.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::TwoSided));
         flags.AddOrRemove(xiiGpuInstanceFlags::Transparent, state.IsTranslucent());
         flags.AddOrRemove(xiiGpuInstanceFlags::Occluder, !state.IsTranslucent());
         if (state.m_FeatureFlags.IsAnySet(xiiMaterialFeatureFlags::ReceivesLighting | xiiMaterialFeatureFlags::CastsShadows | xiiMaterialFeatureFlags::WritesVelocity))

@@ -132,6 +132,9 @@ void xiiMeshContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg)
 {
   if (m_pMeshObject == nullptr)
     return;
+  xiiResourceLock<xiiMeshResource> mesh(m_hMesh, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  if (!mesh || mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    return; // A fallback's bounds must not commit the preview's initial camera.
 
   xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 

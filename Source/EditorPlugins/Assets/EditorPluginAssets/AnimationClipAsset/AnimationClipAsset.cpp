@@ -32,6 +32,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipAssetProperties, 4, xiiRTTIDefa
     XII_MEMBER_PROPERTY("FirstFrame", m_uiFirstFrame),
     XII_MEMBER_PROPERTY("NumFrames", m_uiNumFrames),
     XII_MEMBER_PROPERTY("Additive", m_bAdditive),
+    XII_MEMBER_PROPERTY("Looping", m_bLooping)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("RootMotion", xiiRootMotionSource, m_RootMotionMode),
     XII_MEMBER_PROPERTY("ConstantRootMotion", m_vConstantRootMotion),
     XII_MEMBER_PROPERTY("EventTrack", m_EventTrack)->AddAttributes(new xiiHiddenAttribute()),
@@ -40,7 +41,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipAssetProperties, 4, xiiRTTIDefa
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipAssetDocument, 6, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipAssetDocument, 7, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -123,6 +124,7 @@ xiiTransformStatus xiiAnimationClipAssetDocument::InternalTransformAsset(xiiStre
   options.m_uiFirstFrame = pProp->m_uiFirstFrame;
   options.m_uiNumFrames  = pProp->m_uiNumFrames;
   options.m_bAdditive    = pProp->m_bAdditive;
+  options.m_bLooping     = pProp->m_bLooping;
   xiiModelAnimationImport imported;
   xiiStringBuilder        error;
   const auto              result = xiiModelAnimationImport::ReadFile(sAbsFilename, options, imported, &error);

@@ -16,7 +16,7 @@ xiiResult xiiAnimationPreview::Build(const xiiSkeletonResource& skeleton, const 
     return XII_FAILURE;
   if (pClip)
   {
-    pClip->SampleLocalPose(skeleton, pClip->GetDuration() * xiiMath::Clamp(fNormalizedPosition, 0.0, 1.0), m_Pose);
+    pClip->SampleLocalPose(skeleton, pClip->GetDuration() * xiiMath::Clamp(fNormalizedPosition, 0.0, 1.0), m_Pose, false);
     if (pClip->IsAdditive())
     {
       xiiAnimationPose restPose;

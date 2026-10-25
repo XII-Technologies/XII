@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include <ModelImporter/ModelImporterDLL.h>
+
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
-#include <ModelImporter/ModelImporterDLL.h>
 
 /// Color conversion applied before packing imported vertex colors into native linear bytes.
 struct XII_MODELIMPORTER_DLL xiiModelVertexColorConversion
@@ -67,14 +68,21 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshMaterial
   };
 
   xiiString                                m_sName;
-  xiiColor                                 m_BaseColor     = xiiColor::White;
-  xiiColor                                 m_EmissiveColor = xiiColor::Black;
-  float                                    m_fMetallic     = 0;
-  float                                    m_fRoughness    = 1;
-  float                                    m_fOpacity      = 1; ///< Independent opacity multiplier; glTF alpha is already in m_BaseColor.a.
-  float                                    m_fAlphaCutoff  = 0.5f;
-  bool                                     m_bTwoSided     = false;
-  AlphaMode                                m_AlphaMode     = AlphaMode::Opaque;
+  xiiColor                                 m_BaseColor           = xiiColor::White;
+  xiiColor                                 m_EmissiveColor       = xiiColor::Black;
+  float                                    m_fMetallic           = 0;
+  float                                    m_fRoughness          = 1;
+  float                                    m_fOpacity            = 1; ///< Independent opacity multiplier; glTF alpha is already in m_BaseColor.a.
+  float                                    m_fAlphaCutoff        = 0.5f;
+  float                                    m_fClearCoat          = 0;
+  float                                    m_fClearCoatRoughness = 0;
+  float                                    m_fTransmission       = 0;
+  float                                    m_fThickness          = 0;
+  float                                    m_fIndexOfRefraction  = 1.5f;
+  float                                    m_fAnisotropy         = 0;
+  float                                    m_fSheenRoughness     = 0.5f;
+  bool                                     m_bTwoSided           = false;
+  AlphaMode                                m_AlphaMode           = AlphaMode::Opaque;
   xiiDynamicArray<xiiModelMaterialTexture> m_Textures;
 };
 
@@ -99,6 +107,7 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshImportOptions
   float                                  m_fSimplification           = 0;     ///< Fraction of triangles to remove, in [0, 1). Zero disables simplification.
   float                                  m_fMaxSimplificationError   = 0.05f; ///< Error relative to mesh extents, in [0, 1].
   bool                                   m_bAggressiveSimplification = false;
+  xiiUInt8                               m_uiGeneratedLODs           = 0; ///< Additional native LODs (0-4), each targeting half as many triangles.
 };
 
 /// Converts model files directly into native mesh descriptors. No scene/importer base classes or Qt.
@@ -106,7 +115,8 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshImportOptions
 /// Node/root transforms are baked into vertices, inverse-transpose normals and mirrored winding.
 /// Skinning uses a named mesh-local palette, up to four strongest influences per vertex, and native
 /// byte weights. The caller assigns the default skeleton resource and resolves material assets.
-/// Native packed vertices retain two UV sets and one color set; additional sets are rejected.
+/// Native packed vertices retain two UV sets and one color set; additional sets produce warnings.
+/// A shared material UV mapping is baked into UV0 for the native material renderer.
 /// Animated morph targets cannot be represented by the current native skinning path and are rejected.
 /// ReadFile clears output on failure and never exposes pointers into Assimp-owned storage.
 struct XII_MODELIMPORTER_DLL xiiModelMeshImport

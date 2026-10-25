@@ -10,8 +10,12 @@
 #include <EditorEngineProcessFramework/Animation/AnimationPreview.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Threading/ThreadUtils.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <ModelImporter/AnimationImport.h>
+#include <ModelImporter/MeshImport.h>
+#include <ModelImporter/SkeletonImport.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
 {
@@ -34,7 +38,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
 
   xiiAnimationClipResourceDescriptor clipDescriptor;
   clipDescriptor.m_Duration = xiiTime::MakeFromSeconds(2);
-  clipDescriptor.m_bLooping = false;
+  clipDescriptor.m_bLooping = true;
   auto& track               = clipDescriptor.AddJointTrack("Child");
   track.m_PositionKeys.PushBack({0, xiiVec3(2, 0, 0)});
   track.m_PositionKeys.PushBack({2, xiiVec3(4, 0, 0)});
@@ -55,6 +59,59 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
   mesh.m_Bones.Insert(root, rootBone);
   xiiAnimationPreview preview;
 
+  const auto source = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-importModel");
+  if (!source.IsEmpty())
+  {
+    xiiModelSkeletonImport    sourceSkeleton;
+    xiiModelMeshImport        sourceMesh;
+    xiiModelMeshImportOptions options;
+    options.m_bImportSkinning = true;
+    xiiStringBuilder error;
+    const auto       skeletonResult = xiiModelSkeletonImport::ReadFile(source, sourceSkeleton, &error);
+    if (!XII_TEST_RESULT_MSG(skeletonResult, "%s", error.GetData()))
+      return;
+    const auto meshResult = xiiModelMeshImport::ReadFile(source, options, sourceMesh, &error);
+    if (!XII_TEST_RESULT_MSG(meshResult, "%s", error.GetData()))
+      return;
+    const auto                           sourceHandle = xiiResourceManager::CreateResource<xiiSkeletonResource>("ExternalAnimationPreviewSkeleton", std::move(sourceSkeleton.m_Skeleton));
+    xiiResourceLock<xiiSkeletonResource> sourceResource(sourceHandle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    xiiDynamicArray<xiiString>           names;
+    XII_TEST_RESULT(xiiModelAnimationImport::ReadClipNames(source, names, &error));
+    for (const auto& name : names)
+    {
+      xiiModelAnimationImportOptions clipOptions;
+      clipOptions.m_sClipName = name;
+      xiiModelAnimationImport sourceClip;
+      const auto              result = xiiModelAnimationImport::ReadFile(source, clipOptions, sourceClip, &error);
+      if (!XII_TEST_RESULT_MSG(result, "%s", error.GetData()))
+        return;
+      const auto                                clipHandle = xiiResourceManager::CreateResource<xiiAnimationClipResource>(xiiStringBuilder("ExternalAnimationPreview/", name), std::move(sourceClip.m_Clip));
+      xiiResourceLock<xiiAnimationClipResource> clipResource(clipHandle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      XII_TEST_RESULT(preview.Build(*sourceResource.GetPointer(), sourceMesh.m_Mesh, clipResource.GetPointer(), 0));
+      xiiDynamicArray<xiiMat4> firstPose;
+      firstPose.PushBackRange(preview.GetSkinningMatrices());
+      XII_TEST_RESULT(preview.Build(*sourceResource.GetPointer(), sourceMesh.m_Mesh, clipResource.GetPointer(), 0.5));
+      bool        moved  = false;
+      const auto& buffer = sourceMesh.m_Mesh.GetMeshBufferDescriptor();
+      for (xiiUInt32 i = 0; i < buffer.GetVertexCount(); ++i)
+      {
+        xiiMeshPackedVertex vertex;
+        xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&vertex), buffer.GetVertexData().GetPtr() + i * sizeof(vertex), sizeof(vertex));
+        xiiVec3 first = xiiVec3::MakeZero(), second = xiiVec3::MakeZero();
+        for (xiiUInt32 influence = 0; influence < 4; ++influence)
+        {
+          const auto bone   = vertex.m_vBoneIndices0.GetData()[influence];
+          const auto weight = vertex.m_BoneWeights0.GetData()[influence] / 255.0f;
+          first += firstPose[bone].TransformPosition(vertex.m_vPosition) * weight;
+          second += preview.GetSkinningMatrices()[bone].TransformPosition(vertex.m_vPosition) * weight;
+        }
+        moved |= !first.IsEqual(second, 0.00001f);
+      }
+      XII_TEST_BOOL_MSG(moved, "Clip '%s' must deform source mesh vertices.", name.GetData());
+    }
+    return;
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Rest pose, reordered mesh bones, sparse slots, and exact scrubbing")
   {
     XII_TEST_RESULT(preview.Build(*skeleton.GetPointer(), mesh));
@@ -66,6 +123,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
     XII_TEST_VEC3(preview.GetSkinningMatrices()[2].GetTranslationVector(), xiiVec3::MakeZero(), 0.0001f);
     XII_TEST_RESULT(preview.Build(*skeleton.GetPointer(), mesh, clip.GetPointer(), 2));
     XII_TEST_VEC3(preview.GetSkinningMatrices()[0].GetTranslationVector(), xiiVec3(2, 0, 0), 0.0001f);
+    xiiAnimationPose playback;
+    clip->SampleLocalPose(*skeleton.GetPointer(), clip->GetDuration(), playback);
+    XII_TEST_VEC3(playback.m_LocalTransforms[1].m_vPosition, xiiVec3(2, 0, 0), 0.0001f); // Runtime still loops.
     XII_TEST_RESULT(preview.Build(*skeleton.GetPointer(), mesh, clip.GetPointer(), -1));
     XII_TEST_VEC3(preview.GetSkinningMatrices()[0].GetTranslationVector(), xiiVec3::MakeZero(), 0.0001f);
     xiiMeshResourceDescriptor jointOrderedMesh;

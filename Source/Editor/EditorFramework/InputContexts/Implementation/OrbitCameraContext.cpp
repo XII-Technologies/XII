@@ -59,6 +59,12 @@ void xiiOrbitCameraContext::MoveCameraToDefaultPosition()
     vCamPos = vCenterPos + m_vDefaultCamera * xiiMath::Max(0.1f, xiiMath::Max(ext.x, ext.y, ext.z));
   }
 
+  if (!m_bFixedDefaultCamera && m_pCamera->IsPerspective())
+  {
+    const float radius   = xiiMath::Max(0.001f, m_Volume.GetHalfExtents().GetLength());
+    const float distance = (vCamPos - vCenterPos).GetLength();
+    m_pCamera->SetCameraMode(m_pCamera->GetCameraMode(), m_pCamera->GetFovOrDim(), xiiMath::Max(0.0001f, radius * 0.001f), xiiMath::Max(1.0f, distance + radius * 4));
+  }
   m_pCamera->LookAt(vCamPos, vCenterPos, xiiVec3(0, 0, 1));
 }
 

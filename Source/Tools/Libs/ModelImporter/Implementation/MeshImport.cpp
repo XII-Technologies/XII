@@ -30,16 +30,51 @@ namespace
 
   xiiVec3 ConvertVector(const aiVector3D& value) { return xiiVec3(value.x, value.y, value.z); }
 
+  xiiModelMaterialTexture ExtractCommonUVMapping(xiiModelMeshMaterial& material)
+  {
+    if (material.m_Textures.IsEmpty())
+      return {};
+    const auto mapping = material.m_Textures[0];
+    for (const auto& texture : material.m_Textures)
+      if (texture.m_uiUVChannel != mapping.m_uiUVChannel || texture.m_vUVOffset != mapping.m_vUVOffset || texture.m_vUVScale != mapping.m_vUVScale || texture.m_fUVRotation != mapping.m_fUVRotation)
+        return {}; // Independent mappings remain visible to material conversion diagnostics.
+    for (auto& texture : material.m_Textures)
+    {
+      texture.m_uiUVChannel = 0;
+      texture.m_vUVOffset.SetZero();
+      texture.m_vUVScale.Set(1);
+      texture.m_fUVRotation = 0;
+    }
+    return mapping;
+  }
+
+  void BakeUVMapping(const xiiModelMaterialTexture& mapping, bool bGltf, xiiArrayPtr<xiiMeshPackedVertex> vertices)
+  {
+    const auto  angle  = xiiAngle::MakeFromRadian(mapping.m_fUVRotation);
+    const float cosine = xiiMath::Cos(angle);
+    const float sine   = xiiMath::Sin(angle);
+    for (auto& vertex : vertices)
+    {
+      auto uv = mapping.m_uiUVChannel == 1 ? vertex.m_vTexCoord1 : vertex.m_vTexCoord0;
+      if (bGltf)
+        uv = uv.CompMul(mapping.m_vUVScale);
+      uv = xiiVec2(cosine * uv.x - sine * uv.y, sine * uv.x + cosine * uv.y);
+      if (!bGltf)
+        uv = uv.CompMul(mapping.m_vUVScale);
+      vertex.m_vTexCoord0 = mapping.m_vUVOffset + uv;
+    }
+  }
+
   xiiResult ReadVertices(const aiMesh& mesh, const xiiMat4& transform, const xiiModelMeshImportOptions& options, xiiDynamicArray<xiiMeshPackedVertex>& vertices, xiiStringBuilder* error)
   {
     if (mesh.mNumVertices == 0 || mesh.mVertices == nullptr || mesh.mNormals == nullptr || mesh.mNumVertices > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiMeshPackedVertex))
       return Fail(error, "Source mesh has missing or oversized vertex data.");
     for (xiiUInt32 i = 2; i < AI_MAX_NUMBER_OF_TEXTURECOORDS; ++i)
       if (mesh.HasTextureCoords(i))
-        return Fail(error, "Native packed meshes support at most two UV sets.");
+        xiiLog::Warning("Mesh '{}' has UV set {}; the native mesh retains UV sets 0 and 1.", mesh.mName.C_Str(), i);
     for (xiiUInt32 i = 1; i < AI_MAX_NUMBER_OF_COLOR_SETS; ++i)
       if (mesh.HasVertexColors(i))
-        return Fail(error, "Native packed meshes support one vertex color set.");
+        xiiLog::Warning("Mesh '{}' has color set {}; the native mesh retains color set 0.", mesh.mName.C_Str(), i);
     for (xiiUInt32 i = 0; i < 2; ++i)
       if (mesh.HasTextureCoords(i) && mesh.mNumUVComponents[i] > 2)
         return Fail(error, "Native mesh UV sets must have at most two components.");
@@ -142,10 +177,51 @@ namespace
       simplified.SetCountUninitialized(indices.GetCount());
       const size_t target = xiiMath::Max<size_t>(3, static_cast<size_t>(indices.GetCount() / 3 * (1.0 - options.m_fSimplification)) * 3);
       size_t       count;
-      if (options.m_bAggressiveSimplification)
+      if (options.m_bAggressiveSimplification && !options.m_bImportSkinning)
         count = meshopt_simplifySloppy(simplified.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x, vertices.GetCount(), sizeof(xiiMeshPackedVertex), nullptr, target, options.m_fMaxSimplificationError, nullptr);
       else
-        count = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x, vertices.GetCount(), sizeof(xiiMeshPackedVertex), target, options.m_fMaxSimplificationError, 0, nullptr);
+      {
+        // Continuous attributes contribute to the error metric. Palette indices are
+        // categorical: lock triangles crossing a palette boundary instead of treating
+        // an average joint index as a meaningful skinning attribute.
+        struct Attributes
+        {
+          XII_DECLARE_POD_TYPE();
+          float m_Values[15];
+        };
+        xiiDynamicArray<Attributes>    attributes;
+        xiiDynamicArray<unsigned char> locks;
+        attributes.SetCountUninitialized(vertices.GetCount());
+        locks.SetCount(vertices.GetCount());
+        xiiMemoryUtils::ZeroFill(locks.GetData(), locks.GetCount());
+        for (xiiUInt32 i = 0; i < vertices.GetCount(); ++i)
+        {
+          const auto& v = vertices[i];
+          attributes[i] = {{v.m_vNormal.x, v.m_vNormal.y, v.m_vNormal.z,
+                            v.m_vTexCoord0.x, v.m_vTexCoord0.y, v.m_vTexCoord1.x, v.m_vTexCoord1.y,
+                            v.m_Color0.r / 255.0f, v.m_Color0.g / 255.0f, v.m_Color0.b / 255.0f, v.m_Color0.a / 255.0f,
+                            v.m_BoneWeights0.r / 255.0f, v.m_BoneWeights0.g / 255.0f, v.m_BoneWeights0.b / 255.0f, v.m_BoneWeights0.a / 255.0f}};
+        }
+        if (options.m_bImportSkinning)
+        {
+          for (xiiUInt32 i = 0; i < indices.GetCount(); i += 3)
+          {
+            const auto a = indices[i], b = indices[i + 1], c = indices[i + 2];
+            if (vertices[a].m_vBoneIndices0 != vertices[b].m_vBoneIndices0 || vertices[a].m_vBoneIndices0 != vertices[c].m_vBoneIndices0)
+              locks[a] = locks[b] = locks[c] = meshopt_SimplifyVertex_Lock;
+          }
+          // All copies of a position must agree on the lock, including UV seams.
+          xiiDynamicArray<xiiUInt32> positions;
+          positions.SetCountUninitialized(vertices.GetCount());
+          meshopt_generatePositionRemap(positions.GetData(), &vertices[0].m_vPosition.x, vertices.GetCount(), sizeof(xiiMeshPackedVertex));
+          for (xiiUInt32 i = 0; i < vertices.GetCount(); ++i)
+            locks[positions[i]] |= locks[i];
+          for (xiiUInt32 i = 0; i < vertices.GetCount(); ++i)
+            locks[i] = locks[positions[i]];
+        }
+        const float weights[] = {0.5f, 0.5f, 0.5f, 1, 1, 1, 1, 0.25f, 0.25f, 0.25f, 0.25f, 1, 1, 1, 1};
+        count                 = meshopt_simplifyWithAttributes(simplified.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x, vertices.GetCount(), sizeof(xiiMeshPackedVertex), attributes[0].m_Values, sizeof(Attributes), weights, XII_ARRAY_SIZE(weights), locks.GetData(), target, options.m_fMaxSimplificationError, 0, nullptr);
+      }
       if (count == 0 || count % 3 != 0)
         return Fail(error, "Mesh simplification could not retain a valid surface.");
       simplified.SetCount(static_cast<xiiUInt32>(count));
@@ -154,6 +230,12 @@ namespace
     if (options.m_fSimplification > 0)
       CompactVertices(vertices, indices);
     meshopt_optimizeVertexCache(indices.GetData(), indices.GetData(), indices.GetCount(), vertices.GetCount());
+    // Reordering skinned triangles by their bind-pose depth is not representative of
+    // animated overdraw. Fetch optimization still benefits both static and skinned meshes.
+    if (!options.m_bImportSkinning)
+      meshopt_optimizeOverdraw(indices.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x, vertices.GetCount(), sizeof(xiiMeshPackedVertex), 1.05f);
+    const auto count = meshopt_optimizeVertexFetch(vertices.GetData(), indices.GetData(), indices.GetCount(), vertices.GetData(), vertices.GetCount(), sizeof(xiiMeshPackedVertex));
+    vertices.SetCount(static_cast<xiiUInt32>(count));
     return XII_SUCCESS;
   }
 } // namespace
@@ -167,13 +249,16 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
     out_pError->Clear();
   if (sAbsoluteFile.IsEmpty() || !sAbsoluteFile.IsAbsolutePath())
     return Fail(out_pError, "Mesh import requires an absolute source filename.");
+  if (options.m_uiGeneratedLODs > 4)
+    return Fail(out_pError, "Mesh import supports up to four generated LODs.");
   auto inverseRoot = options.m_RootTransform;
   if (!inverseRoot.IsValid() || inverseRoot.Invert(0).Failed() || !inverseRoot.IsValid() || !xiiMath::IsEqual(options.m_RootTransform.Element(0, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(options.m_RootTransform.Element(1, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(options.m_RootTransform.Element(2, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(options.m_RootTransform.Element(3, 3), 1.0f, 0.00001f) || !xiiMath::IsFinite(options.m_fSimplification) || options.m_fSimplification < 0 || options.m_fSimplification >= 1 || !xiiMath::IsFinite(options.m_fMaxSimplificationError) || options.m_fMaxSimplificationError < 0 || options.m_fMaxSimplificationError > 1 || options.m_VertexColorConversion.GetValue() >= xiiModelVertexColorConversion::ENUM_COUNT)
     return Fail(out_pError, "Mesh import settings contain an invalid transform, color conversion or simplification value.");
 
   Assimp::Importer importer;
-  unsigned int     flags   = aiProcess_Triangulate | aiProcess_ValidateDataStructure | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace;
-  unsigned int     removed = 0;
+  unsigned int     flags = aiProcess_Triangulate | aiProcess_ValidateDataStructure | aiProcess_GenSmoothNormals | aiProcess_GenUVCoords | aiProcess_SortByPType;
+  importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+  unsigned int removed = 0;
   if (options.m_bRecalculateNormals)
     removed |= aiComponent_NORMALS;
   if (options.m_bRecalculateTangents || options.m_bRecalculateNormals)
@@ -190,12 +275,13 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
   if (scene == nullptr || scene->mRootNode == nullptr)
     return Fail(out_pError, importer.GetErrorString());
 
-  xiiModelMeshImport                   result;
-  xiiDynamicArray<PendingNode>         pending;
-  xiiHashSet<const aiNode*>            visited;
-  xiiHashTable<xiiUInt32, xiiUInt32>   materials;
-  xiiDynamicArray<xiiMeshPackedVertex> vertices, localVertices;
-  xiiDynamicArray<xiiUInt32>           indices, localIndices;
+  xiiModelMeshImport                       result;
+  xiiDynamicArray<PendingNode>             pending;
+  xiiHashSet<const aiNode*>                visited;
+  xiiHashTable<xiiUInt32, xiiUInt32>       materials;
+  xiiDynamicArray<xiiModelMaterialTexture> materialMappings;
+  xiiDynamicArray<xiiMeshPackedVertex>     vertices, localVertices;
+  xiiDynamicArray<xiiUInt32>               indices, localIndices;
   pending.PushBack({scene->mRootNode, options.m_RootTransform});
   while (!pending.IsEmpty())
   {
@@ -216,16 +302,40 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
       if (index >= scene->mNumMeshes || scene->mMeshes == nullptr || scene->mMeshes[index] == nullptr)
         return Fail(out_pError, "Source node references an invalid mesh.");
       const auto& mesh = *scene->mMeshes[index];
+      if ((mesh.mPrimitiveTypes & aiPrimitiveType_TRIANGLE) == 0)
+        continue;
       if (xiiStringView(node->mName.C_Str()).StartsWith("UCX_") || xiiStringView(mesh.mName.C_Str()).StartsWith("UCX_"))
         continue; // Authoring colliders are imported by SkeletonImport, not rendered as surfaces.
       if (options.m_bImportSkinning && mesh.mNumAnimMeshes != 0)
         return Fail(out_pError, "Animated morph targets are not supported by the native mesh skinning path.");
-      if (result.m_Mesh.GetSubMeshes().GetCount() == xiiMath::MaxValue<xiiUInt16>())
+      if (result.m_Mesh.GetSubMeshes().GetCount() > xiiMath::MaxValue<xiiUInt16>() - 1U - options.m_uiGeneratedLODs)
         return Fail(out_pError, "Source scene exceeds the native mesh section limit.");
+      xiiUInt32 material;
+      if (!materials.TryGetValue(mesh.mMaterialIndex, material))
+      {
+        if (mesh.mMaterialIndex >= scene->mNumMaterials || scene->mMaterials == nullptr || scene->mMaterials[mesh.mMaterialIndex] == nullptr || result.m_Materials.GetCount() == xiiMath::MaxValue<xiiUInt16>())
+          return Fail(out_pError, "Source mesh references an invalid material or exceeds the native material limit.");
+        material                = result.m_Materials.GetCount();
+        auto&            output = result.m_Materials.ExpandAndGetRef();
+        xiiStringBuilder materialError;
+        if (ReadMaterial(*scene, *scene->mMaterials[mesh.mMaterialIndex], sAbsoluteFile.HasExtension("gltf") || sAbsoluteFile.HasExtension("glb"), options.m_bFlipTextureV, output, result.m_EmbeddedTextures, &materialError).Failed())
+        {
+          const xiiString name(output.m_sName);
+          output         = xiiModelMeshMaterial();
+          output.m_sName = name;
+          xiiLog::Warning("Model '{}', material {} ('{}'): {} Imported geometry with default material properties.", sAbsoluteFile, mesh.mMaterialIndex, name, materialError);
+        }
+        materialMappings.PushBack(ExtractCommonUVMapping(output));
+        materials.Insert(mesh.mMaterialIndex, material);
+        result.m_Mesh.AddMaterialSlot("");
+      }
       XII_SUCCEED_OR_RETURN(ReadVertices(mesh, transform, options, localVertices, out_pError));
       XII_SUCCEED_OR_RETURN(ReadIndices(mesh, transform.GetRotationalPart().GetDeterminant() < 0, localIndices, out_pError));
+      BakeUVMapping(materialMappings[material], sAbsoluteFile.HasExtension("gltf") || sAbsoluteFile.HasExtension("glb"), localVertices);
       if (options.m_bImportSkinning)
         XII_SUCCEED_OR_RETURN(ReadSkin(mesh, node->mName.C_Str(), transform, options, result.m_Mesh, localVertices, out_pError));
+      if (options.m_bRecalculateTangents || options.m_bRecalculateNormals || !mesh.HasTangentsAndBitangents() || materialMappings[material].m_uiUVChannel != 0 || materialMappings[material].m_vUVScale != xiiVec2(1) || materialMappings[material].m_fUVRotation != 0)
+        XII_SUCCEED_OR_RETURN(GenerateTangents(localVertices, localIndices, out_pError));
       XII_SUCCEED_OR_RETURN(OptimizeMesh(options, localVertices, localIndices, out_pError));
       if (localVertices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiMeshPackedVertex) - vertices.GetCount() || localIndices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiUInt32) - indices.GetCount())
         return Fail(out_pError, "Imported mesh exceeds native vertex or index storage capacity.");
@@ -234,18 +344,25 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
       vertices.PushBackRange(localVertices);
       for (auto vertexIndex : localIndices)
         indices.PushBack(firstVertex + vertexIndex);
-      xiiUInt32 material;
-      if (!materials.TryGetValue(mesh.mMaterialIndex, material))
-      {
-        if (mesh.mMaterialIndex >= scene->mNumMaterials || scene->mMaterials == nullptr || scene->mMaterials[mesh.mMaterialIndex] == nullptr || result.m_Materials.GetCount() == xiiMath::MaxValue<xiiUInt16>())
-          return Fail(out_pError, "Source mesh references an invalid material or exceeds the native material limit.");
-        material     = result.m_Materials.GetCount();
-        auto& output = result.m_Materials.ExpandAndGetRef();
-        XII_SUCCEED_OR_RETURN(ReadMaterial(*scene, *scene->mMaterials[mesh.mMaterialIndex], output, result.m_EmbeddedTextures, out_pError));
-        materials.Insert(mesh.mMaterialIndex, material);
-        result.m_Mesh.AddMaterialSlot("");
-      }
       result.m_Mesh.AddSection(localIndices.GetCount() / 3, firstPrimitive, material);
+      for (xiiUInt32 lod = 1; lod <= options.m_uiGeneratedLODs; ++lod)
+      {
+        auto lodVertices             = localVertices;
+        auto lodIndices              = localIndices;
+        auto lodOptions              = options;
+        lodOptions.m_fSimplification = 1.0f - 1.0f / static_cast<float>(1U << lod);
+        // LODs preserve appearance and skinning boundaries, including when the base
+        // mesh was explicitly imported with aggressive simplification.
+        lodOptions.m_bAggressiveSimplification = false;
+        XII_SUCCEED_OR_RETURN(OptimizeMesh(lodOptions, lodVertices, lodIndices, out_pError));
+        if (lodVertices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiMeshPackedVertex) - vertices.GetCount() || lodIndices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiUInt32) - indices.GetCount())
+          return Fail(out_pError, "Generated LODs exceed native mesh storage capacity.");
+        const auto offset = vertices.GetCount();
+        result.m_Mesh.AddSection(lodIndices.GetCount() / 3, indices.GetCount() / 3, material, lod);
+        vertices.PushBackRange(lodVertices);
+        for (auto vertexIndex : lodIndices)
+          indices.PushBack(offset + vertexIndex);
+      }
     }
   }
   if (vertices.IsEmpty() || indices.IsEmpty())

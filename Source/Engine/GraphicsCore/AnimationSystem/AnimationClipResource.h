@@ -2,11 +2,12 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Math/Quat.h>
 #include <Foundation/Time/Time.h>
 #include <GraphicsCore/AnimationSystem/AnimationPose.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 using xiiAnimationClipResourceHandle = xiiTypedResourceHandle<class xiiAnimationClipResource>;
 
@@ -96,7 +97,8 @@ public:
   xiiUInt32                                 GetRuntimeHash() const;
   const xiiAnimationClipResourceDescriptor& GetDescriptor() const;
 
-  void SampleLocalPose(const xiiSkeletonResource& skeleton, xiiTime sampleTime, xiiAnimationPose& ref_pose) const;
+  /// Set bApplyLooping to false for exact, clamped Editor timeline scrubbing.
+  void SampleLocalPose(const xiiSkeletonResource& skeleton, xiiTime sampleTime, xiiAnimationPose& ref_pose, bool bApplyLooping = true) const;
 
 #if defined(BUILDSYSTEM_ENABLE_OZZ_SUPPORT)
   const ozz::animation::Animation* GetOzzAnimation() const;

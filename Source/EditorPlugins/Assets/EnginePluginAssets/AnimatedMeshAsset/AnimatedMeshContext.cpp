@@ -134,6 +134,9 @@ void xiiAnimatedMeshContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg
 {
   if (m_pAnimatedMeshObject == nullptr)
     return;
+  xiiResourceLock<xiiMeshResource> mesh(m_hAnimatedMesh, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  if (!mesh || mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    return;
 
   xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 

@@ -230,6 +230,17 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain
   }
   if (auto* view = GetView())
   {
+    if (pRenderTargetView != nullptr && m_PipelineUsage == xiiEditorRenderPipelineUsage::ScenePreview)
+    {
+      // A short thumbnail capture cannot adapt exposure reliably against its
+      // mostly black background. Use stable studio exposure for asset inspection.
+      xiiVariantDictionary exposure;
+      exposure.Insert("Mode", static_cast<xiiInt32>(xiiExposureMode::Manual));
+      exposure.Insert("ExposureCompensation", 0.0f);
+      xiiVariantDictionary display;
+      display.Insert("Exposure", exposure);
+      view->SetPipelineParameter("DisplayOutput", display);
+    }
     view->SetSwapChain(pSwapChain.Borrow());
     view->SetRenderTargetView(pRenderTargetView);
     view->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(uiWidth), static_cast<float>(uiHeight)));
@@ -250,6 +261,9 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
 
+        // Thumbnail views have no camera messages. Retry resource-dependent
+        // pipeline composition here as well once the scene resource has loaded.
+        UpdateRenderPipeline(*pView);
         pView->SetRenderEnabled(true);
         const xiiTag& editorTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
 
@@ -344,7 +358,8 @@ bool xiiEngineProcessViewContext::FocusCameraOnObject(xiiCamera& inout_camera, c
     if (!vNewCameraPos.IsValid())
       return false;
 
-    inout_camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, fFov, 0.1f, 1000.0f);
+    const float radius = xiiMath::Max(0.001f, objectBounds.GetSphere().m_fRadius);
+    inout_camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, fFov, xiiMath::Max(0.0001f, radius * 0.001f), xiiMath::Max(1.0f, fDistance + radius * 4.0f));
     inout_camera.LookAt(vNewCameraPos, vCenterPosition, xiiVec3(0.0f, 0.0f, 1.0f));
   }
 
