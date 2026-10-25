@@ -29,6 +29,8 @@ xiiResult xiiAtmosphereMultiScatterPass::Configure(const xiiVariantDictionary& p
 xiiResult xiiAtmosphereMultiScatterPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto atmosphere = context.GetInputBuffer(m_Atmosphere);
+  if (!atmosphere.IsValid())
+    return XII_SUCCESS;
   if (!xiiScreenSpacePassUtils::Uniform(context, atmosphere, sizeof(xiiAtmosphereConstants)))
     return context.ReportFailure("AtmosphereMultiScatter requires exact atmosphere constants.");
   const auto transmittance = context.GetInputTexture(m_Transmittance);

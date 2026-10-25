@@ -120,19 +120,23 @@ void main(uint3 tid : SV_DispatchThreadID)
     float3 worldPosition;
     if(!isfinite(depth) || depth>1 || !xiiScreenWorldPosition(uv,isSky?0.001f:depth,worldPosition))
     {g_AtmosphereOutput[tid.xy]=g_SceneRadiance.Load(int3(tid.xy,0));return;}
-    float3 V = normalize(worldPosition - cameraPosition);
+    // Orthographic pixels have parallel rays originating on the camera plane.
+    // Treating them as rays from the camera position bends the sky across Editor panes.
+    const bool orthographic = dot(SurfaceViewProjection[3].xyz, SurfaceViewProjection[3].xyz) < 1e-8f;
+    float3 V = orthographic ? normalize(SurfaceCameraForwardFar.xyz) : normalize(worldPosition - cameraPosition);
+    const float3 rayOrigin = orthographic ? worldPosition - V * dot(worldPosition - cameraPosition, V) : cameraPosition;
     float3 sunDirection = normalize(-EnvironmentDirectionAndIlluminance.xyz);
     float cosTheta = dot(V, sunDirection);
 
     float3 planetUp = normalize(PlanetUpAndGroundAltitudeMeters.xyz);
-    float cameraAltitudeMeters = dot(SurfaceCameraPositionNear.xyz, planetUp) - PlanetUpAndGroundAltitudeMeters.w;
+    float cameraAltitudeMeters = dot(rayOrigin, planetUp) - PlanetUpAndGroundAltitudeMeters.w;
     float cameraHeightKm = PlanetAtmosphereRadiiScaleHeights.x + max(cameraAltitudeMeters / 1000.0f, 0.0f);
     float cosSunZenith   = dot(sunDirection, planetUp);
 
     const float3 atmosphereRayOrigin = planetUp * cameraHeightKm;
     const float atmosphereDistance = DistanceToSphereExit(atmosphereRayOrigin, V, PlanetAtmosphereRadiiScaleHeights.y);
     const float groundDistance = DistanceToGround(atmosphereRayOrigin, V, PlanetAtmosphereRadiiScaleHeights.x);
-    float pathLengthKm = isSky ? atmosphereDistance : min(length(worldPosition - cameraPosition) * 0.001f, atmosphereDistance);
+    float pathLengthKm = isSky ? atmosphereDistance : min(max(dot(worldPosition - rayOrigin, V), 0.0f) * 0.001f, atmosphereDistance);
     if (isSky && groundDistance >= 0.0f)
         pathLengthKm = min(pathLengthKm, groundDistance);
 

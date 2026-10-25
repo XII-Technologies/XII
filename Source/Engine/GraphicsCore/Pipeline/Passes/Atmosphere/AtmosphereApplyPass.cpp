@@ -29,6 +29,8 @@ xiiResult xiiAtmosphereApplyPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  depth = context.GetInputTexture(m_Depth), radiance = context.GetInputTexture(m_Radiance), transmittance = context.GetInputTexture(m_Transmittance), multiScatter = context.GetInputTexture(m_MultiScatter);
   const auto  camera = context.GetInputBuffer(m_Camera), light = context.GetInputBuffer(m_Light), atmosphere = context.GetInputBuffer(m_Atmosphere);
+  if (!atmosphere.IsValid())
+    return context.SetOutput(m_Output, radiance);
   const auto* d = xiiScreenSpacePassUtils::Image(context, depth, 1);
   if (!d || !xiiScreenSpacePassUtils::Image(context, radiance, 4, &d->m_Size) || !xiiScreenSpacePassUtils::Image(context, transmittance, 3) || !xiiScreenSpacePassUtils::Image(context, multiScatter, 3) || !xiiScreenSpacePassUtils::Uniform(context, camera, sizeof(xiiFrameCameraConstants)) || !xiiScreenSpacePassUtils::Uniform(context, light, sizeof(xiiEnvironmentLightConstants)) || !xiiScreenSpacePassUtils::Uniform(context, atmosphere, sizeof(xiiAtmosphereConstants)))
     return context.ReportFailure("AtmosphereApply requires matching depth/radiance images, readable RGB LUTs and exact camera, environment and atmosphere constants.");
