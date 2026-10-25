@@ -16,6 +16,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialResourceBinding, xiiNoBase, 1, xiiRTT
     XII_RESOURCE_MEMBER_PROPERTY("Texture2D", m_hTexture2D),
     XII_RESOURCE_MEMBER_PROPERTY("TextureCube", m_hTextureCube),
     XII_MEMBER_PROPERTY("BindlessIndex", m_uiBindlessIndex),
+    XII_MEMBER_PROPERTY("SamplerIndex", m_uiSamplerIndex),
     XII_MEMBER_PROPERTY("Revision", m_uiRevision),
   }
   XII_END_PROPERTIES;
@@ -99,9 +100,9 @@ xiiResult xiiMaterialInstance::SetTextureCube(xiiMaterialParameterId id, const x
   return SetResourceBinding(id, nullptr, &hTexture, nullptr);
 }
 
-xiiResult xiiMaterialInstance::SetBindlessIndex(xiiMaterialParameterId id, xiiUInt32 uiBindlessIndex)
+xiiResult xiiMaterialInstance::SetBindlessIndex(xiiMaterialParameterId id, xiiUInt32 uiBindlessIndex, xiiUInt32 uiSamplerIndex)
 {
-  return SetResourceBinding(id, nullptr, nullptr, &uiBindlessIndex);
+  return SetResourceBinding(id, nullptr, nullptr, &uiBindlessIndex, &uiSamplerIndex);
 }
 
 void xiiMaterialInstance::SetRuntimeState(const xiiMaterialRuntimeState& runtimeState)
@@ -151,7 +152,7 @@ void xiiMaterialInstance::ConsumeSnapshot(xiiMaterialInstanceSnapshot& out_snaps
   m_Parameters.ClearDirtyRange();
 }
 
-xiiResult xiiMaterialInstance::SetResourceBinding(xiiMaterialParameterId id, const xiiTexture2DResourceHandle* pTexture2D, const xiiTextureCubeResourceHandle* pTextureCube, const xiiUInt32* pBindlessIndex)
+xiiResult xiiMaterialInstance::SetResourceBinding(xiiMaterialParameterId id, const xiiTexture2DResourceHandle* pTexture2D, const xiiTextureCubeResourceHandle* pTextureCube, const xiiUInt32* pBindlessIndex, const xiiUInt32* pSamplerIndex)
 {
   XII_LOCK(m_Mutex);
 
@@ -176,18 +177,25 @@ xiiResult xiiMaterialInstance::SetResourceBinding(xiiMaterialParameterId id, con
   {
     binding.m_hTexture2D      = *pTexture2D;
     binding.m_uiBindlessIndex = xiiInvalidIndex;
+    binding.m_uiSamplerIndex  = xiiInvalidIndex;
     bChanged                  = true;
   }
   if (pTextureCube != nullptr && binding.m_hTextureCube != *pTextureCube)
   {
     binding.m_hTextureCube    = *pTextureCube;
     binding.m_uiBindlessIndex = xiiInvalidIndex;
+    binding.m_uiSamplerIndex  = xiiInvalidIndex;
     bChanged                  = true;
   }
   if (pBindlessIndex != nullptr && binding.m_uiBindlessIndex != *pBindlessIndex)
   {
     binding.m_uiBindlessIndex = *pBindlessIndex;
     bChanged                  = true;
+  }
+  if (pSamplerIndex != nullptr && binding.m_uiSamplerIndex != *pSamplerIndex)
+  {
+    binding.m_uiSamplerIndex = *pSamplerIndex;
+    bChanged                 = true;
   }
 
   if (!bChanged)

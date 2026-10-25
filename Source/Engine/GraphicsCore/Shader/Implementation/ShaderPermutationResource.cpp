@@ -173,7 +173,8 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
       for (const xiiGALShaderResourceDescription& resource : pStageBinary->GetByteCode()->m_ShaderResourceBindings)
       {
         const bool      bRuntimeArray     = resource.m_uiArraySize == 0U;
-        const xiiUInt32 uiDescriptorCount = bRuntimeArray ? XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY : resource.m_uiArraySize;
+        const xiiUInt32 uiRuntimeCapacity = resource.m_Type == xiiGALShaderResourceType::Sampler ? XII_GAL_DEFAULT_BINDLESS_SAMPLER_CAPACITY : XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
+        const xiiUInt32 uiDescriptorCount = bRuntimeArray ? uiRuntimeCapacity : resource.m_uiArraySize;
 
         // Try to find an existing resource with the same bind set and bind slot.
         xiiGALPipelineResourceDescription* pExistingResource = nullptr;

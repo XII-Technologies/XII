@@ -20,6 +20,10 @@ External paths resolve relative to the model after separator normalization and p
 
 A missing external image still receives a texture document with its intended source dependency. Restore the file or edit **Input1** in that document. Optional texture conversion failures produce warnings and retain the material's scalar/color properties so geometry remains inspectable.
 
+Texture assets' filtering, addressing, mip limits and LOD bias now reach native material sampling. Scene's color, normal, packed material, occlusion, emissive and transmission inputs use the sampler belonging to their texture. Depth/alpha coverage, surface picking and emissive mesh-light extraction use the same settings. Ray-tracing material records also retain sampler indices for their explicit-LOD consumers.
+
+Identical GAL samplers share one descriptor across textures. Reloads and material changes publish new indices; retired descriptors remain alive until their last-use frame completes. Explicit descriptor-only material bindings can provide a sampler index through `SetBindlessIndex`, or leave it invalid to retain the consumer's legacy sampler. Runtime sampler arrays use a separate 256-entry API capacity rather than the 4096-entry texture table; exhaustion is diagnosed and uses the legacy fallback.
+
 Repeated complete imports reuse existing documents. Authored material assignments, texture settings, skeleton settings and clip settings are not overwritten. Existing generated documents can be reused before curator indexing completes. Duplicate clip names receive stable source-index suffixes; generated clip filenames also include the complete label's hash.
 
 ## Preview behavior
@@ -28,7 +32,7 @@ Mesh previews wait for final resources before committing their initial camera bo
 
 ## Current representation limits
 
-Native materials still expose one texture per slot and one common UV mapping. Independent mappings and additional texture layers are diagnosed; unrepresentable mappings retain scalar material properties. Per-texture sampler settings are preserved in texture assets, but Scene's surface shaders still use their existing fixed samplers.
+Native materials still expose one texture per slot and one common UV mapping. Independent mappings and additional texture layers are diagnosed; unrepresentable mappings retain scalar material properties.
 
 Morph animation and root-motion extraction are not implemented by this change. Native morph storage and root-motion metadata exist, but importing animated morph tracks and producing usable root-motion playback require additional animation/runtime work. Existing explicit errors for these unsupported conversion paths remain.
 

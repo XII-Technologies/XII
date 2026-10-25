@@ -19,9 +19,11 @@ struct XII_SHADER_STRUCT xiiGpuSurfaceMaterial
   UINT4(TextureIndices1);            ///< Emissive, height, clear-coat and transmission bindless SRVs.
   UINT4(Metadata);                   ///< x = shading model, y = feature flags, z = effective alpha mode, w = blend mode.
   FLOAT4(AdvancedParameters);        ///< x = thickness, y = index of refraction, z = anisotropy, w = sheen roughness.
+  UINT4(SamplerIndices0);            ///< Samplers parallel to TextureIndices0; invalid selects the legacy fallback.
+  UINT4(SamplerIndices1);            ///< Samplers parallel to TextureIndices1.
 };
 
 #if XII_DISABLED(XII_SHADER_PLATFORM)
-static_assert(sizeof(xiiGpuSurfaceMaterial) == 128U, "GPU surface-material records must match the HLSL structured-buffer stride.");
+static_assert(sizeof(xiiGpuSurfaceMaterial) == 160U, "GPU surface-material records must match the HLSL structured-buffer stride.");
 static_assert(alignof(xiiGpuSurfaceMaterial) == 16U, "GPU surface-material records require aligned CPU storage.");
 #endif

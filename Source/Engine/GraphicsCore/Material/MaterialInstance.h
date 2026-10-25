@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/RefCounted.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -16,6 +18,7 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialResourceBinding
   xiiTexture2DResourceHandle   m_hTexture2D;
   xiiTextureCubeResourceHandle m_hTextureCube;
   xiiUInt32                    m_uiBindlessIndex = xiiInvalidIndex;
+  xiiUInt32                    m_uiSamplerIndex  = xiiInvalidIndex;
   xiiUInt32                    m_uiRevision      = 0U;
 };
 
@@ -49,7 +52,9 @@ public:
 
   xiiResult SetTexture2D(xiiMaterialParameterId id, const xiiTexture2DResourceHandle& hTexture);
   xiiResult SetTextureCube(xiiMaterialParameterId id, const xiiTextureCubeResourceHandle& hTexture);
-  xiiResult SetBindlessIndex(xiiMaterialParameterId id, xiiUInt32 uiBindlessIndex);
+  /// Indices are renderer-owned and must remain live through the consuming frame.
+  /// An invalid sampler index selects the shader's legacy fallback sampler.
+  xiiResult SetBindlessIndex(xiiMaterialParameterId id, xiiUInt32 uiBindlessIndex, xiiUInt32 uiSamplerIndex = xiiInvalidIndex);
 
   void                                                SetRuntimeState(const xiiMaterialRuntimeState& runtimeState);
   [[nodiscard]] xiiMaterialRuntimeState               GetRuntimeState() const;
@@ -64,7 +69,7 @@ public:
   void ConsumeSnapshot(xiiMaterialInstanceSnapshot& out_snapshot);
 
 private:
-  xiiResult SetResourceBinding(xiiMaterialParameterId id, const xiiTexture2DResourceHandle* pTexture2D, const xiiTextureCubeResourceHandle* pTextureCube, const xiiUInt32* pBindlessIndex);
+  xiiResult SetResourceBinding(xiiMaterialParameterId id, const xiiTexture2DResourceHandle* pTexture2D, const xiiTextureCubeResourceHandle* pTextureCube, const xiiUInt32* pBindlessIndex, const xiiUInt32* pSamplerIndex = nullptr);
   void      CreateSnapshotLocked(xiiMaterialInstanceSnapshot& out_snapshot) const;
 
   mutable xiiMutex                            m_Mutex;

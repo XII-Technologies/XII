@@ -20,6 +20,13 @@ namespace
     xiiGALBindlessResourceHandle    m_hBindless;
     xiiUInt64                       m_uiLastReferencedFrame = 0ULL;
   };
+
+  struct MaterialSamplerBinding
+  {
+    xiiSharedPtr<xiiGALSampler>  m_pSampler;
+    xiiGALBindlessResourceHandle m_hBindless;
+    xiiUInt64                    m_uiLastReferencedFrame = 0ULL;
+  };
 } // namespace
 
 class xiiMaterialManagerState
@@ -38,6 +45,7 @@ public:
   xiiHashTable<xiiTexture2DResourceHandle, MaterialTextureBindingCacheEntry<xiiTexture2DResourceHandle>>     m_Texture2DCache;
   xiiHashTable<xiiTextureCubeResourceHandle, MaterialTextureBindingCacheEntry<xiiTextureCubeResourceHandle>> m_TextureCubeCache;
   xiiHashTable<xiiMaterialResourceHandle, ResourceMaterialEntry>                                             m_ResourceMaterials;
+  xiiHashTable<xiiGALSampler*, MaterialSamplerBinding>                                                       m_Samplers;
   xiiUInt64                                                                                                  m_uiFrameIndex   = 0ULL;
   bool                                                                                                       m_bEngineStarted = false;
   bool                                                                                                       m_bInitialized   = false;
@@ -45,6 +53,42 @@ public:
 
 namespace
 {
+  xiiUInt32 ResolveBindlessSampler(xiiHashTable<xiiGALSampler*, MaterialSamplerBinding>& samplers, xiiSharedPtr<xiiGALSampler> sampler, xiiUInt64 uiFrameIndex)
+  {
+    if (!sampler)
+      return xiiInvalidIndex;
+    MaterialSamplerBinding* entry = nullptr;
+    if (!samplers.TryGetValue(sampler.Borrow(), entry))
+    {
+      const auto handle = xiiGALBindlessResourceTable::RegisterSampler(sampler);
+      if (!handle.IsValid())
+      {
+        xiiLog::Error("Material sampler descriptor capacity exhausted. Using the shader fallback sampler.");
+        return xiiInvalidIndex;
+      }
+      // The GAL already shares identical sampler descriptions. Reuse that identity
+      // so thousands of textures with equal settings consume one descriptor.
+      samplers.Insert(sampler.Borrow(), MaterialSamplerBinding{sampler, handle, uiFrameIndex});
+      XII_VERIFY(samplers.TryGetValue(sampler.Borrow(), entry), "Inserted material sampler must be available.");
+    }
+    entry->m_uiLastReferencedFrame = uiFrameIndex;
+    return entry->m_hBindless.m_uiIndex;
+  }
+
+  void RetireSamplers(xiiHashTable<xiiGALSampler*, MaterialSamplerBinding>& samplers, xiiUInt64 uiFrameIndex, bool bAll = false)
+  {
+    for (auto it = samplers.GetIterator(); it.IsValid();)
+    {
+      if (!bAll && it.Value().m_uiLastReferencedFrame == uiFrameIndex)
+        ++it;
+      else
+      {
+        xiiGALBindlessResourceTable::RetireSampler(it.Value().m_hBindless, uiFrameIndex);
+        it = samplers.Remove(it);
+      }
+    }
+  }
+
   xiiSharedPtr<xiiMaterialInstance> ResolveResourceMaterial(const xiiMaterialResourceHandle& hMaterial, xiiResourceAcquireMode acquireMode)
   {
     xiiResourceLock<xiiMaterialResource> material(hMaterial, acquireMode);
@@ -54,7 +98,7 @@ namespace
   }
 
   template <typename ResourceType, typename ResourceHandle>
-  xiiUInt32 ResolveBindlessTexture(xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache, const ResourceHandle& hTexture, xiiUInt64 uiFrameIndex)
+  xiiUInt32 ResolveBindlessTexture(xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache, xiiHashTable<xiiGALSampler*, MaterialSamplerBinding>& samplers, const ResourceHandle& hTexture, xiiUInt64 uiFrameIndex, xiiUInt32& out_uiSamplerIndex)
   {
     if (!hTexture.IsValid())
       return xiiInvalidIndex;
@@ -98,6 +142,7 @@ namespace
     }
 
     pEntry->m_uiLastReferencedFrame = uiFrameIndex;
+    out_uiSamplerIndex              = ResolveBindlessSampler(samplers, texture->GetGALSampler(), uiFrameIndex);
     return pEntry->m_hBindless.m_uiIndex;
   }
 
@@ -259,25 +304,27 @@ void xiiMaterialManager::PrepareGpuResources()
 
         const xiiMaterialResourceBinding& binding         = snapshot.m_ResourceBindings[uiTexture];
         xiiUInt32                         uiBindlessIndex = xiiInvalidIndex;
+        xiiUInt32                         uiSamplerIndex  = xiiInvalidIndex;
         if (definition.m_TextureType == xiiGALShaderTextureType::Texture2D || definition.m_TextureType == xiiGALShaderTextureType::Texture2DArray)
         {
           if (!binding.m_hTexture2D.IsValid())
             continue; // No resource handle means an explicitly assigned descriptor is caller-owned.
-          uiBindlessIndex = ResolveBindlessTexture<xiiTexture2DResource>(s_pState->m_Texture2DCache, binding.m_hTexture2D, s_pState->m_uiFrameIndex);
+          uiBindlessIndex = ResolveBindlessTexture<xiiTexture2DResource>(s_pState->m_Texture2DCache, s_pState->m_Samplers, binding.m_hTexture2D, s_pState->m_uiFrameIndex, uiSamplerIndex);
         }
         else if (definition.m_TextureType == xiiGALShaderTextureType::TextureCube || definition.m_TextureType == xiiGALShaderTextureType::TextureCubeArray)
         {
           if (!binding.m_hTextureCube.IsValid())
             continue;
-          uiBindlessIndex = ResolveBindlessTexture<xiiTextureCubeResource>(s_pState->m_TextureCubeCache, binding.m_hTextureCube, s_pState->m_uiFrameIndex);
+          uiBindlessIndex = ResolveBindlessTexture<xiiTextureCubeResource>(s_pState->m_TextureCubeCache, s_pState->m_Samplers, binding.m_hTextureCube, s_pState->m_uiFrameIndex, uiSamplerIndex);
         }
 
-        pMaterial->SetBindlessIndex(binding.m_Id, uiBindlessIndex).IgnoreResult();
+        XII_VERIFY(pMaterial->SetBindlessIndex(binding.m_Id, uiBindlessIndex, uiSamplerIndex).Succeeded(), "Schema-defined bindless texture must accept its resolved descriptors.");
       }
     }
 
     RetireUnreferencedTextures(s_pState->m_Texture2DCache, s_pState->m_uiFrameIndex);
     RetireUnreferencedTextures(s_pState->m_TextureCubeCache, s_pState->m_uiFrameIndex);
+    RetireSamplers(s_pState->m_Samplers, s_pState->m_uiFrameIndex);
   }
 }
 
@@ -429,11 +476,13 @@ void xiiMaterialManager::EngineShutdown()
   {
     RetireAllTextures(s_pState->m_Texture2DCache, s_pState->m_uiFrameIndex);
     RetireAllTextures(s_pState->m_TextureCubeCache, s_pState->m_uiFrameIndex);
+    RetireSamplers(s_pState->m_Samplers, s_pState->m_uiFrameIndex, true);
   }
   else
   {
     s_pState->m_Texture2DCache.Clear();
     s_pState->m_TextureCubeCache.Clear();
+    s_pState->m_Samplers.Clear();
   }
 
   if (s_pState->m_pSystem != nullptr)

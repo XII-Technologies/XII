@@ -197,7 +197,7 @@ xiiResult xiiGALBindlessResourceTable::Configure(const xiiGALBindlessResourceTab
   if (s_pState == nullptr)
     return XII_FAILURE;
 
-  if (description.m_uiBufferSRVCapacity == 0U || description.m_uiBufferUAVCapacity == 0U || description.m_uiTextureSRVCapacity == 0U || description.m_uiTextureUAVCapacity == 0U || description.m_uiSamplerCapacity == 0U || description.m_uiBufferSRVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiBufferUAVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiTextureSRVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiTextureUAVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiSamplerCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY)
+  if (description.m_uiBufferSRVCapacity == 0U || description.m_uiBufferUAVCapacity == 0U || description.m_uiTextureSRVCapacity == 0U || description.m_uiTextureUAVCapacity == 0U || description.m_uiSamplerCapacity == 0U || description.m_uiBufferSRVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiBufferUAVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiTextureSRVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiTextureUAVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiSamplerCapacity > XII_GAL_DEFAULT_BINDLESS_SAMPLER_CAPACITY)
     return XII_FAILURE;
 
   XII_LOCK(s_pState->m_Mutex);
@@ -242,7 +242,7 @@ xiiResult xiiGALBindlessResourceTable::Configure(const xiiGALBindlessResourceTab
 
 void xiiGALBindlessResourceTable::Initialize(const xiiGALBindlessResourceTableDescription& description)
 {
-  XII_ASSERT_DEV(description.m_uiBufferSRVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiBufferUAVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiTextureSRVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiTextureUAVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiSamplerCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY, "Bindless table capacities must fit the reflected runtime descriptor capacity.");
+  XII_ASSERT_DEV(description.m_uiBufferSRVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiBufferUAVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiTextureSRVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiTextureUAVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiSamplerCapacity <= XII_GAL_DEFAULT_BINDLESS_SAMPLER_CAPACITY, "Bindless table capacities must fit the reflected runtime descriptor capacity.");
   auto initialize = [](auto& table, xiiUInt32 uiCapacity) {
     table.m_Allocator.Initialize(uiCapacity);
     table.m_Objects.SetCount(uiCapacity);

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // XII Engine - GPU emissive triangle extraction from canonical scene data.
 
 [PLATFORMS]
@@ -9,6 +11,7 @@ ALL
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Materials/GpuSurfaceMaterial.h>
+#include <Shaders/Materials/GpuSurfaceSampling.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightBuildConstants.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
@@ -201,7 +204,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     const float2 uv0 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.x + TexCoordOffset));
     const float2 uv1 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.y + TexCoordOffset));
     const float2 uv2 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.z + TexCoordOffset));
-    radiance *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)].SampleLevel(g_sLinearWrap, (uv0 + uv1 + uv2) / 3.0f, 0.0f).rgb, 0.0f);
+    radiance *= max(xiiSampleSurfaceTextureLevel(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)], material.SamplerIndices1.x, g_sLinearWrap, (uv0 + uv1 + uv2) / 3.0f, 0.0f).rgb, 0.0f);
   }
   const float luminance = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
   if (!isfinite(luminance) || luminance <= 0.0f)

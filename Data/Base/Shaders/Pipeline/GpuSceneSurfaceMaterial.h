@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <Shaders/Materials/GpuSurfaceSampling.h>
+
 StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
 Texture2D<float4>                       g_Textures[];
 
@@ -20,6 +22,8 @@ xiiGpuSurfaceMaterial xiiLoadSceneSurfaceMaterial(uint materialIndex, uint mater
   material.LayerParameters             = float4(0.5f, 1.0f, 0.0f, 0.1f);
   material.TextureIndices0             = 0xFFFFFFFFu;
   material.TextureIndices1             = 0xFFFFFFFFu;
+  material.SamplerIndices0             = 0xFFFFFFFFu;
+  material.SamplerIndices1             = 0xFFFFFFFFu;
   material.Metadata.y                  = 0xF000u;
   if (materialIsValid)
     material = g_SurfaceMaterials[materialBaseIndex + materialIndex];
@@ -31,7 +35,7 @@ float4 xiiSampleSceneBaseColor(xiiGpuSurfaceMaterial material, float2 texCoord)
 {
   float4 color = max(material.BaseColorOpacity, 0.0f);
   if (material.TextureIndices0.x != 0xFFFFFFFFu)
-    color *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(g_sAnisotropicWrap, texCoord), 0.0f);
+    color *= max(xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)], material.SamplerIndices0.x, g_sAnisotropicWrap, texCoord), 0.0f);
   return color;
 }
 

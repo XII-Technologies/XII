@@ -396,6 +396,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       cmd.ResolveAndSetUnorderedAccessBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hHeader)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_Buffers", xiiGALShaderType::Compute);
       xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_Textures", xiiGALShaderType::Compute);
+      xiiGALBindlessResourceTable::BindSamplers(cmd, "g_MaterialSamplers", xiiGALShaderType::Compute);
       cmd.ResolveAndSetSampler("g_sLinearWrap", xiiEmissiveLightManager::s_pState->m_pMaterialSampler.Borrow(), xiiGALShaderType::Compute);
       if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
         return;

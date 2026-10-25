@@ -6,6 +6,7 @@
 #include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
 
 #include <Core/Graphics/Geometry.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Math/Float16.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/PointLightComponent.h>
@@ -34,6 +35,8 @@
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
+#include <Texture/Image/Image.h>
+#include <Texture/Utilities/TextureAssetFile.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeScenePipeline);
 XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposureEpoch)
@@ -580,45 +583,118 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
         XII_TEST_FLOAT(float((center >> (8 * c)) & 255), float((finalPixels[v] >> (8 * c)) & 255), 2.0f);
     }
   }
-  // Exercise the actual bindless material texture path through the canonical Scene.
+  // Exercise authored samplers through the actual Scene, using UVs beyond the
+  // image edge so replacing every sampler with wrap/linear cannot pass.
   {
     auto& remaining = scenes[1];
     XII_LOCK(remaining.m_World->GetWriteMarker());
-    const xiiUInt8               texel[] = {32, 128, 224, 255};
-    xiiGALTextureSubResourceData content;
-    content.m_pData    = xiiConstByteBlobPtr(texel, sizeof(texel));
-    content.m_uiStride = content.m_uiDepthStride = sizeof(texel);
-    xiiTexture2DResourceDescriptor texture;
-    texture.m_TextureDescription.m_Size        = {1, 1};
-    texture.m_TextureDescription.m_uiMipLevels = 1;
-    texture.m_TextureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
-    texture.m_InitialContent                   = xiiMakeArrayPtr(&content, 1);
-    xiiMaterialResourceDescriptor textured;
-    textured.m_BaseColor                  = xiiColor::White;
-    textured.m_hBaseColorTexture          = xiiResourceManager::CreateResource<xiiTexture2DResource>("Scene.BaseColor", std::move(texture));
-    const auto              material      = xiiResourceManager::CreateResource<xiiMaterialResource>("Scene.TexturedMaterial", std::move(textured));
+    xiiGeometry samplingBox;
+    samplingBox.AddBox(xiiVec3(1), true);
+    samplingBox.SetAllVertexTexCoord(xiiVec2(1.1f, 0.5f));
+    xiiMeshResourceDescriptor samplingMesh;
+    samplingMesh.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(samplingBox, xiiGALPrimitiveTopology::TriangleList, false);
+    samplingMesh.AddSection(12, 0, 0);
+    samplingMesh.ComputeBounds();
     xiiStaticMeshComponent* meshComponent = nullptr;
     if (!XII_TEST_BOOL(remaining.m_World->TryGetComponent(remaining.m_Mesh, meshComponent)))
       return;
-    meshComponent->SetMaterialOverride(0, material);
+    meshComponent->SetMesh(xiiResourceManager::CreateResource<xiiMeshResource>("Scene.SamplerBox", std::move(samplingMesh)));
     for (auto* view : remaining.m_Views)
-      view->SetRenderPipelineResource(pipeline); // Retain the Albedo export for readback.
-    for (xiiUInt32 frame = 0; frame < 4; ++frame)
-      remaining.m_World->Update();
-    environment.GetDevice()->WaitIdle();
-    for (auto* view : remaining.m_Views)
+      view->SetRenderPipelineResource(pipeline);
+    xiiTexture2DResourceHandle reloadedTexture;
+    for (xiiUInt32 sample = 0; sample < 5; ++sample)
     {
-      XII_TEST_RESULT(view->GetLastRenderResult());
-      const auto& instance = view->GetRenderPipelineInstance();
-      const auto* binding  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Albedo", false));
-      const auto  image    = view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture);
-      if (!XII_TEST_BOOL(image != nullptr))
+      const xiiUInt8               texels[] = {255, 0, 0, 255, 0, 0, 255, 0};
+      xiiGALTextureSubResourceData content;
+      content.m_pData    = xiiConstByteBlobPtr(texels, sizeof(texels));
+      content.m_uiStride = content.m_uiDepthStride = sizeof(texels);
+      xiiTexture2DResourceDescriptor texture;
+      texture.m_TextureDescription.m_Size        = {2, 1};
+      texture.m_TextureDescription.m_uiMipLevels = 1;
+      texture.m_TextureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
+      texture.m_InitialContent                   = xiiMakeArrayPtr(&content, 1);
+      const auto filter                          = sample < 3 ? xiiGALFilterType::Point : xiiGALFilterType::Linear;
+      texture.m_SamplerDescription.m_MinFilter   = filter;
+      texture.m_SamplerDescription.m_MagFilter   = filter;
+      texture.m_SamplerDescription.m_MipFilter   = filter;
+      texture.m_SamplerDescription.m_AddressU    = sample == 1 || sample == 4 ? xiiGALTextureAddressMode::Clamp : sample == 2 ? xiiGALTextureAddressMode::Mirror :
+                                                                                                                                xiiGALTextureAddressMode::Wrap;
+      // Re-export and reload one native asset identity as its sampler changes.
+      xiiImageView image;
+      image.ResetAndViewExternalStorage(texture.m_TextureDescription, content.m_pData);
+      {
+        xiiFileWriter file;
+        if (!XII_TEST_RESULT(file.Open(":imgout/SceneSampling.xiiBinTexture2D")) || !XII_TEST_RESULT(xiiTextureAssetFile::WriteImage(file, image, texture.m_SamplerDescription, xiiAssetFileHeader())))
+          return;
+      }
+      if (reloadedTexture.IsValid())
+        XII_TEST_BOOL(xiiResourceManager::ReloadResource(reloadedTexture, true));
+      else
+        reloadedTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(":imgout/SceneSampling.xiiBinTexture2D");
+      {
+        xiiResourceLock<xiiTexture2DResource> resource(reloadedTexture, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+        if (!XII_TEST_BOOL(resource.GetAcquireResult() == xiiResourceAcquireResult::Final))
+          return;
+        XII_TEST_INT(resource->GetGALSampler()->GetDescription().CalculateHash(), texture.m_SamplerDescription.CalculateHash());
+      }
+      xiiMaterialResourceDescriptor textured;
+      textured.m_BaseColor         = xiiColor::White;
+      textured.m_hBaseColorTexture = reloadedTexture;
+      xiiStringBuilder name;
+      name.SetFormat("Scene.SamplingEmission{}", sample);
+      textured.m_hEmissiveTexture = xiiResourceManager::CreateResource<xiiTexture2DResource>(name, std::move(texture));
+      auto masked                 = textured;
+      masked.m_AlphaMode          = xiiMaterialAlphaMode::Mask;
+      masked.m_BlendMode          = xiiMaterialBlendMode::Masked;
+      name.SetFormat("Scene.SamplingMaterial{}", sample);
+      const auto material = xiiResourceManager::CreateResource<xiiMaterialResource>(name, std::move(textured));
+      meshComponent->SetMaterialOverride(0, material);
+      for (xiiUInt32 frame = 0; frame < 4; ++frame)
+        remaining.m_World->Update();
+      environment.GetDevice()->WaitIdle();
+      xiiResourceLock<xiiMaterialResource> loadedMaterial(material, xiiResourceAcquireMode::BlockTillLoaded);
+      xiiMaterialInstanceSnapshot          snapshot;
+      loadedMaterial->GetDefaultInstance()->CreateSnapshot(snapshot);
+      const auto color    = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make("BaseColorTexture"));
+      const auto emission = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make("EmissiveTexture"));
+      if (!XII_TEST_BOOL(color < snapshot.m_ResourceBindings.GetCount() && emission < snapshot.m_ResourceBindings.GetCount()))
         return;
-      xiiUInt32 pixel = 0;
-      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), image->GetDescription().m_Size.width / 2, image->GetDescription().m_Size.height / 2, pixel))
-        return;
-      for (xiiUInt32 channel = 0; channel < 4; ++channel)
-        XII_TEST_FLOAT(float((pixel >> (8 * channel)) & 255), float(texel[channel]), 1.0f);
+      const auto sampler = snapshot.m_ResourceBindings[color].m_uiSamplerIndex;
+      XII_TEST_BOOL(sampler != xiiInvalidIndex);
+      XII_TEST_INT(sampler, snapshot.m_ResourceBindings[emission].m_uiSamplerIndex);
+      const xiiUInt8 expected[][4] = {{255, 0, 0, 255}, {0, 0, 255, 255}, {0, 0, 255, 255}, {179, 0, 77, 255}, {0, 0, 255, 255}};
+      for (auto* view : remaining.m_Views)
+      {
+        XII_TEST_RESULT(view->GetLastRenderResult());
+        const auto& instance = view->GetRenderPipelineInstance();
+        const auto* binding  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Albedo", false));
+        const auto  image    = view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture);
+        if (!XII_TEST_BOOL(image != nullptr))
+          return;
+        xiiUInt32 pixel = 0;
+        if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), image->GetDescription().m_Size.width / 2, image->GetDescription().m_Size.height / 2, pixel))
+          return;
+        for (xiiUInt32 channel = 0; channel < 4; ++channel)
+          XII_TEST_FLOAT(float((pixel >> (8 * channel)) & 255), float(expected[sample][channel]), 2.0f);
+      }
+      // The second texel is transparent. Alpha coverage must use the same sampler
+      // as color, including the depth pass that precedes the G-buffer.
+      name.SetFormat("Scene.SamplingMask{}", sample);
+      meshComponent->SetMaterialOverride(0, xiiResourceManager::CreateResource<xiiMaterialResource>(name, std::move(masked)));
+      for (xiiUInt32 frame = 0; frame < 4; ++frame)
+        remaining.m_World->Update();
+      environment.GetDevice()->WaitIdle();
+      for (auto* view : remaining.m_Views)
+      {
+        XII_TEST_RESULT(view->GetLastRenderResult());
+        const auto& instance = view->GetRenderPipelineInstance();
+        const auto* binding  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("ObjectId", false));
+        const auto  image    = view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture);
+        xiiUInt32   objectId = 0;
+        if (!XII_TEST_BOOL(image != nullptr) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), image->GetDescription().m_Size.width / 2, image->GetDescription().m_Size.height / 2, objectId))
+          return;
+        XII_TEST_BOOL((objectId != 0) == (sample == 0 || sample == 3));
+      }
     }
   }
   XII_TEST_BOOL(sawResident);
