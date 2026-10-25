@@ -185,6 +185,7 @@ public:
       deviceDescription.m_DeviceFeatures.m_DurationQueries               = xiiGALDeviceFeatureState::Optional;
       deviceDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Optional;
       deviceDescription.m_DeviceFeatures.m_RayTracing                    = xiiGALDeviceFeatureState::Disabled;
+      deviceDescription.m_DeviceFeatures.m_TextureUAVExtendedFormats     = xiiGALDeviceFeatureState::Optional;
       deviceDescription.m_DeviceFeatures.m_NativeFence                   = xiiGALDeviceFeatureState::Optional; //< Timeline fences are required for GPU-side synchronization between the graphics, asynchronous-compute, and transfer queues.
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
