@@ -19,7 +19,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindlessResourceTableDescription
   xiiUInt32 m_uiBufferUAVCapacity  = XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
   xiiUInt32 m_uiTextureSRVCapacity = XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
   xiiUInt32 m_uiTextureUAVCapacity = 1024U;
-  xiiUInt32 m_uiSamplerCapacity    = 256U;
+  xiiUInt32 m_uiSamplerCapacity    = XII_GAL_DEFAULT_BINDLESS_SAMPLER_CAPACITY;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBindlessResourceTableDescription);
