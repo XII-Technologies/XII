@@ -4,6 +4,7 @@
 
 #include <DearImguiPlugin/DearImguiPluginDLL.h>
 #include <DearImguiPlugin/DearImguiRenderer.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// SDR overlay in linear light. Connect after color grading/upscaling and before Present.
@@ -14,6 +15,8 @@ class XII_DEARIMGUIPLUGIN_DLL xiiImguiRenderPass final : public xiiRenderPipelin
   XII_ADD_DYNAMIC_REFLECTION(xiiImguiRenderPass, xiiRenderPipelinePass);
 
 public:
+  xiiImguiRenderPass();
+  ~xiiImguiRenderPass() override;
   xiiRenderPipelineTextureInputPin  m_InputColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineDataInputPin     m_InputUI{xiiGetStaticRTTI<xiiImguiFrameData>(), true};
   xiiRenderPipelineTextureOutputPin m_OutputColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget, xiiGALResourceDimension::Texture2D, 1};
@@ -21,5 +24,7 @@ public:
 
 private:
   struct Data;
-  static void Execute(const Data& data, xiiRenderGraphPassContext& context);
+  struct State;
+  xiiUniquePtr<State> m_pState;
+  static void         Execute(const Data& data, xiiRenderGraphPassContext& context);
 };

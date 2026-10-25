@@ -19,8 +19,11 @@ xiiImguiFrameData::xiiImguiFrameData(xiiUInt64 uiSetupSerial, xiiSharedPtr<const
 xiiSharedPtr<xiiGALTexture> xiiImguiTexture::GetTexture()
 {
   XII_LOCK(m_Mutex);
-  if (m_pTexture)
+  const auto device = xiiGALDevice::GetDefaultDevice();
+  if (m_pTexture && m_pTexture->GetDevice() == device)
     return m_pTexture;
+  // Font pixels can be uploaded to a recreated device. User textures require explicit re-registration.
+  m_pTexture.Clear();
   if (m_Pixels.IsEmpty())
     return {};
   xiiGALTextureCreationDescription description;
@@ -34,7 +37,7 @@ xiiSharedPtr<xiiGALTexture> xiiImguiTexture::GetTexture()
   pixels.m_uiStride      = m_Size.width * 4;
   pixels.m_uiDepthStride = m_Pixels.GetCount();
   const xiiGALTextureData initial(xiiMakeArrayPtr(&pixels, 1));
-  m_pTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(description, &initial);
+  m_pTexture = device->CreateTexture(description, &initial);
   return m_pTexture;
 }
 

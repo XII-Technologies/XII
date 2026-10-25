@@ -43,6 +43,15 @@ struct xiiImguiRenderPass::Data
   bool                                           m_bReady = false;
 };
 
+struct xiiImguiRenderPass::State
+{
+  xiiSharedPtr<xiiGALShader>      m_pVertexShader;
+  xiiSharedPtr<xiiGALInputLayout> m_pInputLayout;
+};
+
+xiiImguiRenderPass::xiiImguiRenderPass()  = default;
+xiiImguiRenderPass::~xiiImguiRenderPass() = default;
+
 namespace
 {
   template <typename T>
@@ -85,6 +94,8 @@ xiiResult xiiImguiRenderPass::Build(xiiRenderPipelinePassContext& context)
   const auto frame = value ? value.Downcast<const xiiImguiFrameData>()->m_pFrame : xiiSharedPtr<const xiiImguiFrame>();
   if (!frame || frame->GetCommands().IsEmpty())
     return context.SetOutput(m_OutputColor, color);
+  if (context.m_pView && context.m_pView->GetDisplayOutputSettings().m_OutputMode != xiiDisplayOutputMode::SDRsRGB)
+    return context.ReportFailure("Dear ImGui currently supports SDR composition only.");
   const auto* description = context.m_Graph.GetTextureDescription(color);
   if (!description || description->m_Type != xiiGALResourceDimension::Texture2D || description->m_uiArraySizeOrDepth != 1 || description->m_uiSampleCount != 1 ||
       !description->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) ||
@@ -114,7 +125,14 @@ xiiResult xiiImguiRenderPass::Build(xiiRenderPipelinePassContext& context)
   layout.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Position, 0, xiiGALResourceFormat::RG32Float, offsetof(ImDrawVert, pos), sizeof(ImDrawVert), xiiGALInputElementFrequency::PerVertex, 1});
   layout.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::TexCoord0, 0, xiiGALResourceFormat::RG32Float, offsetof(ImDrawVert, uv), sizeof(ImDrawVert), xiiGALInputElementFrequency::PerVertex, 1});
   layout.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Color0, 0, xiiGALResourceFormat::RGBA8UNormalized, offsetof(ImDrawVert, col), sizeof(ImDrawVert), xiiGALInputElementFrequency::PerVertex, 1});
-  pipeline.m_GraphicsPipeline.m_pInputLayout = pipeline.m_pVertexShader->CreateInputLayout(layout);
+  if (!m_pState)
+    m_pState = XII_DEFAULT_NEW(State);
+  if (!m_pState->m_pInputLayout || m_pState->m_pVertexShader != pipeline.m_pVertexShader)
+  {
+    m_pState->m_pInputLayout  = pipeline.m_pVertexShader->CreateInputLayout(layout);
+    m_pState->m_pVertexShader = pipeline.m_pVertexShader;
+  }
+  pipeline.m_GraphicsPipeline.m_pInputLayout = m_pState->m_pInputLayout;
   auto sampler                               = xiiGALDevice::GetDefaultDevice()->CreateSampler({});
   if (!pipeline.m_GraphicsPipeline.m_pInputLayout || !sampler)
     return context.ReportFailure("Dear ImGui input layout or sampler creation failed.");
@@ -127,6 +145,7 @@ xiiResult xiiImguiRenderPass::Build(xiiRenderPipelinePassContext& context)
     // Sampling the attachment being written would form an invalid feedback loop.
     textures.PushBack(std::move(image));
   }
+  bool                       invalidTexture = false;
   xiiRenderPassResourceScope scope(context);
   const auto                 emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_pFrame = frame;
@@ -143,6 +162,11 @@ xiiResult xiiImguiRenderPass::Build(xiiRenderPipelinePassContext& context)
         xiiStringBuilder name;
         name.SetFormat("UI texture/{0}", i);
         const auto imported = builder.ImportTexture(name, textures[i], textures[i]->GetResourceState());
+        if (!imported.IsValid() || imported.GetResourceId() == color.GetResourceId())
+        {
+          invalidTexture = true;
+          return;
+        }
         data.m_Textures.PushBack(builder.ReadTexture(imported, xiiGALResourceStateFlags::ShaderResource));
       }
       builder.SetPassAllowMerge(false);
@@ -152,6 +176,8 @@ xiiResult xiiImguiRenderPass::Build(xiiRenderPipelinePassContext& context)
           Upload(execution, data.m_Indices, data.m_pFrame->GetIndices(), xiiGALResourceStateFlags::IndexBuffer) &&
           Upload(execution, data.m_Constants, xiiArrayPtr<const xiiImguiConstants>(&data.m_Settings, 1), xiiGALResourceStateFlags::ConstantBuffer);
       }); }, Execute);
+  if (invalidTexture)
+    return context.ReportFailure("Dear ImGui cannot sample its own color attachment or an invalid texture import.");
   return context.SetOutput(m_OutputColor, emitted.first->m_Color);
 }
 

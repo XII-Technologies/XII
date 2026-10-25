@@ -14,6 +14,7 @@ xiiImguiContext::xiiImguiContext()
   auto& io               = ImGui::GetIO();
   io.IniFilename         = nullptr; // Independent tools explicitly opt in to their own settings file.
   io.BackendRendererName = "XII GAL";
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
   ImGui::GetPlatformIO().Renderer_TextureMaxWidth  = 4096;
   ImGui::GetPlatformIO().Renderer_TextureMaxHeight = 4096;
@@ -56,16 +57,19 @@ xiiImguiScopedContext::~xiiImguiScopedContext()
 
 xiiResult xiiImguiScopedContext::BeginFrame(const xiiImguiFrameDescription& description)
 {
+  const float delta = static_cast<float>(description.m_DeltaTime.GetSeconds());
   if (!m_pContext || ImGui::GetCurrentContext() != m_pContext->m_pContext || m_pContext->m_bFrameActive ||
       !description.m_vDisplaySize.IsValid() || !description.m_vFramebufferScale.IsValid() ||
       description.m_vDisplaySize.x < 0 || description.m_vDisplaySize.y < 0 ||
       description.m_vFramebufferScale.x <= 0 || description.m_vFramebufferScale.y <= 0 ||
-      !xiiMath::IsFinite(description.m_DeltaTime.GetSeconds()) || description.m_DeltaTime.GetSeconds() <= 0)
+      !xiiMath::IsFinite(delta) || delta <= 0 ||
+      !xiiMath::IsFinite(description.m_vDisplaySize.x * description.m_vFramebufferScale.x) ||
+      !xiiMath::IsFinite(description.m_vDisplaySize.y * description.m_vFramebufferScale.y))
     return XII_FAILURE;
   auto& io                   = ImGui::GetIO();
   io.DisplaySize             = {description.m_vDisplaySize.x, description.m_vDisplaySize.y};
   io.DisplayFramebufferScale = {description.m_vFramebufferScale.x, description.m_vFramebufferScale.y};
-  io.DeltaTime               = static_cast<float>(description.m_DeltaTime.GetSeconds());
+  io.DeltaTime               = delta;
   ImGui::NewFrame();
   m_pContext->m_bFrameActive = true;
   return XII_SUCCESS;
@@ -202,6 +206,9 @@ xiiResult xiiImguiContext::Snapshot(xiiSharedPtr<const xiiImguiFrame>& out_frame
         continue;
       if (command.IdxOffset > static_cast<xiiUInt32>(list->IdxBuffer.Size) || command.ElemCount > static_cast<xiiUInt32>(list->IdxBuffer.Size) - command.IdxOffset || command.VtxOffset >= static_cast<xiiUInt32>(list->VtxBuffer.Size))
         return XII_FAILURE;
+      for (xiiUInt32 i = 0; i < command.ElemCount; ++i)
+        if (list->IdxBuffer[command.IdxOffset + i] >= static_cast<xiiUInt32>(list->VtxBuffer.Size) - command.VtxOffset)
+          return XII_FAILURE;
       xiiSharedPtr<xiiImguiTexture> texture;
       for (const auto& entry : m_Textures)
         if (entry.m_Id == command.GetTexID())
