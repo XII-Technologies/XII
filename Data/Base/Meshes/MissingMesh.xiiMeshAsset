@@ -11,7 +11,7 @@ o
 		s %AssetType{"Mesh"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{7139397627682754203,4783035615231258983}}
-		u4 %Hash{4137266242566843689}
+		u4 %Hash{18265345040754886595}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -53,6 +53,7 @@ o
 		u2 %Detail{0}
 		u2 %Detail2{0}
 		b %FlipForwardDir{0}
+		u1 %GeneratedLODs{0}
 		f %Height{0}
 		b %ImportMaterials{1}
 		s %ImportTransform{"xiiMeshImportTransform::Custom"}
