@@ -6,6 +6,7 @@
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletCullPass.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
 
@@ -28,6 +29,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshletCullPass, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("VisibleMeshletCount", m_OutputCount)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibleMeshletOverflow", m_Overflow)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(1024U * 1024U), new xiiClampValueAttribute(1U, 16777216U)),
+    XII_MEMBER_PROPERTY("RequireComplete", m_bRequireComplete)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Visibility") } XII_END_ATTRIBUTES;
@@ -40,6 +42,11 @@ xiiResult xiiMeshletCullPass::Configure(const xiiVariantDictionary& properties)
 }
 xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
 {
+  // An absent query is an explicitly inactive rendering workload.
+  if (!context.GetInputBuffer(m_View).IsValid())
+    return XII_SUCCESS;
+  if (m_bRequireComplete && (!context.m_pView || !context.m_pView->GetGpuInstanceData() || context.m_pView->GetGpuInstanceData()->GetMaximumMeshletCount() > m_uiMaxVisibleMeshlets))
+    return context.ReportFailure("Complete meshlet coverage exceeds the authored capacity; increase MaxVisibleMeshlets.");
   const auto scene = context.GetInputBuffer(m_Scene), view = context.GetInputBuffer(m_View), geometry = context.GetInputBuffer(m_Geometry), meshlets = context.GetInputBuffer(m_Meshlets);
   const auto visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count), lod = context.GetInputBuffer(m_Lod), arguments = context.GetInputBuffer(m_Arguments);
   const auto initialCount = context.GetInputBuffer(m_InitialCount), initialOverflow = context.GetInputBuffer(m_InitialOverflow);

@@ -30,6 +30,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVertexPullDrawCommandsPass, 1, xiiRTTIDefaul
 
 xiiResult xiiVertexPullDrawCommandsPass::Build(xiiRenderPipelinePassContext& context)
 {
+  // An absent query is an explicitly inactive rendering workload.
+  if (!context.GetInputBuffer(m_View).IsValid())
+    return XII_SUCCESS;
   const auto scene = context.GetInputBuffer(m_Scene), view = context.GetInputBuffer(m_View), geometry = context.GetInputBuffer(m_Geometry);
   const auto meshlets = context.GetInputBuffer(m_Meshlets), visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count);
   const auto valid = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {

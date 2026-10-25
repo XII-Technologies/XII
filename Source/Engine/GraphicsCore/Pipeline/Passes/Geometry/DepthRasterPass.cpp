@@ -33,6 +33,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 2, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("DrawCommandCount", m_InputDrawCommandCount)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DepthTarget", m_InputDepth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SceneDepth", m_OutputDepth)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("CascadeSnapshot", m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("ShadowCaster", m_bShadowCaster)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("CascadeIndex", m_uiCascadeIndex)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 3U)),
     XII_MEMBER_PROPERTY("Viewport", m_Viewport)->AddAttributes(new xiiDefaultValueAttribute(xiiVec4U32::MakeZero())),
     XII_MEMBER_PROPERTY("UseMeshShaders", m_bUseMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_ENUM_MEMBER_PROPERTY("FillMode", xiiGALFillMode, m_FillMode)->AddAttributes(new xiiDefaultValueAttribute(xiiGALFillMode::Solid)),
@@ -43,14 +46,32 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 2, xiiRTTIDefaultAllocator<
 xiiResult xiiDepthRasterPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return ((m_FillMode == xiiGALFillMode::Solid || m_FillMode == xiiGALFillMode::Wireframe) &&
+  return (m_uiCascadeIndex < 4 && (m_FillMode == xiiGALFillMode::Solid || m_FillMode == xiiGALFillMode::Wireframe) &&
           ((m_Viewport.z && m_Viewport.w) || (m_Viewport == xiiVec4U32::MakeZero()))) ?
     XII_SUCCESS :
     XII_FAILURE;
 }
 
+void xiiDepthRasterPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  xiiRenderPipelinePass::GetPins(out_pins);
+  // Shadow occurrences may forward an absent atlas. Ordinary depth retains its
+  // required public contract; only optionality changes, never the reflected ports.
+  if (!m_bShadowCaster)
+    for (auto& pin : out_pins)
+      if (pin.m_sName == "DepthTarget" || pin.m_sName == "SceneDepth" || pin.m_sName == "RasterConstants" || pin.m_sName == "VisibleMeshlets" || pin.m_sName == "VisibleMeshletCount" || pin.m_sName == "DrawCommands" || pin.m_sName == "DrawCommandCount")
+        pin.m_bOptional = false;
+}
+
 xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (!context.GetInputBuffer(m_InputRasterConstants).IsValid())
+  {
+    if (!m_bShadowCaster)
+      return context.ReportFailure("Ordinary depth rasterization requires raster constants.");
+    const auto depth = context.GetInputTexture(m_InputDepth);
+    return depth.IsValid() ? context.SetOutput(m_OutputDepth, depth) : XII_SUCCESS;
+  }
   if (!xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;
   const auto device = xiiGALDevice::GetDefaultDevice();
@@ -80,22 +101,33 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Depth rasterization requires an explicit single-sample D32 target.");
   auto viewport = m_Viewport;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "RasterViewport", viewport));
+  if (m_bShadowCaster)
+  {
+    const auto  input    = context.GetInputData(m_Cascades);
+    const auto* cascades = xiiDynamicCast<const xiiShadowCascadeSnapshot*>(input.Borrow());
+    if (!cascades || m_uiCascadeIndex >= cascades->m_Cascades.GetCount())
+      return context.ReportFailure("Active shadow rasterization requires its cascade snapshot.");
+    const auto resolution = cascades->m_uiResolution;
+    viewport              = xiiVec4U32((m_uiCascadeIndex % 2) * resolution, (m_uiCascadeIndex / 2) * resolution, resolution, resolution);
+  }
   if (!(viewport.z && viewport.w) && viewport != xiiVec4U32::MakeZero())
     return context.ReportFailure("RasterViewport must be an explicit nonempty rectangle or all zero for the full image.");
   if (viewport == xiiVec4U32::MakeZero())
     viewport = xiiVec4U32(0, 0, image->m_Size.width, image->m_Size.height);
   if (!viewport.z || !viewport.w || viewport.x > image->m_Size.width || viewport.y > image->m_Size.height || viewport.z > image->m_Size.width - viewport.x || viewport.w > image->m_Size.height - viewport.y)
     return context.ReportFailure("Depth raster viewport is outside its supplied image.");
-  if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != m_FillMode)
+  if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != m_FillMode || m_bCachedShadowCaster != m_bShadowCaster)
   {
     const auto                                     shader = xiiResourceManager::LoadResource<xiiShaderResource>(m_bUseMeshShaders ? "Shaders/Geometry/DepthMesh.xiiShader" : "Shaders/Geometry/DepthVertexPull.xiiShader");
     xiiHashTable<xiiHashedString, xiiHashedString> variables;
     xiiHashedString                                name, value;
     name.Assign("RENDER_PASS");
-    value.Assign(m_FillMode == xiiGALFillMode::Wireframe ? "RENDER_PASS_PICKING_WIREFRAME" : "RENDER_PASS_PICKING");
+    value.Assign(m_bShadowCaster ? "RENDER_PASS_DEPTH_ONLY" : m_FillMode == xiiGALFillMode::Wireframe ? "RENDER_PASS_PICKING_WIREFRAME" :
+                                                                                                        "RENDER_PASS_PICKING");
     variables.Insert(name, value);
     m_hShader            = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
     m_bCachedMeshShaders = m_bUseMeshShaders;
+    m_bCachedShadowCaster = m_bShadowCaster;
     m_CachedFill         = m_FillMode;
   }
   xiiResourceLock<xiiShaderPermutationResource> shader(m_hShader, xiiResourceAcquireMode::BlockTillLoaded);

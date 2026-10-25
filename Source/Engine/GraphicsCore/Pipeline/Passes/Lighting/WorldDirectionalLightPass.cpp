@@ -48,6 +48,6 @@ xiiResult xiiWorldDirectionalLightPass::Build(xiiRenderPipelinePassContext& cont
     const auto evaluated = xiiEvaluateLightColor(selected->m_LightColor, selected->m_uiTemperature);
     color                = xiiVec4(evaluated.r, evaluated.g, evaluated.b, selected->m_fRadius);
   }
-  return context.SetOutput(m_Light, XII_DEFAULT_NEW(xiiDirectionalLightFrameData, context.m_Graph.GetSetupSerial(), direction, color));
+  return context.SetOutput(m_Light, XII_DEFAULT_NEW(xiiDirectionalLightFrameData, context.m_Graph.GetSetupSerial(), direction, color, selected && selected->m_bCastShadows));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_WorldDirectionalLightPass);

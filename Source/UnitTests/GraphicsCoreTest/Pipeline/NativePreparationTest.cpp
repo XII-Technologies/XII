@@ -204,7 +204,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, ReflectedMeshletCullingBudget)
   cull.GetPins(pins);
   XII_TEST_RESULT(cull.InitializePinBindings(pins));
   XII_TEST_BOOL(pins[cull.m_Arguments.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
-  XII_TEST_BOOL(!pins[cull.m_Overflow.GetBindingIndex()].m_bInput && !pins[cull.m_Overflow.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(!pins[cull.m_Overflow.GetBindingIndex()].m_bInput && pins[cull.m_Overflow.GetBindingIndex()].m_bOptional);
 }
 
 XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVertexPullCommands)
@@ -217,7 +217,7 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentVertexPullCommands)
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   pass.GetPins(pins);
   XII_TEST_RESULT(pass.InitializePinBindings(pins));
-  XII_TEST_BOOL(pins[pass.m_Visible.GetBindingIndex()].m_bInput && !pins[pass.m_Visible.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[pass.m_Visible.GetBindingIndex()].m_bInput && pins[pass.m_Visible.GetBindingIndex()].m_bOptional);
   XII_TEST_BOOL(pins[pass.m_Commands.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
   XII_TEST_BOOL(pins[pass.m_CommandCount.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments));
   XII_TEST_RESULT(pass.GetProperties(properties));

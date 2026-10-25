@@ -31,6 +31,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInstanceCullPass, 1, xiiRTTIDefaultAllocator
 // clang-format on
 xiiResult xiiInstanceCullPass::Build(xiiRenderPipelinePassContext& context)
 {
+  // An absent query is an explicitly inactive rendering workload.
+  if (!context.GetInputBuffer(m_View).IsValid())
+    return XII_SUCCESS;
   const auto scene = context.GetInputBuffer(m_Instances), view = context.GetInputBuffer(m_View), geometry = context.GetInputBuffer(m_Geometry), candidates = context.GetInputBuffer(m_Candidates);
   const auto counter = context.GetInputBuffer(m_Counter), current = context.GetInputBuffer(m_InitializedLod);
   auto       previous = context.GetInputBuffer(m_PreviousLod);
