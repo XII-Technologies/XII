@@ -531,3 +531,115 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, ImmutableParticleSettingsAndCategoryD
   XII_TEST_FLOAT(retained.m_Renderers[0].m_Tint.b, 1, 0);
   XII_TEST_BOOL(retained.m_hOwnerObject == owner);
 }
+
+XII_CREATE_SIMPLE_TEST(PipelineExtraction, ParticleBirthSpaceLifetimeAndCapacity)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Authoritative particle births", xiiGetStaticRTTI<xiiParticleExtractionTestPass>());
+  const auto          pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("ParticleBirths.Capture", std::move(definition));
+  xiiWorldDescription description("World-authoritative emitter timeline");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  world.GetClock().SetFixedTimeStep(xiiTime::MakeFromSeconds(0.1));
+  xiiGameObjectDescription objectDescription;
+  objectDescription.m_bDynamic = true;
+  xiiGameObject* object        = nullptr;
+  world.CreateObject(objectDescription, object);
+  xiiParticleSystemComponent* system = nullptr;
+  xiiParticleSystemComponent::CreateComponent(object, system);
+  xiiParticleSystemDescriptor settings;
+  settings.m_bAlwaysVisible = true;
+  settings.m_uiMaxParticles = 3;
+  system->SetDescriptor(settings);
+  xiiParticleEmitterComponent* emitter = nullptr;
+  xiiParticleEmitterComponent::CreateComponent(object, emitter);
+  const auto set = [&](xiiStringView name, const xiiVariant& value) {
+    const auto* property = static_cast<const xiiAbstractMemberProperty*>(emitter->GetDynamicRTTI()->FindPropertyByName(name));
+    xiiReflectionUtils::SetMemberPropertyValue(property, emitter, value);
+  };
+  set("SpawnRate", 10.0f);
+  set("Lifetime", 0.35f);
+  set("InitialSpeed", 2.0f);
+  xiiParticleRendererComponent* renderer = nullptr;
+  xiiParticleRendererComponent::CreateComponent(object, renderer);
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView* views[2];
+  for (auto& view : views)
+  {
+    world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Particle birth comparison", view);
+    view->SetCamera(&camera);
+    view->SetViewport({0, 0, 8, 8});
+    view->SetRenderPipelineResource(pipeline);
+  }
+  xiiUInt32 initialId = 0;
+  bool      expired = false, dropped = false;
+  for (xiiUInt32 phase = 0; phase < 8; ++phase)
+  {
+    if (phase == 1)
+      object->SetLocalPosition(xiiVec3(1, 0, 0));
+    if (phase == 4)
+      set("SpawnRate", 0.0f);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    xiiDynamicArray<xiiParticleBirthSnapshot, xiiAlignedAllocatorWrapper> first;
+    for (xiiUInt32 v = 0; v < 2; ++v)
+    {
+      XII_TEST_RESULT(views[v]->GetLastRenderResult());
+      const auto* capture = xiiDynamicCast<const xiiParticleExtractionTestPass*>(views[v]->GetRenderPipelineInstance().GetPass(0));
+      if (!XII_TEST_BOOL(capture && capture->m_Snapshots.GetCount() == 1))
+        return;
+      const auto& packet = capture->m_Snapshots[0];
+      XII_TEST_BOOL(packet.m_sEmissionError.IsEmpty());
+      XII_TEST_BOOL(packet.m_Births.GetCount() <= 3);
+      dropped |= packet.m_uiDroppedSpawnCount > 0;
+      if (v == 0)
+        first = packet.m_Births;
+      else
+      {
+        XII_TEST_INT(packet.m_Births.GetCount(), first.GetCount());
+        for (xiiUInt32 i = 0; i < first.GetCount(); ++i)
+        {
+          XII_TEST_INT(packet.m_Births[i].m_InitialState.m_uiId, first[i].m_InitialState.m_uiId);
+          XII_TEST_BOOL(packet.m_Births[i].m_InitialState.m_vPositionAge == first[i].m_InitialState.m_vPositionAge);
+        }
+      }
+      bool found = false;
+      for (const auto& birth : packet.m_Births)
+      {
+        const auto& state = birth.m_InitialState;
+        XII_TEST_BOOL(state.m_vPositionAge.w >= 0 && state.m_vPositionAge.w < 0.35f);
+        if (phase == 0 && !initialId)
+          initialId = state.m_uiId;
+        if (state.m_uiId == initialId)
+        {
+          found = true;
+          XII_TEST_FLOAT(state.m_vPositionAge.x, 0, 0);
+        }
+      }
+      if (phase >= 4)
+        expired |= !found;
+      if (phase == 7)
+        XII_TEST_BOOL(packet.m_Births.IsEmpty());
+    }
+  }
+  XII_TEST_BOOL(initialId != 0 && expired && dropped);
+  settings.m_SimulationSpace = xiiParticleSimulationSpace::Local;
+  system->SetDescriptor(settings);
+  set("Mode", xiiInt64(xiiParticleEmitterMode::Burst));
+  set("BurstCount", 2U);
+  world.Update();
+  environment.GetDevice()->WaitIdle();
+  const auto* capture = xiiDynamicCast<const xiiParticleExtractionTestPass*>(views[0]->GetRenderPipelineInstance().GetPass(0));
+  XII_TEST_INT(capture->m_Snapshots[0].m_Births.GetCount(), 2);
+  for (const auto& birth : capture->m_Snapshots[0].m_Births)
+  {
+    XII_TEST_FLOAT(birth.m_InitialState.m_vPositionAge.x, 0, 0);
+  }
+}

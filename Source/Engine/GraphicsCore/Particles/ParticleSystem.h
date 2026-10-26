@@ -21,7 +21,7 @@ class xiiParticleSystemRuntime;
 class xiiParticleSystemManager;
 struct xiiMsgExtractRenderData;
 
-using xiiParticleSystemComponentManager = xiiComponentManager<class xiiParticleSystemComponent, xiiBlockStorageType::FreeList>;
+using xiiParticleSystemComponentManager = xiiComponentManagerSimple<class xiiParticleSystemComponent, xiiComponentUpdateType::Always, xiiBlockStorageType::FreeList, xiiWorldUpdatePhase::PostTransform>;
 
 /// Constants shared by the CPU runtime and shader-side particle layouts.
 struct XII_GRAPHICSCORE_DLL xiiParticleSystemConstants
@@ -183,6 +183,13 @@ class XII_GRAPHICSCORE_DLL xiiParticleSystemRuntimeHandle
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemRuntimeHandle);
 
+/// Initial conditions captured at an authoritative particle birth. Current positions are evaluated on the GPU.
+struct alignas(16) XII_GRAPHICSCORE_DLL xiiParticleBirthSnapshot
+{
+  xiiParticleGPUState m_InitialState;
+  xiiHashedString     m_SystemBinding;
+};
+
 /// Renderer-facing packet for GPU particle systems.
 class XII_GRAPHICSCORE_DLL xiiParticleRenderData : public xiiRenderData
 {
@@ -197,6 +204,9 @@ public:
   xiiSharedPtr<xiiGALBuffer> m_pCountersBuffer;      ///< A buffer containing various counters related to the particle system (e.g., alive count, dead count, spawn request count, event count), which is updated by the GPU during simulation passes and can be read by the renderer for rendering or debugging purposes.
   xiiSharedPtr<xiiGALBuffer> m_pDrawIndirectBuffer;  ///< A buffer containing the arguments for indirect draw calls, which is updated by the GPU during simulation passes (e.g., based on the alive count) and read by the renderer for rendering. This allows for efficient rendering of a variable number of particles without needing to read back counts to the CPU.
 
+  xiiDynamicArray<xiiParticleBirthSnapshot, xiiAlignedAllocatorWrapper> m_Births;
+  xiiString                                                             m_sEmissionError;
+  xiiUInt32                                                             m_uiDroppedSpawnCount = 0;
   xiiDynamicArray<xiiParticleEmitterSnapshot>  m_Emitters;
   xiiDynamicArray<xiiParticleRendererSnapshot> m_Renderers;
   xiiTime                                      m_ElapsedTime;
@@ -388,10 +398,13 @@ public:
   [[nodiscard]] xiiParticleSystemRuntimeHandle GetRuntimeHandle() const { return m_hRuntime; }
 
 protected:
+  void Update();
   void OnActivated() override;
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
 private:
+  struct EmissionState;
+  xiiUniquePtr<EmissionState>            m_pEmissionState;
   xiiTime                                m_ActivationTime;
   xiiUInt64                              m_uiSimulationRevision = 0;
   xiiParticleSystemDescriptor            m_Descriptor; ///< The authored particle-system configuration.
