@@ -13,6 +13,9 @@
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSurfaceMaterial);
 
+/// Resolves canonical surface semantics from one coherent material snapshot without reading live instance state.
+XII_GRAPHICSCORE_DLL xiiGpuSurfaceMaterial xiiResolveGpuSurfaceMaterial(const xiiMaterialInstanceSnapshot& snapshot);
+
 /// Configuration for the global GPU material table. Each frame in flight receives a disjoint
 /// slice, so frequent CPU edits never overwrite bytes still consumed by an earlier GPU frame.
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuStorageDescription
