@@ -207,12 +207,12 @@ public:
   xiiDynamicArray<xiiParticleBirthSnapshot, xiiAlignedAllocatorWrapper> m_Births;
   xiiString                                                             m_sEmissionError;
   xiiUInt32                                                             m_uiDroppedSpawnCount = 0;
-  xiiDynamicArray<xiiParticleEmitterSnapshot>  m_Emitters;
-  xiiDynamicArray<xiiParticleRendererSnapshot> m_Renderers;
-  xiiTime                                      m_ElapsedTime;
-  xiiUInt64                                    m_uiSimulationRevision     = 0;
-  xiiUInt32                                    m_uiWorldUpdate            = 0;
-  bool                                         m_bHasAdditionalSimulation = false;
+  xiiDynamicArray<xiiParticleEmitterSnapshot>                           m_Emitters;
+  xiiDynamicArray<xiiParticleRendererSnapshot>                          m_Renderers;
+  xiiTime                                                               m_ElapsedTime;
+  xiiUInt64                                                             m_uiSimulationRevision     = 0;
+  xiiUInt32                                                             m_uiWorldUpdate            = 0;
+  bool                                                                  m_bHasAdditionalSimulation = false;
 
   xiiParticleSystemRuntimeHandle m_hRuntime; ///< Stable subsystem handle for the runtime that owns the simulation resources.
 };

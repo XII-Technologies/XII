@@ -8,6 +8,7 @@
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
+#include <GraphicsCore/Pipeline/Passes/Particles/BallisticParticlePass.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegrationConstantsPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -17,6 +18,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
+#include <Shaders/Pipeline/Passes/Particles/BallisticParticleConstants.h>
 
 /// Test-owned initialized state, deliberately longer than both the active and dispatch ranges.
 class xiiParticleIntegrationTestSource : public xiiRenderPipelinePass
@@ -641,5 +643,138 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, ParticleBirthSpaceLifetimeAndCapacity
   for (const auto& birth : capture->m_Snapshots[0].m_Births)
   {
     XII_TEST_FLOAT(birth.m_InitialState.m_vPositionAge.x, 0, 0);
+  }
+}
+
+class xiiParticleTrajectoryTestSource final : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiParticleTrajectoryTestSource, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineBufferOutputPin m_Seeds{false, xiiGALBindFlags::ShaderResource}, m_Batches{false, xiiGALBindFlags::ShaderResource};
+  bool                             m_bLocal = false;
+  xiiResult                        Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphBufferHandle m_hSeeds, m_hBatches;
+      xiiParticleGPUState        m_Particles[3];
+      xiiParticleTrajectoryBatch m_Batch;
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      xiiMemoryUtils::ZeroFill(data.m_Particles,3);
+      for(xiiUInt32 i=0;i<3;++i){auto& particle=data.m_Particles[i];particle.m_vPositionAge={float(i),0,0,0.5f};particle.m_vPreviousPositionRadius={0,0,0,2};particle.m_vVelocityLifetime={2,0,1,i==1?0.25f:2.0f};particle.m_vColor={1,0.5f,0.25f,0.8f};particle.m_uiId=100+i;}
+      data.m_Batch.LocalToWorld=xiiMat4::MakeTranslation({10,20,30});data.m_Batch.Tint={0.5f,1,0.8f,0.5f};data.m_Batch.SizeAndSoftness={0.25f,0.1f,3,0};data.m_Batch.Policy={m_bLocal?1U:0U,7,0,0};
+      xiiGALBufferCreationDescription description;description.m_Mode=xiiGALBufferMode::Structured;description.m_BindFlags=xiiGALBindFlags::ShaderResource;description.m_uiElementByteStride=sizeof(xiiParticleGPUState);description.m_uiSize=sizeof(data.m_Particles);data.m_hSeeds=builder.WriteBuffer("Immutable particle seeds",description,xiiGALResourceStateFlags::CopyDestination);
+      description.m_uiElementByteStride=sizeof(data.m_Batch);description.m_uiSize=sizeof(data.m_Batch);data.m_hBatches=builder.WriteBuffer("Captured trajectory policy",description,xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) {auto& commands=execute.GetCommandList();commands.UpdateBuffer(execute.GetBuffer(data.m_hSeeds),0,xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Particles),sizeof(data.m_Particles)));commands.UpdateBuffer(execute.GetBuffer(data.m_hBatches),0,xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Batch),sizeof(data.m_Batch))); });
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Seeds, emitted.first->m_hSeeds));
+    return context.SetOutput(m_Batches, emitted.first->m_hBatches);
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleTrajectoryTestSource, 1, xiiRTTIDefaultAllocator<xiiParticleTrajectoryTestSource>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Seeds", m_Seeds)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Batches", m_Batches)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Local", m_bLocal),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_CREATE_SIMPLE_TEST_GROUP(NativeParticles);
+XII_CREATE_SIMPLE_TEST(NativeParticles, BallisticBirthEvaluationPreservesInputAndRecording)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  for (xiiUInt32 phase = 0; phase < 2; ++phase)
+  {
+    xiiRenderPipelineResourceDescriptor definition;
+    xiiVariantDictionary                properties;
+    properties.Insert("Local", phase == 1);
+    const auto source   = definition.AddPass("Immutable world births", xiiGetStaticRTTI<xiiParticleTrajectoryTestSource>(), properties);
+    const auto evaluate = definition.AddPass("Explicit ballistic trajectories", xiiGetStaticRTTI<xiiBallisticParticlePass>());
+    XII_TEST_RESULT(definition.Connect(source, "Seeds", evaluate, "Seeds"));
+    XII_TEST_RESULT(definition.Connect(source, "Batches", evaluate, "Batches"));
+    for (const auto node : {source, evaluate})
+    {
+      const auto sink = definition.AddPass(node == source ? "Original birth readback" : "Evaluated state readback", xiiGetStaticRTTI<xiiParticleIntegrationTestReadback>());
+      XII_TEST_RESULT(definition.Connect(node, node == source ? "Seeds" : "Particles", sink, "Particles"));
+    }
+    xiiStringBuilder name;
+    name.SetFormat("Particles.Ballistic.{}", phase);
+    const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(definition));
+    xiiRenderPipelineInstance instance;
+    xiiRenderGraphTestContext context;
+    if (!XII_TEST_RESULT(instance.Synchronize(resource)) || !XII_TEST_RESULT(context.Initialize("Ballistic immutable birth evaluation")))
+      return;
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    auto& graph = context.GetGraph();
+    auto& cache = context.GetResourceCache();
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+    graph.BeginSetup(frame.GetFrameIndex());
+    if (!XII_TEST_RESULT_MSG(instance.Build(nullptr, graph, context.GetBlackboard()), "%s", instance.GetLastBuildError().GetStartPointer()))
+      return;
+    xiiDynamicArray<xiiRenderGraphBufferHandle> outputs;
+    for (xiiUInt32 i = 0; i < instance.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+      if (const auto* pass = xiiDynamicCast<const xiiParticleIntegrationTestReadback*>(instance.GetPass(i)))
+        outputs.PushBack(pass->m_Readback);
+    graph.EndSetup();
+    instance.Clear();
+    xiiStringBuilder error;
+    if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+      return;
+    environment.GetDevice()->WaitIdle();
+    XII_TEST_INT(outputs.GetCount(), 2);
+    for (xiiUInt32 output = 0; output < outputs.GetCount(); ++output)
+    {
+      const auto staging = graph.GetExportedBuffer(outputs[output]);
+      if (!XII_TEST_BOOL(staging != nullptr))
+        return;
+      auto commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      commands->Begin();
+      void* mapped = nullptr;
+      if (XII_TEST_RESULT(commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, mapped)))
+      {
+        const auto* particles = static_cast<const xiiParticleGPUState*>(mapped);
+        for (xiiUInt32 i = 0; i < 3; ++i)
+        {
+          const auto& p = particles[i];
+          XII_TEST_INT(p.m_uiId, 100 + i);
+          if (output == 0)
+          {
+            XII_TEST_FLOAT(p.m_vPositionAge.x, float(i), 0);
+            XII_TEST_FLOAT(p.m_vPositionAge.z, 0, 0);
+            XII_TEST_FLOAT(p.m_vColor.w, 0.8f, 0);
+          }
+          else if (i == 1)
+          {
+            XII_TEST_FLOAT(p.m_vColor.w, 0, 0);
+            XII_TEST_FLOAT(p.m_vVelocityLifetime.w, 0, 0);
+          }
+          else
+          {
+            XII_TEST_FLOAT(p.m_vPositionAge.x, float(i) + 1 + (phase ? 10 : 0), 0.00001f);
+            XII_TEST_FLOAT(p.m_vPositionAge.y, phase ? 20 : 0, 0.00001f);
+            XII_TEST_FLOAT(p.m_vPositionAge.z, 0.5f - 9.81f * 0.125f + (phase ? 30 : 0), 0.00001f);
+            XII_TEST_FLOAT(p.m_vVelocityLifetime.z, 1 - 9.81f * 0.5f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vPreviousPositionRadius.w, phase ? 1.5f : 0.5f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vColor.x, 0.5f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vColor.z, 0.2f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vColor.w, 0.8f * 0.5f * (1 - 0.25f * 0.25f), 0.00001f);
+          }
+        }
+        XII_TEST_RESULT(commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read));
+      }
+      commands->End();
+      auto* queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+      queue->WaitForFenceValue(queue->Submit(commands));
+    }
   }
 }

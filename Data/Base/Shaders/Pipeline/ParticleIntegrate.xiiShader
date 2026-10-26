@@ -11,22 +11,9 @@ ALL
 
 #include <Shaders/Pipeline/Passes/Particles/ParticleIntegrationConstants.h>
 
-struct Particle
-{
-    float4 PositionAge;            // xyz = world-space position, w = age
-    float4 PreviousPositionRadius; // xyz = previous position, w = radius
-    float4 VelocityLifetime;       // xyz = world-space velocity, w = lifetime
-    float4 Color;                  // rgba
-    float4 ForceInverseMass;       // xyz = accumulated force, w = inverse mass
-    float4 Custom0;
-    float4 Custom1;
-    uint   Id;
-    uint   Flags;
-    uint   Emitter;
-    uint   CellId;
-};
+#include <Shaders/Pipeline/Passes/Particles/ParticleState.h>
 
-RWStructuredBuffer<Particle> g_Particles : register(u0);
+RWStructuredBuffer<xiiParticleState> g_Particles : register(u0);
 
 float ParticleHash(float3 x)
 {
@@ -58,7 +45,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     if (ActiveCount != 0u) count = min(count, ActiveCount);
     if (idx >= count) return;
 
-    Particle p = g_Particles[idx];
+    xiiParticleState p = g_Particles[idx];
 
     // Kill particle when lifetime elapsed.
     p.PositionAge.w += DeltaTimeS;

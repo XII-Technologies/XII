@@ -565,7 +565,7 @@ void xiiParticleSystemComponent::Update()
       const auto born    = settings.m_Mode == xiiParticleEmitterMode::Burst ? source->m_ActivatedAt : xiiTime::MakeFromSeconds(source->m_fNextBirthTime + double(i) / settings.m_fSpawnRate);
       if (state.m_Time - born >= xiiTime::MakeFromSeconds(settings.m_fLifetime))
         continue;
-      xiiRandom random;
+      xiiRandom  random;
       const auto seed = (xiiUInt64(m_Descriptor.m_uiRandomSeed ^ settings.m_uiRandomSeed) << 32) ^ (ordinal + 1);
       random.Initialize(seed ? seed : 1);
       xiiVec3 position = xiiVec3::MakeZero();
