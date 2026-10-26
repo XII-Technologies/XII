@@ -17,7 +17,11 @@
 > previous object/bone motion, depth rejection and recording-safe history slots.
 > Temporal upsampling and the other temporal filters remain separate acceptance work.
 
-Current source inventory: **107 concrete reflected operation classes** in
+> Scene now references an optional eight-operation screen-reflection workload with
+> real closest/farthest depth bounds, filtered radiance, GGX lookup and HDR composition.
+> Spatial output has Scene GPU acceptance; environment probes and SSR history remain separate work.
+
+Current source inventory: **108 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.

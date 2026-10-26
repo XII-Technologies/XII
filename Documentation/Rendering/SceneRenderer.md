@@ -2,7 +2,7 @@
 
 `Data/Base/RenderPipelines` contains two default authored resources: **Scene** and
 **Editor**, plus independently authored **SceneAtmosphere** and
-**SceneDirectionalShadows** workloads composed by Scene. Directional shadows reuse
+**SceneDirectionalShadows** and **SceneScreenSpaceReflections** workloads composed by Scene. Directional shadows reuse
 **SceneShadowCascade** for each cascade's caster rasterization. The two roots are
 defaults, not an enumeration of supported workloads.
 Applications can select any compatible resource or construct a resource descriptor
@@ -42,7 +42,8 @@ Scene renders world mesh components through shared GPU instance extraction,
 view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
 lights, optional world directional shadows, ambient diffuse and emission, spatial
-ambient visibility, optional world atmosphere and temporal antialiasing, exposure,
+ambient visibility, optional world atmosphere, spatial screen reflections and temporal
+antialiasing, exposure,
 tone mapping, color grading and presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
 
@@ -130,8 +131,9 @@ visible/occluded selection and front-surface picking, switches resources, resize
 and checks icon picking. Fixed preview tests exercise real texture/cubemap output.
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
-These defaults intentionally exclude local/virtual/ray shadows, GI, reflections and
-transparent/particle rasterization. Temporal antialiasing is authored but opt-in.
+These defaults intentionally exclude local/virtual/ray shadows, GI, environment/probe
+reflections and transparent/particle rasterization. Spatial screen reflections and
+temporal antialiasing are authored but opt-in.
 Other retained operations and focused tests are not certification of complete production techniques.
 Custom material shader permutations beyond the canonical GPU surface model,
 stereo rendering, backend coverage beyond the configured Vulkan build, large-scene
@@ -145,7 +147,7 @@ committed. The Editor transforms the authored sources into its normal
 subgraph reference use the source asset GUIDs through the existing lookup table.
 For standalone GPU tests/sample preparation, run `EditorFrameworkTest -noGui -run
 -close -all -filter RendererAssets -outputDir <project-local-test-output>`. This
-exports all five sources with the production compiler into the ignored cache, checks
+exports all six sources with the production compiler into the ignored cache, checks
 stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
@@ -395,7 +397,7 @@ Scene authors `xiiTemporalCameraPass` and the existing, corrected
 `xiiTemporalAntiAliasingPass` directly. These are two operation boundaries rather
 than a new single-operation asset. The immutable typed camera sample feeds view
 constants, surface raster constants, visibility preparation and reconstruction.
-Atmosphere HDR feeds TAA; resolved HDR feeds the existing exposure/display chain
+Atmosphere HDR feeds optional screen reflections, then TAA; resolved HDR feeds the existing exposure/display chain
 and `HDRSceneColor`. Editor composes this same result before its overlays.
 Existing root interfaces and source identities are preserved.
 
@@ -481,3 +483,122 @@ corrected before the image results above. Fixture corrections account for
 half-precision/raster motion rounding, closest-depth velocity dilation, paused
 views that intentionally make no render attempt, and isolated layout dependency
 registration. Other backends and interactive desktop acceptance remain unverified.
+
+
+## Spatial screen-space reflections
+
+`SceneScreenSpaceReflections.xiiRenderPipelineAsset` is an eight-operation workload
+between atmosphere application and temporal reconstruction. Its source identity is
+`{ 78cb6185-5e43-9953-e249-8fe1c45085f5 }`. Scene and Editor retain their existing
+identities and interfaces; Scene additionally exposes optional `ScreenReflections`
+(straight RGB with confidence alpha) and `ReflectionLighting` (confidence-weighted RGB).
+
+The authored `Reflection Depth` texture-forward operation has `Enabled=false` and
+`RequireInput=true`. Enabling this occurrence is the single reflection policy switch.
+It publishes Scene depth to two depth-pyramid operations and as the explicit presence
+input of the radiance-pyramid and BRDF producers. These presence inputs control setup;
+the producers do not sample their texels. Absent depth suppresses all reflection GPU
+work. Optional confidence composition forwards the original HDR resource exactly,
+including its precision and read-only binding flags. Missing required resources in an
+active workload are errors. The ordinary Scene default therefore preserves the
+previous rendering behavior and cost.
+
+```text
+SceneDepth -> Reflection Depth -> Closest Depth / Farthest Depth --+
+                    |                                           |
+                    +-> Filtered Radiance <- atmosphere HDR      |
+                    +-> Integrate BRDF                           |
+GBuffer normal/material/albedo + coherent camera ----------------+-> Trace Reflections
+                                                                       |
+                                                             Reflection Confidence
+                                                                       |
+atmosphere HDR -------------------------------------------------> Add Reflections -> TAA
+```
+
+| Resource | Format and dimensions | Producer / consumer |
+| --- | --- | --- |
+| Closest depth | R32Float, viewport-sized full mip chain, SRV/UAV | Reversed-Z maximum reduction / trace near bounds |
+| Farthest depth | R32Float, viewport-sized full mip chain, SRV/UAV | Reversed-Z minimum reduction / trace far bounds |
+| Filtered radiance | RGBA32Float, viewport-sized full mip chain, SRV/UAV | Area-weighted linear HDR reduction / roughness cone sampling |
+| BRDF lookup | RG16Float, existing device-shared lookup extent, SRV/UAV | GGX integration / split-sum specular response |
+| Camera | Exact 160-byte uniform | Existing view constants / world reconstruction and projection |
+| Reflection constants | 48-byte uniform | Reflected traversal, distance, bias and material settings / trace |
+| ScreenReflections | RGBA32Float, viewport-sized, SRV/UAV | Spatial trace / confidence weighting |
+| ReflectionLighting | RGBA32Float, viewport-sized, SRV/UAV | Confidence weighting / HDR addition |
+| HDRSceneColor | RGBA32Float in Scene | Atmosphere plus weighted reflection / TAA and display |
+
+Depth reduction conservatively includes odd-edge texels. Radiance reduction weights
+fractional source coverage so odd viewport dimensions do not discard bright edges.
+Both producers handle one-dimensional and one-pixel images and restore per-mip GAL
+states after reduction. Their graph callbacks own their pipelines, uniforms and
+resource descriptions. The BRDF lookup remains an immutable device-owned lighting
+resource; each recording retains its integration pipeline. A recording prepared
+before another graph initializes the lookup also waits for its readiness fence;
+setup order does not decide which recording performs integration. Its initial
+imported state is resolved by GAL at execution, rather than captured before another
+recording changes it. No new renderer manager
+or mutable cross-occurrence reflection history is introduced.
+
+Tracing walks complete projected hierarchy cell segments, descends on overlapping
+near/far bounds, solves depth crossings at the finest level, and rejects departure
+surface and backface hits while continuing the ray. It supports perspective and
+orthographic camera rays, a finite world-space distance and surface bias, reflected
+step/thickness/roughness limits, approximate GGX cone filtering of actual color mips,
+split-sum material response and confidence fades at screen edges and distance limits.
+The previous frame-dependent, biased roughness perturbation is removed. Raw output
+uses RGBA32Float rather than the old RGBA16Float contract. Unrelated callers with an
+explicit half-float output constraint must resample/convert that output themselves.
+
+A miss contributes zero reflection and preserves the incoming scene radiance.
+Offscreen and hidden surfaces therefore cannot appear; no environment, hardware-ray
+or diffuse-irradiance algorithm is substituted. Environment convolution/probes and
+SSR temporal filtering remain separate work. The old SSR temporal operation depends
+on a different previous-surface contract and is deliberately absent here. This path
+has no reflection history to invalidate on cuts, first frames, resize or reload.
+Whole-scene TAA remains a separate authored choice; moving-reflection/reactive-mask
+quality with TAA, stereo, representative performance and non-Vulkan backends still
+need acceptance. Spatial roughness filtering is an approximation rather than a
+multi-sample glossy transport solution.
+
+The current GGX lookup requires `TextureUAVExtendedFormats` for RG16Float storage.
+An enabled unsupported workload fails explicitly before allocation; the authored
+reflection switch provides the disabled fallback. AO must also be disabled explicitly
+on the same restricted device. The reflection path executes without mesh shaders.
+
+### Reflection GPU acceptance
+
+`SceneReflections` renders actual world-extracted box/floor geometry, materials and
+sunlight through the production Scene resource. At 257 by 193, the mirror has 774
+reflection pixels, 787 red-dominant trace pixels overall and 775 changed final pixels.
+The test checks every RGB pixel against confidence weighting and HDR addition;
+depth and object IDs remain identical with the feature disabled. Recoloring the box
+produces blue reflection pixels and removes red reflection pixels. Rough floor
+materials reject the trace; a dielectric floor reduces weighted reflection energy
+from about 1,841 to 210. Removing the box produces zero hits and exactly unchanged
+final output; restoring it reproduces the original trace bit-for-bit.
+
+The test also exercises odd resize to 193 by 129, orthographic projection, object movement and camera cuts,
+explicit history invalidation, dependency reload that changes the roughness policy
+and restores it, independent worlds/views with red and blue
+objects, and execution of a retained recording after its pipeline instance and world
+retire. Restricted-device coverage verifies an explicit RG16 storage failure while
+authored-disabled Scene still renders real geometry. Native producer tests read all
+depth/color mips at odd, one-dimensional and one-pixel extents, and compare BRDF
+integration to reference values. Optional composition tests cover required-input
+failure, exact read-only RGBA16 forwarding, absent confidence and scaled RGBA32 output.
+`CanonicalRenderer/EditorUsesScene` verifies 159 matching changed final pixels in
+Scene and Editor and exact restoration after the reflection switch is disabled.
+The Editor fixture reacquires its floor component by owner handle after world
+updates, honoring component storage relocation.
+
+
+Final Windows/MSVC Debug validation passed the four CTest targets:
+RendererAssetPreparation, GraphicsCoreTest (79 subtests), GraphicsFoundationTest
+(122 subtests) and EditorEngineProcessFrameworkTest (76 subtests). EditorDocuments
+(20) and NodeLayout (3) also passed. All six source assets export byte-identically
+through the production compiler, with source identities, dependency metadata and
+existing HDR/depth contracts checked. The rebuilt Vulkan sample completed 300
+frames with the default reflection switch disabled. Active reflection evidence
+comes from the Scene/Editor image and buffer comparisons above. Pinned formatting,
+changed-source and whitespace checks passed. Generated binaries, tables, captures
+and logs are excluded from commits; D3D12 and other backends remain unverified.
