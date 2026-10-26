@@ -13,5 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiTextureForwardPass final : public xiiRenderPipelin
 public:
   xiiRenderPipelineTextureInputPin  m_Input{xiiGALResourceFormat::Unknown, true};
   xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read};
+  bool                              m_bEnabled      = true;
+  bool                              m_bRequireInput = false;
+  void                              GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                         Build(xiiRenderPipelinePassContext& context) override;
 };

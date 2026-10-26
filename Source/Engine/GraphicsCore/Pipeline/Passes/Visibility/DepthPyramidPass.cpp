@@ -15,14 +15,27 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthPyramidPass, 1, xiiRTTIDefaultAllocator
   {
     XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DepthPyramid", m_Pyramid)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("ClosestDepth", m_bClosestDepth)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("AllowAbsentDepth", m_bAllowAbsentDepth)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Visibility") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+void xiiDepthPyramidPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  const auto first = out_pins.GetCount();
+  xiiRenderPipelinePass::GetPins(out_pins);
+  for (xiiUInt32 i = first; i < out_pins.GetCount(); ++i)
+    if (out_pins[i].m_sName == "SceneDepth" || out_pins[i].m_sName == "DepthPyramid")
+      out_pins[i].m_bOptional = m_bAllowAbsentDepth;
+}
+
 xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  input  = context.GetInputTexture(m_Depth);
+  if (!input.IsValid() && m_bAllowAbsentDepth)
+    return XII_SUCCESS;
   const auto* source = context.m_Graph.GetTextureDescription(input);
   if (!source || (source->m_Format != xiiGALResourceFormat::D32Float && source->m_Format != xiiGALResourceFormat::R32Float) || source->m_Type != xiiGALResourceDimension::Texture2D || source->m_uiArraySizeOrDepth != 1 || source->m_uiSampleCount != 1 || !source->m_Size.width || !source->m_Size.height || !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     return context.ReportFailure("Depth pyramid requires a nonempty single-sample D32 or R32Float 2D depth image.");
@@ -46,12 +59,13 @@ xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphBufferHandle               m_Constants;
     xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
     xiiGALTextureCreationDescription         m_Description;
+    bool                                     m_bClosest;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Source = builder.ReadTexture(input, xiiGALResourceStateFlags::ShaderResource);
       data.m_Output = builder.WriteTexture("Reversed Depth Pyramid", target, xiiGALResourceStateFlags::UnorderedAccess);
       data.m_Constants = xiiRenderPassUtils::Constants(builder, "Depth Reduction Constants", sizeof(xiiDepthPyramidConstants));
-      data.m_Description = target; data.m_Pipeline = m_Pipeline; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Description = target; data.m_Pipeline = m_Pipeline; data.m_bClosest = m_bClosestDepth; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       auto* output = execute.GetTexture(data.m_Output);
       // Temporary per-mip layouts are owned locally; restore the graph's whole-image state.
@@ -72,7 +86,7 @@ xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
         reads[mip] = output->CreateView(view);
         view.m_ViewType = xiiGALTextureViewType::UnorderedAccess;
         writes[mip] = output->CreateView(view);
-        if (!reads[mip] || !writes[mip]) { xiiLog::Error("Could not create depth-pyramid mip views."); return; }
+        if (!reads[mip] || !writes[mip]) { execute.ReportFailure("Could not create depth-pyramid mip views."); return; }
       }
       output->SetResourceState(xiiGALResourceStateFlags::Unknown);
       commands.SetPipelineState(data.m_Pipeline.Borrow());
@@ -83,7 +97,7 @@ xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
         const xiiSizeU32 next = mip ? xiiSizeU32{xiiMath::Max(size.width >> 1U, 1U), xiiMath::Max(size.height >> 1U, 1U)} : size;
         {
           xiiGALMapHelper<xiiDepthPyramidConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-          mapped->SrcSize = {size.width, size.height}; mapped->DstSize = {next.width, next.height}; mapped->Reduce = mip ? 1 : 0;
+          mapped->SrcSize = {size.width, size.height}; mapped->DstSize = {next.width, next.height}; mapped->Reduce = mip ? (data.m_bClosest ? 2U : 1U) : 0U;
         }
         xiiGALStateTransitionDescription uniform;
         uniform.m_pResource = execute.GetBuffer(data.m_Constants);
@@ -92,7 +106,14 @@ xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
         const auto sourceView = mip ? reads[mip - 1] : execute.GetTexture(data.m_Source)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
         commands.ResolveAndSetShaderResourceTextureView("g_HiZSource", sourceView.Borrow(), xiiGALShaderType::Compute);
         commands.ResolveAndSetUnorderedAccessTextureView("g_HiZDestination", writes[mip].Borrow(), xiiGALShaderType::Compute);
-        commands.CommitShaderResources(xiiGALStateTransitionMode::None).AssertSuccess();
+        if (commands.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        {
+          for (xiiUInt32 previous = 0; previous < mip; ++previous)
+            transitionMip(previous, xiiGALResourceStateFlags::ShaderResource, xiiGALResourceStateFlags::UnorderedAccess);
+          output->SetResourceState(xiiGALResourceStateFlags::UnorderedAccess);
+          execute.ReportFailure("Could not bind depth-pyramid reduction resources.");
+          return;
+        }
         commands.DispatchCompute({(next.width + 7U) / 8U, (next.height + 7U) / 8U, 1});
         if (mip + 1 < reads.GetCount()) transitionMip(mip, xiiGALResourceStateFlags::UnorderedAccess, xiiGALResourceStateFlags::ShaderResource);
         size = next;

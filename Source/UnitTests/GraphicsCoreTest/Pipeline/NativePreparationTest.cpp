@@ -315,10 +315,15 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentDepthPyramidAndTextureHisto
   XII_TEST_RESULT(pyramid.Configure(properties));
   XII_TEST_BOOL(!pyramid.m_bAsyncCompute && pyramid.GetRequiredDeviceFeatures().IsSet(xiiRenderPipelineDeviceFeature::Compute));
   XII_TEST_BOOL(pyramid.GetExtractionRequirements().IsNoFlagSet() && pyramid.GetRuntimeFeatures().IsNoFlagSet());
+  properties.Insert("ClosestDepth", true);
+  properties.Insert("AllowAbsentDepth", true);
+  XII_TEST_RESULT(pyramid.Configure(properties));
+  XII_TEST_BOOL(pyramid.m_bClosestDepth && pyramid.m_bAllowAbsentDepth);
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   pyramid.GetPins(pins);
   XII_TEST_RESULT(pyramid.InitializePinBindings(pins));
   XII_TEST_BOOL(!pins[pyramid.m_Pyramid.GetBindingIndex()].m_bTemporalHistoryOutput);
+  XII_TEST_BOOL(pins[pyramid.m_Depth.GetBindingIndex()].m_bOptional && pins[pyramid.m_Pyramid.GetBindingIndex()].m_bOptional);
   pins.Clear();
   history.GetPins(pins);
   if (!XII_TEST_RESULT(history.InitializePinBindings(pins)))

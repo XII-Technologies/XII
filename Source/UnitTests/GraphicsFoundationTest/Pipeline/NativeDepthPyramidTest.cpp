@@ -3,7 +3,9 @@
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/Temporal/TextureHistoryPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/TextureForwardPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/DepthPyramidPass.h>
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -106,7 +108,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
-  bool CheckPyramid(xiiGALDevice& device, xiiGALTexture* texture, xiiSizeU32 size, float base, bool uniform)
+  bool CheckPyramid(xiiGALDevice& device, xiiGALTexture* texture, xiiSizeU32 size, float base, bool uniform, bool closest = false)
   {
     if (!XII_TEST_BOOL(texture && texture->GetDescription().m_Size == size))
       return false;
@@ -158,7 +160,7 @@ namespace
       for (xiiUInt32 y = 0; y < next.height; ++y)
         for (xiiUInt32 x = 0; x < next.width; ++x)
         {
-          float depth = 1;
+          float depth = closest ? 0.0f : 1.0f;
           // Reference footprints are normalized pixel intervals, independent of the shader's odd-edge implementation.
           const xiiUInt32 beginX = static_cast<xiiUInt32>(xiiUInt64(x) * size.width / next.width);
           const xiiUInt32 beginY = static_cast<xiiUInt32>(xiiUInt64(y) * size.height / next.height);
@@ -166,7 +168,7 @@ namespace
           const xiiUInt32 endY   = static_cast<xiiUInt32>((xiiUInt64(y + 1) * size.height + next.height - 1) / next.height);
           for (xiiUInt32 sy = beginY; sy < endY; ++sy)
             for (xiiUInt32 sx = beginX; sx < endX; ++sx)
-              depth = xiiMath::Min(depth, expected[sy * size.width + sx]);
+              depth = closest ? xiiMath::Max(depth, expected[sy * size.width + sx]) : xiiMath::Min(depth, expected[sy * size.width + sx]);
           reduced[y * next.width + x] = depth;
         }
       expected = std::move(reduced);
@@ -318,4 +320,74 @@ XII_CREATE_SIMPLE_TEST(NativeDepthPyramid, AuthoredInterleavedHistory)
   render(0, 0.03f, {9, 1});
   render(1, 0.05f, {7, 5});
   render(0, 0.06f, {9, 1});
+}
+
+
+XII_CREATE_SIMPLE_TEST(NativeDepthPyramid, PairedBoundsAndAuthoredAbsence)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor descriptor;
+  const auto                          source = descriptor.AddPass("Depth samples", xiiGetStaticRTTI<xiiNativePyramidSource>());
+  xiiVariantDictionary                gateProperties;
+  gateProperties.Insert("RequireInput", true);
+  const auto gate = descriptor.AddPass("Optional reflection depth", xiiGetStaticRTTI<xiiTextureForwardPass>(), gateProperties);
+  XII_TEST_RESULT(descriptor.Connect(source, "Depth", gate, "Input"));
+  for (xiiUInt32 closest = 0; closest < 2; ++closest)
+  {
+    xiiVariantDictionary properties;
+    properties.Insert("ClosestDepth", closest != 0);
+    properties.Insert("AllowAbsentDepth", true);
+    const auto pyramid = descriptor.AddPass(closest ? "Closest" : "Farthest", xiiGetStaticRTTI<xiiDepthPyramidPass>(), properties);
+    const auto sink    = descriptor.AddPass(closest ? "Read closest" : "Read farthest", xiiGetStaticRTTI<xiiOpaqueTestExport>());
+    XII_TEST_RESULT(descriptor.Connect(gate, "Output", pyramid, "SceneDepth"));
+    XII_TEST_RESULT(descriptor.Connect(pyramid, "DepthPyramid", sink, "Input"));
+    descriptor.m_Interface.PushBack({closest ? "Closest" : "Farthest", false, descriptor.m_Passes[sink].m_Id, "Output"});
+  }
+  auto disabled = descriptor;
+  disabled.m_Passes[gate].m_Properties.Insert("Enabled", false);
+  const auto                enabledResource  = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("DepthBounds.Enabled", std::move(descriptor));
+  const auto                disabledResource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("DepthBounds.Disabled", std::move(disabled));
+  xiiRenderPipelineInstance instances[2];
+  XII_TEST_RESULT(instances[0].Synchronize(enabledResource));
+  XII_TEST_RESULT(instances[1].Synchronize(disabledResource));
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(context.Initialize("Paired reversed depth bounds")))
+    return;
+  for (const xiiSizeU32 size : {xiiSizeU32{7, 5}, xiiSizeU32{129, 97}, xiiSizeU32{1, 9}, xiiSizeU32{9, 1}, xiiSizeU32{1, 1}})
+    for (xiiUInt32 inactive = 0; inactive < 2; ++inactive)
+    {
+      xiiRenderGraphFrame frame;
+      if (!XII_TEST_RESULT(frame.Begin()))
+        return;
+      auto& graph = context.GetGraph();
+      auto& cache = context.GetResourceCache();
+      cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+      XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+      graph.BeginSetup(frame.GetFrameIndex());
+      xiiVariantDictionary parameters;
+      parameters.Insert("Native.Width", size.width);
+      parameters.Insert("Native.Height", size.height);
+      auto& instance = instances[inactive];
+      if (!XII_TEST_RESULT_MSG(instance.Build(nullptr, graph, context.GetBlackboard(), parameters), "%s", instance.GetLastBuildError().GetStartPointer()))
+        return;
+      xiiRenderGraphTextureHandle outputs[2];
+      for (xiiUInt32 closest = 0; closest < 2; ++closest)
+      {
+        outputs[closest] = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface(closest ? "Closest" : "Farthest", false))->m_hTexture;
+        XII_TEST_BOOL(outputs[closest].IsValid() == (inactive == 0));
+      }
+      graph.EndSetup();
+      if (inactive)
+        continue;
+      xiiStringBuilder error;
+      if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+        return;
+      for (xiiUInt32 closest = 0; closest < 2; ++closest)
+        CheckPyramid(*environment.GetDevice(), graph.GetExportedTexture(outputs[closest]).Borrow(), size, 0.2f, false, closest != 0);
+    }
 }

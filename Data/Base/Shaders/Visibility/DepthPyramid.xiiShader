@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 [PLATFORMS]
 ALL
 
@@ -26,9 +28,12 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   // conservative; dropping an odd edge could incorrectly reject a visible bound.
   const uint2 first = dispatchThreadId.xy * 2u;
   const uint2 last = min(first + 2u + (SrcSize & 1u), SrcSize);
-  float depth = 1.0f;
+  float depth = Reduce == 2u ? 0.0f : 1.0f;
   [loop] for (uint y = first.y; y < last.y; ++y)
     [loop] for (uint x = first.x; x < last.x; ++x)
-      depth = min(depth, g_HiZSource.Load(int3(x, y, 0)));
+    {
+      const float sampleDepth = g_HiZSource.Load(int3(x, y, 0));
+      depth = Reduce == 2u ? max(depth, sampleDepth) : min(depth, sampleDepth);
+    }
   g_HiZDestination[dispatchThreadId.xy] = depth;
 }
