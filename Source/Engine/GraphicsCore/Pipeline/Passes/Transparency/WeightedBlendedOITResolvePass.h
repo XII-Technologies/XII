@@ -16,6 +16,8 @@ public:
   xiiRenderPipelineTextureInputPin  m_InputRevealage{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputHDR{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputHDR{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Automatic};
+  xiiRenderPipelineTextureInputPin  m_InputAdditive{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputModulation{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   bool                              m_bBypass = false;
   /// Both optional targets absent forwards HDR exactly. A partially supplied pair is an error.
   bool m_bAllowAbsentAccumulation = false;

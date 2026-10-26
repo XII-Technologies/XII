@@ -21,9 +21,9 @@ XII_CREATE_SIMPLE_TEST(NativeTransparency, ReadOnlyHDRPrecisionAndConditionalInp
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  for (xiiUInt32 phase = 0; phase < 9; ++phase)
+  for (xiiUInt32 phase = 0; phase < 12; ++phase)
   {
-    const bool                          fullPrecision = phase != 0 && phase != 2;
+    const bool                          fullPrecision = phase != 0 && phase != 2 && phase != 9;
     const bool                          absent        = phase == 0 || phase == 6 || phase == 7;
     const xiiColor                      background    = fullPrecision ? xiiColor(100000, 200000, 300000, 0.5f) : xiiColor(2, 4, 6, 0.5f);
     xiiRenderPipelineResourceDescriptor definition;
@@ -48,6 +48,14 @@ XII_CREATE_SIMPLE_TEST(NativeTransparency, ReadOnlyHDRPrecisionAndConditionalInp
       XII_TEST_RESULT(definition.Connect(accumulation, "Texture", resolve, "OITAccumulate"));
     if (!absent && phase != 5)
       XII_TEST_RESULT(definition.Connect(revealage, "Texture", resolve, "OITReveal"));
+    if (phase >= 9)
+    {
+      const auto additive   = clear("Added radiance", xiiGALResourceFormat::RGBA32Float, {0.5f, 0.25f, 0.125f, 0});
+      const auto modulation = clear("Modulated transmission", xiiGALResourceFormat::RGBA32Float, {0.5f, 0.75f, 1, 1});
+      XII_TEST_RESULT(definition.Connect(additive, "Texture", resolve, "Additive"));
+      if (phase != 11)
+        XII_TEST_RESULT(definition.Connect(modulation, "Texture", resolve, "Modulation"));
+    }
     // Root inputs permit construction of the intentionally incomplete strict case.
     if (phase == 6)
     {
@@ -78,7 +86,7 @@ XII_CREATE_SIMPLE_TEST(NativeTransparency, ReadOnlyHDRPrecisionAndConditionalInp
     XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
     graph.BeginSetup(frame.GetFrameIndex());
     const auto result = instance.Build(nullptr, graph, context.GetBlackboard());
-    if (phase == 5 || phase == 6 || phase == 8)
+    if (phase == 5 || phase == 6 || phase == 8 || phase == 11)
     {
       XII_TEST_BOOL(result.Failed());
       graph.EndSetup();
@@ -107,6 +115,12 @@ XII_CREATE_SIMPLE_TEST(NativeTransparency, ReadOnlyHDRPrecisionAndConditionalInp
         const float transmittance = phase == 4 ? 64.0f / 255 : 0.25f;
         for (xiiUInt32 channel = 0; channel < 3; ++channel)
           expected.GetData()[channel] = background.GetData()[channel] * transmittance + float(channel + 1) * (1 - transmittance);
+      }
+      if (output == composed && phase >= 9)
+      {
+        expected.x = (expected.x + 0.5f) * 0.5f;
+        expected.y = (expected.y + 0.25f) * 0.75f;
+        expected.z += 0.125f;
       }
       if (fullPrecision)
       {
