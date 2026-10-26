@@ -4,6 +4,7 @@
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegrationConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Transparency/TransparentRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Transparency/WeightedBlendedOITResolvePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
@@ -102,4 +103,30 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ImmutableGpuSurfaceMaterialSnapshot)
   XII_TEST_INT(second.TextureIndices0.x, 23);
   XII_TEST_INT(second.SamplerIndices0.x, 5);
   XII_TEST_INT(second.Metadata.z, xiiMaterialAlphaMode::Opaque);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, ForwardRefractionConfiguration)
+{
+  xiiTransparentRasterPass authored;
+  authored.m_bEnableRefraction   = true;
+  authored.m_fRefractionDistance = 12;
+  authored.m_uiRefractionSteps   = 16;
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(authored.GetProperties(properties));
+  xiiTransparentRasterPass restored;
+  XII_TEST_RESULT(restored.Configure(properties));
+  XII_TEST_BOOL(restored.m_bEnableRefraction);
+  XII_TEST_FLOAT(restored.m_fRefractionDistance, 12, 0);
+  XII_TEST_INT(restored.m_uiRefractionSteps, 16);
+  for (const xiiUInt32 steps : {0U, 129U})
+  {
+    properties.Insert("RefractionSteps", steps);
+    XII_TEST_BOOL(restored.Configure(properties).Failed());
+  }
+  properties.Insert("RefractionSteps", 16U);
+  properties.Insert("RefractionDistance", -1.0f);
+  XII_TEST_BOOL(restored.Configure(properties).Failed());
+  properties.Insert("RefractionDistance", 12.0f);
+  properties.Insert("RefractionThicknessTolerance", 0.0f);
+  XII_TEST_BOOL(restored.Configure(properties).Failed());
 }

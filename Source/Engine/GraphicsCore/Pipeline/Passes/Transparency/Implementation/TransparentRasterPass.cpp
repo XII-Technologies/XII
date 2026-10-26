@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/LightingData.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
@@ -22,11 +23,12 @@
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
+#include <Shaders/Pipeline/Passes/Refraction/ForwardRefractionConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/Transparency/TransparentRasterConstants.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,1,xiiRTTIDefaultAllocator<xiiTransparentRasterPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,2,xiiRTTIDefaultAllocator<xiiTransparentRasterPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -49,6 +51,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,1,xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("LightGrid",m_LightGrid)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("LightIndices",m_LightIndices)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("LightOverflow",m_LightOverflow)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("BackgroundRadiance",m_BackgroundRadiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Depth",m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("LightLayout",m_LightLayout)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Cascades",m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -61,6 +64,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,1,xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Additive",m_Additive)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Modulation",m_Modulation)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("HistoryTrust",m_HistoryTrust)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("EnableRefraction",m_bEnableRefraction)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("RefractionDistance",m_fRefractionDistance)->AddAttributes(new xiiDefaultValueAttribute(100.0f)),
+    XII_MEMBER_PROPERTY("RefractionThicknessTolerance",m_fRefractionThicknessTolerance)->AddAttributes(new xiiDefaultValueAttribute(0.1f)),
+    XII_MEMBER_PROPERTY("RefractionSteps",m_uiRefractionSteps)->AddAttributes(new xiiDefaultValueAttribute(32U)),
     XII_MEMBER_PROPERTY("LightingScale",m_fLightingScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_MEMBER_PROPERTY("WeightDepthScale",m_fWeightDepthScale)->AddAttributes(new xiiDefaultValueAttribute(5.0f)),
     XII_MEMBER_PROPERTY("MaximumWeight",m_fMaximumWeight)->AddAttributes(new xiiDefaultValueAttribute(3000.0f)),
@@ -76,6 +83,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,1,xiiRTTIDefaultAlloca
 xiiResult xiiTransparentRasterPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
+  if (!xiiMath::IsFinite(m_fRefractionDistance) || m_fRefractionDistance <= 0 || m_fRefractionDistance > 100000 ||
+      !xiiMath::IsFinite(m_fRefractionThicknessTolerance) || m_fRefractionThicknessTolerance <= 0 || m_fRefractionThicknessTolerance > 10 ||
+      m_uiRefractionSteps == 0 || m_uiRefractionSteps > 128)
+    return XII_FAILURE;
   return xiiMath::IsFinite(m_fLightingScale) && m_fLightingScale >= 0 && xiiMath::IsFinite(m_fWeightDepthScale) && m_fWeightDepthScale > 0 &&
       xiiMath::IsFinite(m_fMaximumWeight) && m_fMaximumWeight >= 0.01f && m_fMaximumWeight <= 1000000 &&
       xiiMath::IsFinite(m_fDepthBias) && m_fDepthBias >= 0 && m_fDepthBias <= 0.1f && xiiMath::IsFinite(m_fNormalBias) && m_fNormalBias >= 0 && m_fNormalBias <= 10 &&
@@ -104,7 +115,8 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   const auto* depthDescription = context.m_Graph.GetTextureDescription(depth);
   if (!depthDescription || depthDescription->m_Format != xiiGALResourceFormat::D32Float || depthDescription->m_Type != xiiGALResourceDimension::Texture2D || depthDescription->m_uiArraySizeOrDepth != 1 || depthDescription->m_uiSampleCount != 1 || !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil) || !depthDescription->m_Size.HasNonZeroArea() || depthDescription->m_Size.width != context.m_pView->GetRenderResolutionWidth() || depthDescription->m_Size.height != context.m_pView->GetRenderResolutionHeight())
     return context.ReportFailure("Transparent rasterization requires viewport-sized single-sample D32 depth.");
-  const auto valid = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
+  const auto depthSnapshot = *depthDescription;
+  const auto valid         = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
     const auto* d = context.m_Graph.GetBufferDescription(handle);
     return d && d->m_Mode == xiiGALBufferMode::Structured && d->m_uiElementByteStride == stride && d->m_uiSize >= stride && d->m_uiSize % stride == 0 && d->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
@@ -159,12 +171,53 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Transparent atmosphere requires exact physical constants and both readable LUTs.");
   if (!atmospheric && (transmittance.IsValid() || multiScatter.IsValid()))
     return context.ReportFailure("Transparent atmosphere LUTs require physical constants.");
-  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U);
+  bool refractive = false;
+  if (m_bEnableRefraction)
+  {
+    const auto* instances = context.m_pView->GetGpuInstanceData();
+    const auto  records   = instances->GetInstances();
+    for (xiiUInt32 index = 0; index < records.GetCount(); ++index)
+    {
+      const auto required = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::Transparent).GetValue();
+      if ((records[index].m_uiFlags & required) != required)
+        continue;
+      const auto material = xiiMaterialManager::GetGpuStorage().GetMaterial(instances->GetMaterialHandle(index));
+      if (!material)
+        continue; // The canonical absent-material surface has zero transmission.
+      const auto runtime = material->GetRuntimeState();
+      if (!runtime.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::Transmission))
+        continue;
+      xiiMaterialInstanceSnapshot snapshot;
+      material->CreateSnapshot(snapshot);
+      const auto optics = xiiResolveGpuSurfaceMaterial(snapshot);
+      if (!xiiMath::IsFinite(optics.AdvancedParameters.y) || optics.AdvancedParameters.y < 1 ||
+          !xiiMath::IsFinite(optics.AdvancedParameters.x) || optics.AdvancedParameters.x < 0 ||
+          !xiiMath::IsFinite(optics.SurfaceParameters.z))
+        return context.ReportFailure("Refraction materials require finite transmission, IOR at least one and nonnegative world-space thickness.");
+      refractive = true;
+    }
+  }
+  const auto background = context.GetInputTexture(m_BackgroundRadiance);
+  if (refractive)
+  {
+    const auto* image = xiiScreenSpacePassUtils::Image(context, background, 4, &depthDescription->m_Size);
+    if (!image || (image->m_Format != xiiGALResourceFormat::RGBA32Float && image->m_Format != xiiGALResourceFormat::RGBA16Float) ||
+        !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+      return context.ReportFailure("Active refraction requires matching immutable HDR background and shader-readable opaque D32 depth.");
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_RefractionSampler));
+  }
+  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U) | (refractive ? 4U : 0U);
   if (!m_hShaders[permutation].IsValid())
   {
-    constexpr const char* paths[] = {"Shaders/Geometry/TransparentVertexPull.xiiShader", "Shaders/Geometry/TransparentShadowVertexPull.xiiShader", "Shaders/Geometry/TransparentAtmosphereVertexPull.xiiShader", "Shaders/Geometry/TransparentWorldVertexPull.xiiShader"};
-    const auto            shader  = xiiResourceManager::LoadResource<xiiShaderResource>(paths[permutation]);
-    m_hShaders[permutation]       = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+    constexpr const char*                          paths[] = {"Shaders/Geometry/TransparentVertexPull.xiiShader", "Shaders/Geometry/TransparentShadowVertexPull.xiiShader", "Shaders/Geometry/TransparentAtmosphereVertexPull.xiiShader", "Shaders/Geometry/TransparentWorldVertexPull.xiiShader"};
+    const auto                                     shader  = xiiResourceManager::LoadResource<xiiShaderResource>(paths[permutation & 3U]);
+    xiiHashTable<xiiHashedString, xiiHashedString> variables;
+    xiiHashedString                                name;
+    xiiHashedString                                value;
+    name.Assign("FORWARD_REFRACTION");
+    value.Assign(refractive ? "TRUE" : "FALSE");
+    variables.Insert(name, value);
+    m_hShaders[permutation] = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
   }
   xiiResourceLock<xiiShaderPermutationResource> shader(m_hShaders[permutation], xiiResourceAcquireMode::BlockTillLoaded);
   if (!shader.IsValid() || !shader->IsShaderValid())
@@ -191,6 +244,30 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   if (!m_Rasterizer)
     return context.ReportFailure("Could not create transparent rasterizer state.");
   xiiRenderPassResourceScope scope(context);
+  struct RefractionData
+  {
+    xiiRenderGraphTextureHandle   m_SourceDepth;
+    xiiRenderGraphTextureHandle   m_SampledDepth;
+    xiiRenderGraphBufferHandle    m_Constants;
+    xiiForwardRefractionConstants m_Parameters;
+  };
+  xiiRenderGraphTextureHandle sampledDepth;
+  xiiRenderGraphBufferHandle  refractionConstants;
+  if (refractive)
+  {
+    const auto snapshot = context.m_Graph.AddPass<RefractionData>("Refraction opaque snapshot", xiiGALCommandQueueFlags::Transfer, [&](RefractionData& data, xiiRenderGraphBuilder& builder) {
+      const auto description = depthSnapshot;
+      data.m_SourceDepth = builder.ReadTexture(depth, xiiGALResourceStateFlags::CopySource);
+      data.m_SampledDepth = builder.WriteTexture("Refraction sampled depth", description, xiiGALResourceStateFlags::CopyDestination);
+      data.m_Constants = xiiRenderPassUtils::Constants(builder, "Dielectric refraction settings", sizeof(xiiForwardRefractionConstants));
+      data.m_Parameters.RefractionTrace = xiiVec4(m_fRefractionDistance, m_fRefractionThicknessTolerance, float(m_uiRefractionSteps), 0); }, [](const RefractionData& data, xiiRenderGraphPassContext& execute) {
+      auto& commands = execute.GetCommandList();
+      commands.CopyTexture(execute.GetTexture(data.m_SourceDepth), execute.GetTexture(data.m_SampledDepth));
+      xiiGALMapHelper<xiiForwardRefractionConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *mapped = data.m_Parameters; });
+    sampledDepth        = snapshot.first->m_SampledDepth;
+    refractionConstants = snapshot.first->m_Constants;
+  }
   struct Uniforms
   {
     xiiRenderGraphBufferHandle    m_Layout, m_Settings;
@@ -232,6 +309,8 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphBufferHandle                    m_CascadeConstants;
     xiiRenderGraphBufferHandle                    m_Atmosphere;
     xiiRenderGraphTextureHandle                   m_Depth;
+    xiiRenderGraphTextureHandle                   m_RefractionDepth, m_Background;
+    xiiRenderGraphBufferHandle                    m_RefractionConstants;
     xiiRenderGraphTextureHandle                   m_ShadowAtlas;
     xiiRenderGraphTextureHandle                   m_Transmittance;
     xiiRenderGraphTextureHandle                   m_MultiScatter;
@@ -245,10 +324,10 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     xiiSharedPtr<xiiGALBlendState>                m_Blend;
     xiiSharedPtr<xiiGALDepthStencilState>         m_DepthState;
     xiiSharedPtr<xiiGALRasterizerState>           m_Rasterizer;
-    xiiSharedPtr<xiiGALSampler>                   m_MaterialSampler, m_AtmosphereSampler;
+    xiiSharedPtr<xiiGALSampler>                   m_MaterialSampler, m_AtmosphereSampler, m_RefractionSampler;
     xiiSizeU32                                    m_Size;
     xiiUInt32                                     m_uiCapacity;
-    bool                                          m_bShadows, m_bAtmosphere;
+    bool                                          m_bShadows, m_bAtmosphere, m_bRefraction;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     builder.SetPassAllowMerge(false);
@@ -272,17 +351,18 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     data.m_LightOverflow=builder.ReadBuffer(lightOverflow,xiiGALResourceStateFlags::ShaderResource);
     data.m_ClusterConstants=builder.ReadBuffer(uniforms.first->m_Layout,xiiGALResourceStateFlags::ConstantBuffer);data.m_LayerConstants=builder.ReadBuffer(uniforms.first->m_Settings,xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Depth=builder.ReadTexture(depth,xiiGALResourceStateFlags::DepthRead);
-    data.m_bShadows=shadows;data.m_bAtmosphere=atmospheric;
+    data.m_bShadows=shadows;data.m_bAtmosphere=atmospheric;data.m_bRefraction=refractive;
+    if(refractive){data.m_Background=builder.ReadTexture(background,xiiGALResourceStateFlags::ShaderResource);data.m_RefractionDepth=builder.ReadTexture(sampledDepth,xiiGALResourceStateFlags::ShaderResource);data.m_RefractionConstants=builder.ReadBuffer(refractionConstants,xiiGALResourceStateFlags::ConstantBuffer);}
     if(shadows){data.m_ShadowAtlas=builder.ReadTexture(shadowAtlas,xiiGALResourceStateFlags::ShaderResource);data.m_CascadeConstants=builder.ReadBuffer(cascades->m_hConstants,xiiGALResourceStateFlags::ConstantBuffer);}
     if(atmospheric){data.m_Atmosphere=builder.ReadBuffer(atmosphere,xiiGALResourceStateFlags::ConstantBuffer);data.m_Transmittance=builder.ReadTexture(transmittance,xiiGALResourceStateFlags::ShaderResource);data.m_MultiScatter=builder.ReadTexture(multiScatter,xiiGALResourceStateFlags::ShaderResource);}
-    xiiGALTextureCreationDescription target;target.m_Type=xiiGALResourceDimension::Texture2D;target.m_Size=depthDescription->m_Size;target.m_BindFlags=xiiGALBindFlags::RenderTarget|xiiGALBindFlags::ShaderResource;
+    xiiGALTextureCreationDescription target;target.m_Type=xiiGALResourceDimension::Texture2D;target.m_Size=depthSnapshot.m_Size;target.m_BindFlags=xiiGALBindFlags::RenderTarget|xiiGALBindFlags::ShaderResource;
     target.m_Format=xiiGALResourceFormat::RGBA32Float;data.m_Accumulation=builder.WriteTexture("Transparent Accumulation",target,xiiGALResourceStateFlags::RenderTarget);
     target.m_Format=xiiGALResourceFormat::R32Float;data.m_Revealage=builder.WriteTexture("Transparent Revealage",target,xiiGALResourceStateFlags::RenderTarget);
     target.m_Format=xiiGALResourceFormat::RGBA32Float;data.m_Additive=builder.WriteTexture("Transparent Additive",target,xiiGALResourceStateFlags::RenderTarget);
     target.m_Format=xiiGALResourceFormat::RGBA32Float;data.m_Modulation=builder.WriteTexture("Transparent Modulation",target,xiiGALResourceStateFlags::RenderTarget);
     target.m_Format=xiiGALResourceFormat::R32Float;data.m_HistoryTrust=builder.WriteTexture("Transparent HistoryTrust",target,xiiGALResourceStateFlags::RenderTarget);
     builder.SetPassRenderPassManaged();
-    data.m_Vertex=shader->GetGALShader(xiiGALShaderType::Vertex);data.m_Pixel=shader->GetGALShader(xiiGALShaderType::Pixel);data.m_Signature=shader->GetPipelineResourceSignature();data.m_Blend=shader->GetBlendState();data.m_DepthState=shader->GetDepthStencilState();data.m_Rasterizer=m_Rasterizer;data.m_MaterialSampler=m_MaterialSampler;data.m_AtmosphereSampler=m_AtmosphereSampler;data.m_Size=target.m_Size;data.m_uiCapacity=static_cast<xiiUInt32>(capacity); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Vertex=shader->GetGALShader(xiiGALShaderType::Vertex);data.m_Pixel=shader->GetGALShader(xiiGALShaderType::Pixel);data.m_Signature=shader->GetPipelineResourceSignature();data.m_Blend=shader->GetBlendState();data.m_DepthState=shader->GetDepthStencilState();data.m_Rasterizer=m_Rasterizer;data.m_MaterialSampler=m_MaterialSampler;data.m_AtmosphereSampler=m_AtmosphereSampler;data.m_RefractionSampler=m_RefractionSampler;data.m_Size=target.m_Size;data.m_uiCapacity=static_cast<xiiUInt32>(capacity); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands=execute.GetCommandList();
     xiiRenderPassUtils::ClearRenderTargetPreservingState(commands,execute.GetTexture(data.m_Accumulation)->GetDefaultView(xiiGALTextureViewType::RenderTarget),xiiColor::MakeZero());
     xiiRenderPassUtils::ClearRenderTargetPreservingState(commands,execute.GetTexture(data.m_Revealage)->GetDefaultView(xiiGALTextureViewType::RenderTarget),xiiColor::White);
@@ -311,6 +391,13 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     commands.ResolveAndSetShaderResourceBufferView("g_LightGrid",execute.GetBuffer(data.m_LightGrid)->GetDefaultView(xiiGALBufferViewType::ShaderResource),xiiGALShaderType::Pixel);
     commands.ResolveAndSetShaderResourceBufferView("g_LightIndices",execute.GetBuffer(data.m_LightIndices)->GetDefaultView(xiiGALBufferViewType::ShaderResource),xiiGALShaderType::Pixel);
     commands.ResolveAndSetShaderResourceBufferView("g_Overflow",execute.GetBuffer(data.m_LightOverflow)->GetDefaultView(xiiGALBufferViewType::ShaderResource),xiiGALShaderType::Pixel);
+    if(data.m_bRefraction)
+    {
+      commands.ResolveAndSetConstantBuffer("xiiForwardRefractionConstants",execute.GetBuffer(data.m_RefractionConstants),xiiGALShaderType::Pixel);
+      commands.ResolveAndSetSampler("g_sRefractionLinearClamp",data.m_RefractionSampler.Borrow());
+      commands.ResolveAndSetShaderResourceTextureView("g_RefractionDepth",execute.GetTexture(data.m_RefractionDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);
+      commands.ResolveAndSetShaderResourceTextureView("g_RefractionBackground",execute.GetTexture(data.m_Background)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);
+    }
     if(data.m_bShadows){commands.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants",execute.GetBuffer(data.m_CascadeConstants),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_ShadowAtlas",execute.GetTexture(data.m_ShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);}
     if(data.m_bAtmosphere){commands.ResolveAndSetSampler("LinearClampSampler",data.m_AtmosphereSampler.Borrow());commands.ResolveAndSetConstantBuffer("xiiAtmosphereConstants",execute.GetBuffer(data.m_Atmosphere),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_Transmittance",execute.GetTexture(data.m_Transmittance)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_MultiScatter",execute.GetTexture(data.m_MultiScatter)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);}
     xiiGALBindlessResourceTable::BindBufferSRVs(commands,"g_Buffers",xiiGALShaderType::Vertex);xiiGALBindlessResourceTable::BindTextureSRVs(commands,"g_Textures",xiiGALShaderType::Pixel);xiiGALBindlessResourceTable::BindSamplers(commands,"g_MaterialSamplers",xiiGALShaderType::Pixel);
