@@ -12,6 +12,9 @@ Texture2D<float2> g_VelocityBuffer;
 Texture2D<float>  g_SceneDepth;
 Texture2D<float4> g_HistoryFrame;
 Texture2D<float>  g_HistoryDepth;
+#if XII_TAA_HISTORY_TRUST
+Texture2D<float> g_HistoryTrust;
+#endif
 XII_STORAGE_IMAGE_FORMAT("r32f")
 RWTexture2D<float> g_RetainedDepth;
 XII_STORAGE_IMAGE_FORMAT(XII_TAA_STORAGE_FORMAT)
@@ -68,8 +71,14 @@ float3 ClipAABB(float3 minimumColor, float3 maximumColor, float3 historyColor)
   const float  depth                   = g_SceneDepth.Load(int3(dispatchThreadId.xy, 0));
   const float4 current                 = g_CurrentFrame.Load(int3(dispatchThreadId.xy, 0));
   const float3 currentColor            = current.rgb;
-  g_RetainedDepth[dispatchThreadId.xy] = depth;
-  if (HistoryValid == 0U)
+  bool untrusted = false;
+#if XII_TAA_HISTORY_TRUST
+  untrusted = g_HistoryTrust.Load(int3(dispatchThreadId.xy, 0)) < 0.999f;
+#endif
+  // Negative values encode invalid color provenance in private depth history.
+  // This rejects a disappeared transparent layer even when this frame has no mask.
+  g_RetainedDepth[dispatchThreadId.xy] = untrusted ? -(depth + 1.0f) : depth;
+  if (HistoryValid == 0U || untrusted)
   {
     g_Resolved[dispatchThreadId.xy] = current;
     return;
@@ -113,7 +122,7 @@ float3 ClipAABB(float3 minimumColor, float3 maximumColor, float3 historyColor)
   // A depth-changing surface is conservatively rejected, including previously covered
   // background. Moving geometry in depth may reject valid history rather than ghost.
   const bool backgroundMismatch = (depth == 0.0f) != (previousDepth == 0.0f);
-  if (backgroundMismatch || abs(previousDepth - expectedDepth) > max(1.0e-6f, abs(expectedDepth) * DepthThreshold))
+  if (previousDepth < 0 || backgroundMismatch || abs(previousDepth - expectedDepth) > max(1.0e-6f, abs(expectedDepth) * DepthThreshold))
   {
     g_Resolved[dispatchThreadId.xy] = current;
     return;
