@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -41,14 +42,13 @@ xiiResult xiiParticleIntegratePass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  particles   = context.GetInputBuffer(m_InputParticles);
   const auto* description = context.m_Graph.GetBufferDescription(particles);
-  if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiParticleGPUState) || description->m_uiSize % sizeof(xiiParticleGPUState) != 0 || description->m_uiSize / sizeof(xiiParticleGPUState) > xiiParticleSystemConstants::s_uiMaxSupportedParticles)
-    return XII_FAILURE;
+  if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiParticleGPUState) || description->m_uiSize == 0 || description->m_uiSize % sizeof(xiiParticleGPUState) != 0 || description->m_uiSize / sizeof(xiiParticleGPUState) > xiiParticleSystemConstants::s_uiMaxSupportedParticles)
+    return context.ReportFailure("Particle integration requires a nonempty canonical structured state buffer.");
   if (m_bBypass)
     return context.SetOutput(m_OutputParticles, particles);
   const auto  constants  = context.GetInputBuffer(m_InputConstants);
-  const auto* parameters = context.m_Graph.GetBufferDescription(constants);
-  if (!parameters || parameters->m_uiSize < sizeof(xiiParticleIntegrationConstants))
-    return XII_FAILURE;
+  if (!xiiScreenSpacePassUtils::Uniform(context, constants, sizeof(xiiParticleIntegrationConstants)))
+    return context.ReportFailure("Particle integration requires exact integration constants.");
   const auto capacity = static_cast<xiiUInt32>(description->m_uiSize / sizeof(xiiParticleGPUState));
   const auto count    = m_uiParticleCount ? m_uiParticleCount : capacity;
   if (count == 0 || count > capacity || !xiiGALDevice::HasDefaultDevice())
@@ -70,6 +70,7 @@ xiiResult xiiParticleIntegratePass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphBufferHandle              m_Particles, m_Constants, m_Dispatch;
     xiiParticleIntegrationDispatchConstants m_Parameters;
     xiiUInt32                               m_uiGroupsY;
+    xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     // Simulation changes state owned outside this frame, even when it is not rendered now.
@@ -80,17 +81,21 @@ xiiResult xiiParticleIntegratePass::Build(xiiRenderPipelinePassContext& context)
     data.m_Parameters.DispatchGroupsX = width;
     data.m_Parameters.DispatchParticleCount = count;
     data.m_Parameters._Padding = xiiVec2U32::MakeZero();
-    data.m_uiGroupsY = height; }, [this](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_uiGroupsY = height; data.m_Pipeline = m_pState->m_Pipeline; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     {
       xiiGALMapHelper<xiiParticleIntegrationDispatchConstants> mapped(commands, execute.GetBuffer(data.m_Dispatch), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *mapped = data.m_Parameters;
     }
-    commands.SetPipelineState(m_pState->m_Pipeline);
+    commands.SetPipelineState(data.m_Pipeline.Borrow());
     commands.ResolveAndSetConstantBuffer("xiiParticleIntegrationConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("xiiParticleIntegrationDispatchConstants", execute.GetBuffer(data.m_Dispatch), xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessBufferView("g_Particles", execute.GetBuffer(data.m_Particles)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      execute.ReportFailure("Could not bind particle integration resources.");
+      return;
+    }
     commands.DispatchCompute({data.m_Parameters.DispatchGroupsX, data.m_uiGroupsY, 1}); });
   return context.SetOutput(m_OutputParticles, emitted.first->m_Particles);
 }
