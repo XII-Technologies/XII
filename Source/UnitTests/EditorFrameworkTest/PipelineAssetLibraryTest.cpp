@@ -218,6 +218,10 @@ XII_CREATE_SIMPLE_TEST(NodeLayout, CanonicalScene)
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLayoutTest", "PipelineLayout", xiiDataDirUsage::ReadOnly)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLayoutTest"));
+  const auto                                 sceneResource = xiiLoadPipelineLibraryResource("Scene");
+  xiiResourceLock<xiiRenderPipelineResource> sceneDefinition(sceneResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(sceneDefinition.IsValid() && sceneDefinition->GetPipeline()))
+    return;
   PipelineLibraryDocument document(xiiStringBuilder(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/Scene.xiiRenderPipelineAsset"));
   XII_TEST_STATUS(document.LoadDocument());
   auto*          manager = static_cast<xiiDocumentNodeManager*>(document.GetObjectManager());

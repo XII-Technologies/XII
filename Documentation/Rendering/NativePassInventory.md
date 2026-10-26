@@ -13,8 +13,11 @@
 > SceneDirectionalShadows now composes four occurrences of SceneShadowCascade,
 > publishes a real caster atlas and applies its visibility to directional lighting.
 > Local, virtual and ray shadows remain separate integration work.
+> Scene now authors optional native-resolution TAA with explicit camera samples,
+> previous object/bone motion, depth rejection and recording-safe history slots.
+> Temporal upsampling and the other temporal filters remain separate acceptance work.
 
-Current source inventory: **106 concrete reflected operation classes** in
+Current source inventory: **107 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -47,7 +50,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Sensors | 4 | `xiiDepthSensorPass`, `xiiInfraredSensorPass`, `xiiLidarSensorPass`, `xiiRgbSensorPass` |
 | Shadows | 11 | `xiiDirectionalShadowVisibilityPass`, `xiiShadowAtlasPass`, `xiiShadowCascadePass`, `xiiShadowCascadeViewPass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowPagePublishPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowTablesPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
-| Temporal | 3 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTextureHistoryPass` |
+| Temporal | 4 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTemporalCameraPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
 | Utility | 9 | `xiiBufferExportPass`, `xiiBufferForwardPass`, `xiiClearColorPass`, `xiiClearTexturePass`, `xiiCounterResetPass`, `xiiDepthRegionClearPass`, `xiiDepthTargetPass`, `xiiTextureForwardPass`, `xiiTextureSelectionPass` |
 | Visibility | 10 | `xiiDepthPyramidPass`, `xiiInstanceCullPass`, `xiiInstanceOcclusionPass`, `xiiLodHistoryResetPass`, `xiiMatrixVisibilityViewPass`, `xiiMeshletCullPass`, `xiiMeshletDispatchBoundsPass`, `xiiMeshletDispatchPass`, `xiiMeshletOcclusionPass`, `xiiVisibilityViewPass` |

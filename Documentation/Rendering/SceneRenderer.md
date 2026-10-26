@@ -42,8 +42,8 @@ Scene renders world mesh components through shared GPU instance extraction,
 view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
 lights, optional world directional shadows, ambient diffuse and emission, spatial
-ambient visibility, optional world atmosphere, exposure, tone mapping, color grading and
-presentation. It does not require mesh shaders or ray tracing. Material loading
+ambient visibility, optional world atmosphere and temporal antialiasing, exposure,
+tone mapping, color grading and presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
 
 Scene surface images are viewport-local. Atmospheric lookup images have their
@@ -130,9 +130,9 @@ visible/occluded selection and front-surface picking, switches resources, resize
 and checks icon picking. Fixed preview tests exercise real texture/cubemap output.
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
-These defaults intentionally exclude local/virtual/ray shadows, GI, reflections,
-transparent/particle rasterization and temporal antialiasing. Their retained
-operations and focused tests are not certification of complete production techniques.
+These defaults intentionally exclude local/virtual/ray shadows, GI, reflections and
+transparent/particle rasterization. Temporal antialiasing is authored but opt-in.
+Other retained operations and focused tests are not certification of complete production techniques.
 Custom material shader permutations beyond the canonical GPU surface model,
 stereo rendering, backend coverage beyond the configured Vulkan build, large-scene
 performance and a complete interactive Editor acceptance session remain separate
@@ -145,7 +145,7 @@ committed. The Editor transforms the authored sources into its normal
 subgraph reference use the source asset GUIDs through the existing lookup table.
 For standalone GPU tests/sample preparation, run `EditorFrameworkTest -noGui -run
 -close -all -filter RendererAssets -outputDir <project-local-test-output>`. This
-exports all three sources with the production compiler into the ignored cache, checks
+exports all five sources with the production compiler into the ignored cache, checks
 stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
@@ -193,11 +193,11 @@ algorithm selected implicitly.
 
 This integration is screen-space ambient visibility, with the usual missing
 offscreen and hidden geometry. It is not ray-traced visibility or indirect light
-transport. Scene deliberately does not use temporal AO yet: surface raster
-constants currently repeat the current camera matrix as the previous matrix.
-The retained temporal operation has occurrence-local, completion-aware slots and
-revision-checked recording ownership, but needs a complete motion contract and
-moving-scene acceptance before production temporal use.
+transport. Scene deliberately does not use temporal AO yet. Its optional temporal camera now
+supplies coherent previous-camera matrices and jitter, but the AO history shader
+still needs jitter/depth reprojection and moving-scene acceptance. Its retained
+operation has occurrence-local, completion-aware slots and revision-checked
+recording ownership; that alone does not certify temporal AO.
 
 Vulkan acceptance uses a material-bearing cube contacting a real floor, a world
 directional light and manual exposure. Full image readbacks compare AO enabled
@@ -387,3 +387,97 @@ shadow residency, hardware-ray shadows, contact-shadow tracing, angular-source
 penumbrae, atmospheric shadowing and cascade-blend quality remain separate work.
 Animated/cutout shadow content, stereo, large-world performance, other backends and
 interactive desktop acceptance require further effect-specific validation.
+
+
+## Temporal antialiasing
+
+Scene authors `xiiTemporalCameraPass` and the existing, corrected
+`xiiTemporalAntiAliasingPass` directly. These are two operation boundaries rather
+than a new single-operation asset. The immutable typed camera sample feeds view
+constants, surface raster constants, visibility preparation and reconstruction.
+Atmosphere HDR feeds TAA; resolved HDR feeds the existing exposure/display chain
+and `HDRSceneColor`. Editor composes this same result before its overlays.
+Existing root interfaces and source identities are preserved.
+
+Scene authors the camera producer's `Enabled=false`. Enabling that occurrence is
+the single policy switch for jitter and reconstruction. Disabled preparation uses
+the original camera, and reconstruction forwards the exact input image without
+allocating histories or loading a compute pipeline. A disabled resolver with an
+explicitly enabled jitter producer is an error. Standalone uses can still supply
+velocity/depth without a temporal camera sample; that older interface has no
+camera reprojection for depth or sky and requires its caller's motion contract.
+
+| Resource | Format and extent | Dependency |
+| --- | --- | --- |
+| TemporalCamera | Immutable setup-local CPU snapshot | Current/previous jittered matrices, inverse matrix, NDC jitter, size, world update and device frame identities |
+| PerFrameCamera / RasterConstants / VisibilityView | Existing uniform/structured layouts | All consume the same current camera; raster also receives actual previous camera and jitter |
+| Velocity | G-buffer RG16Float at render resolution | Unjittered NDC motion from previous object transform and previous skinning palette |
+| Current color/depth | Scene RGBA32Float and reversed-Z D32Float | Completed opaque lighting and atmosphere, plus actual raster depth |
+| Resolved and retained color | RGBA32Float SRV/UAV in Scene; RGBA16Float also supported by the operation | Stable-grid velocity reprojection, YCoCg neighborhood clipping and reflected motion blend |
+| Retained depth | R32Float SRV/UAV at the same extent | Jittered previous surface lookup, background/depth-disocclusion rejection |
+
+Jitter uses an eight-sample Halton sequence, in NDC pixel units. Color history
+accumulates on a stable pixel grid; raw depth history uses the difference between
+previous and current jitter. Applying that difference to color instead would move
+the accumulated image with the samples. Sky reprojection follows camera rotation
+without translating an infinite background. Closest-depth velocity dilation uses
+a 3 by 3 neighborhood. The reflected current contribution, motion response and
+relative depth threshold remain independent algorithm settings.
+
+History is invalid on first use, explicit camera cuts, incompatible extents or
+formats, resource rebuilds and skipped world updates. Camera and color frame
+identities must match before reuse. World-update identity avoids falsely resetting
+one world's history when another world advances the device frame clock. Callers
+mark discontinuous camera motion with the existing `InvalidateTemporalHistory`.
+The first valid output after a reset is exactly current color. Disabling releases
+cached ownership; recordings retain their own required resources.
+
+Each occurrence owns a mutex/revision-checked state. Recordings retain immutable
+camera data, pipelines, samplers and history slots, without borrowing a pass or
+view. A slot cannot be overwritten until its last GPU frame completes and all
+recordings/publications release that slot. External readiness uses GAL fences and
+explicit graph dependencies. Old recordings cannot promote history after a cut.
+Changing image size eventually retires old allocations; it does not break retained
+recordings to achieve immediate release. Scene history costs 20 bytes per pixel
+per retained slot (16 color plus 4 depth), excluding allocation overhead; the
+number of slots follows actual in-flight and retained recordings.
+
+Production Vulkan tests compare unjittered Scene, jittered current-frame Scene
+and reconstruction, using two worlds with independent views, real red box/blue
+floor materials and a sun. At 129 by 97, the static comparison changes 1,401 final
+pixels. Summed frame-to-frame RGB byte variation over six warmed comparisons falls
+from 187,966 to 152,587, about 19 percent. This is a deterministic fixture measure,
+not a general quality or performance claim. GPU motion is compared with geometric
+projection, including half-precision storage tolerance: 7,544 camera-motion pixels,
+209 object-motion pixels and 256/194 pixels on two changing bone poses. The
+comparison identifies 197 newly revealed pixels and verifies exact current-color
+rejection instead of stale color.
+
+The full comparison repeats with mesh shaders and extended storage formats
+disabled (AO is explicitly disabled for that device). It exercises odd resize,
+Scene resource reload, cuts, orthographic cameras, a paused/resumed independent
+view, destruction of another world
+and a retained full Scene recording executed after its world and pipeline are
+destroyed. An RGBA16Float operation regression retains completed recordings while
+advancing the same occurrence, checks distinct allocations, invalidates between
+setup and execution, and verifies actual HDR output after owner retirement.
+Editor output changes through the same authored choice and restores exact baseline
+images when disabled. Generated captures are `SceneTemporal-Disabled.png`,
+`SceneTemporal-Current.png` and `SceneTemporal-Resolved.png` in the GPU test output.
+
+This path performs antialiasing at render resolution. Temporal upsampling,
+reactive masks for future transparency/particles, morph-history acceptance,
+stereo, representative quality/performance evaluation and other backends remain
+separate work. Moving surfaces in depth may conservatively reject valid history;
+there is no previous-position/depth MRT dedicated to deforming surfaces. Temporal
+AO and reflections retain their own history/reprojection acceptance requirements.
+
+Windows/MSVC Debug validation passed all four CTest targets: production asset
+preparation, GraphicsCore (79 subtests), GraphicsFoundation (114 subtests) and
+EditorEngineProcessFramework (76 subtests), on Vulkan. EditorDocuments (20) and
+NodeLayout (3) also passed. All five source assets export deterministically;
+no compiled pipeline is tracked. The initial jitter-shifted color resolve was
+corrected before the image results above. Fixture corrections account for
+half-precision/raster motion rounding, closest-depth velocity dilation, paused
+views that intentionally make no render attempt, and isolated layout dependency
+registration. Other backends and interactive desktop acceptance remain unverified.
