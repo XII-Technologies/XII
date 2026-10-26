@@ -84,14 +84,7 @@ float3 xiiTransparentAtmosphere(float3 existing, float3 world, bool orthographic
 #endif
 }
 
-struct TransparentOutput
-{
-  float4 Accumulation : SV_Target0;
-  float4 Revealage : SV_Target1;
-  float4 Additive : SV_Target2;
-  float4 Modulation : SV_Target3;
-  float4 HistoryTrust : SV_Target4;
-};
+#include <Shaders/Pipeline/Passes/Transparency/TransparentLayerOutput.h>
 TransparentOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
 {
   const xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
@@ -126,20 +119,5 @@ TransparentOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   lighting = xiiTransparentAtmosphere(max(lighting * TransparentWeightsAndScale.z, 0), input.WorldPosition, orthographic);
   if (!all(isfinite(lighting)))
     clip(-1.0f);
-  TransparentOutput output = (TransparentOutput)0;
-  output.Modulation        = 1;
-  output.HistoryTrust      = float4(0, 0, 0, opacity);
-  if (material.Metadata.w == 3u)
-    output.Additive = float4(lighting * opacity, 0);
-  else if (material.Metadata.w == 4u)
-    output.Modulation = float4(lerp(1, lighting, opacity), 1);
-  else
-  {
-    const float nearRatio = max(viewDepth, 0) / TransparentWeightsAndScale.x;
-    const float farRatio  = max(viewDepth, 0) / 200.0f;
-    const float weight    = opacity * clamp(10.0f / (1.0e-5f + nearRatio * nearRatio + pow(farRatio, 6)), 0.01f, TransparentWeightsAndScale.y);
-    output.Accumulation   = float4(lighting * opacity * weight, opacity * weight);
-    output.Revealage      = float4(0, 0, 0, opacity);
-  }
-  return output;
+  return xiiTransparentLayer(lighting, opacity, viewDepth, material.Metadata.w, TransparentWeightsAndScale.xy);
 }

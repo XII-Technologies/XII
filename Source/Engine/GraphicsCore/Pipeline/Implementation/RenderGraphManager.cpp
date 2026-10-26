@@ -251,6 +251,11 @@ xiiResult xiiRenderGraphManager::GetFrameCompletion(xiiUInt64 uiFrameIndex, xiiU
   return XII_SUCCESS;
 }
 
+xiiUInt64 xiiRenderGraphManager::GetActiveFrameIndex()
+{
+  return s_pState && s_pState->m_bFrameActive ? s_pState->m_uiFrameIndex : 0;
+}
+
 xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt32 uiFramesInFlight)
 {
   if (s_pState == nullptr || frame.IsActive() || uiFramesInFlight == 0U)

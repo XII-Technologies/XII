@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-#include <Foundation/Math/Vec3.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Math/Vec3.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Evaluates immutable birth conditions at their extracted age. This is analytic ballistic motion, not stepped integration.

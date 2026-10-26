@@ -314,7 +314,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   {
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
       if (pass.m_Pins[i].m_bInput && !pass.m_Pins[i].m_bOptional && !connected[pass.m_uiBindingOffset + i])
-        return fail("A required input pin is disconnected.");
+        return fail(xiiStringBuilder("A required input pin is disconnected: ", pass.m_Pins[i].m_sName, " (", pass.m_pType->GetTypeName(), ")"));
     ++diagnosticPass;
   }
   xiiDynamicArray<xiiGraphVertexHandle> order;

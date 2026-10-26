@@ -1,0 +1,91 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[RENDERSTATE]
+DepthEnable = true
+DepthWriteEnable = false
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+CullMode = CullMode_None
+IndependentBlend = true
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_One
+DestinationBlend0 = BlendFactor_One
+SourceBlendAlpha0 = BlendFactor_One
+DestinationBlendAlpha0 = BlendFactor_One
+BlendEnable1 = true
+SourceBlend1 = BlendFactor_Zero
+DestinationBlend1 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha1 = BlendFactor_Zero
+DestinationBlendAlpha1 = BlendFactor_InverseSourceAlpha
+BlendEnable2 = true
+SourceBlend2 = BlendFactor_One
+DestinationBlend2 = BlendFactor_One
+SourceBlendAlpha2 = BlendFactor_One
+DestinationBlendAlpha2 = BlendFactor_One
+BlendEnable3 = true
+SourceBlend3 = BlendFactor_Zero
+DestinationBlend3 = BlendFactor_SourceColor
+SourceBlendAlpha3 = BlendFactor_Zero
+DestinationBlendAlpha3 = BlendFactor_SourceAlpha
+BlendEnable4 = true
+SourceBlend4 = BlendFactor_Zero
+DestinationBlend4 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha4 = BlendFactor_Zero
+DestinationBlendAlpha4 = BlendFactor_InverseSourceAlpha
+
+[SHADER]
+#define XII_SCENE_SURFACE_NO_IDENTITY
+#define XII_SCENE_WORLD_ATTRIBUTES
+#define XII_SCENE_PARTICLE_ATTRIBUTES
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+#include <Shaders/Pipeline/Passes/Transparency/TransparentRasterConstants.h>
+[VERTEX_SHADER]
+#include <Shaders/Pipeline/Passes/Particles/ParticleState.h>
+StructuredBuffer<xiiParticleState> g_Particles;
+GBufferVertex main(uint vertex:SV_VertexID,uint instance:SV_InstanceID)
+{
+  const xiiParticleState particle=g_Particles[instance];
+  GBufferVertex output=(GBufferVertex)0;
+  if(particle.Color.a<=0 || particle.VelocityLifetime.w<=0) { output.Position=float4(2,2,2,1);return output; }
+  const float2 corners[6]={float2(-1,-1),float2(1,-1),float2(-1,1),float2(-1,1),float2(1,-1),float2(1,1)};
+  const float2 corner=corners[vertex];
+  // Differentials on one projection plane preserve camera roll for perspective and orthographic views.
+  float4 center=mul(g_InverseViewProjectionMatrix,float4(0,0,0.5f,1));center/=center.w;
+  float4 horizontal=mul(g_InverseViewProjectionMatrix,float4(1,0,0.5f,1));horizontal/=horizontal.w;
+  float4 vertical=mul(g_InverseViewProjectionMatrix,float4(0,1,0.5f,1));vertical/=vertical.w;
+  const float3 right=normalize(horizontal.xyz-center.xyz),up=normalize(vertical.xyz-center.xyz);
+  output.WorldPosition=particle.PositionAge.xyz+(right*corner.x+up*corner.y)*particle.PreviousPositionRadius.w;
+  output.Position=mul(g_ViewProjectionMatrix,float4(output.WorldPosition,1));
+  output.TexCoord=float2(corner.x*0.5f+0.5f,0.5f-corner.y*0.5f);
+  output.MaterialIndex=asuint(particle.Custom0.x);output.ParticleColor=particle.Color;output.SoftDistance=particle.Custom0.y;
+  return output;
+}
+[PIXEL_SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceMaterial.h>
+#include <Shaders/Pipeline/Passes/Transparency/TransparentLayerOutput.h>
+Texture2D<float> g_SceneDepth;
+TransparentOutput main(GBufferVertex input,bool front:SV_IsFrontFace)
+{
+  const xiiGpuSurfaceMaterial material=xiiLoadSceneSurfaceMaterial(input.MaterialIndex,0);
+  const float4 baseColor=xiiSampleSceneBaseColor(material,input.TexCoord);
+  xiiClipSceneSurface(material,baseColor,front,false);
+  float opacity=saturate(baseColor.a*input.ParticleColor.a);
+  const float viewDepth=dot(input.WorldPosition-g_CameraPositionAndNearPlane.xyz,g_CameraForwardAndFarPlane.xyz);
+  if(input.SoftDistance>0)
+  {
+    uint width,height;g_SceneDepth.GetDimensions(width,height);
+    const uint2 pixel=min(uint2(input.Position.xy),uint2(width-1,height-1));
+    const float raw=g_SceneDepth.Load(int3(pixel,0));
+    if(raw>0)
+    {
+      const float2 ndc=(float2(pixel)+0.5f)/float2(width,height)*float2(2,-2)+float2(-1,1);
+      const float4 world=mul(g_InverseViewProjectionMatrix,float4(ndc,raw,1));
+      const float sceneDepth=dot(world.xyz/world.w-g_CameraPositionAndNearPlane.xyz,g_CameraForwardAndFarPlane.xyz);
+      opacity*=saturate((sceneDepth-viewDepth)/input.SoftDistance);
+    }
+  }
+  clip(opacity-1e-5f);
+  const float3 color=max((baseColor.rgb+xiiSampleSceneEmissive(material,input.TexCoord))*input.ParticleColor.rgb*TransparentWeightsAndScale.z,0);
+  if(!all(isfinite(color)))clip(-1);
+  return xiiTransparentLayer(color,opacity,viewDepth,material.Metadata.w,TransparentWeightsAndScale.xy);
+}

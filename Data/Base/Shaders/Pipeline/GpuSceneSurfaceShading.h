@@ -19,7 +19,7 @@ xiiSceneSurfaceSample xiiSampleSceneSurface(xiiGpuSurfaceMaterial material, GBuf
 {
   float4 baseColor = xiiSampleSceneBaseColor(material, input.TexCoord);
   xiiClipSceneSurface(material, baseColor, isFrontFace, false);
-  float3 emissive     = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
+  float3 emissive     = xiiSampleSceneEmissive(material, input.TexCoord);
   float  roughness    = saturate(material.EmissiveColorAndRoughness.w);
   float  metallic     = saturate(material.SurfaceParameters.x);
   float  occlusion    = 1.0f;
@@ -36,8 +36,6 @@ xiiSceneSurfaceSample xiiSampleSceneSurface(xiiGpuSurfaceMaterial material, GBuf
     const float sampledOcclusion = xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices0.w)], material.SamplerIndices0.w, g_sLinearWrap, input.TexCoord).r;
     occlusion                    = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
-  if (material.TextureIndices1.x != 0xFFFFFFFFu)
-    emissive *= max(xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)], material.SamplerIndices1.x, g_sLinearWrap, input.TexCoord).rgb, 0.0f);
   if (material.TextureIndices1.w != 0xFFFFFFFFu)
     transmission *= saturate(xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices1.w)], material.SamplerIndices1.w, g_sLinearWrap, input.TexCoord).r);
 

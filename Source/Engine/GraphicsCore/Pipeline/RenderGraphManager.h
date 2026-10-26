@@ -99,6 +99,10 @@ public:
   /// Does not wait or advance the timeline.
   [[nodiscard]] static xiiResult GetFrameCompletion(xiiUInt64 uiFrameIndex, xiiUInt64& out_uiCompletedFrame);
 
+  /// Submission timeline for work recorded inside the current shared GPU frame, or zero outside it.
+  /// Call while holding the frame's recording scope. A prepared graph may have an older setup index.
+  [[nodiscard]] static xiiUInt64 GetActiveFrameIndex();
+
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RenderGraphManager);
 
