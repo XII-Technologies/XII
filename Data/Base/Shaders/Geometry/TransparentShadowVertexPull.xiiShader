@@ -1,0 +1,47 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[RENDERSTATE]
+DepthEnable = true
+DepthWriteEnable = false
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+CullMode = CullMode_None
+IndependentBlend = true
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_One
+DestinationBlend0 = BlendFactor_One
+SourceBlendAlpha0 = BlendFactor_One
+DestinationBlendAlpha0 = BlendFactor_One
+BlendEnable1 = true
+SourceBlend1 = BlendFactor_Zero
+DestinationBlend1 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha1 = BlendFactor_Zero
+DestinationBlendAlpha1 = BlendFactor_InverseSourceAlpha
+BlendEnable2 = true
+SourceBlend2 = BlendFactor_One
+DestinationBlend2 = BlendFactor_One
+SourceBlendAlpha2 = BlendFactor_One
+DestinationBlendAlpha2 = BlendFactor_One
+BlendEnable3 = true
+SourceBlend3 = BlendFactor_Zero
+DestinationBlend3 = BlendFactor_SourceColor
+SourceBlendAlpha3 = BlendFactor_Zero
+DestinationBlendAlpha3 = BlendFactor_SourceAlpha
+BlendEnable4 = true
+SourceBlend4 = BlendFactor_Zero
+DestinationBlend4 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha4 = BlendFactor_Zero
+DestinationBlendAlpha4 = BlendFactor_InverseSourceAlpha
+
+[SHADER]
+#define XII_SCENE_SURFACE_NO_IDENTITY
+#define XII_SCENE_SURFACE_FLAGS
+#define XII_SCENE_WORLD_ATTRIBUTES
+#define XII_TRANSPARENT_SHADOWS 1
+#define XII_TRANSPARENT_ATMOSPHERE 0
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+[VERTEX_SHADER]
+#define XII_SCENE_SURFACE_CURRENT_ONLY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+[PIXEL_SHADER]
+#include <Shaders/Geometry/TransparentPixel.h>

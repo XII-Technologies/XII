@@ -86,7 +86,9 @@ namespace
     TryGetMaterialParameter(material, "SheenRoughness", result.AdvancedParameters.w);
 
     const xiiMaterialRuntimeState& runtimeState = snapshot.m_RuntimeState;
-    result.Metadata                             = xiiVec4U32(runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(), static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()), runtimeState.m_BlendMode.GetValue());
+    const auto                     alphaMode    = runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.IsTranslucent() ? xiiMaterialAlphaMode::Blend :
+                                                                                                                                        xiiMaterialAlphaMode::Opaque;
+    result.Metadata                             = xiiVec4U32(runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(), static_cast<xiiUInt32>(alphaMode), runtimeState.m_BlendMode.GetValue());
     result.TextureIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
     result.TextureIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"), ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
     result.SamplerIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture", true), ResolveMaterialTexture(snapshot, "NormalTexture", true), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture", true), ResolveMaterialTexture(snapshot, "OcclusionTexture", true));

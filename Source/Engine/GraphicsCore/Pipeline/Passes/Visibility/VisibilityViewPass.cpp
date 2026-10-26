@@ -34,6 +34,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Enabled",m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("SkipEmptySelection",m_bSkipEmptySelection)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("InputCandidates", m_InputCandidates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibilityView", m_View)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -48,6 +50,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Visibility") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+void xiiVisibilityViewPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  const auto first = out_pins.GetCount();
+  xiiRenderPipelinePass::GetPins(out_pins);
+  for (xiiUInt32 i = first; i < out_pins.GetCount(); ++i)
+    if (!out_pins[i].m_bInput && (out_pins[i].m_sName == "VisibilityView" || out_pins[i].m_sName == "Candidates"))
+      out_pins[i].m_bOptional = !m_bEnabled || m_bSkipEmptySelection;
+}
 xiiResult xiiVisibilityViewPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
@@ -57,9 +67,47 @@ xiiResult xiiVisibilityViewPass::Configure(const xiiVariantDictionary& propertie
 }
 xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (!m_bEnabled)
+    return XII_SUCCESS;
   if (!context.m_pView || !context.m_pView->GetCamera() || !context.m_pView->GetGpuInstanceData())
     return context.ReportFailure("Visibility preparation requires a camera and world GPU instances.");
   const auto& view = *context.m_pView;
+  if (m_bSkipEmptySelection)
+  {
+    const auto records  = view.GetGpuInstanceData()->GetInstances();
+    const auto eligible = [&](xiiUInt32 index) {
+      return index < records.GetCount() && (records[index].m_uiFlags & m_uiRequiredFlags) == m_uiRequiredFlags && (records[index].m_uiFlags & m_uiExcludedFlags) == 0 && (records[index].m_uiVisibilityMask & m_uiVisibilityMask) != 0;
+    };
+    const auto supplied = context.GetInputBuffer(m_InputCandidates);
+    bool       present  = false;
+    if (supplied.IsValid())
+    {
+      const auto* description = context.m_Graph.GetBufferDescription(supplied);
+      if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiUInt32) || description->m_uiSize < sizeof(xiiUInt32) || description->m_uiSize % sizeof(xiiUInt32) != 0 || description->m_uiSize / sizeof(xiiUInt32) > xiiMath::MaxValue<xiiUInt32>())
+        return context.ReportFailure("An external visibility candidate stream must be a nonempty structured uint buffer.");
+    }
+    if (m_bUseViewSelection && !supplied.IsValid())
+    {
+      for (auto index : view.GetGpuInstanceSelection())
+        if (eligible(index))
+        {
+          present = true;
+          break;
+        }
+    }
+    else
+    {
+      // GPU candidate values are unavailable during setup. Never reject potentially selected records.
+      for (xiiUInt32 index = 0; index < records.GetCount(); ++index)
+        if (eligible(index))
+        {
+          present = true;
+          break;
+        }
+    }
+    if (!present)
+      return XII_SUCCESS;
+  }
   xiiFrustum  frustum;
   view.ComputeCullingFrustum(frustum);
   const auto           temporalData = context.GetInputData(m_TemporalCamera);

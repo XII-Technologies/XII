@@ -71,7 +71,7 @@ float3 ClipAABB(float3 minimumColor, float3 maximumColor, float3 historyColor)
   const float  depth                   = g_SceneDepth.Load(int3(dispatchThreadId.xy, 0));
   const float4 current                 = g_CurrentFrame.Load(int3(dispatchThreadId.xy, 0));
   const float3 currentColor            = current.rgb;
-  bool untrusted = false;
+  bool         untrusted               = false;
 #if XII_TAA_HISTORY_TRUST
   untrusted = g_HistoryTrust.Load(int3(dispatchThreadId.xy, 0)) < 0.999f;
 #endif

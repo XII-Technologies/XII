@@ -23,12 +23,17 @@ struct GBufferVertex
   nointerpolation uint MaterialIndex : TEXCOORD4;
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
   float3               WorldPosition : TEXCOORD7;
+#if defined(XII_SCENE_SURFACE_FLAGS)
+  nointerpolation uint SurfaceFlags : TEXCOORD8;
+#endif
+#if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
   nointerpolation uint ObjectUserData : TEXCOORD8;
+#endif
 #endif
 #if !defined(XII_SCENE_SURFACE_QUERY) && !defined(XII_SCENE_DEPTH_ONLY)
   float4 PreviousClipPosition : TEXCOORD5;
 #endif
-#if !defined(XII_SCENE_DEPTH_ONLY)
+#if !defined(XII_SCENE_DEPTH_ONLY) && !defined(XII_SCENE_SURFACE_NO_IDENTITY)
   nointerpolation uint ObjectId : TEXCOORD6;
 #endif
 };
