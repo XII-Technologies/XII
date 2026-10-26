@@ -12,11 +12,14 @@ class XII_GRAPHICSCORE_DLL xiiWeightedBlendedOITResolvePass final : public xiiRe
   XII_ADD_DYNAMIC_REFLECTION(xiiWeightedBlendedOITResolvePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineTextureInputPin  m_InputAccumulation{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin  m_InputRevealage{xiiGALResourceFormat::R8UNormalized, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin  m_InputHDR{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureOutputPin m_OutputHDR{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::ReadWrite};
+  xiiRenderPipelineTextureInputPin  m_InputAccumulation{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputRevealage{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputHDR{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputHDR{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Automatic};
   bool                              m_bBypass = false;
+  /// Both optional targets absent forwards HDR exactly. A partially supplied pair is an error.
+  bool m_bAllowAbsentAccumulation = false;
+  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
 
   xiiWeightedBlendedOITResolvePass();
   ~xiiWeightedBlendedOITResolvePass();
