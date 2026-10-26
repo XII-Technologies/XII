@@ -68,7 +68,9 @@ xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Ready = ready;
     if (generate) data.m_Pipeline = m_pState->m_Pipeline;
-    data.m_Output = builder.ImportTexture("Split-Sum Lookup", texture, texture->GetResourceState());
+    // Independent retained graphs can change this imported resource after setup.
+    // Let GAL resolve its current state when the first barrier is executed.
+    data.m_Output = builder.ImportTexture("Split-Sum Lookup", texture, xiiGALResourceStateFlags::Unknown);
     if (generate) data.m_Output = builder.WriteTexture(data.m_Output, xiiGALResourceStateFlags::UnorderedAccess);
     else
     {
@@ -79,8 +81,16 @@ xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
     } }, [generate](const Data& data, xiiRenderGraphPassContext& execute) {
     // Repeated occurrences built before Execute may all request generation.
     // The graph orders aliases; only the first live occurrence records the work.
-    if (!generate || !xiiLightingManager::IsBRDFLUTGenerationPending()) return;
+    if (!generate)
+      return;
     auto& commands = execute.GetCommandList();
+    if (!xiiLightingManager::IsBRDFLUTGenerationPending())
+    {
+      // Another independently recorded graph may have submitted generation after
+      // this graph's setup. Its shared immutable lookup still needs readiness.
+      commands.DeviceWaitForFence(data.m_Ready.Borrow(), 1);
+      return;
+    }
     commands.SetPipelineState(data.m_Pipeline.Borrow());
     auto* output = execute.GetTexture(data.m_Output);
     commands.ResolveAndSetUnorderedAccessTextureView("g_BRDFLutOut", output->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);

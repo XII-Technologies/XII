@@ -16,5 +16,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiSSRConstants)
   FLOAT1(StrideZCutoff);
   FLOAT2(InvResolution);
   UINT1(HiZMipCount);
-  FLOAT1(_Padding);
+  FLOAT1(MaxDistance);
+  FLOAT1(SurfaceBias);
+  FLOAT3(_Padding);
 };
