@@ -4,15 +4,17 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Captures current-view raster constants. Geometry/material residency remains device-owned.
-/// This producer has no temporal history; motion rasterization requires its own explicit history.
+/// An optional temporal snapshot supplies coherent current/previous matrices and jitter.
 class XII_GRAPHICSCORE_DLL xiiSurfaceRasterConstantsPass final : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSurfaceRasterConstantsPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineDataInputPin    m_TemporalCamera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>(), true};
   xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
   xiiUInt32                        m_uiVertexStride    = sizeof(xiiMeshPackedVertex);
   xiiUInt32                        m_uiNormalOffset    = offsetof(xiiMeshPackedVertex, m_vNormal);

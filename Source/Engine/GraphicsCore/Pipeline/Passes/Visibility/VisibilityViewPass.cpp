@@ -34,6 +34,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("InputCandidates", m_InputCandidates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibilityView", m_View)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Candidates", m_Candidates)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -61,8 +62,16 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   const auto& view = *context.m_pView;
   xiiFrustum  frustum;
   view.ComputeCullingFrustum(frustum);
+  const auto           temporalData = context.GetInputData(m_TemporalCamera);
+  const auto*          temporal     = xiiDynamicCast<const xiiTemporalCameraSnapshot*>(temporalData.Borrow());
   xiiGpuVisibilityView snapshot;
   snapshot.m_ViewProjectionMatrix          = view.GetViewProjectionMatrix(xiiCameraEye::Left);
+  if (temporal && temporal->m_Sample.m_bEnabled)
+  {
+    snapshot.m_ViewProjectionMatrix = temporal->m_Sample.m_Camera.m_ViewProjectionMatrix;
+    if (view.GetCullingCamera() == view.GetCamera())
+      frustum = xiiFrustum::MakeFromMVP(snapshot.m_ViewProjectionMatrix);
+  }
   snapshot.m_OcclusionViewProjectionMatrix = snapshot.m_ViewProjectionMatrix;
   for (xiiUInt8 i = 0; i < 6; ++i)
     snapshot.m_FrustumPlanes[i] = frustum.GetPlane(i).GetAsVec4();
