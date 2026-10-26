@@ -456,6 +456,8 @@ xiiResult xiiParticleSystemComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_b
 void xiiParticleSystemComponent::SetDescriptor(const xiiParticleSystemDescriptor& descriptor)
 {
   m_Descriptor                  = descriptor;
+  m_ActivationTime              = GetOwningManager() ? GetWorld()->GetClock().GetAccumulatedTime() : xiiTime::MakeZero();
+  ++m_uiSimulationRevision;
   m_Descriptor.m_uiMaxParticles = ClampParticleCapacity(m_Descriptor.m_uiMaxParticles);
 
   xiiParticleSystemManager::DestroyRuntime(m_hRuntime);
@@ -475,6 +477,8 @@ void xiiParticleSystemComponent::SetParticleGraph(const xiiParticleGraphResource
     return;
 
   m_Descriptor.m_hGraph = hGraph;
+  m_ActivationTime      = GetOwningManager() ? GetWorld()->GetClock().GetAccumulatedTime() : xiiTime::MakeZero();
+  ++m_uiSimulationRevision;
   InvalidateCachedRenderData();
 }
 
@@ -502,6 +506,13 @@ xiiParticleSystemRuntime& xiiParticleSystemComponent::GetRuntime() const
   return *pRuntime;
 }
 
+void xiiParticleSystemComponent::OnActivated()
+{
+  SUPER::OnActivated();
+  m_ActivationTime = GetWorld()->GetClock().GetAccumulatedTime();
+  ++m_uiSimulationRevision;
+}
+
 void xiiParticleSystemComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const
 {
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
@@ -515,6 +526,21 @@ void xiiParticleSystemComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData&
   pRenderData->m_Descriptor          = m_Descriptor;
   pRenderData->m_uiUniqueID          = GetUniqueIdForRendering();
   pRenderData->m_hRuntime            = m_hRuntime;
+
+  pRenderData->m_ElapsedTime          = GetWorld()->GetClock().GetAccumulatedTime() - m_ActivationTime;
+  pRenderData->m_uiSimulationRevision = m_uiSimulationRevision;
+  pRenderData->m_uiWorldUpdate        = GetWorld()->GetUpdateCounter();
+  for (const auto* component : GetOwner()->GetComponents())
+  {
+    if (!component->IsActiveAndInitialized())
+      continue;
+    if (const auto* emitter = xiiDynamicCast<const xiiParticleEmitterComponent*>(component))
+      pRenderData->m_Emitters.PushBack(emitter->GetRenderSnapshot());
+    else if (const auto* renderer = xiiDynamicCast<const xiiParticleRendererComponent*>(component))
+      pRenderData->m_Renderers.PushBack(renderer->GetRenderSnapshot());
+    else if (xiiDynamicCast<const xiiParticleForceFieldComponent*>(component) || xiiDynamicCast<const xiiParticleColliderComponent*>(component) || xiiDynamicCast<const xiiParticleSimulationDomainComponent*>(component) || xiiDynamicCast<const xiiParticleMolecularDynamicsComponent*>(component))
+      pRenderData->m_bHasAdditionalSimulation = true;
+  }
 
   pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();
   pRenderData->m_GlobalBounds    = m_Descriptor.m_LocalBounds;

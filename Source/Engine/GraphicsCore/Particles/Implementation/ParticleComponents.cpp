@@ -744,4 +744,44 @@ void xiiParticleMolecularDynamicsComponent::DeserializeComponent(xiiWorldReader&
   s >> m_bEnableReadback;
 }
 
+
+xiiParticleEmitterSnapshot xiiParticleEmitterComponent::GetRenderSnapshot() const
+{
+  xiiParticleEmitterSnapshot result;
+  result.m_SystemBinding         = m_sSystemBinding;
+  result.m_Shape                 = m_Shape;
+  result.m_Mode                  = m_Mode;
+  result.m_uiMaxParticles        = m_uiMaxParticles;
+  result.m_uiBurstCount          = m_uiBurstCount;
+  result.m_uiRandomSeed          = m_uiRandomSeed;
+  result.m_fSpawnRate            = m_fSpawnRate;
+  result.m_fLifetime             = m_fLifetime;
+  result.m_fInitialSpeed         = m_fInitialSpeed;
+  result.m_fRadius               = m_fRadius;
+  result.m_fConeAngleDegree      = m_fConeAngleDegree;
+  result.m_BoxExtents            = m_vBoxExtents;
+  result.m_bSurfaceOnly          = m_bSurfaceOnly;
+  result.m_bInheritOwnerVelocity = m_bInheritOwnerVelocity;
+  result.m_bDeterministic        = m_bDeterministic;
+  return result;
+}
+xiiParticleRendererSnapshot xiiParticleRendererComponent::GetRenderSnapshot() const
+{
+  xiiParticleRendererSnapshot result;
+  result.m_SystemBinding         = m_sSystemBinding;
+  result.m_Type                  = m_RendererType;
+  result.m_Material              = m_hMaterial;
+  result.m_Mesh                  = m_hMesh;
+  result.m_Tint                  = m_Tint;
+  result.m_fSize                 = m_fSize;
+  result.m_fStretch              = m_fStretch;
+  result.m_fSoftParticleDistance = m_fSoftParticleDistance;
+  result.m_uiSortPriority        = m_uiSortPriority;
+  result.m_bSortByDepth          = m_bSortByDepth;
+  result.m_bReceiveLighting      = m_bReceiveLighting;
+  result.m_bCastShadows          = m_bCastShadows;
+  result.m_bMotionVectors        = m_bMotionVectors;
+  return result;
+}
+
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Particles_Implementation_ParticleComponents);

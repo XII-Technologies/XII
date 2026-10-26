@@ -5,6 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 
 #include <Core/World/World.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
@@ -397,4 +398,136 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ParticleIntegrationRetainsPreparedReco
   }
   commands->End();
   environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->Submit(commands);
+}
+
+class xiiParticleExtractionTestPass final : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiParticleExtractionTestPass, xiiRenderPipelinePass);
+
+public:
+  bool                                     m_bDemand = true;
+  xiiDynamicArray<xiiParticleRenderData>   m_Snapshots;
+  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return m_bDemand ? xiiRenderExtractionCategory::Particles : xiiRenderExtractionCategory::Geometry; }
+  xiiResult                                Build(xiiRenderPipelinePassContext& context) override
+  {
+    m_Snapshots.Clear();
+    if (!context.m_pView || !context.m_pView->GetExtractedRenderData())
+      return XII_FAILURE;
+    for (const auto* packet : context.m_pView->GetExtractedRenderData()->GetAllRenderData())
+      if (const auto* particle = xiiDynamicCast<const xiiParticleRenderData*>(packet))
+        m_Snapshots.PushBack(*particle);
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleExtractionTestPass, 1, xiiRTTIDefaultAllocator<xiiParticleExtractionTestPass>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Demand", m_bDemand),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_CREATE_SIMPLE_TEST(PipelineExtraction, ImmutableParticleSettingsAndCategoryDemand)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceHandle resources[2];
+  for (xiiUInt32 variant = 0; variant < 2; ++variant)
+  {
+    xiiRenderPipelineResourceDescriptor definition;
+    xiiVariantDictionary                settings;
+    settings.Insert("Demand", variant == 0);
+    definition.AddPass("Capture authoritative particle packets", xiiGetStaticRTTI<xiiParticleExtractionTestPass>(), settings);
+    resources[variant] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(variant ? "ParticleExtraction.OpaqueOnly" : "ParticleExtraction.Particles", std::move(definition));
+  }
+  xiiWorldDescription worldDescription("Particle extraction ownership");
+  xiiWorld            world(worldDescription);
+  XII_LOCK(world.GetWriteMarker());
+  world.SetWorldSimulationEnabled(false);
+  xiiGameObjectDescription objectDescription;
+  objectDescription.m_bDynamic       = true;
+  xiiGameObject*              object = nullptr;
+  const auto                  owner  = world.CreateObject(objectDescription, object);
+  xiiParticleSystemComponent* system = nullptr;
+  xiiParticleSystemComponent::CreateComponent(object, system);
+  xiiParticleSystemDescriptor settings;
+  settings.m_bAlwaysVisible = true;
+  settings.m_uiMaxParticles = 32;
+  system->SetDescriptor(settings);
+  xiiParticleEmitterComponent* emitter = nullptr;
+  xiiParticleEmitterComponent::CreateComponent(object, emitter);
+  emitter->SetRadius(0.4f);
+  xiiParticleRendererComponent* renderer = nullptr;
+  xiiParticleRendererComponent::CreateComponent(object, renderer);
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  camera.LookAt({0, -4, 0}, {0, 0, 0}, {0, 0, 1});
+  xiiView* views[3];
+  for (xiiUInt32 v = 0; v < 3; ++v)
+  {
+    world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Particle snapshot view", views[v]);
+    views[v]->SetCamera(&camera);
+    views[v]->SetViewport({0, 0, 8, 8});
+    views[v]->SetRenderPipelineResource(resources[v == 2 ? 1 : 0]);
+  }
+  xiiParticleRenderData retained;
+  xiiUInt64             firstRevision = 0;
+  for (xiiUInt32 phase = 0; phase < 4; ++phase)
+  {
+    if (phase == 1)
+    {
+      emitter->SetRadius(0.8f);
+      const auto* property = static_cast<const xiiAbstractMemberProperty*>(renderer->GetDynamicRTTI()->FindPropertyByName("Tint"));
+      xiiReflectionUtils::SetMemberPropertyValue(property, renderer, xiiColor(0.1f, 0.2f, 0.8f, 0.5f));
+    }
+    if (phase == 2)
+    {
+      system->SetActiveFlag(false);
+      system->SetActiveFlag(true);
+      emitter->SetActiveFlag(false);
+    }
+    if (phase == 3)
+      system->SetActiveFlag(false);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    for (xiiUInt32 v = 0; v < 3; ++v)
+    {
+      XII_TEST_RESULT(views[v]->GetLastRenderResult());
+      const auto& instance = views[v]->GetRenderPipelineInstance();
+      const auto* capture  = xiiDynamicCast<const xiiParticleExtractionTestPass*>(instance.GetPass(0));
+      if (!XII_TEST_BOOL(capture != nullptr))
+        return;
+      XII_TEST_INT(capture->m_Snapshots.GetCount(), v == 2 || phase == 3 ? 0 : 1);
+      if (capture->m_Snapshots.IsEmpty())
+        continue;
+      const auto& packet = capture->m_Snapshots[0];
+      XII_TEST_BOOL(packet.m_hOwnerObject == owner && packet.m_hOwnerComponent == system->GetHandle());
+      XII_TEST_BOOL(packet.m_ElapsedTime.GetSeconds() >= 0);
+      XII_TEST_INT(packet.m_uiWorldUpdate, world.GetUpdateCounter());
+      XII_TEST_INT(packet.m_Emitters.GetCount(), phase == 2 ? 0 : 1);
+      XII_TEST_INT(packet.m_Renderers.GetCount(), 1);
+      if (phase == 0)
+      {
+        firstRevision = packet.m_uiSimulationRevision;
+        if (v == 0)
+          retained = packet;
+        XII_TEST_FLOAT(packet.m_Emitters[0].m_fRadius, 0.4f, 0);
+      }
+      if (phase == 1)
+      {
+        XII_TEST_FLOAT(packet.m_Emitters[0].m_fRadius, 0.8f, 0);
+        XII_TEST_FLOAT(packet.m_Renderers[0].m_Tint.b, 0.8f, 0);
+      }
+      if (phase == 2)
+        XII_TEST_BOOL(packet.m_uiSimulationRevision > firstRevision);
+    }
+  }
+  world.DeleteObjectNow(owner);
+  XII_TEST_FLOAT(retained.m_Emitters[0].m_fRadius, 0.4f, 0);
+  XII_TEST_FLOAT(retained.m_Renderers[0].m_Tint.b, 1, 0);
+  XII_TEST_BOOL(retained.m_hOwnerObject == owner);
 }
