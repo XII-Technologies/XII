@@ -6,6 +6,7 @@
 #include <Core/World/World.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Memory/FrameAllocator.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/PointLightComponent.h>
@@ -13,6 +14,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -440,7 +442,7 @@ XII_CREATE_SIMPLE_TEST(SceneTransparency, RealWorldAlphaLayers)
   }
 }
 
-static void TestTransparentTemporalWorlds(bool independentBlend)
+static void TestTransparentTemporalWorlds(bool independentBlend, bool particles = false)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize(false, false, independentBlend)))
@@ -461,7 +463,7 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
       pass.m_Properties.Insert("Enabled", true);
   }
   const auto                      taa        = xiiFindPipelineTestPass(definition, "xiiTemporalAntiAliasingPass");
-  const auto                      trans      = xiiUuid::MakeStableUuidFromString("XII.Scene/Transparency");
+  const auto                      trans      = xiiUuid::MakeStableUuidFromString(particles ? "XII.Scene/Particles" : "XII.Scene/Transparency");
   const auto                      source     = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Transparency.TemporalSource", std::move(definition));
   const auto                      reloadable = xiiMakeReloadablePipelineTestResource(source, "Transparency.ReloadableTemporal");
   xiiRenderPipelineResourceHandle pipelines[3];
@@ -480,7 +482,7 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
     {
       auto& off = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
       off.m_Path.PushBack(trans);
-      off.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneTransparency/Transparent View"));
+      off.m_Path.PushBack(xiiUuid::MakeStableUuidFromString(particles ? "XII.RenderPipelines.SceneParticles/World Births" : "XII.RenderPipelines.SceneTransparency/Transparent View"));
       off.m_Properties.Insert("Enabled", false);
     }
     for (const xiiStringView pin : {"HDRSceneColor", "TransparentHistoryTrust", "TransparentAccumulation", "SceneDepth", "ObjectId"})
@@ -503,12 +505,26 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
   xiiMaterialResourceDescriptor backgroundDescription;
   backgroundDescription.m_BaseColor = {0.1f, 0.4f, 0.2f};
   const auto background             = xiiResourceManager::CreateResource<xiiMaterialResource>("Transparency.TemporalBackground", std::move(backgroundDescription));
+  const auto writeParticleTexture   = [](xiiStringView path, bool visible) {
+    const xiiUInt8                   texels[] = {255, 255, 255, visible ? xiiUInt8(255) : xiiUInt8(0)};
+    xiiGALTextureCreationDescription description;
+    description.m_Type   = xiiGALResourceDimension::Texture2D;
+    description.m_Size   = {1, 1};
+    description.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+    xiiImageView image;
+    image.ResetAndViewExternalStorage(description, xiiConstByteBlobPtr(texels, sizeof(texels)));
+    xiiFileWriter file;
+    if (!XII_TEST_RESULT(file.Open(path)))
+      return false;
+    return XII_TEST_RESULT(xiiTextureAssetFile::WriteImage(file, image, xiiGALSamplerCreationDescription(), xiiAssetFileHeader()));
+  };
+  xiiTexture2DResourceHandle particleTextures[2];
   struct Scene
   {
     xiiUniquePtr<xiiWorld>      world;
     xiiCamera                   camera;
     xiiView*                    views[2];
-    xiiMeshComponent*           pane = nullptr;
+    xiiComponent*               pane = nullptr;
     xiiSharedPtr<xiiGALTexture> targets[2];
     xiiDynamicArray<float>      previousTrust;
     xiiSizeU32                  size = {129, 97};
@@ -538,6 +554,15 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
     material.m_BaseColor    = w ? xiiColor(0.02f, 0.05f, 0.8f, 0.5f) : xiiColor(0.8f, 0.05f, 0.02f, 0.5f);
     material.m_ShadingModel = xiiMaterialShadingModel::Unlit;
     material.m_AlphaMode    = xiiMaterialAlphaMode::Blend;
+    if (particles)
+    {
+      xiiStringBuilder path;
+      path.SetFormat(":imgout/TemporalParticleTexture{}.xiiBinTexture2D", w);
+      if (!writeParticleTexture(path, true))
+        return;
+      particleTextures[w]          = xiiResourceManager::LoadResource<xiiTexture2DResource>(path);
+      material.m_hBaseColorTexture = particleTextures[w];
+    }
     const auto paneMaterial = xiiResourceManager::CreateResource<xiiMaterialResource>(w ? "Transparency.TemporalBlue" : "Transparency.TemporalRed", std::move(material));
     for (xiiUInt32 objectIndex = 0; objectIndex < 2; ++objectIndex)
     {
@@ -547,12 +572,41 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
       objectDescription.m_LocalScaling  = objectIndex ? xiiVec3(2, 2, 0.01f) : xiiVec3(8, 8, 0.5f);
       xiiGameObject* object             = nullptr;
       scene.world->CreateObject(objectDescription, object);
-      xiiMeshComponent* component = nullptr;
-      xiiMeshComponent::CreateComponent(object, component);
-      component->SetMesh(mesh);
-      component->SetMaterialOverride(0, objectIndex ? paneMaterial : background);
-      if (objectIndex)
-        scene.pane = component;
+      if (objectIndex && particles)
+      {
+        xiiParticleSystemComponent* system = nullptr;
+        xiiParticleSystemComponent::CreateComponent(object, system);
+        xiiParticleSystemDescriptor settings;
+        settings.m_bAlwaysVisible  = true;
+        settings.m_SimulationSpace = xiiParticleSimulationSpace::Local;
+        settings.m_uiMaxParticles  = 4;
+        system->SetDescriptor(settings);
+        xiiParticleEmitterComponent* emitter = nullptr;
+        xiiParticleEmitterComponent::CreateComponent(object, emitter);
+        xiiParticleRendererComponent* renderer = nullptr;
+        xiiParticleRendererComponent::CreateComponent(object, renderer);
+        const auto set = [](xiiReflectedClass* target, xiiStringView name, const xiiVariant& value) {
+          const auto* property = static_cast<const xiiAbstractMemberProperty*>(target->GetDynamicRTTI()->FindPropertyByName(name));
+          if (XII_TEST_BOOL(property != nullptr))
+            xiiReflectionUtils::SetMemberPropertyValue(property, target, value);
+        };
+        set(emitter, "Mode", xiiInt64(xiiParticleEmitterMode::Burst));
+        set(emitter, "BurstCount", 1U);
+        set(emitter, "InitialSpeed", 0.0f);
+        set(emitter, "Lifetime", 10.0f);
+        set(renderer, "Size", 1.0f);
+        set(renderer, "Material", paneMaterial.GetResourceID());
+        scene.pane = renderer;
+      }
+      else
+      {
+        xiiMeshComponent* component = nullptr;
+        xiiMeshComponent::CreateComponent(object, component);
+        component->SetMesh(mesh);
+        component->SetMaterialOverride(0, objectIndex ? paneMaterial : background);
+        if (objectIndex)
+          scene.pane = component;
+      }
     }
     scene.camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
     scene.camera.LookAt({0, 0, 4}, {0, 0, 0}, {0, 1, 0});
@@ -675,7 +729,7 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
     scene.views[0]->SetRenderPipelineResource(pipelines[1]);
     xiiTestLogInterface   expected;
     xiiTestLogSystemScope expectedScope(&expected);
-    expected.ExpectMessage("Transparent layers require independent blending", xiiLogMsgType::ErrorMsg, 1);
+    expected.ExpectMessage(particles ? "Particle layers require independent blending" : "Transparent layers require independent blending", xiiLogMsgType::ErrorMsg, 1);
     expected.ExpectMessage("Failed to execute render graph for view", xiiLogMsgType::ErrorMsg, 1);
     scene.world->Update();
     XII_TEST_BOOL(scene.views[0]->GetLastRenderResult().Failed());
@@ -702,8 +756,36 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
   }
   const auto output = recording.GetInterfaceBinding(recording.GetPipeline()->FindInterface("TransparentAccumulation", false))->m_hTexture;
   graph.EndSetup();
+  if (particles)
+  {
+    const auto preparedFrame = frame.GetFrameIndex();
+    cache.EndFrame();
+    frame.End();
+    // Retain this recording while the device-wide timeline and streaming resources advance.
+    for (xiiUInt32 i = 0; i < 4; ++i)
+    {
+      xiiRenderGraphFrame advance;
+      if (!XII_TEST_RESULT(advance.Begin()))
+        return;
+    }
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    XII_TEST_BOOL(frame.GetFrameIndex() > preparedFrame + 3);
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+  }
+
   recording.Clear();
   scenes[1].world.Clear();
+  if (particles)
+  {
+    if (!writeParticleTexture(":imgout/TemporalParticleTexture1.xiiBinTexture2D", false))
+      return;
+    XII_TEST_BOOL(xiiResourceManager::ReloadResource(particleTextures[1], true));
+    xiiResourceLock<xiiTexture2DResource> replacement(particleTextures[1], xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(replacement.GetAcquireResult() == xiiResourceAcquireResult::Final))
+      return;
+  }
+
   xiiStringBuilder error;
   if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &retained.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
     return;
@@ -720,3 +802,6 @@ static void TestTransparentTemporalWorlds(bool independentBlend)
 }
 XII_CREATE_SIMPLE_TEST(SceneTransparency, TemporalWorldsViewsReloadAndRetainedRecording) { TestTransparentTemporalWorlds(true); }
 XII_CREATE_SIMPLE_TEST(SceneTransparency, ExplicitIndependentBlendFallback) { TestTransparentTemporalWorlds(false); }
+
+XII_CREATE_SIMPLE_TEST(SceneParticles, TemporalWorldsViewsReloadAndRetainedRecording) { TestTransparentTemporalWorlds(true, true); }
+XII_CREATE_SIMPLE_TEST(SceneParticles, ExplicitIndependentBlendFallback) { TestTransparentTemporalWorlds(false, true); }

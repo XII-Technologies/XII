@@ -8,8 +8,8 @@
 void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
 {
   const auto pipeline = scene.GetPipeline();
-  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 4);
-  XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere));
+  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 5);
+  XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Particles));
   XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting));
   XII_TEST_INT(pipeline->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
   for (const auto& pass : pipeline->GetDescriptor().m_Passes)

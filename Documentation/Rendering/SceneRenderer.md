@@ -2,7 +2,7 @@
 
 `Data/Base/RenderPipelines` contains two default authored resources: **Scene** and
 **Editor**, plus independently authored **SceneAtmosphere** and
-**SceneDirectionalShadows**, **SceneScreenSpaceReflections** and **SceneTransparency** workloads composed by Scene. Directional shadows reuse
+**SceneDirectionalShadows**, **SceneScreenSpaceReflections**, **SceneTransparency** and **SceneParticles** workloads composed by Scene. Directional shadows reuse
 **SceneShadowCascade** for each cascade's caster rasterization. The two roots are
 defaults, not an enumeration of supported workloads.
 Applications can select any compatible resource or construct a resource descriptor
@@ -43,7 +43,7 @@ view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
 lights, optional world directional shadows, ambient diffuse and emission, spatial
 ambient visibility, optional world atmosphere, spatial screen reflections, transparent
-mesh layers and temporal
+mesh and ballistic billboard layers and temporal
 antialiasing, exposure,
 tone mapping, color grading and presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
@@ -133,7 +133,7 @@ and checks icon picking. Fixed preview tests exercise real texture/cubemap outpu
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
 These defaults intentionally exclude local/virtual/ray shadows, GI, environment/probe
-reflections and particle rasterization. Spatial screen reflections and
+reflections, refractive meshes and advanced particle graph rendering. Spatial screen reflections and
 temporal antialiasing are authored but opt-in.
 Other retained operations and focused tests are not certification of complete production techniques.
 Custom material shader permutations beyond the canonical GPU surface model,
@@ -148,7 +148,7 @@ committed. The Editor transforms the authored sources into its normal
 subgraph reference use the source asset GUIDs through the existing lookup table.
 For standalone GPU tests/sample preparation, run `EditorFrameworkTest -noGui -run
 -close -all -filter RendererAssets -outputDir <project-local-test-output>`. This
-exports all seven sources with the production compiler into the ignored cache, checks
+exports all eight sources with the production compiler into the ignored cache, checks
 stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
@@ -606,7 +606,7 @@ and logs are excluded from commits; D3D12 and other backends remain unverified.
 
 ## Transparent world meshes
 
-Scene composes **SceneTransparency** after spatial reflections and before TAA.
+Scene composes **SceneTransparency**, then **SceneParticles**, after spatial reflections and before TAA.
 The root's opaque visibility query now explicitly excludes `Transparent` records;
 otherwise the same surface would incorrectly overwrite depth and shade twice.
 Editor continues to reference Scene. The new workload uses world-authoritative mesh
@@ -618,8 +618,10 @@ vertex-pull command generation and weighted resolve. Its thirteen operations are
 ```text
 Transparent View -> Cull Transparent Instances -> Meshlet Work Bound
     -> Dispatch Meshlets -> Cull Transparent Meshlets -> Transparent Draw Commands
-    -> Raster Transparent Layers -> Composite Transparent Layers -> TAA -> output
+    -> Raster Transparent Layers -> particle append -> shared root resolve -> TAA -> output
 Initialize Transparent LOD + four explicit counters feed the culling operations.
+The standalone mesh workload retains its own resolve; Scene overrides that resolve
+to Bypass=true and resolves the combined mesh/particle targets once at the root.
 ```
 
 `Transparent View.Enabled` is the workload switch. `SkipEmptySelection=true`
@@ -748,3 +750,105 @@ normal output libraries; no running Editor process was stopped. Other backends
 remain unverified. The first broad GPU run exposed an undefined preprocessor
 variable in the shared vertex interface; an explicit optional-interface define
 corrects it, and the full GPU rerun passes.
+
+
+## Ballistic billboard particles
+
+SceneParticles is an independently authored three-operation workload:
+
+```text
+World Births -> Ballistic Trajectories -> Append Billboard Layers
+    seeds + trajectory batches              ^ camera, opaque depth
+    private surface materials --------------+
+SceneTransparency raw layers ---------------+ -> shared root OIT resolve -> TAA
+Spatial reflection radiance ----------------------^ original HDR input
+```
+
+`World Births.Enabled` gates the entire particle workload. Disabled upload, absent
+systems or no live matching births emit no particle buffers; append forwards any
+existing mesh layers exactly. With neither workload present, the root resolve
+forwards the original HDR handle. Active rendering requires compute, bindless
+textures/samplers, five float blend attachments and independent blending. Unsupported
+active configurations fail explicitly; disabling particle upload is the authored
+fallback. No mesh-shader or hardware-ray capability is needed.
+
+The world component captures bounded deterministic initial conditions during
+PostTransform updates, before render extraction. Point, sphere and volume-box
+emitters support burst and continuous emission, lifetime removal, authored emitter
+and system capacities, bindings and dropped-spawn counts. CPU birth metadata is
+not a second evaluation of current particle positions. World-space births preserve
+the transform at birth; local-space births follow the current owner transform.
+Paused worlds retain their age and can display an initial burst for Editor preview.
+Only the world clock advances emission; multiple views cannot advance it twice.
+
+| Resource | Contract | Producer and consumer |
+| --- | --- | --- |
+| Births | Nonempty structured 128-byte initial state, age/lifetime and stable ID; bounded by MaximumParticles | Immutable world extraction -> upload -> trajectory compute |
+| Trajectory batches | Structured 112-byte matrix, tint, size, soft distance and compact material index | Per-view upload -> trajectory compute |
+| Evaluated particles | Distinct SRV/UAV structured 128-byte buffer | GPU analytic position/velocity, radius and quadratic lifetime fade -> billboard vertex shader |
+| Surface materials | Private structured 160-byte canonical material records | Coherent parameter/texture snapshot -> billboard pixel shader |
+| Camera | Exact 160-byte current temporal camera snapshot | Existing view constants -> camera-facing quads and depth reconstruction |
+| Depth | Viewport single-sample D32; unchanged depth attachment plus separate D32 copy for sampling | Opaque raster -> read-only depth test and soft intersections |
+| Transparent layers | Existing viewport RGBA32 accumulation/additive/modulation and R32 revealage/trust, or neutral new targets | Mesh raster -> read-modify-write billboard append -> one HDR resolve and temporal trust |
+
+`Ballistic Trajectories.Acceleration` explicitly selects a world-space analytic
+trajectory, defaulting to Z gravity. It is a distinct operation from the retained
+Euler integration pass. Existing graph-runtime allocation/debug-label scheduling
+is not an implemented particle graph executor. Graphs, force fields, collision,
+neighbors/molecular simulation, events, readback scheduling and sorting are rejected
+by this workload. Its billboard renderer is unlit, does not cast shadows and does
+not substitute for stretched, ribbon, trail, mesh or volumetric renderers.
+
+Billboards use renderer tint/size and canonical base-color/emissive texture and
+sampler evaluation. Authored materials must explicitly select translucent,
+additive or modulation blending; absent material selects a white translucent VFX
+surface. ReceiveLighting and CastShadows must be false. This path does not yet apply
+atmospheric segment scattering to particles. SoftParticleDistance fades coverage
+against reconstructed opaque depth. Particles preserve scene depth and ObjectId;
+Editor mesh picking continues through them. Covered pixels use the shared
+conservative temporal trust, including rejection after particles disappear.
+
+Each prepared recording owns its seed/batch/material values and GAL pipeline
+references. Per-occurrence leases retain immutable bindless texture indices and
+share identical sampler registrations. Reloaded textures receive new indices;
+previous recordings retain the previous actual views. Retirement uses the active
+submission frame, which can be newer than the graph's setup frame. Rebuilding a
+pipeline or destroying its world does not retire a retained recording's resources.
+There is no cross-view GPU simulation history to initialize on cuts, resize or reload.
+
+### Particle output acceptance
+
+The SceneParticles GPU tests compare authored enabled/disabled production Scene
+resources with real background geometry. They verify all three blend modes through
+five layer readbacks and the final HDR resolve, together with unchanged depth/IDs.
+The initial billboard changes 1,296 presented pixels; resize changes 2,209 and the
+orthographic case 2,401. Tests exercise world-space transform retention and reset,
+opaque occlusion, a measured soft-depth fade, texture alpha reload to zero and back,
+live material edits, burst fade/death, continuous births and overlapping transparent
+world meshes. Zero-opacity, disabled and dead content restores the baseline exactly.
+
+Two independent worlds with two views verify temporal first frames, motion,
+disappearance (2,116 interior pixels per world), cuts, resize, pipeline reload and
+orthographic resets. A retained recording renders its old textured particles after
+its instance/world are destroyed, four intervening device frames and replacement of
+the authored texture with zero-alpha data. A device with IndependentBlend disabled
+rejects active particles while disabled/empty paths render normally. The production
+Editor composition changes 1,369 matching Scene/Editor pixels and restores exactly.
+
+These results certify the explicit unlit ballistic billboard path on Windows
+Vulkan. Lit/atmospheric particles, additional renderer/simulation algorithms,
+particle motion reconstruction, multiview/stereo, other backends and representative
+large-effect performance remain acceptance work. The default descriptor's allocation
+and scheduling flags do not turn the separate unfinished graph runtime into a
+production simulation executor.
+
+
+The final isolated MSVC Debug builds passed GraphicsCore and all affected test and
+sample consumers. Full GraphicsCoreTest (80), Vulkan GraphicsFoundationTest (134)
+and Vulkan EditorEngineProcessFrameworkTest (76) subtests passed. RendererAssets
+regenerated all eight sources twice with equal bytes and stable document identities;
+EditorDocuments (20) and NodeLayout (3) passed. The isolated mesh-preview fixture
+includes the additional child dependency. Final particle mode assertions also pass
+as a focused three-subtest Vulkan run. Logs and captures are project-local under
+`Workspace/SceneParticles` and `Workspace/scene-particles-*.log`; binaries, caches
+and temporary authoring helpers are excluded from commits.
