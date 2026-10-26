@@ -11,6 +11,7 @@ ALL
 
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/GBufferMaterial.h>
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
 
@@ -53,7 +54,13 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const float3 normal = DecodeOctNormal(encodedNormal);
   const float4 albedo = g_GBufferAlbedo.Load(int3(pixel, 0));
   const float4 material = g_GBufferMaterial.Load(int3(pixel, 0));
-  const uint materialFlags = (uint)round(saturate(material.a) * 255.0f);
+  if (!xiiGBufferReceivesLighting(material))
+  {
+    g_ReservoirOut[pixel] = ReSTIRPackReservoir(ReSTIREmptyReservoir());
+    g_SurfaceOut[pixel] = 0.0f;
+    return;
+  }
+  const uint materialFlags = xiiGBufferMaterialFlags(material.a);
   const float transmission = (materialFlags & (1u << 6u)) != 0u ? saturate(g_GBufferEmissive.Load(int3(pixel, 0)).a) : 0.0f;
   const xiiReSTIRDISurface surface = ReSTIRMakeSurface(albedo.rgb, material.r, material.g, material.b, transmission);
   const float3 worldPosition = ReconstructWorldPos(uv, depth);

@@ -7,6 +7,7 @@ ALL
 
 #include <Shaders/Common/StorageImageFormat.h>
 #include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/GBufferMaterial.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 
@@ -99,7 +100,7 @@ void main(uint3 id:SV_DispatchThreadID)
   const float depth=g_SceneDepth.Load(int3(id.xy,0));
   const float4 material=g_GBufMaterial.Load(int3(id.xy,0));
   const float roughness=saturate(material.r);
-  if(depth<=0 || roughness>MaxRoughness || HiZMipCount==0) return;
+  if(depth<=0 || !xiiGBufferReceivesLighting(material) || roughness>MaxRoughness || HiZMipCount==0) return;
   const float3 world=ReconstructWorldPos(uv,depth);
   const float3 normal=DecodeOctNormal(g_GBufNormal.Load(int3(id.xy,0)));
   const bool orthographic=all(abs(g_ViewProjectionMatrix[3].xyz)<1.0e-6f);

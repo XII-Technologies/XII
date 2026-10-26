@@ -20,9 +20,9 @@ orchestration descriptions do not describe the current defaults.
   production frame-time/memory baseline is claimed.
 - Extend material/shader coverage beyond the canonical GPU surface representation.
   Validate ordinary imported textured assets and supported custom permutations in
-  representative projects before broad material compatibility claims. Audit opaque
-  unlit emission and G-buffer feature-bit packing: the refraction fixture compares
-  against actual captured opaque HDR, and does not certify those material semantics.
+  representative projects before broad material compatibility claims. Canonical
+  opaque unlit emission and packed deferred flags now have production GPU acceptance;
+  layered sheen/clearcoat/anisotropy evaluation remains a separate material workload.
 - Add volumetric/rough refraction, lit/atmospheric and advanced particle renderers, local/virtual/ray shadows, environment convolution, reflection history/probes,
   GI and temporal upsampling only through complete, independently observable
   rendering paths. Existing operation classes and focused tests do not establish

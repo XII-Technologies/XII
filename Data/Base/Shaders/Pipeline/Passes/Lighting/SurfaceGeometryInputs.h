@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+#include <Shaders/Pipeline/GBufferMaterial.h>
 #include <Shaders/Pipeline/Passes/Lighting/SurfaceLightingConstants.h>
 Texture2D<float>  g_SurfaceDepth;
 Texture2D<float2> g_SurfaceNormal;
@@ -32,10 +33,12 @@ bool LoadSurfaceGeometry(uint2 pixel, out SurfaceSample result)
   result.View           = dot(toCamera, toCamera) > 1e-12f ? normalize(toCamera) : result.Normal;
   result.Albedo         = max(g_SurfaceAlbedo.Load(int3(pixel, 0)).rgb, 0);
   const float4 material = g_SurfaceMaterial.Load(int3(pixel, 0));
+  if (!xiiGBufferReceivesLighting(material))
+    return false;
   result.Roughness      = clamp(material.r, 0.01f, 1);
   result.Metallic       = saturate(material.g);
   result.Specular       = saturate(material.b);
-  result.MaterialFlags  = (uint)round(saturate(material.a) * 255);
+  result.MaterialFlags  = xiiGBufferMaterialFlags(material.a);
   result.Occlusion      = saturate(g_SurfaceAlbedo.Load(int3(pixel, 0)).a);
   return isfinite(result.Occlusion) && all(isfinite(result.Normal)) && all(isfinite(result.View)) && all(isfinite(result.Albedo)) && all(isfinite(material));
 }

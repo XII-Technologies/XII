@@ -56,6 +56,58 @@ that rectangle. `InputCandidates` remains an optional geometry input. Outputs
 including `SceneDepth`, `ObjectId`, `HDRSceneColor` and `GradedColor` are explicit
 interfaces for composition and inspection.
 
+### Opaque material lighting semantics
+
+Canonical unlit surfaces and materials with `ReceivesLighting` disabled write
+sampled base RGB plus emission into the existing emissive target. Ambient,
+directional, clustered local, environment-specular and screen-reflection receivers
+skip these surfaces; they still write ordinary depth, normals, albedo, IDs and
+velocity and can appear in another surface's reflection. Forward transparent
+unlit semantics remain unchanged.
+
+```text
+world geometry/materials -> G-buffer -> packed lighting policy -> ambient/direct/specular/SSR
+                                 +-> sampled emission + unlit base -----------+-> HDR composition
+                                                                            -> atmosphere/layers/TAA/display
+```
+
+The RGBA8 material target retains roughness, metallic and specular in RGB. Its
+alpha is an explicitly packed evaluated-surface byte: bit 0 means unlit; bits
+1 through 7 retain their runtime low-feature meanings, including transmission
+at bit 6 and sheen at bit 7. The normal-texture flag is replaced because normal
+sampling has already produced the G-buffer normal. Higher runtime flags never
+saturate this byte and accidentally enable unrelated features. External producers
+of these material images must use this packed contract, rather than truncating
+or saturating the full runtime material flag word. The shared shader helper is
+`Shaders/Pipeline/GBufferMaterial.h`. No target format, allocation or root
+interface changes are needed. The retained ReSTIR shader consumers also reject
+unlit receivers; shader compilation does not certify that optional algorithm.
+
+`NativeScenePipeline/OpaqueMaterialLightingAndPackedFlags` reads production HDR,
+ambient/direct light, emission, packed material and object identity through ten
+phases with real geometry, a sun and a point light. Changing both light intensities
+changes lit output but leaves unlit final images exactly equal. Unlit HDR equals
+the actual emissive target and sampled authored color, including a base texture;
+all direct and ambient energy is zero. Removing ReceivesLighting matches explicit
+Unlit. GPU byte readbacks verify absent features, baked normal textures, transmission
+and sheen without spurious low bits, and restoring the original material restores
+the exact final image. Scene reflection acceptance additionally changes a known
+reflecting floor to unlit: floor hits and energy become zero, then restore when
+the lit mirror returns. Other surfaces continue reflecting it normally.
+
+The correction passes Windows/MSVC Debug validation and complete GraphicsCoreTest
+(81 subtests), Vulkan GraphicsFoundationTest (138) and
+EditorEngineProcessFrameworkTest (76). Production RendererAssets exports all eight
+source assets deterministically on two runs; EditorDocuments (20) and NodeLayout
+(3) also pass. The production compiler successfully compiles indexed/mesh G-buffer
+and both retained ReSTIR shader consumers for VK_SM66 and exits zero, but logs
+file-access errors during sandboxed shutdown. Other backends and optional ReSTIR
+runtime behavior remain unverified. Final Debug build checks cover GraphicsCore,
+both graphics test executables, both Editor test executables and GpuDrivenScene.
+The strengthened depth/identity assertions pass in the final native Scene group;
+the rebuilt Vulkan sample explicitly completes 300 frames. No generated pipeline
+binary or unrelated scene edit is committed.
+
 Editor references Scene and disables that occurrence's presentation through an
 ordinary reflected property override. It adds filtered world surface queries for
 mesh picking and selected-only, including occluded, selection; material/depth
