@@ -184,11 +184,10 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
       const auto material = xiiMaterialManager::GetGpuStorage().GetMaterial(instances->GetMaterialHandle(index));
       if (!material)
         continue; // The canonical absent-material surface has zero transmission.
-      const auto runtime = material->GetRuntimeState();
-      if (!runtime.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::Transmission))
-        continue;
       xiiMaterialInstanceSnapshot snapshot;
       material->CreateSnapshot(snapshot);
+      if (!snapshot.m_RuntimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::Transmission))
+        continue;
       const auto optics = xiiResolveGpuSurfaceMaterial(snapshot);
       if (!xiiMath::IsFinite(optics.AdvancedParameters.y) || optics.AdvancedParameters.y < 1 ||
           !xiiMath::IsFinite(optics.AdvancedParameters.x) || optics.AdvancedParameters.x < 0 ||

@@ -23,8 +23,10 @@
 
 > SceneTransparency now reuses native culling and weighted resolve around one new
 > forward raster operation. Alpha/additive/modulation have Scene/Editor GPU acceptance,
-> including lighting, depth, optional shadows/atmosphere and temporal trust. Refraction
-> and particle rendering remain separate work. See SceneRenderer.md for contracts.
+> including lighting, depth, optional shadows/atmosphere and temporal trust. Its existing
+> raster operation now traces thin dielectric slabs against an immutable opaque depth/color
+> snapshot. The legacy ScreenRefractionTrace UV perturbation remains a separate operation;
+> its tests do not establish production optical transport. See SceneRenderer.md for limits.
 
 Current source inventory: **109 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph

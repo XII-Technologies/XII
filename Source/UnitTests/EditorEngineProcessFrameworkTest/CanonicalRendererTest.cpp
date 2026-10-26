@@ -624,4 +624,74 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   }
   xiiTestFramework::Output(xiiTestOutput::Details, "Editor particle acceptance: %u Editor, %u Scene, %u matching final pixels.", particleChanges[0], particleChanges[1], matchingParticleChanges);
   XII_TEST_BOOL(particleChanges[0] > 8 && particleChanges[1] > 8 && matchingParticleChanges > 8);
+  renderer->SetActiveFlag(false);
+  xiiMaterialResourceDescriptor glassDescription;
+  glassDescription.m_BaseColor           = xiiColor::White;
+  glassDescription.m_AlphaMode           = xiiMaterialAlphaMode::Blend;
+  glassDescription.m_ShadingModel        = xiiMaterialShadingModel::Unlit;
+  glassDescription.m_fTransmission       = 1;
+  glassDescription.m_fThickness          = 0.5f;
+  glassDescription.m_fIndexOfRefraction  = 1.5f;
+  const auto               glassMaterial = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.Glass", std::move(glassDescription));
+  xiiGameObjectDescription glassObjectDescription;
+  glassObjectDescription.m_bDynamic      = true;
+  glassObjectDescription.m_LocalPosition = {-2, -2.5f, 1.1f};
+  glassObjectDescription.m_LocalScaling  = {1.5f, 1.5f, 0.01f};
+  glassObjectDescription.m_LocalRotation = xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisZ(), -camera.GetCenterDirForwards());
+  xiiGameObject* glassOwner              = nullptr;
+  world.CreateObject(glassObjectDescription, glassOwner);
+  xiiMeshComponent* glass = nullptr;
+  xiiMeshComponent::CreateComponent(glassOwner, glass);
+  glass->SetMesh(mesh);
+  glass->SetMaterialOverride(0, glassMaterial);
+  xiiRenderPipelineResourceHandle noRefraction[2];
+  {
+    xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    xiiResourceLock<xiiRenderPipelineResource> editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    auto                                       sceneDefinition  = scene->GetAuthoring()->m_Descriptor;
+    auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
+    const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/Transparency");
+    const auto                                 raster           = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneTransparency/Raster Transparent Layers");
+    for (auto& pass : sceneDefinition.m_Passes)
+      if (pass.m_Id == occurrence)
+      {
+        auto& off = pass.m_Overrides.ExpandAndGetRef();
+        off.m_Path.PushBack(raster);
+        off.m_Properties.Insert("EnableRefraction", false);
+      }
+    for (auto& pass : editorDefinition.m_Passes)
+      if (pass.m_Definition == sceneDefinition.m_Id)
+      {
+        auto& off = pass.m_Overrides.ExpandAndGetRef();
+        off.m_Path.PushBack(occurrence);
+        off.m_Path.PushBack(raster);
+        off.m_Properties.Insert("EnableRefraction", false);
+      }
+    noRefraction[0] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.NonRefractiveEditor", std::move(editorDefinition));
+    noRefraction[1] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.NonRefractiveScene", std::move(sceneDefinition));
+  }
+  xiiDynamicArray<xiiUInt32> refractionImages[2][4];
+  for (xiiUInt32 phase = 0; phase < 4; ++phase)
+  {
+    views[0]->SetRenderPipelineResource(phase % 2 ? editorPipeline : noRefraction[0]);
+    views[1]->SetRenderPipelineResource(phase % 2 ? scenePipeline : noRefraction[1]);
+    update(3);
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      if (!XII_TEST_RESULT_MSG(views[view]->GetLastRenderResult(), "%s", views[view]->GetRenderPipelineInstance().GetLastBuildError().GetStartPointer()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], refractionImages[view][phase]))
+        return;
+  }
+  xiiUInt32 refractionChanges[2]      = {};
+  xiiUInt32 matchingRefractionChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < refractionImages[0][0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_TEST_INT(refractionImages[view][0][pixel], refractionImages[view][2][pixel]);
+      XII_TEST_INT(refractionImages[view][1][pixel], refractionImages[view][3][pixel]);
+      refractionChanges[view] += refractionImages[view][0][pixel] != refractionImages[view][1][pixel];
+    }
+    matchingRefractionChanges += refractionImages[1][0][pixel] != refractionImages[1][1][pixel] && refractionImages[0][0][pixel] == refractionImages[1][0][pixel] && refractionImages[0][1][pixel] == refractionImages[1][1][pixel];
+  }
+  xiiTestFramework::Output(xiiTestOutput::Details, "Editor refraction acceptance: %u Editor, %u Scene, %u matching final pixels.", refractionChanges[0], refractionChanges[1], matchingRefractionChanges);
+  XII_TEST_BOOL(refractionChanges[0] > 8 && refractionChanges[1] > 8 && matchingRefractionChanges > 8);
 }
