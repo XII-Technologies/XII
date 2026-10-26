@@ -23,10 +23,10 @@ struct GBufferVertex
   nointerpolation uint MaterialIndex : TEXCOORD4;
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
   float3               WorldPosition : TEXCOORD7;
-#if defined(XII_SCENE_SURFACE_FLAGS)
+#  if defined(XII_SCENE_SURFACE_FLAGS)
   nointerpolation uint SurfaceFlags : TEXCOORD8;
-#endif
-#if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
+#  endif
+#  if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
   nointerpolation uint ObjectUserData : TEXCOORD8;
 #endif
 #endif

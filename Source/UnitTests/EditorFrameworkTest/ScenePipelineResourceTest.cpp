@@ -8,7 +8,7 @@
 void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
 {
   const auto pipeline = scene.GetPipeline();
-  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 3);
+  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 4);
   XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere));
   XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting));
   XII_TEST_INT(pipeline->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
@@ -20,9 +20,9 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
     if (XII_TEST_BOOL(index != xiiInvalidIndex))
       XII_TEST_BOOL(pipeline->GetInterface()[index].m_Pin.m_bOptional);
   }
-  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion", "ShadowAtlas", "ShadowVisibility", "ScreenReflections", "ReflectionLighting"})
+  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion", "ShadowAtlas", "ShadowVisibility", "ScreenReflections", "ReflectionLighting", "TransparentAccumulation", "TransparentRevealage", "TransparentAdditive", "TransparentModulation", "TransparentHistoryTrust"})
     XII_TEST_BOOL(pipeline->FindInterface(name, false) != xiiInvalidIndex);
-  for (const xiiStringView name : {"ScreenReflections", "ReflectionLighting"})
+  for (const xiiStringView name : {"ScreenReflections", "ReflectionLighting", "TransparentAccumulation", "TransparentRevealage", "TransparentAdditive", "TransparentModulation", "TransparentHistoryTrust"})
   {
     const auto index = pipeline->FindInterface(name, false);
     if (XII_TEST_BOOL(index != xiiInvalidIndex))

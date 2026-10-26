@@ -242,11 +242,11 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   // disable only Editor's nested AO occurrence through an authored override.
   world.DeleteObjectNow(owners[1]);
   xiiGameObjectDescription floorDescription;
-  floorDescription.m_LocalPosition = {0, 0, -0.6f};
-  floorDescription.m_LocalScaling  = {8, 8, 0.2f};
-  xiiGameObject* floor             = nullptr;
-  const auto              floorHandle       = world.CreateObject(floorDescription, floor);
-  xiiStaticMeshComponent* floorMesh = nullptr;
+  floorDescription.m_LocalPosition    = {0, 0, -0.6f};
+  floorDescription.m_LocalScaling     = {8, 8, 0.2f};
+  xiiGameObject*          floor       = nullptr;
+  const auto              floorHandle = world.CreateObject(floorDescription, floor);
+  xiiStaticMeshComponent* floorMesh   = nullptr;
   xiiStaticMeshComponent::CreateComponent(floor, floorMesh);
   floorMesh->SetMesh(mesh);
   floorMesh->SetMaterialOverride(0, material);
@@ -495,4 +495,83 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   }
   xiiTestFramework::Output(xiiTestOutput::Details, "Editor reflection acceptance: %u Editor, %u Scene, %u matching final pixels.", reflectionChanges[0], reflectionChanges[1], matchingReflectionChanges);
   XII_TEST_BOOL(reflectionChanges[0] > 8 && reflectionChanges[1] > 8 && matchingReflectionChanges > 8);
+  // Blend-mode-only materials use the same coverage for world rendering and Editor picking.
+  xiiMaterialResourceDescriptor paneDescription;
+  paneDescription.m_BaseColor                = {0.05f, 0.8f, 0.1f, 0.5f};
+  paneDescription.m_BlendMode                = xiiMaterialBlendMode::Translucent;
+  paneDescription.m_ShadingModel             = xiiMaterialShadingModel::Unlit;
+  auto       invisibleDescription            = paneDescription;
+  const auto paneMaterial                    = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.TransparentPane", std::move(paneDescription));
+  invisibleDescription.m_BaseColor.a         = 0;
+  const auto               invisibleMaterial = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.InvisiblePane", std::move(invisibleDescription));
+  xiiGameObjectDescription paneObjectDescription;
+  paneObjectDescription.m_bDynamic      = true;
+  paneObjectDescription.m_LocalPosition = {-2, -2.5f, 1.1f};
+  paneObjectDescription.m_LocalScaling  = {1.5f, 1.5f, 1.5f};
+  xiiGameObject*    paneObject          = nullptr;
+  const auto        paneOwner           = world.CreateObject(paneObjectDescription, paneObject);
+  xiiMeshComponent* pane                = nullptr;
+  xiiMeshComponent::CreateComponent(paneObject, pane);
+  pane->SetMesh(mesh);
+  pane->SetMaterialOverride(0, paneMaterial);
+  xiiRenderPipelineResourceHandle disabled[2];
+  {
+    xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    auto                                       sceneDefinition = scene->GetAuthoring()->m_Descriptor, editorDefinition = editor->GetAuthoring()->m_Descriptor;
+    const auto                                 occurrence = xiiUuid::MakeStableUuidFromString("XII.Scene/Transparency");
+    const auto                                 gate       = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneTransparency/Transparent View");
+    for (auto& pass : sceneDefinition.m_Passes)
+      if (pass.m_Id == occurrence)
+      {
+        auto& off = pass.m_Overrides.ExpandAndGetRef();
+        off.m_Path.PushBack(gate);
+        off.m_Properties.Insert("Enabled", false);
+      }
+    for (auto& pass : editorDefinition.m_Passes)
+      if (pass.m_Definition == sceneDefinition.m_Id)
+      {
+        auto& off = pass.m_Overrides.ExpandAndGetRef();
+        off.m_Path.PushBack(occurrence);
+        off.m_Path.PushBack(gate);
+        off.m_Properties.Insert("Enabled", false);
+      }
+    disabled[0] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.OpaqueEditor", std::move(editorDefinition));
+    disabled[1] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.OpaqueScene", std::move(sceneDefinition));
+  }
+  xiiDynamicArray<xiiUInt32> transparencyImages[2][5];
+  for (xiiUInt32 phase = 0; phase < 5; ++phase)
+  {
+    views[0]->SetRenderPipelineResource(phase == 0 ? disabled[0] : editorPipeline);
+    views[1]->SetRenderPipelineResource(phase == 0 ? disabled[1] : scenePipeline);
+    pane->SetMaterialOverride(0, phase == 2 ? invisibleMaterial : paneMaterial);
+    pane->SetActiveFlag(phase != 4);
+    update(3);
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      if (!XII_TEST_RESULT(views[view]->GetLastRenderResult()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], transparencyImages[view][phase]))
+        return;
+    const auto picked = capture()->Pick(*views[0], 64, 48, hit);
+    if (phase == 1 || phase == 3)
+    {
+      XII_TEST_RESULT(picked);
+      XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == paneOwner);
+    }
+    else if (phase == 2 || phase == 4)
+    {
+      XII_TEST_BOOL(picked.Failed() || hit.m_Source.m_hOwnerObject != paneOwner);
+    }
+  }
+  xiiUInt32 transparencyChanges[2] = {}, matchingTransparencyChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < transparencyImages[0][0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_TEST_INT(transparencyImages[view][0][pixel], transparencyImages[view][2][pixel]);
+      XII_TEST_INT(transparencyImages[view][0][pixel], transparencyImages[view][4][pixel]);
+      XII_TEST_INT(transparencyImages[view][1][pixel], transparencyImages[view][3][pixel]);
+      transparencyChanges[view] += transparencyImages[view][0][pixel] != transparencyImages[view][1][pixel];
+    }
+    matchingTransparencyChanges += transparencyImages[1][0][pixel] != transparencyImages[1][1][pixel] && transparencyImages[0][0][pixel] == transparencyImages[1][0][pixel] && transparencyImages[0][1][pixel] == transparencyImages[1][1][pixel];
+  }
+  xiiTestFramework::Output(xiiTestOutput::Details, "Editor transparency acceptance: %u Editor, %u Scene, %u matching final pixels.", transparencyChanges[0], transparencyChanges[1], matchingTransparencyChanges);
+  XII_TEST_BOOL(transparencyChanges[0] > 8 && transparencyChanges[1] > 8 && matchingTransparencyChanges > 8);
 }

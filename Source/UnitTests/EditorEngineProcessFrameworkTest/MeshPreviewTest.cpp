@@ -63,6 +63,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   const xiiString previousReflectionId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(reflectionId).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(reflectionId);
   XII_SCOPE_EXIT(if (previousReflectionId != reflectionId) xiiResourceManager::RegisterNamedResource(reflectionId, previousReflectionId));
+  const auto      transparencyId         = xiiPipelineLibraryTestIdentity("SceneTransparency");
+  const xiiString previousTransparencyId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(transparencyId).GetResourceID();
+  xiiResourceManager::UnregisterNamedResource(transparencyId);
+  XII_SCOPE_EXIT(if (previousTransparencyId != transparencyId) xiiResourceManager::RegisterNamedResource(transparencyId, previousTransparencyId));
   const xiiString shadowIds[] = {xiiPipelineLibraryTestIdentity("SceneShadowCascade"), xiiPipelineLibraryTestIdentity("SceneDirectionalShadows")};
   xiiString       previousShadowIds[2];
   for (xiiUInt32 index = 0; index < 2; ++index)
@@ -76,7 +80,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(cache)))
     return;
   xiiStringBuilder entries;
-  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "Scene"})
+  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "Scene"})
   {
     xiiStringBuilder source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", name, ".xiiBinRenderPipeline");
     source.MakeCleanPath();

@@ -21,13 +21,14 @@ orchestration descriptions do not describe the current defaults.
 - Extend material/shader coverage beyond the canonical GPU surface representation.
   Validate ordinary imported textured assets and supported custom permutations in
   representative projects before broad material compatibility claims.
-- Add transparent/particle rasterization, local/virtual/ray shadows, environment convolution, reflection history/probes,
+- Add refractive/particle rasterization, local/virtual/ray shadows, environment convolution, reflection history/probes,
   GI and temporal upsampling only through complete, independently observable
   rendering paths. Existing operation classes and focused tests do not establish
   complete production implementations. Atmospheric sky/aerial perspective now
   execute only with a selected world atmosphere. Conventional directional cascades
   execute only for the selected shadow-casting sun. Render-resolution TAA and spatial screen reflections are integrated
-  as authored opt-ins; the remaining paths are not enabled.
+  as authored opt-ins. Transparent world meshes now render through a separately authored
+  workload, gated by configuration and eligible content; the remaining paths are not enabled.
 - Establish representative CPU/GPU timing, queue/submission and memory baselines.
   Optimize from those measurements, including the repeated Editor query work.
   Do not add subgraphs or authored assets without a concrete reusable workload.
@@ -52,9 +53,9 @@ its own focused PR and production GPU comparisons before its status changes.
 | Ambient visibility | AO generation and spatial/temporal filtering | Temporal use needs real previous-camera matrices, motion and disocclusion acceptance; canonical spatial path is integrated |
 | Atmosphere and environment | World atmosphere constants, transmittance, multiple scattering and application | Canonical sky/aerial path integrated with GPU Scene/Editor acceptance; environment convolution, clouds, atmospheric shadows and content caching remain |
 | Directional shadows | World-selected cascades, existing GPU caster culling/depth raster and PCF visibility | Canonical directional atlas/lighting path integrated with Scene/Editor GPU comparisons; local/virtual/ray shadows, cascade transitions, animated/cutout acceptance and performance remain |
-| Temporal reconstruction | TAA, buffer/texture history, G-buffer velocity and explicit temporal camera preparation | Opt-in native-resolution TAA integrated with rigid/bone motion, disocclusion, Scene/Editor GPU output and independent-view resets; temporal upsampling, morph/reactive-mask acceptance and quality/performance remain |
+| Temporal reconstruction | TAA, buffer/texture history, G-buffer velocity and explicit temporal camera preparation | Opt-in native-resolution TAA integrated with rigid/bone motion, disocclusion, Scene/Editor GPU output and independent-view resets; temporal upsampling, morph/higher-quality reactive reconstruction and quality/performance remain |
 | Reflections | Screen-space trace/temporal filter, BRDF/environment specular and confidence composition | Opt-in spatial SSR integrated with real depth/radiance mip producers, explicit zero-contribution misses and material-sensitive final output; environment/probe response, reflection history, TAA reactive-mask quality and representative glossy transport/performance remain |
-| Transparency and refraction | Weighted blended resolve and screen refraction trace | Transparent candidate/coverage contracts, actual accumulation/revealage raster producers, lighting, depth and format-compatible HDR composition |
+| Transparency and refraction | Canonical forward transparent raster, weighted alpha/additive/modulation resolve and screen refraction trace | World-mesh alpha/additive/modulation are integrated with Scene/Editor GPU output, fragment-local lights/shadows/atmosphere and conservative temporal trust; refraction, transparent shadow casting, motion-aware AA, skinning/normal/IES-specific acceptance and representative performance remain |
 | Particles | Explicit particle-buffer integration | World extraction, renderable particle resources, billboards/materials and visible transparent composition; simulation is not rendering |
 | Global illumination | DDGI and sparse-voxel scheduling, upload, environment seed and gather; screen irradiance | Geometry-dependent transport and visibility, real radiance updates, bounded residency and final indirect-light acceptance; environment seeding is not scene GI |
 

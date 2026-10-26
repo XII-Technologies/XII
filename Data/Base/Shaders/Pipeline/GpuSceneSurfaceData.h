@@ -53,10 +53,10 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   output.MaterialIndex = instance.MaterialIndex;
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
   output.WorldPosition  = worldPosition;
-#if defined(XII_SCENE_SURFACE_FLAGS)
+#  if defined(XII_SCENE_SURFACE_FLAGS)
   output.SurfaceFlags = instance.Flags;
-#endif
-#if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
+#  endif
+#  if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
   output.ObjectUserData = instance.UserData;
 #endif
 #endif
