@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterFrameData.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 class XII_GRAPHICSCORE_DLL xiiClusteredLocalSurfaceLightingPass final : public xiiRenderPipelinePass
@@ -17,7 +18,11 @@ public:
   xiiRenderPipelineTextureInputPin            m_Material{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Emissive{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin             m_Camera{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineDataInputPin               m_Spots{xiiGetStaticRTTI<xiiSpotShadowSnapshot>(), true};
+  xiiRenderPipelineTextureInputPin            m_SpotAtlas{xiiGALResourceFormat::D32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin            m_ObjectId{xiiGALResourceFormat::R32UInt, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin           m_Reactive{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   float                                       m_fScale        = 1;
   bool                                        m_bAsyncCompute = false;
   xiiRenderPipelineDataInputPin               m_Layout{xiiGetStaticRTTI<xiiLightClusterFrameData>()};
@@ -29,4 +34,5 @@ public:
 
 private:
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_ShadowedPipeline;
 };

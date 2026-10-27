@@ -3,6 +3,7 @@
 ALL
 [PERMUTATIONS]
 FORWARD_REFRACTION
+FORWARD_SPOT_SHADOWS
 [RENDERSTATE]
 DepthEnable = true
 DepthWriteEnable = false

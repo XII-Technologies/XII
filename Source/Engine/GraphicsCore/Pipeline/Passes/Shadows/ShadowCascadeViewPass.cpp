@@ -15,11 +15,12 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadeViewPass, 1, xiiRTTIDefaultAllocator<xiiShadowCascadeViewPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadeViewPass, 2, xiiRTTIDefaultAllocator<xiiShadowCascadeViewPass>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("CascadeSnapshot", m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("SpotShadows", m_Spots)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("VisibilityView", m_View)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Candidates", m_Candidates)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("RasterConstants", m_Raster)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -39,29 +40,32 @@ xiiResult xiiShadowCascadeViewPass::Configure(const xiiVariantDictionary& proper
 xiiResult xiiShadowCascadeViewPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto input = context.GetInputData(m_Cascades);
-  if (!input)
+  const auto spots = context.GetInputData(m_Spots).Downcast<const xiiSpotShadowSnapshot>();
+  if (!input && !spots)
     return XII_SUCCESS;
   const auto* cascades = xiiDynamicCast<const xiiShadowCascadeSnapshot*>(input.Borrow());
-  if (!cascades)
-    return context.ReportFailure("Shadow view requires a cascade snapshot.");
-  if (m_uiCascadeIndex >= cascades->m_Cascades.GetCount())
+  if ((cascades && spots) || (!cascades && !spots))
+    return context.ReportFailure("Shadow view requires exactly one directional or spotlight snapshot.");
+  if (m_uiCascadeIndex >= (spots ? spots->m_Views.GetCount() : cascades->m_Cascades.GetCount()))
     return XII_SUCCESS;
   if (!context.m_pView || !context.m_pView->GetGpuInstanceData() || !xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Shadow view requires authoritative world extraction and device residency.");
-  const auto& cascade = cascades->m_Cascades[m_uiCascadeIndex];
-  if (!cascades->m_uiResolution || !cascade.m_mViewProjection.IsValid() || !xiiMath::IsFinite(cascade.m_fWorldRadius) || cascade.m_fWorldRadius <= 0)
-    return context.ReportFailure("Cascade visibility requires finite projection and positive world extent/resolution.");
-  const auto           frustum = xiiFrustum::MakeFromMVP(cascade.m_mViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+  const auto  resolution = spots ? spots->m_uiResolution : cascades->m_uiResolution;
+  const auto  matrix     = spots ? spots->m_Views[m_uiCascadeIndex].m_ViewProjection : cascades->m_Cascades[m_uiCascadeIndex].m_mViewProjection;
+  const float extent     = spots ? spots->m_Views[m_uiCascadeIndex].m_fTanHalfAngle : cascades->m_Cascades[m_uiCascadeIndex].m_fWorldRadius;
+  if (!resolution || !matrix.IsValid() || !xiiMath::IsFinite(extent) || extent <= 0)
+    return context.ReportFailure("Shadow visibility requires finite projection and positive extent/resolution.");
+  const auto           frustum = xiiFrustum::MakeFromMVP(matrix, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
   xiiGpuVisibilityView view{};
-  view.m_ViewProjectionMatrix          = cascade.m_mViewProjection;
-  view.m_OcclusionViewProjectionMatrix = cascade.m_mViewProjection;
+  view.m_ViewProjectionMatrix          = matrix;
+  view.m_OcclusionViewProjectionMatrix = matrix;
   for (xiiUInt8 plane = 0; plane < 6; ++plane)
     view.m_FrustumPlanes[plane] = frustum.GetPlane(plane).GetAsVec4();
-  view.m_CameraPosition = xiiVec4(0, 0, 0, 1);
-  // Orthographic coverage is world radius times pixels per metre, independent of eye distance.
-  // The fourth LOD field also disables perspective cone rejection in parallel-ray views.
-  view.m_ViewportAndHiZ      = xiiVec4(float(cascades->m_uiResolution), cascades->m_uiResolution / (2.0f * cascade.m_fWorldRadius), 0, 0);
-  view.m_LodParameters       = xiiVec4(0, 0, 65534, 1);
+  view.m_CameraPosition = spots ? spots->m_Views[m_uiCascadeIndex].m_Position.GetAsVec4(1) : xiiVec4(0, 0, 0, 1);
+  // Directional coverage uses world radius; spotlights use the perspective half-angle.
+  // The fourth LOD field disables perspective cone rejection only in parallel-ray views.
+  view.m_ViewportAndHiZ      = xiiVec4(float(resolution), resolution / (2.0f * extent), 0, 0);
+  view.m_LodParameters       = xiiVec4(0, 0, 65534, spots ? 0.0f : 1.0f);
   view.m_uiInstanceCount     = context.m_pView->GetGpuInstanceData()->GetInstanceCount();
   view.m_uiVisibilityMask    = 0xFFFFFFFFU;
   view.m_uiRequiredFlags     = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
@@ -81,9 +85,9 @@ xiiResult xiiShadowCascadeViewPass::Build(xiiRenderPipelinePassContext& context)
     data.m_View = view;
     data.m_Candidates = context.m_pView->GetGpuInstanceSelection();
     if (data.m_Candidates.IsEmpty()) data.m_Candidates.PushBack(xiiInvalidIndex);
-    data.m_Raster.ViewProjectionMatrix = cascade.m_mViewProjection;
-    data.m_Raster.PreviousViewProjectionMatrix = cascade.m_mViewProjection;
-    data.m_Raster.InvRenderSize = xiiVec2(1.0f / cascades->m_uiResolution);
+    data.m_Raster.ViewProjectionMatrix         = matrix;
+    data.m_Raster.PreviousViewProjectionMatrix = matrix;
+    data.m_Raster.InvRenderSize                = xiiVec2(1.0f / resolution);
     data.m_Raster.GeometryBaseIndex = view.m_uiGeometryBaseIndex;
     data.m_Raster.MaterialBaseIndex = xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(context.m_Graph.GetFrameIndex());
     data.m_Raster.VertexStride = sizeof(xiiMeshPackedVertex);

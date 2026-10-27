@@ -4,6 +4,8 @@
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadeSnapshot, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpotShadowSnapshot, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualShadowResidencySnapshot, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualShadowRasterBatch, 1, xiiRTTINoAllocator)

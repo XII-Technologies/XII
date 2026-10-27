@@ -1,0 +1,6 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#define XII_SPOT_SHADOWS 1
+#include <Shaders/Pipeline/Passes/Lighting/ClusteredLocalSurfaceLighting.h>

@@ -6,11 +6,12 @@
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowAtlasPass.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowAtlasPass, 1, xiiRTTIDefaultAllocator<xiiShadowAtlasPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowAtlasPass, 2, xiiRTTIDefaultAllocator<xiiShadowAtlasPass>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("CascadeSnapshot", m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("SpotShadows", m_Spots)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("ShadowAtlas", m_Atlas)->AddFlags(xiiPropertyFlags::ReadOnly),
     } XII_END_PROPERTIES;
     XII_BEGIN_ATTRIBUTES
@@ -21,16 +22,20 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiResult xiiShadowAtlasPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto input = context.GetInputData(m_Cascades);
-  if (!input)
+  const auto spots = context.GetInputData(m_Spots).Downcast<const xiiSpotShadowSnapshot>();
+  if (!input && !spots)
     return XII_SUCCESS;
   const auto* cascades = xiiDynamicCast<const xiiShadowCascadeSnapshot*>(input.Borrow());
-  if (!cascades || cascades->m_Cascades.IsEmpty() || !xiiGALDevice::HasDefaultDevice())
-    return context.ReportFailure("Shadow atlas requires an active directional cascade set and device.");
-  const auto      resolution = cascades->m_uiResolution;
-  const xiiUInt32 columns = cascades->m_Cascades.GetCount() > 1 ? 2U : 1U, rows = cascades->m_Cascades.GetCount() > 2 ? 2U : 1U;
+  if ((cascades && spots) || (!cascades && !spots) || !xiiGALDevice::HasDefaultDevice())
+    return context.ReportFailure("Shadow atlas requires exactly one active shadow view set and device.");
+  const auto count = spots ? spots->m_Views.GetCount() : cascades->m_Cascades.GetCount();
+  if (!count || count > 4)
+    return context.ReportFailure("Shadow atlas requires one to four views.");
+  const auto      resolution = spots ? spots->m_uiResolution : cascades->m_uiResolution;
+  const xiiUInt32 columns = count > 1 ? 2U : 1U, rows = count > 2 ? 2U : 1U;
   const auto&     limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties;
   if (!resolution || resolution > limits.m_uiMaxTexture2DDimension / columns || resolution > limits.m_uiMaxTexture2DDimension / rows)
-    return context.ReportFailure("Directional shadow atlas exceeds the device's 2D image limit; reduce authored resolution.");
+    return context.ReportFailure("Shadow atlas exceeds the device's 2D image limit; reduce authored resolution.");
   const xiiSizeU32           size(resolution * columns, resolution * rows);
   xiiRenderPassResourceScope scope(context);
   const auto                 emitted = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
@@ -39,7 +44,7 @@ xiiResult xiiShadowAtlasPass::Build(xiiRenderPipelinePassContext& context)
     description.m_Size = size;
     description.m_Format = xiiGALResourceFormat::D32Float;
     description.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    data = builder.WriteTexture("Directional Shadow Atlas", description, xiiGALResourceStateFlags::DepthWrite);
+    data                    = builder.WriteTexture("Shadow Atlas", description, xiiGALResourceStateFlags::DepthWrite);
     builder.SetPassRenderPassManaged(); }, [](const auto& data, xiiRenderGraphPassContext& execute) { xiiRenderPassUtils::ClearDepthPreservingState(execute.GetCommandList(), execute.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0); });
   return context.SetOutput(m_Atlas, *emitted.first);
 }

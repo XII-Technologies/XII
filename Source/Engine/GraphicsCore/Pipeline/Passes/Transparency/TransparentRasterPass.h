@@ -41,6 +41,8 @@ public:
   xiiRenderPipelineDataInputPin     m_LightLayout{xiiGetStaticRTTI<xiiLightClusterFrameData>()};
   xiiRenderPipelineDataInputPin     m_Cascades{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>(), true};
   xiiRenderPipelineTextureInputPin  m_ShadowAtlas{xiiGALResourceFormat::D32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineDataInputPin     m_Spots{xiiGetStaticRTTI<xiiSpotShadowSnapshot>(), true};
+  xiiRenderPipelineTextureInputPin  m_SpotAtlas{xiiGALResourceFormat::D32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin   m_Atmosphere{true, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineTextureInputPin  m_Transmittance{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_MultiScatter{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
@@ -65,7 +67,7 @@ public:
   xiiBitflags<xiiRenderPipelineFeature>       GetRuntimeFeatures() const override { return xiiRenderPipelineFeature::GpuScene; }
 
 private:
-  xiiShaderPermutationResourceHandle  m_hShaders[8];
+  xiiShaderPermutationResourceHandle  m_hShaders[16];
   xiiSharedPtr<xiiGALSampler>         m_MaterialSampler, m_AtmosphereSampler;
   xiiSharedPtr<xiiGALSampler>         m_RefractionSampler;
   xiiSharedPtr<xiiGALRasterizerState> m_Rasterizer;

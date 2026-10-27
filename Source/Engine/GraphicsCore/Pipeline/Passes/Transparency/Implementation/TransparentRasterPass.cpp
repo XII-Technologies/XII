@@ -10,6 +10,7 @@
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterPassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/Implementation/SpotShadowPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Transparency/TransparentRasterPass.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -28,7 +29,7 @@
 #include <Shaders/Pipeline/Passes/Transparency/TransparentRasterConstants.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,2,xiiRTTIDefaultAllocator<xiiTransparentRasterPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,3,xiiRTTIDefaultAllocator<xiiTransparentRasterPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -56,6 +57,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,2,xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("LightLayout",m_LightLayout)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Cascades",m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ShadowAtlas",m_ShadowAtlas)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("SpotShadows",m_Spots)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("SpotShadowAtlas",m_SpotAtlas)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Atmosphere",m_Atmosphere)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Transmittance",m_Transmittance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("MultiScatter",m_MultiScatter)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -164,6 +167,9 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     if (!atlas || !resolution || !count || count > 4 || atlas->m_Size != xiiSizeU32(resolution * (count > 1 ? 2U : 1U), resolution * (count > 2 ? 2U : 1U)) || !xiiScreenSpacePassUtils::Uniform(context, cascades->m_hConstants, sizeof(xiiShadowCascadeConstants)))
       return context.ReportFailure("Transparent cascade atlas and constants disagree.");
   }
+  const auto spots     = context.GetInputData(m_Spots).Downcast<const xiiSpotShadowSnapshot>();
+  const auto spotAtlas = context.GetInputTexture(m_SpotAtlas);
+  XII_SUCCEED_OR_RETURN(xiiSpotShadowPassUtils::Validate(context, spots.Borrow(), spotAtlas));
   const auto atmosphere    = context.GetInputBuffer(m_Atmosphere);
   const auto transmittance = context.GetInputTexture(m_Transmittance), multiScatter = context.GetInputTexture(m_MultiScatter);
   const bool atmospheric = atmosphere.IsValid();
@@ -205,7 +211,7 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
       return context.ReportFailure("Active refraction requires matching immutable HDR background and shader-readable opaque D32 depth.");
     XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_RefractionSampler));
   }
-  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U) | (refractive ? 4U : 0U);
+  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U) | (refractive ? 4U : 0U) | (spots ? 8U : 0U);
   if (!m_hShaders[permutation].IsValid())
   {
     constexpr const char*                          paths[] = {"Shaders/Geometry/TransparentVertexPull.xiiShader", "Shaders/Geometry/TransparentShadowVertexPull.xiiShader", "Shaders/Geometry/TransparentAtmosphereVertexPull.xiiShader", "Shaders/Geometry/TransparentWorldVertexPull.xiiShader"};
@@ -215,6 +221,9 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     xiiHashedString                                value;
     name.Assign("FORWARD_REFRACTION");
     value.Assign(refractive ? "TRUE" : "FALSE");
+    variables.Insert(name, value);
+    name.Assign("FORWARD_SPOT_SHADOWS");
+    value.Assign(spots ? "TRUE" : "FALSE");
     variables.Insert(name, value);
     m_hShaders[permutation] = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
   }
@@ -311,6 +320,8 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphTextureHandle                   m_RefractionDepth, m_Background;
     xiiRenderGraphBufferHandle                    m_RefractionConstants;
     xiiRenderGraphTextureHandle                   m_ShadowAtlas;
+    xiiRenderGraphTextureHandle                   m_SpotAtlas;
+    xiiRenderGraphBufferHandle                    m_SpotConstants;
     xiiRenderGraphTextureHandle                   m_Transmittance;
     xiiRenderGraphTextureHandle                   m_MultiScatter;
     xiiRenderGraphTextureHandle                   m_Accumulation;
@@ -353,6 +364,11 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     data.m_bShadows=shadows;data.m_bAtmosphere=atmospheric;data.m_bRefraction=refractive;
     if(refractive){data.m_Background=builder.ReadTexture(background,xiiGALResourceStateFlags::ShaderResource);data.m_RefractionDepth=builder.ReadTexture(sampledDepth,xiiGALResourceStateFlags::ShaderResource);data.m_RefractionConstants=builder.ReadBuffer(refractionConstants,xiiGALResourceStateFlags::ConstantBuffer);}
     if(shadows){data.m_ShadowAtlas=builder.ReadTexture(shadowAtlas,xiiGALResourceStateFlags::ShaderResource);data.m_CascadeConstants=builder.ReadBuffer(cascades->m_hConstants,xiiGALResourceStateFlags::ConstantBuffer);}
+    if (spots)
+    {
+      data.m_SpotAtlas     = builder.ReadTexture(spotAtlas, xiiGALResourceStateFlags::ShaderResource);
+      data.m_SpotConstants = builder.ReadBuffer(spots->m_hConstants, xiiGALResourceStateFlags::ConstantBuffer);
+    }
     if(atmospheric){data.m_Atmosphere=builder.ReadBuffer(atmosphere,xiiGALResourceStateFlags::ConstantBuffer);data.m_Transmittance=builder.ReadTexture(transmittance,xiiGALResourceStateFlags::ShaderResource);data.m_MultiScatter=builder.ReadTexture(multiScatter,xiiGALResourceStateFlags::ShaderResource);}
     xiiGALTextureCreationDescription target;target.m_Type=xiiGALResourceDimension::Texture2D;target.m_Size=depthSnapshot.m_Size;target.m_BindFlags=xiiGALBindFlags::RenderTarget|xiiGALBindFlags::ShaderResource;
     target.m_Format=xiiGALResourceFormat::RGBA32Float;data.m_Accumulation=builder.WriteTexture("Transparent Accumulation",target,xiiGALResourceStateFlags::RenderTarget);
@@ -398,6 +414,11 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
       commands.ResolveAndSetShaderResourceTextureView("g_RefractionBackground",execute.GetTexture(data.m_Background)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);
     }
     if(data.m_bShadows){commands.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants",execute.GetBuffer(data.m_CascadeConstants),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_ShadowAtlas",execute.GetTexture(data.m_ShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);}
+    if (data.m_SpotAtlas.IsValid())
+    {
+      commands.ResolveAndSetConstantBuffer("xiiSpotShadowConstants", execute.GetBuffer(data.m_SpotConstants), xiiGALShaderType::Pixel);
+      commands.ResolveAndSetShaderResourceTextureView("g_SpotShadowAtlas", execute.GetTexture(data.m_SpotAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+    }
     if(data.m_bAtmosphere){commands.ResolveAndSetSampler("LinearClampSampler",data.m_AtmosphereSampler.Borrow());commands.ResolveAndSetConstantBuffer("xiiAtmosphereConstants",execute.GetBuffer(data.m_Atmosphere),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_Transmittance",execute.GetTexture(data.m_Transmittance)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_MultiScatter",execute.GetTexture(data.m_MultiScatter)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);}
     xiiGALBindlessResourceTable::BindBufferSRVs(commands,"g_Buffers",xiiGALShaderType::Vertex);xiiGALBindlessResourceTable::BindTextureSRVs(commands,"g_Textures",xiiGALShaderType::Pixel);xiiGALBindlessResourceTable::BindSamplers(commands,"g_MaterialSamplers",xiiGALShaderType::Pixel);
     if(commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Failed()){execute.ReportFailure("Could not bind transparent geometry and lighting resources.");return;}
