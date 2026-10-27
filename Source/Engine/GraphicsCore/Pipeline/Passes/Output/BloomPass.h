@@ -1,7 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
-
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -11,7 +11,7 @@ class XII_GRAPHICSCORE_DLL xiiBloomPass final : public xiiRenderPipelinePass
 
 public:
   xiiRenderPipelineTextureInputPin  m_InputUpscaledColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureOutputPin m_OutputBloomTexture{xiiGALResourceFormat::RGBA16Float, false, {}, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputBloomTexture{xiiGALResourceFormat::RGBA16Float, true, {}, xiiGALResourceDimension::Texture2D, 1};
 
   xiiBloomPass();
   ~xiiBloomPass();

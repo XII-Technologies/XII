@@ -777,4 +777,42 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   }
   xiiTestFramework::Output(xiiTestOutput::Details, "Editor GI acceptance: %u Editor, %u Scene, %u matching final pixels.", irradianceChanges[0], irradianceChanges[1], matchingIrradianceChanges);
   XII_TEST_BOOL(irradianceChanges[0] > 8 && irradianceChanges[1] > 8 && matchingIrradianceChanges > 8);
+  views[0]->SetRenderPipelineResource(editorPipeline);
+  views[1]->SetRenderPipelineResource(scenePipeline);
+  camera.SetExposure(0.1f);
+  for (xiiUInt32 feature = 0; feature < 2; ++feature)
+  {
+    xiiDynamicArray<xiiUInt32> displayImages[2][4];
+    for (xiiUInt32 phase = 0; phase < 4; ++phase)
+    {
+      for (auto* view : views)
+      {
+        xiiDisplayOutputSettings settings;
+        settings.m_Exposure.m_Mode                   = feature && phase % 2 ? xiiExposureMode::Automatic : xiiExposureMode::Manual;
+        settings.m_Exposure.m_fAdaptationSpeedBright = settings.m_Exposure.m_fAdaptationSpeedDark = 0;
+        settings.m_fBloomStrength                                                                 = !feature && phase % 2 ? 1.0f : 0.0f;
+        settings.m_fBloomThreshold                                                                = 0.1f;
+        settings.m_fBloomKnee                                                                     = 0.05f;
+        settings.m_fBloomRadius                                                                   = 2;
+        XII_TEST_RESULT(view->SetDisplayOutputSettings(settings));
+      }
+      update(3);
+      for (xiiUInt32 view = 0; view < 2; ++view)
+        if (!XII_TEST_RESULT(views[view]->GetLastRenderResult()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], displayImages[view][phase]))
+          return;
+    }
+    xiiUInt32 displayChanges[2] = {}, matchingDisplayChanges = 0;
+    for (xiiUInt32 pixel = 0; pixel < displayImages[0][0].GetCount(); ++pixel)
+    {
+      for (xiiUInt32 view = 0; view < 2; ++view)
+      {
+        XII_TEST_INT(displayImages[view][0][pixel], displayImages[view][2][pixel]);
+        XII_TEST_INT(displayImages[view][1][pixel], displayImages[view][3][pixel]);
+        displayChanges[view] += displayImages[view][0][pixel] != displayImages[view][1][pixel];
+      }
+      matchingDisplayChanges += displayImages[1][0][pixel] != displayImages[1][1][pixel] && displayImages[0][0][pixel] == displayImages[1][0][pixel] && displayImages[0][1][pixel] == displayImages[1][1][pixel];
+    }
+    xiiTestFramework::Output(xiiTestOutput::Details, "Editor %s acceptance: %u Editor, %u Scene, %u matching final pixels.", feature ? "exposure" : "bloom", displayChanges[0], displayChanges[1], matchingDisplayChanges);
+    XII_TEST_BOOL(displayChanges[0] > 8 && displayChanges[1] > 8 && matchingDisplayChanges > 8);
+  }
 }

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 [PLATFORMS]
 ALL
 
@@ -67,7 +69,9 @@ void main(uint3 tid : SV_DispatchThreadID)
 
     float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
     float3 hdr   = g_HDRInput.SampleLevel(LinearClampSampler, uv, 0).rgb;
-    float3 bloom = g_BloomTex.SampleLevel(LinearClampSampler, uv, 0).rgb;
+    float3 bloom = 0;
+    if (BloomStrength > 0.0f)
+        bloom = g_BloomTex.SampleLevel(LinearClampSampler, uv, 0).rgb;
     float  exp   = g_Exposure[0];
 
     hdr = (hdr + bloom * BloomStrength) * exp;

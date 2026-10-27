@@ -7,6 +7,12 @@
 > Operation-level history below does not certify Scene integration. Scene's
 > spatial AO extension reuses the two AO operations; temporal and ray-traced AO
 > remain separate acceptance work.
+> Existing bloom and exposure operations now have production Scene/Editor GPU
+> acceptance. Zero-strength bloom records no extraction workload; automatic
+> metering correctly normalizes fractional percentile weights and decodes the
+> histogram's actual bins. Resource/binding failures remain explicit. This does
+> not certify multiscale bloom, calibrated HDR monitors or arbitrary deferred
+> exposure replay across intervening frames.
 > Canonical G-buffer material packing now carries an explicit unlit policy, with
 > production GPU checks for sampled emission, deferred lighting exclusion and SSR
 > receiver exclusion. Retained ReSTIR shader compilation is not runtime acceptance.

@@ -60,10 +60,11 @@ its own focused PR and production GPU comparisons before its status changes.
 | Transparency and refraction | Canonical forward transparent raster with dielectric slab tracing, weighted alpha/additive/modulation resolve and separate legacy UV refraction | World-mesh blending and thin-slab refraction are integrated with Scene/Editor GPU output, fragment-local lights/shadows/atmosphere and conservative temporal trust; opaque-transmission routing, rough/volume/multiple-interface transport, transparent ray targets/shadow casting, motion-aware AA, skinning/IES-specific acceptance and representative performance remain |
 | Particles | World birth upload, GPU ballistic trajectories, billboard append and separate explicit Euler integration | Unlit ballistic point/sphere/volume-box burst/continuous billboards are integrated through Scene/Editor with materials, soft depth, shared transparency and temporal trust; lit/atmospheric, stretched/mesh/ribbon/volume renderers, graph/force/collision/event/sort/molecular execution and representative performance remain |
 | Global illumination | Three-operation screen irradiance workload; separate DDGI and sparse-voxel scheduling, upload, environment seed and gather | Opt-in geometry-dependent single-bounce screen-space transport has Scene GPU response, visibility, independent-view and temporal rejection acceptance. Offscreen/probe/voxel transport, multibounce updates, denoising, bounded residency and representative performance remain; environment seeding is not scene GI |
+| Bloom and exposure | Existing soft-knee tent bloom, log-luminance histogram, adaptation and tone mapping | Production Scene/Editor pixel acceptance now covers conditional bloom, threshold/knee/radius, fractional percentile metering, adaptation, resets and explicit malformed-input failures. Multiscale bloom, manual-mode histogram elimination, arbitrary retained exposure replay, HDR monitor calibration and representative performance remain |
 
 The historical native-pass inventory must not be used to close any of these
 production gaps. Sensor and optional hardware-ray pipelines stay separate from
 the ordinary Scene path. Bloom already has a producer and tone-mapping consumer
-in Scene; adding another node is not a missing-feature implementation. Its
-quality, thresholds and view controls need effect-specific acceptance alongside
-future world effects.
+in Scene; production GPU acceptance now establishes that existing workload's
+threshold, knee, radius and view controls. Wider filtering and display quality
+remain effect-specific work rather than reasons to add disconnected pass nodes.

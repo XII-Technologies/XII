@@ -212,6 +212,80 @@ errors; they are not silently replaced by Scene. Applying the profile writes its
 matching runtime configuration. A stale runtime profile can otherwise retain an
 old selection even when the current profile schema has changed.
 
+## Bloom and metered exposure
+
+The existing Scene display chain is an actual rendering workload. It remains in
+the canonical resource rather than introducing a second display manager or a
+subgraph with no additional reusable boundary:
+
+```text
+HDRSceneColor -> Luminance Histogram -> Auto Exposure --------+
+       +-> TAA -> Upscale -> optional Bloom ------------------+-> Tone Mapping -> Grading -> Present
+                         +-----------------------------------+
+```
+
+Histogram input is readable single-sample RGBA; its output is a graph-owned
+structured 256-uint SRV/UAV buffer (1,024 bytes). The producer clears counters,
+then counts every input pixel into log-luminance bins. Adaptation validates
+this exact layout and imports its own two-float SRV/UAV exposure/average-luminance
+buffer. Valid history is an explicit read-modify-write dependency. Manual mode
+writes the camera exposure with compensation; automatic mode clips authored
+percentiles, reconstructs bin centers and adapts toward the metered exposure.
+Fractional percentile weights remain fractional for one-pixel viewports. First
+frames do not read uninitialized previous exposure.
+
+Bloom extracts HDR luminance above the reflected threshold with a soft knee and
+a normalized nine-sample tent footprint at the authored radius. Its RGBA16Float
+SRV/UAV image follows its authored resolution, input-sized in Scene. With resolved
+BloomStrength zero, the operation produces no bloom image and records no bloom
+dispatch. Tone mapping accepts the absent input only at zero strength and uses a
+zero-weight HDR binding for that shader slot; the shader bypasses its sample.
+Active missing bloom remains a view failure. These operations validate dimensions,
+formats, binding flags and dispatch bounds; binding failures report failure before dispatch.
+
+Tone mapping adds bloom to HDR before exposure and maps that result to
+display-linear color. Existing grading and presentation apply afterward. Controls
+remain reflected or per-view display settings, and independent occurrences own
+their configuration/history. This change preserves Scene/Editor identities,
+existing root interfaces and the nine-source asset library; only Scene's native
+pin metadata changes to describe optional bloom.
+
+`SceneDisplay/BloomAndMeteredExposureAffectProductionOutput` exercises actual
+opaque emissive geometry and production Scene resources. Thirteen bloom phases
+verify threshold/knee, radius, zero strength, removed content, odd resize,
+orthographic projection, reload and exact restoration. Initially 784 final pixels
+change, including 208 pixels outside the bright source. Radius zero removes that
+halo. Every enabled final RGB value matches measured GPU HDR/bloom inputs, exposure,
+tone mapping and presentation within output precision. HDR remains identical
+between enabled and disabled views.
+
+Nine metering phases verify manual/automatic independent views, one-pixel
+initialization, frozen adaptation, camera cuts, reload, resize and both nonzero
+adaptation rates against deterministic clock steps. Histogram totals equal the
+actual pixel count, and presented pixels match the measured exposure. The test
+reproduced luminance 512 being metered as 425.48 in a one-pixel viewport; corrected
+fractional weights and bin decoding yield 503.68 within quantization error. Active
+missing bloom and a four-byte histogram fail the view; zero bloom strength permits
+the absent bloom input. Editor composition changes 4,780 matching final pixels
+for bloom and 10,015 for automatic exposure, with exact restoration.
+
+Windows/MSVC Debug builds pass GraphicsCore, both graphics test executables, both
+Editor test executables and GpuDrivenScene. Complete GraphicsCoreTest (81), Vulkan
+GraphicsFoundationTest (141) and Vulkan EditorEngineProcessFrameworkTest (76)
+subtests pass. The strengthened final bloom composition readbacks also pass the
+focused SceneDisplay run. RendererAssets exports all nine sources deterministically
+on repeated runs; EditorDocuments (20), NodeLayout (3) and the rebuilt 300-frame
+Vulkan Scene sample pass. Existing Qt font and unused Vulkan output warnings remain.
+Generated pipeline binaries, caches and unrelated scene edits are excluded.
+
+This certifies the bounded spatial tent bloom and existing log-histogram exposure
+path. Multiscale/anisotropic bloom, lens dirt, representative performance, HDR
+monitor calibration, stereo and other backends remain unverified. Manual exposure
+still produces the histogram for the existing resource contract; this is not a
+zero-dispatch manual display path. Arbitrary retained exposure recordings across
+intervening submissions remain separate acceptance work; existing epoch and
+world-destruction recording regressions pass.
+
 ## Ambient visibility
 
 Scene connects its actual depth and material normals to `xiiAmbientOcclusionPass`
