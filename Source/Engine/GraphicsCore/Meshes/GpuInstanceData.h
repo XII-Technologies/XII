@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+#include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Types/UniquePtr.h>
@@ -60,8 +61,8 @@ public:
   };
   /// Shared world allocations, imported by explicit graph handles. Dirty bytes are copied into
   /// graph-owned upload data; later cameras/occurrences reuse the same frame's physical buffers.
-  UploadHandles                         AddUploadPass(xiiRenderGraph& graph, xiiUInt64 frame) const;
-  const xiiGpuInstanceUploadStatistics& GetUploadStatistics() const;
+  UploadHandles                  AddUploadPass(xiiRenderGraph& graph, xiiUInt64 frame) const;
+  xiiGpuInstanceUploadStatistics GetUploadStatistics() const;
 
 private:
   xiiUInt64                                  m_uiDataRevision = 0;

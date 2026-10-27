@@ -35,12 +35,13 @@ xiiTemporalAntiAliasingPass::xiiTemporalAntiAliasingPass() : m_pState(XII_DEFAUL
 }
 xiiTemporalAntiAliasingPass::~xiiTemporalAntiAliasingPass() = default;
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporalAntiAliasingPass, 1, xiiRTTIDefaultAllocator<xiiTemporalAntiAliasingPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporalAntiAliasingPass, 2, xiiRTTIDefaultAllocator<xiiTemporalAntiAliasingPass>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("HistoryTrust",m_HistoryTrust)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("ReactiveRadiance",m_ReactiveRadiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("DepthThreshold", m_fDepthThreshold)->AddAttributes(new xiiDefaultValueAttribute(0.01f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("HDRSceneColor", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -126,6 +127,13 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
   if (outputSize != size || !xiiScreenSpacePassUtils::Image(context, velocity, 2, &size) || !xiiScreenSpacePassUtils::Image(context, depth, 1, &size) || (camera && camera->m_Sample.m_Size != size))
     return context.ReportFailure("TAA requires matching input-sized color, velocity, depth and camera samples.");
   const auto trust = context.GetInputTexture(m_HistoryTrust);
+  const auto reactive = context.GetInputTexture(m_ReactiveRadiance);
+  if (reactive.IsValid())
+  {
+    const auto* signal = xiiScreenSpacePassUtils::Image(context, reactive, 4, &size);
+    if (!signal || (signal->m_Format != xiiGALResourceFormat::RGBA16Float && signal->m_Format != xiiGALResourceFormat::RGBA32Float))
+      return context.ReportFailure("TAA reactive radiance requires matching readable RGBA16Float or RGBA32Float input.");
+  }
   if (trust.IsValid())
   {
     const auto* mask = xiiScreenSpacePassUtils::Image(context, trust, 1, &size);
@@ -137,7 +145,8 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     return context.ReportFailure("TAA requires an active shared GPU frame.");
   auto& state = *m_pState;
   XII_LOCK(state.m_Mutex);
-  const xiiUInt32       variant  = (description->m_Format == xiiGALResourceFormat::RGBA32Float ? 1U : 0U) + (trust.IsValid() ? 2U : 0U);
+  const bool            hasReactive = trust.IsValid() || reactive.IsValid();
+  const xiiUInt32       variant     = (description->m_Format == xiiGALResourceFormat::RGBA32Float ? 1U : 0U) + (hasReactive ? 2U : 0U);
   auto&                 pipeline = state.m_Pipelines[variant];
   constexpr const char* paths[]  = {"Shaders/Pipeline/TAA.xiiShader", "Shaders/Pipeline/TAA32.xiiShader", "Shaders/Pipeline/TAAReactive.xiiShader", "Shaders/Pipeline/TAAReactive32.xiiShader"};
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, paths[variant]));
@@ -185,7 +194,7 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
-    xiiRenderGraphTextureHandle              m_Color, m_Velocity, m_Depth, m_Trust, m_PreviousColor, m_PreviousDepth, m_Output, m_OutputDepth;
+    xiiRenderGraphTextureHandle              m_Color, m_Velocity, m_Depth, m_Trust, m_Reactive, m_PreviousColor, m_PreviousDepth, m_Output, m_OutputDepth;
     xiiRenderGraphBufferHandle               m_Constants;
     xiiTAAConstants                          m_Parameters;
     xiiSizeU32                               m_Size;
@@ -208,8 +217,11 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     data.m_Color = builder.ReadTexture(color, xiiGALResourceStateFlags::ShaderResource);
     data.m_Velocity = builder.ReadTexture(velocity, xiiGALResourceStateFlags::ShaderResource);
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
-    if (trust.IsValid())
-      data.m_Trust = builder.ReadTexture(trust, xiiGALResourceStateFlags::ShaderResource);
+    if (hasReactive)
+    {
+      data.m_Trust    = trust.IsValid() ? builder.ReadTexture(trust, xiiGALResourceStateFlags::ShaderResource) : data.m_Depth;
+      data.m_Reactive = reactive.IsValid() ? builder.ReadTexture(reactive, xiiGALResourceStateFlags::ShaderResource) : data.m_Color;
+    }
     if (valid)
     {
       data.m_Previous = state.m_Last;
@@ -230,6 +242,7 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     data.m_Parameters.MotionBlendScale = m_fMotionBlendScale;
     data.m_Parameters.DepthThreshold = m_fDepthThreshold;
     data.m_Parameters.HasCamera = camera ? 1U : 0U;
+    data.m_Parameters.ReactiveFlags          = (trust.IsValid() ? 1U : 0U) | (reactive.IsValid() ? 2U : 0U);
     data.m_Parameters.InverseViewProjection = camera ? camera->m_Sample.m_Camera.m_InverseViewProjectionMatrix : xiiMat4::MakeIdentity();
     data.m_Parameters.PreviousViewProjection = camera ? camera->m_Sample.m_PreviousViewProjection : xiiMat4::MakeIdentity();
     data.m_Parameters.CameraPosition = camera ? camera->m_Sample.m_Camera.m_CameraPositionAndNearPlane : xiiVec4::MakeZero();
@@ -250,7 +263,10 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     commands.ResolveAndSetShaderResourceTextureView("g_HistoryFrame", execute.GetTexture(data.m_PreviousColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_HistoryDepth", execute.GetTexture(data.m_PreviousDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     if (data.m_Trust.IsValid())
+    {
       commands.ResolveAndSetShaderResourceTextureView("g_HistoryTrust", execute.GetTexture(data.m_Trust)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      commands.ResolveAndSetShaderResourceTextureView("g_ReactiveRadiance", execute.GetTexture(data.m_Reactive)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
     commands.ResolveAndSetUnorderedAccessTextureView("g_Resolved", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessTextureView("g_RetainedDepth", execute.GetTexture(data.m_OutputDepth)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())

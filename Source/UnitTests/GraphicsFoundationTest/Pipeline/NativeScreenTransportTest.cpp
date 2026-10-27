@@ -239,10 +239,10 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
           const float u = (pixel.x + 0.5f) / 9, v = (pixel.y + 0.5f) / 11, depth = TransportDepth(phase, pixel.x);
           const auto  sourceColor = TransportRadiance(phase, u, v);
           const auto  sourceValue = positive(sourceColor.GetAsVec3());
-          const bool  hit         = phase != 1 && phase != 2 && phase < 9;
-          const auto  irradiance  = hit ? sourceValue * xiiMath::Pi<float>() : xiiVec3::MakeZero();
-          const auto  diffuse     = phase == 13 ? xiiVec3(0.2f, 0.4f, 0.6f) : hit ? sourceValue.CompMul(xiiVec3(0.5f, 0.25f, 0.1f)) * ((1 - metallic) * (1 - transmission) * (branch ? 0.5f : 0.25f)) :
-                                                                                    xiiVec3::MakeZero();
+          // This synthetic slab has no second, normal-facing surface within the
+          // ray budget. Its own radiance is not an indirect illumination hit.
+          const auto  irradiance  = xiiVec3::MakeZero();
+          const auto  diffuse     = phase == 13 ? xiiVec3(0.2f, 0.4f, 0.6f) : xiiVec3::MakeZero();
           const auto  base        = sourceValue + diffuse;
           xiiVec3     refracted   = phase == 12 ? xiiVec3(4, 8, 12) : base;
           if (phase >= 10 && phase != 12)

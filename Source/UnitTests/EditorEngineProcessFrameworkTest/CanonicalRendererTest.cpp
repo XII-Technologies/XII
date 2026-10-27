@@ -694,4 +694,87 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   }
   xiiTestFramework::Output(xiiTestOutput::Details, "Editor refraction acceptance: %u Editor, %u Scene, %u matching final pixels.", refractionChanges[0], refractionChanges[1], matchingRefractionChanges);
   XII_TEST_BOOL(refractionChanges[0] > 8 && refractionChanges[1] > 8 && matchingRefractionChanges > 8);
+
+  // Emission from real opaque geometry reaches a diffuse receiver through the
+  // same optional Scene workload beneath both roots.
+  glass->SetActiveFlag(false);
+  floorMesh->SetActiveFlag(false);
+  shadowSun->SetActiveFlag(false);
+  xiiGameObject* original = nullptr;
+  if (world.TryGetObject(owners[0], original))
+    original->SetActiveFlag(false);
+  xiiMaterialResourceDescriptor receiverDescription;
+  receiverDescription.m_BaseColor                = {0.8f, 0.8f, 0.8f};
+  const auto                    receiverMaterial = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.GIReceiver", std::move(receiverDescription));
+  xiiMaterialResourceDescriptor bounceDescription;
+  bounceDescription.m_BaseColor     = xiiColor::Black;
+  bounceDescription.m_EmissiveColor = {4, 0.04f, 0.02f};
+  const auto bounceMaterial         = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.GIEmitter", std::move(bounceDescription));
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    xiiGameObjectDescription description;
+    description.m_bDynamic      = true;
+    description.m_LocalPosition = i ? xiiVec3(0, 1, 1) : xiiVec3(0, 0, -0.05f);
+    description.m_LocalScaling  = i ? xiiVec3(5, 0.1f, 2) : xiiVec3(5, 5, 0.1f);
+    xiiGameObject* object       = nullptr;
+    world.CreateObject(description, object);
+    xiiMeshComponent* component = nullptr;
+    xiiMeshComponent::CreateComponent(object, component);
+    component->SetMesh(mesh);
+    component->SetMaterialOverride(0, i ? bounceMaterial : receiverMaterial);
+  }
+  camera.LookAt({0, -3, 2.5f}, {0, 0.4f, 0.3f}, {0, 0, 1});
+  xiiRenderPipelineResourceHandle irradiancePipelines[2][2];
+  for (xiiUInt32 enabled = 0; enabled < 2; ++enabled)
+  {
+    xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    xiiResourceLock<xiiRenderPipelineResource> editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    auto                                       sceneDefinition  = scene->GetAuthoring()->m_Descriptor;
+    auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
+    const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");
+    const auto                                 gate             = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth");
+    for (auto& pass : sceneDefinition.m_Passes)
+      if (pass.m_Id == occurrence)
+      {
+        auto& setting = pass.m_Overrides.ExpandAndGetRef();
+        setting.m_Path.PushBack(gate);
+        setting.m_Properties.Insert("Enabled", enabled != 0);
+      }
+    for (auto& pass : editorDefinition.m_Passes)
+      if (pass.m_Definition == sceneDefinition.m_Id)
+      {
+        auto& setting = pass.m_Overrides.ExpandAndGetRef();
+        setting.m_Path.PushBack(occurrence);
+        setting.m_Path.PushBack(gate);
+        setting.m_Properties.Insert("Enabled", enabled != 0);
+      }
+    xiiStringBuilder name;
+    name.SetFormat("CanonicalRenderer.IrradianceEditor.{}", enabled);
+    irradiancePipelines[0][enabled] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(editorDefinition));
+    name.SetFormat("CanonicalRenderer.IrradianceScene.{}", enabled);
+    irradiancePipelines[1][enabled] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(sceneDefinition));
+  }
+  xiiDynamicArray<xiiUInt32> irradianceImages[2][4];
+  for (xiiUInt32 phase = 0; phase < 4; ++phase)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      views[view]->SetRenderPipelineResource(irradiancePipelines[view][phase % 2]);
+    update(3);
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      if (!XII_TEST_RESULT_MSG(views[view]->GetLastRenderResult(), "%s", views[view]->GetRenderPipelineInstance().GetLastBuildError().GetStartPointer()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], irradianceImages[view][phase]))
+        return;
+  }
+  xiiUInt32 irradianceChanges[2] = {}, matchingIrradianceChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < irradianceImages[0][0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_TEST_INT(irradianceImages[view][0][pixel], irradianceImages[view][2][pixel]);
+      XII_TEST_INT(irradianceImages[view][1][pixel], irradianceImages[view][3][pixel]);
+      irradianceChanges[view] += irradianceImages[view][0][pixel] != irradianceImages[view][1][pixel];
+    }
+    matchingIrradianceChanges += irradianceImages[1][0][pixel] != irradianceImages[1][1][pixel] && irradianceImages[0][0][pixel] == irradianceImages[1][0][pixel] && irradianceImages[0][1][pixel] == irradianceImages[1][1][pixel];
+  }
+  xiiTestFramework::Output(xiiTestOutput::Details, "Editor GI acceptance: %u Editor, %u Scene, %u matching final pixels.", irradianceChanges[0], irradianceChanges[1], matchingIrradianceChanges);
+  XII_TEST_BOOL(irradianceChanges[0] > 8 && irradianceChanges[1] > 8 && matchingIrradianceChanges > 8);
 }

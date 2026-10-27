@@ -19,30 +19,35 @@ public:
   xiiRenderPipelineTextureOutputPin m_Velocity{xiiGALResourceFormat::RG16Float};
   xiiRenderPipelineTextureOutputPin m_Depth{xiiGALResourceFormat::R32Float};
   xiiRenderPipelineTextureOutputPin m_Trust{xiiGALResourceFormat::R32Float, true};
+  xiiRenderPipelineTextureOutputPin m_Radiance{xiiGALResourceFormat::RGBA32Float, true};
   xiiResult                         Build(xiiRenderPipelinePassContext& context) override
   {
     const auto*     parameter = context.m_Parameters.GetValue("Transparency.Phase");
     const xiiUInt32 phase     = parameter ? parameter->ConvertTo<xiiUInt32>() : 0;
+    const auto*     reactive    = context.m_Parameters.GetValue("Reactive.Radiance");
+    const bool      useRadiance = reactive && reactive->ConvertTo<bool>();
     struct Data
     {
-      xiiRenderGraphTextureHandle m_Images[4];
-      xiiDynamicArray<xiiVec4>    m_Color;
+      xiiRenderGraphTextureHandle m_Images[5];
+      xiiDynamicArray<xiiVec4>    m_Color, m_Radiance;
       xiiDynamicArray<xiiUInt32>  m_Velocity;
       xiiDynamicArray<float>      m_Depth, m_Trust;
     };
     const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
-      const xiiGALResourceFormat::Enum formats[]={xiiGALResourceFormat::RGBA32Float,xiiGALResourceFormat::RG16Float,xiiGALResourceFormat::R32Float,xiiGALResourceFormat::R32Float};
-      for(xiiUInt32 i=0;i<4;++i)
+      const xiiGALResourceFormat::Enum formats[]={xiiGALResourceFormat::RGBA32Float,xiiGALResourceFormat::RG16Float,xiiGALResourceFormat::R32Float,xiiGALResourceFormat::R32Float,xiiGALResourceFormat::RGBA32Float};
+      for(xiiUInt32 i=0;i<5;++i)
       {
+        if(i==4 && !useRadiance)continue;
         if(i==3 && phase==2)continue;
         xiiGALTextureCreationDescription image;image.m_Type=xiiGALResourceDimension::Texture2D;image.m_Size={9,11};image.m_Format=formats[i];image.m_BindFlags=xiiGALBindFlags::ShaderResource;
         xiiStringBuilder name;name.SetFormat("Known temporal input {}",i);data.m_Images[i]=builder.WriteTexture(name,image,xiiGALResourceStateFlags::CopyDestination);
       }
-      data.m_Color.SetCount(99);data.m_Velocity.SetCount(99);data.m_Depth.SetCount(99);data.m_Trust.SetCount(99);
+      data.m_Color.SetCount(99);data.m_Velocity.SetCount(99);data.m_Depth.SetCount(99);data.m_Trust.SetCount(99);data.m_Radiance.SetCount(99);
       for(xiiUInt32 pixel=0;pixel<99;++pixel)
       {
         data.m_Color[pixel]=((pixel%9+phase)&1U)?xiiVec4(0.1f,0.2f,0.8f,1):xiiVec4(0.8f,0.2f,0.1f,1);
         data.m_Velocity[pixel]=0;data.m_Depth[pixel]=0.5f;data.m_Trust[pixel]=phase==1?0.5f:1.0f;
+        data.m_Radiance[pixel]=phase==1 ? xiiVec4(1,1,1,0):xiiVec4::MakeZero();
       } }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       const auto upload=[&](xiiUInt32 index,const void* pixels,xiiUInt32 stride){
         if(!data.m_Images[index].IsValid())return;
@@ -52,12 +57,14 @@ public:
         xiiGALTextureSubResourceData source;source.m_pData=xiiConstByteBlobPtr(padded.GetData(),padded.GetCount());source.m_uiStride=alignedStride;
         execute.GetCommandList().UpdateTexture(execute.GetTexture(data.m_Images[index]),{},xiiBoundingBoxU32::MakeFromMinMax({0,0,0},{9,11,1}),source);
       };
-      upload(0,data.m_Color.GetData(),9*sizeof(xiiVec4));upload(1,data.m_Velocity.GetData(),9*sizeof(xiiUInt32));upload(2,data.m_Depth.GetData(),9*sizeof(float));upload(3,data.m_Trust.GetData(),9*sizeof(float)); });
+      upload(0,data.m_Color.GetData(),9*sizeof(xiiVec4));upload(1,data.m_Velocity.GetData(),9*sizeof(xiiUInt32));upload(2,data.m_Depth.GetData(),9*sizeof(float));upload(3,data.m_Trust.GetData(),9*sizeof(float));upload(4,data.m_Radiance.GetData(),9*sizeof(xiiVec4)); });
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Color, emitted.first->m_Images[0]));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Velocity, emitted.first->m_Images[1]));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Depth, emitted.first->m_Images[2]));
     if (phase != 2)
       XII_SUCCEED_OR_RETURN(context.SetOutput(m_Trust, emitted.first->m_Images[3]));
+    if (useRadiance)
+      XII_SUCCEED_OR_RETURN(context.SetOutput(m_Radiance, emitted.first->m_Images[4]));
     return XII_SUCCESS;
   }
 };
@@ -69,11 +76,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparencyTrustTestSource, 1, xiiRTTIDefau
       XII_MEMBER_PROPERTY("Velocity", m_Velocity)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Depth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Trust", m_Trust)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("ReactiveRadiance", m_Radiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_CREATE_SIMPLE_TEST(NativeTransparency, TemporalCoverageAndDisappearedLayerRejection)
+static void TestTemporalReactiveInputs(bool useRadiance)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize(false, false)))
@@ -87,14 +95,14 @@ XII_CREATE_SIMPLE_TEST(NativeTransparency, TemporalCoverageAndDisappearedLayerRe
   XII_TEST_RESULT(definition.Connect(source, "Color", resolve, "HDRSceneColor"));
   XII_TEST_RESULT(definition.Connect(source, "Velocity", resolve, "DilatedVelocityBuffer"));
   XII_TEST_RESULT(definition.Connect(source, "Depth", resolve, "SceneDepth"));
-  XII_TEST_RESULT(definition.Connect(source, "Trust", resolve, "HistoryTrust"));
+  XII_TEST_RESULT(definition.Connect(source, useRadiance ? "ReactiveRadiance" : "Trust", resolve, useRadiance ? "ReactiveRadiance" : "HistoryTrust"));
   for (const auto node : {source, resolve})
   {
     const auto sink = definition.AddPass(node == source ? "Current color" : "Reconstructed color", xiiGetStaticRTTI<xiiOpaqueTestExport>());
     XII_TEST_RESULT(definition.Connect(node, node == source ? "Color" : "TAAResolved", sink, "Input"));
     definition.m_Interface.PushBack({node == source ? "Current" : "Output", false, definition.m_Passes[sink].m_Id, "Output"});
   }
-  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Transparency.TemporalCoverage", std::move(definition));
+  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(useRadiance ? "Irradiance.TemporalReactive" : "Transparency.TemporalCoverage", std::move(definition));
   xiiRenderPipelineInstance instance;
   xiiRenderGraphTestContext context;
   if (!XII_TEST_RESULT(instance.Synchronize(resource)) || !XII_TEST_RESULT(context.Initialize("Temporal transparent trust")))
@@ -112,6 +120,7 @@ XII_CREATE_SIMPLE_TEST(NativeTransparency, TemporalCoverageAndDisappearedLayerRe
     graph.BeginSetup(frame.GetFrameIndex());
     xiiVariantDictionary parameters;
     parameters.Insert("Transparency.Phase", phase);
+    parameters.Insert("Reactive.Radiance", useRadiance);
     if (!XII_TEST_RESULT_MSG(instance.Build(nullptr, graph, context.GetBlackboard(), parameters), "%s", instance.GetLastBuildError().GetStartPointer()))
       return;
     const auto current  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Current", false))->m_hTexture;
@@ -134,3 +143,6 @@ XII_CREATE_SIMPLE_TEST(NativeTransparency, TemporalCoverageAndDisappearedLayerRe
     previous = output;
   }
 }
+
+XII_CREATE_SIMPLE_TEST(NativeTransparency, TemporalCoverageAndDisappearedLayerRejection) { TestTemporalReactiveInputs(false); }
+XII_CREATE_SIMPLE_TEST(SceneIrradiance, ReactiveRadianceRejectionAndResumedAccumulation) { TestTemporalReactiveInputs(true); }

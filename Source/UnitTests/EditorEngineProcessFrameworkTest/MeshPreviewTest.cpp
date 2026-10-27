@@ -68,6 +68,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   xiiResourceManager::UnregisterNamedResource(transparencyId);
   XII_SCOPE_EXIT(if (previousTransparencyId != transparencyId) xiiResourceManager::RegisterNamedResource(transparencyId, previousTransparencyId));
   const auto      particlesId         = xiiPipelineLibraryTestIdentity("SceneParticles");
+  const auto      irradianceId         = xiiPipelineLibraryTestIdentity("SceneScreenSpaceIrradiance");
+  const xiiString previousIrradianceId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(irradianceId).GetResourceID();
+  xiiResourceManager::UnregisterNamedResource(irradianceId);
+  XII_SCOPE_EXIT(if (previousIrradianceId != irradianceId) xiiResourceManager::RegisterNamedResource(irradianceId, previousIrradianceId));
   const xiiString previousParticlesId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(particlesId).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(particlesId);
   XII_SCOPE_EXIT(if (previousParticlesId != particlesId) xiiResourceManager::RegisterNamedResource(particlesId, previousParticlesId));
@@ -84,7 +88,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(cache)))
     return;
   xiiStringBuilder entries;
-  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "Scene"})
+  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene"})
   {
     xiiStringBuilder source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", name, ".xiiBinRenderPipeline");
     source.MakeCleanPath();

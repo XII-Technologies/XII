@@ -1,8 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
@@ -19,6 +19,8 @@ public:
   xiiRenderPipelineTextureInputPin  m_InputSceneDepth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   /// Optional transmittance of transparent coverage; untrusted pixels also reject history after disappearance.
   xiiRenderPipelineTextureInputPin  m_HistoryTrust{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  /// Nonzero incident radiance marks unstable lighting; disappearance rejects its retained history too.
+  xiiRenderPipelineTextureInputPin  m_ReactiveRadiance{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputTAAResolved{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputPreviousColor{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Automatic, true};
 

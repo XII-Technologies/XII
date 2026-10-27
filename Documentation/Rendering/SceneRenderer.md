@@ -2,7 +2,7 @@
 
 `Data/Base/RenderPipelines` contains two default authored resources: **Scene** and
 **Editor**, plus independently authored **SceneAtmosphere** and
-**SceneDirectionalShadows**, **SceneScreenSpaceReflections**, **SceneTransparency** and **SceneParticles** workloads composed by Scene. Directional shadows reuse
+**SceneDirectionalShadows**, **SceneScreenSpaceReflections**, **SceneScreenSpaceIrradiance**, **SceneTransparency** and **SceneParticles** workloads composed by Scene. Directional shadows reuse
 **SceneShadowCascade** for each cascade's caster rasterization. The two roots are
 defaults, not an enumeration of supported workloads.
 Applications can select any compatible resource or construct a resource descriptor
@@ -43,7 +43,7 @@ view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
 lights, optional world directional shadows, ambient diffuse and emission, spatial
 ambient visibility, optional world atmosphere, spatial screen reflections, transparent
-mesh and ballistic billboard layers and temporal
+single-bounce screen-space diffuse transport, mesh and ballistic billboard layers and temporal
 antialiasing, exposure,
 tone mapping, color grading and presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
@@ -184,9 +184,9 @@ visible/occluded selection and front-surface picking, switches resources, resize
 and checks icon picking. Fixed preview tests exercise real texture/cubemap output.
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
-These defaults intentionally exclude local/virtual/ray shadows, GI, environment/probe
-reflections, refractive meshes and advanced particle graph rendering. Spatial screen reflections and
-temporal antialiasing are authored but opt-in.
+These defaults intentionally exclude local/virtual/ray shadows, offscreen or multibounce GI,
+environment/probe reflections and advanced particle graph rendering. Spatial screen reflections,
+screen-space diffuse transport and temporal antialiasing are authored but opt-in.
 Other retained operations and focused tests are not certification of complete production techniques.
 Custom material shader permutations beyond the canonical GPU surface model,
 stereo rendering, backend coverage beyond the configured Vulkan build, large-scene
@@ -200,7 +200,7 @@ committed. The Editor transforms the authored sources into its normal
 subgraph reference use the source asset GUIDs through the existing lookup table.
 For standalone GPU tests/sample preparation, run `EditorFrameworkTest -noGui -run
 -close -all -filter RendererAssets -outputDir <project-local-test-output>`. This
-exports all eight sources with the production compiler into the ignored cache, checks
+exports all nine sources with the production compiler into the ignored cache, checks
 stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
@@ -911,6 +911,125 @@ Retained material/texture reload across intervening frames remains unverified.
 No generated pipeline resource is committed and no running user Editor
 was stopped. These are direct executable suite runs; no new CTest result or
 non-Vulkan backend result is claimed.
+
+## Single-bounce screen-space diffuse transport
+
+`SceneScreenSpaceIrradiance.xiiRenderPipelineAsset` is a three-operation workload
+composed by the stable `XII.Scene/ScreenIrradiance` occurrence. It reuses existing
+native operations; no renderer manager, view scheduling or retired fragments are added.
+
+```text
+SceneDepth -> Bounce Depth (optional gate) -> Trace Diffuse Bounce -> Irradiance
+                       |                         ^                       |
+                       +-> Direct And Emissive --+                       +-> Ambient Diffuse
+                              ^                                         |   (AddIrradiance)
+DirectLighting + Emission -----+                                         +-> TAA.ReactiveRadiance
+G-buffer Normal + current Camera ----------------+
+```
+
+`Bounce Depth.Enabled` defaults to false. With no depth token, the gated radiance
+addition and trace produce neither images nor GPU work. Ambient lighting retains
+the previous result. Enabling the child produces current-frame transport from
+visible direct and emissive radiance, before ambient, atmosphere or reflections;
+indirect output cannot feed itself. Scene's optional `ScreenIrradiance` and
+`BounceRadiance` diagnostics extend its existing interfaces. Editor composes the
+same workload through its Scene occurrence.
+
+| Resource | Contract | Producer and consumer |
+| --- | --- | --- |
+| Depth | Viewport, single-sample D32, readable SRV | Opaque depth -> gate and world-space intersection reconstruction |
+| Normal | Matching RG16Float octahedral normals, SRV | G-buffer -> receiver hemisphere and hit-facing test |
+| DirectLighting / Emission | Matching RGBA32Float, SRV | Existing direct sum and G-buffer -> gated radiance addition |
+| SourceRadiance | Matching RGBA32Float, SRV/UAV | Direct plus emission -> nearest-pixel trace; root BounceRadiance diagnostic |
+| Camera | Exact 160-byte current camera uniform | View constants -> inverse projection and projection, including orthographic cameras |
+| Irradiance | Matching RGBA32Float, SRV/UAV | Trace -> additive diffuse response, TAA rejection and root ScreenIrradiance diagnostic |
+| Trace options | 32-byte constant buffer | Authored range, thickness, bias, sample/step counts and fixed sequence offset -> trace |
+
+The two new full-resolution images total 32 bytes per pixel before graph aliasing;
+there is no GI history or retained irradiance allocation. All allocations,
+dependencies, transitions and retirement remain graph/GAL managed. Ordinary
+compute and readable scene resources are required. Mesh shaders, ray tracing,
+extended storage-image formats and independent blending are not GI requirements.
+Unsupported active resource contracts, shader compilation or binding failures
+remain reported failures. Disabling the gate is the explicit fallback.
+
+The trace reconstructs actual world positions and projects hemisphere rays back
+into the current depth image. It uses bounded quadratic-distance marching and
+eight crossing refinements, then tests thickness, distance, receiver hemisphere
+and hit-facing normals. Depth, normals and radiance use the same nearest-pixel
+footprint. Authored defaults are 32 deterministic cosine-weighted samples, 64
+steps, four world units, 0.1 thickness tolerance and 0.02 surface bias. Counts,
+distances, sequence offset and queue preference remain reflected settings.
+The sequence does not advance with unrelated device frames or other views.
+
+The output is incident irradiance: pi times mean incident radiance. Valid depth
+has confidence alpha one, including zero-contribution misses; sky is zero.
+`Ambient Diffuse.AddIrradiance` preserves existing environment light and adds
+irradiance times diffuse albedo/pi, metallic/transmission attenuation and authored
+material occlusion exactly once. Unlit receivers remain unlit. Screen AO affects
+ambient environment light; the trace already determines bounce visibility.
+The operation's default confidence-replacement mode remains available separately.
+
+TAA's optional `ReactiveRadiance` input uses this current irradiance to reject
+history wherever RGB is positive. Private negative depth provenance also rejects
+the following frame if GI disappears. The existing optional transparent trust
+signal works alongside it. Flag-disabled fallback bindings are never sampled;
+unaffected pixels continue accumulating. This conservative rule can also reject
+history where material attenuation removes the final GI response. It establishes
+safe initialization and disappearance behavior, not motion-aware GI reconstruction.
+
+### Diffuse transport acceptance and limits
+
+`SceneIrradiance/GeometryTransportsEmissionToDiffuseReceivers` compares authored
+production Scene resources with the depth gate disabled/enabled. Real opaque
+emissive walls illuminate a diffuse floor. Twenty phases read HDR, irradiance,
+albedo, material, depth, IDs and presented images. Initially 5,879 floor pixels
+receive red bounce and change final color. Every receiver RGB response matches
+actual irradiance times the captured diffuse material response. Removing emission
+or the emitter yields zero bounce and exact disabled output; a black blocker
+reduces aggregate red energy from 11,846.55 to 6,502.31. Blue emission changes
+transport color. Metallic, unlit and non-light-receiving materials retain their
+lighting policy; half transmission halves diffuse response, and a normal pointing
+away from the emitter removes bounce.
+
+The fixture also checks perspective/orthographic projection, odd resize, one-pixel
+extent, exact restoration, reload, cuts and async queue preference. Two independent
+worlds with four views verify distinct images and temporal initialization, warm
+frames, cuts, resize, reload and projection resets. All 2,848 disappeared interior
+pixels reject stale GI. A retained recording still produces blue transport after
+its pipeline instance and world are destroyed. This exposed and fixed an instance
+uploader callback borrowing destroyed world state: callbacks now retain only a
+separately owned, synchronized upload cache. A dedicated buffer readback regression
+verifies dirty instance and identity-pose bytes after world destruction.
+
+`SceneIrradiance/ReactiveRadianceRejectionAndResumedAccumulation` verifies first,
+active-signal and disappearance output against current GPU input, followed by exact
+resumption of 0.92 history / 0.08 current blending. Active missing radiance must
+fail the view, while disabling the authored gate bypasses the incomplete workload.
+The scene fixture runs with mesh shaders and extended texture UAV formats disabled.
+
+Editor composition changes 5,879 matching final Scene/Editor pixels, with exact
+enabled/disabled restoration. Final Windows/MSVC Debug builds pass GraphicsCore,
+GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
+EditorEngineProcessFrameworkTest and GpuDrivenScene using the isolated runtime.
+Complete suite runs pass GraphicsCoreTest (81 subtests), Vulkan
+GraphicsFoundationTest (140) and Vulkan EditorEngineProcessFrameworkTest (76).
+The final missing-radiance acceptance additions also pass both SceneIrradiance
+subtests. RendererAssets regenerates all nine sources deterministically on repeated
+runs; EditorDocuments (20) and NodeLayout (3) pass, including the updated Scene
+graph. The rebuilt Vulkan sample explicitly completes 300 Scene frames.
+Existing unused Vulkan shader-output and offscreen Qt font warnings remain.
+No generated pipeline binaries, validation artifacts or unrelated scene edits are
+committed. These are direct executable runs, not an additional CTest certification.
+
+This is bounded, single-bounce screen-space transport. Hidden/offscreen surfaces,
+probe/voxel transport, multiple bounces, volume transport and environment-convolved
+GI are not implemented by this path. Current-view direct radiance approximates
+incident light at a secondary surface, including its view-dependent BRDF. There is
+no radiance history, denoiser or spatial filtering; fixed sampling may produce
+spatial banding. Representative quality and performance, moving-emitter temporal
+reconstruction, stereo and non-Vulkan backends remain unverified. Existing DDGI
+and sparse-voxel environment seeding/gather operations remain operation-level work.
 
 ## Ballistic billboard particles
 

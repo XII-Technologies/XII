@@ -1,8 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 /// Gather screen-space incident irradiance independently of material response and GI policy.
@@ -17,13 +17,15 @@ public:
   xiiRenderPipelineBufferInputPin             m_Camera{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   float                                       m_fRayLength = 2.0f, m_fThickness = 0.15f;
+  float                                       m_fSurfaceBias  = 0.02f;
   xiiUInt32                                   m_uiSampleCount = 8, m_uiStepCount = 6, m_uiSampleOffset = 0;
   bool                                        m_bAsyncCompute = false;
+  bool                                        m_bAllowAbsentDepth = false;
+  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
 
 private:
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
-  xiiSharedPtr<xiiGALSampler>              m_Linear;
 };

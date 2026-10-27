@@ -1,26 +1,47 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereApplyPass.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Composition/RadianceAddPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/ScreenIrradianceTracePass.h>
 #include <GraphicsCore/Pipeline/Passes/Refraction/ScreenRefractionTracePass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/DepthSensorPass.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/RgbSensorPass.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceComposition)
 {
   xiiScreenIrradianceTracePass gi;
   gi.m_uiStepCount = 3;
+  gi.m_fSurfaceBias      = 0.05f;
+  gi.m_bAllowAbsentDepth = true;
   xiiVariantDictionary properties;
   XII_TEST_RESULT(gi.GetProperties(properties));
   xiiScreenIrradianceTracePass copy;
   XII_TEST_RESULT(copy.Configure(properties));
   XII_TEST_INT(copy.m_uiStepCount, 3);
+  XII_TEST_FLOAT(copy.m_fSurfaceBias, 0.05f, 0);
+  XII_TEST_BOOL(copy.m_bAllowAbsentDepth);
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  copy.GetPins(pins);
+  for (const auto& pin : pins)
+    if (pin.m_sName == "Depth" || pin.m_sName == "Radiance" || pin.m_sName == "Irradiance")
+      XII_TEST_BOOL(pin.m_bOptional);
+  properties.Insert("SurfaceBias", -1.0f);
+  XII_TEST_BOOL(copy.Configure(properties).Failed());
+  properties.Insert("SurfaceBias", 0.05f);
   properties.Insert("SampleCount", 0U);
   XII_TEST_BOOL(copy.Configure(properties).Failed());
+  xiiRadianceAddPass sum;
+  sum.m_bRequireActivation = true;
+  pins.Clear();
+  sum.GetPins(pins);
+  for (const auto& pin : pins)
+    if (pin.m_sName == "Radiance" || pin.m_sName == "Activation")
+      XII_TEST_BOOL(pin.m_bOptional);
   xiiScreenRefractionTracePass refraction;
   properties.Clear();
   properties.Insert("MaximumDistance", -1.0f);

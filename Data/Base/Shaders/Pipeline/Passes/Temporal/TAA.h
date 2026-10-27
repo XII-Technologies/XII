@@ -14,6 +14,7 @@ Texture2D<float4> g_HistoryFrame;
 Texture2D<float>  g_HistoryDepth;
 #if XII_TAA_HISTORY_TRUST
 Texture2D<float> g_HistoryTrust;
+Texture2D<float4> g_ReactiveRadiance;
 #endif
 XII_STORAGE_IMAGE_FORMAT("r32f")
 RWTexture2D<float> g_RetainedDepth;
@@ -73,10 +74,13 @@ float3 ClipAABB(float3 minimumColor, float3 maximumColor, float3 historyColor)
   const float3 currentColor            = current.rgb;
   bool         untrusted               = false;
 #if XII_TAA_HISTORY_TRUST
-  untrusted = g_HistoryTrust.Load(int3(dispatchThreadId.xy, 0)) < 0.999f;
+  if ((ReactiveFlags & 1u) != 0u)
+    untrusted = g_HistoryTrust.Load(int3(dispatchThreadId.xy, 0)) < 0.999f;
+  if ((ReactiveFlags & 2u) != 0u)
+    untrusted = untrusted || any(g_ReactiveRadiance.Load(int3(dispatchThreadId.xy, 0)).rgb > 0);
 #endif
   // Negative values encode invalid color provenance in private depth history.
-  // This rejects a disappeared transparent layer even when this frame has no mask.
+  // This also rejects disappeared transparent or indirect-light contributions.
   g_RetainedDepth[dispatchThreadId.xy] = untrusted ? -(depth + 1.0f) : depth;
   if (HistoryValid == 0U || untrusted)
   {
