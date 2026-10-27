@@ -266,13 +266,13 @@ o
 	u3 %v{1}
 	p
 	{
-		s %Access{"xiiRenderPipelinePinAccess::Write"}
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
 		s %DataType{"xiiSpotShadowSnapshot"}
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"SpotShadows"}
-		b %Optional{0}
+		b %Optional{1}
 		s %ResourceType{"xiiRenderPipelinePinType::FrameData"}
 		b %TemporalHistory{0}
 	}
@@ -503,7 +503,7 @@ o
 			s{"{ dcc2963c-bbe0-6a2e-e15f-03ef8d374edb }"}
 		}
 		Uuid %DocumentID{u4{17838772279808529951,3556294463007207433}}
-		u4 %Hash{9708989493454162812}
+		u4 %Hash{2180015767474263021}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{3244159327931217666,835577455807645679}}
@@ -10980,6 +10980,19 @@ o
 }
 o
 {
+	Uuid %id{u4{7747091453272404625,4947359010512594065}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{4557247812165317836,7655047010878493849}}
+		s %SourcePin{"SpotShadows"}
+		Uuid %Target{u4{1560545576700807847,5132840556600473791}}
+		s %TargetPin{"SpotShadows"}
+	}
+}
+o
+{
 	Uuid %id{u4{18055055838695256902,4947710811598398032}}
 	s %t{"xiiRenderPipelineTextureResolution"}
 	u3 %v{1}
@@ -13418,6 +13431,19 @@ o
 }
 o
 {
+	Uuid %id{u4{17049101029243328955,5428066494682594090}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{4557247812165317836,7655047010878493849}}
+		s %SourcePin{"SpotShadows"}
+		Uuid %Target{u4{12006059004606206350,17839636234279553870}}
+		s %TargetPin{"Value"}
+	}
+}
+o
+{
 	Uuid %id{u4{6809399149724621462,5428638736453037725}}
 	s %t{"xiiVertexPullDrawCommandsPass"}
 	u3 %v{1}
@@ -13564,6 +13590,19 @@ o
 		s %SourcePin{"Normal"}
 		Uuid %Target{u4{2544656539049932916,12580380647475237209}}
 		s %TargetPin{"Normal"}
+	}
+}
+o
+{
+	Uuid %id{u4{6016801790532849061,5455193595825115236}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{4557247812165317836,7655047010878493849}}
+		s %SourcePin{"SpotShadows"}
+		Uuid %Target{u4{1241767917180084797,1289586059604843838}}
+		s %TargetPin{"SpotShadows"}
 	}
 }
 o
@@ -16331,6 +16370,9 @@ o
 			Uuid{u4{14027063810275551909,5230892837956386166}}
 			Uuid{u4{6794812799263678603,5024241692456516454}}
 			Uuid{u4{3579383916102890670,5287535316358505764}}
+			Uuid{u4{7747091453272404625,4947359010512594065}}
+			Uuid{u4{6016801790532849061,5455193595825115236}}
+			Uuid{u4{17049101029243328955,5428066494682594090}}
 		}
 	}
 }

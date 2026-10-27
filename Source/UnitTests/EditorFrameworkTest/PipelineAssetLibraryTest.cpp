@@ -89,11 +89,14 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLibraryTest", "PipelineLibrary", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base/AssetCache/Common", "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
+    return;
   // Export dependencies first so resource references resolve to the freshly rebuilt library in the output directory.
   xiiStringBuilder lookupTable;
   for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneSpotShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene", "Editor"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
+    xiiTestFramework::Output(xiiTestOutput::Details, "Exporting %s", name.GetStartPointer());
     PipelineLibraryDocument storage(source);
     xiiDocument*            document = &storage;
     const auto              opened   = document->LoadDocument();
@@ -199,7 +202,23 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
     xiiContiguousMemoryStreamStorage rebuilt, repeated;
     if (!ReadBytes(message.m_sOutputFile, rebuilt))
       return;
-    exported = context.ExportDocument(&message);
+    // Exercise the Editor's save/load path, not just a second export of the same
+    // in-memory graph. Interface refresh must retain typed resource connections.
+    const xiiStringBuilder roundTripPath(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/RoundTrip/", name, ".xiiRenderPipelineAsset");
+    document->DocumentRenamed(roundTripPath);
+    const auto saved = document->SaveDocument(true);
+    XII_TEST_STATUS(saved);
+    if (saved.Failed())
+      return;
+    PipelineLibraryDocument restored(roundTripPath);
+    const auto              reloaded = restored.LoadDocument();
+    XII_TEST_STATUS(reloaded);
+    if (reloaded.Failed())
+      return;
+    PipelineLibraryContext roundTripContext;
+    if (!XII_TEST_RESULT(roundTripContext.Import(restored)))
+      return;
+    exported = roundTripContext.ExportDocument(&message);
     XII_TEST_STATUS(exported);
     if (exported.Failed() || !ReadBytes(message.m_sOutputFile, repeated))
       return;
