@@ -8,6 +8,7 @@
 #include <EnginePluginAssets/RenderPipelineAsset/RenderPipelineContext.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/RttiConverter.h>
@@ -15,6 +16,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GuiFoundation/NodeEditor/Node.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <QImage>
@@ -88,7 +90,8 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
   // Export dependencies first so resource references resolve to the freshly rebuilt library in the output directory.
-  for (const xiiStringView name : {"Scene", "Editor"})
+  xiiStringBuilder lookupTable;
+  for (const xiiStringView name : {"SceneAtmosphere", "Scene", "Editor"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     PipelineLibraryDocument storage(source);
@@ -103,6 +106,12 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
     {
       XII_TEST_BOOL(info->m_TransformDependencies.Contains(xiiRenderPipelineProfileConfig::s_szScenePipeline));
       XII_TEST_BOOL(info->m_PackageDependencies.Contains(xiiRenderPipelineProfileConfig::s_szScenePipeline));
+    }
+    if (name == "Scene")
+    {
+      const auto dependency = xiiPipelineLibraryTestIdentity("SceneAtmosphere");
+      XII_TEST_BOOL(info->m_TransformDependencies.Contains(dependency));
+      XII_TEST_BOOL(info->m_PackageDependencies.Contains(dependency));
     }
     XII_TEST_BOOL(storage.GetSettingsObject() != nullptr);
     XII_TEST_BOOL(document->IsInstanceOf<xiiRenderPipelineAssetDocument>());
@@ -164,11 +173,12 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
       return;
     if (name == "Scene")
       xiiCheckAuthoredSceneContract(*loaded.operator->());
-    const auto*      identity = name == "Scene" ? xiiRenderPipelineProfileConfig::s_szScenePipeline : xiiRenderPipelineProfileConfig::s_szEditorPipeline;
+    const auto       identity = xiiPipelineLibraryTestIdentity(name);
     xiiStringBuilder documentIdentity;
     xiiConversionUtils::ToString(document->GetGuid(), documentIdentity);
     XII_TEST_STRING(documentIdentity, identity);
     xiiResourceManager::RegisterNamedResource(identity, message.m_sOutputFile);
+    lookupTable.AppendFormat("{};RenderPipelines/{}.xiiBinRenderPipeline\n", identity, name);
     const auto authoring = loaded->GetAuthoring();
     XII_TEST_INT(authoring->m_Descriptor.m_Settings.m_uiOutputSamples, 1);
     XII_TEST_BOOL(authoring->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.IsSet(xiiRenderPipelineDeviceFeature::Compute));
@@ -186,6 +196,12 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
       return;
     XII_TEST_BOOL(xiiMakeArrayPtr(rebuilt.GetData(), rebuilt.GetStorageSize32()) == xiiMakeArrayPtr(repeated.GetData(), repeated.GetStorageSize32()));
   }
+  // Standalone applications use the normal file-system asset redirection format
+  // to resolve this library's GUID references without test-process registrations.
+  xiiFileWriter          lookup;
+  const xiiStringBuilder path(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/PipelineLibrary.xiiAidlt");
+  if (XII_TEST_RESULT(lookup.Open(path)))
+    XII_TEST_RESULT(lookup.WriteBytes(lookupTable.GetData(), lookupTable.GetElementCount()));
 }
 
 XII_CREATE_SIMPLE_TEST(NodeLayout, CanonicalScene)

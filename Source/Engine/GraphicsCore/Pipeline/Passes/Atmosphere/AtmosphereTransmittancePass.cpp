@@ -29,6 +29,8 @@ xiiResult xiiAtmosphereTransmittancePass::Configure(const xiiVariantDictionary& 
 xiiResult xiiAtmosphereTransmittancePass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto atmosphere = context.GetInputBuffer(m_Atmosphere);
+  if (!atmosphere.IsValid())
+    return XII_SUCCESS;
   if (!xiiScreenSpacePassUtils::Uniform(context, atmosphere, sizeof(xiiAtmosphereConstants)))
     return context.ReportFailure("AtmosphereTransmittance requires exact atmosphere constants.");
 

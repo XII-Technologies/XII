@@ -127,6 +127,8 @@ public:
     xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
     // Compiled pipelines come from the normal generated asset cache, never source control.
+    xiiDataDirectory::FolderType::s_sRedirectionFile = "RenderPipelines/PipelineLibrary.xiiAidlt";
+    xiiDataDirectory::FolderType::s_sRedirectionPrefix.Clear();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base/AssetCache/Common", "PipelineCache", "pipelinecache").AssertSuccess();
     xiiFileSystem::AddDataDirectory(">project/", "Project", "project").AssertSuccess();
 

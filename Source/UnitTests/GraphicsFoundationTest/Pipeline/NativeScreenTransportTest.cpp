@@ -54,13 +54,21 @@ public:
     };
     const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_CameraData=xiiFrameCameraConstants();data.m_CameraData.m_CameraPositionAndNearPlane=xiiVec4(0,0,m_uiPhase==9?2000.0f:2.0f,0.1f);
-      if(m_uiPhase==9){data.m_CameraData.m_InverseViewProjectionMatrix=xiiMat4::MakeScaling(xiiVec3(1,1,1000));data.m_CameraData.m_ViewProjectionMatrix=xiiMat4::MakeScaling(xiiVec3(1,1,0.001f));}
+      if (m_uiPhase == 9)
+      {
+        // Orthographic slab z=[0,1000], viewed along -Z from z=2000.
+        data.m_CameraData.m_CameraPositionAndNearPlane.w = 1000;
+        data.m_CameraData.m_CameraForwardAndFarPlane     = xiiVec4(0, 0, -1, 2000);
+        data.m_CameraData.m_InverseViewProjectionMatrix  = xiiMat4::MakeScaling(xiiVec3(1, 1, 1000));
+        data.m_CameraData.m_ViewProjectionMatrix         = xiiMat4::MakeScaling(xiiVec3(1, 1, 0.001f));
+      }
       data.m_LightData={};data.m_LightData.EnvironmentDirectionAndIlluminance=xiiVec4(0,0,-1,m_uiPhase==9?2.0f:0.0f);data.m_LightData.EnvironmentColorAndAngularRadius=xiiVec4(1,1,1,0);
       for(xiiUInt32 y=0;y<11;++y)for(xiiUInt32 x=0;x<9;++x){data.m_Pixels[y*9+x]=TransportRadiance(m_uiPhase,(x+0.5f)/9,(y+0.5f)/11);data.m_Depths[y*12+x]=TransportDepth(m_uiPhase,x);}
       xiiGALTextureCreationDescription texture;texture.m_Type=xiiGALResourceDimension::Texture2D;texture.m_Size={9,11};texture.m_Format=xiiGALResourceFormat::RGBA32Float;texture.m_BindFlags=xiiGALBindFlags::ShaderResource;
       data.m_Radiance=builder.WriteTexture("Transport source radiance",texture,xiiGALResourceStateFlags::CopyDestination);texture.m_Format=xiiGALResourceFormat::R32Float;data.m_Depth=builder.WriteTexture("Transport source depth",texture,xiiGALResourceStateFlags::CopyDestination);
       xiiGALBufferCreationDescription buffer;buffer.m_uiSize=m_uiPhase==8?144:sizeof(xiiFrameCameraConstants);buffer.m_BindFlags=xiiGALBindFlags::UniformBuffer;buffer.m_Usage=xiiGALResourceUsage::Dynamic;buffer.m_CPUAccessFlags=xiiGALCPUAccessFlag::Write;data.m_Camera=builder.WriteBuffer("Transport camera",buffer,xiiGALResourceStateFlags::ConstantBuffer);buffer.m_uiSize=sizeof(xiiEnvironmentLightConstants);data.m_Light=builder.WriteBuffer("Transport light",buffer,xiiGALResourceStateFlags::ConstantBuffer); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
-      auto& commands=execute.GetCommandList();{xiiGALMapHelper<xiiFrameCameraConstants> mapped(commands,execute.GetBuffer(data.m_Camera),xiiGALMapType::Write,xiiGALMapFlags::Discard);*mapped=data.m_CameraData;}{xiiGALMapHelper<xiiEnvironmentLightConstants> mapped(commands,execute.GetBuffer(data.m_Light),xiiGALMapType::Write,xiiGALMapFlags::Discard);*mapped=data.m_LightData;}
+      auto& commands=execute.GetCommandList();{xiiGALMapHelper<xiiFrameCameraConstants> mapped(commands,execute.GetBuffer(data.m_Camera),xiiGALMapType::Write,xiiGALMapFlags::Discard);*mapped=data.m_CameraData;}{xiiGALMapHelper<xiiEnvironmentLightConstants> mapped(commands,execute.GetBuffer(data.m_Light),xiiGALMapType::Write,xiiGALMapFlags::Discard);*mapped=data.m_LightData;
+      }
       xiiGALStateTransitionDescription transitions[2];transitions[0].m_pResource=execute.GetBuffer(data.m_Camera);transitions[1].m_pResource=execute.GetBuffer(data.m_Light);for(auto& t:transitions){t.m_NewState=xiiGALResourceStateFlags::ConstantBuffer;t.m_TransitionFlags=xiiGALStateTransitionFlags::UpdateState;}commands.TransitionResourceStates(xiiMakeArrayPtr(transitions));
       xiiGALTextureSubResourceData upload;upload.m_pData=xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(data.m_Pixels),sizeof(data.m_Pixels));upload.m_uiStride=9*sizeof(xiiVec4);commands.UpdateTexture(execute.GetTexture(data.m_Radiance),{},xiiBoundingBoxU32::MakeFromMinMax({0,0,0},{9,11,1}),upload);
       upload.m_pData=xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(data.m_Depths),sizeof(data.m_Depths));upload.m_uiStride=12*sizeof(float);commands.UpdateTexture(execute.GetTexture(data.m_Depth),{},xiiBoundingBoxU32::MakeFromMinMax({0,0,0},{9,11,1}),upload); });
@@ -256,8 +264,8 @@ XII_CREATE_SIMPLE_TEST(NativeScreenTransport, AuthoredTransportMaterialResponseA
           auto        result      = base + transmitted;
           if (phase == 9)
           {
-            const xiiVec3 toSurface(2 * u - 1, 1 - 2 * v, -1500);
-            const float   length = toSurface.GetLength(), cosine = -1500 / length, phaseFunction = 3.0f / (16 * xiiMath::Pi<float>()) * (1 + cosine * cosine);
+            const float length        = 1500;
+            const float phaseFunction = 3.0f / (8 * xiiMath::Pi<float>());
             for (xiiUInt32 c = 0; c < 3; ++c)
             {
               const float t       = xiiMath::Exp(-(float(c) + 1) * 0.1f * length * 0.001f);

@@ -18,6 +18,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereConstantsPass, 1, xiiRTTIDefaultAl
   {
     XII_MEMBER_PROPERTY("AtmosphereConstants", m_OutputAtmosphereConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseWorldAtmosphere", m_bUseWorldAtmosphere)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("RequireWorldAtmosphere", m_bRequireWorldAtmosphere)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Settings", m_Settings),
   }
   XII_END_PROPERTIES;
@@ -34,19 +36,24 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiResult xiiAtmosphereConstantsPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return xiiIsValidAtmosphereSettings(m_Settings) ? XII_SUCCESS : XII_FAILURE;
+  return (!m_bRequireWorldAtmosphere || m_bUseWorldAtmosphere) && xiiIsValidAtmosphereSettings(m_Settings) ? XII_SUCCESS : XII_FAILURE;
 }
 xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (!m_bEnabled)
+    return XII_SUCCESS;
   xiiRenderPassResourceScope scope(context);
   auto                       settings = m_Settings;
   if (m_bUseWorldAtmosphere)
   {
     if (!context.m_pView)
       return XII_FAILURE;
-    if (const auto* extracted = context.m_pView->GetExtractedRenderData())
-      if (const auto* atmosphere = xiiSelectSkyAtmosphere(extracted->GetAllRenderData()))
-        settings = atmosphere->m_AtmosphereSettings;
+    const auto* extracted  = context.m_pView->GetExtractedRenderData();
+    const auto* atmosphere = extracted ? xiiSelectSkyAtmosphere(extracted->GetAllRenderData()) : nullptr;
+    if (atmosphere)
+      settings = atmosphere->m_AtmosphereSettings;
+    else if (m_bRequireWorldAtmosphere)
+      return XII_SUCCESS;
   }
   if (!xiiIsValidAtmosphereSettings(settings))
     return context.ReportFailure("Invalid authored or extracted atmosphere parameters.");

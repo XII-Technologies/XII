@@ -7,25 +7,37 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCoreTest/Pipeline/PipelineTestFixtures.h>
 #include <TestFramework/Framework/TestFramework.h>
 
+inline xiiString xiiPipelineLibraryTestIdentity(xiiStringView name)
+{
+  if (name == "Scene")
+    return xiiRenderPipelineProfileConfig::s_szScenePipeline;
+  if (name == "Editor")
+    return xiiRenderPipelineProfileConfig::s_szEditorPipeline;
+  xiiStringBuilder identity;
+  xiiConversionUtils::ToString(xiiUuid::MakeStableUuidFromString(xiiStringBuilder("XII.RenderPipelines.", name)), identity);
+  return identity;
+}
+
 /// End-to-end tests use the same canonical authored resources as applications.
 inline xiiRenderPipelineResourceHandle xiiLoadPipelineLibraryResource(xiiStringView name)
 {
-  // RendererAssets exports both authored sources through the production compiler.
+  // RendererAssets exports these authored sources through the production compiler.
   // No generated pipeline bytes are checked into the SDK data directory.
-  for (const xiiStringView canonical : {"Scene", "Editor"})
+  for (const xiiStringView canonical : {"SceneAtmosphere", "Scene", "Editor"})
   {
     xiiStringBuilder file(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", canonical, ".xiiBinRenderPipeline");
     file.MakeCleanPath();
     if (!XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(file), "Run EditorFrameworkTest -filter RendererAssets before GPU rendering tests."))
       return {};
-    xiiResourceManager::RegisterNamedResource(canonical == "Scene" ? xiiRenderPipelineProfileConfig::s_szScenePipeline : xiiRenderPipelineProfileConfig::s_szEditorPipeline, file);
+    xiiResourceManager::RegisterNamedResource(xiiPipelineLibraryTestIdentity(canonical), file);
   }
-  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(name == "Scene" ? xiiRenderPipelineProfileConfig::s_szScenePipeline : xiiRenderPipelineProfileConfig::s_szEditorPipeline);
+  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiPipelineLibraryTestIdentity(name));
 }
 
 /// Resolve a leaf by its reflected operation rather than a retired asset hierarchy.

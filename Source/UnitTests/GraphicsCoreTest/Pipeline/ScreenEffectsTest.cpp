@@ -37,6 +37,14 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceComposition)
   XII_TEST_BOOL(atmosphere.GetExtractionRequirements().IsNoFlagSet());
   atmosphere.m_bUseWorldAtmosphere = true;
   XII_TEST_BOOL(atmosphere.GetExtractionRequirements() == xiiRenderExtractionCategory::Atmosphere);
+  properties.Clear();
+  properties.Insert("RequireWorldAtmosphere", true);
+  XII_TEST_RESULT(atmosphere.Configure(properties));
+  properties.Insert("Enabled", false);
+  XII_TEST_RESULT(atmosphere.Configure(properties));
+  XII_TEST_BOOL(atmosphere.GetExtractionRequirements().IsNoFlagSet());
+  properties.Insert("UseWorldAtmosphere", false);
+  XII_TEST_BOOL(atmosphere.Configure(properties).Failed());
 
   auto                                       childResource = xiiCreateScreenEffectsTestResource();
   xiiResourceLock<xiiRenderPipelineResource> child(childResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -98,7 +106,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentScreenTransportSchemas)
   pins.Clear();
   atmosphere.GetPins(pins);
   XII_TEST_RESULT(atmosphere.InitializePinBindings(pins));
-  XII_TEST_BOOL(pins[atmosphere.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::RGBA32Float);
+  XII_TEST_BOOL(pins[atmosphere.m_Output.GetBindingIndex()].m_Format == xiiGALResourceFormat::Unknown);
+  XII_TEST_BOOL(!pins[atmosphere.m_Output.GetBindingIndex()].m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
+  XII_TEST_BOOL(pins[atmosphere.m_Atmosphere.GetBindingIndex()].m_bOptional);
   pins.Clear();
   rgb.GetPins(pins);
   XII_TEST_RESULT(rgb.InitializePinBindings(pins));

@@ -7,6 +7,9 @@
 > Operation-level history below does not certify Scene integration. Scene's
 > spatial AO extension reuses the two AO operations; temporal and ray-traced AO
 > remain separate acceptance work.
+> Scene now references the four-operation SceneAtmosphere workload for optional
+> world-selected sky/aerial rendering. Its production resource and GPU contracts
+> are documented in SceneRenderer.md; the old fragment history below is unchanged.
 
 Current source inventory: **102 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph

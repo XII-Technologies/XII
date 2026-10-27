@@ -8,8 +8,8 @@
 void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
 {
   const auto pipeline = scene.GetPipeline();
-  XII_TEST_BOOL(scene.GetAuthoring()->m_Descriptor.m_References.IsEmpty());
-  XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights));
+  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 1);
+  XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere));
   XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting));
   XII_TEST_INT(pipeline->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
   for (const auto& pass : pipeline->GetDescriptor().m_Passes)
@@ -22,6 +22,13 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   }
   for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion"})
     XII_TEST_BOOL(pipeline->FindInterface(name, false) != xiiInvalidIndex);
+  const auto hdr = pipeline->FindInterface("HDRSceneColor", false);
+  if (XII_TEST_BOOL(hdr != xiiInvalidIndex))
+  {
+    const auto& pin = pipeline->GetInterface()[hdr].m_Pin;
+    XII_TEST_BOOL(pin.m_Format == xiiGALResourceFormat::RGBA32Float);
+    XII_TEST_BOOL(pin.m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
+  }
   const auto& descriptor = pipeline->GetDescriptor();
   const auto  ao         = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
   const auto  filter     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
