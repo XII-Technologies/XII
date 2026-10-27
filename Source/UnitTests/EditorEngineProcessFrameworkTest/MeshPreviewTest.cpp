@@ -75,20 +75,20 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   const xiiString previousParticlesId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(particlesId).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(particlesId);
   XII_SCOPE_EXIT(if (previousParticlesId != particlesId) xiiResourceManager::RegisterNamedResource(particlesId, previousParticlesId));
-  const xiiString shadowIds[] = {xiiPipelineLibraryTestIdentity("SceneShadowCascade"), xiiPipelineLibraryTestIdentity("SceneDirectionalShadows")};
-  xiiString       previousShadowIds[2];
-  for (xiiUInt32 index = 0; index < 2; ++index)
+  const xiiString shadowIds[] = {xiiPipelineLibraryTestIdentity("SceneShadowCascade"), xiiPipelineLibraryTestIdentity("SceneDirectionalShadows"), xiiPipelineLibraryTestIdentity("SceneSpotShadows")};
+  xiiString       previousShadowIds[3];
+  for (xiiUInt32 index = 0; index < 3; ++index)
   {
     previousShadowIds[index] = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(shadowIds[index]).GetResourceID();
     xiiResourceManager::UnregisterNamedResource(shadowIds[index]);
   }
-  XII_SCOPE_EXIT(for (xiiUInt32 index = 0; index < 2; ++index) { if(previousShadowIds[index]!=shadowIds[index]) xiiResourceManager::RegisterNamedResource(shadowIds[index],previousShadowIds[index]); });
+  XII_SCOPE_EXIT(for (xiiUInt32 index = 0; index < 3; ++index) { if(previousShadowIds[index]!=shadowIds[index]) xiiResourceManager::RegisterNamedResource(shadowIds[index],previousShadowIds[index]); });
   xiiStringBuilder fixture(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/MeshPreview");
   xiiStringBuilder cache(fixture, "/AssetCache/Common");
   if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(cache)))
     return;
   xiiStringBuilder entries;
-  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene"})
+  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneSpotShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene"})
   {
     xiiStringBuilder source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", name, ".xiiBinRenderPipeline");
     source.MakeCleanPath();

@@ -2,7 +2,7 @@
 
 `Data/Base/RenderPipelines` contains two default authored resources: **Scene** and
 **Editor**, plus independently authored **SceneAtmosphere** and
-**SceneDirectionalShadows**, **SceneScreenSpaceReflections**, **SceneScreenSpaceIrradiance**, **SceneTransparency** and **SceneParticles** workloads composed by Scene. Directional shadows reuse
+**SceneDirectionalShadows**, **SceneSpotShadows**, **SceneScreenSpaceReflections**, **SceneScreenSpaceIrradiance**, **SceneTransparency** and **SceneParticles** workloads composed by Scene. Directional and spotlight shadows reuse
 **SceneShadowCascade** for each cascade's caster rasterization. The two roots are
 defaults, not an enumeration of supported workloads.
 Applications can select any compatible resource or construct a resource descriptor
@@ -41,7 +41,7 @@ lifetime regression exercises the failure directly.
 Scene renders world mesh components through shared GPU instance extraction,
 view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
-lights, optional world directional shadows, ambient diffuse and emission, spatial
+lights, optional world directional and spotlight shadows, ambient diffuse and emission, spatial
 ambient visibility, optional world atmosphere, spatial screen reflections, transparent
 single-bounce screen-space diffuse transport, mesh and ballistic billboard layers and temporal
 antialiasing, exposure,
@@ -184,7 +184,7 @@ visible/occluded selection and front-surface picking, switches resources, resize
 and checks icon picking. Fixed preview tests exercise real texture/cubemap output.
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
-These defaults intentionally exclude local/virtual/ray shadows, offscreen or multibounce GI,
+These defaults intentionally exclude point/area/virtual/ray shadows, offscreen or multibounce GI,
 environment/probe reflections and advanced particle graph rendering. Spatial screen reflections,
 screen-space diffuse transport and temporal antialiasing are authored but opt-in.
 Other retained operations and focused tests are not certification of complete production techniques.
@@ -200,7 +200,7 @@ committed. The Editor transforms the authored sources into its normal
 subgraph reference use the source asset GUIDs through the existing lookup table.
 For standalone GPU tests/sample preparation, run `EditorFrameworkTest -noGui -run
 -close -all -filter RendererAssets -outputDir <project-local-test-output>`. This
-exports all nine sources with the production compiler into the ignored cache, checks
+exports all ten sources with the production compiler into the ignored cache, checks
 stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
@@ -211,6 +211,111 @@ Asset Profiles against the actual asset. Retired or deleted selections remain
 errors; they are not silently replaced by Scene. Applying the profile writes its
 matching runtime configuration. A stale runtime profile can otherwise retain an
 old selection even when the current profile schema has changed.
+
+## Conventional spotlight shadows
+
+Scene composes the independently authored **SceneSpotShadows** workload. Its only
+new native operation, `xiiSpotShadowPass`, selects shadow-casting spotlights from
+the authoritative extracted light packets and reuses `xiiLocalShadowAtlasBuilder`
+for perspective projections. It does not schedule features in `xiiView`.
+
+```text
+Scene geometry uploads ------------------------------------+
+World Spotlights -> SpotShadows snapshot -> ShadowAtlas ----+-> SceneShadowCascade x4
+                         |                                  |   (perspective caster views)
+                         +-> opaque local lighting <--------+--- completed atlas
+                         +-> transparent raster <--------------- completed atlas
+opaque local potential shadow contribution -> ReactiveLighting union -> TAA
+screen-space irradiance ---------------------> ReactiveLighting union
+```
+
+Each reused caster occurrence selects world/tag-authoritative geometry, performs
+GPU instance/meshlet culling, resets counters, prepares indirect vertex-pull draws
+and rasterizes the current material/pose into its own atlas rectangle. Casters
+outside the main camera remain eligible. `CascadeIndex` selects the occurrence's
+slot for either snapshot type; the spotlight path uses perspective position,
+cone rejection and LOD rather than substituting a directional projection.
+Alpha-masked materials use the existing depth shader's actual texture/cutoff.
+Transparent meshes remain receivers rather than shadow casters.
+
+The snapshot carries one to four views, a graph-owned 384-byte sampling constant
+buffer, and a structured SRV receiver table of sorted `(object ID, flags)` pairs,
+eight bytes per world instance (one zero sentinel when empty). The atlas is
+single-sample D32Float with DepthStencil/SRV bindings. At the authored 1,024-pixel
+tile resolution, one light uses 1,024 squared, two use 2,048 by 1,024, and three or
+four use 2,048 squared (4/8/16 MiB respectively). Caster writes explicitly precede
+each subsequent atlas version and both opaque/transparent consumers. Sampling
+validates the exact dimensions, format, bindings and buffer layouts.
+
+Opaque local lighting resolves receiver flags through the G-buffer's R32UInt ID;
+transparent lighting carries instance flags through its vertex interface. Both
+multiply only the matching spotlight's BRDF contribution by four-comparison PCF
+visibility. Other local lights, ambient illumination and emission retain their
+contributions. Sampling clamps taps to the selected tile, rejects out-of-frustum
+coordinates, and applies reversed-Z depth and world/texel normal bias. Scene
+authors depth bias 0.00005 for this perspective path. Reflected settings retain
+Enabled, Resolution, MaximumLights, NearPlane and all sampling biases.
+
+Only extracted positive-intensity spotlights with CastShadows participate.
+ShadowFadeOutRange zero resolves to the light's effective range, as specified by
+the light component API. Shadows fade over the final twenty percent of the
+camera/light distance and disappear beyond that range. With no eligible light,
+or Enabled false, no atlas, sampling buffers or reactive image are produced and
+the existing unshadowed lighting variant executes. Positive-range cones must be
+finite, between 1 and 175 degrees, and extend beyond twice NearPlane. More than
+the authored MaximumLights (at most four), stereo views, missing active resources
+or oversized device atlas dimensions fail explicitly; no unrelated shadow
+algorithm or silent light truncation replaces them. Point and area lights remain
+unshadowed in this workload.
+
+The shadowed opaque shader also writes an optional viewport-sized RGBA16Float
+SRV/UAV image (eight bytes per pixel). It marks potential incident spotlight
+contribution **before** applying visibility, including fully shadowed receivers.
+TAA therefore rejects stale history on both shadow/light changes and disappearance.
+The existing RadianceAdd operation now accepts either optional input for the
+irradiance/reactivity union: neither produces no output, one forwards its handle,
+and both execute the existing RGBA32Float addition. Forward transparent layers
+retain their existing conservative history-trust path. Independent pipeline
+occurrences own configuration and history; recorded callbacks retain snapshots
+and GAL resources without borrowing the world or operation instance.
+
+`SceneSpotShadows/PerspectiveCasterAtlasAffectsIndividualLights` compares actual
+Scene GPU images and buffers. Twenty-six analytical phases cover caster/material
+and light removal, alpha-mask textures, automatic/explicit shadow fading, main
+camera cuts, odd resize, reload, a one-pixel viewport and exact restoration.
+Initially 128 final pixels change; an off-camera caster affects 1,928 shadowed
+pixels while its identity is absent from the main image. Two independently
+shadowed lights sum correctly, and four lights exercise every tile in the 2-by-2
+atlas with the expected doubled two-light result. Atlas depths, sampling matrices,
+light indices and receiver records are read back. Every HDR delta equals the
+measured per-light change; depth, IDs and ambient light match the disabled view.
+Four transparent phases change 81 layer pixels and 185 final pixels, with no
+layer change for an unlit receiver or a material that cannot cast shadows.
+Eleven temporal phases interleave two worlds/four views, verify initialization,
+cuts, resize, reload and motion, and check 5,415 disappeared interior pixels
+against a current-frame reference. A recording executes after its world and
+pipeline instance are destroyed. Active missing atlas/capacity errors fail the
+view, their explicitly disabled counterparts succeed, and the atlas rejects an
+actual device-dimension overflow before allocation. Editor's nested override
+produces the same final pixel changes as Scene and restores output exactly:
+128 pixels without screen irradiance, and 312 with irradiance enabled, exercising
+the combined reactive-input composition.
+
+Windows/MSVC Debug builds pass GraphicsCore, GraphicsCoreTest,
+GraphicsFoundationTest, EditorFrameworkTest, EditorEngineProcessFrameworkTest and
+GpuDrivenScene. Complete GraphicsCoreTest (81), Vulkan GraphicsFoundationTest
+(142) and Vulkan EditorEngineProcessFrameworkTest (76) subtests pass. The final
+formatted spotlight shaders also pass their focused production GPU run.
+Production RendererAssets exports all ten sources deterministically on repeated
+runs, EditorDocuments (20) and NodeLayout (3) pass, and the rebuilt Vulkan Scene
+sample completes 300 frames. Source asset identities remain stable. Generated
+pipeline binaries, caches, logs and temporary authoring helpers are excluded.
+
+This is bounded conventional spotlight shadow rendering. Point/area shadows,
+virtual pages, ray tracing, contact refinement, physical soft penumbrae, animated
+spotlight-specific acceptance, stereo, large-world budgets and non-Vulkan
+backends remain unverified or separate work. The conservative reactive path
+favors correctness over temporal convergence in spotlight-lit regions.
 
 ## Bloom and metered exposure
 
@@ -511,7 +616,7 @@ above. The first reload run exposed low-resolution receiver acne, which the fina
 texel-aware bias fixes; the recording regression verifies failure diagnostics,
 stopped dependent work and a successful green-image readback after recovery.
 
-This is a conventional directional cascade path. Local-light shadows, virtual-page
+This is a conventional directional cascade path. Point/area shadows, virtual-page
 shadow residency, hardware-ray shadows, contact-shadow tracing, angular-source
 penumbrae, atmospheric shadowing and cascade-blend quality remain separate work.
 Animated/cutout shadow content, stereo, large-world performance, other backends and
