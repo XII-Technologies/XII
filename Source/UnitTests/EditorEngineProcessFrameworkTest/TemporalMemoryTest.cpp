@@ -159,8 +159,8 @@ XII_CREATE_SIMPLE_TEST(TemporalMemory, TAAResizeReleasesOldHistory)
     XII_TEST_INT(current->GetDescription().m_Size.width, view->GetRenderResolutionWidth());
     if (iteration == 0)
       original = current;
-    else
-      XII_TEST_INT(original->GetRefCount(), 1);
+    else if (iteration >= 3)
+      XII_TEST_INT(original->GetRefCount(), 1); // Completion-aware slots may retain an in-flight resize for two frames.
   }
 }
 

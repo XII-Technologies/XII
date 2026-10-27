@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
@@ -12,6 +13,7 @@ class XII_GRAPHICSCORE_DLL xiiVisibilityViewPass final : public xiiRenderPipelin
   XII_ADD_DYNAMIC_REFLECTION(xiiVisibilityViewPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineDataInputPin m_TemporalCamera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>(), true};
   xiiVisibilityViewPass();
   ~xiiVisibilityViewPass() override;
   /// Optional exact candidate stream. Empty selections use one invalid-index sentinel.

@@ -392,4 +392,48 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     matchingChanges += shadowImages[1][0][pixel] != shadowImages[1][1][pixel] && shadowImages[0][0][pixel] == shadowImages[1][0][pixel] && shadowImages[0][1][pixel] == shadowImages[1][1][pixel];
   }
   XII_TEST_BOOL(changed[0] > 8 && changed[1] > 8 && matchingChanges > 8);
+  // Temporal reconstruction remains an authored Scene choice inside Editor.
+  xiiRenderPipelineResourceDescriptor temporalScene, temporalEditor;
+  {
+    xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    xiiResourceLock<xiiRenderPipelineResource> editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    temporalScene       = scene->GetAuthoring()->m_Descriptor;
+    temporalEditor      = editor->GetAuthoring()->m_Descriptor;
+    const auto temporal = xiiFindPipelineTestPass(temporalScene, "xiiTemporalCameraPass");
+    for (auto& pass : temporalScene.m_Passes)
+      if (pass.m_Id == temporal)
+        pass.m_Properties.Insert("Enabled", true);
+    for (auto& pass : temporalEditor.m_Passes)
+      if (pass.m_Definition == temporalScene.m_Id)
+      {
+        auto& override = pass.m_Overrides.ExpandAndGetRef();
+        override.m_Path.PushBack(temporal);
+        override.m_Properties.Insert("Enabled", true);
+      }
+  }
+  views[0]->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.TemporalEditor", std::move(temporalEditor)));
+  views[1]->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.TemporalScene", std::move(temporalScene)));
+  update(8);
+  xiiDynamicArray<xiiUInt32> temporalImages[2];
+  for (xiiUInt32 view = 0; view < 2; ++view)
+    if (!XII_TEST_RESULT(views[view]->GetLastRenderResult()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], temporalImages[view]))
+      return;
+  xiiUInt32 temporalChanges[2] = {}, matchingTemporalChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < temporalImages[0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      temporalChanges[view] += temporalImages[view][pixel] != shadowImages[view][2][pixel];
+    matchingTemporalChanges += temporalImages[1][pixel] != shadowImages[1][2][pixel] && temporalImages[0][pixel] == temporalImages[1][pixel] && shadowImages[0][2][pixel] == shadowImages[1][2][pixel];
+  }
+  XII_TEST_BOOL(temporalChanges[0] > 8 && temporalChanges[1] > 8 && matchingTemporalChanges > 8);
+  views[0]->SetRenderPipelineResource(editorPipeline);
+  views[1]->SetRenderPipelineResource(scenePipeline);
+  update(3);
+  for (xiiUInt32 view = 0; view < 2; ++view)
+  {
+    xiiDynamicArray<xiiUInt32> restored;
+    if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], restored))
+      return;
+    XII_TEST_BOOL(restored == shadowImages[view][2]);
+  }
 }

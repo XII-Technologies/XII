@@ -14,6 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewConstantsPass, 1, xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PerFrameCamera", m_OutputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameGlobal", m_OutputPerFrameGlobal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
   } XII_END_PROPERTIES;
@@ -31,6 +32,8 @@ xiiResult xiiViewConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
   if (!context.m_pView || !context.m_pView->GetCamera())
     return XII_FAILURE;
+  const auto                 temporalData = context.GetInputData(m_TemporalCamera);
+  const auto*                temporal     = xiiDynamicCast<const xiiTemporalCameraSnapshot*>(temporalData.Borrow());
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
@@ -39,8 +42,13 @@ xiiResult xiiViewConstantsPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphBufferHandle m_CameraBuffer, m_GlobalBuffer;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
-      data.m_Camera = xiiSnapshotCameraConstants(*context.m_pView);
+      data.m_Camera = temporal ? temporal->m_Sample.m_Camera : xiiSnapshotCameraConstants(*context.m_pView);
       data.m_Global = xiiSnapshotGlobalConstants(*context.m_pView, static_cast<xiiUInt32>(context.m_Graph.GetFrameIndex()));
+      if (temporal)
+      {
+        data.m_Global.m_RenderScaleJitter.y = temporal->m_Sample.m_Jitter.x;
+        data.m_Global.m_RenderScaleJitter.z = temporal->m_Sample.m_Jitter.y;
+      }
       data.m_CameraBuffer = xiiRenderPassUtils::Constants(builder, "PerFrameCamera", sizeof(data.m_Camera));
       data.m_GlobalBuffer = xiiRenderPassUtils::Constants(builder, "PerFrameGlobal", sizeof(data.m_Global)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();

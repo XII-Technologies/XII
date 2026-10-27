@@ -16,6 +16,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceRasterConstantsPass, 1, xiiRTTIDefaul
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("RasterConstants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VertexStride", m_uiVertexStride)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(sizeof(xiiMeshPackedVertex)))),
     XII_MEMBER_PROPERTY("NormalOffset", m_uiNormalOffset)->AddAttributes(new xiiDefaultValueAttribute(xiiUInt32(offsetof(xiiMeshPackedVertex, m_vNormal)))),
@@ -45,6 +46,8 @@ xiiResult xiiSurfaceRasterConstantsPass::Build(xiiRenderPipelinePassContext& con
   const auto width = context.m_pView->GetRenderResolutionWidth(), height = context.m_pView->GetRenderResolutionHeight();
   if (width == 0 || height == 0)
     return context.ReportFailure("Raster constants require a nonempty render resolution.");
+  const auto                 temporalData = context.GetInputData(m_TemporalCamera);
+  const auto*                temporal     = xiiDynamicCast<const xiiTemporalCameraSnapshot*>(temporalData.Borrow());
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
@@ -57,6 +60,13 @@ xiiResult xiiSurfaceRasterConstantsPass::Build(xiiRenderPipelinePassContext& con
       data.m_Snapshot.PreviousViewProjectionMatrix = data.m_Snapshot.ViewProjectionMatrix;
       data.m_Snapshot.InvRenderSize = xiiVec2(1.0f / width, 1.0f / height);
       data.m_Snapshot.CurrentJitter = data.m_Snapshot.PreviousJitter = xiiVec2::MakeZero();
+      if (temporal)
+      {
+        data.m_Snapshot.ViewProjectionMatrix         = temporal->m_Sample.m_Camera.m_ViewProjectionMatrix;
+        data.m_Snapshot.PreviousViewProjectionMatrix = temporal->m_Sample.m_PreviousViewProjection;
+        data.m_Snapshot.CurrentJitter                = temporal->m_Sample.m_Jitter;
+        data.m_Snapshot.PreviousJitter               = temporal->m_Sample.m_PreviousJitter;
+      }
       data.m_Snapshot.GeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
       data.m_Snapshot.MaterialBaseIndex = xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(context.m_Graph.GetFrameIndex());
       data.m_Snapshot.VertexStride = m_uiVertexStride;
