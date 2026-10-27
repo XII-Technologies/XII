@@ -6,6 +6,9 @@
 #include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
 #include <Shaders/Pipeline/Passes/Transparency/TransparentRasterConstants.h>
 #include <Shaders/Pipeline/SurfaceLocalLight.h>
+#if FORWARD_REFRACTION
+#  include <Shaders/Pipeline/Passes/Refraction/ForwardRefraction.h>
+#endif
 #if XII_TRANSPARENT_SHADOWS
 #  include <Shaders/Pipeline/Passes/Shadows/DirectionalShadowSampling.h>
 #endif
@@ -65,7 +68,7 @@ float3 xiiTransparentClusterLights(uint2 pixel, float3 world, float3 normal, flo
   return result;
 }
 
-float3 xiiTransparentAtmosphere(float3 existing, float3 world, bool orthographic)
+void xiiTransparentAtmosphereTerms(float3 world, bool orthographic, out float3 transmittance, out float3 scattering)
 {
 #if XII_TRANSPARENT_ATMOSPHERE
   const float3 camera    = g_CameraPositionAndNearPlane.xyz;
@@ -76,12 +79,19 @@ float3 xiiTransparentAtmosphere(float3 existing, float3 world, bool orthographic
   const float3 origin    = up * height;
   const float  distance  = min(max(dot(world - rayOrigin, direction), 0) * 0.001f, DistanceToSphereExit(origin, direction, PlanetAtmosphereRadiiScaleHeights.y));
   const float3 sun       = normalize(-EnvironmentDirectionAndIlluminance.xyz);
-  float3       transmittance, scattering;
   IntegrateAtmosphereSegment(origin, direction, distance, sun, dot(direction, sun), EnvironmentColorAndAngularRadius.rgb * max(EnvironmentDirectionAndIlluminance.w, 0), clamp(SampleCounts.w, 1u, 64u), transmittance, scattering);
-  return existing * transmittance + scattering;
+
 #else
-  return existing;
+  transmittance = 1;
+  scattering    = 0;
 #endif
+}
+
+float3 xiiTransparentAtmosphere(float3 existing, float3 world, bool orthographic)
+{
+  float3 transmittance, scattering;
+  xiiTransparentAtmosphereTerms(world, orthographic, transmittance, scattering);
+  return existing * transmittance + scattering;
 }
 
 #include <Shaders/Pipeline/Passes/Transparency/TransparentLayerOutput.h>
@@ -100,8 +110,15 @@ TransparentOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   const float3 view         = orthographic ? -normalize(g_CameraForwardAndFarPlane.xyz) : normalize(g_CameraPositionAndNearPlane.xyz - input.WorldPosition);
   const float  viewDepth    = dot(input.WorldPosition - g_CameraPositionAndNearPlane.xyz, g_CameraForwardAndFarPlane.xyz);
   float3       lighting     = surface.Emissive;
-  if (material.Metadata.x == 6u || (material.Metadata.y & (1u << 12u)) == 0u)
+  const bool   unlit        = material.Metadata.x == 6u || (material.Metadata.y & (1u << 12u)) == 0u;
+  if (unlit)
+  {
+#if FORWARD_REFRACTION
+    lighting += surface.BaseColor.rgb * (1 - surface.Transmission);
+#else
     lighting += surface.BaseColor.rgb;
+#endif
+  }
   else
   {
     lighting += max(EnvironmentAmbientRadiance.rgb, 0) * surface.BaseColor.rgb * (1 - surface.Metallic) * (1 - surface.Transmission) * surface.Occlusion / 3.14159265f;
@@ -116,7 +133,20 @@ TransparentOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
     }
     lighting += xiiTransparentClusterLights(uint2(input.Position.xy), input.WorldPosition, surface.Normal, view, surface, material);
   }
+#if FORWARD_REFRACTION
+  float3 atmosphericTransmission, atmosphericScattering;
+  xiiTransparentAtmosphereTerms(input.WorldPosition, orthographic, atmosphericTransmission, atmosphericScattering);
+  lighting = max(lighting * TransparentWeightsAndScale.z, 0) * atmosphericTransmission + atmosphericScattering;
+  if (surface.Transmission > 0)
+  {
+    float        fresnel;
+    const float3 transmitted = xiiForwardRefraction(input.WorldPosition, surface.Normal, view, material.AdvancedParameters.y, material.AdvancedParameters.x, uint2(input.Position.xy), fresnel);
+    // Background HDR already includes the camera's atmospheric segment. Do not attenuate it twice.
+    lighting += max(transmitted - atmosphericScattering, 0) * surface.BaseColor.rgb * surface.Transmission * (1 - fresnel) * TransparentWeightsAndScale.z;
+  }
+#else
   lighting = xiiTransparentAtmosphere(max(lighting * TransparentWeightsAndScale.z, 0), input.WorldPosition, orthographic);
+#endif
   if (!all(isfinite(lighting)))
     clip(-1.0f);
   return xiiTransparentLayer(lighting, opacity, viewDepth, material.Metadata.w, TransparentWeightsAndScale.xy);

@@ -43,6 +43,15 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   const auto  filter     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
   for (const auto& pass : descriptor.m_Passes)
   {
+    if (pass.m_pType && pass.m_pType->GetTypeName() == "xiiTransparentRasterPass")
+    {
+      const auto* enabled = pass.m_Properties.GetValue("EnableRefraction");
+      XII_TEST_BOOL(enabled && enabled->Get<bool>());
+      bool backgroundConnected = false;
+      for (const auto& connection : descriptor.m_Connections)
+        backgroundConnected |= descriptor.m_Passes[connection.m_uiTarget].m_Id == pass.m_Id && connection.m_sInput == "BackgroundRadiance";
+      XII_TEST_BOOL(backgroundConnected);
+    }
     if (pass.m_Id == ao)
       XII_TEST_BOOL(pass.m_Properties.GetValue("UseRayTracing") && !pass.m_Properties.GetValue("UseRayTracing")->Get<bool>());
     if (pass.m_Id == filter)

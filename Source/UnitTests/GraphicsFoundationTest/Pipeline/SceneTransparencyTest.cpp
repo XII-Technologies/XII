@@ -442,7 +442,7 @@ XII_CREATE_SIMPLE_TEST(SceneTransparency, RealWorldAlphaLayers)
   }
 }
 
-static void TestTransparentTemporalWorlds(bool independentBlend, bool particles = false)
+static void TestTransparentTemporalWorlds(bool independentBlend, bool particles = false, bool refraction = false)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize(false, false, independentBlend)))
@@ -554,6 +554,13 @@ static void TestTransparentTemporalWorlds(bool independentBlend, bool particles 
     material.m_BaseColor    = w ? xiiColor(0.02f, 0.05f, 0.8f, 0.5f) : xiiColor(0.8f, 0.05f, 0.02f, 0.5f);
     material.m_ShadingModel = xiiMaterialShadingModel::Unlit;
     material.m_AlphaMode    = xiiMaterialAlphaMode::Blend;
+    if (refraction)
+    {
+      material.m_fTransmission      = 1;
+      material.m_fThickness         = 0.25f;
+      material.m_fIndexOfRefraction = 1.5f;
+    }
+
     if (particles)
     {
       xiiStringBuilder path;
@@ -805,3 +812,6 @@ XII_CREATE_SIMPLE_TEST(SceneTransparency, ExplicitIndependentBlendFallback) { Te
 
 XII_CREATE_SIMPLE_TEST(SceneParticles, TemporalWorldsViewsReloadAndRetainedRecording) { TestTransparentTemporalWorlds(true, true); }
 XII_CREATE_SIMPLE_TEST(SceneParticles, ExplicitIndependentBlendFallback) { TestTransparentTemporalWorlds(false, true); }
+
+XII_CREATE_SIMPLE_TEST(SceneRefraction, TemporalWorldsViewsReloadAndRetainedRecording) { TestTransparentTemporalWorlds(true, false, true); }
+XII_CREATE_SIMPLE_TEST(SceneRefraction, ExplicitTransparentDeviceFallback) { TestTransparentTemporalWorlds(false, false, true); }

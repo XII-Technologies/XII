@@ -731,11 +731,10 @@ four-frame temporal fixture verifies rejection followed by resumed accumulation.
 through Scene and Editor, exact disabled/invisible/restored images, and opacity-aware
 picking.
 
-Refraction, sorted alpha, transparent shadow casting, motion-aware transparent TAA,
-particle extraction/rasterization, environment/probe specular and GI remain separate
-work. The existing screen-refraction operation does not establish refractive
-transport here. Tests cover the canonical material model; custom material shader
-permutations, transparent skinning/normal-map visual acceptance, IES-specific
+Sorted alpha, transparent shadow casting, motion-aware transparent TAA,
+environment/probe specular and GI remain separate work. Thin-slab refraction and
+ballistic particle extraction/rasterization are described below. Tests cover the
+canonical material model; custom material shader permutations, transparent skinning, IES-specific
 transparent scenes, stereo, other backends and representative performance remain
 unverified.
 
@@ -751,6 +750,115 @@ remain unverified. The first broad GPU run exposed an undefined preprocessor
 variable in the shared vertex interface; an explicit optional-interface define
 corrects it, and the full GPU rerun passes.
 
+
+## Thin-slab screen refraction
+
+`SceneTransparency/Raster Transparent Layers.EnableRefraction=true` is authored in
+the canonical workload. The native operation defaults to false for existing custom
+pipelines. A disabled transparent query, absent eligible content or materials without
+the Transmission feature perform no refraction work. Existing blend behavior is
+preserved when this choice is disabled. Explicit alpha/blend transparent materials,
+including opacity one, select the path; opaque materials are not reclassified.
+
+```text
+opaque lighting -> atmosphere -> optional SSR -> immutable BackgroundRadiance ----+
+opaque D32 -> graph transfer copy -> shader-readable D32 ------------------------+-> transparent slab trace
+world surface + textures + IOR + thickness + coherent camera --------------------+
+trace + surface lighting -> existing five OIT targets -> particle append -> root resolve -> TAA -> display
+original opaque D32 ----------------------------------> read-only raster depth test
+```
+
+The existing Radiance child input now also feeds the raster's optional
+`BackgroundRadiance` pin. No new asset, root interface, renderer manager or native
+operation class is introduced. Reflected `RefractionDistance` (default 100 world
+units), `RefractionSteps` (32, bounded to 128), and
+`RefractionThicknessTolerance` (0.1 view-depth units) control traversal independently.
+
+| Resource | Format and dimensions | Producer / consumer |
+| --- | --- | --- |
+| BackgroundRadiance | Viewport-sized one-sample RGBA16Float or RGBA32Float, SRV; Scene uses full float | Completed opaque atmosphere/reflections -> immutable hit radiance |
+| Opaque depth snapshot | Matching one-sample D32Float, SRV/depth-capable | Explicit graph copy from SceneDepth -> projected hit reconstruction |
+| Original SceneDepth | Matching D32Float | Opaque raster -> copy source, then read-only transparent depth attachment |
+| Refraction constants | 16-byte uniform | Graph upload -> fragment traversal controls |
+| Surface optics | Existing canonical material and sampled normal/transmission textures | Coherent material snapshot/bindless upload -> IOR, world-space thickness, tint and transmission |
+| OIT targets and HDR output | Existing five targets and distinct resolve output | Forward optical/surface contribution -> shared mesh/particle composition |
+
+The extra depth image costs four bytes per render pixel before graph lifetime
+reuse. GAL cannot represent simultaneous DepthRead and ShaderResource texture
+states on the same allocation here; the copy makes both dependencies explicit.
+Graph callbacks retain constants, shaders, samplers and resource handles. Graph
+resource descriptions are copied before additions can invalidate their borrowed
+addresses. No refraction history or shared mutable image is introduced.
+
+The shader refracts the incident camera ray into a parallel-plane dielectric slab
+using Snell's law and world-space thickness. The exiting ray is parallel to the
+incident ray with a lateral displacement. It marches bounded quadratic distances,
+refines the first depth crossing, and samples the immutable HDR background at the
+hit. Reconstruction uses the actual view-projection matrix and inverse for both
+perspective and orthographic cameras. Foreground depth, invalid projection,
+offscreen rays, excessive crossing error and exhausted traversal use the unshifted
+opaque background explicitly. They do not sample a previous frame or substitute
+environment lighting. IOR one has zero Fresnel attenuation and no displacement;
+zero thickness has no displacement but retains the interface Fresnel factor.
+
+Schlick Fresnel attenuates transmitted radiance; material transmission and tint
+scale it independently of alpha coverage. Surface emission and existing fragment
+lighting remain separate contributions. The background already includes aerial
+perspective: front-segment scattering is accounted for when combining it with
+the surface, avoiding a second atmospheric attenuation. The existing shadow,
+atmosphere and combined shader variants support the same optical path. Original
+opaque depth and ObjectId remain unchanged. Existing conservative transparency
+trust rejects TAA history under refractive coverage and after it disappears.
+
+### Refraction acceptance and limits
+
+`SceneRefraction/DielectricSlabUsesSurfaceOpticsAndOpaqueBackground` compares two
+production Scene resources with the native choice enabled/disabled, using actual
+red/blue opaque geometry and a tilted transmitting panel. Twenty-four phases
+read HDR, completed background, final color, depth and IDs. The initial panel
+changes 925 final pixels; its center switches from blue background to red receiver
+radiance with the analytically expected Fresnel factor. IOR one equals the actual
+background. Tests exercise thickness zero, transmission zero, absent content,
+normal/transmission textures, tint, perspective/orthographic projection, odd resize,
+one-pixel extent, foreground rejection, offscreen/short-distance fallback, exact
+restoration and source resource reload. IOR-one comparisons with atmosphere and
+directional shadows also equal the actual background; lit combined variants
+produce finite final output. Missing active background and invalid optical
+parameters must report failure; an empty malformed workload still bypasses it.
+
+The independent-world temporal fixture repeats first frames, camera cuts, resize,
+reload, movement, disappearance and retained recordings with transmitting meshes.
+Two worlds each have two independent views; 2,116 disappeared interior pixels per
+world reject stale history. Actual IndependentBlend restrictions fail active
+content while disabled/empty paths render. Editor composition changes 1,301
+matching final pixels through Scene and Editor, with exact enabled/disabled
+restoration.
+
+This is bounded screen-space thin-slab transmission. Rough transmission blur,
+volume absorption, closed-mesh entry/exit matching, dispersion, multiple refractive
+interfaces and transparent/particle ray targets remain unsupported. Offscreen and
+hidden geometry cannot contribute. Opaque materials with transmission retain their
+previous deferred behavior and need a separate routing/coverage contract; imported
+opaque transmission is not certified by these tests. Weighted OIT still approximates
+overlapping layers. Stereo, representative performance and other backends remain
+unverified. The older `xiiScreenRefractionTracePass` remains an explicit G-buffer
+normal UV perturbation operation; its synthetic tests do not establish this path's
+optical acceptance.
+
+Windows/MSVC Debug builds passed for GraphicsCore, GraphicsCoreTest,
+GraphicsFoundationTest, EditorFrameworkTest, EditorEngineProcessFrameworkTest and
+GpuDrivenScene using the isolated project-local runtime. Complete suite execution
+passed GraphicsCoreTest (81 subtests), Vulkan GraphicsFoundationTest (137) and
+Vulkan EditorEngineProcessFrameworkTest (76). RendererAssets passed deterministic
+exports of all eight source assets on two runs; EditorDocuments (20) and NodeLayout
+(3) passed. The runs emitted existing Vulkan unused-output and offscreen Qt font
+warnings. A final coherent-snapshot adjustment was rebuilt and rechecked with all
+81 CPU subtests, the three SceneRefraction GPU subtests and Editor composition.
+The rebuilt Vulkan sample explicitly completed 300 Scene renderer frames.
+Retained material/texture reload across intervening frames remains unverified.
+No generated pipeline resource is committed and no running user Editor
+was stopped. These are direct executable suite runs; no new CTest result or
+non-Vulkan backend result is claimed.
 
 ## Ballistic billboard particles
 
