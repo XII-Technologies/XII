@@ -4,9 +4,32 @@
 
 #include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Lighting/LocalShadow.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/SpotShadowPass.h>
 
 XII_CREATE_SIMPLE_TEST(Lighting, LocalShadows)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Authored spotlight limits survive reflection and reject invalid budgets")
+  {
+    xiiSpotShadowPass authored;
+    authored.m_uiMaximumLights = 2;
+    authored.m_uiResolution    = 512;
+    authored.m_fNearPlane      = 0.05f;
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(authored.GetProperties(properties));
+    xiiSpotShadowPass restored;
+    XII_TEST_RESULT(restored.Configure(properties));
+    XII_TEST_INT(restored.m_uiMaximumLights, 2);
+    XII_TEST_INT(restored.m_uiResolution, 512);
+    XII_TEST_FLOAT(restored.m_fNearPlane, 0.05f, 0);
+    properties.Insert("MaximumLights", 5U);
+    XII_TEST_BOOL(restored.Configure(properties).Failed());
+    properties.Insert("MaximumLights", 2U);
+    properties.Insert("Resolution", 0U);
+    XII_TEST_BOOL(restored.Configure(properties).Failed());
+    properties.Insert("Resolution", 512U);
+    properties.Insert("NearPlane", -1.0f);
+    XII_TEST_BOOL(restored.Configure(properties).Failed());
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Collision-free spot and point allocations")
   {
     xiiDynamicArray<xiiGpuLightData> lights;

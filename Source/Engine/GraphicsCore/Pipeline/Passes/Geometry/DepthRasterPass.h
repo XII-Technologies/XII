@@ -28,6 +28,7 @@ public:
   xiiRenderPipelineTextureInputPin  m_InputDepth{xiiGALResourceFormat::D32Float, true, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputDepth{xiiGALResourceFormat::D32Float, true, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::ReadWrite};
   xiiRenderPipelineDataInputPin     m_Cascades{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>(), true};
+  xiiRenderPipelineDataInputPin     m_Spots{xiiGetStaticRTTI<xiiSpotShadowSnapshot>(), true};
   bool                              m_bShadowCaster  = false;
   xiiUInt32                         m_uiCascadeIndex = 0;
 

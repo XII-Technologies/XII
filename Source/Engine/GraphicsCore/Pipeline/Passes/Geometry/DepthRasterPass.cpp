@@ -17,7 +17,7 @@
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 2, xiiRTTIDefaultAllocator<xiiDepthRasterPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 3, xiiRTTIDefaultAllocator<xiiDepthRasterPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -34,6 +34,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthRasterPass, 2, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("DepthTarget", m_InputDepth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SceneDepth", m_OutputDepth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("CascadeSnapshot", m_Cascades)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("SpotShadows", m_Spots)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ShadowCaster", m_bShadowCaster)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("CascadeIndex", m_uiCascadeIndex)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 3U)),
     XII_MEMBER_PROPERTY("Viewport", m_Viewport)->AddAttributes(new xiiDefaultValueAttribute(xiiVec4U32::MakeZero())),
@@ -105,9 +106,10 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
   {
     const auto  input    = context.GetInputData(m_Cascades);
     const auto* cascades = xiiDynamicCast<const xiiShadowCascadeSnapshot*>(input.Borrow());
-    if (!cascades || m_uiCascadeIndex >= cascades->m_Cascades.GetCount())
-      return context.ReportFailure("Active shadow rasterization requires its cascade snapshot.");
-    const auto resolution = cascades->m_uiResolution;
+    const auto  spots    = context.GetInputData(m_Spots).Downcast<const xiiSpotShadowSnapshot>();
+    if ((cascades && spots) || (!cascades && !spots) || m_uiCascadeIndex >= (spots ? spots->m_Views.GetCount() : cascades->m_Cascades.GetCount()))
+      return context.ReportFailure("Active shadow rasterization requires exactly one matching directional or spotlight snapshot.");
+    const auto resolution = spots ? spots->m_uiResolution : cascades->m_uiResolution;
     viewport              = xiiVec4U32((m_uiCascadeIndex % 2) * resolution, (m_uiCascadeIndex / 2) * resolution, resolution, resolution);
   }
   if (!(viewport.z && viewport.w) && viewport != xiiVec4U32::MakeZero())

@@ -10,6 +10,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
+#include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -710,6 +711,7 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   bounceDescription.m_BaseColor     = xiiColor::Black;
   bounceDescription.m_EmissiveColor = {4, 0.04f, 0.02f};
   const auto bounceMaterial         = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.GIEmitter", std::move(bounceDescription));
+  xiiMeshComponent* bounceGeometry[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     xiiGameObjectDescription description;
@@ -722,6 +724,7 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     xiiMeshComponent::CreateComponent(object, component);
     component->SetMesh(mesh);
     component->SetMaterialOverride(0, i ? bounceMaterial : receiverMaterial);
+    bounceGeometry[i] = component;
   }
   camera.LookAt({0, -3, 2.5f}, {0, 0.4f, 0.3f}, {0, 0, 1});
   xiiRenderPipelineResourceHandle irradiancePipelines[2][2];
@@ -815,4 +818,106 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     xiiTestFramework::Output(xiiTestOutput::Details, "Editor %s acceptance: %u Editor, %u Scene, %u matching final pixels.", feature ? "exposure" : "bloom", displayChanges[0], displayChanges[1], matchingDisplayChanges);
     XII_TEST_BOOL(displayChanges[0] > 8 && displayChanges[1] > 8 && matchingDisplayChanges > 8);
   }
+  for (auto* component : bounceGeometry)
+    component->SetActiveFlag(false);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    xiiGameObjectDescription description;
+    description.m_bDynamic      = true;
+    description.m_LocalPosition = i ? xiiVec3(0, 0, 0.5f) : xiiVec3(0, 0, -0.1f);
+    description.m_LocalScaling  = i ? xiiVec3(1) : xiiVec3(8, 8, 0.2f);
+    xiiGameObject* object       = nullptr;
+    world.CreateObject(description, object);
+    xiiMeshComponent* component = nullptr;
+    xiiMeshComponent::CreateComponent(object, component);
+    component->SetMesh(mesh);
+    component->SetMaterialOverride(0, receiverMaterial);
+  }
+  xiiGameObjectDescription spotDescription;
+  spotDescription.m_LocalPosition = {2, 1, 4};
+  spotDescription.m_LocalRotation = xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), -spotDescription.m_LocalPosition.GetNormalized());
+  xiiGameObject* spotObject       = nullptr;
+  world.CreateObject(spotDescription, spotObject);
+  xiiSpotLightComponent* spot = nullptr;
+  xiiSpotLightComponent::CreateComponent(spotObject, spot);
+  spot->SetIntensityUnit(xiiPhotometricUnit::Candela);
+  spot->SetIntensity(10);
+  spot->SetRange(15);
+  spot->SetInnerSpotAngle(xiiAngle::MakeFromDegree(65));
+  spot->SetOuterSpotAngle(xiiAngle::MakeFromDegree(80));
+  spot->SetCastShadows(true);
+  camera.SetExposure(8);
+  camera.LookAt({-4, -5, 3}, {0, 0, 0}, {0, 0, 1});
+  xiiRenderPipelineResourceHandle spotPipelines[2][2];
+  for (xiiUInt32 enabled = 0; enabled < 2; ++enabled)
+  {
+    xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    auto                                       sceneDefinition  = scene->GetAuthoring()->m_Descriptor;
+    auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
+    const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/SpotShadows");
+    const auto                                 prepare          = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneSpotShadows/World Spotlights");
+    const auto                                 irradiance       = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");
+    const auto                                 bounceDepth      = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth");
+    for (auto& pass : sceneDefinition.m_Passes)
+    {
+      if (pass.m_Id == occurrence)
+      {
+        auto& setting = pass.m_Overrides.ExpandAndGetRef();
+        setting.m_Path.PushBack(prepare);
+        setting.m_Properties.Insert("Enabled", enabled != 0);
+      }
+      if (pass.m_Id == irradiance)
+      {
+        auto& setting = pass.m_Overrides.ExpandAndGetRef();
+        setting.m_Path.PushBack(bounceDepth);
+        setting.m_Properties.Insert("Enabled", true);
+      }
+    }
+    for (auto& pass : editorDefinition.m_Passes)
+      if (pass.m_Definition == sceneDefinition.m_Id)
+      {
+        auto& setting = pass.m_Overrides.ExpandAndGetRef();
+        setting.m_Path.PushBack(occurrence);
+        setting.m_Path.PushBack(prepare);
+        setting.m_Properties.Insert("Enabled", enabled != 0);
+        auto& bounce = pass.m_Overrides.ExpandAndGetRef();
+        bounce.m_Path.PushBack(irradiance);
+        bounce.m_Path.PushBack(bounceDepth);
+        bounce.m_Properties.Insert("Enabled", true);
+      }
+    xiiStringBuilder name;
+    name.SetFormat("CanonicalRenderer.SpotEditor.{}", enabled);
+    spotPipelines[0][enabled] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(editorDefinition));
+    name.SetFormat("CanonicalRenderer.SpotScene.{}", enabled);
+    spotPipelines[1][enabled] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(sceneDefinition));
+  }
+  xiiDynamicArray<xiiUInt32> spotImages[2][4];
+  for (xiiUInt32 phase = 0; phase < 4; ++phase)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      views[view]->SetRenderPipelineResource(spotPipelines[view][phase % 2]);
+      xiiDisplayOutputSettings display;
+      display.m_Exposure.m_Mode = xiiExposureMode::Manual;
+      display.m_fBloomStrength  = 0;
+      XII_TEST_RESULT(views[view]->SetDisplayOutputSettings(display));
+    }
+    update(3);
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      if (!XII_TEST_RESULT_MSG(views[view]->GetLastRenderResult(), "%s", views[view]->GetRenderPipelineInstance().GetLastBuildError().GetStartPointer()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], spotImages[view][phase]))
+        return;
+  }
+  xiiUInt32 spotChanges[2] = {}, matchingSpotChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < spotImages[0][0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_TEST_INT(spotImages[view][0][pixel], spotImages[view][2][pixel]);
+      XII_TEST_INT(spotImages[view][1][pixel], spotImages[view][3][pixel]);
+      spotChanges[view] += spotImages[view][0][pixel] != spotImages[view][1][pixel];
+    }
+    matchingSpotChanges += spotImages[1][0][pixel] != spotImages[1][1][pixel] && spotImages[0][0][pixel] == spotImages[1][0][pixel] && spotImages[0][1][pixel] == spotImages[1][1][pixel];
+  }
+  xiiTestFramework::Output(xiiTestOutput::Details, "Editor spotlight acceptance: %u Editor, %u Scene, %u matching final pixels.", spotChanges[0], spotChanges[1], matchingSpotChanges);
+  XII_TEST_BOOL(spotChanges[0] > 8 && spotChanges[1] > 8 && matchingSpotChanges > 8);
 }

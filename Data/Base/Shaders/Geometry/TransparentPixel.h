@@ -6,6 +6,9 @@
 #include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
 #include <Shaders/Pipeline/Passes/Transparency/TransparentRasterConstants.h>
 #include <Shaders/Pipeline/SurfaceLocalLight.h>
+#if FORWARD_SPOT_SHADOWS
+#  include <Shaders/Pipeline/Passes/Shadows/SpotShadowSampling.h>
+#endif
 #if FORWARD_REFRACTION
 #  include <Shaders/Pipeline/Passes/Refraction/ForwardRefraction.h>
 #endif
@@ -23,7 +26,7 @@ StructuredBuffer<uint2>           g_LightGrid;
 StructuredBuffer<uint>            g_LightIndices;
 StructuredBuffer<uint>            g_Overflow;
 
-float3 xiiTransparentLocalLight(uint index, float3 world, float3 normal, float3 view, xiiSceneSurfaceSample surface, xiiGpuSurfaceMaterial material)
+float3 xiiTransparentLocalLight(uint index, float3 world, float3 normal, float3 view, xiiSceneSurfaceSample surface, xiiGpuSurfaceMaterial material, bool receives)
 {
   uint count, stride;
   g_Lights.GetDimensions(count, stride);
@@ -33,17 +36,22 @@ float3 xiiTransparentLocalLight(uint index, float3 world, float3 normal, float3 
   const uint            type  = GetLightType(light);
   if (type == XII_LIGHT_TYPE_DIRECTIONAL || type > XII_LIGHT_TYPE_TUBE || light.ColorAndIntensity.w <= 0)
     return 0;
-  return EvaluateLocalLightLayered(light, world, normal, view, surface.BaseColor.rgb, max(surface.Roughness, 0.01f), surface.Metallic, saturate(material.SurfaceParameters.y), surface.Transmission, saturate(material.LayerParameters.z), saturate(material.LayerParameters.w));
+  float3 result = EvaluateLocalLightLayered(light, world, normal, view, surface.BaseColor.rgb, max(surface.Roughness, 0.01f), surface.Metallic, saturate(material.SurfaceParameters.y), surface.Transmission, saturate(material.LayerParameters.z), saturate(material.LayerParameters.w));
+#if FORWARD_SPOT_SHADOWS
+  if (receives)
+    result *= xiiSampleSpotShadow(index, world, normal, g_CameraPositionAndNearPlane.xyz);
+#endif
+  return result;
 }
 
-float3 xiiTransparentClusterLights(uint2 pixel, float3 world, float3 normal, float3 view, xiiSceneSurfaceSample surface, xiiGpuSurfaceMaterial material)
+float3 xiiTransparentClusterLights(uint2 pixel, float3 world, float3 normal, float3 view, xiiSceneSurfaceSample surface, xiiGpuSurfaceMaterial material, bool receives)
 {
   float3 result = 0;
   if (g_Overflow[0] != 0)
   {
     uint count, stride;
     g_Candidates.GetDimensions(count, stride);
-    [loop] for (uint i = 0; i < count; ++i) result += xiiTransparentLocalLight(g_Candidates[i], world, normal, view, surface, material);
+    [loop] for (uint i = 0; i < count; ++i) result += xiiTransparentLocalLight(g_Candidates[i], world, normal, view, surface, material, receives);
   }
   else
   {
@@ -61,7 +69,7 @@ float3 xiiTransparentClusterLights(uint2 pixel, float3 world, float3 normal, flo
         const uint2 range = g_LightGrid[cluster];
         uint        capacity;
         g_LightIndices.GetDimensions(capacity, stride);
-        [loop] for (uint i = 0; i < min(range.y, Viewport.w); ++i) if (range.x < capacity && i < capacity - range.x) result += xiiTransparentLocalLight(g_LightIndices[range.x + i], world, normal, view, surface, material);
+        [loop] for (uint i = 0; i < min(range.y, Viewport.w); ++i) if (range.x < capacity && i < capacity - range.x) result += xiiTransparentLocalLight(g_LightIndices[range.x + i], world, normal, view, surface, material, receives);
       }
     }
   }
@@ -131,7 +139,11 @@ TransparentOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
 #endif
       lighting += BRDFLayered(surface.BaseColor.rgb, max(surface.Roughness, 0.01f), surface.Metallic, saturate(material.SurfaceParameters.y), surface.Transmission, saturate(material.LayerParameters.z), saturate(material.LayerParameters.w), surface.Normal, normalize(-EnvironmentDirectionAndIlluminance.xyz), view) * EnvironmentColorAndAngularRadius.rgb * EnvironmentDirectionAndIlluminance.w * visibility;
     }
-    lighting += xiiTransparentClusterLights(uint2(input.Position.xy), input.WorldPosition, surface.Normal, view, surface, material);
+    bool receives = true;
+#if FORWARD_SPOT_SHADOWS
+    receives = (input.SurfaceFlags & (1u << 3u)) != 0u;
+#endif
+    lighting += xiiTransparentClusterLights(uint2(input.Position.xy), input.WorldPosition, surface.Normal, view, surface, material, receives);
   }
 #if FORWARD_REFRACTION
   float3 atmosphericTransmission, atmosphericScattering;

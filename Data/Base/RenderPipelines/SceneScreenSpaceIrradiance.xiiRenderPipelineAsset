@@ -254,7 +254,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{16426160417551843304,9185843375471567954}}
-		u4 %Hash{2355705468526429072}
+		u4 %Hash{303125161336772338}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{17527460707750734110,4113445835405847170}}
@@ -1557,11 +1557,12 @@ o
 {
 	Uuid %id{u4{600512914285023517,7953483257674553232}}
 	s %t{"xiiRadianceAddPass"}
-	u3 %v{2}
+	u3 %v{3}
 	p
 	{
 		Uuid %A{u4{11365906901008876257,3125258184662897716}}
 		Uuid %Activation{u4{8944669819253621680,638201603913774989}}
+		b %AllowAbsentA{0}
 		b %AllowAbsentB{0}
 		b %AsyncCompute{0}
 		Uuid %B{u4{5246045460352631304,5858843602896280604}}
@@ -2565,7 +2566,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRadianceAddPass"}
-		u3 %TypeVersion{2}
+		u3 %TypeVersion{3}
 	}
 }
 o

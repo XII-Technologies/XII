@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Composition/RadianceAddConstants.h>
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRadianceAddPass,2,xiiRTTIDefaultAllocator<xiiRadianceAddPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRadianceAddPass,3,xiiRTTIDefaultAllocator<xiiRadianceAddPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -18,6 +18,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRadianceAddPass,2,xiiRTTIDefaultAllocator<xi
     XII_MEMBER_PROPERTY("ScaleB",m_fScaleB)->AddAttributes(new xiiDefaultValueAttribute(1.0f),new xiiClampValueAttribute(0.0f,xiiVariant())),
     XII_MEMBER_PROPERTY("Radiance",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("AllowAbsentB", m_bAllowAbsentB)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("AllowAbsentA", m_bAllowAbsentA)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Activation", m_Activation)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("RequireActivation", m_bRequireActivation)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("AsyncCompute",m_bAsyncCompute),
@@ -37,10 +38,12 @@ void xiiRadianceAddPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins
   for (xiiUInt32 i = first; i < out_pins.GetCount(); ++i)
   {
     if (!out_pins[i].m_bInput && out_pins[i].m_sName == "Radiance")
-      out_pins[i].m_bOptional = m_bRequireActivation;
+      out_pins[i].m_bOptional = m_bRequireActivation || (m_bAllowAbsentA && m_bAllowAbsentB);
+    if (out_pins[i].m_bInput && out_pins[i].m_sName == "A")
+      out_pins[i].m_bOptional = m_bAllowAbsentA;
     if (out_pins[i].m_bInput && out_pins[i].m_sName == "B")
       out_pins[i].m_bOptional = m_bAllowAbsentB;
-    if (!out_pins[i].m_bInput && out_pins[i].m_sName == "Radiance" && m_bAllowAbsentB)
+    if (!out_pins[i].m_bInput && out_pins[i].m_sName == "Radiance" && (m_bAllowAbsentA || m_bAllowAbsentB))
     {
       out_pins[i].m_Format                          = xiiGALResourceFormat::Unknown;
       out_pins[i].m_Constraints.m_RequiredBindFlags = xiiGALBindFlags::ShaderResource;
@@ -56,10 +59,15 @@ xiiResult xiiRadianceAddPass::Build(xiiRenderPipelinePassContext& context)
   const auto* aDescription = xiiCompositionPassUtils::Image(context, a);
   const auto  b            = context.GetInputTexture(this->m_B);
   const auto* bDescription = xiiCompositionPassUtils::Image(context, b);
-  if (!aDescription || (!b.IsValid() && !m_bAllowAbsentB) || (b.IsValid() && (!bDescription || aDescription->m_Size != bDescription->m_Size)))
+  if ((!a.IsValid() && !m_bAllowAbsentA) || (!b.IsValid() && !m_bAllowAbsentB) || (a.IsValid() && !aDescription) || (b.IsValid() && !bDescription) || (aDescription && bDescription && aDescription->m_Size != bDescription->m_Size))
     return context.ReportFailure("RadianceAdd requires matching nonempty float-readable RGBA single-sample 2D images.");
+  if (!a.IsValid() && !b.IsValid())
+    return XII_SUCCESS;
   if (!b.IsValid() && m_fScaleA == 1.0f)
     return context.SetOutput(m_Output, a);
+  if (!a.IsValid() && m_fScaleB == 1.0f)
+    return context.SetOutput(m_Output, b);
+  const auto size = aDescription ? aDescription->m_Size : bDescription->m_Size;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_Pipeline, "Shaders/Pipeline/Passes/Composition/RadianceAdd.xiiShader"));
   xiiRenderPassResourceScope scope(context);
   struct Data
@@ -71,10 +79,10 @@ xiiResult xiiRadianceAddPass::Build(xiiRenderPipelinePassContext& context)
     xiiRadianceAddConstants                  m_Snapshot;
   };
   const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_A=builder.ReadTexture(a,xiiGALResourceStateFlags::ShaderResource);
+    data.m_A=builder.ReadTexture(a.IsValid()?a:b,xiiGALResourceStateFlags::ShaderResource);
     data.m_B=builder.ReadTexture(b.IsValid()?b:a,xiiGALResourceStateFlags::ShaderResource);
-    data.m_Size=aDescription->m_Size; data.m_Output=xiiCompositionPassUtils::Output(builder,data.m_Size,xiiGALResourceFormat::RGBA32Float); data.m_Pipeline=m_Pipeline;
-    data.m_Snapshot.RadianceScales=xiiVec4(m_fScaleA,b.IsValid()?m_fScaleB:0.0f,0,0); data.m_Constants=xiiRenderPassUtils::Constants(builder,"Radiance weights",sizeof(xiiRadianceAddConstants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Size=size; data.m_Output=xiiCompositionPassUtils::Output(builder,data.m_Size,xiiGALResourceFormat::RGBA32Float); data.m_Pipeline=m_Pipeline;
+    data.m_Snapshot.RadianceScales=xiiVec4(a.IsValid()?m_fScaleA:0.0f,b.IsValid()?m_fScaleB:0.0f,0,0); data.m_Constants=xiiRenderPassUtils::Constants(builder,"Radiance weights",sizeof(xiiRadianceAddConstants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands=execute.GetCommandList(); commands.SetPipelineState(data.m_Pipeline.Borrow());
     { xiiGALMapHelper<xiiRadianceAddConstants> mapped(commands,execute.GetBuffer(data.m_Constants),xiiGALMapType::Write,xiiGALMapFlags::Discard); *mapped=data.m_Snapshot; }
     xiiGALStateTransitionDescription transition; transition.m_pResource=execute.GetBuffer(data.m_Constants); transition.m_NewState=xiiGALResourceStateFlags::ConstantBuffer; transition.m_TransitionFlags=xiiGALStateTransitionFlags::UpdateState; commands.TransitionResourceStates(xiiMakeArrayPtr(&transition,1));

@@ -12,6 +12,7 @@ class XII_GRAPHICSCORE_DLL xiiShadowCascadeViewPass final : public xiiRenderPipe
 
 public:
   xiiRenderPipelineDataInputPin            m_Cascades{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>(), true};
+  xiiRenderPipelineDataInputPin            m_Spots{xiiGetStaticRTTI<xiiSpotShadowSnapshot>(), true};
   xiiRenderPipelineBufferOutputPin         m_View{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_Candidates{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin         m_Raster{true, xiiGALBindFlags::UniformBuffer};

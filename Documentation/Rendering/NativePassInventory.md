@@ -21,7 +21,10 @@
 > are documented in SceneRenderer.md; the old fragment history below is unchanged.
 > SceneDirectionalShadows now composes four occurrences of SceneShadowCascade,
 > publishes a real caster atlas and applies its visibility to directional lighting.
-> Local, virtual and ray shadows remain separate integration work.
+> SceneSpotShadows now reuses the local projection planner, ShadowAtlas and four
+> perspective SceneShadowCascade occurrences. Opaque and transparent local-light
+> sampling and temporal provenance have production GPU acceptance. Point/area,
+> virtual and ray shadows remain separate integration work.
 > Scene now authors optional native-resolution TAA with explicit camera samples,
 > previous object/bone motion, depth rejection and recording-safe history slots.
 > Temporal upsampling and the other temporal filters remain separate acceptance work.
@@ -44,7 +47,7 @@
 > snapshot. The legacy ScreenRefractionTrace UV perturbation remains a separate operation;
 > its tests do not establish production optical transport. See SceneRenderer.md for limits.
 
-Current source inventory: **109 concrete reflected operation classes** in
+Current source inventory: **110 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.
@@ -80,7 +83,7 @@ updated or satisfied by genuinely rebuilt assets before the migration is complet
 | Refraction | 1 | `xiiScreenRefractionTracePass` |
 | Residency | 2 | `xiiGeometryUploadPass`, `xiiMaterialUploadPass` |
 | Sensors | 4 | `xiiDepthSensorPass`, `xiiInfraredSensorPass`, `xiiLidarSensorPass`, `xiiRgbSensorPass` |
-| Shadows | 11 | `xiiDirectionalShadowVisibilityPass`, `xiiShadowAtlasPass`, `xiiShadowCascadePass`, `xiiShadowCascadeViewPass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowPagePublishPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowTablesPass` |
+| Shadows | 12 | `xiiDirectionalShadowVisibilityPass`, `xiiShadowAtlasPass`, `xiiShadowCascadePass`, `xiiShadowCascadeViewPass`, `xiiSpotShadowPass`, `xiiVirtualShadowFeedbackPass`, `xiiVirtualShadowFeedbackReadbackPass`, `xiiVirtualShadowFeedbackResetPass`, `xiiVirtualShadowPagePublishPass`, `xiiVirtualShadowRasterWorkPass`, `xiiVirtualShadowSamplingConstantsPass`, `xiiVirtualShadowTablesPass` |
 | Streaming | 3 | `xiiGeometryLodFeedbackPass`, `xiiGeometryLodFeedbackReadbackPass`, `xiiGeometryLodFeedbackResetPass` |
 | Temporal | 4 | `xiiBufferHistoryPass`, `xiiTemporalAntiAliasingPass`, `xiiTemporalCameraPass`, `xiiTextureHistoryPass` |
 | Transparency | 1 | `xiiWeightedBlendedOITResolvePass` |
@@ -142,9 +145,9 @@ Do not restore the deleted runtime or put its complete state into a new manager.
 | Visibility | Instance/frustum/flags/mask culling and LOD selection/history are native. Meshlet culling and indirect dispatch preparation are now native; the InstanceVisibility and nested MeshletVisibility assets exercise them. Depth-pyramid construction and texture history are now independent native nodes. Instance occlusion is now an independent node with an ordinary authored resource. Meshlet occlusion is now independently authored as well. LOD streaming table initialization, demand generation and asynchronous request readback are independent native operations, consumed by the authored sample graph. Both vertex-pull and mesh-shader indirect command preparation are native. The old visibility manager/system and their shaders are deleted; remaining sample shadow/VSM/raster orchestration needs conversion. |
 | Geometry | Vertex-pull/mesh indirect draw preparation and nearest depth raster (mesh or vertex pull) are native. GBuffer material/identity/normal/roughness raster and object/skinning motion consume explicit inputs. Standalone camera/jitter history and velocity dilation remain required. SurfaceQuery now emits raster work directly from supplied constants/commands, without calling the legacy picking orchestrator. |
 | Lights | Cluster layout/bounds, list clear/assignment, emitted-power CDF preparation, world light snapshot/upload, directional selection and environment constants are independent native operations with authored assets. The old lighting context and registry are deleted. Shared device IES residency and reflection-probe selection remain. |
-| Shadows | Directional cascade construction/snapshot upload is native. Local atlas allocation/clear, directional/spot/point raster, ray shadow tracing/denoising, contact shadows and explicit virtual residency/publication operations. Feedback reset, generation and private asynchronous readback are now native; page raster uses ordinary ShadowMeshDepth instances. Replace the deleted composite-only ShadowMemory fixture with native operation tests. |
+| Shadows | Directional cascades and conventional spotlight projection/atlas/caster/sampling paths have production Scene/Editor acceptance. Point/area raster, ray shadow tracing/denoising, contact shadows and complete virtual residency/publication remain separate integration work. Feedback reset, generation and private asynchronous readback retain operation-level coverage. |
 | Atmosphere/environment | Constants, transmittance, approximate multiple scattering and aerial perspective composition are native. The unused atmosphere manager/global LUT cache is deleted. Sky irradiance convolution, environment/probe resources, complete scene consumers and safe LUT content caching remain. |
-| Direct illumination | Directional and clustered analytical local surface evaluation are now independent native operations in WorldSurfaceLighting. ReSTIR DI temporal/spatial/visibility/emissive visibility, local shadows, all-directional evaluation and complete forward/deferred composition remain. |
+| Direct illumination | Directional and clustered analytical local surface evaluation are independent native operations; canonical Scene includes per-spotlight shadow sampling in opaque/transparent lighting. ReSTIR DI temporal/spatial/visibility/emissive visibility, point/area shadows, all-directional evaluation and broader forward/deferred composition remain. |
 | Indirect illumination | DDGI and sparse-voxel scheduling/upload/preparation/environment seeding are independent native operations; their old context GPU orchestration is deleted. Geometry-dependent radiance updates, probe/environment preparation, ray GI tracing, ReSTIR GI temporal/spatial reuse and denoising remain. Confidence layering, diffuse material response and environment-specular BRDF response are now native operations; complete scene compositions remain open. |
 | Reflections | Ray-traced reflections and denoising. Screen trace, temporal filter and hybrid composition are native. |
 | Volumes | Froxel allocation, fog initialization, light injection, integration, resolve and temporal reprojection. |

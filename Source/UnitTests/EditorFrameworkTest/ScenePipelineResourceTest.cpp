@@ -8,7 +8,7 @@
 void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
 {
   const auto pipeline = scene.GetPipeline();
-  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 6);
+  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 7);
   XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Particles));
   XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting));
   XII_TEST_INT(pipeline->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
@@ -22,7 +22,7 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   }
   for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion", "ShadowAtlas", "ShadowVisibility", "ScreenReflections", "ReflectionLighting", "TransparentAccumulation", "TransparentRevealage", "TransparentAdditive", "TransparentModulation", "TransparentHistoryTrust"})
     XII_TEST_BOOL(pipeline->FindInterface(name, false) != xiiInvalidIndex);
-  for (const xiiStringView name : {"ScreenReflections", "ReflectionLighting", "ScreenIrradiance", "BounceRadiance", "TransparentAccumulation", "TransparentRevealage", "TransparentAdditive", "TransparentModulation", "TransparentHistoryTrust"})
+  for (const xiiStringView name : {"ScreenReflections", "ReflectionLighting", "ScreenIrradiance", "BounceRadiance", "SpotShadowAtlas", "SpotShadows", "TransparentAccumulation", "TransparentRevealage", "TransparentAdditive", "TransparentModulation", "TransparentHistoryTrust"})
   {
     const auto index = pipeline->FindInterface(name, false);
     if (XII_TEST_BOOL(index != xiiInvalidIndex))
@@ -53,6 +53,9 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
         diffuseBounce        = additive && additive->Get<bool>();
       }
       reactiveBounce |= consumer.m_pType->GetTypeName() == "xiiTemporalAntiAliasingPass" && connection.m_sInput == "ReactiveRadiance";
+      if (consumer.m_pType->GetTypeName() == "xiiRadianceAddPass")
+        for (const auto& next : descriptor.m_Connections)
+          reactiveBounce |= next.m_uiSource == connection.m_uiTarget && descriptor.m_Passes[next.m_uiTarget].m_pType->GetTypeName() == "xiiTemporalAntiAliasingPass" && next.m_sInput == "ReactiveRadiance";
     }
   XII_TEST_BOOL(diffuseBounce && reactiveBounce);
   for (const auto& pass : descriptor.m_Passes)

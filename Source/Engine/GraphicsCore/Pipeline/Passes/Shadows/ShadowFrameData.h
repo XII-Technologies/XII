@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -17,6 +19,28 @@ public:
   const xiiStaticArray<xiiShadowCascadeDescription, 4> m_Cascades;
   const xiiUInt32                                      m_uiResolution;
   const xiiRenderGraphBufferHandle                     m_hConstants;
+};
+
+struct xiiSpotShadowDescription
+{
+  xiiMat4   m_ViewProjection;
+  xiiVec3   m_Position;
+  float     m_fTanHalfAngle;
+  xiiUInt32 m_uiLightIndex;
+  float     m_fFadeDistance;
+};
+
+/// Current view's bounded spotlight projections and immutable sampling/receiver uploads.
+class XII_GRAPHICSCORE_DLL xiiSpotShadowSnapshot final : public xiiRenderPipelineFrameData
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiSpotShadowSnapshot, xiiRenderPipelineFrameData);
+
+public:
+  xiiSpotShadowSnapshot(xiiUInt64 setup, const xiiStaticArray<xiiSpotShadowDescription, 4>& views, xiiUInt32 resolution, xiiRenderGraphBufferHandle constants, xiiRenderGraphBufferHandle receivers) :
+    xiiRenderPipelineFrameData(setup), m_Views(views), m_uiResolution(resolution), m_hConstants(constants), m_hReceivers(receivers) {}
+  const xiiStaticArray<xiiSpotShadowDescription, 4> m_Views;
+  const xiiUInt32                                   m_uiResolution;
+  const xiiRenderGraphBufferHandle                  m_hConstants, m_hReceivers;
 };
 
 /// Frame-local GPU bindings and addressing, never serialized scene identities.
