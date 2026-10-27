@@ -183,8 +183,19 @@ static void TestSceneReflections(bool extendedFormats)
     foreignView->SetViewport({0, 0, 257, 193});
     foreignView->SetRenderTargetView(foreignTarget->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
-  for (xiiUInt32 phase = 0; phase < 11; ++phase)
+  for (xiiUInt32 phase = 0; phase < 13; ++phase)
   {
+    if (phase == 11)
+    {
+      xiiMaterialResourceDescriptor unlit;
+      unlit.m_BaseColor    = xiiColor(0.2f, 0.3f, 0.4f);
+      unlit.m_ShadingModel = xiiMaterialShadingModel::Unlit;
+      unlit.m_fRoughness   = 0.05f;
+      unlit.m_fMetallic    = 1;
+      floor->SetMaterialOverride(0, xiiResourceManager::CreateResource<xiiMaterialResource>("Reflection.Unlit", std::move(unlit)));
+    }
+    if (phase == 12)
+      floor->SetMaterialOverride(0, floorMaterial);
     if (phase == 1)
       box->SetMaterialOverride(0, blueMaterial);
     if (phase == 2)
@@ -354,7 +365,9 @@ static void TestSceneReflections(bool extendedFormats)
       XII_TEST_BOOL(xiiMath::Abs(redPosition / redHits - stationaryCentroid) > 5);
     if (phase == 8)
       XII_TEST_BOOL(hits == 0 && changed == 0);
-    if (phase >= 6 && phase != 8)
+    if (phase == 11)
+      XII_TEST_BOOL(floorHits == 0 && floorEnergy == 0);
+    if (phase >= 6 && phase != 8 && phase != 11)
       XII_TEST_BOOL(floorHits > 8 && redHits > 8 && changed > 8);
     if (phase == 0)
       for (xiiUInt32 variant = 0; variant < 2; ++variant)

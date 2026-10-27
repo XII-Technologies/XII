@@ -3,6 +3,7 @@
 ALL
 [COMPUTE_SHADER]
 #include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/GBufferMaterial.h>
 #include <Shaders/Pipeline/Passes/Lighting/SurfaceLightingConstants.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 Texture2D<float> g_SurfaceDepth;
@@ -20,7 +21,8 @@ void main(uint3 tid:SV_DispatchThreadID)
   if(isfinite(depth) && depth>0 && depth<=1)
   {
     const float4 albedo=g_SurfaceAlbedo.Load(int3(tid.xy,0)), material=g_SurfaceMaterial.Load(int3(tid.xy,0));
-    const uint flags=(uint)round(saturate(material.a)*255);
+    if(!xiiGBufferReceivesLighting(material)){g_Lighting[tid.xy]=float4(0,0,0,1);return;}
+    const uint flags=xiiGBufferMaterialFlags(material.a);
     const float transmission=(flags&64)!=0 ? saturate(g_SurfaceEmissive.Load(int3(tid.xy,0)).a):0;
     const float4 incident=SurfaceExtent.z!=0 ? g_Irradiance.Load(int3(tid.xy,0)):0;
     const float3 irradiance=lerp(max(EnvironmentAmbientRadiance.rgb,0),max(incident.rgb,0),saturate(incident.a));

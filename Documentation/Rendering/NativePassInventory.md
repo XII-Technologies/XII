@@ -7,6 +7,9 @@
 > Operation-level history below does not certify Scene integration. Scene's
 > spatial AO extension reuses the two AO operations; temporal and ray-traced AO
 > remain separate acceptance work.
+> Canonical G-buffer material packing now carries an explicit unlit policy, with
+> production GPU checks for sampled emission, deferred lighting exclusion and SSR
+> receiver exclusion. Retained ReSTIR shader compilation is not runtime acceptance.
 > Scene now references the four-operation SceneAtmosphere workload for optional
 > world-selected sky/aerial rendering. Its production resource and GPU contracts
 > are documented in SceneRenderer.md; the old fragment history below is unchanged.

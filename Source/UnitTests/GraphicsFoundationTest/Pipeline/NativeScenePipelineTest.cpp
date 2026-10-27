@@ -39,6 +39,187 @@
 #include <Texture/Utilities/TextureAssetFile.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeScenePipeline);
+XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueMaterialLightingAndPackedFlags)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  const auto                                 scene = xiiLoadPipelineLibraryResource("Scene");
+  xiiResourceLock<xiiRenderPipelineResource> loaded(scene, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring()))
+    return;
+  auto definition = loaded->GetAuthoring()->m_Descriptor;
+  for (auto& pass : definition.m_Passes)
+    if (pass.m_pType && (pass.m_pType->GetTypeName() == "xiiTemporalAntiAliasingPass" || pass.m_pType->GetTypeName() == "xiiTemporalCameraPass" || pass.m_pType->GetTypeName() == "xiiAmbientOcclusionPass"))
+      pass.m_Properties.Insert("Enabled", false);
+  const auto                          source = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("OpaqueMaterial.Scene", std::move(definition));
+  xiiRenderPipelineResourceDescriptor root;
+  root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, source.GetResourceID()});
+  const auto node = root.AddSubgraph("Authored Scene", loaded->GetAuthoring()->m_Descriptor.m_Id);
+  for (const xiiStringView pin : {"HDRSceneColor", "DirectLighting", "AmbientLighting", "Material", "Emissive", "SceneDepth", "ObjectId"})
+  {
+    const auto sink = root.AddPass(pin, xiiRTTI::FindTypeByName("xiiScenePipelineTestExport"));
+    XII_TEST_RESULT(root.Connect(node, pin, sink, "Input"));
+    root.m_Interface.PushBack({pin, false, root.m_Passes[sink].m_Id, "Output"});
+  }
+  const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("OpaqueMaterial.Root", std::move(root));
+  xiiGeometry geometry;
+  geometry.AddBox(xiiVec3(1), true);
+  geometry.ComputeTangents();
+  xiiMeshResourceDescriptor meshDescription;
+  meshDescription.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
+  meshDescription.AddSection(12, 0, 0);
+  meshDescription.ComputeBounds();
+  const auto          mesh = xiiResourceManager::CreateResource<xiiMeshResource>("OpaqueMaterial.Box", std::move(meshDescription));
+  xiiWorldDescription worldDescription("Opaque material world");
+  xiiWorld            world(worldDescription);
+  XII_LOCK(world.GetWriteMarker());
+  world.SetWorldSimulationEnabled(false);
+  xiiGameObjectDescription objectDescription;
+  xiiGameObject*           object = nullptr;
+  world.CreateObject(objectDescription, object);
+  xiiMeshComponent* component = nullptr;
+  xiiMeshComponent::CreateComponent(object, component);
+  component->SetMesh(mesh);
+  xiiGameObjectDescription sunDescription;
+  sunDescription.m_LocalRotation = xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), -xiiVec3::MakeAxisZ());
+  xiiGameObject* sunObject       = nullptr;
+  world.CreateObject(sunDescription, sunObject);
+  xiiDirectionalLightComponent* sun = nullptr;
+  xiiDirectionalLightComponent::CreateComponent(sunObject, sun);
+  sun->SetIntensityUnit(xiiPhotometricUnit::Lux);
+  xiiGameObjectDescription pointDescription;
+  pointDescription.m_LocalPosition = {0, 0, 2};
+  xiiGameObject* pointObject       = nullptr;
+  world.CreateObject(pointDescription, pointObject);
+  xiiPointLightComponent* point = nullptr;
+  xiiPointLightComponent::CreateComponent(pointObject, point);
+  point->SetIntensityUnit(xiiPhotometricUnit::Candela);
+  point->SetRange(5);
+  xiiCamera camera;
+  camera.LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+  camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 2, 0.1f, 100);
+  camera.SetExposure(8);
+  xiiView* view = nullptr;
+  world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Opaque material acceptance", view);
+  view->SetCamera(&camera);
+  view->SetRenderPipelineResource(pipeline);
+  view->SetViewport({0, 0, 65, 49});
+  xiiGALTextureCreationDescription targetDescription;
+  targetDescription.m_Type      = xiiGALResourceDimension::Texture2D;
+  targetDescription.m_Size      = {65, 49};
+  targetDescription.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
+  targetDescription.m_BindFlags = xiiGALBindFlags::RenderTarget;
+  auto target                   = environment.GetDevice()->CreateTexture(targetDescription);
+  view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  xiiDisplayOutputSettings display;
+  display.m_Exposure.m_Mode = xiiExposureMode::Manual;
+  display.m_fBloomStrength  = 0;
+  XII_TEST_RESULT(view->SetDisplayOutputSettings(display));
+  const auto texture = [](xiiStringView name, xiiColorGammaUB texel) {
+    xiiGALTextureSubResourceData   pixels(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(&texel), sizeof(texel)), sizeof(texel), sizeof(texel));
+    xiiTexture2DResourceDescriptor descriptor;
+    descriptor.m_TextureDescription.m_Type   = xiiGALResourceDimension::Texture2D;
+    descriptor.m_TextureDescription.m_Size   = {1, 1};
+    descriptor.m_TextureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+    descriptor.m_InitialContent              = xiiMakeArrayPtr(&pixels, 1);
+    return xiiResourceManager::CreateResource<xiiTexture2DResource>(name, std::move(descriptor));
+  };
+  const auto                 baseTexture   = texture("OpaqueMaterial.Base", {128, 64, 255, 255});
+  const auto                 normalTexture = texture("OpaqueMaterial.Normal", {128, 128, 255, 255});
+  xiiDynamicArray<xiiUInt32> baseline, unlitImage;
+  float                      baselineDepth = 0;
+  xiiUInt32                  baselineId    = 0;
+  for (xiiUInt32 phase = 0; phase < 10; ++phase)
+  {
+    xiiMaterialResourceDescriptor material;
+    material.m_BaseColor       = {0.2f, 0.4f, 0.8f};
+    material.m_EmissiveColor   = {0.01f, 0.02f, 0.03f};
+    material.m_fSheenRoughness = phase == 8 ? 0.5f : 1.0f;
+    if (phase >= 2 && phase <= 4)
+      material.m_ShadingModel = xiiMaterialShadingModel::Unlit;
+    if (phase == 4)
+      material.m_hBaseColorTexture = baseTexture;
+    if (phase == 5)
+      material.m_FeatureFlags.Remove(xiiMaterialFeatureFlags::ReceivesLighting);
+    if (phase == 6)
+      material.m_hNormalTexture = normalTexture;
+    if (phase == 7)
+      material.m_fTransmission = 0.5f;
+    xiiStringBuilder name;
+    name.SetFormat("OpaqueMaterial.Surface.{}", phase);
+    component->SetMaterialOverride(0, xiiResourceManager::CreateResource<xiiMaterialResource>(name, std::move(material)));
+    sun->SetIntensity(phase == 3 ? 50.0f : phase == 1 ? 5.0f :
+                                                        1.0f);
+    point->SetIntensity(phase == 3 ? 100.0f : phase == 1 ? 10.0f :
+                                                           2.0f);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    if (!XII_TEST_RESULT_MSG(view->GetLastRenderResult(), "%s", view->GetRenderPipelineInstance().GetLastBuildError().GetStartPointer()))
+      return;
+    const auto image = [&](xiiStringView pin) {
+      auto&       instance = view->GetRenderPipelineInstance();
+      const auto* binding  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface(pin, false));
+      return view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture);
+    };
+    struct Half4
+    {
+      XII_DECLARE_POD_TYPE();
+      xiiFloat16 x, y, z, w;
+    } emission;
+    xiiVec4   hdr, ambient, direct;
+    xiiUInt32 flags = 0, id = 0;
+    float     depth = 0;
+    if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image("HDRSceneColor").Borrow(), 32, 24, hdr) ||
+        !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image("AmbientLighting").Borrow(), 32, 24, ambient) ||
+        !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image("DirectLighting").Borrow(), 32, 24, direct) ||
+        !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image("Emissive").Borrow(), 32, 24, emission) ||
+        !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image("Material").Borrow(), 32, 24, flags) ||
+        !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image("ObjectId").Borrow(), 32, 24, id) ||
+        !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image("SceneDepth").Borrow(), 32, 24, depth))
+      return;
+    xiiDynamicArray<xiiUInt32> final;
+    if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), target, final))
+      return;
+    const xiiUInt32 expectedFlags = phase >= 2 && phase <= 5 ? 1 : phase == 7 ? 64 :
+      phase == 8                                                              ? 128 :
+                                                                                0;
+    XII_TEST_INT(flags >> 24, expectedFlags);
+    XII_TEST_BOOL(id != 0 && hdr.IsValid());
+    if (phase == 0)
+    {
+      baselineDepth = depth;
+      baselineId    = id;
+    }
+    XII_TEST_FLOAT(depth, baselineDepth, 0);
+    XII_TEST_INT(id, baselineId);
+    if (phase >= 2 && phase <= 5)
+    {
+      XII_TEST_BOOL(ambient.GetAsVec3() == xiiVec3::MakeZero());
+      XII_TEST_FLOAT(float(direct.x) + float(direct.y) + float(direct.z), 0, 0);
+      XII_TEST_FLOAT(hdr.x, float(emission.x), 1e-5f);
+      XII_TEST_FLOAT(hdr.y, float(emission.y), 1e-5f);
+      XII_TEST_FLOAT(hdr.z, float(emission.z), 1e-5f);
+      const xiiVec3 expected = phase == 4 ? xiiVec3(0.2f * 128 / 255 + 0.01f, 0.4f * 64 / 255 + 0.02f, 0.83f) : xiiVec3(0.21f, 0.42f, 0.83f);
+      XII_TEST_BOOL(hdr.GetAsVec3().IsEqual(expected, 0.001f));
+    }
+    else
+      XII_TEST_BOOL(ambient.x > 0 && float(direct.x) > 0);
+    if (phase == 0)
+      baseline = final;
+    if (phase == 1)
+      XII_TEST_BOOL(final != baseline);
+    if (phase == 2)
+      unlitImage = final;
+    if (phase == 3 || phase == 5)
+      XII_TEST_BOOL(final == unlitImage);
+    if (phase == 9)
+      XII_TEST_BOOL(final == baseline);
+  }
+}
 XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposureEpoch)
 {
   xiiGPUTestingEnvironment environment;
