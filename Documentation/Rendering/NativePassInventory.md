@@ -20,6 +20,13 @@
 > previous object/bone motion, depth rejection and recording-safe history slots.
 > Temporal upsampling and the other temporal filters remain separate acceptance work.
 
+> SceneScreenSpaceIrradiance now reuses a depth gate, gated radiance addition and
+> corrected world-space hemisphere tracing for optional visible single-bounce
+> diffuse transport. Real geometry, emission, blockers, material response and final
+> output have production GPU acceptance. Conservative TAA radiance rejection handles
+> disappearance. DDGI/voxel seeding and gathers remain operation-level work; this
+> integration does not certify offscreen, multibounce or probe transport.
+
 > Scene now references an optional eight-operation screen-reflection workload with
 > real closest/farthest depth bounds, filtered radiance, GGX lookup and HDR composition.
 > Spatial output has Scene GPU acceptance; environment probes and SSR history remain separate work.

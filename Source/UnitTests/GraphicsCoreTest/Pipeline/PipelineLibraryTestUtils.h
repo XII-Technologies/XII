@@ -29,7 +29,7 @@ inline xiiRenderPipelineResourceHandle xiiLoadPipelineLibraryResource(xiiStringV
 {
   // RendererAssets exports these authored sources through the production compiler.
   // No generated pipeline bytes are checked into the SDK data directory.
-  for (const xiiStringView canonical : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "Scene", "Editor"})
+  for (const xiiStringView canonical : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene", "Editor"})
   {
     xiiStringBuilder file(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", canonical, ".xiiBinRenderPipeline");
     file.MakeCleanPath();

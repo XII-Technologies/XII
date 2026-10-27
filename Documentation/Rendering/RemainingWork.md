@@ -24,13 +24,13 @@ orchestration descriptions do not describe the current defaults.
   opaque unlit emission and packed deferred flags now have production GPU acceptance;
   layered sheen/clearcoat/anisotropy evaluation remains a separate material workload.
 - Add volumetric/rough refraction, lit/atmospheric and advanced particle renderers, local/virtual/ray shadows, environment convolution, reflection history/probes,
-  GI and temporal upsampling only through complete, independently observable
+  offscreen/multibounce GI and temporal upsampling only through complete, independently observable
   rendering paths. Existing operation classes and focused tests do not establish
   complete production implementations. Atmospheric sky/aerial perspective now
   execute only with a selected world atmosphere. Conventional directional cascades
   execute only for the selected shadow-casting sun. Render-resolution TAA and spatial screen reflections are integrated
   as authored opt-ins. Transparent world meshes now render through a separately authored
-  workload, gated by configuration and eligible content. Thin-slab screen refraction now uses explicit transparent materials' IOR, thickness, tint and transmission, with an immutable opaque background. Unlit ballistic billboards append to the same layers; the remaining paths are not enabled.
+  workload, gated by configuration and eligible content. Thin-slab screen refraction now uses explicit transparent materials' IOR, thickness, tint and transmission, with an immutable opaque background. Unlit ballistic billboards append to the same layers. Single-bounce screen-space diffuse transport now adds visible direct/emissive radiance through an authored opt-in; offscreen/probe/voxel GI remains separate work.
 - Establish representative CPU/GPU timing, queue/submission and memory baselines.
   Optimize from those measurements, including the repeated Editor query work.
   Do not add subgraphs or authored assets without a concrete reusable workload.
@@ -59,7 +59,7 @@ its own focused PR and production GPU comparisons before its status changes.
 | Reflections | Screen-space trace/temporal filter, BRDF/environment specular and confidence composition | Opt-in spatial SSR integrated with real depth/radiance mip producers, explicit zero-contribution misses and material-sensitive final output; environment/probe response, reflection history, TAA reactive-mask quality and representative glossy transport/performance remain |
 | Transparency and refraction | Canonical forward transparent raster with dielectric slab tracing, weighted alpha/additive/modulation resolve and separate legacy UV refraction | World-mesh blending and thin-slab refraction are integrated with Scene/Editor GPU output, fragment-local lights/shadows/atmosphere and conservative temporal trust; opaque-transmission routing, rough/volume/multiple-interface transport, transparent ray targets/shadow casting, motion-aware AA, skinning/IES-specific acceptance and representative performance remain |
 | Particles | World birth upload, GPU ballistic trajectories, billboard append and separate explicit Euler integration | Unlit ballistic point/sphere/volume-box burst/continuous billboards are integrated through Scene/Editor with materials, soft depth, shared transparency and temporal trust; lit/atmospheric, stretched/mesh/ribbon/volume renderers, graph/force/collision/event/sort/molecular execution and representative performance remain |
-| Global illumination | DDGI and sparse-voxel scheduling, upload, environment seed and gather; screen irradiance | Geometry-dependent transport and visibility, real radiance updates, bounded residency and final indirect-light acceptance; environment seeding is not scene GI |
+| Global illumination | Three-operation screen irradiance workload; separate DDGI and sparse-voxel scheduling, upload, environment seed and gather | Opt-in geometry-dependent single-bounce screen-space transport has Scene GPU response, visibility, independent-view and temporal rejection acceptance. Offscreen/probe/voxel transport, multibounce updates, denoising, bounded residency and representative performance remain; environment seeding is not scene GI |
 
 The historical native-pass inventory must not be used to close any of these
 production gaps. Sensor and optional hardware-ray pipelines stay separate from
