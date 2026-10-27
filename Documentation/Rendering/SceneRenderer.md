@@ -151,3 +151,71 @@ Asset Profiles against the actual asset. Retired or deleted selections remain
 errors; they are not silently replaced by Scene. Applying the profile writes its
 matching runtime configuration. A stale runtime profile can otherwise retain an
 old selection even when the current profile schema has changed.
+
+## Ambient visibility
+
+Scene connects its actual depth and material normals to `xiiAmbientOcclusionPass`
+with `UseRayTracing=false`. `xiiAmbientOcclusionTemporalPass` runs with
+`UseHistory=false` to perform only edge-aware spatial filtering. Its `StableAO`
+feeds the existing optional `Occlusion` input of diffuse surface lighting. The
+normal HDR combination, display operations and Editor composition consume the
+result. Root outputs retain their contracts; optional `AmbientOcclusion` exposes
+the visibility mask for inspection.
+
+| Resource | Producer and format | Consumer |
+| --- | --- | --- |
+| SceneDepth | DepthRaster, reversed-Z D32Float at render resolution | AO reconstruction and spatial edge rejection |
+| NormalRoughness | GBufferRaster, RGBA8UNormalized | AO world-space hemisphere sampling |
+| Normal | GBufferRaster, RG16SNormalized octahedral normals | Spatial edge rejection |
+| RawAO | AmbientOcclusion, R8UNormalized SRV/UAV | Spatial filter |
+| StableAO | Spatial filter, R8UNormalized SRV/UAV | DiffuseSurfaceLighting.Occlusion |
+
+Both masks are graph transients at the current render resolution. The spatial
+path allocates no surface history, readiness fences or retained mask images.
+Sampling uses a fixed spatial phase and reconstructs neighbours at their actual
+texel centers. The radius is in world units; pixel stride and sample counts
+control the screen-space search. Scene authors radius 2, pixel stride 2, eight
+directions, four steps and full spatial weighting. Other tuning remains reflected
+on the two existing operations.
+
+Setting the AO occurrence's `Enabled=false` publishes an absent optional mask.
+The filter emits no work for that absence, and diffuse lighting preserves its
+unoccluded result. It does not suppress direct lighting, emission or authored
+material occlusion. R8 storage requires `TextureUAVExtendedFormats`; an enabled
+path reports an explicit build failure when that capability is unavailable.
+An authored disabled occurrence is the supported fallback, with no replacement
+algorithm selected implicitly.
+
+This integration is screen-space ambient visibility, with the usual missing
+offscreen and hidden geometry. It is not ray-traced visibility or indirect light
+transport. Scene deliberately does not use temporal AO yet: surface raster
+constants currently repeat the current camera matrix as the previous matrix.
+The retained temporal operation has occurrence-local, completion-aware slots and
+revision-checked recording ownership, but needs a complete motion contract and
+moving-scene acceptance before production temporal use.
+
+Vulkan acceptance uses a material-bearing cube contacting a real floor, a world
+directional light and manual exposure. Full image readbacks compare AO enabled
+and disabled: depth and direct illumination are identical, ambient diffuse equals
+the unoccluded result multiplied by the mask, and the HDR delta equals the ambient
+delta. At 129 by 97, 492 final pixels change and minimum visibility is 189/255.
+Deleting the occluder restores a neutral mask and identical final images while
+the second world's contact occlusion remains active. Odd resizing, resource
+reload, camera-history invalidation and independent views/worlds are exercised.
+
+The canonical Editor GPU regression compares contact pixels with Scene and then
+disables only its nested AO occurrence, verifying brighter Editor output and an
+unchanged Scene view. Separate GPU cases execute AO recordings after their pass,
+views and world are destroyed, reject history promotion after invalidation during
+setup, and explicitly disable extended storage formats on the device. The latter
+requires enabled AO to fail diagnostically and disabled AO to build without a
+mask. Focused captures are `SceneAO-Enabled.png`, `SceneAO-Disabled.png` and
+`SceneAO-Mask.png` in the test output directory. These are generated evidence,
+not source assets or cross-backend certification.
+
+The extension passed the Windows/MSVC Debug GraphicsCore and GraphicsFoundation
+suites, the full EditorEngineProcessFramework suite, EditorDocuments, and the
+production RendererAssets export fixture on Vulkan. Repeated Scene/Editor exports
+are byte-identical, their source identities are preserved and no compiled pipeline
+is tracked. Other backends, representative large-world performance and interactive
+desktop acceptance remain unverified.

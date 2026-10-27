@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 [PLATFORMS]
 ALL
 
@@ -32,7 +34,8 @@ void main(uint3 tid : SV_DispatchThreadID)
   const float2 uv       = (float2(tid.xy) + 0.5f) / float2(dimensions);
   const float3 worldPos = ReconstructWorldPos(uv, depth);
   const float3 normal   = DecodeOctNormal(g_NormalRoughness.Load(int3(tid.xy, 0)).rg);
-  const float phase     = InterleavedGradientNoise(float2(tid.xy), g_FrameIndex) * 6.28318530718f;
+  // Stable spatial sampling also supports authored pipelines without temporal accumulation.
+  const float phase     = InterleavedGradientNoise(float2(tid.xy), 0U) * 6.28318530718f;
   const float2 invDimensions = rcp(float2(dimensions));
 
   float occlusion = 0.0f;
@@ -47,9 +50,13 @@ void main(uint3 tid : SV_DispatchThreadID)
     [loop]
     for (uint stepIndex = 1U; stepIndex <= StepCount; ++stepIndex)
     {
-      const float2 sampleUv = uv + direction * (float(stepIndex) * PixelStride) * invDimensions;
+      float2 sampleUv = uv + direction * (float(stepIndex) * PixelStride) * invDimensions;
       if (any(sampleUv <= 0.0f) || any(sampleUv >= 1.0f))
         continue;
+
+      // Reconstruct at the texel actually selected by point sampling. Reconstructing
+      // a neighbour's depth at a fractional UV creates false occlusion on flat surfaces.
+      sampleUv = (floor(sampleUv * float2(dimensions)) + 0.5f) * invDimensions;
 
       const float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, sampleUv, 0.0f);
       if (sampleDepth <= 0.0f)

@@ -11,6 +11,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -234,5 +235,79 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     XII_TEST_BOOL(xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), paneTargets[i].Borrow(), 48, 48, grid));
     XII_TEST_BOOL(grid != background);
     module->DestroyView(panes[i]->GetHandle());
+  }
+
+  // Compare actual contact-occluded geometry through Scene and Editor, then
+  // disable only Editor's nested AO occurrence through an authored override.
+  world.DeleteObjectNow(owners[1]);
+  xiiGameObjectDescription floorDescription;
+  floorDescription.m_LocalPosition = {0, 0, -0.6f};
+  floorDescription.m_LocalScaling  = {8, 8, 0.2f};
+  xiiGameObject* floor             = nullptr;
+  world.CreateObject(floorDescription, floor);
+  xiiStaticMeshComponent* floorMesh = nullptr;
+  xiiStaticMeshComponent::CreateComponent(floor, floorMesh);
+  floorMesh->SetMesh(mesh);
+  floorMesh->SetMaterialOverride(0, material);
+  light->SetIntensity(0.1f);
+  camera.LookAt({-4, -5, 2.5f}, {0, 0, -0.3f}, {0, 0, 1});
+  camera.SetExposure(8);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    auto target   = targets[i]->GetDescription();
+    target.m_Size = {129, 97};
+    targets[i]    = environment.GetDevice()->CreateTexture(target);
+    views[i]->SetRenderTargetView(targets[i]->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    views[i]->SetViewport({0, 0, 129, 97});
+    views[i]->SetRenderScale(1);
+  }
+  update(4);
+  for (auto* view : views)
+    XII_TEST_RESULT(view->GetLastRenderResult());
+  xiiUInt32 contact[2] = {};
+  for (xiiUInt32 y = 53; y <= 55; ++y)
+    for (xiiUInt32 x = 64; x <= 66; ++x)
+    {
+      xiiUInt32 values[2] = {};
+      for (xiiUInt32 i = 0; i < 2; ++i)
+        if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[i].Borrow(), x, y, values[i]))
+          return;
+      XII_TEST_INT(values[0], values[1]);
+      if (x == 65 && y == 54)
+      {
+        contact[0] = values[0];
+        contact[1] = values[1];
+      }
+    }
+  xiiRenderPipelineResourceDescriptor disabledEditor;
+  {
+    xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    xiiResourceLock<xiiRenderPipelineResource> editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(scene.IsValid() && editor.IsValid() && scene->GetAuthoring() && editor->GetAuthoring()))
+      return;
+    disabledEditor       = editor->GetAuthoring()->m_Descriptor;
+    xiiUInt32 overridden = 0;
+    for (auto& pass : disabledEditor.m_Passes)
+      if (pass.m_Definition == scene->GetAuthoring()->m_Descriptor.m_Id)
+      {
+        auto& override = pass.m_Overrides.ExpandAndGetRef();
+        override.m_Path.PushBack(xiiFindPipelineTestPass(scene->GetAuthoring()->m_Descriptor, "xiiAmbientOcclusionPass"));
+        override.m_Properties.Insert("Enabled", false);
+        ++overridden;
+      }
+    XII_TEST_INT(overridden, 1);
+  }
+  views[0]->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.EditorWithoutAO", std::move(disabledEditor)));
+  update(3);
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    XII_TEST_RESULT(views[i]->GetLastRenderResult());
+    xiiUInt32 value = 0;
+    if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[i].Borrow(), 65, 54, value))
+      return;
+    if (i == 0)
+      XII_TEST_BOOL((value & 255) > (contact[i] & 255) + 3);
+    else
+      XII_TEST_INT(value, contact[i]);
   }
 }

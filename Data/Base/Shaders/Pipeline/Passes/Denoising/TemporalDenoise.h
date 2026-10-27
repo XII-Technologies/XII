@@ -29,6 +29,12 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
   return SignalMode == 1U ? signal : signal.xxxx;
 }
 
+float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
+{
+  const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+  return dot(ReconstructWorldPos(uv, depth) - g_CameraPositionAndNearPlane.xyz, g_CameraForwardAndFarPlane.xyz);
+}
+
 [numthreads(8, 8, 1)] void main(uint3 dispatchThreadId : SV_DispatchThreadID) {
   uint2 dimensions;
   g_DenoisedOutput.GetDimensions(dimensions.x, dimensions.y);
@@ -41,7 +47,7 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
 #if defined(XII_DENOISE_CAPTURE_SURFACE)
   // Keep the reprojection surface in this pass instance's own history. Capturing
   // it here avoids a dependency on a lighting algorithm's unrelated history.
-  g_CurrentSurface[pixel] = depth > 0.0f ? float4(g_GBufferNormal.Load(int3(pixel, 0)), LinearizeDepth(depth), 1.0f) : 0.0f.xxxx;
+  g_CurrentSurface[pixel] = depth > 0.0f ? float4(g_GBufferNormal.Load(int3(pixel, 0)), SurfaceViewDepth(pixel, dimensions, depth), 1.0f) : 0.0f.xxxx;
 #endif
   if (depth <= 0.0f)
   {
@@ -51,7 +57,7 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
 
   const float2 encodedNormal = g_GBufferNormal.Load(int3(pixel, 0));
   const float3 normal        = DecodeOctNormal(encodedNormal);
-  const float  linearDepth   = LinearizeDepth(depth);
+  const float  linearDepth   = SurfaceViewDepth(pixel, dimensions, depth);
 
   float4 localMinimum   = current;
   float4 localMaximum   = current;
@@ -70,7 +76,7 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
       if (sampleDepth <= 0.0f)
         continue;
 
-      const float  sampleLinearDepth = LinearizeDepth(sampleDepth);
+      const float  sampleLinearDepth = SurfaceViewDepth(samplePixel, dimensions, sampleDepth);
       const float3 sampleNormal      = DecodeOctNormal(g_GBufferNormal.Load(int3(samplePixel, 0)));
       if (abs(sampleLinearDepth - linearDepth) > max(linearDepth * DepthThreshold, 0.01f) || dot(sampleNormal, normal) < NormalThreshold)
         continue;
@@ -84,6 +90,9 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
   }
 
   current = lerp(current, spatialSum / spatialSamples, saturate(SpatialWeight));
+#if defined(XII_DENOISE_SPATIAL_ONLY)
+  g_DenoisedOutput[pixel] = current;
+#else
   if (HistoryValid == 0U)
   {
     g_DenoisedOutput[pixel] = current;
@@ -115,4 +124,5 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
   history                 = SignalMode == 1U ? history : history.xxxx;
   history                 = clamp(history, localMinimum, localMaximum);
   g_DenoisedOutput[pixel] = lerp(current, history, saturate(HistoryWeight));
+#endif
 }

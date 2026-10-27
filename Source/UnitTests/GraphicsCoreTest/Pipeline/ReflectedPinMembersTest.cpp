@@ -204,6 +204,20 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AmbientOcclusionMemberPins)
   properties.Clear();
   properties.Insert("HistoryWeight", 1.1f);
   XII_TEST_BOOL(temporal.Configure(properties).Failed());
+  properties.Clear();
+  properties.Insert("UseHistory", false);
+  properties.Insert("HistoryWeight", 0.92f);
+  XII_TEST_RESULT(temporal.Configure(properties));
+  pins.Clear();
+  temporal.GetPins(pins);
+  XII_TEST_RESULT(temporal.InitializePinBindings(pins));
+  XII_TEST_INT(temporal.m_Velocity.GetBindingIndex(), xiiInvalidIndex);
+  XII_TEST_BOOL(pins[temporal.m_Raw.GetBindingIndex()].m_bOptional);
+  XII_TEST_BOOL(pins[temporal.m_Output.GetBindingIndex()].m_bOptional);
+  properties.Clear();
+  properties.Insert("Enabled", false);
+  XII_TEST_RESULT(generation.Configure(properties));
+  XII_TEST_BOOL(generation.GetRequiredDeviceFeatures().IsNoFlagSet());
 
   xiiRenderPipelineResourceDescriptor leaf;
   properties.Clear();

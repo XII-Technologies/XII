@@ -20,6 +20,16 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
     if (XII_TEST_BOOL(index != xiiInvalidIndex))
       XII_TEST_BOOL(pipeline->GetInterface()[index].m_Pin.m_bOptional);
   }
-  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput"})
+  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion"})
     XII_TEST_BOOL(pipeline->FindInterface(name, false) != xiiInvalidIndex);
+  const auto& descriptor = pipeline->GetDescriptor();
+  const auto  ao         = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
+  const auto  filter     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
+  for (const auto& pass : descriptor.m_Passes)
+  {
+    if (pass.m_Id == ao)
+      XII_TEST_BOOL(pass.m_Properties.GetValue("UseRayTracing") && !pass.m_Properties.GetValue("UseRayTracing")->Get<bool>());
+    if (pass.m_Id == filter)
+      XII_TEST_BOOL(pass.m_Properties.GetValue("UseHistory") && !pass.m_Properties.GetValue("UseHistory")->Get<bool>());
+  }
 }

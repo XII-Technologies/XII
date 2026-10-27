@@ -1,0 +1,9 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+#define XII_DENOISE_FORMAT "r8"
+#define XII_DENOISE_SPATIAL_ONLY
+#include <Shaders/Pipeline/Passes/Denoising/TemporalDenoise.h>
