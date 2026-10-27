@@ -184,7 +184,7 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
         found = true;
       }
     if (!found)
-      return xiiStatus("Every external interface node must have an internal connection.");
+      return xiiStatus(xiiFmt("External {} interface '{}' must have an internal connection.", boundary->m_bInput ? "input" : "output", boundary->m_sName));
   }
 
   xiiSharedPtr<const xiiRenderPipeline> compiled;

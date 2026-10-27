@@ -39,6 +39,16 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   if (XII_TEST_BOOL(depth != xiiInvalidIndex))
     XII_TEST_BOOL(!pipeline->GetInterface()[depth].m_Pin.m_bOptional);
   const auto& descriptor = pipeline->GetDescriptor();
+  bool        spotlightOpaque = false, spotlightTransparent = false;
+  for (const auto& connection : descriptor.m_Connections)
+    if (connection.m_sOutput == "SpotShadows" && connection.m_sInput == "SpotShadows" &&
+        descriptor.m_Passes[connection.m_uiSource].m_pType->GetTypeName() == "xiiSpotShadowPass")
+    {
+      const auto type = descriptor.m_Passes[connection.m_uiTarget].m_pType->GetTypeName();
+      spotlightOpaque |= type == "xiiClusteredLocalSurfaceLightingPass";
+      spotlightTransparent |= type == "xiiTransparentRasterPass";
+    }
+  XII_TEST_BOOL(spotlightOpaque && spotlightTransparent);
   const auto  ao         = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
   const auto  filter     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
   const auto  trace         = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
