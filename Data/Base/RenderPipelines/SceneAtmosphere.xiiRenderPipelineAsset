@@ -635,7 +635,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Atmosphere"}
-		Vec2 %Node::Pos{f{0,0}}
+		Vec2 %Node::Pos{f{0x0000A6C3,0xA1E45543}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -658,7 +658,7 @@ o
 		Uuid %Depth{u4{17145873832307388023,6497518694721700812}}
 		Uuid %EnvironmentLight{u4{16151943317953226751,5901222569799454402}}
 		Uuid %MultiScatter{u4{126476648686752672,17351300162127446577}}
-		Vec2 %Node::Pos{f{0x0000E144,0}}
+		Vec2 %Node::Pos{f{0x00009243,0xA73D6C43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -750,7 +750,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Transmittance"}
-		Vec2 %Node::Pos{f{0,0}}
+		Vec2 %Node::Pos{f{0x0000A040,0x47F52B44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -877,7 +877,7 @@ o
 		b %AsyncCompute{0}
 		Uuid %Atmosphere{u4{2773685849350727304,574422440490269495}}
 		u3 %Height{64}
-		Vec2 %Node::Pos{f{0x00001644,0}}
+		Vec2 %Node::Pos{f{0x0000C4C3,0x51F2A943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1630,7 +1630,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Camera"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x0000B443}}
+		Vec2 %Node::Pos{f{0x000050C1,0x0000C943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1918,7 +1918,7 @@ o
 		Uuid %Atmosphere{u4{2108939255247817933,11928483927678160980}}
 		u3 %Height{32}
 		Uuid %MultiScatter{u4{10243222128942052354,15689606030862238422}}
-		Vec2 %Node::Pos{f{0x00009644,0}}
+		Vec2 %Node::Pos{f{0x00004CC2,0}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2013,7 +2013,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"MultiScatter"}
-		Vec2 %Node::Pos{f{0,0}}
+		Vec2 %Node::Pos{f{0x0040C243,0x75540742}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2326,7 +2326,7 @@ o
 	{
 		Uuid %AtmosphereConstants{u4{5353809458330109562,15086872230620294203}}
 		b %Enabled{1}
-		Vec2 %Node::Pos{f{0,0}}
+		Vec2 %Node::Pos{f{0x00C031C4,0xBB816943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2403,7 +2403,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"EnvironmentLight"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00000744}}
+		Vec2 %Node::Pos{f{0x000050C1,0x00000444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2639,7 +2639,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"HDRSceneColor"}
-		Vec2 %Node::Pos{f{0x00C00F45,0}}
+		Vec2 %Node::Pos{f{0x00C03044,0xA73D6C43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2675,7 +2675,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Depth"}
-		Vec2 %Node::Pos{f{0x00002FC4,0}}
+		Vec2 %Node::Pos{f{0x000050C1,0x00001643}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2764,7 +2764,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Radiance"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00003443}}
+		Vec2 %Node::Pos{f{0x000050C1,0x00008A43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{

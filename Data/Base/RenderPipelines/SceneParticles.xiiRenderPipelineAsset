@@ -1065,7 +1065,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Accumulation"}
-		Vec2 %Node::Pos{f{0x00C00F45,0}}
+		Vec2 %Node::Pos{f{0x00808243,0x69B72D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1141,7 +1141,7 @@ o
 		Uuid %Materials{u4{16656738091702403571,13250638329935175080}}
 		f %MaximumWeight{0x00803B45}
 		Uuid %Modulation{u4{16636065326277687779,8572393918257189526}}
-		Vec2 %Node::Pos{f{0x00009644,0}}
+		Vec2 %Node::Pos{f{0x0000F2C2,0xB4DBBC43}}
 		VarDict %ParameterOverrides{}
 		Uuid %Particles{u4{14816163950396024852,15747304100309000394}}
 		VarArray %PinConfigurations
@@ -1293,7 +1293,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"HistoryTrust"}
-		Vec2 %Node::Pos{f{0x00C00F45,0x00003444}}
+		Vec2 %Node::Pos{f{0x00808443,0xDA6D2944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1836,7 +1836,7 @@ o
 		b %AllowAbsentSeeds{1}
 		Uuid %Batches{u4{4510566467299058647,13347675840247491025}}
 		u3 %MaximumParticles{1048576}
-		Vec2 %Node::Pos{f{0x00001644,0}}
+		Vec2 %Node::Pos{f{0x0080CBC3,0}}
 		VarDict %ParameterOverrides{}
 		Uuid %Particles{u4{2695818397623865612,5978372873984513368}}
 		VarArray %PinConfigurations
@@ -2311,7 +2311,7 @@ o
 		b %Enabled{1}
 		Uuid %Materials{u4{15228267874284029616,18383267573786144829}}
 		u3 %MaximumParticles{1048576}
-		Vec2 %Node::Pos{f{0,0}}
+		Vec2 %Node::Pos{f{0x00C031C4,0x9BCFEB42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2495,7 +2495,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ParticleStates"}
-		Vec2 %Node::Pos{f{0x00C00F45,0x00006144}}
+		Vec2 %Node::Pos{f{0x000032C2,0x7D033942}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2768,7 +2768,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputModulation"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00006144}}
+		Vec2 %Node::Pos{f{0x00C0C6C3,0x00004344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2869,7 +2869,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Depth"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00003443}}
+		Vec2 %Node::Pos{f{0x00C0C6C3,0x00008A43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2890,7 +2890,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Additive"}
-		Vec2 %Node::Pos{f{0x00C00F45,0x0000B443}}
+		Vec2 %Node::Pos{f{0x00C08543,0xB4DBD443}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2952,7 +2952,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Camera"}
-		Vec2 %Node::Pos{f{0x00002FC4,0}}
+		Vec2 %Node::Pos{f{0x00C0C6C3,0x00001643}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3065,7 +3065,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputAccumulation"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x0000B443}}
+		Vec2 %Node::Pos{f{0x0040C7C3,0x0000C943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3181,7 +3181,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputRevealage"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00000744}}
+		Vec2 %Node::Pos{f{0x00C0C6C3,0x00000444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3312,7 +3312,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputHistoryTrust"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00008744}}
+		Vec2 %Node::Pos{f{0x00C0C6C3,0x00806244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3407,7 +3407,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Modulation"}
-		Vec2 %Node::Pos{f{0x00C00F45,0x00000744}}
+		Vec2 %Node::Pos{f{0x00C08543,0xDAED0944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3861,7 +3861,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Revealage"}
-		Vec2 %Node::Pos{f{0x00C00F45,0x00003443}}
+		Vec2 %Node::Pos{f{0x00C08543,0xB4DB9543}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4062,7 +4062,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputAdditive"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00003444}}
+		Vec2 %Node::Pos{f{0x00C0C6C3,0x00802344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{

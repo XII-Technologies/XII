@@ -641,7 +641,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GeometryMetadata"}
-		Vec2 %Node::Pos{f{0x00002FC4,0}}
+		Vec2 %Node::Pos{f{0x00C0C3C3,0x00007C43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1306,7 +1306,7 @@ o
 	p
 	{
 		Uuid %CascadeSnapshot{u4{4234759645143314322,6994314719503378631}}
-		Vec2 %Node::Pos{f{0x0000C843,0}}
+		Vec2 %Node::Pos{f{0x0080DBC3,0x00003D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1593,7 +1593,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x00C00F45,0}}
+		Vec2 %Node::Pos{f{0x00C08C44,0xDC0DDA42}}
 		VarArray %Overrides
 		{
 			Uuid{u4{8239073086105388988,17205778484604028616}}
@@ -2294,7 +2294,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x0080A244,0}}
+		Vec2 %Node::Pos{f{0x0000A443,0x7783C643}}
 		VarArray %Overrides
 		{
 			Uuid{u4{17064086777403110708,1262500458370313201}}
@@ -2369,7 +2369,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x00004844,0}}
+		Vec2 %Node::Pos{f{0x00008EC2,0xBC410744}}
 		VarArray %Overrides
 		{
 			Uuid{u4{11566755890623832155,2445394176767413962}}
@@ -2596,7 +2596,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00000744}}
+		Vec2 %Node::Pos{f{0x0040C2C3,0x00801D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2617,7 +2617,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ShadowAtlas"}
-		Vec2 %Node::Pos{f{0x00C00F45,0}}
+		Vec2 %Node::Pos{f{0x00A0BE44,0xDC0DDA42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2802,7 +2802,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x0000E144,0}}
+		Vec2 %Node::Pos{f{0x00C03544,0xEE067D43}}
 		VarArray %Overrides
 		{
 			Uuid{u4{16055437624607329078,2312712553384747279}}
@@ -3726,7 +3726,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SkinningMatrices"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00003444}}
+		Vec2 %Node::Pos{f{0x0040C2C3,0x0000FC43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3747,7 +3747,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneInstances"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00003443}}
+		Vec2 %Node::Pos{f{0x0040C2C3,0}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4022,7 +4022,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
-		Vec2 %Node::Pos{f{0x00002FC4,0x0000B443}}
+		Vec2 %Node::Pos{f{0x0040C2C3,0x0000BD43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4638,7 +4638,7 @@ o
 		b %Enabled{1}
 		u3 %MaximumLights{4}
 		f %NearPlane{0x0AD7A33C}
-		Vec2 %Node::Pos{f{0,0}}
+		Vec2 %Node::Pos{f{0x00C031C4,0xA5D7EF43}}
 		f %NormalBias{0x0AD7233C}
 		f %NormalBiasTexels{0x0000803F}
 		VarDict %ParameterOverrides{}
@@ -4707,7 +4707,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"SpotShadows"}
-		Vec2 %Node::Pos{f{0x00C00F45,0x00003443}}
+		Vec2 %Node::Pos{f{0x0040B8C3,0x0000FC42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
