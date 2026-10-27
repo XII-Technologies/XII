@@ -541,6 +541,65 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_BOOL(renderer->GetGpuInstanceData()->GetUploadRanges().IsEmpty());
     xiiTestFramework::Output(xiiTestOutput::Details, "1024 unchanged world components: 20 packing updates = %.3f ms total, %.3f ms/update (Debug).", elapsed.GetMilliseconds(), elapsed.GetMilliseconds() / 20);
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "A retained dirty instance upload survives destruction of its world")
+  {
+    xiiRenderGraphTestContext context;
+    if (!XII_TEST_RESULT(context.Initialize("Retained world upload")))
+      return;
+    xiiRenderGraphFrame gpuFrame;
+    if (!XII_TEST_RESULT(gpuFrame.Begin()))
+      return;
+    auto& graph = context.GetGraph();
+    auto& cache = context.GetResourceCache();
+    cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame(); gpuFrame.End());
+    graph.BeginSetup(gpuFrame.GetFrameIndex());
+    xiiGpuInstanceData::UploadHandles uploaded;
+    xiiUInt32                         retainedIdentity = 0;
+    {
+      xiiWorldDescription retainedDescription("Retired upload owner");
+      xiiWorld            retiredWorld(retainedDescription);
+      XII_LOCK(retiredWorld.GetWriteMarker());
+      retiredWorld.SetWorldSimulationEnabled(false);
+      xiiGameObjectDescription authored;
+      authored.m_bDynamic      = true;
+      authored.m_LocalPosition = {17, 3, 2};
+      xiiGameObject* object    = nullptr;
+      retiredWorld.CreateObject(authored, object);
+      xiiMeshComponent* renderable = nullptr;
+      xiiMeshComponent::CreateComponent(object, renderable);
+      renderable->SetMesh(mesh);
+      retiredWorld.Update();
+      xiiExtractedRenderData  packets;
+      xiiMsgExtractRenderData request;
+      request.m_pExtractedRenderData = &packets;
+      renderable->SendMessage(request);
+      packets.SortAndBatches();
+      auto* renderer = retiredWorld.GetOrCreateModule<xiiRenderWorldModule>();
+      if (!XII_TEST_RESULT(renderer->UpdateGpuInstances(packets, gpuFrame.GetFrameIndex())) || !XII_TEST_INT(renderer->GetGpuInstanceData()->GetInstanceCount(), 1))
+        return;
+      retainedIdentity = renderer->GetGpuInstanceData()->GetInstances()[0].m_uiObjectId;
+      uploaded         = renderer->GetGpuInstanceData()->AddUploadPass(graph, gpuFrame.GetFrameIndex());
+    }
+    struct Export
+    {
+      XII_DECLARE_POD_TYPE();
+    };
+    graph.AddPass<Export>("Retained world buffers", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+      builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+    graph.EndSetup();
+    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
+      return;
+    xiiGpuSceneInstance record;
+    xiiMat4             pose;
+    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(uploaded.m_Instances).Borrow(), 0, record) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(uploaded.m_Skinning).Borrow(), 0, pose))
+      return;
+    XII_TEST_INT(record.m_uiObjectId, retainedIdentity);
+    XII_TEST_BOOL(record.m_GlobalTransform.GetTranslationVector() == xiiVec3(17, 3, 2));
+    XII_TEST_BOOL(pose == xiiMat4::MakeIdentity());
+    environment.GetDevice()->WaitIdle();
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "A live world releases derived buffers across renderer shutdown and restart")
   {
     environment.GetDevice()->WaitIdle();

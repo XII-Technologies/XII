@@ -5,6 +5,8 @@
 #include <Core/World/World.h>
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Threading/AtomicInteger.h>
+#include <Foundation/Threading/Mutex.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
@@ -107,11 +109,19 @@ public:
     xiiUInt64                  m_PoseVersion      = 0;
     xiiUInt32                  m_InstanceCapacity = 0, m_PoseCapacity = 0;
   };
-  xiiDynamicArray<Frame>                                     m_Frames;
+  // Retained graph callbacks may outlive their world. Only the upload cache is
+  // shared with them; world membership and resource leases remain world-owned.
+  struct UploadState : xiiRefCounted
+  {
+    xiiMutex                       m_Mutex;
+    xiiDynamicArray<Frame>         m_Frames;
+    xiiUInt64                      m_StatsFrame = xiiMath::MaxValue<xiiUInt64>();
+    xiiGpuInstanceUploadStatistics m_Stats;
+  };
+  xiiSharedPtr<UploadState>                                  m_Upload = XII_DEFAULT_NEW(UploadState);
   xiiHashTable<xiiUInt64, xiiGpuInstanceData::UploadHandles> m_SetupUploads;
   xiiDynamicArray<xiiMat4>                                   m_LastPose;
-  xiiUInt64                                                  m_Version = 0, m_PoseVersion = 1, m_StatsFrame = xiiMath::MaxValue<xiiUInt64>();
-  xiiGpuInstanceUploadStatistics                             m_Stats;
+  xiiUInt64                                                  m_Version = 0, m_PoseVersion = 1;
   xiiUInt64                                                  m_Identity = 0;
   const xiiWorld&                                            m_World;
   xiiDynamicArray<Entry>                                     m_Entries;
@@ -503,24 +513,27 @@ void xiiGpuInstanceData::SelectInstances(xiiArrayPtr<xiiRenderData* const> packe
   }
 }
 
-const xiiGpuInstanceUploadStatistics& xiiGpuInstanceData::GetUploadStatistics() const
+xiiGpuInstanceUploadStatistics xiiGpuInstanceData::GetUploadStatistics() const
 {
-  return m_pState->m_Stats;
+  XII_LOCK(m_pState->m_Upload->m_Mutex);
+  return m_pState->m_Upload->m_Stats;
 }
 
 xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 frameIndex) const
 {
   auto&         state = *m_pState;
+  const auto    upload = state.m_Upload;
+  XII_LOCK(upload->m_Mutex);
   UploadHandles cached;
   if (state.m_SetupUploads.TryGetValue(graph.GetSetupSerial(), cached))
     return cached;
   if (!xiiGALDevice::HasDefaultDevice())
     return {};
   const auto device = xiiGALDevice::GetDefaultDevice();
-  if (state.m_Frames.IsEmpty())
-    state.m_Frames.SetCount(xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
-  const auto slot     = static_cast<xiiUInt32>(frameIndex % state.m_Frames.GetCount());
-  auto&      frame    = state.m_Frames[slot];
+  if (upload->m_Frames.IsEmpty())
+    upload->m_Frames.SetCount(xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
+  const auto slot     = static_cast<xiiUInt32>(frameIndex % upload->m_Frames.GetCount());
+  auto&      frame    = upload->m_Frames[slot];
   auto       allocate = [&](xiiSharedPtr<xiiGALBuffer>& buffer, xiiUInt32& capacity, xiiUInt32 count, xiiUInt32 stride) {
     if (buffer && capacity >= count)
       return true;
@@ -548,10 +561,10 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
   if (frame.m_Poses != previousPoseBuffer)
     frame.m_PoseVersion = 0;
   frame.m_Versions.SetCount(m_Instances.GetCount(), 0);
-  if (state.m_StatsFrame != frameIndex)
+  if (upload->m_StatsFrame != frameIndex)
   {
-    state.m_StatsFrame = frameIndex;
-    state.m_Stats      = {};
+    upload->m_StatsFrame = frameIndex;
+    upload->m_Stats      = {};
   }
   struct Range
   {
@@ -599,23 +612,27 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
         data.m_Handles.m_Skinning = builder.WriteBuffer(data.m_Handles.m_Skinning, xiiGALResourceStateFlags::CopyDestination);
       }
       builder.SetPassAllowMerge(false);
-      builder.SetPassSideEffects(!data.m_Ranges.IsEmpty() || !data.m_Poses.IsEmpty()); }, [pState = &state, slot](const Upload& data, xiiRenderGraphPassContext& context) {
-      auto& target = pState->m_Frames[slot];
+      builder.SetPassSideEffects(!data.m_Ranges.IsEmpty() || !data.m_Poses.IsEmpty()); }, [upload, slot, frameIndex](const Upload& data, xiiRenderGraphPassContext& context) {
+      XII_LOCK(upload->m_Mutex);
+      auto& target = upload->m_Frames[slot];
       auto& command = context.GetCommandList();
       for (const auto& range : data.m_Ranges)
       {
         command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Instances), xiiUInt64(range.m_First) * sizeof(xiiGpuSceneInstance), xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + range.m_Source), range.m_Count * sizeof(xiiGpuSceneInstance)));
         if (target.m_Instances == data.m_InstanceBuffer)
-          for (xiiUInt32 i = 0; i < range.m_Count; ++i) target.m_Versions[range.m_First+i] = data.m_Versions[range.m_Source+i];
+          for (xiiUInt32 i = 0; i < range.m_Count && range.m_First + i < target.m_Versions.GetCount(); ++i) target.m_Versions[range.m_First+i] = data.m_Versions[range.m_Source+i];
       }
       if (!data.m_Poses.IsEmpty())
       {
         command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Skinning), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Poses.GetData()), data.m_Poses.GetCount() * sizeof(xiiMat4)));
         if (target.m_Poses == data.m_PoseBuffer) target.m_PoseVersion = data.m_PoseVersion;
       }
-      if (!data.m_Records.IsEmpty() || !data.m_Poses.IsEmpty()) ++pState->m_Stats.m_uiUploadPasses;
-      pState->m_Stats.m_uiUploadRanges += data.m_Ranges.GetCount();
-      pState->m_Stats.m_uiBytesUploaded += data.m_Records.GetCount() * sizeof(xiiGpuSceneInstance) + data.m_Poses.GetCount() * sizeof(xiiMat4); });
+      if (upload->m_StatsFrame == frameIndex)
+      {
+        if (!data.m_Records.IsEmpty() || !data.m_Poses.IsEmpty()) ++upload->m_Stats.m_uiUploadPasses;
+        upload->m_Stats.m_uiUploadRanges += data.m_Ranges.GetCount();
+        upload->m_Stats.m_uiBytesUploaded += data.m_Records.GetCount() * sizeof(xiiGpuSceneInstance) + data.m_Poses.GetCount() * sizeof(xiiMat4);
+      } });
   state.m_SetupUploads.Insert(graph.GetSetupSerial(), pass.first->m_Handles);
   return pass.first->m_Handles;
 }
