@@ -13,8 +13,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiShadowCascadeSettings, xiiNoBase, 1, xiiRTTID
   {
     XII_MEMBER_PROPERTY("CascadeCount", m_uiCascadeCount)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(4U)),
     XII_MEMBER_PROPERTY("SplitLambda", m_fSplitLambda)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.65f)),
-    XII_MEMBER_PROPERTY("MaximumShadowDistance", m_fMaximumShadowDistance)->AddAttributes(new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("DepthPadding", m_fDepthPadding)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("MaximumShadowDistance", m_fMaximumShadowDistance)->AddAttributes(new xiiDefaultValueAttribute(250.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("DepthPadding", m_fDepthPadding)->AddAttributes(new xiiDefaultValueAttribute(50.0f), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("ShadowMapResolution", m_uiShadowMapResolution)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
   }
   XII_END_PROPERTIES;

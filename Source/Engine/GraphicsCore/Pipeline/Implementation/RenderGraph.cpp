@@ -1618,6 +1618,13 @@ void xiiRenderGraph::PhaseG_SignatureAndCache(const xiiRenderGraphCompileSetting
   m_Statistics.m_bUsedCachedCompile = false;
 }
 
+void xiiRenderGraphPassContext::ReportFailure(xiiStringView reason) const
+{
+  XII_ASSERT_DEV(m_pExecutionError != nullptr, "Recording failures require an execution diagnostic sink.");
+  if (m_pExecutionError->IsEmpty())
+    m_pExecutionError->SetFormat("Pass '{}': {}", m_sPassName, reason);
+}
+
 xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, xiiStringBuilder* out_pError)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
@@ -1894,6 +1901,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         pCommandList->TransitionResourceStates(transitions);
       }
 
+      xiiStringBuilder executionError;
       // Preparation is deliberately outside the native render-pass scope: Vulkan buffer
       // uploads and their transfer barriers cannot be recorded inside a render pass.
       if (compiledPass.m_PrepareDelegate.IsValid())
@@ -1908,7 +1916,14 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         preparationContext.m_pGraph           = this;
         preparationContext.m_ResolvedTextures = resolvedTextures;
         preparationContext.m_ResolvedBuffers  = resolvedBuffers;
+        preparationContext.m_pExecutionError  = &executionError;
         compiledPass.m_PrepareDelegate(preparationContext);
+        if (!executionError.IsEmpty())
+        {
+          if (out_pError)
+            *out_pError = executionError;
+          return abortSubmission();
+        }
       }
 
       // Handle merge group open.
@@ -1964,6 +1979,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       context.m_pGraph           = this;
       context.m_ResolvedTextures = resolvedTextures;
       context.m_ResolvedBuffers  = resolvedBuffers;
+      context.m_pExecutionError  = &executionError;
 
       compiledPass.m_ExecuteDelegate(context);
 
@@ -1971,6 +1987,13 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       if (bEnableGpuProfiling)
       {
         pProfiler->OnPassEnd(*pCommandList, compiledPass.m_sName, compiledPass.m_uiPassIndex);
+      }
+
+      if (!executionError.IsEmpty())
+      {
+        if (out_pError)
+          *out_pError = executionError;
+        return abortSubmission();
       }
 
       // Close merge group if last pass in group.

@@ -28,6 +28,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadePass, 1, xiiRTTIDefaultAllocato
   {
     XII_MEMBER_PROPERTY("CascadeConstants", m_Constants)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("CascadeSnapshot", m_Snapshot)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("DirectionalLight", m_Light)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("UseWorldLight", m_bUseWorldLight)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Settings", m_Settings),
     XII_MEMBER_PROPERTY("LightDirection", m_LightDirection)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(0, 0, -1))),
   } XII_END_PROPERTIES;
@@ -42,8 +45,20 @@ xiiResult xiiShadowCascadePass::Configure(const xiiVariantDictionary& properties
 }
 xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (!m_bEnabled)
+    return XII_SUCCESS;
   auto direction = m_LightDirection;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ShadowLightDirection", direction));
+  if (m_bUseWorldLight)
+  {
+    const auto  supplied = context.GetInputData(m_Light);
+    const auto* light    = xiiDynamicCast<const xiiDirectionalLightFrameData*>(supplied.Borrow());
+    if (!light)
+      return context.ReportFailure("World cascades require the selected directional-light snapshot.");
+    if (!light->m_bCastsShadows || light->m_DirectionAndIlluminance.w <= 0)
+      return XII_SUCCESS;
+    direction = light->m_DirectionAndIlluminance.GetAsVec3();
+  }
   if (!ValidCascadeProperties(m_Settings, direction))
     return context.ReportFailure("Invalid directional cascade settings or light direction.");
   if (!context.m_pView || !context.m_pView->GetCamera())

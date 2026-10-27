@@ -91,7 +91,7 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
   // Export dependencies first so resource references resolve to the freshly rebuilt library in the output directory.
   xiiStringBuilder lookupTable;
-  for (const xiiStringView name : {"SceneAtmosphere", "Scene", "Editor"})
+  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneAtmosphere", "Scene", "Editor"})
   {
     xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     PipelineLibraryDocument storage(source);
@@ -109,7 +109,16 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
     }
     if (name == "Scene")
     {
-      const auto dependency = xiiPipelineLibraryTestIdentity("SceneAtmosphere");
+      for (const xiiStringView workload : {"SceneAtmosphere", "SceneDirectionalShadows"})
+      {
+        const auto dependency = xiiPipelineLibraryTestIdentity(workload);
+        XII_TEST_BOOL(info->m_TransformDependencies.Contains(dependency));
+        XII_TEST_BOOL(info->m_PackageDependencies.Contains(dependency));
+      }
+    }
+    if (name == "SceneDirectionalShadows")
+    {
+      const auto dependency = xiiPipelineLibraryTestIdentity("SceneShadowCascade");
       XII_TEST_BOOL(info->m_TransformDependencies.Contains(dependency));
       XII_TEST_BOOL(info->m_PackageDependencies.Contains(dependency));
     }

@@ -14,13 +14,13 @@ class XII_GRAPHICSCORE_DLL xiiVertexPullDrawCommandsPass final : public xiiRende
 
 public:
   xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_View{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Meshlets{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Visible{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Count{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferOutputPin            m_Commands{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
-  xiiRenderPipelineBufferOutputPin            m_CommandCount{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferInputPin             m_Visible{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Count{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin            m_Commands{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferOutputPin            m_CommandCount{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
   bool                                        m_bAsyncCompute = true;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

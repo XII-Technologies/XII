@@ -92,7 +92,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   g_PreviousLodHistory.GetDimensions(previousCapacity, previousStride);
   g_CurrentLodHistory.GetDimensions(currentCapacity, currentStride);
   const uint4 previousHistory = selectionIndex < previousCapacity ? g_PreviousLodHistory[selectionIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
-  const float distanceToCamera = length(selection.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
+  const float distanceToCamera = view.LodParameters.w != 0.0f ? 1.0f : length(selection.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
   const uint lod = SelectInstanceResidentLod(geometry, selection, distanceToCamera, view.ViewportAndHiZ.y,
                                              previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
   if (instanceIndex < currentCapacity)

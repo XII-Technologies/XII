@@ -8,7 +8,7 @@
 void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
 {
   const auto pipeline = scene.GetPipeline();
-  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 1);
+  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 2);
   XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere));
   XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting));
   XII_TEST_INT(pipeline->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
@@ -20,7 +20,7 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
     if (XII_TEST_BOOL(index != xiiInvalidIndex))
       XII_TEST_BOOL(pipeline->GetInterface()[index].m_Pin.m_bOptional);
   }
-  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion"})
+  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion", "ShadowAtlas", "ShadowVisibility"})
     XII_TEST_BOOL(pipeline->FindInterface(name, false) != xiiInvalidIndex);
   const auto hdr = pipeline->FindInterface("HDRSceneColor", false);
   if (XII_TEST_BOOL(hdr != xiiInvalidIndex))
@@ -29,6 +29,9 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
     XII_TEST_BOOL(pin.m_Format == xiiGALResourceFormat::RGBA32Float);
     XII_TEST_BOOL(pin.m_Constraints.m_RequiredBindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
   }
+  const auto depth = pipeline->FindInterface("SceneDepth", false);
+  if (XII_TEST_BOOL(depth != xiiInvalidIndex))
+    XII_TEST_BOOL(!pipeline->GetInterface()[depth].m_Pin.m_bOptional);
   const auto& descriptor = pipeline->GetDescriptor();
   const auto  ao         = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
   const auto  filter     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");

@@ -15,7 +15,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiVec4   m_FrustumPlanes[6];
   xiiVec4   m_CameraPosition;
   xiiVec4   m_ViewportAndHiZ; // width, height, Hi-Z mip count, occlusion bias
-  xiiVec4   m_LodParameters;  // hysteresis, current history token, previous history token, reserved
+  xiiVec4   m_LodParameters;  // hysteresis, current history token, previous history token, orthographic coverage
   xiiUInt32 m_uiInstanceCount      = 0U;
   xiiUInt32 m_uiVisibilityMask     = 0xFFFFFFFFU;
   xiiUInt32 m_uiRequiredFlags      = xiiGpuInstanceFlags::Enabled;

@@ -23,6 +23,10 @@ FillMode = FillMode_Wireframe
 void main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
 {
   const xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
+#if RENDER_PASS == RENDER_PASS_DEPTH_ONLY
+  if ((material.Metadata.y & (1u << 13u)) == 0u || material.Metadata.z >= 2u)
+    clip(-1.0f);
+#endif
   const float4 color = xiiSampleSceneBaseColor(material, input.TexCoord);
   xiiClipSceneSurface(material, color, isFrontFace, false);
 }

@@ -12,11 +12,11 @@ class XII_GRAPHICSCORE_DLL xiiMeshletDispatchPass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshletDispatchPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineBufferInputPin             m_Visible{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Count{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Visible{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Count{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Meshlets{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Maximum{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferOutputPin            m_Arguments{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferInputPin             m_Maximum{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin            m_Arguments{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
   bool                                        m_bAsyncCompute = true;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

@@ -10,6 +10,7 @@ class XII_GRAPHICSCORE_DLL xiiDirectionalLightFrameData final : public xiiRender
   XII_ADD_DYNAMIC_REFLECTION(xiiDirectionalLightFrameData, xiiRenderPipelineFrameData);
 
 public:
-  xiiDirectionalLightFrameData(xiiUInt64 setup, xiiVec4 directionAndIlluminance, xiiVec4 colorAndRadius) : xiiRenderPipelineFrameData(setup), m_DirectionAndIlluminance(directionAndIlluminance), m_ColorAndAngularRadius(colorAndRadius) {}
+  xiiDirectionalLightFrameData(xiiUInt64 setup, xiiVec4 directionAndIlluminance, xiiVec4 colorAndRadius, bool castsShadows = false) : xiiRenderPipelineFrameData(setup), m_DirectionAndIlluminance(directionAndIlluminance), m_ColorAndAngularRadius(colorAndRadius), m_bCastsShadows(castsShadows) {}
   const xiiVec4 m_DirectionAndIlluminance, m_ColorAndAngularRadius;
+  const bool    m_bCastsShadows;
 };

@@ -1,0 +1,77 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/ScreenSpaceGeometry.h>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/Shadows/DirectionalShadowConstants.h>
+Texture2D<float> g_SceneDepth;
+Texture2D<float2> g_SceneNormal;
+Texture2D<uint> g_ObjectId;
+Texture2D<float> g_ShadowAtlas;
+StructuredBuffer<uint2> g_ShadowReceivers;
+XII_STORAGE_IMAGE_FORMAT("r32f") RWTexture2D<float> g_ShadowVisibility;
+
+bool ReceivesShadow(uint identity)
+{
+  uint first = 0, last = ShadowExtent.w;
+  while (first < last)
+  {
+    const uint middle = first + (last - first) / 2u;
+    const uint2 entry = g_ShadowReceivers[middle];
+    if (entry.x < identity) first = middle + 1u;
+    else last = middle;
+  }
+  if (first >= ShadowExtent.w) return false;
+  return g_ShadowReceivers[first].x == identity && (g_ShadowReceivers[first].y & (1u << 3u)) != 0u;
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  if (any(tid.xy >= ShadowExtent.xy)) return;
+  float visibility = 1.0f;
+  const float depth = g_SceneDepth.Load(int3(tid.xy, 0));
+  float3 world;
+  const float2 uv = (float2(tid.xy) + 0.5f) / float2(ShadowExtent.xy);
+  if (depth > 0 && ReceivesShadow(g_ObjectId.Load(int3(tid.xy, 0))) && xiiScreenWorldPosition(uv, depth, world))
+  {
+    const float distance = dot(world - SurfaceCameraPositionNear.xyz, SurfaceCameraForwardFar.xyz);
+    uint cascade = 0u;
+    while (cascade < ActiveCascadeCount)
+    {
+      if (distance <= CascadeSplitDepths[cascade]) break;
+      ++cascade;
+    }
+    if (cascade < ActiveCascadeCount)
+    {
+      const float3 normal = xiiScreenNormal(g_SceneNormal.Load(int3(tid.xy, 0)));
+      const float texelWorldSize = 2.0f * CascadeWorldRadii[cascade] / float(ShadowExtent.z);
+      const float normalBias = ShadowBias.y + texelWorldSize * ShadowBias.z;
+      const float4 clipPosition = mul(CascadeViewProjection[cascade], float4(world + normal * normalBias, 1));
+      const float3 projection = clipPosition.xyz / clipPosition.w;
+      const float2 localUV = float2(projection.x * 0.5f + 0.5f, 0.5f - projection.y * 0.5f);
+      if (all(localUV >= 0) && all(localUV <= 1) && projection.z >= 0 && projection.z <= 1)
+      {
+        const int resolution = int(ShadowExtent.z);
+        const int2 origin = int2(cascade % 2u, cascade / 2u) * resolution;
+        const float2 samplePosition = localUV * float(resolution) - 0.5f;
+        const int2 base = int2(floor(samplePosition));
+        const float2 fraction = frac(samplePosition);
+        visibility = 0;
+        // Bilinear comparison filtering uses four explicit texel loads. Each tap is
+        // clamped inside its own cascade, so filtering cannot leak between atlas tiles.
+        [unroll] for (int y = 0; y < 2; ++y)
+          [unroll] for (int x = 0; x < 2; ++x)
+          {
+            const int2 pixel = origin + clamp(base + int2(x, y), 0, resolution - 1);
+            const float stored = g_ShadowAtlas.Load(int3(pixel, 0));
+            const float weight = (x ? fraction.x : 1 - fraction.x) * (y ? fraction.y : 1 - fraction.y);
+            visibility += (projection.z + ShadowBias.x >= stored ? 1.0f : 0.0f) * weight;
+          }
+      }
+    }
+  }
+  g_ShadowVisibility[tid.xy] = visibility;
+}

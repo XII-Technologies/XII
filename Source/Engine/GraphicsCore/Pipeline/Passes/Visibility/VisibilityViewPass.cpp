@@ -4,12 +4,30 @@
 
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Math/Frustum.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+
+struct xiiVisibilityViewPass::State : xiiRefCounted
+{
+  xiiMutex  m_Mutex;
+  xiiUInt32 m_uiLastLodToken = 65534U;
+  xiiUInt64 m_uiRevision     = 0;
+};
+
+xiiVisibilityViewPass::xiiVisibilityViewPass() : m_pState(XII_DEFAULT_NEW(State)) {}
+xiiVisibilityViewPass::~xiiVisibilityViewPass() = default;
+
+void xiiVisibilityViewPass::InvalidateTemporalHistory()
+{
+  XII_LOCK(m_pState->m_Mutex);
+  m_pState->m_uiLastLodToken = 65534U;
+  ++m_pState->m_uiRevision;
+}
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibilityViewPass, 1, xiiRTTIDefaultAllocator<xiiVisibilityViewPass>)
@@ -59,8 +77,10 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   snapshot.m_ViewportAndHiZ.y *= m_fLodScreenScale;
   // Other worlds and views may advance the device frame clock between executions.
   // LOD validity follows this occurrence's published snapshots instead.
-  const auto token            = (m_uiLastLodToken + 1U) % 65535U;
-  snapshot.m_LodParameters    = xiiVec4(m_fLodHysteresis, float(token), float(m_uiLastLodToken), 0);
+  XII_LOCK(m_pState->m_Mutex);
+  const auto revision         = m_pState->m_uiRevision;
+  const auto token            = (m_pState->m_uiLastLodToken + 1U) % 65535U;
+  snapshot.m_LodParameters    = xiiVec4(m_fLodHysteresis, float(token), float(m_pState->m_uiLastLodToken), 0);
   snapshot.m_uiUseCandidates  = m_bUseViewSelection ? 1 : 0;
   snapshot.m_uiCandidateCount = m_bUseViewSelection ? view.GetGpuInstanceSelection().GetCount() : 0;
   const auto supplied         = context.GetInputBuffer(m_InputCandidates);
@@ -91,10 +111,12 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
       data.m_View = builder.WriteBuffer("Camera Culling Parameters", description, xiiGALResourceStateFlags::CopyDestination);
       description.m_uiSize = data.m_Selection.GetCount() * sizeof(xiiUInt32);
       description.m_uiElementByteStride = sizeof(xiiUInt32);
-      data.m_Candidates = supplied.IsValid() ? builder.ReadBuffer(supplied, xiiGALResourceStateFlags::ShaderResource) : builder.WriteBuffer("Camera Component Selection", description, xiiGALResourceStateFlags::CopyDestination); }, [this, supplied](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Candidates = supplied.IsValid() ? builder.ReadBuffer(supplied, xiiGALResourceStateFlags::ShaderResource) : builder.WriteBuffer("Camera Component Selection", description, xiiGALResourceStateFlags::CopyDestination); }, [state = m_pState, supplied, revision](const Data& data, xiiRenderGraphPassContext& execute) {
       execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_View), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Snapshot), sizeof(data.m_Snapshot)));
       if (!supplied.IsValid()) execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Candidates), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Selection.GetData()), data.m_Selection.GetCount() * sizeof(xiiUInt32)));
-      m_uiLastLodToken = static_cast<xiiUInt32>(data.m_Snapshot.m_LodParameters.y); });
+      XII_LOCK(state->m_Mutex);
+      if (state->m_uiRevision==revision && state->m_uiLastLodToken==static_cast<xiiUInt32>(data.m_Snapshot.m_LodParameters.z))
+        state->m_uiLastLodToken = static_cast<xiiUInt32>(data.m_Snapshot.m_LodParameters.y); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_View, emitted.first->m_View));
   return context.SetOutput(m_Candidates, emitted.first->m_Candidates);
 }

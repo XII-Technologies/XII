@@ -14,23 +14,27 @@ class XII_GRAPHICSCORE_DLL xiiMeshletCullPass final : public xiiRenderPipelinePa
 
 public:
   xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_View{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Meshlets{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Visible{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Count{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Lod{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Arguments{false, xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferInputPin             m_Visible{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Count{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Lod{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Arguments{true, xiiGALBindFlags::IndirectDrawArguments};
   xiiRenderPipelineBufferInputPin             m_InitialCount{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferInputPin             m_InitialOverflow{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
-  xiiRenderPipelineBufferOutputPin            m_Output{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
-  xiiRenderPipelineBufferOutputPin            m_OutputCount{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
-  xiiRenderPipelineBufferOutputPin            m_Overflow{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
+  xiiRenderPipelineBufferOutputPin            m_Output{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
+  xiiRenderPipelineBufferOutputPin            m_OutputCount{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
+  xiiRenderPipelineBufferOutputPin            m_Overflow{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
   xiiUInt32                                   m_uiMaxVisibleMeshlets = 1024U * 1024U;
+  /// Reject an insufficient authored capacity before dispatch rather than publishing partial caster coverage.
+  bool                                        m_bRequireComplete     = false;
   bool                                        m_bAsyncCompute        = true;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
+  xiiBitflags<xiiRenderExtractionCategory>    GetExtractionRequirements() const override { return m_bRequireComplete ? xiiRenderExtractionCategory::Geometry : xiiRenderExtractionCategory::None; }
+  xiiBitflags<xiiRenderPipelineFeature>       GetRuntimeFeatures() const override { return m_bRequireComplete ? xiiRenderPipelineFeature::GpuScene : xiiRenderPipelineFeature::None; }
 
 private:
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;

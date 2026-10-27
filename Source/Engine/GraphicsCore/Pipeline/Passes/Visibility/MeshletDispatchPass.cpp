@@ -26,6 +26,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshletDispatchPass, 1, xiiRTTIDefaultAlloca
 
 xiiResult xiiMeshletDispatchPass::Build(xiiRenderPipelinePassContext& context)
 {
+  // An absent query is an explicitly inactive rendering workload.
+  if (!context.GetInputBuffer(m_Visible).IsValid())
+    return XII_SUCCESS;
   const auto visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count), meshlets = context.GetInputBuffer(m_Meshlets), maximum = context.GetInputBuffer(m_Maximum);
   const auto valid = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
     const auto* description = context.m_Graph.GetBufferDescription(handle);

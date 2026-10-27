@@ -14,14 +14,14 @@ class XII_GRAPHICSCORE_DLL xiiMeshletDispatchBoundsPass final : public xiiRender
 
 public:
   xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_View{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_View{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Meshlets{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Visible{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Count{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Lod{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Visible{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Count{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Lod{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Initial{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
-  xiiRenderPipelineBufferOutputPin            m_Maximum{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
+  xiiRenderPipelineBufferOutputPin            m_Maximum{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
   bool                                        m_bAsyncCompute = true;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

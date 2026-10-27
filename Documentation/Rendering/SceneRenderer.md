@@ -1,8 +1,10 @@
 # Default Scene and Editor rendering
 
 `Data/Base/RenderPipelines` contains two default authored resources: **Scene** and
-**Editor**, plus the independently authored **SceneAtmosphere** workload composed
-by Scene. The two roots are defaults, not an enumeration of supported workloads.
+**Editor**, plus independently authored **SceneAtmosphere** and
+**SceneDirectionalShadows** workloads composed by Scene. Directional shadows reuse
+**SceneShadowCascade** for each cascade's caster rasterization. The two roots are
+defaults, not an enumeration of supported workloads.
 Applications can select any compatible resource or construct a resource descriptor
 in C++. Both paths use the same compiler, pipeline instances and render graph.
 
@@ -39,8 +41,8 @@ lifetime regression exercises the failure directly.
 Scene renders world mesh components through shared GPU instance extraction,
 view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
-lights, ambient diffuse and emission, spatial ambient visibility, optional world
-atmosphere, exposure, tone mapping, color grading and
+lights, optional world directional shadows, ambient diffuse and emission, spatial
+ambient visibility, optional world atmosphere, exposure, tone mapping, color grading and
 presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
 
@@ -128,7 +130,7 @@ visible/occluded selection and front-surface picking, switches resources, resize
 and checks icon picking. Fixed preview tests exercise real texture/cubemap output.
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
-These defaults intentionally exclude shadows, GI, reflections,
+These defaults intentionally exclude local/virtual/ray shadows, GI, reflections,
 transparent/particle rasterization and temporal antialiasing. Their retained
 operations and focused tests are not certification of complete production techniques.
 Custom material shader permutations beyond the canonical GPU surface model,
@@ -300,3 +302,88 @@ regressions exposed an incomplete preview package and an inconsistent synthetic
 orthographic transport camera; both fixtures were corrected and passed. Other
 backends, interactive desktop acceptance and representative performance remain
 unverified.
+
+## Directional shadows
+
+Scene references `SceneDirectionalShadows.xiiRenderPipelineAsset` with the same
+selected directional-light snapshot used by illumination. The workload contains
+cascade preparation, an initialized atlas, four independently configured occurrences
+of `SceneShadowCascade`, and directional visibility resolution. Each cascade
+occurrence authors twelve operations: snapshot-derived visibility/raster constants,
+LOD initialization, four counter resets, instance culling, meshlet bounds/dispatch,
+meshlet culling, vertex-pull command generation and ordinary depth rasterization.
+It reuses the native culling and raster algorithms rather than a shadow renderer
+manager. Cascades above the active count emit no raster work and forward the atlas.
+
+| Resource | Format and extent | Producer and consumer |
+| --- | --- | --- |
+| Directional light | Immutable CPU snapshot | World selection supplies illumination and `CastShadows` intent to cascade preparation |
+| Cascades | Immutable CPU snapshot and uniform buffer | Stabilized camera/light projection supplies matching culling, raster and sampling data |
+| Candidates, visibility, LOD, indirect commands | Structured buffers with explicit SRV/UAV/indirect dependencies | Per-cascade selection, existing GPU culling and draw preparation feed depth rasterization |
+| Shadow atlas | D32Float, depth/SRV, 2 by 2 tiles for four cascades | Atlas clear and ordered cascade raster versions feed visibility sampling |
+| Receiver flags | Sorted immutable `uint2` buffer, eight bytes per world draw record | World GPU identities/flags are copied during setup; per-pixel lookup honors receiver policy |
+| Shadow visibility | R32Float at Scene surface extent, SRV/UAV | Atlas, depth, normals, object IDs and camera produce the directional illumination multiplier |
+
+Defaults are four 1024 by 1024 cascades, 120 metres maximum distance and 50 metres
+light-space depth padding. The atlas occupies 16 MiB before graph allocation
+overhead. Extents, splits and padding remain reflected cascade settings. Sampling
+exposes normalized depth bias, world normal bias and normal bias in shadow-texel
+units. Four explicit comparison taps provide bilinear PCF, clamped within each
+tile. The resolution-aware normal offset prevents flat receivers from acquiring
+self-shadowing when atlas resolution changes. There is no temporal shadow history.
+
+`Enabled=false`, no directional emitter, zero intensity or the selected emitter's
+`CastShadows=false` produces no cascades, atlas or visibility. Directional lighting
+then retains its original unshadowed behavior. Disabling this feature does not
+select another shadow algorithm. The canonical vertex-pull path requires compute,
+bindless resources and indirect draws; it requires neither mesh shaders, extended
+storage-image formats nor hardware ray tracing. Atlas dimensions are checked against
+the actual device limit before allocation, including multiplication bounds.
+
+Caster candidates come from world-authoritative extraction with the view's tag
+selection, not the main camera's compact visible-meshlet list. Shadow frusta include
+the authored depth padding. Orthographic coverage uses pixels per world metre and
+conservative meshlet culling without perspective cone rejection. Material shadow
+flags, transparent exclusion, alpha coverage and the canonical current-pose depth
+shader remain in the raster path. Each occurrence has separate transient contents.
+The authored 262,144-meshlet capacity rejects an insufficient conservative world
+bound before dispatch; it does not silently publish a truncated caster set.
+
+Production Vulkan comparisons cover real box/floor geometry, materials and a world
+sun, two independent worlds and enabled/disabled views. The initial 129 by 97 case
+has 305 shadowed pixels and 118 changed final pixels in the first world. A caster
+outside an orthographic camera's object-ID image changes 741 visible floor pixels.
+Removing the caster, disabling its material's shadow flag, or disabling the light's
+shadow flag restores the expected unshadowed output. Depth, object IDs and ambient
+illumination remain identical between the enabled and disabled views, while direct
+light is multiplied by the measured mask (within its RGBA16Float rounding).
+
+Tests also change the referenced workload from four 1024-texel cascades to one
+512-texel cascade, resize the viewport, reload Scene, invalidate camera history,
+destroy an independent world and execute a retained canonical recording after its
+world and pipeline instance are destroyed. The full comparison repeats on a device
+with mesh shaders and extended storage formats disabled. Editor acceptance compares
+changed geometry pixels through its existing Scene composition. Generated assets,
+images and lookup tables remain untracked.
+
+The retained-recording audit also replaced the main visibility producer's borrowed
+`this` callback with occurrence-owned, revision-checked LOD state. Native depth and
+G-buffer recording failures now reach graph execution diagnostics and stop dependent
+output; the graph submits its valid command prefix through the existing abort path.
+
+Windows/MSVC Debug validation passed all four CTest targets: production asset
+preparation, GraphicsCore (79 subtests), GraphicsFoundation (111 subtests) and
+EditorEngineProcessFramework (76 subtests), on Vulkan. EditorDocuments also passed.
+All five authored sources export deterministically; Scene and Editor keep their
+source identities and original required depth/HDR contracts. A fresh sample process
+rendered 300 frames using the generated asset table with shadows inactive by its
+light's default setting. Active shadow acceptance is provided by the comparisons
+above. The first reload run exposed low-resolution receiver acne, which the final
+texel-aware bias fixes; the recording regression verifies failure diagnostics,
+stopped dependent work and a successful green-image readback after recovery.
+
+This is a conventional directional cascade path. Local-light shadows, virtual-page
+shadow residency, hardware-ray shadows, contact-shadow tracing, angular-source
+penumbrae, atmospheric shadowing and cascade-blend quality remain separate work.
+Animated/cutout shadow content, stereo, large-world performance, other backends and
+interactive desktop acceptance require further effect-specific validation.

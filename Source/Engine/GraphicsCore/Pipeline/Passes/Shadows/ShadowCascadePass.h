@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/DirectionalLightFrameData.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -13,8 +14,11 @@ class XII_GRAPHICSCORE_DLL xiiShadowCascadePass final : public xiiRenderPipeline
   XII_ADD_DYNAMIC_REFLECTION(xiiShadowCascadePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineBufferOutputPin m_Constants{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineDataOutputPin   m_Snapshot{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>()};
+  xiiRenderPipelineDataInputPin    m_Light{xiiGetStaticRTTI<xiiDirectionalLightFrameData>(), true};
+  xiiRenderPipelineBufferOutputPin m_Constants{true, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineDataOutputPin   m_Snapshot{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>(), true};
+  bool                             m_bEnabled       = true;
+  bool                             m_bUseWorldLight = false;
   xiiShadowCascadeSettings         m_Settings;
   xiiVec3                          m_LightDirection = xiiVec3(0, 0, -1);
 
