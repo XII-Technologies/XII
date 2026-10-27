@@ -42,7 +42,7 @@ xiiGPUTestingEnvironment::~xiiGPUTestingEnvironment()
   Shutdown();
 }
 
-xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders, bool bEnableExtendedTextureUAVFormats)
+xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders, bool bEnableExtendedTextureUAVFormats, bool bEnableIndependentBlend)
 {
   XII_SUCCEED_OR_RETURN(xiiConfigureGPUTestDataDirectories());
 
@@ -62,7 +62,7 @@ xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders, bool bEn
   description.m_DeviceFeatures.m_DurationQueries                    = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_DepthBiasClamp                     = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_DepthClamp                         = xiiGALDeviceFeatureState::Optional;
-  description.m_DeviceFeatures.m_IndependentBlend                   = xiiGALDeviceFeatureState::Optional;
+  description.m_DeviceFeatures.m_IndependentBlend                   = bEnableIndependentBlend ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
   description.m_DeviceFeatures.m_DualSourceBlend                    = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_MultiViewport                      = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_TextureCompressionBC               = xiiGALDeviceFeatureState::Optional;

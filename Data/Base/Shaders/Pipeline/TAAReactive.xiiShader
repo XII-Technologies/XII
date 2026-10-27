@@ -1,0 +1,10 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+#define XII_TAA_STORAGE_FORMAT "rgba16f"
+#define XII_TAA_HISTORY_TRUST 1
+#include <Shaders/Pipeline/Passes/Temporal/TAA.h>

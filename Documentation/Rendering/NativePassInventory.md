@@ -21,7 +21,12 @@
 > real closest/farthest depth bounds, filtered radiance, GGX lookup and HDR composition.
 > Spatial output has Scene GPU acceptance; environment probes and SSR history remain separate work.
 
-Current source inventory: **108 concrete reflected operation classes** in
+> SceneTransparency now reuses native culling and weighted resolve around one new
+> forward raster operation. Alpha/additive/modulation have Scene/Editor GPU acceptance,
+> including lighting, depth, optional shadows/atmosphere and temporal trust. Refraction
+> and particle rendering remain separate work. See SceneRenderer.md for contracts.
+
+Current source inventory: **109 concrete reflected operation classes** in
 `Source/Engine/GraphicsCore/Pipeline/Passes`. The authoring interface/subgraph
 classes and helper implementations are excluded. This is an inventory of real
 classes, not a claim that the complete renderer has been rebuilt.

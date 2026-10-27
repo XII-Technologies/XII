@@ -26,11 +26,16 @@ public:
   float                                    m_fLodHysteresis    = 0.1f;
   float                                    m_fLodScreenScale   = 1.0f;
   bool                                     m_bUseViewSelection = true;
+  bool                                     m_bEnabled          = true;
+  /// With no GPU-supplied candidate stream, inspect the exact extracted view selection.
+  /// GPU-supplied candidates use a conservative world-wide presence test.
+  bool                                     m_bSkipEmptySelection = false;
+  void                                     GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                                Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
   void                                     InvalidateTemporalHistory() override;
-  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Geometry; }
-  xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override { return xiiRenderPipelineFeature::GpuScene; }
+  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return m_bEnabled ? xiiRenderExtractionCategory::Geometry : xiiRenderExtractionCategory::None; }
+  xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const override { return m_bEnabled ? xiiRenderPipelineFeature::GpuScene : xiiRenderPipelineFeature::None; }
 
 private:
   struct State;

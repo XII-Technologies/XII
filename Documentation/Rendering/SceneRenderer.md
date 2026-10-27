@@ -2,7 +2,7 @@
 
 `Data/Base/RenderPipelines` contains two default authored resources: **Scene** and
 **Editor**, plus independently authored **SceneAtmosphere** and
-**SceneDirectionalShadows** and **SceneScreenSpaceReflections** workloads composed by Scene. Directional shadows reuse
+**SceneDirectionalShadows**, **SceneScreenSpaceReflections** and **SceneTransparency** workloads composed by Scene. Directional shadows reuse
 **SceneShadowCascade** for each cascade's caster rasterization. The two roots are
 defaults, not an enumeration of supported workloads.
 Applications can select any compatible resource or construct a resource descriptor
@@ -42,7 +42,8 @@ Scene renders world mesh components through shared GPU instance extraction,
 view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
 lights, optional world directional shadows, ambient diffuse and emission, spatial
-ambient visibility, optional world atmosphere, spatial screen reflections and temporal
+ambient visibility, optional world atmosphere, spatial screen reflections, transparent
+mesh layers and temporal
 antialiasing, exposure,
 tone mapping, color grading and presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
@@ -132,7 +133,7 @@ and checks icon picking. Fixed preview tests exercise real texture/cubemap outpu
 The sample has completed 300 Vulkan frames at 1440 by 810 through Scene.
 
 These defaults intentionally exclude local/virtual/ray shadows, GI, environment/probe
-reflections and transparent/particle rasterization. Spatial screen reflections and
+reflections and particle rasterization. Spatial screen reflections and
 temporal antialiasing are authored but opt-in.
 Other retained operations and focused tests are not certification of complete production techniques.
 Custom material shader permutations beyond the canonical GPU surface model,
@@ -147,7 +148,7 @@ committed. The Editor transforms the authored sources into its normal
 subgraph reference use the source asset GUIDs through the existing lookup table.
 For standalone GPU tests/sample preparation, run `EditorFrameworkTest -noGui -run
 -close -all -filter RendererAssets -outputDir <project-local-test-output>`. This
-exports all six sources with the production compiler into the ignored cache, checks
+exports all seven sources with the production compiler into the ignored cache, checks
 stable exports and contracts, and is the CTest fixture for the GPU suites. The
 standalone sample mounts that cache; a missing transformation remains a loading
 failure rather than generating a substitute renderer. Core CPU tests require no
@@ -468,7 +469,7 @@ images when disabled. Generated captures are `SceneTemporal-Disabled.png`,
 `SceneTemporal-Current.png` and `SceneTemporal-Resolved.png` in the GPU test output.
 
 This path performs antialiasing at render resolution. Temporal upsampling,
-reactive masks for future transparency/particles, morph-history acceptance,
+particle reactive coverage, morph-history acceptance,
 stereo, representative quality/performance evaluation and other backends remain
 separate work. Moving surfaces in depth may conservatively reject valid history;
 there is no previous-position/depth MRT dedicated to deforming surfaces. Temporal
@@ -602,3 +603,148 @@ frames with the default reflection switch disabled. Active reflection evidence
 comes from the Scene/Editor image and buffer comparisons above. Pinned formatting,
 changed-source and whitespace checks passed. Generated binaries, tables, captures
 and logs are excluded from commits; D3D12 and other backends remain unverified.
+
+## Transparent world meshes
+
+Scene composes **SceneTransparency** after spatial reflections and before TAA.
+The root's opaque visibility query now explicitly excludes `Transparent` records;
+otherwise the same surface would incorrectly overwrite depth and shade twice.
+Editor continues to reference Scene. The new workload uses world-authoritative mesh
+extraction and the canonical bindless material/sampler and current skinning path.
+It adds one algorithm boundary, `xiiTransparentRasterPass`, and reuses the existing
+visibility, LOD initialization, counters, instance/meshlet culling, dispatch bounds,
+vertex-pull command generation and weighted resolve. Its thirteen operations are:
+
+```text
+Transparent View -> Cull Transparent Instances -> Meshlet Work Bound
+    -> Dispatch Meshlets -> Cull Transparent Meshlets -> Transparent Draw Commands
+    -> Raster Transparent Layers -> Composite Transparent Layers -> TAA -> output
+Initialize Transparent LOD + four explicit counters feed the culling operations.
+```
+
+`Transparent View.Enabled` is the workload switch. `SkipEmptySelection=true`
+conservatively checks extracted eligible records before publishing a query.
+Externally supplied GPU candidates retain conservative world-wide eligibility;
+their values are not read on the CPU. No eligible content or a disabled query
+produces no layer images and forwards the exact original HDR handle. Strict native
+resolve remains the default; only this authored workload opts into absent inputs.
+The separate LOD state initializes each frame with `LodHysteresis=0`; it does not
+borrow the opaque occurrence's state or the older reusable buffer-history slots.
+
+| Resource | Format and dimensions | Producer and consumer |
+| --- | --- | --- |
+| Scene instances, poses, geometry, meshlets, materials | Canonical structured buffers | World uploads -> transparent culling, vertex/pixel shaders |
+| Visibility query and indirect commands/count | Canonical view snapshot and structured draw buffers | View preparation/culling -> raster; query presence gates setup |
+| Depth | Viewport D32Float, one sample, depth attachment | Opaque raster -> read-only GreaterEqual test; transparency never writes it |
+| Accumulation | Viewport RGBA32Float, RT/SRV, clear zero | Independent additive blending -> weighted alpha resolve |
+| Revealage | Viewport R32Float, RT/SRV, clear one | Product of one minus opacity -> alpha composition |
+| Additive | Viewport RGBA32Float, RT/SRV, clear zero | Sum of lit color times opacity -> HDR addition |
+| Modulation | Viewport RGBA32Float, RT/SRV, clear one | Product of interpolated transmission factors -> HDR modulation |
+| HistoryTrust | Viewport R32Float, RT/SRV, clear one | Product of one minus opacity for every mode -> conservative TAA rejection |
+| HDR input/output | Matching RGBA16Float or RGBA32Float, input-sized | Immutable input -> distinct SRV/UAV resolve output; Scene uses full float |
+| Light resources | Exact environment/camera constants, typed cluster layout, lights/counts/candidates/IES/grid/indices/overflow | Existing view/world producers -> fragment-local ambient, directional and clustered local lighting |
+| Cascades and atlas, optional complete pair | Typed setup-local snapshot with explicit constant buffer dependency and D32 atlas | SceneDirectionalShadows -> PCF at each transparent fragment's world position |
+| Atmosphere, optional complete group | Exact physical constants and RGBA32 transmittance/multiple-scattering LUTs | SceneAtmosphere -> integration to each transparent surface's own distance |
+
+The shadow and atmosphere children expose these additional sampling resources;
+their existing identities and outputs remain unchanged. Scene retains ViewTarget,
+SceneDepth, ObjectId, HDRSceneColor and GradedColor and exposes optional
+`TransparentAccumulation`, `TransparentRevealage`, `TransparentAdditive`,
+`TransparentModulation` and `TransparentHistoryTrust` diagnostics. The root
+`InputCandidates` policy applies to opaque geometry; transparency uses its own
+view selection and supports a separately authored workload input.
+
+Materials select alpha, additive or modulation through their effective alpha/blend
+state, including blend-mode-only authored materials. The canonical texture alpha,
+normal map, material samplers, two-sided coverage and unlit/emission semantics are
+shared with opaque shading. Effective GPU alpha metadata also makes invisible
+blend-mode-only surfaces stop intercepting Editor picking. Lighting evaluates the
+same layered BRDF and local-light/IES helpers. Cluster overflow explicitly visits
+the complete candidate list. Instance receiver flags govern directional shadows;
+transparent meshes do not become shadow casters in the opaque cascade workload.
+
+Weighted alpha uses `opacity * clamp(10 / (1e-5 + (depth/WeightDepthScale)^2 +
+(depth/200)^6), .01, MaximumWeight)` with defaults 5 metres and 3000. Each fragment
+adds `(litColor * opacity * weight, opacity * weight)`. Resolve divides accumulated
+RGB by accumulated alpha, composites using revealage, adds the additive target,
+then multiplies by modulation. This mixed-mode order is explicit and independent
+of submission order; it approximates layered alpha rather than sorting surfaces.
+HDR alpha is preserved. Half output clamps only composed RGB to the representable
+range; full float retains values above 65504.
+
+Active rasterization requires bindless vertex pulling, indirect count support,
+independent attachment blending, five color attachments and floating-point blending
+for the chosen targets. Unsupported capabilities or shader/pipeline/binding failure
+report an error. The explicit fallback is the authored disabled workload. Empty
+content also bypasses these requirements. No mesh shader, extended storage-image
+format, ray tracer or unrelated transparency algorithm is substituted. Five layer
+images cost 56 bytes per pixel; the distinct full-float HDR resolve adds 16 bytes
+per pixel before graph lifetime reuse. Performance and large-world budgets have
+not been certified.
+
+Callbacks retain shader objects, signatures, pipeline components, samplers and
+captured constants. Shader-resource reloads cannot change a prepared recording's
+components. Uniform upload and transitions occur in a separate graph operation
+before the managed render pass; draw bindings verify GAL-managed states. No callback
+borrows a pass, component, view or world. All writable targets belong to the current
+graph occurrence.
+
+When TAA is enabled, trust below .999 selects current color. Its private R32 depth
+history records `-(depth+1)` for untrusted coverage, so the next frame rejects that
+history even when the layer disappears and no trust image is produced. This
+preserves HDR alpha and avoids a new temporal allocation. It deliberately sacrifices
+temporal antialiasing on covered transparent pixels until transparent motion and
+higher-quality reactive reconstruction are implemented. Opaque history behavior
+remains unchanged; applications still explicitly invalidate camera cuts/projection
+changes with `InvalidateTemporalHistory`.
+
+### Transparent acceptance and limits
+
+`SceneTransparency/RealWorldAlphaLayers` compares authored enabled/disabled Scene
+output using real opaque background geometry and transparent mesh materials.
+Twenty-nine phases check every RGB pixel against the actual accumulation,
+revealage, additive and modulation readbacks; opaque depth and ObjectId stay equal.
+The initial pane changes 2,401 final pixels. Tests cover blend-mode-only alpha,
+additive, modulation, zero opacity, absent content, restoration, odd resize,
+orthographic projection, movement, sun intensity, a separate shadow caster,
+atmospheric attenuation and local lights. Shadow removal restores transparent red
+energy from about 86.5 to 95.4; local lighting changes it from about 32.3 to 67.2.
+Two differently colored layers retain the same composite within float tolerance
+after their creation order reverses. Occluded layers contribute zero. A native
+texture resource reload switches point wrap, point clamp and linear wrap at UVs
+outside the image; both transparent color and opacity follow the authored sampler.
+Linear interpolation acceptance allows finite hardware filter precision.
+
+`TemporalWorldsViewsReloadAndRetainedRecording` interleaves red/blue independent
+worlds with two temporal views each. Covered pixels match the current-color
+reference, 2,116 interior disappeared pixels per world reject stale color, and
+first frames, explicit cuts, resize, Scene reload, orthographic reset and movement
+remain valid. A prepared graph executes and yields blue transparent pixels after
+its pipeline instance and world retire. `ExplicitIndependentBlendFallback` disables
+the actual device feature: active content fails explicitly while authored-disabled
+content and empty active queries render. Native resolve tests cover both HDR
+precisions, retained recordings, incomplete input pairs and shape errors; the
+four-frame temporal fixture verifies rejection followed by resumed accumulation.
+`CanonicalRenderer/EditorUsesScene` verifies 2,244 matching changed final pixels
+through Scene and Editor, exact disabled/invisible/restored images, and opacity-aware
+picking.
+
+Refraction, sorted alpha, transparent shadow casting, motion-aware transparent TAA,
+particle extraction/rasterization, environment/probe specular and GI remain separate
+work. The existing screen-refraction operation does not establish refractive
+transport here. Tests cover the canonical material model; custom material shader
+permutations, transparent skinning/normal-map visual acceptance, IES-specific
+transparent scenes, stereo, other backends and representative performance remain
+unverified.
+
+Final Windows/MSVC Debug builds passed for GraphicsCore, GraphicsCoreTest,
+GraphicsFoundationTest, EditorFrameworkTest, EditorEngineProcessFrameworkTest and
+GpuDrivenScene. Full Vulkan suite execution passed GraphicsCoreTest (79 subtests),
+GraphicsFoundationTest (127) and EditorEngineProcessFrameworkTest (76).
+RendererAssets passed deterministic exports of all seven sources; EditorDocuments
+(20) and NodeLayout (3) passed. The test executables and engine DLLs were built to
+an isolated project-local runtime because the user's running Editor held the
+normal output libraries; no running Editor process was stopped. Other backends
+remain unverified. The first broad GPU run exposed an undefined preprocessor
+variable in the shared vertex interface; an explicit optional-interface define
+corrects it, and the full GPU rerun passes.

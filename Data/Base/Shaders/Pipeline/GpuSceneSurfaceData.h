@@ -53,12 +53,17 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   output.MaterialIndex = instance.MaterialIndex;
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
   output.WorldPosition  = worldPosition;
+#  if defined(XII_SCENE_SURFACE_FLAGS)
+  output.SurfaceFlags = instance.Flags;
+#  endif
+#  if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
   output.ObjectUserData = instance.UserData;
+#endif
 #endif
 #if !defined(XII_SCENE_SURFACE_QUERY) && !defined(XII_SCENE_DEPTH_ONLY)
   output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
 #endif
-#if !defined(XII_SCENE_DEPTH_ONLY)
+#if !defined(XII_SCENE_DEPTH_ONLY) && !defined(XII_SCENE_SURFACE_NO_IDENTITY)
   output.ObjectId = instance.ObjectId;
 #endif
   return output;

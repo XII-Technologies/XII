@@ -1,0 +1,8 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#define XII_OIT_STORAGE_FORMAT "rgba32f"
+#define XII_OIT_FULL_PRECISION 1
+#define XII_OIT_LAYERS 0
+#include <Shaders/Pipeline/Passes/Transparency/OITResolve.h>
