@@ -1,8 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 class XII_GRAPHICSCORE_DLL xiiDiffuseSurfaceLightingPass final : public xiiRenderPipelinePass
@@ -20,6 +20,8 @@ public:
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   float                                       m_fScale        = 1;
   bool                                        m_bAsyncCompute = false;
+  /// Add incident bounce to the environment instead of replacing it by confidence.
+  bool                                        m_bAddIrradiance = false;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

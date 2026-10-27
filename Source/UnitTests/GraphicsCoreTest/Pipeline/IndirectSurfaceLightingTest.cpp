@@ -1,21 +1,25 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/IrradianceLayerPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/DiffuseSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentSpecularPass.h>
-#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 XII_CREATE_SIMPLE_TEST(Pipeline, IndependentIndirectSurfaceSchemas)
 {
   xiiDiffuseSurfaceLightingPass diffuse;
+  diffuse.m_bAddIrradiance = true;
   xiiVariantDictionary          properties;
   properties.Insert("Scale", 2.0f);
+  properties.Insert("AddIrradiance", true);
   XII_TEST_RESULT(diffuse.Configure(properties));
   properties.Clear();
   XII_TEST_RESULT(diffuse.GetProperties(properties));
   XII_TEST_BOOL(!properties.Contains("Depth") && !properties.Contains("EnvironmentLight"));
   xiiDiffuseSurfaceLightingPass copy;
   XII_TEST_RESULT(copy.Configure(properties));
+  XII_TEST_BOOL(copy.m_bAddIrradiance);
   XII_TEST_FLOAT(copy.m_fScale, 2, 0);
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   diffuse.GetPins(pins);

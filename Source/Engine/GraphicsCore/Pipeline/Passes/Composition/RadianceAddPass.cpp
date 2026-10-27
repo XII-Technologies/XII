@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Composition/RadianceAddConstants.h>
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRadianceAddPass,1,xiiRTTIDefaultAllocator<xiiRadianceAddPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRadianceAddPass,2,xiiRTTIDefaultAllocator<xiiRadianceAddPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -18,6 +18,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRadianceAddPass,1,xiiRTTIDefaultAllocator<xi
     XII_MEMBER_PROPERTY("ScaleB",m_fScaleB)->AddAttributes(new xiiDefaultValueAttribute(1.0f),new xiiClampValueAttribute(0.0f,xiiVariant())),
     XII_MEMBER_PROPERTY("Radiance",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("AllowAbsentB", m_bAllowAbsentB)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("Activation", m_Activation)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("RequireActivation", m_bRequireActivation)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("AsyncCompute",m_bAsyncCompute),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Composition") } XII_END_ATTRIBUTES;
@@ -34,6 +36,8 @@ void xiiRadianceAddPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins
   xiiRenderPipelinePass::GetPins(out_pins);
   for (xiiUInt32 i = first; i < out_pins.GetCount(); ++i)
   {
+    if (!out_pins[i].m_bInput && out_pins[i].m_sName == "Radiance")
+      out_pins[i].m_bOptional = m_bRequireActivation;
     if (out_pins[i].m_bInput && out_pins[i].m_sName == "B")
       out_pins[i].m_bOptional = m_bAllowAbsentB;
     if (!out_pins[i].m_bInput && out_pins[i].m_sName == "Radiance" && m_bAllowAbsentB)
@@ -46,6 +50,8 @@ void xiiRadianceAddPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins
 
 xiiResult xiiRadianceAddPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid())
+    return XII_SUCCESS;
   const auto  a            = context.GetInputTexture(this->m_A);
   const auto* aDescription = xiiCompositionPassUtils::Image(context, a);
   const auto  b            = context.GetInputTexture(this->m_B);

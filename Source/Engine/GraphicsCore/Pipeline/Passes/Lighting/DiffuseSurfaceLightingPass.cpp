@@ -7,7 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/Lighting/SurfaceLightingPassUtils.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDiffuseSurfaceLightingPass,1,xiiRTTIDefaultAllocator<xiiDiffuseSurfaceLightingPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDiffuseSurfaceLightingPass,2,xiiRTTIDefaultAllocator<xiiDiffuseSurfaceLightingPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -21,6 +21,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDiffuseSurfaceLightingPass,1,xiiRTTIDefaultA
     XII_MEMBER_PROPERTY("Lighting",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Scale",m_fScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f),new xiiClampValueAttribute(0.0f,xiiVariant())),
     XII_MEMBER_PROPERTY("AsyncCompute",m_bAsyncCompute),
+    XII_MEMBER_PROPERTY("AddIrradiance",m_bAddIrradiance)->AddAttributes(new xiiDefaultValueAttribute(false)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Lighting") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -61,7 +62,7 @@ xiiResult xiiDiffuseSurfaceLightingPass::Build(xiiRenderPipelinePassContext& con
     data.m_Occlusion=occlusion.IsValid() ? builder.ReadTexture(occlusion,xiiGALResourceStateFlags::ShaderResource):data.m_Depth;
     data.m_Environment=builder.ReadBuffer(environment,xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Size=size; data.m_Output=xiiCompositionPassUtils::Output(builder,size,xiiGALResourceFormat::RGBA32Float); data.m_Pipeline=m_Pipeline;
-    data.m_Snapshot.SurfaceExtent=xiiVec4U32(size.width,size.height,irradiance.IsValid() ? 1:0,occlusion.IsValid() ? 1:0); data.m_Snapshot.SurfaceEvaluation=xiiVec4(m_fScale,0,0,0);
+    data.m_Snapshot.SurfaceExtent=xiiVec4U32(size.width,size.height,irradiance.IsValid() ? 1:0,occlusion.IsValid() ? 1:0); data.m_Snapshot.SurfaceEvaluation=xiiVec4(m_fScale,m_bAddIrradiance ? 1.0f : 0.0f,0,0);
     data.m_Constants=xiiRenderPassUtils::Constants(builder,"Diffuse evaluation",sizeof(xiiSurfaceLightingConstants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands=execute.GetCommandList(); commands.SetPipelineState(data.m_Pipeline.Borrow());
     xiiSurfaceLightingPassUtils::BindConstants(execute,data.m_Constants,data.m_Snapshot);
@@ -73,7 +74,7 @@ xiiResult xiiDiffuseSurfaceLightingPass::Build(xiiRenderPipelinePassContext& con
     commands.ResolveAndSetShaderResourceTextureView("g_Irradiance",execute.GetTexture(data.m_Irradiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_Occlusion",execute.GetTexture(data.m_Occlusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessTextureView("g_Lighting",execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess),xiiGALShaderType::Compute);
-    commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess(); commands.DispatchCompute({(data.m_Size.width+7U)/8U,(data.m_Size.height+7U)/8U,1}); });
+    if(commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed()){execute.ReportFailure("Could not bind diffuse lighting resources.");return;} commands.DispatchCompute({(data.m_Size.width+7U)/8U,(data.m_Size.height+7U)/8U,1}); });
   return context.SetOutput(m_Output, pass.first->m_Output);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_DiffuseSurfaceLightingPass);
