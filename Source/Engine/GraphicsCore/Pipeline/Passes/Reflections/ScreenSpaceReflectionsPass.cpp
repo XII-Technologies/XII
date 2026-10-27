@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Reflections/ScreenSpaceReflectionsPass.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
@@ -11,10 +12,9 @@
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 
 using namespace xiiRenderPassUtils;
+static_assert(sizeof(xiiSSRConstants) == 48);
 struct xiiScreenSpaceReflectionsPass::Data
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiRenderGraphTextureHandle m_hSceneDepth;             ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hGBufferNormal;          ///< ShaderResource in (G-Buffer normal).
   xiiRenderGraphTextureHandle m_hGBufferMaterial;        ///< ShaderResource in (G-Buffer material).
@@ -28,7 +28,9 @@ struct xiiScreenSpaceReflectionsPass::Data
   xiiSSRConstants             m_Constants;
 
   xiiSizeU32                 m_Size;
-  xiiRenderGraphBufferHandle m_hPerFrameCamera, m_hPerFrameGlobal;
+  xiiRenderGraphBufferHandle               m_hPerFrameCamera;
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+  xiiSharedPtr<xiiGALSampler>              m_Linear, m_Point;
 };
 struct xiiScreenSpaceReflectionsPass::State
 {
@@ -65,6 +67,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceReflectionsPass, 1, xiiRTTIDefaul
     XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameGlobal", m_InputPerFrameGlobal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Constants", m_OutputConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinNameAttribute("xiiSSRConstants")),
+    XII_MEMBER_PROPERTY("AllowAbsentDepth", m_bAllowAbsentDepth)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("MaxDistance", m_fMaxDistance)->AddAttributes(new xiiDefaultValueAttribute(50.0f), new xiiClampValueAttribute(0.001f, xiiVariant())),
+    XII_MEMBER_PROPERTY("SurfaceBias", m_fSurfaceBias)->AddAttributes(new xiiDefaultValueAttribute(0.01f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("MaxSteps", m_uiMaxSteps)->AddAttributes(new xiiDefaultValueAttribute(96U), new xiiClampValueAttribute(1U, 4096U)),
     XII_MEMBER_PROPERTY("Thickness", m_fThickness)->AddAttributes(new xiiDefaultValueAttribute(0.0025f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("MaxRoughness", m_fMaxRoughness)->AddAttributes(new xiiDefaultValueAttribute(0.72f), new xiiClampValueAttribute(0.0f, 1.0f)),
@@ -76,14 +81,37 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceReflectionsPass, 1, xiiRTTIDefaul
 xiiResult xiiScreenSpaceReflectionsPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return m_uiMaxSteps > 0 && m_uiMaxSteps <= 4096 && xiiMath::IsFinite(m_fThickness) && m_fThickness >= 0 && m_fThickness <= 1 &&
+  return xiiMath::IsFinite(m_fMaxDistance) && m_fMaxDistance > 0 && xiiMath::IsFinite(m_fSurfaceBias) && m_fSurfaceBias >= 0 && m_fSurfaceBias < m_fMaxDistance && m_uiMaxSteps > 0 && m_uiMaxSteps <= 4096 && xiiMath::IsFinite(m_fThickness) && m_fThickness >= 0 && m_fThickness <= 1 &&
       xiiMath::IsFinite(m_fMaxRoughness) && m_fMaxRoughness >= 0 && m_fMaxRoughness <= 1 && xiiMath::IsFinite(m_fStrideZCutoff) && m_fStrideZCutoff >= 0 && m_fStrideZCutoff <= 1 ?
     XII_SUCCESS :
     XII_FAILURE;
 }
+void xiiScreenSpaceReflectionsPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  const auto first = out_pins.GetCount();
+  xiiRenderPipelinePass::GetPins(out_pins);
+  for (xiiUInt32 i = first; i < out_pins.GetCount(); ++i)
+    if (out_pins[i].m_sName == "SceneDepth" || out_pins[i].m_sName == "HiZClosestPyramid" || out_pins[i].m_sName == "HiZPyramid" || out_pins[i].m_sName == "HDRSceneColor" || out_pins[i].m_sName == "BRDFLut" || out_pins[i].m_sName == "SSRRawTerm" || out_pins[i].m_sName == "xiiSSRConstants")
+      out_pins[i].m_bOptional = m_bAllowAbsentDepth;
+}
+
 xiiResult xiiScreenSpaceReflectionsPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
+  const auto                 forward = [&](const xiiRenderPipelineTextureInputPin& input, const xiiRenderPipelineTextureOutputPin& output) {
+    const auto handle = context.GetInputTexture(input);
+    return handle.IsValid() ? context.SetOutput(output, handle) : XII_SUCCESS;
+  };
+  XII_SUCCEED_OR_RETURN(forward(m_InputSceneDepth, m_OutputSceneDepth));
+  XII_SUCCEED_OR_RETURN(forward(m_InputGBufferNormal, m_OutputGBufferNormal));
+  XII_SUCCEED_OR_RETURN(forward(m_InputGBufferMaterial, m_OutputGBufferMaterial));
+  XII_SUCCEED_OR_RETURN(forward(m_InputGBufferAlbedo, m_OutputGBufferAlbedo));
+  XII_SUCCEED_OR_RETURN(forward(m_InputBRDFLut, m_OutputBRDFLut));
+  XII_SUCCEED_OR_RETURN(forward(m_InputHiZClosestPyramid, m_OutputHiZClosestPyramid));
+  XII_SUCCEED_OR_RETURN(forward(m_InputHiZPyramid, m_OutputHiZPyramid));
+  XII_SUCCEED_OR_RETURN(forward(m_InputHDRSceneColor, m_OutputHDRSceneColor));
+  if (!context.GetInputTexture(m_InputSceneDepth).IsValid() && m_bAllowAbsentDepth)
+    return XII_SUCCESS;
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
   XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/SSR.xiiShader"));
@@ -94,18 +122,18 @@ xiiResult xiiScreenSpaceReflectionsPass::Build(xiiRenderPipelinePassContext& con
   const auto* sizingInput = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHDRSceneColor));
   if (!sizingInput || sizingInput->m_Size != size)
     return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
-  if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputSceneDepth)); !desc || desc->m_Size != size)
-    return XII_FAILURE;
-  if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputGBufferNormal)); !desc || desc->m_Size != size)
-    return XII_FAILURE;
-  if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputGBufferMaterial)); !desc || desc->m_Size != size)
-    return XII_FAILURE;
-  if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputGBufferAlbedo)); !desc || desc->m_Size != size)
-    return XII_FAILURE;
-  if (const auto* desc = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHDRSceneColor)); !desc || desc->m_Size != size)
-    return XII_FAILURE;
-  if (!context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHiZClosestPyramid)) || !context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputHiZPyramid)) || !context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputBRDFLut)))
-    return XII_FAILURE;
+  if (!xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputSceneDepth), 1, &size) ||
+      !xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputGBufferNormal), 2, &size) ||
+      !xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputGBufferMaterial), 4, &size) ||
+      !xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputGBufferAlbedo), 4, &size) ||
+      !xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputHDRSceneColor), 4, &size))
+    return context.ReportFailure("Screen reflections require matching readable depth, normal, material, albedo and HDR images.");
+  const auto* closest  = xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputHiZClosestPyramid), 1, &size);
+  const auto* farthest = xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputHiZPyramid), 1, &size);
+  if (!closest || !farthest || closest->m_Format != xiiGALResourceFormat::R32Float || farthest->m_Format != xiiGALResourceFormat::R32Float ||
+      !xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputBRDFLut), 2) ||
+      !xiiScreenSpacePassUtils::Uniform(context, context.GetInputBuffer(m_InputPerFrameCamera), sizeof(xiiFrameCameraConstants)))
+    return context.ReportFailure("Screen reflections require viewport-sized R32Float closest/farthest hierarchies, a readable BRDF lookup and exact camera constants.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
     data.m_hSceneDepth = context.GetInputTexture(m_InputSceneDepth);
@@ -117,7 +145,7 @@ xiiResult xiiScreenSpaceReflectionsPass::Build(xiiRenderPipelinePassContext& con
     data.m_hHiZFarthestPyramid = context.GetInputTexture(m_InputHiZPyramid);
     data.m_hHDRSceneColor = context.GetInputTexture(m_InputHDRSceneColor);
     data.m_hPerFrameCamera = context.GetInputBuffer(m_InputPerFrameCamera);
-    data.m_hPerFrameGlobal = context.GetInputBuffer(m_InputPerFrameGlobal);
+    data.m_Pipeline = m_pState->m_Pipeline;data.m_Linear=m_pState->m_Linear;data.m_Point=m_pState->m_Point;
     const auto* closest = context.m_Graph.GetTextureDescription(data.m_hHiZClosestPyramid);
     const auto* farthest = context.m_Graph.GetTextureDescription(data.m_hHiZFarthestPyramid);
     data.m_Constants.HiZMipCount = xiiMath::Min(closest->m_uiMipLevels, farthest->m_uiMipLevels);
@@ -125,16 +153,9 @@ xiiResult xiiScreenSpaceReflectionsPass::Build(xiiRenderPipelinePassContext& con
     data.m_Constants.Thickness = m_fThickness;
     data.m_Constants.MaxRoughness = m_fMaxRoughness;
     data.m_Constants.StrideZCutoff = m_fStrideZCutoff;
-    Setup(data, builder); }, xiiMakeDelegate(&xiiScreenSpaceReflectionsPass::Execute, this));
+    data.m_Constants.MaxDistance = m_fMaxDistance;data.m_Constants.SurfaceBias = m_fSurfaceBias;
+    Setup(data, builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputSSRRawTerm, emitted.first->m_hScreenSpaceReflections));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputSceneDepth, emitted.first->m_hSceneDepth));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGBufferNormal, emitted.first->m_hGBufferNormal));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGBufferMaterial, emitted.first->m_hGBufferMaterial));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGBufferAlbedo, emitted.first->m_hGBufferAlbedo));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputBRDFLut, emitted.first->m_hBRDFLut));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputHiZClosestPyramid, emitted.first->m_hHiZClosestPyramid));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputHiZPyramid, emitted.first->m_hHiZFarthestPyramid));
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputHDRSceneColor, emitted.first->m_hHDRSceneColor));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputConstants, emitted.first->m_hConstants));
   return XII_SUCCESS;
 }
@@ -153,7 +174,7 @@ void xiiScreenSpaceReflectionsPass::Setup(Data& data, xiiRenderGraphBuilder& bui
 
   xiiGALTextureCreationDescription description;
   description.m_Type             = xiiGALResourceDimension::Texture2D;
-  description.m_Format           = xiiGALResourceFormat::RGBA16Float;
+  description.m_Format           = xiiGALResourceFormat::RGBA32Float;
   description.m_Size.width       = data.m_Size.width;
   description.m_Size.height      = data.m_Size.height;
   description.m_uiMipLevels      = 1U;
@@ -180,11 +201,10 @@ void xiiScreenSpaceReflectionsPass::Setup(Data& data, xiiRenderGraphBuilder& bui
 
   data.m_Constants.InvResolution = xiiVec2(1.0f / static_cast<float>(data.m_Size.width), 1.0f / static_cast<float>(data.m_Size.height));
   data.m_Constants.HiZMipCount   = xiiMath::Min(data.m_Constants.HiZMipCount, uiMipCount);
-  data.m_Constants._Padding      = 0.0f;
+  data.m_Constants._Padding      = xiiVec3::MakeZero();
 
 
   data.m_hPerFrameCamera = builder.ReadBuffer(data.m_hPerFrameCamera, xiiGALResourceStateFlags::ConstantBuffer);
-  data.m_hPerFrameGlobal = builder.ReadBuffer(data.m_hPerFrameGlobal, xiiGALResourceStateFlags::ConstantBuffer);
 }
 void xiiScreenSpaceReflectionsPass::Execute(const Data& data, xiiRenderGraphPassContext& context)
 {
@@ -197,12 +217,12 @@ void xiiScreenSpaceReflectionsPass::Execute(const Data& data, xiiRenderGraphPass
       *pConstants = data.m_Constants;
     }
 
-    cmd.SetPipelineState(m_pState->m_Pipeline);
+    cmd.SetPipelineState(data.m_Pipeline.Borrow());
 
-    cmd.ResolveAndSetSampler("LinearClampSampler", m_pState->m_Linear.Borrow());
+    cmd.ResolveAndSetSampler("LinearClampSampler", data.m_Linear.Borrow());
     cmd.ResolveAndSetConstantBuffer("PerFrameCamera", context.GetBuffer(data.m_hPerFrameCamera), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetConstantBuffer("PerFrameGlobal", context.GetBuffer(data.m_hPerFrameGlobal), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetSampler("PointClampSampler", m_pState->m_Point.Borrow());
+
+    cmd.ResolveAndSetSampler("PointClampSampler", data.m_Point.Borrow());
 
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -214,7 +234,12 @@ void xiiScreenSpaceReflectionsPass::Execute(const Data& data, xiiRenderGraphPass
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRScene", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiSSRConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SSROut", context.GetTexture(data.m_hScreenSpaceReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      cmd.EndDebugGroup();
+      context.ReportFailure("Could not bind screen reflection resources.");
+      return;
+    }
     cmd.DispatchCompute({(data.m_Size.width + 7U) / 8U, (data.m_Size.height + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();

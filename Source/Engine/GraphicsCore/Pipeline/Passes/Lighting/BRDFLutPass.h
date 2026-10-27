@@ -11,6 +11,9 @@ class XII_GRAPHICSCORE_DLL xiiBRDFLutPass final : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiBRDFLutPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineTextureInputPin  m_Activation{xiiGALResourceFormat::Unknown, true};
+  bool                              m_bRequireActivation = false;
+  void                              GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::RG16Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read};
   xiiBRDFLutPass();
   ~xiiBRDFLutPass();

@@ -8,7 +8,7 @@
 void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
 {
   const auto pipeline = scene.GetPipeline();
-  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 2);
+  XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 3);
   XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere));
   XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting));
   XII_TEST_INT(pipeline->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
@@ -20,8 +20,14 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
     if (XII_TEST_BOOL(index != xiiInvalidIndex))
       XII_TEST_BOOL(pipeline->GetInterface()[index].m_Pin.m_bOptional);
   }
-  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion", "ShadowAtlas", "ShadowVisibility"})
+  for (const xiiStringView name : {"HDRSceneColor", "GradedColor", "SceneDepth", "ObjectId", "ViewOutput", "AmbientOcclusion", "ShadowAtlas", "ShadowVisibility", "ScreenReflections", "ReflectionLighting"})
     XII_TEST_BOOL(pipeline->FindInterface(name, false) != xiiInvalidIndex);
+  for (const xiiStringView name : {"ScreenReflections", "ReflectionLighting"})
+  {
+    const auto index = pipeline->FindInterface(name, false);
+    if (XII_TEST_BOOL(index != xiiInvalidIndex))
+      XII_TEST_BOOL(pipeline->GetInterface()[index].m_Pin.m_bOptional);
+  }
   const auto hdr = pipeline->FindInterface("HDRSceneColor", false);
   if (XII_TEST_BOOL(hdr != xiiInvalidIndex))
   {

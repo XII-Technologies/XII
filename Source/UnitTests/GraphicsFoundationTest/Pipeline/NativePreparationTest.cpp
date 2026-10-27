@@ -18,6 +18,8 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
+#include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 class xiiNativePreparationExport : public xiiRenderPipelinePass
 {
@@ -141,4 +143,157 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, SharedImmutableBRDFLookup)
     XII_TEST_RESULT(commands->UnmapTextureSubresource(capture.m_pStagingTexture, {}));
   }
   commands->End();
+}
+
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, RetainedBRDFRecording)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor descriptor;
+  const auto                          generate = descriptor.AddPass("Retained GGX integration", xiiGetStaticRTTI<xiiBRDFLutPass>());
+  const auto                          sink     = descriptor.AddPass("Read integrated GGX", xiiGetStaticRTTI<xiiNativePreparationExport>());
+  XII_TEST_RESULT(descriptor.Connect(generate, "BRDFLut", sink, "Input"));
+  descriptor.m_Interface.PushBack({"LUT", false, descriptor.m_Passes[sink].m_Id, "Output"});
+  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("BRDF.RetainedIntegration", std::move(descriptor));
+  xiiRenderPipelineInstance instance;
+  if (!XII_TEST_RESULT(instance.Synchronize(resource)))
+    return;
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(context.Initialize("Retained GGX integration")))
+    return;
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  auto& graph = context.GetGraph();
+  auto& cache = context.GetResourceCache();
+  cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+  XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+  graph.BeginSetup(frame.GetFrameIndex());
+  if (!XII_TEST_RESULT(instance.Build(nullptr, graph, context.GetBlackboard())))
+    return;
+  const auto output = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("LUT", false))->m_hTexture;
+  graph.EndSetup();
+  instance.Clear();
+  xiiStringBuilder error;
+  if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+    return;
+  struct Lookup
+  {
+    XII_DECLARE_POD_TYPE();
+    xiiFloat16 scale, bias;
+  };
+  Lookup lookup;
+  if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(output).Borrow(), 128, 0, lookup))
+    return;
+  const float fresnel = xiiMath::Pow(1.0f - 128.5f / 256, 5.0f);
+  XII_TEST_FLOAT(float(lookup.scale), 1.0f - fresnel, 0.003f);
+  XII_TEST_FLOAT(float(lookup.bias), fresnel, 0.003f);
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, GatedBRDFAndUnsupportedStorage)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  XII_TEST_BOOL(!xiiLightingManager::GetBRDFLUT());
+  for (xiiUInt32 inactive = 0; inactive < 2; ++inactive)
+  {
+    xiiRenderPipelineResourceDescriptor descriptor;
+    xiiVariantDictionary                properties;
+    properties.Insert("RequireActivation", inactive != 0);
+    const auto generate = descriptor.AddPass("Conditional GGX", xiiGetStaticRTTI<xiiBRDFLutPass>(), properties);
+    descriptor.m_Interface.PushBack({"LUT", false, descriptor.m_Passes[generate].m_Id, "BRDFLut"});
+    const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(inactive ? "BRDF.Inactive" : "BRDF.UnsupportedStorage", std::move(descriptor));
+    xiiRenderPipelineInstance instance;
+    if (!XII_TEST_RESULT(instance.Synchronize(resource)))
+      return;
+    xiiRenderGraphTestContext context;
+    if (!XII_TEST_RESULT(context.Initialize("BRDF device restriction")))
+      return;
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    auto& graph = context.GetGraph();
+    graph.BeginSetup(frame.GetFrameIndex());
+    const auto result = instance.Build(nullptr, graph, context.GetBlackboard());
+    if (inactive)
+    {
+      XII_TEST_RESULT(result);
+      XII_TEST_BOOL(!instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("LUT", false))->m_hTexture.IsValid());
+    }
+    else
+    {
+      XII_TEST_BOOL(result.Failed());
+      XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("TextureUAVExtendedFormats") != nullptr);
+    }
+    graph.EndSetup();
+    frame.End();
+    XII_TEST_BOOL(!xiiLightingManager::GetBRDFLUT());
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(NativePreparation, IndependentlyPreparedBRDFRecordings)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor descriptor;
+  const auto                          generate = descriptor.AddPass("Independent GGX integration", xiiGetStaticRTTI<xiiBRDFLutPass>());
+  const auto                          sink     = descriptor.AddPass("Read GGX on graphics", xiiGetStaticRTTI<xiiNativePreparationExport>());
+  XII_TEST_RESULT(descriptor.Connect(generate, "BRDFLut", sink, "Input"));
+  descriptor.m_Interface.PushBack({"LUT", false, descriptor.m_Passes[sink].m_Id, "Output"});
+  const auto                  resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("BRDF.PreparedBeforeGeneration", std::move(descriptor));
+  xiiRenderGraphTestContext   contexts[2];
+  xiiRenderPipelineInstance   instances[2];
+  xiiRenderGraphTextureHandle outputs[2];
+  xiiRenderGraphFrame         frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  XII_SCOPE_EXIT(frame.End());
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    if (!XII_TEST_RESULT(contexts[i].Initialize("Independently prepared lookup")) || !XII_TEST_RESULT(instances[i].Synchronize(resource)))
+      return;
+    auto& graph = contexts[i].GetGraph();
+    contexts[i].GetResourceCache().BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    graph.BeginSetup(frame.GetFrameIndex());
+    if (!XII_TEST_RESULT(instances[i].Build(nullptr, graph, contexts[i].GetBlackboard())))
+      return;
+    outputs[i] = instances[i].GetInterfaceBinding(instances[i].GetPipeline()->FindInterface("LUT", false))->m_hTexture;
+    graph.EndSetup();
+    instances[i].Clear();
+    if (!XII_TEST_RESULT(graph.Compile()))
+      return;
+  }
+  XII_SCOPE_EXIT(for (auto& context : contexts) context.GetResourceCache().EndFrame());
+  // Setup order does not decide which retained recording initializes the lookup.
+  // Submit both graphs before waiting for either readback or completion.
+  for (xiiUInt32 i : {1U, 0U})
+    if (!XII_TEST_RESULT(contexts[i].GetGraph().Execute(environment.GetDevice(), nullptr, &contexts[i].GetBlackboard(), &contexts[i].GetResourceCache())))
+      return;
+  struct Lookup
+  {
+    XII_DECLARE_POD_TYPE();
+    xiiFloat16 scale, bias;
+  };
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    Lookup pixel;
+    if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), contexts[i].GetGraph().GetExportedTexture(outputs[i]).Borrow(), 128, 0, pixel))
+      return;
+    const float fresnel = xiiMath::Pow(1.0f - 128.5f / 256, 5.0f);
+    XII_TEST_FLOAT(float(pixel.scale), 1 - fresnel, 0.003f);
+    XII_TEST_FLOAT(float(pixel.bias), fresnel, 0.003f);
+  }
 }

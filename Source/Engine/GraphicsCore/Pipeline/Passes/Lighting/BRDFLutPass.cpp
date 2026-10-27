@@ -6,6 +6,7 @@
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/BRDFLutPass.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
@@ -19,6 +20,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBRDFLutPass, 1, xiiRTTIDefaultAllocator<xiiB
   {
     XII_BEGIN_PROPERTIES
     {
+      XII_MEMBER_PROPERTY("Activation", m_Activation)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("RequireActivation", m_bRequireActivation)->AddAttributes(new xiiDefaultValueAttribute(false)),
       XII_MEMBER_PROPERTY("BRDFLut", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     } XII_END_PROPERTIES;
     XII_BEGIN_ATTRIBUTES
@@ -26,8 +29,22 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBRDFLutPass, 1, xiiRTTIDefaultAllocator<xiiB
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+void xiiBRDFLutPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  const auto first = out_pins.GetCount();
+  xiiRenderPipelinePass::GetPins(out_pins);
+  for (xiiUInt32 i = first; i < out_pins.GetCount(); ++i)
+    if (!out_pins[i].m_bInput && out_pins[i].m_sName == "BRDFLut")
+      out_pins[i].m_bOptional = m_bRequireActivation;
+}
+
 xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
 {
+  // Activation is setup-time resource presence, not a shader input or GPU dependency.
+  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid())
+    return XII_SUCCESS;
+  if (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled)
+    return context.ReportFailure("BRDF integration requires RG16Float storage-image support (TextureUAVExtendedFormats).");
   if (xiiLightingManager::EnsureBRDFLUTResources().Failed())
     return context.ReportFailure("Could not allocate the device-shared BRDF lookup.");
   const auto texture = xiiLightingManager::GetBRDFLUT();
@@ -46,10 +63,14 @@ xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
   {
     xiiRenderGraphTextureHandle m_Output;
     xiiSharedPtr<xiiGALFence>   m_Ready;
+    xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Ready = ready;
-    data.m_Output = builder.ImportTexture("Split-Sum Lookup", texture, texture->GetResourceState());
+    if (generate) data.m_Pipeline = m_pState->m_Pipeline;
+    // Independent retained graphs can change this imported resource after setup.
+    // Let GAL resolve its current state when the first barrier is executed.
+    data.m_Output = builder.ImportTexture("Split-Sum Lookup", texture, xiiGALResourceStateFlags::Unknown);
     if (generate) data.m_Output = builder.WriteTexture(data.m_Output, xiiGALResourceStateFlags::UnorderedAccess);
     else
     {
@@ -57,15 +78,27 @@ xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
       // Publish a preserved version establishing external readiness for every
       // consumer queue, including readers whose layout already matches.
       data.m_Output = builder.ReadWriteTexture(data.m_Output, xiiGALResourceStateFlags::ShaderResource);
-    } }, [this, generate](const Data& data, xiiRenderGraphPassContext& execute) {
+    } }, [generate](const Data& data, xiiRenderGraphPassContext& execute) {
     // Repeated occurrences built before Execute may all request generation.
     // The graph orders aliases; only the first live occurrence records the work.
-    if (!generate || !xiiLightingManager::IsBRDFLUTGenerationPending()) return;
+    if (!generate)
+      return;
     auto& commands = execute.GetCommandList();
-    commands.SetPipelineState(m_pState->m_Pipeline.Borrow());
+    if (!xiiLightingManager::IsBRDFLUTGenerationPending())
+    {
+      // Another independently recorded graph may have submitted generation after
+      // this graph's setup. Its shared immutable lookup still needs readiness.
+      commands.DeviceWaitForFence(data.m_Ready.Borrow(), 1);
+      return;
+    }
+    commands.SetPipelineState(data.m_Pipeline.Borrow());
     auto* output = execute.GetTexture(data.m_Output);
     commands.ResolveAndSetUnorderedAccessTextureView("g_BRDFLutOut", output->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      execute.ReportFailure("Could not bind BRDF integration resources.");
+      return;
+    }
     const auto size = output->GetDescription().m_Size;
     commands.DispatchCompute({(size.width + 7U) / 8U, (size.height + 7U) / 8U, 1});
     commands.EnqueueSignal(data.m_Ready.Borrow(), 1);

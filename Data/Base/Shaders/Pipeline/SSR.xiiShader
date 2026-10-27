@@ -1,179 +1,140 @@
-// XII Engine - SSR.xiiShader  [NEW]
-// Pass 31: Screen-Space Reflections via hierarchical DDA ray march on the Hi-Z pyramid.
-// Dispatch: ceil(W/8) × ceil(H/8) × 1
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 [PLATFORMS]
 ALL
 
-[PERMUTATIONS]
-
 [COMPUTE_SHADER]
 
 #include <Shaders/Common/StorageImageFormat.h>
-
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 
-Texture2D<float>    g_SceneDepth;
-Texture2D<float2>   g_GBufNormal;
-Texture2D<float4>   g_GBufMaterial; // r=roughness
-Texture2D<float>    g_HiZClosest;
-Texture2D<float>    g_HiZFarthest;
-Texture2D<float4>   g_HDRScene;
-Texture2D<float4>   g_GBufAlbedo;
-Texture2D<float2>   g_BRDFLut;
-XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_SSROut;
+Texture2D<float> g_SceneDepth;
+Texture2D<float2> g_GBufNormal;
+Texture2D<float4> g_GBufMaterial;
+Texture2D<float4> g_GBufAlbedo;
+Texture2D<float> g_HiZClosest;
+Texture2D<float> g_HiZFarthest;
+Texture2D<float4> g_HDRScene;
+Texture2D<float2> g_BRDFLut;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_SSROut;
 
-// Intersect a projected ray segment against the conservative closest/farthest
-// scene-depth interval stored by each Hi-Z cell. All comparisons happen in
-// linear view depth; reversed-Z values are used only for hierarchy storage.
-bool TraceHiZ(float3 rayOriginNDC, float3 rayDirNDC, float thickness, float roughness,
-              uint maxSteps, uint mipCount, float3 worldRayOrigin,
-              out float2 hitUV, out float hitDepth, out float hitTravel, out float hitQuality)
+float ReflectionViewDepth(float2 uv, float depth)
 {
-    hitUV    = float2(0,0);
-    hitDepth = 0.0f;
-    hitTravel = 0.0f;
-    hitQuality = 0.0f;
-
-    float3 pos = rayOriginNDC;
-    float step = 0.0025f;
-    uint mip   = 0u;
-
-    for (uint i = 0u; i < maxSteps; ++i)
-    {
-        // Bound each projected step to one cell at the selected mip. Sampling
-        // only the endpoint of a segment that spans several cells can skip a
-        // thin foreground interval even when the depth bounds are conservative.
-        const float cellSpanNDC = 2.0f * exp2((float)mip) * min(InvResolution.x, InvResolution.y);
-        const float projectedRate = max(max(abs(rayDirNDC.x), abs(rayDirNDC.y)), 1e-4f);
-        const float traceStep = min(step, max(cellSpanNDC / projectedRate, 1e-5f));
-        const float3 candidate = pos + rayDirNDC * traceStep;
-        const float2 uv = candidate.xy * float2(0.5f, -0.5f) + 0.5f;
-        if (any(uv <= 0.0f) || any(uv >= 1.0f) || candidate.z <= 0.0f || candidate.z > 1.0f)
-            return false;
-
-        const float closestDepth = g_HiZClosest.SampleLevel(PointClampSampler, uv, float(mip));
-        if (closestDepth <= 0.0f)
-        {
-            pos = candidate;
-            step = min(traceStep * 1.5f, max(StrideZCutoff, 0.01f));
-            mip = min(mip + 1u, mipCount - 1u);
-            continue;
-        }
-
-        const float farthestDepth = g_HiZFarthest.SampleLevel(PointClampSampler, uv, float(mip));
-        const float sceneNear = LinearizeDepth(closestDepth);
-        const float sceneFar = farthestDepth > 0.0f ? LinearizeDepth(farthestDepth) : g_CameraForwardAndFarPlane.w;
-        const float rayDepth0 = LinearizeDepth(max(pos.z, 1e-7f));
-        const float rayDepth1 = LinearizeDepth(candidate.z);
-        const float segmentNear = min(rayDepth0, rayDepth1);
-        const float segmentFar = max(rayDepth0, rayDepth1);
-        const float3 candidateWorld = ReconstructWorldPos(uv, candidate.z);
-        const float candidateTravel = length(candidateWorld - worldRayOrigin);
-
-        // Convert the authored relative thickness into metres and expand it by
-        // the rough reflection cone. This avoids a fixed NDC tolerance that
-        // becomes either too thin at distance or excessively thick nearby.
-        const float linearThickness = max(thickness * max(sceneNear, 1.0f), 0.002f) +
-                                      roughness * roughness * candidateTravel * 0.02f;
-        const bool overlapsDepthInterval = segmentFar >= sceneNear - linearThickness &&
-                                           segmentNear <= sceneFar + linearThickness;
-        if (overlapsDepthInterval)
-        {
-            const float depthError = abs(rayDepth1 - sceneNear);
-            if (mip == 0u && depthError <= linearThickness)
-            {
-                hitUV    = uv;
-                hitDepth = closestDepth;
-                hitTravel = candidateTravel;
-                hitQuality = saturate(1.0f - depthError / max(linearThickness, 1e-5f));
-                return true;
-            }
-
-            step = max(traceStep * 0.5f, 1e-5f);
-            if (mip > 0u) mip--;
-        }
-        else
-        {
-            pos = candidate;
-            step = min(traceStep * 1.5f, max(StrideZCutoff, 0.01f));
-            mip = min(mip + 1u, mipCount - 1u);
-        }
-    }
-    return false;
+  return dot(ReconstructWorldPos(uv, depth) - g_CameraPositionAndNearPlane.xyz, g_CameraForwardAndFarPlane.xyz);
 }
 
-[numthreads(8, 8, 1)]
-void main(uint3 tid : SV_DispatchThreadID)
+// Traverse complete cell segments. Endpoint-only sampling can skip thin surfaces
+// even with a conservative hierarchy when a step crosses a cell corner.
+bool TraceReflection(float3 start, float3 finish, float3 worldOrigin, float3 direction,
+                     float roughness, out float2 hitUV, out float hitTravel, out float quality)
 {
-    uint2 dims; g_SSROut.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
-
-    float2 uv        = (float2(tid.xy) + 0.5f) / float2(dims);
-    float  roughness = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0).r;
-
-    g_SSROut[tid.xy] = float4(0,0,0,0);
-    if (roughness > MaxRoughness) return;
-
-    float  depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0);
-    if (depth <= 0.0f) return;
-
-    float3 worldPos = ReconstructWorldPos(uv, depth);
-    float3 V        = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
-    float2 octN     = g_GBufNormal.SampleLevel(PointClampSampler, uv, 0);
-    float3 N        = DecodeOctNormal(octN);
-
-    // Jitter reflection direction based on roughness and frame index (for TAA integration).
-    float  noise    = InterleavedGradientNoise(float2(tid.xy), g_FrameIndex);
-    float  spread   = roughness * roughness * noise * 0.5f;
-    float3 R        = reflect(-V, N);
-    // Perturb in tangent plane by spread.
-    float3 up       = abs(R.y) < 0.999f ? float3(0,1,0) : float3(1,0,0);
-    float3 tangent  = normalize(cross(up, R));
-    R = normalize(R + tangent * spread);
-
-    // Convert to NDC space for Hi-Z traversal.
-    float4 clipOrg  = mul(g_ViewProjectionMatrix, float4(worldPos + R * 0.01f, 1.0f));
-    float4 clipEnd  = mul(g_ViewProjectionMatrix, float4(worldPos + R * 50.0f, 1.0f));
-    float3 ndcOrg   = clipOrg.xyz / clipOrg.w;
-    float3 ndcEnd   = clipEnd.xyz / clipEnd.w;
-    float3 rayDir   = normalize(ndcEnd - ndcOrg);
-
-    float2 hitUV;
-    float hitDepth;
-    float hitTravel;
-    float hitQuality;
-    bool hit = TraceHiZ(ndcOrg, rayDir, Thickness, roughness, MaxSteps, HiZMipCount,
-                        worldPos, hitUV, hitDepth, hitTravel, hitQuality);
-
-    if (hit)
+  hitUV=0;hitTravel=0;quality=0;
+  const float extent=length(finish-start);
+  if(extent<1.0e-6f || !all(isfinite(start)) || !all(isfinite(finish))) return false;
+  const float3 delta=(finish-start)/extent;
+  const float2 uvRate=delta.xy*float2(0.5f,-0.5f);
+  float distance=0;
+  uint mip=0;
+  for(uint step=0;step<MaxSteps && distance<extent;++step)
+  {
+    const float3 position=start+delta*distance;
+    const float2 uv=position.xy*float2(0.5f,-0.5f)+0.5f;
+    if(any(uv<=0) || any(uv>=1) || position.z<=0 || position.z>1) return false;
+    uint width,height,levels;g_HiZClosest.GetDimensions(mip,width,height,levels);
+    const float2 dimensions=float2(width,height);
+    const float2 cell=floor(uv*dimensions);
+    const float2 boundary=(cell+float2(uvRate.x>=0?1:0,uvRate.y>=0?1:0))/dimensions;
+    const float tx=abs(uvRate.x)>1.0e-8f?max((boundary.x-uv.x)/uvRate.x,0):1.0e9f;
+    const float ty=abs(uvRate.y)>1.0e-8f?max((boundary.y-uv.y)/uvRate.y,0):1.0e9f;
+    const float end=min(extent,distance+max(min(min(tx,ty),max(StrideZCutoff,0.01f)),1.0e-6f));
+    const float2 cellUV=(cell+0.5f)/dimensions;
+    const float nearDepth=g_HiZClosest.SampleLevel(PointClampSampler,cellUV,float(mip));
+    const float farDepth=g_HiZFarthest.SampleLevel(PointClampSampler,cellUV,float(mip));
+    const float3 candidate=start+delta*end;
+    const float2 candidateUV=candidate.xy*float2(0.5f,-0.5f)+0.5f;
+    if(nearDepth>0 && candidate.z>0 && candidate.z<=1)
     {
-        // Confidence combines independent failure modes so the hybrid
-        // composite can hand uncertain pixels to hardware RT or probes.
-        float2 edgeFade = saturate(float2(8,8) * min(hitUV, 1.0f - hitUV));
-        const float3 hitNormal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, hitUV, 0.0f));
-        const float facingConfidence = saturate(dot(hitNormal, -R) * 4.0f);
-        const float travelConfidence = saturate(1.0f - hitTravel / 50.0f);
-        const float roughnessConfidence = saturate(1.0f - roughness / max(MaxRoughness, 1e-4f));
-        const float conf = edgeFade.x * edgeFade.y * facingConfidence * travelConfidence * roughnessConfidence * hitQuality;
-
-        // Resolve the hit immediately. RGB is scene-referred radiance and alpha
-        // is confidence, which lets the hybrid reflection composite blend into
-        // ray tracing and local/sky probes without interpreting packed UVs.
-        const float radianceMip = roughness * 4.0f + 0.25f * log2(1.0f + hitTravel);
-        float3 hitRadiance = max(g_HDRScene.SampleLevel(LinearClampSampler, hitUV, radianceMip).rgb, 0.0f);
-        float3 albedo = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0.0f).rgb;
-        const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0.0f);
-        float metallic = saturate(material.g);
-        float dielectricSpecular = saturate(material.b);
-        float NoV = saturate(dot(N, V));
-        float3 f0 = lerp((0.08f * dielectricSpecular).xxx, albedo, metallic);
-        float3 grazing = max(1.0f - roughness, f0);
-        float3 fresnel = f0 + (grazing - f0) * pow(1.0f - NoV, 5.0f);
-        float2 brdf = g_BRDFLut.SampleLevel(LinearClampSampler, float2(NoV, roughness), 0.0f);
-        float3 reflectedRadiance = hitRadiance * (fresnel * brdf.x + brdf.y);
-        g_SSROut[tid.xy] = float4(reflectedRadiance, saturate(conf));
+      const float sceneNear=ReflectionViewDepth(cellUV,nearDepth);
+      const float sceneFar=farDepth>0?ReflectionViewDepth(cellUV,farDepth):g_CameraForwardAndFarPlane.w;
+      const float ray0=ReflectionViewDepth(uv,position.z);
+      const float ray1=ReflectionViewDepth(candidateUV,candidate.z);
+      const float travel=length(ReconstructWorldPos(candidateUV,candidate.z)-worldOrigin);
+      const float thickness=max(Thickness*max(sceneNear,1.0f),0.0001f)+roughness*roughness*travel*0.02f;
+      if(max(ray0,ray1)>=sceneNear-thickness && min(ray0,ray1)<=sceneFar+thickness)
+      {
+        if(mip>0) {--mip;continue;}
+        // At the finest level, solve against this texel's depth rather than
+        // requiring an arbitrary step endpoint to fall inside a thin interval.
+        const float crossing=abs(delta.z)>1.0e-8f?(nearDepth-start.z)/delta.z:distance;
+        const float3 intersection=start+delta*clamp(crossing,distance,end);
+        const float2 intersectionUV=intersection.xy*float2(0.5f,-0.5f)+0.5f;
+        const float error=abs(ReflectionViewDepth(intersectionUV,intersection.z)-sceneNear);
+        const float3 hitWorld=ReconstructWorldPos(intersectionUV,intersection.z);
+        const float hitDistance=length(hitWorld-worldOrigin);
+        const float3 hitNormal=DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler,cellUV,0));
+        // Reject departure-surface/backface intersections and continue tracing.
+        // Returning the first self-hit with zero confidence hides real hits behind it.
+        if(error<=thickness && hitDistance>SurfaceBias*2 && hitDistance<=MaxDistance && dot(hitNormal,-direction)>0.001f)
+        {
+          hitUV=intersectionUV;hitTravel=hitDistance;quality=saturate(1-error/max(thickness,1.0e-6f));return true;
+        }
+      }
+      else mip=min(mip+1,HiZMipCount-1);
     }
+    else mip=min(mip+1,HiZMipCount-1);
+    distance=end+1.0e-6f;
+  }
+  return false;
+}
+
+[numthreads(8,8,1)]
+void main(uint3 id:SV_DispatchThreadID)
+{
+  uint width,height;g_SSROut.GetDimensions(width,height);
+  if(any(id.xy>=uint2(width,height))) return;
+  g_SSROut[id.xy]=0;
+  const float2 uv=(float2(id.xy)+0.5f)/float2(width,height);
+  const float depth=g_SceneDepth.Load(int3(id.xy,0));
+  const float4 material=g_GBufMaterial.Load(int3(id.xy,0));
+  const float roughness=saturate(material.r);
+  if(depth<=0 || roughness>MaxRoughness || HiZMipCount==0) return;
+  const float3 world=ReconstructWorldPos(uv,depth);
+  const float3 normal=DecodeOctNormal(g_GBufNormal.Load(int3(id.xy,0)));
+  const bool orthographic=all(abs(g_ViewProjectionMatrix[3].xyz)<1.0e-6f);
+  const float3 view=orthographic?-g_CameraForwardAndFarPlane.xyz:normalize(g_CameraPositionAndNearPlane.xyz-world);
+  const float3 direction=normalize(reflect(-view,normal));
+  const float3 origin=world+normal*SurfaceBias;
+  float range=MaxDistance;
+  const float forwardRate=dot(direction,g_CameraForwardAndFarPlane.xyz);
+  if(forwardRate<0)
+    range=min(range,(g_CameraPositionAndNearPlane.w-dot(origin-g_CameraPositionAndNearPlane.xyz,g_CameraForwardAndFarPlane.xyz))/forwardRate*0.999f);
+  if(range<=SurfaceBias || !all(isfinite(direction))) return;
+  const float4 clipStart=mul(g_ViewProjectionMatrix,float4(origin,1));
+  const float4 clipEnd=mul(g_ViewProjectionMatrix,float4(origin+direction*range,1));
+  if(clipStart.w<=0 || clipEnd.w<=0) return;
+  float2 hitUV;float travel,quality;
+  if(!TraceReflection(clipStart.xyz/clipStart.w,clipEnd.xyz/clipEnd.w,world,direction,roughness,hitUV,travel,quality)) return;
+
+  // The radiance producer supplies real linear-color mips. Project an approximate
+  // GGX cone footprint to select their LOD; never assume a nonexistent mip chain.
+  uint radianceWidth,radianceHeight,radianceLevels;g_HDRScene.GetDimensions(0,radianceWidth,radianceHeight,radianceLevels);
+  const float3 hitWorld=ReconstructWorldPos(hitUV,g_SceneDepth.SampleLevel(PointClampSampler,hitUV,0));
+  const float3 up=abs(direction.y)<0.99f?float3(0,1,0):float3(1,0,0);
+  const float3 tangent=normalize(cross(direction,up));
+  const float4 offset=mul(g_ViewProjectionMatrix,float4(hitWorld+tangent*(roughness*roughness*travel),1));
+  const float2 offsetUV=offset.xy/max(offset.w,1.0e-6f)*float2(0.5f,-0.5f)+0.5f;
+  const float footprint=length((offsetUV-hitUV)*float2(radianceWidth,radianceHeight));
+  const float lod=clamp(log2(max(footprint,1.0f)),0,float(radianceLevels-1));
+  const float3 radiance=max(g_HDRScene.SampleLevel(LinearClampSampler,hitUV,lod).rgb,0);
+  const float3 albedo=g_GBufAlbedo.Load(int3(id.xy,0)).rgb;
+  const float NoV=saturate(dot(normal,view));
+  const float3 f0=lerp((0.08f*saturate(material.b)).xxx,albedo,saturate(material.g));
+  const float3 fresnel=f0+(max(1.0f-roughness,f0)-f0)*pow(1-NoV,5);
+  const float2 brdf=g_BRDFLut.SampleLevel(LinearClampSampler,float2(NoV,roughness),0);
+  const float2 edge=saturate(min(hitUV,1-hitUV)*8);
+  const float confidence=edge.x*edge.y*saturate(1-travel/MaxDistance)*saturate(1-roughness/max(MaxRoughness,0.0001f))*quality;
+  const float3 reflected=radiance*(fresnel*brdf.x+brdf.y);
+  g_SSROut[id.xy]=all(isfinite(reflected))?float4(reflected,saturate(confidence)):0;
 }

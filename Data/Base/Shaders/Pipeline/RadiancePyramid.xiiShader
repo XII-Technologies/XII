@@ -1,0 +1,40 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/Reflections/RadiancePyramidConstants.h>
+
+Texture2D<float4> g_Source;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Target;
+
+[numthreads(8, 8, 1)]
+void main(uint3 id : SV_DispatchThreadID)
+{
+  if (any(id.xy >= TargetSize))
+    return;
+  if (Reduce == 0u)
+  {
+    g_Target[id.xy] = g_Source.Load(int3(id.xy, 0));
+    return;
+  }
+  // Fractional footprints preserve the image integral when a dimension is odd.
+  const float2 first = float2(id.xy) * float2(SourceSize) / float2(TargetSize);
+  const float2 last = float2(id.xy + 1u) * float2(SourceSize) / float2(TargetSize);
+  const uint2 begin = uint2(floor(first));
+  const uint2 end = min(uint2(ceil(last)), SourceSize);
+  float4 sum = 0;
+  float area = 0;
+  for (uint y = begin.y; y < end.y; ++y)
+    for (uint x = begin.x; x < end.x; ++x)
+    {
+      const float2 covered = max(0.0f, min(last, float2(x + 1u, y + 1u)) - max(first, float2(x, y)));
+      const float weight = covered.x * covered.y;
+      sum += g_Source.Load(int3(x, y, 0)) * weight;
+      area += weight;
+    }
+  g_Target[id.xy] = sum / max(area, 1.0e-8f);
+}

@@ -245,7 +245,7 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   floorDescription.m_LocalPosition = {0, 0, -0.6f};
   floorDescription.m_LocalScaling  = {8, 8, 0.2f};
   xiiGameObject* floor             = nullptr;
-  world.CreateObject(floorDescription, floor);
+  const auto              floorHandle       = world.CreateObject(floorDescription, floor);
   xiiStaticMeshComponent* floorMesh = nullptr;
   xiiStaticMeshComponent::CreateComponent(floor, floorMesh);
   floorMesh->SetMesh(mesh);
@@ -436,4 +436,63 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
       return;
     XII_TEST_BOOL(restored == shadowImages[view][2]);
   }
+  // The optional reflection workload changes both roots before Editor composition.
+  xiiMaterialResourceDescriptor mirror;
+  mirror.m_BaseColor         = xiiColor(0.8f, 0.8f, 0.8f);
+  mirror.m_fMetallic         = 1;
+  mirror.m_fRoughness        = 0.05f;
+  xiiGameObject* mirrorOwner = nullptr;
+  if (!XII_TEST_BOOL(world.TryGetObject(floorHandle, mirrorOwner)) || !XII_TEST_BOOL(mirrorOwner->TryGetComponentOfBaseType(floorMesh)))
+    return;
+  floorMesh->SetMaterialOverride(0, xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.Mirror", std::move(mirror)));
+  xiiDynamicArray<xiiUInt32> reflectionImages[2][3];
+  for (xiiUInt32 phase = 0; phase < 3; ++phase)
+  {
+    if (phase == 1)
+    {
+      xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      xiiResourceLock<xiiRenderPipelineResource> editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      auto                                       sceneDefinition = scene->GetAuthoring()->m_Descriptor, editorDefinition = editor->GetAuthoring()->m_Descriptor;
+      const auto                                 occurrence = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenReflections");
+      const auto                                 gate       = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceReflections/Reflection Depth");
+      for (auto& pass : sceneDefinition.m_Passes)
+        if (pass.m_Id == occurrence)
+        {
+          auto& enable = pass.m_Overrides.ExpandAndGetRef();
+          enable.m_Path.PushBack(gate);
+          enable.m_Properties.Insert("Enabled", true);
+        }
+      for (auto& pass : editorDefinition.m_Passes)
+        if (pass.m_Definition == sceneDefinition.m_Id)
+        {
+          auto& enable = pass.m_Overrides.ExpandAndGetRef();
+          enable.m_Path.PushBack(occurrence);
+          enable.m_Path.PushBack(gate);
+          enable.m_Properties.Insert("Enabled", true);
+        }
+      views[0]->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.ReflectiveEditor", std::move(editorDefinition)));
+      views[1]->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("CanonicalRenderer.ReflectiveScene", std::move(sceneDefinition)));
+    }
+    else
+    {
+      views[0]->SetRenderPipelineResource(editorPipeline);
+      views[1]->SetRenderPipelineResource(scenePipeline);
+    }
+    update(3);
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      if (!XII_TEST_RESULT(views[view]->GetLastRenderResult()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], reflectionImages[view][phase]))
+        return;
+  }
+  xiiUInt32 reflectionChanges[2] = {}, matchingReflectionChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < reflectionImages[0][0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_TEST_INT(reflectionImages[view][0][pixel], reflectionImages[view][2][pixel]);
+      reflectionChanges[view] += reflectionImages[view][0][pixel] != reflectionImages[view][1][pixel];
+    }
+    matchingReflectionChanges += reflectionImages[1][0][pixel] != reflectionImages[1][1][pixel] && reflectionImages[0][0][pixel] == reflectionImages[1][0][pixel] && reflectionImages[0][1][pixel] == reflectionImages[1][1][pixel];
+  }
+  xiiTestFramework::Output(xiiTestOutput::Details, "Editor reflection acceptance: %u Editor, %u Scene, %u matching final pixels.", reflectionChanges[0], reflectionChanges[1], matchingReflectionChanges);
+  XII_TEST_BOOL(reflectionChanges[0] > 8 && reflectionChanges[1] > 8 && matchingReflectionChanges > 8);
 }

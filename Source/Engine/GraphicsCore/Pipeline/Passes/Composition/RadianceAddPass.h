@@ -14,6 +14,8 @@ public:
   xiiRenderPipelineTextureInputPin            m_B{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   bool                                        m_bAsyncCompute = false;
+  bool                                        m_bAllowAbsentB = false;
+  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   float                                       m_fScaleA = 1, m_fScaleB = 1;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;

@@ -12,14 +12,26 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiConfidenceRadiancePass,1,xiiRTTIDefaultAlloc
   {
     XII_MEMBER_PROPERTY("Signal",m_Signal)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Radiance",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("AllowAbsentSignal", m_bAllowAbsentSignal)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("AsyncCompute",m_bAsyncCompute),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Composition") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+void xiiConfidenceRadiancePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const
+{
+  const auto first = out_pins.GetCount();
+  xiiRenderPipelinePass::GetPins(out_pins);
+  for (xiiUInt32 i = first; i < out_pins.GetCount(); ++i)
+    if (out_pins[i].m_sName == "Signal" || out_pins[i].m_sName == "Radiance")
+      out_pins[i].m_bOptional = m_bAllowAbsentSignal;
+}
+
 xiiResult xiiConfidenceRadiancePass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  signal            = context.GetInputTexture(this->m_Signal);
+  if (!signal.IsValid() && m_bAllowAbsentSignal)
+    return XII_SUCCESS;
   const auto* signalDescription = xiiCompositionPassUtils::Image(context, signal);
   if (!signalDescription)
     return context.ReportFailure("ConfidenceRadiance requires matching nonempty float-readable RGBA single-sample 2D images.");
@@ -37,7 +49,7 @@ xiiResult xiiConfidenceRadiancePass::Build(xiiRenderPipelinePassContext& context
     auto& commands=execute.GetCommandList(); commands.SetPipelineState(data.m_Pipeline.Borrow());
     commands.ResolveAndSetShaderResourceTextureView("g_Signal",execute.GetTexture(data.m_Signal)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessTextureView("g_Radiance",execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess),xiiGALShaderType::Compute);
-    commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess(); commands.DispatchCompute({(data.m_Size.width+7U)/8U,(data.m_Size.height+7U)/8U,1}); });
+    if(commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed()){execute.ReportFailure("Could not bind confidence radiance resources.");return;} commands.DispatchCompute({(data.m_Size.width+7U)/8U,(data.m_Size.height+7U)/8U,1}); });
   return context.SetOutput(m_Output, pass.first->m_Output);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Composition_ConfidenceRadiancePass);
