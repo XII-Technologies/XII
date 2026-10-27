@@ -107,8 +107,9 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
     if (!m_pState->m_Exposure)
       return XII_FAILURE;
   }
-  if (!context.GetInputBuffer(m_InputLuminanceHistogram).IsValid())
-    return XII_FAILURE;
+  const auto* histogram = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_InputLuminanceHistogram));
+  if (!histogram || histogram->m_Mode != xiiGALBufferMode::Structured || histogram->m_uiSize != 256 * sizeof(xiiUInt32) || histogram->m_uiElementByteStride != sizeof(xiiUInt32) || !histogram->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+    return context.ReportFailure("Auto exposure requires a readable structured histogram of 256 uint counters.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_hHistogram = context.GetInputBuffer(m_InputLuminanceHistogram);
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;
@@ -131,7 +132,7 @@ void xiiAutoExposurePass::Setup(Data& data, xiiRenderGraphBuilder& builder)
   data.m_hHistogram = builder.ReadBuffer(data.m_hHistogram, xiiGALResourceStateFlags::ShaderResource);
 
   data.m_hExposure = builder.ImportBuffer("CurrentExposure", m_pState->m_Exposure, m_pState->m_Exposure->GetResourceState());
-  data.m_hExposure = builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hExposure = data.m_bHistoryValid ? builder.ReadWriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess) : builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
 
 
   xiiGALBufferCreationDescription constantsDescription;
@@ -166,7 +167,12 @@ void xiiAutoExposurePass::Execute(const Data& data, xiiRenderGraphPassContext& c
     cmd.ResolveAndSetConstantBuffer("xiiExposureAdaptationConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Histogram", context.GetBuffer(data.m_hHistogram)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_Exposure", context.GetBuffer(data.m_hExposure)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      context.ReportFailure("Could not bind auto exposure resources.");
+      cmd.EndDebugGroup();
+      return;
+    }
     cmd.DispatchCompute({1U, 1U, 1U});
     {
       XII_LOCK(data.m_State->m_Mutex);

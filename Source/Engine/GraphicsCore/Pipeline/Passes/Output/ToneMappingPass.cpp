@@ -2,9 +2,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Output/ToneMappingPass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
@@ -35,7 +37,7 @@ xiiToneMappingPass::xiiToneMappingPass()
 }
 xiiToneMappingPass::~xiiToneMappingPass() = default;
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiToneMappingPass, 1, xiiRTTIDefaultAllocator<xiiToneMappingPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiToneMappingPass, 2, xiiRTTIDefaultAllocator<xiiToneMappingPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -91,11 +93,22 @@ xiiResult xiiToneMappingPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputDisplayLinearColor, context.GetInputTexture(m_InputUpscaledColor), size));
+  if (!xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputUpscaledColor), 4))
+    return context.ReportFailure("Tone mapping requires readable single-sample floating-point RGBA input.");
+  const auto bloom = context.GetInputTexture(m_InputBloomTexture);
+  if ((bloom.IsValid() && !xiiScreenSpacePassUtils::Image(context, bloom, 4)) || (!bloom.IsValid() && m_pState->m_Display.m_Settings.m_fBloomStrength > 0))
+    return context.ReportFailure("Active bloom requires a readable RGBA bloom image.");
+  const auto* exposure = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_InputCurrentExposure));
+  if (!exposure || exposure->m_Mode != xiiGALBufferMode::Structured || exposure->m_uiElementByteStride != sizeof(float) || exposure->m_uiSize < sizeof(float) || !exposure->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+    return context.ReportFailure("Tone mapping requires readable structured float exposure.");
+  const auto& limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
+  if ((size.width + 7ULL) / 8 > limits.m_uiMaxThreadGroupCountX || (size.height + 7ULL) / 8 > limits.m_uiMaxThreadGroupCountY)
+    return context.ReportFailure("Tone mapping exceeds compute dispatch dimensions.");
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
     data.m_hHDRInput=context.GetInputTexture(m_InputUpscaledColor);
-    data.m_hBloom=context.GetInputTexture(m_InputBloomTexture);
+    data.m_hBloom         = bloom.IsValid() ? bloom : data.m_hHDRInput;
     data.m_hExposure=context.GetInputBuffer(m_InputCurrentExposure);
     Setup(data,builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hDisplayLinear));
@@ -156,7 +169,12 @@ void xiiToneMappingPass::Execute(const Data& data, xiiRenderGraphPassContext& co
     cmd.ResolveAndSetShaderResourceTextureView("g_BloomTex", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Exposure", context.GetBuffer(data.m_hExposure)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_LDROut", context.GetTexture(data.m_hDisplayLinear)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      context.ReportFailure("Could not bind tone mapping resources.");
+      cmd.EndDebugGroup();
+      return;
+    }
     cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();

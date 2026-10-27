@@ -464,7 +464,7 @@ o
 			s{"{ dcc2963c-bbe0-6a2e-e15f-03ef8d374edb }"}
 		}
 		Uuid %DocumentID{u4{17838772279808529951,3556294463007207433}}
-		u4 %Hash{906571534497701383}
+		u4 %Hash{2289731925005660968}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{3244159327931217666,835577455807645679}}
@@ -9718,7 +9718,7 @@ o
 {
 	Uuid %id{u4{13541745267123214993,4796142911437367438}}
 	s %t{"xiiBloomPass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		Uuid %BloomTexture{u4{1281711665304257304,17407260351759820706}}
@@ -10586,7 +10586,7 @@ o
 {
 	Uuid %id{u4{14795860834490345346,4978533661690275344}}
 	s %t{"xiiToneMappingPass"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
 		f %BloomStrength{0xCDCC4C3D}
@@ -16008,7 +16008,7 @@ o
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"BloomTexture"}
-		b %Optional{0}
+		b %Optional{1}
 		s %ResourceType{"xiiRenderPipelinePinType::Texture"}
 		b %TemporalHistory{0}
 	}
@@ -22094,7 +22094,7 @@ o
 		s %DeclaredFormat{"xiiGALResourceFormat::RGBA16Float"}
 		b %Input{0}
 		s %Name{"BloomTexture"}
-		b %Optional{0}
+		b %Optional{1}
 		s %ResourceType{"xiiRenderPipelinePinType::Texture"}
 		b %TemporalHistory{0}
 	}
@@ -32041,7 +32041,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiBloomPass"}
-		u3 %TypeVersion{1}
+		u3 %TypeVersion{2}
 	}
 }
 o
@@ -32109,7 +32109,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiToneMappingPass"}
-		u3 %TypeVersion{1}
+		u3 %TypeVersion{2}
 	}
 }
 o

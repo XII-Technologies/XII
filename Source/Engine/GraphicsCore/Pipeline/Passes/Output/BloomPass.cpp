@@ -2,9 +2,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Output/BloomPass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
@@ -13,7 +15,6 @@
 struct xiiBloomPass::Data
 {
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
-  xiiSharedPtr<xiiGALSampler>              m_Sampler;
 
   xiiRenderGraphTextureHandle m_hHDRIn; ///< ShaderResource in (upscaled HDR input).
   xiiRenderGraphTextureHandle m_hBloom; ///< UnorderedAccess out (bloom result).
@@ -24,7 +25,6 @@ struct xiiBloomPass::Data
 struct xiiBloomPass::State
 {
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
-  xiiSharedPtr<xiiGALSampler>              m_Sampler;
   xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
@@ -34,7 +34,7 @@ xiiBloomPass::xiiBloomPass()
 }
 xiiBloomPass::~xiiBloomPass() = default;
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 1, xiiRTTIDefaultAllocator<xiiBloomPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 2, xiiRTTIDefaultAllocator<xiiBloomPass>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -74,15 +74,21 @@ xiiResult xiiBloomPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/BloomChain.xiiShader"));
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_pState->m_Sampler));
   xiiDisplayOutputSettings settings;
   settings.m_fBloomThreshold = m_fThreshold;
   settings.m_fBloomKnee      = m_fKnee;
   settings.m_fBloomRadius    = m_fRadius;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
+  if (m_pState->m_Display.m_Settings.m_fBloomStrength == 0)
+    return XII_SUCCESS;
+  if (!xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputUpscaledColor), 4))
+    return context.ReportFailure("Bloom requires readable single-sample floating-point RGBA input.");
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/BloomChain.xiiShader"));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputBloomTexture, context.GetInputTexture(m_InputUpscaledColor), size));
+  const auto& limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
+  if ((size.width + 7ULL) / 8 > limits.m_uiMaxThreadGroupCountX || (size.height + 7ULL) / 8 > limits.m_uiMaxThreadGroupCountY)
+    return context.ReportFailure("Bloom exceeds compute dispatch dimensions.");
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
@@ -95,7 +101,6 @@ xiiResult xiiBloomPass::Build(xiiRenderPipelinePassContext& context)
 void xiiBloomPass::Setup(Data& data, xiiRenderGraphBuilder& builder)
 {
   data.m_Pipeline                = m_pState->m_Pipeline;
-  data.m_Sampler                 = m_pState->m_Sampler;
   const xiiUInt32 uiOutputWidth  = data.m_Size.width;
   const xiiUInt32 uiOutputHeight = data.m_Size.height;
 
@@ -134,11 +139,15 @@ void xiiBloomPass::Execute(const Data& data, xiiRenderGraphPassContext& context)
 
     cmd.SetPipelineState(data.m_Pipeline.Borrow());
 
-    cmd.ResolveAndSetSampler("g_sLinearClamp", data.m_Sampler.Borrow());
     cmd.ResolveAndSetConstantBuffer("xiiBloomConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_BloomOut", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      context.ReportFailure("Could not bind bloom resources.");
+      cmd.EndDebugGroup();
+      return;
+    }
     cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();

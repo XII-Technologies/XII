@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/Pipeline/Passes/Exposure/LuminanceHistogramPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -75,6 +76,11 @@ xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), size));
+  if (!xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputHDRSceneColor), 4))
+    return context.ReportFailure("Luminance histogram requires readable single-sample RGBA input.");
+  const auto& limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
+  if (xiiUInt64(size.width) * size.height > xiiMath::MaxValue<xiiUInt32>() || (size.width + 15ULL) / 16 > limits.m_uiMaxThreadGroupCountX || (size.height + 15ULL) / 16 > limits.m_uiMaxThreadGroupCountY)
+    return context.ReportFailure("Luminance histogram exceeds counter or compute dispatch dimensions.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;
@@ -128,7 +134,12 @@ void xiiLuminanceHistogramPass::Execute(const Data& data, xiiRenderGraphPassCont
     cmd.ResolveAndSetConstantBuffer("xiiExposureHistogramConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRInput", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_Histogram", context.GetBuffer(data.m_hHistogram)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      context.ReportFailure("Could not bind luminance histogram resources.");
+      cmd.EndDebugGroup();
+      return;
+    }
     cmd.DispatchCompute({(uiRenderWidth + 15U) / 16U, (uiRenderHeight + 15U) / 16U, 1U});
   }
   cmd.EndDebugGroup();

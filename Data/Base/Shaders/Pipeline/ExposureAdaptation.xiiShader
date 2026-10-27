@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 [PLATFORMS]
 ALL
 
@@ -39,13 +41,18 @@ void main(uint3 tid : SV_DispatchThreadID)
         float minCount = max(0.0f, lowCount - count);
         float maxCount = min(bCount, highCount - count);
         float contribution = max(0.0f, maxCount - minCount);
-        float logLum = LogLuminanceRange.x + (float(b) / 255.0f) * LogLuminanceRange.z;
+        // Bucket zero is reserved for black. The other buckets encode
+        // floor(t * 254 + 1); reconstruct their centers, with 255 at the maximum.
+        float t = b == 0u ? 0.0f : b == 255u ? 1.0f : (float(b) - 0.5f) / 254.0f;
+        float logLum = LogLuminanceRange.x + t * LogLuminanceRange.z;
         weightedAvg += logLum * contribution;
         count += bCount;
         if (count >= highCount) break;
     }
 
-    float clampedRange = max(highCount - lowCount, 1.0f);
+    // Percentile clipping retains fractional pixel weights, including for a
+    // one-pixel viewport. Do not normalize that weight by an entire pixel.
+    float clampedRange = max(highCount - lowCount, 1.0e-20f);
     float avgLogLum    = weightedAvg / clampedRange;
     float avgLum       = exp2(avgLogLum);
 
@@ -54,8 +61,8 @@ void main(uint3 tid : SV_DispatchThreadID)
     float targetExp    = exp2(Exposure.w) / (1.2f * exp2(ev100));
 
     // Exponential temporal adaptation is stable across variable frame rates.
-    float prevExp      = g_Exposure[0];
-    if (HistoryValid == 0u || prevExp <= 0.0f) prevExp = targetExp;
+    float prevExp      = HistoryValid != 0u ? g_Exposure[0] : targetExp;
+    if (!isfinite(prevExp) || prevExp <= 0.0f) prevExp = targetExp;
     float speed        = targetExp > prevExp ? Metering.z : Metering.w;
     float blend        = 1.0f - exp2(-max(speed, 0.0f) * Exposure.x);
     float newExp       = lerp(prevExp, targetExp, saturate(blend));
