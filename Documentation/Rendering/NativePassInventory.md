@@ -38,6 +38,11 @@ removed completely; rebuild their graphs from native operations. The removed gam
 authored references to these paths produce missing-resource errors. They must be
 updated or satisfied by genuinely rebuilt assets before the migration is complete.
 
+> SceneParticles now composes immutable world-birth upload, explicit GPU ballistic
+> evaluation and unlit billboard append into the canonical shared transparent
+> layers. The old particle runtime's graph-node scheduling remains operation-level
+> scaffolding. See SceneRenderer.md for supported modes and actual GPU acceptance.
+
 ## Operations in source
 
 | Directory | Count | Reflected operations |

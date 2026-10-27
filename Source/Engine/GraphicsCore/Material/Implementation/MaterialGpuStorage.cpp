@@ -9,9 +9,48 @@
 namespace
 {
   template <typename T>
-  bool TryGetMaterialParameter(const xiiMaterialInstance& material, xiiStringView sName, T& out_value)
+  xiiVariant ReadSnapshotValue(const xiiMaterialInstanceSnapshot& snapshot, const xiiMaterialParameterDefinition& definition)
   {
-    const xiiVariant value = material.GetParameter(xiiMaterialParameterId::Make(sName));
+    if (definition.m_uiSize < sizeof(T) || definition.m_uiOffset > snapshot.m_ParameterData.GetCount() || sizeof(T) > snapshot.m_ParameterData.GetCount() - definition.m_uiOffset)
+      return {};
+    T value;
+    xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&value), snapshot.m_ParameterData.GetData() + definition.m_uiOffset, sizeof(T));
+    return value;
+  }
+  xiiVariant SnapshotParameter(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView name)
+  {
+    const auto* definition = snapshot.m_pSchema ? snapshot.m_pSchema->FindParameter(xiiMaterialParameterId::Make(name)) : nullptr;
+    if (!definition)
+      return {};
+    switch (definition->m_Type)
+    {
+      case xiiMaterialParameterType::Bool:
+      {
+        const auto value = ReadSnapshotValue<xiiUInt32>(snapshot, *definition);
+        return value.IsValid() ? xiiVariant(value.Get<xiiUInt32>() != 0) : xiiVariant();
+      }
+      case xiiMaterialParameterType::Int:
+        return ReadSnapshotValue<xiiInt32>(snapshot, *definition);
+      case xiiMaterialParameterType::UInt:
+        return ReadSnapshotValue<xiiUInt32>(snapshot, *definition);
+      case xiiMaterialParameterType::Float:
+        return ReadSnapshotValue<float>(snapshot, *definition);
+      case xiiMaterialParameterType::Float2:
+        return ReadSnapshotValue<xiiVec2>(snapshot, *definition);
+      case xiiMaterialParameterType::Float3:
+        return ReadSnapshotValue<xiiVec3>(snapshot, *definition);
+      case xiiMaterialParameterType::Float4:
+        return ReadSnapshotValue<xiiVec4>(snapshot, *definition);
+      case xiiMaterialParameterType::Color:
+        return ReadSnapshotValue<xiiColor>(snapshot, *definition);
+      default:
+        return {};
+    }
+  }
+  template <typename T>
+  bool TryGetMaterialParameter(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName, T& out_value)
+  {
+    const xiiVariant value = SnapshotParameter(snapshot, sName);
     if (!value.IsValid() || !value.CanConvertTo<T>())
       return false;
 
@@ -19,11 +58,11 @@ namespace
     return true;
   }
 
-  void ResolveMaterialColor(const xiiMaterialInstance& material, xiiStringView sName, xiiVec4& inout_value, bool bPreserveAlpha)
+  void ResolveMaterialColor(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName, xiiVec4& inout_value, bool bPreserveAlpha)
   {
     const float fPreviousAlpha = inout_value.w;
     xiiColor    color;
-    if (TryGetMaterialParameter(material, sName, color))
+    if (TryGetMaterialParameter(snapshot, sName, color))
     {
       inout_value = xiiVec4(color.r, color.g, color.b, color.a);
       if (bPreserveAlpha)
@@ -32,7 +71,7 @@ namespace
     }
 
     xiiVec4 vector4;
-    if (TryGetMaterialParameter(material, sName, vector4))
+    if (TryGetMaterialParameter(snapshot, sName, vector4))
     {
       inout_value = vector4;
       if (bPreserveAlpha)
@@ -41,7 +80,7 @@ namespace
     }
 
     xiiVec3 vector3;
-    if (TryGetMaterialParameter(material, sName, vector3))
+    if (TryGetMaterialParameter(snapshot, sName, vector3))
       inout_value = xiiVec4(vector3.x, vector3.y, vector3.z, inout_value.w);
   }
 
@@ -57,45 +96,46 @@ namespace
     return bSampler ? binding.m_uiSamplerIndex : binding.m_uiBindlessIndex;
   }
 
-  xiiGpuSurfaceMaterial ResolveSurfaceMaterial(const xiiMaterialInstance& material, const xiiMaterialInstanceSnapshot& snapshot)
-  {
-    xiiGpuSurfaceMaterial result;
-    result.BaseColorOpacity          = xiiVec4(1.0f);
-    result.EmissiveColorAndRoughness = xiiVec4(0.0f, 0.0f, 0.0f, 0.5f);
-    result.SurfaceParameters         = xiiVec4(0.0f, 0.5f, 0.0f, 1.0f);
-    result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
-    result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
-    result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
-    result.Metadata                  = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U, static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque));
-    result.AdvancedParameters        = xiiVec4(0.0f, 1.5f, 0.0f, 0.5f);
-
-    ResolveMaterialColor(material, "BaseColor", result.BaseColorOpacity, false);
-    ResolveMaterialColor(material, "EmissiveColor", result.EmissiveColorAndRoughness, true);
-    TryGetMaterialParameter(material, "Roughness", result.EmissiveColorAndRoughness.w);
-    TryGetMaterialParameter(material, "Metallic", result.SurfaceParameters.x);
-    TryGetMaterialParameter(material, "Specular", result.SurfaceParameters.y);
-    TryGetMaterialParameter(material, "Transmission", result.SurfaceParameters.z);
-    TryGetMaterialParameter(material, "OcclusionStrength", result.SurfaceParameters.w);
-    TryGetMaterialParameter(material, "AlphaCutoff", result.LayerParameters.x);
-    TryGetMaterialParameter(material, "NormalScale", result.LayerParameters.y);
-    TryGetMaterialParameter(material, "ClearCoat", result.LayerParameters.z);
-    TryGetMaterialParameter(material, "ClearCoatRoughness", result.LayerParameters.w);
-    TryGetMaterialParameter(material, "Thickness", result.AdvancedParameters.x);
-    TryGetMaterialParameter(material, "IndexOfRefraction", result.AdvancedParameters.y);
-    TryGetMaterialParameter(material, "Anisotropy", result.AdvancedParameters.z);
-    TryGetMaterialParameter(material, "SheenRoughness", result.AdvancedParameters.w);
-
-    const xiiMaterialRuntimeState& runtimeState = snapshot.m_RuntimeState;
-    const auto                     alphaMode    = runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.IsTranslucent() ? xiiMaterialAlphaMode::Blend :
-                                                                                                                                        xiiMaterialAlphaMode::Opaque;
-    result.Metadata                             = xiiVec4U32(runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(), static_cast<xiiUInt32>(alphaMode), runtimeState.m_BlendMode.GetValue());
-    result.TextureIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
-    result.TextureIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"), ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
-    result.SamplerIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture", true), ResolveMaterialTexture(snapshot, "NormalTexture", true), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture", true), ResolveMaterialTexture(snapshot, "OcclusionTexture", true));
-    result.SamplerIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture", true), ResolveMaterialTexture(snapshot, "HeightTexture", true), ResolveMaterialTexture(snapshot, "ClearCoatTexture", true), ResolveMaterialTexture(snapshot, "TransmissionTexture", true));
-    return result;
-  }
 } // namespace
+
+xiiGpuSurfaceMaterial xiiResolveGpuSurfaceMaterial(const xiiMaterialInstanceSnapshot& snapshot)
+{
+  xiiGpuSurfaceMaterial result;
+  result.BaseColorOpacity          = xiiVec4(1.0f);
+  result.EmissiveColorAndRoughness = xiiVec4(0.0f, 0.0f, 0.0f, 0.5f);
+  result.SurfaceParameters         = xiiVec4(0.0f, 0.5f, 0.0f, 1.0f);
+  result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
+  result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
+  result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
+  result.Metadata                  = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U, static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque));
+  result.AdvancedParameters        = xiiVec4(0.0f, 1.5f, 0.0f, 0.5f);
+
+  ResolveMaterialColor(snapshot, "BaseColor", result.BaseColorOpacity, false);
+  ResolveMaterialColor(snapshot, "EmissiveColor", result.EmissiveColorAndRoughness, true);
+  TryGetMaterialParameter(snapshot, "Roughness", result.EmissiveColorAndRoughness.w);
+  TryGetMaterialParameter(snapshot, "Metallic", result.SurfaceParameters.x);
+  TryGetMaterialParameter(snapshot, "Specular", result.SurfaceParameters.y);
+  TryGetMaterialParameter(snapshot, "Transmission", result.SurfaceParameters.z);
+  TryGetMaterialParameter(snapshot, "OcclusionStrength", result.SurfaceParameters.w);
+  TryGetMaterialParameter(snapshot, "AlphaCutoff", result.LayerParameters.x);
+  TryGetMaterialParameter(snapshot, "NormalScale", result.LayerParameters.y);
+  TryGetMaterialParameter(snapshot, "ClearCoat", result.LayerParameters.z);
+  TryGetMaterialParameter(snapshot, "ClearCoatRoughness", result.LayerParameters.w);
+  TryGetMaterialParameter(snapshot, "Thickness", result.AdvancedParameters.x);
+  TryGetMaterialParameter(snapshot, "IndexOfRefraction", result.AdvancedParameters.y);
+  TryGetMaterialParameter(snapshot, "Anisotropy", result.AdvancedParameters.z);
+  TryGetMaterialParameter(snapshot, "SheenRoughness", result.AdvancedParameters.w);
+
+  const xiiMaterialRuntimeState& runtimeState = snapshot.m_RuntimeState;
+  const auto                     alphaMode    = runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.IsTranslucent() ? xiiMaterialAlphaMode::Blend :
+                                                                                                                                      xiiMaterialAlphaMode::Opaque;
+  result.Metadata                             = xiiVec4U32(runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(), static_cast<xiiUInt32>(alphaMode), runtimeState.m_BlendMode.GetValue());
+  result.TextureIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
+  result.TextureIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"), ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
+  result.SamplerIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture", true), ResolveMaterialTexture(snapshot, "NormalTexture", true), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture", true), ResolveMaterialTexture(snapshot, "OcclusionTexture", true));
+  result.SamplerIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture", true), ResolveMaterialTexture(snapshot, "HeightTexture", true), ResolveMaterialTexture(snapshot, "ClearCoatTexture", true), ResolveMaterialTexture(snapshot, "TransmissionTexture", true));
+  return result;
+}
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSurfaceMaterial, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuSurfaceMaterial>)
@@ -372,7 +412,7 @@ void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpu
     upload.m_Data.SetCount(m_uiMaterialStride);
     xiiMemoryUtils::ZeroFill(upload.m_Data.GetData(), upload.m_Data.GetCount());
     xiiMemoryUtils::Copy(upload.m_Data.GetData(), snapshot.m_ParameterData.GetData(), snapshot.m_ParameterData.GetCount());
-    upload.m_SurfaceData = ResolveSurfaceMaterial(*slot.m_pInstance, snapshot);
+    upload.m_SurfaceData = xiiResolveGpuSurfaceMaterial(snapshot);
   }
 }
 

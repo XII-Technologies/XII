@@ -39,6 +39,14 @@ float4 xiiSampleSceneBaseColor(xiiGpuSurfaceMaterial material, float2 texCoord)
   return color;
 }
 
+float3 xiiSampleSceneEmissive(xiiGpuSurfaceMaterial material, float2 texCoord)
+{
+  float3 emissive = max(material.EmissiveColorAndRoughness.rgb, 0);
+  if (material.TextureIndices1.x != 0xFFFFFFFFu)
+    emissive *= max(xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)], material.SamplerIndices1.x, g_sLinearWrap, texCoord).rgb, 0);
+  return emissive;
+}
+
 void xiiClipSceneSurface(xiiGpuSurfaceMaterial material, float4 color, bool isFrontFace, bool pickTranslucent)
 {
   if (!isFrontFace && (material.Metadata.y & (1u << 10u)) == 0u)

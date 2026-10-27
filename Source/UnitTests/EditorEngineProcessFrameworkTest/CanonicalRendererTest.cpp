@@ -6,12 +6,14 @@
 #include <Core/World/World.h>
 #include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
 #include <Foundation/Memory/FrameAllocator.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -574,4 +576,52 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   }
   xiiTestFramework::Output(xiiTestOutput::Details, "Editor transparency acceptance: %u Editor, %u Scene, %u matching final pixels.", transparencyChanges[0], transparencyChanges[1], matchingTransparencyChanges);
   XII_TEST_BOOL(transparencyChanges[0] > 8 && transparencyChanges[1] > 8 && matchingTransparencyChanges > 8);
+  // Ordinary billboard content is rendered by the same Scene occurrence beneath Editor overlays.
+  xiiGameObjectDescription particleDescription;
+  particleDescription.m_bDynamic      = true;
+  particleDescription.m_LocalPosition = {-2, -2.5f, 1.1f};
+  xiiGameObject* particleOwner        = nullptr;
+  world.CreateObject(particleDescription, particleOwner);
+  xiiParticleSystemComponent* particleSystem = nullptr;
+  xiiParticleSystemComponent::CreateComponent(particleOwner, particleSystem);
+  xiiParticleSystemDescriptor particleSettings;
+  particleSettings.m_bAlwaysVisible = true;
+  particleSettings.m_uiMaxParticles = 4;
+  particleSystem->SetDescriptor(particleSettings);
+  xiiParticleEmitterComponent* emitter = nullptr;
+  xiiParticleEmitterComponent::CreateComponent(particleOwner, emitter);
+  xiiParticleRendererComponent* renderer = nullptr;
+  xiiParticleRendererComponent::CreateComponent(particleOwner, renderer);
+  const auto setParticle = [](xiiReflectedClass* object, xiiStringView name, const xiiVariant& value) {
+    const auto* property = static_cast<const xiiAbstractMemberProperty*>(object->GetDynamicRTTI()->FindPropertyByName(name));
+    if (XII_TEST_BOOL(property != nullptr))
+      xiiReflectionUtils::SetMemberPropertyValue(property, object, value);
+  };
+  setParticle(emitter, "Mode", xiiInt64(xiiParticleEmitterMode::Burst));
+  setParticle(emitter, "BurstCount", 1U);
+  setParticle(emitter, "InitialSpeed", 0.0f);
+  setParticle(renderer, "Size", 1.5f);
+  setParticle(renderer, "Tint", xiiColor(0.8f, 0.05f, 0.02f, 0.6f));
+  xiiDynamicArray<xiiUInt32> particleImages[2][4];
+  for (xiiUInt32 phase = 0; phase < 4; ++phase)
+  {
+    renderer->SetActiveFlag(phase == 1 || phase == 3);
+    update(3);
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      if (!XII_TEST_RESULT_MSG(views[view]->GetLastRenderResult(), "%s", views[view]->GetRenderPipelineInstance().GetLastBuildError().GetStartPointer()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], particleImages[view][phase]))
+        return;
+  }
+  xiiUInt32 particleChanges[2] = {}, matchingParticleChanges = 0;
+  for (xiiUInt32 pixel = 0; pixel < particleImages[0][0].GetCount(); ++pixel)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_TEST_INT(particleImages[view][0][pixel], particleImages[view][2][pixel]);
+      XII_TEST_INT(particleImages[view][1][pixel], particleImages[view][3][pixel]);
+      particleChanges[view] += particleImages[view][0][pixel] != particleImages[view][1][pixel];
+    }
+    matchingParticleChanges += particleImages[1][0][pixel] != particleImages[1][1][pixel] && particleImages[0][0][pixel] == particleImages[1][0][pixel] && particleImages[0][1][pixel] == particleImages[1][1][pixel];
+  }
+  xiiTestFramework::Output(xiiTestOutput::Details, "Editor particle acceptance: %u Editor, %u Scene, %u matching final pixels.", particleChanges[0], particleChanges[1], matchingParticleChanges);
+  XII_TEST_BOOL(particleChanges[0] > 8 && particleChanges[1] > 8 && matchingParticleChanges > 8);
 }

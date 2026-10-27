@@ -1,0 +1,45 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/Particles/ParticleState.h>
+#include <Shaders/Pipeline/Passes/Particles/BallisticParticleConstants.h>
+StructuredBuffer<xiiParticleState> g_Seeds;
+StructuredBuffer<xiiParticleTrajectoryBatch> g_Batches;
+RWStructuredBuffer<xiiParticleState> g_Particles;
+[numthreads(64,1,1)]
+void main(uint3 id:SV_DispatchThreadID)
+{
+  const uint index=id.x+id.y*Dispatch.y;
+  if(index>=Dispatch.x)return;
+  xiiParticleState particle=g_Seeds[index];
+  uint batches,stride;g_Batches.GetDimensions(batches,stride);
+  const float age=particle.PositionAge.w,life=particle.VelocityLifetime.w;
+  if(particle.Emitter>=batches || !isfinite(age) || !isfinite(life) || age<0 || life<=0 || age>=life)
+  {
+    particle.Color=0;particle.VelocityLifetime.w=0;g_Particles[index]=particle;return;
+  }
+  const xiiParticleTrajectoryBatch batch=g_Batches[particle.Emitter];
+  float3 position=particle.PositionAge.xyz+particle.VelocityLifetime.xyz*age;
+  float3 velocity=particle.VelocityLifetime.xyz;
+  float radius=particle.PreviousPositionRadius.w*batch.SizeAndSoftness.x;
+  if(batch.Policy.x!=0)
+  {
+    position=mul(batch.LocalToWorld,float4(position,1)).xyz;
+    velocity=mul((float3x3)batch.LocalToWorld,velocity);
+    radius*=batch.SizeAndSoftness.z;
+  }
+  position+=Acceleration.xyz*(0.5f*age*age);
+  velocity+=Acceleration.xyz*age;
+  particle.PositionAge.xyz=position;
+  particle.PreviousPositionRadius=float4(position,radius);
+  particle.VelocityLifetime.xyz=velocity;
+  particle.Color*=batch.Tint;
+  particle.Color.a*=saturate(1-(age/life)*(age/life));
+  particle.Custom0.xy=float2(asfloat(batch.Policy.y),batch.SizeAndSoftness.y);
+  if(!all(isfinite(position)) || !all(isfinite(velocity)) || !isfinite(radius) || radius<0 || !all(isfinite(particle.Color)))
+  {
+    particle.Color=0;particle.VelocityLifetime.w=0;
+  }
+  g_Particles[index]=particle;
+}

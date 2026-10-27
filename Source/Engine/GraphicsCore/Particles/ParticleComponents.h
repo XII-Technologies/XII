@@ -251,6 +251,29 @@ struct XII_GRAPHICSCORE_DLL xiiParticleMolecularEnsemble
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleMolecularEnsemble);
 
+/// Immutable copies of authored component settings carried across render extraction.
+struct XII_GRAPHICSCORE_DLL xiiParticleEmitterSnapshot
+{
+  xiiHashedString                  m_SystemBinding;
+  xiiEnum<xiiParticleEmitterShape> m_Shape;
+  xiiEnum<xiiParticleEmitterMode>  m_Mode;
+  xiiUInt32                        m_uiMaxParticles = 0, m_uiBurstCount = 1024, m_uiRandomSeed = 0;
+  float                            m_fSpawnRate = 1000, m_fLifetime = 5, m_fInitialSpeed = 1, m_fRadius = 1, m_fConeAngleDegree = 25;
+  xiiVec3                          m_BoxExtents   = xiiVec3(1);
+  bool                             m_bSurfaceOnly = false, m_bInheritOwnerVelocity = false, m_bDeterministic = false;
+};
+struct XII_GRAPHICSCORE_DLL xiiParticleRendererSnapshot
+{
+  xiiHashedString                  m_SystemBinding;
+  xiiEnum<xiiParticleRendererType> m_Type;
+  xiiMaterialResourceHandle        m_Material;
+  xiiMeshResourceHandle            m_Mesh;
+  xiiColor                         m_Tint  = xiiColor::White;
+  float                            m_fSize = 0.05f, m_fStretch = 1, m_fSoftParticleDistance = 0;
+  xiiUInt8                         m_uiSortPriority = 128;
+  bool                             m_bSortByDepth = false, m_bReceiveLighting = false, m_bCastShadows = false, m_bMotionVectors = true;
+};
+
 class XII_GRAPHICSCORE_DLL xiiParticleEmitterComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiParticleEmitterComponent, xiiComponent, xiiParticleEmitterComponentManager);
@@ -258,6 +281,7 @@ class XII_GRAPHICSCORE_DLL xiiParticleEmitterComponent : public xiiComponent
 public:
   xiiParticleEmitterComponent();
   ~xiiParticleEmitterComponent();
+  xiiParticleEmitterSnapshot GetRenderSnapshot() const;
 
   virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
@@ -376,6 +400,7 @@ class XII_GRAPHICSCORE_DLL xiiParticleRendererComponent : public xiiComponent
 public:
   xiiParticleRendererComponent();
   ~xiiParticleRendererComponent();
+  xiiParticleRendererSnapshot GetRenderSnapshot() const;
 
   virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;

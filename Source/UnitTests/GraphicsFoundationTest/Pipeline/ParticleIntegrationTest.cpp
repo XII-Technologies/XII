@@ -5,8 +5,10 @@
 #include <Core/ResourceManager/ResourceManager.h>
 
 #include <Core/World/World.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
+#include <GraphicsCore/Pipeline/Passes/Particles/BallisticParticlePass.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegrationConstantsPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -15,6 +17,8 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
+#include <Shaders/Pipeline/Passes/Particles/BallisticParticleConstants.h>
 
 /// Test-owned initialized state, deliberately longer than both the active and dispatch ranges.
 class xiiParticleIntegrationTestSource : public xiiRenderPipelinePass
@@ -296,4 +300,481 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ParticleIntegrationWithoutFrameConsume
   }
   commands->End();
   module->DestroyView(handle);
+}
+
+/// An immutable graph-local upload exercises retirement without a fixture-owned callback.
+class xiiParticleRecordingTestSource final : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiParticleRecordingTestSource, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineBufferOutputPin m_Particles{false, xiiGALBindFlags::UnorderedAccess};
+  xiiResult                        Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphBufferHandle                                       buffer;
+      xiiDynamicArray<xiiParticleGPUState, xiiAlignedAllocatorWrapper> particles;
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [](Data& data, xiiRenderGraphBuilder& builder) {
+      data.particles.SetCount(3);xiiMemoryUtils::ZeroFill(data.particles.GetData(),data.particles.GetCount());
+      for(xiiUInt32 i=0;i<3;++i){auto& p=data.particles[i];p.m_vPositionAge={float(i),3,0,0.1f};p.m_vPreviousPositionRadius={0,0,0,0.25f};p.m_vVelocityLifetime={2,0,0,i==1?0.11f:10.0f};p.m_vColor={1,0.5f,0.25f,1};p.m_uiId=100+i;}
+      xiiGALBufferCreationDescription description;description.m_Mode=xiiGALBufferMode::Structured;description.m_BindFlags=xiiGALBindFlags::UnorderedAccess;description.m_uiSize=data.particles.GetCount()*sizeof(xiiParticleGPUState);description.m_uiElementByteStride=sizeof(xiiParticleGPUState);data.buffer=builder.WriteBuffer("Recording particle state",description,xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.buffer), 0, xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(data.particles.GetData()), data.particles.GetCount() * sizeof(xiiParticleGPUState))); });
+    return context.SetOutput(m_Particles, emitted.first->buffer);
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleRecordingTestSource, 1, xiiRTTIDefaultAllocator<xiiParticleRecordingTestSource>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Particles", m_Particles)->AddFlags(xiiPropertyFlags::ReadOnly),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_CREATE_SIMPLE_TEST(PipelineResources, ParticleIntegrationRetainsPreparedRecording)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor definition;
+  const auto                          source = definition.AddPass("Captured seed particles", xiiGetStaticRTTI<xiiParticleRecordingTestSource>());
+  xiiParticleIntegrationConstantsPass settings;
+  settings.m_fDeltaTimeS      = 0.05f;
+  settings.m_fGravityScale    = 0;
+  settings.m_fDragCoefficient = 0;
+  settings.m_WindVelocity     = {0, 2, 0};
+  xiiVariantDictionary parameters;
+  XII_TEST_RESULT(settings.GetProperties(parameters));
+  const auto constants   = definition.AddPass("Captured integration constants", xiiGetStaticRTTI<xiiParticleIntegrationConstantsPass>(), parameters);
+  const auto integration = definition.AddPass("Retired integration owner", xiiGetStaticRTTI<xiiParticleIntegratePass>());
+  const auto readback    = definition.AddPass("Retired readback owner", xiiGetStaticRTTI<xiiParticleIntegrationTestReadback>());
+  XII_TEST_RESULT(definition.Connect(source, "Particles", integration, "Particles"));
+  XII_TEST_RESULT(definition.Connect(constants, "ParticleSimConstants", integration, "ParticleSimConstants"));
+  XII_TEST_RESULT(definition.Connect(integration, "Particles", readback, "Particles"));
+  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Particles.RetiredRecording", std::move(definition));
+  xiiRenderPipelineInstance instance;
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(instance.Synchronize(resource)) || !XII_TEST_RESULT(context.Initialize("Particle recording lifetime")))
+    return;
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  auto& graph = context.GetGraph();
+  auto& cache = context.GetResourceCache();
+  cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+  XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+  graph.BeginSetup(frame.GetFrameIndex());
+  if (!XII_TEST_RESULT(instance.Build(nullptr, graph, context.GetBlackboard())))
+    return;
+  xiiRenderGraphBufferHandle output;
+  for (xiiUInt32 i = 0; i < instance.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+    if (const auto* pass = xiiDynamicCast<const xiiParticleIntegrationTestReadback*>(instance.GetPass(i)))
+      output = pass->m_Readback;
+  graph.EndSetup();
+  instance.Clear();
+  xiiStringBuilder error;
+  if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+    return;
+  environment.GetDevice()->WaitIdle();
+  const auto staging = graph.GetExportedBuffer(output);
+  if (!XII_TEST_BOOL(staging != nullptr))
+    return;
+  auto commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  commands->Begin();
+  void* mapped = nullptr;
+  if (XII_TEST_RESULT(commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, mapped)))
+  {
+    const auto* particles = static_cast<const xiiParticleGPUState*>(mapped);
+    XII_TEST_FLOAT(particles[0].m_vPositionAge.x, 0.1f, 0.00001f);
+    XII_TEST_FLOAT(particles[0].m_vPositionAge.y, 3.005f, 0.00001f);
+    XII_TEST_FLOAT(particles[0].m_vPositionAge.w, 0.15f, 0.00001f);
+    XII_TEST_FLOAT(particles[1].m_vVelocityLifetime.w, 0, 0);
+    XII_TEST_FLOAT(particles[1].m_vPositionAge.y, -1e6f, 0);
+    XII_TEST_FLOAT(particles[2].m_vPositionAge.x, 2.1f, 0.00001f);
+    for (xiiUInt32 i = 0; i < 3; ++i)
+      XII_TEST_INT(particles[i].m_uiId, 100 + i);
+    XII_TEST_RESULT(commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read));
+  }
+  commands->End();
+  environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->Submit(commands);
+}
+
+class xiiParticleExtractionTestPass final : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiParticleExtractionTestPass, xiiRenderPipelinePass);
+
+public:
+  bool                                     m_bDemand = true;
+  xiiDynamicArray<xiiParticleRenderData>   m_Snapshots;
+  xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return m_bDemand ? xiiRenderExtractionCategory::Particles : xiiRenderExtractionCategory::Geometry; }
+  xiiResult                                Build(xiiRenderPipelinePassContext& context) override
+  {
+    m_Snapshots.Clear();
+    if (!context.m_pView || !context.m_pView->GetExtractedRenderData())
+      return XII_FAILURE;
+    for (const auto* packet : context.m_pView->GetExtractedRenderData()->GetAllRenderData())
+      if (const auto* particle = xiiDynamicCast<const xiiParticleRenderData*>(packet))
+        m_Snapshots.PushBack(*particle);
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleExtractionTestPass, 1, xiiRTTIDefaultAllocator<xiiParticleExtractionTestPass>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Demand", m_bDemand),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_CREATE_SIMPLE_TEST(PipelineExtraction, ImmutableParticleSettingsAndCategoryDemand)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceHandle resources[2];
+  for (xiiUInt32 variant = 0; variant < 2; ++variant)
+  {
+    xiiRenderPipelineResourceDescriptor definition;
+    xiiVariantDictionary                settings;
+    settings.Insert("Demand", variant == 0);
+    definition.AddPass("Capture authoritative particle packets", xiiGetStaticRTTI<xiiParticleExtractionTestPass>(), settings);
+    resources[variant] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(variant ? "ParticleExtraction.OpaqueOnly" : "ParticleExtraction.Particles", std::move(definition));
+  }
+  xiiWorldDescription worldDescription("Particle extraction ownership");
+  xiiWorld            world(worldDescription);
+  XII_LOCK(world.GetWriteMarker());
+  world.SetWorldSimulationEnabled(false);
+  xiiGameObjectDescription objectDescription;
+  objectDescription.m_bDynamic       = true;
+  xiiGameObject*              object = nullptr;
+  const auto                  owner  = world.CreateObject(objectDescription, object);
+  xiiParticleSystemComponent* system = nullptr;
+  xiiParticleSystemComponent::CreateComponent(object, system);
+  xiiParticleSystemDescriptor settings;
+  settings.m_bAlwaysVisible = true;
+  settings.m_uiMaxParticles = 32;
+  system->SetDescriptor(settings);
+  xiiParticleEmitterComponent* emitter = nullptr;
+  xiiParticleEmitterComponent::CreateComponent(object, emitter);
+  emitter->SetRadius(0.4f);
+  xiiParticleRendererComponent* renderer = nullptr;
+  xiiParticleRendererComponent::CreateComponent(object, renderer);
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  camera.LookAt({0, -4, 0}, {0, 0, 0}, {0, 0, 1});
+  xiiView* views[3];
+  for (xiiUInt32 v = 0; v < 3; ++v)
+  {
+    world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Particle snapshot view", views[v]);
+    views[v]->SetCamera(&camera);
+    views[v]->SetViewport({0, 0, 8, 8});
+    views[v]->SetRenderPipelineResource(resources[v == 2 ? 1 : 0]);
+  }
+  xiiParticleRenderData retained;
+  xiiUInt64             firstRevision = 0;
+  for (xiiUInt32 phase = 0; phase < 4; ++phase)
+  {
+    if (phase == 1)
+    {
+      emitter->SetRadius(0.8f);
+      const auto* property = static_cast<const xiiAbstractMemberProperty*>(renderer->GetDynamicRTTI()->FindPropertyByName("Tint"));
+      xiiReflectionUtils::SetMemberPropertyValue(property, renderer, xiiColor(0.1f, 0.2f, 0.8f, 0.5f));
+    }
+    if (phase == 2)
+    {
+      system->SetActiveFlag(false);
+      system->SetActiveFlag(true);
+      emitter->SetActiveFlag(false);
+    }
+    if (phase == 3)
+      system->SetActiveFlag(false);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    for (xiiUInt32 v = 0; v < 3; ++v)
+    {
+      XII_TEST_RESULT(views[v]->GetLastRenderResult());
+      const auto& instance = views[v]->GetRenderPipelineInstance();
+      const auto* capture  = xiiDynamicCast<const xiiParticleExtractionTestPass*>(instance.GetPass(0));
+      if (!XII_TEST_BOOL(capture != nullptr))
+        return;
+      XII_TEST_INT(capture->m_Snapshots.GetCount(), v == 2 || phase == 3 ? 0 : 1);
+      if (capture->m_Snapshots.IsEmpty())
+        continue;
+      const auto& packet = capture->m_Snapshots[0];
+      XII_TEST_BOOL(packet.m_hOwnerObject == owner && packet.m_hOwnerComponent == system->GetHandle());
+      XII_TEST_BOOL(packet.m_ElapsedTime.GetSeconds() >= 0);
+      XII_TEST_INT(packet.m_uiWorldUpdate, world.GetUpdateCounter());
+      XII_TEST_INT(packet.m_Emitters.GetCount(), phase == 2 ? 0 : 1);
+      XII_TEST_INT(packet.m_Renderers.GetCount(), 1);
+      if (phase == 0)
+      {
+        firstRevision = packet.m_uiSimulationRevision;
+        if (v == 0)
+          retained = packet;
+        XII_TEST_FLOAT(packet.m_Emitters[0].m_fRadius, 0.4f, 0);
+      }
+      if (phase == 1)
+      {
+        XII_TEST_FLOAT(packet.m_Emitters[0].m_fRadius, 0.8f, 0);
+        XII_TEST_FLOAT(packet.m_Renderers[0].m_Tint.b, 0.8f, 0);
+      }
+      if (phase == 2)
+        XII_TEST_BOOL(packet.m_uiSimulationRevision > firstRevision);
+    }
+  }
+  world.DeleteObjectNow(owner);
+  XII_TEST_FLOAT(retained.m_Emitters[0].m_fRadius, 0.4f, 0);
+  XII_TEST_FLOAT(retained.m_Renderers[0].m_Tint.b, 1, 0);
+  XII_TEST_BOOL(retained.m_hOwnerObject == owner);
+}
+
+XII_CREATE_SIMPLE_TEST(PipelineExtraction, ParticleBirthSpaceLifetimeAndCapacity)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("Authoritative particle births", xiiGetStaticRTTI<xiiParticleExtractionTestPass>());
+  const auto          pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("ParticleBirths.Capture", std::move(definition));
+  xiiWorldDescription description("World-authoritative emitter timeline");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  world.GetClock().SetFixedTimeStep(xiiTime::MakeFromSeconds(0.1));
+  xiiGameObjectDescription objectDescription;
+  objectDescription.m_bDynamic = true;
+  xiiGameObject* object        = nullptr;
+  world.CreateObject(objectDescription, object);
+  xiiParticleSystemComponent* system = nullptr;
+  xiiParticleSystemComponent::CreateComponent(object, system);
+  xiiParticleSystemDescriptor settings;
+  settings.m_bAlwaysVisible = true;
+  settings.m_uiMaxParticles = 3;
+  system->SetDescriptor(settings);
+  xiiParticleEmitterComponent* emitter = nullptr;
+  xiiParticleEmitterComponent::CreateComponent(object, emitter);
+  const auto set = [&](xiiStringView name, const xiiVariant& value) {
+    const auto* property = static_cast<const xiiAbstractMemberProperty*>(emitter->GetDynamicRTTI()->FindPropertyByName(name));
+    xiiReflectionUtils::SetMemberPropertyValue(property, emitter, value);
+  };
+  set("SpawnRate", 10.0f);
+  set("Lifetime", 0.35f);
+  set("InitialSpeed", 2.0f);
+  xiiParticleRendererComponent* renderer = nullptr;
+  xiiParticleRendererComponent::CreateComponent(object, renderer);
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView* views[2];
+  for (auto& view : views)
+  {
+    world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Particle birth comparison", view);
+    view->SetCamera(&camera);
+    view->SetViewport({0, 0, 8, 8});
+    view->SetRenderPipelineResource(pipeline);
+  }
+  xiiUInt32 initialId = 0;
+  bool      expired = false, dropped = false;
+  for (xiiUInt32 phase = 0; phase < 8; ++phase)
+  {
+    if (phase == 1)
+      object->SetLocalPosition(xiiVec3(1, 0, 0));
+    if (phase == 4)
+      set("SpawnRate", 0.0f);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    xiiDynamicArray<xiiParticleBirthSnapshot, xiiAlignedAllocatorWrapper> first;
+    for (xiiUInt32 v = 0; v < 2; ++v)
+    {
+      XII_TEST_RESULT(views[v]->GetLastRenderResult());
+      const auto* capture = xiiDynamicCast<const xiiParticleExtractionTestPass*>(views[v]->GetRenderPipelineInstance().GetPass(0));
+      if (!XII_TEST_BOOL(capture && capture->m_Snapshots.GetCount() == 1))
+        return;
+      const auto& packet = capture->m_Snapshots[0];
+      XII_TEST_BOOL(packet.m_sEmissionError.IsEmpty());
+      XII_TEST_BOOL(packet.m_Births.GetCount() <= 3);
+      dropped |= packet.m_uiDroppedSpawnCount > 0;
+      if (v == 0)
+        first = packet.m_Births;
+      else
+      {
+        XII_TEST_INT(packet.m_Births.GetCount(), first.GetCount());
+        for (xiiUInt32 i = 0; i < first.GetCount(); ++i)
+        {
+          XII_TEST_INT(packet.m_Births[i].m_InitialState.m_uiId, first[i].m_InitialState.m_uiId);
+          XII_TEST_BOOL(packet.m_Births[i].m_InitialState.m_vPositionAge == first[i].m_InitialState.m_vPositionAge);
+        }
+      }
+      bool found = false;
+      for (const auto& birth : packet.m_Births)
+      {
+        const auto& state = birth.m_InitialState;
+        XII_TEST_BOOL(state.m_vPositionAge.w >= 0 && state.m_vPositionAge.w < 0.35f);
+        if (phase == 0 && !initialId)
+          initialId = state.m_uiId;
+        if (state.m_uiId == initialId)
+        {
+          found = true;
+          XII_TEST_FLOAT(state.m_vPositionAge.x, 0, 0);
+        }
+      }
+      if (phase >= 4)
+        expired |= !found;
+      if (phase == 7)
+        XII_TEST_BOOL(packet.m_Births.IsEmpty());
+    }
+  }
+  XII_TEST_BOOL(initialId != 0 && expired && dropped);
+  settings.m_SimulationSpace = xiiParticleSimulationSpace::Local;
+  system->SetDescriptor(settings);
+  set("Mode", xiiInt64(xiiParticleEmitterMode::Burst));
+  set("BurstCount", 2U);
+  world.Update();
+  environment.GetDevice()->WaitIdle();
+  const auto* capture = xiiDynamicCast<const xiiParticleExtractionTestPass*>(views[0]->GetRenderPipelineInstance().GetPass(0));
+  XII_TEST_INT(capture->m_Snapshots[0].m_Births.GetCount(), 2);
+  for (const auto& birth : capture->m_Snapshots[0].m_Births)
+  {
+    XII_TEST_FLOAT(birth.m_InitialState.m_vPositionAge.x, 0, 0);
+  }
+}
+
+class xiiParticleTrajectoryTestSource final : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiParticleTrajectoryTestSource, xiiRenderPipelinePass);
+
+public:
+  xiiRenderPipelineBufferOutputPin m_Seeds{false, xiiGALBindFlags::ShaderResource}, m_Batches{false, xiiGALBindFlags::ShaderResource};
+  bool                             m_bLocal = false;
+  xiiResult                        Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphBufferHandle m_hSeeds, m_hBatches;
+      xiiParticleGPUState        m_Particles[3];
+      xiiParticleTrajectoryBatch m_Batch;
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      xiiMemoryUtils::ZeroFill(data.m_Particles,3);
+      for(xiiUInt32 i=0;i<3;++i){auto& particle=data.m_Particles[i];particle.m_vPositionAge={float(i),0,0,0.5f};particle.m_vPreviousPositionRadius={0,0,0,2};particle.m_vVelocityLifetime={2,0,1,i==1?0.25f:2.0f};particle.m_vColor={1,0.5f,0.25f,0.8f};particle.m_uiId=100+i;}
+      data.m_Batch.LocalToWorld=xiiMat4::MakeTranslation({10,20,30});data.m_Batch.Tint={0.5f,1,0.8f,0.5f};data.m_Batch.SizeAndSoftness={0.25f,0.1f,3,0};data.m_Batch.Policy={m_bLocal?1U:0U,7,0,0};
+      xiiGALBufferCreationDescription description;description.m_Mode=xiiGALBufferMode::Structured;description.m_BindFlags=xiiGALBindFlags::ShaderResource;description.m_uiElementByteStride=sizeof(xiiParticleGPUState);description.m_uiSize=sizeof(data.m_Particles);data.m_hSeeds=builder.WriteBuffer("Immutable particle seeds",description,xiiGALResourceStateFlags::CopyDestination);
+      description.m_uiElementByteStride=sizeof(data.m_Batch);description.m_uiSize=sizeof(data.m_Batch);data.m_hBatches=builder.WriteBuffer("Captured trajectory policy",description,xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) {auto& commands=execute.GetCommandList();commands.UpdateBuffer(execute.GetBuffer(data.m_hSeeds),0,xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Particles),sizeof(data.m_Particles)));commands.UpdateBuffer(execute.GetBuffer(data.m_hBatches),0,xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Batch),sizeof(data.m_Batch))); });
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Seeds, emitted.first->m_hSeeds));
+    return context.SetOutput(m_Batches, emitted.first->m_hBatches);
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleTrajectoryTestSource, 1, xiiRTTIDefaultAllocator<xiiParticleTrajectoryTestSource>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Seeds", m_Seeds)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Batches", m_Batches)->AddFlags(xiiPropertyFlags::ReadOnly),
+      XII_MEMBER_PROPERTY("Local", m_bLocal),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_CREATE_SIMPLE_TEST_GROUP(NativeParticles);
+XII_CREATE_SIMPLE_TEST(NativeParticles, BallisticBirthEvaluationPreservesInputAndRecording)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  for (xiiUInt32 phase = 0; phase < 2; ++phase)
+  {
+    xiiRenderPipelineResourceDescriptor definition;
+    xiiVariantDictionary                properties;
+    properties.Insert("Local", phase == 1);
+    const auto source   = definition.AddPass("Immutable world births", xiiGetStaticRTTI<xiiParticleTrajectoryTestSource>(), properties);
+    const auto evaluate = definition.AddPass("Explicit ballistic trajectories", xiiGetStaticRTTI<xiiBallisticParticlePass>());
+    XII_TEST_RESULT(definition.Connect(source, "Seeds", evaluate, "Seeds"));
+    XII_TEST_RESULT(definition.Connect(source, "Batches", evaluate, "Batches"));
+    for (const auto node : {source, evaluate})
+    {
+      const auto sink = definition.AddPass(node == source ? "Original birth readback" : "Evaluated state readback", xiiGetStaticRTTI<xiiParticleIntegrationTestReadback>());
+      XII_TEST_RESULT(definition.Connect(node, node == source ? "Seeds" : "Particles", sink, "Particles"));
+    }
+    xiiStringBuilder name;
+    name.SetFormat("Particles.Ballistic.{}", phase);
+    const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(definition));
+    xiiRenderPipelineInstance instance;
+    xiiRenderGraphTestContext context;
+    if (!XII_TEST_RESULT(instance.Synchronize(resource)) || !XII_TEST_RESULT(context.Initialize("Ballistic immutable birth evaluation")))
+      return;
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    auto& graph = context.GetGraph();
+    auto& cache = context.GetResourceCache();
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+    graph.BeginSetup(frame.GetFrameIndex());
+    if (!XII_TEST_RESULT_MSG(instance.Build(nullptr, graph, context.GetBlackboard()), "%s", instance.GetLastBuildError().GetStartPointer()))
+      return;
+    xiiDynamicArray<xiiRenderGraphBufferHandle> outputs;
+    for (xiiUInt32 i = 0; i < instance.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+      if (const auto* pass = xiiDynamicCast<const xiiParticleIntegrationTestReadback*>(instance.GetPass(i)))
+        outputs.PushBack(pass->m_Readback);
+    graph.EndSetup();
+    instance.Clear();
+    xiiStringBuilder error;
+    if (!XII_TEST_RESULT_MSG(graph.Compile({}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
+      return;
+    environment.GetDevice()->WaitIdle();
+    XII_TEST_INT(outputs.GetCount(), 2);
+    for (xiiUInt32 output = 0; output < outputs.GetCount(); ++output)
+    {
+      const auto staging = graph.GetExportedBuffer(outputs[output]);
+      if (!XII_TEST_BOOL(staging != nullptr))
+        return;
+      auto commands = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      commands->Begin();
+      void* mapped = nullptr;
+      if (XII_TEST_RESULT(commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, mapped)))
+      {
+        const auto* particles = static_cast<const xiiParticleGPUState*>(mapped);
+        for (xiiUInt32 i = 0; i < 3; ++i)
+        {
+          const auto& p = particles[i];
+          XII_TEST_INT(p.m_uiId, 100 + i);
+          if (output == 0)
+          {
+            XII_TEST_FLOAT(p.m_vPositionAge.x, float(i), 0);
+            XII_TEST_FLOAT(p.m_vPositionAge.z, 0, 0);
+            XII_TEST_FLOAT(p.m_vColor.w, 0.8f, 0);
+          }
+          else if (i == 1)
+          {
+            XII_TEST_FLOAT(p.m_vColor.w, 0, 0);
+            XII_TEST_FLOAT(p.m_vVelocityLifetime.w, 0, 0);
+          }
+          else
+          {
+            XII_TEST_FLOAT(p.m_vPositionAge.x, float(i) + 1 + (phase ? 10 : 0), 0.00001f);
+            XII_TEST_FLOAT(p.m_vPositionAge.y, phase ? 20 : 0, 0.00001f);
+            XII_TEST_FLOAT(p.m_vPositionAge.z, 0.5f - 9.81f * 0.125f + (phase ? 30 : 0), 0.00001f);
+            XII_TEST_FLOAT(p.m_vVelocityLifetime.z, 1 - 9.81f * 0.5f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vPreviousPositionRadius.w, phase ? 1.5f : 0.5f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vColor.x, 0.5f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vColor.z, 0.2f, 0.00001f);
+            XII_TEST_FLOAT(p.m_vColor.w, 0.8f * 0.5f * (1 - 0.25f * 0.25f), 0.00001f);
+          }
+        }
+        XII_TEST_RESULT(commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read));
+      }
+      commands->End();
+      auto* queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+      queue->WaitForFenceValue(queue->Submit(commands));
+    }
+  }
 }

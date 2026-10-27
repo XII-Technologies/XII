@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegratePass.h>
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleIntegrationConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Transparency/WeightedBlendedOITResolvePass.h>
@@ -61,4 +62,44 @@ XII_CREATE_SIMPLE_TEST(Pipeline, AuthoredTransparencyResolve)
   XII_TEST_RESULT(xiiRenderPipeline::Compile(root, compiled));
   if (compiled)
     XII_TEST_INT(compiled->GetExecutionOrder().GetCount(), 16);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, ImmutableGpuSurfaceMaterialSnapshot)
+{
+  xiiMaterialSchemaDescription description;
+  description.m_sName = "Snapshot-owned canonical material";
+  description.AddParameter("BaseColor", xiiMaterialParameterType::Color, xiiColor(0.2f, 0.4f, 0.8f, 0.5f));
+  description.AddParameter("EmissiveColor", xiiMaterialParameterType::Float3, xiiVec3(0.1f, 0.2f, 0.3f));
+  description.AddParameter("Roughness", xiiMaterialParameterType::Float, 0.25f);
+  description.AddTexture("BaseColorTexture");
+  xiiSharedPtr<xiiMaterialSchema> schema = XII_DEFAULT_NEW(xiiMaterialSchema);
+  if (!XII_TEST_RESULT(schema->Build(description)))
+    return;
+  xiiMaterialRuntimeState runtime;
+  runtime.m_BlendMode = xiiMaterialBlendMode::Translucent;
+  xiiMaterialInstance material;
+  if (!XII_TEST_RESULT(material.Initialize(schema, runtime)))
+    return;
+  const auto texture = xiiMaterialParameterId::Make("BaseColorTexture");
+  XII_TEST_RESULT(material.SetBindlessIndex(texture, 7, 3));
+  xiiMaterialInstanceSnapshot snapshot;
+  material.CreateSnapshot(snapshot);
+  XII_TEST_RESULT(material.SetParameter("BaseColor", xiiColor(1, 0, 0, 0.1f)));
+  XII_TEST_RESULT(material.SetParameter("Roughness", 0.8f));
+  XII_TEST_RESULT(material.SetBindlessIndex(texture, 23, 5));
+  runtime.m_BlendMode = xiiMaterialBlendMode::Opaque;
+  material.SetRuntimeState(runtime);
+  const auto first = xiiResolveGpuSurfaceMaterial(snapshot);
+  XII_TEST_BOOL(first.BaseColorOpacity == xiiVec4(0.2f, 0.4f, 0.8f, 0.5f));
+  XII_TEST_BOOL(first.EmissiveColorAndRoughness == xiiVec4(0.1f, 0.2f, 0.3f, 0.25f));
+  XII_TEST_INT(first.TextureIndices0.x, 7);
+  XII_TEST_INT(first.SamplerIndices0.x, 3);
+  XII_TEST_INT(first.Metadata.z, xiiMaterialAlphaMode::Blend);
+  material.CreateSnapshot(snapshot);
+  const auto second = xiiResolveGpuSurfaceMaterial(snapshot);
+  XII_TEST_BOOL(second.BaseColorOpacity == xiiVec4(1, 0, 0, 0.1f));
+  XII_TEST_FLOAT(second.EmissiveColorAndRoughness.w, 0.8f, 0);
+  XII_TEST_INT(second.TextureIndices0.x, 23);
+  XII_TEST_INT(second.SamplerIndices0.x, 5);
+  XII_TEST_INT(second.Metadata.z, xiiMaterialAlphaMode::Opaque);
 }

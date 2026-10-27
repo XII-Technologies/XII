@@ -422,7 +422,7 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, OpaqueWorldCompositionAndIndependent
       const auto* data = s.m_Module->GetGpuInstanceData();
       if (!XII_TEST_BOOL(data != nullptr))
         return;
-      XII_TEST_BOOL(s.m_Module->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere));
+      XII_TEST_BOOL(s.m_Module->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Particles));
       const bool absent = phase == 6 && w == 0;
       XII_TEST_INT(data->GetInstanceCount(), absent ? 0 : 1);
       xiiGpuInstanceSource resolved;

@@ -3,12 +3,15 @@
 #pragma once
 
 #include <Core/World/World.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/BoundingBoxSphere.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Vec4.h>
+#include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/Id.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
+#include <GraphicsCore/Particles/ParticleComponents.h>
 #include <GraphicsCore/Particles/ParticleGraph.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -18,7 +21,7 @@ class xiiParticleSystemRuntime;
 class xiiParticleSystemManager;
 struct xiiMsgExtractRenderData;
 
-using xiiParticleSystemComponentManager = xiiComponentManager<class xiiParticleSystemComponent, xiiBlockStorageType::FreeList>;
+using xiiParticleSystemComponentManager = xiiComponentManagerSimple<class xiiParticleSystemComponent, xiiComponentUpdateType::Always, xiiBlockStorageType::FreeList, xiiWorldUpdatePhase::PostTransform>;
 
 /// Constants shared by the CPU runtime and shader-side particle layouts.
 struct XII_GRAPHICSCORE_DLL xiiParticleSystemConstants
@@ -180,6 +183,13 @@ class XII_GRAPHICSCORE_DLL xiiParticleSystemRuntimeHandle
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemRuntimeHandle);
 
+/// Initial conditions captured at an authoritative particle birth. Current positions are evaluated on the GPU.
+struct alignas(16) XII_GRAPHICSCORE_DLL xiiParticleBirthSnapshot
+{
+  xiiParticleGPUState m_InitialState;
+  xiiHashedString     m_SystemBinding;
+};
+
 /// Renderer-facing packet for GPU particle systems.
 class XII_GRAPHICSCORE_DLL xiiParticleRenderData : public xiiRenderData
 {
@@ -193,6 +203,16 @@ public:
   xiiSharedPtr<xiiGALBuffer> m_pAliveIndexBuffer;    ///< A buffer containing the indices of currently alive particles, which is updated by the GPU during simulation passes and read by the renderer for rendering. This allows for efficient rendering of only the active particles without needing to process the entire state buffer.
   xiiSharedPtr<xiiGALBuffer> m_pCountersBuffer;      ///< A buffer containing various counters related to the particle system (e.g., alive count, dead count, spawn request count, event count), which is updated by the GPU during simulation passes and can be read by the renderer for rendering or debugging purposes.
   xiiSharedPtr<xiiGALBuffer> m_pDrawIndirectBuffer;  ///< A buffer containing the arguments for indirect draw calls, which is updated by the GPU during simulation passes (e.g., based on the alive count) and read by the renderer for rendering. This allows for efficient rendering of a variable number of particles without needing to read back counts to the CPU.
+
+  xiiDynamicArray<xiiParticleBirthSnapshot, xiiAlignedAllocatorWrapper> m_Births;
+  xiiString                                                             m_sEmissionError;
+  xiiUInt32                                                             m_uiDroppedSpawnCount = 0;
+  xiiDynamicArray<xiiParticleEmitterSnapshot>                           m_Emitters;
+  xiiDynamicArray<xiiParticleRendererSnapshot>                          m_Renderers;
+  xiiTime                                                               m_ElapsedTime;
+  xiiUInt64                                                             m_uiSimulationRevision     = 0;
+  xiiUInt32                                                             m_uiWorldUpdate            = 0;
+  bool                                                                  m_bHasAdditionalSimulation = false;
 
   xiiParticleSystemRuntimeHandle m_hRuntime; ///< Stable subsystem handle for the runtime that owns the simulation resources.
 };
@@ -349,6 +369,8 @@ public:
 
 public:
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+  xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Particles; }
+  bool                                     IsRenderDataViewIndependent() const override { return true; }
 
   //////////////////////////////////////////////////////////////////////////
   // xiiParticleSystemComponent
@@ -376,9 +398,15 @@ public:
   [[nodiscard]] xiiParticleSystemRuntimeHandle GetRuntimeHandle() const { return m_hRuntime; }
 
 protected:
+  void Update();
+  void OnActivated() override;
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
 private:
+  struct EmissionState;
+  xiiUniquePtr<EmissionState>            m_pEmissionState;
+  xiiTime                                m_ActivationTime;
+  xiiUInt64                              m_uiSimulationRevision = 0;
   xiiParticleSystemDescriptor            m_Descriptor; ///< The authored particle-system configuration.
   mutable xiiParticleSystemRuntimeHandle m_hRuntime;   ///< Runtime storage is owned and torn down by the GraphicsCore subsystem.
 };
