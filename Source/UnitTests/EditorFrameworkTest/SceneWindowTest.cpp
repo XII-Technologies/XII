@@ -19,11 +19,14 @@
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
+#include <GuiFoundation/Widgets/WidgetUtils.h>
 #include <QApplication>
+#include <QCursor>
 #include <QElapsedTimer>
 #include <QImage>
 #include <QMouseEvent>
 #include <QPointer>
+#include <QScreen>
 #include <QThread>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
@@ -128,6 +131,9 @@ namespace
     {
       DirectionalScaleGizmo tool;
       tool.SetOwner(&window, &view);
+      // Production cursor wrapping uses the screen containing the real cursor.
+      // Synthetic events must stay inside that same screen, including on multi-monitor hosts.
+      const QPointF globalOrigin(xiiWidgetUtils::GetClosestScreen(QCursor::pos()).availableGeometry().center());
       const xiiVec3 axes[] = {xiiVec3::MakeAxisX(), xiiVec3::MakeAxisY(), xiiVec3::MakeAxisZ()};
       for (auto mode : {xiiCameraMode::PerspectiveFixedFovY, xiiCameraMode::OrthoFixedHeight})
       {
@@ -152,13 +158,13 @@ namespace
               XII_TEST_RESULT(xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, 256, 256, transform.m_qRotation * axes[axis] * 0.01f, end));
               const auto    direction = xiiVec2(end.x - start.x, end.y - start.y).GetNormalized();
               const QPointF delta(xiiMath::Round(direction.x * 20), xiiMath::Round(direction.y * 20));
-              QMouseEvent   press(QEvent::MouseButtonPress, QPointF(128, 128), QPointF(500, 400), Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
+              QMouseEvent   press(QEvent::MouseButtonPress, QPointF(128, 128), globalOrigin, Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
               XII_TEST_BOOL(tool.MousePressEvent(&press) == xiiEditorInput::WasExclusivelyHandled);
-              QMouseEvent move(QEvent::MouseMove, QPointF(128, 128) + delta, QPointF(500, 400) + delta, Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+              QMouseEvent move(QEvent::MouseMove, QPointF(128, 128) + delta, globalOrigin + delta, Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
               tool.MouseMoveEvent(&move);
               XII_TEST_BOOL(tool.GetScalingResult().Dot(axes[axis]) > 1.1f);
               // Crossing the press position toward the pivot must shrink the same axis.
-              QMouseEvent release(QEvent::MouseButtonRelease, QPointF(128, 128) - delta, QPointF(500, 400) - delta, Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+              QMouseEvent release(QEvent::MouseButtonRelease, QPointF(128, 128) - delta, globalOrigin - delta, Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
               tool.MouseReleaseEvent(&release);
               XII_TEST_BOOL(tool.GetScalingResult().Dot(axes[axis]) < 0.9f);
               for (xiiUInt32 other = 0; other < XII_ARRAY_SIZE(axes); ++other)
@@ -202,18 +208,19 @@ namespace
       XII_TEST_BOOL(xiiPlane::MakeFromNormalAndPoint(xiiVec3::MakeAxisX(), transform.m_vPosition).GetRayIntersection(rayStart, rayDirection, nullptr, &point));
       xiiVec3 before;
       XII_TEST_RESULT(xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, 256, 256, point, before));
-      QMouseEvent press(QEvent::MouseButtonPress, local, QPointF(500, 400), Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
+      const QPointF globalOrigin(xiiWidgetUtils::GetClosestScreen(QCursor::pos()).availableGeometry().center());
+      QMouseEvent   press(QEvent::MouseButtonPress, local, globalOrigin, Qt::LeftButton, Qt::LeftButton, Qt::ShiftModifier);
       XII_TEST_BOOL(tool.MousePressEvent(&press) == xiiEditorInput::WasExclusivelyHandled);
       for (float vertical : {-20.0f, 20.0f})
       {
-        QMouseEvent move(QEvent::MouseMove, local + QPointF(0, vertical), QPointF(500, 400 + vertical), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
+        QMouseEvent move(QEvent::MouseMove, local + QPointF(0, vertical), globalOrigin + QPointF(0, vertical), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
         tool.MouseMoveEvent(&move);
         const auto rotated = transform.m_vPosition + tool.GetRotationResult() * (point - transform.m_vPosition);
         xiiVec3    after;
         XII_TEST_RESULT(xiiGraphicsUtils::ConvertWorldPosToScreenPos(viewProjection, 0, 0, 256, 256, rotated, after));
         XII_TEST_BOOL((after.y - before.y) * vertical > 0);
       }
-      QMouseEvent release(QEvent::MouseButtonRelease, local + QPointF(0, 20), QPointF(500, 420), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
+      QMouseEvent release(QEvent::MouseButtonRelease, local + QPointF(0, 20), globalOrigin + QPointF(0, 20), Qt::LeftButton, Qt::NoButton, Qt::ShiftModifier);
       tool.MouseReleaseEvent(&release);
       XII_TEST_BOOL(!xiiEditorInputContext::IsAnyInputContextActive());
     }
