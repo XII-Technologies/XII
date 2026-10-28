@@ -42,6 +42,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRenderModePass, 1, xiiRTTIDefaultAllocat
     XII_MEMBER_PROPERTY("DilatedVelocityBuffer", m_InputDilatedVelocityBuffer)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("StableAO", m_InputStableAO)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("IndirectLighting", m_InputIndirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DirectLighting", m_InputDirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("EnvironmentSpecular", m_InputEnvironmentSpecular)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("BloomTexture", m_InputBloomTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -115,6 +116,14 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   {
     case xiiViewRenderMode::Overdraw:
       source = &m_InputOverdraw;
+      break;
+    case xiiViewRenderMode::LightingOnly:
+    case xiiViewRenderMode::DiffuseOnly:
+    case xiiViewRenderMode::SpecularOnly:
+    case xiiViewRenderMode::ClusterID:
+    case xiiViewRenderMode::LightComplexity:
+      source   = &m_InputDirectLighting;
+      channels = 3;
       break;
     case xiiViewRenderMode::BaseColor:
       source   = &m_InputGBufferAlbedo;

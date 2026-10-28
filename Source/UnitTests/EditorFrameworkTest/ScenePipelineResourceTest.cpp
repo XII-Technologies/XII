@@ -38,7 +38,7 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   const auto depth = pipeline->FindInterface("SceneDepth", false);
   if (XII_TEST_BOOL(depth != xiiInvalidIndex))
     XII_TEST_BOOL(!pipeline->GetInterface()[depth].m_Pin.m_bOptional);
-  const auto& descriptor = pipeline->GetDescriptor();
+  const auto& descriptor      = pipeline->GetDescriptor();
   bool        spotlightOpaque = false, spotlightTransparent = false;
   for (const auto& connection : descriptor.m_Connections)
     if (connection.m_sOutput == "SpotShadows" && connection.m_sInput == "SpotShadows" &&
@@ -49,10 +49,10 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
       spotlightTransparent |= type == "xiiTransparentRasterPass";
     }
   XII_TEST_BOOL(spotlightOpaque && spotlightTransparent);
-  const auto  ao         = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
-  const auto  filter     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
-  const auto  trace         = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
-  bool        diffuseBounce = false, reactiveBounce = false;
+  const auto ao            = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
+  const auto filter        = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
+  const auto trace         = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
+  bool       diffuseBounce = false, reactiveBounce = false;
   for (const auto& connection : descriptor.m_Connections)
     if (descriptor.m_Passes[connection.m_uiSource].m_Id == trace && connection.m_sOutput == "Irradiance")
     {
@@ -95,7 +95,7 @@ void xiiCheckAuthoredEditorVisualizationContract(const xiiRenderPipelineResource
 {
   const auto& descriptor    = editor.GetPipeline()->GetDescriptor();
   const auto  visualization = xiiFindPipelineTestPass(descriptor, "xiiViewRenderModePass");
-  for (const xiiStringView input : {"DisplayLinearColor", "SceneDepth", "PerFrameCamera", "GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "WireframeSurface", "Overdraw", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "EnvironmentSpecular", "BloomTexture", "CurrentExposure"})
+  for (const xiiStringView input : {"DisplayLinearColor", "SceneDepth", "PerFrameCamera", "GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "WireframeSurface", "Overdraw", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "DirectLighting", "EnvironmentSpecular", "BloomTexture", "CurrentExposure"})
   {
     bool connected = false;
     for (const auto& connection : descriptor.m_Connections)

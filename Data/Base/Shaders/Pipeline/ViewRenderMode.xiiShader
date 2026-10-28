@@ -68,6 +68,9 @@ void main(uint3 tid : SV_DispatchThreadID)
             break;
         }
         case ViewRenderMode_BaseColor: color = value.rgb; break;
+        case ViewRenderMode_ClusterID: case ViewRenderMode_LightComplexity: color = value.rgb; break;
+        case ViewRenderMode_LightingOnly: case ViewRenderMode_DiffuseOnly: case ViewRenderMode_SpecularOnly:
+            color = max(value.rgb, 0.0f) / (1.0f + max(value.rgb, 0.0f)); break;
         case ViewRenderMode_Metallic: color = value.ggg; break;
         case ViewRenderMode_Roughness: color = value.rrr; break;
         case ViewRenderMode_Specular: color = value.bbb; break;

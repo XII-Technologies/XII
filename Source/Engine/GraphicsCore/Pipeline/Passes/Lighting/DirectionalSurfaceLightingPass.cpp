@@ -6,6 +6,7 @@
 #include <GraphicsCore/Pipeline/Passes/Lighting/DirectionalSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/SurfaceLightingPassUtils.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionalSurfaceLightingPass,1,xiiRTTIDefaultAllocator<xiiDirectionalSurfaceLightingPass>)
@@ -54,7 +55,8 @@ xiiResult xiiDirectionalSurfaceLightingPass::Build(xiiRenderPipelinePassContext&
   };
   const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Surface=xiiSurfaceLightingPassUtils::Read(surface,builder); data.m_Pipeline=m_Pipeline; data.m_Output=xiiSurfaceLightingPassUtils::Output(builder,surface.m_Size);
-    data.m_Snapshot.SurfaceExtent=xiiVec4U32(surface.m_Size.width,surface.m_Size.height,0,0); data.m_Snapshot.SurfaceEvaluation=xiiVec4(m_fScale,0,0,0);
+    data.m_Snapshot.SurfaceExtent                                                                               = xiiVec4U32(surface.m_Size.width, surface.m_Size.height, 0, 0);
+    data.m_Snapshot.SurfaceEvaluation                                                                           = xiiVec4(m_fScale, 0, context.m_pView ? float(context.m_pView->GetViewRenderMode().GetValue()) : 0.0f, 0);
     data.m_Constants=xiiRenderPassUtils::Constants(builder,"Surface Evaluation",sizeof(xiiSurfaceLightingConstants));
     data.m_Environment=builder.ReadBuffer(environment,xiiGALResourceStateFlags::ConstantBuffer); data.m_Visibility=visibility.IsValid() ? builder.ReadTexture(visibility,xiiGALResourceStateFlags::ShaderResource):data.m_Surface.m_Depth; data.m_Snapshot.SurfaceExtent.z=visibility.IsValid() ? 1U:0U; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands=execute.GetCommandList(); commands.SetPipelineState(data.m_Pipeline.Borrow()); xiiSurfaceLightingPassUtils::Bind(data.m_Surface,execute); xiiSurfaceLightingPassUtils::BindConstants(execute,data.m_Constants,data.m_Snapshot);

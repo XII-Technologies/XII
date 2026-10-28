@@ -8,9 +8,13 @@
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
+#include <GraphicsCore/Components/Lights/PointLightComponent.h>
+#include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterFrameData.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -322,6 +326,83 @@ namespace
     cameras[0].SetExposure(1);
     XII_TEST_RESULT(views[0]->SetDisplayOutputSettings(originalDisplay));
     // Every advertised mode must execute the production resource composition.
+    xiiGameObjectDescription sunDescription;
+    sunDescription.m_LocalRotation = xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), -xiiVec3::MakeAxisZ());
+    xiiGameObject* sunObject       = nullptr;
+    world.CreateObject(sunDescription, sunObject);
+    xiiDirectionalLightComponent* sun = nullptr;
+    xiiDirectionalLightComponent::CreateComponent(sunObject, sun);
+    sun->SetCastShadows(false);
+    sun->SetIntensityUnit(xiiPhotometricUnit::Lux);
+    sun->SetIntensity(xiiMath::Pi<float>());
+    const auto     sunColor = xiiEvaluateLightColor(xiiColorLinearUB(255, 255, 255), sun->GetTemperature());
+    const xiiColor baseColor(0.2f, 0.4f, 0.8f);
+    update();
+    for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
+    {
+      views[0]->SetRenderPath(path);
+      check(xiiViewRenderMode::LightingOnly, {sunColor.r / (1 + sunColor.r), sunColor.g / (1 + sunColor.g), sunColor.b / (1 + sunColor.b)});
+      xiiColor diffuse, specular;
+      for (xiiUInt32 channel = 0; channel < 3; ++channel)
+      {
+        const float base            = baseColor.GetData()[channel];
+        const float fresnel         = 0.01f + 0.75f * base;
+        const float d               = (1.0f - fresnel) * 0.25f * base * sunColor.GetData()[channel];
+        const float s               = 64.0f * fresnel * sunColor.GetData()[channel];
+        diffuse.GetData()[channel]  = d / (1.0f + d);
+        specular.GetData()[channel] = s / (1.0f + s);
+      }
+      check(xiiViewRenderMode::DiffuseOnly, diffuse);
+      check(xiiViewRenderMode::SpecularOnly, specular);
+      check(xiiViewRenderMode::LightComplexity, xiiColor::Black);
+      views[0]->SetViewRenderMode(xiiViewRenderMode::ClusterID);
+      update();
+      for (xiiUInt32 i = 0; i < views[0]->GetRenderPipelineInstance().GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+      {
+        const auto& instance = views[0]->GetRenderPipelineInstance();
+        if (instance.GetPipeline()->GetDescriptor().m_Passes[i].m_pType->GetTypeName() != "xiiLightClusterViewPass")
+          continue;
+        const auto* binding = instance.GetOutputBinding(i, "Layout");
+        const auto* layout  = binding ? xiiDynamicCast<const xiiLightClusterFrameData*>(binding->m_pFrameData.Borrow()) : nullptr;
+        if (!XII_TEST_BOOL(layout != nullptr))
+          continue;
+        const auto& c        = layout->m_Constants;
+        const auto  slice    = xiiUInt32(xiiMath::Log2(2.5f / c.DepthRange.x) / c.DepthRange.z * float(c.ClusterCounts.z));
+        xiiUInt32   identity = (slice * c.ClusterCounts.y + 24 / c.Viewport.z) * c.ClusterCounts.x + 32 / c.Viewport.z + 1;
+        identity ^= identity >> 16;
+        identity *= 0x7feb352dU;
+        identity ^= identity >> 15;
+        identity *= 0x846ca68bU;
+        identity ^= identity >> 16;
+        check(xiiViewRenderMode::ClusterID, {float(identity & 255) / 255, float((identity >> 8) & 255) / 255, float((identity >> 16) & 255) / 255});
+      }
+    }
+    sun->SetActiveFlag(false);
+    xiiPointLightComponent* points[2] = {};
+    for (auto*& point : points)
+    {
+      xiiGameObjectDescription description;
+      description.m_LocalPosition = {0, 0, 2};
+      xiiGameObject* owner        = nullptr;
+      world.CreateObject(description, owner);
+      xiiPointLightComponent::CreateComponent(owner, point);
+      point->SetIntensityUnit(xiiPhotometricUnit::Candela);
+      point->SetIntensity(1);
+      point->SetRange(100);
+      point->SetActiveFlag(false);
+    }
+    for (xiiUInt32 count = 1; count <= 2; ++count)
+    {
+      points[count - 1]->SetActiveFlag(true);
+      const float heat = xiiMath::Log2(float(count + 1)) / 5;
+      for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
+      {
+        views[0]->SetRenderPath(path);
+        check(xiiViewRenderMode::LightComplexity, {0, 4 * heat - 0.5f, 1});
+      }
+    }
+    for (auto* point : points)
+      point->SetActiveFlag(false);
     for (xiiUInt32 value = 0; value < xiiViewRenderMode::ENUM_COUNT; ++value)
     {
       const auto mode = static_cast<xiiViewRenderMode::Enum>(value);

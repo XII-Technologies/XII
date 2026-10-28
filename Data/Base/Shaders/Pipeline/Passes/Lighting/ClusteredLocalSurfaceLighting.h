@@ -4,6 +4,7 @@
 #include <Shaders/Common/StorageImageFormat.h>
 #include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
 #include <Shaders/Pipeline/Passes/Lighting/SurfaceInputs.h>
+#define XII_BRDF_VIEW_MODE ((uint)SurfaceEvaluation.z)
 #include <Shaders/Pipeline/SurfaceLocalLight.h>
 StructuredBuffer<xiiGpuLightData> g_Lights;
 StructuredBuffer<uint4>           g_Counts;
@@ -39,6 +40,8 @@ bool ReceivesSpotShadows(uint2 pixel)
 #endif
 float3 Evaluate(uint index, SurfaceSample surface, bool receives, inout float reactive)
 {
+  if ((uint)SurfaceEvaluation.z == ViewRenderMode_ClusterID || (uint)SurfaceEvaluation.z == ViewRenderMode_LightComplexity)
+    return 0;
   uint count, stride;
   g_Lights.GetDimensions(count, stride);
   if (index >= min(count, g_Counts[0].x))
@@ -64,10 +67,20 @@ float3 Evaluate(uint index, SurfaceSample surface, bool receives, inout float re
   if (any(tid.xy >= SurfaceExtent.xy))
     return;
   SurfaceSample surface;
-  float3        result   = 0;
-  float         reactive = 0;
+  float3        result          = 0;
+  float         reactive        = 0;
+  uint          evaluatedLights = 0;
+  uint          clusterIdentity = 0;
   if (LoadSurface(tid.xy, surface))
   {
+    const float clusterDepth = dot(surface.Position - CameraPosition.xyz, CameraForward.xyz);
+    if (clusterDepth >= DepthRange.x && clusterDepth <= DepthRange.y)
+    {
+      const float t     = DepthRange.w > 0 ? log2(max(clusterDepth, DepthRange.x) / DepthRange.x) / DepthRange.z : (clusterDepth - DepthRange.x) / (DepthRange.y - DepthRange.x);
+      const uint  slice = min((uint)(saturate(t) * ClusterCounts.z), ClusterCounts.z - 1);
+      const uint2 cell  = min(tid.xy / Viewport.z, ClusterCounts.xy - 1);
+      clusterIdentity   = (slice * ClusterCounts.y + cell.y) * ClusterCounts.x + cell.x + 1u;
+    }
     bool receives = true;
 #if XII_SPOT_SHADOWS
     receives = ReceivesSpotShadows(tid.xy);
@@ -77,30 +90,32 @@ float3 Evaluate(uint index, SurfaceSample surface, bool receives, inout float re
       // Capacity overflow preserves semantics by evaluating this view's full candidate set.
       uint count, stride;
       g_Candidates.GetDimensions(count, stride);
+      evaluatedLights = count;
       [loop] for (uint i = 0; i < count; ++i) result += Evaluate(g_Candidates[i], surface, receives, reactive);
     }
     else
     {
-      const float depth = dot(surface.Position - CameraPosition.xyz, CameraForward.xyz);
-      if (depth >= DepthRange.x && depth <= DepthRange.y)
+      if (clusterIdentity != 0u)
       {
-        const float t       = DepthRange.w > 0 ? log2(max(depth, DepthRange.x) / DepthRange.x) / DepthRange.z : (depth - DepthRange.x) / (DepthRange.y - DepthRange.x);
-        const uint  slice   = min((uint)(saturate(t) * ClusterCounts.z), ClusterCounts.z - 1);
-        const uint2 cell    = min(tid.xy / Viewport.z, ClusterCounts.xy - 1);
-        const uint  cluster = (slice * ClusterCounts.y + cell.y) * ClusterCounts.x + cell.x;
-        uint        gridCount, stride;
+        const uint cluster = clusterIdentity - 1u;
+        uint       gridCount, stride;
         g_LightGrid.GetDimensions(gridCount, stride);
         if (cluster < gridCount)
         {
           const uint2 range = g_LightGrid[cluster];
           uint        capacity;
           g_LightIndices.GetDimensions(capacity, stride);
+          evaluatedLights = range.x < capacity ? min(min(range.y, Viewport.w), capacity - range.x) : 0u;
           [loop] for (uint i = 0; i < min(range.y, Viewport.w); ++i) if (range.x < capacity && i < capacity - range.x) result += Evaluate(g_LightIndices[range.x + i], surface, receives, reactive);
         }
       }
     }
   }
   result *= SurfaceEvaluation.x;
+  if ((uint)SurfaceEvaluation.z == ViewRenderMode_ClusterID)
+    result = ViewIdentityColor(clusterIdentity);
+  if ((uint)SurfaceEvaluation.z == ViewRenderMode_LightComplexity)
+    result = evaluatedLights == 0u ? 0.0f : ViewHeatColor(saturate(log2(float(evaluatedLights) + 1.0f) / 5.0f));
   g_Lighting[tid.xy] = float4(all(isfinite(result)) ? clamp(result, 0, 65504.0f) : 0, 1);
 #if XII_SPOT_SHADOWS
   g_SpotReactive[tid.xy] = float4(reactive.xxx, 0);

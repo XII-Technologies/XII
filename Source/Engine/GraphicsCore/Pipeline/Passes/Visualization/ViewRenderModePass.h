@@ -30,6 +30,8 @@ public:
   xiiRenderPipelineBufferInputPin   m_InputPerFrameCamera{true, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin   m_InputCurrentExposure{true, xiiGALBindFlags::ShaderResource};
 
+  xiiRenderPipelineTextureInputPin m_InputDirectLighting{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+
   xiiViewRenderModePass();
   ~xiiViewRenderModePass();
   bool                       m_bUseViewMode = false;

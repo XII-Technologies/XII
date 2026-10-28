@@ -30,6 +30,11 @@ bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
     case Exposure:
     case ToneMappingCurve:
     case ColorGradingLUT:
+    case ClusterID:
+    case LightingOnly:
+    case DiffuseOnly:
+    case SpecularOnly:
+    case LightComplexity:
       return true;
     default:
       return false;

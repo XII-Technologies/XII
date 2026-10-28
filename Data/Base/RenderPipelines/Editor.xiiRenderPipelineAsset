@@ -94,7 +94,7 @@ o
 			s{"{ d83bb009-7ef8-315a-1f96-12e7df0c90f7 }"}
 		}
 		Uuid %DocumentID{u4{9411489702903207356,7442935870891089778}}
-		u4 %Hash{2011276945933300297}
+		u4 %Hash{13299147557179016489}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{17290123325063352669,8931752141477233110}}
@@ -3153,6 +3153,24 @@ o
 }
 o
 {
+	Uuid %id{u4{15082557181943945510,3158570372081757027}}
+	s %t{"xiiRenderPipelinePinMetadata"}
+	u3 %v{1}
+	p
+	{
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
+		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		b %Input{1}
+		s %Name{"DirectLighting"}
+		b %Optional{1}
+		s %ResourceType{"xiiRenderPipelinePinType::Texture"}
+		b %TemporalHistory{0}
+	}
+}
+o
+{
 	Uuid %id{u4{18355288358972828429,3176783939993802301}}
 	s %t{"xiiRenderPipelinePinMetadata"}
 	u3 %v{1}
@@ -3322,6 +3340,20 @@ o
 		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
 		Uuid %Requirements{u4{15369982747989548061,5163556057692579484}}
 		Uuid %Resolution{u4{365627970087279325,4048931117789452633}}
+	}
+}
+o
+{
+	Uuid %id{u4{4447207214593613276,3410169711769404947}}
+	s %t{"xiiRenderPipelineTextureResolution"}
+	u3 %v{1}
+	p
+	{
+		u3 %Height{0}
+		s %Input{""}
+		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
+		f %Scale{0x0000803F}
+		u3 %Width{0}
 	}
 }
 o
@@ -8414,6 +8446,19 @@ o
 }
 o
 {
+	Uuid %id{u4{12027546467849825452,5711933892281090046}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1650248679807836502,7487748841503432768}}
+		s %SourcePin{"DirectLighting"}
+		Uuid %Target{u4{5539107456698103361,8174006311241422836}}
+		s %TargetPin{"DirectLighting"}
+	}
+}
+o
+{
 	Uuid %id{u4{15503276133118500790,5712472367489923537}}
 	s %t{"xiiSurfaceRasterConstantsPass"}
 	u3 %v{1}
@@ -9311,6 +9356,7 @@ o
 			Uuid{u4{5940967281499233945,5035276329265969257}}
 			Uuid{u4{548414150187507603,4677914792091537892}}
 			Uuid{u4{66050194399504820,5364378782288133734}}
+			Uuid{u4{12027546467849825452,5711933892281090046}}
 		}
 	}
 }
@@ -9536,6 +9582,20 @@ o
 		b %Optional{0}
 		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
 		b %TemporalHistory{0}
+	}
+}
+o
+{
+	Uuid %id{u4{8109060210940782741,6694907519422178013}}
+	s %t{"xiiRenderPipelinePinConstraints"}
+	u3 %v{1}
+	p
+	{
+		s %Dimension{"xiiGALResourceDimension::Undefined"}
+		u3 %Height{0}
+		s %RequiredBindFlags{""}
+		u3 %Samples{0}
+		u3 %Width{0}
 	}
 }
 o
@@ -10976,6 +11036,7 @@ o
 		Uuid %BloomTexture{u4{13826018115035309304,11590627405344786069}}
 		Uuid %CurrentExposure{u4{1238001410919411307,14927371796603241055}}
 		Uuid %DilatedVelocityBuffer{u4{6624876181876632952,2567374000563117724}}
+		Uuid %DirectLighting{u4{10281710754206131164,16438981354199143936}}
 		Uuid %DisplayLinearColorInput{u4{17175387867112642443,10269813803002280994}}
 		Uuid %DisplayLinearColorOutput{u4{3980705336973426359,761042346109167331}}
 		Uuid %EnvironmentSpecular{u4{6626428133816903850,12588750218517667269}}
@@ -11010,6 +11071,7 @@ o
 			Uuid{u4{17024782516656020382,10641421990082705267}}
 			Uuid{u4{12898512243816819001,13402431707224553382}}
 			Uuid{u4{1107919922412982828,12743612486194372897}}
+			Uuid{u4{2918262688473087244,18427122029059839361}}
 		}
 		Uuid %SceneDepth{u4{17592090218654052681,18251357304396421692}}
 		Uuid %StableAO{u4{15150936917762406897,13278181390069971330}}
@@ -18874,6 +18936,13 @@ o
 }
 o
 {
+	Uuid %id{u4{10281710754206131164,16438981354199143936}}
+	s %t{"xiiRenderPipelineTextureInputPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
 	Uuid %id{u4{7060649345634692150,16462194511181076535}}
 	s %t{"xiiRenderPipelinePinConfiguration"}
 	u3 %v{1}
@@ -20949,6 +21018,22 @@ o
 		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
 		f %Scale{0x0000803F}
 		u3 %Width{0}
+	}
+}
+o
+{
+	Uuid %id{u4{2918262688473087244,18427122029059839361}}
+	s %t{"xiiRenderPipelinePinConfiguration"}
+	u3 %v{1}
+	p
+	{
+		s %DisplayName{""}
+		Uuid %Id{u4{2918262688473087244,18427122029059839361}}
+		Uuid %Metadata{u4{15082557181943945510,3158570372081757027}}
+		b %OverrideResolution{0}
+		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
+		Uuid %Requirements{u4{8109060210940782741,6694907519422178013}}
+		Uuid %Resolution{u4{4447207214593613276,3410169711769404947}}
 	}
 }
 o

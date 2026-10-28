@@ -154,6 +154,11 @@ xiiViewRenderMode::Exposure;Applied Exposure (Stops)
 xiiViewRenderMode::Bloom;Bloom
 xiiViewRenderMode::ToneMappingCurve;Tone Mapping Curve (-10 to +10 Stops)
 xiiViewRenderMode::ColorGradingLUT;Color Grading Transform (16 Cube LUT)
+xiiViewRenderMode::ClusterID;Light Cluster ID
+xiiViewRenderMode::LightingOnly;Direct Lighting (White Diffuse)
+xiiViewRenderMode::DiffuseOnly;Direct Diffuse Lighting
+xiiViewRenderMode::SpecularOnly;Direct Specular Lighting
+xiiViewRenderMode::LightComplexity;Cluster Light Evaluation Count
 
 # Common
 

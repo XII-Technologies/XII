@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/SurfaceLightingPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/Implementation/SpotShadowPassUtils.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusteredLocalSurfaceLightingPass,2,xiiRTTIDefaultAllocator<xiiClusteredLocalSurfaceLightingPass>)
@@ -96,7 +97,8 @@ xiiResult xiiClusteredLocalSurfaceLightingPass::Build(xiiRenderPipelinePassConte
       data.m_SpotConstants=builder.ReadBuffer(shadows->m_hConstants,xiiGALResourceStateFlags::ConstantBuffer);
       data.m_Receivers=builder.ReadBuffer(shadows->m_hReceivers,xiiGALResourceStateFlags::ShaderResource);
     }
-    data.m_Snapshot.SurfaceExtent=xiiVec4U32(surface.m_Size.width,surface.m_Size.height,0,0); data.m_Snapshot.SurfaceEvaluation=xiiVec4(m_fScale,0,0,0);
+    data.m_Snapshot.SurfaceExtent     = xiiVec4U32(surface.m_Size.width, surface.m_Size.height, 0, 0);
+    data.m_Snapshot.SurfaceEvaluation = xiiVec4(m_fScale, 0, context.m_pView ? float(context.m_pView->GetViewRenderMode().GetValue()) : 0.0f, 0);
     data.m_Constants=xiiRenderPassUtils::Constants(builder,"Surface Evaluation",sizeof(xiiSurfaceLightingConstants));
     data.m_ClusterSnapshot=layout->m_Constants; data.m_Layout=xiiRenderPassUtils::Constants(builder,"Cluster Layout",sizeof(xiiLightClusterConstants));
     data.m_Lights=builder.ReadBuffer(lights,xiiGALResourceStateFlags::ShaderResource);

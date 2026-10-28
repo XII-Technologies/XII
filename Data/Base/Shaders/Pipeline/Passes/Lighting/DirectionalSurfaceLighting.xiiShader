@@ -5,6 +5,7 @@ ALL
 #include <Shaders/Common/StorageImageFormat.h>
 #include <Shaders/Pipeline/Passes/Lighting/SurfaceInputs.h>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
+#define XII_BRDF_VIEW_MODE ((uint)SurfaceEvaluation.z)
 #include <Shaders/Pipeline/SurfaceBRDF.h>
 Texture2D<float> g_DirectionalVisibility;
 XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Lighting;
@@ -14,6 +15,11 @@ void main(uint3 tid:SV_DispatchThreadID)
   if(any(tid.xy>=SurfaceExtent.xy)) return;
   SurfaceSample surface;
   float3 result=0;
+  if ((uint)SurfaceEvaluation.z == ViewRenderMode_ClusterID || (uint)SurfaceEvaluation.z == ViewRenderMode_LightComplexity)
+  {
+    g_Lighting[tid.xy] = float4(0,0,0,1);
+    return;
+  }
   if(LoadSurface(tid.xy,surface) && EnvironmentDirectionAndIlluminance.w>0)
   {
     const float3 L=normalize(-EnvironmentDirectionAndIlluminance.xyz);

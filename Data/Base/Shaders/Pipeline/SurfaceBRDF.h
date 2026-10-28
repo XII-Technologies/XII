@@ -1,6 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+#include <Shaders/Pipeline/ViewRenderModeHelpers.h>
+
+#ifndef XII_BRDF_VIEW_MODE
+#  define XII_BRDF_VIEW_MODE 0u
+#endif
 float D_GGX(float NoH, float roughness)
 {
   const float a  = roughness * roughness;
@@ -26,6 +31,8 @@ float3 F_Schlick(float3 f0, float VoH)
 float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielectricSpecular,
                    float transmission, float clearCoat, float clearCoatRoughness, float3 N, float3 L, float3 V)
 {
+  if (XII_BRDF_VIEW_MODE == ViewRenderMode_LightingOnly)
+    return saturate(dot(N, L)).xxx / 3.14159265f;
   const float3 f0        = lerp((0.08f * saturate(dielectricSpecular)).xxx, albedo, metallic);
   const float3 H         = normalize(V + L);
   const float  NoH       = saturate(dot(N, H));
@@ -37,7 +44,9 @@ float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielect
   const float  G         = G_SmithGGX(NoV, NoL, roughness);
   const float3 spec      = (D * G * F) / max(4.0f * NoV * NoL, 1e-7f);
   const float3 diff      = (1.0f - F) * (1.0f - metallic) * (1.0f - saturate(transmission)) * albedo / 3.14159265f;
-  const float3 baseLayer = (diff + spec) * NoL;
+  const float3 baseLayer = (XII_BRDF_VIEW_MODE == ViewRenderMode_DiffuseOnly ? diff : XII_BRDF_VIEW_MODE == ViewRenderMode_SpecularOnly ? spec :
+                                                                                                                                          diff + spec) *
+    NoL;
 
   // A dielectric coat sits above the base layer. Its Fresnel both contributes a
   // second GGX lobe and removes the same energy from the underlying material.
@@ -50,7 +59,7 @@ float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielect
   const float  coatD         = D_GGX(NoH, coatRoughness);
   const float  coatG         = G_SmithGGX(NoV, NoL, coatRoughness);
   const float3 coatSpecular  = (coatD * coatG * coatF) / max(4.0f * NoV * NoL, 1e-7f) * NoL;
-  return baseLayer * (1.0f - coatF * coatWeight) + coatSpecular * coatWeight;
+  return baseLayer * (1.0f - coatF * coatWeight) + (XII_BRDF_VIEW_MODE == ViewRenderMode_DiffuseOnly ? 0.0f : coatSpecular * coatWeight);
 }
 
 float3 BRDF(float3 albedo, float roughness, float metallic, float dielectricSpecular, float3 N, float3 L, float3 V)
