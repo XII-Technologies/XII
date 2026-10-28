@@ -6,5 +6,7 @@
 DECLARE_CONSTANT_BUFFER_AUTO(xiiViewRenderModeConstants)
 {
   UINT1(RenderMode);
-  FLOAT3(_Padding);
+  UINT1(TexCoord1Offset);
+  UINT1(ColorOffset);
+  FLOAT1(MotionVectorScale);
 };

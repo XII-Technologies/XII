@@ -49,6 +49,113 @@ public:
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualizationTestExport, 1, xiiRTTIDefaultAllocator<xiiVisualizationTestExport>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+namespace
+{
+  bool ReadVisualization(xiiGALDevice& device, xiiGALTexture* texture, xiiColor& color)
+  {
+    xiiGALTextureReadback readback(&device);
+    auto                  commands = device.CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    commands->Begin();
+    const auto result = readback.Enqueue(commands, {.m_pTexture = texture});
+    commands->End();
+    if (!XII_TEST_RESULT(result))
+      return false;
+    auto* queue = device.GetCommandQueue();
+    queue->WaitForFenceValue(queue->Submit(commands));
+    readback.WaitForNextCompleted();
+    const auto capture = readback.GetCompleted();
+    if (!XII_TEST_BOOL(static_cast<bool>(capture)))
+      return false;
+    commands = device.CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    commands->Begin();
+    xiiGALMappedTextureSubresource mapped;
+    if (!XII_TEST_RESULT(commands->MapTextureSubresource(capture.m_pStagingTexture, {}, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped)))
+      return false;
+    const auto* pixel = static_cast<const xiiFloat16*>(mapped.m_pData);
+    color             = xiiColor(float(pixel[0]), float(pixel[1]), float(pixel[2]), float(pixel[3]));
+    XII_TEST_RESULT(commands->UnmapTextureSubresource(capture.m_pStagingTexture, {}));
+    commands->End();
+    readback.RecycleStagingTexture(capture.m_pStagingTexture);
+    return true;
+  }
+} // namespace
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, VisualizationChannelSemantics)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor definition;
+  xiiVariantDictionary                properties;
+  properties.Insert("Depth", 0.5f);
+  properties.Insert("Attributes", xiiColor(0.25f, 0.5f, 0.75f, 1));
+  const auto source = definition.AddPass("Known channels", xiiGetStaticRTTI<xiiScreenEffectTestSource>(), properties);
+  const auto camera = definition.AddPass("Camera", xiiGetStaticRTTI<xiiViewConstantsPass>());
+  properties.Clear();
+  properties.Insert("UseViewMode", true);
+  const auto inspect = definition.AddPass("Visualization", xiiGetStaticRTTI<xiiViewRenderModePass>(), properties);
+  const auto output  = definition.AddPass("Readback", xiiGetStaticRTTI<xiiVisualizationTestExport>());
+  XII_TEST_RESULT(definition.Connect(source, "Color", inspect, "DisplayLinearColor"));
+  XII_TEST_RESULT(definition.Connect(source, "Depth", inspect, "SceneDepth"));
+  XII_TEST_RESULT(definition.Connect(camera, "PerFrameCamera", inspect, "PerFrameCamera"));
+  for (const auto channel : {"GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "StableAO", "DilatedVelocityBuffer", "IndirectLighting", "EnvironmentSpecular", "BloomTexture"})
+    XII_TEST_RESULT(definition.Connect(source, "Attributes", inspect, channel));
+  XII_TEST_RESULT(definition.Connect(inspect, "DisplayLinearColor", output, "Color"));
+  const auto          resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("VisualizationChannelSemantics", std::move(definition));
+  xiiWorldDescription description("Known visualization channels");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  world.SetWorldSimulationEnabled(false);
+  xiiCamera viewCamera;
+  viewCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView* view   = nullptr;
+  auto*    module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  module->CreateView("Channel semantics", view);
+  view->SetCamera(&viewCamera);
+  view->SetViewport({0, 0, 8, 8});
+  view->SetRenderPipelineResource(resource);
+  const auto check = [&](xiiViewRenderMode::Enum mode, xiiColor expected) {
+    view->SetViewRenderMode(mode);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    if (!XII_TEST_RESULT(view->GetLastRenderResult()))
+      return;
+    const auto* binding = view->GetRenderPipelineInstance().GetOutputBinding(output, "Texture");
+    if (!XII_TEST_BOOL(binding != nullptr))
+      return;
+    auto     texture = view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture);
+    xiiColor actual;
+    if (!XII_TEST_BOOL(texture != nullptr) || !ReadVisualization(*environment.GetDevice(), texture.Borrow(), actual))
+      return;
+    XII_TEST_FLOAT(actual.r, expected.r, 0.001f);
+    XII_TEST_FLOAT(actual.g, expected.g, 0.001f);
+    XII_TEST_FLOAT(actual.b, expected.b, 0.001f);
+    XII_TEST_FLOAT(actual.a, 1.0f, 0.001f);
+  };
+  for (xiiUInt32 repeat = 0; repeat < 2; ++repeat)
+  {
+    check(xiiViewRenderMode::BaseColor, {0.25f, 0.5f, 0.75f});
+    check(xiiViewRenderMode::Metallic, {0.5f, 0.5f, 0.5f});
+    check(xiiViewRenderMode::Roughness, {0.25f, 0.25f, 0.25f});
+    check(xiiViewRenderMode::Specular, {0.75f, 0.75f, 0.75f});
+    check(xiiViewRenderMode::AmbientOcclusion, {0.25f, 0.25f, 0.25f});
+    check(xiiViewRenderMode::NormalMap, {0.146447f, 0.5f, 0.853553f});
+    for (const auto mode : {xiiViewRenderMode::Emissive, xiiViewRenderMode::IndirectLighting, xiiViewRenderMode::ReflectionContribution, xiiViewRenderMode::Bloom})
+      check(mode, {0.2f, 1.0f / 3.0f, 3.0f / 7.0f});
+    check(xiiViewRenderMode::DepthNonLinear, {0.5f, 0.5f, 0.5f});
+    check(xiiViewRenderMode::MotionVectors, {1.0f, 0.0f, 0.5f});
+    check(xiiViewRenderMode::DepthLinear, {0.000999001f, 0.000999001f, 0.000999001f});
+    viewCamera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 4, -10, 10);
+    check(xiiViewRenderMode::DepthLinear, {0.5f, 0.5f, 0.5f});
+    check(xiiViewRenderMode::Default, {4, 4, 4});
+    viewCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  }
+  module->DestroyView(view->GetHandle());
+}
+
 XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentVisualizationModes)
 {
   xiiGPUTestingEnvironment environment;

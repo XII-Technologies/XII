@@ -19,11 +19,18 @@ struct GBufferVertex
 #if !defined(XII_SCENE_DEPTH_ONLY) && !defined(XII_SCENE_PARTICLE_ATTRIBUTES)
   float3 WorldNormal : TEXCOORD0;
 #endif
-#if !defined(XII_SCENE_SURFACE_QUERY) && !defined(XII_SCENE_DEPTH_ONLY) && !defined(XII_SCENE_PARTICLE_ATTRIBUTES)
+#if (!defined(XII_SCENE_SURFACE_QUERY) || defined(XII_SCENE_DIAGNOSTICS)) && !defined(XII_SCENE_DEPTH_ONLY) && !defined(XII_SCENE_PARTICLE_ATTRIBUTES)
   float3 WorldTangent : TEXCOORD1;
   float  TangentSign : TEXCOORD2;
 #endif
   float2               TexCoord : TEXCOORD3;
+#if defined(XII_SCENE_DIAGNOSTICS)
+  float3                DiagnosticWorldPosition : TEXCOORD11;
+  float2                DiagnosticUV1 : TEXCOORD12;
+  float4                DiagnosticColor : TEXCOORD13;
+  noperspective float2  DiagnosticBarycentrics : TEXCOORD14;
+  nointerpolation uint3 DiagnosticIdentity : TEXCOORD15; // flags, LOD, resident meshlet index
+#endif
   nointerpolation uint MaterialIndex : TEXCOORD4;
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
   float3               WorldPosition : TEXCOORD7;

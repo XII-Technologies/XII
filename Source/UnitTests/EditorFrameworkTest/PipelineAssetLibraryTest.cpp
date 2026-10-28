@@ -82,6 +82,7 @@ namespace
 } // namespace
 
 void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene);
+void xiiCheckAuthoredEditorVisualizationContract(const xiiRenderPipelineResource& editor);
 
 XII_CREATE_SIMPLE_TEST_GROUP(RendererAssets);
 XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
@@ -185,6 +186,8 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
       return;
     if (name == "Scene")
       xiiCheckAuthoredSceneContract(*loaded.operator->());
+    if (name == "Editor")
+      xiiCheckAuthoredEditorVisualizationContract(*loaded.operator->());
     const auto       identity = xiiPipelineLibraryTestIdentity(name);
     xiiStringBuilder documentIdentity;
     xiiConversionUtils::ToString(document->GetGuid(), documentIdentity);

@@ -21,17 +21,21 @@ public:
   xiiRenderPipelineTextureInputPin  m_InputGBufferEmissive{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputGBufferObjectId{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputWireframeSurface{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_InputOverdraw{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputDilatedVelocityBuffer{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputStableAO{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputIndirectLighting{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputEnvironmentSpecular{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_InputBloomTexture{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin   m_InputPerFrameCamera{true, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferInputPin   m_InputCurrentExposure{true, xiiGALBindFlags::ShaderResource};
 
   xiiViewRenderModePass();
   ~xiiViewRenderModePass();
   bool                       m_bUseViewMode = false;
   xiiEnum<xiiViewRenderMode> m_Mode;
+  /// UV displacement mapped to half the display range. Zero velocity is neutral gray.
+  float m_fMotionVectorScale = 10.0f;
 
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;

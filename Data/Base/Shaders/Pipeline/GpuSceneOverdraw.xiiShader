@@ -1,0 +1,36 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+RENDER_PASS
+
+[RENDERSTATE]
+DepthEnable = false
+DepthWriteEnable = false
+CullMode = CullMode_None
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_One
+DestinationBlend0 = BlendFactor_One
+SourceBlendAlpha0 = BlendFactor_One
+DestinationBlendAlpha0 = BlendFactor_One
+
+[SHADER]
+#define XII_SCENE_SURFACE_QUERY
+#define XII_SCENE_SURFACE_NO_IDENTITY
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+
+[VERTEX_SHADER]
+#define XII_SCENE_SURFACE_CURRENT_ONLY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+
+[PIXEL_SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceMaterial.h>
+
+float4 main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
+{
+  const xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
+  xiiClipSceneSurface(material, xiiSampleSceneBaseColor(material, input.TexCoord), isFrontFace, true);
+  return 1.0f;
+}

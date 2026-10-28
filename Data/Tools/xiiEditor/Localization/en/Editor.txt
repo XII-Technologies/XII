@@ -124,11 +124,34 @@ View.Fog;Enable Fog
 View.SetAsDefault;Set As Default...
 
 xiiViewRenderMode::None;Default
-xiiViewRenderMode::TexCoordsUV0;Texture Coordinates (UV0)
-xiiViewRenderMode::TexCoordsUV1;Texture Coordinates (UV1)
-xiiViewRenderMode::DiffuseColorRange;Diffuse Color Range Check
-xiiViewRenderMode::Occlusion;Ambient Occlusion
+xiiViewRenderMode::Wireframe;Wireframe
+xiiViewRenderMode::Overdraw;Submitted Geometry Overdraw
+xiiViewRenderMode::TriangleSize;Triangle Size (Pixels)
+xiiViewRenderMode::VertexNormals;Vertex Normals (World)
+xiiViewRenderMode::VertexTangents;Vertex Tangents (World)
+xiiViewRenderMode::VertexBitangents;Vertex Bitangents (World)
+xiiViewRenderMode::VertexColors;Vertex Colors
+xiiViewRenderMode::UV0;Texture Coordinates (UV0)
+xiiViewRenderMode::UV1;Texture Coordinates (UV1)
+xiiViewRenderMode::UVDensity;UV Density (Repeats per Meter)
+xiiViewRenderMode::LODLevel;LOD Level
 xiiViewRenderMode::StaticVsDynamic;Static vs. Dynamic
+xiiViewRenderMode::InstanceID;Instance ID
+xiiViewRenderMode::MeshletID;Meshlet ID
+xiiViewRenderMode::BaseColor;Base Color
+xiiViewRenderMode::Metallic;Metallic
+xiiViewRenderMode::Roughness;Roughness
+xiiViewRenderMode::Specular;Dielectric Specular
+xiiViewRenderMode::Emissive;Emissive
+xiiViewRenderMode::AmbientOcclusion;Screen Ambient Occlusion
+xiiViewRenderMode::NormalMap;Surface Normals (World)
+xiiViewRenderMode::DepthLinear;Linear Depth (Near to Far)
+xiiViewRenderMode::DepthNonLinear;Device Depth (Reversed Z)
+xiiViewRenderMode::MotionVectors;Motion Vectors (UV Displacement)
+xiiViewRenderMode::IndirectLighting;Indirect Diffuse Lighting
+xiiViewRenderMode::ReflectionContribution;Reflection Contribution
+xiiViewRenderMode::Exposure;Applied Exposure (Stops)
+xiiViewRenderMode::Bloom;Bloom
 
 # Common
 

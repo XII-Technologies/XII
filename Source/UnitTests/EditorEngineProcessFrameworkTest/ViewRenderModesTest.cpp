@@ -1,0 +1,428 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+
+#include <Core/Graphics/Geometry.h>
+#include <Core/World/GameObject.h>
+#include <Core/World/World.h>
+#include <Foundation/Math/Float16.h>
+#include <Foundation/Memory/FrameAllocator.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Pipeline/Passes/Visualization/ViewRenderModePass.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
+
+#include <bit>
+
+class xiiViewModeTestCapture : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiViewModeTestCapture, xiiRenderPipelinePass);
+
+public:
+  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  {
+    pins.PushBack({"Color", xiiRenderPipelinePin::Texture, true});
+    pins.PushBack({"Output", xiiRenderPipelinePin::Texture, false});
+    pins.PeekBack().m_Access = xiiRenderPipelinePinAccess::Read;
+    for (const auto name : {"Depth", "Surface"})
+    {
+      pins.PushBack({name, xiiRenderPipelinePin::Texture, true});
+      pins.PeekBack().m_bOptional = true;
+      pins.PushBack({name, xiiRenderPipelinePin::Texture, false});
+      pins.PeekBack().m_bOptional = true;
+      pins.PeekBack().m_Access    = xiiRenderPipelinePinAccess::Read;
+    }
+  }
+  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  {
+    struct Data
+    {
+      xiiRenderGraphTextureHandle m_hTexture, m_hDepth, m_hSurface;
+    };
+    const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
+        data.m_hTexture = builder.ReadTexture(context.GetInputTexture("Color"), xiiGALResourceStateFlags::CopySource);
+        builder.ExportTexture(data.m_hTexture, xiiGALResourceStateFlags::CopySource);
+        const auto exportOptional = [&](xiiStringView name) {
+          auto texture = context.GetInputTexture(name);
+          if (texture.IsValid())
+          {
+            texture = builder.ReadTexture(texture, xiiGALResourceStateFlags::CopySource);
+            builder.ExportTexture(texture, xiiGALResourceStateFlags::CopySource);
+          }
+          return texture;
+        };
+        data.m_hDepth = exportOptional("Depth");
+        data.m_hSurface = exportOptional("Surface"); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
+    if (pass.first->m_hDepth.IsValid())
+      XII_SUCCEED_OR_RETURN(context.SetOutput("Depth", pass.first->m_hDepth));
+    if (pass.first->m_hSurface.IsValid())
+      XII_SUCCEED_OR_RETURN(context.SetOutput("Surface", pass.first->m_hSurface));
+    return context.SetOutput("Output", pass.first->m_hTexture);
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewModeTestCapture, 1, xiiRTTIDefaultAllocator<xiiViewModeTestCapture>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+namespace
+{
+  void TestViewRenderModes(bool enableMeshShaders)
+  {
+    xiiGPUTestingEnvironment environment;
+    if (!XII_TEST_RESULT(environment.Initialize(enableMeshShaders)))
+      return;
+    if (enableMeshShaders && environment.GetDevice()->GetFeatures().m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
+    {
+      xiiTestFramework::Output(xiiTestOutput::Message, "Native Forward+ mesh shaders are unavailable; this variant was not exercised.");
+      return;
+    }
+    xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+    xiiStartup::StartupHighLevelSystems();
+    XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+    xiiRenderPipelineResourceDescriptor definition;
+    if (!XII_TEST_RESULT(xiiLoadPipelineTestDescriptor(definition, xiiLoadPipelineLibraryResource("Editor"))))
+      return;
+    xiiUInt32 visualization = xiiInvalidIndex;
+    for (xiiUInt32 i = 0; i < definition.m_Passes.GetCount(); ++i)
+      if (definition.m_Passes[i].m_pType == xiiGetStaticRTTI<xiiViewRenderModePass>())
+        visualization = i;
+    if (!XII_TEST_BOOL(visualization != xiiInvalidIndex))
+      return;
+    const auto capture = definition.AddPass("Read actual diagnostic pixels", xiiGetStaticRTTI<xiiViewModeTestCapture>());
+    XII_TEST_RESULT(definition.Connect(visualization, "DisplayLinearColor", capture, "Color"));
+    const auto connections = definition.m_Connections;
+    for (const auto& connection : connections)
+      if (connection.m_uiTarget == visualization)
+      {
+        if (connection.m_sInput == "SceneDepth")
+          XII_TEST_RESULT(definition.Connect(connection.m_uiSource, connection.m_sOutput, capture, "Depth"));
+        if (connection.m_sInput == "WireframeSurface")
+          XII_TEST_RESULT(definition.Connect(connection.m_uiSource, connection.m_sOutput, capture, "Surface"));
+      }
+    const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("ViewRenderModes.Editor", std::move(definition));
+    xiiGeometry box;
+    box.AddBox(xiiVec3(1), true);
+    box.AddBox(xiiVec3(1), true);
+    box.AddBox(xiiVec3(1), true);
+    xiiMeshResourceDescriptor meshDescription;
+    auto&                     buffer = meshDescription.GetMeshBufferDescriptor();
+    buffer.AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, false);
+    auto* vertices = reinterpret_cast<xiiMeshPackedVertex*>(buffer.m_VertexData.GetData());
+    for (xiiUInt32 i = 0; i < buffer.GetVertexCount(); ++i)
+    {
+      vertices[i].m_vNormal    = {0, 0, 1};
+      vertices[i].m_vTangent   = {1, 0, 0, 1};
+      vertices[i].m_vTexCoord0 = {vertices[i].m_vPosition.x + 0.5f, vertices[i].m_vPosition.y + 0.5f};
+      vertices[i].m_vTexCoord1 = {0.75f, 0.125f};
+      vertices[i].m_Color0     = xiiColorLinearUB(64, 128, 192, 255);
+    }
+    meshDescription.AddLOD(0);
+    meshDescription.AddSection(24, 0, 0, 0);
+    meshDescription.AddSection(12, 24, 0, 1);
+    meshDescription.ComputeBounds();
+    const auto                    mesh = xiiResourceManager::CreateResource<xiiMeshResource>("ViewRenderModes.Mesh", std::move(meshDescription));
+    xiiMaterialResourceDescriptor materialDescription;
+    materialDescription.m_BaseColor  = {0.2f, 0.4f, 0.8f};
+    materialDescription.m_fRoughness = 0.25f;
+    materialDescription.m_fMetallic  = 0.75f;
+    const auto          material     = xiiResourceManager::CreateResource<xiiMaterialResource>("ViewRenderModes.Material", std::move(materialDescription));
+    xiiWorldDescription worldDescription("Analytical diagnostic geometry");
+    xiiWorld            world(worldDescription);
+    XII_LOCK(world.GetWriteMarker());
+    world.SetWorldSimulationEnabled(false);
+    xiiGameObject* object = nullptr;
+    world.CreateObject(xiiGameObjectDescription(), object);
+    xiiLODMeshComponent* component = nullptr;
+    xiiLODMeshComponent::CreateComponent(object, component);
+    component->SetMesh(mesh);
+    component->SetMaterialOverride(0, material);
+    component->SetForcedLOD(0);
+    xiiCamera                   cameras[2];
+    xiiView*                    views[2] = {};
+    xiiSharedPtr<xiiGALTexture> targets[2];
+    auto*                       module = world.GetOrCreateModule<xiiRenderWorldModule>();
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      cameras[i].SetCameraMode(i ? xiiCameraMode::OrthoFixedHeight : xiiCameraMode::PerspectiveFixedFovY, i ? 4.0f : 60.0f, i ? -10.0f : 0.1f, 100);
+      cameras[i].LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+      cameras[i].SetExposure(1);
+      module->CreateView("Independent diagnostic view", views[i]);
+      views[i]->SetCamera(&cameras[i]);
+      views[i]->SetViewport({0, 0, 65, 49});
+      views[i]->SetRenderPipelineResource(pipeline);
+      views[i]->SetPipelineParameter("Editor.SelectionOverlay", false);
+      views[i]->SetPipelineParameter("Editor.ShapeIcons", false);
+      views[i]->SetPipelineParameter("Editor.Picking", false);
+      views[i]->SetPipelineParameter("Editor.PickSelected", false);
+      xiiDisplayOutputSettings display;
+      display.m_Exposure.m_Mode = xiiExposureMode::Manual;
+      XII_TEST_RESULT(views[i]->SetDisplayOutputSettings(display));
+      xiiGALTextureCreationDescription target;
+      target.m_Type      = xiiGALResourceDimension::Texture2D;
+      target.m_Size      = {65, 49};
+      target.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
+      target.m_BindFlags = xiiGALBindFlags::RenderTarget;
+      targets[i]         = environment.GetDevice()->CreateTexture(target);
+      views[i]->SetRenderTargetView(targets[i]->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    }
+    const auto update = [&]() {
+      world.Update();
+      environment.GetDevice()->WaitIdle();
+    };
+    for (xiiUInt32 frame = 0; frame < 6; ++frame)
+      update();
+    struct Pixel
+    {
+      XII_DECLARE_POD_TYPE();
+      xiiFloat16 m_Channels[4];
+    };
+    const auto texture = [&](xiiView* view, xiiStringView pin) -> xiiSharedPtr<xiiGALTexture> {
+      if (!XII_TEST_RESULT(view->GetLastRenderResult()))
+        return nullptr;
+      const auto& instance = view->GetRenderPipelineInstance();
+      for (xiiUInt32 i = 0; i < instance.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+        if (xiiDynamicCast<const xiiViewModeTestCapture*>(instance.GetPass(i)))
+        {
+          const auto* binding = instance.GetOutputBinding(i, pin);
+          return binding ? view->GetRenderGraph()->GetExportedTexture(binding->m_hTexture) : nullptr;
+        }
+      XII_TEST_BOOL(false);
+      return nullptr;
+    };
+    const auto read = [&](xiiView* view, xiiUInt32 x, xiiUInt32 y, xiiColor& result) {
+      auto  image = texture(view, "Output");
+      Pixel pixel;
+      if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), image.Borrow(), x, y, pixel))
+        return false;
+      result = {float(pixel.m_Channels[0]), float(pixel.m_Channels[1]), float(pixel.m_Channels[2]), float(pixel.m_Channels[3])};
+      return true;
+    };
+    const auto check = [&](xiiViewRenderMode::Enum mode, xiiColor expected) {
+      views[0]->SetViewRenderMode(mode);
+      views[1]->SetViewRenderMode(xiiViewRenderMode::BaseColor);
+      update();
+      for (const auto& operation : views[0]->GetRenderPipelineInstance().GetPipeline()->GetDescriptor().m_Passes)
+        if (operation.m_pType->GetTypeName() == "xiiToneMappingPass")
+          for (const auto& pass : views[0]->GetRenderGraph()->GetCompiledPasses())
+            if (pass.m_sName.GetView() == operation.m_sName)
+              XII_TEST_BOOL(pass.m_bIsCulled);
+      xiiColor actual, other, background;
+      if (!read(views[0], 32, 24, actual) || !read(views[1], 32, 24, other) || !read(views[0], 0, 0, background))
+        return;
+      XII_TEST_FLOAT(actual.r, expected.r, 0.003f);
+      XII_TEST_FLOAT(actual.g, expected.g, 0.003f);
+      XII_TEST_FLOAT(actual.b, expected.b, 0.003f);
+      XII_TEST_FLOAT(other.r, 0.2f, 0.003f);
+      XII_TEST_FLOAT(other.g, 0.4f, 0.003f);
+      XII_TEST_FLOAT(other.b, 0.8f, 0.003f);
+      XII_TEST_FLOAT(background.r + background.g + background.b, 0, 0.001f);
+    };
+    for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
+    {
+      views[0]->SetRenderPath(path);
+      check(xiiViewRenderMode::VertexNormals, {0.5f, 0.5f, 1});
+      check(xiiViewRenderMode::VertexTangents, {1, 0.5f, 0.5f});
+      check(xiiViewRenderMode::VertexBitangents, {0.5f, 1, 0.5f});
+      check(xiiViewRenderMode::VertexColors, {64.0f / 255, 128.0f / 255, 192.0f / 255});
+      check(xiiViewRenderMode::UV0, {0.5f, 0.5f, 0});
+      check(xiiViewRenderMode::UV1, {0.75f, 0.125f, 0});
+      check(xiiViewRenderMode::StaticVsDynamic, {0.1f, 0.4f, 1});
+      check(xiiViewRenderMode::NormalMap, {0.5f, 0.5f, 1});
+      check(xiiViewRenderMode::Roughness, {0.25f, 0.25f, 0.25f});
+      check(xiiViewRenderMode::Metallic, {0.75f, 0.75f, 0.75f});
+      check(xiiViewRenderMode::Specular, {0.5f, 0.5f, 0.5f});
+      check(xiiViewRenderMode::UVDensity, {0.5f, 1, 0.5f});
+      check(xiiViewRenderMode::LODLevel, {192.0f / 255, 144.0f / 255, 137.0f / 255});
+      check(xiiViewRenderMode::MeshletID, {192.0f / 255, 144.0f / 255, 137.0f / 255});
+      check(xiiViewRenderMode::Overdraw, {0, 4.0f * xiiMath::Log2(3.0f) / 5.0f - 0.5f, 1});
+      const float area = 0.5f * xiiMath::Square(49.0f / (2.0f * xiiMath::Tan(xiiAngle::MakeFromDegree(30)) * 2.5f));
+      const float heat = xiiMath::Log2(area) / 12.0f;
+      check(xiiViewRenderMode::TriangleSize, {4 * heat - 1.5f, 1, 2.5f - 4 * heat});
+    }
+    component->SetForcedLOD(1);
+    check(xiiViewRenderMode::Overdraw, {0, 0.3f, 1});
+    views[0]->SetViewRenderMode(xiiViewRenderMode::LODLevel);
+    update();
+    xiiColor lod1;
+    if (read(views[0], 32, 24, lod1))
+      XII_TEST_BOOL(xiiMath::Abs(lod1.r - 192.0f / 255) > 0.05f);
+    // Exposure is a full-view scalar diagnostic and deliberately includes the background.
+    views[0]->SetViewRenderMode(xiiViewRenderMode::Exposure);
+    update();
+    xiiColor exposure;
+    if (read(views[0], 0, 0, exposure))
+    {
+      XII_TEST_FLOAT(exposure.r, 0.5f, 0.001f);
+      XII_TEST_FLOAT(exposure.g, 1, 0.001f);
+      XII_TEST_FLOAT(exposure.b, 0.5f, 0.001f);
+    }
+    cameras[0].SetExposure(16);
+    update();
+    if (read(views[0], 0, 0, exposure))
+    {
+      XII_TEST_FLOAT(exposure.r, 1, 0.001f);
+      XII_TEST_FLOAT(exposure.g, 1, 0.001f);
+      XII_TEST_FLOAT(exposure.b, 0, 0.001f);
+    }
+    cameras[0].SetExposure(1);
+    // Every advertised mode must execute the production resource composition.
+    for (xiiUInt32 value = 0; value < xiiViewRenderMode::ENUM_COUNT; ++value)
+    {
+      const auto mode = static_cast<xiiViewRenderMode::Enum>(value);
+      if (!xiiViewRenderMode::IsSupportedVisualizationMode(mode))
+        continue;
+      views[0]->SetViewRenderMode(mode);
+      update();
+      XII_TEST_RESULT_MSG(views[0]->GetLastRenderResult(), "Advertised mode %u failed.", value);
+    }
+    views[0]->SetViewRenderMode(xiiViewRenderMode::Default);
+    update();
+    xiiColor normalRendering;
+    read(views[0], 32, 24, normalRendering);
+    check(xiiViewRenderMode::VertexNormals, {0.5f, 0.5f, 1});
+    views[0]->SetViewRenderMode(xiiViewRenderMode::Default);
+    update();
+    xiiColor restored;
+    if (read(views[0], 32, 24, restored))
+    {
+      XII_TEST_FLOAT(restored.r, normalRendering.r, 0.001f);
+      XII_TEST_FLOAT(restored.g, normalRendering.g, 0.001f);
+      XII_TEST_FLOAT(restored.b, normalRendering.b, 0.001f);
+    }
+    xiiMaterialResourceDescriptor alternateDescription;
+    alternateDescription.m_BaseColor  = {0.8f, 0.1f, 0.3f};
+    alternateDescription.m_fMetallic  = 0.1f;
+    alternateDescription.m_fRoughness = 0.9f;
+    const auto alternate              = xiiResourceManager::CreateResource<xiiMaterialResource>("ViewRenderModes.AlternateMaterial", std::move(alternateDescription));
+    component->SetMaterialOverride(0, alternate);
+    views[0]->SetViewRenderMode(xiiViewRenderMode::BaseColor);
+    update();
+    xiiColor changed;
+    if (read(views[0], 32, 24, changed))
+    {
+      XII_TEST_FLOAT(changed.r, 0.8f, 0.003f);
+      XII_TEST_FLOAT(changed.g, 0.1f, 0.003f);
+      XII_TEST_FLOAT(changed.b, 0.3f, 0.003f);
+    }
+    component->SetMaterialOverride(0, material);
+    xiiGameObjectDescription behindDescription;
+    behindDescription.m_LocalPosition = {0.4f, 0, -1};
+    xiiGameObject* behind             = nullptr;
+    world.CreateObject(behindDescription, behind);
+    behind->MakeDynamic();
+    xiiDynamicMeshComponent* moving = nullptr;
+    xiiDynamicMeshComponent::CreateComponent(behind, moving);
+    moving->SetMesh(mesh);
+    moving->SetMaterialOverride(0, alternate);
+    for (xiiUInt32 frame = 0; frame < 3; ++frame)
+      update();
+    // Read the actual edge query and solid prepass as well as the final output.
+    views[0]->SetViewRenderMode(xiiViewRenderMode::Wireframe);
+    update();
+    xiiDynamicArray<xiiVec4U32> surfaces;
+    xiiDynamicArray<float>      depths;
+    xiiDynamicArray<Pixel>      edges;
+    if (xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), texture(views[0], "Surface"), surfaces) &&
+        xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), texture(views[0], "Depth"), depths) &&
+        xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), texture(views[0], "Output"), edges))
+    {
+      xiiUInt32 visible = 0, occluded = 0;
+      for (xiiUInt32 i = 0; i < surfaces.GetCount(); ++i)
+        if (surfaces[i].x != 0)
+        {
+          const bool hidden = std::bit_cast<float>(surfaces[i].y) + 1e-7f < depths[i];
+          visible += !hidden;
+          occluded += hidden;
+          XII_TEST_FLOAT(float(edges[i].m_Channels[0]), hidden ? 0.0f : 0.8f, 0.001f);
+        }
+      XII_TEST_BOOL(visible > 10 && occluded > 10);
+    }
+    views[0]->SetViewRenderMode(xiiViewRenderMode::InstanceID);
+    update();
+    xiiColor frontIdentity, backIdentity;
+    read(views[0], 32, 24, frontIdentity);
+    component->SetActiveFlag(false);
+    update();
+    if (read(views[0], 32, 24, backIdentity))
+      XII_TEST_BOOL(xiiMath::Abs(frontIdentity.r - backIdentity.r) + xiiMath::Abs(frontIdentity.g - backIdentity.g) + xiiMath::Abs(frontIdentity.b - backIdentity.b) > 0.1f);
+    views[0]->SetViewRenderMode(xiiViewRenderMode::StaticVsDynamic);
+    update();
+    if (read(views[0], 32, 24, changed))
+    {
+      XII_TEST_FLOAT(changed.r, 1, 0.003f);
+      XII_TEST_FLOAT(changed.g, 0.3f, 0.003f);
+      XII_TEST_FLOAT(changed.b, 0.1f, 0.003f);
+    }
+    views[0]->SetViewRenderMode(xiiViewRenderMode::MotionVectors);
+    update();
+    const auto previousObjectClip = views[0]->GetViewProjectionMatrix(xiiCameraEye::Left) * xiiVec4(0.4f, 0, -0.5f, 1);
+    const auto currentObjectClip  = views[0]->GetViewProjectionMatrix(xiiCameraEye::Left) * xiiVec4(0.45f, 0, -0.5f, 1);
+    behind->SetLocalPosition(xiiVec3(0.45f, 0, -1));
+    update();
+    xiiColor velocity;
+    if (read(views[0], 32, 24, velocity))
+      XII_TEST_FLOAT(velocity.r, 0.5f + 5.0f * (currentObjectClip.x / currentObjectClip.w - previousObjectClip.x / previousObjectClip.w), 0.003f);
+    update();
+    if (read(views[0], 32, 24, velocity))
+    {
+      XII_TEST_FLOAT(velocity.r, 0.5f, 0.003f);
+      XII_TEST_FLOAT(velocity.g, 0.5f, 0.003f);
+    }
+    cameras[0].MoveGlobally(0, 0.1f, 0);
+    update();
+    if (read(views[0], 32, 24, velocity))
+      XII_TEST_BOOL(xiiMath::Abs(velocity.r - 0.5f) + xiiMath::Abs(velocity.g - 0.5f) > 0.02f);
+    moving->SetActiveFlag(false);
+    component->SetActiveFlag(true);
+    cameras[0].LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+    auto resized   = targets[0]->GetDescription();
+    resized.m_Size = {97, 73};
+    targets[0]     = environment.GetDevice()->CreateTexture(resized);
+    views[0]->SetRenderTargetView(targets[0]->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    views[0]->SetViewport({0, 0, 97, 73});
+    views[0]->SetViewRenderMode(xiiViewRenderMode::VertexNormals);
+    update();
+    if (read(views[0], 48, 36, changed))
+    {
+      XII_TEST_FLOAT(changed.r, 0.5f, 0.003f);
+      XII_TEST_FLOAT(changed.g, 0.5f, 0.003f);
+      XII_TEST_FLOAT(changed.b, 1, 0.003f);
+    }
+    const auto reloadable = xiiMakeReloadablePipelineTestResource(pipeline, "ViewRenderModes.Reloadable");
+    views[0]->SetRenderPipelineResource(reloadable);
+    update();
+    XII_TEST_BOOL(xiiMakeReloadablePipelineTestResource(pipeline, reloadable.GetResourceID()) == reloadable);
+    update();
+    if (read(views[0], 48, 36, changed))
+      XII_TEST_FLOAT(changed.b, 1, 0.003f);
+    object->MakeDynamic();
+    object->SetLocalScaling(xiiVec3(-1, 1, 1));
+    views[0]->SetViewRenderMode(xiiViewRenderMode::VertexBitangents);
+    update();
+    if (read(views[0], 48, 36, changed))
+    {
+      XII_TEST_FLOAT(changed.r, 0.5f, 0.003f);
+      XII_TEST_FLOAT(changed.g, 1, 0.003f);
+      XII_TEST_FLOAT(changed.b, 0.5f, 0.003f);
+    }
+    for (auto* view : views)
+      module->DestroyView(view->GetHandle());
+  }
+} // namespace
+
+XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderModes)
+{
+  TestViewRenderModes(false);
+}
+
+XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderModesWithMeshShaders)
+{
+  TestViewRenderModes(true);
+}

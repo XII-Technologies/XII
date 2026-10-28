@@ -45,12 +45,25 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
 #if !defined(XII_SCENE_DEPTH_ONLY)
   output.WorldNormal = worldNormal;
 #endif
-#if !defined(XII_SCENE_SURFACE_QUERY) && !defined(XII_SCENE_DEPTH_ONLY)
+#if (!defined(XII_SCENE_SURFACE_QUERY) || defined(XII_SCENE_DIAGNOSTICS)) && !defined(XII_SCENE_DEPTH_ONLY)
   output.WorldTangent = worldTangent;
-  output.TangentSign  = localTangent.w;
+  output.TangentSign  = localTangent.w * (determinant((float3x3)instance.GlobalTransform) < 0.0f ? -1.0f : 1.0f);
 #endif
   output.TexCoord      = texCoord;
   output.MaterialIndex = instance.MaterialIndex;
+#if defined(XII_SCENE_DIAGNOSTICS)
+  // The diagnostic query explicitly consumes the canonical packed vertex layout.
+  if (TexCoord1Offset > VertexStride || VertexStride - TexCoord1Offset < 8u ||
+      ColorOffset > VertexStride || VertexStride - ColorOffset < 4u ||
+      vertexBufferBytes - vertexOffset < max(TexCoord1Offset + 8u, ColorOffset + 4u))
+    return xiiInvalidSceneSurfaceVertex();
+  output.DiagnosticWorldPosition = worldPosition;
+  output.DiagnosticUV1           = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoord1Offset));
+  const uint packedColor         = g_Buffers[lod.VertexBufferIndex].Load(vertexOffset + ColorOffset);
+  output.DiagnosticColor         = float4(packedColor & 255u, (packedColor >> 8u) & 255u, (packedColor >> 16u) & 255u, packedColor >> 24u) / 255.0f;
+  output.DiagnosticIdentity      = uint3(instance.Flags, 0u, 0u);
+  output.DiagnosticBarycentrics  = 0.0f;
+#endif
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
   output.WorldPosition  = worldPosition;
 #  if defined(XII_SCENE_SURFACE_FLAGS)

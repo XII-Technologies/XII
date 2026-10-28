@@ -60,5 +60,15 @@ GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_Instan
   if (VertexStride < attributeEnd || vertexBufferBytes < attributeEnd || any(indices >= lod.VertexCount) ||
       any(indices > (vertexBufferBytes - attributeEnd) / VertexStride))
     return xiiInvalidSceneSurfaceVertex();
-  return xiiLoadSceneSurfaceVertex(instance, lod, indices[vertexIndex % 3u]);
+  const uint sourcePrimitive = meshlet.Header.x + firstIndex / 3u;
+  if ((instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex) ||
+      (instance.PrimitiveCount != 0u && (sourcePrimitive < instance.FirstPrimitive || sourcePrimitive - instance.FirstPrimitive >= instance.PrimitiveCount)))
+    return xiiInvalidSceneSurfaceVertex();
+  GBufferVertex output = xiiLoadSceneSurfaceVertex(instance, lod, indices[vertexIndex % 3u]);
+#if defined(XII_SCENE_DIAGNOSTICS)
+  output.DiagnosticIdentity.yz  = uint2(lodIndex, visible.y);
+  output.DiagnosticBarycentrics = vertexIndex % 3u == 0u ? float2(1, 0) : vertexIndex % 3u == 1u ? float2(0, 1) :
+                                                                                                   float2(0, 0);
+#endif
+  return output;
 }

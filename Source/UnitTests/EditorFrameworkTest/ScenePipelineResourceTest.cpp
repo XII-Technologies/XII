@@ -90,3 +90,24 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
       XII_TEST_BOOL(pass.m_Properties.GetValue("UseHistory") && !pass.m_Properties.GetValue("UseHistory")->Get<bool>());
   }
 }
+
+void xiiCheckAuthoredEditorVisualizationContract(const xiiRenderPipelineResource& editor)
+{
+  const auto& descriptor    = editor.GetPipeline()->GetDescriptor();
+  const auto  visualization = xiiFindPipelineTestPass(descriptor, "xiiViewRenderModePass");
+  for (const xiiStringView input : {"DisplayLinearColor", "SceneDepth", "PerFrameCamera", "GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "WireframeSurface", "Overdraw", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "EnvironmentSpecular", "BloomTexture", "CurrentExposure"})
+  {
+    bool connected = false;
+    for (const auto& connection : descriptor.m_Connections)
+      connected |= descriptor.m_Passes[connection.m_uiTarget].m_Id == visualization && connection.m_sInput == input;
+    XII_TEST_BOOL_MSG(connected, "Editor visualization input '%s' must have an authored producer.", input.GetStartPointer());
+  }
+  bool diagnostics = false;
+  for (const auto& pass : descriptor.m_Passes)
+    if (pass.m_pType->GetTypeName() == "xiiSurfaceQueryPass")
+    {
+      const auto* enabled = pass.m_Properties.GetValue("VisualizeView");
+      diagnostics |= enabled && enabled->Get<bool>();
+    }
+  XII_TEST_BOOL(diagnostics);
+}
