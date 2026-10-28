@@ -37,6 +37,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceQueryPass, 2, xiiRTTIDefaultAllocator
     XII_MEMBER_PROPERTY("SceneDepth", m_OutputDepth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Surface", m_OutputSurface)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinOptionalAttribute("OnlyViewWireframe")),
     XII_MEMBER_PROPERTY("Overdraw", m_OutputOverdraw)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiagnosticMeshlets", m_InputDiagnosticMeshlets)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiagnosticCount", m_InputDiagnosticCount)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiagnosticCommands", m_InputDiagnosticCommands)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiagnosticCommandCount", m_InputDiagnosticCommandCount)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiagnosticDepth", m_InputDiagnosticDepth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("OnlyViewWireframe", m_bOnlyViewWireframe)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("VisualizeView", m_bVisualizeView)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("UseMeshShaders", m_bUseMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(false)),
@@ -56,8 +61,9 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   if (!context.m_pView || !xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;
   const auto mode        = static_cast<xiiViewRenderMode::Enum>(context.m_pView->GetViewRenderMode().GetValue());
-  const bool diagnostics = m_bVisualizeView && xiiViewRenderMode::IsSurfaceVisualizationMode(mode);
-  const bool overdraw    = m_bVisualizeView && mode == xiiViewRenderMode::Overdraw;
+  const bool culling     = m_bVisualizeView && (mode == xiiViewRenderMode::CullingOutcome || mode == xiiViewRenderMode::OcclusionHeatmap);
+  const bool diagnostics = m_bVisualizeView && (xiiViewRenderMode::IsSurfaceVisualizationMode(mode) || culling);
+  const bool overdraw    = (m_bVisualizeView && mode == xiiViewRenderMode::Overdraw) || culling;
   if (m_bOnlyViewWireframe && mode != xiiViewRenderMode::Wireframe && !diagnostics && !overdraw)
     return XII_SUCCESS;
   if ((diagnostics || overdraw) && m_bUseMeshShaders)
@@ -69,17 +75,19 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   if (m_bUseMeshShaders && device->GetFeatures().m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
     return context.ReportFailure("The authored surface mesh-shader path is unsupported by this device.");
   const auto scene = context.GetInputBuffer(m_InputSceneInstances), skinning = context.GetInputBuffer(m_InputSkinningMatrices);
-  const auto visible = context.GetInputBuffer(m_InputVisibleMeshlets), count = context.GetInputBuffer(m_InputVisibleMeshletCount);
+  const auto visible = context.GetInputBuffer(culling ? m_InputDiagnosticMeshlets : m_InputVisibleMeshlets), count = context.GetInputBuffer(culling ? m_InputDiagnosticCount : m_InputVisibleMeshletCount);
   const auto geometry = context.GetInputBuffer(m_InputGeometryMetadata), meshlets = context.GetInputBuffer(m_InputMeshletMetadata), materials = context.GetInputBuffer(m_InputSurfaceMaterials);
-  const auto constants = context.GetInputBuffer(m_InputRasterConstants), arguments = context.GetInputBuffer(m_InputDrawCommands), argumentCount = context.GetInputBuffer(m_InputDrawCommandCount);
+  const auto constants = context.GetInputBuffer(m_InputRasterConstants), arguments = context.GetInputBuffer(culling ? m_InputDiagnosticCommands : m_InputDrawCommands), argumentCount = context.GetInputBuffer(culling ? m_InputDiagnosticCommandCount : m_InputDrawCommandCount);
   const auto valid = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
     const auto* description = context.m_Graph.GetBufferDescription(handle);
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride &&
       description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
   const auto* uniform = context.m_Graph.GetBufferDescription(constants);
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) || !valid(arguments, m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32)) || !valid(argumentCount, sizeof(xiiUInt32)) || !uniform || uniform->m_uiSize != sizeof(xiiGpuSceneGBufferConstants) || !uniform->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(skinning, sizeof(xiiMat4)) || !valid(visible, culling ? sizeof(xiiVec4U32) : sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(materials, sizeof(xiiGpuSurfaceMaterial)) || !valid(arguments, m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32)) || !valid(argumentCount, sizeof(xiiUInt32)) || !uniform || uniform->m_uiSize != sizeof(xiiGpuSceneGBufferConstants) || !uniform->m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
     return context.ReportFailure("Surface rasterization requires canonical data, raster constants and explicit indirect commands.");
+  if (culling && !context.GetInputTexture(m_InputDiagnosticDepth).IsValid())
+    return context.ReportFailure("Culling diagnostics require the solid scene depth image.");
   const auto  capacity = context.m_Graph.GetBufferDescription(arguments)->m_uiSize / (m_bUseMeshShaders ? sizeof(xiiVec3U32) : sizeof(xiiVec4U32));
   const auto& draw     = device->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties;
   if (capacity > draw.m_uiMaxDrawIndirectCount || !draw.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer) || (m_bUseMeshShaders && capacity != 1))
@@ -87,11 +95,18 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   const auto width = context.m_pView->GetRenderResolutionWidth(), height = context.m_pView->GetRenderResolutionHeight();
   if (!width || !height || width > 65536 || height > 65536)
     return context.ReportFailure("Invalid surface raster resolution.");
-  if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != fill || m_bCachedDiagnostics != diagnostics || m_bCachedOverdraw != overdraw)
+  if (culling)
   {
-    const auto                                     shader = xiiResourceManager::LoadResource<xiiShaderResource>(overdraw ? "Shaders/Pipeline/GpuSceneOverdraw.xiiShader" : diagnostics ? "Shaders/Pipeline/GpuSceneDiagnostics.xiiShader" :
-                                                                                                                  m_bUseMeshShaders                                                    ? "Shaders/Pipeline/GpuScenePicking.xiiShader" :
-                                                                                                                                                                                         "Shaders/Pipeline/GpuScenePickingIndexed.xiiShader");
+    const auto* depth = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputDiagnosticDepth));
+    if (!depth || depth->m_Size != xiiSizeU32(width, height) || (depth->m_Format != xiiGALResourceFormat::D32Float && depth->m_Format != xiiGALResourceFormat::R32Float))
+      return context.ReportFailure("Culling diagnostics require matching single-channel float scene depth.");
+  }
+  if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != fill || m_bCachedDiagnostics != diagnostics || m_bCachedOverdraw != overdraw || m_bCachedCulling != culling)
+  {
+    const auto                                     shader = xiiResourceManager::LoadResource<xiiShaderResource>(culling ? "Shaders/Pipeline/GpuSceneCullingDiagnostics.xiiShader" : overdraw ? "Shaders/Pipeline/GpuSceneOverdraw.xiiShader" :
+                                                                                                                  diagnostics                                                                ? "Shaders/Pipeline/GpuSceneDiagnostics.xiiShader" :
+                                                                                                                  m_bUseMeshShaders                                                          ? "Shaders/Pipeline/GpuScenePicking.xiiShader" :
+                                                                                                                                                                                               "Shaders/Pipeline/GpuScenePickingIndexed.xiiShader");
     xiiHashTable<xiiHashedString, xiiHashedString> variables;
     xiiHashedString                                name, value;
     name.Assign("RENDER_PASS");
@@ -102,6 +117,7 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
     m_CachedFill         = fill;
     m_bCachedDiagnostics = diagnostics;
     m_bCachedOverdraw    = overdraw;
+    m_bCachedCulling     = culling;
   }
   xiiResourceLock<xiiShaderPermutationResource> shader(m_hShader, xiiResourceAcquireMode::BlockTillLoaded);
   if (!shader.IsValid() || !shader->IsShaderValid())
@@ -156,6 +172,7 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
     bool                               m_bMesh;
     xiiRenderGraphBufferHandle         m_Diagnostics;
     bool                               m_bDiagnostics;
+    xiiRenderGraphTextureHandle        m_DiagnosticDepth;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Scene = builder.ReadBuffer(scene, xiiGALResourceStateFlags::ShaderResource);
@@ -169,6 +186,8 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
       data.m_bDiagnostics = diagnostics;
       if (diagnostics)
         data.m_Diagnostics = builder.ReadBuffer(diagnosticConstants, xiiGALResourceStateFlags::ConstantBuffer);
+      if (culling)
+        data.m_DiagnosticDepth = builder.ReadTexture(context.GetInputTexture(m_InputDiagnosticDepth), xiiGALResourceStateFlags::ShaderResource);
       data.m_Arguments = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument);
       data.m_ArgumentCount = builder.ReadBuffer(argumentCount, xiiGALResourceStateFlags::IndirectArgument);
       xiiGALTextureCreationDescription target;
@@ -219,6 +238,8 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
       {
         commands.ResolveAndSetConstantBuffer("xiiViewRenderModeConstants", execute.GetBuffer(data.m_Diagnostics), stage | xiiGALShaderType::Pixel);
       }
+      if (data.m_DiagnosticDepth.IsValid())
+        commands.ResolveAndSetShaderResourceTextureView("g_DiagnosticDepth", execute.GetTexture(data.m_DiagnosticDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
       commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", execute.GetBuffer(data.m_Constants), stage | xiiGALShaderType::Pixel);
       commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);

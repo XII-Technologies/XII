@@ -23,6 +23,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVertexPullDrawCommandsPass, 1, xiiRTTIDefaul
     XII_MEMBER_PROPERTY("DrawCommands", m_Commands)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DrawCommandCount", m_CommandCount)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("AllowInactive", m_bAllowInactive)->AddAttributes(new xiiDefaultValueAttribute(false)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Geometry") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -35,21 +36,27 @@ xiiResult xiiVertexPullDrawCommandsPass::Build(xiiRenderPipelinePassContext& con
     return XII_SUCCESS;
   const auto scene = context.GetInputBuffer(m_Scene), view = context.GetInputBuffer(m_View), geometry = context.GetInputBuffer(m_Geometry);
   const auto meshlets = context.GetInputBuffer(m_Meshlets), visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count);
-  const auto valid = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
+  if (m_bAllowInactive && !visible.IsValid() && !count.IsValid())
+    return XII_SUCCESS;
+  const auto*     visibleDescription = context.m_Graph.GetBufferDescription(visible);
+  const bool      diagnosticRecords  = visibleDescription && visibleDescription->m_uiElementByteStride == sizeof(xiiVec4U32);
+  const xiiUInt32 recordStride       = diagnosticRecords ? sizeof(xiiVec4U32) : sizeof(xiiVec2U32);
+  const auto      valid              = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
     const auto* description = context.m_Graph.GetBufferDescription(handle);
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride &&
       description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
-  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(visible, sizeof(xiiVec2U32)) || !valid(count, sizeof(xiiUInt32)))
+  if (!valid(scene, sizeof(xiiGpuSceneInstance)) || !valid(view, sizeof(xiiGpuVisibilityView)) || !valid(geometry, sizeof(xiiGpuGeometryRecord)) || !valid(meshlets, sizeof(xiiMeshlet)) || !valid(visible, recordStride) || !valid(count, sizeof(xiiUInt32)))
     return context.ReportFailure("Vertex-pull draw preparation requires canonical structured inputs.");
   if (!xiiGALDevice::HasDefaultDevice())
     return XII_FAILURE;
-  const auto  capacity = context.m_Graph.GetBufferDescription(visible)->m_uiSize / sizeof(xiiVec2U32);
+  const auto  capacity = context.m_Graph.GetBufferDescription(visible)->m_uiSize / recordStride;
   const auto  groups   = (capacity + 63U) / 64U;
   const auto& limits   = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
   if (limits.m_uiMaxThreadGroupSizeX < 64 || limits.m_uiMaxThreadGroupInvocations < 64 || groups > limits.m_uiMaxThreadGroupCountX)
     return context.ReportFailure("Vertex-pull draw preparation exceeds compute limits; reduce the supplied meshlet capacity.");
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_Pipeline, "Shaders/Geometry/VertexPullDrawCommands.xiiShader"));
+  auto& pipeline = diagnosticRecords ? m_DiagnosticPipeline : m_Pipeline;
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, diagnosticRecords ? "Shaders/Geometry/CullingDiagnosticDrawCommands.xiiShader" : "Shaders/Geometry/VertexPullDrawCommands.xiiShader"));
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
@@ -72,7 +79,7 @@ xiiResult xiiVertexPullDrawCommandsPass::Build(xiiRenderPipelinePassContext& con
       description.m_uiSize = sizeof(xiiUInt32);
       description.m_uiElementByteStride = sizeof(xiiUInt32);
       data.m_CommandCount = builder.WriteBuffer("Vertex-pull Draw Count", description, xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_uiGroups = static_cast<xiiUInt32>(groups); }, [pipeline = m_Pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_uiGroups = static_cast<xiiUInt32>(groups); }, [pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       commands.SetPipelineState(pipeline.Borrow());
       commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);

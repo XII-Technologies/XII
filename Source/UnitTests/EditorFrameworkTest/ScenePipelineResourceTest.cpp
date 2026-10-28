@@ -38,8 +38,20 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   const auto depth = pipeline->FindInterface("SceneDepth", false);
   if (XII_TEST_BOOL(depth != xiiInvalidIndex))
     XII_TEST_BOOL(!pipeline->GetInterface()[depth].m_Pin.m_bOptional);
-  const auto& descriptor      = pipeline->GetDescriptor();
-  bool        spotlightOpaque = false, spotlightTransparent = false;
+  const auto& descriptor         = pipeline->GetDescriptor();
+  bool        cullingDiagnostics = false;
+  for (const auto& pass : descriptor.m_Passes)
+    if (pass.m_pType->GetTypeName() == "xiiMeshletCullPass" && pass.m_Properties.GetValue("VisualizeView") && pass.m_Properties.GetValue("VisualizeView")->Get<bool>())
+      for (const xiiStringView output : {"DiagnosticMeshlets", "DiagnosticCount"})
+      {
+        bool routed = false;
+        for (const auto& connection : descriptor.m_Connections)
+          routed |= descriptor.m_Passes[connection.m_uiSource].m_Id == pass.m_Id && connection.m_sOutput == output;
+        XII_TEST_BOOL(routed);
+        cullingDiagnostics |= routed;
+      }
+  XII_TEST_BOOL(cullingDiagnostics);
+  bool spotlightOpaque = false, spotlightTransparent = false;
   for (const auto& connection : descriptor.m_Connections)
     if (connection.m_sOutput == "SpotShadows" && connection.m_sInput == "SpotShadows" &&
         descriptor.m_Passes[connection.m_uiSource].m_pType->GetTypeName() == "xiiSpotShadowPass")

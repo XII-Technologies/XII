@@ -6,8 +6,12 @@
 StructuredBuffer<GpuSceneInstance>  g_SceneInstances;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<GpuMeshlet>        g_Meshlets;
-StructuredBuffer<uint2>             g_VisibleMeshlets;
-ByteAddressBuffer                   g_Buffers[];
+#if defined(XII_SCENE_CULL_DIAGNOSTICS)
+StructuredBuffer<uint4> g_VisibleMeshlets;
+#else
+StructuredBuffer<uint2> g_VisibleMeshlets;
+#endif
+ByteAddressBuffer g_Buffers[];
 
 #include <Shaders/Pipeline/GpuSceneSurfaceData.h>
 
@@ -20,7 +24,7 @@ GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_Instan
   g_Geometry.GetDimensions(geometryCapacity, stride);
   if (visibleIndex >= visibleCapacity)
     return xiiInvalidSceneSurfaceVertex();
-  const uint2 visible       = g_VisibleMeshlets[visibleIndex];
+  const uint2 visible       = g_VisibleMeshlets[visibleIndex].xy;
   const uint  instanceIndex = visible.x;
   if (instanceIndex >= sceneCapacity || visible.y >= meshletCapacity)
     return xiiInvalidSceneSurfaceVertex();
@@ -66,7 +70,11 @@ GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_Instan
     return xiiInvalidSceneSurfaceVertex();
   GBufferVertex output = xiiLoadSceneSurfaceVertex(instance, lod, indices[vertexIndex % 3u]);
 #if defined(XII_SCENE_DIAGNOSTICS)
-  output.DiagnosticIdentity.yz  = uint2(lodIndex, visible.y);
+  output.DiagnosticIdentity.yz = uint2(lodIndex, visible.y);
+  output.DiagnosticIdentity.w  = sourcePrimitive + 1u;
+#  if defined(XII_SCENE_CULL_DIAGNOSTICS)
+  output.DiagnosticDecision = g_VisibleMeshlets[visibleIndex].z;
+#  endif
   output.DiagnosticBarycentrics = vertexIndex % 3u == 0u ? float2(1, 0) : vertexIndex % 3u == 1u ? float2(0, 1) :
                                                                                                    float2(0, 0);
 #endif

@@ -30,6 +30,8 @@ uint4 main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
 {
   const xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
   xiiClipSceneSurface(material, xiiSampleSceneBaseColor(material, input.TexCoord), isFrontFace, true);
+  if (RenderMode == ViewRenderMode_VisibilityBuffer)
+    return uint4(input.ObjectId, asuint(input.Position.z), input.DiagnosticIdentity.z + 1u, input.DiagnosticIdentity.w);
   float3 color = 0.0f;
   switch (RenderMode)
   {
@@ -58,6 +60,7 @@ uint4 main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     }
     case ViewRenderMode_LODLevel: color = ViewIdentityColor(input.DiagnosticIdentity.y + 1u); break;
     case ViewRenderMode_MeshletID: color = ViewIdentityColor(input.DiagnosticIdentity.z + 1u); break;
+    case ViewRenderMode_ShadingModelID: color = ViewIdentityColor(material.Metadata.x + 1u); break;
     case ViewRenderMode_StaticVsDynamic: color = (input.DiagnosticIdentity.x & 2u) != 0u ? float3(0.1f, 0.4f, 1.0f) : float3(1.0f, 0.3f, 0.1f); break;
   }
   return uint4(input.ObjectId, asuint(input.Position.z), f32tof16(color.r) | (f32tof16(color.g) << 16u), f32tof16(color.b));

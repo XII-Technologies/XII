@@ -157,6 +157,8 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   switch (mode)
   {
     case xiiViewRenderMode::Overdraw:
+    case xiiViewRenderMode::CullingOutcome:
+    case xiiViewRenderMode::OcclusionHeatmap:
       source = &m_InputOverdraw;
       break;
     case xiiViewRenderMode::ShadowMask:

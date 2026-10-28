@@ -1,0 +1,39 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+RENDER_PASS
+[RENDERSTATE]
+DepthEnable = false
+DepthWriteEnable = false
+CullMode = CullMode_None
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_One
+DestinationBlend0 = BlendFactor_One
+SourceBlendAlpha0 = BlendFactor_One
+DestinationBlendAlpha0 = BlendFactor_One
+[SHADER]
+#define XII_SCENE_SURFACE_QUERY
+#define XII_SCENE_DIAGNOSTICS
+#define XII_SCENE_CULL_DIAGNOSTICS
+#include <Shaders/Pipeline/Passes/Output/ViewRenderModeConstants.h>
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+[VERTEX_SHADER]
+#define XII_SCENE_SURFACE_CURRENT_ONLY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+[PIXEL_SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceMaterial.h>
+#include <Shaders/Pipeline/ViewRenderModeHelpers.h>
+Texture2D<float> g_DiagnosticDepth;
+float4 main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
+{
+    const xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
+    // Rejected cone silhouettes must remain visible from their rejected side.
+    xiiClipSceneSurface(material, xiiSampleSceneBaseColor(material, input.TexCoord), RenderMode == ViewRenderMode_CullingOutcome ? true : isFrontFace, true);
+    if (RenderMode == ViewRenderMode_CullingOutcome)
+        return float4(input.DiagnosticDecision == 1u, input.DiagnosticDecision == 0u, input.DiagnosticDecision == 2u, 1);
+    const float depth = g_DiagnosticDepth.Load(int3(uint2(input.Position.xy), 0));
+    const bool occluded = input.Position.z + 1e-7f < depth;
+    return float4(occluded ? 1.0f : 0.0f, occluded ? 0.0f : 1.0f, 0, 1);
+}

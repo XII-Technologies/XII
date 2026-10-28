@@ -28,6 +28,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshletCullPass, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("VisibleMeshlets", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibleMeshletCount", m_OutputCount)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("VisibleMeshletOverflow", m_Overflow)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("DiagnosticMeshlets", m_DiagnosticMeshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("DiagnosticCount", m_DiagnosticCount)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("VisualizeView", m_bVisualizeView)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(1024U * 1024U), new xiiClampValueAttribute(1U, 16777216U)),
     XII_MEMBER_PROPERTY("RequireComplete", m_bRequireComplete)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -45,12 +48,15 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
   // An absent query is an explicitly inactive rendering workload.
   if (!context.GetInputBuffer(m_View).IsValid())
     return XII_SUCCESS;
-  if (m_bRequireComplete && (!context.m_pView || !context.m_pView->GetGpuInstanceData() || context.m_pView->GetGpuInstanceData()->GetMaximumMeshletCount() > m_uiMaxVisibleMeshlets))
+  const auto mode        = context.m_pView ? context.m_pView->GetViewRenderMode().GetValue() : xiiViewRenderMode::Default;
+  const bool diagnostics = m_bVisualizeView && (mode == xiiViewRenderMode::CullingOutcome || mode == xiiViewRenderMode::OcclusionHeatmap);
+  if ((m_bRequireComplete || diagnostics) && (!context.m_pView || !context.m_pView->GetGpuInstanceData() || context.m_pView->GetGpuInstanceData()->GetMaximumMeshletCount() > m_uiMaxVisibleMeshlets))
     return context.ReportFailure("Complete meshlet coverage exceeds the authored capacity; increase MaxVisibleMeshlets.");
-  const auto scene = context.GetInputBuffer(m_Scene), view = context.GetInputBuffer(m_View), geometry = context.GetInputBuffer(m_Geometry), meshlets = context.GetInputBuffer(m_Meshlets);
-  const auto visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count), lod = context.GetInputBuffer(m_Lod), arguments = context.GetInputBuffer(m_Arguments);
-  const auto initialCount = context.GetInputBuffer(m_InitialCount), initialOverflow = context.GetInputBuffer(m_InitialOverflow);
-  const auto valid = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
+  const xiiUInt32 diagnosticCapacity = diagnostics ? xiiUInt32(xiiMath::Max<xiiUInt64>(1, context.m_pView->GetGpuInstanceData()->GetMaximumMeshletCount())) : 0;
+  const auto      scene = context.GetInputBuffer(m_Scene), view = context.GetInputBuffer(m_View), geometry = context.GetInputBuffer(m_Geometry), meshlets = context.GetInputBuffer(m_Meshlets);
+  const auto      visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count), lod = context.GetInputBuffer(m_Lod), arguments = context.GetInputBuffer(m_Arguments);
+  const auto      initialCount = context.GetInputBuffer(m_InitialCount), initialOverflow = context.GetInputBuffer(m_InitialOverflow);
+  const auto      valid = [&](xiiRenderGraphBufferHandle handle, xiiUInt32 stride) {
     const auto* description = context.m_Graph.GetBufferDescription(handle);
     return description && description->m_Mode == xiiGALBufferMode::Structured && description->m_uiElementByteStride == stride && description->m_uiSize >= stride && description->m_uiSize % stride == 0 && description->m_uiSize / stride <= xiiMath::MaxValue<xiiUInt32>();
   };
@@ -61,11 +67,23 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
   const auto& limits = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
   if (limits.m_uiMaxThreadGroupSizeX < 64 || limits.m_uiMaxThreadGroupInvocations < 64)
     return context.ReportFailure("Meshlet culling requires 64-thread compute groups.");
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_Pipeline, "Shaders/Visibility/MeshletCull.xiiShader"));
+  auto& pipeline = diagnostics ? m_DiagnosticPipeline : m_Pipeline;
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, diagnostics ? "Shaders/Visibility/MeshletCullDiagnostics.xiiShader" : "Shaders/Visibility/MeshletCull.xiiShader"));
   xiiRenderPassResourceScope scope(context);
+  xiiRenderGraphBufferHandle diagnosticCounter;
+  if (diagnostics)
+    diagnosticCounter = *context.m_Graph.AddPass<xiiRenderGraphBufferHandle>("Reset culling diagnostic count", xiiGALCommandQueueFlags::Transfer, [](auto& buffer, xiiRenderGraphBuilder& builder) {
+      xiiGALBufferCreationDescription description;
+      description.m_uiSize = description.m_uiElementByteStride = sizeof(xiiUInt32);
+      description.m_Mode = xiiGALBufferMode::Structured;
+      description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+      buffer = builder.WriteBuffer("Diagnostic count", description, xiiGALResourceStateFlags::CopyDestination); }, [](const auto& buffer, xiiRenderGraphPassContext& execute) {
+      const xiiUInt32 zero = 0;
+      execute.GetCommandList().UpdateBuffer(execute.GetBuffer(buffer), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&zero), sizeof(zero))); }).first;
   struct Data
   {
     xiiRenderGraphBufferHandle m_Scene, m_View, m_Geometry, m_Meshlets, m_Visible, m_Count, m_Lod, m_Arguments, m_Output, m_OutputCount, m_Overflow;
+    xiiRenderGraphBufferHandle m_DiagnosticMeshlets, m_DiagnosticCount;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Scene = builder.ReadBuffer(scene, xiiGALResourceStateFlags::ShaderResource);
@@ -83,7 +101,14 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
       description.m_uiElementByteStride = sizeof(xiiVec2U32);
       description.m_Mode = xiiGALBufferMode::Structured;
       description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-      data.m_Output = builder.WriteBuffer("Visible Meshlet Pairs", description, xiiGALResourceStateFlags::UnorderedAccess); }, [pipeline = m_Pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Output = builder.WriteBuffer("Visible Meshlet Pairs", description, xiiGALResourceStateFlags::UnorderedAccess);
+      if (diagnostics)
+      {
+        description.m_uiSize = xiiUInt64(diagnosticCapacity) * sizeof(xiiVec4U32);
+        description.m_uiElementByteStride = sizeof(xiiVec4U32);
+        data.m_DiagnosticMeshlets = builder.WriteBuffer("Pre-compaction Meshlet Decisions", description, xiiGALResourceStateFlags::UnorderedAccess);
+        data.m_DiagnosticCount = builder.ReadWriteBuffer(diagnosticCounter, xiiGALResourceStateFlags::UnorderedAccess);
+      } }, [pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       commands.SetPipelineState(pipeline.Borrow());
       commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -96,10 +121,20 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
       commands.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshlets", execute.GetBuffer(data.m_Output)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       commands.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshletCount", execute.GetBuffer(data.m_OutputCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       commands.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshletOverflow", execute.GetBuffer(data.m_Overflow)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      if (data.m_DiagnosticMeshlets.IsValid())
+      {
+        commands.ResolveAndSetUnorderedAccessBufferView("g_DiagnosticMeshlets", execute.GetBuffer(data.m_DiagnosticMeshlets)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        commands.ResolveAndSetUnorderedAccessBufferView("g_DiagnosticMeshletCount", execute.GetBuffer(data.m_DiagnosticCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      }
       commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
       commands.DispatchComputeIndirect({execute.GetBuffer(data.m_Arguments), xiiGALStateTransitionMode::None}); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Output, emitted.first->m_Output));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputCount, emitted.first->m_OutputCount));
+  if (diagnostics)
+  {
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_DiagnosticMeshlets, emitted.first->m_DiagnosticMeshlets));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_DiagnosticCount, emitted.first->m_DiagnosticCount));
+  }
   return context.SetOutput(m_Overflow, emitted.first->m_Overflow);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Visibility_MeshletCullPass);

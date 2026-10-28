@@ -29,6 +29,10 @@ Diagnostic uniform uploads precede the managed graphics pass. Graph dependencies
 | Device Depth | Reversed-Z device depth: near is white, far is black. |
 | Motion Vectors | Unjittered NDC velocity converted to UV displacement, multiplied by `MotionVectorScale` (default 10), then offset by 0.5. Red increases to the right, green increases down the screen; no motion is neutral gray. |
 | Instance ID | Deterministic hash of the world's non-reused rendering identity. Background is black. |
+| Surface Visibility | A nearest-surface visibility record retains the real world rendering identity, resident meshlet index plus one and source primitive index plus one. The displayed color hashes that tuple; the record also contains device depth. |
+| Material Shading Model ID | Hash of the actual canonical material shading-model metadata plus one, including distinct lit and unlit models. |
+| Meshlet Culling | Actual pre-compaction meshlet decisions: green kept, red frustum rejection, blue cone rejection. Overlapping candidate fragments mix by coverage count; rejected cone silhouettes are visible from either side. Instance selection, LOD and primitive routing precede this stage. Completely offscreen rejects remain outside the image. |
+| Candidate Geometry Occlusion Fraction | The fraction of covered pre-compaction candidate fragments behind the actual solid scene depth, with reversed-Z tolerance. Blue means no hidden coverage; green/red mean increasing occluded coverage. This is a fragment-depth diagnostic, not a claim about hardware Hi-Z traversal or CPU occlusion. |
 | Indirect Lighting | Ambient and screen-space indirect diffuse contribution, displayed as `L / (1 + L)`. |
 | Reflection Contribution | Confidence-weighted reflection radiance actually added by the authored screen-reflection workload; zero when inactive. Uses the same HDR compression. |
 | Direct Lighting (White Diffuse) | Current directional and clustered local lights evaluated on a white Lambertian surface, retaining the actual geometric normals and shadow sampling. Uses `L / (1 + L)`. Excludes ambient, bounce, emission and reflection composition. |
@@ -55,7 +59,7 @@ Surface modes mask uncovered pixels. Bloom can extend into the background. Diagn
 
 ## Limits
 
-The remaining enum entries stay hidden and are rejected as explicit visualization settings: visibility-buffer/culling/occlusion outcomes, shading-model IDs and ray-tracing diagnostics. They still need dedicated outputs or evaluation paths; none is represented by an unrelated material channel.
+The remaining ray-tracing enum entries stay hidden and are rejected as explicit visualization settings. They still need dedicated outputs or evaluation paths; none is represented by an unrelated material channel.
 
 Geometry diagnostics require the authored indexed query and the canonical packed vertex layout. Wireframe additionally requires native wireframe fill. Overdraw requires floating-point additive render-target blending. The existing Scene/Editor device requirements still apply. Setting a geometry-diagnostic query to a mesh-shader-only variant fails explicitly. Regression variants exercise native Forward+ with mesh shaders enabled, deferred rendering, and Forward+'s supported deferred fallback with mesh shaders disabled.
 

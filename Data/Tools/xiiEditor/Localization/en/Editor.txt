@@ -161,6 +161,10 @@ xiiViewRenderMode::SpecularOnly;Direct Specular Lighting
 xiiViewRenderMode::LightComplexity;Cluster Light Evaluation Count
 xiiViewRenderMode::ShadowMask;Directional Shadow Visibility
 xiiViewRenderMode::ShadowCascadeIndex;Directional Shadow Cascade
+xiiViewRenderMode::VisibilityBuffer;Surface Visibility (Instance, Meshlet, Primitive)
+xiiViewRenderMode::ShadingModelID;Material Shading Model ID
+xiiViewRenderMode::CullingOutcome;Meshlet Culling (Green Kept, Red Frustum, Blue Cone)
+xiiViewRenderMode::OcclusionHeatmap;Candidate Geometry Occlusion Fraction
 
 # Common
 

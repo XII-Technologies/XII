@@ -61,17 +61,17 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   output.DiagnosticUV1           = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoord1Offset));
   const uint packedColor         = g_Buffers[lod.VertexBufferIndex].Load(vertexOffset + ColorOffset);
   output.DiagnosticColor         = float4(packedColor & 255u, (packedColor >> 8u) & 255u, (packedColor >> 16u) & 255u, packedColor >> 24u) / 255.0f;
-  output.DiagnosticIdentity      = uint3(instance.Flags, 0u, 0u);
+  output.DiagnosticIdentity      = uint4(instance.Flags, 0u, 0u, 0u);
   output.DiagnosticBarycentrics  = 0.0f;
 #endif
 #if defined(XII_SCENE_WORLD_ATTRIBUTES)
-  output.WorldPosition  = worldPosition;
+  output.WorldPosition = worldPosition;
 #  if defined(XII_SCENE_SURFACE_FLAGS)
   output.SurfaceFlags = instance.Flags;
 #  endif
 #  if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
   output.ObjectUserData = instance.UserData;
-#endif
+#  endif
 #endif
 #if !defined(XII_SCENE_SURFACE_QUERY) && !defined(XII_SCENE_DEPTH_ONLY)
   output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));

@@ -37,6 +37,8 @@ bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
     case LightComplexity:
     case ShadowMask:
     case ShadowCascadeIndex:
+    case CullingOutcome:
+    case OcclusionHeatmap:
       return true;
     default:
       return false;
@@ -58,6 +60,8 @@ bool xiiViewRenderMode::IsSurfaceVisualizationMode(Enum mode)
     case LODLevel:
     case StaticVsDynamic:
     case MeshletID:
+    case VisibilityBuffer:
+    case ShadingModelID:
       return true;
     default:
       return false;

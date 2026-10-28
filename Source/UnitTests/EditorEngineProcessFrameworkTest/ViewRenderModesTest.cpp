@@ -245,11 +245,88 @@ namespace
       check(xiiViewRenderMode::UVDensity, {0.5f, 1, 0.5f});
       check(xiiViewRenderMode::LODLevel, {192.0f / 255, 144.0f / 255, 137.0f / 255});
       check(xiiViewRenderMode::MeshletID, {192.0f / 255, 144.0f / 255, 137.0f / 255});
+      xiiUInt32 modelIdentity = xiiUInt32(xiiMaterialShadingModel::Lit) + 1;
+      modelIdentity ^= modelIdentity >> 16;
+      modelIdentity *= 0x7feb352dU;
+      modelIdentity ^= modelIdentity >> 15;
+      modelIdentity *= 0x846ca68bU;
+      modelIdentity ^= modelIdentity >> 16;
+      check(xiiViewRenderMode::ShadingModelID, {float(modelIdentity & 255) / 255, float((modelIdentity >> 8) & 255) / 255, float((modelIdentity >> 16) & 255) / 255});
+      views[0]->SetViewRenderMode(xiiViewRenderMode::VisibilityBuffer);
+      update();
+      xiiVec4U32 visibleSurface;
+      if (xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), texture(views[0], "Surface").Borrow(), 32, 24, visibleSurface))
+      {
+        XII_TEST_BOOL(visibleSurface.x != 0 && visibleSurface.z != 0 && visibleSurface.w != 0);
+        XII_TEST_BOOL(std::bit_cast<float>(visibleSurface.y) > 0);
+        xiiUInt32 identity = visibleSurface.x ^ visibleSurface.z * 0x9e3779b9U ^ visibleSurface.w * 0x85ebca6bU;
+        identity ^= identity >> 16;
+        identity *= 0x7feb352dU;
+        identity ^= identity >> 15;
+        identity *= 0x846ca68bU;
+        identity ^= identity >> 16;
+        check(xiiViewRenderMode::VisibilityBuffer, {float(identity & 255) / 255, float((identity >> 8) & 255) / 255, float((identity >> 16) & 255) / 255});
+      }
       check(xiiViewRenderMode::Overdraw, {0, 4.0f * xiiMath::Log2(3.0f) / 5.0f - 0.5f, 1});
+      check(xiiViewRenderMode::CullingOutcome, {0, 1, 0});
+      check(xiiViewRenderMode::OcclusionHeatmap, {0, 0, 0.5f});
       const float area = 0.5f * xiiMath::Square(49.0f / (2.0f * xiiMath::Tan(xiiAngle::MakeFromDegree(30)) * 2.5f));
       const float heat = xiiMath::Log2(area) / 12.0f;
       check(xiiViewRenderMode::TriangleSize, {4 * heat - 1.5f, 1, 2.5f - 4 * heat});
     }
+    xiiGameObjectDescription hiddenDescription;
+    hiddenDescription.m_LocalPosition = {0, 0, -1};
+    xiiGameObject* hiddenObject       = nullptr;
+    world.CreateObject(hiddenDescription, hiddenObject);
+    xiiLODMeshComponent* hiddenComponent = nullptr;
+    xiiLODMeshComponent::CreateComponent(hiddenObject, hiddenComponent);
+    hiddenComponent->SetMesh(mesh);
+    hiddenComponent->SetMaterialOverride(0, material);
+    hiddenComponent->SetForcedLOD(0);
+    for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
+    {
+      views[0]->SetRenderPath(path);
+      check(xiiViewRenderMode::OcclusionHeatmap, {0.5f, 1, 0.5f});
+    }
+    hiddenComponent->SetActiveFlag(false);
+    xiiGeometry planeGeometry;
+    planeGeometry.AddRect({1, 1});
+    xiiMeshResourceDescriptor planeDescription;
+    planeDescription.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(planeGeometry, xiiGALPrimitiveTopology::TriangleList, false);
+    planeDescription.AddSection(2, 0, 0);
+    planeDescription.ComputeBounds();
+    const auto     planeMesh   = xiiResourceManager::CreateResource<xiiMeshResource>("ViewRenderModes.ConePlane", std::move(planeDescription));
+    xiiGameObject* planeObject = nullptr;
+    world.CreateObject(xiiGameObjectDescription(), planeObject);
+    xiiStaticMeshComponent* plane = nullptr;
+    xiiStaticMeshComponent::CreateComponent(planeObject, plane);
+    plane->SetMesh(planeMesh);
+    plane->SetMaterialOverride(0, material);
+    component->SetActiveFlag(false);
+    for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
+    {
+      views[0]->SetRenderPath(path);
+      cameras[0].LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+      check(xiiViewRenderMode::CullingOutcome, {0, 1, 0});
+      cameras[0].LookAt({0, 0, -3}, {0, 0, 0}, {0, 1, 0});
+      check(xiiViewRenderMode::CullingOutcome, {0, 0, 1});
+    }
+    cameras[0].LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+    plane->SetActiveFlag(false);
+    component->SetActiveFlag(true);
+    xiiMaterialResourceDescriptor unlitDescription;
+    unlitDescription.m_ShadingModel = xiiMaterialShadingModel::Unlit;
+    unlitDescription.m_BaseColor    = {0.2f, 0.4f, 0.8f};
+    const auto unlit                = xiiResourceManager::CreateResource<xiiMaterialResource>("ViewRenderModes.Unlit", std::move(unlitDescription));
+    component->SetMaterialOverride(0, unlit);
+    xiiUInt32 unlitIdentity = xiiUInt32(xiiMaterialShadingModel::Unlit) + 1;
+    unlitIdentity ^= unlitIdentity >> 16;
+    unlitIdentity *= 0x7feb352dU;
+    unlitIdentity ^= unlitIdentity >> 15;
+    unlitIdentity *= 0x846ca68bU;
+    unlitIdentity ^= unlitIdentity >> 16;
+    check(xiiViewRenderMode::ShadingModelID, {float(unlitIdentity & 255) / 255, float((unlitIdentity >> 8) & 255) / 255, float((unlitIdentity >> 16) & 255) / 255});
+    component->SetMaterialOverride(0, material);
     component->SetForcedLOD(1);
     check(xiiViewRenderMode::Overdraw, {0, 0.3f, 1});
     views[0]->SetViewRenderMode(xiiViewRenderMode::LODLevel);

@@ -42,6 +42,7 @@ void main(uint3 tid : SV_DispatchThreadID)
             break;
         }
         case ViewRenderMode_TriangleSize:
+        case ViewRenderMode_ShadingModelID:
         case ViewRenderMode_VertexNormals:
         case ViewRenderMode_VertexTangents:
         case ViewRenderMode_VertexBitangents:
@@ -60,7 +61,17 @@ void main(uint3 tid : SV_DispatchThreadID)
             return;
         }
         case ViewRenderMode_NormalMap: color = DecodeOctNormal(value.xy) * 0.5f + 0.5f; break;
+        case ViewRenderMode_VisibilityBuffer:
+        {
+            uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
+            const uint4 surface = g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0));
+            color = surface.x != 0u ? ViewIdentityColor(surface.x ^ surface.z * 0x9e3779b9u ^ surface.w * 0x85ebca6bu) : 0.0f;
+            g_Output[tid.xy] = float4(color, 1);
+            return;
+        }
         case ViewRenderMode_Overdraw: color = value.r > 0.0f ? ViewHeatColor(saturate(log2(value.r + 1.0f) / 5.0f)) : 0.0f; break;
+        case ViewRenderMode_CullingOutcome: color = value.a > 0.0f ? value.rgb / value.a : 0.0f; break;
+        case ViewRenderMode_OcclusionHeatmap: color = value.a > 0.0f ? ViewHeatColor(saturate(value.r / value.a)) : 0.0f; break;
         case ViewRenderMode_InstanceID:
         {
             uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
@@ -89,6 +100,6 @@ void main(uint3 tid : SV_DispatchThreadID)
     }
     // Wireframe coverage comes from its own depth-tested surface query, including
     // the indexed fallback where the ordinary scene prepass may be empty.
-    if (depth == 0.0f && RenderMode != ViewRenderMode_Bloom && RenderMode != ViewRenderMode_Wireframe) color = 0.0f;
+    if (depth == 0.0f && RenderMode != ViewRenderMode_Bloom && RenderMode != ViewRenderMode_Wireframe && RenderMode != ViewRenderMode_CullingOutcome && RenderMode != ViewRenderMode_OcclusionHeatmap) color = 0.0f;
     g_Output[tid.xy] = float4(color, 1.0f);
 }
