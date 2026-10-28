@@ -232,7 +232,21 @@ static void TestSceneTemporal(bool extendedFormats)
         if (operation.m_pType == xiiGetStaticRTTI<xiiTemporalCameraPass>() || operation.m_pType == xiiGetStaticRTTI<xiiTemporalAntiAliasingPass>())
           for (const auto& pass : world.m_Views[0]->GetRenderGraph()->GetCompiledPasses())
             if (pass.m_sName.GetView() == operation.m_sName)
-              XII_TEST_BOOL(pass.m_bIsCulled);
+              XII_TEST_BOOL(pass.m_bIsCulled == (operation.m_pType == xiiGetStaticRTTI<xiiTemporalAntiAliasingPass>()));
+      // Disabling jitter/reconstruction must still preserve camera-motion history.
+      // Only the state commit remains live; disabled TAA emits no GPU reconstruction.
+      for (xiiUInt32 pass = 0; pass < disabledInstance.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++pass)
+        if (disabledInstance.GetPipeline()->GetDescriptor().m_Passes[pass].m_pType == xiiGetStaticRTTI<xiiTemporalCameraPass>())
+        {
+          const auto* binding = disabledInstance.GetOutputBinding(pass, "TemporalCamera");
+          const auto* camera  = binding ? xiiDynamicCast<const xiiTemporalCameraSnapshot*>(binding->m_pFrameData.Borrow()) : nullptr;
+          if (XII_TEST_BOOL(camera != nullptr))
+          {
+            XII_TEST_BOOL(!camera->m_Sample.m_bEnabled);
+            XII_TEST_VEC2(camera->m_Sample.m_Jitter, xiiVec2::MakeZero(), 0);
+            XII_TEST_VEC2(camera->m_Sample.m_PreviousJitter, xiiVec2::MakeZero(), 0);
+          }
+        }
       const auto image = [&](xiiUInt32 variant, xiiStringView name) {
         auto*       view     = world.m_Views[variant];
         auto&       instance = view->GetRenderPipelineInstance();

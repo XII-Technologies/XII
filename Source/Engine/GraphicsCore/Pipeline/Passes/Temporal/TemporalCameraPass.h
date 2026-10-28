@@ -38,6 +38,7 @@ public:
   xiiTemporalCameraPass();
   ~xiiTemporalCameraPass() override;
   xiiRenderPipelineDataOutputPin m_Camera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>()};
+  /// Enables projection jitter and temporal reconstruction. Camera motion history is always tracked.
   bool                           m_bEnabled = true;
   xiiResult                      Configure(const xiiVariantDictionary& properties) override;
   xiiResult                      Build(xiiRenderPipelinePassContext& context) override;
