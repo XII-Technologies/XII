@@ -73,6 +73,8 @@ void xiiQtOrbitCamViewWidget::OrbitCamera(const xiiVec2& vRadians)
 
 void xiiQtOrbitCamViewWidget::SyncToEngine()
 {
+  m_pOrbitCameraContext->UpdateCameraClipping();
+
   if (m_pSelectionContext)
   {
     m_pSelectionContext->SetWindowConfig(xiiVec2I32(width(), height()));
