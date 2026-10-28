@@ -6,9 +6,12 @@
 
 bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
 {
+  if (IsSurfaceVisualizationMode(mode) || IsRayTracingVisualizationMode(mode))
+    return true;
   switch (mode)
   {
     case Default:
+    case Overdraw:
     case Wireframe:
     case InstanceID:
     case BaseColor:
@@ -24,10 +27,50 @@ bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
     case IndirectLighting:
     case ReflectionContribution:
     case Bloom:
+    case Exposure:
+    case ToneMappingCurve:
+    case ColorGradingLUT:
+    case ClusterID:
+    case LightingOnly:
+    case DiffuseOnly:
+    case SpecularOnly:
+    case LightComplexity:
+    case ShadowMask:
+    case ShadowCascadeIndex:
+    case CullingOutcome:
+    case OcclusionHeatmap:
       return true;
     default:
       return false;
   }
+}
+
+bool xiiViewRenderMode::IsSurfaceVisualizationMode(Enum mode)
+{
+  switch (mode)
+  {
+    case TriangleSize:
+    case VertexNormals:
+    case VertexTangents:
+    case VertexBitangents:
+    case VertexColors:
+    case UV0:
+    case UV1:
+    case UVDensity:
+    case LODLevel:
+    case StaticVsDynamic:
+    case MeshletID:
+    case VisibilityBuffer:
+    case ShadingModelID:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool xiiViewRenderMode::IsRayTracingVisualizationMode(Enum mode)
+{
+  return mode >= RayTracingRayCount && mode <= RayTracingInstanceMask;
 }
 
 // clang-format off

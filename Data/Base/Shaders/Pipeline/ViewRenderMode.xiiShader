@@ -7,17 +7,14 @@ ALL
 #include <Shaders/Common/StorageImageFormat.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Output/ViewRenderModeConstants.h>
+#include <Shaders/Pipeline/ViewRenderModeHelpers.h>
 
 Texture2D<float4> g_Source;
 Texture2D<float> g_Depth;
 Texture2D<uint4> g_ObjectIds;
 XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Output;
 
-float3 IdentityColor(uint id)
-{
-    id ^= id >> 16; id *= 0x7feb352d; id ^= id >> 15; id *= 0x846ca68b; id ^= id >> 16;
-    return float3(id & 255u, (id >> 8) & 255u, (id >> 16) & 255u) / 255.0f;
-}
+
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)
@@ -31,44 +28,78 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float4 value = g_Source.Load(int3(pixel, 0));
     float3 color = 0.0f;
 
-    // Values match xiiViewRenderMode. Debug values are display-linear and bypass
+    // Debug values are display-linear and bypass
     // scene exposure and tone mapping; the final display transfer remains intact.
     switch (RenderMode)
     {
-        case 1u:
+        case ViewRenderMode_Wireframe:
         {
             uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
             const uint4 surface = g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0));
             // The surface query rasterizes actual triangle edges. Keep hidden
             // edges behind the solid scene prepass, including other objects.
-            color = surface.x != 0u && asfloat(surface.y) + 1e-4f >= depth ? 0.8f : 0.0f;
+            color = surface.x != 0u && asfloat(surface.y) + 1e-7f >= depth ? 0.8f : 0.0f;
             break;
         }
-        case 25u: color = DecodeOctNormal(value.xy) * 0.5f + 0.5f; break;
-        case 14u:
+        case ViewRenderMode_TriangleSize:
+        case ViewRenderMode_ShadingModelID:
+        case ViewRenderMode_VertexNormals:
+        case ViewRenderMode_VertexTangents:
+        case ViewRenderMode_VertexBitangents:
+        case ViewRenderMode_VertexColors:
+        case ViewRenderMode_UV0:
+        case ViewRenderMode_UV1:
+        case ViewRenderMode_UVDensity:
+        case ViewRenderMode_LODLevel:
+        case ViewRenderMode_StaticVsDynamic:
+        case ViewRenderMode_MeshletID:
         {
             uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
-            color = IdentityColor(g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0)).x);
+            const uint4 surface = g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0));
+            color = surface.x == 0u ? 0.0f : float3(f16tof32(surface.z & 0xFFFFu), f16tof32(surface.z >> 16u), f16tof32(surface.w & 0xFFFFu));
+            g_Output[tid.xy] = float4(color, 1.0f);
+            return;
+        }
+        case ViewRenderMode_NormalMap: color = DecodeOctNormal(value.xy) * 0.5f + 0.5f; break;
+        case ViewRenderMode_VisibilityBuffer:
+        {
+            uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
+            const uint4 surface = g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0));
+            color = surface.x != 0u ? ViewIdentityColor(surface.x ^ surface.z * 0x9e3779b9u ^ surface.w * 0x85ebca6bu) : 0.0f;
+            g_Output[tid.xy] = float4(color, 1);
+            return;
+        }
+        case ViewRenderMode_Overdraw: color = value.r > 0.0f ? ViewHeatColor(saturate(log2(value.r + 1.0f) / 5.0f)) : 0.0f; break;
+        case ViewRenderMode_CullingOutcome: color = value.a > 0.0f ? value.rgb / value.a : 0.0f; break;
+        case ViewRenderMode_OcclusionHeatmap: color = value.a > 0.0f ? ViewHeatColor(saturate(value.r / value.a)) : 0.0f; break;
+        case ViewRenderMode_InstanceID:
+        {
+            uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
+            color = ViewIdentityColor(g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0)).x);
             break;
         }
-        case 19u: color = value.rgb; break;
-        case 20u: color = value.ggg; break;
-        case 21u: color = value.rrr; break;
-        case 22u: color = value.bbb; break;
-        case 24u: color = value.rrr; break;
-        case 26u:
+        case ViewRenderMode_BaseColor: color = value.rgb; break;
+        case ViewRenderMode_ClusterID: case ViewRenderMode_LightComplexity: color = value.rgb; break;
+        case ViewRenderMode_LightingOnly: case ViewRenderMode_DiffuseOnly: case ViewRenderMode_SpecularOnly:
+            color = max(value.rgb, 0.0f) / (1.0f + max(value.rgb, 0.0f)); break;
+        case ViewRenderMode_Metallic: color = value.ggg; break;
+        case ViewRenderMode_Roughness: color = value.rrr; break;
+        case ViewRenderMode_Specular: color = value.bbb; break;
+        case ViewRenderMode_AmbientOcclusion: color = value.rrr; break;
+        case ViewRenderMode_ShadowMask: color = value.rrr; break;
+        case ViewRenderMode_DepthLinear:
         {
             const float distance = dot(ReconstructWorldPos(uv, depth) - g_CameraPositionAndNearPlane.xyz, g_CameraForwardAndFarPlane.xyz);
-            color = saturate(distance / g_CameraForwardAndFarPlane.w).xxx;
+            color = saturate((distance - g_CameraPositionAndNearPlane.w) / (g_CameraForwardAndFarPlane.w - g_CameraPositionAndNearPlane.w)).xxx;
             break;
         }
-        case 27u: color = depth.xxx; break;
-        case 28u: color = float3(value.xy * 10.0f + 0.5f, 0.5f); break;
-        case 23u: case 36u: case 37u: case 44u: color = max(value.rgb, 0.0f) / (1.0f + max(value.rgb, 0.0f)); break;
+        case ViewRenderMode_DepthNonLinear: color = depth.xxx; break;
+        case ViewRenderMode_MotionVectors: color = float3(saturate(value.xy * float2(0.5f, -0.5f) * MotionVectorScale + 0.5f), 0.5f); break;
+        case ViewRenderMode_Emissive: case ViewRenderMode_IndirectLighting: case ViewRenderMode_ReflectionContribution: case ViewRenderMode_Bloom: color = max(value.rgb, 0.0f) / (1.0f + max(value.rgb, 0.0f)); break;
         default: color = float3(1.0f, 0.0f, 1.0f); break;
     }
     // Wireframe coverage comes from its own depth-tested surface query, including
     // the indexed fallback where the ordinary scene prepass may be empty.
-    if (depth <= 1e-7f && RenderMode != 44u && RenderMode != 1u) color = 0.0f;
+    if (depth == 0.0f && RenderMode != ViewRenderMode_Bloom && RenderMode != ViewRenderMode_Wireframe && RenderMode != ViewRenderMode_CullingOutcome && RenderMode != ViewRenderMode_OcclusionHeatmap) color = 0.0f;
     g_Output[tid.xy] = float4(color, 1.0f);
 }

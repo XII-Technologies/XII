@@ -79,7 +79,7 @@ xiiResult xiiBloomPass::Build(xiiRenderPipelinePassContext& context)
   settings.m_fBloomKnee      = m_fKnee;
   settings.m_fBloomRadius    = m_fRadius;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
-  if (m_pState->m_Display.m_Settings.m_fBloomStrength == 0)
+  if (m_pState->m_Display.m_Settings.m_fBloomStrength == 0 && (!context.m_pView || context.m_pView->GetViewRenderMode() != xiiViewRenderMode::Bloom))
     return XII_SUCCESS;
   if (!xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputUpscaledColor), 4))
     return context.ReportFailure("Bloom requires readable single-sample floating-point RGBA input.");

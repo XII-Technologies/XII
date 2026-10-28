@@ -119,53 +119,9 @@ struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
 
   enum Enum : StorageType
   {
-    None = 0U,
-    Wireframe,
-    Overdraw,
-    TriangleSize,
-    VertexNormals,
-    VertexTangents,
-    VertexBitangents,
-    VertexColors,
-    UV0,
-    UV1,
-    UVDensity,
-    LODLevel,
-    StaticVsDynamic,
-    VisibilityBuffer,
-    InstanceID,
-    MeshletID,
-    ClusterID,
-    CullingOutcome,
-    OcclusionHeatmap,
-    BaseColor,
-    Metallic,
-    Roughness,
-    Specular,
-    Emissive,
-    AmbientOcclusion,
-    NormalMap,
-    DepthLinear,
-    DepthNonLinear,
-    MotionVectors,
-    ShadingModelID,
-    LightingOnly,
-    DiffuseOnly,
-    SpecularOnly,
-    LightComplexity,
-    ShadowCascadeIndex,
-    ShadowMask,
-    IndirectLighting,
-    ReflectionContribution,
-    RayTracingRayCount,
-    RayTracingBVHTraversal,
-    RayTracingHitDistance,
-    RayTracingMissShaderID,
-    RayTracingInstanceMask,
-    Exposure,
-    Bloom,
-    ToneMappingCurve,
-    ColorGradingLUT,
+#define XII_VIEW_RENDER_MODE(Name, Value) Name = Value,
+#include <Shaders/Pipeline/ViewRenderModes.h>
+#undef XII_VIEW_RENDER_MODE
 
     ENUM_COUNT,
 
@@ -173,6 +129,10 @@ struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
   };
   /// Modes implemented by the reflected channel-visualization operation.
   static bool IsSupportedVisualizationMode(Enum mode);
+  /// Modes rasterized from canonical GPU-scene geometry rather than material G-buffer channels.
+  static bool IsSurfaceVisualizationMode(Enum mode);
+  /// Modes that inspect an explicit hardware ray-tracing diagnostic workload.
+  static bool IsRayTracingVisualizationMode(Enum mode);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderMode);

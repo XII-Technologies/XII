@@ -1,0 +1,67 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+RENDER_PASS
+
+[RENDERSTATE]
+DepthEnable = true
+DepthWriteEnable = true
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+CullMode = CullMode_None
+
+[SHADER]
+#define XII_SCENE_SURFACE_QUERY
+#define XII_SCENE_DIAGNOSTICS
+#include <Shaders/Pipeline/Passes/Output/ViewRenderModeConstants.h>
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+
+[VERTEX_SHADER]
+#define XII_SCENE_SURFACE_CURRENT_ONLY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+
+[PIXEL_SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceMaterial.h>
+#include <Shaders/Pipeline/ViewRenderModeHelpers.h>
+
+uint4 main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
+{
+  const xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
+  xiiClipSceneSurface(material, xiiSampleSceneBaseColor(material, input.TexCoord), isFrontFace, true);
+  if (RenderMode == ViewRenderMode_VisibilityBuffer)
+    return uint4(input.ObjectId, asuint(input.Position.z), input.DiagnosticIdentity.z + 1u, input.DiagnosticIdentity.w);
+  float3 color = 0.0f;
+  switch (RenderMode)
+  {
+    case ViewRenderMode_VertexNormals: color = normalize(input.WorldNormal) * 0.5f + 0.5f; break;
+    case ViewRenderMode_VertexTangents: color = normalize(input.WorldTangent) * 0.5f + 0.5f; break;
+    case ViewRenderMode_VertexBitangents:
+      color = normalize(cross(input.WorldNormal, input.WorldTangent)) * input.TangentSign * 0.5f + 0.5f; break;
+    case ViewRenderMode_VertexColors: color = input.DiagnosticColor.rgb; break;
+    case ViewRenderMode_UV0: color = float3(frac(input.TexCoord), 0.0f); break;
+    case ViewRenderMode_UV1: color = float3(frac(input.DiagnosticUV1), 0.0f); break;
+    case ViewRenderMode_UVDensity:
+    {
+      const float2 dx = ddx(input.TexCoord), dy = ddy(input.TexCoord);
+      const float uvArea = abs(dx.x * dy.y - dx.y * dy.x);
+      const float worldArea = length(cross(ddx(input.DiagnosticWorldPosition), ddy(input.DiagnosticWorldPosition)));
+      const float repeatsPerMeter = sqrt(uvArea / max(worldArea, 1e-20f));
+      color = ViewHeatColor(saturate((log2(max(repeatsPerMeter, 1e-10f)) + 4.0f) / 8.0f));
+      break;
+    }
+    case ViewRenderMode_TriangleSize:
+    {
+      const float2 dx = ddx(input.DiagnosticBarycentrics), dy = ddy(input.DiagnosticBarycentrics);
+      const float areaInPixels = 0.5f / max(abs(dx.x * dy.y - dx.y * dy.x), 1e-20f);
+      color = ViewHeatColor(saturate(log2(max(areaInPixels, 1.0f)) / 12.0f));
+      break;
+    }
+    case ViewRenderMode_LODLevel: color = ViewIdentityColor(input.DiagnosticIdentity.y + 1u); break;
+    case ViewRenderMode_MeshletID: color = ViewIdentityColor(input.DiagnosticIdentity.z + 1u); break;
+    case ViewRenderMode_ShadingModelID: color = ViewIdentityColor(material.Metadata.x + 1u); break;
+    case ViewRenderMode_StaticVsDynamic: color = (input.DiagnosticIdentity.x & 2u) != 0u ? float3(0.1f, 0.4f, 1.0f) : float3(1.0f, 0.3f, 0.1f); break;
+  }
+  return uint4(input.ObjectId, asuint(input.Position.z), f32tof16(color.r) | (f32tof16(color.g) << 16u), f32tof16(color.b));
+}

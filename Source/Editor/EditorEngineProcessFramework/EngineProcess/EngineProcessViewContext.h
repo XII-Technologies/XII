@@ -10,7 +10,7 @@
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
-/// Engine-owned view purposes. Main and scene previews use the asset profile's pipeline selection.
+/// Engine-owned view purposes. Scene previews and scene editors share the authored Editor pipeline.
 enum class xiiEditorRenderPipelineUsage
 {
   Main,

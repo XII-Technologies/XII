@@ -1,0 +1,22 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/ViewRenderModeHelpers.h>
+
+StructuredBuffer<float> g_Exposure;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Output;
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  uint2 size;
+  g_Output.GetDimensions(size.x, size.y);
+  if (any(tid.xy >= size)) return;
+  // Applied exposure multiplier in stops: blue=-16, green=0, red=+16.
+  const float stops = log2(max(g_Exposure[0], exp2(-16.0f)));
+  g_Output[tid.xy] = float4(ViewHeatColor(saturate(stops / 32.0f + 0.5f)), 1.0f);
+}

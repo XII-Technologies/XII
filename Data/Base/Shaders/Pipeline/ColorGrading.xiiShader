@@ -9,6 +9,7 @@ ALL
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
+#include <Shaders/Pipeline/Passes/Output/ColorGradingTransform.h>
 
 Texture2D<float4>   g_DisplayLinear;
 XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_GradedOut;
@@ -33,11 +34,18 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     return;
 
   const float2 uv = (float2(dispatchThreadId.xy) + 0.5f) / float2(dimensions);
+  if (FilmGrain.z != 0.0f)
+  {
+    // A 16^3 RGB cube flattened into 16 horizontal blue slices. Every displayed
+    // cell is an evaluated entry of the same transform used below, not a stock LUT.
+    const uint2 cell = min(uint2(uv * float2(256, 16)), uint2(255, 15));
+    const float3 source = float3(cell.x % 16u, cell.y, cell.x / 16u) / 15.0f;
+    g_GradedOut[dispatchThreadId.xy] = float4(ApplyColorGradingTransform(source, ColorAdjustments.x, ColorAdjustments.y), 1.0f);
+    return;
+  }
   float3 color = max(g_DisplayLinear.Load(int3(dispatchThreadId.xy, 0)).rgb, 0.0f);
 
-  const float luminance = GetLuminance(color);
-  color = lerp(luminance.xxx, color, ColorAdjustments.x);
-  color = max((color - 0.18f) * ColorAdjustments.y + 0.18f, 0.0f);
+  color = ApplyColorGradingTransform(color, ColorAdjustments.x, ColorAdjustments.y);
 
   const float2 centered = abs(uv - 0.5f) * 2.0f;
   const float2 vignetteShape = float2(centered.x * ColorAdjustments.w, centered.y);

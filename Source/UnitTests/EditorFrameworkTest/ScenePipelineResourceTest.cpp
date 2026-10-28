@@ -38,8 +38,20 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   const auto depth = pipeline->FindInterface("SceneDepth", false);
   if (XII_TEST_BOOL(depth != xiiInvalidIndex))
     XII_TEST_BOOL(!pipeline->GetInterface()[depth].m_Pin.m_bOptional);
-  const auto& descriptor = pipeline->GetDescriptor();
-  bool        spotlightOpaque = false, spotlightTransparent = false;
+  const auto& descriptor         = pipeline->GetDescriptor();
+  bool        cullingDiagnostics = false;
+  for (const auto& pass : descriptor.m_Passes)
+    if (pass.m_pType->GetTypeName() == "xiiMeshletCullPass" && pass.m_Properties.GetValue("VisualizeView") && pass.m_Properties.GetValue("VisualizeView")->Get<bool>())
+      for (const xiiStringView output : {"DiagnosticMeshlets", "DiagnosticCount"})
+      {
+        bool routed = false;
+        for (const auto& connection : descriptor.m_Connections)
+          routed |= descriptor.m_Passes[connection.m_uiSource].m_Id == pass.m_Id && connection.m_sOutput == output;
+        XII_TEST_BOOL(routed);
+        cullingDiagnostics |= routed;
+      }
+  XII_TEST_BOOL(cullingDiagnostics);
+  bool spotlightOpaque = false, spotlightTransparent = false;
   for (const auto& connection : descriptor.m_Connections)
     if (connection.m_sOutput == "SpotShadows" && connection.m_sInput == "SpotShadows" &&
         descriptor.m_Passes[connection.m_uiSource].m_pType->GetTypeName() == "xiiSpotShadowPass")
@@ -49,10 +61,10 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
       spotlightTransparent |= type == "xiiTransparentRasterPass";
     }
   XII_TEST_BOOL(spotlightOpaque && spotlightTransparent);
-  const auto  ao         = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
-  const auto  filter     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
-  const auto  trace         = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
-  bool        diffuseBounce = false, reactiveBounce = false;
+  const auto ao            = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
+  const auto filter        = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
+  const auto trace         = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
+  bool       diffuseBounce = false, reactiveBounce = false;
   for (const auto& connection : descriptor.m_Connections)
     if (descriptor.m_Passes[connection.m_uiSource].m_Id == trace && connection.m_sOutput == "Irradiance")
     {
@@ -89,4 +101,25 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
     if (pass.m_Id == filter)
       XII_TEST_BOOL(pass.m_Properties.GetValue("UseHistory") && !pass.m_Properties.GetValue("UseHistory")->Get<bool>());
   }
+}
+
+void xiiCheckAuthoredEditorVisualizationContract(const xiiRenderPipelineResource& editor)
+{
+  const auto& descriptor    = editor.GetPipeline()->GetDescriptor();
+  const auto  visualization = xiiFindPipelineTestPass(descriptor, "xiiViewRenderModePass");
+  for (const xiiStringView input : {"DisplayLinearColor", "SceneDepth", "PerFrameCamera", "GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "WireframeSurface", "Overdraw", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "DirectLighting", "ShadowVisibility", "ShadowCascades", "RayDiagnostics", "EnvironmentSpecular", "BloomTexture", "CurrentExposure"})
+  {
+    bool connected = false;
+    for (const auto& connection : descriptor.m_Connections)
+      connected |= descriptor.m_Passes[connection.m_uiTarget].m_Id == visualization && connection.m_sInput == input;
+    XII_TEST_BOOL_MSG(connected, "Editor visualization input '%s' must have an authored producer.", input.GetStartPointer());
+  }
+  bool diagnostics = false;
+  for (const auto& pass : descriptor.m_Passes)
+    if (pass.m_pType->GetTypeName() == "xiiSurfaceQueryPass")
+    {
+      const auto* enabled = pass.m_Properties.GetValue("VisualizeView");
+      diagnostics |= enabled && enabled->Get<bool>();
+    }
+  XII_TEST_BOOL(diagnostics);
 }

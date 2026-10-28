@@ -355,6 +355,7 @@ bool xiiEngineProcessGameApplication::ProcessIPCMessages(bool bPendingOpInProgre
 void xiiEngineProcessGameApplication::SendProjectReadyMessage()
 {
   xiiProjectReadyMsgToEditor msg;
+  msg.m_bHardwareRayTracing = xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled;
   m_IPC.SendMessage(&msg);
 }
 

@@ -14,6 +14,21 @@
 XII_CREATE_SIMPLE_TEST_GROUP(EditorViews);
 XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Engine ray-tracing capability survives the startup handshake")
+  {
+    for (bool supported : {false, true})
+    {
+      xiiProjectReadyMsgToEditor message;
+      message.m_bHardwareRayTracing = supported;
+      xiiDefaultMemoryStreamStorage storage;
+      xiiMemoryStreamWriter         writer(&storage);
+      xiiReflectionSerializer::WriteObjectToBinary(writer, message.GetDynamicRTTI(), &message);
+      xiiProjectReadyMsgToEditor copy;
+      xiiMemoryStreamReader      reader(&storage);
+      xiiReflectionSerializer::ReadObjectPropertiesFromBinary(reader, *copy.GetDynamicRTTI(), &copy);
+      XII_TEST_BOOL(copy.m_bHardwareRayTracing == supported);
+    }
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Redraw camera and render mode survive IPC serialization")
   {
     xiiViewRedrawMsgToEngine message;

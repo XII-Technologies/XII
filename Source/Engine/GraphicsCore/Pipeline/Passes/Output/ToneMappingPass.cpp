@@ -23,6 +23,7 @@ struct xiiToneMappingPass::Data
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiSizeU32                  m_Size;
   xiiDisplayOutputSettings    m_DisplaySettings;
+  bool                        m_bVisualizeCurve = false;
 };
 struct xiiToneMappingPass::State
 {
@@ -106,6 +107,7 @@ xiiResult xiiToneMappingPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Tone mapping exceeds compute dispatch dimensions.");
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
+    data.m_bVisualizeCurve = context.m_pView && context.m_pView->GetViewRenderMode() == xiiViewRenderMode::ToneMappingCurve;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
     data.m_hHDRInput=context.GetInputTexture(m_InputUpscaledColor);
     data.m_hBloom         = bloom.IsValid() ? bloom : data.m_hHDRInput;
@@ -158,7 +160,8 @@ void xiiToneMappingPass::Execute(const Data& data, xiiRenderGraphPassContext& co
       pConstants->BloomStrength      = data.m_DisplaySettings.m_fBloomStrength;
       pConstants->PaperWhiteNits     = data.m_DisplaySettings.m_fPaperWhiteNits;
       pConstants->MaximumDisplayNits = data.m_DisplaySettings.m_fMaximumDisplayNits;
-      pConstants->_Padding           = xiiVec3::MakeZero();
+      pConstants->VisualizeCurve     = data.m_bVisualizeCurve;
+      pConstants->_Padding           = xiiVec2::MakeZero();
     }
 
     cmd.SetPipelineState(data.m_Pipeline.Borrow());

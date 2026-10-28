@@ -449,6 +449,7 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     return;
   floorMesh->SetMaterialOverride(0, xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.Mirror", std::move(mirror)));
   xiiDynamicArray<xiiUInt32> reflectionImages[2][3];
+  xiiDynamicArray<xiiUInt32> reflectionDiagnostics[3];
   for (xiiUInt32 phase = 0; phase < 3; ++phase)
   {
     if (phase == 1)
@@ -485,7 +486,20 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     for (xiiUInt32 view = 0; view < 2; ++view)
       if (!XII_TEST_RESULT(views[view]->GetLastRenderResult()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], reflectionImages[view][phase]))
         return;
+    views[0]->SetViewRenderMode(xiiViewRenderMode::ReflectionContribution);
+    update(1);
+    if (!XII_TEST_RESULT(views[0]->GetLastRenderResult()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[0], reflectionDiagnostics[phase]))
+      return;
+    views[0]->SetViewRenderMode(xiiViewRenderMode::Default);
   }
+  xiiUInt32 reflectedDiagnosticPixels = 0;
+  for (xiiUInt32 pixel = 0; pixel < reflectionDiagnostics[0].GetCount(); ++pixel)
+  {
+    XII_TEST_INT(reflectionDiagnostics[0][pixel] & 0xFFFFFFU, 0);
+    XII_TEST_INT(reflectionDiagnostics[2][pixel] & 0xFFFFFFU, 0);
+    reflectedDiagnosticPixels += (reflectionDiagnostics[1][pixel] & 0xFFFFFFU) != 0;
+  }
+  XII_TEST_BOOL(reflectedDiagnosticPixels > 20);
   xiiUInt32 reflectionChanges[2] = {}, matchingReflectionChanges = 0;
   for (xiiUInt32 pixel = 0; pixel < reflectionImages[0][0].GetCount(); ++pixel)
   {

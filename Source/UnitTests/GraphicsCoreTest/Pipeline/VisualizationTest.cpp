@@ -18,7 +18,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentVisualizationComposition)
   xiiViewRenderModePass copy;
   XII_TEST_RESULT(copy.Configure(properties));
   XII_TEST_BOOL(copy.m_Mode == xiiViewRenderMode::BaseColor);
-  properties.Insert("Mode", static_cast<xiiInt64>(xiiViewRenderMode::Overdraw));
+  properties.Insert("Mode", static_cast<xiiInt64>(xiiViewRenderMode::ENUM_COUNT));
   XII_TEST_BOOL(copy.Configure(properties).Failed());
   XII_TEST_BOOL(copy.GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(copy.GetRuntimeFeatures().IsNoFlagSet());

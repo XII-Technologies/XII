@@ -26,6 +26,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracingScenePass, 1, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Geometry", m_OutputGeometry)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewSelection", m_bUseViewSelection)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("RequireHardwareRayTracing", m_bRequireHardwareRayTracing)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("OnlyDiagnosticViews", m_bOnlyDiagnosticViews)->AddAttributes(new xiiDefaultValueAttribute(false)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/RayTracing") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -33,6 +34,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracingScenePass, 1, xiiRTTIDefaultAlloca
 xiiResult xiiRayTracingScenePass::Build(xiiRenderPipelinePassContext& context)
 {
   m_Statistics = {};
+  if (m_bOnlyDiagnosticViews && (!context.m_pView || !xiiViewRenderMode::IsRayTracingVisualizationMode(context.m_pView->GetViewRenderMode())))
+    return XII_SUCCESS;
   if (!context.m_pView || !context.m_pView->GetWorld())
     return XII_FAILURE;
   if (!xiiRayTracingResources::IsHardwareRayTracingSupported())

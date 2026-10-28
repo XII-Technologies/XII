@@ -61,18 +61,11 @@ xiiResult xiiTemporalCameraPass::Build(xiiRenderPipelinePassContext& context)
   sample.m_uiFrame       = context.m_Graph.GetFrameIndex();
   sample.m_bEnabled      = m_bEnabled;
   sample.m_uiWorldUpdate = view.GetWorld() ? view.GetWorld()->GetUpdateCounter() : static_cast<xiiUInt32>(sample.m_uiFrame);
-  if (!m_bEnabled)
-  {
-    sample.m_PreviousViewProjection = sample.m_Camera.m_ViewProjectionMatrix;
-    sample.m_uiPreviousFrame        = sample.m_uiFrame;
-    InvalidateTemporalHistory();
-    return context.SetOutput(m_Camera, XII_DEFAULT_NEW(xiiTemporalCameraSnapshot, context.m_Graph.GetSetupSerial(), sample));
-  }
   XII_LOCK(m_pState->m_Mutex);
   const auto  revision   = m_pState->m_uiRevision;
   const auto& last       = m_pState->m_Last;
-  sample.m_bHistoryValid = m_bEnabled && m_pState->m_bValid && last.m_bEnabled && last.m_Size == sample.m_Size && last.m_uiFrame < sample.m_uiFrame && last.m_uiWorldUpdate + 1 == sample.m_uiWorldUpdate;
-  sample.m_uiSequence    = sample.m_bHistoryValid ? (last.m_uiSequence + 1) % 8 : 0;
+  sample.m_bHistoryValid = m_pState->m_bValid && last.m_bEnabled == m_bEnabled && last.m_Size == sample.m_Size && last.m_uiFrame < sample.m_uiFrame && last.m_uiWorldUpdate + 1 == sample.m_uiWorldUpdate;
+  sample.m_uiSequence    = m_bEnabled && sample.m_bHistoryValid ? (last.m_uiSequence + 1) % 8 : 0;
   if (m_bEnabled)
   {
     const auto halton = [](xiiUInt32 index, xiiUInt32 base) {

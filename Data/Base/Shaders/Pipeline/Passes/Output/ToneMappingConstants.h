@@ -12,7 +12,8 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiToneMappingConstants)
   FLOAT1(BloomStrength);
   FLOAT1(PaperWhiteNits);
   FLOAT1(MaximumDisplayNits);
-  FLOAT3(_Padding);
+  UINT1(VisualizeCurve);
+  FLOAT2(_Padding);
 };
 
 #if XII_DISABLED(XII_SHADER_PLATFORM)

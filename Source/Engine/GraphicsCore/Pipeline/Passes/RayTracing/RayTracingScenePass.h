@@ -17,6 +17,8 @@ public:
   xiiRenderPipelineBufferOutputPin                m_OutputGeometry{true, xiiGALBindFlags::ShaderResource};
   bool                                            m_bUseViewSelection          = true;
   bool                                            m_bRequireHardwareRayTracing = false;
+  /// Skip TLAS construction outside explicit ray-tracing diagnostic view modes.
+  bool m_bOnlyDiagnosticViews = false;
   struct BuildStatistics
   {
     xiiUInt32 m_uiInstanceCount = 0, m_uiDeformationDispatchCount = 0, m_uiDynamicBLASBuildCount = 0;

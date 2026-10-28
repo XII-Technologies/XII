@@ -26,10 +26,18 @@ public:
   xiiRenderPipelineBufferInputPin   m_InputDrawCommandCount{false, xiiGALBindFlags::IndirectDrawArguments};
   xiiRenderPipelineTextureOutputPin m_OutputSurface{xiiGALResourceFormat::RGBA32UInt, false, {}, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputDepth{xiiGALResourceFormat::D32Float, true, {}, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_OutputOverdraw{xiiGALResourceFormat::RGBA32Float, true, {}, xiiGALResourceDimension::Texture2D, 1};
 
-  bool                    m_bOnlyViewWireframe = false;
-  bool                    m_bUseMeshShaders    = false;
-  xiiEnum<xiiGALFillMode> m_FillMode           = xiiGALFillMode::Solid;
+  bool                             m_bOnlyViewWireframe = false;
+  xiiRenderPipelineBufferInputPin  m_InputDiagnosticMeshlets{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_InputDiagnosticCount{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_InputDiagnosticCommands{true, xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferInputPin  m_InputDiagnosticCommandCount{true, xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineTextureInputPin m_InputDiagnosticDepth{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  /// Also produce geometry diagnostics in the conditional wireframe occurrence.
+  bool                    m_bVisualizeView  = false;
+  bool                    m_bUseMeshShaders = false;
+  xiiEnum<xiiGALFillMode> m_FillMode        = xiiGALFillMode::Solid;
 
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
@@ -39,5 +47,8 @@ private:
   xiiShaderPermutationResourceHandle m_hShader;
   xiiSharedPtr<xiiGALSampler>        m_Sampler;
   bool                               m_bCachedMeshShaders = false;
+  bool                               m_bCachedDiagnostics = false;
+  bool                               m_bCachedOverdraw    = false;
+  bool                               m_bCachedCulling     = false;
   xiiGALFillMode::Enum               m_CachedFill         = xiiGALFillMode::Undefined;
 };

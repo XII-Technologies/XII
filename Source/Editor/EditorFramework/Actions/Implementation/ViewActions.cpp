@@ -5,6 +5,7 @@
 #include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
+#include <EditorFramework/IPC/EngineProcessConnection.h>
 
 xiiActionDescriptorHandle xiiViewActions::s_hRenderMode;
 xiiActionDescriptorHandle xiiViewActions::s_hPerspective;
@@ -76,7 +77,9 @@ void xiiRenderModeAction::GetEntries(xiiDynamicArray<Item>& out_entries)
 {
   xiiEnumerationMenuAction::GetEntries(out_entries);
   for (xiiUInt32 i = out_entries.GetCount(); i > 0; --i)
-    if (!xiiViewRenderMode::IsSupportedVisualizationMode(static_cast<xiiViewRenderMode::Enum>(out_entries[i - 1].m_UserValue.ConvertTo<xiiInt64>())))
+    if (const auto mode = static_cast<xiiViewRenderMode::Enum>(out_entries[i - 1].m_UserValue.ConvertTo<xiiInt64>());
+        !xiiViewRenderMode::IsSupportedVisualizationMode(mode) ||
+        (xiiViewRenderMode::IsRayTracingVisualizationMode(mode) && !xiiEditorEngineProcessConnection::GetSingleton()->SupportsRayTracingModes()))
       out_entries.RemoveAtAndCopy(i - 1);
 }
 

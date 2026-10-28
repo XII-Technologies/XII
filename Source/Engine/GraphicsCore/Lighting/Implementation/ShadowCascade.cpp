@@ -38,7 +38,7 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
   out_cascades.Clear();
 
   const xiiUInt32 uiCascadeCount = xiiMath::Clamp(settings.m_uiCascadeCount, 1U, 4U);
-  const float     fNearPlane     = xiiMath::Max(camera.GetNearPlane(), 0.001f);
+  const float     fNearPlane     = camera.IsOrthographic() ? camera.GetNearPlane() : xiiMath::Max(camera.GetNearPlane(), 0.001f);
   const float     fFarPlane      = xiiMath::Min(camera.GetFarPlane(), xiiMath::Max(settings.m_fMaximumShadowDistance, fNearPlane + 0.001f));
   if (!xiiMath::IsFinite(fFarPlane) || fFarPlane <= fNearPlane || fAspectRatio <= 0.0f)
     return XII_FAILURE;
@@ -60,8 +60,9 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
   {
     const float fT            = static_cast<float>(uiCascade + 1U) / static_cast<float>(uiCascadeCount);
     const float fUniformSplit = fNearPlane + (fFarPlane - fNearPlane) * fT;
-    const float fLogSplit     = fNearPlane * xiiMath::Pow(fFarPlane / fNearPlane, fT);
-    const float fSplitFar     = xiiMath::Lerp(fUniformSplit, fLogSplit, fSplitLambda);
+    // Orthographic depth may cross or lie behind the camera origin. Its equal
+    // world-space footprint calls for uniform splits, including signed ranges.
+    const float fSplitFar = camera.IsOrthographic() ? fUniformSplit : xiiMath::Lerp(fUniformSplit, fNearPlane * xiiMath::Pow(fFarPlane / fNearPlane, fT), fSplitLambda);
 
     xiiVec3 vCorners[8];
     if (camera.IsOrthographic())

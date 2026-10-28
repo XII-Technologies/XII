@@ -32,6 +32,8 @@ xiiEditorEngineProcessConnection::~xiiEditorEngineProcessConnection()
 
 void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicationChannel::Event& e)
 {
+  if (const auto* ready = xiiDynamicCast<const xiiProjectReadyMsgToEditor*>(e.m_pMessage))
+    m_bHardwareRayTracing = ready->m_bHardwareRayTracing;
   if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiSyncWithProcessMsgToEditor>())
   {
     const xiiSyncWithProcessMsgToEditor* pMsg = static_cast<const xiiSyncWithProcessMsgToEditor*>(e.m_pMessage);

@@ -1,0 +1,29 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/ViewRenderModeHelpers.h>
+Texture2D<float> g_Depth;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Output;
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 size; g_Output.GetDimensions(size.x, size.y);
+    if (any(tid.xy >= size)) return;
+    const float depth = g_Depth.Load(int3(tid.xy, 0));
+    float3 color = 0;
+    if (depth > 0)
+    {
+        const float2 uv = (float2(tid.xy) + 0.5f) / float2(size);
+        const float3 world = ReconstructWorldPos(uv, depth);
+        const float distance = dot(world - g_CameraPositionAndNearPlane.xyz, g_CameraForwardAndFarPlane.xyz);
+        uint cascade = 0;
+        while (cascade < min(ActiveCascadeCount, 4u) && distance > CascadeSplitDepths[cascade]) ++cascade;
+        if (cascade < min(ActiveCascadeCount, 4u)) color = ViewIdentityColor(cascade + 1u);
+    }
+    g_Output[tid.xy] = float4(color, 1);
+}

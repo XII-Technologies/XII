@@ -13,18 +13,21 @@ class XII_GRAPHICSCORE_DLL xiiVertexPullDrawCommandsPass final : public xiiRende
   XII_ADD_DYNAMIC_REFLECTION(xiiVertexPullDrawCommandsPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineBufferInputPin             m_Scene{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_View{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Geometry{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Meshlets{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Visible{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin             m_Count{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferOutputPin            m_Commands{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
-  xiiRenderPipelineBufferOutputPin            m_CommandCount{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
-  bool                                        m_bAsyncCompute = true;
+  xiiRenderPipelineBufferInputPin  m_Scene{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_View{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_Geometry{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_Meshlets{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_Visible{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_Count{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_Commands{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferOutputPin m_CommandCount{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments};
+  bool                             m_bAsyncCompute = true;
+  /// Treat an absent list/count pair as an explicitly inactive workload.
+  bool                                        m_bAllowInactive = false;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
 
 private:
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_DiagnosticPipeline;
 };
