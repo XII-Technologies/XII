@@ -7,6 +7,7 @@
 #include <Core/Graphics/Geometry.h>
 #include <Core/World/World.h>
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
+#include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -328,6 +329,114 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     world.Update();
     checkCenter(0, 0, 0);
     clearDepth = 0.0f;
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Navigation overlay is view-local, antialiased and independent of scene depth, translation and DPI")
+  {
+    environment.GetDevice()->WaitIdle();
+    const auto      originalColor   = color;
+    const auto      originalCapture = capturedColor;
+    const auto      originalDepth   = depth;
+    const xiiCamera originalCamera  = camera;
+    clearDepth                      = 1.0f;
+    camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 70, 0.1f, 1000);
+    camera.LookAt(xiiVec3(6, -8, 4), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+    for (float scale : {1.0f, 1.5f, 2.0f})
+    {
+      environment.GetDevice()->WaitIdle();
+      auto display     = colorDescription;
+      display.m_Size   = {static_cast<xiiUInt32>(257 * scale), static_cast<xiiUInt32>(193 * scale)};
+      color            = environment.GetDevice()->CreateTexture(display);
+      capturedColor    = environment.GetDevice()->CreateTexture(display);
+      auto depthSize   = depthDescription;
+      depthSize.m_Size = display.m_Size;
+      depth            = environment.GetDevice()->CreateTexture(depthSize);
+      first->SetViewport({0, 0, static_cast<float>(display.m_Size.width), static_cast<float>(display.m_Size.height)});
+      first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+      const xiiViewportNavigationGizmo geometry(camera, xiiVec2(static_cast<float>(display.m_Size.width), static_cast<float>(display.m_Size.height)) / scale);
+      geometry.Draw(*first, scale, -1, false);
+      otherWorld.Update();
+      xiiImage otherImage;
+      if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, display.m_Size, otherImage)))
+      {
+        bool black = true;
+        for (xiiUInt64 i = 0; i < otherImage.GetByteBlobPtr().GetCount(); i += 4)
+          black &= otherImage.GetByteBlobPtr()[i] == 0 && otherImage.GetByteBlobPtr()[i + 1] == 0 && otherImage.GetByteBlobPtr()[i + 2] == 0;
+        XII_TEST_BOOL(black);
+      }
+      world.Update();
+      xiiImage reference;
+      if (!XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, display.m_Size, reference)))
+        return;
+      xiiUInt32 colored   = 0;
+      bool      feathered = false;
+      for (xiiUInt32 y = 0; y < display.m_Size.height; ++y)
+      {
+        for (xiiUInt32 x = 0; x < display.m_Size.width; ++x)
+        {
+          const auto* pixel = reference.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y);
+          if (pixel[0] || pixel[1] || pixel[2])
+          {
+            ++colored;
+            XII_TEST_BOOL(x >= static_cast<xiiUInt32>(geometry.m_Bounds.x * scale));
+            XII_TEST_BOOL(y < static_cast<xiiUInt32>(geometry.m_Bounds.Bottom() * scale + 1));
+          }
+        }
+      }
+      XII_TEST_BOOL(colored > 500 * scale * scale);
+      // A separate white circle makes fractional coverage independent of axis shading and labels.
+      xiiDebugRenderer::Draw2DCircle(*first, xiiVec2(25.25f, 25.25f), 10.0f, xiiColor::White);
+      world.Update();
+      xiiImage circle;
+      if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, display.m_Size, circle)))
+      {
+        for (xiiUInt32 y = 13; y < 38; ++y)
+          for (xiiUInt32 x = 13; x < 38; ++x)
+          {
+            const auto red = circle.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y)[0];
+            feathered |= red > 0 && red < 255;
+          }
+      }
+      XII_TEST_BOOL(feathered);
+      camera.MoveLocally(100, 200, 300);
+      xiiViewportNavigationGizmo(camera, xiiVec2(static_cast<float>(display.m_Size.width), static_cast<float>(display.m_Size.height)) / scale).Draw(*first, scale, -1, false);
+      world.Update();
+      xiiImage translated;
+      if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, display.m_Size, translated)))
+        XII_TEST_BOOL(static_cast<const xiiImageView&>(reference).GetByteBlobPtr() == static_cast<const xiiImageView&>(translated).GetByteBlobPtr());
+      geometry.Draw(*first, scale, 0, true);
+      world.Update();
+      xiiImage hovered;
+      if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, display.m_Size, hovered)))
+        XII_TEST_BOOL(static_cast<const xiiImageView&>(reference).GetByteBlobPtr() != static_cast<const xiiImageView&>(hovered).GetByteBlobPtr());
+      for (xiiUInt32 axis = 0; axis < 6; ++axis)
+      {
+        const xiiVec3 direction = -xiiViewportNavigationGizmo::GetAxisDirection(axis);
+        camera.LookAt(-direction * 10.0f, xiiVec3::MakeZero(), axis >= 4 ? xiiVec3::MakeAxisX() : xiiVec3::MakeAxisZ());
+        const xiiViewportNavigationGizmo aligned(camera, xiiVec2(static_cast<float>(display.m_Size.width), static_cast<float>(display.m_Size.height)) / scale);
+        aligned.Draw(*first, scale, -1, false);
+        world.Update();
+        xiiImage axisImage;
+        if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, display.m_Size, axisImage)))
+        {
+          const float radius = (axis & 1) ? 7.0f : 10.0f;
+          const auto* pixel  = axisImage.GetPixelPointer<xiiUInt8>(0, 0, 0, static_cast<xiiUInt32>((aligned.m_vOrigin.x + radius * 0.8f) * scale), static_cast<xiiUInt32>(aligned.m_vOrigin.y * scale));
+          XII_TEST_BOOL(pixel[axis / 2] > pixel[(axis / 2 + 1) % 3]);
+          XII_TEST_BOOL(pixel[axis / 2] > pixel[(axis / 2 + 2) % 3]);
+        }
+      }
+      camera.LookAt(xiiVec3(6, -8, 4), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+      world.Update(); // Omission disables the widget without retaining geometry from the previous frame.
+      checkCenter(0, 0, 0);
+    }
+    environment.GetDevice()->WaitIdle();
+    camera        = originalCamera;
+    color         = originalColor;
+    capturedColor = originalCapture;
+    depth         = originalDepth;
+    clearDepth    = 0;
+    first->SetViewport({0, 0, 64, 64});
+    first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
   // Both views write the same capture target, so the second view must see the
