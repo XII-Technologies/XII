@@ -152,6 +152,8 @@ xiiViewRenderMode::IndirectLighting;Indirect Diffuse Lighting
 xiiViewRenderMode::ReflectionContribution;Reflection Contribution
 xiiViewRenderMode::Exposure;Applied Exposure (Stops)
 xiiViewRenderMode::Bloom;Bloom
+xiiViewRenderMode::ToneMappingCurve;Tone Mapping Curve (-10 to +10 Stops)
+xiiViewRenderMode::ColorGradingLUT;Color Grading Transform (16 Cube LUT)
 
 # Common
 

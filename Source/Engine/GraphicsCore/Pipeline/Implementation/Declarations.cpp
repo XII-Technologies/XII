@@ -28,6 +28,8 @@ bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
     case ReflectionContribution:
     case Bloom:
     case Exposure:
+    case ToneMappingCurve:
+    case ColorGradingLUT:
       return true;
     default:
       return false;

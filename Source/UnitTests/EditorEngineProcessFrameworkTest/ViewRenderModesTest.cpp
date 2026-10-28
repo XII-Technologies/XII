@@ -272,6 +272,55 @@ namespace
       XII_TEST_FLOAT(exposure.b, 0, 0.001f);
     }
     cameras[0].SetExposure(1);
+    // Read the resolved production output transforms, independently of scene
+    // coverage. LUT entries change with grading; curves track operator/exposure.
+    const auto originalDisplay = views[0]->GetDisplayOutputSettings();
+    for (xiiUInt32 phase = 0; phase < 2; ++phase)
+    {
+      auto display                         = originalDisplay;
+      display.m_ColorGrading.m_fSaturation = phase ? 0.0f : 1.0f;
+      display.m_ColorGrading.m_fContrast   = phase ? 1.5f : 1.0f;
+      XII_TEST_RESULT(views[0]->SetDisplayOutputSettings(display));
+      views[0]->SetViewRenderMode(xiiViewRenderMode::ColorGradingLUT);
+      update();
+      for (xiiUInt32 y : {0U, 24U, 48U})
+        for (xiiUInt32 x : {0U, 32U, 64U})
+        {
+          const xiiUInt32 column = xiiUInt32((float(x) + 0.5f) / 65.0f * 256.0f);
+          const float     r = float(column % 16) / 15.0f, g = float(xiiUInt32((float(y) + 0.5f) / 49.0f * 16.0f)) / 15.0f, b = float(column / 16) / 15.0f;
+          const float     luminance = r * 0.2126f + g * 0.7152f + b * 0.0722f;
+          xiiColor        actual;
+          if (read(views[0], x, y, actual))
+            for (xiiUInt32 channel = 0; channel < 3; ++channel)
+              XII_TEST_FLOAT(actual.GetData()[channel], phase ? xiiMath::Max((luminance - 0.18f) * 1.5f + 0.18f, 0.0f) : xiiColor(r, g, b).GetData()[channel], 0.003f);
+        }
+    }
+    XII_TEST_RESULT(views[0]->SetDisplayOutputSettings(originalDisplay));
+    for (const auto op : {xiiToneMappingOperator::ACES, xiiToneMappingOperator::Reinhard})
+      for (float exposureValue : {1.0f, 4.0f})
+      {
+        auto display                  = originalDisplay;
+        display.m_ToneMappingOperator = op;
+        XII_TEST_RESULT(views[0]->SetDisplayOutputSettings(display));
+        cameras[0].SetExposure(exposureValue);
+        views[0]->SetViewRenderMode(xiiViewRenderMode::ToneMappingCurve);
+        update();
+        for (xiiUInt32 x : {12U, 32U, 52U})
+        {
+          const float     value  = xiiMath::Pow(2.0f, (float(x) + 0.5f) / 65.0f * 20.0f - 10.0f) * exposureValue;
+          const float     mapped = op == xiiToneMappingOperator::Reinhard ? value / (value + 1.0f) : xiiMath::Saturate(value * (2.51f * value + 0.03f) / (value * (2.43f * value + 0.59f) + 0.14f));
+          const xiiUInt32 y      = xiiUInt32(xiiMath::Clamp((1.0f - mapped) * 49.0f - 0.5f, 0.0f, 48.0f));
+          const float     line   = xiiMath::Saturate(1.5f - xiiMath::Abs((1.0f - (float(y) + 0.5f) / 49.0f - mapped) * 49.0f));
+          xiiColor        actual;
+          if (read(views[0], x, y, actual))
+          {
+            XII_TEST_FLOAT(actual.r, xiiMath::Lerp(0.015f, 0.2f, line), 0.003f);
+            XII_TEST_FLOAT(actual.g, xiiMath::Lerp(0.015f, 1.0f, line), 0.003f);
+          }
+        }
+      }
+    cameras[0].SetExposure(1);
+    XII_TEST_RESULT(views[0]->SetDisplayOutputSettings(originalDisplay));
     // Every advertised mode must execute the production resource composition.
     for (xiiUInt32 value = 0; value < xiiViewRenderMode::ENUM_COUNT; ++value)
     {

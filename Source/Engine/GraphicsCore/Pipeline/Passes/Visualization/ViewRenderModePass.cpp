@@ -63,7 +63,7 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto mode  = static_cast<xiiViewRenderMode::Enum>(m_bUseViewMode && context.m_pView ? context.m_pView->GetViewRenderMode().GetValue() : m_Mode.GetValue());
   const auto input = context.GetInputTexture(m_InputDisplayLinearColor);
-  if (mode == xiiViewRenderMode::Default)
+  if (mode == xiiViewRenderMode::Default || mode == xiiViewRenderMode::ToneMappingCurve || mode == xiiViewRenderMode::ColorGradingLUT)
     return context.SetOutput(m_OutputDisplayLinearColor, input);
   if (!xiiViewRenderMode::IsSupportedVisualizationMode(mode))
     return XII_FAILURE;
@@ -163,7 +163,7 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   const auto camera   = context.GetInputBuffer(m_InputPerFrameCamera);
   if (!selected.IsValid() || !depth.IsValid() || !camera.IsValid() || ((mode == xiiViewRenderMode::Wireframe || mode == xiiViewRenderMode::InstanceID || surface) && !objects.IsValid()))
   {
-    xiiLog::Error("Visualization '{}' requires its selected channel, depth, camera, and identity/surface inputs.", context.m_sPassName);
+    xiiLog::Error("Visualization '{}' mode {} requires its selected channel ({}), depth ({}), camera ({}), and identity/surface ({}) inputs.", context.m_sPassName, mode, selected.IsValid(), depth.IsValid(), camera.IsValid(), objects.IsValid());
     return XII_FAILURE;
   }
   if (!xiiScreenSpacePassUtils::Image(context, selected, channels) || !xiiScreenSpacePassUtils::Image(context, depth, 1) ||

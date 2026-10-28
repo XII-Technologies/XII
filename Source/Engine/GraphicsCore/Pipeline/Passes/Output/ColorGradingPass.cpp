@@ -20,6 +20,7 @@ struct xiiColorGradingPass::Data
   xiiSizeU32                  m_Size;
   xiiDisplayOutputSettings    m_DisplaySettings;
   bool                        m_bDefaultViewMode = true;
+  bool                        m_bVisualizeLUT    = false;
 };
 struct xiiColorGradingPass::State
 {
@@ -85,6 +86,7 @@ xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
     data.m_Size=size;
     data.m_DisplaySettings=m_pState->m_Display.m_Settings;
     data.m_bDefaultViewMode=!context.m_pView || context.m_pView->GetViewRenderMode()==xiiViewRenderMode::Default;
+    data.m_bVisualizeLUT   = context.m_pView && context.m_pView->GetViewRenderMode() == xiiViewRenderMode::ColorGradingLUT;
     data.m_hDisplayLinear=context.GetInputTexture(m_InputDisplayLinearColor);
     Setup(data,builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGradedColor, emitted.first->m_hGraded));
@@ -128,11 +130,11 @@ void xiiColorGradingPass::Execute(const Data& data, xiiRenderGraphPassContext& c
 
   cmd.BeginDebugGroup("ColorGrading");
   {
-    const xiiColorGradingSettings settings = data.m_bDefaultViewMode ? data.m_DisplaySettings.m_ColorGrading : xiiColorGradingSettings{};
+    const xiiColorGradingSettings settings = data.m_bDefaultViewMode || data.m_bVisualizeLUT ? data.m_DisplaySettings.m_ColorGrading : xiiColorGradingSettings{};
     {
       xiiGALMapHelper<xiiColorGradingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       pConstants->ColorAdjustments = xiiVec4(settings.m_fSaturation, settings.m_fContrast, settings.m_fVignetteStrength, settings.m_fVignetteRoundness);
-      pConstants->FilmGrain        = xiiVec4(settings.m_fFilmGrainStrength, static_cast<float>(context.GetFrameIndex() & 0x00FFFFFFU), 0.0f, 0.0f);
+      pConstants->FilmGrain        = xiiVec4(settings.m_fFilmGrainStrength, static_cast<float>(context.GetFrameIndex() & 0x00FFFFFFU), data.m_bVisualizeLUT ? 1.0f : 0.0f, 0.0f);
     }
 
     cmd.SetPipelineState(data.m_Pipeline.Borrow());
@@ -141,7 +143,12 @@ void xiiColorGradingPass::Execute(const Data& data, xiiRenderGraphPassContext& c
     cmd.ResolveAndSetConstantBuffer("xiiColorGradingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_DisplayLinear", context.GetTexture(data.m_hDisplayLinear)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_GradedOut", context.GetTexture(data.m_hGraded)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      context.ReportFailure("Could not bind color grading resources.");
+      cmd.EndDebugGroup();
+      return;
+    }
     cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
