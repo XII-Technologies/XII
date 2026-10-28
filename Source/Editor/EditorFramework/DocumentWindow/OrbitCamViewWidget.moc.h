@@ -25,6 +25,8 @@ public:
   xiiOrbitCameraContext* GetOrbitCamera();
 
   virtual void SyncToEngine() override;
+  xiiVec3      GetCameraOrbitPoint() const override;
+  void         OrbitCamera(const xiiVec2& vRadians) override;
 
 private:
   bool m_bSetDefaultCamPos = true;

@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/InputContexts/EditorInputContext.h>
+#include <Foundation/Math/Vec2.h>
+#include <Foundation/Math/Vec3.h>
 #include <Foundation/Time/Time.h>
 
 #include <QPoint>
@@ -20,6 +24,11 @@ public:
 
   xiiVec3 GetOrbitPoint() const;
   void    SetOrbitDistance(float fDistance);
+
+  /// Orbits the configured camera about its existing navigation target.
+  void OrbitCamera(const xiiVec2& vRadians);
+  /// Shared by scene and asset-preview navigation, including exact pole orientations.
+  static void OrbitCameraAround(xiiCamera& camera, const xiiVec3& vOrbitPoint, const xiiVec2& vRadians);
 
   static float ConvertCameraSpeed(xiiUInt32 uiSpeedIdx);
 

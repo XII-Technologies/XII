@@ -126,6 +126,7 @@ namespace
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_OverlayLineVertices;
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_OverlayTriangleVertices;
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_Triangle2DVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_OverlayTriangle2DVertices;
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_Line2DVertices;
     xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_LineBoxes;
     xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_SolidBoxes;
@@ -160,6 +161,7 @@ namespace
     data.m_SolidBoxes.Clear();
     data.m_TriangleVertices.Clear();
     data.m_Triangle2DVertices.Clear();
+    data.m_OverlayTriangle2DVertices.Clear();
     data.m_TexturedTriangle2DVertices.Clear();
     data.m_OverlayTexturedTriangle2DVertices.Clear();
     data.m_TexturedTriangle3DVertices.Clear();
@@ -638,6 +640,11 @@ void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArra
 
 void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color)
 {
+  Draw2DLines(context, lines, color, xiiDebugRendererDepthMode::DepthTested);
+}
+
+void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiDebugRendererDepthMode depthMode)
+{
   if (lines.IsEmpty())
     return;
 
@@ -647,6 +654,31 @@ void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiAr
 
   for (auto& line : lines)
   {
+    if (depthMode == xiiDebugRendererDepthMode::Overlay)
+    {
+      xiiVec2 direction(line.m_vEnd.x - line.m_vStart.x, line.m_vEnd.y - line.m_vStart.y);
+      if (direction.NormalizeIfNotZero().Failed())
+        continue;
+      const xiiVec3 normal(-direction.y, direction.x, 0);
+      xiiColor      transparent = color;
+      transparent.a             = 0;
+      // A one-pixel core with a one-pixel alpha fringe on either side.
+      for (xiiUInt32 strip = 0; strip < 3; ++strip)
+      {
+        const float    offsets[]  = {-1.5f, -0.5f, 0.5f, 1.5f};
+        const xiiColor a          = strip == 0 ? transparent : color;
+        const xiiColor b          = strip == 2 ? transparent : color;
+        const Vertex   vertices[] = {
+          {line.m_vStart + normal * offsets[strip], a},
+          {line.m_vEnd + normal * offsets[strip], a},
+          {line.m_vEnd + normal * offsets[strip + 1], b},
+          {line.m_vStart + normal * offsets[strip], a},
+          {line.m_vEnd + normal * offsets[strip + 1], b},
+          {line.m_vStart + normal * offsets[strip + 1], b}};
+        data.m_OverlayTriangle2DVertices.PushBackRange(xiiMakeArrayPtr(vertices));
+      }
+      continue;
+    }
     const xiiVec3* pPositions = &line.m_vStart;
 
     for (xiiUInt32 i = 0; i < 2; ++i)
@@ -1081,6 +1113,36 @@ void xiiDebugRenderer::DrawTexturedTriangles(const xiiDebugRendererContext& cont
       vertex.m_Color     = col;
     }
   }
+}
+
+void xiiDebugRenderer::Draw2DCircle(const xiiDebugRendererContext& context, const xiiVec2& vCenter, float fRadius, const xiiColor& color)
+{
+  if (!vCenter.IsValid() || !xiiMath::IsFinite(fRadius) || fRadius <= 0.0f)
+    return;
+
+  constexpr xiiUInt32 segments = 48;
+  Vertex              vertices[segments * 9];
+  xiiColor            transparent = color;
+  transparent.a                   = 0.0f;
+  const float innerRadius         = xiiMath::Max(0.0f, fRadius - 0.5f);
+  const float outerRadius         = fRadius + 0.5f;
+  for (xiiUInt32 i = 0; i < segments; ++i)
+  {
+    const auto    a = xiiAngle::MakeFromDegree(360.0f * i / segments);
+    const auto    b = xiiAngle::MakeFromDegree(360.0f * (i + 1) / segments);
+    const xiiVec3 center(vCenter.x, vCenter.y, 1.0f);
+    const xiiVec3 da(xiiMath::Cos(a), xiiMath::Sin(a), 0.0f);
+    const xiiVec3 db(xiiMath::Cos(b), xiiMath::Sin(b), 0.0f);
+    const Vertex  ia       = {center + da * innerRadius, color};
+    const Vertex  ib       = {center + db * innerRadius, color};
+    const Vertex  oa       = {center + da * outerRadius, transparent};
+    const Vertex  ob       = {center + db * outerRadius, transparent};
+    const Vertex  sector[] = {{center, color}, ia, ib, ia, oa, ob, ia, ob, ib};
+    for (xiiUInt32 j = 0; j < 9; ++j)
+      vertices[i * 9 + j] = sector[j];
+  }
+  XII_LOCK(s_Mutex);
+  GetDataForExtraction(context).m_OverlayTriangle2DVertices.PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
 void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color)
@@ -1643,6 +1705,7 @@ namespace
     xiiDynamicArray<PreparedGlyphBatch>          m_Text3D;
 
     xiiDynamicArray<PreparedVertexBatch>         m_Triangles2D;
+    xiiDynamicArray<PreparedVertexBatch>         m_OverlayTriangles2D;
     xiiDynamicArray<PreparedTexturedVertexBatch> m_TexturedTriangles2D;
     xiiDynamicArray<PreparedTexturedVertexBatch> m_OverlayTexturedTriangles2D;
     xiiDynamicArray<PreparedVertexBatch>         m_Lines2D;
@@ -2379,6 +2442,7 @@ namespace
     if (const PerContextData* pScreenSpaceData = pWorldSpaceData; pScreenSpaceData != nullptr)
     {
       UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_Triangle2DVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_Triangles2D);
+      UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_OverlayTriangle2DVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_OverlayTriangles2D);
       UploadTexturedVertexBatches(uploadState, allocator, transitions, pScreenSpaceData->m_TexturedTriangle2DVertices, out_preparedData.m_TexturedTriangles2D);
       UploadTexturedVertexBatches(uploadState, allocator, transitions, pScreenSpaceData->m_OverlayTexturedTriangle2DVertices, out_preparedData.m_OverlayTexturedTriangles2D);
       UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_Line2DVertices, xiiGALPrimitiveTopology::LineList, out_preparedData.m_Lines2D);
@@ -2512,6 +2576,7 @@ namespace
     DrawTexturedVertexBatches(drawState, preparedData.m_TexturedTriangles2D, true);
     DrawTexturedVertexBatches(drawState, preparedData.m_OverlayTexturedTriangles2D, true, true);
     DrawVertexBatches(drawState, preparedData.m_Lines2D, xiiGALPrimitiveTopology::LineList, true);
+    DrawVertexBatches(drawState, preparedData.m_OverlayTriangles2D, xiiGALPrimitiveTopology::TriangleList, true, true);
     DrawGlyphBatches(drawState, preparedData.m_Text2D);
   }
 } // namespace

@@ -543,6 +543,23 @@ xiiVec3 xiiCameraMoveContext::GetOrbitPoint() const
   return m_pCamera->GetCenterPosition() + m_pCamera->GetCenterDirForwards() * m_fOrbitPointDistance;
 }
 
+void xiiCameraMoveContext::OrbitCameraAround(xiiCamera& camera, const xiiVec3& vOrbitPoint, const xiiVec2& vRadians)
+{
+  const xiiVec3 offset = camera.GetCenterPosition() - vOrbitPoint;
+  if (offset.GetLengthSquared() < xiiMath::SmallEpsilon<float>())
+    return;
+
+  const xiiQuat pitch    = xiiQuat::MakeFromAxisAndAngle(camera.GetCenterDirRight(), xiiAngle::MakeFromRadian(vRadians.y));
+  const xiiQuat yaw      = xiiQuat::MakeFromAxisAndAngle(camera.GetCoordinateSystem().m_vUpDir, xiiAngle::MakeFromRadian(vRadians.x));
+  const xiiQuat rotation = yaw * pitch;
+  camera.LookAt(vOrbitPoint + rotation * offset, vOrbitPoint, rotation * camera.GetCenterDirUp());
+}
+
+void xiiCameraMoveContext::OrbitCamera(const xiiVec2& vRadians)
+{
+  OrbitCameraAround(*m_pCamera, GetOrbitPoint(), vRadians);
+}
+
 void xiiCameraMoveContext::SetOrbitDistance(float fDistance)
 {
   m_fOrbitPointDistance = fDistance;
@@ -642,28 +659,13 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
 
     if (m_bRotateCamera || m_bOrbitCamera)
     {
-      float   fDistToOrbit = 0.0f;
-      xiiVec3 vOrbitPoint;
-
+      const xiiVec2 rotation(diff.x * fMouseRotateSensitivityX, -diff.y * fMouseRotateSensitivityY);
       if (m_bOrbitCamera)
+        OrbitCamera(rotation);
+      else
       {
-        // fDistToOrbit = xiiMath::Max(0.01f, (m_vOrbitPoint - m_pCamera->GetCenterPosition()).GetLength());
-        fDistToOrbit = xiiMath::Max(0.01f, m_fOrbitPointDistance);
-        vOrbitPoint  = GetOrbitPoint();
-      }
-
-      float fRotateHorizontal = diff.x * fMouseRotateSensitivityX;
-      float fRotateVertical   = -diff.y * fMouseRotateSensitivityY;
-
-      m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(fRotateVertical), xiiAngle::MakeFromRadian(0));
-      m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(fRotateHorizontal));
-
-      if (m_bOrbitCamera)
-      {
-        const xiiVec3 vDirection = m_pCamera->GetDirForwards();
-        const xiiVec3 vNewCamPos = vOrbitPoint - vDirection * fDistToOrbit;
-
-        m_pCamera->LookAt(vNewCamPos, vOrbitPoint, m_pCamera->GetDirUp());
+        m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(rotation.y), xiiAngle::MakeFromRadian(0));
+        m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(rotation.x));
       }
 
       m_vLastMousePos = UpdateMouseMode(e);

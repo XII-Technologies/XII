@@ -172,6 +172,11 @@ public:
 
   /// Renders the given set of lines in 2D (screen-space) for one frame.
   static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color);
+  /// Overlay lines bypass depth and use an antialiased one-pixel core.
+  static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiDebugRendererDepthMode depthMode);
+
+  /// Draws a filled screen-space circle with a one-pixel antialiased edge and no depth testing.
+  static void Draw2DCircle(const xiiDebugRendererContext& context, const xiiVec2& vCenter, float fRadius, const xiiColor& color);
 
   /// Renders a cross for one frame.
   static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());

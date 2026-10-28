@@ -5,6 +5,8 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorFramework/InputContexts/EditorInputContext.h>
+#include <Foundation/Math/BoundingBox.h>
+#include <Foundation/Math/Vec2.h>
 
 class xiiCamera;
 
@@ -16,6 +18,7 @@ public:
 
   void       SetCamera(xiiCamera* pCamera);
   xiiCamera* GetCamera() const;
+  void       OrbitCamera(const xiiVec2& vRadians);
 
   void SetDefaultCameraRelative(const xiiVec3& vDirection, float fDistanceScale);
   void SetDefaultCameraFixed(const xiiVec3& vPosition);

@@ -4,6 +4,7 @@
 
 #include <Core/Graphics/Camera.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
+#include <EditorFramework/InputContexts/CameraMoveContext.h>
 #include <EditorFramework/InputContexts/OrbitCameraContext.h>
 
 xiiOrbitCameraContext::xiiOrbitCameraContext(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
@@ -228,32 +229,7 @@ xiiEditorInput xiiOrbitCameraContext::DoMouseMoveEvent(QMouseEvent* e)
 
   if (m_Mode == Mode::Orbit)
   {
-    const float fMoveRight = diff.x * fMouseMoveSensitivity;
-    const float fMoveUp    = -diff.y * fMouseMoveSensitivity;
-
-    const xiiVec3 vOrbitPoint = m_Volume.GetCenter();
-
-    const float fDistance = (vOrbitPoint - m_pCamera->GetCenterPosition()).GetLength();
-
-    if (fDistance > 0.01f)
-    {
-      // first force the camera to rotate towards the orbit point
-      // this way the camera position doesn't jump around
-      m_pCamera->LookAt(m_pCamera->GetCenterPosition(), vOrbitPoint, xiiVec3(0.0f, 0.0f, 1.0f));
-    }
-
-    // then rotate the camera, and adjust its position to again point at the orbit point
-
-    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(fMoveUp), xiiAngle::MakeFromRadian(0.0f));
-    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(fMoveRight));
-
-    xiiVec3 vDir = m_pCamera->GetDirForwards();
-    if (fDistance == 0.0f || vDir.SetLength(fDistance).Failed())
-    {
-      vDir.Set(1.0f, 0, 0);
-    }
-
-    m_pCamera->LookAt(vOrbitPoint - vDir, vOrbitPoint, xiiVec3(0.0f, 0.0f, 1.0f));
+    OrbitCamera(xiiVec2(diff.x * fMouseMoveSensitivity, -diff.y * fMouseMoveSensitivity));
   }
 
   if (m_Mode == Mode::Free)
@@ -286,6 +262,11 @@ xiiEditorInput xiiOrbitCameraContext::DoMouseMoveEvent(QMouseEvent* e)
   }
 
   return xiiEditorInput::WasExclusivelyHandled;
+}
+
+void xiiOrbitCameraContext::OrbitCamera(const xiiVec2& vRadians)
+{
+  xiiCameraMoveContext::OrbitCameraAround(*m_pCamera, m_Volume.GetCenter(), vRadians);
 }
 
 xiiEditorInput xiiOrbitCameraContext::DoWheelEvent(QWheelEvent* e)

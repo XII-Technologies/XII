@@ -2,11 +2,14 @@
 
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Core/Graphics/Camera.h>
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
-#include <EditorFramework/EditorFrameworkDLL.h>
+#include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Math/Quat.h>
 #include <Foundation/Math/Size.h>
 
 #include <QWidget>
@@ -14,6 +17,7 @@
 
 class xiiQtEngineDocumentWindow;
 class xiiEditorInputContext;
+class xiiEditorViewportNavigationGizmo;
 class QHBoxLayout;
 class QPushButton;
 class QVBoxLayout;
@@ -61,6 +65,16 @@ public:
 
   /// The view's camera will be interpolated to the given coordinates
   void InterpolateCameraTo(const xiiVec3& vPosition, const xiiVec3& vDirection, float fFovOrDim, const xiiVec3* pNewUpDirection = nullptr, bool bImmediate = false);
+
+  /// Navigation is available in scene views and orbit-camera asset previews.
+  void                       SetNavigationGizmoEnabled(bool bEnabled);
+  bool                       IsNavigationGizmoEnabled() const;
+  bool                       HasNavigationGizmo() const { return m_pNavigationGizmo != nullptr; }
+  xiiViewportNavigationGizmo GetNavigationGizmoGeometry() const;
+  void                       InterpolateCameraOrbitTo(const xiiVec3& vDirection);
+  void                       CancelCameraInterpolation() { m_fCameraLerp = 1.0f; }
+  virtual xiiVec3            GetCameraOrbitPoint() const;
+  virtual void               OrbitCamera(const xiiVec2& vRadians) {}
 
   /// If disabled, no picking takes place in this view.
   ///
@@ -122,6 +136,7 @@ protected:
   virtual void keyReleaseEvent(QKeyEvent* e) override;
   virtual void mousePressEvent(QMouseEvent* e) override;
   virtual void mouseReleaseEvent(QMouseEvent* e) override;
+  void         mouseDoubleClickEvent(QMouseEvent* e) override;
   virtual void mouseMoveEvent(QMouseEvent* e) override;
   virtual void wheelEvent(QWheelEvent* e) override;
   virtual void focusOutEvent(QFocusEvent* e) override;
@@ -130,6 +145,7 @@ protected:
   virtual void dropEvent(QDropEvent* e) override;
 
 protected:
+  void         InitializeNavigationGizmo();
   void         EngineViewProcessEventHandler(const xiiEditorEngineProcessConnection::Event& e);
   void         ShowRestartButton(bool bShow);
   void         RecreateEngineViewport();
@@ -147,6 +163,14 @@ protected:
   xiiQtEngineDocumentWindow* m_pDocumentWindow = nullptr;
 
   static xiiUInt32 s_uiNextViewID;
+
+  // Owned by this view; removed before the view is destroyed.
+  xiiEditorViewportNavigationGizmo* m_pNavigationGizmo    = nullptr;
+  bool                              m_bOrbitInterpolation = false;
+  xiiVec3                           m_vCameraOrbitPoint;
+  float                             m_fCameraOrbitDistance = 1.0f;
+  xiiQuat                           m_qCameraStartRotation;
+  xiiQuat                           m_qCameraTargetRotation;
 
   // Camera Interpolation
   float   m_fCameraLerp;

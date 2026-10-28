@@ -106,6 +106,7 @@ Prefabs.ConvertToEditor;Convert to Editor Prefab
 
 View.RenderMode;Render Mode
 View.RenderPerspective;Perspective
+View.NavigationGizmo;Viewport Navigation Gizmo
 View.CameraUsageHint;Camera Usage Hint
 View.RenderPipeline;Render Pipeline
 View.ActivateRemoteProcess;Activate Remote Process

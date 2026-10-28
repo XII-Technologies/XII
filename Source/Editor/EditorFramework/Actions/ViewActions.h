@@ -24,6 +24,7 @@ public:
 
   static xiiActionDescriptorHandle s_hRenderMode;
   static xiiActionDescriptorHandle s_hPerspective;
+  static xiiActionDescriptorHandle s_hNavigationGizmo;
   static xiiActionDescriptorHandle s_hActivateRemoteProcess;
   static xiiActionDescriptorHandle s_hLinkDeviceCamera;
 };
@@ -60,6 +61,7 @@ public:
   {
     ActivateRemoteProcess,
     LinkDeviceCamera,
+    NavigationGizmo,
   };
 
   xiiViewAction(const xiiActionContext& context, const char* szName, ButtonType button);

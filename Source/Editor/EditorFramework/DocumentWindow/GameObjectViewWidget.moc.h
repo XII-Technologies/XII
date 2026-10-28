@@ -25,6 +25,8 @@ public:
   xiiCameraMoveContext* m_pCameraMoveContext;
 
   virtual void SyncToEngine() override;
+  xiiVec3      GetCameraOrbitPoint() const override;
+  void         OrbitCamera(const xiiVec2& vRadians) override;
 
 protected:
   virtual void HandleMarqueePickingResult(const xiiViewMarqueePickingResultMsgToEditor* pMsg) override;

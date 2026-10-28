@@ -53,6 +53,9 @@ public:
   /// Allows to specify a full xiiCoordinateSystemProvider to determine forward/right/up vectors for camera movement
   void SetCoordinateSystem(const xiiSharedPtr<xiiCoordinateSystemProvider>& pProvider);
 
+  /// Returns the configured navigation basis at the camera position, independent of its orientation.
+  xiiCoordinateSystem GetCoordinateSystem() const;
+
   /// Returns the position of the camera that should be used for rendering etc.
   xiiVec3 GetPosition(xiiCameraEye eye = xiiCameraEye::Left) const;
 

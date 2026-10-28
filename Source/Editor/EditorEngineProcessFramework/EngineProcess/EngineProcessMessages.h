@@ -272,6 +272,9 @@ public:
   bool      m_bEnablePickingSelected;
   bool      m_bEnablePickTransparent;
   bool      m_bUseCameraTransformOnDevice = true;
+  bool      m_bShowNavigationGizmo        = false;
+  bool      m_bNavigationHovered          = false;
+  xiiInt32  m_iNavigationHoveredAxis      = -1;
 
   float                      m_fNearPlane;
   float                      m_fFarPlane;
