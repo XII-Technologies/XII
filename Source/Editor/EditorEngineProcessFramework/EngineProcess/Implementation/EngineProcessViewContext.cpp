@@ -9,7 +9,6 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 #include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
-#include <EditorEngineProcessFramework/Rendering/ScenePreviewPipeline.h>
 #include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
@@ -36,6 +35,7 @@ xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiEditorRenderPipe
     switch (usage)
     {
       case xiiEditorRenderPipelineUsage::EditorScene:
+      case xiiEditorRenderPipelineUsage::ScenePreview:
         out_pipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szEditorPipeline);
         return XII_SUCCESS;
       case xiiEditorRenderPipelineUsage::TexturePreview:
@@ -43,7 +43,6 @@ xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiEditorRenderPipe
         out_pipeline = xiiTexturePreviewPass::GetPipelineResource(usage == xiiEditorRenderPipelineUsage::CubeTexturePreview);
         return XII_SUCCESS;
       case xiiEditorRenderPipelineUsage::Main:
-      case xiiEditorRenderPipelineUsage::ScenePreview:
         break;
     }
   }
@@ -51,8 +50,6 @@ xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiEditorRenderPipe
   const auto       result = xiiRenderPipelineProfileConfig::ResolveResource(m_sPipelineReference, m_pPipelineProfile, out_pipeline, &error);
   if (result.Failed())
     xiiLog::Error("Cannot select the editor view pipeline: {}", error);
-  else if (usage == xiiEditorRenderPipelineUsage::ScenePreview)
-    out_pipeline = xiiScenePreviewPipeline::GetResource(out_pipeline);
   return result;
 }
 

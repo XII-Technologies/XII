@@ -38,6 +38,6 @@ Morph animation and root-motion extraction are not implemented by this change. N
 
 ## Verification
 
-Windows/MSVC Debug builds and the existing Vulkan engine-process suite cover the importer, native resources, skinning, previews and LOD integration. The optional `-importModel <absolute model>` argument exercises real models through `ModelImportWorkflow/CompleteModel`, `EditorViews/AnimationPreview` and `EditorViews/MeshPreviewMainProfile` without adding downloaded models to the repository. Khronos Fox and Damaged Helmet were used during implementation.
+Windows/MSVC Debug builds and the existing Vulkan engine-process suite cover the importer, native resources, skinning, previews and LOD integration. The optional `-importModel <absolute model>` argument exercises real models through `ModelImportWorkflow/CompleteModel`, `EditorViews/AnimationPreview` and `EditorViews/MeshPreviewEditorPipeline` without adding downloaded models to the repository. Khronos Fox and Damaged Helmet were used during implementation.
 
 Desktop interaction and additional platforms/backends require separate acceptance checks. A successful export alone does not establish that a thumbnail or viewport contains visible geometry.

@@ -6,7 +6,6 @@
 #include <Core/World/World.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
-#include <EditorEngineProcessFramework/Rendering/ScenePreviewPipeline.h>
 #include <EnginePluginAssets/MeshAsset/MeshContext.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -40,7 +39,7 @@ namespace
   };
 } // namespace
 
-XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
+XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewEditorPipeline)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -55,6 +54,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   const xiiString previousSceneId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szScenePipeline).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(xiiRenderPipelineProfileConfig::s_szScenePipeline);
   XII_SCOPE_EXIT(if (previousSceneId != xiiRenderPipelineProfileConfig::s_szScenePipeline) xiiResourceManager::RegisterNamedResource(xiiRenderPipelineProfileConfig::s_szScenePipeline, previousSceneId));
+  const xiiString previousEditorId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szEditorPipeline).GetResourceID();
+  xiiResourceManager::UnregisterNamedResource(xiiRenderPipelineProfileConfig::s_szEditorPipeline);
+  XII_SCOPE_EXIT(if (previousEditorId != xiiRenderPipelineProfileConfig::s_szEditorPipeline) xiiResourceManager::RegisterNamedResource(xiiRenderPipelineProfileConfig::s_szEditorPipeline, previousEditorId));
   const auto      atmosphereId         = xiiPipelineLibraryTestIdentity("SceneAtmosphere");
   const xiiString previousAtmosphereId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(atmosphereId).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(atmosphereId);
@@ -88,7 +90,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(cache)))
     return;
   xiiStringBuilder entries;
-  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneSpotShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene"})
+  for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneSpotShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene", "Editor"})
   {
     xiiStringBuilder source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", name, ".xiiBinRenderPipeline");
     source.MakeCleanPath();
@@ -187,8 +189,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewMainProfile)
   }
   XII_TEST_RESULT(view->GetLastRenderResult());
   XII_TEST_BOOL(view->GetRenderPipelineInstance().GetResourceAcquireResult() == xiiResourceAcquireResult::Final);
-  const auto selected = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(profile.GetTypeConfig<xiiRenderPipelineProfileConfig>()->m_sMainRenderPipeline);
-  XII_TEST_BOOL(view->GetRenderPipelineResource() == xiiScenePreviewPipeline::GetResource(selected));
+  const auto selected = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szEditorPipeline);
+  XII_TEST_BOOL(view->GetRenderPipelineResource() == selected);
   xiiUInt32 before = 0, after = 0;
   if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), output.Borrow(), 32, 32, before))
     return;

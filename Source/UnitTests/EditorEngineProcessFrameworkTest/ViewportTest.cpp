@@ -398,12 +398,14 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
       // Editor and fixed utility pipelines do not add selectors to the profile.
       XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::EditorScene, selected));
       XII_TEST_BOOL(selected == xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szEditorPipeline));
+      XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::ScenePreview, selected));
+      XII_TEST_BOOL(selected == xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiRenderPipelineProfileConfig::s_szEditorPipeline));
       XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::TexturePreview, selected));
       XII_TEST_BOOL(selected == xiiTexturePreviewPass::GetPipelineResource(false));
       XII_TEST_RESULT(configured.ResolveRenderPipeline(xiiEditorRenderPipelineUsage::CubeTexturePreview, selected));
       XII_TEST_BOOL(selected == xiiTexturePreviewPass::GetPipelineResource(true));
       configured.SetRenderPipelineResourceReference(xiiCreateInstanceVisibilityTestResource().GetResourceID());
-      for (auto usage : {xiiEditorRenderPipelineUsage::Main, xiiEditorRenderPipelineUsage::EditorScene, xiiEditorRenderPipelineUsage::TexturePreview, xiiEditorRenderPipelineUsage::CubeTexturePreview})
+      for (auto usage : {xiiEditorRenderPipelineUsage::Main, xiiEditorRenderPipelineUsage::ScenePreview, xiiEditorRenderPipelineUsage::EditorScene, xiiEditorRenderPipelineUsage::TexturePreview, xiiEditorRenderPipelineUsage::CubeTexturePreview})
       {
         XII_TEST_RESULT(configured.ResolveRenderPipeline(usage, selected));
         XII_TEST_BOOL(selected == xiiCreateInstanceVisibilityTestResource());
