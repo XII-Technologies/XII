@@ -262,7 +262,7 @@ namespace
     result.SamplerIndices0           = xiiVec4U32(xiiInvalidIndex);
     result.SamplerIndices1           = xiiVec4U32(xiiInvalidIndex);
     result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
-    result.Rendering                 = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque), 0U, 0U);
+    result.Rendering                 = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque), 0U, instance.m_uiVisibilityMask);
 
     if (instance.m_hMaterial.IsInvalidated() || !xiiMaterialManager::IsInitialized())
       return result;
@@ -286,7 +286,7 @@ namespace
     const xiiMaterialRuntimeState runtimeState = material->GetRuntimeState();
     result.Metadata.z                          = runtimeState.m_ShadingModel.GetValue();
     result.Metadata.w                          = runtimeState.m_FeatureFlags.GetValue();
-    result.Rendering                           = xiiVec4U32(static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()), runtimeState.m_BlendMode.GetValue(), runtimeState.m_uiTextureMask, 0U);
+    result.Rendering                           = xiiVec4U32(static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()), runtimeState.m_BlendMode.GetValue(), runtimeState.m_uiTextureMask, instance.m_uiVisibilityMask);
 
     xiiMaterialInstanceSnapshot snapshot;
     material->CreateSnapshot(snapshot);

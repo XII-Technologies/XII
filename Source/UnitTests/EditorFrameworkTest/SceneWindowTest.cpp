@@ -4,6 +4,7 @@
 #include <EditorFrameworkTest/SceneDuplicationTest.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
+#include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
@@ -11,6 +12,7 @@
 #include <EditorFramework/Gizmos/DragToPositionGizmo.h>
 #include <EditorFramework/Gizmos/RotateGizmo.h>
 #include <EditorFramework/Gizmos/ScaleGizmo.h>
+#include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <EditorFramework/Preferences/ScenePreferences.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
@@ -395,6 +397,41 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       const auto depthImage     = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportDepth.png");
       const auto normalImage    = captureMode(xiiViewRenderMode::NormalMap, "ViewportNormals.png");
       const auto wireframeImage = captureMode(xiiViewRenderMode::Wireframe, "ViewportWireframe.png");
+      {
+        const auto* process = xiiEditorEngineProcessConnection::GetSingleton();
+        XII_TEST_BOOL(process->IsEngineSetup());
+        xiiActionContext actionContext;
+        actionContext.m_pWindow = view;
+        xiiRenderModeAction                         action(actionContext, "Render mode capability test", "");
+        xiiDynamicArray<xiiDynamicMenuAction::Item> entries;
+        action.GetEntries(entries);
+        for (const auto mode : {xiiViewRenderMode::RayTracingRayCount, xiiViewRenderMode::RayTracingBVHTraversal, xiiViewRenderMode::RayTracingHitDistance, xiiViewRenderMode::RayTracingMissShaderID, xiiViewRenderMode::RayTracingInstanceMask})
+        {
+          bool found = false;
+          for (const auto& entry : entries)
+            found |= entry.m_UserValue.ConvertTo<xiiInt64>() == mode;
+          XII_TEST_BOOL(found == process->SupportsRayTracingModes());
+        }
+        if (process->SupportsRayTracingModes())
+        {
+          const auto mask      = captureMode(xiiViewRenderMode::RayTracingInstanceMask, "ViewportRayMask.png");
+          xiiUInt32  hitPixels = 0, missPixels = 0;
+          for (int y = 0; y < mask.height(); ++y)
+            for (int x = 0; x < mask.width(); ++x)
+            {
+              const auto pixel = mask.pixel(x, y);
+              hitPixels += qRed(pixel) > 250 && qGreen(pixel) > 250 && qBlue(pixel) > 250;
+              missPixels += qRed(pixel) < 5 && qGreen(pixel) < 5 && qBlue(pixel) < 5;
+            }
+          XII_TEST_BOOL(hitPixels > 100 && missPixels > 100);
+        }
+        else
+        {
+          view->m_pViewConfig->m_RenderMode = xiiViewRenderMode::RayTracingInstanceMask;
+          view->SyncToEngine();
+          XII_TEST_BOOL(view->m_pViewConfig->m_RenderMode == xiiViewRenderMode::Default);
+        }
+      }
       XII_TEST_BOOL(depthImage != normalImage);
       if (!depthImage.isNull() && !normalImage.isNull())
       {

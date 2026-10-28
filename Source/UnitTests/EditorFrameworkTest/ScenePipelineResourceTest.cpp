@@ -107,7 +107,7 @@ void xiiCheckAuthoredEditorVisualizationContract(const xiiRenderPipelineResource
 {
   const auto& descriptor    = editor.GetPipeline()->GetDescriptor();
   const auto  visualization = xiiFindPipelineTestPass(descriptor, "xiiViewRenderModePass");
-  for (const xiiStringView input : {"DisplayLinearColor", "SceneDepth", "PerFrameCamera", "GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "WireframeSurface", "Overdraw", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "DirectLighting", "ShadowVisibility", "ShadowCascades", "EnvironmentSpecular", "BloomTexture", "CurrentExposure"})
+  for (const xiiStringView input : {"DisplayLinearColor", "SceneDepth", "PerFrameCamera", "GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "WireframeSurface", "Overdraw", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "DirectLighting", "ShadowVisibility", "ShadowCascades", "RayDiagnostics", "EnvironmentSpecular", "BloomTexture", "CurrentExposure"})
   {
     bool connected = false;
     for (const auto& connection : descriptor.m_Connections)

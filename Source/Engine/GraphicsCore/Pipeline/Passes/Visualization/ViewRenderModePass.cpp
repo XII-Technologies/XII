@@ -47,6 +47,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRenderModePass, 1, xiiRTTIDefaultAllocat
     XII_MEMBER_PROPERTY("DirectLighting", m_InputDirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ShadowVisibility", m_InputShadowVisibility)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ShadowCascades", m_InputShadowCascades)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("RayDiagnostics", m_InputRayDiagnostics)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("EnvironmentSpecular", m_InputEnvironmentSpecular)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("BloomTexture", m_InputBloomTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -81,6 +82,13 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   // Every diagnostic writes all pixels. Its output does not depend on normal
   // grading/tone mapping, so the graph may cull those unused producers.
   const auto outputDescription = *sizingInput;
+  if (xiiViewRenderMode::IsRayTracingVisualizationMode(mode))
+  {
+    const auto rayImage = context.GetInputTexture(m_InputRayDiagnostics);
+    if (!xiiScreenSpacePassUtils::Image(context, rayImage, 4, &size))
+      return context.ReportFailure("Ray visualization requires its explicit current diagnostic image.");
+    return context.SetOutput(m_OutputDisplayLinearColor, rayImage);
+  }
   if (mode == xiiViewRenderMode::ShadowCascadeIndex)
   {
     const auto cascades = context.GetInputData(m_InputShadowCascades).Downcast<const xiiShadowCascadeSnapshot>();

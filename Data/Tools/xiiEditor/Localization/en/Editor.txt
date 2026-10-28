@@ -165,6 +165,11 @@ xiiViewRenderMode::VisibilityBuffer;Surface Visibility (Instance, Meshlet, Primi
 xiiViewRenderMode::ShadingModelID;Material Shading Model ID
 xiiViewRenderMode::CullingOutcome;Meshlet Culling (Green Kept, Red Frustum, Blue Cone)
 xiiViewRenderMode::OcclusionHeatmap;Candidate Geometry Occlusion Fraction
+xiiViewRenderMode::RayTracingRayCount;Diagnostic RT Rays (Camera and Reflection)
+xiiViewRenderMode::RayTracingBVHTraversal;Diagnostic RT Candidate Intersections
+xiiViewRenderMode::RayTracingHitDistance;Diagnostic RT Hit Distance (Meters, Log Scale)
+xiiViewRenderMode::RayTracingMissShaderID;Diagnostic RT Primary Miss Shader
+xiiViewRenderMode::RayTracingInstanceMask;Diagnostic RT Instance Mask (0 to 255)
 
 # Common
 

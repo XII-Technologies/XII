@@ -18,7 +18,7 @@ struct XII_SHADER_STRUCT xiiRayTracingMaterialData
   UINT4(TextureIndices0);            ///< Base color, normal, metallic-roughness and occlusion bindless SRVs.
   UINT4(TextureIndices1);            ///< Emissive, height, clear-coat and transmission bindless SRVs.
   FLOAT4(LayerParameters);           ///< x = alpha cutoff, y = normal scale, z = clear coat, w = clear-coat roughness.
-  UINT4(Rendering);                  ///< x = effective alpha mode, y = blend mode, z = texture mask, w = reserved.
+  UINT4(Rendering);                  ///< x = effective alpha mode, y = blend mode, z = texture mask, w = actual TLAS instance visibility mask.
   UINT4(SamplerIndices0);            ///< Samplers parallel to TextureIndices0; invalid selects the legacy fallback.
   UINT4(SamplerIndices1);            ///< Samplers parallel to TextureIndices1.
 };

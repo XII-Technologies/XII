@@ -34,6 +34,7 @@ public:
   xiiRenderPipelineTextureInputPin m_InputDirectLighting{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin m_InputShadowVisibility{xiiGALResourceFormat::R32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineDataInputPin    m_InputShadowCascades{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>(), true};
+  xiiRenderPipelineTextureInputPin m_InputRayDiagnostics{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
 
   xiiViewRenderModePass();
   ~xiiViewRenderModePass();

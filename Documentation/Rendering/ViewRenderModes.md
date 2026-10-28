@@ -54,12 +54,19 @@ Diagnostic uniform uploads precede the managed graphics pass. Graph dependencies
 | Exposure | Applied exposure multiplier in stops. -16 is blue, 0 green, +16 red. This full-view scalar diagnostic includes the background. |
 | Tone Mapping Curve | The resolved per-view tone operator and SDR/HDR calibration, including current exposure. Horizontal axis is scene luminance from -10 to +10 stops; vertical axis is output relative to SDR white or the calibrated HDR peak. |
 | Color Grading LUT | A sampled 16-cube lookup table of the resolved per-view saturation/contrast transform, flattened into 16 horizontal blue slices. R increases within each slice, G downward, and B across slices. Uses the identical shader function as normal grading. Spatial vignette and stochastic grain are excluded; the renderer has no imported artist LUT. |
+| Diagnostic RT Rays | Actual `TraceRay` calls in the explicit diagnostic workload: one primary camera ray, plus one reflected probe when the primary hits. `log2(count + 1) / 5` maps through blue/green/red. |
+| Diagnostic RT Candidate Intersections | Actual any-hit invocations during that workload's hardware traversal, including candidates rejected by material alpha coverage. Uses the same count heat scale; no candidates is black. The portable API does not expose internal hardware BVH node visits. |
+| Diagnostic RT Hit Distance | Primary hit distance in metres from the reconstructed near-plane origin, mapped with `log2(1 + distance) / log2(1 + far - near)` through the heat palette. Misses are black. |
+| Diagnostic RT Primary Miss Shader | Actual primary-ray miss SBT entry plus one, hashed for display. This diagnostic pipeline has one miss entry (zero); a primary hit is black. Secondary misses do not overwrite primary provenance. |
+| Diagnostic RT Instance Mask | The primary hit's actual eight-bit TLAS visibility mask, displayed as grayscale `mask / 255`. Misses are black. The mask is retained alongside the canonical hit material record; its layout and size are unchanged. |
 
 Surface modes mask uncovered pixels. Bloom can extend into the background. Diagnostics bypass scene exposure and tone mapping; presentation still applies the output transfer. Camera matrix history now advances even when temporal jitter/TAA is disabled, so camera motion remains measurable without enabling temporal reconstruction. Camera cuts, size changes, resource replacement and interrupted world updates retain their history invalidation behavior.
 
 ## Limits
 
-The remaining ray-tracing enum entries stay hidden and are rejected as explicit visualization settings. They still need dedicated outputs or evaluation paths; none is represented by an unrelated material channel.
+All 47 declared mode values now have implementations. The Editor hides the five hardware ray-tracing diagnostics unless its engine process confirms enabled ray tracing in the startup handshake. Saved unsupported ray modes recover to Default once the process is ready; an unknown capability during startup does not discard the saved mode.
+
+Ray diagnostics use one explicit authored TLAS producer and one trace operation shared by all five modes. They do not claim to aggregate unrelated AO, reflection, lighting or path-tracing workloads, or to report inaccessible hardware node counters. Empty TLAS workloads perform no trace or miss invocation and display black. Finite mono perspective and orthographic cameras are supported. Normal views skip TLAS/diagnostic construction.
 
 Geometry diagnostics require the authored indexed query and the canonical packed vertex layout. Wireframe additionally requires native wireframe fill. Overdraw requires floating-point additive render-target blending. The existing Scene/Editor device requirements still apply. Setting a geometry-diagnostic query to a mesh-shader-only variant fails explicitly. Regression variants exercise native Forward+ with mesh shaders enabled, deferred rendering, and Forward+'s supported deferred fallback with mesh shaders disabled.
 
@@ -84,5 +91,10 @@ Runtime acceptance was performed on Windows/Vulkan. Other backends and operating
 - `EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h` and its implementation select the Editor resource. `Rendering/ScenePreviewPipeline.h` and its implementation are removed.
 - Regression changes cover `AssetPreviewPipelineTest`, `ViewRenderModesTest`, `CanonicalRendererTest`, `MeshPreviewTest`, `ViewportTest`, `SceneWindowTest`, `PipelineAssetLibraryTest`, `ScenePipelineResourceTest`, `VisualizationTest`, `VisualizationOperationsTest` and `SceneTemporalTest` in their existing test modules.
 - `Data/Tools/xiiEditor/Localization/en/Editor.txt`, this document and `Documentation/Assets/ModelImport.md` supply current labels and usage/validation documentation.
+- Output inspection additionally updates the production tone/grading operations and shaders, sharing `Passes/Output/ColorGradingTransform.h` with the sampled LUT view.
+- Direct-light diagnostics update the production directional/clustered evaluators and `SurfaceBRDF.h`. Signed orthographic cascade support updates `Lighting/Implementation/ShadowCascade.cpp` and `Passes/Shadows/ShadowCascadePass.cpp`; `ShadowCascadeVisualization.xiiShader` consumes the typed snapshot.
+- Culling provenance updates `MeshletCullPass`, `VertexPullDrawCommandsPass`, their shared shader bodies and instrumented variants, and `GpuSceneCullingDiagnostics.xiiShader`. The authored Scene adds conditional indirect preparation; its diagnostic allocations use the actual meshlet bound.
+- Ray inspection adds `Passes/RayTracing/RayTracingDiagnosticPass.h`, `Implementation/RayTracingDiagnosticPass.cpp` and `Shaders/RayTracing/ViewDiagnostics.xiiShader`. `RayTracingScenePass` gates TLAS building by view mode, and `RayTracingResources` preserves actual instance masks in the existing hit-record layout.
+- Editor startup messages, engine-process connection, render-mode actions and view synchronization carry the enabled ray-tracing capability. Native Editor acceptance checks the menu and actual ray-mask capture; the startup message has a serialization regression.
 
 Build and run commands used for final validation are recorded in the pull request. Generated binaries, caches, logs and temporary authoring helpers are excluded from the change.

@@ -131,6 +131,8 @@ struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
   static bool IsSupportedVisualizationMode(Enum mode);
   /// Modes rasterized from canonical GPU-scene geometry rather than material G-buffer channels.
   static bool IsSurfaceVisualizationMode(Enum mode);
+  /// Modes that inspect an explicit hardware ray-tracing diagnostic workload.
+  static bool IsRayTracingVisualizationMode(Enum mode);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderMode);

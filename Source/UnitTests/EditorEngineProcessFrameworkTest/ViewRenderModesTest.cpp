@@ -208,7 +208,7 @@ namespace
       result = {float(pixel.m_Channels[0]), float(pixel.m_Channels[1]), float(pixel.m_Channels[2]), float(pixel.m_Channels[3])};
       return true;
     };
-    const auto check = [&](xiiViewRenderMode::Enum mode, xiiColor expected) {
+    const auto check = [&](xiiViewRenderMode::Enum mode, xiiColor expected, xiiColor expectedBackground = xiiColor::Black) {
       views[0]->SetViewRenderMode(mode);
       views[1]->SetViewRenderMode(xiiViewRenderMode::BaseColor);
       update();
@@ -226,7 +226,9 @@ namespace
       XII_TEST_FLOAT(other.r, 0.2f, 0.003f);
       XII_TEST_FLOAT(other.g, 0.4f, 0.003f);
       XII_TEST_FLOAT(other.b, 0.8f, 0.003f);
-      XII_TEST_FLOAT(background.r + background.g + background.b, 0, 0.001f);
+      XII_TEST_FLOAT(background.r, expectedBackground.r, 0.001f);
+      XII_TEST_FLOAT(background.g, expectedBackground.g, 0.001f);
+      XII_TEST_FLOAT(background.b, expectedBackground.b, 0.001f);
     };
     for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
     {
@@ -535,10 +537,63 @@ namespace
     cameras[0].LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
     occluder->SetActiveFlag(false);
     sun->SetActiveFlag(false);
+    if (environment.GetDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled)
+    {
+      xiiTestFramework::Output(xiiTestOutput::Details, "Hardware ray-tracing diagnostics: validating all five modes with analytical readbacks.");
+      const auto heatColor = [](float value) {
+        return xiiColor(xiiMath::Saturate(1.5f - xiiMath::Abs(4 * value - 3)), xiiMath::Saturate(1.5f - xiiMath::Abs(4 * value - 2)), xiiMath::Saturate(1.5f - xiiMath::Abs(4 * value - 1)));
+      };
+      for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
+      {
+        views[0]->SetRenderPath(path);
+        check(xiiViewRenderMode::RayTracingRayCount, heatColor(xiiMath::Log2(3.0f) / 5), heatColor(0.2f));
+        check(xiiViewRenderMode::RayTracingMissShaderID, xiiColor::Black, {192.0f / 255, 144.0f / 255, 137.0f / 255});
+        check(xiiViewRenderMode::RayTracingInstanceMask, xiiColor::White);
+        const float metric = xiiMath::Log2(1.0f + 2.4f) / xiiMath::Log2(1.0f + 99.9f);
+        check(xiiViewRenderMode::RayTracingHitDistance, heatColor(metric));
+        cameras[0].LookAt({0, 0, 4}, {0, 0, 0}, {0, 1, 0});
+        check(xiiViewRenderMode::RayTracingHitDistance, heatColor(xiiMath::Log2(1.0f + 3.4f) / xiiMath::Log2(1.0f + 99.9f)));
+        cameras[0].LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+        views[0]->SetViewRenderMode(xiiViewRenderMode::RayTracingBVHTraversal);
+        update();
+        xiiColor candidateColor, noCandidates;
+        if (read(views[0], 32, 24, candidateColor) && read(views[0], 0, 0, noCandidates))
+        {
+          // A center ray can visit either triangle on each of this cube's two
+          // faces. Hardware traversal order may prune candidates after a hit.
+          bool validCount = false;
+          for (xiiUInt32 count = 1; count <= 4; ++count)
+          {
+            const auto expected = heatColor(xiiMath::Log2(float(count + 1)) / 5);
+            validCount |= xiiMath::Abs(candidateColor.r - expected.r) < 0.003f && xiiMath::Abs(candidateColor.g - expected.g) < 0.003f && xiiMath::Abs(candidateColor.b - expected.b) < 0.003f;
+          }
+          XII_TEST_BOOL(validCount);
+          XII_TEST_FLOAT(noCandidates.r + noCandidates.g + noCandidates.b, 0, 0.001f);
+        }
+        component->SetVisibilityMask(0xA5);
+        check(xiiViewRenderMode::RayTracingInstanceMask, {165.0f / 255, 165.0f / 255, 165.0f / 255});
+        component->SetVisibilityMask(0x100); // Raster-visible, but the actual eight-bit TLAS mask is zero.
+        check(xiiViewRenderMode::RayTracingBVHTraversal, xiiColor::Black);
+        check(xiiViewRenderMode::RayTracingRayCount, heatColor(0.2f), heatColor(0.2f));
+        component->SetVisibilityMask(0xFFFFFFFFU);
+      }
+      component->SetActiveFlag(false);
+      for (const auto mode : {xiiViewRenderMode::RayTracingRayCount, xiiViewRenderMode::RayTracingBVHTraversal, xiiViewRenderMode::RayTracingHitDistance, xiiViewRenderMode::RayTracingMissShaderID, xiiViewRenderMode::RayTracingInstanceMask})
+      {
+        views[0]->SetViewRenderMode(mode);
+        update();
+        xiiColor empty;
+        if (read(views[0], 32, 24, empty))
+          XII_TEST_FLOAT(empty.r + empty.g + empty.b, 0, 0.001f);
+      }
+      component->SetActiveFlag(true);
+    }
     for (xiiUInt32 value = 0; value < xiiViewRenderMode::ENUM_COUNT; ++value)
     {
       const auto mode = static_cast<xiiViewRenderMode::Enum>(value);
       if (!xiiViewRenderMode::IsSupportedVisualizationMode(mode))
+        continue;
+      if (xiiViewRenderMode::IsRayTracingVisualizationMode(mode) && environment.GetDevice()->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
         continue;
       views[0]->SetViewRenderMode(mode);
       update();
@@ -664,6 +719,26 @@ namespace
     update();
     if (read(views[0], 48, 36, changed))
       XII_TEST_FLOAT(changed.b, 1, 0.003f);
+    if (environment.GetDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled)
+    {
+      for (const auto cameraMode : {xiiCameraMode::PerspectiveFixedFovY, xiiCameraMode::OrthoFixedHeight})
+      {
+        cameras[0].SetCameraMode(cameraMode, cameraMode == xiiCameraMode::OrthoFixedHeight ? 4.0f : 60.0f, cameraMode == xiiCameraMode::OrthoFixedHeight ? -10.0f : 0.1f, 100);
+        views[0]->SetViewRenderMode(xiiViewRenderMode::RayTracingInstanceMask);
+        update();
+        if (read(views[0], 48, 36, changed))
+        {
+          XII_TEST_FLOAT(changed.r, 1, 0.001f);
+          XII_TEST_FLOAT(changed.g, 1, 0.001f);
+          XII_TEST_FLOAT(changed.b, 1, 0.001f);
+        }
+        xiiMakeReloadablePipelineTestResource(pipeline, reloadable.GetResourceID());
+        update();
+        if (read(views[0], 48, 36, changed))
+          XII_TEST_FLOAT(changed.r, 1, 0.001f);
+      }
+      cameras[0].SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+    }
     object->MakeDynamic();
     object->SetLocalScaling(xiiVec3(-1, 1, 1));
     views[0]->SetViewRenderMode(xiiViewRenderMode::VertexBitangents);

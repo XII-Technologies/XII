@@ -59,7 +59,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShutdownProcessMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiShutdownProcessMsgToEngine>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectReadyMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiProjectReadyMsgToEditor> )
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectReadyMsgToEditor, 2, xiiRTTIDefaultAllocator<xiiProjectReadyMsgToEditor> )
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("HardwareRayTracing", m_bHardwareRayTracing),
+  } XII_END_PROPERTIES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleConfigMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiSimpleConfigMsgToEngine>)

@@ -1,0 +1,99 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Output/ViewRenderModeConstants.h>
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
+#include <Shaders/Pipeline/ViewRenderModeHelpers.h>
+// CountsHit = actual TraceRay calls, any-hit candidates, last hit flag, TLAS mask.
+struct DiagnosticPayload { uint4 CountsHit; float4 PositionDistance; float4 NormalMiss; };
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials;
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry;
+ByteAddressBuffer g_RayTracingBuffers[];
+
+[RAY_GENERATION_SHADER]
+RaytracingAccelerationStructure g_Scene;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Output;
+[shader("raygeneration")]
+void main()
+{
+    const uint2 pixel = DispatchRaysIndex().xy, size = DispatchRaysDimensions().xy;
+    const float2 uv = (float2(pixel) + 0.5f) / float2(size);
+    const float3 origin = ReconstructWorldPos(uv, 1.0f);
+    const float3 farPoint = ReconstructWorldPos(uv, 0.0001f);
+    RayDesc ray;
+    ray.Origin = origin; ray.Direction = normalize(farPoint - origin);
+    ray.TMin = 0.0f;
+    ray.TMax = (g_CameraForwardAndFarPlane.w - g_CameraPositionAndNearPlane.w) / max(dot(ray.Direction, g_CameraForwardAndFarPlane.xyz), 1e-6f);
+    DiagnosticPayload payload = (DiagnosticPayload)0;
+    payload.CountsHit.x = 1u;
+    TraceRay(g_Scene, RAY_FLAG_FORCE_NON_OPAQUE, 0xFFu, 0u, 1u, 0u, ray, payload);
+    const bool primaryHit = payload.CountsHit.z != 0u;
+    const uint primaryMask = payload.CountsHit.w;
+    const float primaryDistance = payload.PositionDistance.w;
+    const uint primaryMissShader = (uint)payload.NormalMiss.w;
+    if (primaryHit)
+    {
+        ray.Origin = payload.PositionDistance.xyz + payload.NormalMiss.xyz * 0.001f;
+        ray.Direction = reflect(ray.Direction, payload.NormalMiss.xyz);
+        ray.TMin = 0.001f;
+        payload.CountsHit.x += 1u;
+        payload.CountsHit.z = 0u;
+        TraceRay(g_Scene, RAY_FLAG_FORCE_NON_OPAQUE, 0xFFu, 0u, 1u, 0u, ray, payload);
+    }
+    float3 color = 0;
+    switch (RenderMode)
+    {
+        case ViewRenderMode_RayTracingRayCount: color = ViewHeatColor(saturate(log2(float(payload.CountsHit.x) + 1.0f) / 5.0f)); break;
+        case ViewRenderMode_RayTracingBVHTraversal: color = payload.CountsHit.y > 0u ? ViewHeatColor(saturate(log2(float(payload.CountsHit.y) + 1.0f) / 5.0f)) : 0.0f; break;
+        case ViewRenderMode_RayTracingHitDistance: color = primaryHit ? ViewHeatColor(saturate(log2(1.0f + primaryDistance) / log2(1.0f + max(g_CameraForwardAndFarPlane.w - g_CameraPositionAndNearPlane.w, 1.0f)))) : 0.0f; break;
+        case ViewRenderMode_RayTracingMissShaderID: color = ViewIdentityColor(primaryMissShader); break;
+        case ViewRenderMode_RayTracingInstanceMask: color = primaryHit ? (float(primaryMask) / 255.0f).xxx : 0.0f; break;
+    }
+    g_Output[pixel] = float4(color, 1);
+}
+[RAY_MISS_SHADER]
+[shader("miss")]
+void main(inout DiagnosticPayload payload)
+{
+    // This pipeline's actual miss SBT entry is zero; store entry plus one so
+    // black remains the no-miss sentinel rather than an invented material ID.
+    payload.NormalMiss.w = 1.0f;
+}
+[RAY_CLOSEST_HIT_SHADER]
+[shader("closesthit")]
+void main(inout DiagnosticPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+    const uint instance = InstanceIndex();
+    const xiiRayTracingGeometryData geometry = g_RayTracingGeometry[instance];
+    uint3 indices = (geometry.VertexAttributes.w + PrimitiveIndex()) * 3u + uint3(0u, 1u, 2u);
+    if (geometry.BufferIndices.z != 0u)
+    {
+        indices.x = xiiLoadRayTracingIndex(g_RayTracingBuffers[NonUniformResourceIndex(geometry.BufferIndices.y)], indices.x, geometry.BufferIndices.z);
+        indices.y = xiiLoadRayTracingIndex(g_RayTracingBuffers[NonUniformResourceIndex(geometry.BufferIndices.y)], indices.y, geometry.BufferIndices.z);
+        indices.z = xiiLoadRayTracingIndex(g_RayTracingBuffers[NonUniformResourceIndex(geometry.BufferIndices.y)], indices.z, geometry.BufferIndices.z);
+    }
+    const uint buffer = NonUniformResourceIndex(geometry.BufferIndices.x);
+    const float3 a = xiiLoadRayTracingPosition(g_RayTracingBuffers[buffer], geometry, indices.x);
+    const float3 b = xiiLoadRayTracingPosition(g_RayTracingBuffers[buffer], geometry, indices.y);
+    const float3 c = xiiLoadRayTracingPosition(g_RayTracingBuffers[buffer], geometry, indices.z);
+    const float3 edge0 = mul((float3x3)ObjectToWorld3x4(), b - a);
+    const float3 edge1 = mul((float3x3)ObjectToWorld3x4(), c - a);
+    float3 normal = normalize(cross(edge0, edge1));
+    if (dot(normal, WorldRayDirection()) > 0.0f) normal = -normal;
+    payload.CountsHit.zw = uint2(1u, g_RayTracingMaterials[instance].Rendering.w);
+    payload.PositionDistance = float4(WorldRayOrigin() + WorldRayDirection() * RayTCurrent(), RayTCurrent());
+    payload.NormalMiss = float4(normal, 0);
+}
+[RAY_ANY_HIT_SHADER]
+Texture2D<float4> g_RayTracingTextures[];
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingAlphaTest.h>
+[shader("anyhit")]
+void main(inout DiagnosticPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+    payload.CountsHit.y += 1u;
+    if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics)) IgnoreHit();
+}

@@ -6,7 +6,7 @@
 
 bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
 {
-  if (IsSurfaceVisualizationMode(mode))
+  if (IsSurfaceVisualizationMode(mode) || IsRayTracingVisualizationMode(mode))
     return true;
   switch (mode)
   {
@@ -66,6 +66,11 @@ bool xiiViewRenderMode::IsSurfaceVisualizationMode(Enum mode)
     default:
       return false;
   }
+}
+
+bool xiiViewRenderMode::IsRayTracingVisualizationMode(Enum mode)
+{
+  return mode >= RayTracingRayCount && mode <= RayTracingInstanceMask;
 }
 
 // clang-format off
