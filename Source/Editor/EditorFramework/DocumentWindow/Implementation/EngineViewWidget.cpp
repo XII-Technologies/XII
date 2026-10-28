@@ -6,6 +6,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
+#include <EditorFramework/InputContexts/EditorViewportNavigationGizmo.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
@@ -85,6 +86,11 @@ xiiQtEngineViewWidget::xiiQtEngineViewWidget(QWidget* pParent, xiiQtEngineDocume
 
 xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 {
+  if (m_pNavigationGizmo && m_pNavigationGizmo->IsActiveInputContext())
+    m_pNavigationGizmo->FocusLost(true);
+  XII_DEFAULT_DELETE(m_pNavigationGizmo);
+  if (s_InteractionContext.m_pLastHoveredViewWidget == this)
+    s_InteractionContext = {};
   xiiEditorEngineProcessConnection::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineViewWidget::EngineViewProcessEventHandler, this));
 
   {
@@ -117,6 +123,12 @@ void xiiQtEngineViewWidget::SyncToEngine()
   if (!xiiViewRenderMode::IsSupportedVisualizationMode(m_pViewConfig->m_RenderMode))
     m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
   cam.m_RenderMode = m_pViewConfig->m_RenderMode;
+  cam.m_bShowNavigationGizmo = IsNavigationGizmoEnabled();
+  if (m_pNavigationGizmo)
+  {
+    cam.m_iNavigationHoveredAxis = m_pNavigationGizmo->GetHoveredAxis();
+    cam.m_bNavigationHovered     = m_pNavigationGizmo->IsHovered();
+  }
 
   float fFov = m_pViewConfig->m_Camera.GetFovOrDim();
   if (m_pViewConfig->m_Camera.IsPerspective())
@@ -183,6 +195,20 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
 
   const float fLerpValue = xiiMath::Sin(xiiAngle::MakeFromDegree(90.0f * m_fCameraLerp));
 
+  if (m_bOrbitInterpolation)
+  {
+    if (xiiEditorInputContext::IsAnyInputContextActive() && xiiEditorInputContext::GetActiveInputContext()->GetOwnerView() == this)
+    {
+      CancelCameraInterpolation();
+      return;
+    }
+    const xiiQuat rotation  = xiiQuat::MakeSlerp(m_qCameraStartRotation, m_qCameraTargetRotation, fLerpValue);
+    const xiiVec3 direction = rotation * xiiVec3::MakeAxisX();
+    const xiiVec3 position  = m_vCameraOrbitPoint - direction * m_fCameraOrbitDistance;
+    cam.LookAt(position, m_vCameraOrbitPoint, rotation * xiiVec3::MakeAxisZ());
+    return;
+  }
+
   xiiQuat qRot, qRotFinal;
   qRot      = xiiQuat::MakeShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
   qRotFinal = xiiQuat::MakeSlerp(xiiQuat::MakeIdentity(), qRot, fLerpValue);
@@ -198,6 +224,7 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
 
 void xiiQtEngineViewWidget::InterpolateCameraTo(const xiiVec3& vPosition, const xiiVec3& vDirection, float fFovOrDim, const xiiVec3* pNewUpDirection /*= nullptr*/, bool bImmediate /*= false*/)
 {
+  m_bOrbitInterpolation   = false;
   m_vCameraStartPosition  = m_pViewConfig->m_Camera.GetPosition();
   m_vCameraTargetPosition = vPosition;
 
@@ -232,6 +259,71 @@ void xiiQtEngineViewWidget::InterpolateCameraTo(const xiiVec3& vPosition, const 
     // make sure the next camera update interpolates all the way
     m_LastCameraUpdate -= xiiTime::MakeFromSeconds(10);
     m_fCameraLerp = 0.9f;
+  }
+}
+
+void xiiQtEngineViewWidget::InitializeNavigationGizmo()
+{
+  XII_ASSERT_DEV(m_pNavigationGizmo == nullptr, "Navigation already initialized.");
+  m_pNavigationGizmo = XII_DEFAULT_NEW(xiiEditorViewportNavigationGizmo, m_pDocumentWindow, this);
+}
+
+void xiiQtEngineViewWidget::SetNavigationGizmoEnabled(bool bEnabled)
+{
+  m_pViewConfig->m_bShowNavigationGizmo = bEnabled;
+  if (!bEnabled && m_pNavigationGizmo && m_pNavigationGizmo->IsActiveInputContext())
+    m_pNavigationGizmo->FocusLost(true);
+}
+
+bool xiiQtEngineViewWidget::IsNavigationGizmoEnabled() const
+{
+  return m_pNavigationGizmo != nullptr && m_pViewConfig->m_bShowNavigationGizmo && m_pViewConfig->m_Camera.GetCameraMode() != xiiCameraMode::Stereo && m_pViewportWidget->width() >= 128 && m_pViewportWidget->height() >= 128;
+}
+
+xiiViewportNavigationGizmo xiiQtEngineViewWidget::GetNavigationGizmoGeometry() const
+{
+  return xiiViewportNavigationGizmo(m_pViewConfig->m_Camera, xiiVec2(m_pViewportWidget->width(), m_pViewportWidget->height()));
+}
+
+xiiVec3 xiiQtEngineViewWidget::GetCameraOrbitPoint() const
+{
+  return m_pViewConfig->m_Camera.GetCenterPosition() + m_pViewConfig->m_Camera.GetCenterDirForwards();
+}
+
+void xiiQtEngineViewWidget::InterpolateCameraOrbitTo(const xiiVec3& vDirection)
+{
+  auto&   camera    = m_pViewConfig->m_Camera;
+  xiiVec3 direction = vDirection;
+  if (direction.NormalizeIfNotZero().Failed() || camera.GetCameraMode() == xiiCameraMode::Stereo)
+    return;
+
+  m_vCameraOrbitPoint    = GetCameraOrbitPoint();
+  m_fCameraOrbitDistance = (m_vCameraOrbitPoint - camera.GetCenterPosition()).GetLength();
+  if (m_fCameraOrbitDistance < 0.0001f)
+    return;
+
+  auto rotationOf = [](const xiiCamera& cam) {
+    xiiMat3 basis;
+    basis.SetColumn(0, cam.GetCenterDirForwards());
+    basis.SetColumn(1, cam.GetCenterDirRight());
+    basis.SetColumn(2, cam.GetCenterDirUp());
+    return xiiQuat::MakeFromMat3(basis);
+  };
+  m_qCameraStartRotation = rotationOf(camera);
+  const auto    system   = camera.GetCoordinateSystem();
+  const xiiVec3 up       = xiiMath::Abs(direction.Dot(system.m_vUpDir)) > 0.999f ? system.m_vForwardDir : system.m_vUpDir;
+  xiiCamera     target   = camera;
+  target.LookAt(m_vCameraOrbitPoint - direction * m_fCameraOrbitDistance, m_vCameraOrbitPoint, up);
+  m_qCameraTargetRotation = rotationOf(target);
+  m_bOrbitInterpolation   = true;
+  m_LastCameraUpdate      = xiiTime::Now();
+  m_fCameraLerp           = 0.0f;
+
+  if (camera.IsOrthographic())
+  {
+    const xiiVec3 axis           = direction.Abs();
+    m_pViewConfig->m_Perspective = axis.z > 0.99f ? xiiSceneViewPerspective::Orthogonal_Top :
+                                                    (axis.y > 0.99f ? xiiSceneViewPerspective::Orthogonal_Right : xiiSceneViewPerspective::Orthogonal_Front);
   }
 }
 
@@ -479,6 +571,15 @@ void xiiQtEngineViewWidget::mousePressEvent(QMouseEvent* e)
     return;
   }
 
+  if (m_pNavigationGizmo && m_pNavigationGizmo->MousePressEvent(e) == xiiEditorInput::WasExclusivelyHandled)
+  {
+    e->accept();
+    return;
+  }
+
+  if (m_bOrbitInterpolation)
+    CancelCameraInterpolation();
+
   // Override context
   {
     xiiEditorInputContext* pOverride = GetDocumentWindow()->GetDocument()->GetEditorInputContextOverride();
@@ -500,6 +601,14 @@ void xiiQtEngineViewWidget::mousePressEvent(QMouseEvent* e)
   }
 
   QWidget::mousePressEvent(e);
+}
+
+void xiiQtEngineViewWidget::mouseDoubleClickEvent(QMouseEvent* e)
+{
+  if (m_pNavigationGizmo && m_pNavigationGizmo->MousePressEvent(e) == xiiEditorInput::WasExclusivelyHandled)
+    e->accept();
+  else
+    QWidget::mouseDoubleClickEvent(e);
 }
 
 void xiiQtEngineViewWidget::mouseReleaseEvent(QMouseEvent* e)
@@ -548,8 +657,10 @@ void xiiQtEngineViewWidget::mouseMoveEvent(QMouseEvent* e)
   s_InteractionContext.m_pLastHoveredViewWidget = this;
   s_InteractionContext.m_pLastPickingResult     = &m_LastPickingResult;
 
-  // kick off the picking
-  PickObject(e->pos().x(), e->pos().y());
+  // Scene tools retain their surface queries while captured; navigation only owns its own disc.
+  const auto* activeContext = xiiEditorInputContext::GetActiveInputContext();
+  if (!IsNavigationGizmoEnabled() || (activeContext && activeContext != m_pNavigationGizmo) || (!m_pNavigationGizmo->IsActiveInputContext() && !GetNavigationGizmoGeometry().Contains(xiiVec2(e->position().x(), e->position().y()))))
+    PickObject(e->pos().x(), e->pos().y());
 
   // if a context is active, it gets exclusive access to the input data
   if (xiiEditorInputContext::IsAnyInputContextActive())
@@ -562,6 +673,12 @@ void xiiQtEngineViewWidget::mouseMoveEvent(QMouseEvent* e)
   }
 
   if (xiiEditorInputContext::IsAnyInputContextActive())
+  {
+    e->accept();
+    return;
+  }
+
+  if (m_pNavigationGizmo && m_pNavigationGizmo->MouseMoveEvent(e) == xiiEditorInput::WasExclusivelyHandled)
   {
     e->accept();
     return;
@@ -601,6 +718,15 @@ void xiiQtEngineViewWidget::wheelEvent(QWheelEvent* e)
 
   if (xiiEditorInputContext::IsAnyInputContextActive())
     return;
+
+  if (m_pNavigationGizmo && m_pNavigationGizmo->WheelEvent(e) == xiiEditorInput::WasExclusivelyHandled)
+  {
+    e->accept();
+    return;
+  }
+
+  if (m_bOrbitInterpolation)
+    CancelCameraInterpolation();
 
   // Override context
   {

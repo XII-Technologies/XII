@@ -13,6 +13,7 @@ xiiQtOrbitCamViewWidget::xiiQtOrbitCamViewWidget(xiiQtEngineDocumentWindow* pOwn
 
   m_pOrbitCameraContext = XII_DEFAULT_NEW(xiiOrbitCameraContext, pOwnerWindow, this);
   m_pOrbitCameraContext->SetCamera(&m_pViewConfig->m_Camera);
+  InitializeNavigationGizmo();
 
   if (bPicking)
   {
@@ -57,6 +58,17 @@ void xiiQtOrbitCamViewWidget::SetOrbitVolume(const xiiVec3& vCenterPos, const xi
 xiiOrbitCameraContext* xiiQtOrbitCamViewWidget::GetOrbitCamera()
 {
   return m_pOrbitCameraContext.Borrow();
+}
+
+xiiVec3 xiiQtOrbitCamViewWidget::GetCameraOrbitPoint() const
+{
+  return m_pOrbitCameraContext->GetVolumeCenter();
+}
+
+void xiiQtOrbitCamViewWidget::OrbitCamera(const xiiVec2& vRadians)
+{
+  CancelCameraInterpolation();
+  m_pOrbitCameraContext->OrbitCamera(vRadians);
 }
 
 void xiiQtOrbitCamViewWidget::SyncToEngine()

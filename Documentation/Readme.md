@@ -7,6 +7,7 @@
 - [World rendering migration](Rendering/WorldRenderingMigration.md)
 - [Renderer remaining work](Rendering/RemainingWork.md)
 - [Editor modernization](EditorModernization.md)
+- [Viewport navigation gizmo](ViewportNavigation.md)
 - [Node layout and alignment](NodeLayout.md)
 - [Inspector rendering](InspectorRendering.md)
 

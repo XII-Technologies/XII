@@ -11,6 +11,7 @@
 #include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
 #include <EditorEngineProcessFramework/Rendering/ScenePreviewPipeline.h>
 #include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
+#include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -109,6 +110,10 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
       HandleWindowUpdate(windowHandle, pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight);
 #  endif
     }
+    m_bShowNavigationGizmo        = pViewRedrawMsg->m_bShowNavigationGizmo;
+    m_bNavigationHovered          = pViewRedrawMsg->m_bNavigationHovered;
+    m_iNavigationHoveredAxis      = pViewRedrawMsg->m_iNavigationHoveredAxis;
+    m_fNavigationDevicePixelRatio = xiiMath::IsFinite(pViewRedrawMsg->m_fDevicePixelRatio) ? xiiMath::Max(0.5f, pViewRedrawMsg->m_fDevicePixelRatio) : 1.0f;
     // The first redraw creates the view; apply the message camera to that new view as well.
     SetCamera(pViewRedrawMsg);
     if (pViewRedrawMsg->m_uiWindowWidth > 0 && pViewRedrawMsg->m_uiWindowHeight > 0)
@@ -265,6 +270,12 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         // pipeline composition here as well once the scene resource has loaded.
         UpdateRenderPipeline(*pView);
         pView->SetRenderEnabled(true);
+        if (m_bShowNavigationGizmo && pView->GetCamera() && pView->GetCamera()->GetCameraMode() != xiiCameraMode::Stereo)
+        {
+          const auto&                      viewport = pView->GetViewport();
+          const xiiViewportNavigationGizmo geometry(*pView->GetCamera(), xiiVec2(viewport.width, viewport.height) / m_fNavigationDevicePixelRatio);
+          geometry.Draw(xiiDebugRendererContext(*pView), m_fNavigationDevicePixelRatio, m_iNavigationHoveredAxis, m_bNavigationHovered);
+        }
         const xiiTag& editorTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
 
         if (bRenderEditorGizmos)

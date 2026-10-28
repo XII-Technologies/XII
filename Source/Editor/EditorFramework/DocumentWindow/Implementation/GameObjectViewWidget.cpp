@@ -18,6 +18,7 @@ xiiQtGameObjectViewWidget::xiiQtGameObjectViewWidget(QWidget* pParent, xiiQtGame
 
   m_pCameraMoveContext->SetCamera(&m_pViewConfig->m_Camera);
   m_pCameraMoveContext->LoadState();
+  InitializeNavigationGizmo();
 
   // add the input contexts in the order in which they are supposed to be processed
   m_InputContexts.PushBack(m_pOrthoGizmoContext);
@@ -30,6 +31,17 @@ xiiQtGameObjectViewWidget::~xiiQtGameObjectViewWidget()
   XII_DEFAULT_DELETE(m_pOrthoGizmoContext);
   XII_DEFAULT_DELETE(m_pSelectionContext);
   XII_DEFAULT_DELETE(m_pCameraMoveContext);
+}
+
+xiiVec3 xiiQtGameObjectViewWidget::GetCameraOrbitPoint() const
+{
+  return m_pCameraMoveContext->GetOrbitPoint();
+}
+
+void xiiQtGameObjectViewWidget::OrbitCamera(const xiiVec2& vRadians)
+{
+  CancelCameraInterpolation();
+  m_pCameraMoveContext->OrbitCamera(vRadians);
 }
 
 void xiiQtGameObjectViewWidget::SyncToEngine()

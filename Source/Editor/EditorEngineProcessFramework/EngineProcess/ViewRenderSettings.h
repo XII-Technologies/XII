@@ -32,6 +32,8 @@ struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewConfig
   xiiCameraUsageHint::Enum      m_CameraUsageHint             = xiiCameraUsageHint::EditorView;
   bool                          m_bUseCameraTransformOnDevice = true;
 
+  bool m_bShowNavigationGizmo = true; ///< Per-viewport editor UI state, preserved across projection changes.
+
   xiiCamera            m_Camera;
   xiiEngineViewConfig* m_pLinkedViewConfig = nullptr; // This is used to store which other view config this is linked to, for resetting values when switching views.
 

@@ -64,6 +64,17 @@ void xiiCamera::SetCoordinateSystem(const xiiSharedPtr<xiiCoordinateSystemProvid
   m_pCoordinateSystem = pProvider;
 }
 
+xiiCoordinateSystem xiiCamera::GetCoordinateSystem() const
+{
+  xiiCoordinateSystem system;
+  system.m_vForwardDir = xiiVec3::MakeAxisX();
+  system.m_vRightDir   = xiiVec3::MakeAxisY();
+  system.m_vUpDir      = xiiVec3::MakeAxisZ();
+  if (m_pCoordinateSystem)
+    m_pCoordinateSystem->GetCoordinateSystem(m_vCameraPosition[0], system);
+  return system;
+}
+
 xiiVec3 xiiCamera::GetPosition(xiiCameraEye eye) const
 {
   return MapInternalToExternal(m_vCameraPosition[static_cast<int>(eye)]);

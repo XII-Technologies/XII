@@ -223,6 +223,8 @@ XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
         tick.m_uiFrame = frame++;
         tick.m_Time    = xiiTime::Now();
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        // Native surface creation and resize events must run just as they do in the Editor's Qt loop.
+        QApplication::processEvents(QEventLoop::AllEvents, 10);
         const auto  hit = view->PickObject(center, center, true);
         QMouseEvent move(QEvent::MouseMove, QPointF(center, center), QPointF(500, 400), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
         view->Move(&move);
@@ -257,6 +259,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
         tick.m_uiFrame = frame++;
         tick.m_Time    = xiiTime::Now();
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        QApplication::processEvents(QEventLoop::AllEvents, 10);
         const auto  hit = view->PickObject(center, lower, true);
         QMouseEvent move(QEvent::MouseMove, QPointF(center, lower), QPointF(500, 490), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
         view->Move(&move);
@@ -300,6 +303,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
           tick.m_uiFrame = frame++;
           tick.m_Time    = xiiTime::Now();
           xiiQtUiServices::s_TickEvent.Broadcast(tick);
+          QApplication::processEvents(QEventLoop::AllEvents, 10);
           const auto  hit = view->PickObject(center, lower, true);
           QMouseEvent move(QEvent::MouseMove, QPointF(center, lower), QPointF(500, 490), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
           view->Move(&move);
@@ -335,6 +339,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
         tick.m_uiFrame = frame++;
         tick.m_Time    = xiiTime::Now();
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        QApplication::processEvents(QEventLoop::AllEvents, 10);
         const auto hit = view->PickObject(center, lower, true);
         XII_TEST_BOOL(!hit.m_PickedObject.IsValid() && hit.m_vPickedNormal.IsZero());
         QMouseEvent move(QEvent::MouseMove, QPointF(center, lower), QPointF(500, 490), Qt::NoButton, Qt::LeftButton, Qt::ShiftModifier);
@@ -357,6 +362,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportInteraction, PlacementDocument)
         tick.m_uiFrame = frame++;
         tick.m_Time    = xiiTime::Now();
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        QApplication::processEvents(QEventLoop::AllEvents, 10);
       };
       xiiGridSettingsMsgToEngine orientationGrid;
       orientationGrid.m_fGridDensity = 1;
