@@ -25,6 +25,9 @@ public:
 
   void MoveCameraToDefaultPosition();
 
+  /// Refreshes bounds-driven perspective clipping after navigation or an asset bounds update.
+  void UpdateCameraClipping();
+
   /// Defines the box in which the user may move the camera around
   void SetOrbitVolume(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize);
 

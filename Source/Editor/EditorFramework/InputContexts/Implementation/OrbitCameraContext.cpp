@@ -60,13 +60,20 @@ void xiiOrbitCameraContext::MoveCameraToDefaultPosition()
     vCamPos = vCenterPos + m_vDefaultCamera * xiiMath::Max(0.1f, xiiMath::Max(ext.x, ext.y, ext.z));
   }
 
-  if (!m_bFixedDefaultCamera && m_pCamera->IsPerspective())
-  {
-    const float radius   = xiiMath::Max(0.001f, m_Volume.GetHalfExtents().GetLength());
-    const float distance = (vCamPos - vCenterPos).GetLength();
-    m_pCamera->SetCameraMode(m_pCamera->GetCameraMode(), m_pCamera->GetFovOrDim(), xiiMath::Max(0.0001f, radius * 0.001f), xiiMath::Max(1.0f, distance + radius * 4));
-  }
   m_pCamera->LookAt(vCamPos, vCenterPos, xiiVec3(0, 0, 1));
+  UpdateCameraClipping();
+}
+
+void xiiOrbitCameraContext::UpdateCameraClipping()
+{
+  if (!m_pCamera || m_bFixedDefaultCamera || !m_pCamera->IsPerspective())
+    return;
+
+  const float fRadius   = xiiMath::Max(0.001f, m_Volume.GetHalfExtents().GetLength());
+  const float fDistance = (m_pCamera->GetCenterPosition() - m_Volume.GetCenter()).GetLength();
+  // Small assets still need the surrounding preview grid. Match the scene-view
+  // far range, and extend it when navigating farther away or loading larger bounds.
+  m_pCamera->SetCameraMode(m_pCamera->GetCameraMode(), m_pCamera->GetFovOrDim(), xiiMath::Max(0.0001f, fRadius * 0.001f), xiiMath::Max(1000.0f, fDistance + fRadius * 4.0f));
 }
 
 void xiiOrbitCameraContext::SetOrbitVolume(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize)

@@ -2,6 +2,8 @@
 
 Scene viewports and 3D asset previews show an orientation widget in their upper-right corner. Toggle **Viewport Navigation Gizmo** in the viewport toolbar to hide or restore it independently in each view. The setting belongs to that view configuration for its lifetime; it is not a global preference. Views smaller than 128 logical pixels on either side hide the widget until they have room again. Stereo cameras are excluded.
 
+Mesh, animated mesh, animation clip and skeleton previews retain a far clipping distance of at least 1,000 metres so framing a small asset does not cut off the surrounding grid. Their clipping range follows the current camera distance and asset bounds on each update, including wheel zoom, free movement and later bounds replies. The near plane remains scaled to the asset for close inspection. Fixed material/texture previews and orthographic clipping ranges retain their configured values.
+
 - Red, green and blue identify world X, Y and Z. Positive axes have labels; negative axes have smaller hollow markers. Rear axes are dimmed and drawn before front axes.
 - Click a marker to view the scene from that side. Click the aligned marker again to flip to the opposite side. The camera animates about its existing orbit target without changing its distance, field of view or orthographic dimension.
 - Drag anywhere inside the circular widget to orbit. Movement continues while the pointer is captured outside the widget. Escape, focus loss or disabling the widget ends the interaction. A click released outside its original marker does not snap.

@@ -12,6 +12,7 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Math/Frustum.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
@@ -304,6 +305,56 @@ XII_CREATE_SIMPLE_TEST(EditorViewportNavigation, NavigationInput)
   XII_TEST_VEC3(config.m_Camera.GetCenterPosition(), scenePosition, 0);
   preview->SetNavigationGizmoEnabled(false);
   XII_TEST_BOOL(view->IsNavigationGizmoEnabled());
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Asset preview clipping follows navigation and bounds without hiding the surrounding scene")
+  {
+    auto& camera       = previewConfig.m_Camera;
+    auto  checkVisible = [&](const xiiVec3& point) {
+      const auto frustum = xiiFrustum::MakeFromFOV(camera.GetCenterPosition(), camera.GetCenterDirForwards(), camera.GetCenterDirUp(), camera.GetFovX(1), camera.GetFovY(1), camera.GetNearPlane(), camera.GetFarPlane());
+      XII_TEST_INT(frustum.GetObjectPosition(&point, 1), xiiVolumePosition::Inside);
+    };
+    for (float extent : {0.1f, 1.0f, 1000.0f})
+    {
+      preview->ConfigureRelative(target, xiiVec3(extent), xiiVec3(5, -2, 3), 2);
+      preview->SetOrbitVolume(target, xiiVec3(extent)); // Consume the initial bounds reply before navigating.
+      XII_TEST_BOOL(camera.GetFarPlane() >= 1000);
+      XII_TEST_BOOL(camera.GetNearPlane() < extent * 0.01f);
+      checkVisible(camera.GetCenterPosition() + camera.GetCenterDirForwards() * 500.0f);
+
+      const xiiVec3 position = target + xiiVec3(0, -20000, 0);
+      camera.LookAt(position, target, xiiVec3::MakeAxisZ());
+      preview->SyncToEngine();
+      XII_TEST_VEC3(camera.GetCenterPosition(), position, 0);
+      checkVisible(target);
+      checkVisible(target + xiiVec3(0, extent, 0));
+
+      QWheelEvent wheel(QPointF(20, 20), preview->mapToGlobal(QPoint(20, 20)), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+      QApplication::sendEvent(preview, &wheel);
+      preview->SyncToEngine();
+      const auto zoomedPosition = camera.GetCenterPosition();
+      XII_TEST_BOOL((zoomedPosition - target).GetLength() > (position - target).GetLength());
+      checkVisible(target);
+
+      // A later bounds response must expand clipping without resetting navigation.
+      preview->SetOrbitVolume(target, xiiVec3(extent * 10));
+      preview->SyncToEngine();
+      XII_TEST_VEC3(camera.GetCenterPosition(), zoomedPosition, 0);
+      checkVisible(target + xiiVec3(0, extent * 10, 0));
+    }
+
+    // Fixed texture/material previews have no asset bounds and keep their authored planes.
+    previewConfig.ApplyPerspectiveSetting(90, 0.01f, 100);
+    preview->ConfigureFixed(target, xiiVec3::MakeZero(), target + xiiVec3(2, 0, 0));
+    preview->SyncToEngine();
+    XII_TEST_FLOAT(camera.GetNearPlane(), 0.01f, 0);
+    XII_TEST_FLOAT(camera.GetFarPlane(), 100, 0);
+    camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 12, -1000, 1000);
+    preview->ConfigureRelative(target, xiiVec3(10), xiiVec3(5, -2, 3), 2);
+    preview->SyncToEngine();
+    XII_TEST_FLOAT(camera.GetNearPlane(), -1000, 0);
+    XII_TEST_FLOAT(camera.GetFarPlane(), 1000, 0);
+    XII_TEST_VEC3(config.m_Camera.GetCenterPosition(), scenePosition, 0);
+  }
 
   // Navigation in another viewport must not cancel this view's animation.
   NavigationInputProbe otherViewInput;
