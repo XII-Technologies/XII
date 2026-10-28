@@ -35,6 +35,8 @@ Diagnostic uniform uploads precede the managed graphics pass. Graph dependencies
 | Direct Diffuse / Direct Specular Lighting | Isolated energy-coupled diffuse or specular lobes of the production BRDF, including local finite-area lights and the existing directional/spot shadows. Uses the authored Scene `DirectLighting` output and the same HDR compression. |
 | Light Cluster ID | Deterministic color of the exact tile/depth-slice index plus one from the current cluster layout. Orthographic projections use the producer's linear depth partition. |
 | Cluster Light Evaluation Count | Number of bounded local-light list entries evaluated for a surface's cluster; on list overflow, the full view candidate count used by the renderer. `log2(count + 1) / 5` maps through blue/green/red; zero is black. Directional lighting is excluded. |
+| Directional Shadow Visibility | The actual directional shadow visibility texture consumed by surface lighting, with receiver flags and filtering intact. White is lit; black is occluded. An inactive directional shadow contributes visibility one. |
+| Directional Shadow Cascade | The current directional shadow snapshot's actual split selection at each reconstructed surface depth. Colors hash cascade index plus one; no active cascade or geometry is black. |
 | Bloom | Thresholded bloom radiance with HDR compression. Inspection still computes the signal when its compositing strength is zero. |
 | Vertex Normals / Tangents / Bitangents | Interpolated world-space vertex basis before normal mapping. Normals use the inverse transpose; tangent handedness accounts for reflected world transforms. |
 | Vertex Colors | Linear normalized source vertex RGB. |
@@ -53,7 +55,7 @@ Surface modes mask uncovered pixels. Bloom can extend into the background. Diagn
 
 ## Limits
 
-The remaining enum entries stay hidden and are rejected as explicit visualization settings: visibility-buffer/culling/occlusion outcomes, shading-model IDs, shadow masks/cascade indices and ray-tracing diagnostics. They still need dedicated outputs or evaluation paths; none is represented by an unrelated material channel.
+The remaining enum entries stay hidden and are rejected as explicit visualization settings: visibility-buffer/culling/occlusion outcomes, shading-model IDs and ray-tracing diagnostics. They still need dedicated outputs or evaluation paths; none is represented by an unrelated material channel.
 
 Geometry diagnostics require the authored indexed query and the canonical packed vertex layout. Wireframe additionally requires native wireframe fill. Overdraw requires floating-point additive render-target blending. The existing Scene/Editor device requirements still apply. Setting a geometry-diagnostic query to a mesh-shader-only variant fails explicitly. Regression variants exercise native Forward+ with mesh shaders enabled, deferred rendering, and Forward+'s supported deferred fallback with mesh shaders disabled.
 

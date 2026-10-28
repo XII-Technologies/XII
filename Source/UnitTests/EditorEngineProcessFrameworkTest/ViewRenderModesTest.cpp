@@ -403,6 +403,61 @@ namespace
     }
     for (auto* point : points)
       point->SetActiveFlag(false);
+    check(xiiViewRenderMode::ShadowMask, xiiColor::White);
+    check(xiiViewRenderMode::ShadowCascadeIndex, xiiColor::Black);
+    sunObject->MakeDynamic();
+    sunObject->SetLocalRotation(xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), xiiVec3(-0.8f, 0, -1).GetNormalized()));
+    sun->SetCastShadows(true);
+    sun->SetActiveFlag(true);
+    for (xiiUInt32 frame = 0; frame < 3; ++frame)
+      update();
+    check(xiiViewRenderMode::ShadowMask, xiiColor::White);
+    xiiGameObjectDescription occluderDescription;
+    occluderDescription.m_LocalPosition = {0.8f, 0, 1.5f};
+    occluderDescription.m_LocalScaling  = xiiVec3(0.4f);
+    xiiGameObject* occluderObject       = nullptr;
+    world.CreateObject(occluderDescription, occluderObject);
+    xiiStaticMeshComponent* occluder = nullptr;
+    xiiStaticMeshComponent::CreateComponent(occluderObject, occluder);
+    occluder->SetMesh(mesh);
+    occluder->SetMaterialOverride(0, material);
+    for (xiiUInt32 frame = 0; frame < 3; ++frame)
+      update();
+    check(xiiViewRenderMode::ShadowMask, xiiColor::Black);
+    for (const auto path : {xiiRenderPath::ForwardPlus, xiiRenderPath::Deferred})
+      for (float distance : {3.0f, 30.0f, 75.0f})
+      {
+        views[0]->SetRenderPath(path);
+        cameras[0].LookAt({0, 0, distance}, {0, 0, 0}, {0, 1, 0});
+        views[0]->SetViewRenderMode(xiiViewRenderMode::ShadowCascadeIndex);
+        update();
+        const auto& instance = views[0]->GetRenderPipelineInstance();
+        bool        checked  = false;
+        for (xiiUInt32 i = 0; i < instance.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
+        {
+          if (instance.GetPipeline()->GetDescriptor().m_Passes[i].m_pType->GetTypeName() != "xiiShadowCascadePass")
+            continue;
+          const auto* binding  = instance.GetOutputBinding(i, "CascadeSnapshot");
+          const auto* snapshot = binding ? xiiDynamicCast<const xiiShadowCascadeSnapshot*>(binding->m_pFrameData.Borrow()) : nullptr;
+          if (!snapshot)
+            continue;
+          xiiUInt32 cascade = 0;
+          while (cascade < snapshot->m_Cascades.GetCount() && distance - 0.5f > snapshot->m_Cascades[cascade].m_fSplitFar)
+            ++cascade;
+          xiiUInt32 identity = cascade < snapshot->m_Cascades.GetCount() ? cascade + 1 : 0;
+          identity ^= identity >> 16;
+          identity *= 0x7feb352dU;
+          identity ^= identity >> 15;
+          identity *= 0x846ca68bU;
+          identity ^= identity >> 16;
+          check(xiiViewRenderMode::ShadowCascadeIndex, {float(identity & 255) / 255, float((identity >> 8) & 255) / 255, float((identity >> 16) & 255) / 255});
+          checked = true;
+        }
+        XII_TEST_BOOL(checked);
+      }
+    cameras[0].LookAt({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+    occluder->SetActiveFlag(false);
+    sun->SetActiveFlag(false);
     for (xiiUInt32 value = 0; value < xiiViewRenderMode::ENUM_COUNT; ++value)
     {
       const auto mode = static_cast<xiiViewRenderMode::Enum>(value);

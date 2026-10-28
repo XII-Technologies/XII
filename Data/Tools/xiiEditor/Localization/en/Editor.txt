@@ -159,6 +159,8 @@ xiiViewRenderMode::LightingOnly;Direct Lighting (White Diffuse)
 xiiViewRenderMode::DiffuseOnly;Direct Diffuse Lighting
 xiiViewRenderMode::SpecularOnly;Direct Specular Lighting
 xiiViewRenderMode::LightComplexity;Cluster Light Evaluation Count
+xiiViewRenderMode::ShadowMask;Directional Shadow Visibility
+xiiViewRenderMode::ShadowCascadeIndex;Directional Shadow Cascade
 
 # Common
 

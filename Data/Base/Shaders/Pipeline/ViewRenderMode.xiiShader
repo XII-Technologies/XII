@@ -75,6 +75,7 @@ void main(uint3 tid : SV_DispatchThreadID)
         case ViewRenderMode_Roughness: color = value.rrr; break;
         case ViewRenderMode_Specular: color = value.bbb; break;
         case ViewRenderMode_AmbientOcclusion: color = value.rrr; break;
+        case ViewRenderMode_ShadowMask: color = value.rrr; break;
         case ViewRenderMode_DepthLinear:
         {
             const float distance = dot(ReconstructWorldPos(uv, depth) - g_CameraPositionAndNearPlane.xyz, g_CameraForwardAndFarPlane.xyz);

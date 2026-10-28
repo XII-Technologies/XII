@@ -11,6 +11,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Output/ViewRenderModeConstants.h>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 
 using namespace xiiRenderPassUtils;
 struct xiiViewRenderModePass::State
@@ -18,6 +19,7 @@ struct xiiViewRenderModePass::State
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Point;
   xiiSharedPtr<xiiGALComputePipelineState> m_pExposurePipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_pCascadePipeline;
 };
 xiiViewRenderModePass::xiiViewRenderModePass()
 {
@@ -43,6 +45,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRenderModePass, 1, xiiRTTIDefaultAllocat
     XII_MEMBER_PROPERTY("StableAO", m_InputStableAO)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("IndirectLighting", m_InputIndirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DirectLighting", m_InputDirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("ShadowVisibility", m_InputShadowVisibility)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("ShadowCascades", m_InputShadowCascades)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("EnvironmentSpecular", m_InputEnvironmentSpecular)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("BloomTexture", m_InputBloomTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameCamera", m_InputPerFrameCamera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -77,6 +81,44 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   // Every diagnostic writes all pixels. Its output does not depend on normal
   // grading/tone mapping, so the graph may cull those unused producers.
   const auto outputDescription = *sizingInput;
+  if (mode == xiiViewRenderMode::ShadowCascadeIndex)
+  {
+    const auto cascades = context.GetInputData(m_InputShadowCascades).Downcast<const xiiShadowCascadeSnapshot>();
+    if (!cascades)
+    {
+      const auto cleared = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto& output, xiiRenderGraphBuilder& builder) { output = builder.WriteTexture("No directional cascades", outputDescription, xiiGALResourceStateFlags::CopyDestination); }, [](const auto& output, xiiRenderGraphPassContext& execute) { ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(output)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); });
+      return context.SetOutput(m_OutputDisplayLinearColor, *cleared.first);
+    }
+    const auto depth  = context.GetInputTexture(m_InputSceneDepth);
+    const auto camera = context.GetInputBuffer(m_InputPerFrameCamera);
+    if (!xiiScreenSpacePassUtils::Image(context, depth, 1, &size) || !xiiScreenSpacePassUtils::Uniform(context, camera, sizeof(xiiFrameCameraConstants)) || !xiiScreenSpacePassUtils::Uniform(context, cascades->m_hConstants, sizeof(xiiShadowCascadeConstants)))
+      return context.ReportFailure("Cascade visualization requires current depth, camera and exact cascade constants.");
+    if (!m_State)
+      m_State = XII_DEFAULT_NEW(State);
+    XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_State->m_pCascadePipeline, "Shaders/Pipeline/ShadowCascadeVisualization.xiiShader"));
+    struct Data
+    {
+      xiiRenderGraphTextureHandle              m_hDepth, m_hOutput;
+      xiiRenderGraphBufferHandle               m_hCamera, m_hCascades;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pPipeline;
+      xiiSizeU32                               m_Size;
+    };
+    const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_hDepth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hCamera = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
+      data.m_hCascades = builder.ReadBuffer(cascades->m_hConstants, xiiGALResourceStateFlags::ConstantBuffer);
+      data.m_hOutput = builder.WriteTexture("Directional cascade selection", outputDescription, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_pPipeline = m_State->m_pCascadePipeline; data.m_Size = size; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      auto& commands = execute.GetCommandList();
+      commands.SetPipelineState(data.m_pPipeline.Borrow());
+      commands.ResolveAndSetConstantBuffer("PerFrameCamera", execute.GetBuffer(data.m_hCamera), xiiGALShaderType::Compute);
+      commands.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", execute.GetBuffer(data.m_hCascades), xiiGALShaderType::Compute);
+      commands.ResolveAndSetShaderResourceTextureView("g_Depth", execute.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      commands.ResolveAndSetUnorderedAccessTextureView("g_Output", execute.GetTexture(data.m_hOutput)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed()) { execute.ReportFailure("Could not bind directional cascade visualization."); return; }
+      commands.DispatchCompute({(data.m_Size.width + 7) / 8, (data.m_Size.height + 7) / 8, 1}); });
+    return context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hOutput);
+  }
   if (mode == xiiViewRenderMode::Exposure)
   {
     const auto  exposure    = context.GetInputBuffer(m_InputCurrentExposure);
@@ -116,6 +158,9 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   {
     case xiiViewRenderMode::Overdraw:
       source = &m_InputOverdraw;
+      break;
+    case xiiViewRenderMode::ShadowMask:
+      source = &m_InputShadowVisibility;
       break;
     case xiiViewRenderMode::LightingOnly:
     case xiiViewRenderMode::DiffuseOnly:
@@ -170,6 +215,17 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   auto       depth    = context.GetInputTexture(m_InputSceneDepth);
   auto       objects  = context.GetInputTexture(mode == xiiViewRenderMode::Wireframe || surface ? m_InputWireframeSurface : m_InputGBufferObjectId);
   const auto camera   = context.GetInputBuffer(m_InputPerFrameCamera);
+  if (mode == xiiViewRenderMode::ShadowMask && !selected.IsValid())
+  {
+    const auto neutral = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>("Inactive directional shadow visibility", xiiGALCommandQueueFlags::Graphics, [](auto& output, xiiRenderGraphBuilder& builder) {
+      xiiGALTextureCreationDescription description;
+      description.m_Type = xiiGALResourceDimension::Texture2D;
+      description.m_Size = {1, 1};
+      description.m_Format = xiiGALResourceFormat::R32Float;
+      description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+      output = builder.WriteTexture("Unshadowed visibility", description, xiiGALResourceStateFlags::CopyDestination); }, [](const auto& output, xiiRenderGraphPassContext& execute) { ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(output)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::White); });
+    selected           = *neutral.first;
+  }
   if (!selected.IsValid() || !depth.IsValid() || !camera.IsValid() || ((mode == xiiViewRenderMode::Wireframe || mode == xiiViewRenderMode::InstanceID || surface) && !objects.IsValid()))
   {
     xiiLog::Error("Visualization '{}' mode {} requires its selected channel ({}), depth ({}), camera ({}), and identity/surface ({}) inputs.", context.m_sPassName, mode, selected.IsValid(), depth.IsValid(), camera.IsValid(), objects.IsValid());

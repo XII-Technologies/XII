@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Visualizes supplied surface channels. Never discovers scene targets by global name.
@@ -31,6 +32,8 @@ public:
   xiiRenderPipelineBufferInputPin   m_InputCurrentExposure{true, xiiGALBindFlags::ShaderResource};
 
   xiiRenderPipelineTextureInputPin m_InputDirectLighting{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin m_InputShadowVisibility{xiiGALResourceFormat::R32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineDataInputPin    m_InputShadowCascades{xiiGetStaticRTTI<xiiShadowCascadeSnapshot>(), true};
 
   xiiViewRenderModePass();
   ~xiiViewRenderModePass();

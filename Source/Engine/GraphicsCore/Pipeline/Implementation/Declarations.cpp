@@ -35,6 +35,8 @@ bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
     case DiffuseOnly:
     case SpecularOnly:
     case LightComplexity:
+    case ShadowMask:
+    case ShadowCascadeIndex:
       return true;
     default:
       return false;
