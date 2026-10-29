@@ -11,6 +11,7 @@
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QMainWindow>
 #include <QSet>
+#include <QStringList>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 class xiiDocumentManager;
@@ -54,6 +55,12 @@ public:
   void RestoreDocumentLayouts();
 
   void ScheduleRestoreWindowLayout();
+
+  /// Named project-local layouts retain the existing ADS format and document layout groups.
+  QStringList GetWorkspaceNames() const;
+  xiiResult   SaveWorkspace(const QString& sName);
+  xiiResult   RestoreWorkspace(const QString& sName);
+  xiiResult   RemoveWorkspace(const QString& sName);
 
   /// Startup may construct docks and restore layouts while presentation is disabled.
   /// Enabling presentation does not show the window; the application owns that transition.
