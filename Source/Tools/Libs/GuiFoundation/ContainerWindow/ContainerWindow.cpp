@@ -4,16 +4,23 @@
 
 #include <Foundation/Application/Application.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
+#include <GuiFoundation/Widgets/CommandPalette.moc.h>
+#include <QApplication>
 #include <QCloseEvent>
 #include <QLabel>
 #include <QLayout>
+#include <QMenu>
 #include <QSettings>
+#include <QShortcut>
 #include <QStatusBar>
 #include <QTabBar>
 #include <QTimer>
+#include <QToolBar>
+#include <QToolButton>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ads/DockAreaWidget.h>
 #include <ads/DockManager.h>
@@ -57,7 +64,7 @@ namespace
 
 xiiQtContainerWindow::xiiQtContainerWindow()
 {
-  setMinimumSize(QSize(960, 540));
+  setMinimumSize(QSize(800, 450));
 
   m_bWindowLayoutRestored         = false;
   m_pStatusBarLabel               = nullptr;
@@ -107,6 +114,52 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   m_pDockManager = new ads::CDockManager(this);
   xiiQtDarkEditorStyle::ApplyDockStyle(m_pDockManager);
 
+  auto* pShell = new QToolBar(tr("Workspace"), this);
+  pShell->setObjectName(QStringLiteral("EditorWorkspaceBar"));
+  pShell->setMovable(false);
+  pShell->setFloatable(false);
+  pShell->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  addToolBar(Qt::TopToolBarArea, pShell);
+  auto* pBrand    = new QLabel(QStringLiteral("  XII  "), pShell);
+  QFont brandFont = pBrand->font();
+  brandFont.setBold(true);
+  pBrand->setFont(brandFont);
+  pShell->addWidget(pBrand);
+  pShell->addSeparator();
+  m_pProjectLabel = new QLabel(pShell);
+  m_pProjectLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+  m_pProjectLabel->setMinimumWidth(80);
+  pShell->addWidget(m_pProjectLabel);
+  auto* pSpacer = new QWidget(pShell);
+  pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  pShell->addWidget(pSpacer);
+
+  auto* pCommands = new QToolButton(pShell);
+  pCommands->setObjectName(QStringLiteral("EditorFindCommand"));
+  pCommands->setFocusPolicy(Qt::NoFocus);
+  pCommands->setText(tr("Find Command"));
+  pCommands->setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Search.svg")));
+  pCommands->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  pCommands->setToolTip(tr("Search commands for the focused document (Ctrl+Shift+P)"));
+  pShell->addWidget(pCommands);
+  connect(pCommands, &QToolButton::clicked, this, &xiiQtContainerWindow::ShowCommandPalette);
+  auto* pShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")), this);
+  pShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+  connect(pShortcut, &QShortcut::activated, this, &xiiQtContainerWindow::ShowCommandPalette);
+
+  auto* pPanels = new QToolButton(pShell);
+  pPanels->setText(tr("Panels"));
+  pPanels->setPopupMode(QToolButton::InstantPopup);
+  auto* pPanelsMenu = new QMenu(pPanels);
+  pPanels->setMenu(pPanelsMenu);
+  connect(pPanelsMenu, &QMenu::aboutToShow, this, [this, pPanelsMenu]() {
+    pPanelsMenu->clear();
+    for (auto* pPanel : m_ApplicationPanels)
+      pPanelsMenu->addAction(pPanel->toggleViewAction());
+  });
+  pShell->addWidget(pPanels);
+  UpdateWindowTitle();
+
   connect(m_pDockManager, &ads::CDockManager::floatingWidgetCreated, this, &xiiQtContainerWindow::SlotFloatingWidgetOpened);
 }
 
@@ -132,6 +185,31 @@ void xiiQtContainerWindow::UpdateWindowTitle()
   sTitle.Append(xiiApplication::GetApplicationInstance()->GetApplicationName().GetView());
 
   setWindowTitle(xiiMakeQString(sTitle.GetView()));
+  if (m_pProjectLabel)
+  {
+    m_pProjectLabel->setText(xiiToolsProject::IsProjectOpen() ? xiiMakeQString(xiiToolsProject::GetSingleton()->GetProjectName(false)) : tr("No project open"));
+    m_pProjectLabel->setToolTip(windowTitle());
+  }
+}
+
+void xiiQtContainerWindow::ShowCommandPalette()
+{
+  QWidget*             pContext        = QApplication::focusWidget();
+  xiiQtDocumentWindow* pDocumentWindow = nullptr;
+  for (auto* pCurrent = pContext; pCurrent; pCurrent = pCurrent->parentWidget())
+    if ((pDocumentWindow = qobject_cast<xiiQtDocumentWindow*>(pCurrent)) != nullptr)
+      break;
+  if (!pDocumentWindow)
+  {
+    const auto uiIndex = m_DocumentDocks.IndexOf(m_pDockManager->focusedDockWidget());
+    if (uiIndex != xiiInvalidIndex)
+    {
+      pDocumentWindow = m_DocumentWindows[uiIndex];
+      pContext        = pDocumentWindow;
+    }
+  }
+  xiiQtCommandPalette palette(this, xiiQtProxy::GetContextActions(pDocumentWindow ? pDocumentWindow->GetDocument() : nullptr, pContext));
+  palette.exec();
 }
 
 void xiiQtContainerWindow::ScheduleRestoreWindowLayout()

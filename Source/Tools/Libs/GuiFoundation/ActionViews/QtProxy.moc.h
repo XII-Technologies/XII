@@ -2,14 +2,16 @@
 
 #pragma once
 
+#include <GuiFoundation/GuiFoundationDLL.h>
+
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/Variant.h>
 #include <GuiFoundation/Action/BaseActions.h>
-#include <GuiFoundation/GuiFoundationDLL.h>
 #include <ToolsFoundation/Factory/RttiMappedObjectFactory.h>
 
 #include <QEvent>
+#include <QList>
 #include <QObject>
 #include <QPointer>
 #include <QSharedPointer>
@@ -48,6 +50,10 @@ public:
   /// \param bTestOnly Accept the event and return true but don't execute the action. Use this inside QEvent::ShortcutOverride.
   /// \return Whether the key event was consumed and an action executed.
   static bool TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* pEvent, bool bTestOnly);
+
+  /// Borrow the live global, document and ancestor-window actions for command discovery.
+  /// Does not instantiate actions or extend their lifetime. Callers must guard retained pointers.
+  static QList<QAction*> GetContextActions(xiiDocument* pDocument, QWidget* pWindow);
 
   static xiiRttiMappedObjectFactory<xiiQtProxy>& GetFactory();
   static QSharedPointer<xiiQtProxy>              GetProxy(xiiActionContext& ref_context, xiiActionDescriptorHandle hAction);

@@ -2,11 +2,12 @@
 
 #pragma once
 
+#include <GuiFoundation/GuiFoundationDLL.h>
+
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/String.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
-#include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QMainWindow>
 #include <QSet>
@@ -60,6 +61,9 @@ public:
   bool IsWindowPresentationEnabled() const { return m_bWindowPresentationEnabled; }
   void setVisible(bool bVisible) override;
 
+public Q_SLOTS:
+  void ShowCommandPalette();
+
 protected:
   virtual bool eventFilter(QObject* obj, QEvent* e) override;
 
@@ -100,6 +104,7 @@ private:
 private:
   ads::CDockManager*                    m_pDockManager = nullptr;
   QLabel*                               m_pStatusBarLabel;
+  QLabel*                               m_pProjectLabel = nullptr;
   xiiDynamicArray<xiiQtDocumentWindow*> m_DocumentWindows;
   xiiDynamicArray<ads::CDockWidget*>    m_DocumentDocks;
 
