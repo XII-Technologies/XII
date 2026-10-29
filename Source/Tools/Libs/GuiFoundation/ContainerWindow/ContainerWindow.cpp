@@ -5,6 +5,7 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
+#include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
@@ -18,6 +19,7 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
+#include <QScrollArea>
 #include <QSettings>
 #include <QShortcut>
 #include <QStatusBar>
@@ -26,6 +28,7 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QVBoxLayout>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ads/DockAreaWidget.h>
 #include <ads/DockManager.h>
@@ -128,7 +131,6 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   auto* pShell = new xiiQtWindowTitleBar(this);
   pShell->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-  setMenuWidget(pShell);
   auto* pBrand    = new QLabel(QStringLiteral("  XII  "), pShell);
   QFont brandFont = pBrand->font();
   brandFont.setBold(true);
@@ -224,7 +226,27 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   UpdateWindowTitle();
 
   pShell->AddWindowControls();
-  connect(qApp, &QApplication::focusChanged, this, [this]() { UpdateDocumentMenu(); });
+  auto* pHeader       = new QWidget(this);
+  auto* pHeaderLayout = new QVBoxLayout(pHeader);
+  pHeaderLayout->setContentsMargins(0, 0, 0, 0);
+  pHeaderLayout->setSpacing(0);
+  pShell->setParent(pHeader);
+  pHeaderLayout->addWidget(pShell);
+  m_pCommandDeck = new xiiQtToolBarActionMapView(tr("Document commands"), pHeader);
+  m_pCommandDeck->setObjectName(QStringLiteral("EditorCommandDeck"));
+  m_pCommandDeck->SetGroupedPresentation(true);
+  m_pCommandDeck->SetShowMenuLabels(false);
+  m_pCommandScroll = new QScrollArea(pHeader);
+  m_pCommandScroll->setObjectName(QStringLiteral("EditorCommandDeckScroll"));
+  m_pCommandScroll->setFrameShape(QFrame::NoFrame);
+  m_pCommandScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  m_pCommandScroll->setWidget(m_pCommandDeck);
+  pHeaderLayout->addWidget(m_pCommandScroll);
+  m_pCommandScroll->hide();
+  setMenuWidget(pHeader);
+  // Focus observers receive borrowed QWidget pointers. Rebuilding the command
+  // deck must wait until ADS and other observers have finished reading them.
+  connect(qApp, &QApplication::focusChanged, this, [this]() { UpdateDocumentMenu(); }, Qt::QueuedConnection);
   connect(m_pDockManager, &ads::CDockManager::floatingWidgetCreated, this, &xiiQtContainerWindow::SlotFloatingWidgetOpened);
 }
 
@@ -233,6 +255,7 @@ xiiQtContainerWindow::~xiiQtContainerWindow()
   // Child-widget destruction changes focus after C++ members have been torn
   // down. Stop menu discovery before QMainWindow destroys those children.
   disconnect(qApp, nullptr, this, nullptr);
+  m_pCommandDeck->ClearActionContext();
   for (auto* pWindow : m_DocumentWindows)
     if (pWindow->menuWidget())
       pWindow->menuWidget()->removeEventFilter(this);
@@ -285,7 +308,8 @@ void xiiQtContainerWindow::UpdateDocumentMenu()
 {
   if (!m_pDocumentMenu)
     return;
-  auto*      pWindow = GetFocusedDocumentWindow();
+  auto* pWindow = GetFocusedDocumentWindow();
+  UpdateCommandDeck(pWindow);
   auto*      pSource = pWindow ? qobject_cast<QMenuBar*>(pWindow->menuWidget()) : nullptr;
   const auto actions = pSource ? pSource->actions() : QList<QAction*>();
   if (m_pMenuSource == pSource && m_pDocumentMenu->actions() == actions)
@@ -293,6 +317,33 @@ void xiiQtContainerWindow::UpdateDocumentMenu()
   m_pDocumentMenu->clear();
   m_pMenuSource = pSource;
   m_pDocumentMenu->addActions(actions);
+}
+
+void xiiQtContainerWindow::UpdateCommandDeck(xiiQtDocumentWindow* pWindow)
+{
+  if (!m_pCommandDeck)
+    return;
+  xiiQtToolBarActionMapView* pSource = nullptr;
+  if (pWindow && pWindow->window() == this)
+  {
+    const auto tools = pWindow->findChildren<xiiQtToolBarActionMapView*>(QString(), Qt::FindDirectChildrenOnly);
+    if (!tools.isEmpty())
+      pSource = tools.front();
+  }
+  if (m_pToolbarSource == pSource)
+    return;
+  if (m_pToolbarSource)
+    m_pToolbarSource->setVisible(m_pToolbarSource->window() != this);
+  m_pToolbarSource = pSource;
+  m_pCommandDeck->ClearActionContext();
+  m_pCommandScroll->setVisible(pSource != nullptr);
+  if (!pSource)
+    return;
+  m_pCommandDeck->SetActionContext(pSource->GetActionContext());
+  pSource->setProperty("EditorCommandDeckSource", true);
+  pSource->hide();
+  m_pCommandDeck->adjustSize();
+  m_pCommandScroll->setFixedHeight(m_pCommandDeck->sizeHint().height() + 14);
 }
 
 void xiiQtContainerWindow::ShowCommandPalette()
@@ -624,6 +675,9 @@ void xiiQtContainerWindow::SlotDockWidgetFloatingChanged(bool)
 #if XII_DISABLED(XII_PLATFORM_OSX)
     pDoc->menuWidget()->setVisible(pDoc->window() != this);
 #endif
+    for (auto* pTools : pDoc->findChildren<xiiQtToolBarActionMapView*>(QString(), Qt::FindDirectChildrenOnly))
+      if (pTools->property("EditorCommandDeckSource").toBool())
+        pTools->setVisible(pDoc->window() != this);
     UpdateWindowDecoration(pDoc);
   }
   UpdateDocumentMenu();
@@ -659,6 +713,12 @@ void xiiQtContainerWindow::UpdateWindowDecoration(xiiQtDocumentWindow* pDocWindo
 
 void xiiQtContainerWindow::RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow)
 {
+  if (m_pToolbarSource && m_pToolbarSource->GetActionContext().m_pDocument == pDocWindow->GetDocument())
+  {
+    m_pCommandDeck->ClearActionContext();
+    m_pToolbarSource.clear();
+    m_pCommandScroll->hide();
+  }
   const xiiUInt32 uiListIndex = m_DocumentWindows.IndexOf(pDocWindow);
   if (uiListIndex == xiiInvalidIndex)
     return;

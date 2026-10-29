@@ -24,7 +24,10 @@ public:
   explicit xiiQtToolBarActionMapView(QString sTitle, QWidget* pParent);
   ~xiiQtToolBarActionMapView();
 
-  void SetActionContext(const xiiActionContext& context);
+  void                    SetActionContext(const xiiActionContext& context);
+  const xiiActionContext& GetActionContext() const { return m_Context; }
+  void                    SetGroupedPresentation(bool bGrouped) { m_bGrouped = bGrouped; }
+  void                    ClearActionContext();
 
   /// Keep primary buttons compact while making menu choices readable.
   void SetShowMenuLabels(bool bShow);
@@ -37,7 +40,7 @@ private:
 
   void ClearView();
   void CreateView();
-  void CreateView(const xiiActionMap::TreeNode* pRoot);
+  void CreateView(const xiiActionMap::TreeNode* pRoot, QToolBar* pTarget);
 
 private:
   xiiHashTable<xiiUuid, QSharedPointer<xiiQtProxy>> m_Proxies;
@@ -45,4 +48,6 @@ private:
   xiiActionContext m_Context;
   xiiActionMap*    m_pActionMap;
   bool             m_bShowMenuLabels = false;
+  bool             m_bGrouped        = false;
+  QList<QAction*>  m_OwnedActions;
 };

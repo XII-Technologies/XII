@@ -21,6 +21,8 @@ class xiiQtApplicationPanel;
 struct xiiDocumentTypeDescriptor;
 class QLabel;
 class QMenuBar;
+class QScrollArea;
+class xiiQtToolBarActionMapView;
 
 namespace ads
 {
@@ -100,6 +102,7 @@ private:
   void                 UpdateWindowTitle();
   xiiQtDocumentWindow* GetFocusedDocumentWindow() const;
   void                 UpdateDocumentMenu();
+  void                 UpdateCommandDeck(xiiQtDocumentWindow* pWindow);
 
   void RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow);
   void RemoveApplicationPanel(xiiQtApplicationPanel* pPanel);
@@ -118,6 +121,9 @@ private:
   QLabel*                               m_pProjectLabel = nullptr;
   QMenuBar*                             m_pDocumentMenu = nullptr;
   QPointer<QMenuBar>                    m_pMenuSource;
+  xiiQtToolBarActionMapView*            m_pCommandDeck   = nullptr;
+  QScrollArea*                          m_pCommandScroll = nullptr;
+  QPointer<xiiQtToolBarActionMapView>   m_pToolbarSource;
   xiiDynamicArray<xiiQtDocumentWindow*> m_DocumentWindows;
   xiiDynamicArray<ads::CDockWidget*>    m_DocumentDocks;
 
