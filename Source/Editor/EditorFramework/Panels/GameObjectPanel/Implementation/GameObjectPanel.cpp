@@ -8,8 +8,10 @@
 #include <GuiFoundation/Models/TreeSearchFilterModel.moc.h>
 #include <GuiFoundation/Widgets/SearchWidget.moc.h>
 #include <QLabel>
+#include <QMenu>
 #include <QShortcut>
 #include <QToolBar>
+#include <QToolButton>
 
 xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel, xiiSelectionManager* pSelection) :
   QWidget(pParent)
@@ -32,7 +34,11 @@ xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocu
   m_pFilterWidget->setPlaceholderText("Search by name or component type");
   connect(m_pFilterWidget, &xiiQtSearchWidget::textChanged, this, &xiiQtGameObjectWidget::OnFilterTextChanged);
 
-  layout()->addWidget(m_pFilterWidget);
+  auto* pHeader = new QHBoxLayout;
+  pHeader->setContentsMargins(0, 0, 0, 0);
+  pHeader->setSpacing(2);
+  pHeader->addWidget(m_pFilterWidget, 1);
+  static_cast<QVBoxLayout*>(layout())->addLayout(pHeader);
 
   m_pTreeWidget = new xiiQtDocumentTreeView(this, pDocument, std::move(pCustomModel), pSelection);
   m_pTreeWidget->setObjectName("xiiQtDocumentTreeView");
@@ -58,17 +64,25 @@ xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocu
   pFocus->setToolTip(tr("Frame the selection in the viewport"));
   connect(pFocus, &QAction::triggered, this, [this]() { m_pDocument->TriggerFocusOnSelection(true); });
   connect(pTools->addAction(tr("Collapse")), &QAction::triggered, m_pTreeWidget, &QTreeView::collapseAll);
-  layout()->addWidget(pTools);
+  auto* pOptions = new QToolButton(this);
+  pOptions->setText(QStringLiteral("..."));
+  pOptions->setAccessibleName(tr("Outliner navigation"));
+  pOptions->setToolTip(tr("Reveal, frame and collapse hierarchy"));
+  pOptions->setPopupMode(QToolButton::InstantPopup);
+  auto* pMenu = new QMenu(pOptions);
+  pMenu->addActions(pTools->actions());
+  pOptions->setMenu(pMenu);
+  pTools->hide();
   auto* pSummary = new QLabel(this);
   pSummary->setContentsMargins(4, 0, 4, 0);
-  auto* pSpacer = new QWidget(pTools);
-  pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  pTools->addWidget(pSpacer);
-  pTools->addWidget(pSummary);
+  pHeader->addWidget(pSummary);
+  pHeader->addWidget(pOptions);
   auto* pSelectionManager = pSelection ? pSelection : pDocument->GetSelectionManager();
   auto  UpdateSelection   = [pSelectionManager, pSummary, pReveal, pFocus]() {
     const auto uiCount = pSelectionManager->GetSelection().GetCount();
-    pSummary->setText(tr("%1 selected").arg(uiCount));
+    pSummary->setText(QString::number(uiCount));
+    pSummary->setToolTip(tr("%1 selected").arg(uiCount));
+    pSummary->setAccessibleName(pSummary->toolTip());
     pReveal->setEnabled(uiCount != 0);
     pFocus->setEnabled(uiCount != 0);
   };

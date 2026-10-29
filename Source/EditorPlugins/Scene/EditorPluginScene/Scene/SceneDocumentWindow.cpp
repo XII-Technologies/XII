@@ -86,7 +86,7 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("PropertyPanel");
     pPropertyPanel->setMinimumWidth(280);
-    pPropertyPanel->setWindowTitle("Properties");
+    pPropertyPanel->setWindowTitle("Inspector");
     pPropertyPanel->show();
 
     xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(GetContainerWindow()->GetDockManager(), this, static_cast<xiiSceneDocument*>(pDocument));
@@ -97,8 +97,9 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
     pPropertyPanel->setWidget(pPropertyGrid);
     XII_VERIFY(connect(pPropertyGrid, &xiiQtPropertyGridWidget::ExtendContextMenu, this, &xiiQtSceneDocumentWindow::ExtendPropertyGridContextMenu), "");
 
-    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
-    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanelTree);
+    auto* pHierarchyArea = m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pPanelTree);
+    auto* pInspectorArea = m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, pPropertyPanel, pHierarchyArea);
+    m_pDockManager->setSplitterSizes(pInspectorArea, {240, 520});
   }
 
   FinishWindowCreation();
