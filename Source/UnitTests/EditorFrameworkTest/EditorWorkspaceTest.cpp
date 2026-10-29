@@ -24,6 +24,9 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMouseEvent>
 #include <QPixmap>
 #include <QScreen>
 #include <QScrollBar>
@@ -42,6 +45,30 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
   const auto* pSelected  = pAccessor->GetObject(selectedObject);
   scene.GetSelectionManager()->SetSelection(pSelected);
   QApplication::processEvents();
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Title-area menus retain live document and plugin actions")
+  {
+    window.setFocus();
+    QApplication::processEvents();
+    auto* pMenu   = pContainer->findChild<QMenuBar*>(QStringLiteral("EditorDocumentMenu"));
+    auto* pSource = qobject_cast<QMenuBar*>(window.menuWidget());
+    if (XII_TEST_BOOL(pMenu != nullptr && pSource != nullptr))
+    {
+      XII_TEST_BOOL(pMenu->actions() == pSource->actions());
+#if XII_DISABLED(XII_PLATFORM_OSX)
+      XII_TEST_BOOL(pSource->isHidden());
+#endif
+      QMenu pluginMenu(QStringLiteral("Plugin acceptance"), &window);
+      pSource->addMenu(&pluginMenu);
+      XII_TEST_BOOL(pMenu->actions().contains(pluginMenu.menuAction()));
+      pSource->removeAction(pluginMenu.menuAction());
+      XII_TEST_BOOL(!pMenu->actions().contains(pluginMenu.menuAction()));
+    }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    XII_TEST_BOOL(pContainer->windowFlags().testFlag(Qt::ExpandedClientAreaHint));
+    XII_TEST_BOOL(!pContainer->windowFlags().testFlag(Qt::FramelessWindowHint));
+#endif
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Outliner search, Inspector navigation and native undo command")
   {
@@ -246,6 +273,14 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
       pSurface->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     }
     pContainer->setWindowState(Qt::WindowNoState);
+    if (auto* pTitleBar = pContainer->findChild<QToolBar*>(QStringLiteral("EditorTitleBar")))
+    {
+      QMouseEvent doubleClick(QEvent::MouseButtonDblClick, QPointF(20, 12), pTitleBar->mapToGlobal(QPoint(20, 12)), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+      QApplication::sendEvent(pTitleBar, &doubleClick);
+      XII_TEST_BOOL(pContainer->isMaximized());
+      QApplication::sendEvent(pTitleBar, &doubleClick);
+      XII_TEST_BOOL(!pContainer->isMaximized());
+    }
     const auto  available = QApplication::primaryScreen()->availableGeometry().size();
     const QSize wideSize(qMin(1280, qMax(800, available.width() - 32)), qMin(800, qMax(450, available.height() - 64)));
     pContainer->resize(wideSize);

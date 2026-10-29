@@ -10,6 +10,7 @@
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QMainWindow>
+#include <QPointer>
 #include <QSet>
 #include <QStringList>
 #include <ToolsFoundation/Project/ToolsProject.h>
@@ -19,6 +20,7 @@ class xiiDocument;
 class xiiQtApplicationPanel;
 struct xiiDocumentTypeDescriptor;
 class QLabel;
+class QMenuBar;
 
 namespace ads
 {
@@ -95,7 +97,9 @@ private Q_SLOTS:
   void SlotDockWidgetFloatingChanged(bool bFloating);
 
 private:
-  void UpdateWindowTitle();
+  void                 UpdateWindowTitle();
+  xiiQtDocumentWindow* GetFocusedDocumentWindow() const;
+  void                 UpdateDocumentMenu();
 
   void RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow);
   void RemoveApplicationPanel(xiiQtApplicationPanel* pPanel);
@@ -112,6 +116,8 @@ private:
   ads::CDockManager*                    m_pDockManager = nullptr;
   QLabel*                               m_pStatusBarLabel;
   QLabel*                               m_pProjectLabel = nullptr;
+  QMenuBar*                             m_pDocumentMenu = nullptr;
+  QPointer<QMenuBar>                    m_pMenuSource;
   xiiDynamicArray<xiiQtDocumentWindow*> m_DocumentWindows;
   xiiDynamicArray<ads::CDockWidget*>    m_DocumentDocks;
 
