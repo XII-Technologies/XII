@@ -7,7 +7,9 @@ undo/redo and renderer integration remain owned by their existing modules.
 
 ## Design
 
-Use graphite surfaces, readable neutral text and a restrained petrol accent.
+Use the splash screen's black shell, neutral gray surfaces, white text and
+light-blue (#6da9f7) accent. Component category colors occupy a narrow header
+marker rather than tinting the complete property group.
 Reserve the accent for selection, focus and active context. Use the system UI
 font and logical pixel metrics so controls follow screen scaling and text size.
 Keep the viewport dominant, with editing commands near their context. Search,
