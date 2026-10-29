@@ -300,7 +300,9 @@ xiiScriptMessageDesc xiiVisualScriptGraphDescription::GetMessageDesc() const
 
 //////////////////////////////////////////////////////////////////////////
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 xiiCVarInt cvar_MaxNodeExecutions("VisualScript.MaxNodeExecutions", 100000, xiiCVarFlags::Default, "Maximum nodes executed within one script invocation. Values below 1 are treated as 1.");
+#endif
 
 xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc, xiiAllocator* pAllocator) :
   m_pDesc(pDesc), m_LocalDataStorage(pDesc->GetLocalDataDesc())
