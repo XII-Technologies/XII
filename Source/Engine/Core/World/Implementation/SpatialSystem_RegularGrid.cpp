@@ -672,7 +672,7 @@ xiiSpatialSystem_RegularGrid::xiiSpatialSystem_RegularGrid(xiiUInt32 uiCellSize 
 
   m_Grids.SetCount(MAX_NUM_GRIDS);
 
-  cvar_SpatialQueriesCachingThreshold.m_CVarEvents.AddEventHandler([&](const xiiCVarEvent& e) {
+  m_CVarSubscription = cvar_SpatialQueriesCachingThreshold.m_CVarEvents.AddEventHandler([this](const xiiCVarEvent& e) {
     if (e.m_EventType == xiiCVarEvent::ValueChanged)
     {
       RemoveAllCachedGrids();
@@ -680,7 +680,10 @@ xiiSpatialSystem_RegularGrid::xiiSpatialSystem_RegularGrid(xiiUInt32 uiCellSize 
   });
 }
 
-xiiSpatialSystem_RegularGrid::~xiiSpatialSystem_RegularGrid() = default;
+xiiSpatialSystem_RegularGrid::~xiiSpatialSystem_RegularGrid()
+{
+  cvar_SpatialQueriesCachingThreshold.m_CVarEvents.RemoveEventHandler(m_CVarSubscription);
+}
 
 xiiResult xiiSpatialSystem_RegularGrid::GetCellBoxForSpatialData(const xiiSpatialDataHandle& hData, xiiBoundingBox& out_boundingBox) const
 {
