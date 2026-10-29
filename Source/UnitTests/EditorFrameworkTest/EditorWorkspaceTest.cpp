@@ -48,6 +48,49 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
   scene.GetSelectionManager()->SetSelection(pSelected);
   QApplication::processEvents();
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Editor 2 command deck, tool workspaces and pinned inspection")
+  {
+    window.setFocus();
+    QApplication::processEvents();
+    auto* pDeck = pContainer->findChild<xiiQtToolBarActionMapView*>(QStringLiteral("EditorCommandDeck"));
+    XII_TEST_BOOL(pDeck && !pDeck->findChildren<QWidget*>(QStringLiteral("CommandDeckGroup")).isEmpty());
+    auto* pGrid = window.findChild<xiiQtPropertyGridWidget*>();
+    if (pGrid)
+    {
+      auto* pPin = pGrid->findChild<QToolButton*>(QStringLiteral("InspectorPin"));
+      pPin->setChecked(true);
+      scene.GetSelectionManager()->Clear();
+      XII_TEST_BOOL(pGrid->IsSelectionPinned());
+      bool bStillInspecting = false;
+      for (auto* pLabel : pGrid->findChildren<QLabel*>())
+        bStillInspecting |= pLabel->text().contains(QStringLiteral("Sphere"));
+      XII_TEST_BOOL(bStillInspecting);
+      pPin->setChecked(false);
+      scene.GetSelectionManager()->SetSelection(pSelected);
+    }
+    auto* pPanel = xiiQtAssetBrowserPanel::GetSingleton();
+    XII_TEST_RESULT(pContainer->FocusApplicationPanel(pPanel));
+    QApplication::processEvents();
+    XII_TEST_BOOL(pPanel->isVisible());
+    XII_TEST_BOOL(!window.isVisible());
+    xiiStringBuilder contentCapture(sOutputDirectory, "/Editor2ContentWorkspace.png");
+    XII_TEST_BOOL(pContainer->grab().save(xiiMakeQString(contentCapture)));
+    auto* pBrowser = pPanel->AssetBrowserWidget;
+    pBrowser->SearchWidget->setText(QStringLiteral("collection query"));
+    XII_TEST_RESULT(pBrowser->SaveCollection(QStringLiteral("Acceptance / Content")));
+    pBrowser->SearchWidget->setText(QString());
+    XII_TEST_RESULT(pBrowser->OpenCollection(QStringLiteral("Acceptance / Content")));
+    XII_TEST_BOOL(pBrowser->SearchWidget->text() == QStringLiteral("collection query"));
+    XII_TEST_BOOL(pBrowser->GetCollectionNames().contains(QStringLiteral("Acceptance / Content")));
+    XII_TEST_RESULT(pBrowser->RemoveCollection(QStringLiteral("Acceptance / Content")));
+    XII_TEST_BOOL(!pBrowser->GetCollectionNames().contains(QStringLiteral("Acceptance / Content")));
+    pBrowser->SearchWidget->setText(QString());
+    XII_TEST_RESULT(pContainer->RestoreEditingWorkspace());
+    window.EnsureVisible();
+    QApplication::processEvents();
+    XII_TEST_BOOL(window.isVisible());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Title-area menus retain live document and plugin actions")
   {
     window.setFocus();

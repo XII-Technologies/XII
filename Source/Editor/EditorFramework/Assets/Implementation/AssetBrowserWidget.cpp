@@ -17,10 +17,16 @@
 
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <QFile>
+#include <QInputDialog>
 #include <QLabel>
+#include <QLineEdit>
+#include <QSettings>
 #include <QShortcut>
 #include <QStyle>
 #include <QToolBar>
+#include <QToolButton>
+#include <QVBoxLayout>
+#include <ToolsFoundation/Application/ApplicationServices.h>
 
 xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   QWidget(pParent)
@@ -73,6 +79,92 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   ButtonShowItemsSubFolders->setText(tr("Subfolders"));
   pNavigation->addWidget(ButtonShowItemsSubFolders);
   RootLayout->insertWidget(0, pNavigation);
+  m_pStudioTools = new QToolBar(tr("Content tools"), this);
+  m_pStudioTools->setObjectName(QStringLiteral("ContentStudioTools"));
+  m_pStudioTools->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  auto* pCreate = new QToolButton(m_pStudioTools);
+  pCreate->setText(tr("New Asset"));
+  pCreate->setPopupMode(QToolButton::InstantPopup);
+  auto* pCreateMenu = new QMenu(pCreate);
+  pCreate->setMenu(pCreateMenu);
+  connect(pCreateMenu, &QMenu::aboutToShow, this, [this, pCreateMenu]() { pCreateMenu->clear(); AddAssetCreatorMenu(pCreateMenu, false); });
+  m_pStudioTools->addWidget(pCreate)->setProperty("BrowserOnly", true);
+  m_pImportSelection = m_pStudioTools->addAction(tr("Import Selection"));
+  m_pImportSelection->setProperty("BrowserOnly", true);
+  connect(m_pImportSelection, &QAction::triggered, this, &xiiQtAssetBrowserWidget::ImportSelection);
+  m_pStudioTools->addSeparator();
+  m_pStudioTools->addWidget(TypeFilter);
+  m_pStudioTools->addWidget(ResetTypeFilter);
+  auto* pCollections = new QToolButton(m_pStudioTools);
+  pCollections->setText(tr("Collections"));
+  pCollections->setPopupMode(QToolButton::InstantPopup);
+  auto* pCollectionsMenu = new QMenu(pCollections);
+  pCollections->setMenu(pCollectionsMenu);
+  m_pStudioTools->addWidget(pCollections)->setProperty("BrowserOnly", true);
+  connect(pCollectionsMenu, &QMenu::aboutToShow, this, [this, pCollectionsMenu]() {
+    pCollectionsMenu->clear();
+    auto* pSave = pCollectionsMenu->addAction(tr("Save Current Search..."));
+    connect(pSave, &QAction::triggered, this, [this]() {
+      bool       bAccepted = false;
+      const auto name      = QInputDialog::getText(this, tr("Save Collection"), tr("Collection name"), QLineEdit::Normal, QString(), &bAccepted);
+      if (bAccepted && SaveCollection(name).Failed())
+        xiiQtUiServices::MessageBoxWarning("The content collection could not be saved.");
+    });
+    auto* pRemove = pCollectionsMenu->addMenu(tr("Remove Collection"));
+    for (const auto& name : GetCollectionNames())
+    {
+      connect(pRemove->addAction(name), &QAction::triggered, this, [this, name]() {
+        if (RemoveCollection(name).Failed())
+          xiiQtUiServices::MessageBoxWarning("The content collection could not be removed.");
+      });
+      connect(pCollectionsMenu->addAction(name), &QAction::triggered, this, [this, name]() {
+        if (OpenCollection(name).Failed())
+          xiiQtUiServices::MessageBoxWarning("The content collection could not be opened.");
+      });
+    }
+  });
+  auto* pToolSpacer = new QWidget(m_pStudioTools);
+  pToolSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  m_pStudioTools->addWidget(pToolSpacer);
+  m_pStudioTools->addWidget(IconSizeSlider);
+  m_pStudioTools->addWidget(ButtonListMode);
+  m_pStudioTools->addWidget(ButtonIconMode);
+  RootLayout->insertWidget(1, m_pStudioTools);
+
+  m_pDetails = new QWidget(splitter);
+  m_pDetails->setObjectName(QStringLiteral("ContentSelectionDetails"));
+  m_pDetails->setMinimumWidth(220);
+  auto* pDetailsLayout = new QVBoxLayout(m_pDetails);
+  pDetailsLayout->setContentsMargins(12, 12, 12, 12);
+  auto* pHeading = new QLabel(tr("ASSET DETAILS"), m_pDetails);
+  pHeading->setForegroundRole(QPalette::PlaceholderText);
+  pDetailsLayout->addWidget(pHeading);
+  m_pAssetIdentity = new QLabel(tr("Select content to inspect"), m_pDetails);
+  m_pAssetIdentity->setWordWrap(true);
+  auto identityFont = m_pAssetIdentity->font();
+  identityFont.setBold(true);
+  identityFont.setPointSizeF(identityFont.pointSizeF() + 2);
+  m_pAssetIdentity->setFont(identityFont);
+  pDetailsLayout->addWidget(m_pAssetIdentity);
+  m_pAssetPath = new QLabel(m_pDetails);
+  m_pAssetPath->setWordWrap(true);
+  m_pAssetPath->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  pDetailsLayout->addWidget(m_pAssetPath);
+  m_pAssetState = new QLabel(m_pDetails);
+  m_pAssetState->setWordWrap(true);
+  pDetailsLayout->addWidget(m_pAssetState);
+  auto* pDetailActions = new QToolBar(m_pDetails);
+  pDetailActions->setOrientation(Qt::Vertical);
+  pDetailActions->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  m_pOpenSelection = pDetailActions->addAction(tr("Open Asset"));
+  connect(m_pOpenSelection, &QAction::triggered, this, &xiiQtAssetBrowserWidget::OnListOpenAssetDocument);
+  m_pTransformSelection = pDetailActions->addAction(tr("Transform Selection"));
+  connect(m_pTransformSelection, &QAction::triggered, this, &xiiQtAssetBrowserWidget::OnTransform);
+  m_pReferences = pDetailActions->addAction(tr("Find References"));
+  connect(m_pReferences, &QAction::triggered, this, [this]() { OnListFindAllReferences(false); });
+  pDetailsLayout->addWidget(pDetailActions);
+  pDetailsLayout->addStretch();
+  splitter->addWidget(m_pDetails);
   for (const auto& entry : {qMakePair(QKeySequence(Qt::ALT | Qt::Key_Left), -1), qMakePair(QKeySequence(Qt::ALT | Qt::Key_Right), 1)})
   {
     auto* pShortcut = new QShortcut(entry.first, this);
@@ -136,6 +228,127 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   setAcceptDrops(true);
   OnPathFilterChanged();
+  connect(ListAssets->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() { UpdateSelectionDetails(); });
+  connect(ListAssets->selectionModel(), &QItemSelectionModel::currentChanged, this, [this]() { UpdateSelectionDetails(); });
+  connect(m_pModel.data(), &QAbstractItemModel::dataChanged, this, [this]() { UpdateSelectionDetails(); });
+  connect(m_pModel.data(), &QAbstractItemModel::modelReset, this, [this]() { UpdateSelectionDetails(); });
+  UpdateSelectionDetails();
+}
+
+void xiiQtAssetBrowserWidget::UpdateSelectionDetails()
+{
+  const auto                                  selected = ListAssets->selectionModel()->selectedRows();
+  const auto                                  current  = ListAssets->currentIndex();
+  const xiiBitflags<xiiAssetBrowserItemFlags> flags    = static_cast<xiiAssetBrowserItemFlags::Enum>(current.data(xiiQtAssetBrowserModel::ItemFlags).toInt());
+  const bool                                  bAsset   = flags.IsAnySet(xiiAssetBrowserItemFlags::Asset | xiiAssetBrowserItemFlags::SubAsset);
+  m_pAssetIdentity->setText(selected.isEmpty() ? tr("Select content to inspect") : (selected.size() > 1 ? tr("%1 items selected").arg(selected.size()) : current.data(Qt::DisplayRole).toString()));
+  m_pAssetPath->setText(current.data(xiiQtAssetBrowserModel::RelativePath).toString());
+  const auto state = static_cast<xiiAssetInfo::TransformState>(current.data(xiiQtAssetBrowserModel::TransformState).toInt());
+  QString    sState;
+  if (bAsset)
+  {
+    switch (state)
+    {
+      case xiiAssetInfo::UpToDate:
+        sState = tr("Ready");
+        break;
+      case xiiAssetInfo::NeedsImport:
+        sState = tr("Import required");
+        break;
+      case xiiAssetInfo::NeedsTransform:
+        sState = tr("Transformation pending");
+        break;
+      case xiiAssetInfo::NeedsThumbnail:
+        sState = tr("Thumbnail pending");
+        break;
+      case xiiAssetInfo::TransformError:
+        sState = tr("Transformation failed. See asset diagnostics.");
+        break;
+      case xiiAssetInfo::MissingTransformDependency:
+      case xiiAssetInfo::MissingThumbnailDependency:
+      case xiiAssetInfo::MissingPackageDependency:
+        sState = tr("Missing dependency. See asset diagnostics.");
+        break;
+      case xiiAssetInfo::CircularDependency:
+        sState = tr("Circular dependency. See asset diagnostics.");
+        break;
+      default:
+        sState = tr("Asset state is being evaluated");
+        break;
+    }
+  }
+  m_pAssetState->setText(sState);
+  m_pOpenSelection->setEnabled(bAsset && !selected.isEmpty());
+  m_pTransformSelection->setEnabled(bAsset && !selected.isEmpty());
+  m_pReferences->setEnabled(bAsset && selected.size() == 1);
+  xiiDynamicArray<xiiString> importable;
+  GetSelectedImportableFiles(importable);
+  m_pImportSelection->setEnabled(!importable.IsEmpty());
+}
+
+QStringList xiiQtAssetBrowserWidget::GetCollectionNames() const
+{
+  if (!xiiToolsProject::IsProjectOpen())
+    return {};
+  xiiStringBuilder path = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  path.AppendPath("content-collections.settings");
+  QSettings   settings(xiiMakeQString(path), QSettings::IniFormat);
+  QStringList result;
+  for (const auto& key : settings.childGroups())
+    result.push_back(settings.value(key + QStringLiteral("/Name")).toString());
+  result.sort(Qt::CaseInsensitive);
+  return result;
+}
+
+xiiResult xiiQtAssetBrowserWidget::RemoveCollection(const QString& sName)
+{
+  if (m_Mode != Mode::Browser || !xiiToolsProject::IsProjectOpen() || sName.trimmed().isEmpty())
+    return XII_FAILURE;
+  xiiStringBuilder path = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  path.AppendPath("content-collections.settings");
+  QSettings settings(xiiMakeQString(path), QSettings::IniFormat);
+  settings.remove(QString::fromLatin1(sName.trimmed().toUtf8().toHex()));
+  settings.sync();
+  return settings.status() == QSettings::NoError ? XII_SUCCESS : XII_FAILURE;
+}
+
+xiiResult xiiQtAssetBrowserWidget::SaveCollection(const QString& sName)
+{
+  if (m_Mode != Mode::Browser || !xiiToolsProject::IsProjectOpen() || sName.trimmed().isEmpty() || sName.size() > 80)
+    return XII_FAILURE;
+  xiiStringBuilder path = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  path.AppendPath("content-collections.settings");
+  QSettings settings(xiiMakeQString(path), QSettings::IniFormat);
+  settings.beginGroup(QString::fromLatin1(sName.trimmed().toUtf8().toHex()));
+  settings.setValue(QStringLiteral("Name"), sName.trimmed());
+  settings.setValue(QStringLiteral("Path"), xiiMakeQString(m_pFilter->GetPathFilter()));
+  settings.setValue(QStringLiteral("Search"), SearchWidget->text());
+  settings.setValue(QStringLiteral("Type"), xiiMakeQString(m_pFilter->GetTypeFilter()));
+  settings.setValue(QStringLiteral("Recursive"), m_pFilter->GetShowItemsInSubFolders());
+  settings.endGroup();
+  settings.sync();
+  return settings.status() == QSettings::NoError ? XII_SUCCESS : XII_FAILURE;
+}
+
+xiiResult xiiQtAssetBrowserWidget::OpenCollection(const QString& sName)
+{
+  if (m_Mode != Mode::Browser || !xiiToolsProject::IsProjectOpen())
+    return XII_FAILURE;
+  xiiStringBuilder path = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  path.AppendPath("content-collections.settings");
+  QSettings settings(xiiMakeQString(path), QSettings::IniFormat);
+  settings.beginGroup(QString::fromLatin1(sName.trimmed().toUtf8().toHex()));
+  if (!settings.contains(QStringLiteral("Name")))
+    return XII_FAILURE;
+  m_pFilter->SetPathFilter(settings.value(QStringLiteral("Path")).toString().toUtf8().constData());
+  m_pFilter->SetTypeFilter(settings.value(QStringLiteral("Type")).toString().toUtf8().constData());
+  m_pFilter->SetShowItemsInSubFolders(settings.value(QStringLiteral("Recursive"), true).toBool());
+  {
+    const QSignalBlocker block(ButtonShowItemsSubFolders);
+    ButtonShowItemsSubFolders->setChecked(m_pFilter->GetShowItemsInSubFolders());
+  }
+  SearchWidget->setText(settings.value(QStringLiteral("Search")).toString());
+  return XII_SUCCESS;
 }
 
 xiiQtAssetBrowserWidget::~xiiQtAssetBrowserWidget()
@@ -336,6 +549,10 @@ void xiiQtAssetBrowserWidget::UpdateAssetTypes()
 
 void xiiQtAssetBrowserWidget::SetMode(Mode mode)
 {
+  m_pDetails->setVisible(mode == Mode::Browser);
+  for (auto* pAction : m_pStudioTools->actions())
+    if (pAction->property("BrowserOnly").toBool())
+      pAction->setVisible(mode == Mode::Browser);
   if (m_Mode == mode)
     return;
 
