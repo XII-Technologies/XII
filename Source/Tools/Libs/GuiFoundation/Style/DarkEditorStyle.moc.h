@@ -25,6 +25,12 @@ public:
   /// Returns a standard palette constructed from dark theme colours.
   QPalette standardPalette() const override;
 
+  int   pixelMetric(PixelMetric metric, const QStyleOption* pOption = nullptr, const QWidget* pWidget = nullptr) const override;
+  QSize sizeFromContents(ContentsType type, const QStyleOption* pOption, const QSize& size, const QWidget* pWidget = nullptr) const override;
+
+  /// Apply the same dock presentation to container and document dock managers.
+  static void ApplyDockStyle(QWidget* pDockManager);
+
 private:
   /// Helper to build a palette from the theme colours.
   QPalette BuildPaletteFromTheme() const;

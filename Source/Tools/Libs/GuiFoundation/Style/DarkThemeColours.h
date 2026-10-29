@@ -15,10 +15,10 @@ struct XII_GUIFOUNDATION_DLL xiiQtDarkThemeColours
   /// \name Base Surfaces.
   ///@{
 
-  QColor m_Window  = QColor(28, 28, 30); ///< Background color of main windows.
-  QColor m_Base    = QColor(18, 18, 20); ///< Background color for input fields and scene graphs.
-  QColor m_AltBase = QColor(36, 36, 38); ///< Background for alternating rows in views.
-  QColor m_Shadow  = QColor(0, 0, 0);    ///< Shadow color used in UI elements like property grid arrays.
+  QColor m_Window  = QColor(32, 35, 40); ///< Background color of main windows.
+  QColor m_Base    = QColor(23, 26, 31); ///< Background color for input fields and scene graphs.
+  QColor m_AltBase = QColor(37, 40, 46); ///< Background for alternating rows in views.
+  QColor m_Shadow  = QColor(16, 18, 22); ///< Shadow color used in UI elements like property grid arrays.
 
   ///@}
 
@@ -29,36 +29,36 @@ struct XII_GUIFOUNDATION_DLL xiiQtDarkThemeColours
   QColor m_Text        = QColor(220, 220, 220); ///< Default text color.
   QColor m_BrightText  = QColor(255, 85, 85);   ///< Bright text used for alerts or emphasis.
   QColor m_ButtonText  = QColor(220, 220, 220); ///< Text color for buttons.
-  QColor m_Placeholder = QColor(140, 140, 140); ///< Color for placeholder text in input fields.
+  QColor m_Placeholder = QColor(153, 161, 174); ///< Color for placeholder text in input fields.
 
   ///@}
 
   /// \name Buttons & Controls
   ///@{
 
-  QColor m_Button   = QColor(40, 40, 42); ///< Background color for buttons and toolbars.
-  QColor m_Light    = QColor(60, 60, 60); ///< Light accent used in gradients and tab lines.
-  QColor m_Midlight = QColor(55, 55, 55); ///< Midlight accent used in subtle highlights.
-  QColor m_Dark     = QColor(35, 35, 35); ///< Dark accent used for underlines and separators.
-  QColor m_Mid      = QColor(45, 45, 45); ///< Mid-tone used for group box outlines and borders.
+  QColor m_Button   = QColor(43, 47, 54); ///< Background color for buttons and toolbars.
+  QColor m_Light    = QColor(64, 70, 80); ///< Light accent used in gradients and tab lines.
+  QColor m_Midlight = QColor(55, 61, 70); ///< Midlight accent used in subtle highlights.
+  QColor m_Dark     = QColor(28, 31, 37); ///< Dark accent used for underlines and separators.
+  QColor m_Mid      = QColor(49, 55, 64); ///< Mid-tone used for group box outlines and borders.
 
   ///@}
 
   /// \name Highlights & Links.
   ///@{
 
-  QColor m_Highlight     = QColor(0, 122, 204);   ///< Highlight color used for selections.
+  QColor m_Highlight     = QColor(37, 116, 145);  ///< Highlight color used for selections.
   QColor m_HighlightText = QColor(255, 255, 255); ///< Text color when highlighted.
-  QColor m_Link          = QColor(0, 122, 204);   ///< Color for hyperlinks.
-  QColor m_LinkVisited   = QColor(128, 100, 162); ///< Color for visited hyperlinks.
+  QColor m_Link          = QColor(107, 187, 209); ///< Color for hyperlinks.
+  QColor m_LinkVisited   = QColor(161, 147, 198); ///< Color for visited hyperlinks.
 
   ///@}
 
   /// \name Tooltips.
   ///@{
 
-  QColor m_ToolTipBase = QColor(255, 255, 240); ///< Background color of tooltips.
-  QColor m_ToolTipText = QColor(0, 0, 0);       ///< Text color within tooltips.
+  QColor m_ToolTipBase = QColor(43, 47, 54);    ///< Background color of tooltips.
+  QColor m_ToolTipText = QColor(235, 238, 242); ///< Text color within tooltips.
 
   ///@}
 
@@ -66,7 +66,7 @@ struct XII_GUIFOUNDATION_DLL xiiQtDarkThemeColours
   ///@{
 
   QColor m_DisabledWindowText = QColor(128, 128, 128); ///< Text color for disabled window elements.
-  QColor m_DisabledButton     = QColor(35, 35, 35);    ///< Background color for disabled buttons.
+  QColor m_DisabledButton     = QColor(28, 31, 37);    ///< Background color for disabled buttons.
   QColor m_DisabledText       = QColor(105, 105, 105); ///< Text color for disabled input fields.
   QColor m_DisabledButtonText = QColor(128, 128, 128); ///< Text color for disabled buttons.
   QColor m_DisabledHighlight  = QColor(70, 90, 110);   ///< Highlight color in disabled state.

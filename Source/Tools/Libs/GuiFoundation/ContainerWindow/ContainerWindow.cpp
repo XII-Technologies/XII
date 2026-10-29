@@ -6,6 +6,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
+#include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 #include <QCloseEvent>
 #include <QLabel>
 #include <QLayout>
@@ -104,6 +105,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   ads::CDockManager::setAutoHideConfigFlags(autoHideFlags);
 
   m_pDockManager = new ads::CDockManager(this);
+  xiiQtDarkEditorStyle::ApplyDockStyle(m_pDockManager);
 
   connect(m_pDockManager, &ads::CDockManager::floatingWidgetCreated, this, &xiiQtContainerWindow::SlotFloatingWidgetOpened);
 }

@@ -3,6 +3,9 @@
 #include <GuiFoundation/GuiFoundationPCH.h>
 
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
+#include <QApplication>
+#include <QStyleFactory>
+#include <QWidget>
 
 xiiQtDarkEditorStyle::xiiQtDarkEditorStyle(QStyle* pBaseStyle) :
   QProxyStyle(pBaseStyle ? pBaseStyle : QStyleFactory::create("fusion"))
@@ -20,6 +23,63 @@ void xiiQtDarkEditorStyle::ApplyPalette()
 QPalette xiiQtDarkEditorStyle::standardPalette() const
 {
   return BuildPaletteFromTheme();
+}
+
+int xiiQtDarkEditorStyle::pixelMetric(PixelMetric metric, const QStyleOption* pOption, const QWidget* pWidget) const
+{
+  // Qt scales these logical pixels for each screen. Never multiply by devicePixelRatio here.
+  switch (metric)
+  {
+    case PM_SmallIconSize:
+    case PM_ToolBarIconSize:
+      return 16;
+    case PM_ToolBarItemMargin:
+    case PM_ToolBarItemSpacing:
+      return 2;
+    case PM_ToolBarFrameWidth:
+      return 0;
+    case PM_DockWidgetSeparatorExtent:
+      return 4;
+    case PM_ScrollBarExtent:
+      return 12;
+    default:
+      return QProxyStyle::pixelMetric(metric, pOption, pWidget);
+  }
+}
+
+QSize xiiQtDarkEditorStyle::sizeFromContents(ContentsType type, const QStyleOption* pOption, const QSize& size, const QWidget* pWidget) const
+{
+  QSize result = QProxyStyle::sizeFromContents(type, pOption, size, pWidget);
+  switch (type)
+  {
+    case CT_PushButton:
+    case CT_ToolButton:
+    case CT_ComboBox:
+    case CT_LineEdit:
+    case CT_SpinBox:
+      result.setHeight(qMax(result.height(), pWidget ? pWidget->fontMetrics().height() + 10 : 28));
+      break;
+    case CT_MenuItem:
+      result.rheight() += 4;
+      break;
+    default:
+      break;
+  }
+  return result;
+}
+
+void xiiQtDarkEditorStyle::ApplyDockStyle(QWidget* pDockManager)
+{
+  // Append to ADS's own sheet so platform-specific buttons and auto-hide behavior survive.
+  pDockManager->setStyleSheet(pDockManager->styleSheet() + QStringLiteral(R"(
+ads--CDockAreaTitleBar { background: palette(window); border-bottom: 1px solid palette(dark); }
+ads--CDockWidgetTab { background: palette(window); border: 0; border-top: 2px solid transparent; padding: 4px 8px; }
+ads--CDockWidgetTab[activeTab="true"] { background: palette(button); border-top: 2px solid palette(highlight); }
+ads--CDockWidgetTab[focused="true"] { background: palette(button); border-top: 2px solid palette(highlight); }
+ads--CDockWidgetTab QLabel { color: palette(text); }
+ads--CDockWidget { border: 0; background: palette(window); }
+ads--CDockSplitter::handle { background: palette(shadow); }
+)"));
 }
 
 QPalette xiiQtDarkEditorStyle::BuildPaletteFromTheme() const
