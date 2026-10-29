@@ -6,6 +6,7 @@
 #include <Foundation/Containers/Set.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/DdlSerializer.h>
+#include <Foundation/Serialization/GraphVersioning.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -222,7 +223,36 @@ bool xiiSettings::HasSameValues(const xiiSettings& other) const
 xiiResult xiiSettings::ReadFromDDL(xiiStreamReader& ref_stream)
 {
   xiiAbstractObjectGraph graph;
-  XII_SUCCEED_OR_RETURN(xiiAbstractGraphDdlSerializer::Read(ref_stream, &graph));
+  xiiAbstractObjectGraph types;
+  XII_SUCCEED_OR_RETURN(xiiAbstractGraphDdlSerializer::Read(ref_stream, &graph, &types, false));
+  const bool bHasTypeGraph = !types.GetAllNodes().IsEmpty();
+  if (!bHasTypeGraph)
+  {
+    // Legacy .pref files have node versions but no type graph. Graph versioning otherwise
+    // falls back to current RTTI versions, skipping the old node's migration entirely.
+    xiiMap<xiiString, xiiUInt32> versions;
+    for (const auto& entry : graph.GetAllNodes())
+    {
+      const auto* pNode = entry.Value();
+      if (auto it = versions.Find(pNode->GetType()); it.IsValid())
+      {
+        if (it.Value() != pNode->GetTypeVersion())
+          return XII_FAILURE;
+        continue;
+      }
+      versions.Insert(pNode->GetType(), pNode->GetTypeVersion());
+      const auto* pType = xiiRTTI::FindTypeByName(pNode->GetType());
+      if (pType == nullptr)
+        continue;
+      auto* pVersion = types.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
+      pVersion->AddProperty("TypeName", xiiString(pNode->GetType()));
+      pVersion->AddProperty("TypeVersion", pNode->GetTypeVersion());
+      pVersion->AddProperty("ParentTypeName", pType->GetParentType() ? xiiString(pType->GetParentType()->GetTypeName()) : xiiString());
+    }
+  }
+  if (bHasTypeGraph)
+    xiiGraphVersioning::GetSingleton()->PatchGraph(&types);
+  xiiGraphVersioning::GetSingleton()->PatchGraph(&graph, &types);
   return ReadFromGraph(graph);
 }
 
