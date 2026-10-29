@@ -13,6 +13,7 @@
 #include <GuiFoundation/Widgets/WindowTitleBar.h>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QDataStream>
 #include <QInputDialog>
 #include <QLabel>
 #include <QLayout>
@@ -40,6 +41,17 @@ bool                  xiiQtContainerWindow::s_bForceClose      = false;
 
 namespace
 {
+  QVariantMap ReadEditingWorkspace(const QByteArray& data)
+  {
+    QVariantMap snapshot;
+    if (!data.isEmpty())
+    {
+      QDataStream stream(data);
+      stream >> snapshot;
+    }
+    return snapshot;
+  }
+
   bool GetProjectLayoutPath(xiiStringBuilder& out_sFile, bool bWrite)
   {
     if (!xiiToolsProject::IsProjectOpen())
@@ -324,7 +336,7 @@ void xiiQtContainerWindow::UpdateCommandDeck(xiiQtDocumentWindow* pWindow)
   if (!m_pCommandDeck)
     return;
   xiiQtToolBarActionMapView* pSource = nullptr;
-  if (pWindow && pWindow->window() == this)
+  if (pWindow && pWindow->window() == this && m_EditingWorkspaceState.isEmpty())
   {
     const auto tools = pWindow->findChildren<xiiQtToolBarActionMapView*>(QString(), Qt::FindDirectChildrenOnly);
     if (!tools.isEmpty())
@@ -385,6 +397,59 @@ QStringList xiiQtContainerWindow::GetWorkspaceNames() const
   return names;
 }
 
+xiiResult xiiQtContainerWindow::FocusApplicationPanel(xiiQtApplicationPanel* pPanel)
+{
+  if (!m_bWindowPresentationEnabled || !pPanel || m_ApplicationPanels.IndexOf(pPanel) == xiiInvalidIndex)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(RestoreEditingWorkspace());
+  QVariantMap snapshot;
+  snapshot.insert(QStringLiteral("Shell"), m_pDockManager->saveState(1));
+  for (auto* pWindow : m_DocumentWindows)
+    snapshot.insert(xiiMakeQString(pWindow->GetUniqueName()), pWindow->m_pDockManager->saveState());
+  QDataStream stream(&m_EditingWorkspaceState, QIODevice::WriteOnly);
+  stream << snapshot;
+  for (auto* pDocument : m_DocumentDocks)
+    pDocument->toggleView(false);
+  for (auto* pTool : m_ApplicationPanels)
+    pTool->toggleView(false);
+  if (pPanel->isAutoHide())
+    pPanel->setAutoHide(false);
+  m_pDockManager->removeDockWidget(pPanel);
+  m_pDockManager->addDockWidget(ads::TopDockWidgetArea, pPanel);
+  pPanel->toggleView(true);
+  pPanel->setFocus();
+  UpdateDocumentMenu();
+  Q_EMIT WorkspaceToolChanged(pPanel->objectName());
+  return XII_SUCCESS;
+}
+
+xiiResult xiiQtContainerWindow::RestoreEditingWorkspace()
+{
+  if (m_EditingWorkspaceState.isEmpty())
+    return XII_SUCCESS;
+  const auto snapshot = ReadEditingWorkspace(m_EditingWorkspaceState);
+  if (!m_pDockManager->restoreState(snapshot.value(QStringLiteral("Shell")).toByteArray(), 1))
+    return XII_FAILURE;
+  // ADS may temporarily detach nested document docks while restoring its root.
+  // Reattach them from the same snapshot before making the documents visible.
+  for (auto* pWindow : m_DocumentWindows)
+  {
+    const auto documentState = snapshot.value(xiiMakeQString(pWindow->GetUniqueName())).toByteArray();
+    if (!documentState.isEmpty() && !pWindow->m_pDockManager->restoreState(documentState))
+      return XII_FAILURE;
+  }
+  m_EditingWorkspaceState.clear();
+  for (auto* pDock : m_DocumentDocks)
+  {
+    if (!pDock->dockContainer())
+      m_pDockManager->addDockWidgetTab(ads::TopDockWidgetArea, pDock);
+    pDock->toggleView(true);
+  }
+  UpdateDocumentMenu();
+  Q_EMIT WorkspaceToolChanged(QString());
+  return XII_SUCCESS;
+}
+
 xiiResult xiiQtContainerWindow::SaveWorkspace(const QString& sName)
 {
   if (!xiiToolsProject::IsProjectOpen() || !m_bWindowPresentationEnabled || sName.trimmed().isEmpty() || sName.size() > 80)
@@ -395,7 +460,7 @@ xiiResult xiiQtContainerWindow::SaveWorkspace(const QString& sName)
   settings.beginGroup(QString::fromLatin1(sName.trimmed().toUtf8().toHex()));
   settings.remove(QString());
   settings.setValue(QStringLiteral("Name"), sName.trimmed());
-  settings.setValue(QStringLiteral("Shell"), m_pDockManager->saveState(1));
+  settings.setValue(QStringLiteral("Shell"), m_EditingWorkspaceState.isEmpty() ? m_pDockManager->saveState(1) : ReadEditingWorkspace(m_EditingWorkspaceState).value(QStringLiteral("Shell")).toByteArray());
   for (auto* pWindow : m_DocumentWindows)
   {
     const auto group = xiiMakeQString(pWindow->GetWindowLayoutGroupName()).toUtf8().toHex();
@@ -410,6 +475,7 @@ xiiResult xiiQtContainerWindow::RestoreWorkspace(const QString& sName)
 {
   if (!xiiToolsProject::IsProjectOpen() || !m_bWindowPresentationEnabled || !xiiQtDocumentWindow::s_bAllowRestoreWindowLayout)
     return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(RestoreEditingWorkspace());
   xiiStringBuilder file = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
   file.AppendPath("workspaces.settings");
   QSettings settings(xiiMakeQString(file), QSettings::IniFormat);
@@ -540,7 +606,7 @@ void xiiQtContainerWindow::SaveWindowLayout()
   QSettings Settings(xiiToolsProject::IsProjectOpen() ? sProjectFile.GetData() : sFile.GetData(), QSettings::IniFormat);
   Settings.beginGroup(QString::fromUtf8("ContainerWnd_xiiEditor"));
   {
-    Settings.setValue("DockManagerState", m_pDockManager->saveState(1));
+    Settings.setValue("DockManagerState", m_EditingWorkspaceState.isEmpty() ? m_pDockManager->saveState(1) : ReadEditingWorkspace(m_EditingWorkspaceState).value(QStringLiteral("Shell")).toByteArray());
     Settings.setValue("WindowGeometry", saveGeometry());
     Settings.setValue("WindowState", saveState());
   }
@@ -860,6 +926,7 @@ void xiiQtContainerWindow::AddApplicationPanel(xiiQtApplicationPanel* pPanel)
 
 xiiResult xiiQtContainerWindow::EnsureVisible(xiiQtDocumentWindow* pDocWindow)
 {
+  XII_SUCCEED_OR_RETURN(RestoreEditingWorkspace());
   const auto uiListIndex = m_DocumentWindows.IndexOf(pDocWindow);
 
   if (uiListIndex == xiiInvalidIndex)
@@ -1000,6 +1067,8 @@ void xiiQtContainerWindow::ProjectEventHandler(const xiiToolsProjectEvent& e)
   {
     case xiiToolsProjectEvent::Type::ProjectOpened:
     case xiiToolsProjectEvent::Type::ProjectClosed:
+      if (e.m_Type == xiiToolsProjectEvent::Type::ProjectClosed)
+        m_EditingWorkspaceState.clear();
       UpdateWindowTitle();
       break;
 
