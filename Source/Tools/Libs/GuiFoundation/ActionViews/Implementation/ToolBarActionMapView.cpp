@@ -17,6 +17,7 @@ xiiQtToolBarActionMapView::xiiQtToolBarActionMapView(QString sTitle, QWidget* pP
 {
   setIconSize(QSize(16, 16));
   setFloatable(false);
+  setMovable(false);
 
   toggleViewAction()->setEnabled(false);
 }
@@ -40,7 +41,15 @@ void xiiQtToolBarActionMapView::SetActionContext(const xiiActionContext& context
 
 void xiiQtToolBarActionMapView::setVisible(bool bVisible)
 {
-  QToolBar::setVisible(true);
+  QToolBar::setVisible(bVisible);
+}
+
+void xiiQtToolBarActionMapView::SetShowMenuLabels(bool bShow)
+{
+  m_bShowMenuLabels = bShow;
+  for (auto* pAction : actions())
+    if (auto* pButton = qobject_cast<QToolButton*>(widgetForAction(pAction)); pButton && pButton->menu())
+      pButton->setToolButtonStyle(bShow ? Qt::ToolButtonTextBesideIcon : Qt::ToolButtonIconOnly);
 }
 
 void xiiQtToolBarActionMapView::ClearView()
@@ -105,9 +114,11 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
         pButton->setText(pQtMenu->title());
         pButton->setIcon(xiiQtUiServices::GetCachedIconResource(pNamed->GetIconPath()));
         pButton->setToolTip(pQtMenu->toolTip());
-
-        pNamed->m_StatusUpdateEvent.AddEventHandler([=](xiiAction* pAction) {
-          pButton->setIcon(xiiQtUiServices::GetCachedIconResource(pNamed->GetIconPath()));
+        pButton->setToolButtonStyle(m_bShowMenuLabels ? Qt::ToolButtonTextBesideIcon : Qt::ToolButtonIconOnly);
+        connect(pQtMenu->menuAction(), &QAction::changed, pButton, [pButton, pQtMenu]() {
+          pButton->setText(pQtMenu->title());
+          pButton->setIcon(pQtMenu->icon());
+          pButton->setToolTip(pQtMenu->toolTip());
         });
 
         // TODO addWidget return value of QAction leaks!
@@ -128,6 +139,7 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
         pButton->setDefaultAction(pQtAction);
         pButton->setMenu(pQtMenu);
         pButton->setPopupMode(QToolButton::ToolButtonPopupMode::MenuButtonPopup);
+        pButton->setToolButtonStyle(m_bShowMenuLabels ? Qt::ToolButtonTextBesideIcon : Qt::ToolButtonIconOnly);
 
         // TODO addWidget return value of QAction leaks!
         QAction* pToolButtonAction = addWidget(pButton);

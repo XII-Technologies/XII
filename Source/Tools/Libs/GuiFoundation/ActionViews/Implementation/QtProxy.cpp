@@ -314,6 +314,17 @@ void xiiQtMenuProxy::Update()
   // therefore there is another event handler in xiiQtToolBarActionMapView::CreateView()
   m_pMenu->setIcon(xiiQtUiServices::GetCachedIconResource(pMenu->GetIconPath()));
   m_pMenu->setTitle(xiiMakeQString(xiiTranslate(pMenu->GetName())));
+  if (auto* pEnumeration = xiiDynamicCast<xiiEnumerationMenuAction*>(pMenu))
+  {
+    xiiDynamicArray<xiiDynamicMenuAction::Item> entries;
+    pEnumeration->GetEntries(entries);
+    for (const auto& entry : entries)
+      if (entry.m_CheckState == xiiDynamicMenuAction::Item::CheckMark::Checked)
+      {
+        m_pMenu->setTitle(xiiMakeQString(xiiTranslate(entry.m_sDisplay)));
+        break;
+      }
+  }
   m_pMenu->setToolTip(xiiMakeQString(xiiTranslateTooltip(pMenu->GetName())));
 }
 
@@ -326,6 +337,7 @@ void xiiQtMenuProxy::SetAction(xiiAction* pAction)
   Update();
 
   m_pAction->m_StatusUpdateEvent.AddEventHandler(xiiMakeDelegate(&xiiQtMenuProxy::StatusUpdateEventHandler, this));
+  connect(m_pMenu, &QMenu::aboutToShow, this, &xiiQtMenuProxy::Update);
 }
 
 QMenu* xiiQtMenuProxy::GetQMenu()

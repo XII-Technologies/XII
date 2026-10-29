@@ -10,11 +10,13 @@
 xiiActionDescriptorHandle xiiViewActions::s_hRenderMode;
 xiiActionDescriptorHandle xiiViewActions::s_hPerspective;
 xiiActionDescriptorHandle xiiViewActions::s_hNavigationGizmo;
+xiiActionDescriptorHandle xiiViewActions::s_hOptions;
 xiiActionDescriptorHandle xiiViewActions::s_hActivateRemoteProcess;
 xiiActionDescriptorHandle xiiViewActions::s_hLinkDeviceCamera;
 
 void xiiViewActions::RegisterActions()
 {
+  s_hOptions               = XII_REGISTER_MENU("View.Options");
   s_hNavigationGizmo       = XII_REGISTER_ACTION_1("View.NavigationGizmo", xiiActionScope::Window, "View", "", xiiViewAction, xiiViewAction::ButtonType::NavigationGizmo);
   s_hRenderMode            = XII_REGISTER_DYNAMIC_MENU("View.RenderMode", xiiRenderModeAction, ":/EditorFramework/Icons/RenderMode.svg");
   s_hPerspective           = XII_REGISTER_DYNAMIC_MENU("View.RenderPerspective", xiiPerspectiveAction, ":/EditorFramework/Icons/Perspective.svg");
@@ -24,6 +26,7 @@ void xiiViewActions::RegisterActions()
 
 void xiiViewActions::UnregisterActions()
 {
+  xiiActionManager::UnregisterAction(s_hOptions);
   xiiActionManager::UnregisterAction(s_hRenderMode);
   xiiActionManager::UnregisterAction(s_hPerspective);
   xiiActionManager::UnregisterAction(s_hNavigationGizmo);
@@ -42,13 +45,17 @@ void xiiViewActions::MapToolbarActions(xiiStringView sMapping, xiiUInt32 uiFlags
   if (uiFlags & Flags::RenderMode)
   {
     pMap->MapAction(s_hRenderMode, "", 2.0f);
-    pMap->MapAction(s_hNavigationGizmo, "", 3.0f);
   }
+
+  if (uiFlags & (Flags::RenderMode | Flags::ActivateRemoteProcess))
+    pMap->MapAction(s_hOptions, "", 3.0f);
+  if (uiFlags & Flags::RenderMode)
+    pMap->MapAction(s_hNavigationGizmo, "View.Options", 1.0f);
 
   if (uiFlags & Flags::ActivateRemoteProcess)
   {
-    pMap->MapAction(s_hActivateRemoteProcess, "", 4.0f);
-    pMap->MapAction(s_hLinkDeviceCamera, "", 5.0f);
+    pMap->MapAction(s_hActivateRemoteProcess, "View.Options", 2.0f);
+    pMap->MapAction(s_hLinkDeviceCamera, "View.Options", 3.0f);
   }
 }
 
