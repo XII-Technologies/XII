@@ -123,29 +123,12 @@ void xiiQtCollapsibleGroupBox::paintEvent(QPaintEvent* event)
   QRect hr = Header->contentsRect();
   hr.moveTopLeft(Header->pos());
 
-  QRect cr = wr;
-  cr.setTop(hr.height());
-  cr.adjust(Rounding / 2, 0, 0, -Rounding / 2);
-
   if (m_FillColor.isValid())
   {
-    QLinearGradient colorGradient(wr.topLeft(), wr.bottomLeft());
-    colorGradient.setColorAt(0.5f, m_FillColor);
-
-    if (!m_bCollapsed)
-      colorGradient.setColorAt(0.9f, pal.mid().color());
-
-    QRectF wrAdjusted = wr;
-    wrAdjusted.adjust(0.5, 0.5, Rounding, -0.5);
-    QPainterPath oPath;
-    oPath.addRoundedRect(wrAdjusted, Rounding, Rounding);
-    p.fillPath(oPath, colorGradient);
-
-    QRectF crAdjusted = cr;
-    crAdjusted.adjust(0.5, 0.5, Rounding, -0.5);
-    QPainterPath path;
-    path.addRoundedRect(crAdjusted, Rounding, Rounding);
-    p.fillPath(path, colorGradient);
+    p.fillRect(wr, pal.base());
+    p.fillRect(hr, pal.alternateBase());
+    // Retain component/category identity without tinting every property control.
+    p.fillRect(QRect(hr.left(), hr.top(), 3, hr.height()), m_FillColor);
   }
 
   if (!Header->isHidden())

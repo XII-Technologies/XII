@@ -57,7 +57,7 @@ QSize xiiQtDarkEditorStyle::sizeFromContents(ContentsType type, const QStyleOpti
     case CT_ComboBox:
     case CT_LineEdit:
     case CT_SpinBox:
-      result.setHeight(qMax(result.height(), pWidget ? pWidget->fontMetrics().height() + 10 : 28));
+      result.setHeight(qMax(result.height(), pWidget ? pWidget->fontMetrics().height() + 6 : 24));
       break;
     case CT_MenuItem:
       result.rheight() += 4;
@@ -73,10 +73,11 @@ void xiiQtDarkEditorStyle::ApplyDockStyle(QWidget* pDockManager)
   // Append to ADS's own sheet so platform-specific buttons and auto-hide behavior survive.
   pDockManager->setStyleSheet(pDockManager->styleSheet() + QStringLiteral(R"(
 ads--CDockAreaTitleBar { background: palette(window); border-bottom: 1px solid palette(dark); }
-ads--CDockWidgetTab { background: palette(window); border: 0; border-top: 2px solid transparent; padding: 4px 8px; }
+ads--CDockWidgetTab { background: palette(window); border: 0; border-top: 2px solid transparent; padding: 3px 6px; }
 ads--CDockWidgetTab[activeTab="true"] { background: palette(button); border-top: 2px solid palette(highlight); }
 ads--CDockWidgetTab[focused="true"] { background: palette(button); border-top: 2px solid palette(highlight); }
 ads--CDockWidgetTab QLabel { color: palette(text); }
+ads--CDockWidgetTab[activeTab="true"] QLabel, ads--CDockWidgetTab[focused="true"] QLabel { color: palette(text); }
 ads--CDockWidget { border: 0; background: palette(window); }
 ads--CDockSplitter::handle { background: palette(shadow); }
 )"));

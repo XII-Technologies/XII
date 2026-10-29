@@ -305,10 +305,10 @@ xiiQtPropertyGridWidget::xiiQtPropertyGridWidget(QWidget* pParent, xiiDocument* 
   setLayout(m_pLayout);
   m_pSelectionLabel = new QLabel(tr("Select an object to inspect its properties"), this);
   m_pSelectionLabel->setWordWrap(true);
-  m_pSelectionLabel->setContentsMargins(8, 8, 8, 8);
+  m_pSelectionLabel->setContentsMargins(6, 4, 6, 4);
   m_pLayout->addWidget(m_pSelectionLabel);
   auto* pSearchRow = new QHBoxLayout();
-  pSearchRow->setContentsMargins(6, 0, 6, 6);
+  pSearchRow->setContentsMargins(4, 4, 4, 4);
   pSearchRow->setSpacing(4);
   m_pSearch = new xiiQtSearchWidget(this);
   m_pSearch->SetCaptureTabKey(false);
@@ -411,6 +411,8 @@ void xiiQtPropertyGridWidget::ClearSelection()
   m_Selection.Clear();
   m_iSearchIndex = -1;
   m_pSelectionLabel->setText(tr("Select an object to inspect its properties"));
+  m_pSelectionLabel->show();
+  m_pSearch->setAccessibleDescription(m_pSelectionLabel->text());
   m_pSearchResult->clear();
 }
 
@@ -449,6 +451,10 @@ void xiiQtPropertyGridWidget::SetSelection(const xiiDeque<const xiiDocumentObjec
 
     m_pContentLayout->insertWidget(0, m_pTypeWidget, 0);
     m_pSelectionLabel->setText(m_Selection.GetCount() == 1 ? tr("1 item selected") : tr("%1 items selected").arg(m_Selection.GetCount()));
+    // The object's Name field already identifies a single selection. Reserve a
+    // separate context row for multi-selection, where that distinction matters.
+    m_pSelectionLabel->setVisible(m_Selection.GetCount() > 1);
+    m_pSearch->setAccessibleDescription(m_pSelectionLabel->text());
     if (!m_pSearch->text().isEmpty())
       NavigateProperty(1);
   }

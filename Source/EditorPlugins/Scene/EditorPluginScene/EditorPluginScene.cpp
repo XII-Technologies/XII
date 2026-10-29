@@ -157,7 +157,6 @@ void OnLoadPlugin()
 
     xiiTransformGizmoActions::MapToolbarActions(szToolBar);
     xiiSceneGizmoActions::MapToolbarActions(szToolBar);
-    xiiGameObjectDocumentActions::MapToolbarActions(szToolBar);
     xiiSceneActions::MapToolbarActions(szToolBar);
   }
   // Scene2 Tool bar adjustments
@@ -171,6 +170,7 @@ void OnLoadPlugin()
   // View Tool Bar
   xiiActionMapManager::RegisterActionMap("EditorPluginScene_ViewToolBar", "AssetViewToolbar");
   xiiViewActions::MapToolbarActions("EditorPluginScene_ViewToolBar", xiiViewActions::PerspectiveMode | xiiViewActions::RenderMode | xiiViewActions::ActivateRemoteProcess);
+  xiiGameObjectDocumentActions::MapViewActions("EditorPluginScene_ViewToolBar");
   xiiQuadViewActions::MapToolbarActions("EditorPluginScene_ViewToolBar");
 
   // Visualizers

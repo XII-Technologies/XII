@@ -85,10 +85,12 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
   {
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("PropertyPanel");
+    pPropertyPanel->setMinimumWidth(280);
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();
 
     xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(GetContainerWindow()->GetDockManager(), this, static_cast<xiiSceneDocument*>(pDocument));
+    pPanelTree->setMinimumWidth(200);
     pPanelTree->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);

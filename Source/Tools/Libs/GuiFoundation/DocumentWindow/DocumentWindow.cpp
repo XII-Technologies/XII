@@ -51,6 +51,9 @@ void xiiQtDocumentWindow::Constructor()
 
   xiiQtMenuBarActionMapView* pMenuBar = new xiiQtMenuBarActionMapView(this);
   setMenuBar(pMenuBar);
+#if XII_DISABLED(XII_PLATFORM_OSX)
+  pMenuBar->hide();
+#endif
 
   xiiToolsProject::SuggestContainerWindow(m_pDocument);
   xiiQtContainerWindow* pContainer = xiiQtContainerWindow::GetContainerWindow();
@@ -299,7 +302,14 @@ xiiString xiiQtDocumentWindow::GetDisplayNameShort() const
 void xiiQtDocumentWindow::showEvent(QShowEvent* event)
 {
   QMainWindow::showEvent(event);
+#if XII_DISABLED(XII_PLATFORM_OSX)
+  // Docked documents share the application title menu. Detached documents keep
+  // their own menu in the floating window, using the same live action proxies.
+  menuBar()->setVisible(window() != GetContainerWindow());
+#endif
   SetVisibleInContainer(true);
+  if (GetContainerWindow())
+    GetContainerWindow()->UpdateDocumentMenu();
 }
 
 void xiiQtDocumentWindow::hideEvent(QHideEvent* event)
