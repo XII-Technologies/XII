@@ -65,6 +65,9 @@ public:
   xiiResult   SaveWorkspace(const QString& sName);
   xiiResult   RestoreWorkspace(const QString& sName);
   xiiResult   RemoveWorkspace(const QString& sName);
+  /// Temporarily dedicate the workspace to a tool without closing documents.
+  xiiResult FocusApplicationPanel(xiiQtApplicationPanel* pPanel);
+  xiiResult RestoreEditingWorkspace();
 
   /// Startup may construct docks and restore layouts while presentation is disabled.
   /// Enabling presentation does not show the window; the application owns that transition.
@@ -74,6 +77,9 @@ public:
 
 public Q_SLOTS:
   void ShowCommandPalette();
+
+Q_SIGNALS:
+  void WorkspaceToolChanged(const QString& sPanelObjectName);
 
 protected:
   virtual bool eventFilter(QObject* obj, QEvent* e) override;
@@ -129,6 +135,7 @@ private:
 
   xiiDynamicArray<xiiQtApplicationPanel*> m_ApplicationPanels;
   QSet<QString>                           m_DockNames;
+  QByteArray                              m_EditingWorkspaceState;
 
   static xiiQtContainerWindow* s_pContainerWindow;
   static bool                  s_bForceClose;

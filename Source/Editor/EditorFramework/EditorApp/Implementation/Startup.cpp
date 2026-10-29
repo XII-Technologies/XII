@@ -73,6 +73,9 @@
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
 #include <GuiFoundation/UIServices/QtProgressbar.h>
+#include <QAction>
+#include <QActionGroup>
+#include <QToolBar>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Document/PrefabCache.h>
 #include <ToolsFoundation/Document/PrefabUtils.h>
@@ -660,6 +663,38 @@ void xiiQtEditorApp::CreatePanels()
   pLongOpsPanel->toggleView(false);
 
   pAssetBrowserPanel->EnsureVisible();
+
+  auto* pWorkflows = new QToolBar(tr("Editor workflows"), pMainWnd);
+  pWorkflows->setObjectName(QStringLiteral("EditorWorkflowRail"));
+  pWorkflows->setMovable(false);
+  pWorkflows->setFloatable(false);
+  pWorkflows->setIconSize(QSize(24, 24));
+  pWorkflows->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+  pMainWnd->addToolBar(Qt::LeftToolBarArea, pWorkflows);
+  auto* pWorkflowGroup = new QActionGroup(pWorkflows);
+  pWorkflowGroup->setExclusive(true);
+  auto AddWorkflow = [pMainWnd, pWorkflows, pWorkflowGroup](const QString& sTitle, const QString& sIcon, const QString& sShortcut, xiiQtApplicationPanel* pPanel) {
+    auto* pAction = pWorkflows->addAction(QIcon(sIcon), sTitle);
+    pAction->setCheckable(true);
+    pWorkflowGroup->addAction(pAction);
+    pAction->setChecked(pPanel == nullptr);
+    QObject::connect(pMainWnd, &xiiQtContainerWindow::WorkspaceToolChanged, pAction, [pAction, pPanel](const QString& sPanel) {
+      pAction->setChecked(pPanel ? sPanel == pPanel->objectName() : sPanel.isEmpty());
+    });
+    pAction->setShortcut(QKeySequence(sShortcut));
+    pAction->setToolTip(sTitle + QStringLiteral(" (") + sShortcut + QStringLiteral(")"));
+    QObject::connect(pAction, &QAction::triggered, pMainWnd, [pMainWnd, pPanel]() {
+      const auto result = pPanel ? pMainWnd->FocusApplicationPanel(pPanel) : pMainWnd->RestoreEditingWorkspace();
+      if (result.Failed())
+        xiiQtUiServices::MessageBoxWarning("The requested editor workspace could not be restored.");
+    });
+  };
+  AddWorkflow(tr("Edit"), QStringLiteral(":/GuiFoundation/Icons/Window.svg"), QStringLiteral("Ctrl+1"), nullptr);
+  AddWorkflow(tr("Content"), QStringLiteral(":/EditorFramework/Icons/Asset.svg"), QStringLiteral("Ctrl+2"), pAssetBrowserPanel);
+  AddWorkflow(tr("Output"), QStringLiteral(":/GuiFoundation/Icons/Log.svg"), QStringLiteral("Ctrl+3"), pLogPanel);
+  AddWorkflow(tr("Assets"), QStringLiteral(":/EditorFramework/Icons/TransformAsset.svg"), QStringLiteral("Ctrl+4"), pAssetCuratorPanel);
+  AddWorkflow(tr("Console"), QStringLiteral(":/GuiFoundation/Icons/CVar.svg"), QStringLiteral("Ctrl+5"), pCVarPanel);
+  AddWorkflow(tr("Tasks"), QStringLiteral(":/GuiFoundation/Icons/Background.svg"), QStringLiteral("Ctrl+6"), pLongOpsPanel);
 }
 
 xiiCommandLineOptionBool opt_NoSplashScreen("_Editor", "-NoSplash", "Disables the editor splash-screen", false);
