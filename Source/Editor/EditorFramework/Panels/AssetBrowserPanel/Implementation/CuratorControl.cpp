@@ -27,7 +27,7 @@ xiiQtCuratorControl::xiiQtCuratorControl(QWidget* pParent) :
   m_pCancelTransforms->hide();
   pLayout->addWidget(m_pCancelTransforms);
   connect(m_pCancelTransforms, &QAbstractButton::clicked, this, []() { xiiAssetProcessor::GetSingleton()->StopProcessTask(false); });
-  pLayout->addSpacing(200);
+  pLayout->addSpacing(230);
 
   UpdateBackgroundProcessState();
   xiiAssetCurator::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtCuratorControl::AssetCuratorEvents, this));
@@ -66,30 +66,37 @@ void xiiQtCuratorControl::paintEvent(QPaintEvent* e)
   colors[xiiAssetInfo::TransformState::CircularDependency]         = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Red));
   colors[xiiAssetInfo::TransformState::TransformError]             = xiiToQtColor(xiiColorScheme::DarkUI(xiiColorScheme::Red));
 
-  const float    fTotalCount   = uiNumAssets;
-  const xiiInt32 iTargetWidth  = rect.width();
-  xiiInt32       iCurrentCount = 0;
-  for (xiiInt32 i = 0; i < xiiAssetInfo::TransformState::COUNT; ++i)
+  painter.fillRect(rect, palette().base());
+  if (uiNumAssets > 0)
   {
-    xiiInt32 iStartX = xiiInt32((iCurrentCount / fTotalCount) * iTargetWidth);
-    iCurrentCount += sections[i];
-    xiiInt32 iEndX = xiiInt32((iCurrentCount / fTotalCount) * iTargetWidth);
-
-    if (sections[i])
+    const float    fTotalCount   = uiNumAssets;
+    const xiiInt32 iTargetWidth  = rect.width();
+    xiiInt32       iCurrentCount = 0;
+    for (xiiInt32 i = 0; i < xiiAssetInfo::TransformState::COUNT; ++i)
     {
-      QRect area = rect;
-      area.setLeft(rect.left() + iStartX);
-      area.setRight(rect.left() + iEndX);
-      painter.setBrush(QBrush(colors[i]));
-      painter.drawRect(area);
+      const xiiInt32 iStartX = xiiInt32((iCurrentCount / fTotalCount) * iTargetWidth);
+      iCurrentCount += sections[i];
+      const xiiInt32 iEndX = xiiInt32((iCurrentCount / fTotalCount) * iTargetWidth);
+      if (sections[i])
+      {
+        QRect area(rect.left() + iStartX, rect.bottom() - 2, iEndX - iStartX, 3);
+        painter.fillRect(area, colors[i]);
+      }
     }
   }
 
-  xiiStringBuilder s;
-  s.SetFormat("[Un: {0}, Imp: {4}, Tr: {1}, Th: {2}, Err: {3}]", sections[xiiAssetInfo::TransformState::Unknown], sections[xiiAssetInfo::TransformState::NeedsTransform], sections[xiiAssetInfo::TransformState::NeedsThumbnail], sections[xiiAssetInfo::TransformState::MissingTransformDependency] + sections[xiiAssetInfo::TransformState::MissingThumbnailDependency] + sections[xiiAssetInfo::TransformState::MissingPackageDependency] + sections[xiiAssetInfo::TransformState::TransformError] + sections[xiiAssetInfo::TransformState::CircularDependency], sections[xiiAssetInfo::TransformState::NeedsImport]);
-
-  painter.setPen(QPen(Qt::white));
-  painter.drawText(rect, s.GetData(), QTextOption(Qt::AlignCenter));
+  const xiiUInt32 uiIssues  = sections[xiiAssetInfo::TransformState::MissingTransformDependency] + sections[xiiAssetInfo::TransformState::MissingThumbnailDependency] + sections[xiiAssetInfo::TransformState::MissingPackageDependency] + sections[xiiAssetInfo::TransformState::TransformError] + sections[xiiAssetInfo::TransformState::CircularDependency];
+  const xiiUInt32 uiPending = sections[xiiAssetInfo::TransformState::Unknown] + sections[xiiAssetInfo::TransformState::NeedsImport] + sections[xiiAssetInfo::TransformState::NeedsTransform] + sections[xiiAssetInfo::TransformState::NeedsThumbnail];
+  QString         sSummary  = tr("No assets");
+  if (uiIssues > 0)
+    sSummary = tr("%1 assets | %2 issues").arg(uiNumAssets).arg(uiIssues);
+  else if (uiPending > 0)
+    sSummary = tr("%1 assets | %2 pending").arg(uiNumAssets).arg(uiPending);
+  else if (uiNumAssets > 0)
+    sSummary = tr("%1 assets ready").arg(uiNumAssets);
+  const QRect textRect = rect.adjusted(8, 0, -8, -3);
+  painter.setPen(palette().color(QPalette::Text));
+  painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, fontMetrics().elidedText(sSummary, Qt::ElideRight, textRect.width()));
 }
 
 void xiiQtCuratorControl::UpdateBackgroundProcessState()
@@ -115,6 +122,7 @@ void xiiQtCuratorControl::UpdateBackgroundProcessState()
 
   m_pBackgroundProcess->setCheckable(true);
   m_pBackgroundProcess->setChecked(state == xiiAssetProcessor::ProcessTaskState::Running);
+  m_pBackgroundProcess->setAccessibleName(m_pBackgroundProcess->toolTip());
 }
 
 void xiiQtCuratorControl::BackgroundProcessClicked(bool checked)
