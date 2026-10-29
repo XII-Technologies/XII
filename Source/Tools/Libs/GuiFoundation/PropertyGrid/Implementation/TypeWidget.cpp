@@ -130,8 +130,9 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, cons
     pLayout->setColumnStretch(1, 0);
     pLayout->setColumnMinimumWidth(1, 5);
     pLayout->setColumnStretch(2, 2);
-    pLayout->setContentsMargins(0, 0, 0, 0);
-    pLayout->setSpacing(0);
+    pLayout->setContentsMargins(4, 2, 4, 4);
+    pLayout->setHorizontalSpacing(6);
+    pLayout->setVerticalSpacing(2);
     pGroupBox->GetContent()->setLayout(pLayout);
 
     for (xiiUInt32 i = 0; i < group->m_Properties.GetCount(); ++i)
@@ -155,6 +156,7 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, const xiiMap<xiiString, cons
         pLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         pLabel->setContentsMargins(0, 0, 0, 0); // 18 is a hacked value to align label with group boxes.
         pLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+        pLabel->setWordWrap(true);
 
         connect(pLabel, &QWidget::customContextMenuRequested, pNewWidget, &xiiQtPropertyWidget::OnCustomContextMenu);
 
@@ -443,6 +445,9 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
 
         xiiTranslatorLogMissing::s_bActive = temp;
       }
+      if (it.Value().m_pLabel->toolTip().isEmpty())
+        it.Value().m_pLabel->setToolTip(it.Value().m_pLabel->text());
+      it.Value().m_pWidget->setAccessibleName(it.Value().m_pLabel->text());
     }
 
     it.Value().m_pWidget->setVisible(state != xiiPropertyUiState::Invisible);

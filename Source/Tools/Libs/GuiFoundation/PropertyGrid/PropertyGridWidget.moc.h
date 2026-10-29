@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Containers/HybridArray.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+
+#include <Foundation/Containers/HybridArray.h>
 #include <GuiFoundation/PropertyGrid/Implementation/TypeWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>
 #include <QWidget>
@@ -15,6 +16,8 @@
 class QSpacerItem;
 class QVBoxLayout;
 class QScrollArea;
+class QLabel;
+class xiiQtSearchWidget;
 
 class xiiQtGroupBoxBase;
 class xiiDocument;
@@ -65,6 +68,7 @@ private:
   void      SelectionEventHandler(const xiiSelectionManagerEvent& e);
   void      FactoryEventHandler(const xiiRttiMappedObjectFactory<xiiQtPropertyWidget>::Event& e);
   void      TypeEventHandler(const xiiPhantomRttiManagerEvent& e);
+  void      NavigateProperty(int iDirection);
   xiiUInt32 GetGroupBoxHash(xiiQtGroupBoxBase* pBox) const;
 
 private:
@@ -80,6 +84,10 @@ private:
   QWidget*     m_pContent;
   QVBoxLayout* m_pContentLayout;
 
-  xiiQtTypeWidget* m_pTypeWidget;
-  QSpacerItem*     m_pSpacer;
+  xiiQtTypeWidget*   m_pTypeWidget;
+  QSpacerItem*       m_pSpacer;
+  xiiQtSearchWidget* m_pSearch         = nullptr;
+  QLabel*            m_pSelectionLabel = nullptr;
+  QLabel*            m_pSearchResult   = nullptr;
+  xiiInt32           m_iSearchIndex    = -1;
 };
