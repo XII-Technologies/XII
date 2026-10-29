@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <ToolsFoundation/Object/DocumentObjectManager.h>
 
 #include <Foundation/Containers/HybridArray.h>
 #include <GuiFoundation/PropertyGrid/Implementation/TypeWidget.moc.h>
@@ -17,6 +18,7 @@ class QSpacerItem;
 class QVBoxLayout;
 class QScrollArea;
 class QLabel;
+class QToolButton;
 class xiiQtSearchWidget;
 
 class xiiQtGroupBoxBase;
@@ -42,6 +44,7 @@ public:
   void                            ClearSelection();
   void                            SetSelectionIncludeExcludeProperties(xiiStringView sIncludeProperties = {}, xiiStringView sExcludeProperties = {});
   void                            SetSelection(const xiiDeque<const xiiDocumentObject*>& selection);
+  bool                            IsSelectionPinned() const;
   const xiiDocument*              GetDocument() const;
   const xiiDocumentObjectManager* GetObjectManager() const;
   xiiCommandHistory*              GetCommandHistory() const;
@@ -84,10 +87,12 @@ private:
   QWidget*     m_pContent;
   QVBoxLayout* m_pContentLayout;
 
-  xiiQtTypeWidget*   m_pTypeWidget;
-  QSpacerItem*       m_pSpacer;
-  xiiQtSearchWidget* m_pSearch         = nullptr;
-  QLabel*            m_pSelectionLabel = nullptr;
-  QLabel*            m_pSearchResult   = nullptr;
-  xiiInt32           m_iSearchIndex    = -1;
+  xiiQtTypeWidget*                                                              m_pTypeWidget;
+  QSpacerItem*                                                                  m_pSpacer;
+  xiiQtSearchWidget*                                                            m_pSearch         = nullptr;
+  QLabel*                                                                       m_pSelectionLabel = nullptr;
+  QLabel*                                                                       m_pSearchResult   = nullptr;
+  xiiInt32                                                                      m_iSearchIndex    = -1;
+  QToolButton*                                                                  m_pPinSelection   = nullptr;
+  xiiCopyOnBroadcastEvent<const xiiDocumentObjectStructureEvent&>::Unsubscriber m_PinSubscription;
 };

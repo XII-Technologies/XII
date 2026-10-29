@@ -5,6 +5,8 @@
 #include <Core/World/GameObject.h>
 #include <EditorFramework/GUI/RawDocumentTreeWidget.moc.h>
 #include <GuiFoundation/Models/TreeSearchFilterModel.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
+#include <QToolButton>
 #include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
@@ -43,4 +45,19 @@ XII_CREATE_SIMPLE_TEST(EditorOutliner, FilterPreservesSelection)
   XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == pAccessor->GetObject(first));
   XII_TEST_INT(view.selectionModel()->selectedRows().size(), 1);
   XII_TEST_BOOL(view.selectionModel()->selectedRows().front().data().toString() == QStringLiteral("Robot"));
+
+  xiiQtPropertyGridWidget inspector(nullptr, &document);
+  auto*                   pPin = inspector.findChild<QToolButton*>(QStringLiteral("InspectorPin"));
+  if (XII_TEST_BOOL(pPin != nullptr))
+  {
+    inspector.SetSelection(document.GetSelectionManager()->GetSelection());
+    pPin->setChecked(true);
+    document.GetSelectionManager()->SetSelection(pAccessor->GetObject(second));
+    XII_TEST_BOOL(inspector.IsSelectionPinned());
+    pAccessor->StartTransaction("Remove pinned object");
+    XII_TEST_STATUS(pAccessor->RemoveObject(pAccessor->GetObject(first)));
+    pAccessor->FinishTransaction();
+    XII_TEST_BOOL(!inspector.IsSelectionPinned());
+    XII_TEST_BOOL(document.GetSelectionManager()->GetCurrentObject() == pAccessor->GetObject(second));
+  }
 }
