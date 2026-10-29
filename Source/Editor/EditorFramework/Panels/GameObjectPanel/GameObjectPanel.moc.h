@@ -6,6 +6,8 @@
 
 #include <EditorFramework/GUI/RawDocumentTreeWidget.moc.h>
 #include <GuiFoundation/DockPanels/DocumentPanel.moc.h>
+#include <QList>
+#include <QPersistentModelIndex>
 
 class xiiQtSearchWidget;
 class xiiGameObjectDocument;
@@ -31,11 +33,14 @@ private:
   void DocumentSceneEventHandler(const xiiGameObjectEvent& e);
 
 protected:
-  xiiQtGameObjectDelegate* m_pDelegate = nullptr;
-  xiiGameObjectDocument*   m_pDocument;
-  xiiQtDocumentTreeView*   m_pTreeWidget;
-  xiiQtSearchWidget*       m_pFilterWidget;
-  xiiString                m_sContextMenuMapping;
+  xiiQtGameObjectDelegate*                                               m_pDelegate = nullptr;
+  xiiGameObjectDocument*                                                 m_pDocument;
+  xiiQtDocumentTreeView*                                                 m_pTreeWidget;
+  xiiQtSearchWidget*                                                     m_pFilterWidget;
+  xiiString                                                              m_sContextMenuMapping;
+  QList<QPersistentModelIndex>                                           m_ExpandedBeforeSearch;
+  bool                                                                   m_bSearching = false;
+  xiiCopyOnBroadcastEvent<const xiiSelectionManagerEvent&>::Unsubscriber m_SelectionSubscription;
 };
 
 class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectPanel : public xiiQtDocumentPanel

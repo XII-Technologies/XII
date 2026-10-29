@@ -33,7 +33,7 @@ xiiQtScenegraphPanel::xiiQtScenegraphPanel(ads::CDockManager* pDockManager, QWid
   xiiQtDocumentPanel(pDockManager, pParent, pDocument)
 {
   setObjectName("xiiQtScenegraphPanel");
-  setWindowTitle("Scenegraph");
+  setWindowTitle(tr("Outliner"));
   m_pSceneDocument = pDocument;
 
   m_pStack = new QStackedWidget(this);
@@ -51,7 +51,7 @@ xiiQtScenegraphPanel::xiiQtScenegraphPanel(ads::CDockManager* pDockManager, QWid
   xiiQtDocumentPanel(pDockManager, pParent, pDocument)
 {
   setObjectName("xiiQtScenegraphPanel");
-  setWindowTitle("Scenegraph");
+  setWindowTitle(tr("Outliner"));
   m_pSceneDocument = pDocument;
 
   m_pStack = new QStackedWidget(this);
