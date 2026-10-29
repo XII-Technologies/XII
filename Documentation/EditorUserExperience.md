@@ -43,3 +43,36 @@ native Qt captures at 100%, 150% and 200% scaling, including a compact window.
 Preserve existing layout identifiers. Check startup restoration and engine IPC
 with the existing native integration tests. Record platform/backend gaps in each
 PR; a build alone is insufficient evidence of usable editor workflows.
+
+## Workspace interactions
+
+- **Ctrl+Shift+P** searches live commands for the focused document and viewport.
+  Disabled commands remain visible. Hidden commands and commands from unrelated
+  documents are excluded. Entries use existing shortcuts, enabled states and
+  action callbacks, including plugin actions.
+- Viewport menus display the current perspective and shading choice. Secondary
+  display and device controls live under **View Options**.
+- **Outliner** search preserves document selection. Clearing search restores the
+  expansion state from before the search. **Reveal**, **Frame** and **Collapse**
+  provide direct hierarchy navigation. Ctrl+F focuses search within the panel.
+- **Inspector** search navigates existing property controls and opens their
+  sections. Enter/Down advances; Up goes back. **Sections** expands or collapses
+  all groups. Section headers support keyboard focus and Space/Enter toggling.
+- **Ctrl+Space** opens the existing Asset Browser and focuses search. In a drawer,
+  repeating it from the focused browser collapses the drawer. New workspaces
+  start with content in the bottom ADS auto-hide bar; existing saved layouts
+  retain their placement. The normal ADS pin button docks it permanently.
+  Breadcrumbs, Back/Forward (Alt+Left/Right), Parent, list/thumbnail controls and
+  thumbnail size share the existing asset model and filters.
+- **Workspaces** saves, restores and removes named layouts in the current
+  project's preferences. Names support Unicode and separators. Layouts include
+  the shell and existing document layout groups; they do not close documents or
+  open saved documents. Safe mode prevents named layout restoration. Failed
+  restores recover the previous layout.
+- Log controls expose severity counts, quick filters and **Follow**. Manual
+  scrolling pauses following, and new messages preserve selected rows. Search
+  and copy continue to use the original log model and callbacks.
+
+The organization takes cues from Epic's [Editor interface](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-editor-interface)
+and [viewport toolbar](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-toolbar).
+XII retains its own palette, document model, action maps and ADS workspaces.

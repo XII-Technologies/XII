@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+#include <EditorFrameworkTest/EditorWorkspaceTest.h>
 #include <EditorFrameworkTest/SceneDuplicationTest.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
@@ -30,12 +31,25 @@
 #include <QPointer>
 #include <QScreen>
 #include <QThread>
+#include <QtMath>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 namespace
 {
+  void ValidateNativeCapture(QImage& image, int iWidth, int iHeight, qreal fPixelRatio)
+  {
+    // Fixed pixel targets are rounded up to logical widget sizes. Fractional DPI
+    // can add a physical edge pixel; retain strict bounds and crop only that padding.
+    const int iMaximumWidth  = qCeil(qCeil(iWidth / fPixelRatio) * fPixelRatio);
+    const int iMaximumHeight = qCeil(qCeil(iHeight / fPixelRatio) * fPixelRatio);
+    XII_TEST_BOOL(image.width() >= iWidth && image.width() <= iMaximumWidth);
+    XII_TEST_BOOL(image.height() >= iHeight && image.height() <= iMaximumHeight);
+    if (image.size() != QSize(iWidth, iHeight))
+      image = image.copy(0, 0, iWidth, iHeight);
+  }
+
   template <typename Predicate>
   bool PumpUntil(Predicate predicate, int iMilliseconds)
   {
@@ -355,6 +369,13 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       TestScaleDirections(*window, *view);
       TestRotationDirection(*scene, *window, *view);
 
+      // A logical-pixel navigation overlay can cover the center of this small,
+      // fixed-pixel target at high DPI. Render-mode probes must sample the scene.
+      const bool bNavigationGizmoEnabled = view->IsNavigationGizmoEnabled();
+      XII_SCOPE_EXIT(view->SetNavigationGizmoEnabled(bNavigationGizmoEnabled));
+      view->SetNavigationGizmoEnabled(false);
+      view->SyncToEngine();
+
       // A completed native pick confirms that the transformed scene has reached the GPU.
       // Capture only after that readiness boundary; a startup delay cannot establish it.
       xiiStringBuilder capture = sProjectDirectory;
@@ -364,8 +385,7 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       view->TakeScreenshot(capture);
       QImage image;
       XII_TEST_BOOL(PumpUntil([&] { return image.load(QString::fromUtf8(capture.GetData())); }, 10000));
-      XII_TEST_INT(image.width(), 256);
-      XII_TEST_INT(image.height(), 256);
+      ValidateNativeCapture(image, 256, 256, view->devicePixelRatio());
       if (!image.isNull())
       {
         bool bVaried = false;
@@ -390,8 +410,7 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         view->TakeScreenshot(output);
         QImage result;
         XII_TEST_BOOL(PumpUntil([&] { return result.load(QString::fromUtf8(output.GetData())); }, 10000));
-        XII_TEST_INT(result.width(), 256);
-        XII_TEST_INT(result.height(), 256);
+        ValidateNativeCapture(result, 256, 256, view->devicePixelRatio());
         return result;
       };
       const auto depthImage     = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportDepth.png");
@@ -526,10 +545,11 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       view->TakeScreenshot(capture);
       image = QImage();
       XII_TEST_BOOL(PumpUntil([&] { return image.load(QString::fromUtf8(capture.GetData())); }, 10000));
-      XII_TEST_INT(image.width(), 1280);
-      XII_TEST_INT(image.height(), 720);
+      ValidateNativeCapture(image, 1280, 720, view->devicePixelRatio());
 
       TestSceneDuplicationAction(*scene, sphereID);
+      view->SetNavigationGizmoEnabled(bNavigationGizmoEnabled);
+      TestEditorWorkspace(*scene, *window, *view, sphereID, sProjectDirectory);
       view->SyncToEngine();
       PumpUntil([] { return false; }, 200);
       XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed());
