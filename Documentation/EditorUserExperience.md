@@ -48,6 +48,30 @@ PR; a build alone is insufficient evidence of usable editor workflows.
 
 ## Workspace interactions
 
+Editor 2 uses one application command deck, rebuilt from the active document's
+existing action map. Save, history, asset processing, transforms and simulation
+are presented in labeled groups. Compact windows can scroll the complete deck;
+floating documents retain their local toolbar and command ownership.
+
+The workflow rail offers Edit (Ctrl+1), Content (Ctrl+2), Output (Ctrl+3), asset
+diagnostics (Ctrl+4), Console (Ctrl+5) and background Tasks (Ctrl+6). Tool
+workspaces use the full editing area. Returning to Edit restores the prior ADS
+layout without closing documents. Saved editor layouts retain the editing
+layout even when a full-size tool is active.
+
+New scene workspaces combine Outliner/Layers above Inspector in one right-hand
+column, leaving the central viewport uninterrupted. Existing saved layouts still
+restore normally. Inspector Pin keeps selected objects available for editing as
+scene selection changes; unpin follows selection again. Removing a pinned object
+or its parent, or resetting its document, clears the pin before invalidation.
+
+Content Studio combines folder navigation, asset creation, import of selected
+source files, type filtering, list/thumbnail controls and a selection-details
+column. Open, Transform and Find References use the existing asset operations.
+Project collections persist named search, type, folder and recursion filters.
+Collections can be reopened or removed. Asset/file pickers retain their type
+constraints and do not expose browser-only authoring or collection commands.
+
 - **Ctrl+Shift+P** searches live commands for the focused document and viewport.
   Disabled commands remain visible. Hidden commands and commands from unrelated
   documents are excluded. Entries use existing shortcuts, enabled states and
@@ -63,7 +87,8 @@ PR; a build alone is insufficient evidence of usable editor workflows.
   local menus. Compact windows use icons for Commands and Workspaces, with the
   same tooltips and keyboard access. Application panels are in Workspaces.
 - Document panels can be resized below the former 300-pixel minimum. Outliner
-  navigation and selection feedback share one footer. Inspector keeps a separate
+  navigation and selection feedback share the search header, preserving hierarchy
+  space in short windows. Inspector keeps a separate
   selection-context row for multiple objects and an empty-selection hint; a
   single object's existing Name field supplies its identity.
 - **Outliner** search preserves document selection. Clearing search restores the

@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorPluginScene/EditorPluginScenePCH.h>
+#include <ads/DockAreaWidget.h>
 
 #include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
@@ -70,7 +71,7 @@ xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocumen
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("PropertyPanel");
     pPropertyPanel->setMinimumWidth(280);
-    pPropertyPanel->setWindowTitle("Properties");
+    pPropertyPanel->setWindowTitle("Inspector");
     pPropertyPanel->show();
     pPropertyPanel->layout()->setObjectName("PropertyPanelLayout");
 
@@ -85,9 +86,11 @@ xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocumen
     pPropertyPanel->setWidget(pPropertyGrid);
     XII_VERIFY(connect(pPropertyGrid, &xiiQtPropertyGridWidget::ExtendContextMenu, this, &xiiQtScene2DocumentWindow::ExtendPropertyGridContextMenu), "");
 
-    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
-    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pLayers);
-    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanelTree);
+    auto* pHierarchyArea = m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pPanelTree);
+    m_pDockManager->addDockWidgetTabToArea(pLayers, pHierarchyArea);
+    pHierarchyArea->setCurrentDockWidget(pPanelTree);
+    auto* pInspectorArea = m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, pPropertyPanel, pHierarchyArea);
+    m_pDockManager->setSplitterSizes(pInspectorArea, {240, 520});
   }
   FinishWindowCreation();
 }

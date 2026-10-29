@@ -140,7 +140,7 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
       pSearch->setText(QStringLiteral("LocalPosition"));
       bool bFound = false;
       for (auto* pLabel : pGrid->findChildren<QLabel*>())
-        bFound |= pLabel->text().contains(QLatin1Char('/'));
+        bFound |= pLabel->accessibleName() == QStringLiteral("Property search results") && pLabel->text().contains(QLatin1Char('/'));
       XII_TEST_BOOL(bFound);
       XII_TEST_INT(scene.GetCommandHistory()->GetUndoStackSize(), uiUndoCount);
       pSearch->setText(QString());
