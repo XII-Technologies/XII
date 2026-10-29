@@ -9,8 +9,10 @@
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
+#include <QLabel>
 #include <QMenu>
 #include <QToolButton>
+#include <QVBoxLayout>
 
 xiiQtToolBarActionMapView::xiiQtToolBarActionMapView(QString sTitle, QWidget* pParent) :
   QToolBar(sTitle, pParent)
@@ -44,6 +46,13 @@ void xiiQtToolBarActionMapView::setVisible(bool bVisible)
   QToolBar::setVisible(bVisible);
 }
 
+void xiiQtToolBarActionMapView::ClearActionContext()
+{
+  ClearView();
+  m_pActionMap = nullptr;
+  m_Context    = {};
+}
+
 void xiiQtToolBarActionMapView::SetShowMenuLabels(bool bShow)
 {
   m_bShowMenuLabels = bShow;
@@ -54,6 +63,9 @@ void xiiQtToolBarActionMapView::SetShowMenuLabels(bool bShow)
 
 void xiiQtToolBarActionMapView::ClearView()
 {
+  clear();
+  qDeleteAll(m_OwnedActions);
+  m_OwnedActions.clear();
   m_Proxies.Clear();
 }
 
@@ -63,17 +75,63 @@ void xiiQtToolBarActionMapView::CreateView()
 
   auto pObject = m_pActionMap->BuildActionTree();
 
-  CreateView(pObject);
+  if (m_bGrouped)
+  {
+    for (auto* pChild : pObject->GetChildren())
+    {
+      auto* pDescriptor = m_pActionMap->GetDescriptor(pChild);
+      if (pDescriptor->m_hAction.GetDescriptor()->m_Type != xiiActionType::Category)
+      {
+        // Root-level actions still use their original mapping, below the groups.
+        continue;
+      }
+      auto pProxy                  = xiiQtProxy::GetProxy(m_Context, pDescriptor->m_hAction);
+      m_Proxies[pChild->GetGuid()] = pProxy;
+      auto* pGroup                 = new QWidget(this);
+      pGroup->setObjectName(QStringLiteral("CommandDeckGroup"));
+      auto* pLayout = new QVBoxLayout(pGroup);
+      pLayout->setContentsMargins(8, 4, 8, 3);
+      pLayout->setSpacing(2);
+      auto* pTools = new QToolBar(pGroup);
+      pTools->setIconSize(QSize(20, 20));
+      pTools->setMovable(false);
+      pTools->setFloatable(false);
+      pTools->setToolButtonStyle(Qt::ToolButtonIconOnly);
+      CreateView(pChild, pTools);
+      pLayout->addWidget(pTools);
+      const auto& name   = pDescriptor->m_hAction.GetDescriptor()->m_sActionName;
+      QString     sTitle = xiiMakeQString(xiiTranslate(name));
+      sTitle.replace(QStringLiteral("Category"), QString());
+      sTitle = sTitle.trimmed();
+      if (name == "GizmoCategory")
+        sTitle = tr("Transform");
+      if (name == "SceneCategory")
+        sTitle = tr("Run");
+      if (name == "CmdHistoryCategory")
+        sTitle = tr("History");
+      if (name == "AssetCategory")
+        sTitle = tr("Build");
+      auto* pLabel = new QLabel(sTitle, pGroup);
+      pLabel->setAlignment(Qt::AlignCenter);
+      pLabel->setForegroundRole(QPalette::PlaceholderText);
+      pLayout->addWidget(pLabel);
+      m_OwnedActions.push_back(addWidget(pGroup));
+    }
+    CreateView(pObject, this);
+  }
+  else
+    CreateView(pObject, this);
 
   if (!actions().isEmpty() && actions().back()->isSeparator())
   {
     QAction* pAction = actions().back();
     removeAction(pAction);
+    m_OwnedActions.removeOne(pAction);
     pAction->deleteLater();
   }
 }
 
-void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject)
+void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject, QToolBar* pTarget)
 {
   for (auto pChild : pObject->GetChildren())
   {
@@ -86,19 +144,25 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
       case xiiActionType::Action:
       {
         QAction* pQtAction = static_cast<xiiQtActionProxy*>(pProxy.data())->GetQAction();
-        addAction(pQtAction);
+        pTarget->addAction(pQtAction);
+        if (m_bGrouped)
+        {
+          const auto name = xiiMakeQString(pDesc->m_hAction.GetDescriptor()->m_sActionName);
+          if (name.startsWith(QStringLiteral("Scene.GameMode.")) || name == QStringLiteral("Document.Save") ||
+              name == QStringLiteral("Gizmo.Translate") || name == QStringLiteral("Gizmo.Rotate") || name == QStringLiteral("Gizmo.Scale"))
+            if (auto* pButton = qobject_cast<QToolButton*>(pTarget->widgetForAction(pQtAction)))
+              pButton->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        }
       }
       break;
 
       case xiiActionType::Category:
       {
-        if (!actions().isEmpty() && !actions().back()->isSeparator())
-          addSeparator()->setParent(pProxy.data());
-
-        CreateView(pChild);
-
-        if (!actions().isEmpty() && !actions().back()->isSeparator())
-          addSeparator()->setParent(pProxy.data());
+        if (m_bGrouped && pTarget == this)
+          break;
+        if (!pTarget->actions().isEmpty() && !pTarget->actions().back()->isSeparator())
+          m_OwnedActions.push_back(pTarget->addSeparator());
+        CreateView(pChild, pTarget);
       }
       break;
 
@@ -106,9 +170,8 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
       {
         xiiNamedAction* pNamed = static_cast<xiiNamedAction*>(pProxy->GetAction());
 
-        QMenu* pQtMenu = static_cast<xiiQtMenuProxy*>(pProxy.data())->GetQMenu();
-        // TODO pButton leaks!
-        QToolButton* pButton = new QToolButton(this);
+        QMenu*       pQtMenu = static_cast<xiiQtMenuProxy*>(pProxy.data())->GetQMenu();
+        QToolButton* pButton = new QToolButton(pTarget);
         pButton->setMenu(pQtMenu);
         pButton->setPopupMode(QToolButton::ToolButtonPopupMode::InstantPopup);
         pButton->setText(pQtMenu->title());
@@ -121,11 +184,13 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
           pButton->setToolTip(pQtMenu->toolTip());
         });
 
-        // TODO addWidget return value of QAction leaks!
-        QAction* pToolButtonAction = addWidget(pButton);
-        pToolButtonAction->setParent(pQtMenu);
+        QAction* pToolButtonAction = pTarget->addWidget(pButton);
+        m_OwnedActions.push_back(pToolButtonAction);
 
-        xiiQtMenuActionMapView::AddDocumentObjectToMenu(m_Proxies, m_Context, m_pActionMap, pQtMenu, pChild);
+        // A second presentation can borrow the same scoped menu. Do not append
+        // its static children again when mirroring a document toolbar.
+        if (pQtMenu->actions().isEmpty())
+          xiiQtMenuActionMapView::AddDocumentObjectToMenu(m_Proxies, m_Context, m_pActionMap, pQtMenu, pChild);
       }
       break;
 
@@ -134,18 +199,17 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
         QMenu*   pQtMenu   = static_cast<xiiQtDynamicActionAndMenuProxy*>(pProxy.data())->GetQMenu();
         QAction* pQtAction = static_cast<xiiQtDynamicActionAndMenuProxy*>(pProxy.data())->GetQAction();
 
-        // TODO pButton leaks!
-        QToolButton* pButton = new QToolButton(this);
+        QToolButton* pButton = new QToolButton(pTarget);
         pButton->setDefaultAction(pQtAction);
         pButton->setMenu(pQtMenu);
         pButton->setPopupMode(QToolButton::ToolButtonPopupMode::MenuButtonPopup);
         pButton->setToolButtonStyle(m_bShowMenuLabels ? Qt::ToolButtonTextBesideIcon : Qt::ToolButtonIconOnly);
 
-        // TODO addWidget return value of QAction leaks!
-        QAction* pToolButtonAction = addWidget(pButton);
-        pToolButtonAction->setParent(pQtMenu);
+        QAction* pToolButtonAction = pTarget->addWidget(pButton);
+        m_OwnedActions.push_back(pToolButtonAction);
 
-        xiiQtMenuActionMapView::AddDocumentObjectToMenu(m_Proxies, m_Context, m_pActionMap, pQtMenu, pChild);
+        if (pQtMenu->actions().isEmpty())
+          xiiQtMenuActionMapView::AddDocumentObjectToMenu(m_Proxies, m_Context, m_pActionMap, pQtMenu, pChild);
       }
       break;
     }
