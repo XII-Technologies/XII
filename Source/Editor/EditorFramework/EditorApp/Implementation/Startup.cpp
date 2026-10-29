@@ -76,6 +76,7 @@
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Document/PrefabCache.h>
 #include <ToolsFoundation/Document/PrefabUtils.h>
+#include <ads/AutoHideDockContainer.h>
 #include <ads/DockManager.h>
 
 void xiiCodeEditorPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
@@ -646,7 +647,9 @@ void xiiQtEditorApp::CreatePanels()
   xiiQtApplicationPanel* pCVarPanel         = new xiiQtCVarPanel(pDockManager);
   xiiQtApplicationPanel* pLongOpsPanel      = new xiiQtLongOpsPanel(pDockManager);
 
-  pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pAssetBrowserPanel);
+  // Apply the initial drawer size when it is attached; restored layouts retain
+  // their saved placement and dimensions later in startup.
+  pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pAssetBrowserPanel)->setSize(360);
   pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pLogPanel);
   pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pAssetCuratorPanel);
   pDockManager->addAutoHideDockWidget(ads::SideBarRight, pCVarPanel);

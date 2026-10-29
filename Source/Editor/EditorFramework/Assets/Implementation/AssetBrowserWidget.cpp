@@ -17,6 +17,10 @@
 
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <QFile>
+#include <QLabel>
+#include <QShortcut>
+#include <QStyle>
+#include <QToolBar>
 
 xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   QWidget(pParent)
@@ -25,18 +29,66 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
 
-  ButtonListMode->setVisible(false);
-  ButtonIconMode->setVisible(false);
+  ButtonListMode->setVisible(true);
+  ButtonIconMode->setVisible(true);
+  ButtonListMode->setAccessibleName(tr("List view"));
+  ButtonIconMode->setAccessibleName(tr("Thumbnail view"));
+  IconSizeSlider->setAccessibleName(tr("Thumbnail size"));
+  IconSizeSlider->setMaximumWidth(120);
   ResetTypeFilter->setEnabled(false);
 
   m_pFilter = new xiiQtAssetBrowserFilter(this);
   m_pFilter->SetShowItemsInSubFolders(pPreferences->m_bAssetBrowserShowItemsInSubFolders);
+
+  auto* pNavigation = new QToolBar(tr("Content navigation"), this);
+  pNavigation->setObjectName(QStringLiteral("ContentNavigation"));
+  pNavigation->setMovable(false);
+  pNavigation->setIconSize(QSize(16, 16));
+  m_pBack    = pNavigation->addAction(style()->standardIcon(QStyle::SP_ArrowBack), tr("Back"));
+  m_pForward = pNavigation->addAction(style()->standardIcon(QStyle::SP_ArrowForward), tr("Forward"));
+  m_pUp      = pNavigation->addAction(style()->standardIcon(QStyle::SP_ArrowUp), tr("Parent folder"));
+  connect(m_pBack, &QAction::triggered, this, [this]() { NavigateHistory(-1); });
+  connect(m_pForward, &QAction::triggered, this, [this]() { NavigateHistory(1); });
+  connect(m_pUp, &QAction::triggered, this, [this]() {
+    QString    sPath  = xiiMakeQString(m_pFilter->GetPathFilter());
+    const auto iSlash = sPath.lastIndexOf(QLatin1Char('/'));
+    m_pFilter->SetPathFilter((iSlash >= 0 ? sPath.left(iSlash) : QString()).toUtf8().constData());
+  });
+  m_pBreadcrumb = new QLabel(this);
+  m_pBreadcrumb->setTextFormat(Qt::RichText);
+  m_pBreadcrumb->setTextInteractionFlags(Qt::LinksAccessibleByMouse | Qt::LinksAccessibleByKeyboard);
+  m_pBreadcrumb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  m_pBreadcrumb->setMinimumWidth(80);
+  m_pBreadcrumb->setAccessibleName(tr("Current content folder"));
+  pNavigation->addWidget(m_pBreadcrumb);
+  connect(m_pBreadcrumb, &QLabel::linkActivated, this, [this](const QString& sLink) {
+    bool       bValid = false;
+    const int  iParts = sLink.toInt(&bValid);
+    const auto parts  = xiiMakeQString(m_pFilter->GetPathFilter()).split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    if (bValid && iParts >= 0 && iParts <= parts.size())
+      m_pFilter->SetPathFilter(parts.mid(0, iParts).join(QLatin1Char('/')).toUtf8().constData());
+  });
+  SearchWidget->setMinimumWidth(140);
+  pNavigation->addWidget(SearchWidget);
+  ButtonShowItemsSubFolders->setText(tr("Subfolders"));
+  pNavigation->addWidget(ButtonShowItemsSubFolders);
+  RootLayout->insertWidget(0, pNavigation);
+  for (const auto& entry : {qMakePair(QKeySequence(Qt::ALT | Qt::Key_Left), -1), qMakePair(QKeySequence(Qt::ALT | Qt::Key_Right), 1)})
+  {
+    auto* pShortcut = new QShortcut(entry.first, this);
+    pShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(pShortcut, &QShortcut::activated, this, [this, iDirection = entry.second]() { NavigateHistory(iDirection); });
+  }
+  auto* pFind = new QShortcut(QKeySequence::Find, this);
+  pFind->setContext(Qt::WidgetWithChildrenShortcut);
+  connect(pFind, &QShortcut::activated, SearchWidget, [this]() { SearchWidget->setFocus(); SearchWidget->selectAll(); });
 
   TreeFolderFilter->SetFilter(m_pFilter);
 
   m_pModel = QSharedPointer<xiiQtAssetBrowserModel>(new xiiQtAssetBrowserModel(this, m_pFilter));
   m_pModel->Initialize();
   SearchWidget->setPlaceholderText("Search Assets");
+  SearchWidget->SetCaptureTabKey(false);
 
   IconSizeSlider->setValue(50);
 
@@ -83,6 +135,7 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::ProjectEventHandler, this));
 
   setAcceptDrops(true);
+  OnPathFilterChanged();
 }
 
 xiiQtAssetBrowserWidget::~xiiQtAssetBrowserWidget()
@@ -352,6 +405,9 @@ void xiiQtAssetBrowserWidget::ProjectEventHandler(const xiiToolsProjectEvent& e)
     case xiiToolsProjectEvent::Type::ProjectClosed:
     {
       m_pFilter->Reset();
+      m_PathHistory  = {QString()};
+      m_iPathHistory = 0;
+      OnPathFilterChanged();
     }
     break;
     default:
@@ -631,7 +687,36 @@ void xiiQtAssetBrowserWidget::OnTypeFilterChanged()
 
 void xiiQtAssetBrowserWidget::OnPathFilterChanged()
 {
+  const QString sPath = xiiMakeQString(m_pFilter->GetPathFilter());
+  if (!m_bHistoryNavigation && m_PathHistory[m_iPathHistory] != sPath)
+  {
+    m_PathHistory = m_PathHistory.mid(0, m_iPathHistory + 1);
+    m_PathHistory.push_back(sPath);
+    if (m_PathHistory.size() > 64)
+      m_PathHistory.removeFirst();
+    m_iPathHistory = m_PathHistory.size() - 1;
+  }
+  m_pBack->setEnabled(m_iPathHistory > 0);
+  m_pForward->setEnabled(m_iPathHistory + 1 < m_PathHistory.size());
+  m_pUp->setEnabled(!sPath.isEmpty());
+  QString    sBreadcrumb = QStringLiteral("<a href=\"0\">Content</a>");
+  const auto parts       = sPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+  for (qsizetype i = 0; i < parts.size(); ++i)
+    sBreadcrumb += QStringLiteral(" / <a href=\"%1\">%2</a>").arg(i + 1).arg(parts[i].toHtmlEscaped());
+  m_pBreadcrumb->setText(sBreadcrumb);
+  m_pBreadcrumb->setToolTip(sPath);
   QTimer::singleShot(0, this, SLOT(OnSelectionTimer()));
+}
+
+void xiiQtAssetBrowserWidget::NavigateHistory(int iDirection)
+{
+  const int iNext = m_iPathHistory + iDirection;
+  if (iNext < 0 || iNext >= m_PathHistory.size())
+    return;
+  m_iPathHistory       = iNext;
+  m_bHistoryNavigation = true;
+  m_pFilter->SetPathFilter(m_PathHistory[m_iPathHistory].toUtf8().constData());
+  m_bHistoryNavigation = false;
 }
 
 void xiiQtAssetBrowserWidget::OnSearchWidgetTextChanged(const QString& text)

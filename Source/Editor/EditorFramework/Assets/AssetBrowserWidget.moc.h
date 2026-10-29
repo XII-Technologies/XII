@@ -5,12 +5,15 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorFramework/ui_AssetBrowserWidget.h>
+#include <QStringList>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 class xiiQtToolBarActionMapView;
 class xiiQtAssetBrowserFilter;
 class xiiQtAssetBrowserModel;
+class QLabel;
+class QAction;
 struct xiiAssetCuratorEvent;
 class xiiQtAssetBrowserModel;
 
@@ -107,6 +110,7 @@ private:
   void AddAssetCreatorMenu(QMenu* pMenu, bool useSelectedAsset);
   void AddImportedViaMenu(QMenu* pMenu);
   void GetSelectedImportableFiles(xiiDynamicArray<xiiString>& out_Files) const;
+  void NavigateHistory(int iDirection);
 
   Mode                                   m_Mode     = Mode::Browser;
   xiiQtToolBarActionMapView*             m_pToolbar = nullptr;
@@ -115,5 +119,12 @@ private:
   xiiQtAssetBrowserFilter*               m_pFilter = nullptr;
 
   /// After creating a new asset and renaming it, we want to open it as well.
-  bool m_bOpenAfterRename = false;
+  bool        m_bOpenAfterRename   = false;
+  QStringList m_PathHistory        = {QString()};
+  xiiInt32    m_iPathHistory       = 0;
+  bool        m_bHistoryNavigation = false;
+  QAction*    m_pBack              = nullptr;
+  QAction*    m_pForward           = nullptr;
+  QAction*    m_pUp                = nullptr;
+  QLabel*     m_pBreadcrumb        = nullptr;
 };

@@ -65,6 +65,7 @@ public:
   static xiiActionDescriptorHandle s_hSaveProfiling;
   static xiiActionDescriptorHandle s_hOpenVsCode;
   static xiiActionDescriptorHandle s_hImportAsset;
+  static xiiActionDescriptorHandle s_hFindAssets;
   static xiiActionDescriptorHandle s_hClearAssetCaches;
 
   static xiiActionDescriptorHandle s_hCppProjectMenu;
@@ -139,6 +140,7 @@ public:
     ExportProject,
     PluginSelection,
     ClearAssetCaches,
+    FindAssets,
   };
 
   xiiProjectAction(const xiiActionContext& context, const char* szName, ButtonType button);

@@ -639,10 +639,8 @@ xiiResult xiiQtContainerWindow::EnsureVisible(xiiQtApplicationPanel* pPanel)
     return XII_SUCCESS;
   }
 
-  if (pPanel->isClosed())
-  {
-    pPanel->toggleView();
-  }
+  // ADS also expands an open but collapsed auto-hide drawer through toggleView(true).
+  pPanel->toggleView(true);
   pPanel->raise();
   return XII_SUCCESS;
 }

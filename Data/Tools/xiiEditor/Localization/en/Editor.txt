@@ -322,3 +322,4 @@ xiiVariantType::ColorGamma;ColorGamma
 xiiCppProject::CppIDE;C++ IDE
 xiiCompilerPreferences::CppCompiler;C++ Compiler
 View.Options;View Options
+Editor.FindAssets;Find Assets
