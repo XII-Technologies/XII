@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Core/World/SpatialSystem.h>
+#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/SimdMath/SimdVec4i.h>
 #include <Foundation/Types/UniquePtr.h>
@@ -28,6 +29,8 @@ public:
 
 private:
   friend xiiInternal::QueryHelper;
+
+  xiiEventSubscriptionID m_CVarSubscription = 0;
 
   // xiiSpatialSystem implementation
   virtual void StartNewFrame() override;

@@ -13,6 +13,13 @@
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProfileConfigData, 1, xiiRTTINoAllocator)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiSettingsScopeAttribute(xiiSettingsScope::Platform),
+  }
+  XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE
 // clang-format on
 
@@ -45,7 +52,23 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPlatformProfile, 1, xiiRTTIDefaultAllocator<
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiPlatformProfile::xiiPlatformProfile() = default;
+xiiPlatformProfile::xiiPlatformProfile()
+{
+  xiiPlugin::Events().AddEventHandler([this](const xiiPluginEvent& event) {
+    if (event.m_EventType != xiiPluginEvent::AfterStartupShutdown)
+      return;
+    for (xiiUInt32 i = m_Configs.GetCount(); i > 0; --i)
+    {
+      auto* pConfig = m_Configs[i - 1];
+      if (pConfig != nullptr && pConfig->GetDynamicRTTI()->GetPluginName() == event.m_sPluginBinary)
+      {
+        pConfig->GetDynamicRTTI()->GetAllocator()->Deallocate(pConfig);
+        m_Configs.RemoveAtAndCopy(i - 1);
+      }
+    }
+  },
+                                      m_PluginSubscription);
+}
 
 xiiPlatformProfile::~xiiPlatformProfile()
 {
@@ -88,7 +111,7 @@ void xiiPlatformProfile::AddMissingConfigs()
       m_Configs.PushBack(pObject);
     }
   },
-                                                    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+                                                    xiiRTTI::ForEachOptions::ExcludeNotConcrete);
 
   // in case unknown configs were loaded from disk, remove them
   m_Configs.RemoveAndSwap(nullptr);

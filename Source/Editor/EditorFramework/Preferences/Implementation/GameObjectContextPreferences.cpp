@@ -7,6 +7,13 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameObjectContextPreferencesUser, 1, xiiRTTIDefaultAllocator<xiiGameObjectContextPreferencesUser>)
 {
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiSettingsScopeAttribute(xiiSettingsScope::Document),
+    new xiiDocumentSettingsAttribute("xiiGameObjectContextDocument"),
+    new xiiCategoryAttribute("Context"),
+  }
+  XII_END_ATTRIBUTES;
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("ContextDocument", m_ContextDocument)->AddAttributes(new xiiHiddenAttribute),

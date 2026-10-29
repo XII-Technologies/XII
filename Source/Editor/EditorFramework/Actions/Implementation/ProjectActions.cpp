@@ -21,6 +21,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Profiling/ProfilingUtils.h>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/Dialogs/ShortcutEditorDlg.moc.h>
 #include <GuiFoundation/Widgets/SearchWidget.moc.h>
 #include <QApplication>
@@ -664,7 +665,14 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::PreferencesDialog:
     {
-      xiiQtPreferencesDlg dlg(nullptr);
+      const xiiDocument* pContext = m_Context.m_pDocument;
+      if (pContext == nullptr)
+      {
+        if (auto* pContainer = xiiQtContainerWindow::GetContainerWindow())
+          if (auto* pWindow = pContainer->GetFocusedDocumentWindow())
+            pContext = pWindow->GetDocument();
+      }
+      xiiQtPreferencesDlg dlg(nullptr, pContext);
       if (dlg.exec() == QDialog::Accepted)
       {
         // save modified preferences right away

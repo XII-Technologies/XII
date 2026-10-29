@@ -11,7 +11,8 @@
 
 /// Creates a swapchain and keeps it up to date with the window.
 ///
-/// If the window is resized or xiiGameApplication::cvar_AppVSync changes and onSwapChainChanged is valid, the swapchain is destroyed and recreated. It is up the the application to respond to the OnSwapChainChanged callback and update any references to the swap-chain, e.g. uses in xiiView or uses as render targets in xiiGALRenderTargetSetup.
+/// Resize notifies onSwapChainChanged so the application can update view and render-target references.
+/// Presentation settings are applied through SetVSyncEnabled, including at output creation.
 ///
 /// If onSwapChainChanged is not set, the swapchain will not be re-created and it is up to the application to manage the swapchain and react to window changes.
 class XII_GAMEENGINE_DLL xiiWindowOutputTargetGAL : public xiiWindowOutputTargetBase

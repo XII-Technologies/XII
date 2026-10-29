@@ -5,10 +5,25 @@
 
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Plugin.h>
+#include <Foundation/Configuration/Settings.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Reflection/Reflection.h>
 
 static xiiInt32 g_iPluginState = -1;
+
+class xiiPluginTestSettings : public xiiSettings
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiPluginTestSettings, xiiSettings);
+};
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPluginTestSettings, 1, xiiRTTIDefaultAllocator<xiiPluginTestSettings>)
+  {
+    XII_BEGIN_ATTRIBUTES
+    {
+      new xiiSettingsScopeAttribute(xiiSettingsScope::Application),
+    } XII_END_ATTRIBUTES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void OnLoadPlugin();
 void OnUnloadPlugin();

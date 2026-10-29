@@ -2,14 +2,32 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Preferences/Preferences.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
+#include <ToolsFoundation/Document/Document.h>
+#include <ToolsFoundation/Project/ToolsProject.h>
 
 // clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentSettingsAttribute, 1, xiiRTTIDefaultAllocator<xiiDocumentSettingsAttribute>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("DocumentType", m_sDocumentType),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPreferences, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
@@ -19,213 +37,298 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPreferences, 1, xiiRTTINoAllocator)
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, Preferences)
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "ToolsFoundation"
+  END_SUBSYSTEM_DEPENDENCIES
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiPlugin::Events().AddEventHandler(xiiPreferences::PluginEventHandler);
+  }
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiPlugin::Events().RemoveEventHandler(xiiPreferences::PluginEventHandler);
+    xiiPreferences::ClearApplicationPreferences();
+  }
+XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiMap<const xiiDocument*, xiiMap<const xiiRTTI*, xiiPreferences*>> xiiPreferences::s_Preferences;
+xiiMap<const xiiDocument*, xiiMap<const xiiRTTI*, xiiPreferences::Entry>> xiiPreferences::s_Preferences;
+xiiEvent<const xiiDocument*>                                              xiiPreferences::s_SettingsInvalidatedEvent;
 
-xiiPreferences::xiiPreferences(Domain domain, const char* szUniqueName)
+xiiPreferences::xiiPreferences(Domain domain, const char* szUniqueName) :
+  m_Domain(domain), m_sUniqueName(szUniqueName), m_pDocument(nullptr)
 {
-  m_Domain      = domain;
-  m_sUniqueName = szUniqueName;
-  m_pDocument   = nullptr;
 }
 
 xiiPreferences* xiiPreferences::QueryPreferences(const xiiRTTI* pRtti, const xiiDocument* pDocument)
 {
-  XII_ASSERT_DEV(xiiQtEditorApp::GetSingleton() != nullptr, "Editor app is not available in this process");
+  if (pRtti == nullptr || !pRtti->IsDerivedFrom<xiiPreferences>())
+    return nullptr;
+  return static_cast<xiiPreferences*>(QuerySettings(pRtti, pDocument));
+}
 
-  auto it = s_Preferences[pDocument].Find(pRtti);
+xiiSettings* xiiPreferences::QuerySettings(const xiiRTTI* pRtti, const xiiDocument* pDocument)
+{
+  if (pRtti == nullptr || !pRtti->IsDerivedFrom<xiiSettings>() || xiiApplicationServices::GetSingleton() == nullptr)
+    return nullptr;
 
-  if (it.IsValid())
-    return it.Value();
-
-  auto pAlloc = pRtti->GetAllocator();
-  XII_ASSERT_DEV(pAlloc != nullptr, "Invalid allocator for preferences type");
-
-  if (!pAlloc->CanAllocate())
+  if (const auto* pContext = pRtti->GetAttributeByType<xiiDocumentSettingsAttribute>())
   {
-    XII_ASSERT_DEV(pAlloc->CanAllocate(), "Cannot create a preferences object that does not have a proper allocator");
+    const auto* pDocumentType = xiiRTTI::FindTypeByName(pContext->GetDocumentType());
+    if (pDocument == nullptr || pDocumentType == nullptr || !pDocument->GetDynamicRTTI()->IsDerivedFrom(pDocumentType))
+      return nullptr;
+  }
+
+  const auto* pScope = pRtti->GetAttributeByType<xiiSettingsScopeAttribute>();
+  if (pScope != nullptr && (pScope->GetScope() < xiiSettingsScope::Application || pScope->GetScope() > xiiSettingsScope::Document || (pScope->GetScope() == xiiSettingsScope::Document) != (pDocument != nullptr) || (pScope->GetScope() != xiiSettingsScope::Application && !xiiToolsProject::IsProjectOpen())))
+    return nullptr;
+
+  if (auto itDocument = s_Preferences.Find(pDocument); itDocument.IsValid())
+  {
+    if (auto it = itDocument.Value().Find(pRtti); it.IsValid())
+      return it.Value().m_pSettings;
+  }
+
+  // Unannotated legacy preferences retain their query API, but are not constructed speculatively.
+  if (pScope == nullptr && !pRtti->IsDerivedFrom<xiiPreferences>())
+    return nullptr;
+
+  Entry entry;
+  entry.m_pSettings = xiiSettings::Create(pRtti);
+  if (entry.m_pSettings == nullptr)
+    return nullptr;
+
+  auto* pPreferences = xiiDynamicCast<xiiPreferences*>(entry.m_pSettings);
+  entry.m_Domain     = pPreferences ? pPreferences->GetDomain() : static_cast<Domain>(pScope->GetScope());
+  if (pPreferences)
+    entry.m_sName = pPreferences->m_sUniqueName;
+  else
+    entry.m_sName = xiiStringBuilder("Settings_", pRtti->GetTypeName());
+
+  if (entry.m_sName.IsEmpty() || xiiPathUtils::ContainsInvalidFilenameChars(entry.m_sName) ||
+      (entry.m_Domain == Domain::Document) != (pDocument != nullptr) ||
+      (entry.m_Domain != Domain::Application && !xiiToolsProject::IsProjectOpen()) ||
+      (pScope != nullptr && pScope->GetScope() != static_cast<xiiInt32>(entry.m_Domain)))
+  {
+    pRtti->GetAllocator()->Deallocate(entry.m_pSettings);
     return nullptr;
   }
 
-  xiiPreferences* pPref           = pAlloc->Allocate<xiiPreferences>();
-  pPref->m_pDocument              = pDocument;
-  s_Preferences[pDocument][pRtti] = pPref;
-
-  if (pPref->m_Domain == Domain::Document)
+  // Never let two types silently share a persisted identity within one scope.
+  for (const auto& existing : s_Preferences[pDocument])
   {
-    XII_ASSERT_DEV(pDocument != nullptr, "Preferences of this type can only be used per document");
+    if (GetFilePath(existing.Value(), pDocument).IsEqual_NoCase(GetFilePath(entry, pDocument)))
+    {
+      xiiLog::Error("Settings type '{}' conflicts with persisted identity '{}'.", pRtti->GetTypeName(), entry.m_sName);
+      pRtti->GetAllocator()->Deallocate(entry.m_pSettings);
+      return nullptr;
+    }
   }
+
+  if (pPreferences)
+    pPreferences->m_pDocument = pDocument;
+
+  xiiFileReader   file;
+  const xiiString path = GetFilePath(entry, pDocument);
+  if (file.Open(path).Succeeded())
+  {
+    entry.m_bCanSave = entry.m_pSettings->ReadFromDDL(file).Succeeded();
+    if (!entry.m_bCanSave)
+      xiiLog::Warning("Invalid settings '{}'; using defaults and preserving the original file. Repair or move it before saving.", path);
+  }
+  else if (xiiFileSystem::ExistsFile(path))
+  {
+    entry.m_bCanSave = false;
+    xiiLog::Warning("Unable to read settings '{}'; preserving the original file.", path);
+  }
+  s_Preferences[pDocument].Insert(pRtti, entry);
+  entry.m_pSettings->NotifyChanged();
+  return entry.m_pSettings;
+}
+
+xiiString xiiPreferences::GetFilePath(const Entry& entry, const xiiDocument* pDocument)
+{
+  auto*            pServices = xiiApplicationServices::GetSingleton();
+  xiiStringBuilder path;
+  switch (entry.m_Domain)
+  {
+    case Domain::Application:
+      path = pServices->GetApplicationPreferencesFolder();
+      break;
+    case Domain::Project:
+      path = pServices->GetProjectPreferencesFolder();
+      break;
+    case Domain::Document:
+      path = pServices->GetDocumentPreferencesFolder(pDocument);
+      break;
+  }
+  path.AppendPath(entry.m_sName);
+  if (entry.m_pSettings != nullptr && !entry.m_pSettings->GetDynamicRTTI()->IsDerivedFrom<xiiPreferences>())
+    path.Append(".pref");
   else
-  {
-    XII_ASSERT_DEV(pDocument == nullptr, "Preferences of this type cannot be used with a document");
-  }
-
-  pPref->Load();
-  return pPref;
+    path.ChangeFileExtension("pref");
+  return path;
 }
 
 xiiString xiiPreferences::GetFilePath() const
 {
-  xiiStringBuilder path;
-
-  if (m_Domain == Domain::Application)
-  {
-    path = xiiApplicationServices::GetSingleton()->GetApplicationPreferencesFolder();
-    path.AppendPath(m_sUniqueName);
-    path.ChangeFileExtension("pref");
-  }
-
-  if (m_Domain == Domain::Project)
-  {
-    path = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-    path.AppendPath(m_sUniqueName);
-    path.ChangeFileExtension("pref");
-  }
-
-  if (m_Domain == Domain::Document)
-  {
-    path = xiiApplicationServices::GetSingleton()->GetDocumentPreferencesFolder(m_pDocument);
-    path.AppendPath(m_sUniqueName);
-    path.ChangeFileExtension("pref");
-  }
-
-  return path;
+  Entry entry;
+  entry.m_Domain = m_Domain;
+  entry.m_sName  = m_sUniqueName;
+  return GetFilePath(entry, m_pDocument);
 }
 
-void xiiPreferences::Load()
+xiiResult xiiPreferences::Save(const Entry& entry, const xiiDocument* pDocument)
 {
-  xiiFileReader file;
-  if (file.Open(GetFilePath()).Failed())
-    return;
+  if (!entry.m_bCanSave)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(entry.m_pSettings->Validate());
 
-  xiiReflectionSerializer::ReadObjectPropertiesFromDDL(file, *GetDynamicRTTI(), this);
-}
+  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  entry.m_pSettings->GetDynamicRTTI()->GetAllProperties(properties);
+  bool bHasProperties = false;
+  for (const auto* pProperty : properties)
+    bHasProperties |= pProperty->GetCategory() != xiiPropertyCategory::Constant && !pProperty->GetFlags().IsSet(xiiPropertyFlags::ReadOnly);
+  if (!bHasProperties)
+    return XII_SUCCESS;
 
-void xiiPreferences::Save() const
-{
-  bool bNothingToSerialize = true;
-
-  xiiHybridArray<const xiiAbstractProperty*, 32> allProperties;
-  GetDynamicRTTI()->GetAllProperties(allProperties);
-
-  for (const xiiAbstractProperty* pProp : allProperties)
-  {
-    if (pProp->GetCategory() == xiiPropertyCategory::Constant || pProp->GetFlags().IsAnySet(xiiPropertyFlags::ReadOnly))
-      continue;
-
-    bNothingToSerialize = false;
-    break;
-  }
-
-  if (bNothingToSerialize)
-    return;
-
+  xiiDefaultMemoryStreamStorage storage;
+  xiiMemoryStreamWriter         writer(&storage);
+  xiiReflectionSerializer::WriteObjectToDDL(writer, entry.m_pSettings->GetDynamicRTTI(), entry.m_pSettings, false, xiiOpenDdlWriter::TypeStringMode::Compliant);
   xiiDeferredFileWriter file;
-  file.SetOutput(GetFilePath());
-
-  xiiReflectionSerializer::WriteObjectToDDL(file, GetDynamicRTTI(), this, false, xiiOpenDdlWriter::TypeStringMode::Compliant);
-
-  if (file.Close().Failed())
-    xiiLog::Error("Failed to open file for writing '{0}'.", GetFilePath());
+  file.SetOutput(GetFilePath(entry, pDocument));
+  XII_SUCCEED_OR_RETURN(storage.CopyToStream(file));
+  return file.Close();
 }
 
+xiiResult xiiPreferences::SaveSettings(xiiSettings* pSettings, const xiiSettings* pSource)
+{
+  for (auto& document : s_Preferences)
+    for (auto& type : document.Value())
+      if (type.Value().m_pSettings == pSettings)
+      {
+        Entry entry = type.Value();
+        if (pSource != nullptr)
+        {
+          if (pSource->GetDynamicRTTI() != pSettings->GetDynamicRTTI())
+            return XII_FAILURE;
+          entry.m_pSettings = const_cast<xiiSettings*>(pSource);
+        }
+        return Save(entry, document.Key());
+      }
+  return XII_FAILURE;
+}
 
 void xiiPreferences::SavePreferences(const xiiDocument* pDocument, Domain domain)
 {
-  auto& docPrefs = s_Preferences[pDocument];
-
-  // save all preferences for the given document
-  for (auto it = docPrefs.GetIterator(); it.IsValid(); ++it)
-  {
-    auto pPref = it.Value();
-
-    if (pPref->m_Domain == domain)
-      pPref->Save();
-  }
+  auto itDocument = s_Preferences.Find(pDocument);
+  if (!itDocument.IsValid())
+    return;
+  for (const auto& type : itDocument.Value())
+    if (type.Value().m_Domain == domain && Save(type.Value(), pDocument).Failed())
+      xiiLog::Error("Failed to save settings '{}'.", GetFilePath(type.Value(), pDocument));
 }
 
 void xiiPreferences::ClearPreferences(const xiiDocument* pDocument, Domain domain)
 {
-  auto& docPrefs = s_Preferences[pDocument];
-
-  // save all preferences for the given document
-  for (auto it = docPrefs.GetIterator(); it.IsValid();)
+  s_SettingsInvalidatedEvent.Broadcast(pDocument);
+  auto itDocument = s_Preferences.Find(pDocument);
+  if (!itDocument.IsValid())
+    return;
+  auto& preferences = itDocument.Value();
+  for (auto it = preferences.GetIterator(); it.IsValid();)
   {
-    xiiPreferences* pPref = it.Value();
-
-    if (pPref->m_Domain == domain)
+    if (it.Value().m_Domain == domain)
     {
-      pPref->GetDynamicRTTI()->GetAllocator()->Deallocate(pPref);
-      it = docPrefs.Remove(it);
+      auto* pSettings = it.Value().m_pSettings;
+      pSettings->GetDynamicRTTI()->GetAllocator()->Deallocate(pSettings);
+      it = preferences.Remove(it);
     }
     else
       ++it;
   }
+  if (preferences.IsEmpty())
+    s_Preferences.Remove(itDocument);
 }
 
-void xiiPreferences::SaveDocumentPreferences(const xiiDocument* pDocument)
-{
-  SavePreferences(pDocument, Domain::Document);
-}
-
-void xiiPreferences::ClearDocumentPreferences(const xiiDocument* pDocument)
-{
-  ClearPreferences(pDocument, Domain::Document);
-}
-
-void xiiPreferences::SaveProjectPreferences()
-{
-  SavePreferences(nullptr, Domain::Project);
-}
-
-void xiiPreferences::ClearProjectPreferences()
-{
-  ClearPreferences(nullptr, Domain::Project);
-}
-
-void xiiPreferences::SaveApplicationPreferences()
-{
-  SavePreferences(nullptr, Domain::Application);
-}
-
-void xiiPreferences::ClearApplicationPreferences()
-{
-  ClearPreferences(nullptr, Domain::Application);
-}
+void xiiPreferences::SaveDocumentPreferences(const xiiDocument* pDocument) { SavePreferences(pDocument, Domain::Document); }
+void xiiPreferences::ClearDocumentPreferences(const xiiDocument* pDocument) { ClearPreferences(pDocument, Domain::Document); }
+void xiiPreferences::SaveProjectPreferences() { SavePreferences(nullptr, Domain::Project); }
+void xiiPreferences::ClearProjectPreferences() { ClearPreferences(nullptr, Domain::Project); }
+void xiiPreferences::SaveApplicationPreferences() { SavePreferences(nullptr, Domain::Application); }
+void xiiPreferences::ClearApplicationPreferences() { ClearPreferences(nullptr, Domain::Application); }
 
 void xiiPreferences::GatherAllPreferences(xiiHybridArray<xiiPreferences*, 16>& out_allPreferences)
 {
   out_allPreferences.Clear();
-  out_allPreferences.Reserve(s_Preferences.GetCount() * 2);
+  for (const auto& document : s_Preferences)
+    for (const auto& type : document.Value())
+      if (auto* pPreferences = xiiDynamicCast<xiiPreferences*>(type.Value().m_pSettings))
+        out_allPreferences.PushBack(pPreferences);
+}
 
-  for (auto itDoc = s_Preferences.GetIterator(); itDoc.IsValid(); ++itDoc)
+void xiiPreferences::GatherSettings(xiiDynamicArray<Settings>& out_settings, const xiiDocument* pDocument)
+{
+  out_settings.Clear();
+  xiiDynamicArray<const xiiRTTI*> types;
+  for (xiiInt32 iScope = xiiSettingsScope::Application; iScope <= xiiSettingsScope::Document; ++iScope)
   {
-    for (auto itType = itDoc.Value().GetIterator(); itType.IsValid(); ++itType)
+    if (iScope != xiiSettingsScope::Application && !xiiToolsProject::IsProjectOpen())
+      continue;
+    if (iScope == xiiSettingsScope::Document && pDocument == nullptr)
+      continue;
+    xiiSettings::GatherTypes(static_cast<xiiSettingsScope::Enum>(iScope), types);
+    for (const auto* pType : types)
+      QuerySettings(pType, iScope == xiiSettingsScope::Document ? pDocument : nullptr);
+  }
+  for (const auto& document : s_Preferences)
+  {
+    if (document.Key() != nullptr && document.Key() != pDocument)
+      continue;
+    for (const auto& type : document.Value())
     {
-      out_allPreferences.PushBack(itType.Value());
+      const auto& entry = type.Value();
+      Settings    settings;
+      settings.m_pSettings = entry.m_pSettings;
+      settings.m_pDocument = document.Key();
+      settings.m_Domain    = entry.m_Domain;
+      settings.m_sName     = entry.m_sName;
+      out_settings.PushBack(settings);
+    }
+  }
+}
+
+void xiiPreferences::PluginEventHandler(const xiiPluginEvent& event)
+{
+  if (event.m_EventType != xiiPluginEvent::AfterStartupShutdown)
+    return;
+  s_SettingsInvalidatedEvent.Broadcast(nullptr);
+  for (auto& document : s_Preferences)
+  {
+    auto& preferences = document.Value();
+    for (auto it = preferences.GetIterator(); it.IsValid();)
+    {
+      if (it.Key()->GetPluginName() == event.m_sPluginBinary)
+      {
+        if (Save(it.Value(), document.Key()).Failed())
+          xiiLog::Error("Failed to save settings before unloading '{}'.", event.m_sPluginBinary);
+        it.Key()->GetAllocator()->Deallocate(it.Value().m_pSettings);
+        it = preferences.Remove(it);
+      }
+      else
+        ++it;
     }
   }
 }
 
 xiiString xiiPreferences::GetName() const
 {
-  xiiStringBuilder s;
-
+  xiiStringBuilder name;
   if (m_Domain == Domain::Document)
-  {
-    s.Set(m_sUniqueName, ": ");
-    s.Append(xiiPathUtils::GetFileName(m_pDocument->GetDocumentPath()));
-  }
+    name.Set(m_sUniqueName, ": ", m_pDocument ? xiiPathUtils::GetFileName(m_pDocument->GetDocumentPath()) : xiiStringView());
   else
-  {
-    if (m_Domain == Domain::Application)
-      s.Append("Application");
-    else if (m_Domain == Domain::Project)
-      s.Append("Project");
-
-    s.Append(": ", m_sUniqueName);
-  }
-
-  return s;
+    name.Set(m_Domain == Domain::Application ? "Application: " : "Project: ", m_sUniqueName);
+  return name;
 }

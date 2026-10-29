@@ -15,6 +15,7 @@
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Time/DefaultTimeStepSmoothing.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
@@ -29,8 +30,10 @@
 xiiGameApplication*                                                             xiiGameApplication::s_pGameApplicationInstance = nullptr;
 xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
 
-xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Synchronizes frame presentation with the display refresh to reduce or eliminate screen tearing. This may introduce input latency and cap the framerate to the monitor's refresh rate. Useful for visual fidelity and stable presentation.");
+xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Compatibility control for runtime presentation settings. Updates VSync in RuntimeConfigs/Presentation.ddl; the reflected file takes precedence over legacy saved CVar values.");
 xiiCVarBool xiiGameApplication::cvar_AppShowFrameStats("App.ShowFrameStats", false, xiiCVarFlags::Save, "Displays a live frames-stats overlay on-screen to aid profiling and spot frame-time spikes during development and debugging. Provides an immediate performance readout without affecting rendering state.");
+
+static xiiCVarFloat cvar_FrameTimeWarningMS("App.FrameTimeWarningMS", 0.0f, xiiCVarFlags::Default, "Log frames exceeding this measured wall-clock duration in milliseconds. Zero disables warnings; intended for temporary hitch diagnosis.");
 
 xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath /*= {}*/) :
   xiiGameApplicationBase(sAppName), m_sAppProjectPath(sProjectPath)
@@ -42,6 +45,7 @@ xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sPr
   xiiConsole::SetMainConsole(m_pConsole.Borrow());
 
   m_CVarChangeSubscriptionID = cvar_AppVSync.m_CVarEvents.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnVSyncChanged, this));
+  m_Settings.m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnSettingsChanged, this), m_SettingsSubscription);
 }
 
 xiiGameApplication::~xiiGameApplication()
@@ -159,6 +163,9 @@ void xiiGameApplication::Run_PresentImage()
 void xiiGameApplication::Run_FinishFrame()
 {
   SUPER::Run_FinishFrame();
+  const float fThreshold = cvar_FrameTimeWarningMS.GetValue();
+  if (xiiMath::IsFinite(fThreshold) && fThreshold > 0.0f && m_FrameTime.GetMilliseconds() > fThreshold)
+    xiiLog::Warning("Frame took {0} ms (App.FrameTimeWarningMS = {1}).", m_FrameTime.GetMilliseconds(), fThreshold);
 }
 
 void xiiGameApplication::RenderFps()
@@ -284,12 +291,40 @@ void xiiGameApplication::RenderConsole()
 
 void xiiGameApplication::OnVSyncChanged(const xiiCVarEvent& e)
 {
+  if (e.m_EventType != xiiCVarEvent::ValueChanged || !m_bSettingsInitialized || m_Settings.m_bVSync == cvar_AppVSync.GetValue())
+    return;
+  m_Settings.m_bVSync = cvar_AppVSync.GetValue();
+  m_Settings.NotifyChanged();
+}
+
+void xiiGameApplication::Init_ConfigureCVars()
+{
+  SUPER::Init_ConfigureCVars();
+  m_bSettingsWritable = !xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-no-file-cvars", false);
+  if (m_bSettingsWritable && m_Settings.Load(":appdata/RuntimeConfigs/Presentation.ddl", cvar_AppVSync.GetValue()).Failed())
+  {
+    m_bSettingsWritable = false;
+    m_Settings.m_bVSync = cvar_AppVSync.GetValue();
+    xiiLog::Warning("Unable to load runtime presentation settings; preserving the original file and using the legacy/default value.");
+  }
+  if (xiiCommandLineUtils::GetGlobalInstance()->HasOption("-App.VSync"))
+    m_Settings.m_bVSync = xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-App.VSync", m_Settings.m_bVSync);
+  m_bSettingsInitialized = true;
+  m_Settings.NotifyChanged();
+}
+
+void xiiGameApplication::OnSettingsChanged(xiiSettings*)
+{
+  cvar_AppVSync = m_Settings.m_bVSync;
+  if (m_bSettingsInitialized && m_bSettingsWritable && m_Settings.Save(":appdata/RuntimeConfigs/Presentation.ddl").Failed())
+    xiiLog::Error("Failed to save runtime presentation settings.");
   auto pWindowManager = xiiWindowManager::GetSingleton();
+  if (pWindowManager == nullptr)
+    return;
 
   xiiTemporaryHybridArray<xiiRegisteredWindowHandle, 8> windows;
   pWindowManager->GetRegistered(windows);
 
-  bool bExecutedFrameCapture = false;
   for (xiiRegisteredWindowHandle hWindow : windows)
   {
     xiiWindowBase* pWindow = pWindowManager->GetWindow(hWindow);
@@ -298,7 +333,7 @@ void xiiGameApplication::OnVSyncChanged(const xiiCVarEvent& e)
 
     if (xiiWindowOutputTargetBase* pOutput = pWindow->GetOutputTarget())
     {
-      pOutput->SetVSyncEnabled(cvar_AppVSync);
+      pOutput->SetVSyncEnabled(m_Settings.m_bVSync);
     }
   }
 }

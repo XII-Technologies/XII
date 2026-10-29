@@ -9,6 +9,12 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectPreferencesUser, 1, xiiRTTIDefaultAllocator<xiiProjectPreferencesUser>)
 {
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiSettingsScopeAttribute(xiiSettingsScope::Project),
+    new xiiCategoryAttribute("General"),
+  }
+  XII_END_ATTRIBUTES;
   XII_BEGIN_PROPERTIES
   {
     XII_ARRAY_MEMBER_PROPERTY("Players", m_PlayerApps)->AddAttributes(new xiiHiddenAttribute()),

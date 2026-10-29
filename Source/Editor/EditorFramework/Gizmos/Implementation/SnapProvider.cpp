@@ -18,7 +18,8 @@ xiiEvent<const xiiSnapProviderEvent&> xiiSnapProvider::s_Events;
 XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, SnapProvider)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "EditorFrameworkMain"
+    "EditorFrameworkMain",
+    "Preferences"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP

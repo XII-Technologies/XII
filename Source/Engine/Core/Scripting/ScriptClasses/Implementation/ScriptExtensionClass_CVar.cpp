@@ -35,34 +35,10 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_CVar, xiiNoBase, 1, xiiR
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-static xiiHashTable<xiiTempHashedString, xiiCVar*> s_CachedCVars;
-
-static xiiCVar* FindCVarByNameCached(xiiStringView sName)
-{
-  xiiTempHashedString sNameHashed(sName);
-
-  xiiCVar* pCVar = nullptr;
-  if (!s_CachedCVars.TryGetValue(sNameHashed, pCVar))
-  {
-    pCVar = xiiCVar::FindCVarByName(sName);
-
-    s_CachedCVars.Insert(sNameHashed, pCVar);
-  }
-
-  xiiCVar::s_AllCVarEvents.AddEventHandler([&](const xiiCVarEvent& e) {
-    if (e.m_EventType == xiiCVarEvent::Type::ListOfVarsChanged)
-    {
-      s_CachedCVars.Clear();
-    }
-  });
-
-  return pCVar;
-}
-
 // static
 xiiVariant xiiScriptExtensionClass_CVar::GetValue(xiiStringView sName)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr)
   {
     return {};
@@ -90,7 +66,7 @@ xiiVariant xiiScriptExtensionClass_CVar::GetValue(xiiStringView sName)
 // static
 bool xiiScriptExtensionClass_CVar::GetBoolValue(xiiStringView sName)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Bool)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type bool.", sName);
@@ -103,7 +79,7 @@ bool xiiScriptExtensionClass_CVar::GetBoolValue(xiiStringView sName)
 // static
 int xiiScriptExtensionClass_CVar::GetIntValue(xiiStringView sName)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Int)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type int.", sName);
@@ -116,7 +92,7 @@ int xiiScriptExtensionClass_CVar::GetIntValue(xiiStringView sName)
 // static
 float xiiScriptExtensionClass_CVar::GetFloatValue(xiiStringView sName)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Float)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type float.", sName);
@@ -128,7 +104,7 @@ float xiiScriptExtensionClass_CVar::GetFloatValue(xiiStringView sName)
 
 double xiiScriptExtensionClass_CVar::GetDoubleValue(xiiStringView sName)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Double)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type double.", sName);
@@ -141,7 +117,7 @@ double xiiScriptExtensionClass_CVar::GetDoubleValue(xiiStringView sName)
 // static
 xiiString xiiScriptExtensionClass_CVar::GetStringValue(xiiStringView sName)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::String)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type string.", sName);
@@ -154,7 +130,7 @@ xiiString xiiScriptExtensionClass_CVar::GetStringValue(xiiStringView sName)
 // static
 void xiiScriptExtensionClass_CVar::SetValue(xiiStringView sName, const xiiVariant& value)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr)
   {
     xiiLog::Error("CVar '{}' does not exist.", sName);
@@ -201,7 +177,7 @@ void xiiScriptExtensionClass_CVar::SetValue(xiiStringView sName, const xiiVarian
 // static
 void xiiScriptExtensionClass_CVar::SetBoolValue(xiiStringView sName, bool bValue)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Bool)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type bool.", sName);
@@ -215,7 +191,7 @@ void xiiScriptExtensionClass_CVar::SetBoolValue(xiiStringView sName, bool bValue
 // static
 void xiiScriptExtensionClass_CVar::SetIntValue(xiiStringView sName, int iValue)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Int)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type int.", sName);
@@ -229,7 +205,7 @@ void xiiScriptExtensionClass_CVar::SetIntValue(xiiStringView sName, int iValue)
 // static
 void xiiScriptExtensionClass_CVar::SetFloatValue(xiiStringView sName, float fValue)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Float)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type float.", sName);
@@ -242,7 +218,7 @@ void xiiScriptExtensionClass_CVar::SetFloatValue(xiiStringView sName, float fVal
 
 void xiiScriptExtensionClass_CVar::SetDoubleValue(xiiStringView sName, double fValue)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::Double)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type double.", sName);
@@ -256,7 +232,7 @@ void xiiScriptExtensionClass_CVar::SetDoubleValue(xiiStringView sName, double fV
 // static
 void xiiScriptExtensionClass_CVar::SetStringValue(xiiStringView sName, const xiiString& sValue)
 {
-  xiiCVar* pCVar = FindCVarByNameCached(sName);
+  xiiCVar* pCVar = xiiCVar::FindCVarByName(sName);
   if (pCVar == nullptr || pCVar->GetType() != xiiCVarType::String)
   {
     xiiLog::Error("CVar '{}' does not exist or is not of type string.", sName);

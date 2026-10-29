@@ -20,6 +20,9 @@ xiiWindowOutputTargetGAL::xiiWindowOutputTargetGAL(const xiiGALSwapChainCreation
   m_pSwapChain = pDevice->CreateSwapChain(description);
   XII_ASSERT_DEV(m_pSwapChain != nullptr, "Failed to create swap chain.");
 
+  if (const auto* pApplication = xiiGameApplication::GetGameApplicationInstance())
+    SetVSyncEnabled(pApplication->GetSettings().m_bVSync);
+
   m_pImageCapture = XII_DEFAULT_NEW(xiiGALImageCapture, pDevice);
 }
 

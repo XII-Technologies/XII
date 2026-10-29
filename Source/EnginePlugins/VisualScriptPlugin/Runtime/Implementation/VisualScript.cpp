@@ -300,7 +300,9 @@ xiiScriptMessageDesc xiiVisualScriptGraphDescription::GetMessageDesc() const
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiCVarInt cvar_MaxNodeExecutions("VisualScript.MaxNodeExecutions", 100000, xiiCVarFlags::Default, "The maximum number of nodes executed within a script invocation");
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+xiiCVarInt cvar_MaxNodeExecutions("VisualScript.MaxNodeExecutions", 100000, xiiCVarFlags::Default, "Maximum nodes executed within one script invocation. Values below 1 are treated as 1.");
+#endif
 
 xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc, xiiAllocator* pAllocator) :
   m_pDesc(pDesc), m_LocalDataStorage(pDesc->GetLocalDataDesc())
@@ -372,9 +374,9 @@ xiiVisualScriptExecutionContext::ExecResult xiiVisualScriptExecutionContext::Exe
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     ++uiCounter;
-    if (uiCounter >= xiiUInt32(cvar_MaxNodeExecutions))
+    if (uiCounter >= static_cast<xiiUInt32>(xiiMath::Max(cvar_MaxNodeExecutions.GetValue(), 1)))
     {
-      xiiLog::Error("Maximum node executions ({}) reached, execution will be aborted. Does the script contain an infinite loop?", cvar_MaxNodeExecutions);
+      xiiLog::Error("Maximum node executions ({}) reached, execution will be aborted. Does the script contain an infinite loop?", xiiMath::Max(cvar_MaxNodeExecutions.GetValue(), 1));
       return ExecResult::Error();
     }
 #endif

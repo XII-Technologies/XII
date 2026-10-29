@@ -348,6 +348,11 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
         pRtti->GetAllocator()->Deallocate(pInstance);
       }
+      else if (pRtti->GetTypeName() == "xiiPluginTestSettings")
+      {
+        XII_TEST_STRING(pRtti->GetPluginName(), xiiFoundationTest_Plugin1);
+        XII_TEST_BOOL(pRtti->IsDerivedFrom<xiiReflectedClass>());
+      }
       else
       {
         XII_TEST_STRING(pRtti->GetPluginName(), "Static");

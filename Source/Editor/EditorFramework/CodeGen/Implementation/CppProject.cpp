@@ -78,6 +78,12 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCppProject, 1, xiiRTTIDefaultAllocator<xiiCppProject>)
 {
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiSettingsScopeAttribute(xiiSettingsScope::Application),
+    new xiiCategoryAttribute("Editor"),
+  }
+  XII_END_ATTRIBUTES;
   XII_BEGIN_PROPERTIES
   {
     XII_ENUM_MEMBER_PROPERTY("CppIDE", xiiIDE, m_Ide),

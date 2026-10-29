@@ -128,9 +128,30 @@ xiiQtAssetProfilesDlg::xiiQtAssetProfilesDlg(QWidget* pParent) :
   {
     m_pDocument->GetSelectionManager()->SetSelection(rootChildArray[xiiAssetCurator::GetSingleton()->GetActiveAssetProfileIndex()]);
   }
+  xiiPlugin::Events().AddEventHandler([this](const xiiPluginEvent& event) {
+    if (event.m_EventType == xiiPluginEvent::BeforePluginChanges)
+    {
+      ReleaseObjects();
+      reject();
+    }
+  },
+                                      m_PluginSubscription);
+  xiiToolsProject::s_Events.AddEventHandler([this](const xiiToolsProjectEvent& event) {
+    if (event.m_Type == xiiToolsProjectEvent::Type::ProjectClosing)
+    {
+      ReleaseObjects();
+      reject();
+    }
+  },
+                                            m_ProjectSubscription);
 }
 
 xiiQtAssetProfilesDlg::~xiiQtAssetProfilesDlg()
+{
+  ReleaseObjects();
+}
+
+void xiiQtAssetProfilesDlg::ReleaseObjects()
 {
   delete Tree;
   Tree = nullptr;
@@ -199,6 +220,8 @@ void xiiQtAssetProfilesDlg::SelectionEventHandler(const xiiSelectionManagerEvent
 
 void xiiQtAssetProfilesDlg::on_ButtonOk_clicked()
 {
+  if (m_pDocument == nullptr)
+    return;
   const xiiStatus status = ApplyAllChanges();
   if (status.Failed())
   {

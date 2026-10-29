@@ -3,7 +3,9 @@
 #include <CoreTest/CoreTestPCH.h>
 
 #include <Core/Messages/UpdateLocalBoundsMessage.h>
+#include <Core/World/SpatialSystem_RegularGrid.h>
 #include <Core/World/World.h>
+#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -84,6 +86,21 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CVar subscriptions expire with the spatial system")
+  {
+    auto*          pThreshold = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Spatial.Queries.CachingThreshold"));
+    const bool     bWasEmpty  = pThreshold->m_CVarEvents.IsEmpty();
+    const xiiInt32 iPrevious  = pThreshold->GetValue();
+    {
+      xiiSpatialSystem_RegularGrid system;
+      XII_TEST_BOOL(!pThreshold->m_CVarEvents.IsEmpty());
+      *pThreshold = iPrevious + 1;
+    }
+    XII_TEST_BOOL(pThreshold->m_CVarEvents.IsEmpty() == bWasEmpty);
+    // With the old captured-this handler this locks a destroyed cache mutex.
+    *pThreshold = iPrevious;
+  }
+
   xiiWorldDescription worldDesc("Test");
   worldDesc.m_uiRandomNumberGeneratorSeed = 5;
 
