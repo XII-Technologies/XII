@@ -14,10 +14,16 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllocator<xiiEditorPreferencesUser>)
 {
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiSettingsScopeAttribute(xiiSettingsScope::Application),
+    new xiiCategoryAttribute("Editor"),
+  }
+  XII_END_ATTRIBUTES;
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("RestoreProjectOnStartup", m_bLoadLastProjectAtStartup)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("ShowSplashScreen", m_bShowSplashScreen)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("RestoreProjectOnStartup", m_bLoadLastProjectAtStartup)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiSettingsRestartAttribute()),
+    XII_MEMBER_PROPERTY("ShowSplashScreen", m_bShowSplashScreen)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiSettingsRestartAttribute()),
     XII_MEMBER_PROPERTY("BackgroundAssetProcessing", m_bBackgroundAssetProcessing)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("FieldOfView", m_fPerspectiveFieldOfView)->AddAttributes(new xiiDefaultValueAttribute(70.0f), new xiiClampValueAttribute(10.0f, 150.0f)),
     XII_MEMBER_PROPERTY("MaxFramerate", m_uiMaxFramerate)->AddAttributes(new xiiDefaultValueAttribute(60)),
@@ -51,12 +57,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiEditorPreferencesUser::xiiEditorPreferencesUser() :
   xiiPreferences(Domain::Application, "General")
 {
-  xiiQtTypeMenu::s_pRecentList = &m_RecentlyCreatedTypes;
 }
 
 xiiEditorPreferencesUser::~xiiEditorPreferencesUser()
 {
-  xiiQtTypeMenu::s_pRecentList = nullptr;
+  if (xiiQtTypeMenu::s_pRecentList == &m_RecentlyCreatedTypes)
+    xiiQtTypeMenu::s_pRecentList = nullptr;
 }
 
 void xiiEditorPreferencesUser::ApplyDefaultValues(xiiEngineViewLightSettings& ref_settings)
@@ -80,20 +86,27 @@ void xiiEditorPreferencesUser::SetShowInDevelopmentFeatures(bool b)
 {
   m_bShowInDevelopmentFeatures = b;
 
-  xiiQtTypeMenu::s_bShowInDevelopmentFeatures = b;
 }
 
 void xiiEditorPreferencesUser::SetHighlightUntranslatedUI(bool b)
 {
   m_bHighlightUntranslatedUI = b;
 
-  xiiTranslator::HighlightUntranslated(m_bHighlightUntranslatedUI);
 }
 
 void xiiEditorPreferencesUser::SetGizmoSize(float f)
 {
   m_fGizmoSize = f;
-  SyncGlobalSettings();
+}
+
+void xiiEditorPreferencesUser::OnChanged()
+{
+  xiiQtTypeMenu::s_pRecentList                = &m_RecentlyCreatedTypes;
+  xiiQtTypeMenu::s_bShowInDevelopmentFeatures = m_bShowInDevelopmentFeatures;
+  xiiTranslator::HighlightUntranslated(m_bHighlightUntranslatedUI);
+  if (xiiEditorEngineProcessConnection::GetSingleton() != nullptr)
+    SyncGlobalSettings();
+  xiiPreferences::OnChanged();
 }
 
 void xiiEditorPreferencesUser::SetMaxFramerate(xiiUInt16 uiFPS)

@@ -213,7 +213,7 @@ bool xiiSettings::HasSameValues(const xiiSettings& other) const
   GetDynamicRTTI()->GetAllProperties(properties);
   for (const auto* pProperty : properties)
   {
-    if (!pProperty->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) && !xiiReflectionUtils::IsEqual(this, &other, pProperty))
+    if (pProperty->GetCategory() != xiiPropertyCategory::Constant && !pProperty->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) && !xiiReflectionUtils::IsEqual(this, &other, pProperty))
       return false;
   }
   return true;

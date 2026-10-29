@@ -66,6 +66,7 @@ public:
   xiiHybridArray<xiiString, 8> m_RecentlyCreatedTypes;
 
 private:
+  void OnChanged() override;
   void SyncGlobalSettings();
 
   float     m_fGizmoSize                  = 1.5f;

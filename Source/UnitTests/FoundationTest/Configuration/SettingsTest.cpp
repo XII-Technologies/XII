@@ -53,6 +53,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestSettings, 1, xiiRTTIDefaultAllocator<xii
     XII_MEMBER_PROPERTY("Scale", m_fScale),
     XII_MEMBER_PROPERTY("Label", m_sLabel),
     XII_MEMBER_PROPERTY("Child", m_Child),
+    XII_CONSTANT_PROPERTY("MaximumCount", 10),
   }
   XII_END_PROPERTIES;
 }

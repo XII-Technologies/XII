@@ -4,21 +4,36 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
-#include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Configuration/Settings.h>
+#include <Foundation/Containers/Map.h>
 
 class xiiDocument;
+
+/// Optional editor context restriction. The RTTI name is resolved before constructing document settings.
+class XII_EDITORFRAMEWORK_DLL xiiDocumentSettingsAttribute : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiDocumentSettingsAttribute, xiiPropertyAttribute);
+
+public:
+  xiiDocumentSettingsAttribute() = default;
+  explicit xiiDocumentSettingsAttribute(xiiStringView sDocumentType) : m_sDocumentType(sDocumentType) {}
+  xiiStringView GetDocumentType() const { return m_sDocumentType; }
+
+private:
+  xiiUntrackedString m_sDocumentType;
+};
 
 /// Base class for all preferences.
 ///
 /// Derive from this to implement a custom class containing preferences.
 /// All properties in such a class are exposed in the preferences UI and are automatically stored and restored.
 ///
-/// Pass the 'Domain' and 'Visibility' to the constructor to configure whether the preference class
-/// is per application, per project or per document, and whether the data is shared among all users
-/// or custom for every user.
-class XII_EDITORFRAMEWORK_DLL xiiPreferences : public xiiReflectedClass
+/// The constructor's Domain selects application, project or document user preferences.
+/// Declare matching scope metadata for discovery before the first query. Shared project configuration
+/// retains its own project/profile owner rather than using these user preference folders.
+class XII_EDITORFRAMEWORK_DLL xiiPreferences : public xiiSettings
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiPreferences, xiiReflectedClass);
+  XII_ADD_DYNAMIC_REFLECTION(xiiPreferences, xiiSettings);
 
 public:
   enum class Domain
@@ -41,25 +56,51 @@ public:
   /// If the instance does not exist yet, it is created and the data is restored from file.
   static xiiPreferences* QueryPreferences(const xiiRTTI* pRtti, const xiiDocument* pDocument = nullptr);
 
+  /// Editor ownership adapter for settings from any module. New types declare scope through RTTI metadata.
+  /// Borrowed pointers expire when their context closes or their plugin unloads.
+  static xiiSettings* QuerySettings(const xiiRTTI* pRtti, const xiiDocument* pDocument = nullptr);
+
+  template <typename TYPE>
+  static TYPE* QuerySettings(const xiiDocument* pDocument = nullptr)
+  {
+    static_assert(std::is_base_of_v<xiiSettings, TYPE>);
+    return static_cast<TYPE*>(QuerySettings(xiiGetStaticRTTI<TYPE>(), pDocument));
+  }
+
+  struct Settings
+  {
+    xiiSettings*       m_pSettings = nullptr;
+    const xiiDocument* m_pDocument = nullptr;
+    Domain             m_Domain    = Domain::Application;
+    xiiString          m_sName;
+  };
+
+  /// Discovers eligible types before gathering application, current project and optional document settings.
+  static void      GatherSettings(xiiDynamicArray<Settings>& out_settings, const xiiDocument* pDocument = nullptr);
+  static xiiResult SaveSettings(xiiSettings* pSettings, const xiiSettings* pSource = nullptr);
+
+  /// Sent before owned objects are destroyed. UI copies must be released synchronously.
+  static xiiEvent<const xiiDocument*> s_SettingsInvalidatedEvent;
+
   /// Saves all preferences that are tied to the given document
   static void SaveDocumentPreferences(const xiiDocument* pDocument);
 
   /// Removes all preferences for the given document. Does not save them.
-  /// Afterwards the preferences will not appear in the UI any further.
+  /// A subsequent query or discovery in a valid context can create them again.
   static void ClearDocumentPreferences(const xiiDocument* pDocument);
 
   /// Saves all project specific preferences.
   static void SaveProjectPreferences();
 
   /// Removes all project specific preferences. Does not save them.
-  /// Afterwards the preferences will not appear in the UI any further.
+  /// A subsequent query or discovery in an open project can create them again.
   static void ClearProjectPreferences();
 
   /// Saves all application specific preferences.
   static void SaveApplicationPreferences();
 
   /// Removes all application specific preferences. Does not save them.
-  /// Afterwards the preferences will not appear in the UI any further.
+  /// A subsequent query or discovery can create them again.
   static void ClearApplicationPreferences();
 
   //// Fills the list with all currently known preferences
@@ -78,24 +119,35 @@ public:
   xiiEvent<xiiPreferences*> m_ChangedEvent;
 
   /// Call this to broadcast that this preference object was modified.
-  void TriggerPreferencesChangedEvent() { m_ChangedEvent.Broadcast(this); }
+  void TriggerPreferencesChangedEvent() { NotifyChanged(); }
 
 protected:
   xiiPreferences(Domain domain, const char* szUniqueName);
 
   xiiString GetFilePath() const;
+  void      OnChanged() override { m_ChangedEvent.Broadcast(this); }
 
 private:
   static void SavePreferences(const xiiDocument* pDocument, Domain domain);
   static void ClearPreferences(const xiiDocument* pDocument, Domain domain);
 
-  void Load();
-  void Save() const;
+  static void PluginEventHandler(const xiiPluginEvent& event);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(EditorFramework, Preferences);
 
 private:
   Domain             m_Domain;
   xiiString          m_sUniqueName;
   const xiiDocument* m_pDocument;
 
-  static xiiMap<const xiiDocument*, xiiMap<const xiiRTTI*, xiiPreferences*>> s_Preferences;
+  struct Entry
+  {
+    xiiSettings* m_pSettings = nullptr;
+    Domain       m_Domain    = Domain::Application;
+    xiiString    m_sName;
+    bool         m_bCanSave = true;
+  };
+
+  static xiiString                                                 GetFilePath(const Entry& entry, const xiiDocument* pDocument);
+  static xiiResult                                                 Save(const Entry& entry, const xiiDocument* pDocument);
+  static xiiMap<const xiiDocument*, xiiMap<const xiiRTTI*, Entry>> s_Preferences;
 };

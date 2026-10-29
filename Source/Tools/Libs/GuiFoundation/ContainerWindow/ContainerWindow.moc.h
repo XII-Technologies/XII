@@ -51,6 +51,9 @@ public:
 
   void GetDocumentWindows(xiiHybridArray<xiiQtDocumentWindow*, 16>& ref_windows);
 
+  /// Resolves the document context for application commands such as the settings dialog.
+  xiiQtDocumentWindow* GetFocusedDocumentWindow() const;
+
   void SaveWindowLayout();
   void SaveDocumentLayouts();
   void RestoreWindowLayout();
@@ -98,7 +101,6 @@ private Q_SLOTS:
 
 private:
   void                 UpdateWindowTitle();
-  xiiQtDocumentWindow* GetFocusedDocumentWindow() const;
   void                 UpdateDocumentMenu();
 
   void RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow);

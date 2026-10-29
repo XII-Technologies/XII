@@ -5,11 +5,13 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorFramework/ui_AssetProfilesDlg.h>
+#include <Foundation/Configuration/Plugin.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/Uuid.h>
 
 #include <QDialog>
+#include <ToolsFoundation/Project/ToolsProject.h>
 
 class xiiAssetProfilesDocument;
 class xiiPlatformProfile;
@@ -44,8 +46,11 @@ private:
   xiiUuid   NativeToObject(xiiPlatformProfile* pProfile);
   void      ObjectToNative(xiiUuid objectGuid, xiiPlatformProfile* pProfile);
   void      SelectionEventHandler(const xiiSelectionManagerEvent& e);
+  void      ReleaseObjects();
 
   xiiAssetProfilesDocument* m_pDocument;
   xiiUuid                   m_ActiveProfile;
   xiiUuid                   m_OriginalActiveProfile;
+  xiiCopyOnBroadcastEvent<const xiiPluginEvent&>::Unsubscriber  m_PluginSubscription;
+  xiiEvent<const xiiToolsProjectEvent&, xiiMutex>::Unsubscriber m_ProjectSubscription;
 };

@@ -58,6 +58,13 @@ namespace
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiQuadViewPreferencesUser, 1, xiiRTTIDefaultAllocator<xiiQuadViewPreferencesUser>)
 {
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiSettingsScopeAttribute(xiiSettingsScope::Document),
+    new xiiDocumentSettingsAttribute("xiiAssetDocument"),
+    new xiiCategoryAttribute("View"),
+  }
+  XII_END_ATTRIBUTES;
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("QuadView", m_bQuadView)->AddAttributes(new xiiHiddenAttribute()),
