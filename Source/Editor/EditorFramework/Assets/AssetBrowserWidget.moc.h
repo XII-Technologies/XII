@@ -13,6 +13,7 @@ class xiiQtToolBarActionMapView;
 class xiiQtAssetBrowserFilter;
 class xiiQtAssetBrowserModel;
 class QLabel;
+class QToolBar;
 class QAction;
 struct xiiAssetCuratorEvent;
 class xiiQtAssetBrowserModel;
@@ -31,12 +32,16 @@ public:
     FilePicker,
   };
 
-  void SetMode(Mode mode);
-  void SetSelectedAsset(xiiUuid preselectedAsset);
-  void SetSelectedFile(xiiStringView sAbsPath);
-  void ShowOnlyTheseTypeFilters(xiiStringView sFilters);
-  void UseFileExtensionFilters(xiiStringView sFileExtensions);
-  void SetRequiredTag(xiiStringView sRequiredTag);
+  void        SetMode(Mode mode);
+  void        SetSelectedAsset(xiiUuid preselectedAsset);
+  void        SetSelectedFile(xiiStringView sAbsPath);
+  void        ShowOnlyTheseTypeFilters(xiiStringView sFilters);
+  void        UseFileExtensionFilters(xiiStringView sFileExtensions);
+  void        SetRequiredTag(xiiStringView sRequiredTag);
+  xiiResult   SaveCollection(const QString& sName);
+  xiiResult   OpenCollection(const QString& sName);
+  xiiResult   RemoveCollection(const QString& sName);
+  QStringList GetCollectionNames() const;
 
   void SaveState(const char* szSettingsName);
   void RestoreState(const char* szSettingsName);
@@ -111,6 +116,7 @@ private:
   void AddImportedViaMenu(QMenu* pMenu);
   void GetSelectedImportableFiles(xiiDynamicArray<xiiString>& out_Files) const;
   void NavigateHistory(int iDirection);
+  void UpdateSelectionDetails();
 
   Mode                                   m_Mode     = Mode::Browser;
   xiiQtToolBarActionMapView*             m_pToolbar = nullptr;
@@ -119,12 +125,21 @@ private:
   xiiQtAssetBrowserFilter*               m_pFilter = nullptr;
 
   /// After creating a new asset and renaming it, we want to open it as well.
-  bool        m_bOpenAfterRename   = false;
-  QStringList m_PathHistory        = {QString()};
-  xiiInt32    m_iPathHistory       = 0;
-  bool        m_bHistoryNavigation = false;
-  QAction*    m_pBack              = nullptr;
-  QAction*    m_pForward           = nullptr;
-  QAction*    m_pUp                = nullptr;
-  QLabel*     m_pBreadcrumb        = nullptr;
+  bool        m_bOpenAfterRename    = false;
+  QStringList m_PathHistory         = {QString()};
+  xiiInt32    m_iPathHistory        = 0;
+  bool        m_bHistoryNavigation  = false;
+  QAction*    m_pBack               = nullptr;
+  QAction*    m_pForward            = nullptr;
+  QAction*    m_pUp                 = nullptr;
+  QLabel*     m_pBreadcrumb         = nullptr;
+  QWidget*    m_pDetails            = nullptr;
+  QToolBar*   m_pStudioTools        = nullptr;
+  QLabel*     m_pAssetIdentity      = nullptr;
+  QLabel*     m_pAssetPath          = nullptr;
+  QLabel*     m_pAssetState         = nullptr;
+  QAction*    m_pOpenSelection      = nullptr;
+  QAction*    m_pTransformSelection = nullptr;
+  QAction*    m_pImportSelection    = nullptr;
+  QAction*    m_pReferences         = nullptr;
 };
