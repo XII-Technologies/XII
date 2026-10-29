@@ -9,6 +9,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <GameEngine/Configuration/GameApplicationSettings.h>
 
 class xiiQuakeConsole;
 struct xiiGALDeviceCreationDescription;
@@ -40,6 +41,10 @@ class XII_GAMEENGINE_DLL xiiGameApplication : public xiiGameApplicationBase
 public:
   static xiiCVarBool cvar_AppVSync;
   static xiiCVarBool cvar_AppShowFrameStats;
+
+  const xiiGameApplicationSettings& GetSettings() const { return m_Settings; }
+  /// Commits validated configuration and notifies output targets once.
+  xiiResult ApplySettings(const xiiGameApplicationSettings& settings) { return m_Settings.Apply(settings); }
 
 public:
   using SUPER = xiiGameApplicationBase;
@@ -75,6 +80,7 @@ public:
 
 protected:
   virtual void Init_ConfigureInput() override;
+  virtual void Init_ConfigureCVars() override;
   virtual void Init_ConfigureAssetManagement() override;
   virtual void Init_LoadRequiredPlugins() override;
   virtual void Init_SetupDefaultResources() override;
@@ -97,6 +103,7 @@ protected:
   void RenderConsole();
 
   void OnVSyncChanged(const xiiCVarEvent& e);
+  void OnSettingsChanged(xiiSettings* pSettings);
 
 protected:
   static xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> s_DefaultDeviceCreator;
@@ -105,4 +112,8 @@ protected:
   xiiUniquePtr<xiiQuakeConsole> m_pConsole;
 
   xiiEventSubscriptionID m_CVarChangeSubscriptionID;
+  xiiGameApplicationSettings           m_Settings;
+  xiiEvent<xiiSettings*>::Unsubscriber m_SettingsSubscription;
+  bool                                 m_bSettingsInitialized = false;
+  bool                                 m_bSettingsWritable    = true;
 };

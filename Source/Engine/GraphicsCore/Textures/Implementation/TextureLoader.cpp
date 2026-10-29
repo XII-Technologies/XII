@@ -18,7 +18,7 @@
 
 static xiiUniquePtr<xiiTextureResourceLoader> s_pTextureResourceLoader;
 
-xiiCVarFloat cvar_StreamingTextureLoadDelay("Streaming.TextureLoadDelay", 0.0f, xiiCVarFlags::Save, "Artificial texture loading slowdown");
+xiiCVarFloat cvar_StreamingTextureLoadDelay("Streaming.TextureLoadDelay", 0.0f, xiiCVarFlags::Default, "Temporary texture loading fault injection in seconds (0 disables, capped at 60). Not persisted.");
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
@@ -130,9 +130,10 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
   res.m_pDataStream       = &pData->m_Reader;
   res.m_pCustomLoaderData = pData.Release();
 
-  if (cvar_StreamingTextureLoadDelay > 0)
+  const float fDelay = cvar_StreamingTextureLoadDelay.GetValue();
+  if (xiiMath::IsFinite(fDelay) && fDelay > 0.0f)
   {
-    xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(cvar_StreamingTextureLoadDelay));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(xiiMath::Min(fDelay, 60.0f)));
   }
 
   return res;
