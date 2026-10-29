@@ -21,6 +21,7 @@ public:
   static void MapMenuSimulationSpeed(xiiStringView sMapping);
 
   static void MapToolbarActions(xiiStringView sMapping);
+  static void MapViewActions(xiiStringView sMapping);
 
   static xiiActionDescriptorHandle s_hGameObjectCategory;
   static xiiActionDescriptorHandle s_hRenderSelectionOverlay;

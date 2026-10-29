@@ -10,8 +10,9 @@ xiiQtDocumentPanel::xiiQtDocumentPanel(ads::CDockManager* pDockManager, QWidget*
 {
   m_pDocument = pDocument;
 
-  setMinimumWidth(300);
-  setMinimumHeight(200);
+  // Panel content and the user-controlled splitter determine the working size.
+  // A blanket 300-pixel minimum wastes most of a compact scene's viewport.
+  setMinimumSize(160, 120);
 
   setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetClosable, false);
   setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetFloatable, true);

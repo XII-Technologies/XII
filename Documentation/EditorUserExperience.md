@@ -53,7 +53,19 @@ PR; a build alone is insufficient evidence of usable editor workflows.
   documents are excluded. Entries use existing shortcuts, enabled states and
   action callbacks, including plugin actions.
 - Viewport menus display the current perspective and shading choice. Secondary
-  display and device controls live under **View Options**.
+  display and device controls, camera speed, grid, selection outlines and
+  visualizers live under **View Options**, keeping the document toolbar focused
+  on authoring and Play.
+- The title area contains the active document's live menus, project context,
+  command search and workspace controls. Windows uses Qt's expanded client area
+  with accessible Qt caption buttons and platform move/resize handling. Other
+  platforms retain their normal window decoration. Detached documents retain
+  local menus. Compact windows use icons for Commands and Workspaces, with the
+  same tooltips and keyboard access. Application panels are in Workspaces.
+- Document panels can be resized below the former 300-pixel minimum. Outliner
+  navigation and selection feedback share one footer. Inspector keeps a separate
+  selection-context row for multiple objects and an empty-selection hint; a
+  single object's existing Name field supplies its identity.
 - **Outliner** search preserves document selection. Clearing search restores the
   expansion state from before the search. **Reveal**, **Frame** and **Collapse**
   provide direct hierarchy navigation. Ctrl+F focuses search within the panel.

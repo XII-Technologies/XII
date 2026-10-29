@@ -24,6 +24,7 @@ xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocu
   setContentsMargins(0, 0, 0, 0);
   layout()->setObjectName("QVBoxLayout1");
   layout()->setContentsMargins(0, 0, 0, 0);
+  layout()->setSpacing(2);
 
   m_pFilterWidget = new xiiQtSearchWidget(this);
   m_pFilterWidget->SetCaptureTabKey(false);
@@ -59,8 +60,11 @@ xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocu
   connect(pTools->addAction(tr("Collapse")), &QAction::triggered, m_pTreeWidget, &QTreeView::collapseAll);
   layout()->addWidget(pTools);
   auto* pSummary = new QLabel(this);
-  pSummary->setContentsMargins(6, 2, 6, 4);
-  layout()->addWidget(pSummary);
+  pSummary->setContentsMargins(4, 0, 4, 0);
+  auto* pSpacer = new QWidget(pTools);
+  pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  pTools->addWidget(pSpacer);
+  pTools->addWidget(pSummary);
   auto* pSelectionManager = pSelection ? pSelection : pDocument->GetSelectionManager();
   auto  UpdateSelection   = [pSelectionManager, pSummary, pReveal, pFocus]() {
     const auto uiCount = pSelectionManager->GetSelection().GetCount();

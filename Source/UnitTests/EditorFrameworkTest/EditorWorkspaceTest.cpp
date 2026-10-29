@@ -9,6 +9,7 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
 #include <EditorFramework/Panels/GameObjectPanel/GameObjectPanel.moc.h>
+#include <EditorFramework/Preferences/ScenePreferences.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
@@ -30,6 +31,7 @@
 #include <QPixmap>
 #include <QScreen>
 #include <QScrollBar>
+#include <QSlider>
 #include <QToolButton>
 #include <QTreeWidget>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -67,6 +69,11 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
     XII_TEST_BOOL(pContainer->windowFlags().testFlag(Qt::ExpandedClientAreaHint));
     XII_TEST_BOOL(!pContainer->windowFlags().testFlag(Qt::FramelessWindowHint));
+    for (const auto* szName : {"EditorMinimize", "EditorMaximize", "EditorClose"})
+    {
+      const auto* pButton = pContainer->findChild<QToolButton*>(QString::fromUtf8(szName));
+      XII_TEST_BOOL(pButton != nullptr && !pButton->accessibleName().isEmpty());
+    }
 #endif
   }
 
@@ -137,6 +144,33 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
       }
       XII_TEST_BOOL(bEditedName);
     }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Contextual camera speed edits retain document preferences")
+  {
+    auto* pToolbar          = window.findChild<xiiQtToolBarActionMapView*>(QStringLiteral("ViewportControls"));
+    bool  bFoundCameraSpeed = false;
+    if (pToolbar)
+    {
+      for (auto* pButton : pToolbar->findChildren<QToolButton*>())
+      {
+        auto* pMenu = pButton->menu();
+        if (!pMenu)
+          continue;
+        for (auto* pSlider : pMenu->findChildren<xiiQtLabeledSlider*>())
+        {
+          bFoundCameraSpeed         = true;
+          auto*      pPreferences   = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(&scene);
+          const auto iPreviousSpeed = pPreferences->GetCameraSpeed();
+          const auto uiUndoCount    = scene.GetCommandHistory()->GetUndoStackSize();
+          pSlider->m_pSlider->setValue((iPreviousSpeed + 1) % 25);
+          XII_TEST_INT(pPreferences->GetCameraSpeed(), (iPreviousSpeed + 1) % 25);
+          pSlider->m_pSlider->setValue(iPreviousSpeed);
+          XII_TEST_INT(scene.GetCommandHistory()->GetUndoStackSize(), uiUndoCount);
+        }
+      }
+    }
+    XII_TEST_BOOL(bFoundCameraSpeed);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Content history preserves search and constrained type filters")
@@ -273,6 +307,15 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
       pSurface->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     }
     pContainer->setWindowState(Qt::WindowNoState);
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    if (auto* pMaximize = pContainer->findChild<QToolButton*>(QStringLiteral("EditorMaximize")))
+    {
+      pMaximize->click();
+      XII_TEST_BOOL(pContainer->isMaximized());
+      pMaximize->click();
+      XII_TEST_BOOL(!pContainer->isMaximized());
+    }
+#endif
     if (auto* pTitleBar = pContainer->findChild<QToolBar*>(QStringLiteral("EditorTitleBar")))
     {
       QMouseEvent doubleClick(QEvent::MouseButtonDblClick, QPointF(20, 12), pTitleBar->mapToGlobal(QPoint(20, 12)), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
@@ -286,6 +329,7 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
     pContainer->resize(wideSize);
     pContainer->layout()->activate();
     QApplication::processEvents();
+    xiiTestFramework::Output(xiiTestOutput::Message, "Workspace viewport: %d x %d logical pixels in a %d x %d shell", view.width(), view.height(), pContainer->width(), pContainer->height());
     xiiStringBuilder capture(sOutputDirectory, "/EditorWorkspace.png");
     XII_TEST_BOOL(pContainer->grab().save(xiiMakeQString(capture)));
     pContainer->resize(qMin(960, wideSize.width()), qMin(640, wideSize.height()));

@@ -119,6 +119,17 @@ void xiiGameObjectDocumentActions::MapToolbarActions(xiiStringView sMapping)
   }
 }
 
+void xiiGameObjectDocumentActions::MapViewActions(xiiStringView sMapping)
+{
+  auto* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "Mapping the viewport actions failed!");
+  pMap->MapAction(s_hRenderSelectionOverlay, "View.Options", 4.0f);
+  pMap->MapAction(s_hRenderVisualizers, "View.Options", 5.0f);
+  pMap->MapAction(s_hRenderShapeIcons, "View.Options", 6.0f);
+  pMap->MapAction(s_hRenderGrid, "View.Options", 7.0f);
+  pMap->MapAction(s_hCameraSpeed, "View.Options", 8.0f);
+}
+
 xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext& context, const char* szName, xiiGameObjectDocumentAction::ActionType type, float fSimSpeed) :
   xiiButtonAction(context, szName, false, "")
 {
