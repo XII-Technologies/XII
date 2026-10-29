@@ -306,7 +306,21 @@ xiiQtPropertyGridWidget::xiiQtPropertyGridWidget(QWidget* pParent, xiiDocument* 
   m_pSelectionLabel = new QLabel(tr("Select an object to inspect its properties"), this);
   m_pSelectionLabel->setWordWrap(true);
   m_pSelectionLabel->setContentsMargins(6, 4, 6, 4);
-  m_pLayout->addWidget(m_pSelectionLabel);
+  auto* pIdentity = new QHBoxLayout;
+  pIdentity->setContentsMargins(4, 4, 4, 2);
+  pIdentity->addWidget(m_pSelectionLabel, 1);
+  m_pPinSelection = new QToolButton(this);
+  m_pPinSelection->setObjectName(QStringLiteral("InspectorPin"));
+  m_pPinSelection->setText(tr("Pin"));
+  m_pPinSelection->setCheckable(true);
+  m_pPinSelection->setToolTip(tr("Keep inspecting these objects while changing the scene selection"));
+  pIdentity->addWidget(m_pPinSelection);
+  m_pLayout->addLayout(pIdentity);
+  connect(m_pPinSelection, &QToolButton::toggled, this, [this](bool bPinned) {
+    m_pPinSelection->setText(bPinned ? tr("Pinned") : tr("Pin"));
+    if (!bPinned && m_pDocument && m_bBindToSelectionManager)
+      SetSelection(m_pDocument->GetSelectionManager()->GetSelection());
+  });
   auto* pSearchRow = new QHBoxLayout();
   pSearchRow->setContentsMargins(4, 4, 4, 4);
   pSearchRow->setSpacing(4);
@@ -379,6 +393,8 @@ xiiQtPropertyGridWidget::~xiiQtPropertyGridWidget()
 
 void xiiQtPropertyGridWidget::SetDocument(xiiDocument* pDocument, bool bBindToSelectionManager)
 {
+  m_PinSubscription.Unsubscribe();
+  m_pPinSelection->setChecked(false);
   m_bBindToSelectionManager = bBindToSelectionManager;
   if (m_pDocument)
   {
@@ -392,7 +408,37 @@ void xiiQtPropertyGridWidget::SetDocument(xiiDocument* pDocument, bool bBindToSe
   {
     m_pDocument->m_ObjectAccessorChangeEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyGridWidget::ObjectAccessorChangeEventHandler, this));
     m_pDocument->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyGridWidget::SelectionEventHandler, this));
+    m_pDocument->GetObjectManager()->m_StructureEvents.AddEventHandler([this](const xiiDocumentObjectStructureEvent& event) {
+      if (!IsSelectionPinned())
+        return;
+      if (event.m_EventType == xiiDocumentObjectStructureEvent::Type::BeforeReset)
+      {
+        const QSignalBlocker block(m_pPinSelection);
+        m_pPinSelection->setChecked(false);
+        m_pPinSelection->setText(tr("Pin"));
+        ClearSelection();
+        return;
+      }
+      if (event.m_EventType != xiiDocumentObjectStructureEvent::Type::BeforeObjectRemoved)
+        return;
+      for (auto* pSelected : m_Selection)
+        for (auto* pObject = pSelected; pObject; pObject = pObject->GetParent())
+          if (pObject == event.m_pObject)
+          {
+            const QSignalBlocker block(m_pPinSelection);
+            m_pPinSelection->setChecked(false);
+            m_pPinSelection->setText(tr("Pin"));
+            ClearSelection();
+            return;
+          }
+    },
+                                                                       m_PinSubscription);
   }
+}
+
+bool xiiQtPropertyGridWidget::IsSelectionPinned() const
+{
+  return m_pPinSelection->isChecked();
 }
 
 void xiiQtPropertyGridWidget::ClearSelection()
@@ -409,6 +455,7 @@ void xiiQtPropertyGridWidget::ClearSelection()
   }
 
   m_Selection.Clear();
+  m_pPinSelection->setEnabled(false);
   m_iSearchIndex = -1;
   m_pSelectionLabel->setText(tr("Select an object to inspect its properties"));
   m_pSelectionLabel->show();
@@ -431,7 +478,12 @@ void xiiQtPropertyGridWidget::SetSelection(const xiiDeque<const xiiDocumentObjec
   m_Selection = selection;
 
   if (m_Selection.IsEmpty())
+  {
+    const QSignalBlocker block(m_pPinSelection);
+    m_pPinSelection->setChecked(false);
+    m_pPinSelection->setText(tr("Pin"));
     return;
+  }
 
   {
     xiiHybridArray<xiiPropertySelection, 8> Items;
@@ -453,7 +505,16 @@ void xiiQtPropertyGridWidget::SetSelection(const xiiDeque<const xiiDocumentObjec
     m_pSelectionLabel->setText(m_Selection.GetCount() == 1 ? tr("1 item selected") : tr("%1 items selected").arg(m_Selection.GetCount()));
     // The object's Name field already identifies a single selection. Reserve a
     // separate context row for multi-selection, where that distinction matters.
-    m_pSelectionLabel->setVisible(m_Selection.GetCount() > 1);
+    QString sIdentity = xiiMakeQString(xiiTranslate(pCommonType->GetTypeName()));
+    if (m_Selection.GetCount() == 1 && pCommonType->FindPropertyByName("Name"))
+    {
+      xiiVariant name;
+      if (GetObjectAccessor()->GetValueByName(m_Selection.PeekFront(), "Name", name).Succeeded() && name.IsA<xiiString>() && !name.Get<xiiString>().IsEmpty())
+        sIdentity = xiiMakeQString(name.Get<xiiString>()) + QStringLiteral("  /  ") + sIdentity;
+    }
+    m_pSelectionLabel->setText(sIdentity + (m_Selection.GetCount() > 1 ? tr("  (%1 selected)").arg(m_Selection.GetCount()) : QString()));
+    m_pSelectionLabel->show();
+    m_pPinSelection->setEnabled(m_bBindToSelectionManager);
     m_pSearch->setAccessibleDescription(m_pSelectionLabel->text());
     if (!m_pSearch->text().isEmpty())
       NavigateProperty(1);
@@ -641,13 +702,18 @@ void xiiQtPropertyGridWidget::OnCollapseStateChanged(bool bCollapsed)
 
 void xiiQtPropertyGridWidget::ObjectAccessorChangeEventHandler(const xiiObjectAccessorChangeEvent& e)
 {
+  {
+    const QSignalBlocker block(m_pPinSelection);
+    m_pPinSelection->setChecked(false);
+    m_pPinSelection->setText(tr("Pin"));
+  }
   SetSelection(m_pDocument->GetSelectionManager()->GetSelection());
 }
 
 void xiiQtPropertyGridWidget::SelectionEventHandler(const xiiSelectionManagerEvent& e)
 {
   // TODO: even when not binding to the selection manager we need to test whether our selection is still valid.
-  if (!m_bBindToSelectionManager)
+  if (!m_bBindToSelectionManager || IsSelectionPinned())
     return;
 
   switch (e.m_Type)
@@ -673,7 +739,7 @@ void xiiQtPropertyGridWidget::SelectionEventHandler(const xiiSelectionManagerEve
 
 void xiiQtPropertyGridWidget::FactoryEventHandler(const xiiRttiMappedObjectFactory<xiiQtPropertyWidget>::Event& e)
 {
-  if (m_bBindToSelectionManager)
+  if (m_bBindToSelectionManager && !IsSelectionPinned())
     SetSelection(m_pDocument->GetSelectionManager()->GetSelection());
   else
   {
@@ -689,7 +755,7 @@ void xiiQtPropertyGridWidget::TypeEventHandler(const xiiPhantomRttiManagerEvent&
     return;
 
   XII_PROFILE_SCOPE("TypeEventHandler");
-  if (m_bBindToSelectionManager)
+  if (m_bBindToSelectionManager && !IsSelectionPinned())
     SetSelection(m_pDocument->GetSelectionManager()->GetSelection());
   else
   {
