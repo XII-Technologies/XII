@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/CoreDLL.h>
-#include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Configuration/Settings.h>
 
 class xiiChunkStreamWriter;
 class xiiChunkStreamReader;
@@ -11,9 +11,9 @@ class xiiChunkStreamReader;
 //////////////////////////////////////////////////////////////////////////
 
 /// Base class for configuration objects that store e.g. asset transform settings or runtime configuration information
-class XII_CORE_DLL xiiProfileConfigData : public xiiReflectedClass
+class XII_CORE_DLL xiiProfileConfigData : public xiiSettings
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiProfileConfigData, xiiReflectedClass);
+  XII_ADD_DYNAMIC_REFLECTION(xiiProfileConfigData, xiiSettings);
 
 public:
   xiiProfileConfigData();
@@ -68,6 +68,7 @@ private:
   xiiString                              m_sName;
   xiiString                              m_sTargetPlatform = "Windows";
   xiiDynamicArray<xiiProfileConfigData*> m_Configs;
+  xiiCopyOnBroadcastEvent<const xiiPluginEvent&>::Unsubscriber m_PluginSubscription;
 };
 
 //////////////////////////////////////////////////////////////////////////
