@@ -169,6 +169,18 @@ void xiiQtDocumentTreeView::EnsureLastSelectedItemVisible()
     scrollTo(index, QAbstractItemView::EnsureVisible);
 }
 
+void xiiQtDocumentTreeView::SetFilterText(const QString& sText)
+{
+  m_bBlockSelectionSignal = true;
+  m_pFilterModel->SetFilterText(sText);
+  m_bBlockSelectionSignal = false;
+  xiiSelectionManagerEvent e;
+  e.m_Type      = xiiSelectionManagerEvent::Type::SelectionSet;
+  e.m_pDocument = m_pDocument;
+  e.m_pObject   = nullptr;
+  SelectionEventHandler(e);
+}
+
 void xiiQtDocumentTreeView::SetAllowDragDrop(bool bAllow)
 {
   m_pModel->SetAllowDragDrop(bAllow);

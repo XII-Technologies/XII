@@ -17,12 +17,17 @@
 #include <EditorFramework/Dialogs/TagsDlg.moc.h>
 #include <EditorFramework/Dialogs/WindowCfgDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Profiling/ProfilingUtils.h>
 #include <GuiFoundation/Dialogs/ShortcutEditorDlg.moc.h>
+#include <GuiFoundation/Widgets/SearchWidget.moc.h>
+#include <QApplication>
+#include <ads/AutoHideDockContainer.h>
 
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectGeneral;
+xiiActionDescriptorHandle xiiProjectActions::s_hFindAssets;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectAssets;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectConfig;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectExternal;
@@ -77,6 +82,7 @@ xiiActionDescriptorHandle xiiProjectActions::s_hRegenerateCppSolution;
 
 void xiiProjectActions::RegisterActions()
 {
+  s_hFindAssets         = XII_REGISTER_ACTION_1("Editor.FindAssets", xiiActionScope::Global, "Editor", "Ctrl+Space", xiiProjectAction, xiiProjectAction::ButtonType::FindAssets);
   s_hCatProjectGeneral  = XII_REGISTER_CATEGORY("G.Project.General");
   s_hCatProjectAssets   = XII_REGISTER_CATEGORY("G.Project.Assets");
   s_hCatProjectExternal = XII_REGISTER_CATEGORY("G.Project.External");
@@ -147,6 +153,7 @@ void xiiProjectActions::RegisterActions()
 
 void xiiProjectActions::UnregisterActions()
 {
+  xiiActionManager::UnregisterAction(s_hFindAssets);
   xiiActionManager::UnregisterAction(s_hCatProjectGeneral);
   xiiActionManager::UnregisterAction(s_hCatProjectAssets);
   xiiActionManager::UnregisterAction(s_hCatProjectConfig);
@@ -232,6 +239,7 @@ void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xii
   pMap->MapAction(s_hCloseProject, "G.Project.General", 5.0f);
 
   pMap->MapAction(s_hImportAsset, "G.Project.Assets", 1.0f);
+  pMap->MapAction(s_hFindAssets, "G.Project.Assets", 0.0f);
   pMap->MapAction(s_hClearAssetCaches, "G.Project.Assets", 5.0f);
 
   pMap->MapAction(s_hDataDirectories, "G.Project.Settings", 1.0f);
@@ -387,6 +395,9 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     case xiiProjectAction::ButtonType::CreateDocument:
       SetIconPath(":/GuiFoundation/Icons/DocumentAdd.svg");
       break;
+    case xiiProjectAction::ButtonType::FindAssets:
+      SetIconPath(":/EditorFramework/Icons/Asset.svg");
+      break;
     case xiiProjectAction::ButtonType::OpenDocument:
       SetIconPath(":/GuiFoundation/Icons/Document.svg");
       break;
@@ -474,6 +485,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
   }
 
   if (m_ButtonType == ButtonType::CloseProject ||
+      m_ButtonType == ButtonType::FindAssets ||
       m_ButtonType == ButtonType::DataDirectories ||
       m_ButtonType == ButtonType::WindowConfig ||
       m_ButtonType == ButtonType::ImportAsset ||
@@ -509,6 +521,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
 xiiProjectAction::~xiiProjectAction()
 {
   if (m_ButtonType == ButtonType::CloseProject ||
+      m_ButtonType == ButtonType::FindAssets ||
       m_ButtonType == ButtonType::DataDirectories ||
       m_ButtonType == ButtonType::WindowConfig ||
       m_ButtonType == ButtonType::ImportAsset ||
@@ -561,6 +574,19 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 {
   switch (m_ButtonType)
   {
+    case xiiProjectAction::ButtonType::FindAssets:
+      if (auto* pPanel = xiiQtAssetBrowserPanel::GetSingleton())
+      {
+        if (auto* pDrawer = pPanel->autoHideDockContainer(); pDrawer && pDrawer->isVisible() && pPanel->isAncestorOf(QApplication::focusWidget()))
+        {
+          pDrawer->collapseView(true);
+          break;
+        }
+        pPanel->EnsureVisible();
+        pPanel->AssetBrowserWidget->SearchWidget->setFocus();
+        pPanel->AssetBrowserWidget->SearchWidget->selectAll();
+      }
+      break;
     case xiiProjectAction::ButtonType::CreateDocument:
       xiiQtEditorApp::GetSingleton()->GuiCreateDocument();
       break;

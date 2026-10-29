@@ -2,14 +2,17 @@
 
 #pragma once
 
+#include <GuiFoundation/GuiFoundationDLL.h>
+
 #include <Foundation/Basics.h>
 #include <Foundation/Logging/Log.h>
-#include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/ui_LogWidget.h>
 #include <QWidget>
 
 class xiiQtLogModel;
 class xiiQtSearchWidget;
+class QToolButton;
+class QLabel;
 
 /// The application wide panel that shows the engine log output and the editor log output
 class XII_GUIFOUNDATION_DLL xiiQtLogWidget : public QWidget, public Ui_LogWidget
@@ -41,7 +44,13 @@ private Q_SLOTS:
 
 private:
   xiiQtLogModel* m_pLog;
-  void           ScrollToBottomIfAtEnd(int iNumElements);
+  QWidget*       m_pDiagnostics  = nullptr;
+  QToolButton*   m_pFollow       = nullptr;
+  QToolButton*   m_pErrors       = nullptr;
+  QToolButton*   m_pWarnings     = nullptr;
+  QLabel*        m_pMessageCount = nullptr;
+  void           UpdateDiagnostics();
+  void           FollowNewMessages();
 
   /// List of callbacks invoked when the user double clicks a log message
   static xiiMap<xiiString, LogItemContextActionCallback> s_LogCallbacks;

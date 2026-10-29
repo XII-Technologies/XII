@@ -4,15 +4,25 @@
 
 #include <Foundation/Application/Application.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
+#include <GuiFoundation/Style/DarkEditorStyle.moc.h>
+#include <GuiFoundation/Widgets/CommandPalette.moc.h>
+#include <QApplication>
 #include <QCloseEvent>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLayout>
+#include <QLineEdit>
+#include <QMenu>
 #include <QSettings>
+#include <QShortcut>
 #include <QStatusBar>
 #include <QTabBar>
 #include <QTimer>
+#include <QToolBar>
+#include <QToolButton>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ads/DockAreaWidget.h>
 #include <ads/DockManager.h>
@@ -56,7 +66,7 @@ namespace
 
 xiiQtContainerWindow::xiiQtContainerWindow()
 {
-  setMinimumSize(QSize(960, 540));
+  setMinimumSize(QSize(800, 450));
 
   m_bWindowLayoutRestored         = false;
   m_pStatusBarLabel               = nullptr;
@@ -104,6 +114,97 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   ads::CDockManager::setAutoHideConfigFlags(autoHideFlags);
 
   m_pDockManager = new ads::CDockManager(this);
+  xiiQtDarkEditorStyle::ApplyDockStyle(m_pDockManager);
+
+  auto* pShell = new QToolBar(tr("Workspace"), this);
+  pShell->setObjectName(QStringLiteral("EditorWorkspaceBar"));
+  pShell->setMovable(false);
+  pShell->setFloatable(false);
+  pShell->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  addToolBar(Qt::TopToolBarArea, pShell);
+  auto* pBrand    = new QLabel(QStringLiteral("  XII  "), pShell);
+  QFont brandFont = pBrand->font();
+  brandFont.setBold(true);
+  pBrand->setFont(brandFont);
+  pShell->addWidget(pBrand);
+  pShell->addSeparator();
+  m_pProjectLabel = new QLabel(pShell);
+  m_pProjectLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+  m_pProjectLabel->setMinimumWidth(80);
+  pShell->addWidget(m_pProjectLabel);
+  auto* pSpacer = new QWidget(pShell);
+  pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  pShell->addWidget(pSpacer);
+
+  auto* pCommands = new QToolButton(pShell);
+  pCommands->setObjectName(QStringLiteral("EditorFindCommand"));
+  pCommands->setFocusPolicy(Qt::NoFocus);
+  pCommands->setText(tr("Find Command"));
+  pCommands->setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Search.svg")));
+  pCommands->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  pCommands->setToolTip(tr("Search commands for the focused document (Ctrl+Shift+P)"));
+  pShell->addWidget(pCommands);
+  connect(pCommands, &QToolButton::clicked, this, &xiiQtContainerWindow::ShowCommandPalette);
+  auto* pShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")), this);
+  pShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+  connect(pShortcut, &QShortcut::activated, this, &xiiQtContainerWindow::ShowCommandPalette);
+
+  auto* pPanels = new QToolButton(pShell);
+  pPanels->setText(tr("Panels"));
+  pPanels->setPopupMode(QToolButton::InstantPopup);
+  auto* pPanelsMenu = new QMenu(pPanels);
+  pPanels->setMenu(pPanelsMenu);
+  connect(pPanelsMenu, &QMenu::aboutToShow, this, [this, pPanelsMenu]() {
+    pPanelsMenu->clear();
+    for (auto* pPanel : m_ApplicationPanels)
+      pPanelsMenu->addAction(pPanel->toggleViewAction());
+  });
+  pShell->addWidget(pPanels);
+  auto* pWorkspaces = new QToolButton(pShell);
+  pWorkspaces->setText(tr("Workspaces"));
+  pWorkspaces->setPopupMode(QToolButton::InstantPopup);
+  auto* pWorkspaceMenu = new QMenu(pWorkspaces);
+  pWorkspaces->setMenu(pWorkspaceMenu);
+  pShell->addWidget(pWorkspaces);
+  connect(pWorkspaceMenu, &QMenu::aboutToShow, this, [this, pWorkspaceMenu]() {
+    pWorkspaceMenu->clear();
+    auto* pSave = pWorkspaceMenu->addAction(tr("Save Workspace As..."));
+    pSave->setEnabled(xiiToolsProject::IsProjectOpen());
+    connect(pSave, &QAction::triggered, this, [this]() {
+      bool       bAccepted = false;
+      const auto sName     = QInputDialog::getText(this, tr("Save Workspace"), tr("Workspace name"), QLineEdit::Normal, QString(), &bAccepted).trimmed();
+      if (bAccepted && !sName.isEmpty())
+      {
+        if (SaveWorkspace(sName).Failed())
+          xiiQtUiServices::MessageBoxWarning("The workspace could not be saved.");
+        else
+          statusBar()->showMessage(tr("Saved workspace: %1").arg(sName), 4000);
+      }
+    });
+    const auto names = GetWorkspaceNames();
+    if (!names.isEmpty())
+      pWorkspaceMenu->addSeparator();
+    for (const auto& sName : names)
+    {
+      auto* pRestore = pWorkspaceMenu->addAction(sName);
+      pRestore->setEnabled(xiiQtDocumentWindow::s_bAllowRestoreWindowLayout);
+      connect(pRestore, &QAction::triggered, this, [this, sName]() {
+        if (RestoreWorkspace(sName).Failed())
+          xiiQtUiServices::MessageBoxWarning("The workspace could not be restored.");
+      });
+    }
+    if (!names.isEmpty())
+    {
+      pWorkspaceMenu->addSeparator();
+      connect(pWorkspaceMenu->addAction(tr("Delete Saved Workspace...")), &QAction::triggered, this, [this, names]() {
+        bool       bAccepted = false;
+        const auto sName     = QInputDialog::getItem(this, tr("Delete Saved Workspace"), tr("Saved workspace to delete"), names, 0, false, &bAccepted);
+        if (bAccepted && RemoveWorkspace(sName).Failed())
+          xiiQtUiServices::MessageBoxWarning("The saved workspace could not be deleted.");
+      });
+    }
+  });
+  UpdateWindowTitle();
 
   connect(m_pDockManager, &ads::CDockManager::floatingWidgetCreated, this, &xiiQtContainerWindow::SlotFloatingWidgetOpened);
 }
@@ -130,6 +231,31 @@ void xiiQtContainerWindow::UpdateWindowTitle()
   sTitle.Append(xiiApplication::GetApplicationInstance()->GetApplicationName().GetView());
 
   setWindowTitle(xiiMakeQString(sTitle.GetView()));
+  if (m_pProjectLabel)
+  {
+    m_pProjectLabel->setText(xiiToolsProject::IsProjectOpen() ? xiiMakeQString(xiiToolsProject::GetSingleton()->GetProjectName(false)) : tr("No project open"));
+    m_pProjectLabel->setToolTip(windowTitle());
+  }
+}
+
+void xiiQtContainerWindow::ShowCommandPalette()
+{
+  QWidget*             pContext        = QApplication::focusWidget();
+  xiiQtDocumentWindow* pDocumentWindow = nullptr;
+  for (auto* pCurrent = pContext; pCurrent; pCurrent = pCurrent->parentWidget())
+    if ((pDocumentWindow = qobject_cast<xiiQtDocumentWindow*>(pCurrent)) != nullptr)
+      break;
+  if (!pDocumentWindow)
+  {
+    const auto uiIndex = m_DocumentDocks.IndexOf(m_pDockManager->focusedDockWidget());
+    if (uiIndex != xiiInvalidIndex)
+    {
+      pDocumentWindow = m_DocumentWindows[uiIndex];
+      pContext        = pDocumentWindow;
+    }
+  }
+  xiiQtCommandPalette palette(this, xiiQtProxy::GetContextActions(pDocumentWindow ? pDocumentWindow->GetDocument() : nullptr, pContext));
+  palette.exec();
 }
 
 void xiiQtContainerWindow::ScheduleRestoreWindowLayout()
@@ -141,6 +267,109 @@ void xiiQtContainerWindow::ScheduleRestoreWindowLayout()
   }
   m_iWindowLayoutRestoreScheduled++;
   QTimer::singleShot(0, this, SLOT(SlotRestoreLayout()));
+}
+
+QStringList xiiQtContainerWindow::GetWorkspaceNames() const
+{
+  if (!xiiToolsProject::IsProjectOpen())
+    return {};
+  xiiStringBuilder file = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  file.AppendPath("workspaces.settings");
+  QSettings   settings(xiiMakeQString(file), QSettings::IniFormat);
+  QStringList names;
+  for (const auto& group : settings.childGroups())
+  {
+    const auto name = settings.value(group + QStringLiteral("/Name")).toString();
+    if (!name.isEmpty())
+      names.push_back(name);
+  }
+  names.sort(Qt::CaseInsensitive);
+  return names;
+}
+
+xiiResult xiiQtContainerWindow::SaveWorkspace(const QString& sName)
+{
+  if (!xiiToolsProject::IsProjectOpen() || !m_bWindowPresentationEnabled || sName.trimmed().isEmpty() || sName.size() > 80)
+    return XII_FAILURE;
+  xiiStringBuilder file = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  file.AppendPath("workspaces.settings");
+  QSettings settings(xiiMakeQString(file), QSettings::IniFormat);
+  settings.beginGroup(QString::fromLatin1(sName.trimmed().toUtf8().toHex()));
+  settings.remove(QString());
+  settings.setValue(QStringLiteral("Name"), sName.trimmed());
+  settings.setValue(QStringLiteral("Shell"), m_pDockManager->saveState(1));
+  for (auto* pWindow : m_DocumentWindows)
+  {
+    const auto group = xiiMakeQString(pWindow->GetWindowLayoutGroupName()).toUtf8().toHex();
+    settings.setValue(QStringLiteral("Documents/") + QString::fromLatin1(group), pWindow->m_pDockManager->saveState());
+  }
+  settings.endGroup();
+  settings.sync();
+  return settings.status() == QSettings::NoError ? XII_SUCCESS : XII_FAILURE;
+}
+
+xiiResult xiiQtContainerWindow::RestoreWorkspace(const QString& sName)
+{
+  if (!xiiToolsProject::IsProjectOpen() || !m_bWindowPresentationEnabled || !xiiQtDocumentWindow::s_bAllowRestoreWindowLayout)
+    return XII_FAILURE;
+  xiiStringBuilder file = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  file.AppendPath("workspaces.settings");
+  QSettings settings(xiiMakeQString(file), QSettings::IniFormat);
+  settings.beginGroup(QString::fromLatin1(sName.trimmed().toUtf8().toHex()));
+  const auto state = settings.value(QStringLiteral("Shell")).toByteArray();
+  if (state.isEmpty())
+    return XII_FAILURE;
+  const auto        previous = m_pDockManager->saveState(1);
+  QList<QByteArray> previousDocuments;
+  for (auto* pWindow : m_DocumentWindows)
+    previousDocuments.push_back(pWindow->m_pDockManager->saveState());
+  if (!m_pDockManager->restoreState(state, 1))
+  {
+    m_pDockManager->restoreState(previous, 1);
+    return XII_FAILURE;
+  }
+  // A saved workspace must never close documents that were opened after it was saved.
+  for (auto* pDock : m_DocumentDocks)
+  {
+    if (!pDock->dockContainer())
+      m_pDockManager->addDockWidgetTab(ads::TopDockWidgetArea, pDock);
+    if (pDock->isClosed())
+      pDock->toggleView(true);
+  }
+  layout()->activate();
+  bool bSucceeded = true;
+  for (auto* pWindow : m_DocumentWindows)
+  {
+    const auto group         = xiiMakeQString(pWindow->GetWindowLayoutGroupName()).toUtf8().toHex();
+    const auto documentState = settings.value(QStringLiteral("Documents/") + QString::fromLatin1(group)).toByteArray();
+    if (!documentState.isEmpty())
+    {
+      if (!pWindow->m_pDockManager->restoreState(documentState))
+      {
+        bSucceeded = false;
+        break;
+      }
+    }
+  }
+  if (!bSucceeded)
+  {
+    m_pDockManager->restoreState(previous, 1);
+    for (xiiUInt32 i = 0; i < m_DocumentWindows.GetCount(); ++i)
+      m_DocumentWindows[i]->m_pDockManager->restoreState(previousDocuments[i]);
+  }
+  return bSucceeded ? XII_SUCCESS : XII_FAILURE;
+}
+
+xiiResult xiiQtContainerWindow::RemoveWorkspace(const QString& sName)
+{
+  if (!xiiToolsProject::IsProjectOpen() || sName.trimmed().isEmpty())
+    return XII_FAILURE;
+  xiiStringBuilder file = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
+  file.AppendPath("workspaces.settings");
+  QSettings settings(xiiMakeQString(file), QSettings::IniFormat);
+  settings.remove(QString::fromLatin1(sName.trimmed().toUtf8().toHex()));
+  settings.sync();
+  return settings.status() == QSettings::NoError ? XII_SUCCESS : XII_FAILURE;
 }
 
 void xiiQtContainerWindow::SlotRestoreLayout()
@@ -559,10 +788,8 @@ xiiResult xiiQtContainerWindow::EnsureVisible(xiiQtApplicationPanel* pPanel)
     return XII_SUCCESS;
   }
 
-  if (pPanel->isClosed())
-  {
-    pPanel->toggleView();
-  }
+  // ADS also expands an open but collapsed auto-hide drawer through toggleView(true).
+  pPanel->toggleView(true);
   pPanel->raise();
   return XII_SUCCESS;
 }

@@ -10,6 +10,12 @@
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/Widgets/CollapsibleGroupBox.moc.h>
 #include <GuiFoundation/Widgets/CurveEditData.h>
+#include <GuiFoundation/Widgets/SearchWidget.moc.h>
+#include <QLabel>
+#include <QMenu>
+#include <QShortcut>
+#include <QToolButton>
+#include <algorithm>
 
 #include <ToolsFoundation/Document/Document.h>
 
@@ -17,6 +23,7 @@
 #include <Foundation/CodeUtils/Expression/ExpressionDeclarations.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Strings/TranslationLookup.h>
 #include <Foundation/Types/VarianceTypes.h>
 #include <Foundation/Types/VariantTypeRegistry.h>
 
@@ -296,6 +303,43 @@ xiiQtPropertyGridWidget::xiiQtPropertyGridWidget(QWidget* pParent, xiiDocument* 
   m_pLayout->setSpacing(0);
   m_pLayout->setContentsMargins(0, 0, 0, 0);
   setLayout(m_pLayout);
+  m_pSelectionLabel = new QLabel(tr("Select an object to inspect its properties"), this);
+  m_pSelectionLabel->setWordWrap(true);
+  m_pSelectionLabel->setContentsMargins(8, 8, 8, 8);
+  m_pLayout->addWidget(m_pSelectionLabel);
+  auto* pSearchRow = new QHBoxLayout();
+  pSearchRow->setContentsMargins(6, 0, 6, 6);
+  pSearchRow->setSpacing(4);
+  m_pSearch = new xiiQtSearchWidget(this);
+  m_pSearch->SetCaptureTabKey(false);
+  m_pSearch->setPlaceholderText(tr("Find properties or components"));
+  m_pSearch->setToolTip(tr("Type to find a property. Enter or Down finds the next match; Up finds the previous match."));
+  pSearchRow->addWidget(m_pSearch, 1);
+  m_pSearchResult = new QLabel(this);
+  m_pSearchResult->setAccessibleName(tr("Property search results"));
+  pSearchRow->addWidget(m_pSearchResult);
+  auto* pSections = new QToolButton(this);
+  pSections->setText(tr("Sections"));
+  pSections->setPopupMode(QToolButton::InstantPopup);
+  auto* pSectionsMenu = new QMenu(pSections);
+  pSections->setMenu(pSectionsMenu);
+  for (bool bCollapse : {false, true})
+    connect(pSectionsMenu->addAction(bCollapse ? tr("Collapse all") : tr("Expand all")), &QAction::triggered, this, [this, bCollapse]() {
+      if (m_pTypeWidget)
+        for (auto* pGroup : m_pTypeWidget->findChildren<xiiQtGroupBoxBase*>())
+          pGroup->SetCollapseState(bCollapse);
+    });
+  pSearchRow->addWidget(pSections);
+  m_pLayout->addLayout(pSearchRow);
+  connect(m_pSearch, &xiiQtSearchWidget::textChanged, this, [this]() { m_iSearchIndex = -1; NavigateProperty(1); });
+  connect(m_pSearch, &xiiQtSearchWidget::enterPressed, this, [this]() { NavigateProperty(1); });
+  connect(m_pSearch, &xiiQtSearchWidget::specialKeyPressed, this, [this](Qt::Key key) {
+    if (key == Qt::Key_Down || key == Qt::Key_Up)
+      NavigateProperty(key == Qt::Key_Up ? -1 : 1);
+  });
+  auto* pFind = new QShortcut(QKeySequence::Find, this);
+  pFind->setContext(Qt::WidgetWithChildrenShortcut);
+  connect(pFind, &QShortcut::activated, m_pSearch, [this]() { m_pSearch->setFocus(); m_pSearch->selectAll(); });
   m_pLayout->addWidget(m_pScroll);
 
   m_pContent = new QWidget(this);
@@ -306,7 +350,7 @@ xiiQtPropertyGridWidget::xiiQtPropertyGridWidget(QWidget* pParent, xiiDocument* 
   m_pContentLayout = new QVBoxLayout(m_pContent);
   m_pContentLayout->setObjectName("QVBoxLayout2");
   m_pContentLayout->setSpacing(1);
-  m_pContentLayout->setContentsMargins(0, 0, 0, 0);
+  m_pContentLayout->setContentsMargins(6, 4, 6, 6);
   m_pContent->setLayout(m_pContentLayout);
 
   m_pSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
@@ -365,6 +409,9 @@ void xiiQtPropertyGridWidget::ClearSelection()
   }
 
   m_Selection.Clear();
+  m_iSearchIndex = -1;
+  m_pSelectionLabel->setText(tr("Select an object to inspect its properties"));
+  m_pSearchResult->clear();
 }
 
 void xiiQtPropertyGridWidget::SetSelectionIncludeExcludeProperties(xiiStringView sIncludeProperties /*= {}*/, xiiStringView sExcludeProperties /*= {}*/)
@@ -401,7 +448,56 @@ void xiiQtPropertyGridWidget::SetSelection(const xiiDeque<const xiiDocumentObjec
     m_pTypeWidget->SetSelection(Items);
 
     m_pContentLayout->insertWidget(0, m_pTypeWidget, 0);
+    m_pSelectionLabel->setText(m_Selection.GetCount() == 1 ? tr("1 item selected") : tr("%1 items selected").arg(m_Selection.GetCount()));
+    if (!m_pSearch->text().isEmpty())
+      NavigateProperty(1);
   }
+}
+
+void xiiQtPropertyGridWidget::NavigateProperty(int iDirection)
+{
+  const QString sQuery = m_pSearch->text().trimmed();
+  if (sQuery.isEmpty() || !m_pTypeWidget)
+  {
+    m_pSearchResult->clear();
+    return;
+  }
+  QList<xiiQtPropertyWidget*> matches;
+  const auto                  words = sQuery.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+  for (auto* pProperty : m_pTypeWidget->findChildren<xiiQtPropertyWidget*>())
+  {
+    if (pProperty->isHidden() || !pProperty->GetProperty())
+      continue;
+    xiiStringBuilder label;
+    const bool       bLogMissing       = xiiTranslatorLogMissing::s_bActive;
+    xiiTranslatorLogMissing::s_bActive = false;
+    QString sName                      = xiiMakeQString(xiiTranslate(pProperty->GetLabel(label)));
+    xiiTranslatorLogMissing::s_bActive = bLogMissing;
+    sName += QLatin1Char(' ') + xiiMakeQString(pProperty->GetLabel(label));
+    for (QWidget* pParent = pProperty->parentWidget(); pParent && pParent != m_pContent; pParent = pParent->parentWidget())
+    {
+      if (auto* pType = qobject_cast<xiiQtTypeWidget*>(pParent))
+        sName += QLatin1Char(' ') + xiiMakeQString(pType->GetType()->GetTypeName());
+      if (auto* pGroup = qobject_cast<xiiQtGroupBoxBase*>(pParent))
+        sName += QLatin1Char(' ') + pGroup->GetTitle();
+    }
+    if (std::all_of(words.begin(), words.end(), [&](const QString& word) { return sName.contains(word, Qt::CaseInsensitive); }))
+      matches.push_back(pProperty);
+  }
+  if (matches.isEmpty())
+  {
+    m_iSearchIndex = -1;
+    m_pSearchResult->setText(tr("No matches"));
+    return;
+  }
+  m_iSearchIndex = (m_iSearchIndex + iDirection + matches.size()) % matches.size();
+  auto* pMatch   = matches[m_iSearchIndex];
+  for (auto* pParent = pMatch->parentWidget(); pParent && pParent != m_pContent; pParent = pParent->parentWidget())
+    if (auto* pGroup = qobject_cast<xiiQtGroupBoxBase*>(pParent))
+      pGroup->SetCollapseState(false);
+  m_pScroll->ensureWidgetVisible(pMatch, 8, 24);
+  m_pSearchResult->setText(tr("%1/%2").arg(m_iSearchIndex + 1).arg(matches.size()));
+  m_pSearchResult->setToolTip(pMatch->toolTip());
 }
 
 const xiiDocument* xiiQtPropertyGridWidget::GetDocument() const

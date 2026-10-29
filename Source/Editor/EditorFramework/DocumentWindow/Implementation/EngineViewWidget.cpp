@@ -124,7 +124,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
       (xiiViewRenderMode::IsRayTracingVisualizationMode(m_pViewConfig->m_RenderMode) && xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup() &&
        !xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed() && !xiiEditorEngineProcessConnection::GetSingleton()->SupportsRayTracingModes()))
     m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
-  cam.m_RenderMode = m_pViewConfig->m_RenderMode;
+  cam.m_RenderMode           = m_pViewConfig->m_RenderMode;
   cam.m_bShowNavigationGizmo = IsNavigationGizmoEnabled();
   if (m_pNavigationGizmo)
   {
@@ -916,6 +916,9 @@ xiiQtViewWidgetContainer::xiiQtViewWidgetContainer(ads::CDockManager* pDockManag
     context.m_pWindow   = m_pViewWidget;
 
     pToolBar->SetActionContext(context);
+    pToolBar->SetShowMenuLabels(true);
+    pToolBar->setObjectName(QStringLiteral("ViewportControls"));
+    pToolBar->setToolTip(tr("Viewport camera, shading and display options"));
     m_pLayout->addWidget(pToolBar, 0);
   }
 

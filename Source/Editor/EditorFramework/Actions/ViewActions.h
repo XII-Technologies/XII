@@ -25,6 +25,7 @@ public:
   static xiiActionDescriptorHandle s_hRenderMode;
   static xiiActionDescriptorHandle s_hPerspective;
   static xiiActionDescriptorHandle s_hNavigationGizmo;
+  static xiiActionDescriptorHandle s_hOptions;
   static xiiActionDescriptorHandle s_hActivateRemoteProcess;
   static xiiActionDescriptorHandle s_hLinkDeviceCamera;
 };

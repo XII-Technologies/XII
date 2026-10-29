@@ -8,7 +8,8 @@
 #include <QLineEdit>
 #include <QPushButton>
 
-xiiQtSearchWidget::xiiQtSearchWidget(QWidget* pParent)
+xiiQtSearchWidget::xiiQtSearchWidget(QWidget* pParent) :
+  QWidget(pParent)
 {
   setLayout(new QHBoxLayout(this));
   setContentsMargins(0, 0, 0, 0);
@@ -16,27 +17,19 @@ xiiQtSearchWidget::xiiQtSearchWidget(QWidget* pParent)
   layout()->setSpacing(0);
 
   {
-    m_pClearButton = new QPushButton(this);
-    m_pClearButton->setAutoDefault(false);
-    m_pClearButton->setDefault(false);
-    m_pClearButton->setEnabled(false);
-    m_pClearButton->setIcon(QIcon(":/GuiFoundation/Icons/Clear.svg"));
-    m_pClearButton->setToolTip("Clear the search text.");
-  }
-
-  {
     m_pLineEdit = new QLineEdit(this);
     m_pLineEdit->setPlaceholderText("Search");
+    m_pLineEdit->setAccessibleName(tr("Search"));
+    m_pLineEdit->setClearButtonEnabled(true);
+    m_pLineEdit->addAction(QIcon(":/GuiFoundation/Icons/Search.svg"), QLineEdit::LeadingPosition);
     m_pLineEdit->installEventFilter(this);
 
     setFocusProxy(m_pLineEdit);
   }
 
   layout()->addWidget(m_pLineEdit);
-  layout()->addWidget(m_pClearButton);
 
   connect(m_pLineEdit, &QLineEdit::textChanged, this, &xiiQtSearchWidget::onLineEditTextChanged);
-  connect(m_pClearButton, &QPushButton::clicked, this, &xiiQtSearchWidget::onClearButtonClicked);
 }
 
 void xiiQtSearchWidget::setText(const QString& sText)
@@ -52,6 +45,7 @@ QString xiiQtSearchWidget::text() const
 void xiiQtSearchWidget::setPlaceholderText(const QString& sText)
 {
   m_pLineEdit->setPlaceholderText(sText);
+  m_pLineEdit->setAccessibleName(sText);
 }
 
 void xiiQtSearchWidget::selectAll()
@@ -61,15 +55,7 @@ void xiiQtSearchWidget::selectAll()
 
 void xiiQtSearchWidget::onLineEditTextChanged(const QString& text)
 {
-  m_pClearButton->setEnabled(!text.isEmpty());
-
   Q_EMIT textChanged(text);
-}
-
-void xiiQtSearchWidget::onClearButtonClicked(bool checked)
-{
-  m_pLineEdit->setText(QString());
-  m_pLineEdit->setFocus();
 }
 
 bool xiiQtSearchWidget::eventFilter(QObject* obj, QEvent* e)
@@ -79,6 +65,8 @@ bool xiiQtSearchWidget::eventFilter(QObject* obj, QEvent* e)
     if (e->type() == QEvent::KeyPress)
     {
       QKeyEvent* pEvent = static_cast<QKeyEvent*>(e);
+      if (!m_bCaptureTabKey && (pEvent->key() == Qt::Key_Tab || pEvent->key() == Qt::Key_Backtab))
+        return false;
 
       if (pEvent->key() == Qt::Key_Escape && !text().isEmpty())
       {

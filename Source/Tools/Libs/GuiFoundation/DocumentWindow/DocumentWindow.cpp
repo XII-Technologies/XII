@@ -11,6 +11,7 @@
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
+#include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QDockWidget>
 #include <QLabel>
@@ -29,6 +30,7 @@ bool                                      xiiQtDocumentWindow::s_bAllowRestoreWi
 void xiiQtDocumentWindow::Constructor()
 {
   m_pDockManager = new ads::CDockManager(this);
+  xiiQtDarkEditorStyle::ApplyDockStyle(m_pDockManager);
 
   s_AllDocumentWindows.PushBack(this);
 

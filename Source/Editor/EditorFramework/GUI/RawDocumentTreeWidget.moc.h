@@ -27,6 +27,8 @@ public:
   void Initialize(xiiDocument* pDocument, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel, xiiSelectionManager* pSelection = nullptr);
 
   void EnsureLastSelectedItemVisible();
+  /// Filter the view without changing the document selection when selected rows disappear.
+  void SetFilterText(const QString& sText);
 
   void SetAllowDragDrop(bool bAllow);
   void SetAllowDeleteObjects(bool bAllow);

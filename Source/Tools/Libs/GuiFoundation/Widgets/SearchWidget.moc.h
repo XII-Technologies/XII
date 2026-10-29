@@ -6,11 +6,10 @@
 #include <QWidget>
 
 class QLineEdit;
-class QPushButton;
 
-/// A widget that contains a line edit for a search text and a button to clear the search text.
+/// A search field with an inline clear button and keyboard navigation signals.
 ///
-/// The clear button is only active when the line edit has text.
+/// The clear button is visible only when the line edit has text.
 /// The text can be cleared by pressing ESC while the line edit has focus.
 class XII_GUIFOUNDATION_DLL xiiQtSearchWidget : public QWidget
 {
@@ -30,6 +29,9 @@ public:
   /// Passed through to the QLineEdit
   void selectAll();
 
+  /// Popup menus and consoles capture Tab for completion. Panels can opt into normal focus traversal.
+  void SetCaptureTabKey(bool bCapture) { m_bCaptureTabKey = bCapture; }
+
 Q_SIGNALS:
   /// Passed through from the QLineEdit
   void textChanged(const QString& sText);
@@ -48,12 +50,11 @@ Q_SIGNALS:
 
 private Q_SLOTS:
   void onLineEditTextChanged(const QString& text);
-  void onClearButtonClicked(bool checked = false);
 
 protected:
   virtual bool eventFilter(QObject* obj, QEvent* e) override;
   virtual void showEvent(QShowEvent* e) override;
 
-  QLineEdit*   m_pLineEdit;
-  QPushButton* m_pClearButton;
+  QLineEdit* m_pLineEdit;
+  bool       m_bCaptureTabKey = true;
 };
