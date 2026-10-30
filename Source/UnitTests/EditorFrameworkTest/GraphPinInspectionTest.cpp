@@ -327,6 +327,21 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Node copy and paste remap owned pin properties and preserve their values")
   {
+    xiiSetNodeCommentCommand comment;
+    comment.m_Object     = owner->GetGuid();
+    comment.m_sComment   = "Shared graph annotation\nKeep the source in linear space. <plain text>";
+    xiiUInt64 beforeHash = 123, afterHash = 123;
+    manager->GetMetaDataHash(owner, beforeHash);
+    accessor->StartTransaction("Comment graph node");
+    XII_TEST_STATUS(document.GetCommandHistory()->AddCommand(comment));
+    accessor->FinishTransaction();
+    XII_TEST_STRING(manager->GetNodeComment(owner), comment.m_sComment);
+    manager->GetMetaDataHash(owner, afterHash);
+    XII_TEST_INT(beforeHash, afterHash);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_BOOL(manager->GetNodeComment(owner).IsEmpty());
+    XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+    XII_TEST_STRING(manager->GetNodeComment(owner), comment.m_sComment);
     document.GetSelectionManager()->SetSelection(owner);
     xiiAbstractObjectGraph graph;
     XII_TEST_BOOL(manager->CopySelectedObjects(graph));
@@ -345,12 +360,15 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     const auto* copiedProperties = manager->GetPinPropertyObject(*manager->GetInputPinByName(copy, "Value"));
     XII_TEST_BOOL(copiedProperties && copiedProperties->GetGuid() != properties->GetGuid());
     XII_TEST_FLOAT(copiedProperties->GetTypeAccessor().GetValue("Value").Get<float>(), 0.75f, 0);
+    XII_TEST_STRING(manager->GetNodeComment(copy), manager->GetNodeComment(owner));
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Saving and reloading preserves pin identity and edited values")
   {
     XII_TEST_STATUS(document.SaveDocument(true));
     InspectorDocument loaded(path);
     XII_TEST_STATUS(loaded.LoadDocument());
+    const auto* loadedManager = static_cast<const InspectorNodeManager*>(loaded.GetObjectManager());
+    XII_TEST_STRING(loadedManager->GetNodeComment(loadedManager->GetObject(nodes[1])), manager->GetNodeComment(owner));
     const auto* loadedProperties = loaded.GetObjectManager()->GetObject(settings[1]);
     if (!XII_TEST_BOOL(loadedProperties != nullptr))
       return;

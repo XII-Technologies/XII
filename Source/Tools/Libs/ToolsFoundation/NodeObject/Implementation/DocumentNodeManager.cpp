@@ -22,6 +22,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 struct DocumentNodeManager_NodeMetaData
 {
   xiiVec2 m_Pos = xiiVec2::MakeZero();
+  xiiString m_sComment;
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, DocumentNodeManager_NodeMetaData);
 
@@ -31,6 +32,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(DocumentNodeManager_NodeMetaData, xiiNoBase, 1, 
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Node::Pos", m_Pos),
+    XII_MEMBER_PROPERTY("Node::Comment", m_sComment),
   }
   XII_END_PROPERTIES;
 }
@@ -125,6 +127,28 @@ void xiiDocumentNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCre
 const xiiRTTI* xiiDocumentNodeManager::GetConnectionType() const
 {
   return xiiGetStaticRTTI<xiiDocumentObject_ConnectionBase>();
+}
+
+xiiStringView xiiDocumentNodeManager::GetNodeComment(const xiiDocumentObject* pObject) const
+{
+  if (pObject == nullptr)
+    return {};
+  const auto node = m_ObjectToNode.Find(pObject->GetGuid());
+  return node.IsValid() ? node.Value().m_sComment.GetView() : xiiStringView();
+}
+
+xiiStatus xiiDocumentNodeManager::SetNodeComment(const xiiDocumentObject* pObject, xiiStringView sComment)
+{
+  if (pObject == nullptr || GetObject(pObject->GetGuid()) != pObject || !IsNode(pObject))
+    return xiiStatus("Graph comments require a node in this document.");
+  auto node = m_ObjectToNode.Find(pObject->GetGuid());
+  if (!node.IsValid())
+    return xiiStatus("The graph node has not been initialized.");
+  if (node.Value().m_sComment == sComment)
+    return XII_SUCCESS;
+  node.Value().m_sComment = sComment;
+  m_NodeEvents.Broadcast(xiiDocumentNodeManagerEvent(xiiDocumentNodeManagerEvent::Type::NodeCommentChanged, pObject));
+  return XII_SUCCESS;
 }
 
 xiiVec2 xiiDocumentNodeManager::GetNodePos(const xiiDocumentObject* pObject) const
@@ -394,6 +418,7 @@ void xiiDocumentNodeManager::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& 
 
         DocumentNodeManager_NodeMetaData nodeMetaData;
         nodeMetaData.m_Pos = node.m_vPos;
+        nodeMetaData.m_sComment = node.m_sComment;
         rttiConverter.AddProperties(pAbstractObject, pNodeMetaDataType, &nodeMetaData);
       }
     }
@@ -436,6 +461,16 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
     {
       DocumentNodeManager_NodeMetaData nodeMetaData;
       rttiConverter.ApplyPropertiesToObject(pAbstractObject, pNodeMetaDataType, &nodeMetaData);
+
+      if (bUndoable)
+      {
+        xiiSetNodeCommentCommand comment;
+        comment.m_Object   = pObject->GetGuid();
+        comment.m_sComment = nodeMetaData.m_sComment;
+        history->AddCommand(comment).LogFailure();
+      }
+      else
+        SetNodeComment(pObject, nodeMetaData.m_sComment).LogFailure();
 
       if (CanMoveNode(pObject, nodeMetaData.m_Pos).Succeeded())
       {
@@ -544,8 +579,7 @@ void xiiDocumentNodeManager::GetMetaDataHash(const xiiDocumentObject* pObject, x
 {
   if (IsNode(pObject))
   {
-    // The node position is not hashed here since the hash is only used for asset transform
-    // and for that the node position is irrelevant.
+    // Layout and comments affect authoring only, not compiled asset content.
   }
   else if (IsConnection(pObject))
   {

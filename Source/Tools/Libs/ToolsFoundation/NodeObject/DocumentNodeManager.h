@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Types/Status.h>
 #include <ToolsFoundation/Document/Document.h>
@@ -15,6 +17,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiDocumentNodeManagerEvent
   enum class Type
   {
     NodeMoved,
+    NodeCommentChanged,
     AfterPinsConnected,
     BeforePinsDisonnected,
     BeforePinsChanged,
@@ -156,6 +159,10 @@ public:
   virtual const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const { return nullptr; }
 
   xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
+  /// Editor-only annotation. Stored with graph layout metadata, excluded from
+  /// transform hashes. Use xiiSetNodeCommentCommand for document history.
+  xiiStringView        GetNodeComment(const xiiDocumentObject* pObject) const;
+  xiiStatus            SetNodeComment(const xiiDocumentObject* pObject, xiiStringView sComment);
   const xiiConnection& GetConnection(const xiiDocumentObject* pObject) const;
   const xiiConnection* GetConnectionIfExists(const xiiDocumentObject* pObject) const;
 
@@ -214,6 +221,7 @@ protected:
   struct NodeInternal
   {
     xiiVec2                                 m_vPos = xiiVec2::MakeZero();
+    xiiString                               m_sComment;
     xiiHybridArray<xiiUniquePtr<xiiPin>, 6> m_Inputs;
     xiiHybridArray<xiiUniquePtr<xiiPin>, 6> m_Outputs;
   };
