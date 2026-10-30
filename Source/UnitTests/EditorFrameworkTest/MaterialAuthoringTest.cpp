@@ -66,6 +66,47 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
     return;
   xiiVisualShaderTypeRegistry::GetSingleton()->UpdateNodeData();
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Expanded material library compiles every new node")
+  {
+    const char* types[] = {"OneMinus", "SafeReciprocal", "SafeDivide", "Smoothstep", "Step", "InverseLerp", "Remap", "PingPong", "Posterize", "ModuloPositive",
+                           "Luminance", "ColorRGB", "Desaturate", "ColorContrast", "BlendScreen", "BlendOverlay", "BlendSoftLight", "HeightBlend",
+                           "UVTilingOffset", "RotateAboutPivot", "PolarCoordinates", "PolarToCartesian", "MirrorUV", "ParallaxOffset", "NormalUnpack", "NormalStrength",
+                           "Checkerboard", "RadialGradient", "RingGradient", "StripePattern", "Voronoi2D", "FractalNoise2D", "RidgedNoise2D", "Turbulence2D", "MergeFloat2", "MergeFloat3", "MergeFloat4"};
+    for (const char* type : types)
+    {
+      const xiiStringBuilder nodePath(project.GetFileDirectory(), "/Node-", type, ".xiiMaterialAsset");
+      auto*                  sample = xiiDynamicCast<xiiMaterialAssetDocument*>(editor->CreateDocument(nodePath, xiiDocumentFlags::EmptyDocument));
+      if (!XII_TEST_BOOL(sample != nullptr))
+        return;
+      XII_SCOPE_EXIT(sample->GetDocumentManager()->CloseDocument(sample));
+      auto* edit  = sample->GetObjectAccessor();
+      auto* nodes = static_cast<xiiVisualShaderNodeManager*>(sample->GetObjectManager());
+      edit->StartTransaction("Compile library node");
+      xiiUuid     main, value;
+      const auto* definition = xiiRTTI::FindTypeByName(xiiStringBuilder("ShaderNode::", type));
+      if (!XII_TEST_BOOL_MSG(definition != nullptr, "Missing material node '%s'.", type))
+      {
+        edit->CancelTransaction();
+        return;
+      }
+      XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::MaterialOutput"), main));
+      XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, definition, value));
+      const auto* pin = static_cast<const xiiVisualShaderPin*>(nodes->GetOutputPins(edit->GetObject(value))[0].Borrow());
+      if (pin->GetDataType() == xiiGetStaticRTTI<xiiVec2>() || pin->GetDataType() == xiiGetStaticRTTI<xiiVec4>())
+      {
+        xiiUuid length;
+        XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::Length"), length));
+        XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(sample->GetCommandHistory(), nodes->GetConnectionType(), *pin, *nodes->GetInputPins(edit->GetObject(length))[0]));
+        pin = static_cast<const xiiVisualShaderPin*>(nodes->GetOutputPins(edit->GetObject(length))[0].Borrow());
+      }
+      const char* target = pin->GetDataType() == xiiGetStaticRTTI<xiiVec3>() || pin->GetDataType() == xiiGetStaticRTTI<xiiColor>() ? "BaseColor" : "Roughness";
+      XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(sample->GetCommandHistory(), nodes->GetConnectionType(), *pin, *nodes->GetInputPinByName(edit->GetObject(main), target)));
+      XII_TEST_STATUS(edit->SetValueByName(sample->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::Custom)));
+      edit->FinishTransaction();
+      const auto compiled = sample->CompileShader();
+      XII_TEST_BOOL_MSG(compiled.Succeeded(), "Node '%s' failed: %s", type, compiled.GetMessageString().GetData());
+    }
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pattern material preserves typed roughness connections")
   {
     const xiiStringBuilder original(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/Materials/Common/Pattern.xiiMaterialAsset");
