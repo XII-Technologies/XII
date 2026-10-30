@@ -41,6 +41,13 @@ drag connections, undo/redo, pan/zoom, and graph arrangement. The Material Graph
 dock is available alongside the 3D preview, with a separate shader diagnostics
 dock.
 
+Compilation uses `Core/Graph`: reachable document nodes and pin connections form
+an `xiiGraphWithData` topology, Core's topological sort schedules producers before
+consumers, and strongly connected components locate imported cycles for node/port
+diagnostics. Shared producers are emitted once. Domain pin types remain in the
+material Editor; the Core graph contains no shader or Qt concepts. The existing
+document format remains authoritative for authoring and serialization.
+
 Numeric math pins explicitly declare polymorphic numeric types. Connections
 resolve scalar/vector dimensions through the graph. Scalar splats and linear
 RGBA conversions are permitted; arbitrary vector truncation requires an explicit
@@ -55,6 +62,13 @@ arbitrary count of texture nodes, including disconnected ones.
 Comments are annotations, not resizable graph frames. Reusable material functions,
 subgraphs, triplanar nodes, and a complete advanced surface output are not added.
 
+All shared Editor node scenes also support attached node comments through the
+node context menu's Add/Edit/Remove Comment actions. Multiline comments render as
+wrapped plain text and participate in document undo/redo, deletion, copy/paste,
+and save/reopen through graph layout metadata. They do not alter transform
+hashes, shader source, or domain properties. The material-specific free comment
+node remains available; attached comments work across other node document types.
+
 Generation uses the compiler's current section grammar, excludes disconnected
 nodes from permutation checks, and does not emit an empty geometry stage. The
 compiler backend remains responsible for expression optimization. The Editor
@@ -63,6 +77,38 @@ platform and fixed, deduplicated material permutations. `.xiiShader` stage
 sections and shared `[SHADER]` source remain supported; no `[STAGES]` declaration
 is introduced. Owned material shader files were migrated directly to the current
 section names.
+
+### Compiler-owned material constants
+
+`[MATERIAL_CONSTANTS]` contains buffer members, using HLSL declarations or XII's
+shared shader-header macros. The standard compiler generates the single
+`xiiMaterialConstants` declaration before active stage/shared source and runs it
+through the normal preprocessor and backend. The generated graph and owned
+material shader sources no longer declare that buffer manually. The old
+`DefaultMaterialCB.h` was removed; shared default member declarations live in
+`DefaultMaterialConstants.h`, included from the constants section.
+
+```hlsl
+[MATERIAL_PARAMETER]
+Color Tint @Default(Color(1, 1, 1));
+float Gain @Default(1);
+
+[MATERIAL_CONSTANTS]
+COLOR4F(Tint);
+FLOAT1(Gain);
+
+[PIXEL_SHADER]
+float4 main() : SV_Target0 { return Tint * Gain; }
+```
+
+Do not manually declare `xiiMaterialConstants` in a shader using this section.
+Empty/whitespace sections create no buffer. Stage-specific sections and shared
+`[SHADER]` source retain their meaning, and the existing backend reflection
+determines which stages actually use the buffer. Declaring shared constants does
+not create a binding for an unrelated stage. Source line mapping includes blank
+lines, so backend errors identify the authored declaration's original location.
+This section declares shader storage; it does not introduce a separate GPU
+allocation or material runtime.
 
 ## Instances and reload
 
@@ -145,6 +191,15 @@ EditorViews tests passed with calibrated thumbnail brightness assertions and PNG
 captures. Repository policy, changed-source formatting, and whitespace checks
 also passed. Other platforms and D3D12 were not exercised. Compilation alone is
 not a rendering acceptance result.
+
+Follow-up validation covers Core Graph shared dependencies and malformed imported
+cycles, the real Qt multiline comment dialog/actions/display and history round
+trips, material-constant buffer reflection/offsets and exact stage masks, cache
+reuse, and malformed-constant source locations. Selected Vulkan permutations of
+all seven migrated built-in material shaders and `ReflectionFilteredSpecular`
+compiled. The existing `SeparatedBilateralBlur` source has an unavailable
+`BLUR_DIRECTION` permutation definition and could not be compiled; its only
+change here removes an unused include of the deleted material-buffer header.
 
 `xiiGBufferRasterPass` still selects its built-in vertex-pull/mesh shader rather
 than dispatching a material schema's shader. The existing graph output also

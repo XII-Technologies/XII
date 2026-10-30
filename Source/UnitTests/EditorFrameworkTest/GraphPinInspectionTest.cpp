@@ -340,7 +340,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Node copy and paste remap owned pin properties and preserve their values")
   {
     const xiiString comment    = "Shared graph annotation\nKeep the source in linear space. <plain text>";
-    xiiUInt64 beforeHash = 123, afterHash = 123;
+    xiiUInt64       beforeHash = 123, afterHash = 123;
     manager->GetMetaDataHash(owner, beforeHash);
     QMenu comments;
     scene.AddCommentActions(comments, owner);
