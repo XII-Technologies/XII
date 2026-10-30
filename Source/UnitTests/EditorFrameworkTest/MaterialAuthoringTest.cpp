@@ -87,6 +87,9 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   XII_TEST_BOOL(!sections.GetSectionContent(xiiGALShaderSections::VertexShader, line).IsEmpty());
   XII_TEST_BOOL(!sections.GetSectionContent(xiiGALShaderSections::PixelShader, line).IsEmpty());
   XII_TEST_BOOL(!sections.GetSectionContent(xiiGALShaderSections::MaterialParameter, line).IsEmpty());
+  XII_TEST_BOOL(!sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, line).IsEmpty());
+  XII_TEST_BOOL(source.FindSubString("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)") == nullptr);
+  XII_TEST_BOOL(source.FindSubString("VSE_CONSTANTS") == nullptr);
   accessor->StartTransaction("Remove unreachable graph node");
   XII_TEST_STATUS(accessor->RemoveObject(accessor->GetObject(disconnected)));
   accessor->FinishTransaction();
@@ -162,13 +165,9 @@ ALL
 [MATERIAL_PARAMETER]
 Color Tint @Default(Color(0.2, 0.4, 0.6));
 float Gain @Default(0.5) @Clamp(0.0, 4.0);
-[SHADER]
-#include <Shaders/Common/ShaderResourceMacros.h>
-DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
-{
-  COLOR4F(Tint);
-  FLOAT1(Gain);
-}
+[MATERIAL_CONSTANTS]
+COLOR4F(Tint);
+FLOAT1(Gain);
 [VERTEX_SHADER]
 float4 main(uint vertex : SV_VertexID) : SV_Position
 {

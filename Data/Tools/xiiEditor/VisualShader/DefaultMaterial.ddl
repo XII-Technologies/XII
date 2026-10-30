@@ -59,13 +59,6 @@ VERTEX_SKINNING=FALSE
 #include <Shaders/Materials/MaterialVertexShader.h>
 #include <Shaders/Common/VisualShaderUtil.h>
 
-DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
-{
-  FLOAT1(MaskThreshold);
-
-  // Insert custom Visual Shader parameters here
-  VSE_CONSTANTS
-}
 
 VS_OUT main(VS_IN Input)
 {
@@ -87,6 +80,8 @@ float3 GetWorldPositionOffset(xiiPerInstanceData data, float3 worldPosition)
 #endif
 
 " }
+
+  string %CodeMaterialCB { "FLOAT1(MaskThreshold);" }
 
   string %CodeMaterialParams { "
 Permutation BLEND_MODE;
@@ -141,13 +136,6 @@ float MaskThreshold @Default($prop0);
   string %CodePixelConstants { "" }
   string %CodePixelBody { "
 
-DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
-{
-  FLOAT1(MaskThreshold);
-
-  // Insert custom Visual Shader parameters here
-  VSE_CONSTANTS
-}
 
 float3 GetBaseColor()
 {

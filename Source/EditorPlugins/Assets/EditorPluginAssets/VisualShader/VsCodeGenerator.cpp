@@ -172,20 +172,19 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateVisualShader(const xiiDocumentNo
 
   XII_SUCCEED_OR_RETURN(GenerateNode(m_pMainNode));
 
-  const xiiStringBuilder sMaterialCBDefine("#define VSE_CONSTANTS ", m_sShaderMaterialCB);
-
   m_sFinalShaderCode.Set("[PLATFORMS]\nALL\n\n");
   m_sFinalShaderCode.Append("[PERMUTATIONS]\n\n", m_sShaderPermutations, "\n");
   m_sFinalShaderCode.Append("[MATERIAL_PARAMETER]\n\n", m_sShaderMaterialParam, "\n");
+  m_sFinalShaderCode.Append("[MATERIAL_CONSTANTS]\n\n", m_sShaderMaterialCB, "\n");
   m_sFinalShaderCode.Append("[RENDERSTATE]\n\n", m_sShaderRenderState, "\n");
-  m_sFinalShaderCode.Append("[VERTEX_SHADER]\n\n", sMaterialCBDefine, "\n\n");
+  m_sFinalShaderCode.Append("[VERTEX_SHADER]\n\n");
   m_sFinalShaderCode.Append(m_sShaderVertexDefines, "\n", m_sShaderVertex, "\n");
   if (!m_sShaderGeometry.IsEmpty())
   {
-    m_sFinalShaderCode.Append("[GEOMETRY_SHADER]\n\n", sMaterialCBDefine, "\n\n");
+    m_sFinalShaderCode.Append("[GEOMETRY_SHADER]\n\n");
     m_sFinalShaderCode.Append(m_sShaderGeometryDefines, "\n", m_sShaderGeometry, "\n");
   }
-  m_sFinalShaderCode.Append("[PIXEL_SHADER]\n\n", sMaterialCBDefine, "\n\n");
+  m_sFinalShaderCode.Append("[PIXEL_SHADER]\n\n");
   m_sFinalShaderCode.Append(m_sShaderPixelDefines, "\n", m_sShaderPixelIncludes, "\n");
   m_sFinalShaderCode.Append(m_sShaderPixelConstants, "\n", m_sShaderPixelSamplers, "\n", m_sShaderPixelBody, "\n");
 
