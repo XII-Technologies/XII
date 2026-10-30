@@ -15,12 +15,11 @@ struct xiiStandardMenuTypes
     Project = XII_BIT(0),
     File    = XII_BIT(1),
     Edit    = XII_BIT(2),
-    Panels  = XII_BIT(3),
-    Scene   = XII_BIT(4),
-    Asset   = XII_BIT(5),
-    View    = XII_BIT(6),
-    Tools   = XII_BIT(7),
-    Help    = XII_BIT(8),
+    Scene   = XII_BIT(3),
+    Asset   = XII_BIT(4),
+    View    = XII_BIT(5),
+    Tools   = XII_BIT(6),
+    Help    = XII_BIT(7),
 
     Default = Project | File | Edit | Tools | Help
   };
@@ -30,7 +29,6 @@ struct xiiStandardMenuTypes
     StorageType Project : 1;
     StorageType File : 1;
     StorageType Edit : 1;
-    StorageType Panels : 1;
     StorageType Scene : 1;
     StorageType Asset : 1;
     StorageType View : 1;
@@ -53,7 +51,6 @@ public:
   static xiiActionDescriptorHandle s_hMenuProject;
   static xiiActionDescriptorHandle s_hMenuFile;
   static xiiActionDescriptorHandle s_hMenuEdit;
-  static xiiActionDescriptorHandle s_hMenuPanels;
   static xiiActionDescriptorHandle s_hMenuScene;
   static xiiActionDescriptorHandle s_hMenuAsset;
   static xiiActionDescriptorHandle s_hMenuView;
@@ -61,20 +58,6 @@ public:
   static xiiActionDescriptorHandle s_hMenuHelp;
   static xiiActionDescriptorHandle s_hCheckForUpdates;
   static xiiActionDescriptorHandle s_hReportProblem;
-};
-
-///
-class XII_GUIFOUNDATION_DLL xiiApplicationPanelsMenuAction : public xiiDynamicMenuAction
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiApplicationPanelsMenuAction, xiiDynamicMenuAction);
-
-public:
-  xiiApplicationPanelsMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
-    xiiDynamicMenuAction(context, sName, sIconPath)
-  {
-  }
-  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) override;
-  virtual void Execute(const xiiVariant& value) override;
 };
 
 //////////////////////////////////////////////////////////////////////////

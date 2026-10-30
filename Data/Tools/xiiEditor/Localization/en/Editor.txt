@@ -27,7 +27,6 @@ Panel.LongOps;Background Operations
 G.Project;&Project
 G.File;&File
 G.Edit;E&dit
-G.Panels;P&anels
 G.Scene;&Scene
 G.Asset;&Asset
 G.Tools;&Tools

@@ -11,8 +11,8 @@
 #include <EditorFramework/Panels/GameObjectPanel/GameObjectPanel.moc.h>
 #include <EditorFramework/Settings/ScenePreferences.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
-#include <Foundation/Strings/TranslationLookup.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
@@ -56,12 +56,11 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
     QApplication::processEvents();
     auto* pMenu   = pContainer->findChild<QMenuBar*>(QStringLiteral("EditorDocumentMenu"));
     auto* pSource = qobject_cast<QMenuBar*>(window.menuWidget());
+    XII_TEST_BOOL(xiiActionManager::GetActionHandle("", "G.Panels").IsInvalidated());
+    XII_TEST_BOOL(xiiRTTI::FindTypeByName("xiiApplicationPanelsMenuAction") == nullptr);
     if (XII_TEST_BOOL(pMenu != nullptr && pSource != nullptr))
     {
       XII_TEST_BOOL(pMenu->actions() == pSource->actions());
-      const auto panelsTitle = xiiMakeQString(xiiTranslate("G.Panels")).remove(QLatin1Char('&'));
-      for (auto* pAction : pMenu->actions())
-        XII_TEST_BOOL(pAction->text().remove(QLatin1Char('&')) != panelsTitle);
 #if XII_DISABLED(XII_PLATFORM_OSX)
       XII_TEST_BOOL(pSource->isHidden());
 #endif
