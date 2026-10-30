@@ -20,7 +20,7 @@ o
 			s{":app/VisualShader/Textures.ddl"}
 		}
 		Uuid %DocumentID{u4{15150418825657775493,4791833822222609996}}
-		u4 %Hash{474770275878062816}
+		u4 %Hash{10189084849392324538}
 		VarArray %MetaInfo{}
 		VarArray %Outputs
 		{
@@ -36,12 +36,36 @@ Objects
 {
 o
 {
+	Uuid %id{u4{13373215029612039551,5769241578321894091}}
+	s %t{"ShaderNode::Split"}
+	u3 %v{1}
+	p
+	{
+		s %Node::Comment{"Extract the red channel for scalar roughness."}
+		Vec2 %Node::Pos{f{950,430}}
+	}
+}
+o
+{
+	Uuid %id{u4{12800661828629438041,5812261359351074522}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13373215029612039551,5769241578321894091}}
+		s %SourcePin{"x"}
+		Uuid %Target{u4{15117791089842229394,5558965522422809899}}
+		s %TargetPin{"b"}
+	}
+}
+o
+{
 	Uuid %id{u4{11278294308812744638,3299255163824642314}}
 	s %t{"xiiMaterialResourceDescriptor"}
 	u3 %v{2}
 	p
 	{
-		f %AlphaCutoff{0}
+		f %AlphaCutoff{0.5}
 		s %AlphaMode{"xiiMaterialAlphaMode::Opaque"}
 		f %Anisotropy{0}
 		Color %BaseColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
@@ -53,22 +77,22 @@ o
 		s %ClearCoatTexture{""}
 		f %DisplacementScale{0}
 		s %Domain{"xiiMaterialDomain::Surface"}
-		Color %EmissiveColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
+		Color %EmissiveColor{f{0,0,0,0x0000803F}}
 		s %EmissiveTexture{""}
 		s %Features{"xiiMaterialFeatureFlags::ReceivesLighting|xiiMaterialFeatureFlags::CastsShadows|xiiMaterialFeatureFlags::WritesVelocity|xiiMaterialFeatureFlags::UsesBindlessResources"}
 		s %HeightTexture{""}
-		f %IndexOfRefraction{0}
+		f %IndexOfRefraction{1.5}
 		f %Metallic{0}
 		s %MetallicRoughnessTexture{""}
-		f %NormalScale{0}
+		f %NormalScale{1}
 		s %NormalTexture{""}
-		f %OcclusionStrength{0}
+		f %OcclusionStrength{1}
 		s %OcclusionTexture{""}
 		VarArray %Parameters{}
-		f %Roughness{0}
+		f %Roughness{0.5}
 		s %Shader{""}
 		s %ShadingModel{"xiiMaterialShadingModel::Lit"}
-		f %SheenRoughness{0}
+		f %SheenRoughness{0.5}
 		i2 %SortPriority{0}
 		HashedString %Surface{s{""}}
 		VarArray %Texture2DBindings{}
@@ -85,7 +109,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0xE882C443,0x125E0043}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF06D0444,0x47052843}}
 		f %a{0x0000803F}
 		f %b{0x0000803F}
 	}
@@ -123,7 +148,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x23EFC543,0x08348643}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF06D0444,0xA4029F43}}
 		f %a{0x0000803F}
 		f %b{0x0000003F}
 	}
@@ -135,7 +161,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0xB0A74943,0x28498042}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0x7F6FD542,0x47851443}}
 	}
 }
 o
@@ -146,7 +173,8 @@ o
 	p
 	{
 		Color %Default{f{0x9218A33E,0x9218A33E,0x9218A33E,0x0000803F}}
-		Vec2 %Node::Pos{f{0xCB07C343,0x1C152842}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF00D0344,0x1C152842}}
 		s %ParamName{"Color"}
 	}
 }
@@ -175,7 +203,8 @@ o
 		Vec3 %Emissive{f{0,0,0}}
 		f %MaskThreshold{0x0000803E}
 		f %Metallic{0}
-		Vec2 %Node::Pos{f{0x0F428E44,0xAFF09442}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF806E044,0x8E0AE042}}
 		f %Occlusion{0x0000803F}
 		f %Opacity{0x0000803F}
 		f %Reflectance{0x0000003F}
@@ -192,7 +221,8 @@ o
 	p
 	{
 		s %Name{"BaseTexture"}
-		Vec2 %Node::Pos{f{0x7F6FE042,0xE8C41743}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0x7F6FE042,0xA4428943}}
 		s %Texture{"{ f962fc28-661b-485c-a527-c997e239a3f0 }"}
 		f %Tiling{0x0000803E}
 	}
@@ -217,7 +247,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x983D7044,0xB1C38743}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF886AB44,0x8E0AAA42}}
 	}
 }
 o
@@ -235,19 +266,13 @@ o
 }
 o
 {
-	Uuid %id{u4{10761525945405070802,5318978621122591656}}
-	s %t{"AssetCache/Common/Materials/Common/Pattern.autogen.xiiShader"}
-	u3 %v{2}
-	p{}
-}
-o
-{
 	Uuid %id{u4{17647047357382570685,5387283873938896650}}
 	s %t{"ShaderNode::Saturate"}
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x71C13A44,0x3C357443}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF836AB44,0xA4828D43}}
 	}
 }
 o
@@ -309,7 +334,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x75EA0F44,0x925E7443}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF0CD6C44,0xA4828D43}}
 		f %a{0x6666A63F}
 		f %b{0}
 	}
@@ -323,8 +349,8 @@ o
 	{
 		Uuid %Source{u4{7349474629313198467,4810738493151362545}}
 		s %SourcePin{"result"}
-		Uuid %Target{u4{15117791089842229394,5558965522422809899}}
-		s %TargetPin{"b"}
+		Uuid %Target{u4{13373215029612039551,5769241578321894091}}
+		s %TargetPin{"a"}
 	}
 }
 o
@@ -334,7 +360,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0x8EA60D44,0xFFDE9542}}
+		s %Node::Comment{""}
+		Vec2 %Node::Pos{f{0xF06D6D44,0x8E0AC542}}
 		f %a{0x0000803F}
 		f %b{0x0000803F}
 	}
@@ -343,15 +370,16 @@ o
 {
 	Uuid %id{u4{5373694201964567170,5685942946020748827}}
 	s %t{"xiiMaterialAssetProperties"}
-	u3 %v{5}
+	u3 %v{6}
 	p
 	{
 		s %AssetFilterTags{""}
 		s %BaseMaterial{""}
 		Uuid %NativeMaterial{u4{11278294308812744638,3299255163824642314}}
 		s %Shader{"{ 1c47ee4c-0379-4280-85f5-b8cda61941d2 }"}
+		VarDict %ShaderAuthoringValues{}
 		s %ShaderMode{"xiiMaterialShaderMode::Custom"}
-		Uuid %ShaderProperties{u4{10761525945405070802,5318978621122591656}}
+		Uuid %ShaderProperties{u4{0,0}}
 		s %Surface{""}
 	}
 }
@@ -379,6 +407,8 @@ o
 		VarArray %Children
 		{
 			Uuid{u4{5373694201964567170,5685942946020748827}}
+			Uuid{u4{13373215029612039551,5769241578321894091}}
+			Uuid{u4{12800661828629438041,5812261359351074522}}
 			Uuid{u4{14379145788071149748,4930371780979134301}}
 			Uuid{u4{10944281192714901918,4966421183176252690}}
 			Uuid{u4{17236283789300039610,4868560560521882739}}
@@ -1013,7 +1043,7 @@ o
 		s %PluginName{"xiiEditorPluginAssets"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMaterialAssetProperties"}
-		u3 %TypeVersion{5}
+		u3 %TypeVersion{6}
 	}
 }
 o
@@ -1098,23 +1128,6 @@ o
 }
 o
 {
-	Uuid %id{u4{4777554906199320294,12515276419501536248}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Phantom"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiShaderTypeBase"}
-		s %PluginName{"ShaderTypes"}
-		VarArray %Properties{}
-		s %TypeName{"AssetCache/Common/Materials/Common/Pattern.autogen.xiiShader"}
-		u3 %TypeVersion{2}
-	}
-}
-o
-{
 	Uuid %id{u4{4440304378651420221,12575431605907932885}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -1150,23 +1163,6 @@ o
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"BaseColor"}
 		s %Type{"xiiVec3"}
-	}
-}
-o
-{
-	Uuid %id{u4{17267037516910190157,13398853962875978533}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Phantom"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiReflectedClass"}
-		s %PluginName{"ShaderTypes"}
-		VarArray %Properties{}
-		s %TypeName{"xiiShaderTypeBase"}
-		u3 %TypeVersion{2}
 	}
 }
 o

@@ -66,6 +66,30 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
     return;
   xiiVisualShaderTypeRegistry::GetSingleton()->UpdateNodeData();
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pattern material preserves typed roughness connections")
+  {
+    const xiiStringBuilder original(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/Materials/Common/Pattern.xiiMaterialAsset");
+    const xiiStringBuilder copy(project.GetFileDirectory(), "/Pattern.xiiMaterialAsset");
+    XII_TEST_RESULT(xiiOSFile::CopyFile(original, copy));
+    auto* pattern = xiiDynamicCast<xiiMaterialAssetDocument*>(editor->OpenDocument(copy, xiiDocumentFlags::None));
+    if (!XII_TEST_BOOL(pattern != nullptr))
+      return;
+    XII_SCOPE_EXIT(pattern->GetDocumentManager()->CloseDocument(pattern));
+    const auto id          = pattern->GetGuid();
+    auto*      nodes       = static_cast<xiiVisualShaderNodeManager*>(pattern->GetObjectManager());
+    xiiUInt32  connections = 0;
+    for (const auto* object : nodes->GetRootObject()->GetChildren())
+      if (nodes->IsConnection(object))
+        ++connections;
+    XII_TEST_INT(connections, 12);
+    xiiVisualShaderCodeGenerator generator;
+    xiiStringBuilder             permutations;
+    XII_TEST_STATUS(generator.GenerateVisualShader(nodes, permutations));
+    XII_TEST_STATUS(pattern->CompileShader());
+    XII_TEST_BOOL(pattern->GetShaderPropertyObject() != nullptr);
+    XII_TEST_STATUS(pattern->SaveDocument());
+    XII_TEST_BOOL(pattern->GetGuid() == id);
+  }
   const xiiStringBuilder path(project.GetFileDirectory(), "/Inspection.xiiMaterialAsset");
   auto*                  document = xiiDynamicCast<xiiMaterialAssetDocument*>(editor->CreateDocument(path, xiiDocumentFlags::EmptyDocument | xiiDocumentFlags::RequestWindow));
   if (!XII_TEST_BOOL(document != nullptr))
