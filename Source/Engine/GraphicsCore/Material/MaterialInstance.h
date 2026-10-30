@@ -46,6 +46,11 @@ class XII_GRAPHICSCORE_DLL xiiMaterialInstance final : public xiiRefCounted
 public:
   xiiResult Initialize(xiiSharedPtr<const xiiMaterialSchema> pSchema, const xiiMaterialRuntimeState& runtimeState = {});
 
+  /// Replaces the shader schema atomically, preserving explicitly authored overrides by stable ID
+  /// and exact type. Removed or incompatible overrides are reported and use the new defaults.
+  /// Renderer-owned bindless indices are invalidated so resources can be resolved again safely.
+  xiiResult RebindSchema(xiiSharedPtr<const xiiMaterialSchema> pSchema, const xiiMaterialRuntimeState& runtimeState, xiiDynamicArray<xiiString>* out_pWarnings = nullptr);
+
   xiiResult                SetParameter(xiiMaterialParameterId id, const xiiVariant& value);
   xiiResult                SetParameter(xiiStringView sName, const xiiVariant& value);
   [[nodiscard]] xiiVariant GetParameter(xiiMaterialParameterId id) const;
@@ -76,6 +81,8 @@ private:
   xiiSharedPtr<const xiiMaterialSchema>       m_pSchema;
   xiiMaterialParameterBlock                   m_Parameters;
   xiiDynamicArray<xiiMaterialResourceBinding> m_ResourceBindings;
+  xiiDynamicArray<xiiMaterialParameterId>     m_ParameterOverrides;
+  xiiDynamicArray<xiiMaterialParameterId>     m_ResourceOverrides;
   xiiMaterialRuntimeState                     m_RuntimeState;
   xiiBitflags<xiiMaterialDirtyFlags>          m_DirtyFlags = xiiMaterialDirtyFlags::None;
   xiiUInt32                                   m_uiRevision = 0U;

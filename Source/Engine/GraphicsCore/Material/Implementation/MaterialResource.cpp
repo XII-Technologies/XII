@@ -550,6 +550,22 @@ void xiiMaterialResourceDescriptor::ApplyPbrParameterDefaults(bool bOnlyIfMissin
   m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::Sheen, m_fSheenRoughness < 1.0f);
   m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::Anisotropy, m_fAnisotropy != 0.0f);
 
+  if (m_hBaseMaterial.IsValid())
+  {
+    // Inherited materials store sparse overrides. Injecting local PBR defaults
+    // here would silently replace their parent's roughness, color and emission.
+    SetPbrTexture2DBinding(*this, "BaseColorTexture", m_hBaseColorTexture, bOnlyIfMissing);
+    SetPbrTexture2DBinding(*this, "NormalTexture", m_hNormalTexture, bOnlyIfMissing);
+    SetPbrTexture2DBinding(*this, "MetallicRoughnessTexture", m_hMetallicRoughnessTexture, bOnlyIfMissing);
+    SetPbrTexture2DBinding(*this, "OcclusionTexture", m_hOcclusionTexture, bOnlyIfMissing);
+    SetPbrTexture2DBinding(*this, "EmissiveTexture", m_hEmissiveTexture, bOnlyIfMissing);
+    SetPbrTexture2DBinding(*this, "HeightTexture", m_hHeightTexture, bOnlyIfMissing);
+    SetPbrTexture2DBinding(*this, "ClearCoatTexture", m_hClearCoatTexture, bOnlyIfMissing);
+    SetPbrTexture2DBinding(*this, "TransmissionTexture", m_hTransmissionTexture, bOnlyIfMissing);
+    RecomputeRuntimeHash();
+    return;
+  }
+
   SetPbrParameter(*this, "BaseColor", m_BaseColor, bOnlyIfMissing);
   SetPbrParameter(*this, "EmissiveColor", m_EmissiveColor, bOnlyIfMissing);
   SetPbrParameter(*this, "Metallic", m_fMetallic, bOnlyIfMissing);
@@ -629,21 +645,21 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialResourceDescriptor, xiiNoBase, 2, xii
     XII_ENUM_MEMBER_PROPERTY("BlendMode", xiiMaterialBlendMode, m_BlendMode),
     XII_ENUM_MEMBER_PROPERTY("AlphaMode", xiiMaterialAlphaMode, m_AlphaMode),
     XII_BITFLAGS_MEMBER_PROPERTY("Features", xiiMaterialFeatureFlags, m_FeatureFlags),
-    XII_MEMBER_PROPERTY("BaseColor", m_BaseColor),
-    XII_MEMBER_PROPERTY("EmissiveColor", m_EmissiveColor),
-    XII_MEMBER_PROPERTY("Metallic", m_fMetallic),
-    XII_MEMBER_PROPERTY("Roughness", m_fRoughness),
-    XII_MEMBER_PROPERTY("OcclusionStrength", m_fOcclusionStrength),
-    XII_MEMBER_PROPERTY("AlphaCutoff", m_fAlphaCutoff),
-    XII_MEMBER_PROPERTY("NormalScale", m_fNormalScale),
-    XII_MEMBER_PROPERTY("DisplacementScale", m_fDisplacementScale),
-    XII_MEMBER_PROPERTY("ClearCoat", m_fClearCoat),
-    XII_MEMBER_PROPERTY("ClearCoatRoughness", m_fClearCoatRoughness),
-    XII_MEMBER_PROPERTY("Transmission", m_fTransmission),
-    XII_MEMBER_PROPERTY("Thickness", m_fThickness),
-    XII_MEMBER_PROPERTY("IndexOfRefraction", m_fIndexOfRefraction),
-    XII_MEMBER_PROPERTY("Anisotropy", m_fAnisotropy),
-    XII_MEMBER_PROPERTY("SheenRoughness", m_fSheenRoughness),
+    XII_MEMBER_PROPERTY("BaseColor", m_BaseColor)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::White)),
+    XII_MEMBER_PROPERTY("EmissiveColor", m_EmissiveColor)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::Black)),
+    XII_MEMBER_PROPERTY("Metallic", m_fMetallic)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("Roughness", m_fRoughness)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("OcclusionStrength", m_fOcclusionStrength)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("AlphaCutoff", m_fAlphaCutoff)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("NormalScale", m_fNormalScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("DisplacementScale", m_fDisplacementScale)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
+    XII_MEMBER_PROPERTY("ClearCoat", m_fClearCoat)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("ClearCoatRoughness", m_fClearCoatRoughness)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("Transmission", m_fTransmission)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("Thickness", m_fThickness)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("IndexOfRefraction", m_fIndexOfRefraction)->AddAttributes(new xiiDefaultValueAttribute(1.5f), new xiiClampValueAttribute(1.0f, 3.0f)),
+    XII_MEMBER_PROPERTY("Anisotropy", m_fAnisotropy)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(-1.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("SheenRoughness", m_fSheenRoughness)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("SortPriority", m_iSortPriority),
     XII_RESOURCE_MEMBER_PROPERTY("BaseColorTexture", m_hBaseColorTexture),
     XII_RESOURCE_MEMBER_PROPERTY("NormalTexture", m_hNormalTexture),
@@ -770,8 +786,8 @@ xiiSharedPtr<xiiMaterialInstance> xiiMaterialResource::CreateInstance()
   if (pInstance->Initialize(m_pSchema, m_RuntimeState).Failed())
     return nullptr;
 
-  for (const auto& parameter : m_ResolvedValues.m_Parameters)
-    pInstance->SetParameter(xiiMaterialParameterId::Make(parameter.Key().GetString()), parameter.Value()).IgnoreResult();
+  // Initialize already applied the immutable schema's defaults. Reapplying them
+  // through SetParameter would incorrectly mark every default as an override.
   for (const auto& texture : m_ResolvedValues.m_Texture2DBindings)
     pInstance->SetTexture2D(xiiMaterialParameterId::Make(texture.Key().GetString()), texture.Value()).IgnoreResult();
   for (const auto& texture : m_ResolvedValues.m_TextureCubeBindings)

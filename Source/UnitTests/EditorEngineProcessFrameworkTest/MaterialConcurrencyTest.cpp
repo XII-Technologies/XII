@@ -46,6 +46,29 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MaterialConcurrency)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Inherited defaults remain sparse and instance changes stay local")
+  {
+    xiiMaterialResourceDescriptor rootDescription;
+    rootDescription.m_fRoughness       = 0.23f;
+    auto                          root = xiiResourceManager::CreateResource<xiiMaterialResource>("MaterialInheritance.Root", std::move(rootDescription));
+    xiiMaterialResourceDescriptor childDescription;
+    childDescription.m_hBaseMaterial           = root;
+    auto                                 child = xiiResourceManager::CreateResource<xiiMaterialResource>("MaterialInheritance.Child", std::move(childDescription));
+    xiiResourceLock<xiiMaterialResource> material(child, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    XII_TEST_FLOAT(material->GetParameter(xiiTempHashedString("Roughness")).ConvertTo<float>(), 0.23f, 0);
+    auto instance = material->CreateInstance();
+    XII_TEST_BOOL(instance != nullptr);
+    XII_TEST_RESULT(instance->SetParameter("Roughness", 0.8f));
+    XII_TEST_FLOAT(material->GetParameter(xiiTempHashedString("Roughness")).ConvertTo<float>(), 0.23f, 0);
+    xiiResourceLock<xiiMaterialResource> parent(root, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    parent->SetParameter("Roughness", 0.4f);
+    parent->SetParameter("BaseColor", xiiColor::Red);
+    XII_TEST_FLOAT(material->GetParameter(xiiTempHashedString("Roughness")).ConvertTo<float>(), 0.4f, 0);
+    XII_TEST_RESULT(instance->RebindSchema(material->GetSchema(), material->GetRuntimeState()));
+    XII_TEST_FLOAT(instance->GetParameter(xiiMaterialParameterId::Make("Roughness")).ConvertTo<float>(), 0.8f, 0);
+    XII_TEST_BOOL(instance->GetParameter(xiiMaterialParameterId::Make("BaseColor")).ConvertTo<xiiColor>() == xiiColor::Red);
+  }
+
   xiiMaterialResourceDescriptor        description;
   const auto                           material = xiiResourceManager::CreateResource<xiiMaterialResource>("Concurrent material resource", std::move(description));
   xiiResourceLock<xiiMaterialResource> loaded(material, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
