@@ -8,6 +8,17 @@
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
 // clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSetGraphCommentBlockCommand, 1, xiiRTTIDefaultAllocator<xiiSetGraphCommentBlockCommand>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Id", m_Id),
+    XII_MEMBER_PROPERTY("Value", m_Value),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSetNodeCommentCommand, 1, xiiRTTIDefaultAllocator<xiiSetNodeCommentCommand>)
 {
   XII_BEGIN_PROPERTIES
@@ -64,6 +75,23 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDisconnectNodePinsCommand, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+xiiStatus xiiSetGraphCommentBlockCommand::DoInternal(bool bRedo)
+{
+  auto* manager = static_cast<xiiDocumentNodeManager*>(GetDocument()->GetObjectManager());
+  if (!bRedo)
+  {
+    const auto block = manager->GetCommentBlocks().Find(m_Id);
+    m_OldValue       = block.IsValid() ? block.Value().ToVariant() : xiiVariant();
+  }
+  return manager->SetCommentBlock(m_Id, m_Value);
+}
+
+xiiStatus xiiSetGraphCommentBlockCommand::UndoInternal(bool bFireEvents)
+{
+  auto* manager = static_cast<xiiDocumentNodeManager*>(GetDocument()->GetObjectManager());
+  return manager->SetCommentBlock(m_Id, m_OldValue);
+}
 
 xiiStatus xiiSetNodeCommentCommand::DoInternal(bool bRedo)
 {

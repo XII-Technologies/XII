@@ -433,6 +433,49 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
   }
 }
 
+XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphCommentBlocks)
+{
+  const auto output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "CommentBlocksTest", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("CommentBlocksTest"));
+  const xiiStringBuilder path(output, "/CommentBlocks.xiiGraph");
+  InspectorDocument      document(path);
+  auto*                  manager = static_cast<InspectorNodeManager*>(document.GetObjectManager());
+  auto*                  history = document.GetCommandHistory();
+  xiiGraphCommentBlock   block;
+  block.m_Id    = xiiUuid::MakeUuid();
+  block.m_sText = "Surface layering\nKeep related nodes together.";
+  xiiSetGraphCommentBlockCommand command;
+  command.m_Id    = block.m_Id;
+  command.m_Value = block.ToVariant();
+  history->StartTransaction("Create comment block");
+  XII_TEST_STATUS(history->AddCommand(command));
+  history->FinishTransaction();
+  XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 1);
+  XII_TEST_INT(manager->GetRootObject()->GetChildren().GetCount(), 0);
+  XII_TEST_STATUS(history->Undo());
+  XII_TEST_BOOL(manager->GetCommentBlocks().IsEmpty());
+  XII_TEST_STATUS(history->Redo());
+  XII_TEST_STATUS(document.SaveDocument(true));
+  InspectorDocument loaded(path);
+  XII_TEST_STATUS(loaded.LoadDocument());
+  const auto* restoredManager = static_cast<const InspectorNodeManager*>(loaded.GetObjectManager());
+  XII_TEST_INT(restoredManager->GetCommentBlocks().GetCount(), 1);
+  if (XII_TEST_BOOL(restoredManager->GetCommentBlocks().Contains(block.m_Id)))
+    XII_TEST_BOOL(restoredManager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == block.ToVariant());
+  block.m_vSize.x = -1;
+  XII_TEST_BOOL(manager->SetCommentBlock(block.m_Id, block.ToVariant()).Failed());
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().m_vSize.x > 0);
+  history->StartTransaction("Remove comment block");
+  command.m_Value = {};
+  XII_TEST_STATUS(history->AddCommand(command));
+  history->FinishTransaction();
+  XII_TEST_BOOL(manager->GetCommentBlocks().IsEmpty());
+  XII_TEST_STATUS(history->Undo());
+  XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 1);
+}
+
 XII_CREATE_SIMPLE_TEST(NodeLayout, DocumentCommands)
 {
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "NodeLayoutTest", ":", xiiDataDirUsage::AllowWrites)))

@@ -7,6 +7,7 @@
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Types/Status.h>
 #include <ToolsFoundation/Document/Document.h>
+#include <ToolsFoundation/NodeObject/GraphCommentBlock.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
 
 class xiiPin;
@@ -18,6 +19,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiDocumentNodeManagerEvent
   {
     NodeMoved,
     NodeCommentChanged,
+    CommentBlocksChanged,
     AfterPinsConnected,
     BeforePinsDisonnected,
     BeforePinsChanged,
@@ -163,6 +165,9 @@ public:
   /// transform hashes. Use xiiSetNodeCommentCommand for document history.
   xiiStringView        GetNodeComment(const xiiDocumentObject* pObject) const;
   xiiStatus            SetNodeComment(const xiiDocumentObject* pObject, xiiStringView sComment);
+  const xiiMap<xiiUuid, xiiGraphCommentBlock>& GetCommentBlocks() const { return m_CommentBlocks; }
+  /// An invalid value removes a block. Use xiiSetGraphCommentBlockCommand for history.
+  xiiStatus            SetCommentBlock(const xiiUuid& id, const xiiVariant& value);
   const xiiConnection& GetConnection(const xiiDocumentObject* pObject) const;
   const xiiConnection* GetConnectionIfExists(const xiiDocumentObject* pObject) const;
 
@@ -246,6 +251,7 @@ private:
 
 private:
   xiiHashTable<xiiUuid, NodeInternal>                            m_ObjectToNode;
+  xiiMap<xiiUuid, xiiGraphCommentBlock>                          m_CommentBlocks;
   xiiHashTable<xiiUuid, xiiUniquePtr<xiiConnection>>             m_ObjectToConnection;
   xiiMap<const xiiPin*, xiiHybridArray<const xiiConnection*, 6>> m_Connections;
 };

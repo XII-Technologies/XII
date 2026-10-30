@@ -129,6 +129,24 @@ const xiiRTTI* xiiDocumentNodeManager::GetConnectionType() const
   return xiiGetStaticRTTI<xiiDocumentObject_ConnectionBase>();
 }
 
+xiiStatus xiiDocumentNodeManager::SetCommentBlock(const xiiUuid& id, const xiiVariant& value)
+{
+  if (!id.IsValid())
+    return xiiStatus("A graph comment block requires a valid identity.");
+  if (!value.IsValid())
+    m_CommentBlocks.Remove(id);
+  else
+  {
+    xiiGraphCommentBlock block;
+    XII_SUCCEED_OR_RETURN(xiiGraphCommentBlock::FromVariant(value, block));
+    if (block.m_Id != id)
+      return xiiStatus("Graph comment block identities do not match.");
+    m_CommentBlocks.Insert(id, std::move(block));
+  }
+  m_NodeEvents.Broadcast(xiiDocumentNodeManagerEvent(xiiDocumentNodeManagerEvent::Type::CommentBlocksChanged));
+  return XII_SUCCESS;
+}
+
 xiiStringView xiiDocumentNodeManager::GetNodeComment(const xiiDocumentObject* pObject) const
 {
   if (pObject == nullptr)
@@ -399,6 +417,13 @@ void xiiDocumentNodeManager::MoveNode(const xiiDocumentObject* pObject, const xi
 
 void xiiDocumentNodeManager::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& ref_graph) const
 {
+  if (auto* root = ref_graph.GetNode(GetRootObject()->GetGuid()))
+  {
+    xiiVariantArray blocks;
+    for (const auto& block : m_CommentBlocks)
+      blocks.PushBack(block.Value().ToVariant());
+    root->AddProperty("Graph::CommentBlocks", blocks);
+  }
   auto pNodeMetaDataType       = xiiGetStaticRTTI<DocumentNodeManager_NodeMetaData>();
   auto pConnectionMetaDataType = xiiGetStaticRTTI<DocumentNodeManager_ConnectionMetaData>();
 
@@ -427,6 +452,35 @@ void xiiDocumentNodeManager::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& 
 
 void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable)
 {
+  if (const auto* root = graph.GetNode(GetRootObject()->GetGuid()))
+  {
+    xiiMap<xiiUuid, xiiGraphCommentBlock> blocks;
+    bool                                  valid = true;
+    if (const auto* saved = root->FindProperty("Graph::CommentBlocks"))
+    {
+      valid = saved->m_Value.IsA<xiiVariantArray>();
+      if (valid)
+      {
+        for (const auto& value : saved->m_Value.Get<xiiVariantArray>())
+        {
+          xiiGraphCommentBlock block;
+          if (xiiGraphCommentBlock::FromVariant(value, block).Failed() || blocks.Contains(block.m_Id))
+          {
+            valid = false;
+            break;
+          }
+          blocks.Insert(block.m_Id, std::move(block));
+        }
+      }
+    }
+    if (valid)
+    {
+      m_CommentBlocks = std::move(blocks);
+      m_NodeEvents.Broadcast(xiiDocumentNodeManagerEvent(xiiDocumentNodeManagerEvent::Type::CommentBlocksChanged));
+    }
+    else
+      xiiLog::Warning("Invalid graph comment block metadata was ignored.");
+  }
   xiiCommandHistory* history = GetDocument()->GetCommandHistory();
 
   auto pNodeMetaDataType       = xiiGetStaticRTTI<DocumentNodeManager_NodeMetaData>();
