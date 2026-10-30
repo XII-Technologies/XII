@@ -19,7 +19,34 @@
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
+#include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
+
+namespace
+{
+  // Deliberately admit malformed imported topology so compiler validation is
+  // exercised independently of the Editor's interactive connection policy.
+  class MaterialTopologyTestManager : public xiiVisualShaderNodeManager
+  {
+  public:
+    xiiStatus InternalCanConnect(const xiiPin&, const xiiPin&, CanConnectResult& result) const override
+    {
+      result = CanConnectResult::ConnectNto1;
+      return XII_SUCCESS;
+    }
+  };
+
+  class MaterialTopologyTestDocument : public xiiDocument
+  {
+  public:
+    explicit MaterialTopologyTestDocument(xiiStringView path) : xiiDocument(path, XII_DEFAULT_NEW(MaterialTopologyTestManager))
+    {
+      m_pDocumentInfo   = CreateDocumentInfo();
+      m_pObjectAccessor = XII_DEFAULT_NEW(xiiNodeCommandAccessor, GetCommandHistory());
+    }
+    xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiDocumentInfo); }
+  };
+} // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(MaterialAuthoring);
 XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
@@ -90,6 +117,32 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   XII_TEST_BOOL(!sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, line).IsEmpty());
   XII_TEST_BOOL(source.FindSubString("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)") == nullptr);
   XII_TEST_BOOL(source.FindSubString("VSE_CONSTANTS") == nullptr);
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Core Graph rejects imported cycles with node and port diagnostics")
+  {
+    MaterialTopologyTestDocument malformed(xiiStringBuilder(output, "/MalformedMaterialGraph.xiiGraph"));
+    auto*                        commands        = malformed.GetObjectAccessor();
+    auto*                        topologyManager = static_cast<MaterialTopologyTestManager*>(malformed.GetObjectManager());
+    xiiUuid                      nodes[3];
+    commands->StartTransaction("Import malformed topology");
+    for (xiiUInt32 index = 0; index < 3; ++index)
+    {
+      XII_TEST_STATUS(commands->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName(index == 2 ? "ShaderNode::MaterialOutput" : "ShaderNode::Reroute"), nodes[index]));
+    }
+    const auto connect = [&](xiiUInt32 from, xiiUInt32 to, const char* pin) {
+      XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(malformed.GetCommandHistory(), topologyManager->GetConnectionType(), *topologyManager->GetOutputPinByName(commands->GetObject(nodes[from]), "Value"), *topologyManager->GetInputPinByName(commands->GetObject(nodes[to]), pin)));
+    };
+    connect(0, 1, "Value");
+    connect(1, 0, "Value");
+    connect(1, 2, "Metallic");
+    commands->FinishTransaction();
+    xiiVisualShaderCodeGenerator generator;
+    xiiStringBuilder             permutations;
+    const auto                   status = generator.GenerateVisualShader(topologyManager, permutations);
+    XII_TEST_BOOL(status.Failed());
+    XII_TEST_BOOL(status.GetMessageString().FindSubString("cycle") != nullptr);
+    XII_TEST_BOOL(status.GetMessageString().FindSubString("Value") != nullptr);
+    XII_TEST_BOOL(generator.GetFinalShaderCode().IsEmpty());
+  }
   accessor->StartTransaction("Remove unreachable graph node");
   XII_TEST_STATUS(accessor->RemoveObject(accessor->GetObject(disconnected)));
   accessor->FinishTransaction();
