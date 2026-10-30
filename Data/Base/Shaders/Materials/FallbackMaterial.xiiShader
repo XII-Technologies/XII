@@ -12,13 +12,15 @@ FLIP_WINDING
 SHADING_QUALITY
 CAMERA_MODE
 
+[MATERIAL_CONSTANTS]
+#include <Shaders/Materials/DefaultMaterialConstants.h>
+
 [RENDERSTATE]
 
 #include <Shaders/Materials/MaterialState.h>
 
 [VERTEX_SHADER]
 
-#include <Shaders/Materials/DefaultMaterialCB.h>
 #include <Shaders/Materials/MaterialVertexShader.h>
 
 VS_OUT main(VS_IN Input)
@@ -81,7 +83,6 @@ void main( triangle GS_IN input[3], inout TriangleStream<GS_OUT> outputStream )
   #define USE_NORMAL
 #endif
 
-#include <Shaders/Materials/DefaultMaterialCB.h>
 #include <Shaders/Materials/MaterialPixelShader.h>
 
 

@@ -24,6 +24,14 @@ float VirtualDistance @Default(1000.0f);
 TextureCube CubeMap;
 Color BaseColor @Default(Color(1.0, 1.0, 1.0));
 
+[MATERIAL_CONSTANTS]
+  COLOR4F(BaseColor);
+  FLOAT1(MaskThreshold);
+  FLOAT1(ExposureBias);
+  BOOL1(InverseTonemap);
+  BOOL1(UseFog);
+  FLOAT1(VirtualDistance);
+
 [RENDERSTATE]
 
 #include <Shaders/Materials/MaterialState.h>
@@ -34,15 +42,6 @@ DepthWriteEnable = false
 
 #include <Shaders/Common/GlobalConstants.h>
 
-DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
-{
-  COLOR4F(BaseColor);
-  FLOAT1(MaskThreshold);
-  FLOAT1(ExposureBias);
-  BOOL1(InverseTonemap);
-  BOOL1(UseFog);
-  FLOAT1(VirtualDistance);
-};
 
 [VERTEX_SHADER]
 

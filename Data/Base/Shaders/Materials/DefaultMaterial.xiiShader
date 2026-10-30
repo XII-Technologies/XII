@@ -50,6 +50,9 @@ Texture2D EmissiveTexture;
 
 #include <Shaders/Materials/MaterialConfig.h>
 
+[MATERIAL_CONSTANTS]
+#include <Shaders/Materials/DefaultMaterialConstants.h>
+
 [RENDERSTATE]
 
 #include <Shaders/Materials/MaterialState.h>
@@ -68,7 +71,6 @@ Texture2D EmissiveTexture;
   #define USE_DEBUG_INTERPOLATOR
 #endif
 
-#include <Shaders/Materials/DefaultMaterialCB.h>
 #include <Shaders/Materials/MaterialVertexShader.h>
 
 VS_OUT main(VS_IN Input)
@@ -92,7 +94,6 @@ VS_OUT main(VS_IN Input)
   #define USE_DEBUG_INTERPOLATOR
 #endif
 
-#include <Shaders/Materials/DefaultMaterialCB.h>
 #include <Shaders/Materials/MaterialPixelShader.h>
 
 Texture2D BaseTexture;

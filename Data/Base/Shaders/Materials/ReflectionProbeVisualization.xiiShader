@@ -16,6 +16,10 @@ CAMERA_MODE
 int MipLevel @Default(0);
 int ReflectionProbeIndex @Default(0);
 
+[MATERIAL_CONSTANTS]
+  INT1(MipLevel);
+  INT1(ReflectionProbeIndex);
+
 [RENDERSTATE]
 
 #include <Shaders/Materials/MaterialState.h>
@@ -25,11 +29,6 @@ int ReflectionProbeIndex @Default(0);
 #define USE_NORMAL
 #include <Shaders/Common/GlobalConstants.h>
 
-DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
-{
-  INT1(MipLevel);
-  INT1(ReflectionProbeIndex);
-};
 
 [VERTEX_SHADER]
 
