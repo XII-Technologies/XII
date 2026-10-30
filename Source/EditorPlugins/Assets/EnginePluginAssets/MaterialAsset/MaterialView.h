@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <EnginePluginAssets/EnginePluginAssetsDLL.h>
+
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 
 class xiiMaterialContext;
@@ -13,6 +15,7 @@ public:
   ~xiiMaterialViewContext();
 
   void PositionThumbnailCamera();
+  void Redraw(bool bRenderEditorGizmos) override;
 
 protected:
   virtual xiiViewHandle CreateView() override;

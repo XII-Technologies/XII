@@ -2,8 +2,8 @@
 
 #include <EnginePluginScene/EnginePluginScenePCH.h>
 
+#include <EditorEngineProcessFramework/Rendering/ScenePreviewLighting.h>
 #include <EnginePluginScene/SceneContext/SceneContext.h>
-#include <SharedPluginScene/Scene/ScenePreviewLighting.h>
 
 void xiiSceneContext::AddAmbientLight(bool bSetEditorTag, bool bForce)
 {

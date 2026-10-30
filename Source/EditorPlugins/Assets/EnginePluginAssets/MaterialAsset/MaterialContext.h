@@ -2,8 +2,10 @@
 
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EnginePluginAssets/EnginePluginAssetsDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
+#include <EditorEngineProcessFramework/Rendering/ScenePreviewLighting.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -19,16 +21,25 @@ class XII_ENGINEPLUGINASSETS_DLL xiiMaterialContext : public xiiEngineProcessDoc
 public:
   xiiMaterialContext();
 
+  const xiiPreviewLightingSettings& GetPreviewLightingSettings() const { return m_LightingSettings; }
+  bool                              GetPreviewGrid() const { return m_bPreviewGrid; }
+
   virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
 
 protected:
   virtual xiiStatus OnInitialize() override;
+  virtual void      OnDeinitialize() override;
 
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
   virtual bool                         UpdateThumbnailViewContext(xiiEngineProcessViewContext* pThumbnailViewContext) override;
 
 private:
+  xiiUniquePtr<xiiScenePreviewLighting> m_pPreviewLighting;
+  xiiPreviewLightingSettings            m_LightingSettings;
+  xiiVariant                            m_LastLightingMessage;
+  bool                                  m_bPreviewGrid        = false;
+  float                                 m_fPreviewOrientation = 0.0f;
   xiiMaterialResourceHandle m_hMaterial;
   xiiMeshResourceHandle     m_hSphereMesh;
   xiiMeshResourceHandle     m_hBoxMesh;

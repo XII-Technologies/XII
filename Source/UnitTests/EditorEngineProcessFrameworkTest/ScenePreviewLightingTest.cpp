@@ -5,6 +5,7 @@
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Core/WorldSerializer/WorldWriter.h>
+#include <EditorEngineProcessFramework/Rendering/ScenePreviewLighting.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -15,7 +16,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
-#include <SharedPluginScene/Scene/ScenePreviewLighting.h>
 
 namespace
 {
@@ -91,6 +91,44 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ScenePreviewLighting)
     writer.WriteWorld(stream, world);
     XII_TEST_INT(writer.GetAllWrittenRootObjects().GetCount(), 0);
     lighting.Clear();
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Physical presets, isolated view state and transactional validation")
+  {
+    xiiView*   first        = nullptr;
+    xiiView*   second       = nullptr;
+    auto*      module       = world.GetOrCreateModule<xiiRenderWorldModule>();
+    const auto firstHandle  = module->CreateView("Material inspection", first);
+    const auto secondHandle = module->CreateView("Unchanged view", second);
+    xiiCamera  camera;
+    const auto originalDisplay = second->GetDisplayOutputSettings();
+    for (const auto preset : {xiiPreviewLightingSettings::Preset::NeutralStudio, xiiPreviewLightingSettings::Preset::OutdoorDaylight, xiiPreviewLightingSettings::Preset::LowLightStudio, xiiPreviewLightingSettings::Preset::Diagnostic})
+    {
+      auto settings = xiiPreviewLightingSettings::MakePreset(preset);
+      XII_TEST_BOOL(settings.IsValid());
+      xiiPreviewLightingSettings restored;
+      XII_TEST_RESULT(xiiPreviewLightingSettings::FromVariant(settings.ToVariant(), restored));
+      XII_TEST_BOOL(restored.ToVariant() == settings.ToVariant());
+      XII_TEST_RESULT(lighting.EnsureCreated(true, true));
+      XII_TEST_RESULT(lighting.SetSettings(settings));
+      auto* light = FindPreviewComponent<xiiDirectionalLightComponent>(world);
+      XII_TEST_FLOAT(light->GetIntensity(), settings.m_fIlluminance, 0);
+      XII_TEST_BOOL(light->GetIntensityUnit() == xiiPhotometricUnit::Lux);
+      XII_TEST_BOOL(light->GetCastShadows() == settings.m_bShadows);
+      XII_TEST_RESULT(settings.ApplyToView(*first, camera));
+      XII_TEST_FLOAT(camera.GetExposure(), settings.m_fExposure, 1e-6f);
+      XII_TEST_FLOAT(second->GetDisplayOutputSettings().m_Exposure.m_fExposureCompensation, originalDisplay.m_Exposure.m_fExposureCompensation, 0);
+      settings.m_fIlluminance = xiiMath::NaN<float>();
+      XII_TEST_BOOL(lighting.SetSettings(settings).Failed());
+      XII_TEST_BOOL(settings.ApplyToView(*first, camera).Failed());
+    }
+    xiiPreviewLightingSettings destination;
+    const auto                 unchanged = destination.ToVariant();
+    XII_TEST_BOOL(xiiPreviewLightingSettings::FromVariant(xiiVariantDictionary(), destination).Failed());
+    XII_TEST_BOOL(destination.ToVariant() == unchanged);
+    lighting.Clear();
+    module->DestroyView(firstHandle);
+    module->DestroyView(secondHandle);
   }
 
   xiiGameObject*             authoredObject  = nullptr;

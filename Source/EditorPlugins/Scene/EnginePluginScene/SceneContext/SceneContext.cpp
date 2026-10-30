@@ -9,6 +9,7 @@
 #include <Core/Prefabs/PrefabResource.h>
 #include <Core/World/EventMessageHandlerComponent.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
+#include <EditorEngineProcessFramework/Rendering/ScenePreviewLighting.h>
 #include <EditorEngineProcessFramework/SceneExport/SceneExportModifier.h>
 #include <EnginePluginScene/SceneContext/LayerContext.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
@@ -16,7 +17,6 @@
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
-#include <SharedPluginScene/Scene/ScenePreviewLighting.h>
 #include <SharedPluginScene/Scene/SceneSkeletonPose.h>
 
 // clang-format off
