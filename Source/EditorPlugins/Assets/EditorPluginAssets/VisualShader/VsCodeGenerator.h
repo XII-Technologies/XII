@@ -23,13 +23,7 @@ public:
 private:
   struct NodeState
   {
-    NodeState() :
-      m_bCodeGenerated(false), m_bInProgress(false)
-    {
-    }
-
-    bool      m_bCodeGenerated;
-    bool      m_bInProgress;
+    bool m_bCodeGenerated = false;
   };
 
   struct OutputPinState
@@ -44,9 +38,9 @@ private:
   };
 
   xiiStatus GatherAllNodes(const xiiDocumentObject* pRootObj);
+  xiiStatus GenerateReachableGraph();
   xiiUInt16 DeterminePinId(const xiiDocumentObject* pOwner, const xiiPin& pin) const;
   xiiStatus GenerateNode(const xiiDocumentObject* pNode);
-  xiiStatus GenerateInputPinCode(xiiArrayPtr<const xiiUniquePtr<const xiiPin>> pins);
   xiiStatus CheckPropertyValues(const xiiDocumentObject* pNode, const xiiVisualShaderNodeDescriptor* pDesc);
   xiiStatus InsertPropertyValues(const xiiDocumentObject* pNode, const xiiVisualShaderNodeDescriptor* pDesc, xiiStringBuilder& sString);
   xiiStatus GenerateOutputPinCode(const xiiDocumentObject* pOwnerNode, const xiiPin& pinSource);

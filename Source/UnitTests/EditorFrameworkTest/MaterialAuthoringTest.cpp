@@ -121,6 +121,32 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   XII_TEST_STATUS(accessor->SetValueByName(document->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::Custom)));
   accessor->FinishTransaction();
   XII_TEST_STATUS(document->CompileShader());
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Core Graph schedules shared dependencies once")
+  {
+    accessor->StartTransaction("Share a graph parameter");
+    xiiUuid parameter, add;
+    XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::Parameter1f"), parameter));
+    XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(parameter), "ParamName", "SharedGain"));
+    XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::Add"), add));
+    const auto* shared = manager->GetOutputPinByName(accessor->GetObject(parameter), "Value");
+    for (const char* input : {"a", "b"})
+    {
+      XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document->GetCommandHistory(), manager->GetConnectionType(), *shared, *manager->GetInputPinByName(accessor->GetObject(add), input)));
+    }
+    XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document->GetCommandHistory(), manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(add), "result"), *manager->GetInputPinByName(accessor->GetObject(outputNode), "Metallic")));
+    accessor->FinishTransaction();
+    const auto                  generated = generate();
+    xiiGALShaderTextSectionizer sharedSections;
+    xiiGALShaderSections::GetShaderSections(generated, sharedSections);
+    const auto  constants   = sharedSections.GetSectionContent(xiiGALShaderSections::MaterialConstants, line);
+    const char* declaration = constants.FindSubString("FLOAT1(SharedGain)");
+    XII_TEST_BOOL(declaration != nullptr);
+    if (declaration != nullptr)
+      XII_TEST_BOOL(xiiStringView(declaration + 1, constants.GetEndPointer()).FindSubString("FLOAT1(SharedGain)") == nullptr);
+    XII_TEST_STATUS(document->CompileShader());
+    XII_TEST_STATUS(document->GetCommandHistory()->Undo());
+    XII_TEST_STRING(generate(), source);
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Procedural graph compilation and unreachable textures")
   {
     accessor->StartTransaction("Author procedural surface");

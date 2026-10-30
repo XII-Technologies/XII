@@ -2,6 +2,8 @@
 
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <Core/Graph/GraphAlgorithms.h>
+#include <Core/Graph/GraphData.h>
 #include <EditorPluginAssets/VisualShader/VsCodeGenerator.h>
 
 static xiiString ToShaderString(const xiiVariant& value)
@@ -114,7 +116,6 @@ xiiStatus xiiVisualShaderCodeGenerator::GatherAllNodes(const xiiDocumentObject* 
   {
     NodeState& ns       = m_Nodes[pRootObj];
     ns.m_bCodeGenerated = false;
-    ns.m_bInProgress    = false;
 
     auto pDesc = m_pTypeRegistry->GetDescriptorForType(pRootObj->GetType());
 
@@ -170,7 +171,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateVisualShader(const xiiDocumentNo
   if (m_pMainNode == nullptr)
     return xiiStatus("Visual Shader does not contain an output node");
 
-  XII_SUCCEED_OR_RETURN(GenerateNode(m_pMainNode));
+  XII_SUCCEED_OR_RETURN(GenerateReachableGraph());
 
   m_sFinalShaderCode.Set("[PLATFORMS]\nALL\n\n");
   m_sFinalShaderCode.Append("[PERMUTATIONS]\n\n", m_sShaderPermutations, "\n");
@@ -201,23 +202,90 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateVisualShader(const xiiDocumentNo
   return XII_SUCCESS;
 }
 
+xiiStatus xiiVisualShaderCodeGenerator::GenerateReachableGraph()
+{
+  // The document owns authoring objects and pin types. Core owns compilation
+  // topology; only nodes contributing to the material output enter this graph.
+  xiiGraphWithData<const xiiDocumentObject*, const xiiConnection*> topology;
+  auto&                                                            graph = topology.m_Graph;
+  xiiMap<const xiiDocumentObject*, xiiGraphVertexHandle>           vertices;
+  xiiDynamicArray<const xiiDocumentObject*>                        pending;
+  const auto                                                       addNode = [&](const xiiDocumentObject* node) -> xiiResult {
+    if (vertices.Contains(node))
+      return XII_SUCCESS;
+    xiiGraphVertexHandle vertex;
+    XII_SUCCEED_OR_RETURN(graph.TryAddVertex(vertex));
+    XII_SUCCEED_OR_RETURN(topology.m_Data.SetVertexData(vertex, node));
+    vertices.Insert(node, vertex);
+    pending.PushBack(node);
+    return XII_SUCCESS;
+  };
+  XII_SUCCEED_OR_RETURN(addNode(m_pMainNode));
+  for (xiiUInt32 index = 0; index < pending.GetCount(); ++index)
+  {
+    const auto* node = pending[index];
+    for (const auto& input : m_pNodeManager->GetInputPins(node))
+    {
+      const auto connections = m_pNodeManager->GetConnections(*input);
+      if (connections.GetCount() > 1)
+        return xiiStatus(xiiFmt("Node '{}' input '{}' has multiple connections.", node->GetGuid(), input->GetName()));
+      for (const auto* connection : connections)
+      {
+        const auto& source = connection->GetSourcePin();
+        XII_SUCCEED_OR_RETURN(addNode(source.GetParent()));
+        xiiGraphEdgeHandle edge;
+        XII_SUCCEED_OR_RETURN(graph.TryAddEdge(vertices.Find(source.GetParent()).Value(), vertices.Find(node).Value(), edge));
+        XII_SUCCEED_OR_RETURN(topology.m_Data.SetEdgeData(edge, connection));
+        m_OutputPins[&source];
+      }
+    }
+  }
+  xiiDynamicArray<xiiGraphVertexHandle> order;
+  if (xiiGraphAlgorithms::TopologicalSort(graph, order).Failed())
+  {
+    xiiGraphComponents components;
+    xiiGraphAlgorithms::StronglyConnectedComponents(graph, components);
+    for (xiiUInt32 index = 0; index < components.GetCount(); ++index)
+    {
+      const auto component = components.GetComponent(index);
+      if (component.GetCount() > 1 || graph.IsValid(graph.FindEdge(component[0], component[0])))
+      {
+        for (auto edge = graph.GetOutgoingEdges(component[0]); edge.IsValid(); ++edge)
+        {
+          if (!component.Contains(graph.GetTarget(edge.GetHandle())))
+            continue;
+          const auto* connection = *topology.m_Data.GetEdgeData(edge.GetHandle());
+          return xiiStatus(xiiFmt("Material Graph cycle from node '{}' port '{}' to node '{}' port '{}'.", connection->GetSourcePin().GetParent()->GetGuid(), connection->GetSourcePin().GetName(), connection->GetTargetPin().GetParent()->GetGuid(), connection->GetTargetPin().GetName()));
+        }
+      }
+    }
+    return xiiStatus("Material Graph topology could not be sorted.");
+  }
+  for (const auto edge : graph.GetEdges())
+  {
+    const auto* connection = *topology.m_Data.GetEdgeData(edge);
+    const auto& source     = static_cast<const xiiVisualShaderPin&>(connection->GetSourcePin());
+    const auto& target     = static_cast<const xiiVisualShaderPin&>(connection->GetTargetPin());
+    if (!xiiVisualShaderPin::CanConvert(source, target))
+      return xiiStatus(xiiFmt("Material Graph node '{}' input '{}' has an incompatible connection from node '{}' port '{}'.", target.GetParent()->GetGuid(), target.GetName(), source.GetParent()->GetGuid(), source.GetName()));
+  }
+  for (const auto vertex : order)
+  {
+    const auto* node = *topology.m_Data.GetVertexData(vertex);
+    XII_SUCCEED_OR_RETURN(GenerateNode(node));
+    for (const auto& output : m_pNodeManager->GetOutputPins(node))
+      if (m_OutputPins.Contains(output.Borrow()))
+        XII_SUCCEED_OR_RETURN(GenerateOutputPinCode(node, *output));
+  }
+  return XII_SUCCESS;
+}
+
 xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pNode)
 {
   NodeState& state = m_Nodes[pNode];
 
-  if (state.m_bInProgress)
-    return xiiStatus(xiiFmt("Material Graph cycle at node '{}'.", pNode->GetGuid()));
-
-  if (state.m_bCodeGenerated)
-    return XII_SUCCESS;
-
-  state.m_bInProgress = true;
-
-  XII_SCOPE_EXIT(state.m_bInProgress = false);
-
   const xiiVisualShaderNodeDescriptor* pDesc = m_pTypeRegistry->GetDescriptorForType(pNode->GetType());
 
-  XII_SUCCEED_OR_RETURN(GenerateInputPinCode(m_pNodeManager->GetInputPins(pNode)));
 
   xiiStringBuilder sConstantsCode, sPsBodyCode, sMaterialParamCode, sPixelSamplersCode, sVsBodyCode, sGsBodyCode, sMaterialCB, sPermutations,
     sRenderStates, sPixelDefines, sPixelIncludes, sVertexDefines, sGeometryDefines;
@@ -280,32 +348,6 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pN
   return XII_SUCCESS;
 }
 
-xiiStatus xiiVisualShaderCodeGenerator::GenerateInputPinCode(xiiArrayPtr<const xiiUniquePtr<const xiiPin>> pins)
-{
-  for (auto& pPin : pins)
-  {
-    auto connections = m_pNodeManager->GetConnections(*pPin);
-    if (connections.GetCount() > 1)
-      return xiiStatus(xiiFmt("Node '{}' input '{}' has multiple connections.", pPin->GetParent()->GetGuid(), pPin->GetName()));
-
-    if (connections.IsEmpty())
-      continue;
-
-    const xiiPin& pinSource = connections[0]->GetSourcePin();
-    if (!xiiVisualShaderPin::CanConvert(static_cast<const xiiVisualShaderPin&>(pinSource), static_cast<const xiiVisualShaderPin&>(*pPin)))
-      return xiiStatus(xiiFmt("Material Graph node '{}' input '{}' has an incompatible connection from node '{}' port '{}'.", pPin->GetParent()->GetGuid(), pPin->GetName(), pinSource.GetParent()->GetGuid(), pinSource.GetName()));
-
-    // recursively generate all dependent code
-    const xiiDocumentObject* pOwnerNode = pinSource.GetParent();
-    const xiiStatus          resNode    = GenerateOutputPinCode(pOwnerNode, pinSource);
-
-    if (resNode.Failed())
-      return resNode;
-  }
-
-  return XII_SUCCESS;
-}
-
 xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentObject* pOwnerNode, const xiiPin& pin)
 {
   OutputPinState& ps = m_OutputPins[&pin];
@@ -313,7 +355,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
   if (ps.m_bCodeGenerated)
     return XII_SUCCESS;
 
-  XII_SUCCEED_OR_RETURN(GenerateNode(pOwnerNode));
+  XII_ASSERT_DEV(m_Nodes[pOwnerNode].m_bCodeGenerated, "Core Graph schedules dependencies before their consumers.");
 
   const xiiVisualShaderNodeDescriptor* pDesc   = m_pTypeRegistry->GetDescriptorForType(pOwnerNode->GetType());
   const xiiUInt16                      uiPinID = DeterminePinId(pOwnerNode, pin);
