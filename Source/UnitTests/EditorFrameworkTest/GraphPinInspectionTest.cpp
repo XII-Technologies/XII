@@ -153,6 +153,15 @@ namespace
       auto* node = m_Nodes.Find(object).Value();
       return node->mapRectToScene(node->boundingRect().united(node->childrenBoundingRect()));
     }
+    QRectF BodyBounds(const xiiDocumentObject* object) const { return m_Nodes.Find(object).Value()->boundingRect(); }
+    QRectF CommentBounds(const xiiDocumentObject* object) const
+    {
+      const auto* node = m_Nodes.Find(object).Value();
+      for (const auto* item : node->childItems())
+        if (item->isVisible() && item->pos().y() < -5)
+          return item->mapRectToParent(item->boundingRect());
+      return {};
+    }
     bool HasComment(const xiiDocumentObject* object, xiiStringView text) const
     {
       const auto* node = m_Nodes.Find(object).Value();
@@ -342,6 +351,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     const xiiString comment    = "Shared graph annotation\nKeep the source in linear space. <plain text>";
     xiiUInt64       beforeHash = 123, afterHash = 123;
     manager->GetMetaDataHash(owner, beforeHash);
+    const auto bodyBeforeComment = scene.BodyBounds(owner);
     QMenu comments;
     scene.AddCommentActions(comments, owner);
     XII_TEST_INT(comments.actions().size(), 1);
@@ -355,6 +365,8 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     comments.actions()[0]->trigger();
     XII_TEST_STRING(manager->GetNodeComment(owner), comment);
     XII_TEST_BOOL(scene.HasComment(owner, comment));
+    XII_TEST_BOOL(scene.BodyBounds(owner) == bodyBeforeComment);
+    XII_TEST_BOOL(scene.CommentBounds(owner).bottom() < scene.BodyBounds(owner).top());
     {
       QImage capture(720, 420, QImage::Format_ARGB32_Premultiplied);
       capture.fill(QColor(32, 34, 38));
@@ -379,6 +391,11 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     XII_TEST_BOOL(manager->GetNodeComment(owner).IsEmpty());
     XII_TEST_STATUS(document.GetCommandHistory()->Undo());
     document.GetSelectionManager()->SetSelection(owner);
+    const auto longCommentBounds = scene.CommentBounds(owner);
+    XII_TEST_STATUS(scene.SetNodeComment(owner, "Short note"));
+    XII_TEST_BOOL(scene.CommentBounds(owner).width() < longCommentBounds.width());
+    XII_TEST_BOOL(scene.BodyBounds(owner) == bodyBeforeComment);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
     xiiAbstractObjectGraph graph;
     XII_TEST_BOOL(manager->CopySelectedObjects(graph));
     xiiContiguousMemoryStreamStorage storage;
