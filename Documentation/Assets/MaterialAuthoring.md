@@ -55,19 +55,48 @@ component-conversion node. Existing graphs that relied on implicit truncation
 must insert that conversion. Cycles and incompatible connections are rejected,
 and generator diagnostics identify the node and input/output port.
 
-The node library adds numeric reroutes, comments, UV transforms, linear gradients,
-and smooth 2D value noise. These use the existing node configuration format.
+The node library includes numeric reroutes, comments, UV transforms, gradients,
+and smooth 2D value noise, plus 34 additional typed nodes:
+
+- Math: one minus, safe reciprocal/divide, smoothstep, step, inverse lerp, remap,
+  ping-pong, posterize, and positive modulo.
+- Color and layers: luminance, explicit RGB extraction, desaturation, contrast,
+  screen/overlay/soft-light blending, and height blending.
+- Coordinates and normals: tiling/offset, rotation about a pivot, polar conversion
+  in both directions, mirrored UVs, parallax offset, normal unpack, and strength.
+- Procedural: checkerboard, radial/ring gradients, stripes, Voronoi, and fixed
+  four-octave fractal, ridged, and turbulent noise.
+
+These use the existing node configuration format and shader backend. Vector
+constructor outputs now declare their actual dimensions. Safe arithmetic bounds
+zero denominators; procedural nodes add no resource bindings or permutations.
 Texture binding limits are checked by the selected shader backend instead of an
 arbitrary count of texture nodes, including disconnected ones.
-Comments are annotations, not resizable graph frames. Reusable material functions,
-subgraphs, triplanar nodes, and a complete advanced surface output are not added.
+Reusable material functions, subgraphs, triplanar nodes, and a complete advanced
+surface output are not added.
 
 All shared Editor node scenes also support attached node comments through the
 node context menu's Add/Edit/Remove Comment actions. Multiline comments render as
-wrapped plain text and participate in document undo/redo, deletion, copy/paste,
+wrapped plain text in fitted bubbles above the node body. Short comments shrink
+to their text; long comments wrap without enlarging the node. They participate in
+document undo/redo, deletion, copy/paste,
 and save/reopen through graph layout metadata. They do not alter transform
 hashes, shader source, or domain properties. The material-specific free comment
 node remains available; attached comments work across other node document types.
+
+Organizational comment blocks are shared Editor annotations behind domain nodes.
+Create one around selected nodes or at the graph cursor, drag its body to move
+fully contained nodes in one undo step, or resize with its bottom-right handle.
+The block menu edits its text/color, fits its bounds to contained nodes,
+duplicates it, or removes it. Blocks persist with stable IDs and validated bounds
+in graph layout metadata and do not affect shader compilation. Block duplication
+copies the annotation; it does not duplicate its contained nodes. Clipboard
+copy/paste of blocks is not implemented.
+
+The built-in Pattern material now extracts the red channel explicitly before its
+scalar roughness operation. This repairs the connection rejected by typed pin
+validation while retaining the asset identity, texture references, and authored
+layout. Its retained native surface defaults also match the runtime descriptor.
 
 Generation uses the compiler's current section grammar, excludes disconnected
 nodes from permutation checks, and does not emit an empty geometry stage. The
@@ -192,10 +221,20 @@ captures. Repository policy, changed-source formatting, and whitespace checks
 also passed. Other platforms and D3D12 were not exercised. Compilation alone is
 not a rendering acceptance result.
 
-Follow-up validation covers Core Graph shared dependencies and malformed imported
+Follow-up validation compiles every added node and the three vector constructors
+through the production shader tool, including vector inputs on all ten new math
+nodes, and opens, compiles, saves, and verifies the
+identity of the actual Pattern asset in a scratch project. It also covers Core
+Graph shared dependencies and malformed imported
 cycles, the real Qt multiline comment dialog/actions/display and history round
 trips, material-constant buffer reflection/offsets and exact stage masks, cache
-reuse, and malformed-constant source locations. Selected Vulkan permutations of
+reuse, and malformed-constant source locations. Organizational blocks are tested
+through actual scene mouse dispatch for drag/resize, one-step grouped undo,
+atomic movement rejection, fit/duplication/deletion, and bounds save/reopen. The
+final run passed 21 EditorDocuments tests, three NodeLayout tests, ShaderCompiler,
+the expanded MaterialAuthoring workflow, and all 52 Vulkan EditorViews tests.
+Node-comment and organizational-block captures were visually inspected.
+Selected Vulkan permutations of
 all seven migrated built-in material shaders and `ReflectionFilteredSpecular`
 compiled. The existing `SeparatedBilateralBlur` source has an unavailable
 `BLUR_DIRECTION` permutation definition and could not be compiled; its only
