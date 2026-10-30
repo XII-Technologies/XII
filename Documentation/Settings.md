@@ -12,16 +12,16 @@ The base does not select a global owner. Existing specializations retain their r
 
 | Context | Owner and storage |
 | --- | --- |
-| Application / user preferences | `xiiPreferences` editor adapter; application preferences folder, existing `.pref` DDL |
+| Application / user preferences | `xiiEditorSettings` editor adapter; application preferences folder, existing `.pref` DDL |
 | Project user preferences | Same adapter; current project's user-specific preferences folder, existing `.pref` DDL |
 | Document user preferences | Same adapter; current project plus document UUID folder, existing `.pref` DDL |
-| Shared project / target configuration | Existing project configuration and `xiiPlatformProfile` owners; profile DDL and runtime chunk export remain unchanged |
+| Shared project / target configuration | Direct project-scoped `xiiSettings` use project `Editor/Settings`; specialized project and `xiiPlatformProfile` owners retain their established DDL/runtime formats |
 | Runtime application user configuration | Application-owned `xiiGameApplicationSettings`; `:appdata/RuntimeConfigs/Presentation.ddl` |
 | Scene / world configuration | Existing `xiiSettingsComponent` and ECS ownership; intentionally independent of global settings |
 
 Project preferences have always been user-specific; the common base does not silently turn them into shared project configuration. Shared settings keep their existing project serialization owner. Platform/runtime metadata does not make an object an editor singleton or a platform-profile child: derive from `xiiProfileConfigData` for profile ownership and implement its existing runtime chunk methods.
 
-`xiiPreferences` and `xiiProfileConfigData` now specialize the common base. Their reflected class names, property names, preference filenames, public query methods and runtime formats remain stable. Rebuild dependent modules/plugins after this C++ ABI change. `xiiPlatformProfile::AddMissingConfigs()` excludes abstract/non-allocatable types; live profiles release plugin-owned configs after plugin subsystem shutdown, before DLL unload. Re-run `AddMissingConfigs()` after loading new profile plugins as before. Profile config pointers are borrowed and expire on profile clear or owning plugin unload.
+`xiiEditorSettings` and `xiiProfileConfigData` specialize the common base. Concrete preference type names, properties, preference filenames and runtime formats remain stable. The old preferences base/query/event adapters are removed; see [EditorConfiguration.md](EditorConfiguration.md) for the source API and project-path migration. Rebuild dependent modules/plugins after this C++ ABI change. `xiiPlatformProfile::AddMissingConfigs()` excludes abstract/non-allocatable types; live profiles release plugin-owned configs after plugin subsystem shutdown, before DLL unload. Re-run `AddMissingConfigs()` after loading new profile plugins as before. Profile config pointers are borrowed and expire on profile clear or owning plugin unload.
 
 The surrounding configuration mechanisms retain their existing owners and formats:
 
@@ -61,7 +61,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMySettings, 1, xiiRTTIDefaultAllocator<xiiMy
 XII_END_DYNAMIC_REFLECTED_TYPE;
 ```
 
-Use the owning DLL macro and direct headers in real code. The example requires `Foundation/Configuration/Settings.h`. In editor code, access the borrowed instance through `xiiPreferences::QuerySettings<xiiMySettings>()`; document settings also pass the document. Runtime code supplies its own appropriate owner and must not depend on this editor adapter. Existing preference subclasses may continue using `QueryPreferences<T>()` and `m_ChangedEvent`; both the legacy and common events fire at the same commit boundary. Do not subscribe to both for the same operation.
+Use the owning DLL macro and direct headers in real code. The example requires `Foundation/Configuration/Settings.h`. In editor code, access the borrowed instance through `xiiEditorSettings::QuerySettings<xiiMySettings>()`; document settings also pass the document. Runtime code supplies its own appropriate owner and must not depend on this editor adapter. User preference subclasses also use `QuerySettings<T>()` and the common `m_SettingsChangedEvent`.
 
 `GatherTypes(scope, ...)` uses `xiiRTTI::ForEachDerivedType` with `ExcludeNotConcrete` and reads metadata before any allocation. `GatherSettings()` creates only application settings, current project settings when a project is open, and document settings for the supplied context. It includes previously queried legacy preferences. Add scope metadata to legacy plugin types to discover them before their first query. A legacy constructor's domain must match its metadata. An unannotated, never-queried legacy type cannot be safely classified without constructing it. Optional editor metadata `xiiDocumentSettingsAttribute("xiiGameObjectDocument")` restricts a document setting to that reflected document type and its descendants before construction; an unavailable context type is skipped. Existing scene, asset-view and game-object-context preferences declare their actual document contexts. Use `xiiTitleAttribute` or the existing translated RTTI type name for the navigation label; persistence identities are not shown as labels.
 
@@ -69,11 +69,11 @@ New direct subclasses use `Settings_<RTTI type name>.pref` in the selected prefe
 
 ## Editing, validation and application
 
-The Settings dialog groups actual types by Application, Project and current Document, then their reflected category paths. Search matches scope, category, type identity and visible property names. It reuses the existing Qt property grid, supported structured editors, property groups, default/range attributes and translated property tooltips. Platform profiles keep their existing profile UI, ownership and export operations.
+The shared Configuration window has Project Settings, Editor Preferences and Plugins sections under Edit > Configuration. It discovers reflected types and category paths automatically and reuses the existing Qt property grid, structured editors, groups, defaults, ranges and tooltips. Platform profiles and other specialized editors are embedded pages retaining their original owners and formats. See [EditorConfiguration.md](EditorConfiguration.md) for the complete page/owner audit.
 
 - Opening copies reflected data into a temporary document. Editing and Reset Category affect those copies only. Reset preserves hidden bookkeeping properties.
 - Apply validates all category candidates, saves changed categories, then commits and notifies changed live instances. OK performs Apply and closes only on success. Cancel discards edits since the last successful Apply.
-- A validation or save error keeps the dialog open and leaves live instances unchanged. Files are saved individually using existing deferred writers; an I/O failure after another category was saved can leave some files updated. This is not a multi-file transaction. Retry after correcting the error.
+- A validation error keeps the window open. Files/pages commit individually; an I/O failure after another page was saved can leave earlier pages committed. Reflected candidates are validated before saves and notified after the page commits succeed. This is not a multi-file transaction. Retry after correcting the error; Cancel does not reverse successful commits.
 - Types/properties marked with `xiiSettingsRestartAttribute` show an explicit restart/reinitialization notice. The owning subsystem decides the safe application point; the dialog does not restart systems. Unmarked settings use the existing consumer's immediate commit behavior.
 - An empty context is valid. Project/document categories are not fabricated. Plugin changes or destruction of owned settings synchronously release the temporary document and close the dialog before RTTI becomes invalid.
 
