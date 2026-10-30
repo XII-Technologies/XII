@@ -3,7 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Document/GameObjectContextDocument.h>
-#include <EditorFramework/Preferences/GameObjectContextPreferences.h>
+#include <EditorFramework/Settings/GameObjectContextPreferences.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <ToolsFoundation/Document/PrefabCache.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
@@ -67,7 +67,7 @@ xiiStatus xiiGameObjectContextDocument::SetContext(xiiUuid documentGuid, xiiUuid
     RestoreMetaDataAfterLoading(graph, false);
   }
   {
-    xiiGameObjectContextPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiGameObjectContextPreferencesUser>(this);
+    xiiGameObjectContextPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiGameObjectContextPreferencesUser>(this);
     m_ContextDocument                                 = documentGuid;
     pPreferences->SetContextDocument(m_ContextDocument);
 
@@ -108,7 +108,7 @@ const xiiDocumentObject* xiiGameObjectContextDocument::GetContextObject() const
 
 void xiiGameObjectContextDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 {
-  xiiGameObjectContextPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiGameObjectContextPreferencesUser>(this);
+  xiiGameObjectContextPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiGameObjectContextPreferencesUser>(this);
   SetContext(pPreferences->GetContextDocument(), pPreferences->GetContextObject()).LogFailure();
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
 }

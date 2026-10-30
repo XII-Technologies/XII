@@ -7,7 +7,7 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <EditorFramework/InputContexts/EditorViewportNavigationGizmo.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 
@@ -135,7 +135,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
   float fFov = m_pViewConfig->m_Camera.GetFovOrDim();
   if (m_pViewConfig->m_Camera.IsPerspective())
   {
-    xiiEditorPreferencesUser* pEditorPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+    xiiEditorPreferencesUser* pEditorPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
     fFov                                         = pEditorPreferences->m_fPerspectiveFieldOfView;
   }
 

@@ -7,7 +7,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/Gizmos/RotateGizmo.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRotateGizmo, 1, xiiRTTINoAllocator)

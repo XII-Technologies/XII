@@ -4,7 +4,7 @@
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Configuration/SubSystem.h>
 
 xiiAngle               xiiSnapProvider::s_RotationSnapValue      = xiiAngle::MakeFromDegree(15.0f);
@@ -19,7 +19,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, SnapProvider)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "EditorFrameworkMain",
-    "Preferences"
+    "EditorSettings"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -44,8 +44,8 @@ void xiiSnapProvider::Shutdown()
 {
   if (s_UserPreferencesChanged)
   {
-    xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-    pPreferences->m_ChangedEvent.RemoveEventHandler(s_UserPreferencesChanged);
+    xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
+    pPreferences->m_SettingsChangedEvent.RemoveEventHandler(s_UserPreferencesChanged);
   }
   xiiQtEditorApp::m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiSnapProvider::EditorEventHandler));
 }
@@ -54,13 +54,13 @@ void xiiSnapProvider::EditorEventHandler(const xiiEditorAppEvent& e)
 {
   if (e.m_Type == xiiEditorAppEvent::Type::EditorStarted)
   {
-    xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+    xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
     PreferenceChangedEventHandler(pPreferences);
-    s_UserPreferencesChanged = pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiSnapProvider::PreferenceChangedEventHandler));
+    s_UserPreferencesChanged = pPreferences->m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiSnapProvider::PreferenceChangedEventHandler));
   }
 }
 
-void xiiSnapProvider::PreferenceChangedEventHandler(xiiPreferences* pPreferenceBase)
+void xiiSnapProvider::PreferenceChangedEventHandler(xiiSettings* pPreferenceBase)
 {
   auto* pPreferences = static_cast<xiiEditorPreferencesUser*>(pPreferenceBase);
   SetRotationSnapValue(pPreferences->m_RotationSnapValue);
@@ -90,9 +90,9 @@ void xiiSnapProvider::SetRotationSnapValue(xiiAngle angle)
 
   s_RotationSnapValue = angle;
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
   pPreferences->m_RotationSnapValue      = angle;
-  pPreferences->TriggerPreferencesChangedEvent();
+  pPreferences->NotifyChanged();
 
   xiiSnapProviderEvent e;
   e.m_Type = xiiSnapProviderEvent::Type::RotationSnapChanged;
@@ -106,9 +106,9 @@ void xiiSnapProvider::SetScaleSnapValue(float fPercentage)
 
   s_fScaleSnapValue = fPercentage;
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
   pPreferences->m_fScaleSnapValue        = fPercentage;
-  pPreferences->TriggerPreferencesChangedEvent();
+  pPreferences->NotifyChanged();
 
   xiiSnapProviderEvent e;
   e.m_Type = xiiSnapProviderEvent::Type::ScaleSnapChanged;
@@ -122,9 +122,9 @@ void xiiSnapProvider::SetTranslationSnapValue(float fUnits)
 
   s_fTranslationSnapValue = fUnits;
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
   pPreferences->m_fTranslationSnapValue  = fUnits;
-  pPreferences->TriggerPreferencesChangedEvent();
+  pPreferences->NotifyChanged();
 
   xiiSnapProviderEvent e;
   e.m_Type = xiiSnapProviderEvent::Type::TranslationSnapChanged;

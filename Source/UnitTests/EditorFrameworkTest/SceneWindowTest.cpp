@@ -14,7 +14,7 @@
 #include <EditorFramework/Gizmos/RotateGizmo.h>
 #include <EditorFramework/Gizmos/ScaleGizmo.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/IO/OSFile.h>
@@ -480,7 +480,7 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         captureMode(mode, name.GetData());
       }
       view->InterpolateCameraTo(xiiVec3(0, -4, 1.5f), xiiVec3(4, 4, -1.5f).GetNormalized(), 60, nullptr, true);
-      auto*      scenePreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(scene);
+      auto*      scenePreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(scene);
       const bool showGrid         = scenePreferences->GetShowGrid();
       scenePreferences->SetShowGrid(false);
       const auto skyImage    = captureMode(xiiViewRenderMode::Default, "ViewportAtmosphere.png");

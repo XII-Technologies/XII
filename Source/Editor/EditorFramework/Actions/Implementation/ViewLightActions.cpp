@@ -8,7 +8,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewLightButtonAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -113,7 +113,7 @@ void xiiViewLightButtonAction::Execute(const xiiVariant& value)
     {
       if (xiiQtUiServices::MessageBoxQuestion("Do you want to make the current light settings the global default?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::Yes) == QMessageBox::StandardButton::Yes)
       {
-        xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+        xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
         pPreferences->SetAsDefaultValues(*m_pSettings);
       }
     }

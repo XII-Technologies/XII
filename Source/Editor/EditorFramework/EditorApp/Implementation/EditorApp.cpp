@@ -7,7 +7,7 @@
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/IO/OpenDdlReader.h>
@@ -121,7 +121,7 @@ void xiiQtEditorApp::SlotSaveSettings()
 
 void xiiQtEditorApp::SlotAutoSave()
 {
-  const auto* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  const auto* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
   if (!pPreferences || pPreferences->m_uiAutoSaveMinutes == 0)
     return;
 

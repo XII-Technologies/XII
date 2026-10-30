@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>xiiQtConfigurationDlg</class>
+ <widget class="QDialog" name="xiiQtConfigurationDlg">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1120</width>
+    <height>680</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Configuration</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../QtResources/resources.qrc">
+    <normaloff>:/EditorFramework/Icons/StoredSettings.svg</normaloff>:/EditorFramework/Icons/StoredSettings.svg</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item><widget class="QLineEdit" name="Search"><property name="placeholderText"><string>Search settings, categories, and properties</string></property><property name="clearButtonEnabled"><bool>true</bool></property></widget></item>
+   <item>
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="childrenCollapsible">
+      <bool>false</bool>
+     </property>
+     <widget class="QTreeWidget" name="Tree"><property name="headerHidden"><bool>true</bool></property><column><property name="text"><string>Configuration</string></property></column></widget>
+     <widget class="QWidget" name="Content" native="true">
+      <layout class="QVBoxLayout" name="ContentLayout">
+       <item><widget class="QLabel" name="Heading"><property name="text"><string>Configuration</string></property></widget></item>
+       <item><widget class="QLabel" name="Description"><property name="wordWrap"><bool>true</bool></property><property name="text"><string/></property></widget></item>
+       <item><widget class="QStackedWidget" name="Pages">
+        <widget class="QWidget" name="ReflectedPage"><layout class="QVBoxLayout" name="PropertyLayout"><item><widget class="xiiQtPropertyGridWidget" name="Properties" native="true"/></item></layout></widget>
+        <widget class="QWidget" name="EmptyPage"><layout class="QVBoxLayout" name="EmptyLayout"><item><widget class="QLabel" name="EmptyText"><property name="wordWrap"><bool>true</bool></property><property name="text"><string>Select a category on the left.</string></property></widget></item><item><spacer name="EmptySpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item></layout></widget>
+       </widget></item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item><widget class="QPushButton" name="ButtonReset"><property name="text"><string>Reset Category</string></property><property name="autoDefault"><bool>false</bool></property></widget></item>
+     <item><widget class="QLabel" name="Status"><property name="wordWrap"><bool>true</bool></property><property name="text"><string/></property></widget></item>
+     <item><widget class="QPushButton" name="ButtonApply"><property name="text"><string>Apply</string></property><property name="autoDefault"><bool>false</bool></property></widget></item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ButtonOk">
+       <property name="text">
+        <string>OK</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ButtonCancel">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>xiiQtPropertyGridWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h</header>
+   <container>1</container>
+  </customwidget>
+</customwidgets>
+ <resources>
+  <include location="../../../Tools/Libs/GuiFoundation/QtResources/resources.qrc"/>
+  <include location="../QtResources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

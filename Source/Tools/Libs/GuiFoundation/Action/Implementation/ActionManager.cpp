@@ -167,10 +167,17 @@ xiiResult xiiActionManager::ExecuteAction(xiiStringView sCategory, xiiStringView
 
 void xiiActionManager::SaveShortcutAssignment()
 {
+  xiiMap<xiiString, xiiString> assignments;
+  if (SaveShortcutAssignment(assignments).Failed())
+    xiiLog::Error("Failed to write shortcuts configuration.");
+}
+
+xiiResult xiiActionManager::SaveShortcutAssignment(const xiiMap<xiiString, xiiString>& assignments)
+{
   xiiStringBuilder sFile = xiiApplicationServices::GetSingleton()->GetApplicationPreferencesFolder();
   sFile.AppendPath("Settings/Shortcuts.ddl");
 
-  XII_LOG_BLOCK("LoadShortcutAssignment", sFile.GetData());
+  XII_LOG_BLOCK("SaveShortcutAssignment", sFile.GetData());
 
   xiiDeferredFileWriter file;
   file.SetOutput(sFile);
@@ -189,20 +196,19 @@ void xiiActionManager::SaveShortcutAssignment()
     if (pAction->m_Type != xiiActionType::Action)
       continue;
 
-    if (pAction->m_sShortcut == pAction->m_sDefaultShortcut)
-      sKey.Set("default: ", pAction->m_sShortcut);
+    const auto* pAssignment = assignments.GetValue(pAction->m_sActionName);
+    const auto& shortcut    = pAssignment ? *pAssignment : pAction->m_sShortcut;
+    if (shortcut == pAction->m_sDefaultShortcut)
+      sKey.Set("default: ", shortcut);
     else
-      sKey = pAction->m_sShortcut;
+      sKey = shortcut;
 
     writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::String, pAction->m_sActionName);
     writer.WriteString(sKey);
     writer.EndPrimitiveList();
   }
 
-  if (file.Close().Failed())
-  {
-    xiiLog::Error("Failed to write shortcuts config file '{0}'", sFile);
-  }
+  return file.Close();
 }
 
 void xiiActionManager::LoadShortcutAssignment()

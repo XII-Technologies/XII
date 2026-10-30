@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include <EditorFramework/ui_SettingsTab.h>
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Configuration/Plugin.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
-class xiiQtSettingsTab : public xiiQtDocumentWindow, Ui_SettingsTab
+class xiiQtSettingsTab : public xiiQtDocumentWindow
 {
   Q_OBJECT
 

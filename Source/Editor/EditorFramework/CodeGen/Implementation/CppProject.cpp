@@ -205,7 +205,7 @@ xiiString xiiCppProject::GetTargetSourceDir(xiiStringView sProjectDirectory /*= 
 
 xiiString xiiCppProject::GetGeneratorFolderName(const xiiCppSettings& cfg)
 {
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   switch (pProjectPreferences->m_CompilerPreferences.m_Compiler.GetValue())
   {
@@ -230,7 +230,7 @@ xiiString xiiCppProject::GetCMakeGeneratorName(const xiiCppSettings& cfg)
 {
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   switch (pProjectPreferences->m_CompilerPreferences.m_Compiler.GetValue())
   {
@@ -292,7 +292,7 @@ xiiString xiiCppProject::GetSolutionPath(const xiiCppSettings& cfg)
   sSolutionFile = GetBuildDir(cfg);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
   if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2026)
   {
     sSolutionFile.AppendPath(cfg.m_sPluginName);
@@ -313,7 +313,7 @@ xiiString xiiCppProject::GetSolutionPath(const xiiCppSettings& cfg)
 
 xiiStatus xiiCppProject::OpenSolution(const xiiCppSettings& cfg)
 {
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   switch (pProjectPreferences->m_Ide.GetValue())
   {
@@ -353,7 +353,7 @@ xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt
   xiiStringBuilder sLineNumber;
   xiiConversionUtils::ToString(iLineNumber, sLineNumber);
 
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   // Visual Studio does not expose a CLI command to open a file/line in all use-cases directly
   // therefore run a custom .vbs script which controls VS and performs the needed actions for us. This avoids pulling COM interfacing into the project.
@@ -462,7 +462,7 @@ xiiString xiiCppProject::GetSdkCompilerMajorVersion()
 
 xiiStatus xiiCppProject::TestCompiler()
 {
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
   if (pProjectPreferences->m_CompilerPreferences.m_Compiler != GetSdkCompiler())
   {
     return xiiStatus(xiiFmt("The currently configured compiler is incompatible with this SDK. The SDK was built with '{}' but the currently configured compiler is '{}'.", CompilerToString(GetSdkCompiler()), CompilerToString(pProjectPreferences->m_CompilerPreferences.m_Compiler)));
@@ -862,7 +862,7 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   po.AddArgument("--build");
   po.AddArgument(GetBuildDir(cfg));
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2026 || pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
   {
@@ -1070,7 +1070,7 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
   if (!configurePresets)
     return ModifyResult::FAILURE;
 
-  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   bool bFoundEnginePreset = false;
   for (auto& preset : *configurePresets)
@@ -1143,13 +1143,13 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
 }
 
 xiiCppProject::xiiCppProject() :
-  xiiPreferences(xiiPreferences::Domain::Application, "C++ Projects")
+  xiiEditorSettings(xiiEditorSettings::Domain::Application, "C++ Projects")
 {
 }
 void xiiCppProject::LoadPreferences()
 {
   XII_PROFILE_SCOPE("Preferences");
-  auto pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  auto pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
 
@@ -1263,7 +1263,7 @@ void xiiCppProject::LoadPreferences()
 
 xiiResult xiiCppProject::ForceSdkCompatibleCompiler()
 {
-  xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
   xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
   for (auto& compiler : s_MachineSpecificCompilers)

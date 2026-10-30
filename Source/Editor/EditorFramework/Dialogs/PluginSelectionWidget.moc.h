@@ -24,6 +24,9 @@ public:
   void SetPluginSet(xiiPluginBundleSet* pPluginSet);
   void SyncStateToSet();
   void SelectTemplate(const char* szTemplate);
+  void      Filter(const QString& text);
+  void      SetReadOnly(bool bReadOnly);
+  xiiResult ValidateSelection(xiiStringBuilder& out_reason) const;
 
 private Q_SLOTS:
   void on_PluginsList_currentItemChanged(QListWidgetItem* current, QListWidgetItem* previous);
@@ -45,4 +48,7 @@ private:
 
   xiiHybridArray<State, 8> m_States;
   xiiPluginBundleSet*      m_pPluginSet = nullptr;
+  QComboBox*               m_pCategory  = nullptr;
+  QString                  m_Filter;
+  bool                     m_bReadOnly = false;
 };

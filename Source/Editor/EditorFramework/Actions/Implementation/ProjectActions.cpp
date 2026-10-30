@@ -6,23 +6,16 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/CodeGen/CppProject.h>
-#include <EditorFramework/Dialogs/AssetProfilesDlg.moc.h>
+#include <EditorFramework/Dialogs/ConfigurationDlg.moc.h>
 #include <EditorFramework/Dialogs/CppProjectDlg.moc.h>
-#include <EditorFramework/Dialogs/DataDirsDlg.moc.h>
 #include <EditorFramework/Dialogs/ExportProjectDlg.moc.h>
-#include <EditorFramework/Dialogs/InputConfigDlg.moc.h>
 #include <EditorFramework/Dialogs/LaunchFileserveDlg.moc.h>
-#include <EditorFramework/Dialogs/PluginSelectionDlg.moc.h>
-#include <EditorFramework/Dialogs/PreferencesDlg.moc.h>
-#include <EditorFramework/Dialogs/TagsDlg.moc.h>
-#include <EditorFramework/Dialogs/WindowCfgDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Profiling/ProfilingUtils.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
-#include <GuiFoundation/Dialogs/ShortcutEditorDlg.moc.h>
 #include <GuiFoundation/Widgets/SearchWidget.moc.h>
 #include <QApplication>
 #include <ads/AutoHideDockContainer.h>
@@ -30,7 +23,6 @@
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectGeneral;
 xiiActionDescriptorHandle xiiProjectActions::s_hFindAssets;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectAssets;
-xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectConfig;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectExternal;
 
 xiiActionDescriptorHandle xiiProjectActions::s_hCatFilesGeneral;
@@ -49,13 +41,13 @@ xiiActionDescriptorHandle xiiProjectActions::s_hRecentProjects;
 xiiActionDescriptorHandle xiiProjectActions::s_hCloseProject;
 xiiActionDescriptorHandle xiiProjectActions::s_hDocsAndCommunity;
 
-xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectSettings;
-xiiActionDescriptorHandle xiiProjectActions::s_hCatPluginSettings;
 xiiActionDescriptorHandle xiiProjectActions::s_hShortcutEditor;
 xiiActionDescriptorHandle xiiProjectActions::s_hDataDirectories;
 xiiActionDescriptorHandle xiiProjectActions::s_hWindowConfig;
 xiiActionDescriptorHandle xiiProjectActions::s_hInputConfig;
-xiiActionDescriptorHandle xiiProjectActions::s_hPreferencesDlg;
+xiiActionDescriptorHandle xiiProjectActions::s_hEditorPreferences;
+xiiActionDescriptorHandle xiiProjectActions::s_hConfigurationMenu;
+xiiActionDescriptorHandle xiiProjectActions::s_hProjectSettings;
 xiiActionDescriptorHandle xiiProjectActions::s_hTagsConfig;
 xiiActionDescriptorHandle xiiProjectActions::s_hImportAsset;
 xiiActionDescriptorHandle xiiProjectActions::s_hAssetProfiles;
@@ -66,7 +58,6 @@ xiiActionDescriptorHandle xiiProjectActions::s_hClearAssetCaches;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatToolsExternal;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatToolsEditor;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatToolsDocument;
-xiiActionDescriptorHandle xiiProjectActions::s_hCatEditorSettings;
 xiiActionDescriptorHandle xiiProjectActions::s_hReloadResources;
 xiiActionDescriptorHandle xiiProjectActions::s_hReloadEngine;
 xiiActionDescriptorHandle xiiProjectActions::s_hLaunchFileserve;
@@ -83,12 +74,12 @@ xiiActionDescriptorHandle xiiProjectActions::s_hRegenerateCppSolution;
 
 void xiiProjectActions::RegisterActions()
 {
+  s_hConfigurationMenu  = XII_REGISTER_MENU("G.Edit.Configuration");
+  s_hProjectSettings    = XII_REGISTER_ACTION_1("Project.Settings", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::ProjectSettings);
   s_hFindAssets         = XII_REGISTER_ACTION_1("Editor.FindAssets", xiiActionScope::Global, "Editor", "Ctrl+Space", xiiProjectAction, xiiProjectAction::ButtonType::FindAssets);
   s_hCatProjectGeneral  = XII_REGISTER_CATEGORY("G.Project.General");
   s_hCatProjectAssets   = XII_REGISTER_CATEGORY("G.Project.Assets");
   s_hCatProjectExternal = XII_REGISTER_CATEGORY("G.Project.External");
-  s_hCatProjectConfig   = XII_REGISTER_CATEGORY("G.Project.Config");
-  s_hCatEditorSettings  = XII_REGISTER_CATEGORY("G.Editor.Settings");
 
   s_hCatFilesGeneral = XII_REGISTER_CATEGORY("G.Files.General");
   s_hCatFileCommon   = XII_REGISTER_CATEGORY("G.File.Common");
@@ -117,7 +108,6 @@ void xiiProjectActions::RegisterActions()
     s_hRegenerateCppSolution = XII_REGISTER_ACTION_1("Project.RegenerateCppSolution", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::RegenerateCppSolution);
   }
 
-  s_hCatProjectSettings = XII_REGISTER_MENU("G.Project.Settings");
 
   s_hPluginSelection = XII_REGISTER_ACTION_1("Project.PluginSelection", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::PluginSelection);
   s_hDataDirectories = XII_REGISTER_ACTION_1("Project.DataDirectories", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::DataDirectories);
@@ -126,7 +116,6 @@ void xiiProjectActions::RegisterActions()
   s_hWindowConfig    = XII_REGISTER_ACTION_1("Project.WindowConfig", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::WindowConfig);
   s_hAssetProfiles   = XII_REGISTER_ACTION_1("Project.AssetProfiles", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::AssetProfiles);
 
-  s_hCatPluginSettings = XII_REGISTER_MENU("G.Plugins.Settings");
 
   //////////////////////////////////////////////////////////////////////////
 
@@ -135,7 +124,7 @@ void xiiProjectActions::RegisterActions()
   s_hRecentDocuments = XII_REGISTER_DYNAMIC_MENU("Project.RecentDocuments.Menu", xiiRecentDocumentsMenuAction, "");
 
   s_hShortcutEditor = XII_REGISTER_ACTION_1("Editor.Shortcuts", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::Shortcuts);
-  s_hPreferencesDlg = XII_REGISTER_ACTION_1("Editor.Preferences", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::PreferencesDialog);
+  s_hEditorPreferences = XII_REGISTER_ACTION_1("Editor.Preferences", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::EditorPreferences);
 
   s_hCatToolsExternal = XII_REGISTER_CATEGORY("G.Tools.External");
   s_hCatToolsEditor   = XII_REGISTER_CATEGORY("G.Tools.Editor");
@@ -154,10 +143,11 @@ void xiiProjectActions::RegisterActions()
 
 void xiiProjectActions::UnregisterActions()
 {
+  xiiActionManager::UnregisterAction(s_hConfigurationMenu);
+  xiiActionManager::UnregisterAction(s_hProjectSettings);
   xiiActionManager::UnregisterAction(s_hFindAssets);
   xiiActionManager::UnregisterAction(s_hCatProjectGeneral);
   xiiActionManager::UnregisterAction(s_hCatProjectAssets);
-  xiiActionManager::UnregisterAction(s_hCatProjectConfig);
   xiiActionManager::UnregisterAction(s_hCatProjectExternal);
 
   xiiActionManager::UnregisterAction(s_hCatFilesGeneral);
@@ -174,12 +164,9 @@ void xiiProjectActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hOpenProject);
   xiiActionManager::UnregisterAction(s_hRecentProjects);
   xiiActionManager::UnregisterAction(s_hCloseProject);
-  xiiActionManager::UnregisterAction(s_hCatProjectSettings);
-  xiiActionManager::UnregisterAction(s_hCatPluginSettings);
   xiiActionManager::UnregisterAction(s_hCatToolsExternal);
   xiiActionManager::UnregisterAction(s_hCatToolsEditor);
   xiiActionManager::UnregisterAction(s_hCatToolsDocument);
-  xiiActionManager::UnregisterAction(s_hCatEditorSettings);
   xiiActionManager::UnregisterAction(s_hReloadResources);
   xiiActionManager::UnregisterAction(s_hReloadEngine);
   xiiActionManager::UnregisterAction(s_hLaunchFileserve);
@@ -188,7 +175,7 @@ void xiiProjectActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hSaveProfiling);
   xiiActionManager::UnregisterAction(s_hOpenVsCode);
   xiiActionManager::UnregisterAction(s_hShortcutEditor);
-  xiiActionManager::UnregisterAction(s_hPreferencesDlg);
+  xiiActionManager::UnregisterAction(s_hEditorPreferences);
   xiiActionManager::UnregisterAction(s_hTagsConfig);
   xiiActionManager::UnregisterAction(s_hDataDirectories);
   xiiActionManager::UnregisterAction(s_hWindowConfig);
@@ -212,17 +199,13 @@ void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xii
 
   // Add categories
   pMap->MapAction(s_hCatProjectGeneral, "G.Project", 1.0f);
-  pMap->MapAction(s_hCatProjectConfig, "G.Project", 2.0f);
   pMap->MapAction(s_hCatProjectAssets, "G.Project", 4.0f);
   pMap->MapAction(s_hCatProjectExternal, "G.Project", 5.0f);
 
   pMap->MapAction(s_hCatToolsExternal, "G.Tools", 1.0f);
   pMap->MapAction(s_hCatToolsEditor, "G.Tools", 2.0f);
   pMap->MapAction(s_hCatToolsDocument, "G.Tools", 3.0f);
-  pMap->MapAction(s_hCatEditorSettings, "G.Tools", 1000.0f);
 
-  pMap->MapAction(s_hCatProjectSettings, "G.Project.Config", 1.0f);
-  pMap->MapAction(s_hCatPluginSettings, "G.Project.Config", 1.0f);
 
   if (menus.IsSet(xiiStandardMenuTypes::File))
   {
@@ -230,6 +213,14 @@ void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xii
     pMap->MapAction(s_hCatFileCommon, "G.File", 2.0f);
     pMap->MapAction(s_hCatAssetDoc, "G.File", 3.0f);
     pMap->MapAction(s_hCatFileSpecial, "G.File", 4.0f);
+  }
+
+  if (menus.IsSet(xiiStandardMenuTypes::Edit))
+  {
+    pMap->MapAction(s_hConfigurationMenu, "G.Edit", 1000.0f);
+    pMap->MapAction(s_hProjectSettings, "G.Edit.Configuration", 1.0f);
+    pMap->MapAction(s_hEditorPreferences, "G.Edit.Configuration", 2.0f);
+    pMap->MapAction(s_hPluginSelection, "G.Edit.Configuration", 3.0f);
   }
 
   // Add actions
@@ -243,13 +234,7 @@ void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xii
   pMap->MapAction(s_hFindAssets, "G.Project.Assets", 0.0f);
   pMap->MapAction(s_hClearAssetCaches, "G.Project.Assets", 5.0f);
 
-  pMap->MapAction(s_hDataDirectories, "G.Project.Settings", 1.0f);
-  pMap->MapAction(s_hInputConfig, "G.Project.Settings", 2.0f);
-  pMap->MapAction(s_hWindowConfig, "G.Project.Settings", 3.0f);
-  pMap->MapAction(s_hTagsConfig, "G.Project.Settings", 4.0f);
-  pMap->MapAction(s_hAssetProfiles, "G.Project.Settings", 5.0f);
 
-  pMap->MapAction(s_hPluginSelection, "G.Plugins.Settings", -1000.0f);
 
   pMap->MapAction(s_hCppProjectMenu, "G.Project.External", 1.0f);
   pMap->MapAction(s_hSetupCppProject, "G.Project.Cpp", 1.0f);
@@ -267,8 +252,7 @@ void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xii
   pMap->MapAction(s_hReloadEngine, "G.Tools.Editor", 2.0f);
   pMap->MapAction(s_hSaveProfiling, "G.Tools.Editor", 3.0f);
 
-  pMap->MapAction(s_hShortcutEditor, "G.Editor.Settings", 1.0f);
-  pMap->MapAction(s_hPreferencesDlg, "G.Editor.Settings", 2.0f);
+
 
   if (menus.IsSet(xiiStandardMenuTypes::Help))
   {
@@ -444,7 +428,8 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     case xiiProjectAction::ButtonType::PluginSelection:
       SetIconPath(":/EditorFramework/Icons/Plugins.svg");
       break;
-    case xiiProjectAction::ButtonType::PreferencesDialog:
+    case xiiProjectAction::ButtonType::ProjectSettings:
+    case xiiProjectAction::ButtonType::EditorPreferences:
       SetIconPath(":/EditorFramework/Icons/StoredSettings.svg");
       break;
     case xiiProjectAction::ButtonType::TagsDialog:
@@ -504,7 +489,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
       m_ButtonType == ButtonType::CompileCppProject ||
       m_ButtonType == ButtonType::ExportProject ||
       m_ButtonType == ButtonType::ClearAssetCaches ||
-      m_ButtonType == ButtonType::PluginSelection)
+      m_ButtonType == ButtonType::ProjectSettings)
   {
     SetEnabled(xiiToolsProject::IsProjectOpen());
 
@@ -540,7 +525,7 @@ xiiProjectAction::~xiiProjectAction()
       m_ButtonType == ButtonType::CompileCppProject ||
       m_ButtonType == ButtonType::ExportProject ||
       m_ButtonType == ButtonType::ClearAssetCaches ||
-      m_ButtonType == ButtonType::PluginSelection)
+      m_ButtonType == ButtonType::ProjectSettings)
   {
     xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
   }
@@ -575,6 +560,9 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 {
   switch (m_ButtonType)
   {
+    case xiiProjectAction::ButtonType::ProjectSettings:
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::ProjectSettings, m_Context.m_pDocument);
+      break;
     case xiiProjectAction::ButtonType::FindAssets:
       if (auto* pPanel = xiiQtAssetBrowserPanel::GetSingleton())
       {
@@ -617,18 +605,12 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     break;
 
     case xiiProjectAction::ButtonType::DataDirectories:
-    {
-      xiiQtDataDirsDlg dlg(nullptr);
-      dlg.exec();
-    }
-    break;
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::ProjectSettings, m_Context.m_pDocument, "Data Directories");
+      break;
 
     case xiiProjectAction::ButtonType::WindowConfig:
-    {
-      xiiQtWindowCfgDlg dlg(nullptr);
-      dlg.exec();
-    }
-    break;
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::ProjectSettings, m_Context.m_pDocument, "Window Configuration");
+      break;
 
     case xiiProjectAction::ButtonType::ImportAsset:
     {
@@ -637,61 +619,20 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     break;
 
     case xiiProjectAction::ButtonType::InputConfig:
-    {
-      xiiQtInputConfigDlg dlg(nullptr);
-      if (dlg.exec() == QDialog::Accepted)
-      {
-        xiiToolsProject::BroadcastConfigChanged();
-      }
-    }
-    break;
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::ProjectSettings, m_Context.m_pDocument, "Input Actions");
+      break;
 
     case xiiProjectAction::ButtonType::PluginSelection:
-    {
-      xiiQtEditorApp::GetSingleton()->DetectAvailablePluginBundles(xiiOSFile::GetApplicationDirectory());
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::Plugins, m_Context.m_pDocument, "");
+      break;
 
-      xiiCppSettings cppSettings;
-      if (cppSettings.Load().Succeeded())
-      {
-        xiiQtEditorApp::GetSingleton()->DetectAvailablePluginBundles(xiiCppProject::GetPluginSourceDir(cppSettings));
-      }
-
-      xiiQtPluginSelectionDlg dlg(&xiiQtEditorApp::GetSingleton()->GetPluginBundles());
-      dlg.exec();
-
-      xiiToolsProject::SaveProjectState();
-    }
-    break;
-
-    case xiiProjectAction::ButtonType::PreferencesDialog:
-    {
-      const xiiDocument* pContext = m_Context.m_pDocument;
-      if (pContext == nullptr)
-      {
-        if (auto* pContainer = xiiQtContainerWindow::GetContainerWindow())
-          if (auto* pWindow = pContainer->GetFocusedDocumentWindow())
-            pContext = pWindow->GetDocument();
-      }
-      xiiQtPreferencesDlg dlg(nullptr, pContext);
-      if (dlg.exec() == QDialog::Accepted)
-      {
-        // save modified preferences right away
-        xiiToolsProject::SaveProjectState();
-
-        xiiToolsProject::BroadcastConfigChanged();
-      }
-    }
-    break;
+    case xiiProjectAction::ButtonType::EditorPreferences:
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::EditorPreferences, m_Context.m_pDocument, "");
+      break;
 
     case xiiProjectAction::ButtonType::TagsDialog:
-    {
-      xiiQtTagsDlg dlg(nullptr);
-      if (dlg.exec() == QDialog::Accepted)
-      {
-        xiiToolsProject::BroadcastConfigChanged();
-      }
-    }
-    break;
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::ProjectSettings, m_Context.m_pDocument, "Tags");
+      break;
 
     case xiiProjectAction::ButtonType::ExportProject:
     {
@@ -715,11 +656,8 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     break;
 
     case xiiProjectAction::ButtonType::Shortcuts:
-    {
-      xiiQtShortcutEditorDlg dlg(nullptr);
-      dlg.exec();
-    }
-    break;
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::EditorPreferences, m_Context.m_pDocument, "Keyboard Shortcuts");
+      break;
 
     case xiiProjectAction::ButtonType::ReloadResources:
     {
@@ -847,15 +785,8 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     break;
 
     case xiiProjectAction::ButtonType::AssetProfiles:
-    {
-      xiiQtAssetProfilesDlg dlg(nullptr);
-      if (dlg.exec() == QDialog::Accepted)
-      {
-        // makes the scene re-select the current objects, which updates which enum values are shown in the property grid
-        xiiToolsProject::BroadcastConfigChanged();
-      }
-    }
-    break;
+      xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::ProjectSettings, m_Context.m_pDocument, "Platform and Asset Profiles");
+      break;
 
     case xiiProjectAction::ButtonType::SetupCppProject:
     {

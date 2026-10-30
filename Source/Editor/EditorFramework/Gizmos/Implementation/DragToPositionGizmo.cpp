@@ -7,7 +7,7 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/Gizmos/DragToPositionGizmo.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDragToPositionGizmo, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;

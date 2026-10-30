@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+
+#include <GuiFoundation/Action/BaseActions.h>
 
 struct xiiStandardMenuTypes
 {
@@ -21,7 +22,7 @@ struct xiiStandardMenuTypes
     Tools   = XII_BIT(7),
     Help    = XII_BIT(8),
 
-    Default = Project | File | Panels | Tools | Help
+    Default = Project | File | Edit | Panels | Tools | Help
   };
 
   struct Bits

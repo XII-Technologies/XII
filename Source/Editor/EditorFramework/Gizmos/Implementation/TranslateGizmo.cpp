@@ -8,7 +8,7 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Gizmos/TranslateGizmo.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <QCursor>
 

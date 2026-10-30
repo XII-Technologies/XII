@@ -7,7 +7,7 @@
 #include <EditorFramework/DocumentWindow/GameObjectDocumentWindow.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 #include <EditorPluginScene/EditTools/GreyBoxEditTool.h>
 #include <GuiFoundation/PropertyGrid/ManipulatorManager.h>
 #include <SharedPluginScene/Scene/SceneCreation.h>
@@ -51,7 +51,7 @@ bool xiiGreyBoxEditTool::GetSupportsMoveParentOnly() const
 
 void xiiGreyBoxEditTool::GetGridSettings(xiiGridSettingsMsgToEngine& ref_msg)
 {
-  xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument());
+  xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetDocument());
 
   ref_msg.m_fGridDensity = xiiSnapProvider::GetTranslationSnapValue(); // negative density = local space
   ref_msg.m_vGridTangent1.SetZero();

@@ -6,9 +6,9 @@
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/Dialogs/ExportProjectDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/Preferences.h>
-#include <EditorFramework/Preferences/ProjectPreferences.h>
 #include <EditorFramework/Project/ProjectExport.h>
+#include <EditorFramework/Settings/EditorSettings.h>
+#include <EditorFramework/Settings/ProjectPreferences.h>
 #include <Foundation/CodeUtils/Preprocessor.h>
 #include <Foundation/Containers/Set.h>
 #include <Foundation/IO/OSFile.h>
@@ -25,7 +25,7 @@ xiiQtExportProjectDlg::xiiQtExportProjectDlg(QWidget* pParent) :
 {
   setupUi(this);
 
-  xiiProjectPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiProjectPreferencesUser>();
+  xiiProjectPreferencesUser* pPref = xiiEditorSettings::QuerySettings<xiiProjectPreferencesUser>();
 
   Destination->setText(pPref->m_sExportFolder.GetData());
 }
@@ -55,7 +55,7 @@ void xiiQtExportProjectDlg::on_BrowseDestination_clicked()
   if (!sPath.isEmpty())
   {
     Destination->setText(sPath);
-    xiiProjectPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiProjectPreferencesUser>();
+    xiiProjectPreferencesUser* pPref = xiiEditorSettings::QuerySettings<xiiProjectPreferencesUser>();
     pPref->m_sExportFolder           = sPath.toUtf8().data();
   }
 }

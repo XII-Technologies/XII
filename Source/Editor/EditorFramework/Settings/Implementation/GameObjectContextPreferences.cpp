@@ -1,0 +1,52 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <EditorFramework/EditorFrameworkPCH.h>
+
+#include <EditorFramework/Settings/GameObjectContextPreferences.h>
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameObjectContextPreferencesUser, 1, xiiRTTIDefaultAllocator<xiiGameObjectContextPreferencesUser>)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiSettingsScopeAttribute(xiiSettingsScope::Document),
+    new xiiDocumentSettingsAttribute("xiiGameObjectContextDocument"),
+    new xiiCategoryAttribute("Context"),
+  }
+  XII_END_ATTRIBUTES;
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("ContextDocument", m_ContextDocument)->AddAttributes(new xiiHiddenAttribute),
+    XII_MEMBER_PROPERTY("ContextObject", m_ContextObject)->AddAttributes(new xiiHiddenAttribute),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGameObjectContextPreferencesUser::xiiGameObjectContextPreferencesUser() :
+  xiiEditorSettings(Domain::Document, "GameObjectContext")
+{
+}
+
+xiiUuid xiiGameObjectContextPreferencesUser::GetContextDocument() const
+{
+  return m_ContextDocument;
+}
+
+void xiiGameObjectContextPreferencesUser::SetContextDocument(xiiUuid val)
+{
+  m_ContextDocument = val;
+  NotifyChanged();
+}
+
+xiiUuid xiiGameObjectContextPreferencesUser::GetContextObject() const
+{
+  return m_ContextObject;
+}
+
+void xiiGameObjectContextPreferencesUser::SetContextObject(xiiUuid val)
+{
+  m_ContextObject = val;
+  NotifyChanged();
+}

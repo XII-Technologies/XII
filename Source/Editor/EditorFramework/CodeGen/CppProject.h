@@ -5,7 +5,7 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorFramework/CodeGen/CppSettings.h>
-#include <EditorFramework/Preferences/Preferences.h>
+#include <EditorFramework/Settings/EditorSettings.h>
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/VariantType.h>
@@ -77,9 +77,9 @@ struct XII_EDITORFRAMEWORK_DLL xiiCodeEditorPreferences
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_EDITORFRAMEWORK_DLL, xiiCodeEditorPreferences);
 
-struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiPreferences
+struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiEditorSettings
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiCppProject, xiiPreferences);
+  XII_ADD_DYNAMIC_REFLECTION(xiiCppProject, xiiEditorSettings);
 
   struct MachineSpecificCompilerPaths
   {

@@ -8,7 +8,7 @@
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/InputContexts/CameraMoveContext.h>
 #include <EditorFramework/InputContexts/OrthoGizmoContext.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTranslateGizmoEditTool, 1, xiiRTTIDefaultAllocator<xiiTranslateGizmoEditTool>)
@@ -23,7 +23,7 @@ xiiTranslateGizmoEditTool::~xiiTranslateGizmoEditTool()
 {
   m_TranslateGizmo.m_GizmoEvents.RemoveEventHandler(xiiMakeDelegate(&xiiTranslateGizmoEditTool::TransformationGizmoEventHandler, this));
 
-  auto& events = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument())->m_ChangedEvent;
+  auto& events = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetDocument())->m_SettingsChangedEvent;
 
   if (events.HasEventHandler(xiiMakeDelegate(&xiiTranslateGizmoEditTool::OnPreferenceChange, this)))
     events.RemoveEventHandler(xiiMakeDelegate(&xiiTranslateGizmoEditTool::OnPreferenceChange, this));
@@ -43,7 +43,7 @@ void xiiTranslateGizmoEditTool::OnConfigured()
 
   m_TranslateGizmo.SetOwner(GetWindow(), nullptr);
 
-  xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument())->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiTranslateGizmoEditTool::OnPreferenceChange, this));
+  xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetDocument())->m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiTranslateGizmoEditTool::OnPreferenceChange, this));
 }
 
 void xiiTranslateGizmoEditTool::ApplyGizmoVisibleState(bool visible)
@@ -156,7 +156,7 @@ void xiiTranslateGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGiz
   }
 }
 
-void xiiTranslateGizmoEditTool::OnPreferenceChange(xiiPreferences* pref)
+void xiiTranslateGizmoEditTool::OnPreferenceChange(xiiSettings* pref)
 {
   xiiScenePreferencesUser* pPref = xiiDynamicCast<xiiScenePreferencesUser*>(pref);
 
@@ -166,7 +166,7 @@ void xiiTranslateGizmoEditTool::OnPreferenceChange(xiiPreferences* pref)
 void xiiTranslateGizmoEditTool::GetGridSettings(xiiGridSettingsMsgToEngine& ref_msg)
 {
   auto                     pSceneDoc    = GetDocument();
-  xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument());
+  xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetDocument());
 
   // if density != 0, it is enabled at least in ortho mode
   ref_msg.m_fGridDensity = xiiSnapProvider::GetTranslationSnapValue() * (pSceneDoc->GetGizmoWorldSpace() ? 1.0f : -1.0f); // negative density = local space

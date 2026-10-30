@@ -6,8 +6,8 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Object/ObjectPropertyPath.h>
-#include <EditorFramework/Preferences/QuadViewPreferences.h>
 #include <EditorFramework/PropertyGrid/ExposedParametersPropertyWidget.moc.h>
+#include <EditorFramework/Settings/QuadViewPreferences.h>
 #include <EditorPluginScene/Commands/SceneCommands.h>
 #include <EditorPluginScene/Dialogs/DeltaTransformDlg.moc.h>
 #include <EditorPluginScene/Objects/SceneObjectManager.h>
@@ -1142,7 +1142,7 @@ void xiiSceneDocument::StoreFavoriteCamera(xiiUInt8 uiSlot)
 {
   XII_ASSERT_DEBUG(uiSlot < 10, "Invalid slot");
 
-  xiiQuadViewPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiQuadViewPreferencesUser>(this);
+  xiiQuadViewPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(this);
   auto&                       cam          = pPreferences->m_FavoriteCamera[uiSlot];
 
   auto* pView = xiiQtEngineViewWidget::GetInteractionContext().m_pLastHoveredViewWidget;
@@ -1157,7 +1157,7 @@ void xiiSceneDocument::StoreFavoriteCamera(xiiUInt8 uiSlot)
     cam.m_vCamUp          = camera.GetCenterDirUp();
 
     // make sure the data gets saved
-    pPreferences->TriggerPreferencesChangedEvent();
+    pPreferences->NotifyChanged();
   }
 }
 
@@ -1165,7 +1165,7 @@ void xiiSceneDocument::RestoreFavoriteCamera(xiiUInt8 uiSlot)
 {
   XII_ASSERT_DEBUG(uiSlot < 10, "Invalid slot");
 
-  xiiQuadViewPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiQuadViewPreferencesUser>(this);
+  xiiQuadViewPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(this);
   auto&                       cam          = pPreferences->m_FavoriteCamera[uiSlot];
 
   auto* pView = xiiQtEngineViewWidget::GetInteractionContext().m_pLastHoveredViewWidget;
