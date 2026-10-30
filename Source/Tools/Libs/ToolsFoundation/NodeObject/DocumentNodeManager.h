@@ -163,8 +163,8 @@ public:
   xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
   /// Editor-only annotation. Stored with graph layout metadata, excluded from
   /// transform hashes. Use xiiSetNodeCommentCommand for document history.
-  xiiStringView        GetNodeComment(const xiiDocumentObject* pObject) const;
-  xiiStatus            SetNodeComment(const xiiDocumentObject* pObject, xiiStringView sComment);
+  xiiStringView                                GetNodeComment(const xiiDocumentObject* pObject) const;
+  xiiStatus                                    SetNodeComment(const xiiDocumentObject* pObject, xiiStringView sComment);
   const xiiMap<xiiUuid, xiiGraphCommentBlock>& GetCommentBlocks() const { return m_CommentBlocks; }
   /// An invalid value removes a block. Use xiiSetGraphCommentBlockCommand for history.
   xiiStatus            SetCommentBlock(const xiiUuid& id, const xiiVariant& value);

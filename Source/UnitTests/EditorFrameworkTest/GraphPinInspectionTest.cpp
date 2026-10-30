@@ -378,7 +378,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     xiiUInt64       beforeHash = 123, afterHash = 123;
     manager->GetMetaDataHash(owner, beforeHash);
     const auto bodyBeforeComment = scene.BodyBounds(owner);
-    QMenu comments;
+    QMenu      comments;
     scene.AddCommentActions(comments, owner);
     XII_TEST_INT(comments.actions().size(), 1);
     QTimer::singleShot(0, [&]() {
@@ -470,9 +470,9 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphCommentBlocks)
   auto*                  manager = static_cast<InspectorNodeManager*>(document.GetObjectManager());
   auto*                  history = document.GetCommandHistory();
   xiiGraphCommentBlock   block;
-  block.m_Id    = xiiUuid::MakeUuid();
+  block.m_Id        = xiiUuid::MakeUuid();
   block.m_vPosition = xiiVec2(-50, -100);
-  block.m_sText = "Surface layering\nKeep related nodes together.";
+  block.m_sText     = "Surface layering\nKeep related nodes together.";
   xiiSetGraphCommentBlockCommand command;
   command.m_Id    = block.m_Id;
   command.m_Value = block.ToVariant();

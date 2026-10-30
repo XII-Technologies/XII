@@ -105,6 +105,22 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
       edit->FinishTransaction();
       const auto compiled = sample->CompileShader();
       XII_TEST_BOOL_MSG(compiled.Succeeded(), "Node '%s' failed: %s", type, compiled.GetMessageString().GetData());
+      if (pin->GetDescriptor()->m_bDynamicNumeric)
+      {
+        edit->StartTransaction("Use vector math input");
+        xiiUuid vector;
+        XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::Constant3"), vector));
+        // Replace the scalar output consumer with a color consumer. Explicit
+        // vector narrowing remains rejected by the graph's connection rules.
+        const auto oldConnections = nodes->GetConnections(*pin);
+        const auto connectionId   = oldConnections[0]->GetParent()->GetGuid();
+        XII_TEST_STATUS(xiiNodeCommands::DisconnectAndRemoveCommand(sample->GetCommandHistory(), connectionId));
+        XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(sample->GetCommandHistory(), nodes->GetConnectionType(), *nodes->GetOutputPins(edit->GetObject(vector))[0], *nodes->GetInputPins(edit->GetObject(value))[0]));
+        XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(sample->GetCommandHistory(), nodes->GetConnectionType(), *pin, *nodes->GetInputPinByName(edit->GetObject(main), "BaseColor")));
+        edit->FinishTransaction();
+        const auto vectorCompiled = sample->CompileShader();
+        XII_TEST_BOOL_MSG(vectorCompiled.Succeeded(), "Vector node '%s' failed: %s", type, vectorCompiled.GetMessageString().GetData());
+      }
     }
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pattern material preserves typed roughness connections")
