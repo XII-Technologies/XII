@@ -268,6 +268,10 @@ void xiiQtContainerWindow::UpdateWindowTitle()
 
 xiiQtDocumentWindow* xiiQtContainerWindow::GetFocusedDocumentWindow() const
 {
+  // An accepted close clears the manager before hiding/deferred deletion can change focus.
+  if (!m_pDockManager)
+    return nullptr;
+
   xiiQtDocumentWindow* pDocumentWindow = nullptr;
   for (auto* pCurrent = QApplication::focusWidget(); pCurrent; pCurrent = pCurrent->parentWidget())
     if ((pDocumentWindow = qobject_cast<xiiQtDocumentWindow*>(pCurrent)) != nullptr)
@@ -441,6 +445,12 @@ void xiiQtContainerWindow::setVisible(bool bVisible)
 
 void xiiQtContainerWindow::closeEvent(QCloseEvent* e)
 {
+  if (!m_pDockManager)
+  {
+    QMainWindow::closeEvent(e);
+    return;
+  }
+
   SaveWindowLayout();
   SaveDocumentLayouts();
 
@@ -469,7 +479,7 @@ void xiiQtContainerWindow::closeEvent(QCloseEvent* e)
     pWindow->ShutdownDocumentWindow();
   }
 
-  // We need to destroy the dock manager here, doing it in the constructor leads to an access violation.
+  // Shut down document windows before deferring destruction of their Qt-owned dock manager.
   m_pDockManager->deleteLater();
   m_pDockManager = nullptr;
   QMainWindow::closeEvent(e);
@@ -514,6 +524,10 @@ void xiiQtContainerWindow::SaveDocumentLayouts()
 
 void xiiQtContainerWindow::RestoreWindowLayout()
 {
+  // A queued layout restore may arrive after closeEvent has released the manager.
+  if (!m_pDockManager)
+    return;
+
   if (m_iWindowLayoutRestoreScheduled > 0)
     --m_iWindowLayoutRestoreScheduled;
   if (m_iWindowLayoutRestoreScheduled > 0)
