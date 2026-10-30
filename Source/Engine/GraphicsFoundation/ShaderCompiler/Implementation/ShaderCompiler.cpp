@@ -274,6 +274,9 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
   xiiUInt32     uiFirstShaderLine = 0;
   xiiStringView sShaderSource     = sections.GetSectionContent(xiiGALShaderSections::Shader, uiFirstShaderLine);
+  xiiUInt32        uiFirstConstantsLine = 0;
+  xiiStringBuilder sMaterialConstants   = sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, uiFirstConstantsLine);
+  sMaterialConstants.Trim(" \t\r\n");
 
   for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
@@ -283,6 +286,16 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
     if (!sStageSource.IsEmpty())
     {
       sTemp.Clear();
+
+      // Source declarations are shared; backend reflection determines which
+      // stages actually use the buffer. Empty sections create no resource.
+      if (!sMaterialConstants.IsEmpty())
+      {
+        sTemp.Append("#include <Shaders/Common/ShaderResourceMacros.h>\n");
+        sTemp.Append("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)\n{\n");
+        sTemp.AppendFormat("#line {0}\n{1}\n", uiFirstConstantsLine, sMaterialConstants);
+        sTemp.Append("};\n");
+      }
 
       // prepend common shader section if there is any
       if (!sShaderSource.IsEmpty())

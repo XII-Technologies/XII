@@ -1,0 +1,31 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[MATERIAL_CONSTANTS]
+float4 Tint;
+FLOAT1(Gain);
+
+[SHADER]
+float EvaluateGain() { return Gain * Tint.r; }
+
+[VERTEX_SHADER]
+float4 main(uint vertex : SV_VertexID) : SV_Position
+{
+  return float4(float2((vertex << 1u) & 2u, vertex & 2u) * 2 - 1, 0, 1);
+}
+
+[PIXEL_SHADER]
+float4 main() : SV_Target0
+{
+  return float4(EvaluateGain(), Tint.gba);
+}
+
+[COMPUTE_SHADER]
+RWStructuredBuffer<float> Output;
+[numthreads(1, 1, 1)]
+void main(uint3 thread : SV_DispatchThreadID)
+{
+  Output[thread.x] = EvaluateGain();
+}
