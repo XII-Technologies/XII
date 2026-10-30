@@ -17,6 +17,10 @@ xiiQtPluginSelectionWidget::xiiQtPluginSelectionWidget(QWidget* pParent) :
   dummy = nullptr;
   gridLayout->addWidget(m_pCategory, 0, 1);
   connect(m_pCategory, &QComboBox::currentIndexChanged, this, [this]() { Filter(m_Filter); });
+  connect(LoadCopy, &QCheckBox::toggled, this, [this](bool checked) {
+    if (auto* pItem = PluginsList->currentItem(); pItem && !m_bReadOnly)
+      m_States[PluginsList->row(pItem)].m_bLoadCopy = checked;
+  });
 }
 
 xiiQtPluginSelectionWidget::~xiiQtPluginSelectionWidget() = default;
@@ -113,6 +117,9 @@ void xiiQtPluginSelectionWidget::on_PluginsList_currentItemChanged(QListWidgetIt
     const auto& info     = *state.m_pInfo;
     QString     metadata = tr("Bundle: %1\n%2\n\n").arg(xiiMakeQString(state.m_sID), current->toolTip());
     metadata += xiiMakeQString(info.m_sDescription);
+    metadata += info.m_bMandatory ? tr("\nRequirement: Mandatory") : state.m_bIsDependency ? tr("\nRequirement: Dependency of a requested bundle") :
+      state.m_bSelected                                                                    ? tr("\nRequirement: Requested by this project") :
+                                                                                             tr("\nRequirement: Not requested");
     auto append = [&](const QString& label, const auto& values) {
       QStringList names;
       for (const auto& name : values)
@@ -126,11 +133,12 @@ void xiiQtPluginSelectionWidget::on_PluginsList_currentItemChanged(QListWidgetIt
     append(tr("Requires: "), info.m_RequiredBundles);
     DescriptionText->setPlainText(metadata);
     LoadCopy->setChecked(state.m_bLoadCopy);
-    LoadCopy->setEnabled(!m_bReadOnly && !info.m_RuntimePlugins.IsEmpty() && !info.m_bMissing);
+    LoadCopy->setEnabled(!m_bReadOnly && state.m_bSelected && !info.m_bMandatory && !info.m_RuntimePlugins.IsEmpty() && !info.m_bMissing);
   }
   else
   {
     LoadCopy->setEnabled(false);
+    DescriptionText->clear();
   }
 }
 
@@ -161,6 +169,7 @@ void xiiQtPluginSelectionWidget::on_Template_currentIndexChanged(int index)
 
 void xiiQtPluginSelectionWidget::UpdateInternalState()
 {
+  const QSignalBlocker blocker(PluginsList);
   for (auto& s : m_States)
   {
     s.m_bIsDependency = false;
@@ -173,8 +182,6 @@ void xiiQtPluginSelectionWidget::UpdateInternalState()
       ApplyRequired(s.m_pInfo->m_RequiredBundles);
     }
   }
-
-  PluginsList->blockSignals(true);
 
   xiiSet<xiiString, xiiCompareString_NoCase> exclusiveFeatures;
 
@@ -221,7 +228,6 @@ void xiiQtPluginSelectionWidget::UpdateInternalState()
     pItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
   }
 
-  PluginsList->blockSignals(false);
   if (m_bReadOnly)
     for (int row = 0; row < PluginsList->count(); ++row)
       PluginsList->item(row)->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
@@ -251,8 +257,9 @@ void xiiQtPluginSelectionWidget::ApplyRequired(xiiArrayPtr<xiiString> required)
 
 void xiiQtPluginSelectionWidget::Filter(const QString& text)
 {
-  m_Filter         = text;
-  const auto terms = text.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+  m_Filter               = text;
+  const auto terms       = text.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+  int        iFirstMatch = -1;
   for (xiiUInt32 i = 0; i < m_States.GetCount(); ++i)
   {
     const auto&   state      = m_States[i];
@@ -280,7 +287,13 @@ void xiiQtPluginSelectionWidget::Filter(const QString& text)
         break;
     }
     pItem->setHidden(!matches);
+    if (matches && iFirstMatch < 0)
+      iFirstMatch = static_cast<int>(i);
   }
+  if (auto* pCurrent = PluginsList->currentItem(); pCurrent == nullptr || pCurrent->isHidden())
+    PluginsList->setCurrentRow(iFirstMatch);
+  // Update may run while list signals are blocked; never leave hidden entries editable.
+  on_PluginsList_currentItemChanged(PluginsList->currentItem(), nullptr);
 }
 
 void xiiQtPluginSelectionWidget::SetReadOnly(bool bReadOnly)

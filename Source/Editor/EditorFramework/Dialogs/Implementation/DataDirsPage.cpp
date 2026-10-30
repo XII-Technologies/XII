@@ -155,6 +155,6 @@ xiiResult xiiQtDataDirsPage::ApplyChanges()
     return XII_SUCCESS;
   XII_SUCCEED_OR_RETURN(m_Config.CreateDataDirStubFiles());
   XII_SUCCEED_OR_RETURN(m_Config.Save());
-  pEditor->SetFileSystemConfig(m_Config);
+  pEditor->SetFileSystemConfig(m_Config, false);
   return XII_SUCCESS;
 }

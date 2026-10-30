@@ -304,7 +304,13 @@ XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
     XII_TEST_BOOL(xiiEditorSettings::SaveSettings(pRecovered).Failed());
     xiiEditorSettings::ClearDocumentSettings(&first);
   }
-  xiiToolsProject::CloseProject();
+  {
+    xiiQtConfigurationDlg dialog(nullptr);
+    dialog.SelectSection(xiiQtConfigurationDlg::Section::ProjectSettings, "Input Actions");
+    QPointer<QWidget> pPage = dialog.Pages->currentWidget();
+    xiiToolsProject::CloseProject();
+    XII_TEST_BOOL(dialog.Properties == nullptr && pPage == nullptr);
+  }
   xiiStringBuilder otherProject(root, "/OtherProject/xiiProject");
   // The editor deliberately launches a separate process for a second project. Exercise the
   // preferences owner's scope transition directly without launching another user-facing editor.

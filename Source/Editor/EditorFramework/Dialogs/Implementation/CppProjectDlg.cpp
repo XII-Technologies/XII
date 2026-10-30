@@ -31,7 +31,7 @@ xiiQtCppProjectDlg::xiiQtCppProjectDlg(QWidget* pParent) :
   {
     // TODO: how do I color the ErrorText label in Red (or whatever error color is configured?)
     xiiStringBuilder fmt;
-    ErrorText->setText(xiiMakeQString(xiiFmt("<html><b>Error:</b> {}<br>Please go to preferences and configure the C & C++ compiler.", compilerTestResult.GetMessageString()).GetText(fmt)));
+    ErrorText->setText(xiiMakeQString(xiiFmt("<html><b>Error:</b> {}<br>Configure the C & C++ compiler in Edit &gt; Configuration &gt; Editor Preferences &gt; Editor &gt; C++ Projects.", compilerTestResult.GetMessageString()).GetText(fmt)));
     GenerateSolution->setDisabled(true);
   }
 

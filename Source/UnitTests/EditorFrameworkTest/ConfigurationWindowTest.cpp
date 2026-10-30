@@ -9,6 +9,8 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Settings/EditorPreferences.h>
+#include <Foundation/IO/MemoryStream.h>
+#include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/Action/ActionMapManager.h>
@@ -218,6 +220,16 @@ void TestConfigurationNavigation(xiiStringView sProjectDirectory)
     XII_TEST_RESULT(dialog.ApplyAllChanges());
     XII_TEST_BOOL(pEditor->GetPluginBundles().m_Plugins["ConfigurationTest"].m_bSelected);
     XII_TEST_BOOL(ReadFile(pluginsPath).contains("ConfigurationTest"));
+    XII_TEST_BOOL(pEditor->GetRestartRequiredReasons().Find("The set of active plugins has changed.").IsValid());
+  }
+  {
+    xiiQtConfigurationDlg dialog(nullptr, nullptr, Section::ProjectSettings);
+    dialog.SelectSection(Section::ProjectSettings, "Platform and Asset Profiles");
+    QPointer<QWidget> pPage = dialog.Pages->currentWidget();
+    xiiPlugin::BeginPluginChanges();
+    XII_TEST_BOOL(dialog.Properties == nullptr);
+    XII_TEST_BOOL(pPage == nullptr);
+    xiiPlugin::EndPluginChanges();
   }
 }
 
@@ -235,6 +247,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, PluginDependenciesAndFiltering)
   b.m_sDisplayName = "Runtime Physics";
   b.m_RuntimePlugins.PushBack("Physics");
   b.m_RequiredBundles.PushBack("A");
+  xiiPluginBundleSet         empty;
   xiiQtPluginSelectionWidget widget(nullptr);
   widget.SetPluginSet(&bundles);
   widget.SetPluginSet(&bundles);
@@ -253,10 +266,25 @@ XII_CREATE_SIMPLE_TEST(Configuration, PluginDependenciesAndFiltering)
   a.m_ExclusiveFeatures.PushBack("Physics");
   b.m_ExclusiveFeatures.PushBack("Physics");
   XII_TEST_BOOL(widget.ValidateSelection(reason).Failed());
-  xiiPluginBundleSet empty;
+  widget.SetReadOnly(true);
+  XII_TEST_BOOL(!widget.PluginsList->item(0)->flags().testFlag(Qt::ItemIsUserCheckable));
+  widget.PluginsList->setCurrentRow(0);
+  XII_TEST_BOOL(!widget.DescriptionText->toPlainText().isEmpty());
+  widget.Filter(QStringLiteral("no matching plugin"));
+  XII_TEST_BOOL(widget.PluginsList->currentItem() == nullptr);
+  XII_TEST_BOOL(widget.DescriptionText->toPlainText().isEmpty());
+  XII_TEST_BOOL(!widget.LoadCopy->isEnabled());
   widget.SetPluginSet(&empty);
   widget.SetReadOnly(true);
   widget.Filter(QStringLiteral("unavailable"));
   XII_TEST_INT(widget.PluginsList->count(), 0);
   XII_TEST_RESULT(widget.ValidateSelection(reason));
+  const xiiStringView      ddl = "PluginState { string %ID { \"OtherProject\" } bool %Selected { true } }";
+  xiiRawMemoryStreamReader stream(ddl.GetStartPointer(), ddl.GetElementCount());
+  xiiOpenDdlReader         reader;
+  XII_TEST_RESULT(reader.ParseDocument(stream));
+  a.m_bSelected = true;
+  a.m_bLoadCopy = true;
+  a.ReadStateFromDDL(reader, "A");
+  XII_TEST_BOOL(!a.m_bSelected && !a.m_bLoadCopy);
 }

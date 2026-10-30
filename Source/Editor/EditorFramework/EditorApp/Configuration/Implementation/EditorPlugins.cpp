@@ -23,6 +23,7 @@ void xiiPluginBundle::WriteStateToDDL(xiiOpenDdlWriter& ref_ddl, xiiStringView s
 void xiiPluginBundle::ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, xiiStringView sOwnName)
 {
   m_bSelected = false;
+  m_bLoadCopy = false;
 
   auto pState = ref_ddl.GetRootElement()->FindChildOfType("PluginState");
   while (pState)

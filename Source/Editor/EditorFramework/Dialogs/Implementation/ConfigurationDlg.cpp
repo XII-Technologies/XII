@@ -273,8 +273,11 @@ void xiiQtConfigurationDlg::SelectionChanged()
   bool bRestart = false;
   if (pObject)
   {
-    const auto* pType = pObject->GetType();
-    bRestart          = pType->GetAttributeByType<xiiSettingsRestartAttribute>() != nullptr;
+    const auto* pType   = pObject->GetType();
+    const auto* pScope  = pType->GetAttributeByType<xiiSettingsScopeAttribute>();
+    const bool  bShared = !pType->IsDerivedFrom<xiiEditorSettings>() && pScope && pScope->GetScope() == xiiSettingsScope::Project;
+    Description->setText(bShared ? tr("Shared settings stored with the current project. Apply saves changes for this project.") : tr("Preferences for this user. Project and document preferences remain specific to their labeled context."));
+    bRestart = pType->GetAttributeByType<xiiSettingsRestartAttribute>() != nullptr;
     xiiHybridArray<const xiiAbstractProperty*, 32> properties;
     pType->GetAllProperties(properties);
     for (const auto* pProperty : properties)
@@ -506,7 +509,13 @@ QWidget* xiiQtConfigurationDlg::CreatePage(int iPage)
         if (cpp.Load().Succeeded())
           pEditor->DetectAvailablePluginBundles(xiiCppProject::GetPluginSourceDir(cpp));
       }
-      m_Plugins        = pEditor->GetPluginBundles();
+      m_Plugins = pEditor->GetPluginBundles();
+      if (!xiiToolsProject::IsProjectOpen())
+        for (auto& bundle : m_Plugins.m_Plugins)
+        {
+          bundle.Value().m_bSelected = false;
+          bundle.Value().m_bLoadCopy = false;
+        }
       auto* pSelection = new xiiQtPluginSelectionWidget(Pages);
       pSelection->SetPluginSet(&m_Plugins);
       pSelection->SetReadOnly(!xiiToolsProject::IsProjectOpen());
@@ -598,12 +607,12 @@ xiiResult xiiQtConfigurationDlg::ApplyPages()
           selection.WriteStateToDDL(ddl);
           XII_SUCCEED_OR_RETURN(file.Close());
           pEditor->GetPluginBundles() = selection;
-          pEditor->AddRestartRequiredReason("The set of active plugins has changed.");
+          pEditor->AddRestartRequiredReason("The set of active plugins has changed.", false);
         }
         break;
       }
     }
-    bProjectChanged |= page != Shortcuts;
+    bProjectChanged |= page == Input || page == Tags || page == Profiles;
     m_ModifiedPages.remove(pWidget);
   }
   if (bProjectChanged)

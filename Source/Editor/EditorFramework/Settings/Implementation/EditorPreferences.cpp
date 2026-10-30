@@ -33,7 +33,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("RotationSnap", m_RotationSnapValue)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(15.0f)), new xiiGroupAttribute("Snapping")),
     XII_MEMBER_PROPERTY("ScaleSnap", m_fScaleSnapValue)->AddAttributes(new xiiDefaultValueAttribute(0.125f), new xiiGroupAttribute("Snapping")),
     XII_MEMBER_PROPERTY("TranslationSnap", m_fTranslationSnapValue)->AddAttributes(new xiiDefaultValueAttribute(0.25f), new xiiGroupAttribute("Snapping")),
-    XII_MEMBER_PROPERTY("UsePrecompiledTools", m_bUsePrecompiledTools)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("UsePrecompiledTools", m_bUsePrecompiledTools)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiGroupAttribute("Editor")),
     XII_MEMBER_PROPERTY("CustomPrecompiledToolsFolder", m_sCustomPrecompiledToolsFolder),
     XII_MEMBER_PROPERTY("ExpandSceneTreeOnSelection", m_bExpandSceneTreeOnSelection)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ClearEditorLogsOnPlay", m_bClearEditorLogsOnPlay)->AddAttributes(new xiiDefaultValueAttribute(true)),
