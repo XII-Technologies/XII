@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Containers/Map.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+
+#include <Foundation/Containers/Map.h>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <ToolsFoundation/Factory/RttiMappedObjectFactory.h>
@@ -51,6 +52,10 @@ public:
   xiiStatus ArrangeNodes(NodeArrangement arrangement, bool bWholeGraph = false);
   /// Add shared formatting and alignment actions to a graph menu.
   void AddArrangementActions(QMenu& menu);
+  /// Shared annotation editing for every node document. A single transaction
+  /// participates in ordinary document undo/redo and persistence.
+  xiiStatus SetNodeComment(const xiiDocumentObject* pNode, xiiStringView sComment);
+  void      AddCommentActions(QMenu& menu, const xiiDocumentObject* pNode);
 
 Q_SIGNALS:
   /// Emitted after a successful full-graph format so attached views can frame the result.

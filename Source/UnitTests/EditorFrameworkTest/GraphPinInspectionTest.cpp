@@ -13,11 +13,14 @@
 #include <QApplication>
 #include <QDoubleSpinBox>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsTextItem>
 #include <QImage>
+#include <QInputDialog>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QMenu>
 #include <QPainter>
+#include <QTimer>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -149,6 +152,15 @@ namespace
     {
       auto* node = m_Nodes.Find(object).Value();
       return node->mapRectToScene(node->boundingRect().united(node->childrenBoundingRect()));
+    }
+    bool HasComment(const xiiDocumentObject* object, xiiStringView text) const
+    {
+      const auto* node = m_Nodes.Find(object).Value();
+      for (const auto* item : node->childItems())
+        if (const auto* label = dynamic_cast<const QGraphicsTextItem*>(item))
+          if (label->isVisible() && label->toPlainText() == QString::fromUtf8(text.GetStartPointer(), text.GetElementCount()))
+            return true;
+      return false;
     }
     xiiQtPin* FindPin(const xiiDocumentObject* object, bool input)
     {
@@ -327,21 +339,45 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Node copy and paste remap owned pin properties and preserve their values")
   {
-    xiiSetNodeCommentCommand comment;
-    comment.m_Object     = owner->GetGuid();
-    comment.m_sComment   = "Shared graph annotation\nKeep the source in linear space. <plain text>";
+    const xiiString comment    = "Shared graph annotation\nKeep the source in linear space. <plain text>";
     xiiUInt64 beforeHash = 123, afterHash = 123;
     manager->GetMetaDataHash(owner, beforeHash);
-    accessor->StartTransaction("Comment graph node");
-    XII_TEST_STATUS(document.GetCommandHistory()->AddCommand(comment));
-    accessor->FinishTransaction();
-    XII_TEST_STRING(manager->GetNodeComment(owner), comment.m_sComment);
+    QMenu comments;
+    scene.AddCommentActions(comments, owner);
+    XII_TEST_INT(comments.actions().size(), 1);
+    QTimer::singleShot(0, [&]() {
+      if (auto* dialog = qobject_cast<QInputDialog*>(QApplication::activeModalWidget()))
+      {
+        dialog->setTextValue(QString::fromUtf8(comment.GetData()));
+        dialog->accept();
+      }
+    });
+    comments.actions()[0]->trigger();
+    XII_TEST_STRING(manager->GetNodeComment(owner), comment);
+    XII_TEST_BOOL(scene.HasComment(owner, comment));
+    {
+      QImage capture(720, 420, QImage::Format_ARGB32_Premultiplied);
+      capture.fill(QColor(32, 34, 38));
+      QPainter painter(&capture);
+      painter.setRenderHint(QPainter::Antialiasing);
+      scene.render(&painter, QRectF(15, 15, 690, 390), scene.Bounds(owner).adjusted(-15, -15, 15, 15), Qt::KeepAspectRatio);
+      painter.end();
+      XII_TEST_BOOL(capture.save(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/GraphComment.png").GetData()));
+    }
     manager->GetMetaDataHash(owner, afterHash);
     XII_TEST_INT(beforeHash, afterHash);
     XII_TEST_STATUS(document.GetCommandHistory()->Undo());
     XII_TEST_BOOL(manager->GetNodeComment(owner).IsEmpty());
+    XII_TEST_BOOL(!scene.HasComment(owner, comment));
     XII_TEST_STATUS(document.GetCommandHistory()->Redo());
-    XII_TEST_STRING(manager->GetNodeComment(owner), comment.m_sComment);
+    XII_TEST_STRING(manager->GetNodeComment(owner), comment);
+    XII_TEST_BOOL(scene.HasComment(owner, comment));
+    QMenu removeComment;
+    scene.AddCommentActions(removeComment, owner);
+    XII_TEST_INT(removeComment.actions().size(), 2);
+    removeComment.actions()[1]->trigger();
+    XII_TEST_BOOL(manager->GetNodeComment(owner).IsEmpty());
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
     document.GetSelectionManager()->SetSelection(owner);
     xiiAbstractObjectGraph graph;
     XII_TEST_BOOL(manager->CopySelectedObjects(graph));

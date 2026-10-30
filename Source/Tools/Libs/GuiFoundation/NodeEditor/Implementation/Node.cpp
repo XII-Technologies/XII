@@ -44,6 +44,10 @@ xiiQtNode::xiiQtNode()
   {
     m_pIcon = new QGraphicsPixmapItem(this);
   }
+  m_pCommentLabel = new QGraphicsTextItem(this);
+  m_pCommentLabel->setFont(QApplication::font());
+  m_pCommentLabel->setTextWidth(280);
+  m_pCommentLabel->setAcceptedMouseButtons(Qt::NoButton);
 
   m_HeaderColor = palette.alternateBase().color();
 }
@@ -93,6 +97,9 @@ void xiiQtNode::InitNode(const xiiDocumentNodeManager* pManager, const xiiDocume
 void xiiQtNode::UpdateGeometry()
 {
   prepareGeometryChange();
+  const auto comment = m_pManager->GetNodeComment(m_pObject);
+  m_pCommentLabel->setPlainText(xiiMakeQString(comment));
+  m_pCommentLabel->setVisible(!comment.IsEmpty());
 
   QRectF iconRect = m_pIcon->boundingRect();
   iconRect.moveTo(m_pIcon->pos());
@@ -156,6 +163,12 @@ void xiiQtNode::UpdateGeometry()
   w                     = xiiMath::Max(w, headerWidth);
 
   maxheight = xiiMath::Max(maxheight, y);
+  if (!comment.IsEmpty())
+  {
+    w = xiiMath::Max(w, 290);
+    m_pCommentLabel->setPos(5, maxheight + 5);
+    maxheight += static_cast<int>(m_pCommentLabel->boundingRect().height()) + 10;
+  }
 
   // Align outputs to the right
   for (xiiUInt32 i = 0; i < m_Outputs.GetCount(); ++i)
