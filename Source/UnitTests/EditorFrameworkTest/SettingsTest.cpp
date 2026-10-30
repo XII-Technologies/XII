@@ -2,11 +2,12 @@
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 
-#include <EditorFramework/Dialogs/AssetProfilesDlg.moc.h>
-#include <EditorFramework/Dialogs/PreferencesDlg.moc.h>
+#include <EditorFramework/Dialogs/AssetProfilesPage.moc.h>
+#include <EditorFramework/Dialogs/ConfigurationDlg.moc.h>
+#include <EditorFramework/Dialogs/PluginSelectionWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
@@ -93,7 +94,7 @@ namespace
     xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiDocumentInfo); }
   };
 
-  xiiDocumentObject* FindSettingsObject(xiiQtPreferencesDlg& dialog, const xiiRTTI* pType)
+  xiiDocumentObject* FindSettingsObject(xiiQtConfigurationDlg& dialog, const xiiRTTI* pType)
   {
     auto* pDocument = const_cast<xiiDocument*>(dialog.Properties->GetDocument());
     for (const auto* pObject : pDocument->GetObjectManager()->GetRootObject()->GetChildren())
@@ -102,7 +103,7 @@ namespace
     return nullptr;
   }
 
-  void EditValue(xiiQtPreferencesDlg& dialog, xiiInt32 iValue)
+  void EditValue(xiiQtConfigurationDlg& dialog, xiiInt32 iValue)
   {
     auto* pObject = FindSettingsObject(dialog, xiiGetStaticRTTI<xiiEditorTestSettings>());
     if (!XII_TEST_BOOL(pObject != nullptr))
@@ -117,6 +118,7 @@ namespace
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorSettings);
+void TestConfigurationNavigation(xiiStringView sProjectDirectory);
 XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
 {
   auto*           pEditor      = xiiQtEditorApp::GetSingleton();
@@ -129,25 +131,33 @@ XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
   pEditor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, root);
   XII_SCOPE_EXIT(pEditor->ShutdownEditor());
 
-  xiiDynamicArray<xiiPreferences::Settings> discovered;
-  xiiPreferences::GatherSettings(discovered);
+  {
+    xiiQtConfigurationDlg dialog(nullptr, nullptr, xiiQtConfigurationDlg::Section::Plugins);
+    auto*                 pPlugins = dialog.findChild<xiiQtPluginSelectionWidget*>();
+    XII_TEST_BOOL(pPlugins != nullptr && !pPlugins->Template->isEnabled());
+    XII_TEST_INT(dialog.Tree->topLevelItem(0)->childCount(), 0);
+    dialog.ButtonCancel->click();
+  }
+
+  xiiDynamicArray<xiiEditorSettings::Settings> discovered;
+  xiiEditorSettings::GatherSettings(discovered);
   bool bFound = false;
   for (const auto& entry : discovered)
   {
     bFound |= entry.m_pSettings->GetDynamicRTTI() == xiiGetStaticRTTI<xiiEditorTestSettings>();
-    XII_TEST_BOOL(entry.m_Domain == xiiPreferences::Domain::Application);
+    XII_TEST_BOOL(entry.m_Domain == xiiEditorSettings::Domain::Application);
   }
   XII_TEST_BOOL(bFound);
-  XII_TEST_BOOL(xiiPreferences::QuerySettings<xiiEditorTestProjectSettings>() == nullptr);
-  XII_TEST_BOOL(xiiPreferences::QuerySettings<xiiEditorTestDocumentSettings>() == nullptr);
-  auto* pLive                                        = xiiPreferences::QuerySettings<xiiEditorTestSettings>();
+  XII_TEST_BOOL(xiiEditorSettings::QuerySettings<xiiEditorTestProjectSettings>() == nullptr);
+  XII_TEST_BOOL(xiiEditorSettings::QuerySettings<xiiEditorTestDocumentSettings>() == nullptr);
+  auto* pLive                                        = xiiEditorSettings::QuerySettings<xiiEditorTestSettings>();
   pLive->m_iValue                                    = 3;
   xiiUInt32                            notifications = 0;
   xiiEvent<xiiSettings*>::Unsubscriber subscription;
   pLive->m_SettingsChangedEvent.AddEventHandler([&](xiiSettings*) { ++notifications; }, subscription);
 
   {
-    xiiQtPreferencesDlg dialog(nullptr);
+    xiiQtConfigurationDlg dialog(nullptr);
     for (QTreeWidgetItemIterator it(dialog.Tree); *it; ++it)
       if ((*it)->text(0) == QStringLiteral("General"))
         dialog.Tree->setCurrentItem(*it);
@@ -162,10 +172,10 @@ XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
     XII_TEST_INT(pLive->m_iValue, 3);
   }
   {
-    xiiQtPreferencesDlg dialog(nullptr);
+    xiiQtConfigurationDlg dialog(nullptr);
     EditValue(dialog, 7);
     dialog.ButtonApply->click();
-    XII_TEST_BOOL(xiiQtTypeMenu::s_pRecentList == &xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>()->m_RecentlyCreatedTypes);
+    XII_TEST_BOOL(xiiQtTypeMenu::s_pRecentList == &xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>()->m_RecentlyCreatedTypes);
     XII_TEST_INT(pLive->m_iValue, 7);
     XII_TEST_INT(notifications, 1);
     XII_TEST_RESULT(dialog.ApplyAllChanges());
@@ -184,7 +194,7 @@ XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
       XII_TEST_BOOL(dialog.Tree->topLevelItem(i)->isHidden());
   }
   {
-    xiiQtPreferencesDlg dialog(nullptr);
+    xiiQtConfigurationDlg dialog(nullptr);
     EditValue(dialog, 99);
     XII_TEST_BOOL(dialog.ApplyAllChanges().Failed());
     XII_TEST_INT(pLive->m_iValue, 7);
@@ -201,13 +211,13 @@ XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
   }
   subscription.Unsubscribe();
   {
-    xiiQtPreferencesDlg dialog(nullptr);
+    xiiQtConfigurationDlg dialog(nullptr);
     dialog.ButtonOk->click();
     XII_TEST_INT(dialog.result(), QDialog::Accepted);
     XII_TEST_INT(pLive->m_iValue, 7);
   }
   {
-    xiiQtPreferencesDlg dialog(nullptr);
+    xiiQtConfigurationDlg dialog(nullptr);
     xiiPlugin::BeginPluginChanges();
     XII_TEST_BOOL(dialog.Properties == nullptr);
     XII_TEST_BOOL(!dialog.ButtonApply->isEnabled());
@@ -226,41 +236,58 @@ XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
   if (!XII_TEST_RESULT(pEditor->CreateOrOpenProject(true, project)))
     return;
   {
-    xiiQtAssetProfilesDlg dialog(nullptr);
+    xiiEditorTestProjectSettings previous;
+    previous.m_iValue = 6;
+    const xiiStringBuilder oldPath(xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder(), "/Settings_xiiEditorTestProjectSettings.pref");
+    {
+      xiiFileWriter file;
+      XII_TEST_RESULT(file.Open(oldPath));
+      xiiReflectionSerializer::WriteObjectToDDL(file, previous.GetDynamicRTTI(), &previous);
+    }
+    auto* pShared = xiiEditorSettings::QuerySettings<xiiEditorTestProjectSettings>();
+    XII_TEST_INT(pShared->m_iValue, 6);
+    XII_TEST_RESULT(xiiEditorSettings::SaveSettings(pShared));
+    const xiiStringBuilder sharedPath(project.GetFileDirectory(), "/Editor/Settings/Settings_xiiEditorTestProjectSettings.pref");
+    XII_TEST_BOOL(xiiOSFile::ExistsFile(sharedPath));
+    XII_TEST_BOOL(xiiOSFile::ExistsFile(oldPath));
+  }
+  TestConfigurationNavigation(project.GetFileDirectory());
+  {
+    xiiQtAssetProfilesPage dialog(nullptr);
     xiiPlugin::BeginPluginChanges();
     XII_TEST_BOOL(dialog.Tree == nullptr && dialog.Properties == nullptr);
     xiiPlugin::EndPluginChanges();
   }
   SettingsTestDocument first(xiiStringBuilder(root, "/First.asset"));
   SettingsTestDocument second(xiiStringBuilder(root, "/Second.asset"));
-  auto*                pFirst  = xiiPreferences::QuerySettings<xiiEditorTestDocumentSettings>(&first);
-  auto*                pSecond = xiiPreferences::QuerySettings<xiiEditorTestDocumentSettings>(&second);
+  auto*                pFirst  = xiiEditorSettings::QuerySettings<xiiEditorTestDocumentSettings>(&first);
+  auto*                pSecond = xiiEditorSettings::QuerySettings<xiiEditorTestDocumentSettings>(&second);
   XII_TEST_BOOL(pFirst != nullptr && pSecond != nullptr && pFirst != pSecond);
   pFirst->m_iValue = 9;
   XII_TEST_INT(pSecond->m_iValue, 3);
-  XII_TEST_RESULT(xiiPreferences::SaveSettings(pFirst));
-  xiiPreferences::ClearDocumentPreferences(&first);
-  pFirst = xiiPreferences::QuerySettings<xiiEditorTestDocumentSettings>(&first);
+  XII_TEST_RESULT(xiiEditorSettings::SaveSettings(pFirst));
+  xiiEditorSettings::ClearDocumentSettings(&first);
+  pFirst = xiiEditorSettings::QuerySettings<xiiEditorTestDocumentSettings>(&first);
   XII_TEST_INT(pFirst->m_iValue, 9);
-  xiiPreferences::GatherSettings(discovered, &first);
+  xiiEditorSettings::GatherSettings(discovered, &first);
   for (const auto& entry : discovered)
   {
     XII_TEST_BOOL(entry.m_pDocument == nullptr || entry.m_pDocument == &first);
     XII_TEST_BOOL(entry.m_pSettings->GetDynamicRTTI() != xiiGetStaticRTTI<xiiScenePreferencesUser>());
   }
-  auto* pProject = xiiPreferences::QuerySettings<xiiEditorTestProjectSettings>();
+  auto* pProject = xiiEditorSettings::QuerySettings<xiiEditorTestProjectSettings>();
   XII_TEST_BOOL(pProject != nullptr);
   pProject->m_iValue = 4;
   {
-    xiiQtPreferencesDlg dialog(nullptr, &first);
-    xiiPreferences::ClearDocumentPreferences(&second);
+    xiiQtConfigurationDlg dialog(nullptr, &first);
+    xiiEditorSettings::ClearDocumentSettings(&second);
     XII_TEST_BOOL(dialog.Properties != nullptr);
-    xiiPreferences::ClearDocumentPreferences(&first);
+    xiiEditorSettings::ClearDocumentSettings(&first);
     XII_TEST_BOOL(dialog.Properties == nullptr);
     XII_TEST_INT(dialog.Tree->topLevelItemCount(), 0);
     XII_TEST_BOOL(dialog.ApplyAllChanges().Failed());
   }
-  xiiPreferences::ClearDocumentPreferences(&second);
+  xiiEditorSettings::ClearDocumentSettings(&second);
   {
     const xiiStringBuilder path(xiiApplicationServices::GetSingleton()->GetDocumentPreferencesFolder(&first), "/Settings_xiiEditorTestDocumentSettings.pref");
     {
@@ -272,18 +299,24 @@ XII_CREATE_SIMPLE_TEST(EditorSettings, DiscoveryEditingAndPersistence)
     xiiTestLogInterface   log;
     xiiTestLogSystemScope scope(&log);
     log.ExpectMessage("Invalid settings", xiiLogMsgType::WarningMsg);
-    auto* pRecovered = xiiPreferences::QuerySettings<xiiEditorTestDocumentSettings>(&first);
+    auto* pRecovered = xiiEditorSettings::QuerySettings<xiiEditorTestDocumentSettings>(&first);
     XII_TEST_INT(pRecovered->m_iValue, 3);
-    XII_TEST_BOOL(xiiPreferences::SaveSettings(pRecovered).Failed());
-    xiiPreferences::ClearDocumentPreferences(&first);
+    XII_TEST_BOOL(xiiEditorSettings::SaveSettings(pRecovered).Failed());
+    xiiEditorSettings::ClearDocumentSettings(&first);
   }
-  xiiToolsProject::CloseProject();
+  {
+    xiiQtConfigurationDlg dialog(nullptr);
+    dialog.SelectSection(xiiQtConfigurationDlg::Section::ProjectSettings, "Input Actions");
+    QPointer<QWidget> pPage = dialog.Pages->currentWidget();
+    xiiToolsProject::CloseProject();
+    XII_TEST_BOOL(dialog.Properties == nullptr && pPage == nullptr);
+  }
   xiiStringBuilder otherProject(root, "/OtherProject/xiiProject");
   // The editor deliberately launches a separate process for a second project. Exercise the
   // preferences owner's scope transition directly without launching another user-facing editor.
   if (XII_TEST_STATUS(xiiToolsProject::CreateProject(otherProject)))
   {
-    pProject = xiiPreferences::QuerySettings<xiiEditorTestProjectSettings>();
+    pProject = xiiEditorSettings::QuerySettings<xiiEditorTestProjectSettings>();
     if (XII_TEST_BOOL(pProject != nullptr))
       XII_TEST_INT(pProject->m_iValue, 3);
     xiiToolsProject::CloseProject();

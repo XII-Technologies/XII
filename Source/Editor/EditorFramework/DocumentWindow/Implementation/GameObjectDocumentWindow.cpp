@@ -10,8 +10,8 @@
 #include <EditorFramework/Gizmos/TranslateGizmo.h>
 #include <EditorFramework/InputContexts/CameraMoveContext.h>
 #include <EditorFramework/Manipulators/ManipulatorAdapterRegistry.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 
 xiiQtGameObjectDocumentWindow::xiiQtGameObjectDocumentWindow(xiiGameObjectDocument* pDocument) :
   xiiQtEngineDocumentWindow(pDocument)
@@ -58,7 +58,7 @@ xiiGridSettingsMsgToEngine xiiQtGameObjectDocumentWindow::GetGridSettings() cons
     xiiManipulatorAdapterRegistry::GetSingleton()->QueryGridSettings(GetDocument(), msg);
   }
 
-  const auto* preferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument());
+  const auto* preferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetDocument());
   if (preferences->GetShowGrid() && msg.m_vGridTangent1.IsZero())
   {
     // A scene grid must remain visible without a selection or an active gizmo.

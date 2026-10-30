@@ -26,7 +26,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiPluginBundle
   xiiTimestamp m_LastModificationTime;
 
   // General Bundle Description
-  bool                         m_bMandatory = false;  ///< if set, the bundle is always used and not even displayed in the UI
+  bool                         m_bMandatory = false;  ///< If set, the bundle is always used and shown as a fixed requirement in the UI.
   xiiString                    m_sDisplayName;        ///< The string for displaying the bundle in UI
   xiiString                    m_sDescription;        ///< A proper description what this bundle is for, so that users know when to use it.
   xiiHybridArray<xiiString, 1> m_EditorPlugins;       ///< List of all the DLLs (without extension) to load into the editor process.

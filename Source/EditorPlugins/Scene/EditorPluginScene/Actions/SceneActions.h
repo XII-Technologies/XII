@@ -7,7 +7,7 @@
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 
-class xiiPreferences;
+class xiiEditorSettings;
 
 ///
 class XII_EDITORPLUGINSCENE_DLL xiiSceneActions

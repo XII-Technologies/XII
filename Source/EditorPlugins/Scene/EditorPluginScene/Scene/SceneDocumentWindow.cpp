@@ -6,7 +6,7 @@
 
 #include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <EditorPluginScene/Panels/ScenegraphPanel/ScenegraphPanel.moc.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <EditorPluginScene/Scene/SceneDocumentWindow.moc.h>
@@ -40,7 +40,7 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
     m_pDockManager->setCentralWidget(pViewPanel);
   }
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
   SetTargetFrameRate(pPreferences->GetMaxFramerate());
 
   {

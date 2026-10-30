@@ -4,11 +4,23 @@
 
 #include <EditorFramework/Dialogs/PluginSelectionWidget.moc.h>
 #include <EditorFramework/EditorApp/Configuration/Plugins.h>
+#include <QSignalBlocker>
 
 xiiQtPluginSelectionWidget::xiiQtPluginSelectionWidget(QWidget* pParent) :
   QWidget(pParent)
 {
   setupUi(this);
+  m_pCategory = new QComboBox(this);
+  m_pCategory->setObjectName(QStringLiteral("PluginCategory"));
+  m_pCategory->addItems({tr("All Plugins"), tr("Editor"), tr("Runtime / Engine"), tr("Editor and Runtime"), tr("Requested"), tr("Missing")});
+  delete dummy;
+  dummy = nullptr;
+  gridLayout->addWidget(m_pCategory, 0, 1);
+  connect(m_pCategory, &QComboBox::currentIndexChanged, this, [this]() { Filter(m_Filter); });
+  connect(LoadCopy, &QCheckBox::toggled, this, [this](bool checked) {
+    if (auto* pItem = PluginsList->currentItem(); pItem && !m_bReadOnly)
+      m_States[PluginsList->row(pItem)].m_bLoadCopy = checked;
+  });
 }
 
 xiiQtPluginSelectionWidget::~xiiQtPluginSelectionWidget() = default;
@@ -16,6 +28,8 @@ xiiQtPluginSelectionWidget::~xiiQtPluginSelectionWidget() = default;
 void xiiQtPluginSelectionWidget::SetPluginSet(xiiPluginBundleSet* pPluginSet)
 {
   m_pPluginSet = pPluginSet;
+  const QSignalBlocker blocker(PluginsList);
+  PluginsList->clear();
   m_States.Clear();
 
   xiiSet<xiiString> templates;
@@ -30,13 +44,10 @@ void xiiQtPluginSelectionWidget::SetPluginSet(xiiPluginBundleSet* pPluginSet)
       templates.Insert(tmp);
     }
 
-    if (pi.m_bMandatory)
-      continue;
-
     auto& state       = m_States.ExpandAndGetRef();
     state.m_sID       = plugin.Key();
     state.m_pInfo     = &pi;
-    state.m_bSelected = pi.m_bSelected;
+    state.m_bSelected = pi.m_bSelected || pi.m_bMandatory;
     state.m_bLoadCopy = pi.m_bLoadCopy;
 
     tmp = pi.m_sDisplayName;
@@ -54,6 +65,9 @@ void xiiQtPluginSelectionWidget::SetPluginSet(xiiPluginBundleSet* pPluginSet)
     pItem->setCheckState(pi.m_bSelected ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 
     pItem->setData(Qt::UserRole, plugin.Key().GetData());
+    const QString category = pi.m_EditorPlugins.IsEmpty() ? tr("Runtime / Engine") : pi.m_RuntimePlugins.IsEmpty() ? tr("Editor") :
+                                                                                                                     tr("Editor and Runtime");
+    pItem->setToolTip(category + (pi.m_bMandatory ? tr(" | Required by the editor") : QString()));
 
     PluginsList->addItem(pItem);
   }
@@ -78,7 +92,8 @@ void xiiQtPluginSelectionWidget::SyncStateToSet()
 
   for (auto& state : m_States)
   {
-    state.m_pInfo->m_bSelected = state.m_bSelected;
+    if (!state.m_pInfo->m_bMandatory)
+      state.m_pInfo->m_bSelected = state.m_bSelected;
     state.m_pInfo->m_bLoadCopy = state.m_bLoadCopy;
   }
 }
@@ -99,13 +114,31 @@ void xiiQtPluginSelectionWidget::on_PluginsList_currentItemChanged(QListWidgetIt
   if (current)
   {
     auto& state = m_States[PluginsList->row(current)];
-    DescriptionText->setPlainText(state.m_pInfo->m_sDescription.GetData());
+    const auto& info     = *state.m_pInfo;
+    QString     metadata = tr("Bundle: %1\n%2\n\n").arg(xiiMakeQString(state.m_sID), current->toolTip());
+    metadata += xiiMakeQString(info.m_sDescription);
+    metadata += info.m_bMandatory ? tr("\nRequirement: Mandatory") : state.m_bIsDependency ? tr("\nRequirement: Dependency of a requested bundle") :
+      state.m_bSelected                                                                    ? tr("\nRequirement: Requested by this project") :
+                                                                                             tr("\nRequirement: Not requested");
+    auto append = [&](const QString& label, const auto& values) {
+      QStringList names;
+      for (const auto& name : values)
+        names.push_back(xiiMakeQString(name));
+      if (!names.isEmpty())
+        metadata += QLatin1Char('\n') + label + names.join(QStringLiteral(", "));
+    };
+    append(tr("Editor modules: "), info.m_EditorPlugins);
+    append(tr("Engine process modules: "), info.m_EditorEnginePlugins);
+    append(tr("Runtime modules: "), info.m_RuntimePlugins);
+    append(tr("Requires: "), info.m_RequiredBundles);
+    DescriptionText->setPlainText(metadata);
     LoadCopy->setChecked(state.m_bLoadCopy);
-    LoadCopy->setEnabled(true);
+    LoadCopy->setEnabled(!m_bReadOnly && state.m_bSelected && !info.m_bMandatory && !info.m_RuntimePlugins.IsEmpty() && !info.m_bMissing);
   }
   else
   {
     LoadCopy->setEnabled(false);
+    DescriptionText->clear();
   }
 }
 
@@ -128,7 +161,7 @@ void xiiQtPluginSelectionWidget::on_Template_currentIndexChanged(int index)
 
   for (auto& s : m_States)
   {
-    s.m_bSelected = s.m_pInfo->m_EnabledInTemplates.Contains(sTemplate);
+    s.m_bSelected = s.m_pInfo->m_bMandatory || s.m_pInfo->m_EnabledInTemplates.Contains(sTemplate);
   }
 
   UpdateInternalState();
@@ -136,6 +169,7 @@ void xiiQtPluginSelectionWidget::on_Template_currentIndexChanged(int index)
 
 void xiiQtPluginSelectionWidget::UpdateInternalState()
 {
+  const QSignalBlocker blocker(PluginsList);
   for (auto& s : m_States)
   {
     s.m_bIsDependency = false;
@@ -148,8 +182,6 @@ void xiiQtPluginSelectionWidget::UpdateInternalState()
       ApplyRequired(s.m_pInfo->m_RequiredBundles);
     }
   }
-
-  PluginsList->blockSignals(true);
 
   xiiSet<xiiString, xiiCompareString_NoCase> exclusiveFeatures;
 
@@ -166,8 +198,8 @@ void xiiQtPluginSelectionWidget::UpdateInternalState()
       }
     }
 
-    if (pi.m_bIsDependency)
-      pItem->setFlags(Qt::ItemFlag::ItemIsSelectable | Qt::ItemFlag::ItemIsUserCheckable);
+    if ((pi.m_bIsDependency && !pi.m_bSelected) || pi.m_pInfo->m_bMandatory)
+      pItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
     else
       pItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable | Qt::ItemFlag::ItemIsUserCheckable);
 
@@ -193,10 +225,13 @@ void xiiQtPluginSelectionWidget::UpdateInternalState()
     continue;
 
   disable:
-    pItem->setFlags(Qt::ItemFlag::ItemIsSelectable | Qt::ItemFlag::ItemIsUserCheckable);
+    pItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
   }
 
-  PluginsList->blockSignals(false);
+  if (m_bReadOnly)
+    for (int row = 0; row < PluginsList->count(); ++row)
+      PluginsList->item(row)->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+  Filter(m_Filter);
 }
 
 void xiiQtPluginSelectionWidget::ApplyRequired(xiiArrayPtr<xiiString> required)
@@ -205,10 +240,11 @@ void xiiQtPluginSelectionWidget::ApplyRequired(xiiArrayPtr<xiiString> required)
   {
     for (auto& s : m_States)
     {
-      if (s.m_sID == reqName)
+      if (s.m_sID.IsEqual_NoCase(reqName))
       {
         if (!s.m_bIsDependency)
         {
+          s.m_bIsDependency = true;
           ApplyRequired(s.m_pInfo->m_RequiredBundles);
         }
 
@@ -217,4 +253,86 @@ void xiiQtPluginSelectionWidget::ApplyRequired(xiiArrayPtr<xiiString> required)
       }
     }
   }
+}
+
+void xiiQtPluginSelectionWidget::Filter(const QString& text)
+{
+  m_Filter               = text;
+  const auto terms       = text.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+  int        iFirstMatch = -1;
+  for (xiiUInt32 i = 0; i < m_States.GetCount(); ++i)
+  {
+    const auto&   state      = m_States[i];
+    auto*         pItem      = PluginsList->item(i);
+    const QString searchable = pItem->text() + pItem->toolTip() + xiiMakeQString(state.m_sID) + xiiMakeQString(state.m_pInfo->m_sDescription);
+    bool          matches    = true;
+    for (const auto& term : terms)
+      matches &= searchable.contains(term, Qt::CaseInsensitive);
+    switch (m_pCategory->currentIndex())
+    {
+      case 1:
+        matches &= !state.m_pInfo->m_EditorPlugins.IsEmpty() && state.m_pInfo->m_RuntimePlugins.IsEmpty();
+        break;
+      case 2:
+        matches &= state.m_pInfo->m_EditorPlugins.IsEmpty();
+        break;
+      case 3:
+        matches &= !state.m_pInfo->m_EditorPlugins.IsEmpty() && !state.m_pInfo->m_RuntimePlugins.IsEmpty();
+        break;
+      case 4:
+        matches &= state.m_bSelected || state.m_bIsDependency;
+        break;
+      case 5:
+        matches &= state.m_pInfo->m_bMissing;
+        break;
+    }
+    pItem->setHidden(!matches);
+    if (matches && iFirstMatch < 0)
+      iFirstMatch = static_cast<int>(i);
+  }
+  if (auto* pCurrent = PluginsList->currentItem(); pCurrent == nullptr || pCurrent->isHidden())
+    PluginsList->setCurrentRow(iFirstMatch);
+  // Update may run while list signals are blocked; never leave hidden entries editable.
+  on_PluginsList_currentItemChanged(PluginsList->currentItem(), nullptr);
+}
+
+void xiiQtPluginSelectionWidget::SetReadOnly(bool bReadOnly)
+{
+  m_bReadOnly = bReadOnly;
+  Template->setEnabled(!bReadOnly);
+  LoadCopy->setEnabled(!bReadOnly && PluginsList->currentItem() != nullptr);
+  UpdateInternalState();
+}
+
+xiiResult xiiQtPluginSelectionWidget::ValidateSelection(xiiStringBuilder& out_reason) const
+{
+  xiiSet<xiiString, xiiCompareString_NoCase> features;
+  for (const auto& state : m_States)
+  {
+    if (!state.m_bSelected && !state.m_bIsDependency)
+      continue;
+    if (state.m_pInfo->m_bMissing)
+    {
+      out_reason.SetFormat("Plugin bundle '{}' is unavailable. Install it or remove its requirement.", state.m_sID);
+      return XII_FAILURE;
+    }
+    for (const auto& required : state.m_pInfo->m_RequiredBundles)
+    {
+      if (!m_pPluginSet->m_Plugins.Contains(required))
+      {
+        out_reason.SetFormat("Plugin bundle '{}' requires unavailable bundle '{}'.", state.m_sID, required);
+        return XII_FAILURE;
+      }
+    }
+    for (const auto& feature : state.m_pInfo->m_ExclusiveFeatures)
+    {
+      if (features.Contains(feature))
+      {
+        out_reason.SetFormat("Selected plugin bundles conflict for feature '{}'.", feature);
+        return XII_FAILURE;
+      }
+      features.Insert(feature);
+    }
+  }
+  return XII_SUCCESS;
 }

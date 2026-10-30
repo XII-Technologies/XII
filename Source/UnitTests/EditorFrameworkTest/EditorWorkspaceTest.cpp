@@ -9,7 +9,7 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
 #include <EditorFramework/Panels/GameObjectPanel/GameObjectPanel.moc.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
@@ -160,7 +160,7 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
         for (auto* pSlider : pMenu->findChildren<xiiQtLabeledSlider*>())
         {
           bFoundCameraSpeed         = true;
-          auto*      pPreferences   = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(&scene);
+          auto*      pPreferences   = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(&scene);
           const auto iPreviousSpeed = pPreferences->GetCameraSpeed();
           const auto uiUndoCount    = scene.GetCommandHistory()->GetUndoStackSize();
           pSlider->m_pSlider->setValue((iPreviousSpeed + 1) % 25);

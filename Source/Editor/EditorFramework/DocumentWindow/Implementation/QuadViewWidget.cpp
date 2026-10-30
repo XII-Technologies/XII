@@ -6,8 +6,8 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
-#include <EditorFramework/Preferences/QuadViewPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
+#include <EditorFramework/Settings/QuadViewPreferences.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 
 xiiQtQuadViewWidget::xiiQtQuadViewWidget(xiiAssetDocument* pDocument, xiiQtEngineDocumentWindow* pWindow, ViewFactory viewFactory, const char* szViewToolBarMapping)
@@ -52,7 +52,7 @@ void xiiQtQuadViewWidget::LoadViewConfig(xiiEngineViewConfig& cfg, xiiEngineView
 
   if (cfg.m_Perspective == xiiSceneViewPerspective::Perspective)
   {
-    xiiEditorPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+    xiiEditorPreferencesUser* pPref = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
     cfg.ApplyPerspectiveSetting(pPref->m_fPerspectiveFieldOfView);
   }
   else
@@ -69,7 +69,7 @@ void xiiQtQuadViewWidget::LoadViewConfig(xiiEngineViewConfig& cfg, xiiEngineView
 
 void xiiQtQuadViewWidget::SaveViewConfigs() const
 {
-  xiiQuadViewPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiQuadViewPreferencesUser>(m_pDocument);
+  xiiQuadViewPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(m_pDocument);
   pPreferences->m_bQuadView                = m_ActiveMainViews.GetCount() == 4;
 
   SaveViewConfig(m_ViewConfigSingle, pPreferences->m_ViewSingle);
@@ -81,7 +81,7 @@ void xiiQtQuadViewWidget::SaveViewConfigs() const
 
 void xiiQtQuadViewWidget::LoadViewConfigs()
 {
-  xiiQuadViewPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiQuadViewPreferencesUser>(m_pDocument);
+  xiiQuadViewPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(m_pDocument);
 
   LoadViewConfig(m_ViewConfigSingle, pPreferences->m_ViewSingle);
   LoadViewConfig(m_ViewConfigQuad[0], pPreferences->m_ViewQuad0);

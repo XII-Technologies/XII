@@ -6,7 +6,7 @@
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/Gizmos/ClickGizmo.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClickGizmo, 1, xiiRTTINoAllocator)

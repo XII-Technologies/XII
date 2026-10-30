@@ -7,7 +7,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/Gizmos/ScaleGizmo.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScaleGizmo, 1, xiiRTTINoAllocator)

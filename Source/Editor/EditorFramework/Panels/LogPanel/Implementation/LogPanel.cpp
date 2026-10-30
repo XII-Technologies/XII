@@ -3,7 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Panels/LogPanel/LogPanel.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <GuiFoundation/Models/LogModel.moc.h>
 
 XII_IMPLEMENT_SINGLETON(xiiQtLogPanel);
@@ -40,8 +40,8 @@ xiiQtLogPanel::xiiQtLogPanel(ads::CDockManager* pDockManager) :
 
   xiiQtUiServices::GetSingleton()->s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtLogPanel::UiServiceEventHandler, this));
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtLogPanel::OnPreferenceChange, this));
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
+  pPreferences->m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtLogPanel::OnPreferenceChange, this));
 
   m_bCombineLogs = pPreferences->m_bCombinedEditorAndEngineLogs;
 
@@ -50,8 +50,8 @@ xiiQtLogPanel::xiiQtLogPanel(ads::CDockManager* pDockManager) :
 
 xiiQtLogPanel::~xiiQtLogPanel()
 {
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  pPreferences->m_ChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtLogPanel::OnPreferenceChange, this));
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
+  pPreferences->m_SettingsChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtLogPanel::OnPreferenceChange, this));
 
   QSettings Settings;
   Settings.beginGroup(QLatin1String("LogPanel"));
@@ -185,7 +185,7 @@ void xiiQtLogPanel::UiServiceEventHandler(const xiiQtUiServices::Event& e)
   }
 }
 
-void xiiQtLogPanel::OnPreferenceChange(xiiPreferences* pref)
+void xiiQtLogPanel::OnPreferenceChange(xiiSettings* pref)
 {
   if (xiiEditorPreferencesUser* pPref = xiiDynamicCast<xiiEditorPreferencesUser*>(pref))
   {

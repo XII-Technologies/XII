@@ -8,7 +8,7 @@
 #include <Foundation/Math/Declarations.h>
 
 struct xiiEditorAppEvent;
-class xiiPreferences;
+class xiiSettings;
 
 struct xiiSnapProviderEvent
 {
@@ -53,7 +53,7 @@ public:
 
 private:
   static void EditorEventHandler(const xiiEditorAppEvent& e);
-  static void PreferenceChangedEventHandler(xiiPreferences* pPreferenceBase);
+  static void PreferenceChangedEventHandler(xiiSettings* pPreferenceBase);
 
   static xiiAngle               s_RotationSnapValue;
   static float                  s_fScaleSnapValue;

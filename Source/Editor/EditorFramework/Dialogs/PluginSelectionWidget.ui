@@ -73,7 +73,7 @@
      <item>
       <widget class="QCheckBox" name="LoadCopy">
        <property name="text">
-        <string>Enable Reload</string>
+        <string>Copy runtime modules for supported reloads</string>
        </property>
       </widget>
      </item>

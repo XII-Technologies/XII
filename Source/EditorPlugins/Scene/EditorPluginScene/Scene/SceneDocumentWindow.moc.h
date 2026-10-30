@@ -22,7 +22,7 @@ class xiiQtViewWidgetContainer;
 class xiiQtSceneViewWidget;
 class QSettings;
 struct xiiManipulatorManagerEvent;
-class xiiPreferences;
+class xiiEditorSettings;
 class xiiQtQuadViewWidget;
 struct xiiEngineWindowEvent;
 class xiiSceneDocument;

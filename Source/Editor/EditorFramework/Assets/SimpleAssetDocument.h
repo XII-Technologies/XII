@@ -6,7 +6,7 @@
 
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <EditorFramework/Assets/AssetDocument.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Serialization/ApplyNativePropertyChangesContext.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
@@ -31,7 +31,7 @@ public:
   {
     if (bEnableDefaultLighting)
     {
-      xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+      xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
       pPreferences->ApplyDefaultValues(m_LightSettings);
     }
   }
@@ -41,7 +41,7 @@ public:
   {
     if (bEnableDefaultLighting)
     {
-      xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+      xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
       pPreferences->ApplyDefaultValues(m_LightSettings);
     }
   }

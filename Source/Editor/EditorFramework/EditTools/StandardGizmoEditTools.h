@@ -11,7 +11,7 @@
 #include <EditorFramework/Gizmos/TranslateGizmo.h>
 
 class xiiQtGameObjectDocumentWindow;
-class xiiPreferences;
+class xiiSettings;
 
 class XII_EDITORFRAMEWORK_DLL xiiTranslateGizmoEditTool : public xiiGameObjectGizmoEditTool
 {
@@ -33,7 +33,7 @@ protected:
   virtual void OnActiveChanged(bool bIsActive) override;
 
 private:
-  void OnPreferenceChange(xiiPreferences* pref);
+  void OnPreferenceChange(xiiSettings* pref);
 
   xiiTranslateGizmo m_TranslateGizmo;
 };

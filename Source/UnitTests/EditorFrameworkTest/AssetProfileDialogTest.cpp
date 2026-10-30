@@ -3,7 +3,7 @@
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
-#include <EditorFramework/Dialogs/AssetProfilesDlg.moc.h>
+#include <EditorFramework/Dialogs/AssetProfilesPage.moc.h>
 #include <EditorFramework/GUI/RawDocumentTreeWidget.moc.h>
 #include <EditorFrameworkTest/AssetProfileTest.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -35,13 +35,13 @@ namespace
     return bytes;
   }
 
-  const xiiDocument* GetDraft(xiiQtAssetProfilesDlg& dialog)
+  const xiiDocument* GetDraft(xiiQtAssetProfilesPage& dialog)
   {
     const auto* model = static_cast<const xiiQtDocumentTreeModel*>(dialog.Tree->GetProxyFilterModel()->sourceModel());
     return model->GetDocumentTree()->GetDocument();
   }
 
-  QModelIndex IndexFor(xiiQtAssetProfilesDlg& dialog, const xiiDocumentObject* object)
+  QModelIndex IndexFor(xiiQtAssetProfilesPage& dialog, const xiiDocumentObject* object)
   {
     const auto* model = static_cast<const xiiQtDocumentTreeModel*>(dialog.Tree->GetProxyFilterModel()->sourceModel());
     return dialog.Tree->GetProxyFilterModel()->mapFromSource(model->ComputeModelIndex(object));
@@ -69,7 +69,7 @@ void TestAssetProfileDialog(xiiStringView projectDirectory)
   runtimeOld.AppendPath("RuntimeConfigs/OldDialogProfile.xiiProfile");
   const auto before = ReadFile(definitions);
   {
-    xiiQtAssetProfilesDlg cancelled(nullptr);
+    xiiQtAssetProfilesPage cancelled(nullptr);
     const auto*           draft    = GetDraft(cancelled);
     auto*                 accessor = draft->GetObjectAccessor();
     const auto*           profile  = draft->GetObjectManager()->GetRootObject()->GetChildren()[0];
@@ -77,12 +77,12 @@ void TestAssetProfileDialog(xiiStringView projectDirectory)
     XII_TEST_STATUS(accessor->SetValueByName(profile, "TargetPlatform", "Linux"));
     accessor->FinishTransaction();
     XII_TEST_STRING(curator->GetAssetProfile(0)->GetTargetPlatform(), original[0]->GetTargetPlatform());
-    XII_TEST_BOOL(QMetaObject::invokeMethod(&cancelled, "on_ButtonCancel_clicked", Qt::DirectConnection));
+    cancelled.hide(); // Destruction discards the uncommitted page.
     XII_TEST_BOOL(ReadFile(definitions) == before);
     XII_TEST_STRING(curator->GetActiveAssetProfile()->GetConfigName(), "OldDialogProfile");
   }
 
-  xiiQtAssetProfilesDlg dialog(nullptr);
+  xiiQtAssetProfilesPage dialog(nullptr);
   const auto*           draft     = GetDraft(dialog);
   auto*                 accessor  = draft->GetObjectAccessor();
   const auto*           root      = draft->GetObjectManager()->GetRootObject();
@@ -116,17 +116,9 @@ void TestAssetProfileDialog(xiiStringView projectDirectory)
     if (!XII_TEST_BOOL(file != INVALID_HANDLE_VALUE))
       return;
     XII_SCOPE_EXIT(CloseHandle(file));
-    bool reported = false;
-    QTimer::singleShot(0, [&]() {
-      if (auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget()))
-      {
-        reported = box->text().contains("Could not save asset profiles") && box->text().contains("Could not install profile file");
-        box->accept();
-      }
-    });
-    XII_TEST_BOOL(QMetaObject::invokeMethod(&dialog, "on_ButtonOk_clicked", Qt::DirectConnection));
-    XII_TEST_BOOL(reported);
-    XII_TEST_INT(dialog.result(), QDialog::Rejected);
+    const auto status = dialog.ApplyAllChanges();
+    XII_TEST_BOOL(status.Failed());
+    XII_TEST_BOOL(status.GetMessageString().FindSubString("Could not install profile file") != nullptr);
     XII_TEST_BOOL(curator->GetAssetProfile(0) == liveDefault && curator->GetActiveAssetProfile() == liveActive);
     XII_TEST_BOOL(ReadFile(definitions) == before);
     XII_TEST_BOOL(ReadFile(runtimeDefault) == defaultBytes);
@@ -140,8 +132,7 @@ void TestAssetProfileDialog(xiiStringView projectDirectory)
     XII_TEST_INT(root->GetChildren().GetCount(), 3);
   }
 #endif
-  XII_TEST_BOOL(QMetaObject::invokeMethod(&dialog, "on_ButtonOk_clicked", Qt::DirectConnection));
-  XII_TEST_INT(dialog.result(), QDialog::Accepted);
+  XII_TEST_STATUS(dialog.ApplyAllChanges());
   XII_TEST_INT(curator->GetNumAssetProfiles(), 3);
   XII_TEST_STRING(curator->GetAssetProfile(0)->GetConfigName(), "Default");
   XII_TEST_STRING(curator->GetAssetProfile(1)->GetConfigName(), "FirstDialogProfile");

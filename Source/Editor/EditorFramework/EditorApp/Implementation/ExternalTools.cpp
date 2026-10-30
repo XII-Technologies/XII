@@ -3,7 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
@@ -20,7 +20,7 @@ xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
 
   szToolName = toolExe;
 
-  xiiEditorPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPref = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
 
   xiiHybridArray<xiiString, 3> sFolders;
 

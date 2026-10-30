@@ -4,7 +4,7 @@
 
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <EditorFramework/Assets/AssetDocument.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <EditorPluginAssets/CustomDataAsset/CustomDataAsset.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Serialization/ApplyNativePropertyChangesContext.h>

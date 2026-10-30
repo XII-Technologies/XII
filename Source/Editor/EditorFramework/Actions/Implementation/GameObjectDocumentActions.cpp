@@ -4,7 +4,7 @@
 
 #include <EditorFramework/Actions/GameObjectDocumentActions.h>
 #include <EditorFramework/Document/GameObjectDocument.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameObjectDocumentAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -161,8 +161,8 @@ xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext&
 
     case ActionType::RenderGrid:
     {
-      xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
-      pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiGameObjectDocumentAction::OnPreferenceChange, this));
+      xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
+      pPreferences->m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiGameObjectDocumentAction::OnPreferenceChange, this));
 
       SetCheckable(true);
       SetIconPath(":/EditorFramework/Icons/Grid.svg");
@@ -195,9 +195,9 @@ xiiGameObjectDocumentAction::~xiiGameObjectDocumentAction()
   {
     case ActionType::RenderGrid:
     {
-      xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
+      xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
 
-      pPreferences->m_ChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectDocumentAction::OnPreferenceChange, this));
+      pPreferences->m_SettingsChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectDocumentAction::OnPreferenceChange, this));
     }
     break;
     default:
@@ -223,7 +223,7 @@ void xiiGameObjectDocumentAction::Execute(const xiiVariant& value)
 
     case ActionType::RenderGrid:
     {
-      auto pPref = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
+      auto pPref = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
       pPref->SetShowGrid(!pPref->GetShowGrid());
       m_pGameObjectDocument->ShowDocumentStatus(xiiFmt("Show Grid: {}", pPref->GetShowGrid() ? "ON" : "OFF"));
       return;
@@ -309,9 +309,9 @@ void xiiGameObjectDocumentAction::SceneEventHandler(const xiiGameObjectEvent& e)
   }
 }
 
-void xiiGameObjectDocumentAction::OnPreferenceChange(xiiPreferences* pref)
+void xiiGameObjectDocumentAction::OnPreferenceChange(xiiSettings* pref)
 {
-  xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
+  xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
 
   switch (m_Type)
   {
@@ -336,9 +336,9 @@ xiiCameraSpeedSliderAction::xiiCameraSpeedSliderAction(const xiiActionContext& c
   {
     case ActionType::CameraSpeed:
     {
-      xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
+      xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
 
-      pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiCameraSpeedSliderAction::OnPreferenceChange, this));
+      pPreferences->m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiCameraSpeedSliderAction::OnPreferenceChange, this));
 
       SetRange(0, 24);
     }
@@ -354,9 +354,9 @@ xiiCameraSpeedSliderAction::~xiiCameraSpeedSliderAction()
   {
     case ActionType::CameraSpeed:
     {
-      xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
+      xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
 
-      pPreferences->m_ChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiCameraSpeedSliderAction::OnPreferenceChange, this));
+      pPreferences->m_SettingsChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiCameraSpeedSliderAction::OnPreferenceChange, this));
     }
     break;
   }
@@ -368,7 +368,7 @@ void xiiCameraSpeedSliderAction::Execute(const xiiVariant& value)
   {
     case ActionType::CameraSpeed:
     {
-      xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
+      xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
 
       pPreferences->SetCameraSpeed(value.Get<xiiInt32>());
     }
@@ -376,7 +376,7 @@ void xiiCameraSpeedSliderAction::Execute(const xiiVariant& value)
   }
 }
 
-void xiiCameraSpeedSliderAction::OnPreferenceChange(xiiPreferences* pref)
+void xiiCameraSpeedSliderAction::OnPreferenceChange(xiiSettings* pref)
 {
   UpdateState();
 }
@@ -387,7 +387,7 @@ void xiiCameraSpeedSliderAction::UpdateState()
   {
     case ActionType::CameraSpeed:
     {
-      xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(m_pGameObjectDocument);
+      xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(m_pGameObjectDocument);
 
       SetValue(pPreferences->GetCameraSpeed());
     }

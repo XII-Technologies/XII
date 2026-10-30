@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include <GuiFoundation/GuiFoundationDLL.h>
+
 #include <Foundation/Basics.h>
+#include <Foundation/Containers/Map.h>
 #include <GuiFoundation/Action/Action.h>
 
 /// Registers a xiiAction whose constructor takes no arguments.
@@ -87,6 +90,8 @@ public:
   static xiiResult ExecuteAction(xiiStringView sCategory, xiiStringView sActionName, const xiiActionContext& context, const xiiVariant& value = xiiVariant());
 
   static void SaveShortcutAssignment();
+  /// Saves staged assignments without changing live action descriptors. Unspecified actions retain their bindings.
+  static xiiResult SaveShortcutAssignment(const xiiMap<xiiString, xiiString>& assignments);
   static void LoadShortcutAssignment();
 
   static const xiiIdTable<xiiActionId, xiiActionDescriptor*>::ConstIterator GetActionIterator();

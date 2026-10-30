@@ -147,10 +147,10 @@ public:
   const xiiPluginBundleSet& GetPluginBundles() const { return m_PluginBundles; }
   xiiPluginBundleSet&       GetPluginBundles() { return m_PluginBundles; }
 
-  void                     AddRestartRequiredReason(const char* szReason);
+  void                     AddRestartRequiredReason(const char* szReason, bool bPrompt = true);
   const xiiSet<xiiString>& GetRestartRequiredReasons() { return m_RestartRequiredReasons; }
 
-  void                     AddReloadProjectRequiredReason(const char* szReason);
+  void                     AddReloadProjectRequiredReason(const char* szReason, bool bPrompt = true);
   const xiiSet<xiiString>& GetReloadProjectRequiredReason() { return m_ReloadProjectRequiredReasons; }
 
   void SaveSettings();
@@ -218,7 +218,7 @@ public:
   const xiiApplicationFileSystemConfig& GetFileSystemConfig() const { return m_FileSystemConfig; }
   const xiiApplicationPluginConfig      GetRuntimePluginConfig(bool bIncludeEditorPlugins) const;
 
-  void SetFileSystemConfig(const xiiApplicationFileSystemConfig& cfg);
+  void SetFileSystemConfig(const xiiApplicationFileSystemConfig& cfg, bool bPromptForReload = true);
 
   bool MakeDataDirectoryRelativePathAbsolute(xiiStringBuilder& ref_sPath) const;
   bool MakeDataDirectoryRelativePathAbsolute(xiiString& ref_sPath) const;

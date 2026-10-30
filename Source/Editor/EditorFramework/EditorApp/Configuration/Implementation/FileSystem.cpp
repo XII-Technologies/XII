@@ -33,13 +33,13 @@ void xiiQtEditorApp::AddPluginDataDirDependency(const char* szSdkRootRelativePat
   m_FileSystemConfig.m_DataDirs.PushBack(cfg);
 }
 
-void xiiQtEditorApp::SetFileSystemConfig(const xiiApplicationFileSystemConfig& cfg)
+void xiiQtEditorApp::SetFileSystemConfig(const xiiApplicationFileSystemConfig& cfg, bool bPromptForReload)
 {
   if (m_FileSystemConfig == cfg)
     return;
 
   m_FileSystemConfig = cfg;
-  xiiQtEditorApp::GetSingleton()->AddReloadProjectRequiredReason("The data directory configuration has changed.");
+  xiiQtEditorApp::GetSingleton()->AddReloadProjectRequiredReason("The data directory configuration has changed.", bPromptForReload);
 
   m_FileSystemConfig.CreateDataDirStubFiles().IgnoreResult();
 }

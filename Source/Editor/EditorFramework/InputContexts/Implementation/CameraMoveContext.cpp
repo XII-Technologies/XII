@@ -6,7 +6,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/InputContexts/CameraMoveContext.h>
-#include <EditorFramework/Preferences/ScenePreferences.h>
+#include <EditorFramework/Settings/ScenePreferences.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 
 static constexpr float s_fMoveSpeed[25] = {
@@ -87,7 +87,7 @@ void xiiCameraMoveContext::DoFocusLost(bool bCancel)
 
 void xiiCameraMoveContext::LoadState()
 {
-  const xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
+  const xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
   SetMoveSpeed(pPreferences->GetCameraSpeed());
 }
 
@@ -98,7 +98,7 @@ void xiiCameraMoveContext::UpdateContext()
 
   const double TimeDiff = xiiMath::Min(diff.GetSeconds(), 0.1);
 
-  xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
+  xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
   float                    fSpeedFactor = TimeDiff;
 
   if (m_bRun)
@@ -589,7 +589,7 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
   if (m_pCamera == nullptr)
     return xiiEditorInput::MayBeHandledByOthers;
 
-  const xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
+  const xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
 
   m_bRun = (e->modifiers() & Qt::KeyboardModifier::ShiftModifier) != 0;
 
@@ -754,7 +754,7 @@ void xiiCameraMoveContext::SetMoveSpeed(xiiInt32 iSpeed)
 {
   if (GetOwnerWindow()->GetDocument() != nullptr)
   {
-    xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
+    xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
     pPreferences->SetCameraSpeed(iSpeed);
   }
 }
@@ -766,7 +766,7 @@ void xiiCameraMoveContext::OnActivated()
 
 xiiEditorInput xiiCameraMoveContext::DoWheelEvent(QWheelEvent* e)
 {
-  const xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
+  const xiiScenePreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
 
   if (m_bMoveCamera || m_bMoveCameraInPlane || m_bOrbitCamera || m_bRotateCamera)
   {

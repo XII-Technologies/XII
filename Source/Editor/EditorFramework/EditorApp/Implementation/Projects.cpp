@@ -7,7 +7,7 @@
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Time/Timestamp.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
@@ -318,7 +318,7 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
         UpdateRecentProjects();
       }
 
-      xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+      xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
 
       // Make sure preferences are saved, this is important when the project was just created.
       if (m_bSavePreferencesAfterOpenProject)
@@ -417,7 +417,7 @@ Explanation: For assets to work properly, they must be <a href='https://xiiengin
       m_ReloadProjectRequiredReasons.Clear();
       UpdateGlobalStatusBarMessage();
 
-      xiiPreferences::ClearProjectPreferences();
+      xiiEditorSettings::ClearProjectSettings();
 
       // remove all dynamic enums that were dynamically loaded from the project directory
       {

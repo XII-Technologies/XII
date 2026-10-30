@@ -3,7 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/Preferences.h>
+#include <EditorFramework/Settings/EditorSettings.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <ToolsFoundation/Document/DocumentUtils.h>
 
@@ -128,7 +128,7 @@ void xiiQtEditorApp::DocumentEventHandler(const xiiDocumentEvent& e)
   {
     case xiiDocumentEvent::Type::DocumentSaved:
     {
-      xiiPreferences::SaveDocumentPreferences(e.m_pDocument);
+      xiiEditorSettings::SaveDocumentSettings(e.m_pDocument);
     }
     break;
 
@@ -157,8 +157,8 @@ void xiiQtEditorApp::DocumentManagerEventHandler(const xiiDocumentManager::Event
 
     case xiiDocumentManager::Event::Type::DocumentClosing2:
     {
-      xiiPreferences::SaveDocumentPreferences(r.m_pDocument);
-      xiiPreferences::ClearDocumentPreferences(r.m_pDocument);
+      xiiEditorSettings::SaveDocumentSettings(r.m_pDocument);
+      xiiEditorSettings::ClearDocumentSettings(r.m_pDocument);
     }
     break;
 

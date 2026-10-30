@@ -9,7 +9,7 @@
 #include <EditorFramework/EditTools/EditTool.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Panels/LogPanel/LogPanel.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <GuiFoundation/Models/LogModel.moc.h>
 #include <GuiFoundation/PropertyGrid/ManipulatorManager.h>
 #include <GuiFoundation/PropertyGrid/VisualizerManager.h>
@@ -88,7 +88,7 @@ void xiiGameObjectDocument::GameObjectDocumentEventHandler(const xiiGameObjectDo
     case xiiGameObjectDocumentEvent::Type::GameMode_StartingPlay:
     case xiiGameObjectDocumentEvent::Type::GameMode_StartingSimulate:
     {
-      auto pEditorPrefsUser = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+      auto pEditorPrefsUser = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
       if (pEditorPrefsUser && pEditorPrefsUser->m_bClearEditorLogsOnPlay)
       {
         xiiQtLogPanel::GetSingleton()->CombinedLog->GetLog()->Clear();
@@ -943,7 +943,7 @@ void xiiGameObjectDocument::SelectionManagerEventHandler(const xiiSelectionManag
 {
   ScheduleSendObjectSelection();
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
 
   if (pPreferences->m_bExpandSceneTreeOnSelection)
   {

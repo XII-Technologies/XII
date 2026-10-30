@@ -3,8 +3,8 @@
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
 #include <EditorFramework/CodeGen/CppProject.h>
-#include <EditorFramework/Preferences/Preferences.h>
-#include <EditorFramework/Preferences/ProjectPreferences.h>
+#include <EditorFramework/Settings/EditorSettings.h>
+#include <EditorFramework/Settings/ProjectPreferences.h>
 #include <EditorPluginScene/Dialogs/ExportAndRunDlg.moc.h>
 #include <Foundation/IO/OSFile.h>
 #include <QFileDialog>
@@ -26,7 +26,7 @@ xiiQtExportAndRunDlg::xiiQtExportAndRunDlg(QWidget* pParent) :
   ToolCombo->addItem("xiiPlayer", "xiiPlayer");
 #endif
 
-  xiiProjectPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiProjectPreferencesUser>();
+  xiiProjectPreferencesUser* pPref = xiiEditorSettings::QuerySettings<xiiProjectPreferencesUser>();
 
   for (const auto& app : pPref->m_PlayerApps)
   {
@@ -47,7 +47,7 @@ void xiiQtExportAndRunDlg::PullFromUI()
   s_iLastPlayerApp   = ToolCombo->currentIndex();
   s_bCompileCpp      = CompileCpp->isChecked();
 
-  xiiProjectPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiProjectPreferencesUser>();
+  xiiProjectPreferencesUser* pPref = xiiEditorSettings::QuerySettings<xiiProjectPreferencesUser>();
   pPref->m_PlayerApps.Clear();
 
   for (int i = 1; i < ToolCombo->count(); ++i)

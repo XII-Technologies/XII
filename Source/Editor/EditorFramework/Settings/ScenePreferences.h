@@ -1,0 +1,25 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#pragma once
+
+#include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/Settings/EditorSettings.h>
+
+class XII_EDITORFRAMEWORK_DLL xiiScenePreferencesUser : public xiiEditorSettings
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiScenePreferencesUser, xiiEditorSettings);
+
+public:
+  xiiScenePreferencesUser();
+
+  void     SetCameraSpeed(xiiInt32 value);
+  xiiInt32 GetCameraSpeed() const { return m_iCameraSpeed; }
+
+  void SetShowGrid(bool bShow);
+  bool GetShowGrid() const { return m_bShowGrid; }
+
+protected:
+  bool m_bShowGrid;
+  int  m_iCameraSpeed;
+};

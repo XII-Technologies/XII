@@ -39,7 +39,6 @@
 #include <EditorFramework/Panels/LongOpsPanel/LongOpsPanel.moc.h>
 #include <EditorFramework/Platform/Windows/WindowsNotifications.h>
 #include <EditorFramework/Platform/Windows/WindowsTaskbar.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
 #include <EditorFramework/PropertyGrid/AssetBrowserPropertyWidget.moc.h>
 #include <EditorFramework/PropertyGrid/DynamicEnumPropertyWidget.moc.h>
 #include <EditorFramework/PropertyGrid/DynamicStringEnumPropertyWidget.moc.h>
@@ -48,6 +47,7 @@
 #include <EditorFramework/PropertyGrid/FileBrowserPropertyWidget.moc.h>
 #include <EditorFramework/PropertyGrid/GameObjectReferencePropertyWidget.moc.h>
 #include <EditorFramework/PropertyGrid/RttiTypeStringPropertyWidget.moc.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <EditorFramework/Visualizers/BoxVisualizerAdapter.h>
 #include <EditorFramework/Visualizers/CameraVisualizerAdapter.h>
 #include <EditorFramework/Visualizers/CapsuleVisualizerAdapter.h>
@@ -445,7 +445,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     m_Events.Broadcast(e);
   }
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
 
   if (m_bStartupQuitRequested)
   {

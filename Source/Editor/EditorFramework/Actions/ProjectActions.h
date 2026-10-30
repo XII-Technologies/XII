@@ -21,7 +21,6 @@ public:
 
   static xiiActionDescriptorHandle s_hCatProjectGeneral;
   static xiiActionDescriptorHandle s_hCatProjectAssets;
-  static xiiActionDescriptorHandle s_hCatProjectConfig;
   static xiiActionDescriptorHandle s_hCatProjectExternal;
 
   static xiiActionDescriptorHandle s_hCatFilesGeneral;
@@ -41,13 +40,13 @@ public:
 
   static xiiActionDescriptorHandle s_hDocsAndCommunity;
 
-  static xiiActionDescriptorHandle s_hCatProjectSettings;
-  static xiiActionDescriptorHandle s_hCatPluginSettings;
   static xiiActionDescriptorHandle s_hShortcutEditor;
   static xiiActionDescriptorHandle s_hDataDirectories;
   static xiiActionDescriptorHandle s_hWindowConfig;
   static xiiActionDescriptorHandle s_hInputConfig;
-  static xiiActionDescriptorHandle s_hPreferencesDlg;
+  static xiiActionDescriptorHandle s_hEditorPreferences;
+  static xiiActionDescriptorHandle s_hConfigurationMenu;
+  static xiiActionDescriptorHandle s_hProjectSettings;
   static xiiActionDescriptorHandle s_hTagsConfig;
   static xiiActionDescriptorHandle s_hAssetProfiles;
   static xiiActionDescriptorHandle s_hExportProject;
@@ -56,7 +55,6 @@ public:
   static xiiActionDescriptorHandle s_hCatToolsExternal;
   static xiiActionDescriptorHandle s_hCatToolsEditor;
   static xiiActionDescriptorHandle s_hCatToolsDocument;
-  static xiiActionDescriptorHandle s_hCatEditorSettings;
   static xiiActionDescriptorHandle s_hReloadResources;
   static xiiActionDescriptorHandle s_hReloadEngine;
   static xiiActionDescriptorHandle s_hLaunchFileserve;
@@ -128,7 +126,8 @@ public:
     DataDirectories,
     WindowConfig,
     InputConfig,
-    PreferencesDialog,
+    EditorPreferences,
+    ProjectSettings,
     TagsDialog,
     ImportAsset,
     AssetProfiles,

@@ -7,7 +7,7 @@
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 
-class xiiPreferences;
+class xiiSettings;
 struct xiiGameObjectEvent;
 class xiiGameObjectDocument;
 ///
@@ -59,7 +59,7 @@ public:
 
 private:
   void SceneEventHandler(const xiiGameObjectEvent& e);
-  void OnPreferenceChange(xiiPreferences* pref);
+  void OnPreferenceChange(xiiSettings* pref);
 
   float                  m_fSimSpeed;
   xiiGameObjectDocument* m_pGameObjectDocument;
@@ -83,7 +83,7 @@ public:
   virtual void Execute(const xiiVariant& value) override;
 
 private:
-  void OnPreferenceChange(xiiPreferences* pref);
+  void OnPreferenceChange(xiiSettings* pref);
   void UpdateState();
 
   xiiGameObjectDocument* m_pGameObjectDocument;

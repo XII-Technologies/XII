@@ -10,7 +10,7 @@
 #include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Strings/TranslationLookup.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
@@ -27,7 +27,7 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 {
   setupUi(this);
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
 
   ButtonListMode->setVisible(true);
   ButtonIconMode->setVisible(true);
@@ -1006,7 +1006,7 @@ void xiiQtAssetBrowserWidget::OnShowSubFolderItemsToggled()
 {
   m_pFilter->SetShowItemsInSubFolders(!m_pFilter->GetShowItemsInSubFolders());
 
-  xiiEditorPreferencesUser* pPreferences             = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorPreferencesUser* pPreferences             = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
   pPreferences->m_bAssetBrowserShowItemsInSubFolders = m_pFilter->GetShowItemsInSubFolders();
 }
 

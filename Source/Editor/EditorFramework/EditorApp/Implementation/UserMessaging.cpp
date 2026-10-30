@@ -4,13 +4,16 @@
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 
-void xiiQtEditorApp::AddRestartRequiredReason(const char* szReason)
+void xiiQtEditorApp::AddRestartRequiredReason(const char* szReason, bool bPrompt)
 {
   if (!m_RestartRequiredReasons.Find(szReason).IsValid())
   {
     m_RestartRequiredReasons.Insert(szReason);
     UpdateGlobalStatusBarMessage();
   }
+
+  if (!bPrompt)
+    return;
 
   xiiStringBuilder s;
   s.SetFormat("The editor process must be restarted.\nReason: '{0}'\n\nDo you want to restart now?", szReason);
@@ -27,7 +30,7 @@ void xiiQtEditorApp::AddRestartRequiredReason(const char* szReason)
   }
 }
 
-void xiiQtEditorApp::AddReloadProjectRequiredReason(const char* szReason)
+void xiiQtEditorApp::AddReloadProjectRequiredReason(const char* szReason, bool bPrompt)
 {
   if (!m_ReloadProjectRequiredReasons.Find(szReason).IsValid())
   {
@@ -36,7 +39,8 @@ void xiiQtEditorApp::AddReloadProjectRequiredReason(const char* szReason)
     xiiStringBuilder s;
     s.SetFormat("The project must be reloaded.\nReason: '{0}'", szReason);
 
-    xiiQtUiServices::MessageBoxInformation(s);
+    if (bPrompt)
+      xiiQtUiServices::MessageBoxInformation(s);
 
     UpdateGlobalStatusBarMessage();
   }

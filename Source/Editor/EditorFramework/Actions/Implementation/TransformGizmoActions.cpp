@@ -3,7 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Actions/TransformGizmoActions.h>
-#include <EditorFramework/Dialogs/SnapSettingsDlg.moc.h>
+#include <EditorFramework/Dialogs/ConfigurationDlg.moc.h>
 #include <EditorFramework/EditTools/StandardGizmoEditTools.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 
@@ -518,7 +518,6 @@ void xiiTransformGizmoActions::MapMenuActions(xiiStringView sMapping)
   pMap->MapAction(s_hDragToPositionGizmo, sTarget, 4.0f);
   pMap->MapAction(s_hWorldSpace, sTarget, 6.0f);
   pMap->MapAction(s_hMoveParentOnly, sTarget, 7.0f);
-  pMap->MapAction(s_SnapSettings, sTarget, 8.0f);
 }
 
 void xiiTransformGizmoActions::MapToolbarActions(xiiStringView sMapping)
@@ -587,8 +586,7 @@ void xiiTransformGizmoAction::Execute(const xiiVariant& value)
   }
   else if (m_Type == ActionType::GizmoSnapSettings)
   {
-    xiiQtSnapSettingsDlg dlg(nullptr);
-    dlg.exec();
+    xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::EditorPreferences, m_Context.m_pDocument, "General");
   }
 
   UpdateState();

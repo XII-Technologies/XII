@@ -4,7 +4,7 @@
 
 #include <EditorFramework/Dialogs/DashboardDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/IO/OSFile.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
@@ -19,7 +19,7 @@ xiiQtDashboardDlg::xiiQtDashboardDlg(QWidget* pParent, DashboardTab activeTab) :
   SamplesTab->setFlat(true);
   DocumentationTab->setFlat(true);
 
-  if (xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>())
+  if (xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>())
   {
     LoadLastProject->setChecked(pPreferences->m_bLoadLastProjectAtStartup);
   }
@@ -245,7 +245,7 @@ void xiiQtDashboardDlg::on_OpenSample_clicked()
 
 void xiiQtDashboardDlg::on_LoadLastProject_stateChanged(int)
 {
-  if (xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>())
+  if (xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>())
   {
     pPreferences->m_bLoadLastProjectAtStartup = LoadLastProject->isChecked();
   }
