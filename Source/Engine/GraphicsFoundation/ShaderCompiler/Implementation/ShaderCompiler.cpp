@@ -274,9 +274,10 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
   xiiUInt32     uiFirstShaderLine = 0;
   xiiStringView sShaderSource     = sections.GetSectionContent(xiiGALShaderSections::Shader, uiFirstShaderLine);
-  xiiUInt32        uiFirstConstantsLine = 0;
-  xiiStringBuilder sMaterialConstants   = sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, uiFirstConstantsLine);
-  sMaterialConstants.Trim(" \t\r\n");
+  xiiUInt32           uiFirstConstantsLine = 0;
+  const xiiStringView sMaterialConstants   = sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, uiFirstConstantsLine);
+  xiiStringView       trimmedConstants     = sMaterialConstants;
+  trimmedConstants.Trim();
 
   for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
@@ -289,7 +290,7 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
       // Source declarations are shared; backend reflection determines which
       // stages actually use the buffer. Empty sections create no resource.
-      if (!sMaterialConstants.IsEmpty())
+      if (!trimmedConstants.IsEmpty())
       {
         sTemp.Append("#include <Shaders/Common/ShaderResourceMacros.h>\n");
         sTemp.Append("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)\n{\n");

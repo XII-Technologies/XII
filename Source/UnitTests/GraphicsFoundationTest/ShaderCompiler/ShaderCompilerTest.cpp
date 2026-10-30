@@ -379,11 +379,32 @@ RaytracingAccelerationStructure Scene : register(t4, space0);
             {
               XII_TEST_BOOL(binding->m_Type == xiiGALShaderResourceType::ConstantBuffer);
               XII_TEST_BOOL(binding->m_ShaderStages == stage);
+              XII_TEST_BOOL(binding->m_uiTotalSize >= 20);
+              XII_TEST_INT(binding->m_Variables.GetCount(), 2);
+              for (const auto& variable : binding->m_Variables)
+              {
+                if (variable.m_sName == "Tint")
+                  XII_TEST_INT(variable.m_uiOffset, 0);
+                else if (variable.m_sName == "Gain")
+                  XII_TEST_INT(variable.m_uiOffset, 16);
+                else
+                  XII_TEST_BOOL_MSG(false, "Unexpected material constant.");
+              }
             }
           }
         }
       }
     }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Material constant diagnostics preserve source lines")
+  {
+    xiiLogSystemToBuffer log;
+    xiiLogSystemScope    scope(&log);
+    xiiGALShaderCompiler compiler;
+    XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms("Shaders/MaterialConstantsInvalid.xiiShader", {}, &log, environment.GetShaderModel()).Failed());
+    XII_TEST_BOOL(log.m_sBuffer.FindSubString("NotAType") != nullptr);
+    XII_TEST_BOOL(log.m_sBuffer.FindSubString(":9:") != nullptr || log.m_sBuffer.FindSubString("(9,") != nullptr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compile and reuse the cache for every selected backend")
