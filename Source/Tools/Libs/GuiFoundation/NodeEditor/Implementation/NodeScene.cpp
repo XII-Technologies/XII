@@ -3,6 +3,7 @@
 #include <GuiFoundation/GuiFoundationPCH.h>
 
 #include <Foundation/Strings/TranslationLookup.h>
+#include <GuiFoundation/NodeEditor/CommentBlock.h>
 #include <GuiFoundation/NodeEditor/Connection.h>
 #include <GuiFoundation/NodeEditor/Node.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
@@ -69,6 +70,7 @@ void xiiQtNodeScene::InitScene(const xiiDocumentNodeManager* pManager)
       CreateQtConnection(pObject);
     }
   }
+  SyncCommentBlocks();
   UpdateSelection();
 }
 
@@ -322,14 +324,18 @@ void xiiQtNodeScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* contextMen
 
   QGraphicsItem* pItem = itemAt(contextMenuEvent->scenePos(), id);
   int            iType = pItem != nullptr ? pItem->type() : -1;
-  while (pItem && !(iType >= Type::Node && iType <= Type::Connection))
+  while (pItem && !(iType >= Type::Node && iType <= Type::CommentBlock))
   {
     pItem = pItem->parentItem();
     iType = pItem != nullptr ? pItem->type() : -1;
   }
 
   QMenu menu;
-  if (iType == Type::Pin)
+  if (iType == Type::CommentBlock)
+  {
+    AddCommentBlockActions(menu, static_cast<xiiQtGraphCommentBlock*>(pItem)->GetBlock().m_Id);
+  }
+  else if (iType == Type::Pin)
   {
     xiiQtPin* pPin    = static_cast<xiiQtPin*>(pItem);
     QAction*  pAction = new QAction("Disconnect Pin", &menu);
@@ -357,6 +363,7 @@ void xiiQtNodeScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* contextMen
     }
 
     AddCommentActions(menu, pNode->GetObject());
+    AddCommentBlockActions(menu);
     pNode->ExtendContextMenu(menu);
   }
   else if (iType == Type::Connection)
@@ -413,6 +420,9 @@ void xiiQtNodeScene::keyPressEvent(QKeyEvent* event)
 
 void xiiQtNodeScene::Clear()
 {
+  for (const auto& block : m_CommentBlocks)
+    delete block.Value();
+  m_CommentBlocks.Clear();
   while (!m_Connections.IsEmpty())
   {
     DeleteQtConnection(m_Connections.GetIterator().Key());
@@ -619,6 +629,9 @@ void xiiQtNodeScene::NodeEventsHandler(const xiiDocumentNodeManagerEvent& e)
 {
   switch (e.m_EventType)
   {
+    case xiiDocumentNodeManagerEvent::Type::CommentBlocksChanged:
+      SyncCommentBlocks();
+      break;
     case xiiDocumentNodeManagerEvent::Type::NodeMoved:
     {
       xiiVec2    vPos  = m_pManager->GetNodePos(e.m_pObject);
@@ -894,6 +907,7 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
   {
     menu.addSeparator();
     AddArrangementActions(menu);
+    AddCommentBlockActions(menu);
     ExtendContextMenu(menu, nullptr);
   }
 
@@ -958,15 +972,33 @@ void xiiQtNodeScene::RemoveSelectedNodesAction()
   xiiDeque<xiiQtNode*> selection;
   GetSelectedNodes(selection);
   xiiHybridArray<xiiUuid, 8> connections;
+  xiiHybridArray<xiiUuid, 8> blocks;
   for (auto* item : selectedItems())
+  {
     if (item->type() == Type::Connection)
       connections.PushBack(static_cast<xiiQtConnection*>(item)->GetObject()->GetGuid());
+    else if (item->type() == Type::CommentBlock)
+      blocks.PushBack(static_cast<xiiQtGraphCommentBlock*>(item)->GetBlock().m_Id);
+  }
 
-  if (selection.IsEmpty() && connections.IsEmpty())
+  if (selection.IsEmpty() && connections.IsEmpty() && blocks.IsEmpty())
     return;
 
   xiiCommandHistory* history = GetDocumentNodeManager()->GetDocument()->GetCommandHistory();
   history->StartTransaction("Remove Graph Selection");
+
+  for (const auto& id : blocks)
+  {
+    xiiSetGraphCommentBlockCommand command;
+    command.m_Id      = id;
+    const auto status = history->AddCommand(command);
+    if (status.Failed())
+    {
+      history->CancelTransaction();
+      xiiQtUiServices::GetSingleton()->MessageBoxStatus(status, "Failed to remove comment block.");
+      return;
+    }
+  }
 
   for (const auto& id : connections)
   {

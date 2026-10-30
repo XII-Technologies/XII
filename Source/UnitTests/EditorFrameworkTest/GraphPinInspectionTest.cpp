@@ -5,6 +5,7 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/NodeEditor/CommentBlock.h>
 #include <GuiFoundation/NodeEditor/Connection.h>
 #include <GuiFoundation/NodeEditor/Node.h>
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
@@ -148,6 +149,31 @@ namespace
   class InspectorScene : public xiiQtNodeScene
   {
   public:
+    void DragCommentBlock(const xiiUuid& id, QPointF delta, bool resize)
+    {
+      auto*                    block = m_CommentBlocks.Find(id).Value();
+      const auto               start = resize ? block->mapToScene(QPointF(block->GetBlock().m_vSize.x - 4, block->GetBlock().m_vSize.y - 4)) : block->mapToScene(QPointF(12, 12));
+      QGraphicsSceneMouseEvent press(QEvent::GraphicsSceneMousePress);
+      press.setButton(Qt::LeftButton);
+      press.setPos(block->mapFromScene(start));
+      press.setScenePos(start);
+      mousePressEvent(&press);
+      QGraphicsSceneMouseEvent move(QEvent::GraphicsSceneMouseMove);
+      move.setButtons(Qt::LeftButton);
+      move.setScenePos(start + delta);
+      move.setPos(block->mapFromScene(start + delta));
+      mouseMoveEvent(&move);
+      QGraphicsSceneMouseEvent release(QEvent::GraphicsSceneMouseRelease);
+      release.setButton(Qt::LeftButton);
+      release.setScenePos(start + delta);
+      release.setPos(block->mapFromScene(start + delta));
+      mouseReleaseEvent(&release);
+    }
+    void SelectCommentBlock(const xiiUuid& id)
+    {
+      clearSelection();
+      m_CommentBlocks.Find(id).Value()->setSelected(true);
+    }
     QRectF Bounds(const xiiDocumentObject* object) const
     {
       auto* node = m_Nodes.Find(object).Value();
@@ -445,6 +471,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphCommentBlocks)
   auto*                  history = document.GetCommandHistory();
   xiiGraphCommentBlock   block;
   block.m_Id    = xiiUuid::MakeUuid();
+  block.m_vPosition = xiiVec2(-50, -100);
   block.m_sText = "Surface layering\nKeep related nodes together.";
   xiiSetGraphCommentBlockCommand command;
   command.m_Id    = block.m_Id;
@@ -464,13 +491,67 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphCommentBlocks)
   XII_TEST_INT(restoredManager->GetCommentBlocks().GetCount(), 1);
   if (XII_TEST_BOOL(restoredManager->GetCommentBlocks().Contains(block.m_Id)))
     XII_TEST_BOOL(restoredManager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == block.ToVariant());
+  InspectorScene scene;
+  scene.InitScene(manager);
+  auto*   edit = document.GetObjectAccessor();
+  xiiUuid nodeIds[2];
+  edit->StartTransaction("Create grouped nodes");
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiInspectorGraphNode>(), nodeIds[index]));
+    manager->MoveNode(edit->GetObject(nodeIds[index]), xiiVec2(index * 800.0f, 0));
+  }
+  edit->FinishTransaction();
+  const auto historyBefore = history->GetUndoStackSize();
+  scene.DragCommentBlock(block.m_Id, QPointF(100, 50), false);
+  XII_TEST_INT(history->GetUndoStackSize(), historyBefore + 1);
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[0])) == xiiVec2(100, 50));
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[1])) == xiiVec2(800, 0));
+  XII_TEST_STATUS(history->Undo());
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[0])) == xiiVec2::MakeZero());
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().m_vPosition == block.m_vPosition);
+  manager->m_RejectMove = nodeIds[0];
+  auto rejectedMove     = block;
+  rejectedMove.m_vPosition += xiiVec2(50);
+  const auto beforeRejectedMove = history->GetUndoStackSize();
+  XII_TEST_BOOL(scene.SetCommentBlock(rejectedMove, true).Failed());
+  XII_TEST_INT(history->GetUndoStackSize(), beforeRejectedMove);
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == block.ToVariant());
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[0])) == xiiVec2::MakeZero());
+  manager->m_RejectMove = {};
+  scene.DragCommentBlock(block.m_Id, QPointF(120, 90), true);
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().m_vSize == block.m_vSize + xiiVec2(120, 90));
+  XII_TEST_STATUS(history->Undo());
+  QMenu actions;
+  scene.AddCommentBlockActions(actions, block.m_Id);
+  XII_TEST_INT(actions.actions().size(), 5);
+  actions.actions()[2]->trigger();
+  const auto   fitted = manager->GetCommentBlocks().Find(block.m_Id).Value();
+  const QRectF fittedBounds(fitted.m_vPosition.x, fitted.m_vPosition.y, fitted.m_vSize.x, fitted.m_vSize.y);
+  XII_TEST_BOOL(fittedBounds.contains(scene.Bounds(edit->GetObject(nodeIds[0]))));
+  XII_TEST_BOOL(!fittedBounds.contains(scene.Bounds(edit->GetObject(nodeIds[1]))));
+  XII_TEST_STATUS(document.SaveDocument(true));
+  InspectorDocument editedReload(path);
+  XII_TEST_STATUS(editedReload.LoadDocument());
+  const auto* editedManager = static_cast<const InspectorNodeManager*>(editedReload.GetObjectManager());
+  XII_TEST_BOOL(editedManager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == fitted.ToVariant());
+  actions.actions()[3]->trigger();
+  XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 2);
+  XII_TEST_STATUS(history->Undo());
+  {
+    QImage image(1000, 500, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(32, 34, 38));
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    scene.render(&painter, QRectF(15, 15, 970, 470), scene.itemsBoundingRect().adjusted(-20, -20, 20, 20), Qt::KeepAspectRatio);
+    painter.end();
+    XII_TEST_BOOL(image.save(xiiStringBuilder(output, "/OrganizationalBlock.png").GetData()));
+  }
   block.m_vSize.x = -1;
   XII_TEST_BOOL(manager->SetCommentBlock(block.m_Id, block.ToVariant()).Failed());
   XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().m_vSize.x > 0);
-  history->StartTransaction("Remove comment block");
-  command.m_Value = {};
-  XII_TEST_STATUS(history->AddCommand(command));
-  history->FinishTransaction();
+  scene.SelectCommentBlock(block.m_Id);
+  scene.DeleteSelection();
   XII_TEST_BOOL(manager->GetCommentBlocks().IsEmpty());
   XII_TEST_STATUS(history->Undo());
   XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 1);
