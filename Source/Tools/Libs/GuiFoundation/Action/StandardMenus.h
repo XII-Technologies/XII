@@ -22,7 +22,7 @@ struct xiiStandardMenuTypes
     Tools   = XII_BIT(7),
     Help    = XII_BIT(8),
 
-    Default = Project | File | Edit | Panels | Tools | Help
+    Default = Project | File | Edit | Tools | Help
   };
 
   struct Bits
