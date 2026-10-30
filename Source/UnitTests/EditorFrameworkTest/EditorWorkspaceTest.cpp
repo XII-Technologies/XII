@@ -12,9 +12,11 @@
 #include <EditorFramework/Settings/ScenePreferences.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
+#include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 #include <GuiFoundation/Models/LogModel.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/Widgets/CollapsibleGroupBox.moc.h>
@@ -54,6 +56,8 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
     QApplication::processEvents();
     auto* pMenu   = pContainer->findChild<QMenuBar*>(QStringLiteral("EditorDocumentMenu"));
     auto* pSource = qobject_cast<QMenuBar*>(window.menuWidget());
+    XII_TEST_BOOL(xiiActionManager::GetActionHandle("", "G.Panels").IsInvalidated());
+    XII_TEST_BOOL(xiiRTTI::FindTypeByName("xiiApplicationPanelsMenuAction") == nullptr);
     if (XII_TEST_BOOL(pMenu != nullptr && pSource != nullptr))
     {
       XII_TEST_BOOL(pMenu->actions() == pSource->actions());
@@ -222,6 +226,31 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Named workspace round trip and safe-mode guard")
   {
+    auto* pWorkspaces = pContainer->findChild<QToolButton*>(QStringLiteral("EditorWorkspaces"));
+    if (XII_TEST_BOOL(pWorkspaces != nullptr && pWorkspaces->menu() != nullptr))
+    {
+      auto* pMenu = pWorkspaces->menu();
+      pMenu->popup(pWorkspaces->mapToGlobal(QPoint(0, pWorkspaces->height())));
+      QApplication::processEvents();
+      auto* pPanels = pMenu->actions().isEmpty() ? nullptr : pMenu->actions().front()->menu();
+      if (XII_TEST_BOOL(pPanels != nullptr))
+      {
+        for (auto* pPanel : xiiQtApplicationPanel::GetAllApplicationPanels())
+        {
+          auto* pAction = pPanel->toggleViewAction();
+          XII_TEST_BOOL(pPanels->actions().contains(pAction));
+          XII_TEST_BOOL(pAction->isCheckable());
+          XII_TEST_BOOL(pAction->isChecked() == !pPanel->isClosed());
+          XII_TEST_BOOL(pAction->isIconVisibleInMenu());
+          XII_TEST_BOOL(!pAction->icon().pixmap(16, 16).isNull());
+        }
+        pPanels->popup(pMenu->mapToGlobal(QPoint(pMenu->width(), 0)));
+        QApplication::processEvents();
+        XII_TEST_BOOL(pPanels->grab().save(xiiMakeQString(xiiStringBuilder(sOutputDirectory, "/EditorWorkspacePanels.png"))));
+        pPanels->hide();
+      }
+      pMenu->hide();
+    }
     const bool bPrevious = xiiQtDocumentWindow::s_bAllowRestoreWindowLayout;
     XII_SCOPE_EXIT(xiiQtDocumentWindow::s_bAllowRestoreWindowLayout = bPrevious);
     xiiQtDocumentWindow::s_bAllowRestoreWindowLayout = true;

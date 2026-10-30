@@ -183,7 +183,13 @@ xiiQtContainerWindow::xiiQtContainerWindow()
     pWorkspaceMenu->clear();
     auto* pPanels = pWorkspaceMenu->addMenu(tr("Application Panels"));
     for (auto* pPanel : m_ApplicationPanels)
-      pPanels->addAction(pPanel->toggleViewAction());
+    {
+      // ADS omits icons from checkable toggle actions; retain both in the workspace menu.
+      auto* pAction = pPanel->toggleViewAction();
+      pAction->setIcon(pPanel->icon());
+      pAction->setIconVisibleInMenu(true);
+      pPanels->addAction(pAction);
+    }
     pWorkspaceMenu->addSeparator();
     auto* pSave = pWorkspaceMenu->addAction(tr("Save Workspace As..."));
     pSave->setEnabled(xiiToolsProject::IsProjectOpen());
