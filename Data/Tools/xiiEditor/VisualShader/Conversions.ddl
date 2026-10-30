@@ -5,7 +5,7 @@ Node %Split
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Tooltip { "Value that should be split into components.\nCan be of any type, missing components output zero." }
   }

@@ -29,7 +29,7 @@ FillMode = FillMode_Solid
   #define CUSTOM_INTERPOLATOR uint GameObjectID : GAME_OBJECT_ID;
 #endif
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #include <Shaders/Common/GlobalConstants.h>
 #include <Shaders/Materials/MaterialInterpolator.h>
@@ -100,7 +100,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
   return Output;
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #include <Shaders/Materials/MaterialHelper.h>
 

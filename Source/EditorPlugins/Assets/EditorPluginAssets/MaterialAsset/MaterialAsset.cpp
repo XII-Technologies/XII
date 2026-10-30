@@ -6,108 +6,17 @@
 #include <EditorPluginAssets/MaterialAsset/MaterialAssetManager.h>
 #include <EditorPluginAssets/MaterialAsset/ShaderTypeRegistry.h>
 #include <EditorPluginAssets/VisualShader/VsCodeGenerator.h>
-#include <Foundation/CodeUtils/Preprocessor.h>
+#include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/Material/MaterialAssetFile.h>
 #include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Textures/TextureCubeResource.h>
+#include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ToolsFoundation/Document/PrefabCache.h>
 #include <ToolsFoundation/Document/PrefabUtils.h>
-
-#ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-#  include <Foundation/IO/CompressedStreamZstd.h>
-#endif
-
-namespace
-{
-  xiiResult AddDefines(xiiDynamicArray<xiiString>& inout_defines, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)
-  {
-    xiiStringBuilder sDefine;
-
-    xiiStringView sName = pProp->GetPropertyName();
-    if (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::Bool)
-    {
-      sDefine.Set(sName, " ", pObject->GetTypeAccessor().GetValue(sName).Get<bool>() ? "TRUE" : "FALSE");
-      inout_defines.PushBack(sDefine);
-      return XII_SUCCESS;
-    }
-    else if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
-    {
-      xiiInt64 iValue = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiInt64>();
-
-      xiiHybridArray<xiiReflectionUtils::EnumKeyValuePair, 16> enumValues;
-      xiiReflectionUtils::GetEnumKeysAndValues(pProp->GetSpecificType(), enumValues, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
-      for (auto& enumValue : enumValues)
-      {
-        sDefine.SetFormat("{} {}", enumValue.m_sKey, enumValue.m_iValue);
-        inout_defines.PushBack(sDefine);
-
-        if (enumValue.m_iValue == iValue)
-        {
-          sDefine.Set(sName, " ", enumValue.m_sKey);
-          inout_defines.PushBack(sDefine);
-        }
-      }
-
-      return XII_SUCCESS;
-    }
-
-    XII_REPORT_FAILURE("Invalid shader permutation property type '{0}'", pProp->GetSpecificType()->GetTypeName());
-    return XII_FAILURE;
-  }
-
-  xiiResult ParseMaterialConfig(xiiStringView sRelativeFileName, const xiiDocumentObject* pShaderPropertyObject, xiiVariantDictionary& out_materialConfig)
-  {
-    xiiFileReader file;
-    if (file.Open(sRelativeFileName).Failed())
-      return XII_FAILURE;
-
-    xiiHybridArray<xiiString, 16> defines;
-    {
-      xiiHybridArray<const xiiAbstractProperty*, 32> properties;
-      pShaderPropertyObject->GetType()->GetAllProperties(properties);
-
-      for (auto& pProp : properties)
-      {
-        const xiiCategoryAttribute* pCategory = pProp->GetAttributeByType<xiiCategoryAttribute>();
-        if (pCategory == nullptr || pCategory->GetCategory() != "Permutation")
-          continue;
-
-        XII_SUCCEED_OR_RETURN(AddDefines(defines, pShaderPropertyObject, pProp));
-      }
-    }
-
-    xiiStringBuilder sOutput;
-    XII_SUCCEED_OR_RETURN(xiiGALShaderParser::PreprocessSection(file, xiiGALShaderSections::MaterialConfiguration, defines, sOutput));
-
-    xiiHybridArray<xiiStringView, 32> allAssignments;
-    sOutput.Split(false, allAssignments, "\n", ";", "\r");
-
-    xiiStringBuilder                 temp;
-    xiiHybridArray<xiiStringView, 4> components;
-    for (const xiiStringView& assignment : allAssignments)
-    {
-      temp = assignment;
-      temp.Trim(" \t\r\n;");
-      if (temp.IsEmpty())
-        continue;
-
-      temp.Split(false, components, " ", "\t", "=", "\r");
-
-      if (components.GetCount() != 2)
-      {
-        xiiLog::Error("Malformed shader state assignment: '{0}'", temp);
-        continue;
-      }
-
-      out_materialConfig[components[0]] = components[1];
-    }
-
-    return XII_SUCCESS;
-  }
-} // namespace
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialAssetPreview, 1)
@@ -122,7 +31,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialShaderMode, 1)
 XII_ENUM_CONSTANTS(xiiMaterialShaderMode::BaseMaterial, xiiMaterialShaderMode::File, xiiMaterialShaderMode::Custom, xiiMaterialShaderMode::Native)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 5, xiiRTTIDefaultAllocator<xiiMaterialAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 6, xiiRTTIDefaultAllocator<xiiMaterialAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -202,42 +111,21 @@ void xiiMaterialAssetProperties::SetShaderMode(xiiEnum<xiiMaterialShaderMode> mo
   // If no doc is present, we are de-serializing the document so do nothing yet.
   if (!m_pDocument)
     return;
-  xiiCommandHistory*     pHistory  = m_pDocument->GetCommandHistory();
-  xiiObjectAccessorBase* pAccessor = m_pDocument->GetObjectAccessor();
+  xiiCommandHistory* pHistory = m_pDocument->GetCommandHistory();
   // Do not make new commands if we got here in a response to an undo / redo action.
   if (pHistory->IsInUndoRedo())
     return;
 
-  xiiStringBuilder tmp;
-
-  switch (m_ShaderMode)
-  {
-    case xiiMaterialShaderMode::BaseMaterial:
-    {
-      pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "BaseMaterial", "").AssertSuccess();
-      pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "Shader", "").AssertSuccess();
-    }
-    break;
-    case xiiMaterialShaderMode::File:
-    case xiiMaterialShaderMode::Native:
-    {
-      pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "BaseMaterial", "").AssertSuccess();
-      pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "Shader", "").AssertSuccess();
-    }
-    break;
-    case xiiMaterialShaderMode::Custom:
-    {
-      pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "BaseMaterial", "").AssertSuccess();
-      pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "Shader", xiiConversionUtils::ToString(m_pDocument->GetGuid(), tmp).GetData()).AssertSuccess();
-    }
-    break;
-  }
+  // Modes select a source, not a destructive conversion. Preserve authored data.
+  if (m_ShaderMode == xiiMaterialShaderMode::BaseMaterial && !m_sBaseMaterial.IsEmpty())
+    m_pDocument->SetBaseMaterial(m_sBaseMaterial);
+  UpdateShader();
 }
 
 void xiiMaterialAssetProperties::SetDocument(xiiMaterialAssetDocument* pDocument)
 {
   m_pDocument = pDocument;
-  if (!m_sBaseMaterial.IsEmpty())
+  if (m_ShaderMode == xiiMaterialShaderMode::BaseMaterial && !m_sBaseMaterial.IsEmpty())
   {
     m_pDocument->SetBaseMaterial(m_sBaseMaterial);
   }
@@ -262,8 +150,7 @@ void xiiMaterialAssetProperties::UpdateShader(bool bForce)
 
   if (m_ShaderMode == xiiMaterialShaderMode::Native)
   {
-    if (pPropObject != nullptr)
-      DeleteProperties();
+    // Keep the serialized shader property object for returning to shader authoring.
     return;
   }
 
@@ -345,7 +232,9 @@ void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
 
     auto res = pHistory->AddCommand(cmd);
     XII_ASSERT_DEV(res.Succeeded(), "Addition of new properties should never fail.");
-    LoadOldValues();
+    // The property setter runs inside the object manager's property event.
+    // Restore values before the transaction ends, after that event has unwound.
+    m_pDocument->m_bRestoreShaderProperties = true;
   }
 }
 
@@ -362,7 +251,8 @@ void xiiMaterialAssetProperties::SaveOldValues()
     {
       if (pProp->GetCategory() == xiiPropertyCategory::Member)
       {
-        m_CachedProperties[pProp->GetPropertyName()] = accessor.GetValue(pProp->GetPropertyName());
+        xiiStringBuilder key(pType->GetTypeName(), "|", pProp->GetPropertyName());
+        m_pDocument->m_ShaderAuthoringValues[key] = accessor.GetValue(pProp->GetPropertyName());
       }
     }
   }
@@ -383,7 +273,8 @@ void xiiMaterialAssetProperties::LoadOldValues()
       if (pProp->GetCategory() == xiiPropertyCategory::Member)
       {
         xiiString sPropName = pProp->GetPropertyName();
-        auto      it        = m_CachedProperties.Find(sPropName);
+        xiiStringBuilder key(pType->GetTypeName(), "|", sPropName);
+        auto             it = m_pDocument->m_ShaderAuthoringValues.Find(key);
         if (it.IsValid())
         {
           if (it.Value() != accessor.GetValue(sPropName.GetData()))
@@ -393,8 +284,9 @@ void xiiMaterialAssetProperties::LoadOldValues()
             cmd.m_sProperty = sPropName;
             cmd.m_NewValue  = it.Value();
 
-            // Do not check for success, if a cached value failed to apply, simply ignore it.
-            pHistory->AddCommand(cmd).AssertSuccess();
+            const auto status = pHistory->AddCommand(cmd);
+            if (status.Failed())
+              xiiLog::Warning("Shader parameter '{}' changed type and its previous value could not be restored: {}", sPropName, status.GetMessageString());
           }
         }
       }
@@ -433,11 +325,23 @@ void xiiMaterialAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSt
 
 xiiString xiiMaterialAssetProperties::ResolveRelativeShaderPath() const
 {
-  bool isGuid = xiiConversionUtils::IsStringUuid(m_sShader);
+  if (m_ShaderMode == xiiMaterialShaderMode::Native)
+    return {};
+
+  xiiStringBuilder source = m_sShader;
+  if (m_ShaderMode == xiiMaterialShaderMode::Custom && m_pDocument != nullptr)
+  {
+    const auto*      manager       = m_pDocument->GetAssetDocumentManager();
+    const auto       dataDirectory = xiiAssetCurator::GetSingleton()->FindDataDirectoryForAsset(m_pDocument->GetDocumentPath());
+    xiiStringBuilder path("AssetCache/", manager->GetRelativeOutputFileName(m_pDocument->GetAssetDocumentTypeDescriptor(), dataDirectory, m_pDocument->GetDocumentPath(), xiiMaterialAssetDocumentManager::s_szShaderOutputTag));
+    return path;
+  }
+
+  bool isGuid = xiiConversionUtils::IsStringUuid(source);
 
   if (isGuid)
   {
-    xiiUuid guid   = xiiConversionUtils::ConvertStringToUuid(m_sShader);
+    xiiUuid guid   = xiiConversionUtils::ConvertStringToUuid(source);
     auto    pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(guid);
     if (pAsset)
     {
@@ -466,14 +370,27 @@ xiiString xiiMaterialAssetProperties::ResolveRelativeShaderPath() const
 //////////////////////////////////////////////////////////////////////////
 
 xiiMaterialAssetDocument::xiiMaterialAssetDocument(xiiStringView sDocumentPath) :
-  xiiSimpleAssetDocument<xiiMaterialAssetProperties>(XII_DEFAULT_NEW(xiiMaterialObjectManager), sDocumentPath, xiiAssetDocEngineConnection::Simple, true)
+  xiiSimpleAssetDocument<xiiMaterialAssetProperties>(XII_DEFAULT_NEW(xiiMaterialObjectManager), sDocumentPath, xiiAssetDocEngineConnection::Simple, false)
 {
   xiiQtEditorApp::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiMaterialAssetDocument::EditorEventHandler, this));
+  GetCommandHistory()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiMaterialAssetDocument::CommandHistoryEventHandler, this));
 }
 
 xiiMaterialAssetDocument::~xiiMaterialAssetDocument()
 {
+  GetCommandHistory()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiMaterialAssetDocument::CommandHistoryEventHandler, this));
   xiiQtEditorApp::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiMaterialAssetDocument::EditorEventHandler, this));
+}
+
+void xiiMaterialAssetDocument::CommandHistoryEventHandler(const xiiCommandHistoryEvent& event)
+{
+  if (event.m_Type == xiiCommandHistoryEvent::Type::BeforeTransactionEnded && m_bRestoreShaderProperties)
+  {
+    m_bRestoreShaderProperties = false;
+    GetProperties()->LoadOldValues();
+  }
+  else if (event.m_Type == xiiCommandHistoryEvent::Type::BeforeTransactionCanceled)
+    m_bRestoreShaderProperties = false;
 }
 
 void xiiMaterialAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
@@ -637,7 +554,30 @@ void xiiMaterialAssetDocument::UpdatePrefabObject(xiiDocumentObject* pObject, co
     {
       if (xiiAbstractObjectNode* pNodeBase = baseGraph.GetNode(GetMaterialNodeGuid(baseGraph)))
       {
-        pNodeBase->ChangeProperty("Shader", pProp->m_Value);
+        xiiInt64 mode = xiiMaterialShaderMode::BaseMaterial;
+        if (const auto* shaderMode = pNode->FindProperty("ShaderMode"))
+        {
+          if (shaderMode->m_Value.IsA<xiiString>())
+          {
+            if (!xiiReflectionUtils::StringToEnumeration(xiiGetStaticRTTI<xiiMaterialShaderMode>(), shaderMode->m_Value.Get<xiiString>(), mode))
+            {
+              xiiLog::Error("Base material '{}' has an invalid shader authoring mode.", PrefabAsset);
+              return;
+            }
+          }
+          else
+            mode = shaderMode->m_Value.ConvertTo<xiiInt64>();
+        }
+        if (mode == xiiMaterialShaderMode::Custom)
+        {
+          xiiStringBuilder graphSource;
+          xiiConversionUtils::ToString(PrefabAsset, graphSource);
+          pNodeBase->ChangeProperty("Shader", graphSource.GetView());
+        }
+        else if (mode == xiiMaterialShaderMode::Native)
+          pNodeBase->ChangeProperty("Shader", xiiString());
+        else
+          pNodeBase->ChangeProperty("Shader", pProp->m_Value);
       }
     }
   }
@@ -645,16 +585,6 @@ void xiiMaterialAssetDocument::UpdatePrefabObject(xiiDocumentObject* pObject, co
   // Create a new diff that changes our current instance to the new instance
   xiiDeque<xiiAbstractGraphDiffOperation> newInstanceToCurrentInstance;
   baseGraph.CreateDiffWithBaseGraph(rightGraph, newInstanceToCurrentInstance);
-  if (false)
-  {
-    xiiFileWriter file;
-    file.Open("C:\\temp\\Material - diff.txt").IgnoreResult();
-
-    xiiStringBuilder sDiff;
-    sDiff.Append("######## New Instance To Instance #######\n");
-    xiiPrefabUtils::WriteDiff(newInstanceToCurrentInstance, sDiff);
-    file.WriteBytes(sDiff.GetData(), sDiff.GetElementCount()).IgnoreResult();
-  }
   // Apply diff to current instance
   // Shader needs to be set first
   for (xiiUInt32 i = 0; i < newInstanceToCurrentInstance.GetCount(); ++i)
@@ -742,102 +672,111 @@ public:
   }
 };
 
+xiiStatus xiiMaterialAssetDocument::CompileShader()
+{
+  if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Native)
+    return xiiStatus("Standard materials use the built-in native shader.");
+
+  xiiMaterialVisualShaderEvent event;
+  event.m_Type       = xiiMaterialVisualShaderEvent::TransformFailed;
+  const auto compile = [&]() -> xiiStatus {
+    if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Custom)
+    {
+      xiiAssetFileHeader header;
+      header.SetFileHashAndVersion(0, GetAssetTypeVersion());
+      XII_SUCCEED_OR_RETURN(RecreateVisualShaderFile(header));
+    }
+    xiiString path = GetProperties()->ResolveRelativeShaderPath();
+    if (path.IsEmpty() || !xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(path))
+      return xiiStatus("Select an existing .xiiShader source before compiling the material.");
+    xiiStringView platform, compiler;
+    xiiGALDeviceFactory::GetShaderModelAndCompiler(xiiGameApplication::GetActiveRenderer(), platform, compiler);
+    if (platform.IsEmpty())
+      return xiiStatus("The selected renderer does not provide a shader compilation platform.");
+    QStringList arguments;
+    arguments << "-project" << QString::fromUtf8(xiiToolsProject::GetSingleton()->GetProjectDirectory().GetData());
+    arguments << "-shader" << QString::fromUtf8(path.GetData());
+    arguments << "-platform" << QString::fromUtf8(platform.GetStartPointer(), platform.GetElementCount());
+    xiiMap<xiiString, xiiString> fixed;
+    if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Custom)
+    {
+      xiiHybridArray<xiiStringView, 16> checks;
+      m_sCheckPermutations.Split(false, checks, "\n", "\r");
+      for (const auto check : checks)
+      {
+        xiiHybridArray<xiiStringView, 2> assignment;
+        check.Split(false, assignment, "=");
+        if (assignment.GetCount() != 2)
+          return xiiStatus(xiiFmt("Invalid graph permutation check '{}'.", check));
+        fixed.Insert(assignment[0], assignment[1]);
+      }
+    }
+    if (const auto* object = GetShaderPropertyObject())
+    {
+      xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+      object->GetType()->GetAllProperties(properties);
+      for (const auto* property : properties)
+      {
+        const auto* category = property->GetAttributeByType<xiiCategoryAttribute>();
+        if (category == nullptr || category->GetCategory() != "Permutation")
+          continue;
+        const auto       value = object->GetTypeAccessor().GetValue(property->GetPropertyName());
+        xiiStringBuilder selected;
+        if (value.IsA<bool>())
+          selected = value.Get<bool>() ? "TRUE" : "FALSE";
+        else if (!xiiReflectionUtils::EnumerationToString(property->GetSpecificType(), value.ConvertTo<xiiInt64>(), selected, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          return xiiStatus(xiiFmt("Invalid shader permutation '{}'.", property->GetPropertyName()));
+        fixed.Insert(property->GetPropertyName(), selected);
+      }
+    }
+    if (!fixed.IsEmpty())
+    {
+      arguments << "-perm";
+      for (const auto& value : fixed)
+      {
+        xiiStringBuilder assignment(value.Key(), "=", value.Value());
+        arguments << QString::fromUtf8(assignment.GetData());
+      }
+    }
+    xiiVisualShaderErrorLog log;
+    const auto              toolStatus = xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiShaderCompilerTool", arguments, 60, &log);
+    event.m_sTransformError            = log.m_sResult;
+    if (toolStatus.Failed())
+      return event.m_sTransformError.IsEmpty() ? toolStatus : xiiStatus(event.m_sTransformError.GetView());
+    return log.m_Status;
+  };
+  const xiiStatus result = compile();
+  if (result.Succeeded())
+    event.m_Type = xiiMaterialVisualShaderEvent::TransformSucceeded;
+  else if (event.m_sTransformError.IsEmpty())
+    event.m_sTransformError = result.GetMessageString();
+  if (result.Failed() && GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Custom)
+    TagVisualShaderFileInvalid(event.m_sTransformError);
+  m_VisualShaderEvents.Broadcast(event);
+  return result;
+}
+
 xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   if (sOutputTag.IsEqual(xiiMaterialAssetDocumentManager::s_szShaderOutputTag))
   {
-    xiiStatus ret = RecreateVisualShaderFile(AssetHeader);
-
+    const xiiStatus status = RecreateVisualShaderFile(AssetHeader);
+    if (status.Failed())
+      return status;
     if (transformFlags.IsSet(xiiTransformFlags::ForceTransform))
-    {
-      xiiMaterialVisualShaderEvent e;
-
-      if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Custom)
-      {
-        e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
-        e.m_sTransformError = ret.GetMessageString();
-
-        if (ret.Succeeded())
-        {
-          e.m_Type                        = xiiMaterialVisualShaderEvent::TransformSucceeded;
-          xiiStringBuilder sAutoGenShader = GetProperties()->GetAutoGenShaderPathAbs();
-
-          QStringList      arguments;
-          xiiStringBuilder temp;
-
-          arguments << "-project";
-          arguments << QString::fromUtf8(xiiToolsProject::GetSingleton()->GetProjectDirectory().GetData());
-
-          arguments << "-shader";
-          arguments << QString::fromUtf8(sAutoGenShader.GetData());
-
-          arguments << "-platform";
-          arguments << "VK_SM60"; /// \todo Rendering platform is currently hardcoded
-
-          // determine the permutation variables that should get fixed values
-          {
-            // m_sCheckPermutations are just all fixed perm vars from every node in the VS
-            xiiStringBuilder        temp = m_sCheckPermutations;
-            xiiDeque<xiiStringView> perms;
-            temp.Split(false, perms, "\n");
-
-            // remove duplicates
-            xiiSet<xiiString> uniquePerms;
-            for (const xiiStringView& perm : perms)
-            {
-              uniquePerms.Insert(perm);
-            }
-
-            // pass permutation variable definitions to the compiler: "SOME_VAR=SOME_VAL"
-            arguments << "-perm";
-            for (auto it = uniquePerms.GetIterator(); it.IsValid(); ++it)
-            {
-              arguments << it.Key().GetData();
-            }
-          }
-
-          xiiVisualShaderErrorLog log;
-
-          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiShaderCompilerTool", arguments, 60, &log);
-          if (ret.Failed())
-          {
-            e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
-            e.m_sTransformError = ret.GetMessageString();
-          }
-          else
-          {
-            e.m_Type            = log.m_Status.Succeeded() ? xiiMaterialVisualShaderEvent::TransformSucceeded : xiiMaterialVisualShaderEvent::TransformFailed;
-            e.m_sTransformError = log.m_sResult;
-            xiiLog::Info("Compiled Visual Shader.");
-          }
-        }
-      }
-      else
-      {
-        e.m_Type = xiiMaterialVisualShaderEvent::VisualShaderNotUsed;
-      }
-
-      if (e.m_Type == xiiMaterialVisualShaderEvent::TransformFailed)
-      {
-        TagVisualShaderFileInvalid(pAssetProfile, e.m_sTransformError);
-      }
-
-      m_VisualShaderEvents.Broadcast(e);
-    }
-
-    return ret;
+      return CompileShader();
+    return XII_SUCCESS;
   }
-  else
-  {
-    return SUPER::InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
-  }
+  if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::File && transformFlags.IsSet(xiiTransformFlags::ForceTransform))
+    XII_SUCCEED_OR_RETURN(CompileShader());
+  return SUPER::InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
 }
 
 xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   XII_ASSERT_DEV(sOutputTag.IsEmpty(), "Additional output '{0}' not implemented!", sOutputTag);
 
-  return WriteMaterialAsset(stream, pAssetProfile, true);
+  return WriteMaterialAsset(stream);
 }
 
 xiiTransformStatus xiiMaterialAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)
@@ -856,6 +795,13 @@ void xiiMaterialAssetDocument::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph
   SUPER::AttachMetaDataBeforeSaving(graph);
   const xiiDocumentNodeManager* pManager = static_cast<const xiiDocumentNodeManager*>(GetObjectManager());
   pManager->AttachMetaDataBeforeSaving(graph);
+  if (auto* node = graph.GetNode(GetPropertyObject()->GetGuid()))
+  {
+    xiiVariantDictionary values;
+    for (const auto& entry : m_ShaderAuthoringValues)
+      values.Insert(entry.Key(), entry.Value());
+    node->AddProperty("ShaderAuthoringValues", values);
+  }
 }
 
 void xiiMaterialAssetDocument::RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable)
@@ -863,6 +809,16 @@ void xiiMaterialAssetDocument::RestoreMetaDataAfterLoading(const xiiAbstractObje
   SUPER::RestoreMetaDataAfterLoading(graph, bUndoable);
   xiiDocumentNodeManager* pManager = static_cast<xiiDocumentNodeManager*>(GetObjectManager());
   pManager->RestoreMetaDataAfterLoading(graph, bUndoable);
+  if (const auto* node = graph.GetNode(GetPropertyObject()->GetGuid()))
+  {
+    if (const auto* values = node->FindProperty("ShaderAuthoringValues"); values != nullptr && values->m_Value.IsA<xiiVariantDictionary>())
+    {
+      auto& saved = m_ShaderAuthoringValues;
+      saved.Clear();
+      for (const auto& entry : values->m_Value.Get<xiiVariantDictionary>())
+        saved.Insert(entry.Key(), entry.Value());
+    }
+  }
 }
 
 void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const
@@ -947,228 +903,87 @@ void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
   }
 }
 
-xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_stream0, const xiiPlatformProfile* pAssetProfile, bool bEmbedLowResData) const
+xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_stream) const
 {
-  const xiiMaterialAssetProperties* pProp = GetProperties();
-
-  if (pProp->m_ShaderMode == xiiMaterialShaderMode::Native)
-    return xiiMaterialAssetFile::Write(inout_stream0, pProp->m_NativeMaterial);
-
-  xiiStringBuilder sValue;
-
-  // now generate the .xiiBinMaterial file
+  const auto*                   pProperties = GetProperties();
+  xiiMaterialResourceDescriptor description;
+  if (pProperties->m_ShaderMode == xiiMaterialShaderMode::Native)
   {
-    const xiiUInt8 uiVersion = 7;
-
-    inout_stream0 << uiVersion;
-
-    xiiUInt8 uiCompressionMode = 0;
-
-#ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-    uiCompressionMode = 1;
-    xiiCompressedStreamWriterZstd stream(&inout_stream0, 0, xiiCompressedStreamWriterZstd::Compression::Average);
-#else
-    xiiStreamWriter& stream = stream0;
-#endif
-
-    inout_stream0 << uiCompressionMode;
-
-    stream << pProp->m_sBaseMaterial;
-    stream << pProp->m_sSurface;
-
-    xiiString sRelativeShaderPath = pProp->ResolveRelativeShaderPath();
-    stream << sRelativeShaderPath;
-
-    xiiHybridArray<const xiiAbstractProperty*, 16> Textures2D;
-    xiiHybridArray<const xiiAbstractProperty*, 16> TexturesCube;
-    xiiHybridArray<const xiiAbstractProperty*, 16> Permutations;
-    xiiHybridArray<const xiiAbstractProperty*, 16> Constants;
-
+    description = pProperties->m_NativeMaterial;
+  }
+  else
+  {
+    if (pProperties->m_ShaderMode == xiiMaterialShaderMode::BaseMaterial && !pProperties->m_sBaseMaterial.IsEmpty())
+      description.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(pProperties->m_sBaseMaterial);
+    const xiiString shader = pProperties->ResolveRelativeShaderPath();
+    if (!shader.IsEmpty())
+      description.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(shader);
     const xiiDocumentObject* pObject = GetShaderPropertyObject();
     if (pObject != nullptr)
     {
-      bool                                           hasBaseMaterial = xiiPrefabUtils::GetPrefabRoot(pObject, *m_DocumentObjectMetaData).IsValid();
-      auto                                           pType           = pObject->GetTypeAccessor().GetType();
-      xiiHybridArray<const xiiAbstractProperty*, 32> properties;
-      pType->GetAllProperties(properties);
-
+      const bool                              bInherited = xiiPrefabUtils::GetPrefabRoot(pObject, *m_DocumentObjectMetaData).IsValid();
       xiiHybridArray<xiiPropertySelection, 1> selection;
       selection.PushBack({pObject, xiiVariant()});
-      xiiDefaultObjectState defaultState(pType, GetObjectAccessor(), selection.GetArrayPtr());
-
-      for (auto pProp : properties)
+      xiiDefaultObjectState                          defaultState(pObject->GetType(), GetObjectAccessor(), selection.GetArrayPtr());
+      xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+      pObject->GetType()->GetAllProperties(properties);
+      for (const auto* pProperty : properties)
       {
-        if (hasBaseMaterial && defaultState.IsDefaultValue(pProp))
+        if (bInherited && defaultState.IsDefaultValue(pProperty))
           continue;
-
-        const xiiCategoryAttribute* pCategory = pProp->GetAttributeByType<xiiCategoryAttribute>();
-
-        XII_ASSERT_DEBUG(pCategory, "Category cannot be null for a shader property");
+        const auto* pCategory = pProperty->GetAttributeByType<xiiCategoryAttribute>();
         if (pCategory == nullptr)
           continue;
-
-        if (pCategory->GetCategory() == "Texture 2D")
+        const xiiStringView name  = pProperty->GetPropertyName();
+        const xiiVariant    value = pObject->GetTypeAccessor().GetValue(name);
+        if (pCategory->GetCategory() == "Constant")
         {
-          Textures2D.PushBack(pProp);
+          auto& parameter = description.m_Parameters.ExpandAndGetRef();
+          parameter.m_Name.Assign(name);
+          parameter.m_Value = value;
+        }
+        else if (pCategory->GetCategory() == "Texture 2D")
+        {
+          auto& binding = description.m_Texture2DBindings.ExpandAndGetRef();
+          binding.m_Name.Assign(name);
+          const xiiString id = value.ConvertTo<xiiString>();
+          if (!id.IsEmpty())
+            binding.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(id);
         }
         else if (pCategory->GetCategory() == "Texture Cube")
         {
-          TexturesCube.PushBack(pProp);
+          auto& binding = description.m_TextureCubeBindings.ExpandAndGetRef();
+          binding.m_Name.Assign(name);
+          const xiiString id = value.ConvertTo<xiiString>();
+          if (!id.IsEmpty())
+            binding.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(id);
         }
         else if (pCategory->GetCategory() == "Permutation")
         {
-          Permutations.PushBack(pProp);
-        }
-        else if (pCategory->GetCategory() == "Constant")
-        {
-          Constants.PushBack(pProp);
-        }
-        else
-        {
-          XII_REPORT_FAILURE("Invalid shader property type '{0}'", pCategory->GetCategory());
-        }
-      }
-    }
-
-    // write out the permutation variables
-    {
-      const xiiUInt16 uiPermVars = Permutations.GetCount();
-      stream << uiPermVars;
-
-      for (auto pProp : Permutations)
-      {
-        XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out permutation");
-        xiiStringView sName = pProp->GetPropertyName();
-        if (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::Bool)
-        {
-          sValue = pObject->GetTypeAccessor().GetValue(sName).Get<bool>() ? "TRUE" : "FALSE";
-        }
-        else if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
-        {
-          xiiReflectionUtils::EnumerationToString(pProp->GetSpecificType(), pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiInt64>(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
-        }
-        else
-        {
-          XII_REPORT_FAILURE("Invalid shader permutation property type '{0}'", pProp->GetSpecificType()->GetTypeName());
-        }
-
-        stream << sName;
-        stream << sValue;
-      }
-    }
-
-    // write out the 2D textures
-    {
-      const xiiUInt16 uiTextures = Textures2D.GetCount();
-      stream << uiTextures;
-
-      for (auto pProp : Textures2D)
-      {
-        XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out texture");
-        xiiStringView sName = pProp->GetPropertyName();
-        sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
-
-        stream << sName;
-        stream << sValue;
-      }
-    }
-
-    // write out the Cube textures
-    {
-      const xiiUInt16 uiTextures = TexturesCube.GetCount();
-      stream << uiTextures;
-
-      for (auto pProp : TexturesCube)
-      {
-        XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out texture cube");
-        xiiStringView sName = pProp->GetPropertyName();
-        sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
-
-        stream << sName;
-        stream << sValue;
-      }
-    }
-
-    // write out the constants
-    {
-      const xiiUInt16 uiConstants = Constants.GetCount();
-      stream << uiConstants;
-
-      for (auto pProp : Constants)
-      {
-        XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out constant");
-        xiiStringView sName = pProp->GetPropertyName();
-        xiiVariant    value = pObject->GetTypeAccessor().GetValue(sName);
-
-        stream << sName;
-        stream << value;
-      }
-    }
-
-    // Reserved legacy field.
-    {
-      stream << xiiStringView();
-    }
-
-    // find and embed low res texture data
-    {
-      if (bEmbedLowResData)
-      {
-        xiiStringBuilder           sFilename, sResourceName;
-        xiiDynamicArray<xiiUInt32> content;
-
-        // embed 2D texture data
-        for (auto prop : Textures2D)
-        {
-          XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out texture2d");
-          xiiStringView sName = prop->GetPropertyName();
-          sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
-
-          if (sValue.IsEmpty())
-            continue;
-
-          sResourceName = sValue;
-
-          auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue);
-          if (!asset.isValid())
-            continue;
-
-          sValue = asset->m_pAssetInfo->GetManager()->GetAbsoluteOutputFileName(asset->m_pAssetInfo->m_pDocumentTypeDescriptor, asset->m_pAssetInfo->m_Path, "", pAssetProfile);
-
-          sFilename = sValue.GetFileName();
-          sFilename.Append("-lowres");
-
-          sValue.ChangeFileName(sFilename);
-
-          xiiFileReader file;
-          if (file.Open(sValue).Failed())
-            continue;
-
-          content.SetCountUninitialized(file.GetFileSize());
-
-          file.ReadBytes(content.GetData(), content.GetCount());
-
-          stream << sResourceName;
-          stream << content.GetCount();
-          XII_SUCCEED_OR_RETURN(stream.WriteBytes(content.GetData(), content.GetCount()));
+          xiiStringBuilder permutationValue;
+          if (pProperty->GetSpecificType()->GetVariantType() == xiiVariantType::Bool)
+            permutationValue = value.Get<bool>() ? "TRUE" : "FALSE";
+          else if (pProperty->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
+          {
+            if (!xiiReflectionUtils::EnumerationToString(pProperty->GetSpecificType(), value.ConvertTo<xiiInt64>(), permutationValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+              return xiiStatus(xiiFmt("Invalid permutation value for '{}'.", name));
+          }
+          else
+            return xiiStatus(xiiFmt("Unsupported permutation type for '{}'.", name));
+          auto& permutation = description.m_PermutationVariables.ExpandAndGetRef();
+          permutation.m_sName.Assign(name);
+          permutation.m_sValue.Assign(permutationValue);
         }
       }
-
-      // marker: end of embedded data
-      stream << "";
     }
-
-#ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-    XII_SUCCEED_OR_RETURN(stream.FinishCompressedStream());
-
-    xiiLog::Dev("Compressed material data from {0} KB to {1} KB ({2}%%)", xiiArgF((float)stream.GetUncompressedSize() / 1024.0f, 1), xiiArgF((float)stream.GetCompressedSize() / 1024.0f, 1), xiiArgF(100.0f * stream.GetCompressedSize() / stream.GetUncompressedSize(), 1));
-#endif
   }
-
-  return XII_SUCCESS;
+  description.m_sSurface.Assign(pProperties->m_sSurface);
+  // Version 7 remains read-only compatibility data. Every authoring source now
+  // writes the native descriptor without changing asset GUIDs or references.
+  return xiiMaterialAssetFile::Write(inout_stream, description);
 }
 
-void xiiMaterialAssetDocument::TagVisualShaderFileInvalid(const xiiPlatformProfile* pAssetProfile, const char* szError)
+void xiiMaterialAssetDocument::TagVisualShaderFileInvalid(const char* szError)
 {
   if (GetProperties()->m_ShaderMode != xiiMaterialShaderMode::Custom)
     return;

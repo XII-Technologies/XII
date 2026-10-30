@@ -223,6 +223,7 @@ void xiiVisualShaderTypeRegistry::LoadConfigFile(const char* szFile)
       if (!pNode->IsCustomType() || pNode->GetCustomType() != "Node")
       {
         xiiLog::Error("Top-Level object is not a 'Node' type");
+        pNode = pNode->GetSibling();
         continue;
       }
 
@@ -327,8 +328,11 @@ void xiiVisualShaderTypeRegistry::ExtractNodePins(const xiiOpenDdlReaderElement*
           pin.m_pDataType = xiiGetStaticRTTI<xiiVec3>();
         else if (sType == "float2")
           pin.m_pDataType = xiiGetStaticRTTI<xiiVec2>();
-        else if (sType == "float")
+        else if (sType == "float" || sType == "numeric")
+        {
           pin.m_pDataType = xiiGetStaticRTTI<float>();
+          pin.m_bDynamicNumeric = sType == "numeric";
+        }
         else if (sType == "string")
           pin.m_pDataType = xiiGetStaticRTTI<xiiString>();
         else if (sType == "sampler")

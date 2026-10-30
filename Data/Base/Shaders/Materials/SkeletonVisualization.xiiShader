@@ -17,7 +17,7 @@ CAMERA_MODE
 
 #include <Shaders/Materials/MaterialState.h>
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #if VERTEX_SKINNING
     #define USE_SKINNING
@@ -31,7 +31,7 @@ VS_OUT main(VS_IN Input)
   return FillVertexData(Input);
 }
 
-[GEOMETRYSHADER]
+[GEOMETRY_SHADER]
 
 #if TOPOLOGY == TOPOLOGY_TRIANGLE_LIST
 
@@ -81,7 +81,7 @@ void main( triangle GS_IN input[3], inout TriangleStream<GS_OUT> outputStream )
 
 #endif
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #if TOPOLOGY == TOPOLOGY_TRIANGLE_LIST
   #define USE_NORMAL

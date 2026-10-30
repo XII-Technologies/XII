@@ -145,53 +145,45 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
     m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
   }
 
-  // Visual Shader Editor
+  CreatePreviewControls();
+
+  // Material Graph
   {
     m_pVsePanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     m_pVsePanel->setObjectName("VisualShaderDockWidget");
-    m_pVsePanel->setWindowTitle("Visual Shader Editor");
-
-    QSplitter* pSplitter = new QSplitter(Qt::Orientation::Horizontal, m_pVsePanel);
+    m_pVsePanel->setWindowTitle("Material Graph");
 
     m_pScene = new xiiQtVisualShaderScene(this);
     m_pScene->InitScene(static_cast<const xiiDocumentNodeManager*>(pDocument->GetObjectManager()));
-
     m_pNodeView = new xiiQtNodeView(m_pVsePanel);
     m_pNodeView->SetScene(m_pScene);
-    pSplitter->addWidget(m_pNodeView);
-
-    QWidget* pRightGroup = new QWidget(m_pVsePanel);
-    pRightGroup->setLayout(new QVBoxLayout());
-
-    QWidget* pButtonGroup = new QWidget(m_pVsePanel);
-    pButtonGroup->setLayout(new QHBoxLayout());
-
-    m_pOutputLine = new QTextEdit(m_pVsePanel);
-    m_pOutputLine->setText("Transform the material asset to compile the Visual Shader.");
-    m_pOutputLine->setReadOnly(true);
-
-    m_pOpenShaderButton = new QPushButton(m_pVsePanel);
-    m_pOpenShaderButton->setText("Open Shader File");
-    connect(m_pOpenShaderButton, &QPushButton::clicked, this, &xiiQtMaterialAssetDocumentWindow::OnOpenShaderClicked);
-
-    pButtonGroup->layout()->setContentsMargins(0, 0, 0, 0);
-    pButtonGroup->layout()->addItem(new QSpacerItem(0, 0, QSizePolicy::Expanding));
-    pButtonGroup->layout()->addWidget(m_pOpenShaderButton);
-
-    pRightGroup->layout()->setContentsMargins(0, 0, 0, 0);
-    pRightGroup->layout()->addWidget(m_pOutputLine);
-    pRightGroup->layout()->addWidget(pButtonGroup);
-
-    pSplitter->addWidget(pRightGroup);
-
-    pSplitter->setStretchFactor(0, 10);
-    pSplitter->setStretchFactor(1, 1);
-
+    m_pVsePanel->setWidget(m_pNodeView);
+    m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, m_pVsePanel);
     m_bVisualShaderEnabled = false;
-    m_pVsePanel->setWidget(pSplitter);
-
-    m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pVsePanel);
     m_pVsePanel->toggleView(false);
+
+    auto* diagnostics = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
+    diagnostics->setObjectName("MaterialShaderDiagnostics");
+    diagnostics->setWindowTitle("Shader Source and Diagnostics");
+    auto* content = new QWidget(diagnostics);
+    auto* layout  = new QVBoxLayout(content);
+    m_pOutputLine = new QTextEdit(content);
+    m_pOutputLine->setPlainText("Standard materials use the native surface shader. Select Material Graph or Custom Shader to compile authored source.");
+    m_pOutputLine->setReadOnly(true);
+    layout->addWidget(m_pOutputLine);
+    auto* compile = new QPushButton("Compile Shader", content);
+    layout->addWidget(compile);
+    connect(compile, &QPushButton::clicked, this, [this]() {
+      if (GetMaterialDocument()->GetProperties()->GetShaderMode() == xiiMaterialShaderMode::Native)
+        m_pOutputLine->setPlainText("Standard materials use the built-in native shader and do not require authoring compilation.");
+      else
+        GetMaterialDocument()->CompileShader().LogFailure();
+    });
+    m_pOpenShaderButton = new QPushButton("Open Shader Source", content);
+    layout->addWidget(m_pOpenShaderButton);
+    connect(m_pOpenShaderButton, &QPushButton::clicked, this, &xiiQtMaterialAssetDocumentWindow::OnOpenShaderClicked);
+    diagnostics->setWidget(content);
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, diagnostics);
   }
 
   pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
@@ -274,9 +266,8 @@ void xiiQtMaterialAssetDocumentWindow::showEvent(QShowEvent* event)
 
 void xiiQtMaterialAssetDocumentWindow::OnOpenShaderClicked(bool)
 {
-  xiiAssetDocumentManager* pManager = (xiiAssetDocumentManager*)GetMaterialDocument()->GetDocumentManager();
-
-  xiiString sAutoGenShader = pManager->GetAbsoluteOutputFileName(GetMaterialDocument()->GetAssetDocumentTypeDescriptor(), GetMaterialDocument()->GetDocumentPath(), xiiMaterialAssetDocumentManager::s_szShaderOutputTag);
+  xiiString sAutoGenShader = GetMaterialDocument()->GetProperties()->ResolveRelativeShaderPath();
+  xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(sAutoGenShader);
 
   if (xiiOSFile::ExistsFile(sAutoGenShader))
   {
@@ -316,7 +307,7 @@ void xiiQtMaterialAssetDocumentWindow::UpdatePreview()
   AssetHeader.Write(memoryWriter).IgnoreResult();
 
   // Write Asset Data
-  if (GetMaterialDocument()->WriteMaterialAsset(memoryWriter, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile(), false).Failed())
+  if (GetMaterialDocument()->WriteMaterialAsset(memoryWriter).Failed())
     return;
 
   msg.m_Data = xiiArrayPtr<const xiiUInt8>(streamStorage.GetData(), streamStorage.GetStorageSize32());
@@ -372,6 +363,16 @@ void xiiQtMaterialAssetDocumentWindow::SendRedrawMsg()
 
     GetEditorEngineConnection()->SendMessage(&msg);
   }
+
+  xiiSimpleDocumentConfigMsgToEngine lighting;
+  lighting.m_sWhatToDo    = "PreviewLighting";
+  lighting.m_PayloadValue = m_PreviewLighting.ToVariant();
+  GetEditorEngineConnection()->SendMessage(&lighting);
+  xiiDocumentConfigMsgToEngine scene;
+  scene.m_sWhatToDo = "PreviewScene";
+  scene.m_iValue    = m_bPreviewGrid ? 1 : 0;
+  scene.m_fValue    = m_fPreviewOrientation;
+  GetEditorEngineConnection()->SendMessage(&scene);
 
   for (auto pView : m_ViewWidgets)
   {
@@ -431,36 +432,15 @@ void xiiQtMaterialAssetDocumentWindow::OnVseConfigChanged(xiiStringView sFilenam
 void xiiQtMaterialAssetDocumentWindow::VisualShaderEventHandler(const xiiMaterialVisualShaderEvent& e)
 {
   xiiStringBuilder text;
-
-  if (e.m_Type == xiiMaterialVisualShaderEvent::VisualShaderNotUsed)
+  if (e.m_Type == xiiMaterialVisualShaderEvent::TransformSucceeded)
   {
-    text = "<span style=\"color:#bbbb00;\">Visual Shader is not used by the material.</span><br><br>Change the ShaderMode in the asset "
-           "properties to enable Visual Shader mode.";
-  }
-  else
-  {
-    if (e.m_Type == xiiMaterialVisualShaderEvent::TransformSucceeded)
-      text = "<span style=\"color:#00ff00;\">Visual Shader was transformed successfully.</span><br><br>";
-    else
-      text = "<span style=\"color:#ff8800;\">Visual Shader is invalid:</span><br><br>";
-
-    xiiStringBuilder err = e.m_sTransformError;
-
-    xiiHybridArray<xiiStringView, 16> lines;
-    err.Split(false, lines, "\n");
-
-    for (const xiiStringView& line : lines)
-    {
-      if (line.StartsWith("Error:"))
-        text.AppendFormat("<span style=\"color:#ff2200;\">{0}</span><br>", line);
-      else if (line.StartsWith("Warning:"))
-        text.AppendFormat("<span style=\"color:#ffaa00;\">{0}</span><br>", line);
-      else
-        text.Append(line);
-    }
+    text = "Material shader compiled successfully.\n\n";
     UpdatePreview();
   }
-
-  m_pOutputLine->setAcceptRichText(true);
-  m_pOutputLine->setHtml(text.GetData());
+  else if (e.m_Type == xiiMaterialVisualShaderEvent::TransformFailed)
+    text = "Material shader compilation failed.\n\n";
+  else
+    text = "Select Material Graph or Custom Shader to compile authored shader source.\n\n";
+  text.Append(e.m_sTransformError);
+  m_pOutputLine->setPlainText(QString::fromUtf8(text.GetData()));
 }

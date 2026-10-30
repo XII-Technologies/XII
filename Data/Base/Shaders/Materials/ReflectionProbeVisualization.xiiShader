@@ -11,7 +11,7 @@ SHADING_MODE = SHADING_MODE_FULLBRIGHT
 SHADING_QUALITY = SHADING_QUALITY_MEDIUM
 CAMERA_MODE
 
-[MATERIALPARAMETER]
+[MATERIAL_PARAMETER]
 
 int MipLevel @Default(0);
 int ReflectionProbeIndex @Default(0);
@@ -31,7 +31,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
   INT1(ReflectionProbeIndex);
 };
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #include <Shaders/Materials/MaterialVertexShader.h>
 
@@ -40,7 +40,7 @@ VS_OUT main(VS_IN Input)
   return FillVertexData(Input);
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #include <Shaders/Materials/MaterialPixelShader.h>
 

@@ -27,7 +27,7 @@ SamplerState BaseTexture_AutoSampler;
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "BaseTexture.Sample(BaseTexture_AutoSampler, ToFloat2($in0))" }
   }
@@ -133,7 +133,7 @@ SamplerState EmissiveTexture_AutoSampler;
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "EmissiveTexture.Sample(EmissiveTexture_AutoSampler, ToFloat2($in0))" }
   }
@@ -278,7 +278,7 @@ SamplerState $prop0_AutoSampler;
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "$prop0.Sample($in1, ToFloat2($in0))" }
   }
@@ -353,7 +353,7 @@ SamplerState $prop0_AutoSampler;
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "SampleTexture3Way($prop0, $prop0_AutoSampler, $in0, G.Input.WorldPosition, $prop2)" }
   }

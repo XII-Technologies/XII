@@ -35,6 +35,11 @@ void xiiQtVisualShaderPin::SetPin(const xiiPin& pin)
     sTooltip = shaderPin.GetName();
   }
 
+  if (const auto* type = shaderPin.GetDataType())
+    sTooltip.Append("\nType: ", type->GetTypeName());
+  else
+    sTooltip.Append("\nType error: incompatible numeric dimensions or cyclic graph.");
+
   if (!shaderPin.GetDescriptor()->m_sDefaultValue.IsEmpty())
   {
     if (!sTooltip.IsEmpty())
@@ -108,5 +113,11 @@ void xiiQtVisualShaderNode::UpdateState()
   if (temp.StartsWith_NoCase("ShaderNode::"))
     temp.Shrink(12, 0);
 
-  m_pTitleLabel->setPlainText(temp.GetData());
+  if (temp == "Comment")
+  {
+    const xiiString comment = GetObject()->GetTypeAccessor().GetValue("Comment").ConvertTo<xiiString>();
+    m_pTitleLabel->setPlainText(comment.GetData());
+  }
+  else
+    m_pTitleLabel->setPlainText(temp.GetData());
 }

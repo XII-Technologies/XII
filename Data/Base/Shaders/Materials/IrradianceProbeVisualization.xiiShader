@@ -19,7 +19,7 @@ CAMERA_MODE
 
 #define USE_NORMAL
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #include <Shaders/Materials/MaterialVertexShader.h>
 
@@ -28,7 +28,7 @@ VS_OUT main(VS_IN Input)
   return FillVertexData(Input);
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #include <Shaders/Materials/MaterialPixelShader.h>
 

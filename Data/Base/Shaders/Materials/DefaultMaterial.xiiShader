@@ -13,7 +13,7 @@ CAMERA_MODE
 SHADING_QUALITY
 VERTEX_SKINNING
 
-[MATERIALPARAMETER]
+[MATERIAL_PARAMETER]
 
 Permutation BLEND_MODE;
 Permutation SHADING_MODE;
@@ -46,7 +46,7 @@ Color EmissiveColor @Default(Color(0.0, 0.0, 0.0));
 bool UseEmissiveTexture;
 Texture2D EmissiveTexture;
 
-[MATERIALCONFIG]
+[MATERIAL_CONFIGURATION]
 
 #include <Shaders/Materials/MaterialConfig.h>
 
@@ -54,7 +54,7 @@ Texture2D EmissiveTexture;
 
 #include <Shaders/Materials/MaterialState.h>
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #define USE_NORMAL
 #define USE_TANGENT
@@ -76,7 +76,7 @@ VS_OUT main(VS_IN Input)
   return FillVertexData(Input);
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #define USE_NORMAL
 #define USE_TANGENT

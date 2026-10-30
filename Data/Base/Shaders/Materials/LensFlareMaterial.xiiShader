@@ -27,7 +27,7 @@ SourceBlendAlpha0 = BlendFactor_Zero
 #define USE_COLOR0
 #define CUSTOM_INTERPOLATOR nointerpolation uint Flags : FLAGS;
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #include <Shaders/Common/Lighting.h>
 #include <Shaders/Materials/MaterialInterpolator.h>
@@ -175,7 +175,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
   return Output;
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #include <Shaders/Common/GlobalConstants.h>
 #include <Shaders/Materials/MaterialInterpolator.h>

@@ -5,7 +5,7 @@ Node %ConstantColor
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "$prop0" }
   }

@@ -1,13 +1,15 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <EditorPluginAssets/EditorPluginAssetsPCH.h>
+#pragma once
+
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
 
 #include <EditorPluginAssets/MaterialAsset/MaterialAsset.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 
 class xiiDocumentNodeManager;
 
-class xiiVisualShaderCodeGenerator
+class XII_EDITORPLUGINASSETS_DLL xiiVisualShaderCodeGenerator
 {
 public:
   xiiVisualShaderCodeGenerator();
@@ -22,11 +24,10 @@ private:
   struct NodeState
   {
     NodeState() :
-      m_uiNodeId(0), m_bCodeGenerated(false), m_bInProgress(false)
+      m_bCodeGenerated(false), m_bInProgress(false)
     {
     }
 
-    xiiUInt16 m_uiNodeId;
     bool      m_bCodeGenerated;
     bool      m_bInProgress;
   };
