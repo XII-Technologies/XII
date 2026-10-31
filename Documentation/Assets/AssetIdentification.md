@@ -17,6 +17,8 @@ An authored asset has one persistent document GUID. Sub-assets have their own GU
 
 Path lookup cleans separators and `.`/`..` components. Editor file lookup uses the existing file model's comparison policy and never searches outside a selected data directory through relative traversal. Path case is preserved. Runtime table keys use exact spelling; use authored casing for portable references. A registered GUID is the durable choice for serialized asset references.
 
+On platforms with case-insensitive paths, Editor lookup treats spelling variants such as `D:/XII` and `D:/xii` as the same physical file. The file model may retain both spellings for watcher and case-only rename events; a linked document entry takes precedence over an unlinked spelling. Different document GUIDs registered for the same physical file are reported as a conflict. Case-sensitive platforms keep distinct spellings distinct.
+
 Ambiguous paths fail. The diagnostic names conflicting locations and asks for a GUID, absolute path, or rooted path. Explicit exhaustive Editor lookup permits a **unique** path suffix for authoring/import suggestions; it does not choose by hash-table order, shortest path, or an arbitrary first match.
 
 ## Editor entry points

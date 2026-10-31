@@ -8,6 +8,7 @@
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFrameworkTest/AssetTestDocument.h>
+#include <EditorPluginAssets/MaterialAsset/MaterialAsset.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -20,6 +21,7 @@
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <QApplication>
 #include <TestFramework/Utilities/TestLogInterface.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 class ResolutionTestDocument : public xiiSimpleAssetDocument<ResaveTestProperties>
@@ -91,6 +93,59 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(ResolutionTestManager, 1, xiiRTTIDefaultAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST_GROUP(AssetResolution);
+XII_CREATE_SIMPLE_TEST_GROUP(MaterialInheritance);
+
+XII_CREATE_SIMPLE_TEST(MaterialInheritance, PatternAsBaseMaterial)
+{
+  auto&           editor       = *xiiQtEditorApp::GetSingleton();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
+  const xiiStringBuilder preferences(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/InheritancePreferences");
+  editor.StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
+  XII_SCOPE_EXIT(editor.CloseProject(); QApplication::processEvents(QEventLoop::AllEvents, 10); editor.ShutdownEditor());
+  QApplication::processEvents(QEventLoop::AllEvents, 10);
+  const xiiStringBuilder project(preferences, "/Project/xiiProject");
+  if (!XII_TEST_RESULT(editor.CreateOrOpenProject(true, project)))
+    return;
+  xiiAssetProcessor::GetSingleton()->StopProcessTask(false, true);
+  auto*      curator = xiiAssetCurator::GetSingleton();
+  xiiUuid    patternId;
+  const auto resolution = curator->ResolveAsset("Base/Materials/Common/Pattern.xiiMaterialAsset", patternId);
+  XII_TEST_STATUS(resolution);
+  if (resolution.Failed())
+    return;
+  xiiString patternSource;
+  {
+    const auto knownPattern = curator->GetSubAsset(patternId);
+    if (!XII_TEST_BOOL(static_cast<bool>(knownPattern)))
+      return;
+    patternSource = knownPattern->m_pAssetInfo->m_Path.GetAbsolutePath();
+  }
+  xiiStringBuilder differentCase(patternSource);
+  differentCase.ReplaceAll("/xii/", "/XII/");
+  xiiUuid byAbsolutePath;
+  XII_TEST_STATUS(curator->ResolveAsset(differentCase, byAbsolutePath));
+  XII_TEST_BOOL(byAbsolutePath == patternId);
+  const xiiStringBuilder path(project.GetFileDirectory(), "/Materials/Inherited.xiiMaterialAsset");
+  auto*                  material = xiiDynamicCast<xiiMaterialAssetDocument*>(xiiOSFile::ExistsFile(path) ? editor.OpenDocument(path, xiiDocumentFlags::None) : editor.CreateDocument(path, xiiDocumentFlags::None));
+  if (!XII_TEST_BOOL(material != nullptr))
+    return;
+  XII_SCOPE_EXIT(material->GetDocumentManager()->CloseDocument(material));
+  auto* accessor = material->GetObjectAccessor();
+  accessor->StartTransaction("Inherit Pattern by source path");
+  XII_TEST_STATUS(accessor->SetValueByName(material->GetPropertyObject(), "BaseMaterial", "Base/Materials/Common/Pattern.xiiMaterialAsset"));
+  XII_TEST_STATUS(accessor->SetValueByName(material->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::BaseMaterial)));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(material->SaveDocument());
+  curator->NotifyOfFileChange(path);
+  xiiUInt64  asset = 0, thumbnail = 0, package = 0;
+  const auto state = curator->IsAssetUpToDate(material->GetGuid(), nullptr, nullptr, asset, thumbnail, package, true);
+  XII_TEST_BOOL_MSG(state == xiiAssetInfo::NeedsTransform || state == xiiAssetInfo::NeedsThumbnail || state == xiiAssetInfo::UpToDate, "Inherited Pattern state: %d", static_cast<int>(state));
+  const auto status = curator->TransformAsset(path, xiiTransformFlags::TriggeredManually);
+  XII_TEST_BOOL_MSG(status.Succeeded(), "%s", status.m_sMessage.GetData());
+}
 
 XII_CREATE_SIMPLE_TEST(AssetResolution, EditorAndRuntime)
 {
