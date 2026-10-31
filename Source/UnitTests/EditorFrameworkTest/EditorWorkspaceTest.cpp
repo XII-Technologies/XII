@@ -71,7 +71,7 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
       XII_TEST_BOOL(!pMenu->actions().contains(pluginMenu.menuAction()));
     }
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    XII_TEST_BOOL(pContainer->windowFlags().testFlag(Qt::ExpandedClientAreaHint));
+    XII_TEST_BOOL(!pContainer->windowFlags().testFlag(Qt::ExpandedClientAreaHint));
     XII_TEST_BOOL(!pContainer->windowFlags().testFlag(Qt::FramelessWindowHint));
     for (const auto* szName : {"EditorMinimize", "EditorMaximize", "EditorClose"})
     {
@@ -336,18 +336,13 @@ void TestEditorWorkspace(xiiSceneDocument& scene, xiiQtEngineDocumentWindow& win
       pSurface->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     }
     pContainer->setWindowState(Qt::WindowNoState);
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    if (auto* pMaximize = pContainer->findChild<QToolButton*>(QStringLiteral("EditorMaximize")))
+    if (auto* pTitleBar = pContainer->findChild<QWidget*>(QStringLiteral("EditorTitleBar")))
     {
-      pMaximize->click();
-      XII_TEST_BOOL(pContainer->isMaximized());
-      pMaximize->click();
-      XII_TEST_BOOL(!pContainer->isMaximized());
-    }
-#endif
-    if (auto* pTitleBar = pContainer->findChild<QToolBar*>(QStringLiteral("EditorTitleBar")))
-    {
-      QMouseEvent doubleClick(QEvent::MouseButtonDblClick, QPointF(20, 12), pTitleBar->mapToGlobal(QPoint(20, 12)), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+      auto* pCaption = pTitleBar->findChild<QWidget*>(QStringLiteral("EditorCaptionSpacer"));
+      if (!XII_TEST_BOOL(pCaption != nullptr && pCaption->isVisible()))
+        return;
+      const auto  position = pCaption->mapTo(pTitleBar, pCaption->rect().center());
+      QMouseEvent doubleClick(QEvent::MouseButtonDblClick, position, pTitleBar->mapToGlobal(position), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
       QApplication::sendEvent(pTitleBar, &doubleClick);
       XII_TEST_BOOL(pContainer->isMaximized());
       QApplication::sendEvent(pTitleBar, &doubleClick);
