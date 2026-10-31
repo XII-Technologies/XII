@@ -31,22 +31,19 @@ public:
   xiiString m_sActiveAssetProfile = "Default";
   xiiString m_sDefaultScene;
 
-  /// Creates a new persistent identity. Legacy projects did not have a project UUID;
-  /// migration never changes document UUIDs or their path-based resolution.
+  /// Creates a new persistent project identity independently of document UUIDs.
   void      Initialize(xiiStringView sProjectFile);
   xiiStatus Validate() const;
   xiiStatus CheckEngineCompatibility() const;
   /// Transactional read: leaves this object unchanged on failure. Unknown optional fields survive saving.
   xiiStatus Read(xiiStreamReader& stream);
   xiiStatus Write(xiiStreamWriter& stream) const;
-  /// Accepts only the exact legacy marker or a validated manifest. Does not migrate on read.
-  xiiStatus Load(xiiStringView sProjectFile, bool* out_pLegacy = nullptr);
+  /// Loads a validated OpenDDL manifest, leaving this object unchanged on failure.
+  xiiStatus Load(xiiStringView sProjectFile);
   /// Same-directory staging followed by atomic replacement; never truncates the destination.
   xiiStatus Save(xiiStringView sProjectFile) const;
-  /// Migrates once, keeping an exact xiiProject.legacy backup. Must succeed before opening in tools.
-  xiiStatus Migrate(xiiStringView sProjectFile) const;
   /// Resolves a canonical :project configuration filename through the mounted manifest.
-  /// Legacy / exported projects without a manifest retain their established configuration paths.
+  /// Applications without a mounted manifest retain their established configuration paths.
   static xiiStatus ResolveConfigPath(xiiStringView sDefaultPath, xiiStringBuilder& out_sPath);
 
 private:

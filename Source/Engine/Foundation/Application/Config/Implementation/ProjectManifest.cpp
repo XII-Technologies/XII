@@ -15,8 +15,7 @@
 
 namespace
 {
-  constexpr xiiStringView s_sLegacyMarker         = "xiiEditor Project File";
-  constexpr xiiUInt64     s_uiMaximumManifestSize = 1024 * 1024;
+  constexpr xiiUInt64 s_uiMaximumManifestSize = 1024 * 1024;
 
   struct StringField
   {
@@ -250,10 +249,8 @@ xiiStatus xiiProjectManifest::Write(xiiStreamWriter& stream) const
   return storage.CopyToStream(stream);
 }
 
-xiiStatus xiiProjectManifest::Load(xiiStringView sProjectFile, bool* out_pLegacy)
+xiiStatus xiiProjectManifest::Load(xiiStringView sProjectFile)
 {
-  if (out_pLegacy)
-    *out_pLegacy = false;
   xiiOSFile file;
   if (file.Open(sProjectFile, xiiFileOpenMode::Read).Failed())
     return xiiStatus(xiiFmt("Could not read project '{}'.", sProjectFile));
@@ -264,14 +261,6 @@ xiiStatus xiiProjectManifest::Load(xiiStringView sProjectFile, bool* out_pLegacy
   bytes.SetCountUninitialized(static_cast<xiiUInt32>(size));
   if (file.Read(bytes.GetData(), size) != size)
     return xiiStatus("Could not read the complete project manifest.");
-  if (size == s_sLegacyMarker.GetElementCount() + 1 && bytes.PeekBack() == 0 &&
-      xiiMemoryUtils::IsEqual(bytes.GetData(), reinterpret_cast<const xiiUInt8*>(s_sLegacyMarker.GetStartPointer()), s_sLegacyMarker.GetElementCount()))
-  {
-    Initialize(sProjectFile);
-    if (out_pLegacy)
-      *out_pLegacy = true;
-    return XII_SUCCESS;
-  }
   xiiRawMemoryStreamReader stream(bytes.GetData(), size);
   return Read(stream);
 }
@@ -304,40 +293,6 @@ xiiStatus xiiProjectManifest::Save(xiiStringView sProjectFile) const
   if (xiiOSFile::AtomicReplaceFile(staged, sProjectFile).Failed())
     return xiiStatus(xiiFmt("Could not atomically replace project manifest '{}'. Original retained.", sProjectFile));
   return XII_SUCCESS;
-}
-
-xiiStatus xiiProjectManifest::Migrate(xiiStringView sProjectFile) const
-{
-  // Serialize competing first opens across processes, without adding a machine-specific
-  // lock filename to the portable project. Keep the lock inode in the system temp folder.
-  xiiStringBuilder key(sProjectFile);
-  key.MakeCleanPath();
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  key.ToLower();
-#endif
-  xiiStringBuilder lockPath(xiiOSFile::GetTempDataFolder("XII/ProjectMigration"));
-  xiiStringBuilder lockName;
-  lockName.SetFormat("{}.lock", xiiHashingUtils::xxHash64String(key));
-  lockPath.AppendPath(lockName);
-  xiiOSFile lock;
-  if (lock.Open(lockPath, xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Failed())
-    return xiiStatus("Another process is migrating this project. Retry opening it after that operation finishes.");
-  xiiProjectManifest current;
-  bool               legacy = false;
-  XII_SUCCEED_OR_RETURN(current.Load(sProjectFile, &legacy));
-  if (!legacy)
-    return XII_SUCCESS;
-  xiiStringBuilder backup(sProjectFile, ".legacy");
-  if (xiiOSFile::ExistsFile(backup))
-  {
-    bool backupIsLegacy = false;
-    XII_SUCCEED_OR_RETURN(current.Load(backup, &backupIsLegacy));
-    if (!backupIsLegacy)
-      return xiiStatus("Legacy project backup already exists with different contents. Preserve it and resolve the conflict before migration.");
-  }
-  else if (xiiOSFile::CopyFile(sProjectFile, backup).Failed())
-    return xiiStatus(xiiFmt("Could not preserve legacy project at '{}'.", backup));
-  return Save(sProjectFile);
 }
 
 xiiStatus xiiProjectManifest::ResolveConfigPath(xiiStringView sDefaultPath, xiiStringBuilder& out_sPath)

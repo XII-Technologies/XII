@@ -1,6 +1,6 @@
 # Project manifest and Editor lifecycle
 
-The file named `xiiProject` is the portable entry point for an XII project. Its filename and location do not change. New projects use OpenDDL format version 1. Tools accept the old, exact null-terminated `xiiEditor Project File` marker and migrate it before initializing the project.
+The file named `xiiProject` is the portable entry point for an XII project. Its filename and location do not change. Projects use OpenDDL format version 1. The bundled projects are stored in this format; tools require a validated manifest when opening a project.
 
 ```openddl
 Project
@@ -37,7 +37,7 @@ Use the UUID syntax emitted by `xiiConversionUtils::ToString()` / `xiiProjectMan
 | Compiler executable, background processing preference, recent files, workspace layout, export destination and other user preferences | Existing Editor settings/preferences storage |
 | Asset discovery metadata, hashes, lookup tables, compiled assets and thumbnails | Generated `AssetCache` files |
 
-The manifest references dedicated files instead of copying their contents. This preserves runtime configuration ownership and avoids a second directory list, plugin list or asset-profile definition that could disagree with the first. Project-relative data directories remain encoded in the referenced directory configuration using the established `>project/` convention; SDK/plugin dependencies retain `>sdk/` mounts. Existing data-directory order, root names, document GUIDs, output paths and asset resolution rules remain unchanged by migration.
+The manifest references dedicated files instead of copying their contents. This preserves runtime configuration ownership and avoids a second directory list, plugin list or asset-profile definition that could disagree with the first. Project-relative data directories remain encoded in the referenced directory configuration using the established `>project/` convention; SDK/plugin dependencies retain `>sdk/` mounts. Data-directory order, root names, document GUIDs, output paths and asset resolution rules retain their established semantics independently of the project UUID.
 
 Background processing enablement and worker/compiler choices remain user preferences. Project-wide asset-processing policy belongs in named asset profiles. Project C++ build settings remain in their dedicated file and CMake sources. No machine path, cache, saved transform date or user preference is added to the manifest.
 
@@ -54,11 +54,11 @@ Background processing enablement and worker/compiler choices remain user prefere
 
 `xiiProjectManifest` lives in Foundation so runtime applications can resolve configuration paths without depending on Editor or ToolsFoundation. The standard filesystem/plugin configuration entry points and C++ settings resolve their canonical configuration paths through the mounted manifest. Exported applications without a manifest retain canonical runtime paths. Runtime `-profile` remains an explicit session override.
 
-## Persistence and migration
+## Persistence and identity
 
 Writes serialize into memory, write a unique sibling staging file, close and verify its complete contents, then use same-filesystem atomic replacement. Errors retain the previous destination and return an `xiiStatus`; staging files are cleaned up where possible. Atomic visibility is guaranteed by the platform replacement operation; this is not an fsync/power-loss durability guarantee.
 
-Migration preserves an exact `xiiProject.legacy` backup. It introduces a project UUID because the marker never contained one. Asset/document/sub-asset GUIDs, path references, preference-folder mapping and cache namespaces are not regenerated. Subsequent opens retain the persisted project UUID, including after moving the project directory. Competing migrations are serialized using an OS-file lock in the system temporary directory, and the winner's manifest is reread before initialization. A conflicting backup or an unwritable project fails with a recovery message.
+Opening a project retains the persisted project UUID, including after moving the project directory. Asset/document/sub-asset GUIDs, path references, preference-folder mapping and cache namespaces are not regenerated. The obsolete placeholder marker format is no longer supported, and opening a project performs no format conversion or backup creation.
 
 Creating over an existing project is rejected. Creating from an Editor project template explicitly assigns a new project UUID while retaining the template's configuration and document GUIDs. `SaveManifest()` rejects attempts to change the identity of an open project. Display-name edits do not rename the project directory or generated C++ identifiers.
 
@@ -96,7 +96,8 @@ Curator scans and worker IPC processes are owned and drained by their project se
 
 ## Validation
 
-- Foundation `ProjectManifest/Format`: round trip, stable relocation identity, schema/version/type/cardinality rejection, path validation, engine compatibility, preserved optional extensions, legacy backup, repeated migration and failed replacement.
+- Foundation `ProjectManifest/Format`: round trip, stable relocation identity, schema/version/type/cardinality rejection, path validation, engine compatibility, preserved optional extensions, transactional file-load rejection and failed replacement.
+- Foundation `ProjectManifest/BundledProjects`: validated bundled manifests with stable persistent identities across repeated loads.
 - ToolsFoundation `ProjectLifecycle/Tools`: create/open/save/close/reopen, preflight rejection preserving the active project, switching, failed required initialization, cleanup/retry, immutable project identity and generation invalidation.
 - Editor `EditorProjectLifecycle/AssetsWithoutRestart`: real surface asset transformation immediately after opening, queued transformation and stale close/document callbacks across switching, indexed reopening with preserved GUIDs, successful background transformation without restarting the Editor, configuration failure/recovery, relocated configuration files and document-triggered discovery.
 

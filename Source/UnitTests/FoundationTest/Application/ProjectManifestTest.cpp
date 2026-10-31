@@ -21,9 +21,7 @@ XII_CREATE_SIMPLE_TEST(ProjectManifest, Format)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Round trip and portable persistent identity")
   {
     xiiProjectManifest loaded;
-    bool               legacy = true;
-    XII_TEST_STATUS(loaded.Load(project, &legacy));
-    XII_TEST_BOOL(!legacy);
+    XII_TEST_STATUS(loaded.Load(project));
     XII_TEST_BOOL(loaded.m_ProjectID == id);
     XII_TEST_STRING(loaded.m_sName, "Manifest");
     loaded.m_sDescription = "A project with Unicode and escaped text: \"hello\"\nworld";
@@ -93,34 +91,23 @@ XII_CREATE_SIMPLE_TEST(ProjectManifest, Format)
     XII_TEST_BOOL(text.FindSubString("preserved") != nullptr);
     XII_TEST_BOOL(text.FindSubString("Vendor") != nullptr);
   }
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Legacy migration preserves marker backup and new identity")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid manifest files do not replace the loaded identity")
   {
-    const xiiStringBuilder legacyPath(project.GetFileDirectory(), "Legacy/xiiProject");
-    constexpr char         marker[] = "xiiEditor Project File";
+    const xiiStringBuilder invalidPath(project.GetFileDirectory(), "Invalid/xiiProject");
+    constexpr char         invalid[]  = "Other {}";
+    const auto             previousID = manifest.m_ProjectID;
     {
       xiiOSFile file;
-      XII_TEST_RESULT(file.Open(legacyPath, xiiFileOpenMode::Write));
-      XII_TEST_RESULT(file.Write(marker, sizeof(marker)));
+      XII_TEST_RESULT(file.Open(invalidPath, xiiFileOpenMode::Write));
+      XII_TEST_RESULT(file.Write(invalid, sizeof(invalid) - 1));
     }
-    bool legacy = false;
-    XII_TEST_STATUS(manifest.Load(legacyPath, &legacy));
-    XII_TEST_BOOL(legacy);
-    const auto migratedID = manifest.m_ProjectID;
-    XII_TEST_STATUS(manifest.Migrate(legacyPath));
-    XII_TEST_STATUS(manifest.Load(legacyPath, &legacy));
-    XII_TEST_BOOL(!legacy);
-    XII_TEST_BOOL(manifest.m_ProjectID == migratedID);
-    xiiProjectManifest competing;
-    competing.Initialize(legacyPath);
-    XII_TEST_STATUS(competing.Migrate(legacyPath));
-    XII_TEST_STATUS(competing.Load(legacyPath));
-    XII_TEST_BOOL(competing.m_ProjectID == migratedID);
-    const xiiStringBuilder backup(legacyPath, ".legacy");
-    xiiOSFile              file;
-    XII_TEST_RESULT(file.Open(backup, xiiFileOpenMode::Read));
-    char bytes[sizeof(marker)] = {};
-    XII_TEST_INT(file.Read(bytes, sizeof(bytes)), sizeof(bytes));
-    XII_TEST_BOOL(xiiMemoryUtils::IsEqual(bytes, marker, sizeof(marker)));
+    XII_TEST_BOOL(manifest.Load(invalidPath).Failed());
+    XII_TEST_BOOL(manifest.m_ProjectID == previousID);
+    xiiOSFile file;
+    XII_TEST_RESULT(file.Open(invalidPath, xiiFileOpenMode::Read));
+    char bytes[sizeof(invalid)] = {};
+    XII_TEST_INT(file.Read(bytes, sizeof(bytes)), sizeof(invalid) - 1);
+    XII_TEST_STRING(bytes, invalid);
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Failed replacement retains the previous complete manifest")
   {
