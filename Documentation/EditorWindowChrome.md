@@ -59,6 +59,12 @@ widths. It elides within the symmetric free caption area, yielding to controls
 when there is no central space. The full accessible label and tooltip remain
 available without changing text or size hints during resizing.
 
+The embedded top-level menu bar paints an opaque window-palette background
+into its widget backing store before the standard Qt menu-item paint pass.
+This isolates hover selection repaints from transparent caption background
+propagation while preserving QMenuBar's interaction, accessibility, keyboard
+navigation and overflow. Dropdown menus retain their normal Qt painting.
+
 Qt implementation references: [native flags and expanded-area hit testing](https://github.com/qt/qtbase/blob/v6.11.0/src/plugins/platforms/windows/qwindowswindow.cpp),
 [system movement API](https://doc.qt.io/qt-6/qwindow.html#startSystemMove).
 
