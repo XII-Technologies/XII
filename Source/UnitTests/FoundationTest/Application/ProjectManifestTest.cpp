@@ -3,6 +3,7 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Application/Config/ProjectManifest.h>
+#include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Utilities/ConversionUtils.h>
@@ -134,5 +135,20 @@ XII_CREATE_SIMPLE_TEST(ProjectManifest, Format)
     XII_TEST_STATUS(changed.Load(project));
     XII_TEST_BOOL(changed.m_ProjectID == manifest.m_ProjectID);
     XII_TEST_STRING(changed.m_sName, previousName);
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(ProjectManifest, BundledProjects)
+{
+  if (!XII_TEST_RESULT(xiiFileSystem::DetectSdkRootDirectory()))
+    return;
+  for (const xiiStringView relative : {"Data/Base/xiiProject", "Data/Samples/FeatureLab/xiiProject"})
+  {
+    const xiiStringBuilder path(xiiFileSystem::GetSdkRootDirectory(), "/", relative);
+    xiiProjectManifest     manifest, reloaded;
+    XII_TEST_STATUS(manifest.Load(path));
+    XII_TEST_STATUS(reloaded.Load(path));
+    XII_TEST_BOOL(manifest.m_ProjectID.IsValid());
+    XII_TEST_BOOL(manifest.m_ProjectID == reloaded.m_ProjectID);
   }
 }
