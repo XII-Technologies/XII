@@ -18,16 +18,25 @@ struct xiiMaterialRasterBatch
 class xiiMaterialRasterBatches
 {
 public:
+  enum class Pass
+  {
+    GBuffer,
+    Depth,
+    Transparent,
+    Picking,
+    Wireframe
+  };
   xiiResult Build(xiiRenderPipelinePassContext& context, xiiRenderGraphBufferHandle visible, xiiRenderGraphBufferHandle count,
-                  xiiDynamicArray<xiiMaterialRasterBatch>& batches, xiiRenderGraphBufferHandle& sortedVisible, xiiRenderGraphBufferHandle& draws, bool bDepth = false, bool bTransparent = false,
-                  const xiiHashTable<xiiHashedString, xiiHashedString>* pViewPermutations = nullptr, bool bPicking = false);
+                  xiiDynamicArray<xiiMaterialRasterBatch>& batches, xiiRenderGraphBufferHandle& sortedVisible, xiiRenderGraphBufferHandle& draws, Pass pass = Pass::GBuffer,
+                  const xiiHashTable<xiiHashedString, xiiHashedString>* pViewPermutations = nullptr);
 
 private:
   struct CachedBinding
   {
-    xiiSharedPtr<xiiMaterialInstance> m_Instance;
-    xiiUInt32                         m_uiRevision = 0;
-    xiiMaterialShaderBinding          m_Binding;
+    xiiSharedPtr<xiiMaterialInstance>     m_Instance;
+    xiiUInt32                             m_uiRevision = 0;
+    xiiMaterialShaderBinding              m_Binding;
+    xiiSharedPtr<xiiGALDepthStencilState> m_SourceDepth;
   };
   xiiMap<xiiUInt32, CachedBinding>         m_Bindings;
   xiiSharedPtr<xiiGALComputePipelineState> m_Count, m_Prefix, m_Scatter;

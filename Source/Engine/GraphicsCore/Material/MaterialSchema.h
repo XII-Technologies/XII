@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/HashedString.h>

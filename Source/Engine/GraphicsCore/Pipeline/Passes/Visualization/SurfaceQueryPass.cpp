@@ -104,8 +104,8 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope              scope(context);
   xiiDynamicArray<xiiMaterialRasterBatch> batches;
   xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
-  if (!diagnostics && !overdraw && fill == xiiGALFillMode::Solid)
-    XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visible, count, batches, sortedVisible, materialDraws, false, false, nullptr, true));
+  if (!diagnostics && !overdraw)
+    XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visible, count, batches, sortedVisible, materialDraws, fill == xiiGALFillMode::Wireframe ? xiiMaterialRasterBatches::Pass::Wireframe : xiiMaterialRasterBatches::Pass::Picking));
   const bool useMesh = m_bUseMeshShaders && batches.IsEmpty();
   if (!m_hShader.IsValid() || m_bCachedMeshShaders != useMesh || m_CachedFill != fill || m_bCachedDiagnostics != diagnostics || m_bCachedOverdraw != overdraw || m_bCachedCulling != culling)
   {

@@ -121,7 +121,7 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope              scope(context);
   xiiDynamicArray<xiiMaterialRasterBatch> batches;
   xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
-  XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visible, count, batches, sortedVisible, materialDraws, true));
+  XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visible, count, batches, sortedVisible, materialDraws, xiiMaterialRasterBatches::Pass::Depth));
   const bool useMesh = m_bUseMeshShaders && batches.IsEmpty();
   if (!m_hShader.IsValid() || m_bCachedMeshShaders != useMesh || m_CachedFill != m_FillMode || m_bCachedShadowCaster != m_bShadowCaster)
   {

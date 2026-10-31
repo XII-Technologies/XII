@@ -17,9 +17,12 @@ static_assert(offsetof(xiiMeshPackedVertex, m_vTexCoord1) == 48 && offsetof(xiiM
               "Authored surface attributes must match GpuSceneSurfaceData.h.");
 
 xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context, xiiRenderGraphBufferHandle visible, xiiRenderGraphBufferHandle count,
-                                          xiiDynamicArray<xiiMaterialRasterBatch>& batches, xiiRenderGraphBufferHandle& sortedVisible, xiiRenderGraphBufferHandle& draws, bool bDepth, bool bTransparent,
-                                          const xiiHashTable<xiiHashedString, xiiHashedString>* pViewPermutations, bool bPicking)
+                                          xiiDynamicArray<xiiMaterialRasterBatch>& batches, xiiRenderGraphBufferHandle& sortedVisible, xiiRenderGraphBufferHandle& draws, Pass pass,
+                                          const xiiHashTable<xiiHashedString, xiiHashedString>* pViewPermutations)
 {
+  const bool bDepth       = pass == Pass::Depth;
+  const bool bTransparent = pass == Pass::Transparent;
+  const bool bPicking     = pass == Pass::Picking || pass == Pass::Wireframe;
   batches.Clear();
   const auto* scene = context.m_pView ? context.m_pView->GetGpuInstanceData() : nullptr;
   if (!scene)
@@ -68,8 +71,9 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
         variables.Insert(variable.Key(), variable.Value());
     xiiHashedString passName, passValue;
     passName.Assign("RENDER_PASS");
-    passValue.Assign(bPicking ? "RENDER_PASS_PICKING" : bDepth ? "RENDER_PASS_DEPTH_ONLY" :
-                                                                 "RENDER_PASS_FORWARD");
+    passValue.Assign(pass == Pass::Wireframe ? "RENDER_PASS_PICKING_WIREFRAME" : bPicking ? "RENDER_PASS_PICKING" :
+                       bDepth                                                             ? "RENDER_PASS_DEPTH_ONLY" :
+                                                                                            "RENDER_PASS_FORWARD");
     variables.Insert(passName, passValue);
     const auto permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(snapshot.m_pSchema->GetShader(), variables, false);
     if (!permutation.IsValid())
@@ -80,7 +84,7 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
     const auto bin    = batches.GetCount();
     auto&      cached = m_Bindings[key];
     if (cached.m_Instance != instance || cached.m_uiRevision != snapshot.m_uiRevision ||
-        cached.m_Binding.m_Vertex != shader->GetGALShader(xiiGALShaderType::Vertex) || cached.m_Binding.m_Pixel != shader->GetGALShader(xiiGALShaderType::Pixel) || !cached.m_Binding.AreTexturesCurrent())
+        cached.m_Binding.m_Vertex != shader->GetGALShader(xiiGALShaderType::Vertex) || cached.m_Binding.m_Pixel != shader->GetGALShader(xiiGALShaderType::Pixel) || cached.m_Binding.m_Signature != shader->GetPipelineResourceSignature() || cached.m_Binding.m_Rasterizer != shader->GetRasterizerState() || cached.m_Binding.m_Blend != shader->GetBlendState() || cached.m_SourceDepth != shader->GetDepthStencilState() || !cached.m_Binding.AreTexturesCurrent())
     {
       xiiMaterialShaderBinding replacement;
       const auto               status = replacement.Build(snapshot, *shader.GetPointer(), bTransparent, bPicking);
@@ -94,9 +98,10 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
         if (!replacement.m_Depth)
           return context.ReportFailure("Could not create authored surface depth state.");
       }
-      cached.m_Binding    = std::move(replacement);
-      cached.m_Instance   = instance;
-      cached.m_uiRevision = snapshot.m_uiRevision;
+      cached.m_Binding     = std::move(replacement);
+      cached.m_SourceDepth = shader->GetDepthStencilState();
+      cached.m_Instance    = instance;
+      cached.m_uiRevision  = snapshot.m_uiRevision;
     }
     batches.ExpandAndGetRef().m_Binding = cached.m_Binding;
     materialBins.Insert(key, bin);

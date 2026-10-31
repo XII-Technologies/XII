@@ -265,7 +265,7 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   feature("FORWARD_SPOT_SHADOWS", spots != nullptr);
   xiiDynamicArray<xiiMaterialRasterBatch> batches;
   xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
-  XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visibleMeshlets, drawCommandCount, batches, sortedVisible, materialDraws, false, true, &materialVariables));
+  XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visibleMeshlets, drawCommandCount, batches, sortedVisible, materialDraws, xiiMaterialRasterBatches::Pass::Transparent, &materialVariables));
 
   struct RefractionData
   {

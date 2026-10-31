@@ -38,4 +38,7 @@ DepthWriteEnable = false
 ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 CullMode = CullMode_None
 #endif
+#if RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME
+FillMode = FillMode_Wireframe
+#endif
 // clang-format on
