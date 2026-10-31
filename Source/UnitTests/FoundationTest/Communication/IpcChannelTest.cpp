@@ -265,4 +265,22 @@ XII_CREATE_SIMPLE_TEST(Communication, IpcChannel_Pipe)
   pServer.Clear();
 }
 
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+XII_CREATE_SIMPLE_TEST(Communication, IpcChannel_CancelPendingConnection)
+{
+  xiiUniquePtr<xiiIpcChannel> channel = xiiIpcChannel::CreatePipeChannel("XII_unit_test_cancel_connection", xiiIpcChannel::Mode::Server);
+  ChannelTester               observer(channel.Borrow(), false);
+  for (xiiUInt32 i = 0; i < 4; ++i)
+  {
+    channel->Connect();
+    auto connecting = observer.WaitForEvents(xiiTime::MakeFromSeconds(1));
+    XII_TEST_BOOL(connecting.has_value() && connecting->m_Type == xiiIpcChannelEvent::Connecting);
+    channel->Disconnect();
+    auto disconnected = observer.WaitForEvents(xiiTime::MakeFromSeconds(1));
+    XII_TEST_BOOL(disconnected.has_value() && disconnected->m_Type == xiiIpcChannelEvent::Disconnected);
+    XII_TEST_BOOL(channel->GetConnectionState() == xiiIpcChannel::ConnectionState::Disconnected);
+  }
+}
+#  endif
+
 #endif
