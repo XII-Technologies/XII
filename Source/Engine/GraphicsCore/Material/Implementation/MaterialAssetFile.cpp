@@ -69,7 +69,7 @@ xiiResult xiiMaterialAssetFile::Write(xiiStreamWriter& stream, const xiiMaterial
     return XII_FAILURE;
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamWriter         writer(&storage);
-  writer << xiiUInt8(8) << xiiUInt8(0); // Native PBR block, no compression.
+  writer << xiiUInt8(9); // Current native material content.
   writer << (d.m_hBaseMaterial.IsValid() ? d.m_hBaseMaterial.GetResourceID() : xiiStringView());
   writer << d.m_sSurface.GetString();
   writer << (d.m_hShader.IsValid() ? d.m_hShader.GetResourceID() : xiiStringView());
@@ -85,9 +85,7 @@ xiiResult xiiMaterialAssetFile::Write(xiiStreamWriter& stream, const xiiMaterial
   writer << static_cast<xiiUInt16>(d.m_Parameters.GetCount());
   for (const auto& parameter : d.m_Parameters)
     writer << parameter.m_Name.GetString() << parameter.m_Value;
-  writer << xiiStringView(); // Reserved field, unchanged from version 7.
   XII_SUCCEED_OR_RETURN(WritePbrBlock(writer, d));
-  writer << xiiStringView(); // No embedded fallback textures; native resource references own loading.
   return storage.CopyToStream(stream);
 }
 

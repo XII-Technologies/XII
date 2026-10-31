@@ -155,19 +155,15 @@ public:
 
   const xiiMaterialResourceDescriptor& GetCurrentDescription() const;
 
-  /// Use these enum values together with GetDefaultMaterialFileName() to get the default file names for these material types.
+  /// Shared native descriptors used by loading, missing-resource and Editor previews.
   enum class DefaultMaterialType
   {
-    Fullbright,
-    FullbrightAlphaTest,
-    Lit,
-    LitAlphaTest,
-    Sky,
-    MissingMaterial
+    Missing,
+    Loading,
+    Highlight,
+    Preview
   };
-
-  /// Returns the default material file name for the given type (materials in Data/Base/Materials/BaseMaterials).
-  static xiiStringView GetDefaultMaterialFileName(DefaultMaterialType materialType);
+  static xiiMaterialResourceHandle GetDefaultMaterial(DefaultMaterialType type);
 
 private:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;

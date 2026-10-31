@@ -3,21 +3,14 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Algorithm/HashStream.h>
-#include <Foundation/IO/OpenDdlReader.h>
-#include <Foundation/IO/OpenDdlUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Material/MaterialAssetFile.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
-#include <GraphicsCore/Textures/TextureLoader.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <Texture/Image/Formats/DdsFileFormat.h>
 
-#ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-#  include <Foundation/IO/CompressedStreamZstd.h>
-#endif
 
 namespace
 {
@@ -89,112 +82,6 @@ namespace
     return 1U << static_cast<xiiUInt8>(slot);
   }
 
-  static bool ReadFloatChild(const xiiOpenDdlReaderElement& block, xiiStringView sName, float& ref_fValue)
-  {
-    if (const xiiOpenDdlReaderElement* pValue = block.FindChildOfType(xiiOpenDdlPrimitiveType::Float, sName))
-    {
-      ref_fValue = pValue->GetPrimitivesFloat()[0];
-      return true;
-    }
-
-    if (const xiiOpenDdlReaderElement* pValue = block.FindChildOfType(xiiOpenDdlPrimitiveType::Double, sName))
-    {
-      ref_fValue = static_cast<float>(pValue->GetPrimitivesDouble()[0]);
-      return true;
-    }
-
-    return false;
-  }
-
-  static bool ReadBoolChild(const xiiOpenDdlReaderElement& block, xiiStringView sName, bool& ref_bValue)
-  {
-    if (const xiiOpenDdlReaderElement* pValue = block.FindChildOfType(xiiOpenDdlPrimitiveType::Bool, sName))
-    {
-      ref_bValue = pValue->GetPrimitivesBool()[0];
-      return true;
-    }
-
-    return false;
-  }
-
-  static bool ReadInt16Child(const xiiOpenDdlReaderElement& block, xiiStringView sName, xiiInt16& ref_iValue)
-  {
-    if (const xiiOpenDdlReaderElement* pValue = block.FindChildOfType(xiiOpenDdlPrimitiveType::Int16, sName))
-    {
-      ref_iValue = pValue->GetPrimitivesInt16()[0];
-      return true;
-    }
-
-    if (const xiiOpenDdlReaderElement* pValue = block.FindChildOfType(xiiOpenDdlPrimitiveType::Int32, sName))
-    {
-      ref_iValue = static_cast<xiiInt16>(pValue->GetPrimitivesInt32()[0]);
-      return true;
-    }
-
-    return false;
-  }
-
-  static bool ReadStringChild(const xiiOpenDdlReaderElement& block, xiiStringView sName, xiiStringView& ref_sValue)
-  {
-    if (const xiiOpenDdlReaderElement* pValue = block.FindChildOfType(xiiOpenDdlPrimitiveType::String, sName))
-    {
-      ref_sValue = pValue->GetPrimitivesString()[0];
-      return true;
-    }
-
-    return false;
-  }
-
-  static bool TryParseShadingModel(xiiStringView sValue, xiiEnum<xiiMaterialShadingModel>& ref_value)
-  {
-    if (sValue.IsEqual_NoCase("Lit"))
-      ref_value = xiiMaterialShadingModel::Lit;
-    else if (sValue.IsEqual_NoCase("Subsurface"))
-      ref_value = xiiMaterialShadingModel::Subsurface;
-    else if (sValue.IsEqual_NoCase("ClearCoat"))
-      ref_value = xiiMaterialShadingModel::ClearCoat;
-    else if (sValue.IsEqual_NoCase("Cloth"))
-      ref_value = xiiMaterialShadingModel::Cloth;
-    else if (sValue.IsEqual_NoCase("Hair"))
-      ref_value = xiiMaterialShadingModel::Hair;
-    else if (sValue.IsEqual_NoCase("Eye"))
-      ref_value = xiiMaterialShadingModel::Eye;
-    else if (sValue.IsEqual_NoCase("Unlit"))
-      ref_value = xiiMaterialShadingModel::Unlit;
-    else if (sValue.IsEqual_NoCase("ParticipatingMedia"))
-      ref_value = xiiMaterialShadingModel::ParticipatingMedia;
-    else if (sValue.IsEqual_NoCase("XRayAttenuation"))
-      ref_value = xiiMaterialShadingModel::XRayAttenuation;
-    else if (sValue.IsEqual_NoCase("SensorResponse"))
-      ref_value = xiiMaterialShadingModel::SensorResponse;
-    else if (sValue.IsEqual_NoCase("Custom"))
-      ref_value = xiiMaterialShadingModel::Custom;
-    else
-      return false;
-
-    return true;
-  }
-
-  static bool TryParseMaterialDomain(xiiStringView sValue, xiiEnum<xiiMaterialDomain>& ref_value)
-  {
-    if (sValue.IsEqual_NoCase("Surface"))
-      ref_value = xiiMaterialDomain::Surface;
-    else if (sValue.IsEqual_NoCase("Decal"))
-      ref_value = xiiMaterialDomain::Decal;
-    else if (sValue.IsEqual_NoCase("Volume"))
-      ref_value = xiiMaterialDomain::Volume;
-    else if (sValue.IsEqual_NoCase("PostProcess"))
-      ref_value = xiiMaterialDomain::PostProcess;
-    else if (sValue.IsEqual_NoCase("Sensor"))
-      ref_value = xiiMaterialDomain::Sensor;
-    else if (sValue.IsEqual_NoCase("Compute"))
-      ref_value = xiiMaterialDomain::Compute;
-    else
-      return false;
-
-    return true;
-  }
-
   static bool TryGetMaterialParameterType(const xiiVariant& value, xiiMaterialParameterType::Enum& out_type)
   {
     switch (value.GetType())
@@ -242,142 +129,6 @@ namespace
     }
   }
 
-  static bool TryParseBlendMode(xiiStringView sValue, xiiEnum<xiiMaterialBlendMode>& ref_value)
-  {
-    if (sValue.IsEqual_NoCase("Opaque"))
-      ref_value = xiiMaterialBlendMode::Opaque;
-    else if (sValue.IsEqual_NoCase("Masked"))
-      ref_value = xiiMaterialBlendMode::Masked;
-    else if (sValue.IsEqual_NoCase("Translucent"))
-      ref_value = xiiMaterialBlendMode::Translucent;
-    else if (sValue.IsEqual_NoCase("Additive"))
-      ref_value = xiiMaterialBlendMode::Additive;
-    else if (sValue.IsEqual_NoCase("Modulate"))
-      ref_value = xiiMaterialBlendMode::Modulate;
-    else
-      return false;
-
-    return true;
-  }
-
-  static bool TryParseAlphaMode(xiiStringView sValue, xiiEnum<xiiMaterialAlphaMode>& ref_value)
-  {
-    if (sValue.IsEqual_NoCase("Opaque"))
-      ref_value = xiiMaterialAlphaMode::Opaque;
-    else if (sValue.IsEqual_NoCase("Mask") || sValue.IsEqual_NoCase("Masked"))
-      ref_value = xiiMaterialAlphaMode::Mask;
-    else if (sValue.IsEqual_NoCase("Blend") || sValue.IsEqual_NoCase("Translucent"))
-      ref_value = xiiMaterialAlphaMode::Blend;
-    else
-      return false;
-
-    return true;
-  }
-
-  static bool TryAddMaterialFeature(xiiStringView sValue, xiiBitflags<xiiMaterialFeatureFlags>& ref_flags)
-  {
-    if (sValue.IsEqual_NoCase("NormalTexture"))
-      ref_flags.Add(xiiMaterialFeatureFlags::NormalTexture);
-    else if (sValue.IsEqual_NoCase("MetallicRoughnessTexture"))
-      ref_flags.Add(xiiMaterialFeatureFlags::MetallicRoughnessTexture);
-    else if (sValue.IsEqual_NoCase("OcclusionTexture"))
-      ref_flags.Add(xiiMaterialFeatureFlags::OcclusionTexture);
-    else if (sValue.IsEqual_NoCase("EmissiveTexture"))
-      ref_flags.Add(xiiMaterialFeatureFlags::EmissiveTexture);
-    else if (sValue.IsEqual_NoCase("HeightTexture"))
-      ref_flags.Add(xiiMaterialFeatureFlags::HeightTexture);
-    else if (sValue.IsEqual_NoCase("ClearCoat"))
-      ref_flags.Add(xiiMaterialFeatureFlags::ClearCoat);
-    else if (sValue.IsEqual_NoCase("Transmission"))
-      ref_flags.Add(xiiMaterialFeatureFlags::Transmission);
-    else if (sValue.IsEqual_NoCase("Sheen"))
-      ref_flags.Add(xiiMaterialFeatureFlags::Sheen);
-    else if (sValue.IsEqual_NoCase("Anisotropy"))
-      ref_flags.Add(xiiMaterialFeatureFlags::Anisotropy);
-    else if (sValue.IsEqual_NoCase("VertexColor"))
-      ref_flags.Add(xiiMaterialFeatureFlags::VertexColor);
-    else if (sValue.IsEqual_NoCase("TwoSided"))
-      ref_flags.Add(xiiMaterialFeatureFlags::TwoSided);
-    else if (sValue.IsEqual_NoCase("RuntimeGenerated"))
-      ref_flags.Add(xiiMaterialFeatureFlags::RuntimeGenerated);
-    else if (sValue.IsEqual_NoCase("ReceivesLighting"))
-      ref_flags.Add(xiiMaterialFeatureFlags::ReceivesLighting);
-    else if (sValue.IsEqual_NoCase("CastsShadows"))
-      ref_flags.Add(xiiMaterialFeatureFlags::CastsShadows);
-    else if (sValue.IsEqual_NoCase("WritesVelocity"))
-      ref_flags.Add(xiiMaterialFeatureFlags::WritesVelocity);
-    else if (sValue.IsEqual_NoCase("UsesBindlessResources"))
-      ref_flags.Add(xiiMaterialFeatureFlags::UsesBindlessResources);
-    else
-      return false;
-
-    return true;
-  }
-
-  static void ReadPbrTextureChild(const xiiOpenDdlReaderElement& block, xiiStringView sName, xiiTexture2DResourceHandle& ref_hTexture)
-  {
-    xiiStringView sTexture;
-    if (ReadStringChild(block, sName, sTexture) && !sTexture.IsEmpty())
-    {
-      ref_hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTexture);
-    }
-  }
-
-  static void ReadPbrMaterialBlock(const xiiOpenDdlReaderElement& block, xiiMaterialResourceDescriptor& ref_desc)
-  {
-    xiiStringView sValue;
-    if (ReadStringChild(block, "Domain", sValue))
-      TryParseMaterialDomain(sValue, ref_desc.m_Domain);
-    if (ReadStringChild(block, "ShadingModel", sValue))
-      TryParseShadingModel(sValue, ref_desc.m_ShadingModel);
-    if (ReadStringChild(block, "BlendMode", sValue))
-      TryParseBlendMode(sValue, ref_desc.m_BlendMode);
-    if (ReadStringChild(block, "AlphaMode", sValue))
-      TryParseAlphaMode(sValue, ref_desc.m_AlphaMode);
-
-    if (const xiiOpenDdlReaderElement* pBaseColor = block.FindChild("BaseColor"))
-      xiiOpenDdlUtils::ConvertToColor(pBaseColor, ref_desc.m_BaseColor).IgnoreResult();
-    if (const xiiOpenDdlReaderElement* pEmissiveColor = block.FindChild("EmissiveColor"))
-      xiiOpenDdlUtils::ConvertToColor(pEmissiveColor, ref_desc.m_EmissiveColor).IgnoreResult();
-
-    ReadFloatChild(block, "Metallic", ref_desc.m_fMetallic);
-    ReadFloatChild(block, "Roughness", ref_desc.m_fRoughness);
-    ReadFloatChild(block, "OcclusionStrength", ref_desc.m_fOcclusionStrength);
-    ReadFloatChild(block, "AlphaCutoff", ref_desc.m_fAlphaCutoff);
-    ReadFloatChild(block, "NormalScale", ref_desc.m_fNormalScale);
-    ReadFloatChild(block, "DisplacementScale", ref_desc.m_fDisplacementScale);
-    ReadFloatChild(block, "ClearCoat", ref_desc.m_fClearCoat);
-    ReadFloatChild(block, "ClearCoatRoughness", ref_desc.m_fClearCoatRoughness);
-    ReadFloatChild(block, "Transmission", ref_desc.m_fTransmission);
-    ReadFloatChild(block, "Thickness", ref_desc.m_fThickness);
-    ReadFloatChild(block, "IndexOfRefraction", ref_desc.m_fIndexOfRefraction);
-    ReadFloatChild(block, "Anisotropy", ref_desc.m_fAnisotropy);
-    ReadFloatChild(block, "SheenRoughness", ref_desc.m_fSheenRoughness);
-    ReadInt16Child(block, "SortPriority", ref_desc.m_iSortPriority);
-
-    bool bFlag = false;
-    if (ReadBoolChild(block, "TwoSided", bFlag))
-      ref_desc.m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::TwoSided, bFlag);
-    if (ReadBoolChild(block, "VertexColor", bFlag))
-      ref_desc.m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::VertexColor, bFlag);
-
-    if (const xiiOpenDdlReaderElement* pFeatures = block.FindChildOfType(xiiOpenDdlPrimitiveType::String, "Features"))
-    {
-      for (xiiUInt32 i = 0; i < pFeatures->GetNumPrimitives(); ++i)
-      {
-        TryAddMaterialFeature(pFeatures->GetPrimitivesString()[i], ref_desc.m_FeatureFlags);
-      }
-    }
-
-    ReadPbrTextureChild(block, "BaseColorTexture", ref_desc.m_hBaseColorTexture);
-    ReadPbrTextureChild(block, "NormalTexture", ref_desc.m_hNormalTexture);
-    ReadPbrTextureChild(block, "MetallicRoughnessTexture", ref_desc.m_hMetallicRoughnessTexture);
-    ReadPbrTextureChild(block, "OcclusionTexture", ref_desc.m_hOcclusionTexture);
-    ReadPbrTextureChild(block, "EmissiveTexture", ref_desc.m_hEmissiveTexture);
-    ReadPbrTextureChild(block, "HeightTexture", ref_desc.m_hHeightTexture);
-    ReadPbrTextureChild(block, "ClearCoatTexture", ref_desc.m_hClearCoatTexture);
-    ReadPbrTextureChild(block, "TransmissionTexture", ref_desc.m_hTransmissionTexture);
-  }
 } // namespace
 
 void xiiMaterialResourceDescriptor::Clear()
@@ -1170,26 +921,35 @@ const xiiMaterialResourceDescriptor& xiiMaterialResource::GetCurrentDescription(
   return m_Description;
 }
 
-xiiStringView xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialType materialType)
+xiiMaterialResourceHandle xiiMaterialResource::GetDefaultMaterial(DefaultMaterialType type)
 {
-  switch (materialType)
+  xiiMaterialResourceDescriptor description;
+  xiiStringView                 name;
+  switch (type)
   {
-    case DefaultMaterialType::Fullbright:
-      return "Base/Materials/BaseMaterials/Fullbright.xiiMaterialAsset";
-    case DefaultMaterialType::FullbrightAlphaTest:
-      return "Base/Materials/BaseMaterials/FullbrightAlphaTest.xiiMaterialAsset";
-    case DefaultMaterialType::Lit:
-      return "Base/Materials/BaseMaterials/Lit.xiiMaterialAsset";
-    case DefaultMaterialType::LitAlphaTest:
-      return "Base/Materials/BaseMaterials/LitAlphaTest.xiiMaterialAsset";
-    case DefaultMaterialType::Sky:
-      return "Base/Materials/BaseMaterials/Sky.xiiMaterialAsset";
-    case DefaultMaterialType::MissingMaterial:
-      return "Base/Materials/Common/MissingMaterial.xiiMaterialAsset";
+    case DefaultMaterialType::Missing:
+      name                    = "Native/Materials/Missing";
+      description.m_BaseColor = xiiColor(1, 0, 1);
+      break;
+    case DefaultMaterialType::Loading:
+      name                    = "Native/Materials/Loading";
+      description.m_BaseColor = xiiColor(0.25f, 0.25f, 0.25f);
+      break;
+    case DefaultMaterialType::Highlight:
+      name                        = "Native/Materials/Highlight";
+      description.m_BaseColor     = xiiColor::Black;
+      description.m_EmissiveColor = xiiColor(1, 5, 5);
+      description.m_FeatureFlags.Add(xiiMaterialFeatureFlags::TwoSided);
+      break;
+    case DefaultMaterialType::Preview:
+      name                    = "Native/Materials/Preview";
+      description.m_BaseColor = xiiColor(0.4f, 0.4f, 0.4f);
+      break;
     default:
       XII_ASSERT_NOT_IMPLEMENTED;
-      return "";
+      return {};
   }
+  return xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(name, std::move(description), name);
 }
 
 xiiResourceLoadDescription xiiMaterialResource::UnloadData(Unload WhatToUnload)
@@ -1250,298 +1010,127 @@ xiiResourceLoadDescription xiiMaterialResource::UpdateContent(xiiStreamReader* p
   xiiStringBuilder sAbsFilePath;
   (*pOuterStream) >> sAbsFilePath;
 
-  if (sAbsFilePath.HasExtension("xiiBinMaterial"))
+  xiiAssetFileHeader header;
+  xiiUInt8           version = 0;
+  if (!sAbsFilePath.HasExtension("xiiBinMaterial") || header.Read(*pOuterStream).Failed() || pOuterStream->ReadBytes(&version, 1) != 1 || version != 9)
   {
-    xiiStringBuilder sTemp, sTemp2;
+    xiiLog::Error("Material '{}' requires current native material content. Re-transform the asset.", sAbsFilePath);
+    res.m_State = xiiResourceState::LoadedResourceMissing;
+    return res;
+  }
+  xiiStringBuilder sTemp, sTemp2;
+  auto&            s = *pOuterStream;
+  // Base material
+  {
+    s >> sTemp;
 
-    xiiAssetFileHeader AssetHash;
-    AssetHash.Read(*pOuterStream).IgnoreResult();
+    if (!sTemp.IsEmpty())
+      m_Description.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sTemp);
+  }
 
-    xiiUInt8 uiVersion = 0;
-    (*pOuterStream) >> uiVersion;
-    if (uiVersion < 4 || uiVersion > 8)
-    {
-      res.m_State = xiiResourceState::LoadedResourceMissing;
-      return res;
-    }
+  // Surface
+  {
+    s >> sTemp;
+    m_Description.m_sSurface.Assign(sTemp.GetView());
+  }
 
-    xiiUInt8 uiCompressionMode = 0;
-    if (uiVersion >= 6)
-    {
-      *pOuterStream >> uiCompressionMode;
-    }
+  // Shader
+  {
+    s >> sTemp;
 
-    xiiStreamReader* pInnerStream = pOuterStream;
+    if (!sTemp.IsEmpty())
+      m_Description.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sTemp);
+  }
 
-#ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-    xiiCompressedStreamReaderZstd decompressorZstd;
-#endif
+  // Permutation Variables
+  {
+    xiiUInt16 uiPermVars;
+    s >> uiPermVars;
 
-    switch (uiCompressionMode)
-    {
-      case 0:
-        break;
+    m_Description.m_PermutationVariables.Reserve(uiPermVars);
 
-      case 1:
-#ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-        decompressorZstd.SetInputStream(pOuterStream);
-        pInnerStream = &decompressorZstd;
-        break;
-#else
-        xiiLog::Error("Material resource is compressed with zstandard, but support for this compressor is not compiled in.");
-        res.m_State = xiiResourceState::LoadedResourceMissing;
-        return res;
-#endif
-
-      default:
-        xiiLog::Error("Material resource is compressed with an unknown algorithm.");
-        res.m_State = xiiResourceState::LoadedResourceMissing;
-        return res;
-    }
-
-    xiiStreamReader& s = *pInnerStream;
-
-    // Base material
+    for (xiiUInt16 i = 0; i < uiPermVars; ++i)
     {
       s >> sTemp;
+      s >> sTemp2;
 
-      if (!sTemp.IsEmpty())
-        m_Description.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sTemp);
-    }
-
-    // Surface
-    {
-      s >> sTemp;
-      m_Description.m_sSurface.Assign(sTemp.GetView());
-    }
-
-    // Shader
-    {
-      s >> sTemp;
-
-      if (!sTemp.IsEmpty())
-        m_Description.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sTemp);
-    }
-
-    // Permutation Variables
-    {
-      xiiUInt16 uiPermVars;
-      s >> uiPermVars;
-
-      m_Description.m_PermutationVariables.Reserve(uiPermVars);
-
-      for (xiiUInt16 i = 0; i < uiPermVars; ++i)
+      if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
       {
-        s >> sTemp;
-        s >> sTemp2;
-
-        if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
-        {
-          AddPermutationVariable(sTemp, sTemp2);
-        }
-      }
-    }
-
-    // 2D Textures
-    {
-      xiiUInt16 uiTextures = 0;
-      s >> uiTextures;
-
-      m_Description.m_Texture2DBindings.Reserve(uiTextures);
-
-      for (xiiUInt16 i = 0; i < uiTextures; ++i)
-      {
-        s >> sTemp;
-        s >> sTemp2;
-
-        if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
-        {
-          xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_Description.m_Texture2DBindings.ExpandAndGetRef();
-          tc.m_Name.Assign(sTemp.GetData());
-          tc.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTemp2);
-        }
-      }
-    }
-
-    // Cube Textures
-    {
-      xiiUInt16 uiTextures = 0;
-      s >> uiTextures;
-
-      m_Description.m_TextureCubeBindings.Reserve(uiTextures);
-
-      for (xiiUInt16 i = 0; i < uiTextures; ++i)
-      {
-        s >> sTemp;
-        s >> sTemp2;
-
-        if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
-        {
-          xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
-          tc.m_Name.Assign(sTemp.GetView());
-          tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTemp2);
-        }
-      }
-    }
-
-    // Shader constants
-    {
-      xiiUInt16 uiConstants = 0;
-      s >> uiConstants;
-
-      m_Description.m_Parameters.Reserve(uiConstants);
-
-      xiiVariant vTemp;
-
-      for (xiiUInt16 i = 0; i < uiConstants; ++i)
-      {
-        s >> sTemp;
-        s >> vTemp;
-
-        if (!sTemp.IsEmpty() && vTemp.IsValid())
-        {
-          xiiMaterialResourceDescriptor::Parameter& tc = m_Description.m_Parameters.ExpandAndGetRef();
-          tc.m_Name.Assign(sTemp.GetData());
-          tc.m_Value = vTemp;
-        }
-      }
-    }
-
-    // Reserved legacy field.
-    if (uiVersion >= 7)
-    {
-      xiiStringBuilder sUnusedLegacyField;
-      s >> sUnusedLegacyField;
-    }
-
-    if (uiVersion >= 8 && xiiMaterialAssetFile::ReadPbrBlock(s, m_Description).Failed())
-    {
-      m_Description.Clear();
-      res.m_State = xiiResourceState::LoadedResourceMissing;
-      return res;
-    }
-
-    if (uiVersion >= 5)
-    {
-      xiiStreamReader& s = *pInnerStream;
-
-      xiiStringBuilder sResourceName;
-      s >> sResourceName;
-
-      xiiTextureResourceLoader::LoadedData embedded;
-
-      while (!sResourceName.IsEmpty())
-      {
-        xiiUInt32 dataSize = 0;
-        s >> dataSize;
-
-        xiiTextureResourceLoader::LoadTexFile(s, embedded).IgnoreResult();
-        embedded.m_bIsFallback = true;
-
-        xiiDefaultMemoryStreamStorage storage;
-        xiiMemoryStreamWriter         loadStreamWriter(&storage);
-        xiiTextureResourceLoader::WriteTextureLoadStream(loadStreamWriter, embedded);
-
-        xiiMemoryStreamReader loadStreamReader(&storage);
-
-        xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
-        xiiResourceManager::SetResourceLowResData(hTexture, &loadStreamReader);
-
-        s >> sResourceName;
+        AddPermutationVariable(sTemp, sTemp2);
       }
     }
   }
-  else if (sAbsFilePath.HasExtension("xiiMaterial"))
+
+  // 2D Textures
   {
-    xiiOpenDdlReader reader;
+    xiiUInt16 uiTextures = 0;
+    s >> uiTextures;
 
-    if (reader.ParseDocument(*pOuterStream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
+    m_Description.m_Texture2DBindings.Reserve(uiTextures);
+
+    for (xiiUInt16 i = 0; i < uiTextures; ++i)
     {
-      res.m_State = xiiResourceState::LoadedResourceMissing;
-      return res;
-    }
+      s >> sTemp;
+      s >> sTemp2;
 
-    const xiiOpenDdlReaderElement* pRoot = reader.GetRootElement();
-
-    // Read the base material
-    if (const xiiOpenDdlReaderElement* pBase = pRoot->FindChildOfType(xiiOpenDdlPrimitiveType::String, "BaseMaterial"))
-    {
-      m_Description.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(pBase->GetPrimitivesString()[0]);
-    }
-
-    // Read the shader
-    if (const xiiOpenDdlReaderElement* pShader = pRoot->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Shader"))
-    {
-      m_Description.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(pShader->GetPrimitivesString()[0]);
-    }
-
-    for (const xiiOpenDdlReaderElement* pChild = pRoot->GetFirstChild(); pChild != nullptr; pChild = pChild->GetSibling())
-    {
-      // Read explicit PBR authoring state. Legacy Constant/Texture2D blocks below still override shader-facing bindings.
-      if (pChild->IsCustomType("PBR") || pChild->IsCustomType("Pbr") || pChild->IsCustomType("PbrMaterial"))
+      if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
       {
-        ReadPbrMaterialBlock(*pChild, m_Description);
-      }
-
-      // Read the shader permutation variables
-      if (pChild->IsCustomType("Permutation"))
-      {
-        const xiiOpenDdlReaderElement* pName  = pChild->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Variable");
-        const xiiOpenDdlReaderElement* pValue = pChild->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Value");
-
-        if (pName && pValue)
-        {
-          AddPermutationVariable(pName->GetPrimitivesString()[0], pValue->GetPrimitivesString()[0]);
-        }
-      }
-
-      // Read the shader constants
-      if (pChild->IsCustomType("Constant"))
-      {
-        const xiiOpenDdlReaderElement* pName  = pChild->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Variable");
-        const xiiOpenDdlReaderElement* pValue = pChild->FindChild("Value");
-
-        xiiVariant value;
-        if (pName && pValue && xiiOpenDdlUtils::ConvertToVariant(pValue, value).Succeeded())
-        {
-          xiiMaterialResourceDescriptor::Parameter& sc = m_Description.m_Parameters.ExpandAndGetRef();
-          sc.m_Name.Assign(pName->GetPrimitivesString()[0]);
-          sc.m_Value = value;
-        }
-      }
-
-      // Read the texture references
-      if (pChild->IsCustomType("Texture2D"))
-      {
-        const xiiOpenDdlReaderElement* pName  = pChild->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Variable");
-        const xiiOpenDdlReaderElement* pValue = pChild->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Value");
-
-        if (pName && pValue)
-        {
-          xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_Description.m_Texture2DBindings.ExpandAndGetRef();
-          tc.m_Name.Assign(pName->GetPrimitivesString()[0]);
-          tc.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(pValue->GetPrimitivesString()[0]);
-        }
-      }
-
-      // Read the texture references
-      if (pChild->IsCustomType("TextureCube"))
-      {
-        const xiiOpenDdlReaderElement* pName  = pChild->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Variable");
-        const xiiOpenDdlReaderElement* pValue = pChild->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Value");
-
-        if (pName && pValue)
-        {
-          xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
-          tc.m_Name.Assign(pName->GetPrimitivesString()[0]);
-          tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(pValue->GetPrimitivesString()[0]);
-        }
+        xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_Description.m_Texture2DBindings.ExpandAndGetRef();
+        tc.m_Name.Assign(sTemp.GetData());
+        tc.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTemp2);
       }
     }
   }
-  else
+
+  // Cube Textures
   {
-    xiiLog::Error("Unknown material file type: '{}'", sAbsFilePath);
+    xiiUInt16 uiTextures = 0;
+    s >> uiTextures;
+
+    m_Description.m_TextureCubeBindings.Reserve(uiTextures);
+
+    for (xiiUInt16 i = 0; i < uiTextures; ++i)
+    {
+      s >> sTemp;
+      s >> sTemp2;
+
+      if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
+      {
+        xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
+        tc.m_Name.Assign(sTemp.GetView());
+        tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTemp2);
+      }
+    }
+  }
+
+  // Shader constants
+  {
+    xiiUInt16 uiConstants = 0;
+    s >> uiConstants;
+
+    m_Description.m_Parameters.Reserve(uiConstants);
+
+    xiiVariant vTemp;
+
+    for (xiiUInt16 i = 0; i < uiConstants; ++i)
+    {
+      s >> sTemp;
+      s >> vTemp;
+
+      if (!sTemp.IsEmpty() && vTemp.IsValid())
+      {
+        xiiMaterialResourceDescriptor::Parameter& tc = m_Description.m_Parameters.ExpandAndGetRef();
+        tc.m_Name.Assign(sTemp.GetData());
+        tc.m_Value = vTemp;
+      }
+    }
+  }
+
+  if (xiiMaterialAssetFile::ReadPbrBlock(s, m_Description).Failed())
+  {
+    m_Description.Clear();
+    res.m_State = xiiResourceState::LoadedResourceMissing;
+    return res;
   }
 
   m_Description.ApplyPbrParameterDefaults();

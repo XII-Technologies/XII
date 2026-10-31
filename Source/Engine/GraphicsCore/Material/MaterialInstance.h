@@ -58,7 +58,7 @@ public:
   xiiResult SetTexture2D(xiiMaterialParameterId id, const xiiTexture2DResourceHandle& hTexture);
   xiiResult SetTextureCube(xiiMaterialParameterId id, const xiiTextureCubeResourceHandle& hTexture);
   /// Indices are renderer-owned and must remain live through the consuming frame.
-  /// An invalid sampler index selects the shader's legacy fallback sampler.
+  /// An invalid sampler index selects the renderer's default sampler.
   xiiResult SetBindlessIndex(xiiMaterialParameterId id, xiiUInt32 uiBindlessIndex, xiiUInt32 uiSamplerIndex = xiiInvalidIndex);
 
   void                                                SetRuntimeState(const xiiMaterialRuntimeState& runtimeState);

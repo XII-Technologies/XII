@@ -11,6 +11,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, MaterialAssetFile)
 {
@@ -40,10 +41,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MaterialAssetFile)
   xiiMemoryStreamWriter         writer(&storage);
   if (!XII_TEST_RESULT(xiiMaterialAssetFile::Write(writer, d)))
     return;
-  // Empty base/surface/shader, zero custom counts and reserved string precede the typed block.
-  constexpr xiiUInt32           offset    = 2 + 3 * 4 + 4 * 2 + 4;
+  // Current version byte, empty base/surface/shader and zero custom counts precede the typed block.
+  constexpr xiiUInt32           offset    = 1 + 3 * 4 + 4 * 2;
   const auto                    bytes     = storage.GetContiguousMemoryRange(offset);
-  const auto                    blockSize = bytes.GetCount() - 4; // Exclude the embedded-data terminator.
+  const auto                    blockSize = bytes.GetCount();
   xiiRawMemoryStreamReader      reader(bytes.GetPtr(), blockSize);
   xiiMaterialResourceDescriptor restored;
   XII_TEST_RESULT(xiiMaterialAssetFile::ReadPbrBlock(reader, restored));
@@ -82,6 +83,34 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MaterialAssetFile)
     xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
     xiiStartup::StartupHighLevelSystems();
     XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+    for (auto type : {xiiMaterialResource::DefaultMaterialType::Missing, xiiMaterialResource::DefaultMaterialType::Loading, xiiMaterialResource::DefaultMaterialType::Highlight, xiiMaterialResource::DefaultMaterialType::Preview})
+    {
+      const auto handle = xiiMaterialResource::GetDefaultMaterial(type);
+      XII_TEST_BOOL(handle == xiiMaterialResource::GetDefaultMaterial(type));
+      xiiResourceLock<xiiMaterialResource> builtin(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      XII_TEST_BOOL(builtin && !builtin->GetCurrentDescription().m_hShader.IsValid());
+      XII_TEST_BOOL(builtin->GetDefaultInstance() && builtin->GetSchema()->IsValid());
+    }
+    for (xiiUInt8 obsolete : {4, 5, 6, 7, 8})
+    {
+      xiiStringBuilder path;
+      path.SetFormat(":imgout/RemovedMaterialVersion{}.xiiBinMaterial", obsolete);
+      {
+        xiiFileWriter file;
+        if (!XII_TEST_RESULT(file.Open(path)))
+          return;
+        xiiAssetFileHeader header;
+        XII_TEST_RESULT(header.Write(file));
+        file << obsolete;
+      }
+      xiiTestLogInterface   log;
+      xiiTestLogSystemScope logScope(&log, true);
+      log.ExpectMessage("requires current native material content", xiiLogMsgType::ErrorMsg);
+      log.ExpectMessage("Missing Resource of Type 'xiiMaterialResource'", xiiLogMsgType::SeriousWarningMsg);
+      const auto                           handle = xiiResourceManager::LoadResource<xiiMaterialResource>(path);
+      xiiResourceLock<xiiMaterialResource> rejected(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      XII_TEST_BOOL(rejected.GetAcquireResult() != xiiResourceAcquireResult::Final);
+    }
     // Named resources retain their IDs without requiring a texture file to load yet.
     d.m_hBaseColorTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("Textures/Native-骨.xiiBinTexture2D");
     auto& parameter       = d.m_Parameters.ExpandAndGetRef();
@@ -92,7 +121,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MaterialAssetFile)
       xiiFileWriter file;
       XII_SUCCEED_OR_RETURN(file.Open(path));
       xiiAssetFileHeader header;
-      header.SetFileHashAndVersion(12345, 8);
+      header.SetFileHashAndVersion(12345, 9);
       XII_SUCCEED_OR_RETURN(header.Write(file));
       return xiiMaterialAssetFile::Write(file, d);
     };
