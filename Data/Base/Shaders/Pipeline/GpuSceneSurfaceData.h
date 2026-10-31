@@ -59,6 +59,7 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   output.Color         = float4(color & 255u, (color >> 8u) & 255u, (color >> 16u) & 255u, color >> 24u) / 255.0f;
   output.LocalPosition = localPosition;
   output.InstanceIndex = 0u;
+  output.Barycentric   = 0;
 #endif
   output.TexCoord      = texCoord;
   output.MaterialIndex = instance.MaterialIndex;

@@ -28,6 +28,7 @@ struct GBufferVertex
   float2               TexCoord1 : TEXCOORD9;
   float4               Color : TEXCOORD10;
   float3               LocalPosition : TEXCOORD11;
+  float3               Barycentric : TEXCOORD18;
   nointerpolation uint InstanceIndex : TEXCOORD12;
 #endif
 #if defined(XII_SCENE_DIAGNOSTICS)
