@@ -12,8 +12,8 @@
 #include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
 StructuredBuffer<GpuSceneInstance> g_SceneInstances;
 
-/// Authored surface stages consume the canonical GPU scene vertex and write the
-/// same seven targets as standard materials. Geometry and visibility stay native.
+/// Authored stages consume canonical GPU-scene vertices and emit the native
+/// outputs for the selected pass. Geometry and visibility stay native.
 float3 xiiMaterialDecodeNormalTexture(float4 value)
 {
   float3 normal = value.xyz * 2 - 1;
@@ -31,7 +31,11 @@ float3 xiiMaterialTangentToWorld(GBufferVertex input, float3 normal)
 xiiMaterialSurface xiiDefaultMaterialSurface(GBufferVertex input, bool frontFace)
 {
   const xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
+#if defined(TWO_SIDED)
+  if (!frontFace && TWO_SIDED != TRUE)
+#else
   if (!frontFace && (material.Metadata.y & (1u << 10u)) == 0u)
+#endif
     clip(-1.0f);
   return xiiSampleSceneSurface(material, input, frontFace, false);
 }
