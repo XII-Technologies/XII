@@ -737,7 +737,15 @@ void xiiQtNodeScene::UpdateSelection()
   {
     m_bIgnoreSelectionChange = true;
 
+    // Annotation selection has no domain object. Inspector fallback selections
+    // must not erase it; explicit graph interaction still clears it normally.
+    QList<QGraphicsItem*> selectedBlocks;
+    for (auto* item : selectedItems())
+      if (item->type() == Type::CommentBlock)
+        selectedBlocks.push_back(item);
     clearSelection();
+    for (auto* item : selectedBlocks)
+      item->setSelected(true);
 
     QList<QGraphicsItem*> qSelection;
     for (const xiiDocumentObject* pObject : selection)

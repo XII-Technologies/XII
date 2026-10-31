@@ -14,6 +14,7 @@ class xiiQtNode;
 class xiiQtPin;
 class xiiQtConnection;
 class xiiQtGraphCommentBlock;
+class xiiPasteObjectsCommand;
 class QMenu;
 struct xiiSelectionManagerEvent;
 
@@ -65,6 +66,11 @@ public:
   xiiStatus CreateCommentBlock(xiiStringView sText);
   xiiStatus FitCommentBlock(const xiiUuid& id);
   void      AddCommentBlockActions(QMenu& menu, const xiiUuid& id = {});
+  bool      HasSelectedCommentBlocks() const;
+  /// Use the document's MIME format and paste command for both annotations and nodes.
+  bool      CopySelectedObjects(xiiAbstractObjectGraph& out_graph, xiiStringBuilder& out_sMimeType) const;
+  xiiStatus PasteObjects(xiiPasteObjectsCommand& command);
+  void      DeleteSelectedObjects() { RemoveSelectedNodesAction(); }
 
 Q_SIGNALS:
   /// Emitted after a successful full-graph format so attached views can frame the result.

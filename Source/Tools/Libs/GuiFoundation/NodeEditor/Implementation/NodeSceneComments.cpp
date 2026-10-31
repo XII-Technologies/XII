@@ -11,7 +11,55 @@
 #include <QInputDialog>
 #include <QMenu>
 #include <ToolsFoundation/Command/NodeCommands.h>
+#include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
+
+bool xiiQtNodeScene::HasSelectedCommentBlocks() const
+{
+  for (const auto& block : m_CommentBlocks)
+    if (block.Value()->isSelected())
+      return true;
+  return false;
+}
+
+bool xiiQtNodeScene::CopySelectedObjects(xiiAbstractObjectGraph& out_graph, xiiStringBuilder& out_sMimeType) const
+{
+  const bool                 copiedNodes = GetDocument()->CopySelectedObjects(out_graph, out_sMimeType);
+  xiiHybridArray<xiiUuid, 8> blocks;
+  for (const auto& block : m_CommentBlocks)
+    if (block.Value()->isSelected())
+      blocks.PushBack(block.Key());
+  if (out_sMimeType.IsEmpty() || m_pManager->CopyCommentBlocks(out_graph, blocks).Failed())
+    return false;
+  return copiedNodes || !blocks.IsEmpty();
+}
+
+xiiStatus xiiQtNodeScene::PasteObjects(xiiPasteObjectsCommand& command)
+{
+  auto* history = GetDocument()->GetCommandHistory();
+  if (history->IsInTransaction() || history->IsInUndoRedo() || m_pTempConnection)
+    return xiiStatus("Finish the current graph edit first.");
+  xiiSet<xiiUuid> previousBlocks;
+  for (const auto& block : m_CommentBlocks)
+    previousBlocks.Insert(block.Key());
+  history->StartTransaction("Paste");
+  const auto status = history->AddCommand(command);
+  if (status.Failed())
+  {
+    history->CancelTransaction();
+    return status;
+  }
+  history->FinishTransaction();
+
+  // The document selects pasted nodes. Add the pasted annotations to that same
+  // visible selection without publishing annotations as domain objects.
+  const bool ignored       = m_bIgnoreSelectionChange;
+  m_bIgnoreSelectionChange = true;
+  for (const auto& block : m_CommentBlocks)
+    block.Value()->setSelected(!previousBlocks.Contains(block.Key()));
+  m_bIgnoreSelectionChange = ignored;
+  return XII_SUCCESS;
+}
 
 void xiiQtNodeScene::SyncCommentBlocks()
 {
