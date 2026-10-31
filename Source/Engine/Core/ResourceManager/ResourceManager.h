@@ -194,12 +194,10 @@ public:
   /// Same as EndAcquireResource but without the template parameter. See also BeginAcquireResourcePointer.
   static void EndAcquireResourcePointer(xiiResource* pResource);
 
-  /// Forces the resource manager to treat xiiResourceAcquireMode::AllowLoadingFallback as xiiResourceAcquireMode::BlockTillLoaded on
-  /// BeginAcquireResource.
+  /// Forces both AllowLoadingFallback modes to block on BeginAcquireResource, preserving NeverFail error handling.
   static void ForceNoFallbackAcquisition(xiiUInt32 uiNumFrames = 0xFFFFFFFFU);
 
-  /// If the returned number is greater 0 the resource manager treats xiiResourceAcquireMode::AllowLoadingFallback as
-  /// xiiResourceAcquireMode::BlockTillLoaded on BeginAcquireResource.
+  /// If greater than zero, both AllowLoadingFallback modes block, preserving NeverFail error handling.
   static xiiUInt32 GetForceNoFallbackAcquisition();
 
   /// Retrieves an array of pointers to resources of the indicated type which

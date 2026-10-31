@@ -3,6 +3,8 @@
 #include <CoreTest/CoreTestPCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Threading/DelegateTask.h>
+#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/ScopeExit.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(ResourceManager);
@@ -124,11 +126,72 @@ namespace
     }
   };
 
+  class GatedResourceLoader : public TestResourceTypeLoader
+  {
+  public:
+    xiiThreadSignal m_Entered;
+    xiiThreadSignal m_Release;
+
+    xiiResourceLoadData OpenDataStream(const xiiResource* resource) override
+    {
+      if (resource->GetResourceID().StartsWith("GatedFallback/"))
+      {
+        m_Entered.RaiseSignal();
+        m_Release.WaitForSignal(xiiTime::MakeFromSeconds(10));
+      }
+      return TestResourceTypeLoader::OpenDataStream(resource);
+    }
+  };
+
   XII_RESOURCE_IMPLEMENT_COMMON_CODE(TestResource);
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(TestResource, 1, xiiRTTIDefaultAllocator<TestResource>)
   XII_END_DYNAMIC_REFLECTED_TYPE;
 
 } // namespace
+
+XII_CREATE_SIMPLE_TEST(ResourceManager, LoadingFallbackModes)
+{
+  GatedResourceLoader loader;
+  xiiResourceManager::SetResourceTypeLoader<TestResource>(&loader);
+  const auto previousFallback = xiiResourceManager::GetResourceTypeLoadingFallback<TestResource>();
+  const auto previousForce    = xiiResourceManager::GetForceNoFallbackAcquisition();
+  XII_SCOPE_EXIT(xiiTaskSystem::WaitForCondition([] { return !xiiResourceManager::IsAnyLoadingInProgress(); }); xiiResourceManager::ForceNoFallbackAcquisition(previousForce); xiiResourceManager::SetResourceTypeLoadingFallback(previousFallback); xiiResourceManager::SetResourceTypeLoader<TestResource>(nullptr); xiiResourceManager::FreeAllUnusedResources());
+  const auto fallback = xiiResourceManager::LoadResource<TestResource>("ReadyLoadingFallback");
+  {
+    xiiResourceLock<TestResource> ready(fallback, xiiResourceAcquireMode::BlockTillLoaded);
+    XII_TEST_BOOL(ready.IsValid());
+  }
+  xiiResourceManager::SetResourceTypeLoadingFallback(fallback);
+  for (xiiUInt32 index = 0; index < 4; ++index)
+  {
+    const bool force = index >= 2;
+    const auto mode  = index % 2 == 0 ? xiiResourceAcquireMode::AllowLoadingFallback : xiiResourceAcquireMode::AllowLoadingFallback_NeverFail;
+    xiiResourceManager::ForceNoFallbackAcquisition(force ? 1 : 0);
+    xiiStringBuilder sourceId;
+    sourceId.SetFormat("GatedFallback/{}", index);
+    const auto      source = xiiResourceManager::LoadResource<TestResource>(sourceId);
+    xiiThreadSignal returned;
+    auto            result       = xiiResourceAcquireResult::None;
+    bool            usedFallback = false;
+    auto            task         = XII_DEFAULT_NEW(xiiDelegateTask<void>, "Acquire pending resource", xiiTaskNesting::Maybe, [&]() {
+      auto* resource = xiiResourceManager::BeginAcquireResource(source, mode, {}, &result);
+      usedFallback   = resource && resource->GetResourceID() == fallback.GetResourceID();
+      xiiResourceManager::EndAcquireResource(resource);
+      returned.RaiseSignal();
+    });
+    const auto      group        = xiiTaskSystem::StartSingleTask(task, xiiTaskPriority::LongRunning);
+    const bool      entered      = loader.m_Entered.WaitForSignal(xiiTime::MakeFromSeconds(5)) == xiiThreadSignal::WaitResult::Signaled;
+    XII_TEST_BOOL(entered);
+    const bool completed = returned.WaitForSignal(xiiTime::MakeFromSeconds(force ? 0.1 : 5)) == xiiThreadSignal::WaitResult::Signaled;
+    loader.m_Release.RaiseSignal();
+    xiiTaskSystem::WaitForGroup(group);
+    XII_TEST_BOOL(completed != force);
+    XII_TEST_BOOL(usedFallback != force);
+    XII_TEST_BOOL(result == (force ? xiiResourceAcquireResult::Final : xiiResourceAcquireResult::LoadingFallback));
+    xiiResourceLock<TestResource> final(source, xiiResourceAcquireMode::BlockTillLoaded);
+    XII_TEST_BOOL(final.GetAcquireResult() == xiiResourceAcquireResult::Final);
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(ResourceManager, Basics)
 {
