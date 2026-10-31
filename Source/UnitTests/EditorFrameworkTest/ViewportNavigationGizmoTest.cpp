@@ -31,6 +31,7 @@ namespace
   class NavigationDocumentWindow : public xiiQtGameObjectDocumentWindow
   {
   public:
+    using xiiQtGameObjectDocumentWindow::GetWorldSettings;
     explicit NavigationDocumentWindow(xiiSceneDocument* document) : xiiQtGameObjectDocumentWindow(document) { FinishWindowCreation(); }
     xiiStringView GetWindowLayoutGroupName() const override { return "NavigationGizmoTest"; }
   };
@@ -376,6 +377,11 @@ XII_CREATE_SIMPLE_TEST(EditorViewportNavigation, NavigationInput)
     XII_TEST_STATUS(loaded);
     if (loaded.Failed())
       return;
+    // Scene icon textures may finish streaming between captures. Compare only
+    // the navigation overlay against a background without those unrelated icons.
+    auto worldSettings                = window->GetWorldSettings();
+    worldSettings.m_bRenderShapeIcons = false;
+    scene->SendMessageToEngine(&worldSettings);
     config.m_Camera.SetCoordinateSystem(xiiBasisAxis::PositiveX, xiiBasisAxis::PositiveY, xiiBasisAxis::PositiveZ);
     config.m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 70, 0.1f, 1000);
     reset();

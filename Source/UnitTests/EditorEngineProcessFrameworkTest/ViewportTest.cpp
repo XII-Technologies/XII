@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
 #include <Core/World/WorldDesc.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
@@ -11,14 +12,27 @@
 #include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Memory/FrameAllocator.h>
+#include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Threading/TaskSystem.h>
+#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
+#include <GameEngine/GameApplication/WindowOutputTarget.h>
+#include <GraphicsCore/Pipeline/Passes/Output/PresentPass.h>
+#include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Shader/ShaderPermutationResource.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Device/SwapChain.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
 #include <Texture/Image/Image.h>
@@ -207,6 +221,7 @@ namespace
   public:
     using xiiEngineProcessViewContext::xiiEngineProcessViewContext;
     using xiiEngineProcessViewContext::SetCamera;
+    using xiiEngineProcessViewContext::OnSwapChainChanged;
     using xiiEngineProcessViewContext::ResolveRenderPipeline;
     using xiiEngineProcessViewContext::UpdateRenderPipeline;
     xiiView* BorrowView() const { return GetView(); }
@@ -252,6 +267,34 @@ namespace
 
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(TestDocumentContext, 1, xiiRTTIDefaultAllocator<TestDocumentContext>)
   XII_END_DYNAMIC_REFLECTED_TYPE;
+
+  xiiRenderPipelineResourceDescriptor ClearPresentation(xiiColor color)
+  {
+    xiiRenderPipelineResourceDescriptor descriptor;
+    xiiVariantDictionary                properties;
+    properties.Insert("Color", color);
+    const auto clear   = descriptor.AddPass("Clear", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
+    const auto present = descriptor.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>());
+    descriptor.Connect(clear, "Texture", present, "GradedColor").AssertSuccess();
+    return descriptor;
+  }
+
+  class GatedPipelineLoader : public xiiResourceLoaderFromMemory
+  {
+  public:
+    GatedPipelineLoader(xiiThreadSignal& entered, xiiThreadSignal& release) : m_Entered(entered), m_Release(release) {}
+
+    xiiResourceLoadData OpenDataStream(const xiiResource* resource) override
+    {
+      m_Entered.RaiseSignal();
+      m_Release.WaitForSignal(xiiTime::MakeFromSeconds(10));
+      return xiiResourceLoaderFromMemory::OpenDataStream(resource);
+    }
+
+  private:
+    xiiThreadSignal& m_Entered;
+    xiiThreadSignal& m_Release;
+  };
 
   // A test output owns a reference exactly as a GAL swapchain does.
   class ReferencedWindowOutput : public xiiWindowOutputTargetBase
@@ -524,4 +567,147 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
     XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(ownerGuid) == nullptr);
     XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(borrowerGuid) == nullptr);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViews, SwapChainViewportExtent)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  auto* device = environment.GetDevice();
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(device->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  auto window = environment.CreateWindow(128, 96, "Editor viewport extent regression");
+  if (!XII_TEST_BOOL(window != nullptr))
+    return;
+  xiiWorldDescription                worldDescription("Editor swapchain viewport");
+  xiiWorld                           world(worldDescription);
+  TestDocumentContext                document(world);
+  TestViewContext                    context(&document);
+  xiiSizeU32                         notifiedSize;
+  xiiGALSwapChainCreationDescription description;
+  description.m_pWindow = window.Borrow();
+  xiiWindowOutputTargetGAL output(description, [&](xiiSharedPtr<xiiGALSwapChain> swapChain, xiiSizeU32 size) {
+    notifiedSize = size;
+    context.OnSwapChainChanged(std::move(swapChain), size);
+  });
+  if (!XII_TEST_BOOL(output.m_pSwapChain != nullptr))
+    return;
+  // IPC dimensions can precede or differ from the native surface allocation.
+  context.SetupRenderTarget(output.m_pSwapChain, nullptr, 1024, 768);
+  XII_LOCK(world.GetWriteMarker());
+  auto* view = context.BorrowView();
+  if (!XII_TEST_BOOL(view != nullptr))
+    return;
+  view->GetCamera()->SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  view->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("ViewportExtent/Clear", ClearPresentation(xiiColor::Blue)));
+  const auto checkAndRender = [&]() {
+    const auto actual = output.m_pSwapChain->GetBackBufferTexture()->GetDescription().m_Size;
+    XII_TEST_FLOAT(view->GetViewport().width, static_cast<float>(actual.width), 0);
+    XII_TEST_FLOAT(view->GetViewport().height, static_cast<float>(actual.height), 0);
+    context.Redraw(false);
+    world.Update();
+    device->WaitIdle();
+    XII_TEST_RESULT(view->GetLastRenderResult());
+  };
+  checkAndRender();
+  output.Resize({512, 384});
+  XII_TEST_BOOL(notifiedSize == output.m_pSwapChain->GetCurrentSize());
+  checkAndRender();
+  for (const auto size : {xiiSizeU32(64, 48), xiiSizeU32(160, 120), xiiSizeU32(96, 72)})
+  {
+    XII_TEST_RESULT(static_cast<xiiWindow*>(window.Borrow())->Resize(size));
+    window->ProcessWindowMessages();
+    // Simulate surface-driven recreation, which has no output-target callback.
+    XII_TEST_RESULT(output.m_pSwapChain->Resize(size));
+    context.Redraw(false);
+    checkAndRender();
+    output.PresentImage();
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViews, PipelineLoadingFallback)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  auto* device = environment.GetDevice();
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(device->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  const auto previousFallback = xiiResourceManager::GetResourceTypeLoadingFallback<xiiRenderPipelineResource>();
+  const auto previousForce    = xiiResourceManager::GetForceNoFallbackAcquisition();
+  xiiResourceManager::ForceNoFallbackAcquisition(0);
+  const auto fallback = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("ViewportFallback/Loading", ClearPresentation(xiiColor::Blue));
+  xiiResourceManager::SetResourceTypeLoadingFallback(fallback);
+  XII_SCOPE_EXIT(xiiResourceManager::SetResourceTypeLoadingFallback(previousFallback); xiiResourceManager::ForceNoFallbackAcquisition(previousForce));
+  // Keep the fallback's shader resident before blocking the file-loading worker.
+  const auto                                    blit = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/FinalBlit.xiiShader"), {}, false);
+  xiiResourceLock<xiiShaderPermutationResource> shader(blit, xiiResourceAcquireMode::BlockTillLoaded);
+  if (!XII_TEST_BOOL(shader.IsValid() && shader->IsShaderValid()))
+    return;
+  xiiThreadSignal       entered, release, returned;
+  auto                  loader = XII_DEFAULT_NEW(GatedPipelineLoader, entered, release);
+  xiiMemoryStreamWriter writer(&loader->m_CustomData);
+  writer << "ViewportFallback/Final.xiiBinRenderPipeline";
+  xiiAssetFileHeader header;
+  if (!XII_TEST_RESULT(header.Write(writer)))
+    return;
+  writer << xiiUInt8(3);
+  if (!XII_TEST_RESULT(ClearPresentation(xiiColor(0, 1, 0)).Serialize(writer)))
+    return;
+  const auto                source = xiiResourceManager::GetExistingResourceOrCreateAsync<xiiRenderPipelineResource>("ViewportFallback/Final", std::move(loader));
+  xiiRenderPipelineInstance instance;
+  xiiResult                 synchronized = XII_FAILURE;
+  auto                      task         = XII_DEFAULT_NEW(xiiDelegateTask<void>, "Synchronize pending pipeline", xiiTaskNesting::Maybe, [&]() {
+    synchronized = instance.Synchronize(source);
+    returned.RaiseSignal();
+  });
+  const auto                group        = xiiTaskSystem::StartSingleTask(task, xiiTaskPriority::LongRunning);
+  XII_SCOPE_EXIT(release.RaiseSignal(); xiiTaskSystem::WaitForGroup(group); xiiResourceLock<xiiRenderPipelineResource> completed(source, xiiResourceAcquireMode::BlockTillLoaded));
+  if (!XII_TEST_BOOL(entered.WaitForSignal(xiiTime::MakeFromSeconds(5)) == xiiThreadSignal::WaitResult::Signaled) ||
+      !XII_TEST_BOOL(returned.WaitForSignal(xiiTime::MakeFromSeconds(5)) == xiiThreadSignal::WaitResult::Signaled))
+    return;
+  XII_TEST_RESULT(synchronized);
+  XII_TEST_BOOL(instance.GetResourceAcquireResult() == xiiResourceAcquireResult::LoadingFallback);
+
+  xiiWorldDescription              worldDescription("Pipeline loading fallback");
+  xiiWorld                         world(worldDescription);
+  TestDocumentContext              document(world);
+  TestViewContext                  context(&document);
+  xiiGALTextureCreationDescription target;
+  target.m_Type      = xiiGALResourceDimension::Texture2D;
+  target.m_Size      = {16, 16};
+  target.m_Format    = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  target.m_BindFlags = xiiGALBindFlags::RenderTarget;
+  auto texture       = device->CreateTexture(target);
+  if (!XII_TEST_BOOL(texture != nullptr))
+    return;
+  context.SetupRenderTarget({}, texture->GetDefaultView(xiiGALTextureViewType::RenderTarget), 16, 16);
+  XII_LOCK(world.GetWriteMarker());
+  auto* view = context.BorrowView();
+  view->SetRenderPipelineResource(source);
+  view->GetCamera()->SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  const auto render = [&](bool final) {
+    context.Redraw(false);
+    world.Update();
+    device->WaitIdle();
+    XII_TEST_RESULT(view->GetLastRenderResult());
+    XII_TEST_BOOL(view->GetRenderPipelineInstance().GetResourceAcquireResult() == (final ? xiiResourceAcquireResult::Final : xiiResourceAcquireResult::LoadingFallback));
+    xiiImage image;
+    if (XII_TEST_RESULT(xiiCaptureThumbnail(texture, {16, 16}, image)))
+    {
+      const auto* pixel = image.GetPixelPointer<xiiUInt8>(0, 0, 0, 8, 8);
+      XII_TEST_BOOL(pixel[final ? 1 : 2] > 200);
+      XII_TEST_BOOL(pixel[final ? 2 : 1] < 5);
+    }
+  };
+  render(false);
+  release.RaiseSignal();
+  {
+    xiiResourceLock<xiiRenderPipelineResource> completed(source, xiiResourceAcquireMode::BlockTillLoaded);
+    XII_TEST_BOOL(completed.GetAcquireResult() == xiiResourceAcquireResult::Final);
+  }
+  render(true);
 }

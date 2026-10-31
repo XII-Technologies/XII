@@ -88,11 +88,15 @@ void xiiWindowOutputTargetGAL::Resize(const xiiSizeU32& newSize)
 
   const xiiGALSwapChainCreationDescription& description = m_pSwapChain->GetDescription();
 
-  m_pSwapChain->Resize(newSize, description.m_PreTransform).IgnoreResult();
+  if (m_pSwapChain->Resize(newSize, description.m_PreTransform).Failed())
+  {
+    xiiLog::Error("Failed to resize the window output swapchain.");
+    return;
+  }
 
   if (m_OnSwapChainChanged.IsValid())
   {
-    m_OnSwapChainChanged(m_pSwapChain, newSize);
+    m_OnSwapChainChanged(m_pSwapChain, m_pSwapChain->GetCurrentSize());
   }
 }
 

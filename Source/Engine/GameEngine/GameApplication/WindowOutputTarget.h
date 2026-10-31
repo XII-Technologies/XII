@@ -22,6 +22,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSwapChain* GetSwapChain() const { return m_pSwapChain; }
 
 public:
+  /// Reports the allocated swapchain extent, which may differ from the requested window size.
   using OnSwapChainChanged = xiiDelegate<void(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize)>;
 
   xiiWindowOutputTargetGAL(const xiiGALSwapChainCreationDescription& description, OnSwapChainChanged onSwapChainChanged = {});
