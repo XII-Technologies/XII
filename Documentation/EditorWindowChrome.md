@@ -53,9 +53,11 @@ do not become caption regions when they ignore a mouse event.
 The custom row has a 32-logical-pixel minimum height, growing with larger fonts,
 and retains the upper native resize strip. Its background matches the black Editor window palette, with flat menu/command hover backgrounds,
 fixed 46-pixel caption hit widths and 16-pixel SVG glyphs. Hover rules change
-paint only, with common border/padding in all states. Project names are elided
-at paint time, retaining the full accessible label and tooltip without changing
-text or size hints during resizing.
+paint only, with common border/padding in all states. The project title uses
+semibold text centered on the whole title bar, independent of menu/control
+widths. It elides within the symmetric free caption area, yielding to controls
+when there is no central space. The full accessible label and tooltip remain
+available without changing text or size hints during resizing.
 
 Qt implementation references: [native flags and expanded-area hit testing](https://github.com/qt/qtbase/blob/v6.11.0/src/plugins/platforms/windows/qwindowswindow.cpp),
 [system movement API](https://doc.qt.io/qt-6/qwindow.html#startSystemMove).

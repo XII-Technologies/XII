@@ -49,14 +49,28 @@ namespace
   class ProjectTitleLabel final : public QLabel
   {
   public:
-    explicit ProjectTitleLabel(QWidget* pParent) : QLabel(pParent) {}
+    explicit ProjectTitleLabel(QWidget* pParent) : QLabel(pParent)
+    {
+      setTextFormat(Qt::PlainText);
+      QFont titleFont = font();
+      titleFont.setWeight(QFont::DemiBold);
+      setFont(titleFont);
+    }
 
   protected:
     void paintEvent(QPaintEvent*) override
     {
-      QPainter painter(this);
+      // Center on the whole title bar, independently of the menu and controls'
+      // different widths. Elide within the symmetric free area, never over them.
+      const auto bounds     = contentsRect().adjusted(8, 0, -8, 0);
+      const int  iCenter    = mapFrom(parentWidget(), parentWidget()->rect().center()).x();
+      const int  iHalfWidth = qMin(iCenter - bounds.left(), bounds.right() - iCenter);
+      if (iHalfWidth <= 0)
+        return;
+      const QRect titleRect(iCenter - iHalfWidth, bounds.top(), iHalfWidth * 2 + 1, bounds.height());
+      QPainter    painter(this);
       painter.setPen(palette().color(QPalette::WindowText));
-      painter.drawText(contentsRect(), Qt::AlignVCenter | Qt::AlignLeft, fontMetrics().elidedText(text(), Qt::ElideRight, contentsRect().width()));
+      painter.drawText(titleRect, Qt::AlignCenter, fontMetrics().elidedText(text(), Qt::ElideRight, titleRect.width()));
     }
   };
 
@@ -166,17 +180,11 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   pShellLayout->addWidget(m_pDocumentMenu);
   pShellLayout->addSpacing(10);
   m_pProjectLabel = new ProjectTitleLabel(pShell);
+  m_pProjectLabel->setObjectName(QStringLiteral("EditorCaptionSpacer"));
   m_pProjectLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-  m_pProjectLabel->setMinimumWidth(90);
-  m_pProjectLabel->setMaximumWidth(220);
+  m_pProjectLabel->setMinimumWidth(32);
   m_pProjectLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
-  pShellLayout->addWidget(m_pProjectLabel);
-  auto* pSpacer = new QWidget(pShell);
-  pSpacer->setObjectName(QStringLiteral("EditorCaptionSpacer"));
-  pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  pSpacer->setMinimumWidth(32);
-  pSpacer->setAttribute(Qt::WA_TransparentForMouseEvents);
-  pShellLayout->addWidget(pSpacer, 1);
+  pShellLayout->addWidget(m_pProjectLabel, 1);
 
   auto* pCommands = new QToolButton(pShell);
   pCommands->setObjectName(QStringLiteral("EditorFindCommand"));
