@@ -127,9 +127,12 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
   // XII_ASSERT_DEV(pResource->m_iLockCount < 20, "You probably forgot somewhere to call 'EndAcquireResource' in sync with 'BeginAcquireResource'.");
   XII_ASSERT_DEBUG(pResource->GetDynamicRTTI()->template IsDerivedFrom<ResourceType>(), "The requested resource does not have the same type ('{0}') as the resource handle ('{1}').", pResource->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<ResourceType>()->GetTypeName());
 
-  if (mode == xiiResourceAcquireMode::AllowLoadingFallback && GetForceNoFallbackAcquisition() > 0)
+  if ((mode == xiiResourceAcquireMode::AllowLoadingFallback || mode == xiiResourceAcquireMode::AllowLoadingFallback_NeverFail) && GetForceNoFallbackAcquisition() > 0)
   {
-    mode = xiiResourceAcquireMode::BlockTillLoaded;
+    if (mode == xiiResourceAcquireMode::AllowLoadingFallback)
+      mode = xiiResourceAcquireMode::BlockTillLoaded;
+    else if (mode == xiiResourceAcquireMode::AllowLoadingFallback_NeverFail)
+      mode = xiiResourceAcquireMode::BlockTillLoaded_NeverFail;
   }
 
   if (mode == xiiResourceAcquireMode::PointerOnly)
@@ -152,7 +155,7 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
       // if BlockTillLoaded is specified, it will prepended to the preload array, thus will be loaded immediately
       InternalPreloadResource(pResource, mode >= xiiResourceAcquireMode::BlockTillLoaded);
 
-      if (mode == xiiResourceAcquireMode::AllowLoadingFallback && (pResource->m_hLoadingFallback.IsValid() || hFallbackResource.IsValid() || GetResourceTypeLoadingFallback<ResourceType>().IsValid()))
+      if ((mode == xiiResourceAcquireMode::AllowLoadingFallback || mode == xiiResourceAcquireMode::AllowLoadingFallback_NeverFail) && (pResource->m_hLoadingFallback.IsValid() || hFallbackResource.IsValid() || GetResourceTypeLoadingFallback<ResourceType>().IsValid()))
       {
         // return the fallback resource for now, if there is one
         if (out_pAcquireResult)

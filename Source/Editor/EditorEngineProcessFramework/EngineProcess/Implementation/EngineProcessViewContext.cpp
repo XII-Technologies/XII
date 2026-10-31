@@ -245,7 +245,8 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain
     }
     view->SetSwapChain(pSwapChain.Borrow());
     view->SetRenderTargetView(pRenderTargetView);
-    view->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(uiWidth), static_cast<float>(uiHeight)));
+    const auto size = pSwapChain ? pSwapChain->GetCurrentSize() : xiiSizeU32(uiWidth, uiHeight);
+    view->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(size.width), static_cast<float>(size.height)));
   }
 }
 
@@ -262,6 +263,14 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         xiiView* pView = nullptr;
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
+
+        // Surface-driven swapchain recreation can occur during presentation, without
+        // a resize message. Full-window Editor views follow the allocated extent.
+        if (const auto* swapChain = pView->GetSwapChain())
+        {
+          const auto size = swapChain->GetCurrentSize();
+          pView->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(size.width), static_cast<float>(size.height)));
+        }
 
         // Thumbnail views have no camera messages. Retry resource-dependent
         // pipeline composition here as well once the scene resource has loaded.

@@ -228,9 +228,10 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 
   XII_ASSERT_DEV(newWindowSize.HasNonZeroArea(), "Invalid window size.");
 
-  if (SDL_SetWindowSize(m_hWindowHandle, newWindowSize.width, newWindowSize.height) != 0)
+  if (!SDL_SetWindowSize(m_hWindowHandle, newWindowSize.width, newWindowSize.height))
   {
-    xiiLog::Error("Failed to initialize SDL Window size with error '{}'", SDL_GetError());
+    xiiLog::Error("Failed to resize SDL Window with error '{}'", SDL_GetError());
+    return XII_FAILURE;
   }
   return XII_SUCCESS;
 }
