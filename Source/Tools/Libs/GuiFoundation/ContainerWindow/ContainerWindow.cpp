@@ -71,10 +71,11 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 {
   setMinimumSize(QSize(800, 450));
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  // Qt retains the native resize frame and system move/menu handling. The title
-  // controls are Qt widgets so they remain accessible in the expanded client area.
-  setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::ExpandedClientAreaHint | Qt::NoTitleBarBackgroundHint | Qt::WindowSystemMenuHint);
-  setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
+  // Keep the OS caption and capabilities: Windows Snap requires a maximizable
+  // native window, and owns caption buttons, system menus, resize borders and DPI.
+  // ExpandedClientAreaHint also routes nonclient hit tests through widget mouse
+  // delivery in Qt's Windows plugin; embedded menu/tool controls are client UI.
+  setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
   QApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
 #endif
 
@@ -139,8 +140,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   m_pDocumentMenu = new QMenuBar(pShell);
   m_pDocumentMenu->setNativeMenuBar(false);
   m_pDocumentMenu->setObjectName(QStringLiteral("EditorDocumentMenu"));
-  m_pDocumentMenu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  m_pDocumentMenu->setMinimumWidth(160);
+  m_pDocumentMenu->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
   pShell->addWidget(m_pDocumentMenu);
   pShell->addSeparator();
   m_pProjectLabel = new QLabel(pShell);
@@ -150,6 +150,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   m_pProjectLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
   pShell->addWidget(m_pProjectLabel);
   auto* pSpacer = new QWidget(pShell);
+  pSpacer->setObjectName(QStringLiteral("EditorCaptionSpacer"));
   pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   pSpacer->setMinimumWidth(32);
   pSpacer->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -157,11 +158,11 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   auto* pCommands = new QToolButton(pShell);
   pCommands->setObjectName(QStringLiteral("EditorFindCommand"));
-  pCommands->setFocusPolicy(Qt::NoFocus);
   pCommands->setText(tr("Commands"));
   pCommands->setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Search.svg")));
   pCommands->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   pCommands->setToolTip(tr("Search commands for the focused document (Ctrl+Shift+P)"));
+  pCommands->setAccessibleName(tr("Commands"));
   pShell->addWidget(pCommands);
   connect(pCommands, &QToolButton::clicked, this, &xiiQtContainerWindow::ShowCommandPalette);
   auto* pShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")), this);
@@ -170,11 +171,11 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   auto* pWorkspaces = new QToolButton(pShell);
   pWorkspaces->setObjectName(QStringLiteral("EditorWorkspaces"));
-  pWorkspaces->setFocusPolicy(Qt::NoFocus);
   pWorkspaces->setText(tr("Workspaces"));
   pWorkspaces->setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Window.svg")));
   pWorkspaces->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   pWorkspaces->setToolTip(tr("Workspaces and application panels"));
+  pWorkspaces->setAccessibleName(tr("Workspaces"));
   pWorkspaces->setPopupMode(QToolButton::InstantPopup);
   auto* pWorkspaceMenu = new QMenu(pWorkspaces);
   pWorkspaces->setMenu(pWorkspaceMenu);
@@ -229,8 +230,19 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   });
   UpdateWindowTitle();
 
-  pShell->AddWindowControls();
-  connect(qApp, &QApplication::focusChanged, this, [this]() { UpdateDocumentMenu(); });
+  connect(qApp, &QApplication::focusChanged, this, [this](QWidget*, QWidget* pNow) {
+    // Menus, title controls and temporary focus loss retain the document context.
+    // Only entering a document can change the source; do not rebuild menus from
+    // focus events emitted by the menus being synchronized.
+    for (auto* pWidget = pNow; pWidget; pWidget = pWidget->parentWidget())
+    {
+      if (qobject_cast<xiiQtDocumentWindow*>(pWidget))
+      {
+        UpdateDocumentMenu();
+        break;
+      }
+    }
+  });
   connect(m_pDockManager, &ads::CDockManager::floatingWidgetCreated, this, &xiiQtContainerWindow::SlotFloatingWidgetOpened);
 }
 
@@ -280,7 +292,7 @@ xiiQtDocumentWindow* xiiQtContainerWindow::GetFocusedDocumentWindow() const
 
   xiiQtDocumentWindow* pDocumentWindow = nullptr;
   for (auto* pCurrent = QApplication::focusWidget(); pCurrent; pCurrent = pCurrent->parentWidget())
-    if ((pDocumentWindow = qobject_cast<xiiQtDocumentWindow*>(pCurrent)) != nullptr)
+    if ((pDocumentWindow = qobject_cast<xiiQtDocumentWindow*>(pCurrent)) != nullptr && m_DocumentWindows.Contains(pDocumentWindow))
       return pDocumentWindow;
   const auto uiIndex = m_DocumentDocks.IndexOf(m_pDockManager->focusedDockWidget());
   if (uiIndex != xiiInvalidIndex)
@@ -300,9 +312,19 @@ void xiiQtContainerWindow::UpdateDocumentMenu()
   const auto actions = pSource ? pSource->actions() : QList<QAction*>();
   if (m_pMenuSource == pSource && m_pDocumentMenu->actions() == actions)
     return;
-  m_pDocumentMenu->clear();
   m_pMenuSource = pSource;
-  m_pDocumentMenu->addActions(actions);
+  // Share the original actions (and shortcuts) and retain unaffected entries.
+  // clear()/addActions() invalidates every menu geometry and active menu even
+  // when a plugin has only inserted or removed one entry.
+  for (auto* pAction : m_pDocumentMenu->actions())
+    if (!actions.contains(pAction))
+      m_pDocumentMenu->removeAction(pAction);
+  for (qsizetype i = 0; i < actions.size(); ++i)
+  {
+    const auto current = m_pDocumentMenu->actions();
+    if (i >= current.size() || current[i] != actions[i])
+      m_pDocumentMenu->insertAction(i < current.size() ? current[i] : nullptr, actions[i]);
+  }
 }
 
 void xiiQtContainerWindow::ShowCommandPalette()
@@ -716,6 +738,7 @@ void xiiQtContainerWindow::RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow)
       UpdateWindowDecoration(pDocWindow);
     }
   }
+  UpdateDocumentMenu();
 }
 
 void xiiQtContainerWindow::RemoveApplicationPanel(xiiQtApplicationPanel* pPanel)
