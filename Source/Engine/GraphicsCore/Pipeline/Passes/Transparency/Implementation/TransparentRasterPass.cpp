@@ -252,6 +252,21 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   if (!m_Rasterizer)
     return context.ReportFailure("Could not create transparent rasterizer state.");
   xiiRenderPassResourceScope scope(context);
+  xiiHashTable<xiiHashedString, xiiHashedString> materialVariables;
+  const auto                                     feature = [&](xiiStringView key, bool enabled) {
+    xiiHashedString name, value;
+    name.Assign(key);
+    value.Assign(enabled ? "TRUE" : "FALSE");
+    materialVariables.Insert(name, value);
+  };
+  feature("FORWARD_DIRECTIONAL_SHADOWS", shadows);
+  feature("FORWARD_ATMOSPHERE", atmospheric);
+  feature("FORWARD_REFRACTION", refractive);
+  feature("FORWARD_SPOT_SHADOWS", spots != nullptr);
+  xiiDynamicArray<xiiMaterialRasterBatch> batches;
+  xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
+  XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visibleMeshlets, drawCommandCount, batches, sortedVisible, materialDraws, false, true, &materialVariables));
+
   struct RefractionData
   {
     xiiRenderGraphTextureHandle   m_SourceDepth;
@@ -294,6 +309,7 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     commands.TransitionResourceStates(transitions); });
   struct Data
   {
+    xiiDynamicArray<xiiMaterialRasterBatch>       m_Batches;
     xiiRenderGraphBufferHandle                    m_SceneInstances;
     xiiRenderGraphBufferHandle                    m_SkinningMatrices;
     xiiRenderGraphBufferHandle                    m_VisibleMeshlets;
@@ -340,15 +356,28 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     bool                                          m_bShadows, m_bAtmosphere, m_bRefraction;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+    data.m_Batches = batches;
+    for (xiiUInt32 i = 1; i < data.m_Batches.GetCount(); ++i)
+    {
+      auto& batch = data.m_Batches[i];
+      batch.m_ViewConstants = builder.ReadBuffer(batch.m_ViewConstants, xiiGALResourceStateFlags::ConstantBuffer);
+      if (batch.m_Constants.IsValid()) batch.m_Constants = builder.ReadBuffer(batch.m_Constants, xiiGALResourceStateFlags::ConstantBuffer);
+      for (xiiUInt32 texture = 0; texture < batch.m_Binding.m_Textures.GetCount(); ++texture)
+      {
+        xiiStringBuilder name; name.SetFormat("Material {} Texture {}", i, texture);
+        const auto handle = builder.ImportTexture(name, batch.m_Binding.m_Textures[texture].m_Texture, batch.m_Binding.m_Textures[texture].m_Texture->GetResourceState());
+        [[maybe_unused]] const auto read = builder.ReadTexture(handle, xiiGALResourceStateFlags::ShaderResource);
+      }
+    }
     builder.SetPassAllowMerge(false);
     data.m_SceneInstances=builder.ReadBuffer(sceneInstances,xiiGALResourceStateFlags::ShaderResource);
     data.m_SkinningMatrices=builder.ReadBuffer(skinningMatrices,xiiGALResourceStateFlags::ShaderResource);
-    data.m_VisibleMeshlets=builder.ReadBuffer(visibleMeshlets,xiiGALResourceStateFlags::ShaderResource);
+    data.m_VisibleMeshlets=builder.ReadBuffer(batches.IsEmpty() ? visibleMeshlets : sortedVisible,xiiGALResourceStateFlags::ShaderResource);
     data.m_GeometryMetadata=builder.ReadBuffer(geometryMetadata,xiiGALResourceStateFlags::ShaderResource);
     data.m_MeshletMetadata=builder.ReadBuffer(meshletMetadata,xiiGALResourceStateFlags::ShaderResource);
     data.m_SurfaceMaterials=builder.ReadBuffer(surfaceMaterials,xiiGALResourceStateFlags::ShaderResource);
     data.m_RasterConstants=builder.ReadBuffer(rasterConstants,xiiGALResourceStateFlags::ConstantBuffer);
-    data.m_DrawCommands=builder.ReadBuffer(drawCommands,xiiGALResourceStateFlags::IndirectArgument);
+    data.m_DrawCommands=builder.ReadBuffer(batches.IsEmpty() ? drawCommands : materialDraws,xiiGALResourceStateFlags::IndirectArgument);
     data.m_DrawCommandCount=builder.ReadBuffer(drawCommandCount,xiiGALResourceStateFlags::IndirectArgument);
     data.m_Camera=builder.ReadBuffer(camera,xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Environment=builder.ReadBuffer(environment,xiiGALResourceStateFlags::ConstantBuffer);
@@ -384,16 +413,24 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderPassUtils::ClearRenderTargetPreservingState(commands,execute.GetTexture(data.m_Additive)->GetDefaultView(xiiGALTextureViewType::RenderTarget),xiiColor::MakeZero());
     xiiRenderPassUtils::ClearRenderTargetPreservingState(commands,execute.GetTexture(data.m_Modulation)->GetDefaultView(xiiGALTextureViewType::RenderTarget),xiiColor::White);
     xiiRenderPassUtils::ClearRenderTargetPreservingState(commands,execute.GetTexture(data.m_HistoryTrust)->GetDefaultView(xiiGALTextureViewType::RenderTarget),xiiColor::White);
+    for (xiiUInt32 bin = 0; bin < xiiMath::Max(1u, data.m_Batches.GetCount()); ++bin)
+    {
     xiiGALGraphicsPipelineStateCreationDescription pipeline;pipeline.m_PipelineType=xiiGALPipelineType::Graphics;pipeline.m_pPipelineResourceSignature=data.m_Signature;pipeline.m_pVertexShader=data.m_Vertex;pipeline.m_pPixelShader=data.m_Pixel;pipeline.m_GraphicsPipeline.m_pBlendState=data.m_Blend;pipeline.m_GraphicsPipeline.m_pDepthStencilState=data.m_DepthState;pipeline.m_GraphicsPipeline.m_pRasterizerState=data.m_Rasterizer;pipeline.m_GraphicsPipeline.m_pRenderPass=execute.GetRenderPass();pipeline.m_GraphicsPipeline.m_uiSubpassIndex=static_cast<xiiUInt8>(execute.GetSubpassIndex());pipeline.m_GraphicsPipeline.m_PrimitiveTopology=xiiGALPrimitiveTopology::TriangleList;
+    if (bin > 0)
+    {
+      const auto& binding = data.m_Batches[bin].m_Binding;
+      pipeline.m_pPipelineResourceSignature = binding.m_Signature; pipeline.m_pVertexShader = binding.m_Vertex; pipeline.m_pPixelShader = binding.m_Pixel;
+      pipeline.m_GraphicsPipeline.m_pBlendState = binding.m_Blend; pipeline.m_GraphicsPipeline.m_pDepthStencilState = binding.m_Depth; pipeline.m_GraphicsPipeline.m_pRasterizerState = binding.m_Rasterizer;
+    }
     const auto state=xiiGALPipelineCache::GetPipeline(pipeline);if(!state){execute.ReportFailure("Could not create transparent layer raster pipeline, including required floating-point attachment blending.");return;}
     commands.SetPipelineState(state.Borrow());commands.SetViewport({0,0,float(data.m_Size.width),float(data.m_Size.height),0,1});
     commands.ResolveAndSetSampler("g_sAnisotropicWrap",data.m_MaterialSampler.Borrow());commands.ResolveAndSetSampler("g_sLinearWrap",data.m_MaterialSampler.Borrow());
-    commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants",execute.GetBuffer(data.m_RasterConstants),xiiGALShaderType::Vertex|xiiGALShaderType::Pixel);
+    commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants",execute.GetBuffer(data.m_RasterConstants));
     commands.ResolveAndSetConstantBuffer("PerFrameCamera",execute.GetBuffer(data.m_Camera),xiiGALShaderType::Pixel);
     commands.ResolveAndSetConstantBuffer("xiiEnvironmentLightConstants",execute.GetBuffer(data.m_Environment),xiiGALShaderType::Pixel);
     commands.ResolveAndSetConstantBuffer("xiiLightClusterConstants",execute.GetBuffer(data.m_ClusterConstants),xiiGALShaderType::Pixel);
     commands.ResolveAndSetConstantBuffer("xiiTransparentRasterConstants",execute.GetBuffer(data.m_LayerConstants),xiiGALShaderType::Pixel);
-    commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances",execute.GetBuffer(data.m_SceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource),xiiGALShaderType::Vertex);
+    commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances",execute.GetBuffer(data.m_SceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
     commands.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices",execute.GetBuffer(data.m_SkinningMatrices)->GetDefaultView(xiiGALBufferViewType::ShaderResource),xiiGALShaderType::Vertex);
     commands.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets",execute.GetBuffer(data.m_VisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource),xiiGALShaderType::Vertex);
     commands.ResolveAndSetShaderResourceBufferView("g_Geometry",execute.GetBuffer(data.m_GeometryMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource),xiiGALShaderType::Vertex);
@@ -421,8 +458,15 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     }
     if(data.m_bAtmosphere){commands.ResolveAndSetSampler("LinearClampSampler",data.m_AtmosphereSampler.Borrow());commands.ResolveAndSetConstantBuffer("xiiAtmosphereConstants",execute.GetBuffer(data.m_Atmosphere),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_Transmittance",execute.GetTexture(data.m_Transmittance)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);commands.ResolveAndSetShaderResourceTextureView("g_MultiScatter",execute.GetTexture(data.m_MultiScatter)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Pixel);}
     xiiGALBindlessResourceTable::BindBufferSRVs(commands,"g_Buffers",xiiGALShaderType::Vertex);xiiGALBindlessResourceTable::BindTextureSRVs(commands,"g_Textures",xiiGALShaderType::Pixel);xiiGALBindlessResourceTable::BindSamplers(commands,"g_MaterialSamplers",xiiGALShaderType::Pixel);
+    if (bin > 0)
+    {
+      commands.ResolveAndSetConstantBuffer("xiiNativeMaterialViewConstants", execute.GetBuffer(data.m_Batches[bin].m_ViewConstants));
+      data.m_Batches[bin].m_Binding.Bind(commands, data.m_Batches[bin].m_Constants.IsValid() ? execute.GetBuffer(data.m_Batches[bin].m_Constants) : nullptr);
+    }
     if(commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Failed()){execute.ReportFailure("Could not bind transparent geometry and lighting resources.");return;}
-    commands.DrawIndirect({execute.GetBuffer(data.m_DrawCommands),data.m_uiCapacity,0,sizeof(xiiVec4U32),xiiGALStateTransitionMode::None,execute.GetBuffer(data.m_DrawCommandCount)}); });
+    if (!data.m_Batches.IsEmpty()) commands.DrawIndirect({execute.GetBuffer(data.m_DrawCommands), 1, bin * sizeof(xiiVec4U32), sizeof(xiiVec4U32), xiiGALStateTransitionMode::None});
+    else commands.DrawIndirect({execute.GetBuffer(data.m_DrawCommands),data.m_uiCapacity,0,sizeof(xiiVec4U32),xiiGALStateTransitionMode::None,execute.GetBuffer(data.m_DrawCommandCount)});
+    } });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Accumulation, emitted.first->m_Accumulation));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Revealage, emitted.first->m_Revealage));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Additive, emitted.first->m_Additive));

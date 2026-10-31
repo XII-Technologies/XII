@@ -3,6 +3,7 @@
 #pragma once
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <GraphicsCore/Pipeline/Passes/Implementation/MaterialRasterBatches.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterFrameData.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
@@ -67,6 +68,7 @@ public:
   xiiBitflags<xiiRenderPipelineFeature>       GetRuntimeFeatures() const override { return xiiRenderPipelineFeature::GpuScene; }
 
 private:
+  xiiMaterialRasterBatches            m_MaterialBatches;
   xiiShaderPermutationResourceHandle  m_hShaders[16];
   xiiSharedPtr<xiiGALSampler>         m_MaterialSampler, m_AtmosphereSampler;
   xiiSharedPtr<xiiGALSampler>         m_RefractionSampler;

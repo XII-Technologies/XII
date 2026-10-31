@@ -1,7 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
-#include <Shaders/Visibility/GpuSceneCommon.h>
-StructuredBuffer<GpuSceneInstance> g_SceneInstances;
 StructuredBuffer<uint2>            g_VisibleMeshlets;
 StructuredBuffer<uint>             g_VisibleMeshletCount;
 StructuredBuffer<uint>             g_InstanceBins;

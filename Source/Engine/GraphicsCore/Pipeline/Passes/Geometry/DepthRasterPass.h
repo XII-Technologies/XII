@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/Passes/Implementation/MaterialRasterBatches.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -43,6 +44,7 @@ public:
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return m_bUseMeshShaders ? xiiRenderPipelineDeviceFeature::MeshShaders | xiiRenderPipelineDeviceFeature::BindlessResources : xiiRenderPipelineDeviceFeature::BindlessResources; }
 
 private:
+  xiiMaterialRasterBatches           m_MaterialBatches;
   xiiShaderPermutationResourceHandle m_hShader;
   xiiSharedPtr<xiiGALSampler>        m_Sampler;
   bool                               m_bCachedMeshShaders = false;

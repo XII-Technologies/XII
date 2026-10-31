@@ -4,9 +4,11 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Material/MaterialShaderBinding.h>
+#include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <Shaders/Materials/NativeMaterialViewConstants.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 
 namespace
@@ -62,7 +64,7 @@ namespace
         type = xiiGALShaderResourceType::Sampler;
     }
     known = type != xiiGALShaderResourceType::Unknown;
-    if (known && (resource.m_Type != type || !stages.IsSet(stage) || (!array && resource.m_uiArraySize != 1)))
+    if (known && (resource.m_Type != type || !stages.IsSet(stage) || (array ? resource.m_uiArraySize == 1 : resource.m_uiArraySize != 1)))
       return xiiStatus(xiiFmt("Native surface binding '{}' has an incompatible type, array count or stage.", name));
     return XII_SUCCESS;
   }
@@ -114,15 +116,38 @@ xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& sna
     return xiiStatus("The authored surface shader does not match this raster pass's material domain or blend class.");
   if (shader.GetActiveShaderStages() != (xiiGALShaderType::Vertex | xiiGALShaderType::Pixel))
     return xiiStatus("Native authored surfaces require vertex and pixel stages with no vertex stream inputs.");
+  bool passPermutation = false;
+  for (const auto& variable : shader.GetPermutationVariables())
+    passPermutation |= variable.m_sName.GetString() == "RENDER_PASS";
+  if (!passPermutation)
+    return xiiStatus("Native authored surfaces must declare RENDER_PASS for surface, depth and picking variants.");
   const auto* vertex = shader.GetShaderByteCode(xiiGALShaderType::Vertex);
   if (!vertex || !vertex->m_VertexInputLayout.IsEmpty() || !vertex->GetDescription("g_SceneInstances") || !vertex->GetDescription("g_VisibleMeshlets"))
     return xiiStatus("The vertex shader must consume the native GPU-scene surface interface.");
   const auto depth = shader.GetDepthStencilState()->GetDescription();
-  if (!depth.m_bDepthEnable || depth.m_bDepthWriteEnable || depth.m_ComparisonDepthFunction != xiiGALComparisonFunction::GreaterEqual)
+  if (!depth.m_bDepthEnable || depth.m_bDepthWriteEnable || depth.m_bStencilEnable || depth.m_ComparisonDepthFunction != xiiGALComparisonFunction::GreaterEqual)
     return xiiStatus("Native G-buffer shaders require read-only reverse-Z depth (GreaterEqual).");
   for (const auto& target : shader.GetBlendState()->GetDescription().m_RenderTargets)
     if (!bTransparent && target.m_bBlendEnable)
       return xiiStatus("Native G-buffer shaders cannot blend their material targets.");
+  const auto& blend = shader.GetBlendState()->GetDescription();
+  if (blend.m_bAlphaToCoverage || blend.m_LogicOperationEnable)
+    return xiiStatus("Native authored surfaces cannot use alpha-to-coverage or logic operations.");
+  if (bTransparent)
+  {
+    if (!blend.m_bIndependentBlend || blend.m_RenderTargets.GetCount() < 5)
+      return xiiStatus("Transparent surface shaders require the native five-target layer blend state.");
+    for (xiiUInt32 i = 0; i < 5; ++i)
+    {
+      const auto& target           = blend.m_RenderTargets[i];
+      const auto  source           = i == 1 || i >= 3 ? xiiGALBlendFactor::Zero : xiiGALBlendFactor::One;
+      const auto  destination      = i == 1 || i == 4 ? xiiGALBlendFactor::InverseSourceAlpha : i == 3 ? xiiGALBlendFactor::SourceColor :
+                                                                                                         xiiGALBlendFactor::One;
+      const auto  alphaDestination = i == 3 ? xiiGALBlendFactor::SourceAlpha : destination;
+      if (!target.m_bBlendEnable || target.m_SourceBlend != source || target.m_SourceBlendAlpha != source || target.m_DestinationBlend != destination || target.m_DestinationBlendAlpha != alphaDestination || target.m_BlendOperation != xiiGALBlendOperation::Add || target.m_BlendOperationAlpha != xiiGALBlendOperation::Add || target.m_ColorMask != xiiGALColorMask::RGBA)
+        return xiiStatus("Transparent surface blending must match NativeMaterialState.h.");
+    }
+  }
 
   const xiiGALShaderResourceDescription* constantsLayout = nullptr;
   for (auto stage : {xiiGALShaderType::Vertex, xiiGALShaderType::Pixel})
@@ -162,7 +187,7 @@ xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& sna
           const auto* parameter = snapshot.m_pSchema->FindParameter(variable.m_sName);
           if (!parameter)
             continue; // Unassigned reflected parameters have zero defaults.
-          if (parameter->m_Type != type && !(type == xiiMaterialParameterType::Float4 && parameter->m_Type == xiiMaterialParameterType::Color))
+          if (parameter->m_Type != type && !((type == xiiMaterialParameterType::Float3 || type == xiiMaterialParameterType::Float4) && parameter->m_Type == xiiMaterialParameterType::Color))
             return xiiStatus(xiiFmt("Material parameter '{}' has an incompatible reflected type.", variable.m_sName));
           if (parameter->m_uiOffset > snapshot.m_ParameterData.GetCount() || bytes > snapshot.m_ParameterData.GetCount() - parameter->m_uiOffset)
             return xiiStatus("Invalid native material parameter snapshot.");
@@ -175,10 +200,12 @@ xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& sna
       }
       else if (sceneBinding)
       {
+        if ((name == "xiiNativeMaterialViewConstants" && resource.m_uiTotalSize != sizeof(xiiNativeMaterialViewConstants)) || (name == "PerFrameCamera" && resource.m_uiTotalSize != sizeof(xiiFrameCameraConstants)))
+          return xiiStatus(xiiFmt("Native surface binding '{}' has an incompatible view layout.", name));
         if (name == "xiiGpuSceneGBufferConstants" && (resource.m_Type != xiiGALShaderResourceType::ConstantBuffer || resource.m_uiTotalSize != sizeof(xiiGpuSceneGBufferConstants)))
           return xiiStatus("The shader uses an incompatible native surface camera layout.");
       }
-      else if (resource.m_Type == xiiGALShaderResourceType::TextureSRV && resource.m_uiArraySize == 1)
+      else if ((resource.m_Type == xiiGALShaderResourceType::TextureSRV || resource.m_Type == xiiGALShaderResourceType::TextureAndSampler) && resource.m_uiArraySize == 1)
       {
         const auto                 index = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(name));
         xiiMaterialResourceBinding binding;
@@ -222,11 +249,11 @@ xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& sna
         if (!textureName.TrimWordEnd("_AutoSampler") || resource.m_uiArraySize != 1)
           return xiiStatus(xiiFmt("Material sampler '{}' must belong to a reflected texture.", name));
         const auto* texture = shader.GetShaderByteCode(stage)->GetDescription(xiiTempHashedString(textureName));
-        if (!texture || texture->m_Type != xiiGALShaderResourceType::TextureSRV || texture->m_uiArraySize != 1)
+        if (!texture || (texture->m_Type != xiiGALShaderResourceType::TextureSRV && texture->m_Type != xiiGALShaderResourceType::TextureAndSampler) || texture->m_uiArraySize != 1)
           return xiiStatus(xiiFmt("Material sampler '{}' has no matching texture.", name));
       }
       else
-        return xiiStatus(xiiFmt("Unsupported authored surface binding '{}'.", name));
+        return xiiStatus(xiiFmt("Unsupported authored surface binding '{}' (type {}, array count {}).", name, resource.m_Type.GetValue(), resource.m_uiArraySize));
     }
   }
   m_Vertex     = shader.GetGALShader(xiiGALShaderType::Vertex);
@@ -247,6 +274,7 @@ void xiiMaterialShaderBinding::Bind(xiiGALCommandList& commands, xiiGALBuffer* c
     commands.ResolveAndSetShaderResourceTextureView(texture.m_Name, texture.m_Texture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     const xiiStringBuilder sampler(texture.m_Name.GetString(), "_AutoSampler");
     commands.ResolveAndSetSampler(xiiTempHashedString(sampler), texture.m_Sampler.Borrow());
+    commands.ResolveAndSetSampler(texture.m_Name, texture.m_Sampler.Borrow()); // Combined image/sampler backends.
   }
 }
 
