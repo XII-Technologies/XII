@@ -12,12 +12,14 @@
 #include <GuiFoundation/Widgets/WindowTitleBar.h>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QHBoxLayout>
 #include <QInputDialog>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
+#include <QPainter>
 #include <QSettings>
 #include <QShortcut>
 #include <QStatusBar>
@@ -26,17 +28,52 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QWindow>
+#include <QtMath>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ads/DockAreaWidget.h>
 #include <ads/DockManager.h>
 #include <ads/DockWidgetTab.h>
 #include <ads/FloatingDockContainer.h>
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+#  include <windowsx.h>
+#endif
+
 xiiQtContainerWindow* xiiQtContainerWindow::s_pContainerWindow = nullptr;
 bool                  xiiQtContainerWindow::s_bForceClose      = false;
 
 namespace
 {
+  class ProjectTitleLabel final : public QLabel
+  {
+  public:
+    explicit ProjectTitleLabel(QWidget* pParent) : QLabel(pParent)
+    {
+      setTextFormat(Qt::PlainText);
+      QFont titleFont = font();
+      titleFont.setWeight(QFont::DemiBold);
+      setFont(titleFont);
+    }
+
+  protected:
+    void paintEvent(QPaintEvent*) override
+    {
+      // Center on the whole title bar, independently of the menu and controls'
+      // different widths. Elide within the symmetric free area, never over them.
+      const auto bounds     = contentsRect().adjusted(8, 0, -8, 0);
+      const int  iCenter    = mapFrom(parentWidget(), parentWidget()->rect().center()).x();
+      const int  iHalfWidth = qMin(iCenter - bounds.left(), bounds.right() - iCenter);
+      if (iHalfWidth <= 0)
+        return;
+      const QRect titleRect(iCenter - iHalfWidth, bounds.top(), iHalfWidth * 2 + 1, bounds.height());
+      QPainter    painter(this);
+      painter.setPen(palette().color(QPalette::WindowText));
+      painter.drawText(titleRect, Qt::AlignCenter, fontMetrics().elidedText(text(), Qt::ElideRight, titleRect.width()));
+    }
+  };
+
   bool GetProjectLayoutPath(xiiStringBuilder& out_sFile, bool bWrite)
   {
     if (!xiiToolsProject::IsProjectOpen())
@@ -71,10 +108,9 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 {
   setMinimumSize(QSize(800, 450));
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  // Qt retains the native resize frame and system move/menu handling. The title
-  // controls are Qt widgets so they remain accessible in the expanded client area.
-  setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::ExpandedClientAreaHint | Qt::NoTitleBarBackgroundHint | Qt::WindowSystemMenuHint);
-  setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
+  // Retain the native window capabilities. WM_NCCALCSIZE extends only the top
+  // client edge for our custom caption; Windows keeps the remaining frame.
+  setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
   QApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
 #endif
 
@@ -126,43 +162,40 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   m_pDockManager = new ads::CDockManager(this);
   xiiQtDarkEditorStyle::ApplyDockStyle(m_pDockManager);
 
-  auto* pShell = new xiiQtWindowTitleBar(this);
-  pShell->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  auto* pShell       = new xiiQtWindowTitleBar(this);
+  m_pTitleBar        = pShell;
+  auto* pShellLayout = static_cast<QHBoxLayout*>(pShell->layout());
   setMenuWidget(pShell);
-  auto* pBrand    = new QLabel(QStringLiteral("  XII  "), pShell);
+  auto* pBrand = new QLabel(QStringLiteral("XII"), pShell);
+  pBrand->setContentsMargins(0, 0, 8, 0);
   QFont brandFont = pBrand->font();
   brandFont.setBold(true);
   pBrand->setFont(brandFont);
   pBrand->setAttribute(Qt::WA_TransparentForMouseEvents);
-  pShell->addWidget(pBrand);
-  pShell->addSeparator();
+  pShellLayout->addWidget(pBrand);
   m_pDocumentMenu = new QMenuBar(pShell);
   m_pDocumentMenu->setNativeMenuBar(false);
   m_pDocumentMenu->setObjectName(QStringLiteral("EditorDocumentMenu"));
-  m_pDocumentMenu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  m_pDocumentMenu->setMinimumWidth(160);
-  pShell->addWidget(m_pDocumentMenu);
-  pShell->addSeparator();
-  m_pProjectLabel = new QLabel(pShell);
+  m_pDocumentMenu->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+  pShellLayout->addWidget(m_pDocumentMenu);
+  pShellLayout->addSpacing(10);
+  m_pProjectLabel = new ProjectTitleLabel(pShell);
+  m_pProjectLabel->setObjectName(QStringLiteral("EditorCaptionSpacer"));
   m_pProjectLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-  m_pProjectLabel->setMinimumWidth(80);
-  m_pProjectLabel->setMaximumWidth(200);
+  m_pProjectLabel->setMinimumWidth(32);
   m_pProjectLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
-  pShell->addWidget(m_pProjectLabel);
-  auto* pSpacer = new QWidget(pShell);
-  pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  pSpacer->setMinimumWidth(32);
-  pSpacer->setAttribute(Qt::WA_TransparentForMouseEvents);
-  pShell->addWidget(pSpacer);
+  pShellLayout->addWidget(m_pProjectLabel, 1);
 
   auto* pCommands = new QToolButton(pShell);
   pCommands->setObjectName(QStringLiteral("EditorFindCommand"));
-  pCommands->setFocusPolicy(Qt::NoFocus);
+  pCommands->setAutoRaise(true);
+  pCommands->setIconSize(QSize(16, 16));
   pCommands->setText(tr("Commands"));
   pCommands->setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Search.svg")));
   pCommands->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   pCommands->setToolTip(tr("Search commands for the focused document (Ctrl+Shift+P)"));
-  pShell->addWidget(pCommands);
+  pCommands->setAccessibleName(tr("Commands"));
+  pShellLayout->addWidget(pCommands);
   connect(pCommands, &QToolButton::clicked, this, &xiiQtContainerWindow::ShowCommandPalette);
   auto* pShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")), this);
   pShortcut->setContext(Qt::WidgetWithChildrenShortcut);
@@ -170,15 +203,17 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   auto* pWorkspaces = new QToolButton(pShell);
   pWorkspaces->setObjectName(QStringLiteral("EditorWorkspaces"));
-  pWorkspaces->setFocusPolicy(Qt::NoFocus);
+  pWorkspaces->setAutoRaise(true);
+  pWorkspaces->setIconSize(QSize(16, 16));
   pWorkspaces->setText(tr("Workspaces"));
   pWorkspaces->setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Window.svg")));
   pWorkspaces->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   pWorkspaces->setToolTip(tr("Workspaces and application panels"));
+  pWorkspaces->setAccessibleName(tr("Workspaces"));
   pWorkspaces->setPopupMode(QToolButton::InstantPopup);
   auto* pWorkspaceMenu = new QMenu(pWorkspaces);
   pWorkspaces->setMenu(pWorkspaceMenu);
-  pShell->addWidget(pWorkspaces);
+  pShellLayout->addWidget(pWorkspaces);
   connect(pWorkspaceMenu, &QMenu::aboutToShow, this, [this, pWorkspaceMenu]() {
     pWorkspaceMenu->clear();
     auto* pPanels = pWorkspaceMenu->addMenu(tr("Application Panels"));
@@ -230,7 +265,19 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   UpdateWindowTitle();
 
   pShell->AddWindowControls();
-  connect(qApp, &QApplication::focusChanged, this, [this]() { UpdateDocumentMenu(); });
+  connect(qApp, &QApplication::focusChanged, this, [this](QWidget*, QWidget* pNow) {
+    // Menus, title controls and temporary focus loss retain the document context.
+    // Only entering a document can change the source; do not rebuild menus from
+    // focus events emitted by the menus being synchronized.
+    for (auto* pWidget = pNow; pWidget; pWidget = pWidget->parentWidget())
+    {
+      if (qobject_cast<xiiQtDocumentWindow*>(pWidget))
+      {
+        UpdateDocumentMenu();
+        break;
+      }
+    }
+  });
   connect(m_pDockManager, &ads::CDockManager::floatingWidgetCreated, this, &xiiQtContainerWindow::SlotFloatingWidgetOpened);
 }
 
@@ -245,6 +292,7 @@ xiiQtContainerWindow::~xiiQtContainerWindow()
   m_pMenuSource.clear();
   m_pDocumentMenu->clear();
   m_pDocumentMenu    = nullptr;
+  m_pTitleBar        = nullptr;
   s_pContainerWindow = nullptr;
 
   xiiQtDocumentWindow::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::DocumentWindowEventHandler, this));
@@ -267,7 +315,7 @@ void xiiQtContainerWindow::UpdateWindowTitle()
   setWindowTitle(xiiMakeQString(sTitle.GetView()));
   if (m_pProjectLabel)
   {
-    m_pProjectLabel->setText(xiiToolsProject::IsProjectOpen() ? xiiMakeQString(xiiToolsProject::GetSingleton()->GetProjectName(false)) : tr("No project open"));
+    m_pProjectLabel->setText(xiiToolsProject::IsProjectOpen() ? xiiMakeQString(xiiToolsProject::GetSingleton()->GetProjectName(false)) : tr("No project"));
     m_pProjectLabel->setToolTip(windowTitle());
   }
 }
@@ -280,7 +328,7 @@ xiiQtDocumentWindow* xiiQtContainerWindow::GetFocusedDocumentWindow() const
 
   xiiQtDocumentWindow* pDocumentWindow = nullptr;
   for (auto* pCurrent = QApplication::focusWidget(); pCurrent; pCurrent = pCurrent->parentWidget())
-    if ((pDocumentWindow = qobject_cast<xiiQtDocumentWindow*>(pCurrent)) != nullptr)
+    if ((pDocumentWindow = qobject_cast<xiiQtDocumentWindow*>(pCurrent)) != nullptr && m_DocumentWindows.Contains(pDocumentWindow))
       return pDocumentWindow;
   const auto uiIndex = m_DocumentDocks.IndexOf(m_pDockManager->focusedDockWidget());
   if (uiIndex != xiiInvalidIndex)
@@ -300,9 +348,19 @@ void xiiQtContainerWindow::UpdateDocumentMenu()
   const auto actions = pSource ? pSource->actions() : QList<QAction*>();
   if (m_pMenuSource == pSource && m_pDocumentMenu->actions() == actions)
     return;
-  m_pDocumentMenu->clear();
   m_pMenuSource = pSource;
-  m_pDocumentMenu->addActions(actions);
+  // Share the original actions (and shortcuts) and retain unaffected entries.
+  // clear()/addActions() invalidates every menu geometry and active menu even
+  // when a plugin has only inserted or removed one entry.
+  for (auto* pAction : m_pDocumentMenu->actions())
+    if (!actions.contains(pAction))
+      m_pDocumentMenu->removeAction(pAction);
+  for (qsizetype i = 0; i < actions.size(); ++i)
+  {
+    const auto current = m_pDocumentMenu->actions();
+    if (i >= current.size() || current[i] != actions[i])
+      m_pDocumentMenu->insertAction(i < current.size() ? current[i] : nullptr, actions[i]);
+  }
 }
 
 void xiiQtContainerWindow::ShowCommandPalette()
@@ -716,6 +774,7 @@ void xiiQtContainerWindow::RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow)
       UpdateWindowDecoration(pDocWindow);
     }
   }
+  UpdateDocumentMenu();
 }
 
 void xiiQtContainerWindow::RemoveApplicationPanel(xiiQtApplicationPanel* pPanel)
@@ -920,6 +979,59 @@ bool xiiQtContainerWindow::eventFilter(QObject* obj, QEvent* e)
     }
   }
   return false;
+}
+
+bool xiiQtContainerWindow::nativeEvent(const QByteArray& eventType, void* pMessage, qintptr* pResult)
+{
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const auto* pNativeMessage = static_cast<const MSG*>(pMessage);
+  if (pNativeMessage->message == WM_NCCALCSIZE && pNativeMessage->wParam)
+  {
+    auto*      pParameters = reinterpret_cast<NCCALCSIZE_PARAMS*>(pNativeMessage->lParam);
+    const LONG top         = pParameters->rgrc[0].top;
+    // Preserve native side/bottom borders and maximized work-area calculations.
+    DefWindowProcW(pNativeMessage->hwnd, WM_NCCALCSIZE, pNativeMessage->wParam, pNativeMessage->lParam);
+    const UINT dpi           = GetDpiForWindow(pNativeMessage->hwnd);
+    const int  border        = GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+    pParameters->rgrc[0].top = top + (IsZoomed(pNativeMessage->hwnd) && !isFullScreen() ? border : 0);
+    *pResult                 = 0;
+    return true;
+  }
+  if (pNativeMessage->message == WM_NCHITTEST && m_pTitleBar && m_pTitleBar->isVisible() && windowHandle())
+  {
+    // startSystemMove() from the embedded toolbar was not reliable in Windows
+    // GUI acceptance. Expose only its empty regions as native caption; the OS
+    // still owns the complete move/restore/snap loop and native resizing.
+    // ScreenToClient handles negative monitor origins in native pixels. Convert
+    // only the client offset using this window's current Qt DPI scale.
+    POINT position = {GET_X_LPARAM(pNativeMessage->lParam), GET_Y_LPARAM(pNativeMessage->lParam)};
+    if (ScreenToClient(pNativeMessage->hwnd, &position))
+    {
+      // Let DefWindowProc retain every native border hit. Only the removed top
+      // caption needs its resize strip and interactive/client regions supplied.
+      const auto nativeHit = DefWindowProcW(pNativeMessage->hwnd, WM_NCHITTEST, pNativeMessage->wParam, pNativeMessage->lParam);
+      if (nativeHit == HTLEFT || nativeHit == HTRIGHT || nativeHit == HTBOTTOM || nativeHit == HTBOTTOMLEFT || nativeHit == HTBOTTOMRIGHT)
+      {
+        *pResult = nativeHit;
+        return true;
+      }
+      const UINT dpi    = GetDpiForWindow(pNativeMessage->hwnd);
+      const int  border = IsZoomed(pNativeMessage->hwnd) || isFullScreen() ? 0 : GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+      if (border > 0 && position.y < border)
+      {
+        *pResult = nativeHit == HTTOPLEFT || nativeHit == HTTOPRIGHT ? nativeHit : HTTOP;
+        return true;
+      }
+      const qreal  scale = windowHandle()->devicePixelRatio();
+      const QPoint localPosition(qFloor(position.x / scale), qFloor(position.y / scale));
+      *pResult = !isFullScreen() && m_pTitleBar->IsCaptionPosition(m_pTitleBar->mapFrom(this, localPosition)) ? HTCAPTION : HTCLIENT;
+      // Keep caption controls in the client area. There is no expanded-area Qt
+      // hit-test fallback to synchronously inject mouse events into widgets.
+      return true;
+    }
+  }
+#endif
+  return QMainWindow::nativeEvent(eventType, pMessage, pResult);
 }
 
 void xiiQtContainerWindow::SlotDocumentTabCloseRequested()

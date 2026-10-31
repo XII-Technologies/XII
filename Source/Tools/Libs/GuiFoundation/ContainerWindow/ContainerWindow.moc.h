@@ -21,6 +21,7 @@ class xiiQtApplicationPanel;
 struct xiiDocumentTypeDescriptor;
 class QLabel;
 class QMenuBar;
+class xiiQtWindowTitleBar;
 
 namespace ads
 {
@@ -78,6 +79,7 @@ public Q_SLOTS:
 
 protected:
   virtual bool eventFilter(QObject* obj, QEvent* e) override;
+  bool         nativeEvent(const QByteArray& eventType, void* pMessage, qintptr* pResult) override;
 
 private:
   friend class xiiQtDocumentWindow;
@@ -100,8 +102,8 @@ private Q_SLOTS:
   void SlotDockWidgetFloatingChanged(bool bFloating);
 
 private:
-  void                 UpdateWindowTitle();
-  void                 UpdateDocumentMenu();
+  void UpdateWindowTitle();
+  void UpdateDocumentMenu();
 
   void RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow);
   void RemoveApplicationPanel(xiiQtApplicationPanel* pPanel);
@@ -120,6 +122,7 @@ private:
   QLabel*                               m_pProjectLabel = nullptr;
   QMenuBar*                             m_pDocumentMenu = nullptr;
   QPointer<QMenuBar>                    m_pMenuSource;
+  xiiQtWindowTitleBar*                  m_pTitleBar = nullptr;
   xiiDynamicArray<xiiQtDocumentWindow*> m_DocumentWindows;
   xiiDynamicArray<ads::CDockWidget*>    m_DocumentDocks;
 

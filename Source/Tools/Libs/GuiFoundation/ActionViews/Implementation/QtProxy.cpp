@@ -11,6 +11,7 @@
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QAction>
 #include <QBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QMenu>
 #include <QSlider>
@@ -310,10 +311,14 @@ void xiiQtMenuProxy::Update()
 {
   auto pMenu = static_cast<xiiMenuAction*>(m_pAction);
 
-  // note that setting the icon on the menu is pretty pointless, because you'd need to set the icon on something like a QToolButton.
-  // therefore there is another event handler in xiiQtToolBarActionMapView::CreateView()
-  m_pMenu->setIcon(xiiQtUiServices::GetCachedIconResource(pMenu->GetIconPath()));
-  m_pMenu->setTitle(xiiMakeQString(xiiTranslate(pMenu->GetName())));
+  // QAction::setIcon emits ActionChanged even for the same icon. This Update
+  // also runs during aboutToShow; invalidating the menu bar then clears its
+  // active action, so the next mouse move hides and reopens the same popup.
+  const QIcon& icon = xiiQtUiServices::GetCachedIconResource(pMenu->GetIconPath());
+  if (m_pMenu->icon().cacheKey() != icon.cacheKey())
+    m_pMenu->setIcon(icon);
+
+  QString sTitle = xiiMakeQString(xiiTranslate(pMenu->GetName()));
   if (auto* pEnumeration = xiiDynamicCast<xiiEnumerationMenuAction*>(pMenu))
   {
     xiiDynamicArray<xiiDynamicMenuAction::Item> entries;
@@ -321,10 +326,14 @@ void xiiQtMenuProxy::Update()
     for (const auto& entry : entries)
       if (entry.m_CheckState == xiiDynamicMenuAction::Item::CheckMark::Checked)
       {
-        m_pMenu->setTitle(xiiMakeQString(xiiTranslate(entry.m_sDisplay)));
+        sTitle = xiiMakeQString(xiiTranslate(entry.m_sDisplay));
         break;
       }
   }
+  // Resolve enumeration titles before publishing, avoiding a temporary reset
+  // to the base title (and two action changes) on every popup opening.
+  if (m_pMenu->title() != sTitle)
+    m_pMenu->setTitle(sTitle);
   m_pMenu->setToolTip(xiiMakeQString(xiiTranslateTooltip(pMenu->GetName())));
 }
 

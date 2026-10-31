@@ -34,6 +34,10 @@
     <file>Icons/Paste.svg</file>
     <file>Icons/Shortcuts.svg</file>
     <file>Icons/Window.svg</file>
+    <file>Icons/WindowMinimize.svg</file>
+    <file>Icons/WindowMaximize.svg</file>
+    <file>Icons/WindowRestore.svg</file>
+    <file>Icons/WindowClose.svg</file>
     <file>ThumbnailLoading.svg</file>
     <file>ThumbnailUnavailable.svg</file>
     <file>Icons/Flag_Blue.svg</file>
