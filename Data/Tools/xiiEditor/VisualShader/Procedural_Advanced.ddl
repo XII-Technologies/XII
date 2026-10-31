@@ -5,7 +5,7 @@ Node %Checkerboard
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Tiling
@@ -28,7 +28,7 @@ Node %RadialGradient
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Center
@@ -57,7 +57,7 @@ Node %RingGradient
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Center
@@ -92,7 +92,7 @@ Node %StripePattern
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Direction
@@ -128,7 +128,7 @@ Node %Voronoi2D
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Scale
@@ -152,7 +152,7 @@ Node %FractalNoise2D
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Scale
@@ -177,7 +177,7 @@ Node %RidgedNoise2D
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Scale
@@ -201,7 +201,7 @@ Node %Turbulence2D
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Scale

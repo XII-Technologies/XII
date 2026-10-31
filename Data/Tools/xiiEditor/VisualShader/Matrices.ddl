@@ -14,7 +14,7 @@ Node %FromCameraSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(CameraToScreenMatrix, ToFloat3($in0))" }
+    string %Inline { "xiiMaterialProject(MaterialViewToClip, ToFloat3($in0))" }
     string %Tooltip { "Transformed position in screen-space." }
   }
 
@@ -22,7 +22,7 @@ Node %FromCameraSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(CameraToWorldMatrix, ToFloat3($in0))" }
+    string %Inline { "mul(MaterialViewToWorld, ToFloat4Position($in0)).xyz" }
     string %Tooltip { "Transformed position in world-space." }
   }
 }
@@ -43,7 +43,7 @@ Node %FromScreenSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(ScreenToCameraMatrix, ToFloat3($in0))" }
+    string %Inline { "xiiMaterialProject(MaterialClipToView, ToFloat3($in0))" }
     string %Tooltip { "Transformed position in camera-space." }
   }
 
@@ -51,7 +51,7 @@ Node %FromScreenSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(ScreenToWorldMatrix, ToFloat3($in0))" }
+    string %Inline { "xiiMaterialProject(mul(MaterialViewToWorld, MaterialClipToView), ToFloat3($in0))" }
     string %Tooltip { "Transformed position in world-space." }
   }
 }
@@ -72,7 +72,7 @@ Node %FromWorldSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(ToFloat4Position($in0), TransformToMatrix(GetInstanceData().ObjectToWorld))" }
+    string %Inline { "xiiMaterialWorldToObject(g_SceneInstances[MaterialInput.InstanceIndex], ToFloat3($in0), true)" }
     string %Tooltip { "Transformed position in object-space." }
   }  
 
@@ -80,14 +80,14 @@ Node %FromWorldSpace
   {
     string %Type { "float3" }
     string %Color { "Violet" }
-    string %Inline { "mul(ToFloat3($in0), TransformToRotation(GetInstanceData().ObjectToWorld))" }
+    string %Inline { "xiiMaterialWorldToObject(g_SceneInstances[MaterialInput.InstanceIndex], ToFloat3($in0), false)" }
     string %Tooltip { "Transformed direction vector in object-space." }
   }
   OutputPin %CameraSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(WorldToCameraMatrix, ToFloat3($in0))" }
+    string %Inline { "mul(MaterialWorldToView, ToFloat4Position($in0)).xyz" }
     string %Tooltip { "Transformed position in camera-space." }
   }
 
@@ -95,7 +95,7 @@ Node %FromWorldSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(WorldToScreenMatrix, ToFloat3($in0))" }
+    string %Inline { "xiiMaterialProject(ViewProjectionMatrix, ToFloat3($in0))" }
     string %Tooltip { "Transformed position in screen-space." }
   }
 }
@@ -116,7 +116,7 @@ Node %FromObjectSpace
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "mul(TransformToMatrix(GetInstanceData().ObjectToWorld), ToFloat4Position($in0))" }
+    string %Inline { "mul(g_SceneInstances[MaterialInput.InstanceIndex].GlobalTransform, ToFloat4Position($in0)).xyz" }
     string %Tooltip { "Transformed position in world-space." }
   }
 
@@ -124,7 +124,7 @@ Node %FromObjectSpace
   {
     string %Type { "float3" }
     string %Color { "Violet" }
-    string %Inline { "mul(TransformToRotation(GetInstanceData().ObjectToWorld), ToFloat3($in0))" }
+    string %Inline { "mul((float3x3)g_SceneInstances[MaterialInput.InstanceIndex].GlobalTransform, ToFloat3($in0))" }
     string %Tooltip { "Transformed direction vector in world-space." }
   }
 }
@@ -145,7 +145,7 @@ Node %TangentToWorldSpace
   {
     string %Type { "float3" }
     string %Color { "Violet" }
-    string %Inline { "TangentToWorldSpace(ToFloat3($in0))" }
+    string %Inline { "xiiMaterialTangentToWorld(MaterialInput, ToFloat3($in0))" }
     string %Tooltip { "Transformed normal in world-space." }
   }
 }

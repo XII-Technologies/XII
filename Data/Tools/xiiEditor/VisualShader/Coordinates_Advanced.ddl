@@ -5,7 +5,7 @@ Node %UVTilingOffset
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Tiling
@@ -35,7 +35,7 @@ Node %RotateAboutPivot
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Pivot
@@ -65,7 +65,7 @@ Node %PolarCoordinates
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Center
@@ -111,7 +111,7 @@ Node %MirrorUV
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   OutputPin %UV
@@ -128,7 +128,7 @@ Node %ParallaxOffset
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Height

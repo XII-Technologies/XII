@@ -188,6 +188,9 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateVisualShader(const xiiDocumentNo
   m_sFinalShaderCode.Append("[PIXEL_SHADER]\n\n");
   m_sFinalShaderCode.Append(m_sShaderPixelDefines, "\n", m_sShaderPixelIncludes, "\n");
   m_sFinalShaderCode.Append(m_sShaderPixelConstants, "\n", m_sShaderPixelSamplers, "\n", m_sShaderPixelBody, "\n");
+  // Node-library files may use platform checkout line endings. Shader identity
+  // must depend on graph content, not the authoring machine's newline convention.
+  m_sFinalShaderCode.ReplaceAll("\r\n", "\n");
 
   for (auto it = m_Nodes.GetIterator(); it.IsValid(); ++it)
   {
@@ -285,7 +288,12 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pN
   NodeState& state = m_Nodes[pNode];
 
   const xiiVisualShaderNodeDescriptor* pDesc = m_pTypeRegistry->GetDescriptorForType(pNode->GetType());
-
+  if (pDesc->m_sName == "MaterialOutput")
+  {
+    const auto* subsurface = m_pNodeManager->GetInputPinByName(pNode, "SubsurfaceColor");
+    if (subsurface && !m_pNodeManager->GetConnections(*subsurface).IsEmpty())
+      return xiiStatus(xiiFmt("Node '{}' ({}) input 'SubsurfaceColor' is not encoded by the native surface targets.", pDesc->m_sName, pNode->GetGuid()));
+  }
 
   xiiStringBuilder sConstantsCode, sPsBodyCode, sMaterialParamCode, sPixelSamplersCode, sVsBodyCode, sGsBodyCode, sMaterialCB, sPermutations,
     sRenderStates, sPixelDefines, sPixelIncludes, sVertexDefines, sGeometryDefines;
@@ -359,6 +367,9 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
 
   const xiiVisualShaderNodeDescriptor* pDesc   = m_pTypeRegistry->GetDescriptorForType(pOwnerNode->GetType());
   const xiiUInt16                      uiPinID = DeterminePinId(pOwnerNode, pin);
+
+  if (pDesc->m_sName == "VertexColor2" || pDesc->m_sName == "DepthFade" || pDesc->m_sName == "Refraction")
+    return xiiStatus(xiiFmt("Node '{}' ({}) output '{}' requires a resource interface that the native surface raster passes do not supply.", pDesc->m_sName, pOwnerNode->GetGuid(), pin.GetName()));
 
   xiiStringBuilder sInlineCode = pDesc->m_OutputPins[uiPinID].m_sShaderCodeInline;
   xiiStringBuilder ignore; // DefineWhenUsingDefaultValue not used for output pins

@@ -32,7 +32,7 @@ Node %UVTransform
   InputPin %UV
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Scale
@@ -69,7 +69,7 @@ Node %ValueNoise2D
   InputPin %Position
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   OutputPin %Value
@@ -86,7 +86,7 @@ Node %LinearGradient
   InputPin %Position
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
   }
   InputPin %Direction

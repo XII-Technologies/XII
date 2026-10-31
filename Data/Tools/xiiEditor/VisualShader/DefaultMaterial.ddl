@@ -3,204 +3,82 @@ Node %MaterialOutput
   string %Category { "Output" }
   string %Color { "Grape" }
   string %NodeType { "Main" }
-  string %CodePermutations { "
-BLEND_MODE
+  string %CodePermutations { "FORWARD_DIRECTIONAL_SHADOWS
+FORWARD_ATMOSPHERE
+FORWARD_REFRACTION
+FORWARD_SPOT_SHADOWS
 RENDER_PASS
+BLEND_MODE
 SHADING_MODE
-TWO_SIDED
-FLIP_WINDING
-FORWARD_PASS_WRITE_DEPTH
-SHADING_QUALITY
-CAMERA_MODE
-VERTEX_SKINNING" }
-
-  string %CheckPermutations
-  {"
+TWO_SIDED" }
+  string %CheckPermutations { "RENDER_PASS=RENDER_PASS_FORWARD
 BLEND_MODE=BLEND_MODE_OPAQUE
-RENDER_PASS=RENDER_PASS_FORWARD
 SHADING_MODE=SHADING_MODE_LIT
-TWO_SIDED=FALSE
-FLIP_WINDING=FALSE
-FORWARD_PASS_WRITE_DEPTH=TRUE
-SHADING_QUALITY=SHADING_QUALITY_MEDIUM
-CAMERA_MODE=CAMERA_MODE_PERSPECTIVE
-VERTEX_SKINNING=FALSE
-"}
-
-  string %CodeRenderStates { "#include <Shaders/Materials/MaterialState.h>" }
-  string %CodeVertexShader { "
-
-#if VERTEX_SKINNING
-  #define USE_SKINNING
-#endif
-
-#if RENDER_PASS == RENDER_PASS_EDITOR
-  #define USE_DEBUG_INTERPOLATOR
-#endif
-
-#if INPUT_PIN_1_CONNECTED
-#if !defined(USE_NORMAL)
-  #define USE_NORMAL
-#endif
-#if !defined(USE_TANGENT)
-  #define USE_TANGENT
-#endif
-
-#endif
-
-#if INPUT_PIN_10_CONNECTED
-  #define USE_OBJECT_POSITION_OFFSET
-#endif
-
-#if INPUT_PIN_11_CONNECTED
-  #define USE_WORLD_POSITION_OFFSET
-#endif
-
-#include <Shaders/Materials/MaterialVertexShader.h>
-#include <Shaders/Common/VisualShaderUtil.h>
-
-
-VS_OUT main(VS_IN Input)
-{
-  return FillVertexData(Input);
-}
-
-#if defined(USE_OBJECT_POSITION_OFFSET)
-float3 GetObjectPositionOffset(xiiPerInstanceData data)
-{
-  return ToFloat3($in10);
-}
-#endif
-
-#if defined(USE_WORLD_POSITION_OFFSET)
-float3 GetWorldPositionOffset(xiiPerInstanceData data, float3 worldPosition)
-{
-  return ToFloat3($in11);
-}
-#endif
-
+TWO_SIDED=FALSE" }
+  string %CodeRenderStates { "
+#include <Shaders/Materials/NativeMaterialState.h>
 " }
-
+  string %CodeVertexShader { "
+#define XII_SCENE_WORLD_ATTRIBUTES
+#define XII_SCENE_MATERIAL_ATTRIBUTES
+#define XII_SCENE_SURFACE_FLAGS
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+#include <Shaders/Common/VisualShaderUtil.h>
+#include <Shaders/Common/MaterialGraphUtilities.h>
+#include <Shaders/Materials/NativeMaterialViewConstants.h>
+#define XII_SCENE_CUSTOM_VERTEX_ENTRY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+static GBufferVertex MaterialInput;
+GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_InstanceID)
+{
+  MaterialInput = xiiLoadIndexedSceneSurfaceVertex(vertexIndex, visibleIndex);
+#if INPUT_PIN_10_CONNECTED || INPUT_PIN_11_CONNECTED
+  const GpuSceneInstance instance = g_SceneInstances[MaterialInput.InstanceIndex];
+  const float3 offset = mul(instance.GlobalTransform, float4(ToFloat3($in10), 0)).xyz + ToFloat3($in11);
+  MaterialInput.WorldPosition += offset;
+  MaterialInput.Position = mul(ViewProjectionMatrix, float4(MaterialInput.WorldPosition, 1));
+  MaterialInput.PreviousClipPosition += mul(PreviousViewProjectionMatrix, float4(offset, 0));
+#endif
+  return MaterialInput;
+}
+" }
   string %CodeMaterialCB { "FLOAT1(MaskThreshold);" }
-
   string %CodeMaterialParams { "
 Permutation BLEND_MODE;
 Permutation SHADING_MODE;
 Permutation TWO_SIDED;
 float MaskThreshold @Default($prop0);
 " }
-
-  string %CodePixelDefines { "
-#define USE_SIMPLE_MATERIAL_MODEL
-#define USE_MATERIAL_EMISSIVE
-#define USE_MATERIAL_OCCLUSION
-#define USE_TWO_SIDED_LIGHTING
-#define USE_DECALS
-
-#if VERTEX_SKINNING
-  #define USE_SKINNING
-#endif
-
-#if RENDER_PASS == RENDER_PASS_EDITOR
-  #define USE_DEBUG_INTERPOLATOR
-#endif
-
-#if $prop1
-  #define USE_FOG
-#endif
-
-#if INPUT_PIN_1_CONNECTED
-#if !defined(USE_NORMAL)
-  #define USE_NORMAL
-#endif
-#if !defined(USE_TANGENT)
-  #define USE_TANGENT
-#endif
-#endif
-
-#if INPUT_PIN_8_CONNECTED
-  #define USE_MATERIAL_REFRACTION
-#endif
-
-#if INPUT_PIN_9_CONNECTED
-  #define USE_MATERIAL_SUBSURFACE_COLOR
-#endif
-" }
-
   string %CodePixelIncludes { "
-#include <Shaders/Materials/MaterialPixelShader.h>
+#include <Shaders/Materials/NativeMaterialSurface.h>
 #include <Shaders/Common/VisualShaderUtil.h>
+static GBufferVertex MaterialInput;
 " }
-
-  string %CodePixelSamplers { "" }
-  string %CodePixelConstants { "" }
   string %CodePixelBody { "
-
-
-float3 GetBaseColor()
+xiiMaterialSurfaceOutput main(GBufferVertex input, bool frontFace : SV_IsFrontFace)
 {
-  return ToColor3($in0);
-}
-
-float3 GetNormal()
-{
-#if defined(USE_TANGENT) || defined(USE_NORMAL)
-  return TangentToWorldSpace(ToFloat3($in1));
-#else
-  return ToFloat3($in1);
+  MaterialInput = input;
+  const xiiGpuSurfaceMaterial nativeMaterial = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
+#if TWO_SIDED != TRUE
+  if (!frontFace) discard;
 #endif
-}
-
-float GetMetallic()
-{
-  return saturate(ToFloat1($in2));
-}
-
-float GetReflectance()
-{
-  return saturate(ToFloat1($in3));
-}
-
-float GetRoughness()
-{
-  return saturate(ToFloat1($in4));
-}
-
-float GetOpacity()
-{
-  #if BLEND_MODE == BLEND_MODE_MASKED
-    return saturate(ToFloat1($in5)) - MaskThreshold;
-  #else
-    return saturate(ToFloat1($in5));
-  #endif
-}
-
-float3 GetEmissiveColor()
-{
-  return ToColor3($in6);
-}
-
-float GetOcclusion()
-{
-  return saturate(ToFloat1($in7));
-}
-
-#if defined USE_MATERIAL_REFRACTION
-float4 GetRefractionColor()
-{
-  return ToColor4($in8);
-}
+  xiiMaterialSurface surface;
+  surface.BaseColor = float4(ToColor3($in0), saturate(ToFloat1($in5)));
+  surface.AlphaCutoff = MaskThreshold;
+#if BLEND_MODE == BLEND_MODE_MASKED
+  clip(surface.BaseColor.a - MaskThreshold);
 #endif
-
-#if defined USE_MATERIAL_SUBSURFACE_COLOR
-float3 GetSubsurfaceColor()
-{
-  return ToColor3($in9);
+  surface.Normal = xiiMaterialTangentToWorld(input, ToFloat3($in1)) * (frontFace ? 1 : -1);
+  surface.Metallic = saturate(ToFloat1($in2));
+  surface.Reflectance = saturate(ToFloat1($in3));
+  surface.Roughness = saturate(ToFloat1($in4));
+  surface.Emissive = ToColor3($in6);
+  surface.Occlusion = saturate(ToFloat1($in7));
+  surface.Transmission = saturate(1 - ToColor4($in8).a);
+  surface.Unlit = SHADING_MODE == SHADING_MODE_FULLBRIGHT;
+  return xiiWriteMaterialSurface(input, surface);
 }
-#endif
-
 " }
-
   Property %MaskThreshold
   {
     string %Type { "float" }
