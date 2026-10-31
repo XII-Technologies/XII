@@ -25,8 +25,6 @@ ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 
 [VERTEX_SHADER]
 
-#define USE_COLOR0
-#define USE_TEXCOORD0
 
 #include <Shaders/Common/GlobalConstants.h>
 struct DebugVertexInput { float3 Position : POSITION; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; uint InstanceID : SV_InstanceID; uint VertexID : SV_VertexID; };
@@ -61,8 +59,6 @@ DebugVertex main(DebugVertexInput Input)
 
 [PIXEL_SHADER]
 
-#define USE_COLOR0
-#define USE_TEXCOORD0
 
 struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; nointerpolation uint InstanceID : TEXCOORD7;
 #if CAMERA_MODE == CAMERA_MODE_STEREO

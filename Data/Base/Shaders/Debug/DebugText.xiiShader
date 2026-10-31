@@ -18,11 +18,9 @@ DepthWriteEnable = false
 
 [VERTEX_SHADER]
 
-#define USE_TEXCOORD0
-#define USE_COLOR0
 
 #include <Shaders/Common/GlobalConstants.h>
-struct DebugVertexInput { float3 Position : POSITION; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; uint InstanceID : SV_InstanceID; uint VertexID : SV_VertexID; };
+#include <Shaders/Common/Common.h>
 struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; nointerpolation uint InstanceID : TEXCOORD7;
 #if CAMERA_MODE == CAMERA_MODE_STEREO
  uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
@@ -82,8 +80,6 @@ DebugVertex main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 
 [PIXEL_SHADER]
 
-#define USE_TEXCOORD0
-#define USE_COLOR0
 
 struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; nointerpolation uint InstanceID : TEXCOORD7;
 #if CAMERA_MODE == CAMERA_MODE_STEREO
