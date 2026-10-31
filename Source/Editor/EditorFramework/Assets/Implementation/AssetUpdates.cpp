@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetTableWriter.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -533,6 +534,10 @@ xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const xiiDataDirPath& absFilePa
 void xiiAssetCurator::UpdateSubAssets(xiiAssetInfo& assetInfo)
 {
   CURATOR_PROFILE("UpdateSubAssets");
+  // Foreground transforms can publish resources before the next main-thread tick.
+  // Lookup tables must already reflect the same identities as the curator.
+  if (m_pAssetTableWriter)
+    m_pAssetTableWriter->InvalidateTables();
   if (assetInfo.m_ExistanceState == xiiAssetExistanceState::FileRemoved)
   {
     return;
@@ -743,6 +748,8 @@ void xiiAssetCurator::UpdateAssetTransformLog(const xiiUuid& assetGuid, xiiDynam
 void xiiAssetCurator::SetAssetExistanceState(xiiAssetInfo& assetInfo, xiiAssetExistanceState::Enum state)
 {
   XII_ASSERT_DEBUG(m_CuratorMutex.IsLocked(), "");
+  if (m_pAssetTableWriter)
+    m_pAssetTableWriter->InvalidateTables();
 
   // Only the main thread tick function is allowed to change from FileAdded / FileRenamed to FileModified to inform views.
   // A modified 'added' file is still added until the added state was addressed.

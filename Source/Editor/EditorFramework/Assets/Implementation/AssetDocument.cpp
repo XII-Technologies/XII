@@ -605,7 +605,7 @@ xiiTransformStatus xiiAssetDocument::InternalCreateThumbnail(const ThumbnailInfo
 
 xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnailInfo, xiiArrayPtr<xiiStringView> viewExclusionTags) const
 {
-  xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
+  XII_SUCCEED_OR_RETURN(xiiAssetCurator::GetSingleton()->WriteAssetTables());
 
   xiiLog::Info("Create {0} thumbnail for \"{1}\"", GetDocumentTypeName(), GetDocumentPath());
 
@@ -829,7 +829,7 @@ xiiResult xiiAssetDocument::ThumbnailInfo::Deserialize(xiiStreamReader& inout_re
 
   inout_reader >> m_uiHash;
   inout_reader >> m_uiVersion;
-  inout_reader >> m_uiReserved;
+  inout_reader >> m_uiThumbnailVersion;
 
   return XII_SUCCESS;
 }
@@ -840,7 +840,7 @@ xiiResult xiiAssetDocument::ThumbnailInfo::Serialize(xiiStreamWriter& inout_writ
 
   inout_writer << m_uiHash;
   inout_writer << m_uiVersion;
-  inout_writer << m_uiReserved;
+  inout_writer << m_uiThumbnailVersion;
 
   return XII_SUCCESS;
 }

@@ -236,6 +236,15 @@ void xiiAssetTableWriter::ClearAssetTables()
   m_bTablesDirty = true;
 }
 
+void xiiAssetTableWriter::InvalidateTables()
+{
+  XII_LOCK(m_AssetTableMutex);
+  for (auto& tables : m_DataDirToAssetTables)
+    for (auto table : tables)
+      table.Value()->m_bReset = true;
+  m_bTablesDirty = true;
+}
+
 void xiiAssetTableWriter::NeedsReloadResource(const xiiUuid& assetGuid)
 {
   xiiAssetCurator::xiiLockedSubAsset asset = xiiAssetCurator::GetSingleton()->GetSubAsset(assetGuid);
