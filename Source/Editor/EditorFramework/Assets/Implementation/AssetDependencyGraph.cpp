@@ -5,6 +5,7 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <Foundation/Utilities/DGMLWriter.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 void xiiAssetCurator::FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, bool bTransitive) const
 {
@@ -46,23 +47,28 @@ void xiiAssetCurator::FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, 
   } while (bTransitive && !todoList.IsEmpty());
 }
 
-void xiiAssetCurator::FindAllUses(xiiStringView sAbsolutePath, xiiSet<xiiUuid>& ref_uses) const
+void xiiAssetCurator::FindAllUses(xiiStringView sPathOrGuid, xiiSet<xiiUuid>& ref_uses) const
 {
   XII_LOCK(m_CuratorMutex);
-  if (auto it = m_InverseTransformDeps.Find(sAbsolutePath); it.IsValid())
+  if (const auto asset = FindSubAsset(sPathOrGuid))
   {
-    for (const xiiUuid& guid : it.Value())
-    {
-      ref_uses.Insert(guid);
-    }
+    FindAllUses(asset->m_Data.m_Guid, ref_uses, false);
+    return;
   }
+  xiiDataDirPath path;
+  if (xiiFileSystemModel::GetSingleton()->ResolveFilePath(sPathOrGuid, path).Failed())
+    return;
+  for (const auto* tracker : {&m_InverseTransformDeps, &m_InverseThumbnailDeps, &m_InversePackageDeps})
+    if (const auto it = tracker->Find(path.GetAbsolutePath()); it.IsValid())
+      for (const auto id : it.Value())
+        ref_uses.Insert(id);
 }
 
-bool xiiAssetCurator::IsReferenced(xiiStringView sAbsolutePath) const
+bool xiiAssetCurator::IsReferenced(xiiStringView sPathOrGuid) const
 {
-  XII_LOCK(m_CuratorMutex);
-  auto it = m_InverseTransformDeps.Find(sAbsolutePath);
-  return it.IsValid() && !it.Value().IsEmpty();
+  xiiSet<xiiUuid> uses;
+  FindAllUses(sPathOrGuid, uses);
+  return !uses.IsEmpty();
 }
 
 void xiiAssetCurator::GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps, bool bIncludeThumbnailDeps, bool bIncludePackageDeps) const

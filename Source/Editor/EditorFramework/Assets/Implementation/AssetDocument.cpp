@@ -137,6 +137,12 @@ void xiiAssetDocument::InternalAfterSaveDocument()
       xiiUuid docGuid = GetGuid();
 
       xiiSharedPtr<xiiDelegateTask<void>> pTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "TransformAfterSaveDocument", xiiTaskNesting::Never, [docGuid]() {
+        auto* curator = xiiAssetCurator::GetSingleton();
+        // A queued save callback can run after another request has reserved this asset.
+        // Its owner validates saved input changes before publishing the result.
+        auto assets = curator->GetKnownAssets();
+        if (curator->IsAssetBeingTransformed(docGuid))
+          return;
         xiiDocument* pDoc = xiiDocumentManager::GetDocumentByGuid(docGuid);
         if (pDoc == nullptr)
           return;
@@ -328,8 +334,16 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
 xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
 {
   XII_PROFILE_SCOPE("TransformAsset");
-  if (xiiAssetCurator::GetSingleton()->IsAssetBeingTransformed(GetGuid()))
-    return xiiTransformStatus("Asset is being transformed in the background. Retry after it finishes.");
+  auto* curator = xiiAssetCurator::GetSingleton();
+  {
+    // Share the scheduler's reservation with direct document transforms. A separate
+    // check before writing leaves a window in which a background task can start.
+    XII_LOCK(curator->m_CuratorMutex);
+    if (curator->m_Updating.Contains(GetGuid()))
+      return xiiTransformStatus("Asset already has an active transformation.");
+    curator->m_Updating.Insert(GetGuid());
+  }
+  XII_SCOPE_EXIT({ XII_LOCK(curator->m_CuratorMutex); curator->m_Updating.Remove(GetGuid()); });
 
   if (!transformFlags.IsSet(xiiTransformFlags::ForceTransform))
   {

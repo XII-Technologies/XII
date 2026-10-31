@@ -101,6 +101,19 @@ xiiStatus xiiAssetProcessor::QueueTransformAssets(xiiArrayPtr<const xiiUuid> ass
   return QueueTransforms(assets, flags, false);
 }
 
+xiiStatus xiiAssetProcessor::QueueTransformAssetReferences(xiiArrayPtr<const xiiString> references, xiiBitflags<xiiTransformFlags> flags)
+{
+  xiiDynamicArray<xiiUuid> assets;
+  assets.Reserve(references.GetCount());
+  for (const auto& reference : references)
+  {
+    xiiUuid guid;
+    XII_SUCCEED_OR_RETURN(xiiAssetCurator::GetSingleton()->ResolveAsset(reference, guid));
+    assets.PushBack(guid);
+  }
+  return QueueTransforms(assets, flags, false);
+}
+
 xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, xiiBitflags<xiiTransformFlags> flags, bool bAllAssets)
 {
   XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "Save and queue transformations on the editor thread.");
@@ -115,6 +128,19 @@ xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, 
       if (auto* assetManager = xiiDynamicCast<xiiAssetDocumentManager*>(manager))
         assetManager->GetAssetTypesRequiringTransformForSceneExport(finalTypes);
   }
+  xiiDynamicArray<xiiUuid> owners;
+  {
+    const auto known = curator->GetKnownAssets();
+    for (const auto guid : assets)
+    {
+      const auto* info = curator->GetAssetInfo(guid);
+      if (info == nullptr)
+        return xiiStatus("A queued asset no longer exists. Refresh the selection before transforming.");
+      if (!owners.Contains(info->m_Info->m_DocumentID))
+        owners.PushBack(info->m_Info->m_DocumentID);
+    }
+  }
+  assets = owners.GetArrayPtr();
   // Save documents only on the GUI thread. The subprocess reads saved inputs and never
   // modifies the editor's live document graph. Import graphs are applied by the curator tick.
   for (const auto& guid : assets)

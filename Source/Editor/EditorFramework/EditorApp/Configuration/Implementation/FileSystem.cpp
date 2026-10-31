@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFramework/EditorFrameworkPCH.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
@@ -169,52 +170,61 @@ bool xiiQtEditorApp::MakeParentDataDirectoryRelativePathAbsolute(xiiStringBuilde
 
 bool xiiQtEditorApp::MakeDataDirectoryRelativePathAbsolute(xiiStringBuilder& ref_sPath) const
 {
-  if (xiiPathUtils::IsAbsolutePath(ref_sPath))
-    return true;
-
-  if (xiiPathUtils::IsRootedPath(ref_sPath))
-  {
-    xiiStringBuilder sAbsPath;
-    if (xiiFileSystem::ResolvePath(ref_sPath, &sAbsPath, nullptr).Succeeded())
-    {
-      ref_sPath = sAbsPath;
-      return true;
-    }
-
+  const bool      rooted = ref_sPath.IsRootedPath();
+  const xiiString root(rooted ? ref_sPath.GetRootedPathRootName() : xiiStringView());
+  ref_sPath.MakeCleanPath();
+  if (rooted && (!ref_sPath.IsRootedPath() || !root.IsEqual_NoCase(ref_sPath.GetRootedPathRootName())))
     return false;
-  }
-
-  if (xiiConversionUtils::IsStringUuid(ref_sPath))
+  if (ref_sPath.IsEmpty())
+    return false;
+  if (ref_sPath.IsAbsolutePath())
+    return true;
+  if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(ref_sPath))
   {
-    xiiUuid guid   = xiiConversionUtils::ConvertStringToUuid(ref_sPath);
-    auto    pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(guid);
-
-    if (pAsset == nullptr)
-      return false;
-
-    ref_sPath = pAsset->m_pAssetInfo->m_Path;
+    ref_sPath = asset->m_pAssetInfo->m_Path.GetAbsolutePath();
     return true;
   }
-
-  xiiStringBuilder sTemp;
-
-  for (xiiUInt32 i = m_FileSystemConfig.m_DataDirs.GetCount(); i > 0; --i)
+  if (xiiConversionUtils::IsStringUuid(ref_sPath) || ref_sPath.FindSubString("|") != nullptr)
+    return false;
+  if (ref_sPath.IsRootedPath())
   {
-    const auto& dd = m_FileSystemConfig.m_DataDirs[i - 1];
-
-    if (xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sTemp).Failed())
-      continue;
-
-    sTemp.AppendPath(ref_sPath);
-    sTemp.MakeCleanPath();
-
-    if (xiiOSFile::ExistsFile(sTemp) || xiiOSFile::ExistsDirectory(sTemp))
-    {
-      ref_sPath = sTemp;
-      return true;
-    }
+    xiiStringBuilder absolute;
+    if (xiiFileSystem::ResolvePath(ref_sPath, &absolute, nullptr).Failed())
+      return false;
+    ref_sPath = absolute;
+    return true;
   }
-
+  xiiStringBuilder match;
+  auto             consider = [&](xiiStringView path) -> bool {
+    if (!xiiOSFile::ExistsFile(path) && !xiiOSFile::ExistsDirectory(path))
+      return true;
+    if (!match.IsEmpty() && !xiiFileSystemModel::IsSameFile(match, path))
+      return false;
+    match = path;
+    return true;
+  };
+  for (const auto& dd : m_FileSystemConfig.m_DataDirs)
+  {
+    xiiStringBuilder root;
+    if (xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, root).Failed())
+      continue;
+    xiiStringBuilder candidate(root);
+    candidate.AppendPath(ref_sPath);
+    candidate.MakeCleanPath();
+    if (candidate.IsPathBelowFolder(root) && !consider(candidate))
+      return false;
+    candidate = root;
+    candidate.PathParentDirectory();
+    candidate.AppendPath(ref_sPath);
+    candidate.MakeCleanPath();
+    if (candidate.IsPathBelowFolder(root) && !consider(candidate))
+      return false;
+  }
+  if (!match.IsEmpty())
+  {
+    ref_sPath = match;
+    return true;
+  }
   return false;
 }
 

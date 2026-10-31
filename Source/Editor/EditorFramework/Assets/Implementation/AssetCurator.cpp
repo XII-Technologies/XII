@@ -489,6 +489,15 @@ xiiStatus xiiAssetCurator::TransformAllAssets(xiiBitflags<xiiTransformFlags> tra
   return XII_SUCCESS;
 }
 
+xiiTransformStatus xiiAssetCurator::TransformAsset(xiiStringView sPathOrGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
+{
+  xiiUuid    guid;
+  const auto status = ResolveAsset(sPathOrGuid, guid);
+  if (status.Failed())
+    return status;
+  return TransformAsset(guid, transformFlags, pAssetProfile);
+}
+
 xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
 {
   xiiTransformStatus                    res;
@@ -499,8 +508,10 @@ xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xii
     XII_LOCK(m_CuratorMutex);
 
     xiiAssetInfo* pInfo = nullptr;
-    if (!m_KnownAssets.TryGetValue(assetGuid, pInfo))
+    if ((pInfo = GetAssetInfo(assetGuid)) == nullptr)
       return xiiTransformStatus("Transform failed, unknown asset.");
+
+    pTypeDesc = pInfo->m_pDocumentTypeDescriptor;
 
     sAbsPath = pInfo->m_Path;
     res      = ProcessAsset(pInfo, pAssetProfile, transformFlags);
@@ -592,140 +603,80 @@ xiiResult xiiAssetCurator::WriteAssetTables(const xiiPlatformProfile* pAssetProf
 // xiiAssetCurator Asset Access
 ////////////////////////////////////////////////////////////////////////
 
+xiiStatus xiiAssetCurator::ResolveAsset(xiiStringView sPathOrGuid, xiiUuid& out_guid, bool bExhaustiveSearch) const
+{
+  XII_LOCK(m_CuratorMutex);
+  out_guid = {};
+  if (sPathOrGuid.IsEmpty())
+    return xiiStatus("An empty reference does not identify an asset.");
+  if (xiiConversionUtils::IsStringUuid(sPathOrGuid))
+  {
+    const auto guid = xiiConversionUtils::ConvertStringToUuid(sPathOrGuid);
+    const auto it   = m_KnownSubAssets.Find(guid);
+    if (!it.IsValid() || it.Value().m_ExistanceState == xiiAssetExistanceState::FileRemoved)
+      return xiiStatus(xiiFmt("Asset GUID '{}' was not found. Restore the asset or update its reference.", sPathOrGuid));
+    out_guid = guid;
+    return XII_SUCCESS;
+  }
+
+  xiiStringView mainPath = sPathOrGuid, subName;
+  if (const char* separator = sPathOrGuid.FindSubString("|"))
+  {
+    mainPath = xiiStringView(sPathOrGuid.GetStartPointer(), separator);
+    subName  = xiiStringView(separator + 1, sPathOrGuid.GetEndPointer());
+    if (subName.IsEmpty())
+      return xiiStatus(xiiFmt("Asset reference '{}' has an empty sub-asset name.", sPathOrGuid));
+  }
+  xiiDataDirPath      path;
+  xiiFileStatus       stat;
+  const auto          status = xiiFileSystemModel::GetSingleton()->ResolveFilePath(mainPath, path, &stat);
+  const xiiAssetInfo* info   = nullptr;
+  if (status.Succeeded())
+    info = GetAssetInfo(stat.m_DocumentID);
+  else if (bExhaustiveSearch && !mainPath.IsAbsolutePath() && !mainPath.IsRootedPath())
+  {
+    xiiStringBuilder suffix("/", mainPath);
+    suffix.MakeCleanPath();
+    for (auto it = m_KnownAssets.GetIterator(); it.IsValid(); ++it)
+    {
+      if (it.Value()->m_ExistanceState == xiiAssetExistanceState::FileRemoved || !it.Value()->m_Path.GetAbsolutePath().EndsWith(suffix))
+        continue;
+      if (info != nullptr && info != it.Value())
+        return xiiStatus(xiiFmt("Ambiguous asset reference '{}': '{}' and '{}'. Use a GUID or a qualified path.", sPathOrGuid, info->m_Path, it.Value()->m_Path));
+      info = it.Value();
+    }
+  }
+  if (info == nullptr || info->m_ExistanceState == xiiAssetExistanceState::FileRemoved)
+    return status.Failed() ? status : xiiStatus(xiiFmt("File '{}' is not a registered asset document.", mainPath));
+  if (subName.IsEmpty())
+  {
+    out_guid = info->m_Info->m_DocumentID;
+    return XII_SUCCESS;
+  }
+  for (const auto id : info->m_SubAssets)
+  {
+    const auto it = m_KnownSubAssets.Find(id);
+    if (it.IsValid() && it.Value().m_ExistanceState != xiiAssetExistanceState::FileRemoved && subName.IsEqual_NoCase(it.Value().GetName()))
+    {
+      if (out_guid.IsValid())
+      {
+        out_guid = {};
+        return xiiStatus(xiiFmt("Sub-asset name '{}' is ambiguous in '{}'. Use its GUID.", subName, mainPath));
+      }
+      out_guid = id;
+    }
+  }
+  return out_guid.IsValid() ? xiiStatus(XII_SUCCESS) : xiiStatus(xiiFmt("Sub-asset '{}' was not found in '{}'.", subName, mainPath));
+}
+
 const xiiAssetCurator::xiiLockedSubAsset xiiAssetCurator::FindSubAsset(xiiStringView sPathOrGuid, bool bExhaustiveSearch) const
 {
   CURATOR_PROFILE("FindSubAsset");
   XII_LOCK(m_CuratorMutex);
-
-  if (xiiConversionUtils::IsStringUuid(sPathOrGuid))
-  {
-    return GetSubAsset(xiiConversionUtils::ConvertStringToUuid(sPathOrGuid));
-  }
-
-  // Split into mainAsset|subAsset
-  xiiStringBuilder mainAsset;
-  xiiStringView    subAsset;
-  const char*      szSeparator = sPathOrGuid.FindSubString("|");
-  if (szSeparator != nullptr)
-  {
-    mainAsset.SetSubString_FromTo(sPathOrGuid.GetStartPointer(), szSeparator);
-    subAsset = xiiStringView(szSeparator + 1);
-  }
-  else
-  {
-    mainAsset = sPathOrGuid;
-  }
-  mainAsset.MakeCleanPath();
-
-  // Find mainAsset
-  xiiFileStatus stat;
-  xiiResult     res = xiiFileSystemModel::GetSingleton()->FindFile(mainAsset, stat);
-
-  // Did we find an asset?
-  if (res == XII_SUCCESS && stat.m_DocumentID.IsValid())
-  {
-    xiiAssetInfo* pAssetInfo = nullptr;
-    m_KnownAssets.TryGetValue(stat.m_DocumentID, pAssetInfo);
-    XII_ASSERT_DEV(pAssetInfo != nullptr, "Files reference non-existant assset!");
-
-    if (subAsset.IsValid())
-    {
-      for (const xiiUuid& sub : pAssetInfo->m_SubAssets)
-      {
-        auto itSub = m_KnownSubAssets.Find(sub);
-        if (itSub.IsValid() && subAsset.IsEqual_NoCase(itSub.Value().GetName()))
-        {
-          return xiiLockedSubAsset(m_CuratorMutex, &itSub.Value());
-        }
-      }
-    }
-    else
-    {
-      auto itSub = m_KnownSubAssets.Find(pAssetInfo->m_Info->m_DocumentID);
-      return xiiLockedSubAsset(m_CuratorMutex, &itSub.Value());
-    }
-  }
-
-  if (!bExhaustiveSearch)
+  xiiUuid guid;
+  if (ResolveAsset(sPathOrGuid, guid, bExhaustiveSearch).Failed())
     return xiiLockedSubAsset();
-
-  // TODO: This is the old slow code path that will find the longest substring match.
-  // Should be removed or folded into FindBestMatchForFile once it's surely not needed anymore.
-
-  auto FindAsset = [this](xiiStringView sPathView) -> xiiAssetInfo* {
-    // try to find the 'exact' relative path
-    // otherwise find the shortest possible path
-    xiiUInt32     uiMinLength = 0xFFFFFFFF;
-    xiiAssetInfo* pBestInfo   = nullptr;
-
-    if (sPathView.IsEmpty())
-      return nullptr;
-
-    const xiiStringBuilder sPath = sPathView;
-    const xiiStringBuilder sPathWithSlash("/", sPath);
-
-    for (auto it = m_KnownAssets.GetIterator(); it.IsValid(); ++it)
-    {
-      if (it.Value()->m_Path.GetDataDirParentRelativePath().EndsWith_NoCase(sPath))
-      {
-        // endswith -> could also be equal
-        if (sPathView.IsEqual_NoCase(it.Value()->m_Path.GetDataDirParentRelativePath()))
-        {
-          // if equal, just take it
-          return it.Value();
-        }
-
-        // need to check again with a slash to make sure we don't return something that is of an invalid type
-        // this can happen where the user is allowed to type random paths
-        if (it.Value()->m_Path.GetDataDirParentRelativePath().EndsWith_NoCase(sPathWithSlash))
-        {
-          const xiiUInt32 uiLength = it.Value()->m_Path.GetDataDirParentRelativePath().GetElementCount();
-          if (uiLength < uiMinLength)
-          {
-            uiMinLength = uiLength;
-            pBestInfo   = it.Value();
-          }
-        }
-      }
-    }
-
-    return pBestInfo;
-  };
-
-  szSeparator = sPathOrGuid.FindSubString("|");
-  if (szSeparator != nullptr)
-  {
-    xiiStringBuilder mainAsset2;
-    mainAsset2.SetSubString_FromTo(sPathOrGuid.GetStartPointer(), szSeparator);
-
-    xiiStringView subAsset2(szSeparator + 1);
-    if (xiiAssetInfo* pAssetInfo = FindAsset(mainAsset2))
-    {
-      for (const xiiUuid& sub : pAssetInfo->m_SubAssets)
-      {
-        auto subIt = m_KnownSubAssets.Find(sub);
-        if (subIt.IsValid() && subAsset2.IsEqual_NoCase(subIt.Value().GetName()))
-        {
-          return xiiLockedSubAsset(m_CuratorMutex, &subIt.Value());
-        }
-      }
-    }
-  }
-
-  xiiStringBuilder sPath = sPathOrGuid;
-  sPath.MakeCleanPath();
-  if (sPath.IsAbsolutePath())
-  {
-    if (!xiiQtEditorApp::GetSingleton()->MakePathDataDirectoryParentRelative(sPath))
-      return xiiLockedSubAsset();
-  }
-
-  if (xiiAssetInfo* pAssetInfo = FindAsset(sPath))
-  {
-    auto itSub = m_KnownSubAssets.Find(pAssetInfo->m_Info->m_DocumentID);
-    return xiiLockedSubAsset(m_CuratorMutex, &itSub.Value());
-  }
-  return xiiLockedSubAsset();
+  return GetSubAsset(guid);
 }
 
 const xiiAssetCurator::xiiLockedSubAsset xiiAssetCurator::GetSubAsset(const xiiUuid& assetGuid) const
@@ -733,7 +684,7 @@ const xiiAssetCurator::xiiLockedSubAsset xiiAssetCurator::GetSubAsset(const xiiU
   XII_LOCK(m_CuratorMutex);
 
   auto it = m_KnownSubAssets.Find(assetGuid);
-  if (it.IsValid())
+  if (it.IsValid() && it.Value().m_ExistanceState != xiiAssetExistanceState::FileRemoved)
   {
     const xiiSubAsset* pAssetInfo = &(it.Value());
     return xiiLockedSubAsset(m_CuratorMutex, pAssetInfo);
@@ -861,7 +812,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
   xiiAssetDocumentManager*              pManager        = nullptr;
   const xiiAssetDocumentTypeDescriptor* pTypeDescriptor = nullptr;
   xiiString                             sAssetFile;
-  xiiUInt8                              uiLastStateUpdate = 0;
+  xiiUInt64                             uiLastStateUpdate = 0;
   xiiUInt64                             uiSettingsHash    = 0;
   xiiHybridArray<xiiString, 16>         transformDeps;
   xiiHybridArray<xiiString, 16>         thumbnailDeps;
@@ -1029,11 +980,14 @@ xiiResult xiiAssetCurator::FindBestMatchForFile(xiiStringBuilder& ref_sFile, xii
   {
     testName.ChangeFileExtension(ext);
 
-    if (xiiFileSystem::ExistsFile(testName))
+    xiiDataDirPath resolved;
+    if (xiiFileSystemModel::GetSingleton()->ResolveFilePath(testName, resolved).Succeeded())
     {
-      ref_sFile = testName;
+      testName = resolved.GetAbsolutePath();
       goto found;
     }
+    if (testName.IsAbsolutePath() && xiiFileSystem::ExistsFile(testName))
+      goto found;
   }
 
   testName = ref_sFile.GetFileNameAndExtension();
@@ -1055,19 +1009,23 @@ xiiResult xiiAssetCurator::FindBestMatchForFile(xiiStringBuilder& ref_sFile, xii
   {
     XII_LOCK(m_CuratorMutex);
 
-    auto SearchFile = [this](xiiStringBuilder& ref_sName) -> bool {
-      return xiiFileSystemModel::GetSingleton()->FindFile([&ref_sName](const xiiDataDirPath& file, const xiiFileStatus& stat) {
-                                                 if (stat.m_Status != xiiFileStatus::Status::Valid)
-                                                   return false;
-
-                                                 if (file.GetAbsolutePath().EndsWith_NoCase(ref_sName))
-                                                 {
-                                                   ref_sName = file.GetAbsolutePath();
-                                                   return true;
-                                                 }
-                                                 return false; //
-                                               })
-        .Succeeded();
+    auto SearchFile = [](xiiStringBuilder& ref_sName) -> bool {
+      xiiString match;
+      bool      ambiguous = false;
+      xiiFileSystemModel::GetSingleton()->FindFile([&](const xiiDataDirPath& file, const xiiFileStatus& stat) {
+                                          if (stat.m_Status == xiiFileStatus::Status::Valid && file.GetAbsolutePath().EndsWith(ref_sName))
+                                          {
+                                            if (!match.IsEmpty() && match != file.GetAbsolutePath())
+                                              ambiguous = true;
+                                            match = file.GetAbsolutePath();
+                                          }
+                                          return false;
+                                        })
+        .IgnoreResult();
+      if (ambiguous || match.IsEmpty())
+        return false;
+      ref_sName = match;
+      return true;
     };
 
     // search for the full name
@@ -1364,8 +1322,8 @@ xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiUuid& assetGuid)
 {
   xiiAssetInfo* pAssetInfo = nullptr;
   if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
-    return pAssetInfo;
-  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid())
+    return pAssetInfo->m_ExistanceState != xiiAssetExistanceState::FileRemoved ? pAssetInfo : nullptr;
+  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid() && it.Value().m_ExistanceState != xiiAssetExistanceState::FileRemoved)
     return it.Value().m_pAssetInfo;
   return nullptr;
 }
@@ -1374,25 +1332,18 @@ const xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiUuid& assetGuid) cons
 {
   xiiAssetInfo* pAssetInfo = nullptr;
   if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
-    return pAssetInfo;
-  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid())
+    return pAssetInfo->m_ExistanceState != xiiAssetExistanceState::FileRemoved ? pAssetInfo : nullptr;
+  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid() && it.Value().m_ExistanceState != xiiAssetExistanceState::FileRemoved)
     return it.Value().m_pAssetInfo;
   return nullptr;
 }
 
-xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiString& sAssetGuid)
+xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiString& sPathOrGuid)
 {
-  if (sAssetGuid.IsEmpty())
+  xiiUuid guid;
+  if (ResolveAsset(sPathOrGuid, guid).Failed())
     return nullptr;
-
-  if (xiiConversionUtils::IsStringUuid(sAssetGuid))
-  {
-    const xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(sAssetGuid);
-
-    return GetAssetInfo(guid);
-  }
-
-  return nullptr;
+  return GetAssetInfo(guid);
 }
 
 xiiSubAsset* xiiAssetCurator::GetSubAssetInternal(const xiiUuid& assetGuid)
@@ -1501,9 +1452,20 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
         {
           xiiAssetInfo* pAssetInfo = it.Value();
           XII_ASSERT_DEBUG(xiiFileSystemModel::IsSameFile(e.m_Path, pAssetInfo->m_Path), "");
+          xiiSet<xiiUuid> dependents;
+          FindAllUses(guid0, dependents, false);
+          for (const auto id : dependents)
+            if (auto* consumer = GetAssetInfo(id))
+              UntrackDependencies(consumer);
           UntrackDependencies(pAssetInfo);
           RemoveAssetTransformState(guid0);
           SetAssetExistanceState(*pAssetInfo, xiiAssetExistanceState::FileRemoved);
+          for (const auto id : dependents)
+            if (auto* consumer = GetAssetInfo(id))
+            {
+              TrackDependencies(consumer);
+              InvalidateAssetTransformState(id);
+            }
         }
       }
       auto it = m_InverseTransformDeps.Find(e.m_Path);

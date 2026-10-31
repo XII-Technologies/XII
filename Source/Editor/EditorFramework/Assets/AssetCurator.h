@@ -84,7 +84,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetInfo
     COUNT,
   };
 
-  xiiUInt8                     m_LastStateUpdate = 0; ///< Changes every time m_TransformState is modified. Used to detect stale computations done outside the lock.
+  xiiUInt64                    m_LastStateUpdate = 0; ///< Changes every time m_TransformState is modified. Used to detect stale computations done outside the lock.
   xiiAssetExistanceState::Enum m_ExistanceState  = xiiAssetExistanceState::FileAdded;
   TransformState               m_TransformState  = TransformState::Unknown;
   xiiUInt64                    m_AssetHash       = 0; ///< Valid if m_TransformState != Unknown and asset not in Curator's m_TransformStateStale list.
@@ -243,6 +243,7 @@ public:
   /// Transforms all assets and writes the lookup tables. If the given platform is empty, the active platform is used.
   xiiStatus          TransformAllAssets(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
+  xiiTransformStatus TransformAsset(xiiStringView sPathOrGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   bool               IsAssetBeingTransformed(const xiiUuid& assetGuid) const;
   xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
 
@@ -268,10 +269,15 @@ public:
 
   /// Tries to find the asset information for an asset identified through a string.
   ///
-  /// The string may be a stringyfied asset GUID or a relative or absolute path. The function will try all possibilities.
+  /// The string may be an asset GUID, absolute, rooted, data-directory-relative or parent-relative path,
+  /// optionally followed by |SubAssetName. Ambiguous references fail.
   /// If no asset can be found, an empty/invalid xiiAssetInfo is returned.
-  /// If bExhaustiveSearch is set the function will go through all known assets and find the closest match.
+  /// Exhaustive search permits a unique path suffix; it never chooses an arbitrary closest match.
   const xiiLockedSubAsset FindSubAsset(xiiStringView sPathOrGuid, bool bExhaustiveSearch = false) const;
+
+  /// Resolves the same references as FindSubAsset, with an actionable failure diagnostic.
+  /// Returns the persistent sub-asset identity (not its owner's GUID). Clears out_guid on failure.
+  xiiStatus ResolveAsset(xiiStringView sPathOrGuid, xiiUuid& out_guid, bool bExhaustiveSearch = false) const;
 
   /// Same as GetAssteInfo, but wraps the return value into a xiiLockedSubAsset struct
   const xiiLockedSubAsset GetSubAsset(const xiiUuid& assetGuid) const;
@@ -320,12 +326,12 @@ public:
   /// Returns all assets that use a file for transform. Use this to e.g. figure which assets still reference a .tga file in the project.
   /// \param sAbsolutePath Absolute path to any file inside a data directory.
   /// \param ref_uses List of assets that use 'sAbsolutePath'. Any previous content of the set is not removed.
-  void FindAllUses(xiiStringView sAbsolutePath, xiiSet<xiiUuid>& ref_uses) const;
+  void FindAllUses(xiiStringView sPathOrGuid, xiiSet<xiiUuid>& ref_uses) const;
 
   /// Returns whether a file is referenced, i.e. used for transforming an asset. Use this to e.g. figure out whether a .tga file is still in use by any asset.
   /// \param sAbsolutePath Absolute path to any file inside a data directory.
   /// \return True, if at least one asset references the given file.
-  bool IsReferenced(xiiStringView sAbsolutePath) const;
+  bool IsReferenced(xiiStringView sPathOrGuid) const;
 
 
   ///@}
@@ -468,6 +474,7 @@ public:
 private:
   friend class xiiUpdateTask;
   friend class xiiAssetProcessor;
+  friend class xiiAssetDocument;
   friend class xiiProcessTask;
 
   mutable xiiCuratorMutex m_CuratorMutex; // Global lock

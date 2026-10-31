@@ -617,22 +617,10 @@ XII_CREATE_SIMPLE_TEST(EditorBackgroundTransforms, BatchFailureAndCancellation)
   editAccessor->StartTransaction("Edit while transforming");
   XII_TEST_STATUS(editAccessor->SetValueByName(edited->GetObjectManager()->GetRootObject()->GetChildren()[0], "Restitution", 0.75f));
   editAccessor->FinishTransaction();
-  class ReservationLog : public xiiTestLogInterface
-  {
-    void HandleLogMessage(const xiiLoggingEventData& e) override
-    {
-      // Unit-test save mode retains its legacy synchronous auto-transform task. Its
-      // attempted concurrent transform must be rejected by the production reservation.
-      if (e.m_EventType != xiiLogMsgType::ErrorMsg || !e.m_sText.FindSubString("Asset is being transformed in the background"))
-        xiiTestLogInterface::HandleLogMessage(e);
-    }
-  } reservationLog;
-  {
-    xiiTestLogSystemScope scope(&reservationLog);
-    XII_TEST_STATUS(edited->SaveDocument());
-    edited->GetDocumentManager()->CloseDocument(edited);
-    wait();
-  }
+  // Saved edits are observed by the reserved job without a competing auto-transform or error.
+  XII_TEST_STATUS(edited->SaveDocument());
+  edited->GetDocumentManager()->CloseDocument(edited);
+  wait();
   progress = processor->GetTransformProgress();
   XII_TEST_BOOL(progress.m_uiTotal >= 2);
   XII_TEST_INT(progress.m_uiFailed, 0);

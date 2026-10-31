@@ -186,19 +186,7 @@ xiiResult xiiAssetDocumentManager::TryOpenAssetDocument(const char* szPathOrGuid
 {
   xiiAssetCurator::xiiLockedSubAsset pSubAsset;
 
-  if (xiiConversionUtils::IsStringUuid(szPathOrGuid))
-  {
-    xiiUuid matGuid;
-    matGuid = xiiConversionUtils::ConvertStringToUuid(szPathOrGuid);
-
-    pSubAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(matGuid);
-  }
-  else
-  {
-    // I think this is even wrong, either the string is a GUID, or it is not an asset at all, in which case we cannot find it this way
-    // either left as an exercise for whoever needs non-asset references
-    pSubAsset = xiiAssetCurator::GetSingleton()->FindSubAsset(szPathOrGuid);
-  }
+  pSubAsset = xiiAssetCurator::GetSingleton()->FindSubAsset(szPathOrGuid);
 
   if (pSubAsset)
   {
@@ -221,7 +209,8 @@ bool xiiAssetDocumentManager::IsResourceUpToDate(const char* szResourceFile, xii
     return false;
 
   xiiAssetFileHeader AssetHeader;
-  AssetHeader.Read(file).IgnoreResult();
+  if (AssetHeader.Read(file).Failed())
+    return false;
 
   return AssetHeader.IsFileUpToDate(uiHash, uiTypeVersion);
 }
