@@ -109,6 +109,11 @@ XII_CREATE_SIMPLE_TEST(ProjectManifest, Format)
     XII_TEST_STATUS(manifest.Load(legacyPath, &legacy));
     XII_TEST_BOOL(!legacy);
     XII_TEST_BOOL(manifest.m_ProjectID == migratedID);
+    xiiProjectManifest competing;
+    competing.Initialize(legacyPath);
+    XII_TEST_STATUS(competing.Migrate(legacyPath));
+    XII_TEST_STATUS(competing.Load(legacyPath));
+    XII_TEST_BOOL(competing.m_ProjectID == migratedID);
     const xiiStringBuilder backup(legacyPath, ".legacy");
     xiiOSFile              file;
     XII_TEST_RESULT(file.Open(backup, xiiFileOpenMode::Read));

@@ -245,6 +245,8 @@ xiiStatus xiiProjectManifest::Write(xiiStreamWriter& stream) const
       CopyElement(writer, *child);
   }
   writer.EndObject();
+  if (storage.GetStorageSize64() > s_uiMaximumManifestSize)
+    return xiiStatus("Project manifest exceeds the 1 MiB size limit.");
   return storage.CopyToStream(stream);
 }
 
@@ -288,6 +290,17 @@ xiiStatus xiiProjectManifest::Save(xiiStringView sProjectFile) const
     if (file.Open(staged, xiiFileOpenMode::Write).Failed() || file.Write(storage.GetData(), storage.GetStorageSize64()).Failed())
       return xiiStatus(xiiFmt("Could not stage project manifest '{}'.", staged));
   }
+  // OSFile::Close cannot return buffered close errors on every platform. Verify the
+  // closed staging file before making it authoritative (manifests are at most 1 MiB).
+  {
+    xiiOSFile                 verify;
+    xiiDynamicArray<xiiUInt8> bytes;
+    bytes.SetCountUninitialized(storage.GetStorageSize32());
+    if (verify.Open(staged, xiiFileOpenMode::Read).Failed() || verify.GetFileSize() != bytes.GetCount() ||
+        verify.Read(bytes.GetData(), bytes.GetCount()) != bytes.GetCount() ||
+        !xiiMemoryUtils::IsEqual(bytes.GetData(), storage.GetData(), bytes.GetCount()))
+      return xiiStatus("The staged project manifest could not be verified; original retained.");
+  }
   if (xiiOSFile::AtomicReplaceFile(staged, sProjectFile).Failed())
     return xiiStatus(xiiFmt("Could not atomically replace project manifest '{}'. Original retained.", sProjectFile));
   return XII_SUCCESS;
@@ -295,8 +308,34 @@ xiiStatus xiiProjectManifest::Save(xiiStringView sProjectFile) const
 
 xiiStatus xiiProjectManifest::Migrate(xiiStringView sProjectFile) const
 {
+  // Serialize competing first opens across processes, without adding a machine-specific
+  // lock filename to the portable project. Keep the lock inode in the system temp folder.
+  xiiStringBuilder key(sProjectFile);
+  key.MakeCleanPath();
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  key.ToLower();
+#endif
+  xiiStringBuilder lockPath(xiiOSFile::GetTempDataFolder("XII/ProjectMigration"));
+  xiiStringBuilder lockName;
+  lockName.SetFormat("{}.lock", xiiHashingUtils::xxHash64String(key));
+  lockPath.AppendPath(lockName);
+  xiiOSFile lock;
+  if (lock.Open(lockPath, xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Failed())
+    return xiiStatus("Another process is migrating this project. Retry opening it after that operation finishes.");
+  xiiProjectManifest current;
+  bool               legacy = false;
+  XII_SUCCEED_OR_RETURN(current.Load(sProjectFile, &legacy));
+  if (!legacy)
+    return XII_SUCCESS;
   xiiStringBuilder backup(sProjectFile, ".legacy");
-  if (!xiiOSFile::ExistsFile(backup) && xiiOSFile::CopyFile(sProjectFile, backup).Failed())
+  if (xiiOSFile::ExistsFile(backup))
+  {
+    bool backupIsLegacy = false;
+    XII_SUCCEED_OR_RETURN(current.Load(backup, &backupIsLegacy));
+    if (!backupIsLegacy)
+      return xiiStatus("Legacy project backup already exists with different contents. Preserve it and resolve the conflict before migration.");
+  }
+  else if (xiiOSFile::CopyFile(sProjectFile, backup).Failed())
     return xiiStatus(xiiFmt("Could not preserve legacy project at '{}'.", backup));
   return Save(sProjectFile);
 }

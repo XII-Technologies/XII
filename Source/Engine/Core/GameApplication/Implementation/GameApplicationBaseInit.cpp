@@ -168,7 +168,7 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
 
   {
     xiiApplicationFileSystemConfig appFileSystemConfig;
-    appFileSystemConfig.Load();
+    appFileSystemConfig.Load().LogFailure();
 
     // get rid of duplicates that we already hard-coded above
     for (xiiUInt32 i = appFileSystemConfig.m_DataDirs.GetCount(); i > 0; --i)
@@ -180,7 +180,7 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
       }
     }
 
-    appFileSystemConfig.Apply();
+    appFileSystemConfig.Apply().LogFailure();
   }
 }
 

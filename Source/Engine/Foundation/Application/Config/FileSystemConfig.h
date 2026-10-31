@@ -5,6 +5,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/String.h>
+#include <Foundation/Types/Status.h>
 
 class XII_FOUNDATION_DLL xiiApplicationFileSystemConfig
 {
@@ -12,10 +13,10 @@ public:
   static constexpr const xiiStringView s_sConfigFile = ":project/RuntimeConfigs/DataDirectories.ddl"_xiisv;
 
   xiiResult Save(xiiStringView sPath = s_sConfigFile);
-  void      Load(xiiStringView sPath = s_sConfigFile);
+  xiiStatus Load(xiiStringView sPath = s_sConfigFile);
 
   /// Sets up the data directories that were configured or loaded into this object
-  void Apply();
+  xiiStatus Apply();
 
   /// Removes all data directories that were set up by any call to xiiApplicationFileSystemConfig::Apply()
   static void Clear();

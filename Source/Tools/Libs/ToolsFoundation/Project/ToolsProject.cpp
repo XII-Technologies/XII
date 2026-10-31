@@ -73,7 +73,10 @@ xiiStatus xiiToolsProject::Open()
   bool bLegacy = false;
   XII_SUCCEED_OR_RETURN(m_Manifest.Load(m_sProjectPath, &bLegacy));
   if (bLegacy)
+  {
     XII_SUCCEED_OR_RETURN(m_Manifest.Migrate(m_sProjectPath));
+    XII_SUCCEED_OR_RETURN(m_Manifest.Load(m_sProjectPath)); // A competing opener may have migrated first.
+  }
 
   xiiStatus            status(XII_SUCCESS);
   xiiToolsProjectEvent e;
