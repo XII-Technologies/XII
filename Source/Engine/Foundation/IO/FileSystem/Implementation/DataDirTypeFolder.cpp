@@ -177,26 +177,41 @@ namespace xiiDataDirectory
 
         content.PushBack(0); // Make sure the string is terminated
 
-        const char* szLineStart = content.GetData();
-        const char* szSeparator = nullptr;
-        const char* szLineEnd   = nullptr;
-
-        xiiStringBuilder sFileToRedirect, sRedirection;
-
-        while (true)
+        const char* cursor = content.GetData();
+        const char* end    = content.GetData() + content.GetCount() - 1;
+        while (cursor < end)
         {
-          szSeparator = xiiStringUtils::FindSubString(szLineStart, ";");
-          szLineEnd   = xiiStringUtils::FindSubString(szSeparator, "\n");
-
-          if (szLineStart == nullptr || szSeparator == nullptr || szLineEnd == nullptr)
-            break;
-
-          sFileToRedirect.SetSubString_FromTo(szLineStart, szSeparator);
-          sRedirection.SetSubString_FromTo(szSeparator + 1, szLineEnd);
-
-          m_FileRedirection[sFileToRedirect] = sRedirection;
-
-          szLineStart = szLineEnd + 1;
+          const char*   newline = xiiStringUtils::FindSubString(cursor, "\n", end);
+          const char*   lineEnd = newline != nullptr ? newline : end;
+          xiiStringView line(cursor, lineEnd);
+          line.Trim("\r");
+          if (!line.IsEmpty())
+          {
+            const char* separator = line.FindSubString(";");
+            if (separator == nullptr || separator == line.GetStartPointer() || separator + 1 == line.GetEndPointer())
+            {
+              xiiLog::Error("Invalid asset table entry in '{}': '{}'. Expected key;value.", sRedirectionFile, line);
+              m_FileRedirection.Clear();
+              return;
+            }
+            xiiStringBuilder key(xiiStringView(line.GetStartPointer(), separator));
+            xiiStringBuilder value(xiiStringView(separator + 1, line.GetEndPointer()));
+            if (xiiConversionUtils::IsStringUuid(key))
+              xiiConversionUtils::ToString(xiiConversionUtils::ConvertStringToUuid(key), key);
+            if (xiiConversionUtils::IsStringUuid(value))
+            {
+              key.MakeCleanPath();
+              xiiConversionUtils::ToString(xiiConversionUtils::ConvertStringToUuid(value), value);
+            }
+            if (const auto* previous = m_FileRedirection.GetValue(key); previous != nullptr && *previous != value)
+            {
+              xiiLog::Error("Conflicting asset table entries for '{}' in '{}'.", key, sRedirectionFile);
+              m_FileRedirection.Clear();
+              return;
+            }
+            m_FileRedirection[key] = value;
+          }
+          cursor = newline != nullptr ? newline + 1 : end;
         }
 
         // xiiLog::Debug("Redirection file contains {0} entries", m_FileRedirection.GetCount());
@@ -336,6 +351,16 @@ namespace xiiDataDirectory
     return pReader;
   }
 
+  bool FolderType::ResolveAssetIdentifier(xiiStringView sPath, xiiStringBuilder& out_sGuid)
+  {
+    XII_LOCK(m_RedirectionMutex);
+    const auto it = m_FileRedirection.Find(sPath);
+    if (!it.IsValid() || !xiiConversionUtils::IsStringUuid(it.Value()))
+      return false;
+    out_sGuid = it.Value();
+    return true;
+  }
+
   bool FolderType::ResolveAssetRedirection(xiiStringView sFile, xiiStringBuilder& out_sRedirection)
   {
     XII_LOCK(m_RedirectionMutex);
@@ -343,9 +368,8 @@ namespace xiiDataDirectory
     auto it = m_FileRedirection.Find(sFile);
 
     // If available, open the file that is mentioned in the redirection file instead
-    if (it.IsValid())
+    if (it.IsValid() && !xiiConversionUtils::IsStringUuid(it.Value()))
     {
-
       if (it.Value().StartsWith("?"))
       {
         // ? is an option to tell the system to skip the redirection prefix and use the path as is

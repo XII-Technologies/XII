@@ -28,7 +28,7 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringV
     hResource = xiiTypedResourceHandle<ResourceType>(GetResource<ResourceType>(sResourceID, true));
   }
 
-  if (hLoadingFallback.IsValid())
+  if (hResource.IsValid() && hLoadingFallback.IsValid())
   {
     hResource.m_pResource->SetLoadingFallbackResource(hLoadingFallback);
   }
@@ -39,18 +39,9 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringV
 template <typename ResourceType>
 xiiTypedResourceHandle<ResourceType> xiiResourceManager::GetExistingResource(xiiStringView sResourceID)
 {
-  xiiResource* pResource = nullptr;
-
-  const xiiTempHashedString sResourceHash(sResourceID);
-
-  XII_LOCK(s_ResourceMutex);
-
-  const xiiRTTI* pRtti = FindResourceTypeOverride(xiiGetStaticRTTI<ResourceType>(), sResourceID);
-
-  if (GetLoadedResources()[pRtti].m_Resources.TryGetValue(sResourceHash, pResource))
-    return xiiTypedResourceHandle<ResourceType>((ResourceType*)pResource);
-
-  return xiiTypedResourceHandle<ResourceType>();
+  xiiTypedResourceHandle<ResourceType> handle;
+  handle.AssignFromTypelessHandle(GetExistingResourceByType(xiiGetStaticRTTI<ResourceType>(), sResourceID));
+  return handle;
 }
 
 template <typename ResourceType, typename DescriptorType>
@@ -63,6 +54,8 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::CreateResource(xiiStrin
   XII_LOCK(s_ResourceMutex);
 
   xiiTypedResourceHandle<ResourceType> hResource(GetResource<ResourceType>(sResourceID, false));
+  if (!hResource.IsValid())
+    return hResource;
 
   ResourceType* pResource = BeginAcquireResource(hResource, xiiResourceAcquireMode::PointerOnly);
   pResource->SetResourceDescription(sResourceDescription);

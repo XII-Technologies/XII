@@ -736,6 +736,9 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
     xiiUuid          guid;
     xiiStringBuilder sGuid;
 
+    XII_TEST_BOOL(!xiiConversionUtils::IsStringUuid("{ 0000000G-0000-0000-0000-000000000000 }"));
+    XII_TEST_BOOL(!xiiConversionUtils::IsStringUuid("{ 00000000-0000-0000-0000-00000000000! }"));
+    XII_TEST_BOOL(xiiConversionUtils::IsStringUuid("{ ABCDEF00-1234-abcd-ABCD-0123456789ab }"));
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
       guid = xiiUuid::MakeUuid();

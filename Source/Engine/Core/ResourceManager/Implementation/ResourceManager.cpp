@@ -688,12 +688,31 @@ void xiiResourceManager::OnCoreShutdown()
   s_pState.Clear();
 }
 
+xiiResult xiiResourceManager::ResolveResourceID(xiiStringView sResourceID, xiiStringBuilder& out_sCanonicalID)
+{
+  XII_ASSERT_DEV(s_ResourceMutex.IsLocked(), "Resource lookup requires the resource mutex.");
+  if (const auto* named = s_pState->m_NamedResources.GetValue(xiiTempHashedString(sResourceID)))
+    sResourceID = named->GetView();
+  const auto status = xiiFileSystem::ResolveAssetIdentifier(sResourceID, out_sCanonicalID);
+  if (status.Failed())
+  {
+    xiiLog::Error("Cannot resolve resource '{}': {}", sResourceID, status.GetMessageString());
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
+}
+
 xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView sResourceID, bool bIsReloadable)
 {
   if (sResourceID.IsEmpty())
     return nullptr;
 
   XII_ASSERT_DEV(s_ResourceMutex.IsLocked(), "Calling code must lock the mutex until the resource pointer is stored in a handle");
+
+  xiiStringBuilder canonicalID;
+  if (ResolveResourceID(sResourceID, canonicalID).Failed())
+    return nullptr;
+  sResourceID = canonicalID;
 
   // redirect requested type to override type, if available
   pRtti = FindResourceTypeOverride(pRtti, sResourceID);
@@ -709,13 +728,6 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
   XII_ASSERT_DEBUG(pRtti->GetAllocator() != nullptr && pRtti->GetAllocator()->CanAllocate(), "There is no RTTI allocator available for the given resource type '{0}'", XII_PP_STRINGIFY(ResourceType));
 
   xiiTempHashedString sHashedResourceID(sResourceID);
-
-  xiiHashedString* pRedirection;
-  if (s_pState->m_NamedResources.TryGetValue(sHashedResourceID, pRedirection))
-  {
-    sHashedResourceID = *pRedirection;
-    sResourceID       = pRedirection->GetView();
-  }
 
   LoadedResources& lr = s_pState->m_LoadedResources[pRtti];
 
@@ -806,9 +818,12 @@ xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceByType(const xi
 {
   xiiResource* pResource = nullptr;
 
-  const xiiTempHashedString sResourceHash(sResourceID);
-
   XII_LOCK(s_ResourceMutex);
+  xiiStringBuilder canonicalID;
+  if (ResolveResourceID(sResourceID, canonicalID).Failed())
+    return xiiTypelessResourceHandle();
+  sResourceID = canonicalID;
+  const xiiTempHashedString sResourceHash(sResourceID);
 
   const xiiRTTI* pRtti = FindResourceTypeOverride(pResourceType, sResourceID);
 

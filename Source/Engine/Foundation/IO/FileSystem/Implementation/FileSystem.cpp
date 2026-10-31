@@ -8,6 +8,7 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/Implementation/StringIterator.h>
 #include <Foundation/Strings/StringView.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, FileSystem)
@@ -779,18 +780,99 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& ref_sResult, xi
   return XII_FAILURE;
 }
 
-bool xiiFileSystem::ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection)
+xiiStatus xiiFileSystem::ResolveAssetIdentifier(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sIdentifier)
 {
+  // Copy before touching the output: callers may normalize a string in place.
+  const xiiString  reference(sPathOrAssetGuid);
+  xiiStringBuilder path(reference);
+  out_sIdentifier.Clear();
+  if (xiiConversionUtils::IsStringUuid(path))
+  {
+    xiiConversionUtils::ToString(xiiConversionUtils::ConvertStringToUuid(path), out_sIdentifier);
+    return XII_SUCCESS;
+  }
+  const bool rooted = reference.IsRootedPath();
+  const auto root   = rooted ? reference.GetRootedPathRootName() : xiiStringView();
+  if (rooted)
+  {
+    xiiStringView relative(root.GetEndPointer(), reference.GetView().GetEndPointer());
+    relative.Trim("/");
+    path = relative;
+  }
+  path.MakeCleanPath();
+  if (rooted && (path == ".." || path.StartsWith("../") || path.IsAbsolutePath()))
+    return xiiStatus(xiiFmt("Rooted asset reference '{}' escapes data directory '{}'.", reference, root));
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
-
-  for (auto& dd : s_pData->m_DataDirectories)
+  xiiStringBuilder match, firstPath;
+  auto             consider = [&](const xiiDataDirectoryInfo& dd, xiiStringView relative) -> xiiStatus {
+    xiiStringBuilder guid;
+    if (!dd.m_pDataDirType->ResolveAssetIdentifier(relative, guid))
+      return XII_SUCCESS;
+    // Even equal GUIDs in different physical data directories are duplicate registrations.
+    xiiStringBuilder absolute(dd.m_pDataDirType->GetRedirectedDataDirectoryPath());
+    absolute.AppendPath(relative);
+    absolute.MakeCleanPath();
+    if (!match.IsEmpty() && !firstPath.IsEqual(absolute))
+      return xiiStatus(xiiFmt("Ambiguous asset reference '{}': '{}' and '{}'. Use an absolute or :Root/path reference.", sPathOrAssetGuid, firstPath, absolute));
+    match     = guid;
+    firstPath = absolute;
+    return XII_SUCCESS;
+  };
+  for (const auto& dd : s_pData->m_DataDirectories)
   {
-    if (dd.m_pDataDirType->ResolveAssetRedirection(sPathOrAssetGuid, out_sRedirection))
+    if (rooted)
+    {
+      if (!root.IsEqual_NoCase(dd.m_sRootName))
+        continue;
+      XII_SUCCEED_OR_RETURN(consider(dd, path));
+    }
+    else if (path.IsAbsolutePath())
+    {
+      xiiStringBuilder directory(dd.m_pDataDirType->GetRedirectedDataDirectoryPath());
+      if (!directory.IsEmpty() && path.IsPathBelowFolder(directory))
+      {
+        xiiStringBuilder relative(path);
+        relative.MakeRelativeTo(directory).AssertSuccess();
+        XII_SUCCEED_OR_RETURN(consider(dd, relative));
+      }
+    }
+    else
+    {
+      XII_SUCCEED_OR_RETURN(consider(dd, path));
+      // Parent-relative editor paths include the data directory's folder name.
+      xiiStringBuilder directory(dd.m_pDataDirType->GetRedirectedDataDirectoryPath());
+      directory.Trim("/");
+      xiiStringBuilder prefix(directory.GetFileNameAndExtension(), "/");
+      if (path.StartsWith(prefix))
+      {
+        const xiiStringView relative(path.GetData() + prefix.GetElementCount(), path.GetView().GetEndPointer());
+        XII_SUCCEED_OR_RETURN(consider(dd, relative));
+      }
+    }
+  }
+  out_sIdentifier = match.IsEmpty() ? reference.GetView() : match.GetView();
+  return XII_SUCCESS;
+}
+
+bool xiiFileSystem::ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection)
+{
+  xiiStringBuilder identifier;
+  if (ResolveAssetIdentifier(sPathOrAssetGuid, identifier).Failed())
+  {
+    out_sRedirection.Clear();
+    return false;
+  }
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
+  XII_LOCK(s_pData->m_FsMutex);
+  // Match the filesystem's mount precedence for resource-type selection and file loading.
+  for (xiiUInt32 i = s_pData->m_DataDirectories.GetCount(); i > 0; --i)
+  {
+    const auto& dd = s_pData->m_DataDirectories[i - 1];
+    if (dd.m_pDataDirType->ResolveAssetRedirection(identifier, out_sRedirection))
       return true;
   }
-
-  out_sRedirection = sPathOrAssetGuid;
+  out_sRedirection = identifier;
   return false;
 }
 

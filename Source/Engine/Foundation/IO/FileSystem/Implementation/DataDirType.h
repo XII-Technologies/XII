@@ -111,6 +111,14 @@ protected:
     return false;
   }
 
+  /// Looks up an authored path in this data directory's asset table without redirecting ordinary file reads.
+  virtual bool ResolveAssetIdentifier(xiiStringView sPath, xiiStringBuilder& out_sGuid)
+  {
+    XII_IGNORE_UNUSED(sPath);
+    XII_IGNORE_UNUSED(out_sGuid);
+    return false;
+  }
+
 protected:
   friend class xiiDataDirectoryReaderWriterBase;
 
