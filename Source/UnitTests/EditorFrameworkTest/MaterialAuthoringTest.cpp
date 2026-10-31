@@ -12,10 +12,19 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
+#include <GuiFoundation/Action/EditActions.h>
+#include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
+#include <GuiFoundation/NodeEditor/CommentBlock.h>
+#include <GuiFoundation/NodeEditor/NodeScene.moc.h>
+#include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <QApplication>
+#include <QClipboard>
 #include <QComboBox>
+#include <QKeyEvent>
+#include <QMimeData>
+#include <QTimer>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
@@ -131,7 +140,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
     auto* pattern = xiiDynamicCast<xiiMaterialAssetDocument*>(editor->OpenDocument(copy, xiiDocumentFlags::None));
     if (!XII_TEST_BOOL(pattern != nullptr))
       return;
-    XII_SCOPE_EXIT(pattern->GetDocumentManager()->CloseDocument(pattern));
+    XII_SCOPE_EXIT(pattern->GetDocumentManager()->CloseDocument(pattern); xiiOSFile::DeleteFile(copy).IgnoreResult());
     const auto id          = pattern->GetGuid();
     auto*      nodes       = static_cast<xiiVisualShaderNodeManager*>(pattern->GetObjectManager());
     xiiUInt32  connections = 0;
@@ -308,6 +317,62 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
     XII_TEST_STATUS(document->CompileShader());
     XII_TEST_STATUS(document->GetCommandHistory()->Undo());
     XII_TEST_STRING(generate(), source);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Material graph block clipboard uses production document shortcuts")
+  {
+    auto* window = xiiQtDocumentWindow::FindWindowByDocument(document);
+    auto* view   = window ? window->findChild<xiiQtNodeView*>() : nullptr;
+    if (!XII_TEST_BOOL(view != nullptr))
+      return;
+    auto* clipboard         = QApplication::clipboard();
+    auto* previousClipboard = new QMimeData;
+    if (const auto* previous = clipboard->mimeData())
+      for (const auto& format : previous->formats())
+        previousClipboard->setData(format, previous->data(format));
+    XII_SCOPE_EXIT(clipboard->setMimeData(previousClipboard));
+    window->EnsureVisible();
+    window->window()->activateWindow();
+    window->window()->raise();
+    QApplication::processEvents();
+    view->setFocus();
+    QApplication::processEvents();
+    XII_TEST_BOOL(QApplication::focusWidget() == view || view->isAncestorOf(QApplication::focusWidget()));
+    auto*            scene = view->GetScene();
+    xiiActionContext context(document);
+    context.m_pWindow          = window;
+    auto                 copy  = xiiQtProxy::GetProxy(context, xiiEditActions::s_hCopy);
+    auto                 paste = xiiQtProxy::GetProxy(context, xiiEditActions::s_hPaste);
+    xiiGraphCommentBlock block;
+    block.m_Id    = xiiUuid::MakeUuid();
+    block.m_sText = "Material clipboard block";
+    XII_TEST_STATUS(scene->SetCommentBlock(block));
+    scene->clearSelection();
+    for (auto* item : scene->items())
+      if (item->type() == xiiQtNodeScene::CommentBlock)
+        item->setSelected(true);
+    QEventLoop pendingSelection;
+    QTimer::singleShot(5, &pendingSelection, &QEventLoop::quit);
+    pendingSelection.exec();
+    XII_TEST_BOOL(scene->HasSelectedCommentBlocks());
+    XII_TEST_BOOL(static_cast<xiiEditAction*>(copy->GetAction())->IsEnabled());
+    for (const auto key : {Qt::Key_C, Qt::Key_V})
+    {
+      QKeyEvent shortcutOverride(QEvent::ShortcutOverride, key, Qt::ControlModifier);
+      XII_TEST_BOOL(xiiQtProxy::TriggerDocumentAction(document, &shortcutOverride, true));
+      QKeyEvent press(QEvent::KeyPress, key, Qt::ControlModifier);
+      XII_TEST_BOOL(xiiQtProxy::TriggerDocumentAction(document, &press, false));
+      if (key == Qt::Key_C)
+        XII_TEST_BOOL(clipboard->mimeData()->data("application/xiiEditor.NodeGraph").contains("Graph::CommentBlock"));
+    }
+    XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 2);
+    XII_TEST_STRING(generate(), source);
+    if (manager->GetCommentBlocks().GetCount() == 2)
+    {
+      XII_TEST_STATUS(document->GetCommandHistory()->Undo());
+      XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 1);
+    }
+    XII_TEST_STATUS(document->GetCommandHistory()->Undo());
+    XII_TEST_BOOL(manager->GetCommentBlocks().IsEmpty());
   }
   accessor->StartTransaction("Return to standard authoring");
   XII_TEST_STATUS(accessor->SetValueByName(document->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::Native)));

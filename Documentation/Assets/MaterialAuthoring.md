@@ -90,8 +90,14 @@ fully contained nodes in one undo step, or resize with its bottom-right handle.
 The block menu edits its text/color, fits its bounds to contained nodes,
 duplicates it, or removes it. Blocks persist with stable IDs and validated bounds
 in graph layout metadata and do not affect shader compilation. Block duplication
-copies the annotation; it does not duplicate its contained nodes. Clipboard
-copy/paste of blocks is not implemented.
+copies the annotation; it does not duplicate its contained nodes. Normal Copy
+and Paste actions include selected blocks, including block-only selections.
+Selecting nodes with blocks copies their connections and attached notes as well.
+Pastes assign fresh block IDs and preserve text, color, size, and relative layout
+in one undo step. Regular paste places the group at the graph cursor; Paste at
+Original Location retains its coordinates. Cross-document pasting uses the
+document's existing graph MIME format. Unselected contained nodes are not copied
+implicitly.
 
 The built-in Pattern material now extracts the red channel explicitly before its
 scalar roughness operation. This repairs the connection rejected by typed pin
@@ -231,9 +237,16 @@ trips, material-constant buffer reflection/offsets and exact stage masks, cache
 reuse, and malformed-constant source locations. Organizational blocks are tested
 through actual scene mouse dispatch for drag/resize, one-step grouped undo,
 atomic movement rejection, fit/duplication/deletion, and bounds save/reopen. The
-final run passed 21 EditorDocuments tests, three NodeLayout tests, ShaderCompiler,
+final rendering run passed 21 EditorDocuments tests, three NodeLayout tests, ShaderCompiler,
 the expanded MaterialAuthoring workflow, and all 52 Vulkan EditorViews tests.
 Node-comment and organizational-block captures were visually inspected.
+Clipboard follow-up validation passed 22 EditorDocuments tests, three NodeLayout
+tests, and the full MaterialAuthoring workflow. It covers actual Qt clipboard
+data and actions, block-only/multi-block/mixed cross-document pastes, fresh IDs,
+shared offsets, original-position paste, undo/redo, malformed-payload rejection,
+save/reopen, and real material-window Ctrl+C/Ctrl+V action proxies. The material
+test also processes the delayed Inspector fallback and checks that annotation
+selection and generated shader source remain unchanged.
 Selected Vulkan permutations of
 all seven migrated built-in material shaders and `ReflectionFilteredSpecular`
 compiled. The existing `SeparatedBilateralBlur` source has an unavailable
