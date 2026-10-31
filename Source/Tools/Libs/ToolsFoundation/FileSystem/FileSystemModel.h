@@ -9,6 +9,7 @@
 #  include <Foundation/Application/Config/FileSystemConfig.h>
 #  include <Foundation/Configuration/Singleton.h>
 #  include <Foundation/Threading/LockedObject.h>
+#  include <Foundation/Types/Status.h>
 #  include <Foundation/Types/UniquePtr.h>
 #  include <ToolsFoundation/FileSystem/DataDirPath.h>
 #  include <ToolsFoundation/FileSystem/Declarations.h>
@@ -121,6 +122,11 @@ public:
   /// \param stat Contains the current state of the file in the model if found.
   /// \return Returns XII_SUCCESS if the file was found.
   xiiResult FindFile(xiiStringView sPath, xiiFileStatus& out_stat) const;
+
+  /// Resolves a normalized absolute, rooted, data-directory-relative or data-directory-parent-relative
+  /// path in the model. Relative paths must identify one file across all configured directories.
+  /// Ambiguous and missing paths fail without selecting an arbitrary directory. Outputs are cleared on failure.
+  xiiStatus ResolveFilePath(xiiStringView sPath, xiiDataDirPath& out_path, xiiFileStatus* out_pStatus = nullptr) const;
 
   /// Searches for the first file in the model that satisfies the given visitor function.
   /// \param visitor Called for every file in the model. If this functions returns true, the search is canceled and the function returns XII_SUCCESS.

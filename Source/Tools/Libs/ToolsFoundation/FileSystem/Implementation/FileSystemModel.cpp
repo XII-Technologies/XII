@@ -247,50 +247,75 @@ void xiiFileSystemModel::CheckFileSystem()
 
 xiiResult xiiFileSystemModel::FindFile(xiiStringView sPath, xiiFileStatus& out_stat) const
 {
-  if (!m_bInitialized)
-    return XII_FAILURE;
+  xiiDataDirPath path;
+  return ResolveFilePath(sPath, path, &out_stat).GetResult();
+}
 
-  XII_LOCK(m_FilesMutex);
-  xiiFileSystemModel::FilesMap::ConstIterator it;
-  if (xiiPathUtils::IsAbsolutePath(sPath))
+xiiStatus xiiFileSystemModel::ResolveFilePath(xiiStringView sPath, xiiDataDirPath& out_path, xiiFileStatus* out_pStatus) const
+{
+  out_path.Clear();
+  if (out_pStatus != nullptr)
+    *out_pStatus = {};
+  if (!m_bInitialized || sPath.IsEmpty())
+    return xiiStatus("No file path or initialized file model was supplied.");
+
+  const bool       rooted = sPath.IsRootedPath();
+  const xiiString  root(rooted ? sPath.GetRootedPathRootName() : xiiStringView());
+  xiiStringBuilder path(sPath);
+  if (rooted)
   {
-    it = m_ReferencedFiles.Find(sPath);
+    xiiStringView relative(root.GetElementCount() + sPath.GetStartPointer() + 1, sPath.GetEndPointer());
+    relative.Trim("/");
+    path = relative;
+  }
+  path.MakeCleanPath();
+  if (rooted && (path == ".." || path.StartsWith("../") || path.IsAbsolutePath()))
+    return xiiStatus(xiiFmt("Rooted file reference '{}' escapes data directory '{}'.", sPath, root));
+  XII_LOCK(m_FilesMutex);
+  FilesMap::ConstIterator match;
+  auto                    consider = [&](xiiStringView candidate) -> xiiStatus {
+    const auto it = m_ReferencedFiles.Find(candidate);
+    if (!it.IsValid())
+      return XII_SUCCESS;
+    if (match.IsValid() && match.Key() != it.Key().GetAbsolutePath())
+      return xiiStatus(xiiFmt("Ambiguous file reference '{}': '{}' and '{}'. Use a GUID, absolute path or :Root/path.", sPath, match.Key(), it.Key()));
+    match = it;
+    return XII_SUCCESS;
+  };
+
+  if (path.IsAbsolutePath())
+  {
+    XII_SUCCEED_OR_RETURN(consider(path));
   }
   else
   {
-    // Data dir parent relative?
-    for (const auto& dd : m_FileSystemConfig.m_DataDirs)
+    for (xiiUInt32 i = 0; i < m_DataDirRoots.GetCount(); ++i)
     {
-      xiiStringBuilder sDataDir;
-      xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sDataDir).AssertSuccess();
-      sDataDir.PathParentDirectory();
-      sDataDir.AppendPath(sPath);
-      it = m_ReferencedFiles.Find(sDataDir);
-      if (it.IsValid())
-        break;
-    }
-
-    if (!it.IsValid())
-    {
-      // Data dir relative?
-      for (const auto& dd : m_FileSystemConfig.m_DataDirs)
+      if (m_DataDirRoots[i].IsEmpty() || (rooted && !root.IsEqual_NoCase(m_FileSystemConfig.m_DataDirs[i].m_sRootName)))
+        continue;
+      xiiStringBuilder candidate(m_DataDirRoots[i]);
+      candidate.AppendPath(path);
+      candidate.MakeCleanPath();
+      // A relative reference may not escape the selected data directory.
+      if (candidate.IsPathBelowFolder(m_DataDirRoots[i]))
+        XII_SUCCEED_OR_RETURN(consider(candidate));
+      if (!rooted)
       {
-        xiiStringBuilder sDataDir;
-        xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sDataDir).AssertSuccess();
-        sDataDir.AppendPath(sPath);
-        it = m_ReferencedFiles.Find(sDataDir);
-        if (it.IsValid())
-          break;
+        candidate = m_DataDirRoots[i];
+        candidate.PathParentDirectory();
+        candidate.AppendPath(path);
+        candidate.MakeCleanPath();
+        if (candidate.IsPathBelowFolder(m_DataDirRoots[i]))
+          XII_SUCCEED_OR_RETURN(consider(candidate));
       }
     }
   }
-
-  if (it.IsValid())
-  {
-    out_stat = it.Value();
-    return XII_SUCCESS;
-  }
-  return XII_FAILURE;
+  if (!match.IsValid())
+    return xiiStatus(xiiFmt("File reference '{}' was not found in the configured data directories.", sPath));
+  out_path = match.Key();
+  if (out_pStatus != nullptr)
+    *out_pStatus = match.Value();
+  return XII_SUCCESS;
 }
 
 
