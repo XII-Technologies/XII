@@ -59,14 +59,20 @@ widths. It elides within the symmetric free caption area, yielding to controls
 when there is no central space. The full accessible label and tooltip remain
 available without changing text or size hints during resizing.
 
-The embedded top-level menu bar paints an opaque window-palette background
-into its widget backing store before the standard Qt menu-item paint pass.
-This isolates hover selection repaints from transparent caption background
-propagation while preserving QMenuBar's interaction, accessibility, keyboard
-navigation and overflow. Dropdown menus retain their normal Qt painting.
+The repeated-popup hover regression originates in `xiiQtMenuProxy::Update()`,
+which runs on `QMenu::aboutToShow`. An unconditional `setIcon()` sends
+`ActionChanged` even for an unchanged icon. Qt's menu-bar geometry update then
+clears its current action, so a subsequent mouse move over the same entry hides
+and reopens its popup. Compare cached icon identities before assigning and
+compute the final enumeration title before publishing it. Unchanged metadata
+now leaves the active popup intact; genuine metadata changes still propagate.
+The menu bar retains its standard Qt event and paint implementation. An earlier
+opaque-paint workaround was removed because it did not address this loop.
 
 Qt implementation references: [native flags and expanded-area hit testing](https://github.com/qt/qtbase/blob/v6.11.0/src/plugins/platforms/windows/qwindowswindow.cpp),
 [system movement API](https://doc.qt.io/qt-6/qwindow.html#startSystemMove).
+Menu-state references: [QAction icon assignment](https://github.com/qt/qtbase/blob/6.11/src/gui/kernel/qaction.cpp),
+[menu-bar geometry and current-action handling](https://github.com/qt/qtbase/blob/v6.11.0/src/widgets/widgets/qmenubar.cpp).
 
 ## Regression coverage
 

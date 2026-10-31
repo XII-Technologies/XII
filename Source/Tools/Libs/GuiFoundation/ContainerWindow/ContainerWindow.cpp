@@ -19,7 +19,6 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
-#include <QPaintEvent>
 #include <QPainter>
 #include <QSettings>
 #include <QShortcut>
@@ -47,28 +46,6 @@ bool                  xiiQtContainerWindow::s_bForceClose      = false;
 
 namespace
 {
-  class TitleBarMenuBar final : public QMenuBar
-  {
-  public:
-    explicit TitleBarMenuBar(QWidget* pParent) : QMenuBar(pParent)
-    {
-      setAttribute(Qt::WA_OpaquePaintEvent);
-    }
-
-  protected:
-    void paintEvent(QPaintEvent* pEvent) override
-    {
-      // Paint the complete dirty region in the widget backing store before Qt
-      // draws menu items. Hover must not expose or repaint the caption beneath
-      // transparent items between selection changes.
-      {
-        QPainter painter(this);
-        painter.fillRect(pEvent->rect(), palette().window());
-      }
-      QMenuBar::paintEvent(pEvent);
-    }
-  };
-
   class ProjectTitleLabel final : public QLabel
   {
   public:
@@ -196,7 +173,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   pBrand->setFont(brandFont);
   pBrand->setAttribute(Qt::WA_TransparentForMouseEvents);
   pShellLayout->addWidget(pBrand);
-  m_pDocumentMenu = new TitleBarMenuBar(pShell);
+  m_pDocumentMenu = new QMenuBar(pShell);
   m_pDocumentMenu->setNativeMenuBar(false);
   m_pDocumentMenu->setObjectName(QStringLiteral("EditorDocumentMenu"));
   m_pDocumentMenu->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
