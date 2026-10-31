@@ -68,7 +68,7 @@ xiiSettings* xiiEditorSettings::QuerySettings(const xiiRTTI* pRtti, const xiiDoc
   }
 
   const auto* pScope = pRtti->GetAttributeByType<xiiSettingsScopeAttribute>();
-  if (pScope != nullptr && (pScope->GetScope() < xiiSettingsScope::Application || pScope->GetScope() > xiiSettingsScope::Document || (pScope->GetScope() == xiiSettingsScope::Document) != (pDocument != nullptr) || (pScope->GetScope() != xiiSettingsScope::Application && !xiiToolsProject::IsProjectOpen())))
+  if (pScope != nullptr && (pScope->GetScope() < xiiSettingsScope::Application || pScope->GetScope() > xiiSettingsScope::Document || (pScope->GetScope() == xiiSettingsScope::Document) != (pDocument != nullptr) || (pScope->GetScope() != xiiSettingsScope::Application && xiiToolsProject::GetSingleton() == nullptr)))
     return nullptr;
 
   if (auto itDocument = s_Settings.Find(pDocument); itDocument.IsValid())
@@ -95,7 +95,7 @@ xiiSettings* xiiEditorSettings::QuerySettings(const xiiRTTI* pRtti, const xiiDoc
 
   if (entry.m_sName.IsEmpty() || xiiPathUtils::ContainsInvalidFilenameChars(entry.m_sName) ||
       (entry.m_Domain == Domain::Document) != (pDocument != nullptr) ||
-      (entry.m_Domain != Domain::Application && !xiiToolsProject::IsProjectOpen()) ||
+      (entry.m_Domain != Domain::Application && xiiToolsProject::GetSingleton() == nullptr) ||
       (pScope != nullptr && pScope->GetScope() != static_cast<xiiInt32>(entry.m_Domain)))
   {
     pRtti->GetAllocator()->Deallocate(entry.m_pSettings);
@@ -252,7 +252,7 @@ void xiiEditorSettings::GatherSettings(xiiDynamicArray<Settings>& out_settings, 
   xiiDynamicArray<const xiiRTTI*> types;
   for (xiiInt32 iScope = xiiSettingsScope::Application; iScope <= xiiSettingsScope::Document; ++iScope)
   {
-    if (iScope != xiiSettingsScope::Application && !xiiToolsProject::IsProjectOpen())
+    if (iScope != xiiSettingsScope::Application && xiiToolsProject::GetSingleton() == nullptr)
       continue;
     if (iScope == xiiSettingsScope::Document && pDocument == nullptr)
       continue;

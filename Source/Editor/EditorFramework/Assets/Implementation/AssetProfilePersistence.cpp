@@ -12,6 +12,7 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
+#include <ToolsFoundation/Project/ToolsProject.h>
 
 namespace
 {
@@ -73,7 +74,7 @@ xiiResult xiiAssetCurator::SaveAssetProfiles()
   xiiMemoryStreamWriter         stream(&storage);
   WriteDefinitions(stream, m_AssetProfiles.GetArrayPtr());
   xiiFileWriter file;
-  XII_SUCCEED_OR_RETURN(file.Open(":project/Editor/AssetProfiles.ddl"));
+  XII_SUCCEED_OR_RETURN(file.Open(xiiStringBuilder(":project/", xiiToolsProject::GetSingleton()->GetManifest().m_sAssetProfiles)));
   XII_SUCCEED_OR_RETURN(storage.CopyToStream(file));
   return file.Flush();
 }
@@ -168,11 +169,22 @@ xiiStatus xiiAssetCurator::ApplyAssetProfiles(xiiArrayPtr<const xiiPlatformProfi
       addFile(relative, false);
   }
   // Install the authoritative definitions last, after all runtime files are ready.
-  auto& definitionFile = addFile("Editor/AssetProfiles.ddl", true);
+  auto& definitionFile = addFile(xiiToolsProject::GetSingleton()->GetManifest().m_sAssetProfiles, true);
   {
     xiiFileWriter file;
     if (file.Open(definitionFile.m_Staged).Failed() || definitions.CopyToStream(file).Failed() || file.Flush().Failed())
       return xiiStatus(xiiFmt("Could not write profile definitions '{}'.", definitionFile.m_Target));
+  }
+
+  // Active selection is project configuration. Stage it with the profile definitions so
+  // renaming/deleting profiles cannot leave the manifest pointing at a removed profile.
+  auto manifest                  = xiiToolsProject::GetSingleton()->GetManifest();
+  manifest.m_sActiveAssetProfile = profiles[uiActiveProfile]->GetConfigName();
+  auto& manifestFile             = addFile("xiiProject", true);
+  {
+    xiiFileWriter file;
+    if (file.Open(manifestFile.m_Staged).Failed() || manifest.Write(file).Failed() || file.Flush().Failed())
+      return xiiStatus("Could not stage the project's active asset profile.");
   }
 
   auto*      processor        = xiiAssetProcessor::GetSingleton();
@@ -196,6 +208,8 @@ xiiStatus xiiAssetCurator::ApplyAssetProfiles(xiiArrayPtr<const xiiPlatformProfi
       file.m_bInstalled = true;
     }
   }
+  if (xiiToolsProject::GetSingleton()->SaveManifest(manifest).Failed())
+    return RollBack(files, "xiiProject");
   PublishAssetProfiles(profiles, hash, uiActiveProfile);
   for (const auto& file : files)
     if (file.m_bBackedUp && xiiOSFile::DeleteFile(file.m_Backup).Failed())

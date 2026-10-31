@@ -42,6 +42,8 @@ void xiiGameApplicationBase::ExecuteInitFunctions()
   Init_LoadRequiredPlugins();
   Init_ConfigureAssetManagement();
   Init_FileSystem_ConfigureDataDirs();
+  if (WasQuitRequested())
+    return;
   Init_LoadWorldModuleConfig();
   Init_LoadProjectPlugins();
   Init_PlatformProfile_LoadForRuntime();

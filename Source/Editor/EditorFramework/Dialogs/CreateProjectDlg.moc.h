@@ -1,10 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#pragma once
+
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorFramework/EditorApp/Configuration/Plugins.h>
 #include <EditorFramework/ui_CreateProjectDlg.h>
 #include <Foundation/Strings/String.h>
+#include <Foundation/Types/Status.h>
 #include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtCreateProjectDlg : public QDialog, public Ui_xiiQtCreateProjectDlg
@@ -27,10 +30,10 @@ private Q_SLOTS:
   void on_Next_clicked();
 
 private:
-  void UpdateUI();
-  void FindProjectTemplates(xiiDynamicArray<xiiString>& out_Projects);
-  void FillProjectTemplatesList();
-  void CreateProject();
+  void      UpdateUI();
+  void      FindProjectTemplates(xiiDynamicArray<xiiString>& out_Projects);
+  void      FillProjectTemplatesList();
+  xiiStatus CreateProject();
 
   enum class State
   {

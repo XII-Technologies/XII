@@ -6,6 +6,7 @@
 #include <EditorFramework/Assets/AssetTableWriter.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Algorithm/HashingUtils.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OpenDdlReader.h>
@@ -13,6 +14,7 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <ToolsFoundation/Project/ToolsProject.h>
 
 const xiiPlatformProfile* xiiAssetCurator::GetDevelopmentAssetProfile() const
 {
@@ -114,6 +116,16 @@ void xiiAssetCurator::SetActiveAssetProfileByIndex(xiiUInt32 uiIndex, bool bForc
 
   XII_LOG_BLOCK("Switch Active Asset Platform", m_AssetProfiles[uiIndex]->GetConfigName());
 
+  if (xiiToolsProject::IsProjectOpen() && !xiiStartup::HasApplicationTag("editorprocessor"))
+  {
+    auto manifest = xiiToolsProject::GetSingleton()->GetManifest();
+    if (manifest.m_sActiveAssetProfile != m_AssetProfiles[uiIndex]->GetConfigName())
+    {
+      manifest.m_sActiveAssetProfile = m_AssetProfiles[uiIndex]->GetConfigName();
+      if (xiiToolsProject::GetSingleton()->SaveManifest(manifest).LogFailure())
+        return;
+    }
+  }
   m_uiActiveAssetProfile = uiIndex;
 
   CheckFileSystem();
@@ -152,7 +164,7 @@ xiiResult xiiAssetCurator::ReloadAssetProfiles()
   XII_LOG_BLOCK("ReloadAssetProfiles", ":project/Editor/AssetProfiles.ddl");
 
   xiiFileReader file;
-  if (file.Open(":project/Editor/AssetProfiles.ddl").Failed())
+  if (file.Open(xiiStringBuilder(":project/", xiiToolsProject::GetSingleton()->GetManifest().m_sAssetProfiles)).Failed())
     return XII_FAILURE;
 
   if (file.GetFileSize() > xiiMath::MaxValue<xiiUInt32>())

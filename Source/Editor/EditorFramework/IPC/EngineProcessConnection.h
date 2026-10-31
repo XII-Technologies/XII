@@ -96,6 +96,7 @@ private:
   bool                   m_bProcessShouldBeRunning;
   bool                   m_bProcessCrashed;
   bool                   m_bClientIsConfigured;
+  xiiString              m_sInitializationFailure;
   bool                   m_bHardwareRayTracing     = false;
   xiiEventSubscriptionID m_TickEventSubscriptionID = 0;
   xiiUInt32              m_uiRedrawCountSent       = 0;

@@ -29,7 +29,7 @@ void xiiQtEditorApp::AssetProcessorEventHandler(const xiiAssetProcessorEvent& e)
     return;
   const auto progress = e.m_Progress;
   QMetaObject::invokeMethod(this, [this, progress]() {
-    if (!m_bIsRunning || !xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
+    if (!xiiToolsProject::IsProjectGenerationCurrent(progress.m_uiProjectGeneration) || !m_bIsRunning || !xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
       return;
     if (xiiAssetCurator::GetSingleton()->WriteAssetTables().Failed())
       xiiLog::Error("Failed to publish asset lookup tables after background transformation.");
@@ -282,9 +282,20 @@ bool ContainsPlugin(const xiiDynamicArray<xiiApplicationPluginConfig::PluginConf
   return false;
 }
 
-xiiResult xiiQtEditorApp::AddBundlesInOrder(xiiDynamicArray<xiiApplicationPluginConfig::PluginConfig>& order, const xiiPluginBundleSet& bundles, const xiiString& start, bool bEditor, bool bEditorEngine, bool bRuntime) const
+xiiResult xiiQtEditorApp::AddBundlesInOrder(xiiDynamicArray<xiiApplicationPluginConfig::PluginConfig>& order, const xiiPluginBundleSet& bundles, const xiiString& start, bool bEditor, bool bEditorEngine, bool bRuntime, xiiDynamicArray<xiiString>* pDependencyStack) const
 {
-  const xiiPluginBundle& bundle = bundles.m_Plugins.Find(start).Value();
+  xiiDynamicArray<xiiString> stack;
+  if (pDependencyStack == nullptr)
+    pDependencyStack = &stack;
+  const auto found = bundles.m_Plugins.Find(start);
+  if (!found.IsValid() || found.Value().m_bMissing || pDependencyStack->Contains(start))
+  {
+    xiiLog::Error("Required plugin bundle '{}' is missing or contains a dependency cycle.", start);
+    return XII_FAILURE;
+  }
+  pDependencyStack->PushBack(start);
+  XII_SCOPE_EXIT(pDependencyStack->PopBack());
+  const xiiPluginBundle& bundle = found.Value();
 
   for (const xiiString& req : bundle.m_RequiredBundles)
   {
@@ -296,7 +307,7 @@ xiiResult xiiQtEditorApp::AddBundlesInOrder(xiiDynamicArray<xiiApplicationPlugin
       return XII_FAILURE;
     }
 
-    XII_SUCCEED_OR_RETURN(AddBundlesInOrder(order, bundles, req, bEditor, bEditorEngine, bRuntime));
+    XII_SUCCEED_OR_RETURN(AddBundlesInOrder(order, bundles, req, bEditor, bEditorEngine, bRuntime, pDependencyStack));
   }
 
   if (bRuntime)
@@ -540,32 +551,51 @@ bool xiiQtEditorApp::ExistsPluginSelectionStateDDL(const char* szProjectDir /*= 
   if (path.EndsWith_NoCase("/xiiProject"))
     path.PathParentDirectory();
 
-  path.AppendPath("Editor/PluginSelection.ddl");
+  xiiProjectManifest manifest;
+  if (xiiToolsProject::GetSingleton() && (path == ":project" || path == xiiToolsProject::GetSingleton()->GetProjectDirectory()))
+    manifest = xiiToolsProject::GetSingleton()->GetManifest();
+  else
+  {
+    const xiiStringBuilder projectFile(path, "/xiiProject");
+    if (xiiOSFile::ExistsFile(projectFile))
+      manifest.Load(projectFile).LogFailure();
+  }
+  path.AppendPath(manifest.m_sPluginSelection);
 
   return xiiOSFile::ExistsFile(path);
 }
 
-void xiiQtEditorApp::WritePluginSelectionStateDDL(const char* szProjectDir /*= ":project"*/)
+xiiStatus xiiQtEditorApp::WritePluginSelectionStateDDL(const char* szProjectDir /*= ":project"*/)
 {
   if (m_StartupFlags.IsAnySet(StartupFlags::Background | StartupFlags::Headless | StartupFlags::UnitTest))
-    return;
+    return XII_SUCCESS;
 
-  xiiStringBuilder path = szProjectDir;
-  path.AppendPath("Editor/PluginSelection.ddl");
+  xiiStringBuilder   path = szProjectDir;
+  xiiProjectManifest manifest;
+  if (xiiToolsProject::GetSingleton() && (path == ":project" || path == xiiToolsProject::GetSingleton()->GetProjectDirectory()))
+    manifest = xiiToolsProject::GetSingleton()->GetManifest();
+  else
+  {
+    const xiiStringBuilder projectFile(path, "/xiiProject");
+    if (xiiOSFile::ExistsFile(projectFile))
+      XII_SUCCEED_OR_RETURN(manifest.Load(projectFile));
+  }
+  path.AppendPath(manifest.m_sPluginSelection);
 
   xiiFileWriter file;
-  file.Open(path).AssertSuccess();
+  XII_SUCCEED_OR_RETURN(file.Open(path));
 
   xiiOpenDdlWriter ddl;
   ddl.SetOutputStream(&file);
 
   m_PluginBundles.WriteStateToDDL(ddl);
+  return file.Flush();
 }
 
-void xiiQtEditorApp::CreatePluginSelectionDDL(const char* szProjectFile, const char* szTemplate)
+xiiStatus xiiQtEditorApp::CreatePluginSelectionDDL(const char* szProjectFile, const char* szTemplate)
 {
   if (m_StartupFlags.IsAnySet(StartupFlags::Background | StartupFlags::Headless | StartupFlags::UnitTest))
-    return;
+    return XII_SUCCESS;
 
   xiiStringBuilder sPath = szProjectFile;
   sPath.PathParentDirectory();
@@ -577,14 +607,20 @@ void xiiQtEditorApp::CreatePluginSelectionDDL(const char* szProjectFile, const c
     bundle.m_bSelected = bundle.m_EnabledInTemplates.Contains(szTemplate);
   }
 
-  WritePluginSelectionStateDDL(sPath);
+  return WritePluginSelectionStateDDL(sPath);
 }
 
-void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
+xiiStatus xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
 {
   xiiStringBuilder sPath = szProjectFile;
   sPath.PathParentDirectory();
-  sPath.AppendPath("Editor/PluginSelection.ddl");
+  xiiProjectManifest     manifest;
+  const xiiStringBuilder projectFile(sPath, "/xiiProject");
+  if (xiiOSFile::ExistsFile(projectFile))
+    XII_SUCCEED_OR_RETURN(manifest.Load(projectFile));
+  sPath.AppendPath(manifest.m_sPluginSelection);
+  for (auto& entry : m_PluginBundles.m_Plugins)
+    entry.Value().m_bSelected = false;
 
   xiiFileReader file;
   if (file.Open(sPath).Succeeded())
@@ -592,10 +628,35 @@ void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
     xiiOpenDdlReader ddl;
     if (ddl.ParseDocument(file).Failed())
     {
-      xiiLog::Error("Syntax error in plugin bundle file '{}'", sPath);
+      return xiiStatus(xiiFmt("Syntax error in plugin bundle file '{}'.", sPath));
     }
     else
     {
+      xiiSet<xiiString> ids;
+      for (auto* state = ddl.GetRootElement()->GetFirstChild(); state; state = state->GetSibling())
+      {
+        if (!state->IsCustomType("PluginState"))
+          continue;
+        xiiSet<xiiString> names;
+        for (auto* field = state->GetFirstChild(); field; field = field->GetSibling())
+        {
+          const auto name = field->GetName();
+          if (!field->HasName() || names.Contains(name))
+            return xiiStatus("Plugin selection fields must have unique names.");
+          names.Insert(name);
+          if ((name == "ID" || name == "Selected" || name == "LoadCopy") &&
+              (field->GetNumPrimitives() != 1 || field->GetPrimitivesType() != (name == "ID" ? xiiOpenDdlPrimitiveType::String : xiiOpenDdlPrimitiveType::Bool)))
+            return xiiStatus("Plugin selection ID requires one string; Selected and LoadCopy require one bool.");
+        }
+        const auto* id = state->FindChildOfType(xiiOpenDdlPrimitiveType::String, "ID");
+        if (!id || id->GetPrimitivesString()[0].IsEmpty())
+          return xiiStatus("Plugin selection requires a nonempty bundle ID.");
+        xiiStringBuilder key(id->GetPrimitivesString()[0]);
+        key.ToLower();
+        if (ids.Contains(key))
+          return xiiStatus("Plugin selection contains duplicate bundle IDs.");
+        ids.Insert(key);
+      }
       auto pState = ddl.GetRootElement()->FindChildOfType("PluginState");
       while (pState)
       {
@@ -623,6 +684,8 @@ void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
     }
   }
 
+  if (!file.IsOpen() && xiiOSFile::ExistsFile(sPath))
+    return xiiStatus(xiiFmt("Could not read project plugin selection '{}'.", sPath));
   xiiDynamicArray<xiiApplicationPluginConfig::PluginConfig> order;
 
   // first all the mandatory bundles
@@ -635,7 +698,7 @@ void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
     {
       xiiQtUiServices::MessageBoxWarning("The mandatory plugin bundles have non-existing dependencies. Please make sure all plugins are properly built and the xiiPluginBundle files correctly reference each other.");
 
-      return;
+      return xiiStatus("Project plugin bundles have missing dependencies.");
     }
   }
 
@@ -649,7 +712,7 @@ void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
     {
       xiiQtUiServices::MessageBoxWarning("The plugin bundles have non-existing dependencies. Please make sure all plugins are properly built and the xiiPluginBundle files correctly reference each other.");
 
-      return;
+      return xiiStatus("Project plugin bundles have missing dependencies.");
     }
   }
 
@@ -676,8 +739,9 @@ void xiiQtEditorApp::LoadPluginBundleDlls(const char* szProjectFile)
       s.AppendFormat(" '{0}' \n", it.Key());
     }
 
-    xiiQtUiServices::MessageBoxWarning(s);
+    return xiiStatus(s.GetView());
   }
+  return XII_SUCCESS;
 }
 
 void xiiQtEditorApp::LaunchEditor(const char* szProject, bool bCreate)

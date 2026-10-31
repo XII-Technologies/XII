@@ -108,9 +108,12 @@ xiiAssetCurator::~xiiAssetCurator()
   XII_ASSERT_DEBUG(m_KnownAssets.IsEmpty(), "Need to call Deinitialize before curator is deleted.");
 }
 
-void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
+xiiStatus xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
 {
   XII_PROFILE_SCOPE("StartInitialize");
+  if (m_bInitialized || m_InitializeCuratorTaskID.IsValid())
+    return xiiStatus("Asset curator is already initialized.");
+  m_bReady = false;
 
   {
     XII_LOG_BLOCK("SetupAssetProfiles");
@@ -118,15 +121,32 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
     SetupDefaultAssetProfiles();
     if (ReloadAssetProfiles().Failed())
     {
-      xiiLog::Warning("Asset profiles file does not exist or contains invalid data. Setting up default profiles.");
-      if (!xiiStartup::HasApplicationTag("editorprocessor") && !xiiFileSystem::ExistsFile(":project/Editor/AssetProfiles.ddl"))
+      const xiiStringBuilder profiles(":project/", xiiToolsProject::GetSingleton()->GetManifest().m_sAssetProfiles);
+      if (xiiFileSystem::ExistsFile(profiles))
+      {
+        ClearAssetProfiles();
+        return xiiStatus(xiiFmt("Asset profile configuration '{}' is invalid. Repair it before opening this project.", profiles));
+      }
+      xiiLog::Info("Setting up default asset profiles.");
+      if (!xiiStartup::HasApplicationTag("editorprocessor") && !xiiFileSystem::ExistsFile(profiles))
       {
         if (SaveAssetProfiles().Failed() || SaveRuntimeProfiles().Failed())
-          xiiLog::Error("Could not save the initial asset profile configuration.");
+        {
+          ClearAssetProfiles();
+          return xiiStatus("Could not save the initial asset profile configuration.");
+        }
       }
     }
   }
 
+  const auto profileIndex = FindAssetProfileByName(xiiToolsProject::GetSingleton()->GetManifest().m_sActiveAssetProfile);
+  if (profileIndex == xiiInvalidIndex)
+  {
+    ClearAssetProfiles();
+    return xiiStatus("The manifest references an unknown active asset profile.");
+  }
+  m_uiActiveAssetProfile = profileIndex;
+  m_bInitialized         = true;
   BuildFileExtensionSet(m_ValidAssetExtensions);
 
   m_bRunUpdateTask   = true;
@@ -183,28 +203,23 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
     e.m_Type = xiiAssetCuratorEvent::Type::ActivePlatformChanged;
     m_Events.Broadcast(e);
   }
+  return XII_SUCCESS;
 }
 
-void xiiAssetCurator::WaitForInitialize()
+xiiStatus xiiAssetCurator::WaitForInitialize()
 {
   XII_PROFILE_SCOPE("WaitForInitialize");
-  const auto* pEditor = xiiQtEditorApp::GetSingleton();
-  if (pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsBackgroundMode() && !pEditor->IsInUnitTestMode())
-  {
-    QEventLoop loop;
-    const auto finished = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::FileAccessHighPriority, [&loop](xiiTaskGroupID) {
-      QMetaObject::invokeMethod(&loop, "quit", Qt::QueuedConnection);
-    });
-    xiiTaskSystem::AddTaskGroupDependency(finished, m_InitializeCuratorTaskID);
-    xiiTaskSystem::StartTaskGroup(finished);
-    loop.exec(QEventLoop::ExcludeUserInputEvents);
-    xiiTaskSystem::WaitForGroup(finished);
-  }
+  if (!m_bInitialized)
+    return xiiStatus("Asset curator initialization has not started.");
+  if (m_bReady)
+    return XII_SUCCESS;
+  // Do not pump a nested Qt event loop while this task owns the project filesystem.
+  // Project close/switch is serialized on this thread and joins all curator tasks.
   xiiTaskSystem::WaitForGroup(m_InitializeCuratorTaskID);
   m_InitializeCuratorTaskID.Invalidate();
 
   XII_LOCK(m_CuratorMutex);
-  ProcessAllCoreAssets();
+  m_bReady = true;
   // Broadcast reset.
   {
     xiiAssetCuratorEvent e;
@@ -212,15 +227,23 @@ void xiiAssetCurator::WaitForInitialize()
     e.m_Type  = xiiAssetCuratorEvent::Type::AssetListReset;
     m_Events.Broadcast(e);
   }
+  return XII_SUCCESS;
 }
 
 void xiiAssetCurator::Deinitialize()
 {
   XII_PROFILE_SCOPE("Deinitialize");
+  m_bReady = false;
+  if (!m_bInitialized)
+    return;
+  if (m_InitializeCuratorTaskID.IsValid())
+    xiiTaskSystem::WaitForGroup(m_InitializeCuratorTaskID);
+  m_InitializeCuratorTaskID.Invalidate();
 
   WaitForFileSystemCheck();
   ShutdownUpdateTask();
-  xiiAssetProcessor::GetSingleton()->StopProcessTask(true);
+  xiiAssetProcessor::GetSingleton()->StopProcessTask(true, true);
+  xiiAssetProcessor::GetSingleton()->m_DeferredImports.Clear();
   xiiFileSystemModel*            pFiles = xiiFileSystemModel::GetSingleton();
   xiiFileSystemModel::FilesMap   referencedFiles;
   xiiFileSystemModel::FoldersMap referencedFolders;
@@ -261,11 +284,15 @@ void xiiAssetCurator::Deinitialize()
   }
 
   ClearAssetProfiles();
+  m_bInitialized = false;
+  m_ValidAssetExtensions.Clear();
 }
 
 void xiiAssetCurator::MainThreadTick(bool bTopLevel)
 {
   CURATOR_PROFILE("MainThreadTick");
+  if (!IsReady() || !xiiToolsProject::IsProjectOpen())
+    return;
 
   static std::atomic<bool> bReentry = false;
   if (bReentry)
@@ -431,6 +458,8 @@ void xiiAssetCurator::StoreFullTransformDate()
 xiiStatus xiiAssetCurator::TransformAllAssets(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
 {
   XII_PROFILE_SCOPE("TransformAllAssets");
+  if (!IsReady() || !xiiToolsProject::IsProjectOpen())
+    return xiiStatus("Project asset indexing is not ready for transformation.");
 
   xiiDynamicArray<xiiUuid> assets;
   {
@@ -500,6 +529,8 @@ xiiTransformStatus xiiAssetCurator::TransformAsset(xiiStringView sPathOrGuid, xi
 
 xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
 {
+  if (!IsReady() || !xiiToolsProject::IsProjectOpen())
+    return xiiTransformStatus("Project asset indexing is not ready for transformation.");
   xiiTransformStatus                    res;
   xiiStringBuilder                      sAbsPath;
   xiiStopwatch                          timer;
@@ -1499,11 +1530,15 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
   }
 }
 
-void xiiAssetCurator::ProcessAllCoreAssets()
+xiiStatus xiiAssetCurator::TransformCoreAssets()
 {
-  XII_PROFILE_SCOPE("ProcessAllCoreAssets");
+  XII_PROFILE_SCOPE("TransformCoreAssets");
+  if (!IsReady() || !xiiToolsProject::IsProjectOpen())
+    return xiiStatus("Core transformation requires a ready project and curator.");
   if (xiiQtUiServices::IsHeadless())
-    return;
+    return XII_SUCCESS;
+
+  xiiUInt32 failures = 0;
 
   // The 'Core Assets' are always transformed for the PC platform,
   // as they are needed to run the editor properly
@@ -1541,7 +1576,10 @@ void xiiAssetCurator::ProcessAllCoreAssets()
               {
                 resReferences = ProcessAsset(pInfo, pAssetProfile, xiiTransformFlags::TriggeredManually);
                 if (resReferences.Failed())
-                  break;
+                {
+                  ++failures;
+                  xiiLog::Error("Core asset transformation failed for '{}': {}. Retry from Asset Curator after repairing its inputs.", ref, resReferences.m_sMessage);
+                }
               }
             }
           }
@@ -1549,6 +1587,9 @@ void xiiAssetCurator::ProcessAllCoreAssets()
       }
     }
   }
+  if (failures > 0)
+    return xiiStatus(xiiFmt("{} core asset transformations failed; the indexed project remains available for recovery.", failures));
+  return XII_SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1927,7 +1968,7 @@ void xiiAssetCurator::ClearAssetCaches(xiiAssetDocumentManager::OutputReliabilit
 
   xiiAssetCurator::CheckFileSystem();
 
-  xiiAssetCurator::ProcessAllCoreAssets();
+  xiiAssetCurator::TransformCoreAssets().LogFailure();
 
   if (bRestartAutomatic)
   {

@@ -9,9 +9,11 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Time/Timestamp.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GameEngine/Configuration/InputConfig.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GuiFoundation/Dialogs/ModifiedDocumentsDlg.moc.h>
 #include <GuiFoundation/UIServices/DynamicStringEnum.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
@@ -20,7 +22,10 @@ void UpdateInputDynamicEnumValues();
 
 void xiiQtEditorApp::CloseProject()
 {
-  QMetaObject::invokeMethod(this, "SlotQueuedCloseProject", Qt::ConnectionType::QueuedConnection);
+  const auto generation = xiiToolsProject::GetProjectGeneration();
+  QMetaObject::invokeMethod(this, [this, generation]() {
+    if (!m_bLoadingProjectInProgress && !IsProgressBarProcessingEvents() && xiiToolsProject::IsProjectGenerationCurrent(generation))
+      SlotQueuedCloseProject(); }, Qt::QueuedConnection);
 }
 
 void xiiQtEditorApp::SlotQueuedCloseProject()
@@ -28,6 +33,7 @@ void xiiQtEditorApp::SlotQueuedCloseProject()
   // purge the image loading queue when a project is closed, but keep the existing cache
   xiiQtImageCache::GetSingleton()->StopRequestProcessing(false);
 
+  xiiToolsProject::SaveProjectState();
   xiiToolsProject::CloseProject();
 
   // enable image loading again, the queue is purged now
@@ -42,7 +48,11 @@ xiiResult xiiQtEditorApp::OpenProject(const char* szProject, bool bImmediate /*=
   }
   else
   {
-    QMetaObject::invokeMethod(this, "SlotQueuedOpenProject", Qt::ConnectionType::QueuedConnection, Q_ARG(QString, szProject));
+    const auto    generation = xiiToolsProject::GetProjectGeneration();
+    const QString project    = QString::fromUtf8(szProject);
+    QMetaObject::invokeMethod(this, [this, generation, project]() {
+      if (generation == xiiToolsProject::GetProjectGeneration() && !m_bLoadingProjectInProgress)
+        SlotQueuedOpenProject(project); }, Qt::QueuedConnection);
     return XII_SUCCESS;
   }
 }
@@ -52,12 +62,14 @@ void xiiQtEditorApp::SlotQueuedOpenProject(QString sProject)
   // Don't try to execute a queued project open if we have already shutdown the editor.
   if (m_bIsRunning)
   {
-    CreateOrOpenProject(false, sProject.toUtf8().data()).IgnoreResult();
+    xiiStatus(CreateOrOpenProject(false, sProject.toUtf8().data())).LogFailure();
   }
 }
 
 xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0)
 {
+  if (IsProgressBarProcessingEvents() || m_bLoadingProjectInProgress || (xiiToolsProject::GetSingleton() && !xiiToolsProject::IsProjectOpen()))
+    return XII_FAILURE;
   UpdateStartupProgress(bCreate ? QStringLiteral("Creating project") : QStringLiteral("Opening project"), xiiMakeQString(sFile0));
   // A project opened during startup shares the application's splash lifetime.
   XII_SCOPE_EXIT(if (!m_bStartupInProgress) CloseSplashScreen());
@@ -117,19 +129,48 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     return XII_FAILURE;
   }
 
+  xiiProjectManifest manifest;
+  if (bCreate)
+    manifest.Initialize(sProjectFile);
+  else
+  {
+    const auto status = manifest.Load(sProjectFile);
+    if (status.Failed())
+    {
+      xiiQtUiServices::MessageBoxStatus(status, "Invalid project manifest.");
+      return XII_FAILURE;
+    }
+  }
   if (!xiiToolsProject::CanCloseProject())
     return XII_FAILURE;
+  xiiToolsProject::SaveProjectState();
 
+  // Resolve the selected configuration before deciding whether loaded editor modules can be reused.
+  if (!ExistsPluginSelectionStateDDL(sProjectFile) && CreatePluginSelectionDDL(sProjectFile, "General3D").LogFailure())
+    return XII_FAILURE;
+  const xiiStringBuilder selection(sProjectFile.GetFileDirectory(), manifest.m_sPluginSelection);
+  xiiUInt64              selectionHash = 0;
+  if (xiiOSFile::ExistsFile(selection))
+  {
+    xiiFileReader file;
+    if (file.Open(selection).Failed())
+      return XII_FAILURE;
+    xiiContiguousMemoryStreamStorage contents;
+    contents.ReadAll(file);
+    selectionHash = xiiHashingUtils::xxHash64(contents.GetData(), contents.GetStorageSize64());
+  }
+  const xiiStringBuilder cppConfiguration(sProjectFile.GetFileDirectory(), manifest.m_sCppSettings);
+  if (xiiOSFile::ExistsFile(cppConfiguration))
+  {
+    // Identically named project-local DLLs from different projects are still different modules.
+    selectionHash = xiiHashingUtils::xxHash64String(sProjectFile, selectionHash);
+  }
   xiiToolsProject::CloseProject();
-
-  // create default plugin selection
-  if (!ExistsPluginSelectionStateDDL(sProjectFile))
-    CreatePluginSelectionDDL(sProjectFile, "General3D");
 
   xiiStatus res(XII_SUCCESS);
   if (bCreate)
   {
-    if (m_bAnyProjectOpened)
+    if (m_bAnyProjectOpened && m_uiPluginSelectionHash != selectionHash)
     {
       // if we opened any project before, spawn a new editor instance and open the project there
       // this way, a different set of editor plugins can be loaded
@@ -140,17 +181,23 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     }
     else
     {
-      // once we start loading any plugins, we can't reuse the same instance again for another project
+      // Projects with the same editor module selection can reuse this Editor instance.
       m_bAnyProjectOpened = true;
 
-      LoadPluginBundleDlls(sProjectFile);
+      const auto pluginStatus = LoadPluginBundleDlls(sProjectFile);
+      if (pluginStatus.Failed())
+      {
+        xiiQtUiServices::MessageBoxStatus(pluginStatus, "Project plugin initialization failed.");
+        return XII_FAILURE;
+      }
+      m_uiPluginSelectionHash = selectionHash;
 
       res = xiiToolsProject::CreateProject(sProjectFile);
     }
   }
   else
   {
-    if (m_bAnyProjectOpened)
+    if (m_bAnyProjectOpened && m_uiPluginSelectionHash != selectionHash)
     {
       // if we opened any project before, spawn a new editor instance and open the project there
       // this way, a different set of editor plugins can be loaded
@@ -161,7 +208,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     }
     else
     {
-      // once we start loading any plugins, we can't reuse the same instance again for another project
+      // Projects with the same editor module selection can reuse this Editor instance.
       m_bAnyProjectOpened = true;
 
       xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
@@ -179,7 +226,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
         sProjectDir.PathParentDirectory();
 
         xiiStringBuilder sSettingsFile = sProjectDir;
-        sSettingsFile.AppendPath("Editor/CppProject.ddl");
+        sSettingsFile.AppendPath(manifest.m_sCppSettings);
 
         // first attempt to load project specific plugin bundles
         xiiCppSettings cppSettings;
@@ -189,7 +236,13 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
         }
 
         // now load the plugin DLLs
-        LoadPluginBundleDlls(sProjectFile);
+        const auto pluginStatus = LoadPluginBundleDlls(sProjectFile);
+        if (pluginStatus.Failed())
+        {
+          xiiQtUiServices::MessageBoxStatus(pluginStatus, "Project plugin initialization failed.");
+          return XII_FAILURE;
+        }
+        m_uiPluginSelectionHash = selectionHash;
       }
 
       UpdateStartupProgress(QStringLiteral("Opening project"), xiiMakeQString(sProjectFile));
@@ -204,6 +257,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     xiiStringBuilder s;
     s.SetFormat("Failed to open project:\n'{0}'", sProjectFile);
 
+    xiiQtUiServices::ShowGlobalStatusBarMessage(xiiFmt("Project initialization failed: {}", res.GetMessageString()));
     xiiQtUiServices::MessageBoxStatus(res, s);
     return XII_FAILURE;
   }
@@ -250,7 +304,14 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
 
       if (allDocs.GetFileList().IsEmpty())
       {
-        OpenDemoDocument();
+        const auto& defaultScene = xiiToolsProject::GetSingleton()->GetManifest().m_sDefaultScene;
+        if (!defaultScene.IsEmpty())
+        {
+          const xiiStringBuilder scene(xiiToolsProject::GetSingleton()->GetProjectDirectory(), "/", defaultScene);
+          SlotQueuedOpenDocument(xiiMakeQString(scene), nullptr);
+        }
+        else
+          OpenDemoDocument();
       }
     }
 
@@ -262,10 +323,62 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
   return XII_SUCCESS;
 }
 
+xiiStatus xiiQtEditorApp::InitializeProject()
+{
+  xiiDynamicStringEnum::s_RequestUnknownCallback = xiiMakeDelegate(&xiiQtEditorApp::OnDemandDynamicStringEnumLoad, this);
+  xiiQtUiServices::ShowGlobalStatusBarMessage("Loading project configuration...");
+  UpdateStartupProgress(QStringLiteral("Loading project configuration"));
+  LoadProjectPreferences();
+  XII_SUCCEED_OR_RETURN(SetupDataDirectories());
+  ReadTagRegistry();
+  UpdateInputDynamicEnumValues();
+
+  // add project specific translations
+  // (these are currently never removed)
+  {
+    m_pTranslatorFromFiles->AddTranslationFilesFromFolder(":project/Editor/Localization/en");
+  }
+
+  // tell the engine process which file system and plugin configuration to use
+  xiiEditorEngineProcessConnection::GetSingleton()->SetFileSystemConfig(m_FileSystemConfig);
+  xiiEditorEngineProcessConnection::GetSingleton()->SetPluginConfig(GetRuntimePluginConfig(true));
+
+  UpdateStartupProgress(QStringLiteral("Registering project asset types"), QStringLiteral("Loading asset profiles and cached file metadata"));
+  XII_SUCCEED_OR_RETURN(xiiAssetCurator::GetSingleton()->StartInitialize(m_FileSystemConfig));
+  UpdateStartupProgress(QStringLiteral("Initializing the rendering process"), QStringLiteral("Loading project plugins and configuring the engine"));
+  if (xiiEditorEngineProcessConnection::GetSingleton()->RestartProcess().Failed())
+  {
+    XII_PROFILE_SCOPE("ErrorLog");
+    if (!m_bStartupQuitRequested)
+    {
+      xiiLog::Error("The rendering process failed to start. Asset indexing and transformation remain available; restart the rendering process to recover.");
+      if (m_bStartupInProgress && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::Background | StartupFlags::UnitTest))
+      {
+        xiiQtUiServices::MessageBoxWarning("The rendering process could not start. Asset operations remain available. See the Editor log and restart the rendering process to recover.");
+      }
+    }
+  }
+  xiiQtUiServices::ShowGlobalStatusBarMessage("Indexing project assets...");
+  UpdateStartupProgress(QStringLiteral("Indexing project assets"), QStringLiteral("Checking files and resolving asset metadata"));
+  XII_SUCCEED_OR_RETURN(xiiAssetCurator::GetSingleton()->WaitForInitialize());
+
+  return XII_SUCCESS;
+}
+
 void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
 {
   switch (r.m_Type)
   {
+    case xiiToolsProjectEvent::Type::ProjectOpening:
+      if (r.m_pInitializationStatus && r.m_pInitializationStatus->Succeeded())
+        *r.m_pInitializationStatus = InitializeProject();
+      break;
+
+    case xiiToolsProjectEvent::Type::ProjectOpenFailed:
+      xiiLog::Error("Project initialization failed: {}", r.m_pInitializationStatus->GetMessageString());
+      xiiQtUiServices::ShowGlobalStatusBarMessage(xiiFmt("Project initialization failed: {}", r.m_pInitializationStatus->GetMessageString()));
+      break;
+
     case xiiToolsProjectEvent::Type::ProjectCreated:
       SetupNewProject();
       m_bSavePreferencesAfterOpenProject = true;
@@ -274,41 +387,37 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
     case xiiToolsProjectEvent::Type::ProjectOpened:
     {
       XII_PROFILE_SCOPE("ProjectOpened");
-      xiiDynamicStringEnum::s_RequestUnknownCallback = xiiMakeDelegate(&xiiQtEditorApp::OnDemandDynamicStringEnumLoad, this);
-      UpdateStartupProgress(QStringLiteral("Loading project configuration"));
-      LoadProjectPreferences();
-      SetupDataDirectories();
-      ReadTagRegistry();
-      UpdateInputDynamicEnumValues();
-
-      // add project specific translations
-      // (these are currently never removed)
+      auto* curator           = xiiAssetCurator::GetSingleton();
+      bool  editorAssetsReady = !curator->TransformCoreAssets().LogFailure();
+      if (!IsInHeadlessMode() && !xiiQtUiServices::IsHeadless())
       {
-        m_pTranslatorFromFiles->AddTranslationFilesFromFolder(":project/Editor/Localization/en");
-      }
-
-      // tell the engine process which file system and plugin configuration to use
-      xiiEditorEngineProcessConnection::GetSingleton()->SetFileSystemConfig(m_FileSystemConfig);
-      xiiEditorEngineProcessConnection::GetSingleton()->SetPluginConfig(GetRuntimePluginConfig(true));
-
-      UpdateStartupProgress(QStringLiteral("Registering project asset types"), QStringLiteral("Loading asset profiles and cached file metadata"));
-      xiiAssetCurator::GetSingleton()->StartInitialize(m_FileSystemConfig);
-      UpdateStartupProgress(QStringLiteral("Initializing the rendering process"), QStringLiteral("Loading project plugins and configuring the engine"));
-      if (xiiEditorEngineProcessConnection::GetSingleton()->RestartProcess().Failed())
-      {
-        XII_PROFILE_SCOPE("ErrorLog");
-        if (!m_bStartupQuitRequested)
+        // These are Editor rendering prerequisites, not general project/file-system policy.
+        // Core collections do not necessarily include the Editor's own viewport pipeline.
+        const auto*     pipelineConfig = curator->GetActiveAssetProfile()->GetTypeConfig<xiiRenderPipelineProfileConfig>();
+        const xiiString references[]   = {xiiRenderPipelineProfileConfig::s_szEditorPipeline,
+                                        pipelineConfig ? pipelineConfig->GetResourceReference() : xiiStringView()};
+        for (const auto& reference : references)
         {
-          xiiLog::Error("Failed to start the engine process. Project loading incomplete.");
-          if (m_bStartupInProgress && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::Background | StartupFlags::UnitTest))
+          if (reference.IsEmpty())
+            continue;
+          const auto status = curator->TransformAsset(reference, xiiTransformFlags::TriggeredManually);
+          if (status.Failed())
           {
-            xiiQtUiServices::MessageBoxWarning("The rendering process could not start. Project loading is incomplete. See the Editor log for details.");
+            editorAssetsReady = false;
+            xiiLog::Error("Editor rendering prerequisite '{}' could not transform: {}. Repair its inputs and retry the transformation.", reference, status.m_sMessage);
           }
         }
+        if (curator->WriteAssetTables(nullptr, true).Failed())
+        {
+          editorAssetsReady = false;
+          xiiLog::Error("Could not publish asset lookup tables for Editor rendering prerequisites.");
+        }
       }
-      UpdateStartupProgress(QStringLiteral("Indexing project assets"), QStringLiteral("Checking files and resolving asset metadata"));
-      xiiAssetCurator::GetSingleton()->WaitForInitialize();
-
+      xiiLog::Info("Project '{}' is ready for asset operations.", r.m_pProject->GetManifest().m_sName);
+      if (editorAssetsReady && xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup())
+        xiiQtUiServices::ShowGlobalStatusBarMessage(xiiFmt("Project ready: {}", r.m_pProject->GetManifest().m_sName));
+      else
+        xiiQtUiServices::ShowGlobalStatusBarMessage("Project ready for assets; rendering initialization is degraded. See the log, retry failed assets, or restart the rendering process.");
       m_sLastDocumentFolder = xiiToolsProject::GetSingleton()->GetProjectFile();
       m_sLastProjectFolder  = xiiToolsProject::GetSingleton()->GetProjectFile();
 
@@ -343,7 +452,6 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
               This project has <a href='https://xiiengine.net/pages/docs/custom-code/cpp/cpp-project-generation.html'>a dedicated C++ plugin</a> with custom code.<br><br>\
               The compiler set in the preferences does not appear to work, as a result the plugin cannot be compiled <br><br><b>Error:</b> {}</html>",
                                                       compilerStatus.GetMessageString().GetView()));
-            break;
           }
           else if (xiiCppProject::IsBuildRequired())
           {
@@ -352,10 +460,8 @@ Explanation: This project has <a href='https://xiiengine.net/pages/docs/custom-c
 It is advised to compile the plugin now, but you can also do so later.</html>",
                                                                      QMessageBox::StandardButton::Apply | QMessageBox::StandardButton::Ignore, QMessageBox::StandardButton::Apply);
 
-            if (clicked == QMessageBox::StandardButton::Ignore)
-              break;
-
-            QTimer::singleShot(1000, this, [this]() { xiiCppProject::EnsureCppPluginReady().IgnoreResult(); });
+            if (clicked == QMessageBox::StandardButton::Apply && xiiCppProject::EnsureCppPluginReady().Failed())
+              xiiLog::Error("Project C++ plugin build failed. Rebuild it from the Project menu and retry failed asset transformations.");
           }
         }
 
@@ -364,7 +470,7 @@ It is advised to compile the plugin now, but you can also do so later.</html>",
 
         if (pPreferences->m_bBackgroundAssetProcessing)
         {
-          QTimer::singleShot(2000, this, [this]() { xiiAssetProcessor::GetSingleton()->StartProcessTask(); });
+          xiiAssetProcessor::GetSingleton()->StartProcessTask();
         }
         else if (!lastTransform.IsValid() || (xiiTimestamp::CurrentTimestamp() - lastTransform).GetHours() > 5 * 24)
         {
@@ -374,12 +480,11 @@ Explanation: For assets to work properly, they must be <a href='https://xiiengin
 
           if (clicked == QMessageBox::StandardButton::Ignore)
           {
-            xiiAssetCurator::GetSingleton()->StoreFullTransformDate();
             break;
           }
 
           // check whether the project needs to be transformed
-          QTimer::singleShot(2000, this, [this]() { xiiAssetProcessor::GetSingleton()->QueueTransformAllAssets().LogFailure(); });
+          xiiAssetProcessor::GetSingleton()->QueueTransformAllAssets().LogFailure();
         }
       }
 
@@ -399,6 +504,8 @@ Explanation: For assets to work properly, they must be <a href='https://xiiengin
 
     case xiiToolsProjectEvent::Type::ProjectClosing:
     {
+      // Stop admission and join workers while the project, profiles and documents still exist.
+      xiiAssetProcessor::GetSingleton()->StopProcessTask(true, true);
       xiiShutdownProcessMsgToEngine msg;
       xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
       break;

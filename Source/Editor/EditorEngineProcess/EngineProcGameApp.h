@@ -76,6 +76,7 @@ private:
 
   virtual xiiString FindProjectDirectory() const override;
 
+  xiiString                               m_sInitializationFailure;
   xiiString                               m_sProjectDirectory;
   xiiApplicationFileSystemConfig          m_CustomFileSystemConfig;
   xiiApplicationPluginConfig              m_CustomPluginConfig;

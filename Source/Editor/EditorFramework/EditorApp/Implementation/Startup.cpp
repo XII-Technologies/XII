@@ -280,7 +280,8 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   QCoreApplication::setApplicationName(xiiMakeQString(xiiApplication::GetApplicationInstance()->GetApplicationName()));
   QCoreApplication::setApplicationVersion(xiiMakeQString(sb));
 
-  m_StartupFlags          = startupFlags;
+  m_StartupFlags = startupFlags;
+  xiiQtUiServices::SetHeadless(IsInHeadlessMode());
   m_bStartupInProgress    = true;
   m_bStartupQuitRequested = false;
   qApp->installEventFilter(this);
@@ -453,7 +454,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   }
   else if (pCmd->GetStringOptionArguments("-newproject") > 0)
   {
-    CreateOrOpenProject(true, pCmd->GetAbsolutePathOption("-newproject")).IgnoreResult();
+    xiiStatus(CreateOrOpenProject(true, pCmd->GetAbsolutePathOption("-newproject"))).LogFailure();
   }
   else if (pCmd->GetStringOptionArguments("-project") > 0)
   {
@@ -462,7 +463,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
       m_DocumentsToOpen.PushBack(pCmd->GetStringOption("-documents", doc));
     }
 
-    CreateOrOpenProject(false, pCmd->GetAbsolutePathOption("-project")).IgnoreResult();
+    xiiStatus(CreateOrOpenProject(false, pCmd->GetAbsolutePathOption("-project"))).LogFailure();
   }
   else if (!IsInHeadlessMode() && opt_CreateProjectDialog.GetOptionValue(xiiCommandLineOption::LogMode::Never))
   {
@@ -476,7 +477,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   {
     if (!m_RecentProjects.GetFileList().IsEmpty())
     {
-      CreateOrOpenProject(false, m_RecentProjects.GetFileList()[0].m_File).IgnoreResult();
+      xiiStatus(CreateOrOpenProject(false, m_RecentProjects.GetFileList()[0].m_File)).LogFailure();
     }
   }
   else if (!IsInHeadlessMode() && !IsInSafeMode())
@@ -529,7 +530,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     pContainer->SetWindowPresentationEnabled(true);
     ShowEditorWindow(pContainer);
   }
-  if (!m_bStartupQuitRequested && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::UnitTest) && !xiiToolsProject::GetSingleton()->IsProjectOpen())
+  if (!m_bStartupQuitRequested && m_StartupFlags.AreNoneSet(StartupFlags::Headless | StartupFlags::UnitTest) && !xiiToolsProject::IsProjectOpen())
   {
     GuiOpenDashboard();
   }

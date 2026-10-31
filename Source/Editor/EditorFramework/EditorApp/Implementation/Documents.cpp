@@ -9,7 +9,11 @@
 
 void xiiQtEditorApp::OpenDocumentQueued(xiiStringView sDocument, const xiiDocumentObject* pOpenContext /*= nullptr*/)
 {
-  QMetaObject::invokeMethod(this, "SlotQueuedOpenDocument", Qt::ConnectionType::QueuedConnection, Q_ARG(QString, xiiMakeQString(sDocument)), Q_ARG(void*, (void*)pOpenContext));
+  const auto    generation = xiiToolsProject::GetProjectGeneration();
+  const QString document   = xiiMakeQString(sDocument);
+  QMetaObject::invokeMethod(this, [this, generation, document, pOpenContext]() {
+    if (generation == xiiToolsProject::GetProjectGeneration() && !m_bLoadingProjectInProgress)
+      SlotQueuedOpenDocument(document, const_cast<xiiDocumentObject*>(pOpenContext)); }, Qt::QueuedConnection);
 }
 
 xiiDocument* xiiQtEditorApp::OpenDocument(xiiStringView sDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext)
@@ -189,6 +193,11 @@ void xiiQtEditorApp::DocumentManagerRequestHandler(xiiDocumentManager::Request& 
 
       if (!xiiToolsProject::IsProjectOpen())
       {
+        if (xiiToolsProject::GetSingleton() != nullptr)
+        {
+          r.m_RequestStatus = xiiStatus("Project initialization is in progress; retry when asset indexing has finished.");
+          return;
+        }
         // if no project is open yet, try to open the corresponding one
 
         xiiStringBuilder sProjectPath = xiiToolsProject::FindProjectDirectoryForDocument(r.m_sDocumentPath);
@@ -205,7 +214,7 @@ void xiiQtEditorApp::DocumentManagerRequestHandler(xiiDocumentManager::Request& 
           sProjectPath.AppendPath("xiiProject");
 
           // if a project could be found, try to open it
-          xiiStatus res = xiiToolsProject::OpenProject(sProjectPath);
+          xiiStatus res = CreateOrOpenProject(false, sProjectPath);
 
           // if project opening failed, relay that error message
           if (res.Failed())
@@ -213,9 +222,13 @@ void xiiQtEditorApp::DocumentManagerRequestHandler(xiiDocumentManager::Request& 
             r.m_RequestStatus = res;
             return;
           }
+          if (!xiiToolsProject::IsProjectOpen())
+          {
+            r.m_RequestStatus = xiiStatus("This project is opening in another Editor instance. Open the document there.");
+            return;
+          }
         }
       }
-      else
       {
         if (!xiiToolsProject::GetSingleton()->IsDocumentInAllowedRoot(r.m_sDocumentPath))
         {

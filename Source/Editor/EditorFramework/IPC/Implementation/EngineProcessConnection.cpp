@@ -33,7 +33,12 @@ xiiEditorEngineProcessConnection::~xiiEditorEngineProcessConnection()
 void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicationChannel::Event& e)
 {
   if (const auto* ready = xiiDynamicCast<const xiiProjectReadyMsgToEditor*>(e.m_pMessage))
-    m_bHardwareRayTracing = ready->m_bHardwareRayTracing;
+  {
+    m_bHardwareRayTracing    = ready->m_bSucceeded && ready->m_bHardwareRayTracing;
+    m_sInitializationFailure = ready->m_bSucceeded ? xiiString() : ready->m_sFailure;
+    if (!ready->m_bSucceeded && m_sInitializationFailure.IsEmpty())
+      m_sInitializationFailure = "Rendering process project initialization failed.";
+  }
   if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiSyncWithProcessMsgToEditor>())
   {
     const xiiSyncWithProcessMsgToEditor* pMsg = static_cast<const xiiSyncWithProcessMsgToEditor*>(e.m_pMessage);
@@ -372,6 +377,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
 
   ShutdownProcess();
 
+  m_sInitializationFailure.Clear();
   Initialize(xiiGetStaticRTTI<xiiSetupProjectMsgToEngine>());
 
   if (m_bProcessCrashed)
@@ -385,7 +391,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
 
   auto*      pEditor             = xiiQtEditorApp::GetSingleton();
   const bool bInteractiveStartup = pEditor->IsStartingUp() && !pEditor->IsInHeadlessMode() && !pEditor->IsBackgroundMode() && !pEditor->IsInUnitTestMode();
-  if ((bInteractiveStartup ? m_IPC.WaitForStartup() : m_IPC.WaitForConnection(xiiTime())).Failed())
+  if ((bInteractiveStartup ? m_IPC.WaitForStartup() : m_IPC.WaitForConnection(xiiTime::MakeFromSeconds(30))).Failed())
   {
     if (!pEditor->WasStartupQuitRequested())
       xiiLog::Error("Engine process did not connect. Engine process output:\n{}", m_IPC.GetStdoutContents());
@@ -407,7 +413,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
 
   xiiLog::Dev("Waiting for Engine Process response");
 
-  if ((bInteractiveStartup ? m_IPC.WaitForStartup(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>()) : WaitForMessage(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>(), xiiTime())).Failed())
+  if ((bInteractiveStartup ? m_IPC.WaitForStartup(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>()) : WaitForMessage(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>(), xiiTime::MakeFromSeconds(60))).Failed())
   {
     if (!pEditor->WasStartupQuitRequested())
       xiiLog::Error("Failed to restart the engine process. Engine Process Output:\n", m_IPC.GetStdoutContents());
@@ -415,6 +421,12 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
     return XII_FAILURE;
   }
 
+  if (!m_sInitializationFailure.IsEmpty())
+  {
+    xiiLog::Error("Rendering process initialization failed: {}", m_sInitializationFailure);
+    ShutdownProcess();
+    return XII_FAILURE;
+  }
   xiiLog::Dev("Transmitting open documents to Engine Process");
 
   xiiHybridArray<xiiAssetDocument*, 6> docs;

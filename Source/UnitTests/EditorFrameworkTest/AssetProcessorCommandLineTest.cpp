@@ -15,7 +15,7 @@ void TestAssetProcessorCommandLine(xiiStringView projectDirectory)
   project.AppendPath("xiiProject");
   preferences.AppendPath("Processor/CommandLinePreferences");
   profilePath.AppendPath("Editor/AssetProfiles.ddl");
-  auto run = [&](xiiStringView profile, xiiStringView error) {
+  auto run = [&](xiiStringView profile, xiiStringView error, xiiInt32 expectedExitCode = 1) {
     xiiProcessOptions options;
     xiiStringBuilder  executable(xiiOSFile::GetApplicationDirectory());
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -40,7 +40,7 @@ void TestAssetProcessorCommandLine(xiiStringView projectDirectory)
     xiiProcess process;
     if (!XII_TEST_RESULT(process.Launch(options)) || !XII_TEST_RESULT(process.WaitToFinish(xiiTime::MakeFromSeconds(30))))
       return false;
-    XII_TEST_INT(process.GetExitCode(), 1);
+    XII_TEST_INT(process.GetExitCode(), expectedExitCode);
     XII_TEST_BOOL_MSG(output.FindSubString(error) != nullptr, "%s", output.GetData());
     return true;
   };
@@ -63,7 +63,7 @@ void TestAssetProcessorCommandLine(xiiStringView projectDirectory)
     if (!XII_TEST_RESULT(file.WriteBytes(invalid.GetData(), invalid.GetElementCount())) || !XII_TEST_RESULT(file.Close()))
       return;
   }
-  if (!run("Default", "Could not reload asset platform configurations"))
+  if (!run("Default", "Asset profile configuration", 2))
     return;
   xiiFileReader file;
   if (!XII_TEST_RESULT(file.Open(profilePath)))
