@@ -20,6 +20,7 @@
 #include <QMouseEvent>
 #include <QScreen>
 #include <QStyleOptionToolButton>
+#include <QToolBar>
 #include <QToolButton>
 #include <QWindow>
 #include <ads/DockManager.h>
