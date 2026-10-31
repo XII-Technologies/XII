@@ -5,7 +5,7 @@
 #include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
 
 /// Canonical texture and normal evaluation shared by deferred and transparent rasterization.
-struct xiiSceneSurfaceSample
+struct xiiMaterialSurface
 {
   float4 BaseColor;
   float3 Emissive;
@@ -13,12 +13,16 @@ struct xiiSceneSurfaceSample
   float  Metallic;
   float  Occlusion;
   float  Transmission;
+  float  Reflectance;
+  float  AlphaCutoff;
+  bool   Unlit;
   float3 Normal;
 };
-xiiSceneSurfaceSample xiiSampleSceneSurface(xiiGpuSurfaceMaterial material, GBufferVertex input, bool isFrontFace)
+xiiMaterialSurface xiiSampleSceneSurface(xiiGpuSurfaceMaterial material, GBufferVertex input, bool isFrontFace, bool applyCoverage = true)
 {
   float4 baseColor = xiiSampleSceneBaseColor(material, input.TexCoord);
-  xiiClipSceneSurface(material, baseColor, isFrontFace, false);
+  if (applyCoverage)
+    xiiClipSceneSurface(material, baseColor, isFrontFace, false);
   float3 emissive     = xiiSampleSceneEmissive(material, input.TexCoord);
   float  roughness    = saturate(material.EmissiveColorAndRoughness.w);
   float  metallic     = saturate(material.SurfaceParameters.x);
@@ -51,13 +55,16 @@ xiiSceneSurfaceSample xiiSampleSceneSurface(xiiGpuSurfaceMaterial material, GBuf
   }
 
 
-  xiiSceneSurfaceSample result;
+  xiiMaterialSurface result;
   result.BaseColor    = baseColor;
   result.Emissive     = emissive;
   result.Roughness    = roughness;
   result.Metallic     = metallic;
   result.Occlusion    = occlusion;
   result.Transmission = transmission;
+  result.Reflectance  = material.SurfaceParameters.y;
+  result.AlphaCutoff  = material.LayerParameters.x;
+  result.Unlit        = material.Metadata.x == 6u || (material.Metadata.y & (1u << 12u)) == 0u;
   result.Normal       = worldNormal;
   return result;
 }

@@ -49,6 +49,17 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   output.WorldTangent = worldTangent;
   output.TangentSign  = localTangent.w * (determinant((float3x3)instance.GlobalTransform) < 0.0f ? -1.0f : 1.0f);
 #endif
+#if defined(XII_SCENE_MATERIAL_ATTRIBUTES)
+  // Native authored surfaces use the canonical packed vertex layout. Validate
+  // optional attributes before reading them, including malformed resident data.
+  if (VertexStride < 60u || vertexBufferBytes - vertexOffset < 60u)
+    return xiiInvalidSceneSurfaceVertex();
+  output.TexCoord1     = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + 48u));
+  const uint color     = g_Buffers[lod.VertexBufferIndex].Load(vertexOffset + 56u);
+  output.Color         = float4(color & 255u, (color >> 8u) & 255u, (color >> 16u) & 255u, color >> 24u) / 255.0f;
+  output.LocalPosition = localPosition;
+  output.InstanceIndex = 0u;
+#endif
   output.TexCoord      = texCoord;
   output.MaterialIndex = instance.MaterialIndex;
 #if defined(XII_SCENE_DIAGNOSTICS)

@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <Shaders/Materials/GpuSurfaceMaterial.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+
 #include <Shaders/Materials/GpuSurfaceSampling.h>
 
 StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;

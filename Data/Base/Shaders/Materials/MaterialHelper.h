@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+#include <Shaders/Common/MaterialGraphUtilities.h>
 
 #include <Shaders/Common/BRDF.h>
 #include <Shaders/Common/Common.h>
@@ -183,27 +184,6 @@ float3 TangentToWorldSpace(float3 normalTS)
 }
 #endif
 
-float3 BlendNormals(float3 baseNormal, float3 detailNormal)
-{
-  float3 t = baseNormal + float3(0, 0, 1);
-  float3 u = detailNormal * float3(-1, -1, 1);
-  return t * dot(t, u) - u * t.z;
-}
-
-float4 SampleTexture3Way(Texture2D tex, SamplerState samplerState, float3 worldNormal, float3 worldPosition, float tiling)
-{
-  float3 blendWeights = abs(worldNormal);
-  blendWeights        = max((blendWeights - 0.2) * 7.0, 0.0);
-  blendWeights /= (blendWeights.x + blendWeights.y + blendWeights.z);
-
-  float3 ns = sign(worldNormal) * tiling;
-
-  float4 color1 = tex.Sample(samplerState, worldPosition.yz * float2(-ns.x, -tiling));
-  float4 color2 = tex.Sample(samplerState, worldPosition.xz * float2(ns.y, -tiling));
-  float4 color3 = tex.Sample(samplerState, worldPosition.xy * float2(ns.z, tiling));
-
-  return color1 * blendWeights.x + color2 * blendWeights.y + color3 * blendWeights.z;
-}
 
 float4 ColorizeGameObjectId(uint gameObjectId)
 {
