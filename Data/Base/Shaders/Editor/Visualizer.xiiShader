@@ -13,33 +13,42 @@ FillMode = FillMode_Wireframe
 CullMode = CullMode_None
 ComparisonDepthFunction = ComparisonFunction_Less
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #define USE_COLOR0
 
 #include <Shaders/Common/GlobalConstants.h>
 #include <Shaders/Editor/GizmoConstants.h>
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertexInput { float3 Position : POSITION; float4 Color0 : COLOR0; uint InstanceID : SV_InstanceID; uint VertexID : SV_VertexID; };
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
-VS_OUT main(VS_IN Input)
+DebugVertex main(DebugVertexInput Input)
 {
   float4 worldSpacePos = mul(ObjectToWorldMatrix, float4(Input.Position, 1.0f));
 
-  VS_OUT RetVal;
+  DebugVertex RetVal;
   RetVal.Position = mul(GetWorldToScreenMatrix(), worldSpacePos);
   RetVal.Color0 = GizmoColor;
 
   return RetVal;
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #define USE_COLOR0
 
 #include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
-float4 main(PS_IN Input) : SV_Target
+float4 main(DebugVertex Input) : SV_Target
 {
 #if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
   discard;

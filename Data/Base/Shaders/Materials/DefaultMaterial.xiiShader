@@ -44,10 +44,6 @@ Color EmissiveColor @Default(Color(0.0, 0.0, 0.0));
 bool UseEmissiveTexture;
 Texture2D EmissiveTexture;
 
-[MATERIAL_CONFIGURATION]
-
-#include <Shaders/Materials/MaterialConfig.h>
-
 [MATERIAL_CONSTANTS]
 #include <Shaders/Materials/DefaultMaterialConstants.h>
 

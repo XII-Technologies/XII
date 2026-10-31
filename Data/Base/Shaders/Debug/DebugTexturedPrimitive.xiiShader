@@ -29,11 +29,16 @@ ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 #define USE_TEXCOORD0
 
 #include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertexInput { float3 Position : POSITION; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; uint InstanceID : SV_InstanceID; uint VertexID : SV_VertexID; };
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
-VS_OUT main(VS_IN Input)
+DebugVertex main(DebugVertexInput Input)
 {
-  VS_OUT RetVal;
+  DebugVertex RetVal;
 
   #if defined(CAMERA_MODE) && CAMERA_MODE == CAMERA_MODE_STEREO
     s_ActiveCameraEyeIndex = Input.InstanceID % 2;
@@ -59,13 +64,17 @@ VS_OUT main(VS_IN Input)
 #define USE_COLOR0
 #define USE_TEXCOORD0
 
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
 #include <Shaders/Common/Common.h>
 
 Texture2D BaseTexture;
 
-float4 main(PS_IN Input) : SV_Target
+float4 main(DebugVertex Input) : SV_Target
 {
 #if MONOCHROME
   return float4(BaseTexture.Sample(LinearClampSampler, Input.TexCoord0.xy).rrr, 1) * Input.Color0;
