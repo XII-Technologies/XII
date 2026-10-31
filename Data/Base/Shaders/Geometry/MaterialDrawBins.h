@@ -1,11 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 #pragma once
-StructuredBuffer<uint2>            g_VisibleMeshlets;
-StructuredBuffer<uint>             g_VisibleMeshletCount;
-StructuredBuffer<uint>             g_InstanceBins;
-RWStructuredBuffer<uint>           g_BinCounts;
-RWStructuredBuffer<uint4>          g_BinDraws;
-RWStructuredBuffer<uint2>          g_BinnedMeshlets;
+StructuredBuffer<uint2>   g_VisibleMeshlets;
+StructuredBuffer<uint>    g_VisibleMeshletCount;
+StructuredBuffer<uint>    g_InstanceBins;
+RWStructuredBuffer<uint>  g_BinCounts;
+RWStructuredBuffer<uint4> g_BinDraws;
+RWStructuredBuffer<uint2> g_BinnedMeshlets;
 
 uint xiiCandidateBin(uint index)
 {

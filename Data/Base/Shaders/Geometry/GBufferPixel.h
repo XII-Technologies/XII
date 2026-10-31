@@ -21,11 +21,11 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
 
   const xiiMaterialSurface surface   = xiiSampleSceneSurface(material, input, isFrontFace);
-  const float4                baseColor = surface.BaseColor;
-  const bool                  unlit     = material.Metadata.x == 6u || (material.Metadata.y & (1u << 12u)) == 0u;
-  const float3                emissive  = surface.Emissive + (unlit ? baseColor.rgb : 0);
-  const float                 roughness = surface.Roughness, metallic = surface.Metallic, occlusion = surface.Occlusion, transmission = surface.Transmission;
-  const float3                worldNormal = surface.Normal;
+  const float4             baseColor = surface.BaseColor;
+  const bool               unlit     = material.Metadata.x == 6u || (material.Metadata.y & (1u << 12u)) == 0u;
+  const float3             emissive  = surface.Emissive + (unlit ? baseColor.rgb : 0);
+  const float              roughness = surface.Roughness, metallic = surface.Metallic, occlusion = surface.Occlusion, transmission = surface.Transmission;
+  const float3             worldNormal = surface.Normal;
 
   const float2 octNormal   = EncodeOctNormal(worldNormal);
   const float  featureByte = xiiPackGBufferMaterialFlags(material.Metadata.y, unlit);
