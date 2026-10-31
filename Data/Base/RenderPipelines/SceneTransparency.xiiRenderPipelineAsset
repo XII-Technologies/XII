@@ -1383,7 +1383,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{14532438569158422202,11217115850580492635}}
-		u4 %Hash{5162536432571274981}
+		u4 %Hash{14907294985083403598}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{5219837636212385,4079793010734481269}}
@@ -2421,6 +2421,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"MultiScatter"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00A03C45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2496,6 +2497,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"LightCandidates"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0080AC44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2728,6 +2730,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{3772483273872217126,11536405059582709501}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00003EC3,0x7F368144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3260,6 +3263,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Cascades"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00600D45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3390,6 +3394,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"LightLayout"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00800545}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3533,6 +3538,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"LightOverflow"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0080EB44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3584,6 +3590,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"ShadowAtlas"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00401545}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3676,6 +3683,7 @@ o
 	p
 	{
 		Uuid %LodHistory{u4{17822989357412098260,11012623307821128993}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00801BC4,0x82443144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3798,6 +3806,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Additive"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00A01845,0xBF09B444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3818,6 +3827,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Depth"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0040FB44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4116,6 +4126,7 @@ o
 		Uuid %HDRSceneColorInput{u4{4487403396605077841,5076159239805321720}}
 		Uuid %HDRSceneColorOutput{u4{10703613866371097474,3692211216409084016}}
 		Uuid %Modulation{u4{2935072596428564444,387960269596314389}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00701345,0x7D937144}}
 		Uuid %OITAccumulate{u4{10117307270586731507,10653858725155648433}}
 		Uuid %OITReveal{u4{11963388345561713944,13941100038315307521}}
@@ -4564,11 +4575,13 @@ o
 	u3 %v{1}
 	p
 	{
+		b %AllowInactive{0}
 		b %AsyncCompute{1}
 		Uuid %DrawCommandCount{u4{17644258043751214449,15149800230351270260}}
 		Uuid %DrawCommands{u4{1340529060955876616,2549721391914686846}}
 		Uuid %GeometryMetadata{u4{3307424179656888644,3442334795525678638}}
 		Uuid %MeshletMetadata{u4{17864077006699180859,16270360344750898346}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0020BE44,0x00801D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4742,6 +4755,20 @@ o
 }
 o
 {
+	Uuid %id{u4{18427206257689565414,4440843640852657467}}
+	s %t{"xiiRenderPipelinePinConstraints"}
+	u3 %v{1}
+	p
+	{
+		s %Dimension{"xiiGALResourceDimension::Undefined"}
+		u3 %Height{0}
+		s %RequiredBindFlags{""}
+		u3 %Samples{0}
+		u3 %Width{0}
+	}
+}
+o
+{
 	Uuid %id{u4{3549268662485869128,4457180825066178743}}
 	s %t{"xiiRenderPipelinePinConstraints"}
 	u3 %v{1}
@@ -4797,6 +4824,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"LightIndices"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00C0DB44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -5318,6 +5346,13 @@ o
 }
 o
 {
+	Uuid %id{u4{14040796552386884214,4991861037709608019}}
+	s %t{"xiiRenderPipelineBufferOutputPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
 	Uuid %id{u4{10939200428243086495,4991861203178554034}}
 	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
@@ -5447,6 +5482,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneInstances"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000061C4,0xD3232E44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -5470,6 +5506,7 @@ o
 		Uuid %GeometryMetadata{u4{16921746711016208898,2007592213822875545}}
 		Uuid %InitializedLodHistory{u4{12515476901095455988,6845100518489812631}}
 		Uuid %LodHistory{u4{17114035817644890066,11969162492018517419}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000085C3,0xFD6C1F44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -5664,6 +5701,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputCandidates"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000061C4,0xD3236D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -5903,6 +5941,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{4116888262176960036,12822512461999762178}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00203144,0xDFC45D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -6626,6 +6665,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{7243275333635524661,7842896765219598146}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x006013C4,0x82C41144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7027,6 +7067,7 @@ o
 			Uuid{u4{13946217029550392831,6625955806453583543}}
 			Uuid{u4{9913108038756309378,5427665098888464124}}
 		}
+		VarArray %Graph::CommentBlocks{}
 	}
 }
 o
@@ -7147,6 +7188,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SpotShadowAtlas"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00002545}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7656,6 +7698,20 @@ o
 }
 o
 {
+	Uuid %id{u4{1317649457136478731,7348944426676262653}}
+	s %t{"xiiRenderPipelinePinConstraints"}
+	u3 %v{1}
+	p
+	{
+		s %Dimension{"xiiGALResourceDimension::Undefined"}
+		u3 %Height{0}
+		s %RequiredBindFlags{""}
+		u3 %Samples{0}
+		u3 %Width{0}
+	}
+}
+o
+{
 	Uuid %id{u4{14063917007673310037,7465750117647621644}}
 	s %t{"xiiRenderPipelinePinConfiguration"}
 	u3 %v{1}
@@ -7732,6 +7788,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"RasterConstants"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0000FC43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7801,6 +7858,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0000BD43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7836,6 +7894,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"MeshletOverflow"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00F0C944,0}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7902,6 +7961,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Camera"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00005B44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -7923,6 +7983,20 @@ o
 		u3 %Height{0}
 		s %RequiredBindFlags{""}
 		u3 %Samples{0}
+		u3 %Width{0}
+	}
+}
+o
+{
+	Uuid %id{u4{2512446303949170071,7922569731913134458}}
+	s %t{"xiiRenderPipelineTextureResolution"}
+	u3 %v{1}
+	p
+	{
+		u3 %Height{0}
+		s %Input{""}
+		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
+		f %Scale{0x0000803F}
 		u3 %Width{0}
 	}
 }
@@ -8220,6 +8294,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Radiance"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00007C43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -8492,6 +8567,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Revealage"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00A01845,0xBF49A444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -8514,6 +8590,24 @@ o
 		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Default"}
+		b %Optional{1}
+		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
+		b %TemporalHistory{0}
+	}
+}
+o
+{
+	Uuid %id{u4{18388179709285816765,8829939904829408699}}
+	s %t{"xiiRenderPipelinePinMetadata"}
+	u3 %v{1}
+	p
+	{
+		s %Access{"xiiRenderPipelinePinAccess::Write"}
+		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		b %Input{0}
+		s %Name{"DiagnosticMeshlets"}
 		b %Optional{1}
 		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
 		b %TemporalHistory{0}
@@ -8564,6 +8658,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"LightGrid"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0000CC44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -8860,6 +8955,22 @@ o
 		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
 		Uuid %Requirements{u4{1727789110709368903,1149255953646161108}}
 		Uuid %Resolution{u4{3344651594512685311,8990232013102995298}}
+	}
+}
+o
+{
+	Uuid %id{u4{14863349175489892964,9184616451045259227}}
+	s %t{"xiiRenderPipelinePinConfiguration"}
+	u3 %v{1}
+	p
+	{
+		s %DisplayName{""}
+		Uuid %Id{u4{14863349175489892964,9184616451045259227}}
+		Uuid %Metadata{u4{2933188491426349224,17467017029028626181}}
+		b %OverrideResolution{0}
+		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
+		Uuid %Requirements{u4{18427206257689565414,4440843640852657467}}
+		Uuid %Resolution{u4{2512446303949170071,7922569731913134458}}
 	}
 }
 o
@@ -9345,6 +9456,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"HistoryTrust"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00781845,0xBF89D344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -10020,6 +10132,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Atmosphere"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00E02C45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -10343,6 +10456,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Accumulation"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00381845,0xBF899444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -10384,6 +10498,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"IESProfiles"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0040BC44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -10486,6 +10601,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"LightCounts"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00C09C44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -10627,6 +10743,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SkinningMatrices"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x0000FC42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -10834,6 +10951,7 @@ o
 		Uuid %InputCandidates{u4{14666696572550252816,12421004837703739869}}
 		f %LodHysteresis{0}
 		f %LodScreenScale{0x0000803F}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00401EC4,0x82C45044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -11066,6 +11184,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"HDRSceneColor"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00402B45,0x7D937144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -11511,6 +11630,7 @@ o
 		Uuid %LodHistory{u4{17264088496849969195,8013046637753726122}}
 		Uuid %MaximumMeshletGroups{u4{7316224561333201007,4966449806858910278}}
 		Uuid %MeshletMetadata{u4{4096594811691657411,1055156446252566868}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00002643,0xDF443E44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -11634,6 +11754,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Environment"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00807A44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -11809,6 +11930,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Modulation"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00A01845,0xBFC9C344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -12090,6 +12212,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Lights"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00008D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -12594,6 +12717,7 @@ o
 		Uuid %DispatchArguments{u4{11356110544160824895,8338106945510756317}}
 		Uuid %MaximumMeshletGroups{u4{12036312511367841128,8373687362266130686}}
 		Uuid %MeshletMetadata{u4{16826738498530593853,16741691762791457068}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00001C44,0xDF442C44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -12637,6 +12761,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x008037C3,0xFDEC6244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -12727,6 +12852,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SpotShadows"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00201D45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -12792,6 +12918,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"TemporalCamera"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000061C4,0xD3A34D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -12991,6 +13118,8 @@ o
 	p
 	{
 		b %AsyncCompute{1}
+		Uuid %DiagnosticCount{u4{9630117720809809850,16008759943126023014}}
+		Uuid %DiagnosticMeshlets{u4{14040796552386884214,4991861037709608019}}
 		Uuid %DispatchArguments{u4{17566358347576828354,12839452649611786622}}
 		Uuid %GeometryMetadata{u4{7626837230661731478,8074786681906807543}}
 		Uuid %InitialCount{u4{3622949630414639979,11645064456488040476}}
@@ -12998,6 +13127,7 @@ o
 		Uuid %LodHistory{u4{15093643507110493325,16107890457091217901}}
 		u3 %MaxVisibleMeshlets{1048576}
 		Uuid %MeshletMetadata{u4{9036223037190467024,16775623387695395059}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00208644,0xDFC42744}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -13015,6 +13145,8 @@ o
 			Uuid{u4{8081989282109658939,8800994694863114092}}
 			Uuid{u4{10704235714849779148,7657312266196345950}}
 			Uuid{u4{7868469724183330293,9452148987431333632}}
+			Uuid{u4{9160085922738812054,17651061838662621794}}
+			Uuid{u4{14863349175489892964,9184616451045259227}}
 		}
 		b %RequireComplete{1}
 		Uuid %SceneInstances{u4{17570083161951609922,2321242976193483369}}
@@ -13024,6 +13156,7 @@ o
 		Uuid %VisibleMeshletCount{u4{6723530327881147698,18048320660373001615}}
 		Uuid %VisibleMeshletOverflow{u4{6209669335634205531,12243655898932156978}}
 		Uuid %VisibleMeshlets{u4{7139641599977079353,6974309693556138733}}
+		b %VisualizeView{0}
 	}
 }
 o
@@ -13163,6 +13296,7 @@ o
 	p
 	{
 		Uuid %Counter{u4{12414145332335869890,18236512074515513051}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00203144,0xDF447D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -13417,6 +13551,27 @@ o
 }
 o
 {
+	Uuid %id{u4{9630117720809809850,16008759943126023014}}
+	s %t{"xiiRenderPipelineBufferOutputPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{16199893408879064048,16015804401908855552}}
+	s %t{"xiiRenderPipelineTextureResolution"}
+	u3 %v{1}
+	p
+	{
+		u3 %Height{0}
+		s %Input{""}
+		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
+		f %Scale{0x0000803F}
+		u3 %Width{0}
+	}
+}
+o
+{
 	Uuid %id{u4{14315440427663470524,16026253696202588087}}
 	s %t{"xiiTransparentRasterPass"}
 	u3 %v{3}
@@ -13450,6 +13605,7 @@ o
 		Uuid %MeshletMetadata{u4{16757730784294414316,11783264908138039967}}
 		Uuid %Modulation{u4{12067605844753561505,13123667395599065265}}
 		Uuid %MultiScatter{u4{14369074492383101995,6648397147415233529}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000F544,0xBF099744}}
 		f %NormalBias{0x0AD7A33C}
 		f %NormalBiasTexels{0x0000C03F}
@@ -13660,6 +13816,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Transmittance"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00E0C844,0x00C03445}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -14469,6 +14626,24 @@ o
 }
 o
 {
+	Uuid %id{u4{2933188491426349224,17467017029028626181}}
+	s %t{"xiiRenderPipelinePinMetadata"}
+	u3 %v{1}
+	p
+	{
+		s %Access{"xiiRenderPipelinePinAccess::Write"}
+		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
+		s %DataType{""}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		b %Input{0}
+		s %Name{"DiagnosticCount"}
+		b %Optional{1}
+		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
+		b %TemporalHistory{0}
+	}
+}
+o
+{
 	Uuid %id{u4{11149392733463819948,17471773291197263174}}
 	s %t{"xiiRenderPipelineBufferInputPin"}
 	u3 %v{1}
@@ -14538,6 +14713,22 @@ o
 }
 o
 {
+	Uuid %id{u4{9160085922738812054,17651061838662621794}}
+	s %t{"xiiRenderPipelinePinConfiguration"}
+	u3 %v{1}
+	p
+	{
+		s %DisplayName{""}
+		Uuid %Id{u4{9160085922738812054,17651061838662621794}}
+		Uuid %Metadata{u4{18388179709285816765,8829939904829408699}}
+		b %OverrideResolution{0}
+		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
+		Uuid %Requirements{u4{1317649457136478731,7348944426676262653}}
+		Uuid %Resolution{u4{16199893408879064048,16015804401908855552}}
+	}
+}
+o
+{
 	Uuid %id{u4{8437237198188850454,17654287546127270229}}
 	s %t{"xiiRenderPipelinePinConfiguration"}
 	u3 %v{1}
@@ -14563,6 +14754,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GeometryMetadata"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x008012C4,0x82447644}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations

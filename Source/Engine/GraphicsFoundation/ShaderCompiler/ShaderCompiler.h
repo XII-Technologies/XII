@@ -38,6 +38,10 @@ public:
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCompiler
 {
 public:
+  /// A nonempty [MATERIAL_CONSTANTS] section contains constant-buffer members
+  /// (HLSL declarations or XII shared-header macros). The compiler declares
+  /// xiiMaterialConstants once per active stage; reflection retains only used
+  /// stage bindings. Do not declare that buffer manually in the same shader.
   xiiResult CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform = "ALL", xiiTokenizedFileCache* pFileCache = nullptr);
 
 private:

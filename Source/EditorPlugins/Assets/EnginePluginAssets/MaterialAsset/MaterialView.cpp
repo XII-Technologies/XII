@@ -35,3 +35,18 @@ xiiViewHandle xiiMaterialViewContext::CreateView()
   pView->SetCamera(&m_Camera);
   return pView->GetHandle();
 }
+
+void xiiMaterialViewContext::Redraw(bool bRenderEditorGizmos)
+{
+  auto* world = GetDocumentContext()->GetWorld();
+  {
+    XII_LOCK(world->GetWriteMarker());
+    if (auto* view = GetView())
+    {
+      m_pMaterialContext->GetPreviewLightingSettings().ApplyToView(*view, m_Camera).AssertSuccess();
+      if (m_pMaterialContext->GetPreviewGrid())
+        DrawGrid(0.05f).IgnoreResult();
+    }
+  }
+  xiiEngineProcessViewContext::Redraw(bRenderEditorGizmos);
+}

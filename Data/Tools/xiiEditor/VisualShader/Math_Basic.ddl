@@ -5,21 +5,21 @@ Node %Add
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "0" }
   }
 
   InputPin %b
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "0" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "(ToBiggerType($in0, $in1) + ToBiggerType($in1, $in0))" }
     string %Tooltip { "a + b" }
   }
@@ -32,21 +32,21 @@ Node %Subtract
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "0" }
   }
 
   InputPin %b
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "0" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "(ToBiggerType($in0, $in1) - ToBiggerType($in1, $in0))" }
     string %Tooltip { "a - b" }
   }
@@ -59,21 +59,21 @@ Node %Multiply
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "1" }
   }
 
   InputPin %b
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "1" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "(ToBiggerType($in0, $in1) * ToBiggerType($in1, $in0))" }
     string %Tooltip { "a * b (component-wise)" }
   }
@@ -86,21 +86,21 @@ Node %Divide
 
   InputPin %a
     {
-      string %Type { "float" }
+      string %Type { "numeric" }
       bool %Expose { true }
       string %DefaultValue { "1" }
     }
 
   InputPin %b
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "1" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "(ToBiggerType($in0, $in1) / ToBiggerType($in1, $in0))" }
     string %Tooltip { "a / b (component-wise)" }
   }
@@ -113,12 +113,12 @@ Node %Fraction
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "frac($in0)" }
     string %Tooltip { "The fractional part of the input (component-wise)." }
   }
@@ -131,12 +131,12 @@ Node %Abs
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "abs($in0)" }
     string %Tooltip { "The absolute value of the input (component-wise)." }
   }
@@ -149,12 +149,12 @@ Node %Sign
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "sign($in0)" }
     string %Tooltip { "Outputs the sign of the input (component-wise)." }
   }
@@ -167,12 +167,12 @@ Node %Sqrt
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "sqrt($in0)" }
     string %Tooltip { "The square root of the input (component-wise)." }
   }
@@ -185,13 +185,13 @@ Node %Negate
 
   InputPin %a
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %DefaultValue { "0" }
   }
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     string %Inline { "-$in0" }
     string %Tooltip { "Negated input value." }
   }

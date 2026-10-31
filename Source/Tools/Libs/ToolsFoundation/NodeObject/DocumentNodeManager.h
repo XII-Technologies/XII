@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Types/Status.h>
 #include <ToolsFoundation/Document/Document.h>
+#include <ToolsFoundation/NodeObject/GraphCommentBlock.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
 
 class xiiPin;
@@ -15,6 +18,8 @@ struct XII_TOOLSFOUNDATION_DLL xiiDocumentNodeManagerEvent
   enum class Type
   {
     NodeMoved,
+    NodeCommentChanged,
+    CommentBlocksChanged,
     AfterPinsConnected,
     BeforePinsDisonnected,
     BeforePinsChanged,
@@ -156,6 +161,13 @@ public:
   virtual const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const { return nullptr; }
 
   xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
+  /// Editor-only annotation. Stored with graph layout metadata, excluded from
+  /// transform hashes. Use xiiSetNodeCommentCommand for document history.
+  xiiStringView                                GetNodeComment(const xiiDocumentObject* pObject) const;
+  xiiStatus                                    SetNodeComment(const xiiDocumentObject* pObject, xiiStringView sComment);
+  const xiiMap<xiiUuid, xiiGraphCommentBlock>& GetCommentBlocks() const { return m_CommentBlocks; }
+  /// An invalid value removes a block. Use xiiSetGraphCommentBlockCommand for history.
+  xiiStatus            SetCommentBlock(const xiiUuid& id, const xiiVariant& value);
   const xiiConnection& GetConnection(const xiiDocumentObject* pObject) const;
   const xiiConnection* GetConnectionIfExists(const xiiDocumentObject* pObject) const;
 
@@ -198,6 +210,9 @@ public:
 
   void GetMetaDataHash(const xiiDocumentObject* pObject, xiiUInt64& inout_uiHash) const;
   bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph) const;
+  /// Append explicitly selected annotations to the document's existing clipboard graph.
+  /// They remain metadata, and their IDs participate in ordinary clipboard GUID remapping.
+  xiiStatus CopyCommentBlocks(xiiAbstractObjectGraph& ref_objectGraph, xiiArrayPtr<const xiiUuid> blocks) const;
   bool PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition);
 
 protected:
@@ -214,6 +229,7 @@ protected:
   struct NodeInternal
   {
     xiiVec2                                 m_vPos = xiiVec2::MakeZero();
+    xiiString                               m_sComment;
     xiiHybridArray<xiiUniquePtr<xiiPin>, 6> m_Inputs;
     xiiHybridArray<xiiUniquePtr<xiiPin>, 6> m_Outputs;
   };
@@ -238,6 +254,7 @@ private:
 
 private:
   xiiHashTable<xiiUuid, NodeInternal>                            m_ObjectToNode;
+  xiiMap<xiiUuid, xiiGraphCommentBlock>                          m_CommentBlocks;
   xiiHashTable<xiiUuid, xiiUniquePtr<xiiConnection>>             m_ObjectToConnection;
   xiiMap<const xiiPin*, xiiHybridArray<const xiiConnection*, 6>> m_Connections;
 };

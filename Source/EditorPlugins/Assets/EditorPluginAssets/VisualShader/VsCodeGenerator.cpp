@@ -2,6 +2,8 @@
 
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <Core/Graph/GraphAlgorithms.h>
+#include <Core/Graph/GraphData.h>
 #include <EditorPluginAssets/VisualShader/VsCodeGenerator.h>
 
 static xiiString ToShaderString(const xiiVariant& value)
@@ -113,9 +115,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GatherAllNodes(const xiiDocumentObject* 
   if (pRootObj->GetType()->IsDerivedFrom(m_pNodeBaseRtti))
   {
     NodeState& ns       = m_Nodes[pRootObj];
-    ns.m_uiNodeId       = m_Nodes.GetCount(); // ID 0 is reserved
     ns.m_bCodeGenerated = false;
-    ns.m_bInProgress    = false;
 
     auto pDesc = m_pTypeRegistry->GetDescriptorForType(pRootObj->GetType());
 
@@ -171,28 +171,115 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateVisualShader(const xiiDocumentNo
   if (m_pMainNode == nullptr)
     return xiiStatus("Visual Shader does not contain an output node");
 
-  XII_SUCCEED_OR_RETURN(GenerateNode(m_pMainNode));
-
-  const xiiStringBuilder sMaterialCBDefine("#define VSE_CONSTANTS ", m_sShaderMaterialCB);
+  XII_SUCCEED_OR_RETURN(GenerateReachableGraph());
 
   m_sFinalShaderCode.Set("[PLATFORMS]\nALL\n\n");
   m_sFinalShaderCode.Append("[PERMUTATIONS]\n\n", m_sShaderPermutations, "\n");
-  m_sFinalShaderCode.Append("[MATERIALPARAMETER]\n\n", m_sShaderMaterialParam, "\n");
+  m_sFinalShaderCode.Append("[MATERIAL_PARAMETER]\n\n", m_sShaderMaterialParam, "\n");
+  m_sFinalShaderCode.Append("[MATERIAL_CONSTANTS]\n\n", m_sShaderMaterialCB, "\n");
   m_sFinalShaderCode.Append("[RENDERSTATE]\n\n", m_sShaderRenderState, "\n");
-  m_sFinalShaderCode.Append("[VERTEXSHADER]\n\n", sMaterialCBDefine, "\n\n");
+  m_sFinalShaderCode.Append("[VERTEX_SHADER]\n\n");
   m_sFinalShaderCode.Append(m_sShaderVertexDefines, "\n", m_sShaderVertex, "\n");
-  m_sFinalShaderCode.Append("[GEOMETRYSHADER]\n\n", sMaterialCBDefine, "\n\n");
-  m_sFinalShaderCode.Append(m_sShaderGeometryDefines, "\n", m_sShaderGeometry, "\n");
-  m_sFinalShaderCode.Append("[PIXELSHADER]\n\n", sMaterialCBDefine, "\n\n");
+  if (!m_sShaderGeometry.IsEmpty())
+  {
+    m_sFinalShaderCode.Append("[GEOMETRY_SHADER]\n\n");
+    m_sFinalShaderCode.Append(m_sShaderGeometryDefines, "\n", m_sShaderGeometry, "\n");
+  }
+  m_sFinalShaderCode.Append("[PIXEL_SHADER]\n\n");
   m_sFinalShaderCode.Append(m_sShaderPixelDefines, "\n", m_sShaderPixelIncludes, "\n");
   m_sFinalShaderCode.Append(m_sShaderPixelConstants, "\n", m_sShaderPixelSamplers, "\n", m_sShaderPixelBody, "\n");
+  // Node-library files may use platform checkout line endings. Shader identity
+  // must depend on graph content, not the authoring machine's newline convention.
+  m_sFinalShaderCode.ReplaceAll("\r\n", "\n");
 
   for (auto it = m_Nodes.GetIterator(); it.IsValid(); ++it)
   {
-    auto pDesc = m_pTypeRegistry->GetDescriptorForType(it.Key()->GetType());
-    out_sCheckPerms.Append("\n", pDesc->m_sCheckPermutations);
+    // Disconnected nodes must not introduce permutations or invalidate compilation.
+    if (it.Value().m_bCodeGenerated)
+    {
+      auto pDesc = m_pTypeRegistry->GetDescriptorForType(it.Key()->GetType());
+      out_sCheckPerms.Append("\n", pDesc->m_sCheckPermutations);
+    }
   }
 
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiVisualShaderCodeGenerator::GenerateReachableGraph()
+{
+  // The document owns authoring objects and pin types. Core owns compilation
+  // topology; only nodes contributing to the material output enter this graph.
+  xiiGraphWithData<const xiiDocumentObject*, const xiiConnection*> topology;
+  auto&                                                            graph = topology.m_Graph;
+  xiiMap<const xiiDocumentObject*, xiiGraphVertexHandle>           vertices;
+  xiiDynamicArray<const xiiDocumentObject*>                        pending;
+  const auto                                                       addNode = [&](const xiiDocumentObject* node) -> xiiResult {
+    if (vertices.Contains(node))
+      return XII_SUCCESS;
+    xiiGraphVertexHandle vertex;
+    XII_SUCCEED_OR_RETURN(graph.TryAddVertex(vertex));
+    XII_SUCCEED_OR_RETURN(topology.m_Data.SetVertexData(vertex, node));
+    vertices.Insert(node, vertex);
+    pending.PushBack(node);
+    return XII_SUCCESS;
+  };
+  XII_SUCCEED_OR_RETURN(addNode(m_pMainNode));
+  for (xiiUInt32 index = 0; index < pending.GetCount(); ++index)
+  {
+    const auto* node = pending[index];
+    for (const auto& input : m_pNodeManager->GetInputPins(node))
+    {
+      const auto connections = m_pNodeManager->GetConnections(*input);
+      if (connections.GetCount() > 1)
+        return xiiStatus(xiiFmt("Node '{}' input '{}' has multiple connections.", node->GetGuid(), input->GetName()));
+      for (const auto* connection : connections)
+      {
+        const auto& source = connection->GetSourcePin();
+        XII_SUCCEED_OR_RETURN(addNode(source.GetParent()));
+        xiiGraphEdgeHandle edge;
+        XII_SUCCEED_OR_RETURN(graph.TryAddEdge(vertices.Find(source.GetParent()).Value(), vertices.Find(node).Value(), edge));
+        XII_SUCCEED_OR_RETURN(topology.m_Data.SetEdgeData(edge, connection));
+        m_OutputPins[&source];
+      }
+    }
+  }
+  xiiDynamicArray<xiiGraphVertexHandle> order;
+  if (xiiGraphAlgorithms::TopologicalSort(graph, order).Failed())
+  {
+    xiiGraphComponents components;
+    xiiGraphAlgorithms::StronglyConnectedComponents(graph, components);
+    for (xiiUInt32 index = 0; index < components.GetCount(); ++index)
+    {
+      const auto component = components.GetComponent(index);
+      if (component.GetCount() > 1 || graph.IsValid(graph.FindEdge(component[0], component[0])))
+      {
+        for (auto edge = graph.GetOutgoingEdges(component[0]); edge.IsValid(); ++edge)
+        {
+          if (!component.Contains(graph.GetTarget(edge.GetHandle())))
+            continue;
+          const auto* connection = *topology.m_Data.GetEdgeData(edge.GetHandle());
+          return xiiStatus(xiiFmt("Material Graph cycle from node '{}' port '{}' to node '{}' port '{}'.", connection->GetSourcePin().GetParent()->GetGuid(), connection->GetSourcePin().GetName(), connection->GetTargetPin().GetParent()->GetGuid(), connection->GetTargetPin().GetName()));
+        }
+      }
+    }
+    return xiiStatus("Material Graph topology could not be sorted.");
+  }
+  for (const auto edge : graph.GetEdges())
+  {
+    const auto* connection = *topology.m_Data.GetEdgeData(edge);
+    const auto& source     = static_cast<const xiiVisualShaderPin&>(connection->GetSourcePin());
+    const auto& target     = static_cast<const xiiVisualShaderPin&>(connection->GetTargetPin());
+    if (!xiiVisualShaderPin::CanConvert(source, target))
+      return xiiStatus(xiiFmt("Material Graph node '{}' input '{}' has an incompatible connection from node '{}' port '{}'.", target.GetParent()->GetGuid(), target.GetName(), source.GetParent()->GetGuid(), source.GetName()));
+  }
+  for (const auto vertex : order)
+  {
+    const auto* node = *topology.m_Data.GetVertexData(vertex);
+    XII_SUCCEED_OR_RETURN(GenerateNode(node));
+    for (const auto& output : m_pNodeManager->GetOutputPins(node))
+      if (m_OutputPins.Contains(output.Borrow()))
+        XII_SUCCEED_OR_RETURN(GenerateOutputPinCode(node, *output));
+  }
   return XII_SUCCESS;
 }
 
@@ -200,20 +287,13 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pN
 {
   NodeState& state = m_Nodes[pNode];
 
-  if (state.m_bInProgress)
-    return xiiStatus("The shader graph has a circular dependency.");
-
-  if (state.m_bCodeGenerated)
-    return XII_SUCCESS;
-
-  state.m_bCodeGenerated = true;
-  state.m_bInProgress    = true;
-
-  XII_SCOPE_EXIT(state.m_bInProgress = false);
-
   const xiiVisualShaderNodeDescriptor* pDesc = m_pTypeRegistry->GetDescriptorForType(pNode->GetType());
-
-  XII_SUCCEED_OR_RETURN(GenerateInputPinCode(m_pNodeManager->GetInputPins(pNode)));
+  if (pDesc->m_sName == "MaterialOutput")
+  {
+    const auto* subsurface = m_pNodeManager->GetInputPinByName(pNode, "SubsurfaceColor");
+    if (subsurface && !m_pNodeManager->GetConnections(*subsurface).IsEmpty())
+      return xiiStatus(xiiFmt("Node '{}' ({}) input 'SubsurfaceColor' is not encoded by the native surface targets.", pDesc->m_sName, pNode->GetGuid()));
+  }
 
   xiiStringBuilder sConstantsCode, sPsBodyCode, sMaterialParamCode, sPixelSamplersCode, sVsBodyCode, sGsBodyCode, sMaterialCB, sPermutations,
     sRenderStates, sPixelDefines, sPixelIncludes, sVertexDefines, sGeometryDefines;
@@ -272,29 +352,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pN
     AppendStringIfUnique(m_sShaderMaterialCB, sMaterialCB);
   }
 
-  return XII_SUCCESS;
-}
-
-xiiStatus xiiVisualShaderCodeGenerator::GenerateInputPinCode(xiiArrayPtr<const xiiUniquePtr<const xiiPin>> pins)
-{
-  for (auto& pPin : pins)
-  {
-    auto connections = m_pNodeManager->GetConnections(*pPin);
-    XII_ASSERT_DEBUG(connections.GetCount() <= 1, "Input pin has {0} connections", connections.GetCount());
-
-    if (connections.IsEmpty())
-      continue;
-
-    const xiiPin& pinSource = connections[0]->GetSourcePin();
-
-    // recursively generate all dependent code
-    const xiiDocumentObject* pOwnerNode = pinSource.GetParent();
-    const xiiStatus          resNode    = GenerateOutputPinCode(pOwnerNode, pinSource);
-
-    if (resNode.Failed())
-      return resNode;
-  }
-
+  state.m_bCodeGenerated = true;
   return XII_SUCCESS;
 }
 
@@ -305,12 +363,13 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
   if (ps.m_bCodeGenerated)
     return XII_SUCCESS;
 
-  ps.m_bCodeGenerated = true;
-
-  XII_SUCCEED_OR_RETURN(GenerateNode(pOwnerNode));
+  XII_ASSERT_DEV(m_Nodes[pOwnerNode].m_bCodeGenerated, "Core Graph schedules dependencies before their consumers.");
 
   const xiiVisualShaderNodeDescriptor* pDesc   = m_pTypeRegistry->GetDescriptorForType(pOwnerNode->GetType());
   const xiiUInt16                      uiPinID = DeterminePinId(pOwnerNode, pin);
+
+  if (pDesc->m_sName == "VertexColor2" || pDesc->m_sName == "DepthFade" || pDesc->m_sName == "Refraction")
+    return xiiStatus(xiiFmt("Node '{}' ({}) output '{}' requires a resource interface that the native surface raster passes do not supply.", pDesc->m_sName, pOwnerNode->GetGuid(), pin.GetName()));
 
   xiiStringBuilder sInlineCode = pDesc->m_OutputPins[uiPinID].m_sShaderCodeInline;
   xiiStringBuilder ignore; // DefineWhenUsingDefaultValue not used for output pins
@@ -321,6 +380,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
 
   // store the result
   ps.m_sCodeAtPin = sInlineCode;
+  ps.m_bCodeGenerated = true;
 
   return XII_SUCCESS;
 }
@@ -359,7 +419,7 @@ xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(const xiiDocument
 
       if (sValue.IsEmpty())
       {
-        return xiiStatus(xiiFmt("Not all required input pins on a '{0}' node are connected.", pNodeDesc->m_sName));
+        return xiiStatus(xiiFmt("Node '{0}' ({1}) requires input '{2}'.", pNodeDesc->m_sName, pOwnerNode->GetGuid(), inputPins[i]->GetName()));
       }
 
       // replace all occurrences of the pin identifier with the code that was generate for the connected output pin
@@ -373,7 +433,21 @@ xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(const xiiDocument
       XII_ASSERT_DEBUG(pinState.m_bCodeGenerated, "Pin code should have been generated at this point");
 
       // replace all occurrences of the pin identifier with the code that was generate for the connected output pin
-      sInlineCode.ReplaceAll(sPinName, pinState.m_sCodeAtPin);
+      xiiStringBuilder expression = pinState.m_sCodeAtPin;
+      const auto&      target     = static_cast<const xiiVisualShaderPin&>(*inputPins[i]);
+      const auto&      source     = static_cast<const xiiVisualShaderPin&>(outputPin);
+      if (!target.GetDescriptor()->m_bDynamicNumeric && source.GetDataType() != target.GetDataType())
+      {
+        if (target.GetDataType() == xiiGetStaticRTTI<xiiVec2>())
+          expression.Set("ToFloat2(", pinState.m_sCodeAtPin, ")");
+        else if (target.GetDataType() == xiiGetStaticRTTI<xiiVec3>())
+          expression.Set("ToFloat3(", pinState.m_sCodeAtPin, ")");
+        else if (target.GetDataType() == xiiGetStaticRTTI<xiiColor>())
+          expression.Set("ToColor4(", pinState.m_sCodeAtPin, ")");
+        else if (target.GetDataType() == xiiGetStaticRTTI<xiiVec4>())
+          expression.Set("ToFloat4Direction(", pinState.m_sCodeAtPin, ")");
+      }
+      sInlineCode.ReplaceAll(sPinName, expression);
     }
   }
 

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
+
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderNodeManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
@@ -21,7 +23,7 @@ struct xiiMaterialShaderMode
     Custom,
     Native, ///< Typed material definition consumed directly by the native renderer.
 
-    Default = BaseMaterial
+    Default = Native
   };
 };
 
@@ -55,7 +57,7 @@ struct xiiMaterialAssetPreview
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiMaterialAssetPreview);
 
-class xiiMaterialAssetProperties : public xiiReflectedClass
+class XII_EDITORPLUGINASSETS_DLL xiiMaterialAssetProperties : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMaterialAssetProperties, xiiReflectedClass);
 
@@ -97,13 +99,12 @@ public:
   xiiString m_sShader;
   xiiString m_sAssetFilterTags;
 
-  xiiMap<xiiString, xiiVariant>  m_CachedProperties;
   xiiMaterialAssetDocument*      m_pDocument = nullptr;
   xiiEnum<xiiMaterialShaderMode> m_ShaderMode;
   xiiMaterialResourceDescriptor  m_NativeMaterial;
 };
 
-class xiiMaterialAssetDocument : public xiiSimpleAssetDocument<xiiMaterialAssetProperties>
+class XII_EDITORPLUGINASSETS_DLL xiiMaterialAssetDocument : public xiiSimpleAssetDocument<xiiMaterialAssetProperties>
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMaterialAssetDocument, xiiSimpleAssetDocument<xiiMaterialAssetProperties>);
 
@@ -116,7 +117,10 @@ public:
 
   void SetBaseMaterial(const char* szBaseMaterial);
 
-  xiiStatus WriteMaterialAsset(xiiStreamWriter& inout_stream, const xiiPlatformProfile* pAssetProfile, bool bEmbedLowResData) const;
+  /// Compiles the selected shader source with the existing shader compiler tool.
+  xiiStatus CompileShader();
+
+  xiiStatus WriteMaterialAsset(xiiStreamWriter& inout_stream) const;
 
   /// Will make sure that the visual shader is rebuilt.
   /// Typically called during asset transformation, but can be triggered manually to enforce getting visual shader node changes in.
@@ -124,13 +128,11 @@ public:
 
   /// If shader compilation failed this will modify the output shader file such that transforming it again, will trigger a full
   /// regeneration Otherwise the AssetCurator would early out
-  void TagVisualShaderFileInvalid(const xiiPlatformProfile* pAssetProfile, const char* szError);
+  void TagVisualShaderFileInvalid(const char* szError);
 
   /// Deletes all Visual Shader nodes that are not connected to the output
   void RemoveDisconnectedNodes();
 
-  static xiiUuid GetLitBaseMaterial();
-  static xiiUuid GetLitAlphaTestBaseMaterial();
   static xiiUuid GetNeutralNormalMap();
 
   virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
@@ -160,9 +162,11 @@ protected:
   void EditorEventHandler(const xiiEditorAppEvent& e);
 
 private:
+  friend class xiiMaterialAssetProperties;
+  void                          CommandHistoryEventHandler(const xiiCommandHistoryEvent& event);
+  bool                          m_bRestoreShaderProperties = false;
+  xiiMap<xiiString, xiiVariant> m_ShaderAuthoringValues;
   xiiStringBuilder m_sCheckPermutations;
-  static xiiUuid   s_LitBaseMaterial;
-  static xiiUuid   s_LitAlphaTextBaseMaterial;
   static xiiUuid   s_NeutralNormalMap;
 };
 

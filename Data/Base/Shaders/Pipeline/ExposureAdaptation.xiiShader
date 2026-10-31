@@ -24,10 +24,15 @@ void main(uint3 tid : SV_DispatchThreadID)
         return;
     }
 
-    // Count total pixels (sum histogram).
+    // Bin zero is reserved for black/background. Meter only valid luminance samples.
     uint totalPixels = 0u;
-    for (uint i = 0u; i < 256u; ++i) totalPixels += g_Histogram[i];
-    if (totalPixels == 0u) return;
+    for (uint i = 1u; i < 256u; ++i) totalPixels += g_Histogram[i];
+    if (totalPixels == 0u)
+    {
+        g_Exposure[0] = HistoryValid != 0u && isfinite(g_Exposure[0]) && g_Exposure[0] > 0.0f ? g_Exposure[0] : manualExposure;
+        g_Exposure[1] = 0.0f;
+        return;
+    }
 
     // Weighted average of log-luminance (clip low/high percentiles).
     float lowCount  = float(totalPixels) * Metering.x;
@@ -35,7 +40,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     float count     = 0.0f;
     float weightedAvg = 0.0f;
 
-    for (uint b = 0u; b < 256u; ++b)
+    for (uint b = 1u; b < 256u; ++b)
     {
         float bCount = float(g_Histogram[b]);
         float minCount = max(0.0f, lowCount - count);

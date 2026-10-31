@@ -7,8 +7,12 @@
 #include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/Action/ActionMapManager.h>
 #include <GuiFoundation/Action/EditActions.h>
+#include <GuiFoundation/NodeEditor/NodeScene.moc.h>
+#include <GuiFoundation/NodeEditor/NodeView.moc.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QApplication>
 #include <QClipboard>
+#include <QMenuBar>
 #include <QMimeData>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -124,14 +128,15 @@ xiiEditAction::xiiEditAction(const xiiActionContext& context, xiiStringView sNam
 
   m_Context.m_pDocument->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiEditAction::SelectionEventHandler, this));
 
-  if (m_ButtonType == ButtonType::Copy || m_ButtonType == ButtonType::Delete)
-  {
-    SetEnabled(!m_Context.m_pDocument->GetSelectionManager()->IsSelectionEmpty());
-  }
+  m_FocusConnection = QObject::connect(qApp, &QApplication::focusChanged, qApp, [this](QWidget*, QWidget* focus) { UpdateGraphScene(focus); });
+  UpdateGraphScene(QApplication::focusWidget());
+  UpdateSelectionState();
 }
 
 xiiEditAction::~xiiEditAction()
 {
+  QObject::disconnect(m_FocusConnection);
+  QObject::disconnect(m_GraphSelectionConnection);
   if (m_Context.m_pDocument)
   {
     m_Context.m_pDocument->GetSelectionManager()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEditAction::SelectionEventHandler, this));
@@ -147,7 +152,8 @@ void xiiEditAction::Execute(const xiiVariant& value)
       xiiStringBuilder sMimeType;
 
       xiiAbstractObjectGraph graph;
-      if (!m_Context.m_pDocument->CopySelectedObjects(graph, sMimeType))
+      const bool             copied = m_pGraphScene ? m_pGraphScene->CopySelectedObjects(graph, sMimeType) : m_Context.m_pDocument->CopySelectedObjects(graph, sMimeType);
+      if (!copied)
         break;
 
       // Serialize to string
@@ -219,6 +225,12 @@ void xiiEditAction::Execute(const xiiVariant& value)
         cmd.m_bAllowPickedPosition = false;
       }
 
+      if (m_pGraphScene)
+      {
+        xiiQtUiServices::GetSingleton()->MessageBoxStatus(m_pGraphScene->PasteObjects(cmd), "Could not paste graph selection.");
+        break;
+      }
+
       auto history = m_Context.m_pDocument->GetCommandHistory();
 
       history->StartTransaction("Paste");
@@ -232,7 +244,10 @@ void xiiEditAction::Execute(const xiiVariant& value)
 
     case xiiEditAction::ButtonType::Delete:
     {
-      m_Context.m_pDocument->DeleteSelectedObjects();
+      if (m_pGraphScene)
+        m_pGraphScene->DeleteSelectedObjects();
+      else
+        m_Context.m_pDocument->DeleteSelectedObjects();
     }
     break;
   }
@@ -240,8 +255,40 @@ void xiiEditAction::Execute(const xiiVariant& value)
 
 void xiiEditAction::SelectionEventHandler(const xiiSelectionManagerEvent& e)
 {
+  UpdateSelectionState();
+}
+
+void xiiEditAction::UpdateSelectionState()
+{
   if (m_ButtonType == ButtonType::Copy || m_ButtonType == ButtonType::Delete)
   {
-    SetEnabled(!m_Context.m_pDocument->GetSelectionManager()->IsSelectionEmpty());
+    SetEnabled(!m_Context.m_pDocument->GetSelectionManager()->IsSelectionEmpty() || (m_pGraphScene && m_pGraphScene->HasSelectedCommentBlocks()));
   }
+}
+
+void xiiEditAction::UpdateGraphScene(QWidget* pFocus)
+{
+  // Menu activation and Qt action proxies temporarily clear focus before
+  // execution. Retain the graph context until another editing widget takes it.
+  if (!pFocus || pFocus->window()->windowType() == Qt::Popup || qobject_cast<QMenuBar*>(pFocus))
+    return;
+  xiiQtNodeScene* graph = nullptr;
+  for (auto* widget = pFocus; widget; widget = widget->parentWidget())
+  {
+    if (auto* view = qobject_cast<xiiQtNodeView*>(widget))
+    {
+      auto* scene = view->GetScene();
+      if (scene && scene->GetDocument() == m_Context.m_pDocument)
+        graph = scene;
+      break;
+    }
+  }
+  if (m_pGraphScene != graph)
+  {
+    QObject::disconnect(m_GraphSelectionConnection);
+    m_pGraphScene = graph;
+    if (graph)
+      m_GraphSelectionConnection = QObject::connect(graph, &QGraphicsScene::selectionChanged, qApp, [this]() { UpdateSelectionState(); });
+  }
+  UpdateSelectionState();
 }

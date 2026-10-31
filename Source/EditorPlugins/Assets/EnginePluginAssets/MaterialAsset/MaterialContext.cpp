@@ -26,6 +26,24 @@ xiiMaterialContext::xiiMaterialContext() :
 
 void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
+  if (const auto* config = xiiDynamicCast<const xiiSimpleDocumentConfigMsgToEngine*>(pMsg))
+  {
+    if (config->m_sWhatToDo == "PreviewLighting")
+    {
+      if (config->m_PayloadValue == m_LastLightingMessage)
+        return;
+      xiiPreviewLightingSettings settings;
+      if (xiiPreviewLightingSettings::FromVariant(config->m_PayloadValue, settings).Succeeded() && m_pPreviewLighting != nullptr && m_pPreviewLighting->SetSettings(settings).Succeeded())
+      {
+        m_LightingSettings    = settings;
+        m_LastLightingMessage = config->m_PayloadValue;
+      }
+      else
+        xiiLog::Warning("Rejected invalid material preview lighting settings.");
+      return;
+    }
+  }
+
   if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiCreateThumbnailMsgToEngine>())
   {
     xiiResourceManager::RestoreResource(m_hMaterial);
@@ -35,7 +53,19 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
   {
     const xiiDocumentConfigMsgToEngine* pMsg2 = static_cast<const xiiDocumentConfigMsgToEngine*>(pMsg);
 
-    if (pMsg2->m_sWhatToDo == "InvalidateCache")
+    if (pMsg2->m_sWhatToDo == "PreviewScene" && xiiMath::IsFinite(pMsg2->m_fValue))
+    {
+      m_bPreviewGrid = pMsg2->m_iValue != 0;
+      if (m_fPreviewOrientation != pMsg2->m_fValue)
+      {
+        XII_LOCK(m_pWorld->GetWriteMarker());
+        xiiMeshComponent* mesh = nullptr;
+        if (m_pWorld->TryGetComponent(m_hMeshComponent, mesh))
+          mesh->GetOwner()->SetLocalRotation(xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(pMsg2->m_fValue)));
+        m_fPreviewOrientation = pMsg2->m_fValue;
+      }
+    }
+    else if (pMsg2->m_sWhatToDo == "InvalidateCache")
     {
       // make sure all scenes etc rebuild their render cache
       if (m_pWorld != nullptr)
@@ -44,7 +74,7 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
         m_pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
       }
     }
-    else if (pMsg2->m_sWhatToDo == "PreviewModel" && m_PreviewModel != (PreviewModel)pMsg2->m_iValue)
+    else if (pMsg2->m_sWhatToDo == "PreviewModel" && pMsg2->m_iValue >= 0 && pMsg2->m_iValue <= static_cast<int>(PreviewModel::Plane) && m_PreviewModel != (PreviewModel)pMsg2->m_iValue)
     {
       m_PreviewModel = (PreviewModel)pMsg2->m_iValue;
 
@@ -70,6 +100,11 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
     }
   }
 
+  if (const auto* config = xiiDynamicCast<const xiiDocumentConfigMsgToEngine*>(pMsg))
+  {
+    if (config->m_sWhatToDo == "PreviewScene" || config->m_sWhatToDo == "PreviewModel" || config->m_sWhatToDo == "InvalidateCache")
+      return;
+  }
   xiiEngineProcessDocumentContext::HandleMessage(pMsg);
 }
 
@@ -91,7 +126,7 @@ xiiStatus xiiMaterialContext::OnInitialize()
         xiiGeometry geom;
 
         xiiGeometry::GeoOptions opt;
-        opt.m_Color     = xiiColor::Red;
+        opt.m_Color     = xiiColor::White;
         opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
         geom.AddStackedSphere(0.1f, 64, 64, opt);
         geom.ComputeTangents();
@@ -130,7 +165,7 @@ xiiStatus xiiMaterialContext::OnInitialize()
       if (!hMeshBuffer.IsValid())
       {
         xiiGeometry::GeoOptions opt;
-        opt.m_Color = xiiColor::Red;
+        opt.m_Color = xiiColor::White;
 
         // Build geometry
         xiiGeometry geom;
@@ -175,7 +210,7 @@ xiiStatus xiiMaterialContext::OnInitialize()
         xiiGeometry geom;
 
         xiiGeometry::GeoOptions opt;
-        opt.m_Color     = xiiColor::Red;
+        opt.m_Color     = xiiColor::White;
         opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(-90));
         geom.AddRect(xiiVec2(0.2f), 64, 64, opt);
         geom.ComputeTangents();
@@ -210,6 +245,7 @@ xiiStatus xiiMaterialContext::OnInitialize()
   // Preview Mesh
   {
     obj.m_sName.Assign("MaterialPreview");
+    obj.m_bDynamic = true;
     pWorld->CreateObject(obj, pObj);
 
     xiiMeshComponent* pMesh;
@@ -222,7 +258,18 @@ xiiStatus xiiMaterialContext::OnInitialize()
     // All three generated preview meshes have one material slot.
     pMesh->SetMaterialOverride(0, m_hMaterial);
   }
+  m_pPreviewLighting = XII_DEFAULT_NEW(xiiScenePreviewLighting, *pWorld);
+  // This world contains only transient preview state. The Editor tag is hidden
+  // when rendering thumbnails or disabling gizmos, so it must not hide lighting.
+  XII_SUCCEED_OR_RETURN(m_pPreviewLighting->EnsureCreated(false, true));
+  XII_SUCCEED_OR_RETURN(m_pPreviewLighting->SetSettings(m_LightingSettings));
   return XII_SUCCESS;
+}
+
+void xiiMaterialContext::OnDeinitialize()
+{
+  m_pPreviewLighting.Clear();
+  xiiEngineProcessDocumentContext::OnDeinitialize();
 }
 
 xiiEngineProcessViewContext* xiiMaterialContext::CreateViewContext()

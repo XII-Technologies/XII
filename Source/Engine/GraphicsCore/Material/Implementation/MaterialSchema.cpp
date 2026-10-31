@@ -51,6 +51,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialSchemaDescription, xiiNoBase, 1, xiiR
   {
     XII_MEMBER_PROPERTY("Name", m_sName),
     XII_RESOURCE_MEMBER_PROPERTY("Shader", m_hShader),
+    XII_MAP_MEMBER_PROPERTY("Permutations", m_Permutations),
     XII_ENUM_MEMBER_PROPERTY("Domain", xiiMaterialDomain, m_Domain),
     XII_ENUM_MEMBER_PROPERTY("ShadingModel", xiiMaterialShadingModel, m_ShadingModel),
     XII_MEMBER_PROPERTY("Version", m_uiVersion),
@@ -115,6 +116,13 @@ xiiResult xiiMaterialSchema::Build(const xiiMaterialSchemaDescription& descripti
 
   m_sName        = description.m_sName;
   m_hShader      = description.m_hShader;
+  for (const auto& permutation : description.m_Permutations)
+  {
+    xiiHashedString name, value;
+    name.Assign(permutation.Key());
+    value.Assign(permutation.Value());
+    m_Permutations.Insert(name, value);
+  }
   m_Domain       = description.m_Domain;
   m_ShadingModel = description.m_ShadingModel;
   m_uiVersion    = description.m_uiVersion;
@@ -193,6 +201,7 @@ void xiiMaterialSchema::Clear()
 {
   m_sName.Clear();
   m_hShader.Invalidate();
+  m_Permutations.Clear();
   m_Domain               = xiiMaterialDomain::Surface;
   m_ShadingModel         = xiiMaterialShadingModel::Lit;
   m_uiVersion            = 0U;

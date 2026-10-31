@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Containers/Map.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+
+#include <Foundation/Containers/Map.h>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <ToolsFoundation/Factory/RttiMappedObjectFactory.h>
@@ -12,6 +13,8 @@
 class xiiQtNode;
 class xiiQtPin;
 class xiiQtConnection;
+class xiiQtGraphCommentBlock;
+class xiiPasteObjectsCommand;
 class QMenu;
 struct xiiSelectionManagerEvent;
 
@@ -23,7 +26,8 @@ public:
   {
     Node = QGraphicsItem::UserType + 1,
     Pin,
-    Connection
+    Connection,
+    CommentBlock
   };
 
   explicit xiiQtNodeScene(QObject* pParent = nullptr);
@@ -51,6 +55,22 @@ public:
   xiiStatus ArrangeNodes(NodeArrangement arrangement, bool bWholeGraph = false);
   /// Add shared formatting and alignment actions to a graph menu.
   void AddArrangementActions(QMenu& menu);
+  /// Shared annotation editing for every node document. A single transaction
+  /// participates in ordinary document undo/redo and persistence.
+  xiiStatus SetNodeComment(const xiiDocumentObject* pNode, xiiStringView sComment);
+  void      AddCommentActions(QMenu& menu, const xiiDocumentObject* pNode);
+  /// Shared organizational frames are Editor metadata. Dragging moves fully contained
+  /// nodes in the same transaction; resizing changes only the frame's bounds.
+  xiiStatus SetCommentBlock(const xiiGraphCommentBlock& block, bool bMoveContainedNodes = false);
+  xiiStatus RemoveCommentBlock(const xiiUuid& id);
+  xiiStatus CreateCommentBlock(xiiStringView sText);
+  xiiStatus FitCommentBlock(const xiiUuid& id);
+  void      AddCommentBlockActions(QMenu& menu, const xiiUuid& id = {});
+  bool      HasSelectedCommentBlocks() const;
+  /// Use the document's MIME format and paste command for both annotations and nodes.
+  bool      CopySelectedObjects(xiiAbstractObjectGraph& out_graph, xiiStringBuilder& out_sMimeType) const;
+  xiiStatus PasteObjects(xiiPasteObjectsCommand& command);
+  void      DeleteSelectedObjects() { RemoveSelectedNodesAction(); }
 
 Q_SIGNALS:
   /// Emitted after a successful full-graph format so attached views can frame the result.
@@ -110,6 +130,7 @@ protected:
 
 private:
   void Clear();
+  void SyncCommentBlocks();
   void CreateQtNode(const xiiDocumentObject* pObject);
   void DeleteQtNode(const xiiDocumentObject* pObject);
   void CreateQtConnection(const xiiDocumentObject* pObject);
@@ -149,6 +170,7 @@ protected:
 
   xiiMap<const xiiDocumentObject*, xiiQtNode*>       m_Nodes;
   xiiMap<const xiiDocumentObject*, xiiQtConnection*> m_Connections;
+  xiiMap<xiiUuid, xiiQtGraphCommentBlock*>           m_CommentBlocks;
 
 private:
   bool                                   m_bIgnoreSelectionChange = false;

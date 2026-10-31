@@ -20,14 +20,14 @@ SamplerState BaseTexture_AutoSampler;
   {
     string %Color { "Teal" }
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
     string %Tooltip { "Optional UV coordinates to sample the texture. Default uses the mesh UV coordinates." }
   }
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "BaseTexture.Sample(BaseTexture_AutoSampler, ToFloat2($in0))" }
   }
@@ -90,7 +90,7 @@ SamplerState $prop0_AutoSampler;
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
     string %Tooltip { "Optional UV coordinates to sample the texture. Default uses the mesh UV coordinates." }
   }
@@ -99,7 +99,7 @@ SamplerState $prop0_AutoSampler;
   {
     string %Type { "float3" }
     string %Color { "Violet" }
-    string %Inline { "DecodeNormalTexture($prop0.Sample($prop0_AutoSampler, ToFloat2($in0)))" }
+    string %Inline { "xiiMaterialDecodeNormalTexture($prop0.Sample($prop0_AutoSampler, ToFloat2($in0)))" }
     string %Tooltip { "Normal in Tangent Space" }
   }
 }
@@ -126,14 +126,14 @@ SamplerState EmissiveTexture_AutoSampler;
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
     string %Tooltip { "Optional UV coordinates to sample the texture. Default uses the mesh UV coordinates." }
   }
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "EmissiveTexture.Sample(EmissiveTexture_AutoSampler, ToFloat2($in0))" }
   }
@@ -182,7 +182,7 @@ SamplerState MetallicTexture_AutoSampler;
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
     string %Tooltip { "Optional UV coordinates to sample the texture. Default uses the mesh UV coordinates." }
   }
@@ -217,7 +217,7 @@ SamplerState RoughnessTexture_AutoSampler;
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
     string %Tooltip { "Optional UV coordinates to sample the texture. Default uses the mesh UV coordinates." }
   }
@@ -263,7 +263,7 @@ SamplerState $prop0_AutoSampler;
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %DefaultValue { "G.Input.TexCoord0" }
+    string %DefaultValue { "MaterialInput.TexCoord" }
     string %DefineWhenUsingDefaultValue { "USE_TEXCOORD0" }
     string %Tooltip { "Optional UV coordinates to sample the texture. Default uses the mesh UV coordinates." }
   }
@@ -278,7 +278,7 @@ SamplerState $prop0_AutoSampler;
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "$prop0.Sample($in1, ToFloat2($in0))" }
   }
@@ -347,15 +347,15 @@ SamplerState $prop0_AutoSampler;
   {
     string %Type { "float3" }
     string %Color { "Violet" }
-    string %DefaultValue { "G.Input.Normal" }
+    string %DefaultValue { "MaterialInput.WorldNormal" }
     string %DefineWhenUsingDefaultValue { "USE_NORMAL" }
   }
 
   OutputPin %RGBA
   {
-    string %Type { "float4" }
+    string %Type { "color" }
     unsigned_int8 %Color { 200, 200, 200 }
-    string %Inline { "SampleTexture3Way($prop0, $prop0_AutoSampler, $in0, G.Input.WorldPosition, $prop2)" }
+    string %Inline { "xiiMaterialSampleTriplanar($prop0, $prop0_AutoSampler, $in0, MaterialInput.WorldPosition, $prop2)" }
   }
 }
 
@@ -380,7 +380,7 @@ Node %BlendNormals
   {
     string %Type { "float3" }
     string %Color { "Violet" }
-    string %Inline { "BlendNormals($in0, $in1)" }
+    string %Inline { "xiiMaterialBlendNormals($in0, $in1)" }
     string %Tooltip { "Blended Normal" }
   }
 }

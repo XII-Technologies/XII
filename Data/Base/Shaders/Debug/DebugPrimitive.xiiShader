@@ -24,14 +24,18 @@ ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 
 [VERTEX_SHADER]
 
-#define USE_COLOR0
 
 #include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertexInput { float3 Position : POSITION; float4 Color0 : COLOR0; uint InstanceID : SV_InstanceID; uint VertexID : SV_VertexID; };
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
-VS_OUT main(VS_IN Input)
+DebugVertex main(DebugVertexInput Input)
 {
-  VS_OUT RetVal;
+  DebugVertex RetVal;
 
   #if defined(CAMERA_MODE) && CAMERA_MODE == CAMERA_MODE_STEREO
     s_ActiveCameraEyeIndex = Input.InstanceID % 2;
@@ -53,12 +57,15 @@ VS_OUT main(VS_IN Input)
 
 [PIXEL_SHADER]
 
-#define USE_COLOR0
 
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 #include <Shaders/Common/GlobalConstants.h>
 
-float4 main(PS_IN Input) : SV_Target
+float4 main(DebugVertex Input) : SV_Target
 {
   return Input.Color0;
 }

@@ -6,6 +6,7 @@
 
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Strings/HashedString.h>
+#include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 
 using xiiShaderResourceHandle = xiiTypedResourceHandle<class xiiShaderResource>;
 
@@ -25,6 +26,7 @@ public:
   bool IsShaderValid() const { return m_bShaderResourceIsValid; }
 
   xiiArrayPtr<const xiiHashedString> GetUsedPermutationVariables() const { return m_PermutationVariablesUsed; }
+  xiiArrayPtr<const xiiGALPermutationVariable> GetFixedPermutationVariables() const { return m_FixedPermutationVariables; }
 
 private:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
@@ -33,5 +35,6 @@ private:
 
 private:
   xiiHybridArray<xiiHashedString, 16> m_PermutationVariablesUsed;
+  xiiHybridArray<xiiGALPermutationVariable, 16> m_FixedPermutationVariables;
   bool                                m_bShaderResourceIsValid;
 };

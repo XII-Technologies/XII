@@ -6,7 +6,7 @@ Node %SceneColor
   InputPin %ScreenPosition
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.Position.xy" }
+    string %DefaultValue { "MaterialInput.Position.xy" }
   }
 
   OutputPin %Color
@@ -25,7 +25,7 @@ Node %SceneDepth
   InputPin %ScreenPosition
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.Position.xy" }
+    string %DefaultValue { "MaterialInput.Position.xy" }
   }
 
   OutputPin %Depth
@@ -43,7 +43,7 @@ Node %ScenePosition
   InputPin %ScreenPosition
   {
     string %Type { "float2" }
-    string %DefaultValue { "G.Input.Position.xy" }
+    string %DefaultValue { "MaterialInput.Position.xy" }
   }
 
   OutputPin %Position
@@ -69,7 +69,7 @@ Node %DepthFade
   OutputPin %Fade
   {
     string %Type { "float" }
-    string %Inline { "DepthFade(G.Input.Position.xyw, ToFloat1($in0))" }
+    string %Inline { "DepthFade(MaterialInput.Position.xyw, ToFloat1($in0))" }
   }
 }
 
@@ -82,7 +82,7 @@ Node %Fresnel
 
 float VisualShaderFresnel(float3 normal, float f0, float exponent)
 {
-  float3 normalizedViewVector = normalize(GetCameraPosition() - G.Input.WorldPosition);
+  float3 normalizedViewVector = normalize(MaterialCameraPosition.xyz - MaterialInput.WorldPosition);
   float NdotV = saturate(dot(normalize(normal), normalizedViewVector));
   float f = pow(1 - NdotV, exponent);
   return f + (1 - f) * f0;
@@ -107,7 +107,7 @@ float VisualShaderFresnel(float3 normal, float f0, float exponent)
   InputPin %Normal
   {
     string %Type { "float3" }
-    string %DefaultValue { "GetNormal()" }
+    string %DefaultValue { "normalize(MaterialInput.WorldNormal)" }
   }
 
   OutputPin %Fresnel
@@ -126,7 +126,7 @@ Node %Refraction
 
 float4 VisualShaderRefraction(float3 worldNormal, float IoR, float thickness, float3 tintColor, float newOpacity)
 {
-  return CalculateRefraction(G.Input.WorldPosition, worldNormal, IoR, thickness, tintColor, newOpacity);
+  return CalculateRefraction(MaterialInput.WorldPosition, worldNormal, IoR, thickness, tintColor, newOpacity);
 }
 
 " }
@@ -135,7 +135,7 @@ float4 VisualShaderRefraction(float3 worldNormal, float IoR, float thickness, fl
   {
     string %Color { "Violet" }
     string %Type { "float3" }
-    string %DefaultValue { "GetNormal()" }
+    string %DefaultValue { "normalize(MaterialInput.WorldNormal)" }
   }
   
   InputPin %IoR

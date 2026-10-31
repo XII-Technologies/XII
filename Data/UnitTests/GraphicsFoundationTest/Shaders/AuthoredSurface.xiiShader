@@ -1,0 +1,50 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[PERMUTATIONS]
+BLEND_MODE
+FORWARD_DIRECTIONAL_SHADOWS
+FORWARD_ATMOSPHERE
+FORWARD_REFRACTION
+FORWARD_SPOT_SHADOWS
+RENDER_PASS
+[MATERIAL_PARAMETER]
+Color AuthoredTint @Default(Color(1, 0, 0));
+float AuthoredGain @Default(1);
+float AuthoredOpacity @Default(1);
+float3 AuthoredOffset @Default(float3(0, 0, 0));
+Texture2D AuthoredTexture;
+[MATERIAL_CONSTANTS]
+float AuthoredGain;
+float3 AuthoredTint;
+float AuthoredOpacity;
+float3 AuthoredOffset;
+[RENDERSTATE]
+#include <Shaders/Materials/NativeMaterialState.h>
+[VERTEX_SHADER]
+#define XII_SCENE_WORLD_ATTRIBUTES
+#define XII_SCENE_MATERIAL_ATTRIBUTES
+#define XII_SCENE_SURFACE_FLAGS
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+#define XII_SCENE_CUSTOM_VERTEX_ENTRY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_InstanceID)
+{
+  GBufferVertex vertex = xiiLoadIndexedSceneSurfaceVertex(vertexIndex, visibleIndex);
+  vertex.WorldPosition += AuthoredOffset;
+  vertex.Position = mul(ViewProjectionMatrix, float4(vertex.WorldPosition, 1));
+  vertex.PreviousClipPosition += mul(PreviousViewProjectionMatrix, float4(AuthoredOffset, 0));
+  return vertex;
+}
+[PIXEL_SHADER]
+#include <Shaders/Materials/NativeMaterialSurface.h>
+Texture2D AuthoredTexture;
+SamplerState AuthoredTexture_AutoSampler;
+xiiMaterialSurfaceOutput main(GBufferVertex input, bool frontFace : SV_IsFrontFace)
+{
+  xiiMaterialSurface surface = xiiDefaultMaterialSurface(input, frontFace);
+  surface.BaseColor = float4(AuthoredTint * AuthoredGain * AuthoredTexture.Sample(AuthoredTexture_AutoSampler, input.TexCoord).rgb, AuthoredOpacity * surface.BaseColor.a);
+  surface.Roughness = 0.25;
+  surface.Metallic = 0.8;
+  return xiiWriteMaterialSurface(input, surface);
+}

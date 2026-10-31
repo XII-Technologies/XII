@@ -2,6 +2,8 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <GraphicsCore/Material/MaterialResource.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
@@ -76,7 +78,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SkeletonContext)
     xiiMeshResourceDescriptor mesh;
     mesh.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
     mesh.AddSubMesh(12, 0, 0);
-    mesh.AddMaterialSlot("Editor/Materials/SkeletonPreviewMesh.xiiMaterial");
+    mesh.AddMaterialSlot(xiiMaterialResource::GetDefaultMaterial(xiiMaterialResource::DefaultMaterialType::Preview).GetResourceID());
     mesh.ComputeBounds();
     auto                               hMesh = xiiResourceManager::CreateResource<xiiMeshResource>("EditorSkeletonContextMesh", std::move(mesh));
     xiiSimpleDocumentConfigMsgToEngine config;

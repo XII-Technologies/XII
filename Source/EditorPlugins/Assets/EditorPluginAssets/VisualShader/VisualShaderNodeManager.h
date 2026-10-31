@@ -2,12 +2,14 @@
 
 #pragma once
 
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
+
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
 struct xiiVisualShaderPinDescriptor;
 
-class xiiVisualShaderPin : public xiiPin
+class XII_EDITORPLUGINASSETS_DLL xiiVisualShaderPin : public xiiPin
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiVisualShaderPin, xiiPin);
 
@@ -16,13 +18,14 @@ public:
 
   const xiiRTTI*                      GetDataType() const;
   const xiiString&                    GetTooltip() const;
+  static bool                         CanConvert(const xiiVisualShaderPin& source, const xiiVisualShaderPin& target);
   const xiiVisualShaderPinDescriptor* GetDescriptor() const { return m_pDescriptor; }
 
 private:
   const xiiVisualShaderPinDescriptor* m_pDescriptor;
 };
 
-class xiiVisualShaderNodeManager : public xiiDocumentNodeManager
+class XII_EDITORPLUGINASSETS_DLL xiiVisualShaderNodeManager : public xiiDocumentNodeManager
 {
 public:
   virtual bool InternalIsNode(const xiiDocumentObject* pObject) const override;

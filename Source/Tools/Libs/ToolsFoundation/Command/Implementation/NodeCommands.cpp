@@ -8,6 +8,28 @@
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
 // clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSetGraphCommentBlockCommand, 1, xiiRTTIDefaultAllocator<xiiSetGraphCommentBlockCommand>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Id", m_Id),
+    XII_MEMBER_PROPERTY("Value", m_Value),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSetNodeCommentCommand, 1, xiiRTTIDefaultAllocator<xiiSetNodeCommentCommand>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("ObjectGuid", m_Object),
+    XII_MEMBER_PROPERTY("Comment", m_sComment),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRemoveNodeCommand, 1, xiiRTTIDefaultAllocator<xiiRemoveNodeCommand>)
 {
   XII_BEGIN_PROPERTIES
@@ -53,6 +75,40 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDisconnectNodePinsCommand, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+xiiStatus xiiSetGraphCommentBlockCommand::DoInternal(bool bRedo)
+{
+  auto* manager = static_cast<xiiDocumentNodeManager*>(GetDocument()->GetObjectManager());
+  if (!bRedo)
+  {
+    const auto block = manager->GetCommentBlocks().Find(m_Id);
+    m_OldValue       = block.IsValid() ? block.Value().ToVariant() : xiiVariant();
+  }
+  return manager->SetCommentBlock(m_Id, m_Value);
+}
+
+xiiStatus xiiSetGraphCommentBlockCommand::UndoInternal(bool bFireEvents)
+{
+  auto* manager = static_cast<xiiDocumentNodeManager*>(GetDocument()->GetObjectManager());
+  return manager->SetCommentBlock(m_Id, m_OldValue);
+}
+
+xiiStatus xiiSetNodeCommentCommand::DoInternal(bool bRedo)
+{
+  auto*       manager = static_cast<xiiDocumentNodeManager*>(GetDocument()->GetObjectManager());
+  const auto* object  = manager->GetObject(m_Object);
+  if (object == nullptr || !manager->IsNode(object))
+    return xiiStatus("The graph comment's node no longer exists.");
+  if (!bRedo)
+    m_sOldComment = manager->GetNodeComment(object);
+  return manager->SetNodeComment(object, m_sComment);
+}
+
+xiiStatus xiiSetNodeCommentCommand::UndoInternal(bool bFireEvents)
+{
+  auto* manager = static_cast<xiiDocumentNodeManager*>(GetDocument()->GetObjectManager());
+  return manager->SetNodeComment(manager->GetObject(m_Object), m_sOldComment);
+}
 
 ////////////////////////////////////////////////////////////////////////
 // xiiRemoveNodeCommand

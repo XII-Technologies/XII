@@ -2,6 +2,8 @@
 
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <GraphicsCore/Material/MaterialResource.h>
+
 #include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/OrbitCameraContext.h>
@@ -158,7 +160,7 @@ bool xiiQtAnimatedMeshAssetDocumentWindow::UpdatePreview()
       if (uiSlot == m_uiHighlightSlots)
       {
         bHighlighted       = true;
-        msg.m_Materials[i] = "Editor/Materials/HighlightMesh.xiiMaterial";
+        msg.m_Materials[i] = xiiMaterialResource::GetDefaultMaterial(xiiMaterialResource::DefaultMaterialType::Highlight).GetResourceID();
       }
 
       ++uiSlot;

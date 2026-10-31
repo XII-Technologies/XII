@@ -2,18 +2,16 @@
 ALL
 
 [PERMUTATIONS]
-
+FORWARD_DIRECTIONAL_SHADOWS
+FORWARD_ATMOSPHERE
+FORWARD_REFRACTION
+FORWARD_SPOT_SHADOWS
 BLEND_MODE
 RENDER_PASS
 SHADING_MODE
 TWO_SIDED
-FLIP_WINDING
-FORWARD_PASS_WRITE_DEPTH
-CAMERA_MODE
-SHADING_QUALITY
-VERTEX_SKINNING
 
-[MATERIALPARAMETER]
+[MATERIAL_PARAMETER]
 
 Permutation BLEND_MODE;
 Permutation SHADING_MODE;
@@ -46,54 +44,22 @@ Color EmissiveColor @Default(Color(0.0, 0.0, 0.0));
 bool UseEmissiveTexture;
 Texture2D EmissiveTexture;
 
-[MATERIALCONFIG]
-
-#include <Shaders/Materials/MaterialConfig.h>
+[MATERIAL_CONSTANTS]
+#include <Shaders/Materials/DefaultMaterialConstants.h>
 
 [RENDERSTATE]
+#include <Shaders/Materials/NativeMaterialState.h>
 
-#include <Shaders/Materials/MaterialState.h>
+[VERTEX_SHADER]
+#define XII_SCENE_WORLD_ATTRIBUTES
+#define XII_SCENE_MATERIAL_ATTRIBUTES
+#define XII_SCENE_SURFACE_FLAGS
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
 
-[VERTEXSHADER]
-
-#define USE_NORMAL
-#define USE_TANGENT
-#define USE_TEXCOORD0
-
-#if VERTEX_SKINNING
-  #define USE_SKINNING
-#endif
-
-#if RENDER_PASS == RENDER_PASS_EDITOR
-  #define USE_DEBUG_INTERPOLATOR
-#endif
-
-#include <Shaders/Materials/DefaultMaterialCB.h>
-#include <Shaders/Materials/MaterialVertexShader.h>
-
-VS_OUT main(VS_IN Input)
-{
-  return FillVertexData(Input);
-}
-
-[PIXELSHADER]
-
-#define USE_NORMAL
-#define USE_TANGENT
-#define USE_TEXCOORD0
-#define USE_SIMPLE_MATERIAL_MODEL
-#define USE_MATERIAL_EMISSIVE
-#define USE_MATERIAL_OCCLUSION
-#define USE_TWO_SIDED_LIGHTING
-#define USE_DECALS
-#define USE_FOG
-
-#if RENDER_PASS == RENDER_PASS_EDITOR
-  #define USE_DEBUG_INTERPOLATOR
-#endif
-
-#include <Shaders/Materials/DefaultMaterialCB.h>
-#include <Shaders/Materials/MaterialPixelShader.h>
+[PIXEL_SHADER]
+#include <Shaders/Materials/NativeMaterialSurface.h>
+static GBufferVertex MaterialInput;
 
 Texture2D BaseTexture;
 SamplerState BaseTexture_AutoSampler;
@@ -121,28 +87,28 @@ float3 GetNormal()
   [branch]
   if (UseNormalTexture)
   {
-    float3 normalTS = DecodeNormalTexture(NormalTexture.Sample(NormalTexture_AutoSampler, G.Input.TexCoord0.xy));
-    return TangentToWorldSpace(normalTS);
+    float3 normalTS = xiiMaterialDecodeNormalTexture(NormalTexture.Sample(NormalTexture_AutoSampler, MaterialInput.TexCoord));
+    return xiiMaterialTangentToWorld(MaterialInput, normalTS);
   }
   else
   {
-    return G.Input.Normal;
+    return MaterialInput.WorldNormal;
   }
 }
 
 float3 GetBaseColor()
 {
-  float3 baseColor = BaseColor.rgb * GetInstanceData().Color.rgb;
+  float3 baseColor = BaseColor.rgb;
 
   // note that the default material actually doesn't support per-vertex colors
 #if defined(USE_COLOR0)
-  baseColor *= G.Input.Color0;
+  baseColor *= MaterialInput.Color.rgb;
 #endif
 
   [branch]
   if (UseBaseTexture)
   {
-    baseColor *= BaseTexture.Sample(BaseTexture_AutoSampler, G.Input.TexCoord0.xy).rgb;
+    baseColor *= BaseTexture.Sample(BaseTexture_AutoSampler, MaterialInput.TexCoord).rgb;
   }
 
   return baseColor;
@@ -153,11 +119,11 @@ float GetMetallic()
   [branch]
   if (UseOrmTexture)
   {
-    return OrmTexture.Sample(OrmTexture_AutoSampler, G.Input.TexCoord0.xy).b;
+    return OrmTexture.Sample(OrmTexture_AutoSampler, MaterialInput.TexCoord).b;
   }
   else if (UseMetallicTexture)
   {
-    return MetallicTexture.Sample(MetallicTexture_AutoSampler, G.Input.TexCoord0.xy).r;
+    return MetallicTexture.Sample(MetallicTexture_AutoSampler, MaterialInput.TexCoord).r;
   }
   else
   {
@@ -175,11 +141,11 @@ float GetRoughness()
   [branch]
   if (UseOrmTexture)
   {
-    return RoughnessValue * OrmTexture.Sample(OrmTexture_AutoSampler, G.Input.TexCoord0.xy).g;
+    return RoughnessValue * OrmTexture.Sample(OrmTexture_AutoSampler, MaterialInput.TexCoord).g;
   }
   else if (UseRoughnessTexture)
   {
-    return RoughnessValue * RoughnessTexture.Sample(RoughnessTexture_AutoSampler, G.Input.TexCoord0.xy).r;
+    return RoughnessValue * RoughnessTexture.Sample(RoughnessTexture_AutoSampler, MaterialInput.TexCoord).r;
   }
   else
   {
@@ -189,12 +155,12 @@ float GetRoughness()
 
 float GetOpacity()
 {
-  float opacity = BaseColor.a * GetInstanceData().Color.a;
+  float opacity = BaseColor.a * MaterialInput.Color.a;
 
   [branch]
   if (UseBaseTexture)
   {
-    opacity *= BaseTexture.Sample(BaseTexture_AutoSampler, G.Input.TexCoord0.xy).a;
+    opacity *= BaseTexture.Sample(BaseTexture_AutoSampler, MaterialInput.TexCoord).a;
   }
 
   #if BLEND_MODE == BLEND_MODE_MASKED
@@ -209,7 +175,7 @@ float3 GetEmissiveColor()
   [branch]
   if (UseEmissiveTexture)
   {
-    return EmissiveTexture.Sample(EmissiveTexture_AutoSampler, G.Input.TexCoord0.xy).rgb * EmissiveColor.rgb;
+    return EmissiveTexture.Sample(EmissiveTexture_AutoSampler, MaterialInput.TexCoord).rgb * EmissiveColor.rgb;
   }
   else
   {
@@ -222,14 +188,37 @@ float GetOcclusion()
   [branch]
   if (UseOrmTexture)
   {
-    return OrmTexture.Sample(OrmTexture_AutoSampler, G.Input.TexCoord0.xy).r;
+    return OrmTexture.Sample(OrmTexture_AutoSampler, MaterialInput.TexCoord).r;
   }
   else if (UseOcclusionTexture)
   {
-    return OcclusionTexture.Sample(OcclusionTexture_AutoSampler, G.Input.TexCoord0.xy).r;
+    return OcclusionTexture.Sample(OcclusionTexture_AutoSampler, MaterialInput.TexCoord).r;
   }
   else
   {
     return 1.0f;
   }
+}
+
+xiiMaterialSurfaceOutput main(GBufferVertex input, bool frontFace : SV_IsFrontFace)
+{
+  MaterialInput = input;
+#if TWO_SIDED != TRUE
+  if (!frontFace) discard;
+#endif
+#if BLEND_MODE == BLEND_MODE_MASKED
+  clip(GetOpacity());
+#endif
+  xiiMaterialSurface surface;
+  surface.BaseColor = float4(GetBaseColor(), GetOpacity());
+  surface.AlphaCutoff = 0;
+  surface.Normal = GetNormal() * (frontFace ? 1 : -1);
+  surface.Roughness = GetRoughness();
+  surface.Metallic = GetMetallic();
+  surface.Reflectance = GetReflectance();
+  surface.Occlusion = GetOcclusion();
+  surface.Emissive = GetEmissiveColor();
+  surface.Transmission = 0;
+  surface.Unlit = SHADING_MODE == SHADING_MODE_FULLBRIGHT;
+  return xiiWriteMaterialSurface(input, surface);
 }

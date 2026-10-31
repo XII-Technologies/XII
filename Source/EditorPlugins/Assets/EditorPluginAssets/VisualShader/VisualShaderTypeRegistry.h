@@ -18,6 +18,7 @@ struct xiiVisualShaderPinDescriptor
   xiiReflectedPropertyDescriptor m_PropertyDesc;
   xiiColorGammaUB                m_Color             = xiiColorScheme::DarkUI(xiiColorScheme::Gray);
   bool                           m_bExposeAsProperty = false;
+  bool                           m_bDynamicNumeric   = false;
   xiiString                      m_sDefaultValue;
   xiiDynamicArray<xiiString>     m_sDefinesWhenUsingDefaultValue;
   xiiString                      m_sShaderCodeInline;

@@ -24,6 +24,13 @@ struct GBufferVertex
   float  TangentSign : TEXCOORD2;
 #endif
   float2 TexCoord : TEXCOORD3;
+#if defined(XII_SCENE_MATERIAL_ATTRIBUTES)
+  float2               TexCoord1 : TEXCOORD9;
+  float4               Color : TEXCOORD10;
+  float3               LocalPosition : TEXCOORD11;
+  float3               Barycentric : TEXCOORD18;
+  nointerpolation uint InstanceIndex : TEXCOORD12;
+#endif
 #if defined(XII_SCENE_DIAGNOSTICS)
   float3                DiagnosticWorldPosition : TEXCOORD11;
   float2                DiagnosticUV1 : TEXCOORD12;
@@ -41,7 +48,7 @@ struct GBufferVertex
   nointerpolation uint SurfaceFlags : TEXCOORD8;
 #  endif
 #  if !defined(XII_SCENE_SURFACE_NO_IDENTITY)
-  nointerpolation uint ObjectUserData : TEXCOORD8;
+  nointerpolation uint ObjectUserData : TEXCOORD17;
 #  endif
 #endif
 #if !defined(XII_SCENE_SURFACE_QUERY) && !defined(XII_SCENE_DEPTH_ONLY) && !defined(XII_SCENE_PARTICLE_ATTRIBUTES)

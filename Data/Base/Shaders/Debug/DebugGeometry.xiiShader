@@ -19,10 +19,14 @@ DepthWriteEnable = true
 
 [VERTEX_SHADER]
 
-#define USE_COLOR0
 
 #include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertexInput { float3 Position : POSITION; float4 Color0 : COLOR0; uint InstanceID : SV_InstanceID; uint VertexID : SV_VertexID; };
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
 struct BoxData
 {
@@ -32,13 +36,13 @@ struct BoxData
 
 DECLARE_STRUCTURED_BUFFER_AUTO(boxData, BoxData);
 
-struct VS_IN_POS_ONLY
+struct DebugVertexInput_POS_ONLY
 {
   float3 Position : POSITION;
   uint InstanceID : SV_InstanceID;
 };
 
-VS_OUT main(VS_IN_POS_ONLY Input)
+DebugVertex main(DebugVertexInput_POS_ONLY Input)
 {
   #if CAMERA_MODE == CAMERA_MODE_STEREO
     s_ActiveCameraEyeIndex = Input.InstanceID % 2;
@@ -52,7 +56,7 @@ VS_OUT main(VS_IN_POS_ONLY Input)
 
   float4 worldPos = mul(worldMatrix, float4(Input.Position, 1.0f));
 
-  VS_OUT RetVal;
+  DebugVertex RetVal;
   RetVal.Position = mul(GetWorldToScreenMatrix(), worldPos);
   #if defined(CAMERA_MODE) && CAMERA_MODE == CAMERA_MODE_STEREO
     RetVal.Color0 = boxData[Input.InstanceID / 2].color;
@@ -68,11 +72,14 @@ VS_OUT main(VS_IN_POS_ONLY Input)
 
 [PIXEL_SHADER]
 
-#define USE_COLOR0
 
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
-float4 main(PS_IN Input) : SV_Target
+float4 main(DebugVertex Input) : SV_Target
 {
   return Input.Color0;
 }

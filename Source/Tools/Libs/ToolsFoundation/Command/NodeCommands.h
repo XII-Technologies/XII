@@ -2,11 +2,45 @@
 
 #pragma once
 
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
+#include <Foundation/Types/Variant.h>
 #include <ToolsFoundation/Command/Command.h>
 
 class xiiDocumentObject;
 class xiiCommandHistory;
 class xiiPin;
+
+class XII_TOOLSFOUNDATION_DLL xiiSetGraphCommentBlockCommand : public xiiCommand
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiSetGraphCommentBlockCommand, xiiCommand);
+
+public:
+  xiiUuid    m_Id;
+  xiiVariant m_Value;
+
+private:
+  xiiStatus  DoInternal(bool bRedo) override;
+  xiiStatus  UndoInternal(bool bFireEvents) override;
+  void       CleanupInternal(CommandState state) override {}
+  xiiVariant m_OldValue;
+};
+
+/// Edits a graph annotation without changing domain properties or connections.
+class XII_TOOLSFOUNDATION_DLL xiiSetNodeCommentCommand : public xiiCommand
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiSetNodeCommentCommand, xiiCommand);
+
+public:
+  xiiUuid   m_Object;
+  xiiString m_sComment;
+
+private:
+  xiiStatus DoInternal(bool bRedo) override;
+  xiiStatus UndoInternal(bool bFireEvents) override;
+  void      CleanupInternal(CommandState state) override {}
+  xiiString m_sOldComment;
+};
 
 class XII_TOOLSFOUNDATION_DLL xiiRemoveNodeCommand : public xiiCommand
 {

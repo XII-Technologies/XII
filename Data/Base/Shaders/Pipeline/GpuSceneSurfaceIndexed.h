@@ -15,7 +15,7 @@ ByteAddressBuffer g_Buffers[];
 
 #include <Shaders/Pipeline/GpuSceneSurfaceData.h>
 
-GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_InstanceID)
+GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleIndex)
 {
   uint sceneCapacity, visibleCapacity, meshletCapacity, geometryCapacity, stride;
   g_SceneInstances.GetDimensions(sceneCapacity, stride);
@@ -69,6 +69,11 @@ GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_Instan
       (instance.PrimitiveCount != 0u && (sourcePrimitive < instance.FirstPrimitive || sourcePrimitive - instance.FirstPrimitive >= instance.PrimitiveCount)))
     return xiiInvalidSceneSurfaceVertex();
   GBufferVertex output = xiiLoadSceneSurfaceVertex(instance, lod, indices[vertexIndex % 3u]);
+#if defined(XII_SCENE_MATERIAL_ATTRIBUTES)
+  output.InstanceIndex = instanceIndex;
+  output.Barycentric   = vertexIndex % 3u == 0u ? float3(1, 0, 0) : vertexIndex % 3u == 1u ? float3(0, 1, 0) :
+                                                                                             float3(0, 0, 1);
+#endif
 #if defined(XII_SCENE_DIAGNOSTICS)
   output.DiagnosticIdentity.yz = uint2(lodIndex, visible.y);
   output.DiagnosticIdentity.w  = sourcePrimitive + 1u;
@@ -80,3 +85,10 @@ GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_Instan
 #endif
   return output;
 }
+
+#if !defined(XII_SCENE_CUSTOM_VERTEX_ENTRY)
+GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_InstanceID)
+{
+  return xiiLoadIndexedSceneSurfaceVertex(vertexIndex, visibleIndex);
+}
+#endif

@@ -18,11 +18,14 @@ DepthWriteEnable = false
 
 [VERTEX_SHADER]
 
-#define USE_TEXCOORD0
-#define USE_COLOR0
 
 #include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Materials/MaterialInterpolator.h>
+#include <Shaders/Common/Common.h>
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
 struct GlyphData
 {
@@ -33,7 +36,7 @@ struct GlyphData
 
 DECLARE_STRUCTURED_BUFFER_AUTO(glyphData, GlyphData);
 
-VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
+DebugVertex main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 {
   float2 vertexPositions[6] =
   {
@@ -61,7 +64,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
   float texCoordX = fmod( glyphIndex, 16.0 );
   float texCoordY = floor( glyphIndex * invAtlasSize.x );
 
-  VS_OUT RetVal;
+  DebugVertex RetVal;
   RetVal.Position = float4(screenPosition, 0.0, 1.0);
   RetVal.TexCoord0 = (float2(texCoordX, texCoordY) + vertexPosition) * invAtlasSize;
   RetVal.Color0 = RGBA8ToFloat4(data.color);
@@ -77,16 +80,18 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 
 [PIXEL_SHADER]
 
-#define USE_TEXCOORD0
-#define USE_COLOR0
 
-#include <Shaders/Materials/MaterialInterpolator.h>
+struct DebugVertex { float4 Position : SV_Position; float4 Color0 : COLOR0; float2 TexCoord0 : TEXCOORD0; nointerpolation uint InstanceID : TEXCOORD7;
+#if CAMERA_MODE == CAMERA_MODE_STEREO
+ uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
 
 #include <Shaders/Common/Common.h>
 
 Texture2D FontTexture;
 
-float4 main(PS_IN Input) : SV_Target
+float4 main(DebugVertex Input) : SV_Target
 {
   float glyph = FontTexture.Sample(LinearClampSampler, Input.TexCoord0.xy).r;
   float c = saturate(glyph * 2.0 - 1.0); // 0.5 - 1 is color content

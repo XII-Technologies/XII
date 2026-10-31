@@ -84,11 +84,16 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
   const auto* depthDescription = context.m_Graph.GetTextureDescription(depth);
   if (!depthDescription || depthDescription->m_Format != xiiGALResourceFormat::D32Float || depthDescription->m_Type != xiiGALResourceDimension::Texture2D || depthDescription->m_uiArraySizeOrDepth != 1 || depthDescription->m_uiSampleCount != 1 || depthDescription->m_Size.width != width || depthDescription->m_Size.height != height || !depthDescription->m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
     return context.ReportFailure("G-buffer rasterization requires a matching single-sample D32 depth attachment.");
-  if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != m_FillMode)
+  xiiRenderPassResourceScope              scope(context);
+  xiiDynamicArray<xiiMaterialRasterBatch> batches;
+  xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
+  XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visible, count, batches, sortedVisible, materialDraws));
+  const bool useMesh = m_bUseMeshShaders && batches.IsEmpty();
+  if (!m_hShader.IsValid() || m_bCachedMeshShaders != useMesh || m_CachedFill != m_FillMode)
   {
-    const auto shader    = xiiResourceManager::LoadResource<xiiShaderResource>(m_bUseMeshShaders ? "Shaders/Geometry/GBufferMesh.xiiShader" : "Shaders/Geometry/GBufferVertexPull.xiiShader");
+    const auto shader    = xiiResourceManager::LoadResource<xiiShaderResource>(useMesh ? "Shaders/Geometry/GBufferMesh.xiiShader" : "Shaders/Geometry/GBufferVertexPull.xiiShader");
     m_hShader            = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
-    m_bCachedMeshShaders = m_bUseMeshShaders;
+    m_bCachedMeshShaders = useMesh;
     m_CachedFill         = m_FillMode;
   }
   xiiResourceLock<xiiShaderPermutationResource> shader(m_hShader, xiiResourceAcquireMode::BlockTillLoaded);
@@ -116,9 +121,9 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
   }
   if (!m_Rasterizer)
     return context.ReportFailure("Could not create the G-buffer rasterizer state.");
-  xiiRenderPassResourceScope scope(context);
   struct Data
   {
+    xiiDynamicArray<xiiMaterialRasterBatch> m_Batches;
     xiiRenderGraphBufferHandle          m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
     xiiRenderGraphTextureHandle         m_Depth, m_Albedo, m_Normal, m_Material, m_Emissive, m_NormalRoughness, m_Velocity, m_ObjectId;
     xiiShaderPermutationResourceHandle  m_Shader;
@@ -128,15 +133,28 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
     bool                                m_bMesh;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_Batches = batches;
+      for (xiiUInt32 i = 1; i < data.m_Batches.GetCount(); ++i)
+      {
+        auto& batch = data.m_Batches[i];
+        batch.m_ViewConstants = builder.ReadBuffer(batch.m_ViewConstants, xiiGALResourceStateFlags::ConstantBuffer);
+        if (batch.m_Constants.IsValid()) batch.m_Constants = builder.ReadBuffer(batch.m_Constants, xiiGALResourceStateFlags::ConstantBuffer);
+        for (xiiUInt32 texture = 0; texture < batch.m_Binding.m_Textures.GetCount(); ++texture)
+        {
+          xiiStringBuilder name; name.SetFormat("Material {} Texture {}", i, texture);
+          const auto handle = builder.ImportTexture(name, batch.m_Binding.m_Textures[texture].m_Texture, batch.m_Binding.m_Textures[texture].m_Texture->GetResourceState());
+          [[maybe_unused]] const auto read = builder.ReadTexture(handle, xiiGALResourceStateFlags::ShaderResource);
+        }
+      }
       data.m_Scene = builder.ReadBuffer(scene, xiiGALResourceStateFlags::ShaderResource);
       data.m_Skinning = builder.ReadBuffer(skinning, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Visible = builder.ReadBuffer(visible, xiiGALResourceStateFlags::ShaderResource);
-      if (m_bUseMeshShaders) data.m_Count = builder.ReadBuffer(count, xiiGALResourceStateFlags::ShaderResource);
+      data.m_Visible = builder.ReadBuffer(batches.IsEmpty() ? visible : sortedVisible, xiiGALResourceStateFlags::ShaderResource);
+      if (useMesh) data.m_Count = builder.ReadBuffer(count, xiiGALResourceStateFlags::ShaderResource);
       data.m_Geometry = builder.ReadBuffer(geometry, xiiGALResourceStateFlags::ShaderResource);
       data.m_Meshlets = builder.ReadBuffer(meshlets, xiiGALResourceStateFlags::ShaderResource);
       data.m_Materials = builder.ReadBuffer(materials, xiiGALResourceStateFlags::ShaderResource);
       data.m_Constants = builder.ReadBuffer(constants, xiiGALResourceStateFlags::ConstantBuffer);
-      data.m_Arguments = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument);
+      data.m_Arguments = builder.ReadBuffer(batches.IsEmpty() ? arguments : materialDraws, xiiGALResourceStateFlags::IndirectArgument);
       data.m_ArgumentCount = builder.ReadBuffer(argumentCount, xiiGALResourceStateFlags::IndirectArgument);
       data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::DepthRead);
       xiiGALTextureCreationDescription target;
@@ -158,7 +176,7 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       target.m_Format = xiiGALResourceFormat::R32UInt;
       data.m_ObjectId = builder.WriteTexture("Object Identity", target, xiiGALResourceStateFlags::RenderTarget);
       data.m_Shader = m_hShader; data.m_Sampler = m_Sampler;
-      data.m_uiWidth = width; data.m_uiHeight = height; data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = m_bUseMeshShaders; data.m_Rasterizer = m_Rasterizer;
+      data.m_uiWidth = width; data.m_uiHeight = height; data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = useMesh; data.m_Rasterizer = m_Rasterizer;
       builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Albedo)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0, 0, 0, 1));
@@ -174,6 +192,8 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
         execute.ReportFailure("G-buffer raster shader became unavailable.");
         return;
       }
+      for (xiiUInt32 bin = 0; bin < xiiMath::Max(1u, data.m_Batches.GetCount()); ++bin)
+      {
       xiiGALGraphicsPipelineStateCreationDescription pipeline;
       pipeline.m_PipelineType = data.m_bMesh ? xiiGALPipelineType::Mesh : xiiGALPipelineType::Graphics;
       pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
@@ -186,6 +206,16 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       pipeline.m_GraphicsPipeline.m_pRenderPass = execute.GetRenderPass();
       pipeline.m_GraphicsPipeline.m_uiSubpassIndex = static_cast<xiiUInt8>(execute.GetSubpassIndex());
       pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
+      if (bin > 0)
+      {
+        const auto& binding = data.m_Batches[bin].m_Binding;
+        pipeline.m_pPipelineResourceSignature = binding.m_Signature;
+        pipeline.m_pVertexShader = binding.m_Vertex;
+        pipeline.m_pPixelShader = binding.m_Pixel;
+        pipeline.m_GraphicsPipeline.m_pBlendState = binding.m_Blend;
+        pipeline.m_GraphicsPipeline.m_pRasterizerState = binding.m_Rasterizer;
+        pipeline.m_GraphicsPipeline.m_pDepthStencilState = binding.m_Depth;
+      }
       auto state = xiiGALPipelineCache::GetPipeline(pipeline);
       if (!state)
       {
@@ -197,8 +227,8 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       const auto stage = data.m_bMesh ? xiiGALShaderType::Mesh : xiiGALShaderType::Vertex;
       commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
       commands.ResolveAndSetSampler("g_sLinearWrap", data.m_Sampler.Borrow());
-      commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", execute.GetBuffer(data.m_Constants), stage | xiiGALShaderType::Pixel);
-      commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
+      commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", execute.GetBuffer(data.m_Constants));
+      commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       commands.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", execute.GetBuffer(data.m_Skinning)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
       commands.ResolveAndSetShaderResourceBufferView("g_Geometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
       commands.ResolveAndSetShaderResourceBufferView("g_Meshlets", execute.GetBuffer(data.m_Meshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
@@ -208,9 +238,17 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", stage);
       xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_Textures", xiiGALShaderType::Pixel);
       xiiGALBindlessResourceTable::BindSamplers(commands, "g_MaterialSamplers", xiiGALShaderType::Pixel);
-      commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();
+      if (bin > 0)
+      {
+        commands.ResolveAndSetConstantBuffer("xiiNativeMaterialViewConstants", execute.GetBuffer(data.m_Batches[bin].m_ViewConstants));
+        data.m_Batches[bin].m_Binding.Bind(commands, data.m_Batches[bin].m_Constants.IsValid() ? execute.GetBuffer(data.m_Batches[bin].m_Constants) : nullptr);
+      }
+      if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Failed()) { execute.ReportFailure("Could not bind native material shader resources."); return; }
+      if (!data.m_Batches.IsEmpty()) commands.DrawIndirect({execute.GetBuffer(data.m_Arguments), 1, bin * sizeof(xiiVec4U32), sizeof(xiiVec4U32), xiiGALStateTransitionMode::None});
+      else
       if (data.m_bMesh) commands.DrawMeshIndirect({execute.GetBuffer(data.m_Arguments), 1, 0, xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)});
-      else commands.DrawIndirect({execute.GetBuffer(data.m_Arguments), data.m_uiCapacity, 0, sizeof(xiiVec4U32), xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)}); });
+      else commands.DrawIndirect({execute.GetBuffer(data.m_Arguments), data.m_uiCapacity, 0, sizeof(xiiVec4U32), xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)});
+      } });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputAlbedo, emitted.first->m_Albedo));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputNormal, emitted.first->m_Normal));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputMaterial, emitted.first->m_Material));

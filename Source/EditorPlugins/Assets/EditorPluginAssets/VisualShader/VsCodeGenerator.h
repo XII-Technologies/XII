@@ -1,13 +1,15 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <EditorPluginAssets/EditorPluginAssetsPCH.h>
+#pragma once
+
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
 
 #include <EditorPluginAssets/MaterialAsset/MaterialAsset.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 
 class xiiDocumentNodeManager;
 
-class xiiVisualShaderCodeGenerator
+class XII_EDITORPLUGINASSETS_DLL xiiVisualShaderCodeGenerator
 {
 public:
   xiiVisualShaderCodeGenerator();
@@ -21,14 +23,7 @@ public:
 private:
   struct NodeState
   {
-    NodeState() :
-      m_uiNodeId(0), m_bCodeGenerated(false), m_bInProgress(false)
-    {
-    }
-
-    xiiUInt16 m_uiNodeId;
-    bool      m_bCodeGenerated;
-    bool      m_bInProgress;
+    bool m_bCodeGenerated = false;
   };
 
   struct OutputPinState
@@ -43,9 +38,9 @@ private:
   };
 
   xiiStatus GatherAllNodes(const xiiDocumentObject* pRootObj);
+  xiiStatus GenerateReachableGraph();
   xiiUInt16 DeterminePinId(const xiiDocumentObject* pOwner, const xiiPin& pin) const;
   xiiStatus GenerateNode(const xiiDocumentObject* pNode);
-  xiiStatus GenerateInputPinCode(xiiArrayPtr<const xiiUniquePtr<const xiiPin>> pins);
   xiiStatus CheckPropertyValues(const xiiDocumentObject* pNode, const xiiVisualShaderNodeDescriptor* pDesc);
   xiiStatus InsertPropertyValues(const xiiDocumentObject* pNode, const xiiVisualShaderNodeDescriptor* pDesc, xiiStringBuilder& sString);
   xiiStatus GenerateOutputPinCode(const xiiDocumentObject* pOwnerNode, const xiiPin& pinSource);

@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Containers/HybridArray.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+
+#include <Foundation/Containers/HybridArray.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <QGraphicsWidget>
 
@@ -79,6 +80,7 @@ protected:
   QRectF               m_HeaderRect;
   QGraphicsTextItem*   m_pTitleLabel    = nullptr;
   QGraphicsTextItem*   m_pSubtitleLabel = nullptr;
+  QGraphicsTextItem*   m_pCommentLabel  = nullptr;
   QGraphicsPixmapItem* m_pIcon          = nullptr;
 
 private:

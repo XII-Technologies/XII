@@ -5,19 +5,26 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/Action/EditActions.h>
+#include <GuiFoundation/NodeEditor/CommentBlock.h>
 #include <GuiFoundation/NodeEditor/Connection.h>
 #include <GuiFoundation/NodeEditor/Node.h>
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <QApplication>
+#include <QClipboard>
 #include <QDoubleSpinBox>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsTextItem>
 #include <QImage>
+#include <QInputDialog>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QMenu>
+#include <QMimeData>
 #include <QPainter>
+#include <QTimer>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -124,6 +131,16 @@ namespace
       m_pObjectAccessor = XII_DEFAULT_NEW(xiiNodeCommandAccessor, GetCommandHistory());
     }
     xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiDocumentInfo); }
+    xiiVec2          m_vPickedPosition = xiiVec2::MakeZero();
+    void             GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_types) const override
+    {
+      out_types.PushBack("application/xiiEditor.PinInspectorTest");
+    }
+    bool CopySelectedObjects(xiiAbstractObjectGraph& out_graph, xiiStringBuilder& out_type) const override
+    {
+      out_type = "application/xiiEditor.PinInspectorTest";
+      return static_cast<const InspectorNodeManager*>(GetObjectManager())->CopySelectedObjects(out_graph);
+    }
 
   private:
     void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const override
@@ -138,17 +155,62 @@ namespace
     }
     bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& graph, bool picked, xiiStringView) override
     {
-      return static_cast<InspectorNodeManager*>(GetObjectManager())->PasteObjects(info, graph, xiiVec2::MakeZero(), picked);
+      return static_cast<InspectorNodeManager*>(GetObjectManager())->PasteObjects(info, graph, m_vPickedPosition, picked);
     }
   };
 
   class InspectorScene : public xiiQtNodeScene
   {
   public:
+    void DragCommentBlock(const xiiUuid& id, QPointF delta, bool resize)
+    {
+      auto*                    block = m_CommentBlocks.Find(id).Value();
+      const auto               start = resize ? block->mapToScene(QPointF(block->GetBlock().m_vSize.x - 4, block->GetBlock().m_vSize.y - 4)) : block->mapToScene(QPointF(12, 12));
+      QGraphicsSceneMouseEvent press(QEvent::GraphicsSceneMousePress);
+      press.setButton(Qt::LeftButton);
+      press.setPos(block->mapFromScene(start));
+      press.setScenePos(start);
+      mousePressEvent(&press);
+      QGraphicsSceneMouseEvent move(QEvent::GraphicsSceneMouseMove);
+      move.setButtons(Qt::LeftButton);
+      move.setScenePos(start + delta);
+      move.setPos(block->mapFromScene(start + delta));
+      mouseMoveEvent(&move);
+      QGraphicsSceneMouseEvent release(QEvent::GraphicsSceneMouseRelease);
+      release.setButton(Qt::LeftButton);
+      release.setScenePos(start + delta);
+      release.setPos(block->mapFromScene(start + delta));
+      mouseReleaseEvent(&release);
+    }
+    void SelectCommentBlock(const xiiUuid& id)
+    {
+      clearSelection();
+      m_CommentBlocks.Find(id).Value()->setSelected(true);
+    }
+    void   AddNodeToSelection(const xiiDocumentObject* object) { m_Nodes.Find(object).Value()->setSelected(true); }
+    void   AddCommentBlockToSelection(const xiiUuid& id) { m_CommentBlocks.Find(id).Value()->setSelected(true); }
     QRectF Bounds(const xiiDocumentObject* object) const
     {
       auto* node = m_Nodes.Find(object).Value();
       return node->mapRectToScene(node->boundingRect().united(node->childrenBoundingRect()));
+    }
+    QRectF BodyBounds(const xiiDocumentObject* object) const { return m_Nodes.Find(object).Value()->boundingRect(); }
+    QRectF CommentBounds(const xiiDocumentObject* object) const
+    {
+      const auto* node = m_Nodes.Find(object).Value();
+      for (const auto* item : node->childItems())
+        if (item->isVisible() && item->pos().y() < -5)
+          return item->mapRectToParent(item->boundingRect());
+      return {};
+    }
+    bool HasComment(const xiiDocumentObject* object, xiiStringView text) const
+    {
+      const auto* node = m_Nodes.Find(object).Value();
+      for (const auto* item : node->childItems())
+        if (const auto* label = dynamic_cast<const QGraphicsTextItem*>(item))
+          if (label->isVisible() && label->toPlainText() == QString::fromUtf8(text.GetStartPointer(), text.GetElementCount()))
+            return true;
+      return false;
     }
     xiiQtPin* FindPin(const xiiDocumentObject* object, bool input)
     {
@@ -327,7 +389,54 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Node copy and paste remap owned pin properties and preserve their values")
   {
+    const xiiString comment    = "Shared graph annotation\nKeep the source in linear space. <plain text>";
+    xiiUInt64       beforeHash = 123, afterHash = 123;
+    manager->GetMetaDataHash(owner, beforeHash);
+    const auto bodyBeforeComment = scene.BodyBounds(owner);
+    QMenu      comments;
+    scene.AddCommentActions(comments, owner);
+    XII_TEST_INT(comments.actions().size(), 1);
+    QTimer::singleShot(0, [&]() {
+      if (auto* dialog = qobject_cast<QInputDialog*>(QApplication::activeModalWidget()))
+      {
+        dialog->setTextValue(QString::fromUtf8(comment.GetData()));
+        dialog->accept();
+      }
+    });
+    comments.actions()[0]->trigger();
+    XII_TEST_STRING(manager->GetNodeComment(owner), comment);
+    XII_TEST_BOOL(scene.HasComment(owner, comment));
+    XII_TEST_BOOL(scene.BodyBounds(owner) == bodyBeforeComment);
+    XII_TEST_BOOL(scene.CommentBounds(owner).bottom() < scene.BodyBounds(owner).top());
+    {
+      QImage capture(720, 420, QImage::Format_ARGB32_Premultiplied);
+      capture.fill(QColor(32, 34, 38));
+      QPainter painter(&capture);
+      painter.setRenderHint(QPainter::Antialiasing);
+      scene.render(&painter, QRectF(15, 15, 690, 390), scene.Bounds(owner).adjusted(-15, -15, 15, 15), Qt::KeepAspectRatio);
+      painter.end();
+      XII_TEST_BOOL(capture.save(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/GraphComment.png").GetData()));
+    }
+    manager->GetMetaDataHash(owner, afterHash);
+    XII_TEST_INT(beforeHash, afterHash);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_BOOL(manager->GetNodeComment(owner).IsEmpty());
+    XII_TEST_BOOL(!scene.HasComment(owner, comment));
+    XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+    XII_TEST_STRING(manager->GetNodeComment(owner), comment);
+    XII_TEST_BOOL(scene.HasComment(owner, comment));
+    QMenu removeComment;
+    scene.AddCommentActions(removeComment, owner);
+    XII_TEST_INT(removeComment.actions().size(), 2);
+    removeComment.actions()[1]->trigger();
+    XII_TEST_BOOL(manager->GetNodeComment(owner).IsEmpty());
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
     document.GetSelectionManager()->SetSelection(owner);
+    const auto longCommentBounds = scene.CommentBounds(owner);
+    XII_TEST_STATUS(scene.SetNodeComment(owner, "Short note"));
+    XII_TEST_BOOL(scene.CommentBounds(owner).width() < longCommentBounds.width());
+    XII_TEST_BOOL(scene.BodyBounds(owner) == bodyBeforeComment);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
     xiiAbstractObjectGraph graph;
     XII_TEST_BOOL(manager->CopySelectedObjects(graph));
     xiiContiguousMemoryStreamStorage storage;
@@ -345,12 +454,15 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     const auto* copiedProperties = manager->GetPinPropertyObject(*manager->GetInputPinByName(copy, "Value"));
     XII_TEST_BOOL(copiedProperties && copiedProperties->GetGuid() != properties->GetGuid());
     XII_TEST_FLOAT(copiedProperties->GetTypeAccessor().GetValue("Value").Get<float>(), 0.75f, 0);
+    XII_TEST_STRING(manager->GetNodeComment(copy), manager->GetNodeComment(owner));
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Saving and reloading preserves pin identity and edited values")
   {
     XII_TEST_STATUS(document.SaveDocument(true));
     InspectorDocument loaded(path);
     XII_TEST_STATUS(loaded.LoadDocument());
+    const auto* loadedManager = static_cast<const InspectorNodeManager*>(loaded.GetObjectManager());
+    XII_TEST_STRING(loadedManager->GetNodeComment(loadedManager->GetObject(nodes[1])), manager->GetNodeComment(owner));
     const auto* loadedProperties = loaded.GetObjectManager()->GetObject(settings[1]);
     if (!XII_TEST_BOOL(loadedProperties != nullptr))
       return;
@@ -360,6 +472,302 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphPinInspection)
     loaded.GetSelectionManager()->SetSelection(loadedProperties);
     XII_TEST_BOOL(loadedScene.FindPin(loaded.GetObjectManager()->GetObject(nodes[1]), true)->isSelected());
   }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphCommentBlocks)
+{
+  const auto output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "CommentBlocksTest", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("CommentBlocksTest"));
+  const xiiStringBuilder path(output, "/CommentBlocks.xiiGraph");
+  InspectorDocument      document(path);
+  auto*                  manager = static_cast<InspectorNodeManager*>(document.GetObjectManager());
+  auto*                  history = document.GetCommandHistory();
+  xiiGraphCommentBlock   block;
+  block.m_Id        = xiiUuid::MakeUuid();
+  block.m_vPosition = xiiVec2(-50, -100);
+  block.m_sText     = "Surface layering\nKeep related nodes together.";
+  xiiSetGraphCommentBlockCommand command;
+  command.m_Id    = block.m_Id;
+  command.m_Value = block.ToVariant();
+  history->StartTransaction("Create comment block");
+  XII_TEST_STATUS(history->AddCommand(command));
+  history->FinishTransaction();
+  XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 1);
+  XII_TEST_INT(manager->GetRootObject()->GetChildren().GetCount(), 0);
+  XII_TEST_STATUS(history->Undo());
+  XII_TEST_BOOL(manager->GetCommentBlocks().IsEmpty());
+  XII_TEST_STATUS(history->Redo());
+  XII_TEST_STATUS(document.SaveDocument(true));
+  InspectorDocument loaded(path);
+  XII_TEST_STATUS(loaded.LoadDocument());
+  const auto* restoredManager = static_cast<const InspectorNodeManager*>(loaded.GetObjectManager());
+  XII_TEST_INT(restoredManager->GetCommentBlocks().GetCount(), 1);
+  if (XII_TEST_BOOL(restoredManager->GetCommentBlocks().Contains(block.m_Id)))
+    XII_TEST_BOOL(restoredManager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == block.ToVariant());
+  InspectorScene scene;
+  scene.InitScene(manager);
+  auto*   edit = document.GetObjectAccessor();
+  xiiUuid nodeIds[2];
+  edit->StartTransaction("Create grouped nodes");
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiInspectorGraphNode>(), nodeIds[index]));
+    manager->MoveNode(edit->GetObject(nodeIds[index]), xiiVec2(index * 800.0f, 0));
+  }
+  edit->FinishTransaction();
+  const auto historyBefore = history->GetUndoStackSize();
+  scene.DragCommentBlock(block.m_Id, QPointF(100, 50), false);
+  XII_TEST_INT(history->GetUndoStackSize(), historyBefore + 1);
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[0])) == xiiVec2(100, 50));
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[1])) == xiiVec2(800, 0));
+  XII_TEST_STATUS(history->Undo());
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[0])) == xiiVec2::MakeZero());
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().m_vPosition == block.m_vPosition);
+  manager->m_RejectMove = nodeIds[0];
+  auto rejectedMove     = block;
+  rejectedMove.m_vPosition += xiiVec2(50);
+  const auto beforeRejectedMove = history->GetUndoStackSize();
+  XII_TEST_BOOL(scene.SetCommentBlock(rejectedMove, true).Failed());
+  XII_TEST_INT(history->GetUndoStackSize(), beforeRejectedMove);
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == block.ToVariant());
+  XII_TEST_BOOL(manager->GetNodePos(edit->GetObject(nodeIds[0])) == xiiVec2::MakeZero());
+  manager->m_RejectMove = {};
+  scene.DragCommentBlock(block.m_Id, QPointF(120, 90), true);
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().m_vSize == block.m_vSize + xiiVec2(120, 90));
+  XII_TEST_STATUS(history->Undo());
+  QMenu actions;
+  scene.AddCommentBlockActions(actions, block.m_Id);
+  XII_TEST_INT(actions.actions().size(), 5);
+  actions.actions()[2]->trigger();
+  const auto   fitted = manager->GetCommentBlocks().Find(block.m_Id).Value();
+  const QRectF fittedBounds(fitted.m_vPosition.x, fitted.m_vPosition.y, fitted.m_vSize.x, fitted.m_vSize.y);
+  XII_TEST_BOOL(fittedBounds.contains(scene.Bounds(edit->GetObject(nodeIds[0]))));
+  XII_TEST_BOOL(!fittedBounds.contains(scene.Bounds(edit->GetObject(nodeIds[1]))));
+  XII_TEST_STATUS(document.SaveDocument(true));
+  InspectorDocument editedReload(path);
+  XII_TEST_STATUS(editedReload.LoadDocument());
+  const auto* editedManager = static_cast<const InspectorNodeManager*>(editedReload.GetObjectManager());
+  XII_TEST_BOOL(editedManager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == fitted.ToVariant());
+  actions.actions()[3]->trigger();
+  XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 2);
+  XII_TEST_STATUS(history->Undo());
+  {
+    QImage image(1000, 500, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(32, 34, 38));
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    scene.render(&painter, QRectF(15, 15, 970, 470), scene.itemsBoundingRect().adjusted(-20, -20, 20, 20), Qt::KeepAspectRatio);
+    painter.end();
+    XII_TEST_BOOL(image.save(xiiStringBuilder(output, "/OrganizationalBlock.png").GetData()));
+  }
+  block.m_vSize.x = -1;
+  XII_TEST_BOOL(manager->SetCommentBlock(block.m_Id, block.ToVariant()).Failed());
+  XII_TEST_BOOL(manager->GetCommentBlocks().Find(block.m_Id).Value().m_vSize.x > 0);
+  scene.SelectCommentBlock(block.m_Id);
+  scene.DeleteSelection();
+  XII_TEST_BOOL(manager->GetCommentBlocks().IsEmpty());
+  XII_TEST_STATUS(history->Undo());
+  XII_TEST_INT(manager->GetCommentBlocks().GetCount(), 1);
+}
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphBlockClipboard)
+{
+  const auto output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "BlockClipboardTest", ":", xiiDataDirUsage::AllowWrites)))
+    return;
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("BlockClipboardTest"));
+  auto* clipboard         = QApplication::clipboard();
+  auto* previousClipboard = new QMimeData;
+  if (const auto* previous = clipboard->mimeData())
+    for (const auto& format : previous->formats())
+      previousClipboard->setData(format, previous->data(format));
+  XII_SCOPE_EXIT(clipboard->setMimeData(previousClipboard));
+
+  InspectorDocument      source(xiiStringBuilder(output, "/ClipboardSource.xiiGraph"));
+  const xiiStringBuilder targetPath(output, "/ClipboardTarget.xiiGraph");
+  InspectorDocument      target(targetPath);
+  auto*                  sourceManager = static_cast<InspectorNodeManager*>(source.GetObjectManager());
+  auto*                  targetManager = static_cast<InspectorNodeManager*>(target.GetObjectManager());
+  target.m_vPickedPosition             = xiiVec2(600, 350);
+  InspectorScene sourceScene, targetScene;
+  sourceScene.InitScene(sourceManager);
+  targetScene.InitScene(targetManager);
+  QWidget       window;
+  xiiQtNodeView sourceView(&window), targetView(&window);
+  QLineEdit     otherEditor(&window);
+  sourceView.SetScene(&sourceScene);
+  targetView.SetScene(&targetScene);
+  sourceView.setGeometry(0, 0, 500, 400);
+  targetView.setGeometry(500, 0, 500, 400);
+  otherEditor.setGeometry(0, 410, 300, 25);
+  window.resize(1000, 450);
+  window.show();
+  window.activateWindow();
+  sourceView.setFocus();
+  QApplication::processEvents();
+  xiiActionContext sourceContext(&source), targetContext(&target);
+  sourceContext.m_pWindow = &window;
+  targetContext.m_pWindow = &window;
+  xiiEditAction sourceCopy(sourceContext, "Copy", xiiEditAction::ButtonType::Copy);
+  xiiEditAction targetCopy(targetContext, "Copy", xiiEditAction::ButtonType::Copy);
+  xiiEditAction targetPaste(targetContext, "Paste", xiiEditAction::ButtonType::Paste);
+  xiiEditAction targetOriginal(targetContext, "Paste at Original Location", xiiEditAction::ButtonType::PasteAtOriginalLocation);
+  xiiEditAction targetDelete(targetContext, "Delete", xiiEditAction::ButtonType::Delete);
+  const auto    trigger = [](xiiEditAction& action) {
+    XII_TEST_BOOL(action.IsEnabled());
+    // Qt action proxies clear focus before executing to commit pending edits.
+    // Keep this focus transition in the standalone document/action test too.
+    QPointer<QWidget> focus = QApplication::focusWidget();
+    if (focus)
+      focus->clearFocus();
+    action.Execute({});
+    if (focus)
+      focus->setFocus();
+  };
+  xiiGraphCommentBlock block;
+  block.m_Id        = xiiUuid::MakeUuid();
+  block.m_vPosition = xiiVec2(-50, -80);
+  block.m_sText     = "Layer composition\nClipboard annotation";
+  block.m_Color     = xiiColor(0.2f, 0.4f, 0.6f);
+  XII_TEST_STATUS(sourceScene.SetCommentBlock(block));
+  auto unselected        = block;
+  unselected.m_Id        = xiiUuid::MakeUuid();
+  unselected.m_vPosition = xiiVec2(900);
+  XII_TEST_STATUS(sourceScene.SetCommentBlock(unselected));
+  sourceScene.SelectCommentBlock(block.m_Id);
+  XII_TEST_BOOL(source.GetSelectionManager()->IsSelectionEmpty());
+  XII_TEST_BOOL(sourceCopy.IsEnabled());
+  trigger(sourceCopy);
+  if (!XII_TEST_BOOL(clipboard->mimeData() && clipboard->mimeData()->hasFormat("application/xiiEditor.PinInspectorTest")))
+    return;
+  targetView.setFocus();
+  trigger(targetPaste);
+  if (!XII_TEST_BOOL(targetManager->GetCommentBlocks().GetCount() == 1))
+    return;
+  XII_TEST_INT(targetManager->GetRootObject()->GetChildren().GetCount(), 0);
+  const auto pasted = targetManager->GetCommentBlocks().GetIterator().Value();
+  XII_TEST_BOOL(pasted.m_Id != block.m_Id);
+  XII_TEST_BOOL(pasted.m_vPosition + pasted.m_vSize * 0.5f == target.m_vPickedPosition);
+  XII_TEST_STRING(pasted.m_sText, block.m_sText);
+  XII_TEST_BOOL(pasted.m_Color == block.m_Color && pasted.m_vSize == block.m_vSize);
+  XII_TEST_BOOL(targetScene.HasSelectedCommentBlocks());
+  XII_TEST_BOOL(targetCopy.IsEnabled());
+  XII_TEST_STATUS(target.GetCommandHistory()->Undo());
+  XII_TEST_BOOL(targetManager->GetCommentBlocks().IsEmpty());
+  XII_TEST_STATUS(target.GetCommandHistory()->Redo());
+  XII_TEST_BOOL(targetManager->GetCommentBlocks().Contains(pasted.m_Id));
+  trigger(targetPaste);
+  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 2);
+  XII_TEST_STATUS(target.GetCommandHistory()->Undo());
+  targetScene.SelectCommentBlock(pasted.m_Id);
+  trigger(targetDelete);
+  XII_TEST_BOOL(targetManager->GetCommentBlocks().IsEmpty());
+  XII_TEST_STATUS(target.GetCommandHistory()->Undo());
+  otherEditor.setFocus();
+  XII_TEST_BOOL(!targetCopy.IsEnabled());
+
+  sourceView.setFocus();
+  sourceScene.SelectCommentBlock(block.m_Id);
+  sourceScene.AddCommentBlockToSelection(unselected.m_Id);
+  trigger(sourceCopy);
+  targetView.setFocus();
+  const auto beforeMultiPaste = target.GetCommandHistory()->GetUndoStackSize();
+  trigger(targetPaste);
+  XII_TEST_INT(target.GetCommandHistory()->GetUndoStackSize(), beforeMultiPaste + 1);
+  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 3);
+  const auto blockOffset = target.m_vPickedPosition - (block.m_vPosition + unselected.m_vPosition + block.m_vSize) * 0.5f;
+  for (const auto& entry : targetManager->GetCommentBlocks())
+    if (entry.Key() != pasted.m_Id)
+      XII_TEST_BOOL(entry.Value().m_vPosition == block.m_vPosition + blockOffset || entry.Value().m_vPosition == unselected.m_vPosition + blockOffset);
+  XII_TEST_STATUS(target.GetCommandHistory()->Undo());
+  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 1);
+
+  auto*   edit = source.GetObjectAccessor();
+  xiiUuid nodes[3];
+  edit->StartTransaction("Clipboard source nodes");
+  for (xiiUInt32 index = 0; index < 3; ++index)
+  {
+    XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiInspectorGraphNode>(), nodes[index]));
+    xiiMoveNodeCommand move;
+    move.m_Object = nodes[index];
+    move.m_NewPos = index < 2 ? xiiVec2(30 + index * 100.0f, 10 + index * 60.0f) : xiiVec2(800);
+    XII_TEST_STATUS(source.GetCommandHistory()->AddCommand(move));
+  }
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(source.GetCommandHistory(), sourceManager->GetConnectionType(), *sourceManager->GetOutputPins(edit->GetObject(nodes[0]))[0], *sourceManager->GetInputPins(edit->GetObject(nodes[1]))[0]));
+  edit->FinishTransaction();
+  XII_TEST_STATUS(sourceScene.SetNodeComment(edit->GetObject(nodes[0]), "Attached note"));
+  sourceView.setFocus();
+  sourceScene.SelectCommentBlock(block.m_Id);
+  sourceScene.AddNodeToSelection(edit->GetObject(nodes[0]));
+  sourceScene.AddNodeToSelection(edit->GetObject(nodes[1]));
+  trigger(sourceCopy);
+  const auto mixedData = clipboard->mimeData()->data("application/xiiEditor.PinInspectorTest");
+  targetView.setFocus();
+  trigger(targetOriginal);
+  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 2);
+  XII_TEST_INT(targetManager->GetRootObject()->GetChildren().GetCount(), 3);
+  xiiUuid mixedBlock;
+  for (const auto& entry : targetManager->GetCommentBlocks())
+    if (entry.Key() != pasted.m_Id)
+    {
+      mixedBlock = entry.Key();
+      XII_TEST_BOOL(entry.Value().m_vPosition == block.m_vPosition);
+    }
+  xiiUInt32 attachedNotes = 0;
+  for (const auto* node : target.GetSelectionManager()->GetSelection())
+    if (targetManager->IsNode(node))
+    {
+      const auto position = targetManager->GetNodePos(node);
+      XII_TEST_BOOL(position == xiiVec2(30, 10) || position == xiiVec2(130, 70));
+      if (targetManager->GetNodeComment(node) == "Attached note")
+        ++attachedNotes;
+    }
+  XII_TEST_INT(attachedNotes, 1);
+  XII_TEST_STATUS(target.GetCommandHistory()->Undo());
+  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 1);
+  XII_TEST_BOOL(targetManager->GetRootObject()->GetChildren().IsEmpty());
+  XII_TEST_STATUS(target.GetCommandHistory()->Redo());
+  XII_TEST_BOOL(targetManager->GetCommentBlocks().Contains(mixedBlock));
+  trigger(targetPaste);
+  const auto offset = target.m_vPickedPosition - xiiVec2(80, 40);
+  for (const auto& entry : targetManager->GetCommentBlocks())
+    if (entry.Key() != pasted.m_Id && entry.Key() != mixedBlock)
+      XII_TEST_BOOL(entry.Value().m_vPosition == block.m_vPosition + offset);
+  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 3);
+  XII_TEST_INT(targetManager->GetRootObject()->GetChildren().GetCount(), 6);
+  for (const auto* node : target.GetSelectionManager()->GetSelection())
+    if (targetManager->IsNode(node))
+    {
+      const auto position = targetManager->GetNodePos(node) - offset;
+      XII_TEST_BOOL(position == xiiVec2(30, 10) || position == xiiVec2(130, 70));
+    }
+  XII_TEST_STATUS(target.SaveDocument(true));
+  InspectorDocument loaded(targetPath);
+  XII_TEST_STATUS(loaded.LoadDocument());
+  const auto& savedBlocks = static_cast<const InspectorNodeManager*>(loaded.GetObjectManager())->GetCommentBlocks();
+  XII_TEST_INT(savedBlocks.GetCount(), 3);
+  for (const auto& entry : savedBlocks)
+    XII_TEST_BOOL(entry.Value().ToVariant() == targetManager->GetCommentBlocks().Find(entry.Key()).Value().ToVariant());
+
+  xiiAbstractObjectGraph   malformed;
+  xiiRawMemoryStreamReader reader(mixedData.constData(), mixedData.size());
+  XII_TEST_RESULT(xiiAbstractGraphDdlSerializer::Read(reader, &malformed));
+  malformed.GetNode(block.m_Id)->ChangeProperty("Size", xiiVec2(-1, 240));
+  xiiContiguousMemoryStreamStorage storage;
+  xiiMemoryStreamWriter            writer(&storage);
+  xiiAbstractGraphDdlSerializer::Write(writer, &malformed);
+  xiiPasteObjectsCommand invalid;
+  invalid.m_sMimeType        = "application/xiiEditor.PinInspectorTest";
+  invalid.m_sGraphTextFormat = xiiStringView(reinterpret_cast<const char*>(storage.GetData()), storage.GetStorageSize32());
+  const auto undoCount       = target.GetCommandHistory()->GetUndoStackSize();
+  XII_TEST_BOOL(targetScene.PasteObjects(invalid).Failed());
+  XII_TEST_INT(target.GetCommandHistory()->GetUndoStackSize(), undoCount);
+  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 3);
+  XII_TEST_INT(targetManager->GetRootObject()->GetChildren().GetCount(), 6);
+  XII_TEST_INT(sourceManager->GetCommentBlocks().GetCount(), 2);
+  XII_TEST_BOOL(sourceManager->GetCommentBlocks().Find(block.m_Id).Value().ToVariant() == block.ToVariant());
 }
 
 XII_CREATE_SIMPLE_TEST(NodeLayout, DocumentCommands)

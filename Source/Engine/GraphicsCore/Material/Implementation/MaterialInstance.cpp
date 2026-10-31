@@ -40,6 +40,9 @@ xiiResult xiiMaterialInstance::Initialize(xiiSharedPtr<const xiiMaterialSchema> 
   m_RuntimeState.m_Domain       = m_pSchema->GetDomain();
   m_RuntimeState.m_ShadingModel = m_pSchema->GetShadingModel();
   m_RuntimeState.m_uiLayoutHash = m_pSchema->GetLayoutHash();
+  m_ParameterOverrides.Clear();
+  m_ResourceOverrides.Clear();
+  m_ResourceBindings.Clear();
   m_ResourceBindings.SetCount(m_pSchema->GetTextures().GetCount());
 
   xiiArrayPtr<const xiiMaterialTextureDefinition> pTextureDefinitions = m_pSchema->GetTextures();
@@ -49,8 +52,65 @@ xiiResult xiiMaterialInstance::Initialize(xiiSharedPtr<const xiiMaterialSchema> 
   }
 
   m_DirtyFlags                = xiiMaterialDirtyFlags::All;
-  m_uiRevision                = 1U;
+  ++m_uiRevision;
   m_RuntimeState.m_uiRevision = m_uiRevision;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiMaterialInstance::RebindSchema(xiiSharedPtr<const xiiMaterialSchema> pSchema, const xiiMaterialRuntimeState& runtimeState, xiiDynamicArray<xiiString>* out_pWarnings)
+{
+  xiiMaterialInstance replacement;
+  XII_SUCCEED_OR_RETURN(replacement.Initialize(pSchema, runtimeState));
+  XII_LOCK(m_Mutex);
+  xiiDynamicArray<xiiString> warnings;
+  for (const auto id : m_ParameterOverrides)
+  {
+    const auto* oldDefinition = m_pSchema->FindParameter(id);
+    const auto* newDefinition = pSchema->FindParameter(id);
+    const auto* value         = m_Parameters.GetValue(id);
+    if (oldDefinition != nullptr && newDefinition != nullptr && oldDefinition->m_Type == newDefinition->m_Type && value != nullptr)
+    {
+      XII_SUCCEED_OR_RETURN(replacement.SetParameter(id, *value));
+    }
+    else
+    {
+      xiiStringBuilder message;
+      message.SetFormat("Material override '{}' was removed or changed type.", oldDefinition != nullptr ? oldDefinition->m_sName.GetString().GetView() : xiiStringView("<unknown>"));
+      warnings.PushBack(message);
+    }
+  }
+  for (const auto id : m_ResourceOverrides)
+  {
+    const auto* oldDefinition = m_pSchema->FindTexture(id);
+    const auto* newDefinition = pSchema->FindTexture(id);
+    if (oldDefinition != nullptr && newDefinition != nullptr && oldDefinition->m_TextureType == newDefinition->m_TextureType)
+    {
+      const auto oldIndex                                        = m_pSchema->FindTextureIndex(id);
+      const auto newIndex                                        = pSchema->FindTextureIndex(id);
+      replacement.m_ResourceBindings[newIndex]                   = m_ResourceBindings[oldIndex];
+      replacement.m_ResourceBindings[newIndex].m_uiBindlessIndex = xiiInvalidIndex;
+      replacement.m_ResourceBindings[newIndex].m_uiSamplerIndex  = xiiInvalidIndex;
+      ++replacement.m_ResourceBindings[newIndex].m_uiRevision;
+      replacement.m_ResourceOverrides.PushBack(id);
+    }
+    else
+    {
+      xiiStringBuilder message;
+      message.SetFormat("Material resource override '{}' was removed or changed dimension.", oldDefinition != nullptr ? oldDefinition->m_sName.GetString().GetView() : xiiStringView("<unknown>"));
+      warnings.PushBack(message);
+    }
+  }
+  m_pSchema            = std::move(replacement.m_pSchema);
+  m_Parameters         = std::move(replacement.m_Parameters);
+  m_ResourceBindings   = std::move(replacement.m_ResourceBindings);
+  m_ParameterOverrides = std::move(replacement.m_ParameterOverrides);
+  m_ResourceOverrides  = std::move(replacement.m_ResourceOverrides);
+  m_RuntimeState       = replacement.m_RuntimeState;
+  ++m_uiRevision;
+  m_RuntimeState.m_uiRevision = m_uiRevision;
+  m_DirtyFlags                = xiiMaterialDirtyFlags::All;
+  if (out_pWarnings != nullptr)
+    *out_pWarnings = std::move(warnings);
   return XII_SUCCESS;
 }
 
@@ -64,6 +124,8 @@ xiiResult xiiMaterialInstance::SetParameter(xiiMaterialParameterId id, const xii
 
   const xiiUInt32 uiPreviousRevision = m_Parameters.GetRevision();
   XII_SUCCEED_OR_RETURN(m_Parameters.SetValue(id, value));
+  if (!m_ParameterOverrides.Contains(id))
+    m_ParameterOverrides.PushBack(id);
   if (uiPreviousRevision == m_Parameters.GetRevision())
     return XII_SUCCESS;
 
@@ -170,6 +232,9 @@ xiiResult xiiMaterialInstance::SetResourceBinding(xiiMaterialParameterId id, con
     return XII_FAILURE;
   if (pBindlessIndex != nullptr && !definition.m_bBindless)
     return XII_FAILURE;
+
+  if ((pTexture2D != nullptr || pTextureCube != nullptr) && !m_ResourceOverrides.Contains(id))
+    m_ResourceOverrides.PushBack(id);
 
   xiiMaterialResourceBinding& binding  = m_ResourceBindings[uiIndex];
   bool                        bChanged = false;

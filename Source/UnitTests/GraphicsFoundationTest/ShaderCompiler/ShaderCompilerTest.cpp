@@ -347,6 +347,66 @@ RaytracingAccelerationStructure Scene : register(t4, space0);
     XII_TEST_STRING(loaded.m_PermutationVariables[1].m_sValue.GetView(), "TRUE");
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compiler-owned material constants and exact stage reflection")
+  {
+    const xiiStringView  source   = "Shaders/MaterialConstants.xiiShader";
+    const auto           platform = environment.GetShaderModel();
+    xiiGALShaderCompiler compiler;
+    if (XII_TEST_RESULT(compiler.CompileShaderPermutationForPlatforms(source, {}, xiiLog::GetThreadLocalLogSystem(), platform)))
+    {
+      XII_TEST_RESULT(compiler.CompileShaderPermutationForPlatforms(source, {}, xiiLog::GetThreadLocalLogSystem(), platform));
+      xiiStringBuilder path(xiiGALShaderManager::GetCacheDirectory(), "/", platform, "/Shaders/MaterialConstants");
+      path.AppendFormat("_{}.xiiPermutation", xiiArgU(xiiGALPermutationVariable::CalculateHash({}), 8, true, 16, true));
+      xiiFileReader file;
+      if (XII_TEST_RESULT(file.Open(path)))
+      {
+        xiiGALShaderPermutationBinary permutation;
+        bool                          old = false;
+        if (XII_TEST_RESULT(permutation.Read(file, old)))
+        {
+          for (const auto stage : {xiiGALShaderType::Vertex, xiiGALShaderType::Pixel, xiiGALShaderType::Compute})
+          {
+            const auto hash = permutation.m_ShaderStageHashes.Find(stage);
+            if (!XII_TEST_BOOL(hash.IsValid()))
+              continue;
+            const auto* binary = xiiGALShaderStageBinary::LoadStageBinary(stage, hash.Value(), platform);
+            if (!XII_TEST_BOOL(binary != nullptr))
+              continue;
+            const auto* binding = binary->GetByteCode()->GetDescription("xiiMaterialConstants");
+            if (stage == xiiGALShaderType::Vertex)
+              XII_TEST_BOOL(binding == nullptr);
+            else if (XII_TEST_BOOL(binding != nullptr))
+            {
+              XII_TEST_BOOL(binding->m_Type == xiiGALShaderResourceType::ConstantBuffer);
+              XII_TEST_BOOL(binding->m_ShaderStages == stage);
+              XII_TEST_BOOL(binding->m_uiTotalSize >= 20);
+              XII_TEST_INT(binding->m_Variables.GetCount(), 2);
+              for (const auto& variable : binding->m_Variables)
+              {
+                if (variable.m_sName == "Tint")
+                  XII_TEST_INT(variable.m_uiOffset, 0);
+                else if (variable.m_sName == "Gain")
+                  XII_TEST_INT(variable.m_uiOffset, 16);
+                else
+                  XII_TEST_BOOL_MSG(false, "Unexpected material constant.");
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Material constant diagnostics preserve source lines")
+  {
+    xiiLogSystemToBuffer log;
+    xiiLogSystemScope    scope(&log);
+    xiiGALShaderCompiler compiler;
+    XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms("Shaders/MaterialConstantsInvalid.xiiShader", {}, &log, environment.GetShaderModel()).Failed());
+    XII_TEST_BOOL(log.m_sBuffer.FindSubString("NotAType") != nullptr);
+    XII_TEST_BOOL(log.m_sBuffer.FindSubString(":9:") != nullptr || log.m_sBuffer.FindSubString("(9,") != nullptr);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compile and reuse the cache for every selected backend")
   {
     const xiiStringView sShaderFile  = "Shaders/Minimal.xiiShader";

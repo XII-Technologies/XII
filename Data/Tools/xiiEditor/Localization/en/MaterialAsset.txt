@@ -4,9 +4,11 @@ Material;Material
 
 # Enums
 
-xiiMaterialShaderMode::File;From File
-xiiMaterialShaderMode::Custom;Visual Shader
-xiiMaterialShaderMode::BaseMaterial;From Base Material
+xiiMaterialShaderMode::File;Custom Shader
+xiiMaterialShaderMode::Custom;Material Graph
+xiiMaterialShaderMode::BaseMaterial;Inherited Material
+xiiMaterialShaderMode::Native;Standard Material
+NativeMaterial;Surface Properties
 
 xiiMaterialAssetPreview::Ball;Ball
 xiiMaterialAssetPreview::Sphere;Sphere
@@ -25,7 +27,7 @@ SHADING_MODE::SHADING_MODE_FULLBRIGHT;Fullbright
 
 # UI
 
-VisualShader.CleanGraph;Clean Visual Shader Graph
+VisualShader.CleanGraph;Clean Material Graph
 MaterialAsset.Model;Preview Model
 CustomAction_CreateShaderFromTemplate;Create Shader From Template...
 AssetFilterTags;Asset Filter Tags;Semicolon-separated tags to only allow to select this material in specific contexts. Components must specifically request this tag.

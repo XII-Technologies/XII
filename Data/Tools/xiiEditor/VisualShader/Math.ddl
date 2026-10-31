@@ -6,14 +6,14 @@ Node %Lerp
 
   InputPin %x
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "0" }
   }
 
   InputPin %y
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     bool %Expose { true }
     string %DefaultValue { "1" }
   }
@@ -28,7 +28,7 @@ Node %Lerp
 
   OutputPin %result
   {
-    string %Type { "float" }
+    string %Type { "numeric" }
     unsigned_int8 %Color { 200, 200, 200 }
     string %Inline { "lerp(ToBiggerType($in0, $in1), ToBiggerType($in1, $in0), ToFloat1($in2))" }
     string %Tooltip { "Linear interpolation between x and y according to factor." }

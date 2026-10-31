@@ -101,11 +101,17 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
     if (!depth || depth->m_Size != xiiSizeU32(width, height) || (depth->m_Format != xiiGALResourceFormat::D32Float && depth->m_Format != xiiGALResourceFormat::R32Float))
       return context.ReportFailure("Culling diagnostics require matching single-channel float scene depth.");
   }
-  if (!m_hShader.IsValid() || m_bCachedMeshShaders != m_bUseMeshShaders || m_CachedFill != fill || m_bCachedDiagnostics != diagnostics || m_bCachedOverdraw != overdraw || m_bCachedCulling != culling)
+  xiiRenderPassResourceScope              scope(context);
+  xiiDynamicArray<xiiMaterialRasterBatch> batches;
+  xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
+  if (!diagnostics && !overdraw)
+    XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visible, count, batches, sortedVisible, materialDraws, fill == xiiGALFillMode::Wireframe ? xiiMaterialRasterBatches::Pass::Wireframe : xiiMaterialRasterBatches::Pass::Picking));
+  const bool useMesh = m_bUseMeshShaders && batches.IsEmpty();
+  if (!m_hShader.IsValid() || m_bCachedMeshShaders != useMesh || m_CachedFill != fill || m_bCachedDiagnostics != diagnostics || m_bCachedOverdraw != overdraw || m_bCachedCulling != culling)
   {
     const auto                                     shader = xiiResourceManager::LoadResource<xiiShaderResource>(culling ? "Shaders/Pipeline/GpuSceneCullingDiagnostics.xiiShader" : overdraw ? "Shaders/Pipeline/GpuSceneOverdraw.xiiShader" :
                                                                                                                   diagnostics                                                                ? "Shaders/Pipeline/GpuSceneDiagnostics.xiiShader" :
-                                                                                                                  m_bUseMeshShaders                                                          ? "Shaders/Pipeline/GpuScenePicking.xiiShader" :
+                                                                                                                  useMesh                                                                    ? "Shaders/Pipeline/GpuScenePicking.xiiShader" :
                                                                                                                                                                                                "Shaders/Pipeline/GpuScenePickingIndexed.xiiShader");
     xiiHashTable<xiiHashedString, xiiHashedString> variables;
     xiiHashedString                                name, value;
@@ -113,7 +119,7 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
     value.Assign(fill == xiiGALFillMode::Wireframe ? "RENDER_PASS_PICKING_WIREFRAME" : "RENDER_PASS_PICKING");
     variables.Insert(name, value);
     m_hShader            = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
-    m_bCachedMeshShaders = m_bUseMeshShaders;
+    m_bCachedMeshShaders = useMesh;
     m_CachedFill         = fill;
     m_bCachedDiagnostics = diagnostics;
     m_bCachedOverdraw    = overdraw;
@@ -136,7 +142,6 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   }
   if (!m_Sampler)
     return XII_FAILURE;
-  xiiRenderPassResourceScope scope(context);
   xiiRenderGraphBufferHandle diagnosticConstants;
   if (diagnostics)
   {
@@ -164,6 +169,7 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   }
   struct Data
   {
+    xiiDynamicArray<xiiMaterialRasterBatch> m_Batches;
     xiiRenderGraphBufferHandle         m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
     xiiRenderGraphTextureHandle        m_Surface, m_Depth;
     xiiShaderPermutationResourceHandle m_Shader;
@@ -175,10 +181,23 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
     xiiRenderGraphTextureHandle        m_DiagnosticDepth;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_Batches = batches;
+      for (xiiUInt32 i = 1; i < data.m_Batches.GetCount(); ++i)
+      {
+        auto& batch = data.m_Batches[i];
+        batch.m_ViewConstants = builder.ReadBuffer(batch.m_ViewConstants, xiiGALResourceStateFlags::ConstantBuffer);
+        if (batch.m_Constants.IsValid()) batch.m_Constants = builder.ReadBuffer(batch.m_Constants, xiiGALResourceStateFlags::ConstantBuffer);
+        for (xiiUInt32 texture = 0; texture < batch.m_Binding.m_Textures.GetCount(); ++texture)
+        {
+          xiiStringBuilder name; name.SetFormat("Material {} Texture {}", i, texture);
+          const auto handle = builder.ImportTexture(name, batch.m_Binding.m_Textures[texture].m_Texture, batch.m_Binding.m_Textures[texture].m_Texture->GetResourceState());
+          [[maybe_unused]] const auto read = builder.ReadTexture(handle, xiiGALResourceStateFlags::ShaderResource);
+        }
+      }
       data.m_Scene = builder.ReadBuffer(scene, xiiGALResourceStateFlags::ShaderResource);
       data.m_Skinning = builder.ReadBuffer(skinning, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Visible = builder.ReadBuffer(visible, xiiGALResourceStateFlags::ShaderResource);
-      if (m_bUseMeshShaders) data.m_Count = builder.ReadBuffer(count, xiiGALResourceStateFlags::ShaderResource);
+      data.m_Visible = builder.ReadBuffer(batches.IsEmpty() ? visible : sortedVisible, xiiGALResourceStateFlags::ShaderResource);
+      if (useMesh) data.m_Count = builder.ReadBuffer(count, xiiGALResourceStateFlags::ShaderResource);
       data.m_Geometry = builder.ReadBuffer(geometry, xiiGALResourceStateFlags::ShaderResource);
       data.m_Meshlets = builder.ReadBuffer(meshlets, xiiGALResourceStateFlags::ShaderResource);
       data.m_Materials = builder.ReadBuffer(materials, xiiGALResourceStateFlags::ShaderResource);
@@ -188,7 +207,7 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
         data.m_Diagnostics = builder.ReadBuffer(diagnosticConstants, xiiGALResourceStateFlags::ConstantBuffer);
       if (culling)
         data.m_DiagnosticDepth = builder.ReadTexture(context.GetInputTexture(m_InputDiagnosticDepth), xiiGALResourceStateFlags::ShaderResource);
-      data.m_Arguments = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument);
+      data.m_Arguments = builder.ReadBuffer(batches.IsEmpty() ? arguments : materialDraws, xiiGALResourceStateFlags::IndirectArgument);
       data.m_ArgumentCount = builder.ReadBuffer(argumentCount, xiiGALResourceStateFlags::IndirectArgument);
       xiiGALTextureCreationDescription target;
       target.m_Type = xiiGALResourceDimension::Texture2D;
@@ -201,7 +220,7 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
       if (!overdraw)
         data.m_Depth = builder.WriteTexture("Surface Query Depth", target, xiiGALResourceStateFlags::DepthWrite);
       data.m_Shader = m_hShader; data.m_Sampler = m_Sampler;
-      data.m_uiWidth = width; data.m_uiHeight = height; data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = m_bUseMeshShaders;
+      data.m_uiWidth = width; data.m_uiHeight = height; data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = useMesh;
       builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Surface)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
@@ -213,6 +232,8 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
         execute.ReportFailure("Surface query shader became unavailable.");
         return;
       }
+      for (xiiUInt32 bin = 0; bin < xiiMath::Max(1u, data.m_Batches.GetCount()); ++bin)
+      {
       xiiGALGraphicsPipelineStateCreationDescription pipeline;
       pipeline.m_PipelineType = data.m_bMesh ? xiiGALPipelineType::Mesh : xiiGALPipelineType::Graphics;
       pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
@@ -225,6 +246,12 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
       pipeline.m_GraphicsPipeline.m_pRenderPass = execute.GetRenderPass();
       pipeline.m_GraphicsPipeline.m_uiSubpassIndex = static_cast<xiiUInt8>(execute.GetSubpassIndex());
       pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
+      if (bin > 0)
+      {
+        const auto& binding = data.m_Batches[bin].m_Binding;
+        pipeline.m_pPipelineResourceSignature = binding.m_Signature; pipeline.m_pVertexShader = binding.m_Vertex; pipeline.m_pPixelShader = binding.m_Pixel;
+        pipeline.m_GraphicsPipeline.m_pBlendState = binding.m_Blend; pipeline.m_GraphicsPipeline.m_pDepthStencilState = binding.m_Depth; pipeline.m_GraphicsPipeline.m_pRasterizerState = binding.m_Rasterizer;
+      }
       auto state = xiiGALPipelineCache::GetPipeline(pipeline);
       if (!state)
       {
@@ -241,8 +268,8 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
       if (data.m_DiagnosticDepth.IsValid())
         commands.ResolveAndSetShaderResourceTextureView("g_DiagnosticDepth", execute.GetTexture(data.m_DiagnosticDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
-      commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", execute.GetBuffer(data.m_Constants), stage | xiiGALShaderType::Pixel);
-      commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
+      commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", execute.GetBuffer(data.m_Constants));
+      commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       commands.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", execute.GetBuffer(data.m_Skinning)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
       commands.ResolveAndSetShaderResourceBufferView("g_Geometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
       commands.ResolveAndSetShaderResourceBufferView("g_Meshlets", execute.GetBuffer(data.m_Meshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stage);
@@ -252,13 +279,20 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
       xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", stage);
       xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_Textures", xiiGALShaderType::Pixel);
       xiiGALBindlessResourceTable::BindSamplers(commands, "g_MaterialSamplers", xiiGALShaderType::Pixel);
+      if (bin > 0)
+      {
+        commands.ResolveAndSetConstantBuffer("xiiNativeMaterialViewConstants", execute.GetBuffer(data.m_Batches[bin].m_ViewConstants));
+        data.m_Batches[bin].m_Binding.Bind(commands, data.m_Batches[bin].m_Constants.IsValid() ? execute.GetBuffer(data.m_Batches[bin].m_Constants) : nullptr);
+      }
       if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Failed())
       {
         execute.ReportFailure("Could not bind surface query resources.");
         return;
       }
-      if (data.m_bMesh) commands.DrawMeshIndirect({execute.GetBuffer(data.m_Arguments), 1, 0, xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)});
-      else commands.DrawIndirect({execute.GetBuffer(data.m_Arguments), data.m_uiCapacity, 0, sizeof(xiiVec4U32), xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)}); });
+      if (!data.m_Batches.IsEmpty()) commands.DrawIndirect({execute.GetBuffer(data.m_Arguments), 1, bin * sizeof(xiiVec4U32), sizeof(xiiVec4U32), xiiGALStateTransitionMode::None});
+      else if (data.m_bMesh) commands.DrawMeshIndirect({execute.GetBuffer(data.m_Arguments), 1, 0, xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)});
+      else commands.DrawIndirect({execute.GetBuffer(data.m_Arguments), data.m_uiCapacity, 0, sizeof(xiiVec4U32), xiiGALStateTransitionMode::None, execute.GetBuffer(data.m_ArgumentCount)});
+      } });
   if (overdraw)
     return context.SetOutput(m_OutputOverdraw, emitted.first->m_Surface);
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputSurface, emitted.first->m_Surface));

@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
+
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
+#include <EditorEngineProcessFramework/Rendering/ScenePreviewLighting.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <Foundation/Basics.h>
 #include <GuiFoundation/Action/BaseActions.h>
@@ -42,6 +45,10 @@ private Q_SLOTS:
 
 private:
   void UpdatePreview();
+  void                       CreatePreviewControls();
+  xiiPreviewLightingSettings m_PreviewLighting;
+  bool                       m_bPreviewGrid        = false;
+  float                      m_fPreviewOrientation = 0.0f;
   void PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e);
   void SelectionEventHandler(const xiiSelectionManagerEvent& e);
   void SendRedrawMsg();

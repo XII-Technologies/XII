@@ -6,14 +6,14 @@ Node %Time
   OutputPin %Global
   {
     string %Type { "float" }
-    string %Inline { "GlobalTime" }
+    string %Inline { "MaterialTimes.x" }
     string %Tooltip { "Real time. Always at the same speed, unaffected by world simulation speed." }
   }
 
   OutputPin %World
   {
     string %Type { "float" }
-    string %Inline { "WorldTime" }
+    string %Inline { "MaterialTimes.y" }
     string %Tooltip { "World simulation time. Affected by simulation speed (slow-motion) and world paused state." }
   }
 }
@@ -23,29 +23,14 @@ Node %UV
   string %Category { "Input" }
   string %Color { "Teal" }
 
-  string %CodeVertexShader { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-" }
 
-  string %CodeGeometryShader { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-" }
 
-  string %CodePixelDefines { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-" }
 
   OutputPin %UV
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %Inline { "G.Input.TexCoord0" }
+    string %Inline { "MaterialInput.TexCoord" }
     string %Tooltip { "The UV 0 texture coordinate." }
   }
 }
@@ -55,38 +40,14 @@ Node %UV2
   string %Category { "Input" }
   string %Color { "Teal" }
   
-  string %CodeVertexShader { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-#ifndef USE_TEXCOORD1
-  #define USE_TEXCOORD1
-#endif
-" }
 
-  string %CodeGeometryShader { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-#ifndef USE_TEXCOORD1
-  #define USE_TEXCOORD1
-#endif
-" }
   
-  string %CodePixelDefines { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-#ifndef USE_TEXCOORD1
-  #define USE_TEXCOORD1
-#endif
-" }
 
   OutputPin %UV
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %Inline { "G.Input.TexCoord1" }
+    string %Inline { "MaterialInput.TexCoord1" }
     string %Tooltip { "The UV 0 texture coordinate." }
   }
 }
@@ -96,23 +57,8 @@ Node %UV_Scroll
   string %Category { "Input" }
   string %Color { "Green" }
 
-  string %CodeVertexShader { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-" }
 
-  string %CodeGeometryShader { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-" }
 
-  string %CodePixelDefines { "
-#ifndef USE_TEXCOORD0
-  #define USE_TEXCOORD0
-#endif
-" }
 
   InputPin %Speed
   {
@@ -139,7 +85,7 @@ Node %UV_Scroll
   {
     string %Type { "float2" }
     string %Color { "Teal" }
-    string %Inline { "(G.Input.TexCoord0 * $in1 + $in2) + frac(WorldTime * $in0)" }
+    string %Inline { "(MaterialInput.TexCoord * $in1 + $in2) + frac(MaterialTimes.y * $in0)" }
     string %Tooltip { "The scrolled UV 0 texture coordinate." }
   }
 }
@@ -153,8 +99,8 @@ Node %VertexPosition
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "G.Input.Position" }
-    string %Tooltip { "The vertex position. For vertex shaders this is the local position, for pixel shaders it is the transformed position." }
+    string %Inline { "MaterialInput.LocalPosition" }
+    string %Tooltip { "The interpolated object-space vertex position." }
   }
 }
 
@@ -167,7 +113,7 @@ Node %VertexWorldPosition
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "G.Input.WorldPosition" }
+    string %Inline { "MaterialInput.WorldPosition" }
     string %Tooltip { "The vertex world space position." }
   }
 }
@@ -177,30 +123,15 @@ Node %VertexNormal
   string %Category { "Input" }
   string %Color { "Green" }
 
-  string %CodeVertexShader { "
-#ifndef USE_NORMAL
-  #define USE_NORMAL
-#endif
-" }
 
-  string %CodeGeometryShader { "
-#ifndef USE_NORMAL
-  #define USE_NORMAL
-#endif
-" }
 
-  string %CodePixelDefines { "
-#ifndef USE_NORMAL
-  #define USE_NORMAL
-#endif
-" }
 
   OutputPin %Normal
   {
     string %Type { "float3" }
     string %Color { "Violet" }
-    string %Inline { "G.Input.Normal" }
-    string %Tooltip { "The vertex normal. For vertex shaders this is in local space, for pixel shaders it is in world space." }
+    string %Inline { "MaterialInput.WorldNormal" }
+    string %Tooltip { "The world-space vertex normal." }
   }
 }
 
@@ -209,30 +140,15 @@ Node %VertexTangent
   string %Category { "Input" }
   string %Color { "Green" }
 
-  string %CodeVertexShader { "
-#ifndef USE_TANGENT
-  #define USE_TANGENT
-#endif
-" }
 
-  string %CodeGeometryShader { "
-#ifndef USE_TANGENT
-  #define USE_TANGENT
-#endif
-" }
 
-  string %CodePixelDefines { "
-#ifndef USE_TANGENT
-  #define USE_TANGENT
-#endif
-" }
 
   OutputPin %Tangent
   {
     string %Type { "float3" }
     string %Color { "Grape" }
-    string %Inline { "G.Input.Tangent" }
-    string %Tooltip { "The vertex tangent. For vertex shaders this is the local tangent, for pixel shaders it is the transformed tangent." }
+    string %Inline { "MaterialInput.WorldTangent" }
+    string %Tooltip { "The world-space vertex tangent." }
   }
 }
 
@@ -241,29 +157,14 @@ Node %VertexColor
   string %Category { "Input" }
   string %Color { "Green" }
   
-  string %CodeVertexShader { "
-#ifndef USE_COLOR0
-  #define USE_COLOR0
-#endif
-" }
 
-  string %CodeGeometryShader { "
-#ifndef USE_COLOR0
-  #define USE_COLOR0
-#endif
-" }
   
-  string %CodePixelDefines { "
-#ifndef USE_COLOR0
-  #define USE_COLOR0
-#endif
-" }
 
   OutputPin %Color
   {
     string %Type { "float4" }
     unsigned_int8 %Color { 200, 200, 200 }
-    string %Inline { "G.Input.Color0" }
+    string %Inline { "MaterialInput.Color" }
     string %Tooltip { "The vertex color" }
   }
 }
@@ -273,38 +174,14 @@ Node %VertexColor2
   string %Category { "Input" }
   string %Color { "Green" }
   
-  string %CodeVertexShader { "
-#ifndef USE_COLOR0
-  #define USE_COLOR0
-#endif
-#ifndef USE_COLOR1
-  #define USE_COLOR1
-#endif
-" }
 
-  string %CodeGeometryShader { "
-#ifndef USE_COLOR0
-  #define USE_COLOR0
-#endif
-#ifndef USE_COLOR1
-  #define USE_COLOR1
-#endif
-" }
   
-  string %CodePixelDefines { "
-#ifndef USE_COLOR0
-  #define USE_COLOR0
-#endif
-#ifndef USE_COLOR1
-  #define USE_COLOR1
-#endif
-" }
 
   OutputPin %Color
   {
     string %Type { "float4" }
     unsigned_int8 %Color { 200, 200, 200 }
-    string %Inline { "G.Input.Color1" }
+    string %Inline { "MaterialInput.Color" }
     string %Tooltip { "The second vertex color" }
   }
 }
@@ -318,8 +195,8 @@ Node %InstanceData
   {
     string %Type { "float4" }
     unsigned_int8 %Color { 200, 200, 200 }
-    string %Inline { "GetInstanceData().Color" }
-    string %Tooltip { "Per instance color." }
+    string %Inline { "xiiLoadSceneSurfaceMaterial(MaterialInput.MaterialIndex, MaterialBaseIndex).BaseColorOpacity" }
+    string %Tooltip { "Native material-instance base color and opacity." }
   }
   
 }
@@ -333,7 +210,7 @@ Node %Camera
   {
     string %Type { "float3" }
 	string %Color { "Indigo" }
-    string %Inline { "GetCameraPosition()" }
+    string %Inline { "MaterialCameraPosition.xyz" }
     string %Tooltip { "Global camera position." }
   }
 
@@ -341,7 +218,7 @@ Node %Camera
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "GetCameraDirForwards()" }
+    string %Inline { "MaterialCameraForward.xyz" }
     string %Tooltip { "Forward direction vector of the camera." }
   }
 
@@ -349,7 +226,7 @@ Node %Camera
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "GetCameraDirRight()" }
+    string %Inline { "MaterialCameraRight.xyz" }
     string %Tooltip { "Right direction vector of the camera." }
   }
 
@@ -357,14 +234,14 @@ Node %Camera
   {
     string %Type { "float3" }
     string %Color { "Indigo" }
-    string %Inline { "GetCameraDirUp()" }
+    string %Inline { "MaterialCameraUp.xyz" }
     string %Tooltip { "Up direction vector of the camera." }
   }
 
   OutputPin %Exposure
   {
     string %Type { "float" }
-    string %Inline { "Exposure" }
+    string %Inline { "MaterialTimes.z" }
     string %Tooltip { "Current exposure value of the camera." }
   }
 }

@@ -4,7 +4,11 @@
 
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <QMetaObject>
+#include <QPointer>
 #include <ToolsFoundation/Selection/SelectionManager.h>
+
+class xiiQtNodeScene;
 ///
 class XII_GUIFOUNDATION_DLL xiiEditActions
 {
@@ -46,6 +50,11 @@ public:
 
 private:
   void SelectionEventHandler(const xiiSelectionManagerEvent& e);
+  void UpdateGraphScene(QWidget* pFocus);
+  void UpdateSelectionState();
 
   ButtonType m_ButtonType;
+  QPointer<xiiQtNodeScene> m_pGraphScene;
+  QMetaObject::Connection  m_FocusConnection;
+  QMetaObject::Connection  m_GraphSelectionConnection;
 };

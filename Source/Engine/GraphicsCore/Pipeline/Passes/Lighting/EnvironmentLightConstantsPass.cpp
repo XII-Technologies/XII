@@ -39,6 +39,12 @@ xiiResult xiiEnvironmentLightConstantsPass::Build(xiiRenderPipelinePassContext& 
   snapshot.EnvironmentDirectionAndIlluminance = xiiVec4(direction, m_fIlluminance);
   snapshot.EnvironmentColorAndAngularRadius   = xiiVec4(m_Color, m_fAngularRadius);
   snapshot.EnvironmentAmbientRadiance         = xiiVec4(m_Ambient, 0);
+  if (const auto* ambient = context.m_Parameters.GetValue("EnvironmentAmbientRadiance"))
+  {
+    if (!ambient->IsA<xiiVec3>() || !ambient->Get<xiiVec3>().IsValid() || ambient->Get<xiiVec3>().x < 0 || ambient->Get<xiiVec3>().y < 0 || ambient->Get<xiiVec3>().z < 0)
+      return context.ReportFailure("Environment ambient radiance must be a finite, non-negative linear RGB value.");
+    snapshot.EnvironmentAmbientRadiance = xiiVec4(ambient->Get<xiiVec3>(), 0);
+  }
   if (const auto supplied = context.GetInputData(m_Directional))
   {
     const auto* light = xiiDynamicCast<const xiiDirectionalLightFrameData*>(supplied.Borrow());

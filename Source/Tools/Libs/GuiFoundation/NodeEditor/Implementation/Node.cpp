@@ -12,6 +12,26 @@
 #include <QGraphicsPixmapItem>
 #include <QPainter>
 
+namespace
+{
+  class NodeCommentItem : public QGraphicsTextItem
+  {
+  public:
+    explicit NodeCommentItem(QGraphicsItem* parent) : QGraphicsTextItem(parent) {}
+
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override
+    {
+      painter->save();
+      const auto palette = QApplication::palette();
+      painter->setPen(QPen(palette.mid().color()));
+      painter->setBrush(palette.toolTipBase());
+      painter->drawRoundedRect(boundingRect(), 4, 4);
+      painter->restore();
+      QGraphicsTextItem::paint(painter, option, widget);
+    }
+  };
+} // namespace
+
 xiiQtNode::xiiQtNode()
 {
   auto palette = QApplication::palette();
@@ -44,6 +64,10 @@ xiiQtNode::xiiQtNode()
   {
     m_pIcon = new QGraphicsPixmapItem(this);
   }
+  m_pCommentLabel = new NodeCommentItem(this);
+  m_pCommentLabel->setFont(QApplication::font());
+  m_pCommentLabel->setDefaultTextColor(palette.toolTipText().color());
+  m_pCommentLabel->setAcceptedMouseButtons(Qt::NoButton);
 
   m_HeaderColor = palette.alternateBase().color();
 }
@@ -93,6 +117,13 @@ void xiiQtNode::InitNode(const xiiDocumentNodeManager* pManager, const xiiDocume
 void xiiQtNode::UpdateGeometry()
 {
   prepareGeometryChange();
+  const auto comment = m_pManager->GetNodeComment(m_pObject);
+  m_pCommentLabel->setPlainText(xiiMakeQString(comment));
+  m_pCommentLabel->setVisible(!comment.IsEmpty());
+  m_pCommentLabel->setTextWidth(-1);
+  if (m_pCommentLabel->boundingRect().width() > 320)
+    m_pCommentLabel->setTextWidth(320);
+  m_pCommentLabel->setPos(-5, -m_pCommentLabel->boundingRect().height() - 12);
 
   QRectF iconRect = m_pIcon->boundingRect();
   iconRect.moveTo(m_pIcon->pos());
