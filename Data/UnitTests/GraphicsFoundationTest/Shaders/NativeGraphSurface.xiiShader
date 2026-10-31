@@ -1,0 +1,105 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+FORWARD_DIRECTIONAL_SHADOWS
+FORWARD_ATMOSPHERE
+FORWARD_REFRACTION
+FORWARD_SPOT_SHADOWS
+RENDER_PASS
+BLEND_MODE
+SHADING_MODE
+TWO_SIDED
+
+[MATERIAL_PARAMETER]
+
+
+Permutation BLEND_MODE;
+Permutation SHADING_MODE;
+Permutation TWO_SIDED;
+float MaskThreshold @Default(0.25);
+
+[MATERIAL_CONSTANTS]
+
+FLOAT1(MaskThreshold);
+[RENDERSTATE]
+
+
+#include <Shaders/Materials/NativeMaterialState.h>
+
+[VERTEX_SHADER]
+
+#if !defined(USE_TEXCOORD0)
+  #define USE_TEXCOORD0
+#endif
+#if !defined(USE_NORMAL)
+  #define USE_NORMAL
+#endif
+
+
+#define XII_SCENE_WORLD_ATTRIBUTES
+#define XII_SCENE_MATERIAL_ATTRIBUTES
+#define XII_SCENE_SURFACE_FLAGS
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+#include <Shaders/Common/VisualShaderUtil.h>
+#include <Shaders/Common/MaterialGraphUtilities.h>
+#include <Shaders/Materials/NativeMaterialViewConstants.h>
+#define XII_SCENE_CUSTOM_VERTEX_ENTRY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+static GBufferVertex MaterialInput;
+GBufferVertex main(uint vertexIndex : SV_VertexID, uint visibleIndex : SV_InstanceID)
+{
+  MaterialInput = xiiLoadIndexedSceneSurfaceVertex(vertexIndex, visibleIndex);
+#if 0 || 0
+  const GpuSceneInstance instance = g_SceneInstances[MaterialInput.InstanceIndex];
+  const float3 offset = mul(instance.GlobalTransform, float4(ToFloat3(0), 0)).xyz + ToFloat3(0);
+  MaterialInput.WorldPosition += offset;
+  MaterialInput.Position = mul(ViewProjectionMatrix, float4(MaterialInput.WorldPosition, 1));
+  MaterialInput.PreviousClipPosition += mul(PreviousViewProjectionMatrix, float4(offset, 0));
+#endif
+  return MaterialInput;
+}
+
+[PIXEL_SHADER]
+
+#if !defined(USE_TEXCOORD0)
+  #define USE_TEXCOORD0
+#endif
+#if !defined(USE_NORMAL)
+  #define USE_NORMAL
+#endif
+
+#include <Shaders/Common/MaterialGraphUtilities.h>
+
+#include <Shaders/Materials/NativeMaterialSurface.h>
+#include <Shaders/Common/VisualShaderUtil.h>
+static GBufferVertex MaterialInput;
+
+
+
+
+xiiMaterialSurfaceOutput main(GBufferVertex input, bool frontFace : SV_IsFrontFace)
+{
+  MaterialInput = input;
+  const xiiGpuSurfaceMaterial nativeMaterial = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
+#if TWO_SIDED != TRUE
+  if (!frontFace) discard;
+#endif
+  xiiMaterialSurface surface;
+  surface.BaseColor = float4(ToColor3(float3(1, 1, 1)), saturate(ToFloat1(1)));
+  surface.AlphaCutoff = MaskThreshold;
+#if BLEND_MODE == BLEND_MODE_MASKED
+  clip(surface.BaseColor.a - MaskThreshold);
+#endif
+  surface.Normal = xiiMaterialTangentToWorld(input, ToFloat3(float3(0, 0, 1))) * (frontFace ? 1 : -1);
+  surface.Metallic = saturate(ToFloat1((ToBiggerType(xiiMaterialValueNoise2D(xiiMaterialRotateUV(MaterialInput.TexCoord * float2(1, 1), 0) + float2(0, 0)), saturate(dot(MaterialInput.TexCoord, float2(1, 0)))) * ToBiggerType(saturate(dot(MaterialInput.TexCoord, float2(1, 0))), xiiMaterialValueNoise2D(xiiMaterialRotateUV(MaterialInput.TexCoord * float2(1, 1), 0) + float2(0, 0))))));
+  surface.Reflectance = saturate(ToFloat1(0.5));
+  surface.Roughness = saturate(ToFloat1(0.42));
+  surface.Emissive = ToColor3(float3(0, 0, 0));
+  surface.Occlusion = saturate(ToFloat1(1));
+  surface.Transmission = saturate(1 - ToColor4(float4(0, 0, 0, 1)).a);
+  surface.Unlit = SHADING_MODE == SHADING_MODE_FULLBRIGHT;
+  return xiiWriteMaterialSurface(input, surface);
+}
+
