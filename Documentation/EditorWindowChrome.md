@@ -51,7 +51,7 @@ do not become caption regions when they ignore a mouse event.
   coverage checks size hints and geometry with hover, focus, press and popups.
 
 The custom row has a 32-logical-pixel minimum height, growing with larger fonts,
-and retains the upper native resize strip. It uses a charcoal surface, flat menu/command hover backgrounds,
+and retains the upper native resize strip. Its background matches the black Editor window palette, with flat menu/command hover backgrounds,
 fixed 46-pixel caption hit widths and 16-pixel SVG glyphs. Hover rules change
 paint only, with common border/padding in all states. Project names are elided
 at paint time, retaining the full accessible label and tooltip without changing

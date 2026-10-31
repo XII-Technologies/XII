@@ -16,7 +16,7 @@ xiiQtWindowTitleBar::xiiQtWindowTitleBar(QWidget* pWindow) :
   setMinimumHeight(qMax(32, fontMetrics().height() + 16));
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   setStyleSheet(QStringLiteral(R"(
-QWidget#EditorTitleBar { background: #15181e; border: 0; border-bottom: 1px solid #2a2e36; }
+QWidget#EditorTitleBar { background: palette(window); border: 0; border-bottom: 1px solid #2a2e36; }
 QWidget#EditorTitleBar QLabel { color: #c2c7d0; background: transparent; border: 0; }
 QWidget#EditorTitleBar QMenuBar { color: #dce0e8; background: transparent; border: 0; spacing: 2px; }
 QWidget#EditorTitleBar QMenuBar::item { background: transparent; padding: 2px 8px; border: 0; border-radius: 4px; }
