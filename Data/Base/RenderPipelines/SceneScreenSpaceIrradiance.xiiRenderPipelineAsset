@@ -533,6 +533,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Emission"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0D4C3,0xAB6AB443}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -860,6 +861,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Normal"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000005C3,0}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -881,6 +883,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"SourceRadiance"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00803F43,0x00007B43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -951,6 +954,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Camera"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000005C3,0x0000FC42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1017,6 +1021,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"DirectLighting"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0D4C3,0x55D56A43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1371,6 +1376,7 @@ o
 			Uuid{u4{6676434274181775946,3666258388100957551}}
 			Uuid{u4{12578490462118693034,5195817207388090444}}
 		}
+		VarArray %Graph::CommentBlocks{}
 	}
 }
 o
@@ -1384,6 +1390,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Depth"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00002FC4,0xABAAD942}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1484,6 +1491,7 @@ o
 		Uuid %Camera{u4{14781795620579310788,10250722520841204342}}
 		Uuid %Depth{u4{2224599916230749857,15238916951893138135}}
 		Uuid %Irradiance{u4{11448110986397531255,816550115726904597}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00001843,0x00005442}}
 		Uuid %Normal{u4{6492267906890607595,1559207601517764906}}
 		VarDict %ParameterOverrides{}
@@ -1566,6 +1574,7 @@ o
 		b %AllowAbsentB{0}
 		b %AsyncCompute{0}
 		Uuid %B{u4{5246045460352631304,5858843602896280604}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000017C3,0x00007C43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1739,6 +1748,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Irradiance"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000EC43,0x00005442}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2123,6 +2133,7 @@ o
 	{
 		b %Enabled{0}
 		Uuid %Input{u4{15531826295966561547,3223969959787792395}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0080D8C3,0xABAAD942}}
 		Uuid %Output{u4{15924903359857489861,13138790969725742848}}
 		VarDict %ParameterOverrides{}

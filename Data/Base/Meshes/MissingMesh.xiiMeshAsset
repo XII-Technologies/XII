@@ -11,7 +11,7 @@ o
 		s %AssetType{"Mesh"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{7139397627682754203,4783035615231258983}}
-		u4 %Hash{18265345040754886595}
+		u4 %Hash{15619009771782572771}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps

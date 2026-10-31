@@ -1065,6 +1065,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Accumulation"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00808243,0x69B72D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1141,6 +1142,7 @@ o
 		Uuid %Materials{u4{16656738091702403571,13250638329935175080}}
 		f %MaximumWeight{0x00803B45}
 		Uuid %Modulation{u4{16636065326277687779,8572393918257189526}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000F2C2,0xB4DBBC43}}
 		VarDict %ParameterOverrides{}
 		Uuid %Particles{u4{14816163950396024852,15747304100309000394}}
@@ -1293,6 +1295,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"HistoryTrust"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00808443,0xDA6D2944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1836,6 +1839,7 @@ o
 		b %AllowAbsentSeeds{1}
 		Uuid %Batches{u4{4510566467299058647,13347675840247491025}}
 		u3 %MaximumParticles{1048576}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0080CBC3,0}}
 		VarDict %ParameterOverrides{}
 		Uuid %Particles{u4{2695818397623865612,5978372873984513368}}
@@ -2284,6 +2288,7 @@ o
 			Uuid{u4{10586480919252760978,7390061659413966624}}
 			Uuid{u4{3987032926520796545,5433488939337833167}}
 		}
+		VarArray %Graph::CommentBlocks{}
 	}
 }
 o
@@ -2311,6 +2316,7 @@ o
 		b %Enabled{1}
 		Uuid %Materials{u4{15228267874284029616,18383267573786144829}}
 		u3 %MaximumParticles{1048576}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C031C4,0x9BCFEB42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2495,6 +2501,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ParticleStates"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000032C2,0x7D033942}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2768,6 +2775,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputModulation"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0C6C3,0x00004344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2869,6 +2877,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Depth"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0C6C3,0x00008A43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2890,6 +2899,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Additive"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C08543,0xB4DBD443}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2952,6 +2962,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Camera"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0C6C3,0x00001643}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3065,6 +3076,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputAccumulation"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0040C7C3,0x0000C943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3181,6 +3193,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputRevealage"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0C6C3,0x00000444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3312,6 +3325,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputHistoryTrust"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0C6C3,0x00806244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3407,6 +3421,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Modulation"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C08543,0xDAED0944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3861,6 +3876,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Revealage"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C08543,0xB4DB9543}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4062,6 +4078,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"InputAdditive"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0C6C3,0x00802344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations

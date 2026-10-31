@@ -641,6 +641,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"GeometryMetadata"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0C3C3,0x00007C43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1306,6 +1307,7 @@ o
 	p
 	{
 		Uuid %CascadeSnapshot{u4{4234759645143314322,6994314719503378631}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0080DBC3,0x00003D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1593,6 +1595,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C08C44,0xDC0DDA42}}
 		VarArray %Overrides
 		{
@@ -2172,6 +2175,7 @@ o
 			Uuid{u4{4979935302483498296,17796023273796250483}}
 			Uuid{u4{7474586122654116286,4744241370554551096}}
 		}
+		VarArray %Graph::CommentBlocks{}
 	}
 }
 o
@@ -2294,6 +2298,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000A443,0x7783C643}}
 		VarArray %Overrides
 		{
@@ -2369,6 +2374,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00008EC2,0xBC410744}}
 		VarArray %Overrides
 		{
@@ -2596,6 +2602,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0040C2C3,0x00801D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2617,6 +2624,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ShadowAtlas"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00A0BE44,0xDC0DDA42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2802,6 +2810,7 @@ o
 	u3 %v{1}
 	p
 	{
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C03544,0xEE067D43}}
 		VarArray %Overrides
 		{
@@ -3726,6 +3735,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SkinningMatrices"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0040C2C3,0x0000FC43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3747,6 +3757,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneInstances"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0040C2C3,0}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4022,6 +4033,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0040C2C3,0x0000BD43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4638,6 +4650,7 @@ o
 		b %Enabled{1}
 		u3 %MaximumLights{4}
 		f %NearPlane{0x0AD7A33C}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C031C4,0xA5D7EF43}}
 		f %NormalBias{0x0AD7233C}
 		f %NormalBiasTexels{0x0000803F}
@@ -4707,6 +4720,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"SpotShadows"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0040B8C3,0x0000FC42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations

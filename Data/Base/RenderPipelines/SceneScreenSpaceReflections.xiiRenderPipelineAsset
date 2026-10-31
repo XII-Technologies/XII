@@ -752,6 +752,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"HDRSceneColor"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00809944,0x7D518D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -982,6 +983,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ReflectionLighting"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00406D44,0xFAA21C43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1110,6 +1112,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Normal"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000DBC2,0x000048C3}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1490,6 +1493,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Material"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000DBC2,0x000094C2}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1597,6 +1601,7 @@ o
 		b %AsyncCompute{1}
 		b %ClosestDepth{1}
 		Uuid %DepthPyramid{u4{7575818932598030787,10812304091994716784}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000015C3,0x00009843}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -1776,6 +1781,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Camera"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000DBC2,0x00803044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2274,6 +2280,7 @@ o
 	{
 		Uuid %Activation{u4{1303202616276324453,17461569495655161575}}
 		Uuid %BRDFLut{u4{8919420513857437492,17204259517975940315}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000FFC2,0x00003243}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2397,6 +2404,7 @@ o
 			Uuid{u4{3460709817884365248,1434742846042014922}}
 			Uuid{u4{14420832224301244053,5668674002623403857}}
 		}
+		VarArray %Graph::CommentBlocks{}
 	}
 }
 o
@@ -2463,6 +2471,7 @@ o
 		Uuid %Activation{u4{18343296143818951038,16660696238500207900}}
 		b %AsyncCompute{1}
 		Uuid %Color{u4{14248016302444304056,3220917708349765927}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000017C3,0x00000B44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -2544,6 +2553,7 @@ o
 	{
 		b %Enabled{0}
 		Uuid %Input{u4{4165862670969053196,14694201063852247901}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0080D8C3,0xC6BA9A43}}
 		Uuid %Output{u4{5266775969208624893,17019060085211477732}}
 		VarDict %ParameterOverrides{}
@@ -3156,6 +3166,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"SceneDepth"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00002FC4,0xC6BA9A43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3269,6 +3280,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Albedo"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000DBC2,0x00005042}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3454,6 +3466,7 @@ o
 		b %AllowAbsentB{1}
 		b %AsyncCompute{0}
 		Uuid %B{u4{6458969898355246901,29317635809921287}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00406744,0x7D518D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -3580,6 +3593,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{1}
 		s %Name{"Radiance"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C0D4C3,0xC6BAD943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4136,6 +4150,7 @@ o
 		s %Format{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ScreenReflections"}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00602144,0x18742142}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4367,6 +4382,7 @@ o
 		b %AsyncCompute{1}
 		b %ClosestDepth{0}
 		Uuid %DepthPyramid{u4{3196243806560124443,12637267315400336775}}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000015C3,0x0000D743}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4404,6 +4420,7 @@ o
 	{
 		b %AllowAbsentSignal{1}
 		b %AsyncCompute{0}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00001B44,0xFAA26743}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
@@ -4453,6 +4470,7 @@ o
 		f %MaxDistance{0x00004842}
 		f %MaxRoughness{0xEC51383F}
 		u3 %MaxSteps{256}
+		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00004743,0x00000843}}
 		VarDict %ParameterOverrides{}
 		Uuid %PerFrameCamera{u4{8373480441401037386,4310619474516560671}}
