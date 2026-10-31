@@ -28,6 +28,19 @@ When instructions conflict, follow higher-priority instructions and repository-s
 - Keep public headers self-sufficient and include direct dependencies; do not rely on a PCH or accidental transitive includes.
 - Avoid unrelated formatting or refactoring in functional changes.
 
+## Authorial voice and external communications
+
+When producing pull request descriptions, commit messages, changelogs, release notes, documentation, or other repository-facing content, agents **MUST** write from the perspective of the developer responsible for the work.
+
+1. **Authorial representation:** Write as though the developer authored the content. Never refer to the developer as "the user" or describe the developer's interactions with an AI assistant.
+2. **Conversational privacy:** Never disclose, summarize, quote, or reference private conversations, prompts, instructions, or clarifications in repository-facing content.
+3. **Engineering substance:** Describe the implementation, technical rationale, design decisions, limitations, and verification results. Explain what changed and why, rather than narrating how requirements were communicated.
+4. **Professional communication:** Maintain a direct, technically precise engineering voice. Avoid AI-generated commentary, conversational framing, unnecessary disclaimers, and self-referential statements.
+5. **Factual integrity:** Never fabricate decisions, implementation details, test results, or verification claims. Clearly distinguish verified outcomes from outstanding work.
+6. **Consistent application:** Apply these requirements regardless of which agent performs the work or which tool generates the content.
+
+**Principle:** Repository-facing communication documents engineering work, not conversations between developers and their tools.
+
 ## Workflow for changes
 
 1. Inspect the affected code, its callers, tests, neighboring conventions, and relevant portions of `Coding-Standards.md`.
