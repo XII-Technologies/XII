@@ -56,6 +56,10 @@ public:
   /// Writes the asset table for each data dir for the given asset profile.
   xiiResult WriteAssetTables(const xiiPlatformProfile* pAssetProfile, bool bForce);
 
+  /// Invalidates cached entries as soon as curator identities, paths or outputs change.
+  /// Must be called under the curator mutex, before deferred UI events are delivered.
+  void InvalidateTables();
+
   /// Discards tables borrowing profile pointers before profiles are replaced or destroyed.
   void ClearAssetTables();
 

@@ -12,6 +12,7 @@
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorEngineProcessFramework/Rendering/EditorGizmoPass.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -548,15 +549,25 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
       xiiCreateThumbnailMsgToEditor ret;
       ret.m_DocumentGuid = GetDocumentGuid();
 
+      // Readback itself succeeds even when extraction or pipeline execution failed,
+      // leaving an untouched black target. Never publish that as a valid thumbnail.
+      bool rendered = false;
+      {
+        XII_LOCK(m_pWorld->GetWriteMarker());
+        auto*    module = m_pWorld->GetModule<xiiRenderWorldModule>();
+        xiiView* view   = nullptr;
+        if (module && module->TryGetView(m_pThumbnailViewContext->GetViewHandle(), view))
+          rendered = view->GetLastRenderResult().Succeeded() && view->GetRenderPipelineInstance().GetResourceAcquireResult() == xiiResourceAcquireResult::Final;
+      }
       xiiImage image;
-      if (xiiCaptureThumbnail(m_pThumbnailColorRT.Borrow(), {m_uiThumbnailWidth / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor), m_uiThumbnailHeight / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor)}, image).Succeeded())
+      if (rendered && xiiCaptureThumbnail(m_pThumbnailColorRT.Borrow(), {m_uiThumbnailWidth / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor), m_uiThumbnailHeight / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor)}, image).Succeeded())
       {
         ret.m_ThumbnailData.SetCountUninitialized(static_cast<xiiUInt32>(image.GetByteBlobPtr().GetCount()));
         xiiMemoryUtils::Copy(ret.m_ThumbnailData.GetData(), image.GetPixelPointer<xiiUInt8>(), ret.m_ThumbnailData.GetCount());
       }
       else
       {
-        xiiLog::Error("Failed to capture thumbnail for document '{0}'.", GetDocumentGuid());
+        xiiLog::Error("Failed to render or capture thumbnail for document '{0}'. Check resource and render pipeline diagnostics.", GetDocumentGuid());
       }
 
       DestroyThumbnailViewContext();

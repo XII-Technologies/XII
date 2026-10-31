@@ -55,13 +55,14 @@ public:
     xiiResult Serialize(xiiStreamWriter& inout_writer) const;
 
     /// Checks whether the stored file contains the same hash.
-    bool IsThumbnailUpToDate(xiiUInt64 uiExpectedHash, xiiUInt16 uiVersion) const { return (m_uiHash == uiExpectedHash && m_uiVersion == uiVersion); }
+    bool IsThumbnailUpToDate(xiiUInt64 uiExpectedHash, xiiUInt16 uiVersion) const { return (m_uiHash == uiExpectedHash && m_uiVersion == uiVersion && m_uiThumbnailVersion == s_uiThumbnailVersion); }
 
     /// Sets the asset file hash
     void SetFileHashAndVersion(xiiUInt64 uiHash, xiiUInt16 v)
     {
-      m_uiHash    = uiHash;
-      m_uiVersion = v;
+      m_uiHash             = uiHash;
+      m_uiVersion          = v;
+      m_uiThumbnailVersion = s_uiThumbnailVersion;
     }
 
     /// Returns the serialized size of the thumbnail info.
@@ -69,9 +70,12 @@ public:
     constexpr xiiUInt32 GetSerializedSize() const { return 19; }
 
   private:
-    xiiUInt64 m_uiHash     = 0;
-    xiiUInt16 m_uiVersion  = 0;
-    xiiUInt16 m_uiReserved = 0;
+    // Bump when thumbnail rendering changes so previously cached images are regenerated.
+    static constexpr xiiUInt16 s_uiThumbnailVersion = 1;
+
+    xiiUInt64 m_uiHash             = 0;
+    xiiUInt16 m_uiVersion          = 0;
+    xiiUInt16 m_uiThumbnailVersion = s_uiThumbnailVersion;
   };
 
   xiiAssetDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType);
