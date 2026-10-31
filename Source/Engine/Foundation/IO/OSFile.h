@@ -247,6 +247,10 @@ public:
   /// Returns XII_FAILURE if the move failed.
   static xiiResult MoveFileOrDirectory(xiiStringView sFrom, xiiStringView sTo);
 
+  /// Atomically installs a staged file, replacing an existing destination. Both paths must be on the same filesystem.
+  /// On failure the destination remains intact. Does not provide power-loss durability.
+  static xiiResult AtomicReplaceFile(xiiStringView sStagedFile, xiiStringView sDestination);
+
   /// Copies the source file into the destination file.
   static xiiResult CopyFile(xiiStringView sSource, xiiStringView sDestination); // [tested]
 
@@ -384,6 +388,7 @@ private:
   static xiiResult InternalDeleteFile(xiiStringView sFile);
   static xiiResult InternalDeleteDirectory(xiiStringView sDirectory);
   static xiiResult InternalCreateDirectory(xiiStringView sFile);
+  static xiiResult InternalAtomicReplaceFile(xiiStringView sStagedFile, xiiStringView sDestination);
   static xiiResult InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiStringView sDirectoryTo);
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)

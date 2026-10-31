@@ -314,6 +314,11 @@ xiiResult xiiOSFile::InternalCreateDirectory(xiiStringView sDirectory)
   return XII_FAILURE;
 }
 
+xiiResult xiiOSFile::InternalAtomicReplaceFile(xiiStringView sStagedFile, xiiStringView sDestination)
+{
+  return rename(xiiString(sStagedFile), xiiString(sDestination)) == 0 ? XII_SUCCESS : XII_FAILURE;
+}
+
 xiiResult xiiOSFile::InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiStringView sDirectoryTo)
 {
   if (rename(xiiString(sDirectoryFrom), xiiString(sDirectoryTo)) != 0)

@@ -282,6 +282,11 @@ xiiResult xiiOSFile::InternalCreateDirectory(xiiStringView sDirectory)
   return XII_SUCCESS;
 }
 
+xiiResult xiiOSFile::InternalAtomicReplaceFile(xiiStringView sStagedFile, xiiStringView sDestination)
+{
+  return MoveFileExW(xiiDosDevicePath(sStagedFile), xiiDosDevicePath(sDestination), MOVEFILE_REPLACE_EXISTING) != 0 ? XII_SUCCESS : XII_FAILURE;
+}
+
 xiiResult xiiOSFile::InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiStringView sDirectoryTo)
 {
   if (MoveFileW(xiiDosDevicePath(sDirectoryFrom), xiiDosDevicePath(sDirectoryTo)) == 0)

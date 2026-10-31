@@ -448,6 +448,16 @@ xiiResult xiiOSFile::MoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiString
   return InternalMoveFileOrDirectory(sFrom, sTo);
 }
 
+xiiResult xiiOSFile::AtomicReplaceFile(xiiStringView sStagedFile, xiiStringView sDestination)
+{
+  xiiStringBuilder staged(sStagedFile), destination(sDestination);
+  staged.MakeCleanPath();
+  destination.MakeCleanPath();
+  if (!staged.IsAbsolutePath() || !destination.IsAbsolutePath() || staged == destination)
+    return XII_FAILURE;
+  return InternalAtomicReplaceFile(staged, destination);
+}
+
 xiiResult xiiOSFile::CopyFile(xiiStringView sSource, xiiStringView sDestination)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
