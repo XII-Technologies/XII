@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Material/MaterialShaderBinding.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
@@ -105,10 +107,10 @@ namespace
   }
 } // namespace
 
-xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& snapshot, const xiiShaderPermutationResource& shader, bool bTransparent)
+xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& snapshot, const xiiShaderPermutationResource& shader, bool bTransparent, bool bPicking)
 {
   *this = {};
-  if (!snapshot.m_pSchema || snapshot.m_pSchema->GetDomain() != xiiMaterialDomain::Surface || snapshot.m_RuntimeState.IsTranslucent() != bTransparent)
+  if (!snapshot.m_pSchema || snapshot.m_pSchema->GetDomain() != xiiMaterialDomain::Surface || (!bPicking && snapshot.m_RuntimeState.IsTranslucent() != bTransparent))
     return xiiStatus("The authored surface shader does not match this raster pass's material domain or blend class.");
   if (shader.GetActiveShaderStages() != (xiiGALShaderType::Vertex | xiiGALShaderType::Pixel))
     return xiiStatus("Native authored surfaces require vertex and pixel stages with no vertex stream inputs.");
@@ -178,11 +180,23 @@ xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& sna
       }
       else if (resource.m_Type == xiiGALShaderResourceType::TextureSRV && resource.m_uiArraySize == 1)
       {
-        const auto index = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(name));
-        if (index >= snapshot.m_ResourceBindings.GetCount())
-          return xiiStatus(xiiFmt("Material texture '{}' is unbound.", name));
-        const auto& binding = snapshot.m_ResourceBindings[index];
-        Texture     texture;
+        const auto                 index = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(name));
+        xiiMaterialResourceBinding binding;
+        if (index < snapshot.m_ResourceBindings.GetCount())
+          binding = snapshot.m_ResourceBindings[index];
+        const auto* definition = snapshot.m_pSchema->FindTexture(xiiMaterialParameterId::Make(name));
+        if (!binding.m_hTexture2D.IsValid() && !binding.m_hTextureCube.IsValid())
+        {
+          if (definition && definition->m_bRequired)
+            return xiiStatus(xiiFmt("Required material texture '{}' is unbound.", name));
+          // Use the engine's shared missing-resource texture for optional empty
+          // slots. No per-material GPU allocation or descriptor placeholder.
+          if (resource.m_TextureType == xiiGALShaderTextureType::Texture2D)
+            binding.m_hTexture2D = xiiResourceManager::GetResourceTypeMissingFallback<xiiTexture2DResource>();
+          else if (resource.m_TextureType == xiiGALShaderTextureType::TextureCube)
+            binding.m_hTextureCube = xiiResourceManager::GetResourceTypeMissingFallback<xiiTextureCubeResource>();
+        }
+        Texture texture;
         texture.m_Name         = resource.m_sName;
         texture.m_hTexture2D   = binding.m_hTexture2D;
         texture.m_hTextureCube = binding.m_hTextureCube;

@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Types/Status.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Types/Status.h>
 #include <GraphicsCore/Material/MaterialInstance.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -32,7 +33,7 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialShaderBinding
 
   /// Validates the canonical native G-buffer interface and packs constants by
   /// reflected names/offsets rather than assuming schema and HLSL packing agree.
-  xiiStatus Build(const xiiMaterialInstanceSnapshot& snapshot, const xiiShaderPermutationResource& shader, bool bTransparent = false);
+  xiiStatus Build(const xiiMaterialInstanceSnapshot& snapshot, const xiiShaderPermutationResource& shader, bool bTransparent = false, bool bPicking = false);
   void      Bind(xiiGALCommandList& commands, xiiGALBuffer* constants) const;
   bool      AreTexturesCurrent() const;
 };

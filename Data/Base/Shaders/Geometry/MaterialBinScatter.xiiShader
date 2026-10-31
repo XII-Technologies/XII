@@ -1,0 +1,6 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#define XII_MATERIAL_BIN_PHASE 2
+#include <Shaders/Geometry/MaterialDrawBins.h>
