@@ -29,14 +29,15 @@ struct xiiAssetInfo;
 /// One coalesced set of explicit requests, shared by all editor progress surfaces.
 struct xiiAssetTransformProgress
 {
-  xiiUInt32 m_uiTotal          = 0;
-  xiiUInt32 m_uiCompleted      = 0;
-  xiiUInt32 m_uiFailed         = 0;
-  xiiUInt32 m_uiNeedsImport    = 0;
-  xiiUInt32 m_uiCanceled       = 0;
-  bool      m_bActive          = false;
-  bool      m_bCancelRequested = false;
-  bool      m_bAllAssets       = false;
+  xiiUInt64 m_uiProjectGeneration = 0;
+  xiiUInt32 m_uiTotal             = 0;
+  xiiUInt32 m_uiCompleted         = 0;
+  xiiUInt32 m_uiFailed            = 0;
+  xiiUInt32 m_uiNeedsImport       = 0;
+  xiiUInt32 m_uiCanceled          = 0;
+  bool      m_bActive             = false;
+  bool      m_bCancelRequested    = false;
+  bool      m_bAllAssets          = false;
   xiiTime   m_Duration;
 };
 
@@ -210,5 +211,6 @@ private:
   xiiSet<xiiUuid>              m_DeferredImports; ///< Live edits awaiting save/close; checked only by the GUI tick.
   xiiAssetTransformProgress    m_TransformProgress;
   xiiTime                      m_TransformStart;
-  std::atomic<bool>            m_bAutomatic = false;
+  std::atomic<bool>            m_bAutomatic          = false;
+  xiiUInt64                    m_uiProjectGeneration = 0;
 };

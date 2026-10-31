@@ -981,7 +981,7 @@ void xiiCppProject::UpdatePluginConfig(const xiiCppSettings& cfg)
   plugin.m_sDescription = txt;
   plugin.m_RuntimePlugins.PushBack(sPluginName);
 
-  xiiQtEditorApp::GetSingleton()->WritePluginSelectionStateDDL();
+  xiiQtEditorApp::GetSingleton()->WritePluginSelectionStateDDL().LogFailure();
 }
 
 xiiResult xiiCppProject::EnsureCppPluginReady()

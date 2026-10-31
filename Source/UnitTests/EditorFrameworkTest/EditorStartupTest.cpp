@@ -69,17 +69,11 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
   editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
   XII_SCOPE_EXIT(editor->ShutdownEditor());
   XII_TEST_BOOL(editor->IsRunning());
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Graceful processor stop and restart")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Processor rejects work before project readiness")
   {
-    auto* processor = xiiAssetProcessor::GetSingleton();
-    processor->StartProcessTask();
-    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running);
-    processor->StopProcessTask(false);
-    processor->StopProcessTask(false, true);
-    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
-    processor->StartProcessTask();
-    processor->StopProcessTask(false, true);
-    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+    xiiAssetProcessor::GetSingleton()->StartProcessTask();
+    XII_TEST_BOOL(xiiAssetProcessor::GetSingleton()->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+    XII_TEST_BOOL(xiiAssetProcessor::GetSingleton()->QueueTransformAllAssets().Failed());
   }
   xiiStringBuilder preferenceRoot = xiiApplicationServices::GetSingleton()->GetApplicationPreferencesFolder();
   preferenceRoot.Trim("/\\");
@@ -104,6 +98,19 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     project.AppendPath("SourceWindowProject", "xiiProject");
     if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
       return;
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Graceful processor stop and restart")
+    {
+      auto* processor = xiiAssetProcessor::GetSingleton();
+      processor->StartProcessTask();
+      XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running);
+      processor->StopProcessTask(false);
+      processor->StopProcessTask(false, true);
+      XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+      processor->StartProcessTask();
+      processor->StopProcessTask(false, true);
+      XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+    }
+
     XII_TEST_BOOL(xiiToolsProject::IsProjectOpen());
     TestDocumentSaveUi(*editor, project.GetFileDirectory());
     TestAssetReplacement(*editor, project.GetFileDirectory());

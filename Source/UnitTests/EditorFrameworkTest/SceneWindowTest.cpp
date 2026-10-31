@@ -287,6 +287,12 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
   {
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native scene viewport, resource transformation, capture and picking")
     {
+      // Opening a project must prepare the Editor viewport pipeline before any scene is opened.
+      const auto editorPipeline = xiiAssetCurator::GetSingleton()->FindSubAsset("{ 7e79df72-9ebd-674a-bcd5-ca4405549c82 }");
+      if (!XII_TEST_BOOL(static_cast<bool>(editorPipeline)))
+        return;
+      auto* pipelineInfo = editorPipeline->m_pAssetInfo;
+      XII_TEST_BOOL(xiiOSFile::ExistsFile(pipelineInfo->GetManager()->GetAbsoluteOutputFileName(pipelineInfo->m_pDocumentTypeDescriptor, pipelineInfo->m_Path, "")));
       // Linked test plugins start before StartupEditor mounts tool data. Refresh their data as a loaded editor plugin would.
       xiiVisualShaderTypeRegistry::GetSingleton()->UpdateNodeData();
       const xiiUuid sphereAsset = xiiConversionUtils::ConvertStringToUuid("{ 618ee743-ed04-4fac-bf5f-572939db2f1d }");

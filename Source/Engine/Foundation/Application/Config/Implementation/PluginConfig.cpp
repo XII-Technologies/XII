@@ -3,6 +3,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Application/Config/PluginConfig.h>
+#include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -79,7 +80,9 @@ xiiResult xiiApplicationPluginConfig::Save(xiiStringView sConfigPath) const
   m_Plugins.Sort();
 
   xiiDeferredFileWriter file;
-  file.SetOutput(sConfigPath, true);
+  xiiStringBuilder      resolved;
+  XII_SUCCEED_OR_RETURN(xiiProjectManifest::ResolveConfigPath(sConfigPath, resolved).GetResult());
+  file.SetOutput(resolved, true);
 
   xiiOpenDdlWriter writer;
   writer.SetOutputStream(&file);
@@ -107,8 +110,14 @@ void xiiApplicationPluginConfig::Load(xiiStringView sConfigPath)
 
   m_Plugins.Clear();
 
-  xiiFileReader file;
-  if (file.Open(sConfigPath).Failed())
+  xiiFileReader    file;
+  xiiStringBuilder resolved;
+  if (xiiProjectManifest::ResolveConfigPath(sConfigPath, resolved).Failed())
+  {
+    xiiLog::Error("Could not resolve runtime plugin configuration from the project manifest.");
+    return;
+  }
+  if (file.Open(resolved).Failed())
   {
     xiiLog::Warning("Could not open plugins config file '{0}'", sConfigPath);
     return;

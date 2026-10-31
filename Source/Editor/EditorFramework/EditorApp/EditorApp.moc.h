@@ -202,11 +202,11 @@ public:
   /// If checking out fails or is user canceled, the function returns failure.
   xiiStatus MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePath);
 
-  bool ExistsPluginSelectionStateDDL(const char* szProjectDir = ":project");
-  void WritePluginSelectionStateDDL(const char* szProjectDir = ":project");
-  void CreatePluginSelectionDDL(const char* szProjectFile, const char* szTemplate);
-  void LoadPluginBundleDlls(const char* szProjectFile);
-  void DetectAvailablePluginBundles(xiiStringView sSearchDirectory);
+  bool      ExistsPluginSelectionStateDDL(const char* szProjectDir = ":project");
+  xiiStatus WritePluginSelectionStateDDL(const char* szProjectDir = ":project");
+  xiiStatus CreatePluginSelectionDDL(const char* szProjectFile, const char* szTemplate);
+  xiiStatus LoadPluginBundleDlls(const char* szProjectFile);
+  void      DetectAvailablePluginBundles(xiiStringView sSearchDirectory);
 
   /// Launches a new instance of the editor to open the given project.
   void LaunchEditor(const char* szProject, bool bCreate);
@@ -304,23 +304,25 @@ private:
 
   void ReadTagRegistry();
 
-  void SetupDataDirectories();
-  void CreatePanels();
+  xiiStatus SetupDataDirectories();
+  xiiStatus InitializeProject();
+  void      CreatePanels();
 
   void SetupAndShowSplashScreen();
   void CloseSplashScreen();
 
   void OpenDemoDocument();
 
-  xiiResult AddBundlesInOrder(xiiDynamicArray<xiiApplicationPluginConfig::PluginConfig>& order, const xiiPluginBundleSet& bundles, const xiiString& start, bool bEditor, bool bEditorEngine, bool bRuntime) const;
+  xiiResult AddBundlesInOrder(xiiDynamicArray<xiiApplicationPluginConfig::PluginConfig>& order, const xiiPluginBundleSet& bundles, const xiiString& start, bool bEditor, bool bEditorEngine, bool bRuntime, xiiDynamicArray<xiiString>* pDependencyStack = nullptr) const;
 
-  bool m_bSavePreferencesAfterOpenProject;
-  bool m_bLoadingProjectInProgress = false;
-  bool m_bAnyProjectOpened         = false;
-  bool m_bWroteCrashIndicatorFile  = false;
-  bool m_bIsRunning                = false;
-  bool m_bStartupInProgress        = false;
-  bool m_bStartupQuitRequested     = false;
+  bool      m_bSavePreferencesAfterOpenProject;
+  bool      m_bLoadingProjectInProgress = false;
+  bool      m_bAnyProjectOpened         = false;
+  xiiUInt64 m_uiPluginSelectionHash     = 0;
+  bool      m_bWroteCrashIndicatorFile  = false;
+  bool      m_bIsRunning                = false;
+  bool      m_bStartupInProgress        = false;
+  bool      m_bStartupQuitRequested     = false;
 
   xiiBitflags<StartupFlags>  m_StartupFlags;
   xiiDynamicArray<xiiString> m_DocumentsToOpen;

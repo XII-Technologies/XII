@@ -292,20 +292,26 @@ void xiiQtCreateProjectDlg::on_Next_clicked()
 
   if (m_State == State::Create)
   {
-    CreateProject();
-
+    const auto status = CreateProject();
+    if (status.Failed())
+    {
+      xiiQtUiServices::MessageBoxStatus(status, "Could not create the project.");
+      m_State = State::Summary;
+      UpdateUI();
+      return;
+    }
     QDialog::accept();
   }
 }
 
-void xiiQtCreateProjectDlg::CreateProject()
+xiiStatus xiiQtCreateProjectDlg::CreateProject()
 {
   const xiiString sFullPath = GetFullTargetPath();
 
+  if (xiiOSFile::ExistsDirectory(sFullPath))
+    return xiiStatus("The destination directory already exists. Choose a new project directory.");
   if (xiiOSFile::CreateDirectoryStructure(sFullPath).Failed())
-  {
-    // TODO
-  }
+    return xiiStatus("Could not create the project directory.");
 
   if (m_sProjectTemplate.IsEmpty())
   {
@@ -314,12 +320,13 @@ void xiiQtCreateProjectDlg::CreateProject()
     path.AppendPath("Editor/PluginSelection.ddl");
 
     xiiFileWriter file;
-    file.Open(path).AssertSuccess();
+    XII_SUCCEED_OR_RETURN(file.Open(path));
 
     xiiOpenDdlWriter ddl;
     ddl.SetOutputStream(&file);
 
     m_LocalPluginSet.WriteStateToDDL(ddl);
+    XII_SUCCEED_OR_RETURN(file.Flush());
   }
   else
   {
@@ -328,12 +335,20 @@ void xiiQtCreateProjectDlg::CreateProject()
     xiiStringBuilder srcFolder = m_sProjectTemplate;
     srcFolder.PathParentDirectory();
     if (xiiOSFile::CopyFolder(srcFolder, sFullPath).Failed())
-    {
-      // TODO
-    }
+      return xiiStatus("Could not copy the project template. The incomplete destination is retained for recovery.");
+
+    // A template starts a new project identity; asset/document UUIDs stay intact.
+    const xiiStringBuilder copiedManifest(sFullPath, "/xiiProject");
+    xiiProjectManifest     manifest;
+    XII_SUCCEED_OR_RETURN(manifest.Load(copiedManifest));
+    manifest.m_ProjectID = xiiUuid::MakeUuid();
+    manifest.m_sName     = xiiPathUtils::GetFileNameAndExtension(sFullPath);
+    XII_SUCCEED_OR_RETURN(manifest.Save(copiedManifest));
 
     // Ensure that in case we copied an AssetCache, it gets deleted so that the project definitely starts fresh.
     xiiStringBuilder sAssetCache(sFullPath, "/AssetCache");
-    xiiOSFile::DeleteFolder(sAssetCache).IgnoreResult();
+    if (xiiOSFile::ExistsDirectory(sAssetCache))
+      XII_SUCCEED_OR_RETURN(xiiOSFile::DeleteFolder(sAssetCache));
   }
+  return XII_SUCCESS;
 }

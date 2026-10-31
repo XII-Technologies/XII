@@ -45,19 +45,19 @@ void xiiQtEditorApp::SetFileSystemConfig(const xiiApplicationFileSystemConfig& c
   m_FileSystemConfig.CreateDataDirStubFiles().IgnoreResult();
 }
 
-void xiiQtEditorApp::SetupDataDirectories()
+xiiStatus xiiQtEditorApp::SetupDataDirectories()
 {
   XII_PROFILE_SCOPE("SetupDataDirectories");
-  xiiFileSystem::DetectSdkRootDirectory().IgnoreResult();
+  XII_SUCCEED_OR_RETURN(xiiFileSystem::DetectSdkRootDirectory());
 
   xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
 
   xiiFileSystem::SetSpecialDirectory("project", sPath);
 
-  sPath.AppendPath("RuntimeConfigs/DataDirectories.ddl");
+  sPath.AppendPath(xiiToolsProject::GetSingleton()->GetManifest().m_sDataDirectories);
   // we cannot use the default ":project/" path here, because that data directory will only be configured a few lines below
   // so instead we use the absolute path directly
-  m_FileSystemConfig.Load(sPath);
+  XII_SUCCEED_OR_RETURN(m_FileSystemConfig.Load(sPath));
 
   xiiEditorAppEvent e;
   e.m_Type = xiiEditorAppEvent::Type::BeforeApplyDataDirectories;
@@ -93,7 +93,7 @@ void xiiQtEditorApp::SetupDataDirectories()
     }
   }
 
-  m_FileSystemConfig.Apply();
+  return m_FileSystemConfig.Apply();
 }
 
 bool xiiQtEditorApp::MakeParentDataDirectoryRelativePathAbsolute(xiiStringBuilder& ref_sPath, bool bCheckExists) const

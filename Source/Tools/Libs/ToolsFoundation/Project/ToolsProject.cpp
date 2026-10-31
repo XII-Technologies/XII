@@ -3,10 +3,19 @@
 #include <ToolsFoundation/ToolsFoundationPCH.h>
 
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 XII_IMPLEMENT_SINGLETON(xiiToolsProject);
+
+std::atomic<xiiUInt64> xiiToolsProject::s_uiProjectGeneration = 0;
+
+namespace
+{
+  bool s_bOpeningProject = false;
+}
+
 
 xiiEvent<const xiiToolsProjectEvent&, xiiMutex> xiiToolsProject::s_Events;
 xiiEvent<xiiToolsProjectRequest&>               xiiToolsProject::s_Requests;
@@ -22,7 +31,7 @@ xiiToolsProjectRequest::xiiToolsProjectRequest()
 xiiToolsProject::xiiToolsProject(xiiStringView sProjectPath) :
   m_SingletonRegistrar(this)
 {
-  m_bIsClosing = false;
+  ++s_uiProjectGeneration;
 
   m_sProjectPath = sProjectPath;
   XII_ASSERT_DEV(!m_sProjectPath.IsEmpty(), "Path cannot be empty.");
@@ -32,20 +41,10 @@ xiiToolsProject::~xiiToolsProject() = default;
 
 xiiStatus xiiToolsProject::Create()
 {
-  {
-    xiiOSFile projectFile;
-    if (projectFile.Open(m_sProjectPath, xiiFileOpenMode::Write).Failed())
-    {
-      return xiiStatus(xiiFmt("Could not open/create the project file for writing: '{0}'", m_sProjectPath));
-    }
-    else
-    {
-      xiiStringView szToken = "xiiEditor Project File";
-
-      XII_SUCCEED_OR_RETURN(projectFile.Write(szToken.GetStartPointer(), szToken.GetElementCount() + 1));
-      projectFile.Close();
-    }
-  }
+  if (xiiOSFile::ExistsFile(m_sProjectPath))
+    return xiiStatus("Refusing to overwrite an existing project. Open it instead.");
+  m_Manifest.Initialize(m_sProjectPath);
+  XII_SUCCEED_OR_RETURN(m_Manifest.Save(m_sProjectPath));
 
   {
     xiiToolsProjectEvent e;
@@ -58,7 +57,7 @@ xiiStatus xiiToolsProject::Create()
 
   // if this file already exists, the project was created from a template and should not get additional setup
   xiiStringBuilder path(GetProjectDirectory(), "/Scenes/Main.xiiScene");
-  if (!xiiOSFile::ExistsDirectory(path))
+  if (!xiiOSFile::ExistsFile(path))
   {
     xiiToolsProjectEvent e;
     e.m_pProject = this;
@@ -71,19 +70,37 @@ xiiStatus xiiToolsProject::Create()
 
 xiiStatus xiiToolsProject::Open()
 {
-  xiiOSFile projectFile;
-  if (projectFile.Open(m_sProjectPath, xiiFileOpenMode::Read).Failed())
+  XII_SUCCEED_OR_RETURN(m_Manifest.Load(m_sProjectPath));
+
+  xiiStatus            status(XII_SUCCESS);
+  xiiToolsProjectEvent e;
+  e.m_pProject              = this;
+  e.m_Type                  = xiiToolsProjectEvent::Type::ProjectOpening;
+  e.m_pInitializationStatus = &status;
+  s_Events.Broadcast(e);
+  if (status.Failed())
   {
-    return xiiStatus(xiiFmt("Could not open the project file for reading: '{0}'", m_sProjectPath));
+    m_State  = State::Failed;
+    e.m_Type = xiiToolsProjectEvent::Type::ProjectOpenFailed;
+    s_Events.Broadcast(e);
+    return status;
   }
 
-  projectFile.Close();
-
-  xiiToolsProjectEvent e;
-  e.m_pProject = this;
-  e.m_Type     = xiiToolsProjectEvent::Type::ProjectOpened;
+  m_State                   = State::Ready;
+  e.m_pInitializationStatus = nullptr;
+  e.m_Type                  = xiiToolsProjectEvent::Type::ProjectOpened;
   s_Events.Broadcast(e);
 
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiToolsProject::SaveManifest(const xiiProjectManifest& manifest)
+{
+  if (!IsProjectOpen() || manifest.m_ProjectID != m_Manifest.m_ProjectID)
+    return xiiStatus("Cannot save a manifest outside a ready project or change its persistent identity.");
+  XII_SUCCEED_OR_RETURN(manifest.CheckEngineCompatibility());
+  XII_SUCCEED_OR_RETURN(manifest.Save(m_sProjectPath));
+  m_Manifest = manifest;
   return XII_SUCCESS;
 }
 
@@ -100,9 +117,10 @@ void xiiToolsProject::CreateSubFolder(xiiStringView sFolder) const
 
 void xiiToolsProject::CloseProject()
 {
-  if (GetSingleton())
+  if (!s_bOpeningProject && GetSingleton() && GetSingleton()->m_State != State::Opening && !IsProjectClosing())
   {
-    GetSingleton()->m_bIsClosing = true;
+    GetSingleton()->m_State = State::Closing;
+    ++s_uiProjectGeneration;
 
     xiiToolsProjectEvent e;
     e.m_pProject = GetSingleton();
@@ -113,16 +131,16 @@ void xiiToolsProject::CloseProject()
 
     delete GetSingleton();
 
-    e.m_Type = xiiToolsProjectEvent::Type::ProjectClosed;
+    e.m_pProject = nullptr;
+    e.m_Type     = xiiToolsProjectEvent::Type::ProjectClosed;
     s_Events.Broadcast(e);
   }
 }
 
 void xiiToolsProject::SaveProjectState()
 {
-  if (GetSingleton())
+  if (IsProjectOpen())
   {
-    GetSingleton()->m_bIsClosing = true;
 
     xiiToolsProjectEvent e;
     e.m_pProject = GetSingleton();
@@ -183,8 +201,17 @@ xiiStringBuilder xiiToolsProject::GetPathForDocumentGuid(const xiiUuid& guid)
 
 xiiStatus xiiToolsProject::CreateOrOpenProject(xiiStringView sProjectPath, bool bCreate)
 {
+  if (s_bOpeningProject || (GetSingleton() && GetSingleton()->m_State != State::Ready))
+    return xiiStatus("Cannot open a project during another project lifecycle transition.");
+  // Reject malformed/incompatible candidates before destroying the current project.
+  if (!bCreate)
+  {
+    xiiProjectManifest candidate;
+    XII_SUCCEED_OR_RETURN(candidate.Load(sProjectPath));
+  }
   CloseProject();
-
+  s_bOpeningProject = true;
+  XII_SCOPE_EXIT(s_bOpeningProject = false);
   new xiiToolsProject(sProjectPath);
 
   xiiStatus ret(XII_SUCCESS);
@@ -192,14 +219,17 @@ xiiStatus xiiToolsProject::CreateOrOpenProject(xiiStringView sProjectPath, bool 
   if (bCreate)
   {
     ret = GetSingleton()->Create();
-    xiiToolsProject::SaveProjectState();
+    if (ret.Succeeded())
+      xiiToolsProject::SaveProjectState();
   }
   else
     ret = GetSingleton()->Open();
 
   if (ret.Failed())
   {
-    delete GetSingleton();
+    GetSingleton()->m_State = State::Failed;
+    s_bOpeningProject       = false;
+    CloseProject();
     return ret;
   }
 
@@ -277,7 +307,7 @@ const xiiString xiiToolsProject::GetProjectName(bool bSanitize) const
   sTemp.Trim("/");
 
   if (!bSanitize)
-    return sTemp.GetFileName();
+    return m_Manifest.m_sName;
 
   const xiiStringBuilder sOrgName = sTemp.GetFileName();
   sTemp.Clear();
@@ -355,7 +385,13 @@ xiiString xiiToolsProject::FindProjectDirectoryForDocument(xiiStringView sDocume
     sTemp.AppendPath("xiiProject");
 
     if (xiiOSFile::ExistsFile(sTemp))
-      return sPath;
+    {
+      xiiProjectManifest manifest;
+      if (manifest.Load(sTemp).Succeeded())
+        return sPath;
+      // A malformed nearest project is a boundary, never silently select a parent project.
+      return "";
+    }
 
     sPath.PathParentDirectory();
   }

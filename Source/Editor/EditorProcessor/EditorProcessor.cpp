@@ -240,12 +240,7 @@ public:
 
     if (!sTransformProfile.IsEmpty() || bCompile)
     {
-      if (xiiQtEditorApp::GetSingleton()->OpenProject(sProject).Failed())
-      {
-        SetReturnCode(2);
-        return xiiApplication::Execution::Quit;
-      }
-
+      // StartupEditor has completed the same readiness contract used by interactive opens.
       // before we transform any assets of if specifically asked, make sure the C++ code is built.
       {
         xiiCppSettings cppSettings;

@@ -32,7 +32,7 @@ void xiiAssetProcessor::ApplyImportResults()
       continue;
     task.m_bImportPending = false;
     task.m_bImportApplied = true;
-    if (m_ProcessTaskState != ProcessTaskState::Running || !xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
+    if (!xiiToolsProject::IsProjectGenerationCurrent(m_uiProjectGeneration) || m_ProcessTaskState != ProcessTaskState::Running || !xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
     {
       task.m_Status = xiiTransformStatus(xiiTransformResult::NeedsImport);
       continue;
@@ -117,10 +117,11 @@ xiiStatus xiiAssetProcessor::QueueTransformAssetReferences(xiiArrayPtr<const xii
 xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, xiiBitflags<xiiTransformFlags> flags, bool bAllAssets)
 {
   XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "Save and queue transformations on the editor thread.");
-  if (!xiiToolsProject::IsProjectOpen() || xiiToolsProject::IsProjectClosing())
+  if (!xiiToolsProject::IsProjectOpen() || !xiiAssetCurator::GetSingleton()->IsReady())
     return xiiStatus("No project is available for transformation.");
 
-  auto*                       curator = xiiAssetCurator::GetSingleton();
+  const auto                  generation = xiiToolsProject::GetProjectGeneration();
+  auto*                       curator    = xiiAssetCurator::GetSingleton();
   xiiSet<xiiTempHashedString> finalTypes;
   if (bAllAssets)
   {
@@ -148,6 +149,8 @@ xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, 
     if (auto* document = xiiDocumentManager::GetDocumentByGuid(guid); flags.IsSet(xiiTransformFlags::TriggeredManually) && document && document->IsModified())
       XII_SUCCEED_OR_RETURN(document->SaveDocument());
   }
+  if (!xiiToolsProject::IsProjectGenerationCurrent(generation) || !xiiToolsProject::IsProjectOpen() || !curator->IsReady())
+    return xiiStatus("The project changed while saving transformation inputs. Submit the request in the current project.");
   {
     XII_LOCK(m_ProcessorMutex);
     if (m_ProcessTaskState == ProcessTaskState::Stopping)
@@ -155,8 +158,9 @@ xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, 
     XII_LOCK(curator->m_CuratorMutex);
     if (!m_TransformProgress.m_bActive)
     {
-      m_TransformProgress = {};
-      m_TransformStart    = xiiTime::Now();
+      m_TransformProgress                       = {};
+      m_TransformProgress.m_uiProjectGeneration = xiiToolsProject::GetProjectGeneration();
+      m_TransformStart                          = xiiTime::Now();
     }
     m_TransformProgress.m_bAllAssets |= bAllAssets;
     for (const auto& guid : assets)
@@ -236,6 +240,8 @@ xiiStatus xiiAssetProcessor::QueueTransformAllAssets()
 xiiAssetTransformProgress xiiAssetProcessor::GetTransformProgress() const
 {
   XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+  if (m_TransformProgress.m_uiProjectGeneration != xiiToolsProject::GetProjectGeneration())
+    return {};
   return m_TransformProgress;
 }
 
@@ -262,6 +268,8 @@ void xiiAssetProcessor::BroadcastTransformProgress(bool bFinished)
 xiiResult xiiAssetProcessor::PrepareAssetRequest(xiiUuid assetGuid, xiiProcessAssetMsg& out_request, xiiStringView sProfile)
 {
   auto* curator = xiiAssetCurator::GetSingleton();
+  if (!curator->IsReady() || !xiiToolsProject::IsProjectOpen())
+    return XII_FAILURE;
   XII_LOCK(curator->m_CuratorMutex);
   const auto* asset = curator->GetAssetInfo(assetGuid);
   if (asset == nullptr || asset->m_ExistanceState == xiiAssetExistanceState::FileRemoved)

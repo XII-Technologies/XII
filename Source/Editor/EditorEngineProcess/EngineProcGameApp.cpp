@@ -355,6 +355,8 @@ bool xiiEngineProcessGameApplication::ProcessIPCMessages(bool bPendingOpInProgre
 void xiiEngineProcessGameApplication::SendProjectReadyMessage()
 {
   xiiProjectReadyMsgToEditor msg;
+  msg.m_bSucceeded          = m_sInitializationFailure.IsEmpty();
+  msg.m_sFailure            = m_sInitializationFailure;
   msg.m_bHardwareRayTracing = xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled;
   m_IPC.SendMessage(&msg);
 }
@@ -448,7 +450,11 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     // Now that we know which project to initialize, do the delayed project setup.
     {
       ExecuteInitFunctions();
-
+      if (!m_sInitializationFailure.IsEmpty())
+      {
+        SendProjectReadyMessage();
+        return;
+      }
       xiiStartup::StartupHighLevelSystems();
 
       xiiDebugRenderer::SetTextScale(pMsg->m_fDevicePixelRatio);
@@ -745,7 +751,13 @@ void xiiEngineProcessGameApplication::Init_FileSystem_ConfigureDataDirs()
   xiiFileSystem::AddDataDirectory(sAppDir.GetData(), "EngineProcess", "app").AssertSuccess();                                    // app specific data
   xiiFileSystem::AddDataDirectory(sUserData, "EngineProcess", "appdata", xiiDataDirUsage::AllowWrites).AssertSuccess();          // for writing app user data
 
-  m_CustomFileSystemConfig.Apply();
+  const auto mountStatus = m_CustomFileSystemConfig.Apply();
+  if (mountStatus.Failed())
+  {
+    m_sInitializationFailure = mountStatus.GetMessageString();
+    RequestQuit();
+    return;
+  }
 
   {
     xiiStringBuilder sLogName = "LogEngine";

@@ -88,6 +88,11 @@ void xiiAssetProcessor::StartProcessTask()
 
 void xiiAssetProcessor::StartProcessTask(bool bAutomatic)
 {
+  if (!xiiToolsProject::IsProjectOpen() || !xiiAssetCurator::GetSingleton()->IsReady())
+  {
+    xiiLog::Warning("Asset processing requires a ready project and completed asset indexing.");
+    return;
+  }
   XII_LOCK(m_ProcessorMutex);
   if (bAutomatic)
     m_bAutomatic = true;
@@ -103,7 +108,9 @@ void xiiAssetProcessor::StartProcessTask(bool bAutomatic)
     m_pThread.Clear();
   }
 
-  m_ProcessTaskState = ProcessTaskState::Running;
+  m_bForceStop          = false;
+  m_uiProjectGeneration = xiiToolsProject::GetProjectGeneration();
+  m_ProcessTaskState    = ProcessTaskState::Running;
 
   const xiiUInt32 uiWorkerCount = xiiTaskSystem::GetWorkerThreadCount(xiiWorkerThreadType::LongTasks);
   m_ProcessTasks.SetCount(uiWorkerCount);
@@ -179,7 +186,7 @@ void xiiAssetProcessor::RemoveLogWriter(xiiLoggingEvent::Handler handler)
 
 void xiiAssetProcessor::Run()
 {
-  while (m_ProcessTaskState == ProcessTaskState::Running)
+  while (m_ProcessTaskState == ProcessTaskState::Running && xiiToolsProject::IsProjectGenerationCurrent(m_uiProjectGeneration))
   {
     for (xiiUInt32 i = 0; i < m_ProcessTasks.GetCount(); i++)
     {
@@ -425,6 +432,8 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
   auto* processor = xiiAssetProcessor::GetSingleton();
   auto* curator   = xiiAssetCurator::GetSingleton();
   m_bRequested    = false;
+  if (!curator->IsReady() || !xiiToolsProject::IsProjectOpen() || !xiiToolsProject::IsProjectGenerationCurrent(processor->m_uiProjectGeneration))
+    return false;
   if (curator->IsCheckingFileSystem())
     return false; // Keep reservations for running work; dispatch new work after the rescan.
   // Manager-wide outputs are rebuilt after ordinary assets and their in-flight writes.
@@ -645,7 +654,7 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
       case State::ReportResult:
       {
         XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
-        const bool bCanceled = xiiAssetProcessor::GetSingleton()->m_bForceStop ||
+        const bool bCanceled = !xiiToolsProject::IsProjectGenerationCurrent(xiiAssetProcessor::GetSingleton()->m_uiProjectGeneration) || xiiAssetProcessor::GetSingleton()->m_bForceStop ||
           (m_Request.m_bImport && m_Status.m_Result == xiiTransformResult::NeedsImport && xiiAssetProcessor::GetSingleton()->GetProcessTaskState() != xiiAssetProcessor::ProcessTaskState::Running);
         xiiProcessAssetMsg current;
         const bool         bChanged = m_bRequested && !bCanceled && xiiAssetProcessor::PrepareAssetRequest(m_AssetGuid, current, m_Request.m_sPlatform).Succeeded() &&

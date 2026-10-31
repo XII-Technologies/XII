@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/CodeGen/CppSettings.h>
+#include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OpenDdlReader.h>
@@ -31,7 +32,9 @@ xiiResult xiiCppSettings::Save(xiiStringView sFile)
     return XII_FAILURE;
 
   xiiDeferredFileWriter file;
-  file.SetOutput(sFile);
+  xiiStringBuilder      resolved;
+  XII_SUCCEED_OR_RETURN(xiiProjectManifest::ResolveConfigPath(sFile, resolved).GetResult());
+  file.SetOutput(resolved);
 
   xiiOpenDdlWriter ddl;
   ddl.SetOutputStream(&file);
@@ -48,8 +51,10 @@ xiiResult xiiCppSettings::Save(xiiStringView sFile)
 xiiResult xiiCppSettings::Load(xiiStringView sFile)
 {
   m_sPluginName.Clear();
-  xiiFileReader file;
-  XII_SUCCEED_OR_RETURN(file.Open(sFile));
+  xiiFileReader    file;
+  xiiStringBuilder resolved;
+  XII_SUCCEED_OR_RETURN(xiiProjectManifest::ResolveConfigPath(sFile, resolved).GetResult());
+  XII_SUCCEED_OR_RETURN(file.Open(resolved));
 
   xiiOpenDdlReader ddl;
   XII_SUCCEED_OR_RETURN(ddl.ParseDocument(file));

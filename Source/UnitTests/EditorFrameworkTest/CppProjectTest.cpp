@@ -215,6 +215,11 @@ void TestCppProjectConfiguration(xiiStringView sProjectDirectory)
     XII_TEST_BOOL(!xiiOSFile::ExistsDirectory(xiiStringBuilder(exportPath, "/Data/project/Output")));
     XII_TEST_BOOL(!xiiOSFile::ExistsFile(xiiStringBuilder(exportPath, "/Bin/DoNotExport.txt")));
     XII_TEST_BOOL(!xiiOSFile::ExistsFile(xiiStringBuilder(exportPath, "/Bin/xiiSdkRoot.txt")));
+    xiiProjectManifest exportedManifest;
+    XII_TEST_STATUS(exportedManifest.Load(xiiStringBuilder(exportPath, "/Data/project/xiiProject")));
+    XII_TEST_BOOL(exportedManifest.m_ProjectID == xiiToolsProject::GetSingleton()->GetManifest().m_ProjectID);
+    XII_TEST_STRING(exportedManifest.m_sDataDirectories, "RuntimeConfigs/DataDirectories.ddl");
+    XII_TEST_STRING(exportedManifest.m_sRuntimePlugins, "RuntimeConfigs/Plugins.ddl");
     xiiApplicationPluginConfig packaged;
     packaged.Load(xiiStringBuilder(exportPath, "/Data/project/RuntimeConfigs/Plugins.ddl"));
     bool packagedPlugin = false;

@@ -560,6 +560,15 @@ xiiResult xiiProjectExport::ExportProject(const char* szTargetDirectory, const x
     }
     xiiStringBuilder pluginConfigPath(szTargetDirectory, "/Data/project/RuntimeConfigs/Plugins.ddl");
     XII_SUCCEED_OR_RETURN(plugins.Save(pluginConfigPath));
+
+    // Exported runtime files use deployment paths, regardless of development configuration references.
+    auto                     manifest = xiiToolsProject::GetSingleton()->GetManifest();
+    const xiiProjectManifest defaults;
+    manifest.m_sDataDirectories    = defaults.m_sDataDirectories;
+    manifest.m_sRuntimePlugins     = defaults.m_sRuntimePlugins;
+    manifest.m_sActiveAssetProfile = pPlatformProfile->GetConfigName();
+    const xiiStringBuilder manifestPath(szTargetDirectory, "/Data/project/xiiProject");
+    XII_SUCCEED_OR_RETURN(manifest.Save(manifestPath).GetResult());
   }
 
   // 6

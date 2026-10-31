@@ -64,7 +64,9 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiProjectReadyMsgToEditor : public x
   XII_ADD_DYNAMIC_REFLECTION(xiiProjectReadyMsgToEditor, xiiEditorEngineMsg);
 
 public:
-  bool m_bHardwareRayTracing = false;
+  bool      m_bSucceeded = true;
+  xiiString m_sFailure;
+  bool      m_bHardwareRayTracing = false;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSimpleConfigMsgToEngine : public xiiEditorEngineMsg

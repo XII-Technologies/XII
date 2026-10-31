@@ -62,7 +62,7 @@ bool xiiQtUiServices::IsHeadless()
 
 void xiiQtUiServices::SetHeadless(bool bHeadless)
 {
-  s_bHeadless = true;
+  s_bHeadless = bHeadless;
 }
 
 void xiiQtUiServices::SaveState()

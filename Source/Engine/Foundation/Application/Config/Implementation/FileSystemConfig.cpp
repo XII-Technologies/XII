@@ -3,6 +3,8 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Application/Config/FileSystemConfig.h>
+#include <Foundation/Application/Config/ProjectManifest.h>
+#include <Foundation/Containers/Set.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
@@ -37,8 +39,10 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiResult xiiApplicationFileSystemConfig::Save(xiiStringView sPath)
 {
+  xiiStringBuilder resolved;
+  XII_SUCCEED_OR_RETURN(xiiProjectManifest::ResolveConfigPath(sPath, resolved).GetResult());
   xiiFileWriter file;
-  if (file.Open(sPath).Failed())
+  if (file.Open(resolved).Failed())
     return XII_FAILURE;
 
   xiiOpenDdlWriter writer;
@@ -60,52 +64,62 @@ xiiResult xiiApplicationFileSystemConfig::Save(xiiStringView sPath)
   return XII_SUCCESS;
 }
 
-void xiiApplicationFileSystemConfig::Load(xiiStringView sPath)
+xiiStatus xiiApplicationFileSystemConfig::Load(xiiStringView sPath)
 {
-  XII_LOG_BLOCK("xiiApplicationFileSystemConfig::Load()");
-
-  m_DataDirs.Clear();
-
-  xiiFileReader file;
-  if (file.Open(sPath).Failed())
+  xiiStringBuilder resolved;
+  XII_SUCCEED_OR_RETURN(xiiProjectManifest::ResolveConfigPath(sPath, resolved));
+  xiiHybridArray<DataDirConfig, 4> directories;
+  xiiFileReader                    file;
+  if (file.Open(resolved).Failed())
   {
-    xiiLog::Dev("File-system config file '{0}' does not exist.", sPath);
-    return;
+    if (xiiFileSystem::ExistsFile(resolved))
+      return xiiStatus(xiiFmt("Cannot read data-directory configuration '{}'.", resolved));
+    m_DataDirs.Clear(); // An absent file uses the caller's project / SDK mounts.
+    return XII_SUCCESS;
   }
-
   xiiOpenDdlReader reader;
   if (reader.ParseDocument(file, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
+    return xiiStatus(xiiFmt("Invalid data-directory configuration '{}'.", resolved));
+  xiiSet<xiiString> roots;
+  for (auto* dir = reader.GetRootElement()->GetFirstChild(); dir; dir = dir->GetSibling())
   {
-    xiiLog::Error("Failed to parse file-system config file '{0}'", sPath);
-    return;
-  }
-
-  const xiiOpenDdlReaderElement* pTree = reader.GetRootElement();
-
-  for (const xiiOpenDdlReaderElement* pDirs = pTree->GetFirstChild(); pDirs != nullptr; pDirs = pDirs->GetSibling())
-  {
-    if (!pDirs->IsCustomType("DataDir"))
+    if (!dir->IsCustomType("DataDir"))
       continue;
-
-    DataDirConfig cfg;
-    cfg.m_bWritable = false;
-
-    const xiiOpenDdlReaderElement* pPath  = pDirs->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Path");
-    const xiiOpenDdlReaderElement* pRoot  = pDirs->FindChildOfType(xiiOpenDdlPrimitiveType::String, "RootName");
-    const xiiOpenDdlReaderElement* pWrite = pDirs->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "Writable");
-
-    if (pPath)
-      cfg.m_sDataDirSpecialPath = pPath->GetPrimitivesString()[0];
-    if (pRoot)
-      cfg.m_sRootName = pRoot->GetPrimitivesString()[0];
-    if (pWrite)
-      cfg.m_bWritable = pWrite->GetPrimitivesBool()[0];
-
-    m_DataDirs.PushBack(cfg);
+    DataDirConfig     cfg;
+    xiiSet<xiiString> names;
+    for (auto* field = dir->GetFirstChild(); field; field = field->GetSibling())
+    {
+      const auto name = field->GetName();
+      if (!field->HasName() || names.Contains(name))
+        return xiiStatus("Data-directory fields must have unique names.");
+      names.Insert(name);
+      if (name == "Path" || name == "RootName")
+      {
+        if (field->GetPrimitivesType() != xiiOpenDdlPrimitiveType::String || field->GetNumPrimitives() != 1)
+          return xiiStatus("Data-directory Path and RootName require one string.");
+        (name == "Path" ? cfg.m_sDataDirSpecialPath : cfg.m_sRootName) = field->GetPrimitivesString()[0];
+      }
+      else if (name == "Writable")
+      {
+        if (field->GetPrimitivesType() != xiiOpenDdlPrimitiveType::Bool || field->GetNumPrimitives() != 1)
+          return xiiStatus("Data-directory Writable requires one bool.");
+        cfg.m_bWritable = field->GetPrimitivesBool()[0];
+      }
+    }
+    if (cfg.m_sDataDirSpecialPath.IsEmpty())
+      return xiiStatus("Data-directory Path cannot be empty.");
+    xiiStringBuilder root(cfg.m_sRootName);
+    root.ToLower();
+    if (!root.IsEmpty() && roots.Contains(root))
+      return xiiStatus(xiiFmt("Duplicate data-directory root '{}'.", root));
+    roots.Insert(root);
+    directories.PushBack(std::move(cfg));
   }
+  m_DataDirs = std::move(directories);
+  return XII_SUCCESS;
 }
 
-void xiiApplicationFileSystemConfig::Apply()
+xiiStatus xiiApplicationFileSystemConfig::Apply()
 {
   XII_LOG_BLOCK("xiiApplicationFileSystemConfig::Apply");
 
@@ -118,9 +132,14 @@ void xiiApplicationFileSystemConfig::Apply()
   {
     // if (xiiFileSystem::ResolveSpecialDirectory(var.m_sDataDirSpecialPath, s).Succeeded())
     {
-      xiiFileSystem::AddDataDirectory(var.m_sDataDirSpecialPath, "AppFileSystemConfig", var.m_sRootName, (!var.m_sRootName.IsEmpty() && var.m_bWritable) ? xiiDataDirUsage::AllowWrites : xiiDataDirUsage::ReadOnly).IgnoreResult();
+      if (xiiFileSystem::AddDataDirectory(var.m_sDataDirSpecialPath, "AppFileSystemConfig", var.m_sRootName, (!var.m_sRootName.IsEmpty() && var.m_bWritable) ? xiiDataDirUsage::AllowWrites : xiiDataDirUsage::ReadOnly).Failed())
+      {
+        Clear();
+        return xiiStatus(xiiFmt("Could not mount required data directory '{}' (root '{}').", var.m_sDataDirSpecialPath, var.m_sRootName));
+      }
     }
   }
+  return XII_SUCCESS;
 }
 
 
@@ -155,7 +174,7 @@ xiiResult xiiApplicationFileSystemConfig::CreateDataDirStubFiles()
     }
   }
 
-  return XII_SUCCESS;
+  return res;
 }
 
 

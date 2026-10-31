@@ -114,7 +114,9 @@ void xiiQtEditorApp::SaveSettings()
     xiiEditorSettings::SaveProjectSettings();
     SaveOpenDocumentsList();
 
-    m_FileSystemConfig.Save().IgnoreResult();
-    GetRuntimePluginConfig(false).Save().IgnoreResult();
+    if (m_FileSystemConfig.Save().Failed())
+      xiiLog::Error("Could not save the project's data-directory configuration.");
+    if (GetRuntimePluginConfig(false).Save().Failed())
+      xiiLog::Error("Could not save the project's runtime plugin configuration.");
   }
 }

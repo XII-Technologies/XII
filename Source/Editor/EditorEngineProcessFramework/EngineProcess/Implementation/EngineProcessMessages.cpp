@@ -59,10 +59,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShutdownProcessMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiShutdownProcessMsgToEngine>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectReadyMsgToEditor, 2, xiiRTTIDefaultAllocator<xiiProjectReadyMsgToEditor> )
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectReadyMsgToEditor, 3, xiiRTTIDefaultAllocator<xiiProjectReadyMsgToEditor> )
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Succeeded", m_bSucceeded),
+    XII_MEMBER_PROPERTY("Failure", m_sFailure),
     XII_MEMBER_PROPERTY("HardwareRayTracing", m_bHardwareRayTracing),
   } XII_END_PROPERTIES;
 }

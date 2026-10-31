@@ -155,9 +155,11 @@ public:
   ///@{
 
   /// Starts init task. Need to call WaitForInitialize to finish before loading docs.
-  void StartInitialize(const xiiApplicationFileSystemConfig& cfg);
+  xiiStatus StartInitialize(const xiiApplicationFileSystemConfig& cfg);
   /// Waits for init task to finish.
-  void WaitForInitialize();
+  xiiStatus WaitForInitialize();
+  /// True after the initial asset scan. Independent of rendering-process readiness.
+  bool IsReady() const { return m_bReady.load(); }
   void Deinitialize();
 
   void MainThreadTick(bool bTopLevel);
@@ -240,7 +242,10 @@ public:
   xiiDateTime GetLastFullTransformDate() const;
   void        StoreFullTransformDate();
 
-  /// Transforms all assets and writes the lookup tables. If the given platform is empty, the active platform is used.
+  /// Transforms core collections after project readiness and before restoring user documents.
+  xiiStatus TransformCoreAssets();
+
+  /// Transforms all assets and writes lookup tables, using the active profile if none is given.
   xiiStatus          TransformAllAssets(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus TransformAsset(xiiStringView sPathOrGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
@@ -396,10 +401,6 @@ private:
 
   void OnFileChangedEvent(const xiiFileChangedEvent& e);
 
-  /// Some assets are vital for the engine to run. Each data directory can contain a [DataDirName].xiiCollectionAsset
-  ///   that has all its references transformed before any other documents are loaded.
-  void ProcessAllCoreAssets();
-
   ///@}
   /// \name Update Task
   ///@{
@@ -478,6 +479,8 @@ private:
   friend class xiiProcessTask;
 
   mutable xiiCuratorMutex m_CuratorMutex; // Global lock
+  std::atomic<bool>       m_bReady       = false;
+  bool                    m_bInitialized = false;
   xiiTaskGroupID          m_InitializeCuratorTaskID;
   xiiTaskGroupID          m_CheckFileSystemTaskID; ///< GUI-thread owned; joined before file-model teardown.
   std::atomic<bool>       m_bCheckingFileSystem = false;

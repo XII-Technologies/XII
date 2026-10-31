@@ -42,6 +42,8 @@ void xiiGameApplicationBase::ExecuteInitFunctions()
   Init_LoadRequiredPlugins();
   Init_ConfigureAssetManagement();
   Init_FileSystem_ConfigureDataDirs();
+  if (WasQuitRequested())
+    return;
   Init_LoadWorldModuleConfig();
   Init_LoadProjectPlugins();
   Init_PlatformProfile_LoadForRuntime();
@@ -168,7 +170,7 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
 
   {
     xiiApplicationFileSystemConfig appFileSystemConfig;
-    appFileSystemConfig.Load();
+    appFileSystemConfig.Load().LogFailure();
 
     // get rid of duplicates that we already hard-coded above
     for (xiiUInt32 i = appFileSystemConfig.m_DataDirs.GetCount(); i > 0; --i)
@@ -180,7 +182,7 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
       }
     }
 
-    appFileSystemConfig.Apply();
+    appFileSystemConfig.Apply().LogFailure();
   }
 }
 

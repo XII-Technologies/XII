@@ -5,6 +5,7 @@
 #include <EditorFramework/Dialogs/CreateProjectDlg.moc.h>
 #include <EditorFramework/Dialogs/DashboardDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <Foundation/IO/OSFile.h>
 
 void xiiQtEditorApp::GuiOpenDashboard()
 {
@@ -89,5 +90,5 @@ bool xiiQtEditorApp::GuiCreateOrOpenProject(bool bCreate)
 
   m_sLastProjectFolder = xiiPathUtils::GetFileDirectory(sFile);
 
-  return CreateOrOpenProject(bCreate, sFile).Succeeded();
+  return CreateOrOpenProject(bCreate && !xiiOSFile::ExistsFile(sFile), sFile).Succeeded();
 }

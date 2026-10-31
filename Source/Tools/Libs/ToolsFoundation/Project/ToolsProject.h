@@ -2,11 +2,15 @@
 
 #pragma once
 
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
+#include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/Uuid.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
+
+#include <atomic>
 
 class xiiToolsProject;
 class xiiDocument;
@@ -16,6 +20,8 @@ struct xiiToolsProjectEvent
   enum class Type
   {
     ProjectCreated,
+    ProjectOpening, ///< Manifest loaded; listeners initialize required subsystems and report failure through m_pInitializationStatus.
+    ProjectOpenFailed,
     ProjectOpened,
     ProjectFirstSetup,
     ProjectSaveState,
@@ -28,6 +34,7 @@ struct xiiToolsProjectEvent
 
   xiiToolsProject* m_pProject;
   Type             m_Type;
+  xiiStatus*       m_pInitializationStatus = nullptr; ///< Borrowed only during ProjectOpening / ProjectOpenFailed; never retain.
 };
 
 struct xiiToolsProjectRequest
@@ -62,8 +69,23 @@ public:
   static xiiEvent<xiiToolsProjectRequest&>               s_Requests;
 
 public:
-  static bool IsProjectOpen() { return GetSingleton() != nullptr; }
-  static bool IsProjectClosing() { return (GetSingleton() != nullptr && GetSingleton()->m_bIsClosing); }
+  enum class State : xiiUInt8
+  {
+    Opening, ///< Valid manifest; required tool subsystems are being initialized.
+    Ready,   ///< Required initialization completed successfully; asset operations may begin.
+    Failed,  ///< Required initialization failed; followed by closing and cleanup.
+    Closing  ///< No new work may be admitted; outstanding work is drained before deletion.
+  };
+
+  static bool IsProjectOpen() { return GetSingleton() != nullptr && GetSingleton()->m_State == State::Ready; }
+  static bool IsProjectClosing() { return GetSingleton() != nullptr && GetSingleton()->m_State == State::Closing; }
+  State       GetState() const { return m_State.load(); }
+  /// Monotonic process-local session identity, distinct from the persistent project UUID.
+  static xiiUInt64          GetProjectGeneration() { return s_uiProjectGeneration.load(); }
+  static bool               IsProjectGenerationCurrent(xiiUInt64 uiGeneration) { return GetSingleton() != nullptr && s_uiProjectGeneration == uiGeneration; }
+  const xiiProjectManifest& GetManifest() const { return m_Manifest; }
+  /// Validates and atomically persists changes before publishing them. Project identity is immutable.
+  xiiStatus   SaveManifest(const xiiProjectManifest& manifest);
   static void CloseProject();
   static void SaveProjectState();
   /// Returns true when the project can be closed. Uses xiiToolsProjectRequest::Type::CanCloseProject event.
@@ -120,7 +142,9 @@ private:
   xiiStatus Open();
 
 private:
-  bool                         m_bIsClosing;
-  xiiString                    m_sProjectPath;
-  xiiHybridArray<xiiString, 4> m_AllowedDocumentRoots;
+  std::atomic<State>            m_State = State::Opening;
+  xiiProjectManifest            m_Manifest;
+  static std::atomic<xiiUInt64> s_uiProjectGeneration;
+  xiiString                     m_sProjectPath;
+  xiiHybridArray<xiiString, 4>  m_AllowedDocumentRoots;
 };

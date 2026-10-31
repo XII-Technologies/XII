@@ -115,7 +115,8 @@ xiiTaskGroupID xiiAssetDocument::InternalSaveDocument(AfterSaveCallback callback
 
 void xiiAssetDocument::InternalAfterSaveDocument()
 {
-  const auto flags = GetAssetFlags();
+  const auto generation = xiiToolsProject::GetProjectGeneration();
+  const auto flags      = GetAssetFlags();
   xiiAssetCurator::GetSingleton()->NotifyOfFileChange(GetDocumentPath());
   xiiAssetCurator::GetSingleton()->MainThreadTick(false);
 
@@ -125,8 +126,8 @@ void xiiAssetDocument::InternalAfterSaveDocument()
     if (!editor->IsBackgroundMode() && !editor->IsInHeadlessMode() && !editor->IsInUnitTestMode())
     {
       const xiiUuid guid = GetGuid();
-      QMetaObject::invokeMethod(editor, [guid]() {
-        if (xiiToolsProject::IsProjectOpen() && !xiiToolsProject::IsProjectClosing())
+      QMetaObject::invokeMethod(editor, [guid, generation]() {
+        if (xiiToolsProject::IsProjectGenerationCurrent(generation) && xiiToolsProject::IsProjectOpen() && !xiiToolsProject::IsProjectClosing())
           xiiAssetProcessor::GetSingleton()->QueueTransformAssets(xiiMakeArrayPtr(&guid, 1), xiiTransformFlags::None).LogFailure(); }, Qt::QueuedConnection);
       return;
     }
@@ -136,7 +137,9 @@ void xiiAssetDocument::InternalAfterSaveDocument()
     {
       xiiUuid docGuid = GetGuid();
 
-      xiiSharedPtr<xiiDelegateTask<void>> pTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "TransformAfterSaveDocument", xiiTaskNesting::Never, [docGuid]() {
+      xiiSharedPtr<xiiDelegateTask<void>> pTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "TransformAfterSaveDocument", xiiTaskNesting::Never, [docGuid, generation]() {
+        if (!xiiToolsProject::IsProjectGenerationCurrent(generation) || !xiiToolsProject::IsProjectOpen())
+          return;
         auto* curator = xiiAssetCurator::GetSingleton();
         // A queued save callback can run after another request has reserved this asset.
         // Its owner validates saved input changes before publishing the result.
@@ -156,7 +159,8 @@ void xiiAssetDocument::InternalAfterSaveDocument()
         }
         else
         {
-          xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
+          if (xiiAssetCurator::GetSingleton()->WriteAssetTables().Failed())
+            xiiLog::Error("Could not publish asset lookup tables after save-triggered transformation.");
         }
         //
       });

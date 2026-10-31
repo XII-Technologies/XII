@@ -599,7 +599,7 @@ xiiResult xiiQtConfigurationDlg::ApplyPages()
         }
         if (!pEditor->GetPluginBundles().IsStateEqual(selection))
         {
-          xiiStringBuilder      path(xiiToolsProject::GetSingleton()->GetProjectDirectory(), "/Editor/PluginSelection.ddl");
+          xiiStringBuilder      path(xiiToolsProject::GetSingleton()->GetProjectDirectory(), "/", xiiToolsProject::GetSingleton()->GetManifest().m_sPluginSelection);
           xiiDeferredFileWriter file;
           file.SetOutput(path);
           xiiOpenDdlWriter ddl;
