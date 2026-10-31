@@ -26,11 +26,18 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QWindow>
+#include <QtMath>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ads/DockAreaWidget.h>
 #include <ads/DockManager.h>
 #include <ads/DockWidgetTab.h>
 #include <ads/FloatingDockContainer.h>
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+#  include <windowsx.h>
+#endif
 
 xiiQtContainerWindow* xiiQtContainerWindow::s_pContainerWindow = nullptr;
 bool                  xiiQtContainerWindow::s_bForceClose      = false;
@@ -128,6 +135,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   xiiQtDarkEditorStyle::ApplyDockStyle(m_pDockManager);
 
   auto* pShell = new xiiQtWindowTitleBar(this);
+  m_pTitleBar  = pShell;
   pShell->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   setMenuWidget(pShell);
   auto* pBrand    = new QLabel(QStringLiteral("  XII  "), pShell);
@@ -257,6 +265,7 @@ xiiQtContainerWindow::~xiiQtContainerWindow()
   m_pMenuSource.clear();
   m_pDocumentMenu->clear();
   m_pDocumentMenu    = nullptr;
+  m_pTitleBar        = nullptr;
   s_pContainerWindow = nullptr;
 
   xiiQtDocumentWindow::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::DocumentWindowEventHandler, this));
@@ -943,6 +952,33 @@ bool xiiQtContainerWindow::eventFilter(QObject* obj, QEvent* e)
     }
   }
   return false;
+}
+
+bool xiiQtContainerWindow::nativeEvent(const QByteArray& eventType, void* pMessage, qintptr* pResult)
+{
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const auto* pNativeMessage = static_cast<const MSG*>(pMessage);
+  if (pNativeMessage->message == WM_NCHITTEST && m_pTitleBar && m_pTitleBar->isVisible() && !isFullScreen() && windowHandle())
+  {
+    // startSystemMove() from the embedded toolbar was not reliable in Windows
+    // GUI acceptance. Expose only its empty regions as native caption; the OS
+    // still owns the complete move/restore/snap loop and all nonclient chrome.
+    // ScreenToClient handles negative monitor origins in native pixels. Convert
+    // only the client offset using this window's current Qt DPI scale.
+    POINT position = {GET_X_LPARAM(pNativeMessage->lParam), GET_Y_LPARAM(pNativeMessage->lParam)};
+    if (ScreenToClient(pNativeMessage->hwnd, &position))
+    {
+      const qreal  scale = windowHandle()->devicePixelRatio();
+      const QPoint localPosition(qFloor(position.x / scale), qFloor(position.y / scale));
+      if (m_pTitleBar->IsCaptionPosition(m_pTitleBar->mapFrom(this, localPosition)))
+      {
+        *pResult = HTCAPTION;
+        return true;
+      }
+    }
+  }
+#endif
+  return QMainWindow::nativeEvent(eventType, pMessage, pResult);
 }
 
 void xiiQtContainerWindow::SlotDocumentTabCloseRequested()
