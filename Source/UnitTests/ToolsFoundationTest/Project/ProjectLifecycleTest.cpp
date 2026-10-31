@@ -16,9 +16,9 @@ XII_CREATE_SIMPLE_TEST(ProjectLifecycle, Tools)
   cleanSecond.MakeCleanPath();
   XII_TEST_RESULT(xiiOSFile::DeleteFile(first));
   XII_TEST_RESULT(xiiOSFile::DeleteFile(cleanSecond));
-  xiiUInt32  opened = 0, failed = 0, closed = 0;
-  bool       failInitialization = false;
-  auto subscription       = xiiToolsProject::s_Events.AddEventHandler([&](const xiiToolsProjectEvent& event) {
+  xiiUInt32 opened = 0, failed = 0, closed = 0;
+  bool      failInitialization = false;
+  auto      subscription       = xiiToolsProject::s_Events.AddEventHandler([&](const xiiToolsProjectEvent& event) {
     switch (event.m_Type)
     {
       case xiiToolsProjectEvent::Type::ProjectOpening:
