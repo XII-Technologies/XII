@@ -488,8 +488,8 @@ void xiiVisualShaderTypeRegistry::ExtractNodeProperties(const xiiOpenDdlReaderEl
           pRtti = xiiGetStaticRTTI<xiiString>();
 
           // apparently the attributes are deallocated using the type allocator, so we must allocate them here through RTTI as well
-          xiiFileBrowserAttribute* pAttr = xiiFileBrowserAttribute::GetStaticRTTI()->GetAllocator()->Allocate<xiiFileBrowserAttribute>();
-          *pAttr                         = xiiFileBrowserAttribute("Select Texture 2D", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds");
+          xiiAssetBrowserAttribute* pAttr = xiiAssetBrowserAttribute::GetStaticRTTI()->GetAllocator()->Allocate<xiiAssetBrowserAttribute>();
+          pAttr->SetTypeFilter("CompatibleAsset_Texture_2D");
           prop.m_Attributes.PushBack(pAttr);
         }
         else

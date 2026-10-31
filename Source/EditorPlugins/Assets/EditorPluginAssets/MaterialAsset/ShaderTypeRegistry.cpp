@@ -179,17 +179,17 @@ namespace
       if (ref_def.m_sType.IsEqual("Texture2D"))
       {
         ref_attributes.PushBack(XII_DEFAULT_NEW(xiiCategoryAttribute, "Texture 2D"));
-        ref_attributes.PushBack(XII_DEFAULT_NEW(xiiFileBrowserAttribute, "Select Texture 2D", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds"));
+        ref_attributes.PushBack(XII_DEFAULT_NEW(xiiAssetBrowserAttribute, "CompatibleAsset_Texture_2D"));
       }
       else if (ref_def.m_sType.IsEqual("Texture3D"))
       {
         ref_attributes.PushBack(XII_DEFAULT_NEW(xiiCategoryAttribute, "Texture 3D"));
-        ref_attributes.PushBack(XII_DEFAULT_NEW(xiiFileBrowserAttribute, "Select Texture 3D", "*.xiiTexture3DAsset;*.xiiBinTexture3D;*.dds"));
+        ref_attributes.PushBack(XII_DEFAULT_NEW(xiiAssetBrowserAttribute, "CompatibleAsset_Texture_3D"));
       }
       else if (ref_def.m_sType.IsEqual("TextureCube"))
       {
         ref_attributes.PushBack(XII_DEFAULT_NEW(xiiCategoryAttribute, "Texture Cube"));
-        ref_attributes.PushBack(XII_DEFAULT_NEW(xiiFileBrowserAttribute, "Select Texture Cube", "*.xiiTextureCubeAsset;*.xiiBinTextureCube;*.dds"));
+        ref_attributes.PushBack(XII_DEFAULT_NEW(xiiAssetBrowserAttribute, "CompatibleAsset_Texture_Cube"));
       }
     }
     else if (ref_def.m_sType.StartsWith_NoCase("permutation"))

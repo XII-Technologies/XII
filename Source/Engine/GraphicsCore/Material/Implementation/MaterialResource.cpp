@@ -411,7 +411,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialResourceDescriptor::Texture2DBinding,
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_Name),
-    XII_RESOURCE_MEMBER_PROPERTY("Texture", m_Value)->AddAttributes(new xiiFileBrowserAttribute("Select Texture 2D", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
+    XII_RESOURCE_MEMBER_PROPERTY("Texture", m_Value)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
   }
   XII_END_PROPERTIES;
 }
@@ -422,7 +422,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialResourceDescriptor::TextureCubeBindin
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_Name),
-    XII_RESOURCE_MEMBER_PROPERTY("Texture", m_Value)->AddAttributes(new xiiFileBrowserAttribute("Select Texture Cube", "*.xiiTextureCubeAsset;*.xiiBinTextureCube;*.dds")),
+    XII_RESOURCE_MEMBER_PROPERTY("Texture", m_Value)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Cube")),
   }
   XII_END_PROPERTIES;
 }
@@ -432,8 +432,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialResourceDescriptor, xiiNoBase, 2, xii
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_RESOURCE_MEMBER_PROPERTY("BaseMaterial", m_hBaseMaterial)->AddAttributes(new xiiFileBrowserAttribute("Select Base Material", "*.xiiMaterialAsset;*.xiiBinMaterial")),
-    XII_MEMBER_PROPERTY("Surface", m_sSurface)->AddAttributes(new xiiFileBrowserAttribute("Select Surface", "*.xiiSurfaceAsset;*.xiiBinSurface")),
+    XII_RESOURCE_MEMBER_PROPERTY("BaseMaterial", m_hBaseMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material", xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package)),
+    XII_MEMBER_PROPERTY("Surface", m_sSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_RESOURCE_MEMBER_PROPERTY("Shader", m_hShader)->AddAttributes(new xiiFileBrowserAttribute("Select Shader", "*.xiiShader")),
     XII_ENUM_MEMBER_PROPERTY("Domain", xiiMaterialDomain, m_Domain),
     XII_ENUM_MEMBER_PROPERTY("ShadingModel", xiiMaterialShadingModel, m_ShadingModel),
@@ -456,14 +456,14 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialResourceDescriptor, xiiNoBase, 2, xii
     XII_MEMBER_PROPERTY("Anisotropy", m_fAnisotropy)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(-1.0f, 1.0f)),
     XII_MEMBER_PROPERTY("SheenRoughness", m_fSheenRoughness)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("SortPriority", m_iSortPriority),
-    XII_RESOURCE_MEMBER_PROPERTY("BaseColorTexture", m_hBaseColorTexture)->AddAttributes(new xiiFileBrowserAttribute("Select BaseColor Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
-    XII_RESOURCE_MEMBER_PROPERTY("NormalTexture", m_hNormalTexture)->AddAttributes(new xiiFileBrowserAttribute("Select Normal Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
-    XII_RESOURCE_MEMBER_PROPERTY("MetallicRoughnessTexture", m_hMetallicRoughnessTexture)->AddAttributes(new xiiFileBrowserAttribute("Select MetallicRoughness Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
-    XII_RESOURCE_MEMBER_PROPERTY("OcclusionTexture", m_hOcclusionTexture)->AddAttributes(new xiiFileBrowserAttribute("Select Occlusion Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
-    XII_RESOURCE_MEMBER_PROPERTY("EmissiveTexture", m_hEmissiveTexture)->AddAttributes(new xiiFileBrowserAttribute("Select Emissive Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
-    XII_RESOURCE_MEMBER_PROPERTY("HeightTexture", m_hHeightTexture)->AddAttributes(new xiiFileBrowserAttribute("Select Height Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
-    XII_RESOURCE_MEMBER_PROPERTY("ClearCoatTexture", m_hClearCoatTexture)->AddAttributes(new xiiFileBrowserAttribute("Select ClearCoat Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
-    XII_RESOURCE_MEMBER_PROPERTY("TransmissionTexture", m_hTransmissionTexture)->AddAttributes(new xiiFileBrowserAttribute("Select Transmission Texture", "*.xiiTextureAsset;*.xiiRenderTargetAsset;*.xiiBinTexture2D;*.dds")),
+    XII_RESOURCE_MEMBER_PROPERTY("BaseColorTexture", m_hBaseColorTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("NormalTexture", m_hNormalTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("MetallicRoughnessTexture", m_hMetallicRoughnessTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("OcclusionTexture", m_hOcclusionTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("EmissiveTexture", m_hEmissiveTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("HeightTexture", m_hHeightTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("ClearCoatTexture", m_hClearCoatTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("TransmissionTexture", m_hTransmissionTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
     XII_ARRAY_MEMBER_PROPERTY("Parameters", m_Parameters),
     XII_ARRAY_MEMBER_PROPERTY("Texture2DBindings", m_Texture2DBindings),
     XII_ARRAY_MEMBER_PROPERTY("TextureCubeBindings", m_TextureCubeBindings),
