@@ -510,6 +510,50 @@ xiiMaterialRuntimeState xiiMaterialResourceDescriptor::BuildRuntimeState() const
   state.m_uiRuntimeHash = m_uiRuntimeHash;
   state.m_iSortPriority = m_iSortPriority;
 
+  for (const auto& variable : m_PermutationVariables)
+  {
+    const auto name  = variable.m_sName.GetString();
+    const auto value = variable.m_sValue.GetString();
+    if (name == "BLEND_MODE")
+    {
+      if (value == "BLEND_MODE_OPAQUE")
+      {
+        state.m_BlendMode = xiiMaterialBlendMode::Opaque;
+        state.m_AlphaMode = xiiMaterialAlphaMode::Opaque;
+      }
+      else if (value == "BLEND_MODE_MASKED")
+      {
+        state.m_BlendMode = xiiMaterialBlendMode::Masked;
+        state.m_AlphaMode = xiiMaterialAlphaMode::Mask;
+      }
+      else if (value == "BLEND_MODE_TRANSPARENT")
+      {
+        state.m_BlendMode = xiiMaterialBlendMode::Translucent;
+        state.m_AlphaMode = xiiMaterialAlphaMode::Blend;
+      }
+      else if (value == "BLEND_MODE_ADDITIVE")
+      {
+        state.m_BlendMode = xiiMaterialBlendMode::Additive;
+        state.m_AlphaMode = xiiMaterialAlphaMode::Blend;
+      }
+      else if (value == "BLEND_MODE_MODULATE")
+      {
+        state.m_BlendMode = xiiMaterialBlendMode::Modulate;
+        state.m_AlphaMode = xiiMaterialAlphaMode::Blend;
+      }
+    }
+    else if (name == "TWO_SIDED")
+      state.m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::TwoSided, value == "TRUE");
+    else if (name == "SHADING_MODE")
+    {
+      if (value == "SHADING_MODE_FULLBRIGHT")
+        state.m_ShadingModel = xiiMaterialShadingModel::Unlit;
+      else if (state.m_ShadingModel == xiiMaterialShadingModel::Unlit)
+        state.m_ShadingModel = xiiMaterialShadingModel::Lit;
+      state.m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::ReceivesLighting, state.m_ShadingModel != xiiMaterialShadingModel::Unlit);
+    }
+  }
+
   if (m_hBaseColorTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("BaseColorTexture")) != xiiInvalidIndex)
     state.m_uiTextureMask |= TextureSlotBit(xiiMaterialTextureSlot::BaseColor);
   if (m_hNormalTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("NormalTexture")) != xiiInvalidIndex)
@@ -723,26 +767,27 @@ xiiEnum<xiiMaterialDomain> xiiMaterialResource::GetDomain() const
 
 xiiEnum<xiiMaterialShadingModel> xiiMaterialResource::GetShadingModel() const
 {
-  return m_Description.m_ShadingModel;
+  return GetRuntimeState().m_ShadingModel;
 }
 
 xiiEnum<xiiMaterialBlendMode> xiiMaterialResource::GetBlendMode() const
 {
-  return m_Description.m_BlendMode;
+  return GetRuntimeState().m_BlendMode;
 }
 
 xiiEnum<xiiMaterialAlphaMode> xiiMaterialResource::GetAlphaMode() const
 {
-  return m_Description.m_AlphaMode;
+  return GetRuntimeState().m_AlphaMode;
 }
 
 xiiBitflags<xiiMaterialFeatureFlags> xiiMaterialResource::GetFeatureFlags() const
 {
-  return m_Description.m_FeatureFlags;
+  return GetRuntimeState().m_FeatureFlags;
 }
 
 const xiiMaterialRuntimeState& xiiMaterialResource::GetRuntimeState() const
 {
+  const_cast<xiiMaterialResource*>(this)->EnsureRuntimeData();
   return m_RuntimeState;
 }
 
@@ -758,7 +803,7 @@ xiiUInt32 xiiMaterialResource::GetTextureMask() const
 
 bool xiiMaterialResource::IsTranslucent() const
 {
-  return m_RuntimeState.IsTranslucent();
+  return GetRuntimeState().IsTranslucent();
 }
 
 xiiSharedPtr<const xiiMaterialSchema> xiiMaterialResource::GetSchema()
@@ -1640,6 +1685,18 @@ void xiiMaterialResource::EnsureRuntimeData()
     materialHierarchy[i] = nullptr;
   });
 
+  // Read source configuration before taking the material mutex: loading the
+  // shader can broadcast resource events back to this material.
+  xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermutations;
+  for (const auto* material : materialHierarchy)
+    if (material->m_Description.m_hShader.IsValid())
+    {
+      xiiResourceLock<xiiShaderResource> shader(material->m_Description.m_hShader, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (shader.IsValid())
+        fixedPermutations = shader->GetFixedPermutationVariables();
+      break;
+    }
+
   XII_LOCK(m_RuntimeDataMutex);
 
   if (!IsModified())
@@ -1682,6 +1739,17 @@ void xiiMaterialResource::EnsureRuntimeData()
   }
 
   xiiMaterialSchemaDescription schemaDescription;
+  for (const auto& fixed : fixedPermutations)
+    m_ResolvedValues.m_PermutationVariables.Insert(fixed.m_sName, fixed.m_sValue);
+  auto resolvedDescription = m_Description;
+  resolvedDescription.m_PermutationVariables.Clear();
+  for (const auto& permutation : m_ResolvedValues.m_PermutationVariables)
+  {
+    auto& variable    = resolvedDescription.m_PermutationVariables.ExpandAndGetRef();
+    variable.m_sName  = permutation.Key();
+    variable.m_sValue = permutation.Value();
+  }
+  m_RuntimeState            = resolvedDescription.BuildRuntimeState();
   schemaDescription.m_sName = GetResourceID();
   if (schemaDescription.m_sName.IsEmpty())
     schemaDescription.m_sName = "Runtime Material";
@@ -1691,7 +1759,7 @@ void xiiMaterialResource::EnsureRuntimeData()
     schemaDescription.m_Permutations.Insert(permutation.Key().GetString(), permutation.Value().GetString());
   }
   schemaDescription.m_Domain       = m_Description.m_Domain;
-  schemaDescription.m_ShadingModel = m_Description.m_ShadingModel;
+  schemaDescription.m_ShadingModel = m_RuntimeState.m_ShadingModel;
 
   xiiDynamicArray<xiiHashedString> parameterNames;
   for (const auto& parameter : m_ResolvedValues.m_Parameters)
