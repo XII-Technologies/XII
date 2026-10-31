@@ -4,9 +4,11 @@
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorPluginAssets/MaterialAsset/MaterialAsset.h>
+#include <EditorPluginAssets/MaterialAsset/MaterialAssetManager.h>
 #include <EditorPluginAssets/VisualShader/VsCodeGenerator.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OSFile.h>
@@ -22,8 +24,11 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QComboBox>
+#include <QDialog>
 #include <QKeyEvent>
+#include <QLineEdit>
 #include <QMimeData>
+#include <QTableWidget>
 #include <QTimer>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
@@ -80,7 +85,8 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
     const char* types[] = {"OneMinus", "SafeReciprocal", "SafeDivide", "Smoothstep", "Step", "InverseLerp", "Remap", "PingPong", "Posterize", "ModuloPositive",
                            "Luminance", "ColorRGB", "Desaturate", "ColorContrast", "BlendScreen", "BlendOverlay", "BlendSoftLight", "HeightBlend",
                            "UVTilingOffset", "RotateAboutPivot", "PolarCoordinates", "PolarToCartesian", "MirrorUV", "ParallaxOffset", "NormalUnpack", "NormalStrength",
-                           "Checkerboard", "RadialGradient", "RingGradient", "StripePattern", "Voronoi2D", "FractalNoise2D", "RidgedNoise2D", "Turbulence2D", "MergeFloat2", "MergeFloat3", "MergeFloat4"};
+                           "Checkerboard", "RadialGradient", "RingGradient", "StripePattern", "Voronoi2D", "FractalNoise2D", "RidgedNoise2D", "Turbulence2D", "MergeFloat2", "MergeFloat3", "MergeFloat4",
+                           "Time", "UV", "UV2", "UV_Scroll", "VertexPosition", "VertexWorldPosition", "VertexNormal", "VertexTangent", "VertexColor", "InstanceData", "Camera", "FromCameraSpace", "FromScreenSpace", "FromWorldSpace", "FromObjectSpace", "TangentToWorldSpace"};
     for (const char* type : types)
     {
       const xiiStringBuilder nodePath(project.GetFileDirectory(), "/Node-", type, ".xiiMaterialAsset");
@@ -100,6 +106,12 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
       }
       XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::MaterialOutput"), main));
       XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, definition, value));
+      if (xiiStringView(type).StartsWith("From") || xiiStringView(type) == "TangentToWorldSpace")
+      {
+        xiiUuid position;
+        XII_TEST_STATUS(edit->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::Constant3"), position));
+        XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(sample->GetCommandHistory(), nodes->GetConnectionType(), *nodes->GetOutputPins(edit->GetObject(position))[0], *nodes->GetInputPins(edit->GetObject(value))[0]));
+      }
       const auto* pin = static_cast<const xiiVisualShaderPin*>(nodes->GetOutputPins(edit->GetObject(value))[0].Borrow());
       if (pin->GetDataType() == xiiGetStaticRTTI<xiiVec2>() || pin->GetDataType() == xiiGetStaticRTTI<xiiVec4>())
       {
@@ -131,6 +143,69 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
         XII_TEST_BOOL_MSG(vectorCompiled.Succeeded(), "Vector node '%s' failed: %s", type, vectorCompiled.GetMessageString().GetData());
       }
     }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Production shader template dialog emits native shaders")
+  {
+    const auto create = xiiDocumentManager::s_CustomActions["CustomAction_CreateShaderFromTemplate"];
+    if (!XII_TEST_BOOL(create != nullptr))
+      return;
+    for (auto name : {"PBR", "Fullbright"})
+      for (int selectable = 0; selectable < 2; ++selectable)
+      {
+        xiiStringBuilder fileName;
+        fileName.SetFormat("Template-{}-{}.xiiShader", name, selectable);
+        const xiiStringBuilder shaderPath(project.GetFileDirectory(), "/", fileName);
+        const xiiStringBuilder assetPath(shaderPath, ".xiiMaterialAsset");
+        auto*                  sample = xiiDynamicCast<xiiMaterialAssetDocument*>(editor->CreateDocument(assetPath, xiiDocumentFlags::EmptyDocument));
+        if (!XII_TEST_BOOL(sample != nullptr))
+          return;
+        XII_SCOPE_EXIT(sample->GetDocumentManager()->CloseDocument(sample));
+        QTimer watchdog;
+        QObject::connect(&watchdog, &QTimer::timeout, []() { if (auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget())) dialog->reject(); });
+        watchdog.start(5000);
+        QTimer::singleShot(0, [&]() {
+          auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+          if (!XII_TEST_BOOL(dialog != nullptr))
+            return;
+          auto* templates   = dialog->findChild<QComboBox*>("ShaderTemplate");
+          auto* destination = dialog->findChild<QLineEdit*>("DestinationFile");
+          auto* variables   = dialog->findChild<QTableWidget*>("TemplateVars");
+          if (!XII_TEST_BOOL(templates && destination && variables))
+          {
+            dialog->reject();
+            return;
+          }
+          const auto index = templates->findText(QString::fromUtf8(name));
+          if (!XII_TEST_BOOL(index >= 0))
+          {
+            dialog->reject();
+            return;
+          }
+          templates->setCurrentIndex(index);
+          destination->setText(QString::fromUtf8(shaderPath.GetData()));
+          XII_TEST_INT(variables->rowCount(), 3);
+          if (selectable)
+            for (int row = 0; row < 3; ++row)
+              if (auto* choice = qobject_cast<QComboBox*>(variables->cellWidget(row, 1)))
+                choice->setCurrentIndex(row == 1 ? 2 : 1);
+          XII_TEST_BOOL(QMetaObject::invokeMethod(dialog, "on_Buttons_accepted", Qt::DirectConnection));
+          // Exercise production generation, then cancel the outer action so it
+          // does not launch an unrelated external source editor during tests.
+          dialog->reject();
+        });
+        create(sample);
+        watchdog.stop();
+        XII_TEST_BOOL(xiiOSFile::ExistsFile(shaderPath));
+        auto* edit = sample->GetObjectAccessor();
+        edit->StartTransaction("Use generated shader template");
+        XII_TEST_STATUS(edit->SetValueByName(sample->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::File)));
+        XII_TEST_STATUS(edit->SetValueByName(sample->GetPropertyObject(), "Shader", fileName.GetView()));
+        edit->FinishTransaction();
+        XII_TEST_STATUS(sample->CompileShader());
+        xiiDefaultMemoryStreamStorage storage;
+        xiiMemoryStreamWriter         writer(&storage);
+        XII_TEST_STATUS(sample->WriteMaterialAsset(writer));
+      }
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pattern material preserves typed roughness connections")
   {
@@ -197,7 +272,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
     return xiiString(generator.GetFinalShaderCode());
   };
   const xiiString source = generate();
-  XII_TEST_BOOL(source.FindSubString("0.42") != nullptr);
+
   xiiGALShaderTextSectionizer sections;
   xiiGALShaderSections::GetShaderSections(source, sections);
   xiiUInt32 line = 0;
@@ -264,6 +339,31 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   XII_TEST_STATUS(accessor->SetValueByName(document->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::Custom)));
   accessor->FinishTransaction();
   XII_TEST_STATUS(document->CompileShader());
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Previous surface shader caches require regeneration")
+  {
+    auto*            assets = static_cast<xiiMaterialAssetDocumentManager*>(document->GetDocumentManager());
+    const auto*      type   = document->GetAssetDocumentTypeDescriptor();
+    const auto       cached = assets->GetAbsoluteOutputFileName(type, document->GetDocumentPath(), "VISUAL_SHADER");
+    xiiStringBuilder original;
+    {
+      xiiFileReader file;
+      if (!XII_TEST_RESULT(file.Open(cached)))
+        return;
+      original.ReadAll(file);
+    }
+    const auto write = [&](xiiStringView text) {
+      xiiFileWriter file;
+      XII_SUCCEED_OR_RETURN(file.Open(cached));
+      return file.WriteBytes(text.GetStartPointer(), text.GetElementCount());
+    };
+    XII_SCOPE_EXIT(write(original).IgnoreResult());
+    XII_TEST_RESULT(write("//1234|8\n[PLATFORMS]\nALL\n"));
+    XII_TEST_BOOL(!assets->IsOutputUpToDate(document->GetDocumentPath(), "VISUAL_SHADER", 1234, type));
+    xiiStringBuilder current;
+    current.SetFormat("//1234|{}\n[PLATFORMS]\nALL\n", document->GetAssetTypeVersion());
+    XII_TEST_RESULT(write(current));
+    XII_TEST_BOOL(assets->IsOutputUpToDate(document->GetDocumentPath(), "VISUAL_SHADER", 1234, type));
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Core Graph schedules shared dependencies once")
   {
     accessor->StartTransaction("Share a graph parameter");
@@ -312,6 +412,19 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
     }
     accessor->FinishTransaction();
     const auto procedural = generate();
+    {
+      xiiFileReader          reference;
+      const xiiStringBuilder referencePath(xiiFileSystem::GetSdkRootDirectory(), "/Data/UnitTests/GraphicsFoundationTest/Shaders/NativeGraphSurface.xiiShader");
+      if (XII_TEST_RESULT(reference.Open(referencePath)))
+      {
+        xiiStringBuilder expected;
+        expected.ReadAll(reference);
+        expected.ReplaceAll("\r\n", "\n");
+        XII_TEST_STRING(procedural, expected);
+      }
+    }
+
+    XII_TEST_BOOL(source.FindSubString("0.42") != nullptr);
     XII_TEST_BOOL(procedural.FindSubString("xiiMaterialValueNoise2D") != nullptr);
     XII_TEST_BOOL(procedural.FindSubString("Texture2D BaseTexture") == nullptr);
     XII_TEST_STATUS(document->CompileShader());
