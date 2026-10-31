@@ -48,7 +48,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 6, xiiRTTIDefaultAl
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 8, xiiRTTINoAllocator)
+// Invalidate generated shaders that still target the previous surface interface.
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 9, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
