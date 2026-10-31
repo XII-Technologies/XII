@@ -308,9 +308,12 @@ xiiStatus xiiPasteObjectsCommand::DoInternal(bool bRedo)
       {
         pDocument->GetObjectManager()->DestroyObject(item.m_pObject);
       }
+      return xiiStatus("Paste Objects: the document rejected the clipboard data!");
     }
 
-    if (m_PastedObjects.IsEmpty())
+    // Documents may paste only metadata through undoable child commands, for
+    // example organizational graph blocks with no selected domain nodes.
+    if (m_PastedObjects.IsEmpty() && !HasChildActions())
       return xiiStatus("Paste Objects: nothing was pasted!");
   }
   else

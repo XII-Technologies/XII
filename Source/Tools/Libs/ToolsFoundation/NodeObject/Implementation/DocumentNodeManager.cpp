@@ -699,8 +699,95 @@ bool xiiDocumentNodeManager::CopySelectedObjects(xiiAbstractObjectGraph& out_obj
   return true;
 }
 
+xiiStatus xiiDocumentNodeManager::CopyCommentBlocks(xiiAbstractObjectGraph& ref_objectGraph, xiiArrayPtr<const xiiUuid> blocks) const
+{
+  xiiSet<xiiUuid> ids;
+  for (const auto& id : blocks)
+  {
+    if (!m_CommentBlocks.Contains(id) || ref_objectGraph.GetNode(id) || ids.Contains(id))
+      return xiiStatus("The selected graph comment block is missing or duplicated.");
+    ids.Insert(id);
+  }
+  for (const auto& id : blocks)
+  {
+    // A named metadata node is deliberately not a document-object clipboard root.
+    auto*      node  = ref_objectGraph.AddNode(id, "xiiGraphCommentBlock", 1, "Graph::CommentBlock");
+    const auto value = m_CommentBlocks.Find(id).Value().ToVariant();
+    for (const auto& property : value.Get<xiiVariantDictionary>())
+      node->AddProperty(property.Key(), property.Value());
+  }
+  return XII_SUCCESS;
+}
+
 bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition)
 {
+  xiiDynamicArray<xiiGraphCommentBlock> blocks;
+  for (const auto& entry : objectGraph.GetAllNodes())
+  {
+    const auto* node = entry.Value();
+    if (node->GetNodeName() != "Graph::CommentBlock")
+      continue;
+    xiiVariantDictionary value;
+    for (const auto& property : node->GetProperties())
+      value.Insert(property.m_sPropertyName, property.m_Value);
+    xiiGraphCommentBlock block;
+    if (node->GetType() != "xiiGraphCommentBlock" || node->GetTypeVersion() != 1 ||
+        xiiGraphCommentBlock::FromVariant(value, block).Failed() || block.m_Id != node->GetGuid() || m_CommentBlocks.Contains(block.m_Id))
+    {
+      xiiLog::Warning("Invalid graph comment block clipboard data was rejected.");
+      return false;
+    }
+    blocks.PushBack(std::move(block));
+  }
+  // Validate the common translation before adding objects or commands. Clipboard
+  // bounds can be finite individually and still overflow when translated.
+  xiiVec2 offset = xiiVec2::MakeZero();
+  if (bAllowPickedPosition)
+  {
+    if (!vPickedPosition.IsValid())
+      return false;
+    double    anchorX = 0, anchorY = 0;
+    xiiUInt32 count = 0;
+    for (const auto& pi : info)
+    {
+      if (!IsNode(pi.m_pObject) || CanAdd(pi.m_pObject->GetTypeAccessor().GetType(), nullptr, "Children", pi.m_Index).Failed())
+        continue;
+      xiiVec2 position = xiiVec2::MakeZero();
+      if (const auto* node = objectGraph.GetNode(pi.m_pObject->GetGuid()))
+      {
+        if (const auto* savedPosition = node->FindProperty("Node::Pos"))
+        {
+          if (!savedPosition->m_Value.IsA<xiiVec2>() || !savedPosition->m_Value.Get<xiiVec2>().IsValid())
+            return false;
+          position = savedPosition->m_Value.Get<xiiVec2>();
+        }
+      }
+      if (CanMoveNode(pi.m_pObject, position).Failed())
+        position = GetNodePos(pi.m_pObject);
+      anchorX += position.x;
+      anchorY += position.y;
+      ++count;
+    }
+    // Retain the node anchor for mixed selections; block-only pastes use centers.
+    if (count == 0)
+      for (const auto& block : blocks)
+      {
+        anchorX += static_cast<double>(block.m_vPosition.x) + block.m_vSize.x * 0.5;
+        anchorY += static_cast<double>(block.m_vPosition.y) + block.m_vSize.y * 0.5;
+        ++count;
+      }
+    if (count > 0)
+      offset = xiiVec2(static_cast<float>(vPickedPosition.x - anchorX / count), static_cast<float>(vPickedPosition.y - anchorY / count));
+    if (!offset.IsValid())
+      return false;
+  }
+  for (auto& block : blocks)
+  {
+    block.m_vPosition += offset;
+    if (!block.m_vPosition.IsValid())
+      return false;
+  }
+
   bool                               bAddedAll = true;
   xiiDeque<const xiiDocumentObject*> AddedObjects;
 
@@ -720,31 +807,16 @@ bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteIn
 
   RestoreMetaDataAfterLoading(objectGraph, true);
 
-  if (!AddedObjects.IsEmpty() && bAllowPickedPosition)
+  xiiCommandHistory* history = GetDocument()->GetCommandHistory();
+  if (bAllowPickedPosition)
   {
-    xiiCommandHistory* history = GetDocument()->GetCommandHistory();
-
-    xiiVec2   vAvgPos(0);
-    xiiUInt32 nodeCount = 0;
-    for (const xiiDocumentObject* pObject : AddedObjects)
-    {
-      if (IsNode(pObject))
-      {
-        vAvgPos += GetNodePos(pObject);
-        ++nodeCount;
-      }
-    }
-
-    vAvgPos /= (float)nodeCount;
-    const xiiVec2 vMoveNode = -vAvgPos + vPickedPosition;
-
     for (const xiiDocumentObject* pObject : AddedObjects)
     {
       if (IsNode(pObject))
       {
         xiiMoveNodeCommand move;
         move.m_Object = pObject->GetGuid();
-        move.m_NewPos = GetNodePos(pObject) + vMoveNode;
+        move.m_NewPos = GetNodePos(pObject) + offset;
         history->AddCommand(move).LogFailure();
       }
     }
@@ -753,6 +825,14 @@ bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteIn
     {
       xiiLog::Info("[EditorStatus]Not all nodes were allowed to be added to the document");
     }
+  }
+
+  for (auto& block : blocks)
+  {
+    xiiSetGraphCommentBlockCommand command;
+    command.m_Id    = block.m_Id;
+    command.m_Value = block.ToVariant();
+    history->AddCommand(command).AssertSuccess("Validated graph comment block could not be pasted.");
   }
 
   GetDocument()->GetSelectionManager()->SetSelection(AddedObjects);

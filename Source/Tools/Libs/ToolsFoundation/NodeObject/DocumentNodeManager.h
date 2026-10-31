@@ -210,6 +210,9 @@ public:
 
   void GetMetaDataHash(const xiiDocumentObject* pObject, xiiUInt64& inout_uiHash) const;
   bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph) const;
+  /// Append explicitly selected annotations to the document's existing clipboard graph.
+  /// They remain metadata, and their IDs participate in ordinary clipboard GUID remapping.
+  xiiStatus CopyCommentBlocks(xiiAbstractObjectGraph& ref_objectGraph, xiiArrayPtr<const xiiUuid> blocks) const;
   bool PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition);
 
 protected:

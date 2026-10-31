@@ -4,6 +4,22 @@
 
 #include <ToolsFoundation/NodeObject/GraphCommentBlock.h>
 
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGraphCommentBlock, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGraphCommentBlock>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Id", m_Id),
+    XII_MEMBER_PROPERTY("Position", m_vPosition),
+    XII_MEMBER_PROPERTY("Size", m_vSize),
+    XII_MEMBER_PROPERTY("Text", m_sText),
+    XII_MEMBER_PROPERTY("Color", m_Color),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiVariant xiiGraphCommentBlock::ToVariant() const
 {
   xiiVariantDictionary data;

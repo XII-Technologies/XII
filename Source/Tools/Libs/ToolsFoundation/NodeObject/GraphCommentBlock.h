@@ -6,6 +6,7 @@
 
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Vec2.h>
+#include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/Uuid.h>
@@ -24,3 +25,5 @@ struct XII_TOOLSFOUNDATION_DLL xiiGraphCommentBlock
   xiiVariant       ToVariant() const;
   static xiiStatus FromVariant(const xiiVariant& value, xiiGraphCommentBlock& out_block);
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiGraphCommentBlock);
