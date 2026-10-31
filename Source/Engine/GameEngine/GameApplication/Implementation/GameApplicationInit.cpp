@@ -142,8 +142,8 @@ void xiiGameApplication::Init_SetupDefaultResources()
   {
     xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<xiiMaterialResource, xiiMaterialResource>();
 
-    xiiMaterialResourceHandle hMissingMaterial  = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/Common/MissingMaterial.xiiMaterial");
-    xiiMaterialResourceHandle hFallbackMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/Common/LoadingMaterial.xiiMaterial");
+    xiiMaterialResourceHandle hMissingMaterial  = xiiMaterialResource::GetDefaultMaterial(xiiMaterialResource::DefaultMaterialType::Missing);
+    xiiMaterialResourceHandle hFallbackMaterial = xiiMaterialResource::GetDefaultMaterial(xiiMaterialResource::DefaultMaterialType::Loading);
 
     xiiResourceManager::SetResourceTypeLoadingFallback<xiiMaterialResource>(hFallbackMaterial);
     xiiResourceManager::SetResourceTypeMissingFallback<xiiMaterialResource>(hMissingMaterial);

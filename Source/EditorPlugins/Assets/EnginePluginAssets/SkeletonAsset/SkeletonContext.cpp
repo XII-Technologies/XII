@@ -2,6 +2,8 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsPCH.h>
 
+#include <GraphicsCore/Material/MaterialResource.h>
+
 #include <EnginePluginAssets/SkeletonAsset/SkeletonContext.h>
 #include <EnginePluginAssets/SkeletonAsset/SkeletonView.h>
 
@@ -174,7 +176,7 @@ xiiResult xiiSkeletonContext::UpdatePreview()
     if (m_uiMeshChangeCounter != mesh->GetCurrentResourceChangeCounter())
     {
       pMesh->ClearMaterialOverrides();
-      const auto material = xiiResourceManager::LoadResource<xiiMaterialResource>("Editor/Materials/SkeletonPreviewMesh.xiiMaterial");
+      const auto material = xiiMaterialResource::GetDefaultMaterial(xiiMaterialResource::DefaultMaterialType::Preview);
       for (xiiUInt32 i = 0; i < mesh->GetDescriptor().GetMaterials().GetCount(); ++i)
         pMesh->SetMaterialOverride(i, material);
       m_uiMeshChangeCounter = mesh->GetCurrentResourceChangeCounter();

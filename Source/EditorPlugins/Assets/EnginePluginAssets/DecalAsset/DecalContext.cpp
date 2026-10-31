@@ -2,6 +2,8 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsPCH.h>
 
+#include <GraphicsCore/Material/MaterialResource.h>
+
 #include <EnginePluginAssets/DecalAsset/DecalContext.h>
 #include <EnginePluginAssets/DecalAsset/DecalView.h>
 #include <GraphicsCore/Components/Render/DecalComponent.h>
@@ -68,7 +70,7 @@ xiiStatus xiiDecalContext::OnInitialize()
       xiiMeshResourceDescriptor md;
       md.UseExistingMeshBuffer(hMeshBuffer);
       md.AddSubMesh(pMeshBuffer->GetPrimitiveCount(), 0, 0);
-      md.SetMaterial(0, "Materials/Common/TestBricks.xiiMaterial");
+      md.SetMaterial(0, xiiMaterialResource::GetDefaultMaterial(xiiMaterialResource::DefaultMaterialType::Preview).GetResourceID());
       md.ComputeBounds();
 
       m_hPreviewMeshResource = xiiResourceManager::GetOrCreateResource<xiiMeshResource>(szMeshName, std::move(md), pMeshBuffer->GetResourceDescription());

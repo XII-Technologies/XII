@@ -49,12 +49,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 6, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // Invalidate generated shaders that still target the previous surface interface.
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 9, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 10, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiUuid xiiMaterialAssetDocument::s_LitBaseMaterial;
-xiiUuid xiiMaterialAssetDocument::s_LitAlphaTextBaseMaterial;
 xiiUuid xiiMaterialAssetDocument::s_NeutralNormalMap;
 
 void xiiMaterialAssetProperties::SetBaseMaterial(const char* szBaseMaterial)
@@ -979,8 +977,6 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
     }
   }
   description.m_sSurface.Assign(pProperties->m_sSurface);
-  // Version 7 remains read-only compatibility data. Every authoring source now
-  // writes the native descriptor without changing asset GUIDs or references.
   return xiiMaterialAssetFile::Write(inout_stream, description);
 }
 
@@ -1153,34 +1149,6 @@ void xiiMaterialAssetDocument::RemoveDisconnectedNodes()
   }
 }
 
-xiiUuid xiiMaterialAssetDocument::GetLitBaseMaterial()
-{
-  if (!s_LitBaseMaterial.IsValid())
-  {
-    const auto szLitMaterialAssetPath = xiiMaterialResource::GetDefaultMaterialFileName(xiiMaterialResource::DefaultMaterialType::Lit);
-    auto       assetInfo              = xiiAssetCurator::GetSingleton()->FindSubAsset(szLitMaterialAssetPath);
-    if (assetInfo)
-      s_LitBaseMaterial = assetInfo->m_Data.m_Guid;
-    else
-      xiiLog::Error("Can't find default lit material {0}", szLitMaterialAssetPath);
-  }
-  return s_LitBaseMaterial;
-}
-
-xiiUuid xiiMaterialAssetDocument::GetLitAlphaTestBaseMaterial()
-{
-  if (!s_LitAlphaTextBaseMaterial.IsValid())
-  {
-    const auto szLitAlphaTestMaterialAssetPath = xiiMaterialResource::GetDefaultMaterialFileName(xiiMaterialResource::DefaultMaterialType::LitAlphaTest);
-    auto       assetInfo                       = xiiAssetCurator::GetSingleton()->FindSubAsset(szLitAlphaTestMaterialAssetPath);
-    if (assetInfo)
-      s_LitAlphaTextBaseMaterial = assetInfo->m_Data.m_Guid;
-    else
-      xiiLog::Error("Can't find default lit alpha test material {0}", szLitAlphaTestMaterialAssetPath);
-  }
-  return s_LitAlphaTextBaseMaterial;
-}
-
 xiiUuid xiiMaterialAssetDocument::GetNeutralNormalMap()
 {
   if (!s_NeutralNormalMap.IsValid())
@@ -1214,56 +1182,3 @@ bool xiiMaterialAssetDocument::Paste(const xiiArrayPtr<PasteInfo>& info, const x
   return pManager->PasteObjects(info, objectGraph, xiiQtNodeScene::GetLastMouseInteractionPos(), bAllowPickedPosition);
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-#include <Foundation/Serialization/GraphPatch.h>
-
-class xiiMaterialAssetPropertiesPatch_1_2 : public xiiGraphPatch
-{
-public:
-  xiiMaterialAssetPropertiesPatch_1_2() :
-    xiiGraphPatch("xiiMaterialAssetProperties", 2)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
-  {
-    pNode->RenameProperty("Shader Mode", "ShaderMode");
-    pNode->RenameProperty("Base Material", "BaseMaterial");
-  }
-};
-
-xiiMaterialAssetPropertiesPatch_1_2 g_xiiMaterialAssetPropertiesPatch_1_2;
-
-
-class xiiMaterialAssetPropertiesPatch_2_3 : public xiiGraphPatch
-{
-public:
-  xiiMaterialAssetPropertiesPatch_2_3() :
-    xiiGraphPatch("xiiMaterialAssetProperties", 3)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
-  {
-    auto* pBaseMatProp    = pNode->FindProperty("BaseMaterial");
-    auto* pShaderModeProp = pNode->FindProperty("ShaderMode");
-
-    if (pBaseMatProp && (pBaseMatProp->m_Value.IsA<xiiString>() || pBaseMatProp->m_Value.IsA<xiiStringView>()))
-    {
-      if (!pBaseMatProp->m_Value.ConvertTo<xiiString>().IsEmpty())
-      {
-        // BaseMaterial is set
-        pNode->ChangeProperty("ShaderMode", (xiiInt32)xiiMaterialShaderMode::BaseMaterial);
-      }
-      else
-      {
-        pNode->ChangeProperty("ShaderMode", (xiiInt32)xiiMaterialShaderMode::File);
-      }
-    }
-  }
-};
-
-xiiMaterialAssetPropertiesPatch_2_3 g_xiiMaterialAssetPropertiesPatch_2_3;

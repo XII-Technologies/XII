@@ -133,8 +133,6 @@ public:
   /// Deletes all Visual Shader nodes that are not connected to the output
   void RemoveDisconnectedNodes();
 
-  static xiiUuid GetLitBaseMaterial();
-  static xiiUuid GetLitAlphaTestBaseMaterial();
   static xiiUuid GetNeutralNormalMap();
 
   virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
@@ -169,8 +167,6 @@ private:
   bool                          m_bRestoreShaderProperties = false;
   xiiMap<xiiString, xiiVariant> m_ShaderAuthoringValues;
   xiiStringBuilder m_sCheckPermutations;
-  static xiiUuid   s_LitBaseMaterial;
-  static xiiUuid   s_LitAlphaTextBaseMaterial;
   static xiiUuid   s_NeutralNormalMap;
 };
 

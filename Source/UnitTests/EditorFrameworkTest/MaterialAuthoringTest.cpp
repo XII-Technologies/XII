@@ -255,7 +255,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   xiiMemoryStreamReader standardReader(&standardStorage);
   xiiUInt8              version = 0;
   standardReader >> version;
-  XII_TEST_INT(version, 8);
+  XII_TEST_INT(version, 9);
 
   xiiUuid outputNode, valueNode, disconnected;
   accessor->StartTransaction("Author material graph");
@@ -535,11 +535,10 @@ float4 main() : SV_Target0
     xiiMemoryStreamWriter         writer(&storage);
     XII_TEST_STATUS(document->WriteMaterialAsset(writer));
     xiiMemoryStreamReader reader(&storage);
-    xiiUInt8              format = 0, compression = 255;
+    xiiUInt8              format = 0;
     xiiString             base, surface, shader;
-    reader >> format >> compression >> base >> surface >> shader;
-    XII_TEST_INT(format, 8);
-    XII_TEST_INT(compression, 0);
+    reader >> format >> base >> surface >> shader;
+    XII_TEST_INT(format, 9);
     XII_TEST_STRING(shader, "Handwritten.xiiShader");
     accessor->StartTransaction("Return to independent graph");
     XII_TEST_STATUS(accessor->SetValueByName(document->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::Custom)));
