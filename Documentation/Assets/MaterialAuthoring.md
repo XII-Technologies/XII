@@ -2,9 +2,9 @@
 
 The Editor's authoring modes share `xiiMaterialResourceDescriptor`, the native
 material asset writer, `xiiMaterialResource`, immutable schemas, and runtime
-instances. This change establishes that common asset boundary and improves
-authoring and preview behavior. It does **not** complete per-material shader
-execution in the GPU-driven renderer.
+instances. Authored surface shaders now execute through the native GPU-scene
+raster passes. Standard materials, generated graphs, and shader files use the
+same instances, visibility, geometry residency, render graph, and pipeline cache.
 
 ## Authoring sources
 
@@ -253,11 +253,132 @@ compiled. The existing `SeparatedBilateralBlur` source has an unavailable
 `BLUR_DIRECTION` permutation definition and could not be compiled; its only
 change here removes an unused include of the deleted material-buffer header.
 
-`xiiGBufferRasterPass` still selects its built-in vertex-pull/mesh shader rather
-than dispatching a material schema's shader. The existing graph output also
-targets the older material shader interface. Consequently, successful graph or
-handwritten shader compilation and native resource serialization do **not** prove
-their authored shader executes in the scene renderer. Per-material native shader
-dispatch, the matching stage/resource binding contract, advanced graph surface
-output, automatic graph conversion for implicit narrowing, and exhaustive asset
-migration remain required before the comprehensive modernization is complete.
+## Authored surface shader dispatch
+
+The missing execution path had several causes: raster passes always selected
+built-in shaders; schemas dropped authored permutations; graph output and shader
+templates used the former vertex-stream interface; and shader blend/culling
+permutations did not classify native instances. Schema bytes also use a different
+packing contract from HLSL constants. These boundaries now resolve in the native
+runtime.
+
+Native schemas retain inherited shader permutations, and shader resources expose
+fixed source permutations. Source-fixed values take precedence. Resolved blend,
+two-sided, and shading selections classify native extraction and instances,
+including inherited shader settings. The raster scheduler resolves
+one immutable reflected binding snapshot per material, including its compiled
+shader objects, signature, states, textures, and samplers. Visibility remains on
+the GPU: count, prefix, and scatter kernels partition the existing visible
+meshlets into linear storage and produce one indirect draw per material. Bin zero
+keeps ordinary native materials in the same stream. No visibility readback or
+second material runtime is introduced. Standard-only views retain their existing
+mesh shader path; mixed views use native vertex pulling.
+
+Authored shaders execute in the G-buffer, shadow depth, transparent layers, Editor
+picking, and wireframe passes. The native surface contract uses
+`GpuSceneSurfaceIndexed.h`, `NativeMaterialSurface.h`, and
+`NativeMaterialState.h`. Declare the existing `RENDER_PASS` permutation; no new
+stage declaration is required. Use `BLEND_MODE` when alpha modes are needed.
+The canonical surface helper emits the appropriate native targets and coverage
+for the selected pass. Transparent lighting is shared with standard materials,
+including existing light clusters, shadows, atmosphere, and optional refraction.
+Its blend state must match the native five-target layer contract.
+
+Graph output now writes that contract directly. UVs, secondary UVs, vertex color,
+object/world positions, normals/tangents, camera transforms, time, and manual
+camera exposure use native data. Object-space conversions use the inverse
+transform rather than the forward transform. The instance-color input reads the
+native material instance's base color and opacity. Vertex offsets update current
+and previous clip positions. Redundant attribute defines and empty geometry-stage
+fragments were removed from the input library. Default, fallback, collision mesh,
+skeleton, and hit-box shader sources migrate directly while retaining their paths
+and asset references. Barycentrics come from native triangle indices, replacing
+those visualization shaders' geometry stages. The material document transform
+version is incremented so unchanged assets regenerate cached shader outputs for
+the new interface; native runtime content remains version 8.
+
+`[MATERIAL_CONSTANTS]` remains compiler-owned. The renderer copies compatible
+parameters by reflected name, type, and byte offset; schema packing is never
+assumed to equal HLSL packing. Cross-stage layouts, native binding types/stages,
+reverse-Z depth, and transparent blending are validated before dispatch. Supported
+material textures include 2D and cube resources with the texture's authored
+sampler. Both combined and separate sampler reflection are handled. Optional
+empty slots use the engine's shared missing-resource fallback when available;
+required or incompatible bindings fail explicitly. Canonical scene buffers are
+provided by their owning passes. Arbitrary material-owned buffers and standalone
+sampler parameters are not added to the instance API.
+
+Compatible parameter changes reuse compiled permutations. Binding caches also
+observe shader objects, signatures, render states, and current texture/sampler
+objects. Graph callbacks retain immutable GPU objects through execution, including
+when a resource reload replaces the source object. This does not automatically
+rebind independently created instances to new schemas; that existing API remains
+explicit.
+
+The focused Vulkan `MaterialShaders` suite checks actual authored output, graph
+roughness, mixed native/two-authored-material bins, reflected float/float3 packing,
+incompatible parameter rejection, vertex and pixel constant consumption, texture
+and shader-permutation reloads, instance parameter updates, displacement, masked
+coverage, picking, and wireframe. The graph rendering fixture is compared exactly
+with production Editor output, including normalized newlines. The Qt workflow
+also compiles native input and transformation nodes through the production shader
+tool, creates both PBR and fullbright shader templates through the actual dialog
+with fixed/selectable options, and retains Pattern, document history, and
+save/reopen checks. Template generation uses current section names and
+compiler-owned constants; unsupported second/procedural vertex-color choices
+are removed from the new-source dialog. Existing source files remain independent.
+
+Remaining boundaries:
+
+- Surface dispatch currently accepts native vertex/pixel shaders. Other shader
+  domains and stage combinations continue to use their explicit renderer passes;
+  they are not silently treated as native surfaces.
+- Overdraw, topology/culling diagnostics, and ray-tracing diagnostics still inspect
+  canonical geometry rather than execute authored material displacement.
+- Displacement requires conservative authored mesh bounds; bounds are not inferred
+  from arbitrary shader expressions. Graph vertex expressions must be valid in
+  the vertex stage. Manual camera exposure is exposed; the GPU's adapted exposure
+  is not fed back into graph evaluation.
+- Secondary vertex color, depth-fade, old scene-color refraction nodes, and a
+  connected subsurface-color output lack matching native interfaces. Their
+  serialized data remains intact and reachable uses report node/port diagnostics.
+  Native transparent transmission/refraction remains available through the
+  renderer's existing material settings and enabled pass features.
+- Specialized sky/probe visualization shader migration, additional advanced graph
+  outputs, backend error-to-node mapping, reusable functions, automatic numeric
+  narrowing migration, arbitrary ground/background controls, and exhaustive asset
+  migration remain separate work. No compatibility wrappers or alternate runtime
+  are used to conceal these boundaries.
+- Validation here uses Windows/MSVC Debug and Vulkan. D3D12, other platforms,
+  exhaustive shadow/refraction combinations, and full manual Editor acceptance
+  remain unverified.
+
+## Dispatch validation
+
+Final Windows/MSVC Debug builds passed for `Editor`, `EditorFrameworkTest`,
+`EditorEngineProcessFrameworkTest`, and `GraphicsFoundationTest`.
+
+| Check | Result |
+| --- | --- |
+| Vulkan `MaterialShaders` | All 9 cases passed, 34.25 seconds |
+| Vulkan `EditorViews` | All 52 cases passed, 52.27 seconds |
+| Native Windows Qt `MaterialAuthoring` | Passed, 118.90 seconds |
+| Native Windows Qt `EditorDocuments` | All 22 cases passed, 4.17 seconds |
+| Native Windows Qt `NodeLayout` | All 3 cases passed, 2.35 seconds |
+| `ShaderCompiler` | Passed, 0.65 seconds |
+| Migrated built-in shaders | Five materials compiled for forward, depth, picking, and wireframe Vulkan variants (20 selected combinations) |
+| Source formatting and repository policy | Passed |
+
+The first native clipboard run encountered Windows clipboard access failures and
+an invalid test iterator dereference. The test now returns after the failed
+assertion. Qt's offscreen document checks passed, but offscreen material/window
+and layout checks failed because that platform cannot supply the native window,
+selection, and Vulkan swap-chain behavior. Final native Windows runs passed all
+three groups; no application was closed to obtain clipboard access. The failed
+offscreen runs are not counted as successful GUI acceptance.
+
+Detailed local evidence is in `Workspace/authored-delivery-build.log`,
+`authored-delivery-gpu.log`, `authored-editorviews-final.log`,
+`authored-templates-windows-final.log`, `authored-windows-documents-final.log`,
+`authored-native-nodelayout-final.log`, and `authored-delivery-compiler.log`.
+These generated logs and scratch assets are not committed.
