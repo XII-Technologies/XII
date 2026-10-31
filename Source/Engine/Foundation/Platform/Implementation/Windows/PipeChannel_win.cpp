@@ -143,19 +143,14 @@ void xiiPipeChannel_win::InternalDisconnect()
     FlushPendingOperations();
   }
 
-  bool bWasConnected = false;
   {
     XII_LOCK(m_OutputQueueMutex);
     m_OutputQueue.Clear();
-    bWasConnected = IsConnected();
   }
 
-  if (bWasConnected)
-  {
-    SetConnectionState(ConnectionState::Disconnected);
-    // Raise in case another thread is waiting for new messages (as we would sleep forever otherwise).
-    m_IncomingMessages.RaiseSignal();
-  }
+  // A canceled connection attempt must leave Connecting as well as Connected.
+  SetConnectionState(ConnectionState::Disconnected);
+  m_IncomingMessages.RaiseSignal();
 }
 
 void xiiPipeChannel_win::InternalSend()
@@ -318,13 +313,26 @@ void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfe
   XII_IGNORE_UNUSED(uiError);
 
   XII_ASSERT_DEBUG(m_ThreadId == xiiThreadUtils::GetCurrentThreadID(), "Function must be called from worker thread!");
+  if (m_hPipeHandle == INVALID_HANDLE_VALUE)
+  {
+    // InternalDisconnect closes the handle before draining canceled IO completions.
+    // A canceled connect is not a request to connect the already closed pipe again.
+    if (pContext == &m_InputState.Context)
+      m_InputState.IsPending = false;
+    else
+      m_OutputState.IsPending = false;
+    return;
+  }
   bool bRes = true;
   if (pContext == &m_InputState.Context)
   {
     if (!IsConnected())
     {
       if (!ProcessConnection())
+      {
+        InternalDisconnect();
         return;
+      }
 
       bool bHasOutput = false;
       {

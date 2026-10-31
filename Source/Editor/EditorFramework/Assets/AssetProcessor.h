@@ -153,7 +153,9 @@ public:
 
   /// GUI-thread entry points. Save modified inputs before requesting; no widgets or documents
   /// are accessed by the process thread. Duplicate requests coalesce until their result arrives.
-  xiiStatus                 QueueTransformAssets(xiiArrayPtr<const xiiUuid> assets, xiiBitflags<xiiTransformFlags> flags = xiiTransformFlags::TriggeredManually);
+  xiiStatus QueueTransformAssets(xiiArrayPtr<const xiiUuid> assets, xiiBitflags<xiiTransformFlags> flags = xiiTransformFlags::TriggeredManually);
+  /// Resolves all GUID/path references before queuing work. Invalid or ambiguous references fail the request.
+  xiiStatus                 QueueTransformAssetReferences(xiiArrayPtr<const xiiString> references, xiiBitflags<xiiTransformFlags> flags = xiiTransformFlags::TriggeredManually);
   xiiStatus                 QueueTransformAllAssets();
   xiiAssetTransformProgress GetTransformProgress() const;
   /// Stops dispatching jobs. Force cancels running processes; wait joins the processor thread

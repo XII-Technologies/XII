@@ -7,6 +7,8 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 
 #if XII_ENABLED(XII_SUPPORTS_LONG_PATHS)
 #  define LongPath                                                                                                                                   \
@@ -15,6 +17,76 @@
 #else
 #  define LongPath "AShortPathBecaueThisPlatformDoesntSupportLongOnes"
 #endif
+
+XII_CREATE_SIMPLE_TEST(IO, AssetIdentifiers)
+{
+  const xiiStringBuilder first(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/AssetIdentifiers/First");
+  const xiiStringBuilder second(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/AssetIdentifiers/Second");
+  const xiiString        previousTable               = xiiDataDirectory::FolderType::s_sRedirectionFile;
+  const xiiString        previousPrefix              = xiiDataDirectory::FolderType::s_sRedirectionPrefix;
+  xiiDataDirectory::FolderType::s_sRedirectionFile   = "Lookup.xiiAidlt";
+  xiiDataDirectory::FolderType::s_sRedirectionPrefix = "AssetCache/";
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("AssetIdentifiers"); xiiDataDirectory::FolderType::s_sRedirectionFile = previousTable; xiiDataDirectory::FolderType::s_sRedirectionPrefix = previousPrefix;);
+  auto write = [](xiiStringView path, xiiStringView text) {
+    xiiOSFile file;
+    XII_TEST_RESULT(file.Open(path, xiiFileOpenMode::Write));
+    XII_TEST_RESULT(file.Write(text.GetStartPointer(), text.GetElementCount()));
+  };
+  const char*      firstGuid  = "{ 12345678-abcd-4321-1234-123456789abc }";
+  const char*      secondGuid = "{ abcdef00-1234-abcd-ABCD-0123456789ab }";
+  xiiStringBuilder canonicalFirst, canonicalSecond;
+  xiiConversionUtils::ToString(xiiConversionUtils::ConvertStringToUuid(firstGuid), canonicalFirst);
+  xiiConversionUtils::ToString(xiiConversionUtils::ConvertStringToUuid(secondGuid), canonicalSecond);
+  // Exercise CRLF and a final record without a trailing newline.
+  write(xiiStringBuilder(first, "/Lookup.xiiAidlt"), xiiStringBuilder(firstGuid, ";Common/Asset.bin\r\nCommon/Asset.xiiAsset;", firstGuid));
+  write(xiiStringBuilder(first, "/AssetCache/Common/Asset.bin"), "compiled");
+  write(xiiStringBuilder(first, "/Common/Asset.xiiAsset"), "authored");
+  XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(first, "AssetIdentifiers", "AssetFirst"));
+  xiiStringBuilder resolved;
+  const xiiString  forms[] = {firstGuid, "Common/Asset.xiiAsset", "Common/./Other/../Asset.xiiAsset", "First/Common/Asset.xiiAsset", ":AssetFirst/Common/Asset.xiiAsset", xiiStringBuilder(first, "/Common/Asset.xiiAsset")};
+  for (const auto& reference : forms)
+  {
+    XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier(reference, resolved));
+    XII_TEST_STRING(resolved, canonicalFirst);
+  }
+  resolved = "Common/Asset.xiiAsset";
+  XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier(resolved, resolved));
+  XII_TEST_STRING(resolved, canonicalFirst);
+  XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier("Native/GeneratedResource", resolved));
+  XII_TEST_STRING(resolved, "Native/GeneratedResource");
+  XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier("AssetCache/Common/Asset.bin", resolved));
+  XII_TEST_STRING(resolved, "AssetCache/Common/Asset.bin");
+  {
+    xiiFileReader source, resource;
+    XII_TEST_RESULT(source.Open(":AssetFirst/Common/Asset.xiiAsset"));
+    XII_TEST_RESULT(resource.Open(canonicalFirst));
+    char sourceBytes[8] = {}, resourceBytes[8] = {};
+    XII_TEST_INT(source.ReadBytes(sourceBytes, 8), 8);
+    XII_TEST_INT(resource.ReadBytes(resourceBytes, 8), 8);
+    XII_TEST_BOOL(xiiMemoryUtils::IsEqual(sourceBytes, "authored", 8));
+    XII_TEST_BOOL(xiiMemoryUtils::IsEqual(resourceBytes, "compiled", 8));
+  }
+  write(xiiStringBuilder(second, "/Lookup.xiiAidlt"), xiiStringBuilder(secondGuid, ";Other.bin\nCommon/Asset.xiiAsset;", secondGuid, "\n"));
+  XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(second, "AssetIdentifiers", "AssetSecond"));
+  const auto ambiguous = xiiFileSystem::ResolveAssetIdentifier("Common/Asset.xiiAsset", resolved);
+  XII_TEST_BOOL(ambiguous.Failed());
+  XII_TEST_BOOL(ambiguous.GetMessageString().FindSubString("Ambiguous") != nullptr);
+  XII_TEST_BOOL(resolved.IsEmpty());
+  XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier(":AssetSecond/Common/Asset.xiiAsset", resolved));
+  XII_TEST_STRING(resolved, canonicalSecond);
+  XII_TEST_BOOL(xiiFileSystem::ResolveAssetIdentifier(":AssetFirst/../AssetSecond/Common/Asset.xiiAsset", resolved).Failed());
+  XII_TEST_BOOL(resolved.IsEmpty());
+  XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier(xiiStringBuilder(first, "/Common/Asset.xiiAsset"), resolved));
+  XII_TEST_STRING(resolved, canonicalFirst);
+  write(xiiStringBuilder(first, "/Lookup.xiiAidlt"), xiiStringBuilder(firstGuid, ";Relocated.bin\nMoved/Asset.xiiAsset;", firstGuid));
+  xiiFileSystem::ReloadAllExternalDataDirectoryConfigs();
+  XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier(":AssetFirst/Moved/Asset.xiiAsset", resolved));
+  XII_TEST_STRING(resolved, canonicalFirst);
+  XII_TEST_STATUS(xiiFileSystem::ResolveAssetIdentifier(":AssetFirst/Common/Asset.xiiAsset", resolved));
+  XII_TEST_STRING(resolved, ":AssetFirst/Common/Asset.xiiAsset");
+  XII_TEST_BOOL(xiiFileSystem::ResolveAssetRedirection(canonicalFirst, resolved));
+  XII_TEST_STRING(resolved, "AssetCache/Relocated.bin");
+}
 
 XII_CREATE_SIMPLE_TEST(IO, FileSystem)
 {

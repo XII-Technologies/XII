@@ -16,6 +16,7 @@ xiiResult xiiAssetTable::WriteAssetTable()
   xiiStringBuilder sTemp;
   xiiString        sResourcePath;
 
+  m_GuidToManagerResource.Clear();
   {
     for (auto& man : xiiAssetDocumentManager::GetAllDocumentManagers())
     {
@@ -37,6 +38,9 @@ xiiResult xiiAssetTable::WriteAssetTable()
     for (auto it = allSubAssetsLocked->GetIterator(); it.IsValid(); ++it)
     {
       sTemp = it.Value().m_pAssetInfo->m_Path.GetAbsolutePath();
+
+      if (it.Value().m_ExistanceState == xiiAssetExistanceState::FileRemoved)
+        continue;
 
       // ignore all assets that are not located in this data directory
       if (!sTemp.IsPathBelowFolder(m_sDataDir))
@@ -69,6 +73,16 @@ xiiResult xiiAssetTable::WriteAssetTable()
   for (auto it = m_GuidToPath.GetIterator(); it.IsValid(); ++it)
   {
     Write(it.Key(), it.Value(), file);
+    // Source-path entries point to the persistent identity, not the compiled output.
+    // Runtime resource APIs consume these entries; ordinary file reads still open source data.
+    const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(it.Key());
+    if (asset && asset->m_ExistanceState != xiiAssetExistanceState::FileRemoved)
+    {
+      xiiStringBuilder source(asset->m_pAssetInfo->m_Path.GetDataDirRelativePath());
+      if (!asset->m_bMainAsset)
+        source.Append("|", asset->GetName());
+      Write(source, it.Key(), file);
+    }
   }
 
   if (file.Close().Failed())
@@ -101,6 +115,11 @@ void xiiAssetTable::Update(const xiiSubAsset& subAsset)
     xiiConversionUtils::ToString(subAsset.m_Data.m_Guid, sTemp);
 
     m_GuidToPath[sTemp] = sEntry;
+  }
+  else
+  {
+    xiiConversionUtils::ToString(subAsset.m_Data.m_Guid, sTemp);
+    m_GuidToPath.Remove(sTemp);
   }
   m_bDirty = true;
 }
@@ -141,6 +160,8 @@ xiiAssetTableWriter::~xiiAssetTableWriter()
 
 void xiiAssetTableWriter::MainThreadTick()
 {
+  auto assets = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
+  XII_LOCK(m_AssetTableMutex);
   // We must flush any pending table changes before triggering resource reloads.
   // If no resource reload is scheduled, we can just wait for the timer to run out to flush the changes.
   //
@@ -149,7 +170,9 @@ void xiiAssetTableWriter::MainThreadTick()
     m_bTablesDirty = false;
     if (WriteAssetTables(xiiAssetCurator::GetSingleton()->GetActiveAssetProfile(), false).Failed())
     {
-      xiiLog::Error("Failed to write asset tables");
+      m_bTablesDirty = true;
+      xiiLog::Error("Failed to write asset tables; resource reload is deferred until the tables are published.");
+      return;
     }
   }
 
@@ -204,6 +227,15 @@ void xiiAssetTableWriter::MainThreadTick()
   }
 }
 
+void xiiAssetTableWriter::ClearAssetTables()
+{
+  auto assets = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
+  XII_LOCK(m_AssetTableMutex);
+  for (auto& tables : m_DataDirToAssetTables)
+    tables.Clear();
+  m_bTablesDirty = true;
+}
+
 void xiiAssetTableWriter::NeedsReloadResource(const xiiUuid& assetGuid)
 {
   xiiAssetCurator::xiiLockedSubAsset asset = xiiAssetCurator::GetSingleton()->GetSubAsset(assetGuid);
@@ -253,7 +285,7 @@ xiiResult xiiAssetTableWriter::WriteAssetTables(const xiiPlatformProfile* pAsset
     }
   }
 
-  if (bAnyChanged && pAssetProfile == xiiAssetCurator::GetSingleton()->GetActiveAssetProfile())
+  if (res.Succeeded() && bAnyChanged && pAssetProfile == xiiAssetCurator::GetSingleton()->GetActiveAssetProfile())
   {
     xiiSimpleConfigMsgToEngine msg;
     msg.m_sWhatToDo = "ReloadAssetLUT";
@@ -270,13 +302,20 @@ void xiiAssetTableWriter::AssetCuratorEvents(const xiiAssetCuratorEvent& e)
   XII_LOCK(m_AssetTableMutex);
 
   const xiiPlatformProfile* pProfile = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile();
+  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetAdded || e.m_Type == xiiAssetCuratorEvent::Type::AssetMoved || e.m_Type == xiiAssetCuratorEvent::Type::AssetRemoved || e.m_Type == xiiAssetCuratorEvent::Type::AssetUpdated)
+  {
+    const auto dataDir = FindDataDir(*e.m_pInfo);
+    for (xiiUInt32 i = 0; i < m_DataDirToAssetTables.GetCount(); ++i)
+    {
+      if (i != dataDir && e.m_Type != xiiAssetCuratorEvent::Type::AssetMoved)
+        continue;
+      for (auto table : m_DataDirToAssetTables[i])
+        table.Value()->m_bReset = true;
+    }
+    m_bTablesDirty = true;
+  }
   switch (e.m_Type)
   {
-    // #TODO Are asset table entries static or do they change with the asset?
-    /*case xiiAssetCuratorEvent::Type::AssetUpdated:
-      if (e.m_pInfo->m_pAssetInfo->m_TransformState == xiiAssetInfo::TransformState::Unknown)
-        return;
-      [[fallthrough]];*/
     case xiiAssetCuratorEvent::Type::AssetAdded:
     case xiiAssetCuratorEvent::Type::AssetMoved:
     {
@@ -285,6 +324,13 @@ void xiiAssetTableWriter::AssetCuratorEvents(const xiiAssetCuratorEvent& e)
       {
         pTable->Update(*e.m_pInfo);
         m_bTablesDirty = true;
+        if (e.m_Type == xiiAssetCuratorEvent::Type::AssetMoved)
+        {
+          xiiStringBuilder guid;
+          xiiConversionUtils::ToString(e.m_AssetGuid, guid);
+          m_ReloadResources.PushBack({uiDataDirIndex, guid, e.m_pInfo->m_Data.m_sSubAssetsDocumentTypeName.GetString()});
+          m_bNeedToReloadResources = true;
+        }
       }
     }
     break;

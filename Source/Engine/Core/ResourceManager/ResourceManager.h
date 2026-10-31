@@ -470,6 +470,7 @@ private:
   template <typename ResourceType>
   static ResourceType* GetResource(xiiStringView sResourceID, bool bIsReloadable);
   static xiiResource*  GetResource(const xiiRTTI* pRtti, xiiStringView sResourceID, bool bIsReloadable);
+  static xiiResult     ResolveResourceID(xiiStringView sResourceID, xiiStringBuilder& out_sCanonicalID);
   static void          RunWorkerTask();
   static void          UpdateLoadingDeadlines();
   static void          ReverseBubbleSortStep(xiiDeque<LoadingInfo>& data);

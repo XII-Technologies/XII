@@ -80,9 +80,10 @@ bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt6
   if (sPath.IsEmpty())
     return true;
 
-  if (xiiConversionUtils::IsStringUuid(sPath))
+  xiiUuid    guid;
+  const auto resolution = ResolveAsset(sPath, guid);
+  if (resolution.Succeeded())
   {
-    const xiiUuid                guid        = xiiConversionUtils::ConvertStringToUuid(sPath);
     xiiUInt64                    assetHash   = 0;
     xiiUInt64                    thumbHash   = 0;
     xiiUInt64                    packageHash = 0;
@@ -103,6 +104,17 @@ bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt6
     }
     return true;
   }
+
+  const xiiDocumentTypeDescriptor* type = nullptr;
+  if (xiiConversionUtils::IsStringUuid(sPath) || sPath.FindSubString("|") != nullptr ||
+      (xiiDocumentManager::FindDocumentTypeFromPath(sPath, false, type).Succeeded() && type->m_pManager->GetDynamicRTTI()->IsDerivedFrom<xiiAssetDocumentManager>()))
+  {
+    xiiLog::Error("Failed to hash dependency asset '{}': {}", sPath, resolution.GetMessageString());
+    return false;
+  }
+  xiiDataDirPath resolved;
+  if (xiiFileSystemModel::GetSingleton()->ResolveFilePath(sPath, resolved).Succeeded())
+    sPath = resolved.GetAbsolutePath();
 
   if (!xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(sPath))
   {
@@ -242,6 +254,14 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
     newExistanceState = xiiAssetExistanceState::FileAdded;
   }
 
+  xiiSet<xiiUuid> dependents;
+  if (pCurrentAssetInfo != nullptr && pCurrentAssetInfo->m_Path != absFilePath.GetAbsolutePath())
+  {
+    FindAllUses(newGuid, dependents, false);
+    for (const auto id : dependents)
+      if (auto* consumer = GetAssetInfo(id))
+        UntrackDependencies(consumer);
+  }
   if (pCurrentAssetInfo)
   {
     UntrackDependencies(pCurrentAssetInfo);
@@ -270,6 +290,12 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
   UpdateUnresolvedTrackedFiles(m_InversePackageDeps, m_UnresolvedPackageDeps);
   CheckForCircularDependencies(pCurrentAssetInfo).IgnoreResult();
 
+  for (const auto id : dependents)
+    if (auto* consumer = GetAssetInfo(id))
+    {
+      TrackDependencies(consumer);
+      InvalidateAssetTransformState(id);
+    }
   InvalidateAssetTransformState(newGuid);
   if (pFiles->LinkDocument(absFilePath, pCurrentAssetInfo->m_Info->m_DocumentID).Failed())
   {
@@ -341,66 +367,78 @@ xiiResult xiiAssetCurator::CheckForCircularDependencies(xiiAssetInfo* pAssetInfo
 
 void xiiAssetCurator::UpdateTrackedFiles(const xiiUuid& assetGuid, const xiiSet<xiiString>& files, xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& inverseTracker, xiiSet<std::tuple<xiiUuid, xiiUuid>>& unresolved, bool bAdd)
 {
-  for (const auto& dep : files)
-  {
-    xiiString sPath = dep;
-
-    if (sPath.IsEmpty())
-      continue;
-
-    if (xiiConversionUtils::IsStringUuid(sPath))
-    {
-      const xiiUuid       guid  = xiiConversionUtils::ConvertStringToUuid(sPath);
-      const xiiAssetInfo* pInfo = GetAssetInfo(guid);
-
-      if (!bAdd)
-      {
-        const bool wasUnresolved = unresolved.Remove(std::tuple<xiiUuid, xiiUuid>(assetGuid, guid));
-        if (pInfo == nullptr)
-        {
-          // The referenced asset/sub-asset may have disappeared since tracking. Untracking
-          // removes this owner's entire dependency set, so discard any remaining aliases.
-          if (!wasUnresolved)
-          {
-            for (auto it = inverseTracker.GetIterator(); it.IsValid();)
-            {
-              while (it.Value().RemoveAndCopy(assetGuid))
-              {
-              }
-              if (it.Value().IsEmpty())
-                it = inverseTracker.Remove(it);
-              else
-                ++it;
-            }
-          }
-          continue;
-        }
-      }
-
-      if (pInfo == nullptr && bAdd)
-      {
-        unresolved.Insert(std::tuple<xiiUuid, xiiUuid>(assetGuid, guid));
-        continue;
-      }
-
-      sPath = pInfo->m_Path.GetAbsolutePath();
-    }
-    else
-    {
-      if (!xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(sPath))
-      {
-        continue;
-      }
-    }
+  auto track = [&](xiiStringView path) {
     if (bAdd)
     {
-      inverseTracker.FindOrAdd(sPath).Value().PushBack(assetGuid);
+      auto& owners = inverseTracker.FindOrAdd(path).Value();
+      if (!owners.Contains(assetGuid))
+        owners.PushBack(assetGuid);
     }
-    else if (auto it = inverseTracker.Find(sPath); it.IsValid())
+    else if (auto it = inverseTracker.Find(path); it.IsValid())
     {
       it.Value().RemoveAndCopy(assetGuid);
       if (it.Value().IsEmpty())
         inverseTracker.Remove(it);
+    }
+  };
+  for (const auto& dep : files)
+  {
+    if (dep.IsEmpty())
+      continue;
+    if (xiiConversionUtils::IsStringUuid(dep))
+    {
+      const auto  guid = xiiConversionUtils::ConvertStringToUuid(dep);
+      const auto* info = GetAssetInfo(guid);
+      if (!bAdd)
+        unresolved.Remove(std::tuple<xiiUuid, xiiUuid>(assetGuid, guid));
+      if (info == nullptr)
+      {
+        if (bAdd)
+          unresolved.Insert(std::tuple<xiiUuid, xiiUuid>(assetGuid, guid));
+        continue;
+      }
+      track(info->m_Path.GetAbsolutePath());
+      continue;
+    }
+    // Index every possible physical location of a relative reference, including missing files.
+    // Adding a second match must invalidate consumers just as adding the first match does.
+    xiiStringBuilder path(dep);
+    if (const char* separator = dep.FindSubString("|"))
+      path.SetSubString_FromTo(dep.GetData(), separator);
+    path.MakeCleanPath();
+    if (path.IsAbsolutePath())
+    {
+      track(path);
+      continue;
+    }
+    const bool rooted = path.IsRootedPath();
+    const auto root   = rooted ? path.GetRootedPathRootName() : xiiStringView();
+    const auto roots  = xiiFileSystemModel::GetSingleton()->GetDataDirectoryRoots();
+    for (xiiUInt32 i = 0; i < roots.GetCount(); ++i)
+    {
+      if (roots[i].IsEmpty() || (rooted && !root.IsEqual_NoCase(m_FileSystemConfig.m_DataDirs[i].m_sRootName)))
+        continue;
+      xiiStringBuilder candidate(roots[i]);
+      if (rooted)
+      {
+        xiiStringView relative(root.GetEndPointer(), path.GetView().GetEndPointer());
+        relative.Trim("/");
+        candidate.AppendPath(relative);
+      }
+      else
+        candidate.AppendPath(path);
+      candidate.MakeCleanPath();
+      if (candidate.IsPathBelowFolder(roots[i]))
+        track(candidate);
+      if (!rooted)
+      {
+        candidate = roots[i];
+        candidate.PathParentDirectory();
+        candidate.AppendPath(path);
+        candidate.MakeCleanPath();
+        if (candidate.IsPathBelowFolder(roots[i]))
+          track(candidate);
+      }
     }
   }
 }
@@ -416,7 +454,9 @@ void xiiAssetCurator::UpdateUnresolvedTrackedFiles(xiiMap<xiiString, xiiHybridAr
     {
       xiiString sPath     = pInfo->m_Path.GetAbsolutePath();
       auto      itTracker = inverseTracker.FindOrAdd(sPath);
-      itTracker.Value().PushBack(assetGuid);
+      if (!itTracker.Value().Contains(assetGuid))
+        itTracker.Value().PushBack(assetGuid);
+      InvalidateAssetTransformState(assetGuid);
       it = unresolved.Remove(it);
     }
     else

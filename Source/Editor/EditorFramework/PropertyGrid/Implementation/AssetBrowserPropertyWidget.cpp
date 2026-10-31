@@ -53,25 +53,11 @@ xiiQtAssetPropertyWidget::xiiQtAssetPropertyWidget() :
 
 bool xiiQtAssetPropertyWidget::IsValidAssetType(const char* szAssetReference) const
 {
-  xiiAssetCurator::xiiLockedSubAsset pAsset;
-
-  if (!xiiConversionUtils::IsStringUuid(szAssetReference))
+  const auto pAsset = xiiAssetCurator::GetSingleton()->FindSubAsset(szAssetReference);
+  if (!pAsset && !xiiConversionUtils::IsStringUuid(szAssetReference))
   {
-    pAsset = xiiAssetCurator::GetSingleton()->FindSubAsset(szAssetReference);
-
-    if (pAsset == nullptr)
-    {
-      const xiiAssetBrowserAttribute* pAssetAttribute = m_pProp->GetAttributeByType<xiiAssetBrowserAttribute>();
-
-      // if this file type is on the asset whitelist for this asset type, let it through
-      return xiiAssetFileExtensionWhitelist::IsFileOnAssetWhitelist(pAssetAttribute->GetTypeFilter(), szAssetReference);
-    }
-  }
-  else
-  {
-    const xiiUuid AssetGuid = xiiConversionUtils::ConvertStringToUuid(szAssetReference);
-
-    pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(AssetGuid);
+    const auto* attribute = m_pProp->GetAttributeByType<xiiAssetBrowserAttribute>();
+    return xiiAssetFileExtensionWhitelist::IsFileOnAssetWhitelist(attribute->GetTypeFilter(), szAssetReference);
   }
 
   // invalid asset in general
@@ -153,7 +139,9 @@ void xiiQtAssetPropertyWidget::InternalSetValue(const xiiVariant& value)
     m_AssetGuid            = xiiUuid();
     xiiStringBuilder sThumbnailPath;
 
-    if (xiiConversionUtils::IsStringUuid(sText))
+    xiiUuid    resolvedGuid;
+    const auto resolution = xiiAssetCurator::GetSingleton()->ResolveAsset(sText, resolvedGuid);
+    if (resolution.Succeeded())
     {
       if (!IsValidAssetType(sText))
       {
@@ -170,7 +158,7 @@ void xiiQtAssetPropertyWidget::InternalSetValue(const xiiVariant& value)
         return;
       }
 
-      xiiUuid newAssetGuid = xiiConversionUtils::ConvertStringToUuid(sText);
+      const xiiUuid newAssetGuid = resolvedGuid;
 
       // All hashed dependency categories must remain acyclic, including package-only references.
       const xiiAssetBrowserAttribute* pAssetAttribute = m_pProp->GetAttributeByType<xiiAssetBrowserAttribute>();
@@ -218,7 +206,7 @@ void xiiQtAssetPropertyWidget::InternalSetValue(const xiiVariant& value)
       if (m_AssetGuid.IsValid())
         m_pWidget->setToolTip(QStringLiteral("Valid asset selected.\n\nCTRL+LMB or MMB to open the asset document.\nSHIFT+LMB to select a different asset."));
       else
-        m_pWidget->setToolTip(QStringLiteral("The selected file is not a valid asset."));
+        m_pWidget->setToolTip(xiiMakeQString(resolution.GetMessageString()));
     }
 
     m_pWidget->setPlaceholderText(QString());

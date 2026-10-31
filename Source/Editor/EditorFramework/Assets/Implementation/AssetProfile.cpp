@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetTableWriter.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -91,6 +92,8 @@ xiiResult xiiAssetCurator::DeleteAssetProfile(xiiPlatformProfile* pProfile)
       if (i < m_uiActiveAssetProfile)
         --m_uiActiveAssetProfile;
 
+      if (m_pAssetTableWriter)
+        m_pAssetTableWriter->ClearAssetTables();
       XII_DEFAULT_DELETE(pProfile);
       m_AssetProfiles.RemoveAtAndCopy(i);
 
@@ -267,6 +270,9 @@ xiiResult xiiAssetCurator::ReloadAssetProfiles()
 
 void xiiAssetCurator::ClearAssetProfiles()
 {
+  if (m_pAssetTableWriter)
+    m_pAssetTableWriter->ClearAssetTables();
+
   for (auto pCfg : m_AssetProfiles)
   {
     pCfg->GetDynamicRTTI()->GetAllocator()->Deallocate(pCfg);

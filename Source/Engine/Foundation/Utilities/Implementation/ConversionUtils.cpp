@@ -894,6 +894,14 @@ namespace xiiConversionUtils
       return false;
     }
 
+    for (xiiUInt32 i = 2; i < 38; ++i)
+    {
+      if (i == 10 || i == 15 || i == 20 || i == 25)
+        continue;
+      const char c = szText[i];
+      if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))
+        return false;
+    }
     return true;
   }
 

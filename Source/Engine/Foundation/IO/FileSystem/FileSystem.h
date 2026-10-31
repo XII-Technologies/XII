@@ -8,6 +8,7 @@
 #include <Foundation/IO/FileSystem/Implementation/DataDirType.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Types/Status.h>
 
 /// The xiiFileSystem provides high-level functionality to manage files in a virtual file system.
 ///
@@ -245,6 +246,12 @@ public:
 
   /// Returns true, if any data directory knows how to redirect the given path. Otherwise the original string is returned in out_sRedirection.
   static bool ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection);
+
+  /// Resolves authored asset paths through the mounted asset tables to their persistent GUID.
+  /// Accepts GUIDs, absolute paths, :Root/paths, data-directory-relative and parent-relative paths.
+  /// GUID spelling is canonicalized. Unregistered resource IDs are preserved verbatim; ordinary
+  /// file reads continue to access source files. Ambiguity fails and clears the output.
+  static xiiStatus ResolveAssetIdentifier(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sIdentifier);
 
   /// Migrates a file from an old location to a new one, and returns the path that should be used to open it (either the old or the new path).
   ///

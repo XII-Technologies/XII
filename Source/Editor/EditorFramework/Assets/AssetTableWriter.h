@@ -15,9 +15,8 @@ struct xiiAssetInfo;
 
 /// Asset table class. Persistent cache for an asset table.
 ///
-/// The following assumptions need to be true for this cache to work:
-/// 1. xiiAssetDocumentManager::AddEntriesToAssetTable does never change over time
-/// 2. xiiAssetDocumentManager::GetAssetTableEntry never changes over the lifetime of an asset.
+/// GUIDs map to profile-specific resource outputs; authored paths map to those GUIDs.
+/// Source-path entries are rebuilt from the curator, so renames cannot leave stale aliases.
 struct xiiAssetTable
 {
   struct ManagerResource
@@ -56,6 +55,9 @@ public:
 
   /// Writes the asset table for each data dir for the given asset profile.
   xiiResult WriteAssetTables(const xiiPlatformProfile* pAssetProfile, bool bForce);
+
+  /// Discards tables borrowing profile pointers before profiles are replaced or destroyed.
+  void ClearAssetTables();
 
 private:
   void           AssetCuratorEvents(const xiiAssetCuratorEvent& e);

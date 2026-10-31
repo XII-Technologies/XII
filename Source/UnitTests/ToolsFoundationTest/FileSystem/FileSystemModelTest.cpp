@@ -11,6 +11,7 @@
 #  include <Foundation/IO/FileSystem/FileSystem.h>
 #  include <Foundation/IO/FileSystem/FileWriter.h>
 #  include <Foundation/Threading/ThreadUtils.h>
+#  include <Foundation/Types/ScopeExit.h>
 #  include <Foundation/Utilities/Progress.h>
 #  include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
@@ -157,6 +158,48 @@ XII_CREATE_SIMPLE_TEST(FileSystem, DataDirPath)
     xiiStringView sAbs = path.GetAbsolutePath();
     XII_TEST_STRING(sAbs, sFilePathView);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(FileSystem, ReferenceResolution)
+{
+  auto*                          model = xiiFileSystemModel::GetSingleton();
+  const xiiStringBuilder         first(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/Resolution/First");
+  const xiiStringBuilder         second(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/Resolution/Second");
+  xiiApplicationFileSystemConfig config;
+  for (const auto& path : {first, second})
+  {
+    auto& dataDir                 = config.m_DataDirs.ExpandAndGetRef();
+    dataDir.m_sDataDirSpecialPath = path;
+    dataDir.m_sRootName           = path == first ? "First" : "Second";
+  }
+  XII_TEST_RESULT(xiiFileSystem::AddDataDirectory("", "ReferenceResolution", ":", xiiDataDirUsage::AllowWrites));
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("ReferenceResolution"));
+  const xiiStringBuilder firstFile(first, "/Common/Asset.xiiAsset");
+  const xiiStringBuilder secondFile(second, "/Common/Asset.xiiAsset");
+  XII_TEST_RESULT(xiitCreateFile(firstFile));
+  XII_TEST_RESULT(xiitCreateFile(secondFile));
+  model->Initialize(config, {}, {});
+  XII_SCOPE_EXIT(model->Deinitialize());
+  model->NotifyOfChange(firstFile);
+  xiiDataDirPath resolved;
+  xiiFileStatus  stat;
+  for (const auto reference : {"Common/Asset.xiiAsset", "Common/./Other/../Asset.xiiAsset", "First/Common/Asset.xiiAsset", ":First/Common/Asset.xiiAsset"})
+  {
+    XII_TEST_STATUS(model->ResolveFilePath(reference, resolved, &stat));
+    XII_TEST_STRING(resolved.GetAbsolutePath(), firstFile);
+  }
+  model->NotifyOfChange(secondFile);
+  const auto ambiguous = model->ResolveFilePath("Common/Asset.xiiAsset", resolved, &stat);
+  XII_TEST_BOOL(ambiguous.Failed());
+  XII_TEST_BOOL(ambiguous.GetMessageString().FindSubString("Ambiguous") != nullptr);
+  XII_TEST_BOOL(!resolved.IsValid());
+  XII_TEST_BOOL(!stat.m_DocumentID.IsValid());
+  XII_TEST_STATUS(model->ResolveFilePath(":Second/Common/Asset.xiiAsset", resolved));
+  XII_TEST_STRING(resolved.GetAbsolutePath(), secondFile);
+  XII_TEST_STATUS(model->ResolveFilePath(firstFile, resolved));
+  XII_TEST_STRING(resolved.GetAbsolutePath(), firstFile);
+  XII_TEST_BOOL(model->ResolveFilePath(":First/../Second/Common/Asset.xiiAsset", resolved).Failed());
+  XII_TEST_BOOL(model->ResolveFilePath("Missing.xiiAsset", resolved).Failed());
 }
 
 void FileSystemModelTest()

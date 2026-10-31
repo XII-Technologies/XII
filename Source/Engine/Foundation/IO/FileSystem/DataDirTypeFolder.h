@@ -30,6 +30,8 @@ namespace xiiDataDirectory
     /// the file access will be replaced by 'value' (plus s_sRedirectionPrefix) 'key' may be anything (e.g. a GUID string), 'value' should
     /// be a valid relative path into the SAME data directory. The redirection file can be used to implement an asset lookup, where assets
     /// are identified by GUIDs and need to be mapped to the actual asset file.
+    /// A path key with a GUID value records authored asset identity. It is consumed by
+    /// ResolveAssetIdentifier only; it never redirects ordinary source-file reads.
     static xiiString s_sRedirectionFile;
 
     /// If a redirection file is used AND the redirection lookup was successful, s_sRedirectionPrefix is prepended to the redirected file
@@ -47,6 +49,7 @@ namespace xiiDataDirectory
     virtual xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
 
     virtual bool                    ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) override;
+    virtual bool                    ResolveAssetIdentifier(xiiStringView sPath, xiiStringBuilder& out_sGuid) override;
     virtual xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) override;
     virtual void                    RemoveDataDirectory() override;
     virtual void                    DeleteFile(xiiStringView sFile) override;
