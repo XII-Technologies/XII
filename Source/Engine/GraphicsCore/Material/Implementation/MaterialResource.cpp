@@ -1686,6 +1686,10 @@ void xiiMaterialResource::EnsureRuntimeData()
   if (schemaDescription.m_sName.IsEmpty())
     schemaDescription.m_sName = "Runtime Material";
   schemaDescription.m_hShader      = m_ResolvedValues.m_hShader;
+  for (const auto& permutation : m_ResolvedValues.m_PermutationVariables)
+  {
+    schemaDescription.m_Permutations.Insert(permutation.Key().GetString(), permutation.Value().GetString());
+  }
   schemaDescription.m_Domain       = m_Description.m_Domain;
   schemaDescription.m_ShadingModel = m_Description.m_ShadingModel;
 

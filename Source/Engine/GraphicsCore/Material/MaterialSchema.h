@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/RefCounted.h>
 #include <Foundation/Types/Variant.h>
@@ -49,6 +50,7 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialSchemaDescription
 {
   xiiString                                       m_sName;
   xiiShaderResourceHandle                         m_hShader;
+  xiiMap<xiiString, xiiString>                    m_Permutations;
   xiiEnum<xiiMaterialDomain>                      m_Domain       = xiiMaterialDomain::Surface;
   xiiEnum<xiiMaterialShadingModel>                m_ShadingModel = xiiMaterialShadingModel::Lit;
   xiiUInt32                                       m_uiVersion    = 1U;
@@ -75,6 +77,7 @@ public:
 
   [[nodiscard]] const xiiString&                 GetName() const { return m_sName; }
   [[nodiscard]] const xiiShaderResourceHandle&   GetShader() const { return m_hShader; }
+  [[nodiscard]] const xiiHashTable<xiiHashedString, xiiHashedString>& GetPermutations() const { return m_Permutations; }
   [[nodiscard]] xiiEnum<xiiMaterialDomain>       GetDomain() const { return m_Domain; }
   [[nodiscard]] xiiEnum<xiiMaterialShadingModel> GetShadingModel() const { return m_ShadingModel; }
   [[nodiscard]] xiiUInt32                        GetVersion() const { return m_uiVersion; }
@@ -98,6 +101,7 @@ public:
 private:
   xiiString                                       m_sName;
   xiiShaderResourceHandle                         m_hShader;
+  xiiHashTable<xiiHashedString, xiiHashedString>  m_Permutations;
   xiiEnum<xiiMaterialDomain>                      m_Domain               = xiiMaterialDomain::Surface;
   xiiEnum<xiiMaterialShadingModel>                m_ShadingModel         = xiiMaterialShadingModel::Lit;
   xiiUInt32                                       m_uiVersion            = 0U;
