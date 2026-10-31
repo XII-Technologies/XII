@@ -640,10 +640,12 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, GraphBlockClipboard)
   XII_TEST_BOOL(source.GetSelectionManager()->IsSelectionEmpty());
   XII_TEST_BOOL(sourceCopy.IsEnabled());
   trigger(sourceCopy);
-  XII_TEST_BOOL(clipboard->mimeData()->hasFormat("application/xiiEditor.PinInspectorTest"));
+  if (!XII_TEST_BOOL(clipboard->mimeData() && clipboard->mimeData()->hasFormat("application/xiiEditor.PinInspectorTest")))
+    return;
   targetView.setFocus();
   trigger(targetPaste);
-  XII_TEST_INT(targetManager->GetCommentBlocks().GetCount(), 1);
+  if (!XII_TEST_BOOL(targetManager->GetCommentBlocks().GetCount() == 1))
+    return;
   XII_TEST_INT(targetManager->GetRootObject()->GetChildren().GetCount(), 0);
   const auto pasted = targetManager->GetCommentBlocks().GetIterator().Value();
   XII_TEST_BOOL(pasted.m_Id != block.m_Id);
