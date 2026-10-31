@@ -188,6 +188,33 @@ XII_CREATE_SIMPLE_TEST(FileSystem, ReferenceResolution)
     XII_TEST_STATUS(model->ResolveFilePath(reference, resolved, &stat));
     XII_TEST_STRING(resolved.GetAbsolutePath(), firstFile);
   }
+#  if XII_ENABLED(XII_SUPPORTS_CASE_INSENSITIVE_PATHS)
+  const auto documentId = xiiUuid::MakeUuid();
+  XII_TEST_RESULT(model->LinkDocument(firstFile, documentId));
+  xiiStringBuilder differentCase(firstFile);
+  differentCase.ReplaceAll("/Resolution/First/", "/resolution/first/");
+  model->NotifyOfChange(differentCase);
+  // A second physical spelling can exist for watcher bookkeeping without a document
+  // link. It must not shadow the linked asset, even if it is the exact query spelling.
+  for (const auto& spelling : {firstFile, differentCase})
+  {
+    XII_TEST_STATUS(model->ResolveFilePath(spelling, resolved, &stat));
+    XII_TEST_BOOL(stat.m_DocumentID == documentId);
+    XII_TEST_STRING(resolved.GetAbsolutePath(), firstFile);
+  }
+  XII_TEST_STATUS(model->ResolveFilePath(":First/common/asset.xiiasset", resolved, &stat));
+  XII_TEST_BOOL(stat.m_DocumentID == documentId);
+  XII_TEST_STATUS(model->ResolveFilePath("first/common/asset.xiiasset", resolved, &stat));
+  XII_TEST_BOOL(stat.m_DocumentID == documentId);
+  XII_TEST_RESULT(model->LinkDocument(differentCase, xiiUuid::MakeUuid()));
+  const auto conflict = model->ResolveFilePath(firstFile, resolved, &stat);
+  XII_TEST_BOOL(conflict.Failed());
+  XII_TEST_BOOL(conflict.GetMessageString().FindSubString("Conflicting document identities") != nullptr);
+  XII_TEST_BOOL(!resolved.IsValid() && !stat.m_DocumentID.IsValid());
+  XII_TEST_RESULT(model->UnlinkDocument(differentCase));
+#  else
+  XII_TEST_BOOL(model->ResolveFilePath("common/asset.xiiasset", resolved).Failed());
+#  endif
   model->NotifyOfChange(secondFile);
   const auto ambiguous = model->ResolveFilePath("Common/Asset.xiiAsset", resolved, &stat);
   XII_TEST_BOOL(ambiguous.Failed());
@@ -235,7 +262,9 @@ void FileSystemModelTest()
     switch (e.m_Type)
     {
       case xiiFileChangedEvent::Type::FileRemoved:
-        XII_TEST_BOOL(xiiFileSystemModel::GetSingleton()->FindFile(e.m_Path, stat).Failed());
+        // Watcher events retire a spelling. A case-insensitive reference may still
+        // resolve the same physical file after a case-only rename.
+        XII_TEST_BOOL(!xiiFileSystemModel::GetSingleton()->GetFiles()->Contains(e.m_Path));
         break;
       case xiiFileChangedEvent::Type::FileAdded:
       case xiiFileChangedEvent::Type::FileChanged:

@@ -273,13 +273,50 @@ xiiStatus xiiFileSystemModel::ResolveFilePath(xiiStringView sPath, xiiDataDirPat
     return xiiStatus(xiiFmt("Rooted file reference '{}' escapes data directory '{}'.", sPath, root));
   XII_LOCK(m_FilesMutex);
   FilesMap::ConstIterator match;
-  auto                    consider = [&](xiiStringView candidate) -> xiiStatus {
-    const auto it = m_ReferencedFiles.Find(candidate);
-    if (!it.IsValid())
-      return XII_SUCCESS;
-    if (match.IsValid() && match.Key() != it.Key().GetAbsolutePath())
-      return xiiStatus(xiiFmt("Ambiguous file reference '{}': '{}' and '{}'. Use a GUID, absolute path or :Root/path.", sPath, match.Key(), it.Key()));
+  auto                    select = [&](FilesMap::ConstIterator it) -> xiiStatus {
+    if (match.IsValid())
+    {
+      if (!IsSameFile(match.Key(), it.Key()))
+        return xiiStatus(xiiFmt("Ambiguous file reference '{}': '{}' and '{}'. Use a GUID, absolute path or :Root/path.", sPath, match.Key(), it.Key()));
+      if (match.Value().m_DocumentID.IsValid() && it.Value().m_DocumentID.IsValid() && match.Value().m_DocumentID != it.Value().m_DocumentID)
+        return xiiStatus(xiiFmt("Conflicting document identities for file '{}'. Refresh the asset index and resolve the duplicate asset registration.", sPath));
+      // The model retains spelling changes for watcher/UI events. An unlinked spelling
+      // must not hide the document registration for the same physical file.
+      if (match.Value().m_DocumentID.IsValid())
+        return XII_SUCCESS;
+    }
     match = it;
+    return XII_SUCCESS;
+  };
+  auto consider = [&](xiiStringView candidate) -> xiiStatus {
+#  if XII_ENABLED(XII_SUPPORTS_CASE_INSENSITIVE_PATHS)
+    // The map orders first without case, then by spelling. Equal physical paths form
+    // one contiguous range, so lookup remains logarithmic plus the spelling variants.
+    auto it = m_ReferencedFiles.LowerBound(candidate);
+    if (!it.IsValid())
+    {
+      const auto last = m_ReferencedFiles.GetReverseIterator();
+      if (!last.IsValid())
+        return XII_SUCCESS;
+      it = m_ReferencedFiles.Find(last.Key());
+    }
+    if (!it.Key().GetAbsolutePath().IsEqual_NoCase(candidate))
+      --it;
+    if (!it.IsValid() || !it.Key().GetAbsolutePath().IsEqual_NoCase(candidate))
+      return XII_SUCCESS;
+    auto previous = it;
+    --previous;
+    while (previous.IsValid() && previous.Key().GetAbsolutePath().IsEqual_NoCase(candidate))
+    {
+      it = previous;
+      --previous;
+    }
+    for (; it.IsValid() && it.Key().GetAbsolutePath().IsEqual_NoCase(candidate); ++it)
+      XII_SUCCEED_OR_RETURN(select(it));
+#  else
+    if (const auto it = m_ReferencedFiles.Find(candidate); it.IsValid())
+      XII_SUCCEED_OR_RETURN(select(it));
+#  endif
     return XII_SUCCESS;
   };
 
