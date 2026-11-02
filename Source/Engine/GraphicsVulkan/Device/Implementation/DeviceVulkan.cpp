@@ -619,14 +619,8 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #endif
   }
 
-#if XII_ENABLED(XII_PLATFORM_OSX)
-  // From the 1.3.216 Vulkan SDK and later, the Vulkan Loader is strictly enforcing the new VK_KHR_PORTABILITY_subset extension.
-  constexpr bool bUsePortabilityEnumeration = true;
-#else
-  constexpr bool bUsePortabilityEnumeration = false;
-#endif
-
   xiiTemporaryHybridArray<const char*, 6U> instanceExtensions;
+  bool                                     bEnablePortabilityEnumeration = false;
   {
     if (IsExtensionAvailable(extensionProperties, VK_KHR_SURFACE_EXTENSION_NAME))
     {
@@ -642,14 +636,17 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
       instanceExtensions.PushBack(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
-#if defined(VK_USE_PLATFORM_MACOS_MVK)
+#if defined(VK_USE_PLATFORM_METAL_EXT)
       instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 #endif
     }
 
-    if (bUsePortabilityEnumeration)
+    // Enable enumeration of portability implementations (e.g., MoltenVK) when supported.
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+
+      bEnablePortabilityEnumeration = true;
     }
 
     // This extension added to core in 1.1, but current version is 1.0.
@@ -683,7 +680,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(extensionProperties, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
     }
   }
-
 
   // Add required instance extensions and layers for debugging if validation is enabled.
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -826,10 +822,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     instanceCreateInformation.ppEnabledLayerNames = instanceLayers.GetData();
 #endif
 
-    if (bUsePortabilityEnumeration)
+    if (bEnablePortabilityEnumeration)
     {
-      // The instance will enumerate available Vulkan Portability-compliant physical devices and groups in addition to the Vulkan physical devices and groups that
-      // are enumerated by default.
+      // The instance will enumerate available Vulkan Portability-compliant physical devices and groups in addition to the Vulkan physical devices and groups that are enumerated by default.
       instanceCreateInformation.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
     }
 

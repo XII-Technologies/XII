@@ -22,8 +22,10 @@
 xiiEngineProcessViewContext::xiiEngineProcessViewContext(xiiEngineProcessDocumentContext* pContext) :
   m_pDocumentContext(pContext), m_uiViewID(0xFFFFFFFFU)
 {
-  if (auto* application = xiiGameApplicationBase::GetGameApplicationBaseInstance())
-    m_pPipelineProfile = &application->GetPlatformProfile();
+  if (auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance())
+  {
+    m_pPipelineProfile = &pApplication->GetPlatformProfile();
+  }
 }
 
 xiiResult xiiEngineProcessViewContext::ResolveRenderPipeline(xiiEditorRenderPipelineUsage usage, xiiRenderPipelineResourceHandle& out_pipeline)

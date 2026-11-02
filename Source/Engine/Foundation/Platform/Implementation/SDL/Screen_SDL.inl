@@ -21,6 +21,8 @@ xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Scre
 
   XII_SCOPE_EXIT(if (pDisplayIDs != nullptr) { SDL_free(pDisplayIDs); });
 
+  out_Screens.Reserve(iDisplayCount);
+
   for (xiiInt32 i = 0; i < iDisplayCount; ++i)
   {
     xiiScreenInfo& screen = out_Screens.ExpandAndGetRef();
