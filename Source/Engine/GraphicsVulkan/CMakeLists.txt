@@ -20,10 +20,4 @@ target_link_libraries(${PROJECT_NAME}
   VulkanMemoryAllocator
 )
 
-if (XII_3RDPARTY_SDL_SUPPORT)
-  if(XII_COMPILE_ENGINE_AS_DLL)
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-shared)
-  else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-static)
-  endif()
-endif()
+xii_link_thirdparty_sdl(${PROJECT_NAME})
