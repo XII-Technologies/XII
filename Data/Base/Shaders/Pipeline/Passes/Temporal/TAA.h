@@ -13,7 +13,7 @@ Texture2D<float>  g_SceneDepth;
 Texture2D<float4> g_HistoryFrame;
 Texture2D<float>  g_HistoryDepth;
 #if XII_TAA_HISTORY_TRUST
-Texture2D<float> g_HistoryTrust;
+Texture2D<float>  g_HistoryTrust;
 Texture2D<float4> g_ReactiveRadiance;
 #endif
 XII_STORAGE_IMAGE_FORMAT("r32f")
@@ -69,10 +69,10 @@ float3 ClipAABB(float3 minimumColor, float3 maximumColor, float3 historyColor)
     }
   }
 
-  const float  depth                   = g_SceneDepth.Load(int3(dispatchThreadId.xy, 0));
-  const float4 current                 = g_CurrentFrame.Load(int3(dispatchThreadId.xy, 0));
-  const float3 currentColor            = current.rgb;
-  bool         untrusted               = false;
+  const float  depth        = g_SceneDepth.Load(int3(dispatchThreadId.xy, 0));
+  const float4 current      = g_CurrentFrame.Load(int3(dispatchThreadId.xy, 0));
+  const float3 currentColor = current.rgb;
+  bool         untrusted    = false;
 #if XII_TAA_HISTORY_TRUST
   if ((ReactiveFlags & 1u) != 0u)
     untrusted = g_HistoryTrust.Load(int3(dispatchThreadId.xy, 0)) < 0.999f;

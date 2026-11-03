@@ -160,7 +160,7 @@ public:
   /// for graphs whose pins have no authored properties. No Qt or rendering dependency.
   virtual const xiiDocumentObject* GetPinPropertyObject(const xiiPin& pin) const { return nullptr; }
 
-  xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
+  xiiVec2 GetNodePos(const xiiDocumentObject* pObject) const;
   /// Editor-only annotation. Stored with graph layout metadata, excluded from
   /// transform hashes. Use xiiSetNodeCommentCommand for document history.
   xiiStringView                                GetNodeComment(const xiiDocumentObject* pObject) const;
@@ -213,7 +213,7 @@ public:
   /// Append explicitly selected annotations to the document's existing clipboard graph.
   /// They remain metadata, and their IDs participate in ordinary clipboard GUID remapping.
   xiiStatus CopyCommentBlocks(xiiAbstractObjectGraph& ref_objectGraph, xiiArrayPtr<const xiiUuid> blocks) const;
-  bool PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition);
+  bool      PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition);
 
 protected:
   /// Tests whether pTarget can be reached from pSource by following the pin connections

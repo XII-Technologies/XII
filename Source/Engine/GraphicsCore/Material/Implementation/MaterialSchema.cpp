@@ -114,8 +114,8 @@ xiiResult xiiMaterialSchema::Build(const xiiMaterialSchemaDescription& descripti
   if (description.m_sName.IsEmpty())
     return SetSchemaError(out_pError, "Material schema name must not be empty.");
 
-  m_sName        = description.m_sName;
-  m_hShader      = description.m_hShader;
+  m_sName   = description.m_sName;
+  m_hShader = description.m_hShader;
   for (const auto& permutation : description.m_Permutations)
   {
     xiiHashedString name, value;

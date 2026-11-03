@@ -46,7 +46,7 @@ xiiResult xiiParticleIntegratePass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Particle integration requires a nonempty canonical structured state buffer.");
   if (m_bBypass)
     return context.SetOutput(m_OutputParticles, particles);
-  const auto  constants  = context.GetInputBuffer(m_InputConstants);
+  const auto constants = context.GetInputBuffer(m_InputConstants);
   if (!xiiScreenSpacePassUtils::Uniform(context, constants, sizeof(xiiParticleIntegrationConstants)))
     return context.ReportFailure("Particle integration requires exact integration constants.");
   const auto capacity = static_cast<xiiUInt32>(description->m_uiSize / sizeof(xiiParticleGPUState));
@@ -67,9 +67,9 @@ xiiResult xiiParticleIntegratePass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
-    xiiRenderGraphBufferHandle              m_Particles, m_Constants, m_Dispatch;
-    xiiParticleIntegrationDispatchConstants m_Parameters;
-    xiiUInt32                               m_uiGroupsY;
+    xiiRenderGraphBufferHandle               m_Particles, m_Constants, m_Dispatch;
+    xiiParticleIntegrationDispatchConstants  m_Parameters;
+    xiiUInt32                                m_uiGroupsY;
     xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {

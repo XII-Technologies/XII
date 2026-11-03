@@ -22,8 +22,8 @@ public:
   xiiRenderPipelineTextureOutputPin m_Radiance{xiiGALResourceFormat::RGBA32Float, true};
   xiiResult                         Build(xiiRenderPipelinePassContext& context) override
   {
-    const auto*     parameter = context.m_Parameters.GetValue("Transparency.Phase");
-    const xiiUInt32 phase     = parameter ? parameter->ConvertTo<xiiUInt32>() : 0;
+    const auto*     parameter   = context.m_Parameters.GetValue("Transparency.Phase");
+    const xiiUInt32 phase       = parameter ? parameter->ConvertTo<xiiUInt32>() : 0;
     const auto*     reactive    = context.m_Parameters.GetValue("Reactive.Radiance");
     const bool      useRadiance = reactive && reactive->ConvertTo<bool>();
     struct Data

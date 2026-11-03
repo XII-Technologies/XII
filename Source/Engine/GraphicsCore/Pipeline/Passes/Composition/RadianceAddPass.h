@@ -10,13 +10,13 @@ class XII_GRAPHICSCORE_DLL xiiRadianceAddPass final : public xiiRenderPipelinePa
   XII_ADD_DYNAMIC_REFLECTION(xiiRadianceAddPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineTextureInputPin            m_A{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin            m_B{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin m_A{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin m_B{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   /// Optional setup-time activation token. Its texels are never sampled.
   xiiRenderPipelineTextureInputPin            m_Activation{xiiGALResourceFormat::Unknown, true};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
-  bool                                        m_bAsyncCompute = false;
-  bool                                        m_bAllowAbsentB = false;
+  bool                                        m_bAsyncCompute      = false;
+  bool                                        m_bAllowAbsentB      = false;
   bool                                        m_bAllowAbsentA      = false;
   bool                                        m_bRequireActivation = false;
   void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;

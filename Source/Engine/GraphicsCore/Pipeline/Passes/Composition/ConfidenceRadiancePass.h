@@ -12,7 +12,7 @@ class XII_GRAPHICSCORE_DLL xiiConfidenceRadiancePass final : public xiiRenderPip
 public:
   xiiRenderPipelineTextureInputPin            m_Signal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
-  bool                                        m_bAsyncCompute = false;
+  bool                                        m_bAsyncCompute      = false;
   bool                                        m_bAllowAbsentSignal = false;
   void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;

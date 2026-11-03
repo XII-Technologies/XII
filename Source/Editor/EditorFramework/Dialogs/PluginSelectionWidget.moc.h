@@ -21,9 +21,9 @@ public:
   xiiQtPluginSelectionWidget(QWidget* pParent);
   ~xiiQtPluginSelectionWidget();
 
-  void SetPluginSet(xiiPluginBundleSet* pPluginSet);
-  void SyncStateToSet();
-  void SelectTemplate(const char* szTemplate);
+  void      SetPluginSet(xiiPluginBundleSet* pPluginSet);
+  void      SyncStateToSet();
+  void      SelectTemplate(const char* szTemplate);
   void      Filter(const QString& text);
   void      SetReadOnly(bool bReadOnly);
   xiiResult ValidateSelection(xiiStringBuilder& out_reason) const;

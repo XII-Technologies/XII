@@ -639,8 +639,8 @@ xiiResult xiiParticleSystemComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_b
 void xiiParticleSystemComponent::SetDescriptor(const xiiParticleSystemDescriptor& descriptor)
 {
   m_pEmissionState.Clear();
-  m_Descriptor                  = descriptor;
-  m_ActivationTime              = GetOwningManager() ? GetWorld()->GetClock().GetAccumulatedTime() : xiiTime::MakeZero();
+  m_Descriptor     = descriptor;
+  m_ActivationTime = GetOwningManager() ? GetWorld()->GetClock().GetAccumulatedTime() : xiiTime::MakeZero();
   ++m_uiSimulationRevision;
   m_Descriptor.m_uiMaxParticles = ClampParticleCapacity(m_Descriptor.m_uiMaxParticles);
 

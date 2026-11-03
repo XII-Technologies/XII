@@ -29,17 +29,17 @@ public:
   xiiRenderPipelineTextureOutputPin m_OutputHDRSceneColor{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read};
   xiiRenderPipelineBufferInputPin   m_InputPerFrameCamera{false, xiiGALBindFlags::UniformBuffer};
   /// Retained optional authoring port; spatial tracing has no frame-time dependency.
-  xiiRenderPipelineBufferInputPin   m_InputPerFrameGlobal{true, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineBufferOutputPin  m_OutputConstants{false, xiiGALBindFlags::UniformBuffer};
-  bool                              m_bAllowAbsentDepth = false;
-  float                             m_fMaxDistance      = 50.0f;
-  float                             m_fSurfaceBias      = 0.01f;
-  void                              GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
-  xiiUInt32                         m_uiMaxSteps     = 96;
-  float                             m_fThickness     = 0.0025f;
-  float                             m_fMaxRoughness  = 0.72f;
-  float                             m_fStrideZCutoff = 0.25f;
-  xiiResult                         Configure(const xiiVariantDictionary& properties) override;
+  xiiRenderPipelineBufferInputPin  m_InputPerFrameGlobal{true, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferOutputPin m_OutputConstants{false, xiiGALBindFlags::UniformBuffer};
+  bool                             m_bAllowAbsentDepth = false;
+  float                            m_fMaxDistance      = 50.0f;
+  float                            m_fSurfaceBias      = 0.01f;
+  void                             GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
+  xiiUInt32                        m_uiMaxSteps     = 96;
+  float                            m_fThickness     = 0.0025f;
+  float                            m_fMaxRoughness  = 0.72f;
+  float                            m_fStrideZCutoff = 0.25f;
+  xiiResult                        Configure(const xiiVariantDictionary& properties) override;
   xiiScreenSpaceReflectionsPass();
   ~xiiScreenSpaceReflectionsPass();
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

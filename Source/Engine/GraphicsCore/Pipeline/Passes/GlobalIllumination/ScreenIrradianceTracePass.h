@@ -19,7 +19,7 @@ public:
   float                                       m_fRayLength = 2.0f, m_fThickness = 0.15f;
   float                                       m_fSurfaceBias  = 0.02f;
   xiiUInt32                                   m_uiSampleCount = 8, m_uiStepCount = 6, m_uiSampleOffset = 0;
-  bool                                        m_bAsyncCompute = false;
+  bool                                        m_bAsyncCompute     = false;
   bool                                        m_bAllowAbsentDepth = false;
   void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;

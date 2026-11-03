@@ -379,7 +379,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
   XII_SUCCEED_OR_RETURN(InsertPropertyValues(pOwnerNode, pDesc, sInlineCode));
 
   // store the result
-  ps.m_sCodeAtPin = sInlineCode;
+  ps.m_sCodeAtPin     = sInlineCode;
   ps.m_bCodeGenerated = true;
 
   return XII_SUCCESS;

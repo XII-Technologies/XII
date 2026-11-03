@@ -20,11 +20,11 @@ public:
   xiiRenderPipelineTextureOutputPin m_Previous{xiiGALResourceFormat::R8UNormalized, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read, true};
   xiiRenderPipelineTextureOutputPin m_Surface{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   /// Spatial-only filtering requires no motion producer or retained images.
-  bool                              m_bUseHistory      = true;
-  float                             m_fHistoryWeight   = 0.92f;
-  float                             m_fDepthThreshold  = 0.08f;
-  float                             m_fNormalThreshold = 0.82f;
-  float                             m_fSpatialWeight   = 0.35f;
+  bool  m_bUseHistory      = true;
+  float m_fHistoryWeight   = 0.92f;
+  float m_fDepthThreshold  = 0.08f;
+  float m_fNormalThreshold = 0.82f;
+  float m_fSpatialWeight   = 0.35f;
   xiiAmbientOcclusionTemporalPass();
   ~xiiAmbientOcclusionTemporalPass();
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;

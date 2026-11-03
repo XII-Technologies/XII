@@ -126,7 +126,7 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputTAAResolved, color, outputSize));
   if (outputSize != size || !xiiScreenSpacePassUtils::Image(context, velocity, 2, &size) || !xiiScreenSpacePassUtils::Image(context, depth, 1, &size) || (camera && camera->m_Sample.m_Size != size))
     return context.ReportFailure("TAA requires matching input-sized color, velocity, depth and camera samples.");
-  const auto trust = context.GetInputTexture(m_HistoryTrust);
+  const auto trust    = context.GetInputTexture(m_HistoryTrust);
   const auto reactive = context.GetInputTexture(m_ReactiveRadiance);
   if (reactive.IsValid())
   {
@@ -147,8 +147,8 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
   XII_LOCK(state.m_Mutex);
   const bool            hasReactive = trust.IsValid() || reactive.IsValid();
   const xiiUInt32       variant     = (description->m_Format == xiiGALResourceFormat::RGBA32Float ? 1U : 0U) + (hasReactive ? 2U : 0U);
-  auto&                 pipeline = state.m_Pipelines[variant];
-  constexpr const char* paths[]  = {"Shaders/Pipeline/TAA.xiiShader", "Shaders/Pipeline/TAA32.xiiShader", "Shaders/Pipeline/TAAReactive.xiiShader", "Shaders/Pipeline/TAAReactive32.xiiShader"};
+  auto&                 pipeline    = state.m_Pipelines[variant];
+  constexpr const char* paths[]     = {"Shaders/Pipeline/TAA.xiiShader", "Shaders/Pipeline/TAA32.xiiShader", "Shaders/Pipeline/TAAReactive.xiiShader", "Shaders/Pipeline/TAAReactive32.xiiShader"};
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, paths[variant]));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(state.m_Linear));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::PointClampSampler(state.m_Point));

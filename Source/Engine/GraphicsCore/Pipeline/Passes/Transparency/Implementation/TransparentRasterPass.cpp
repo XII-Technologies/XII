@@ -251,7 +251,7 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   m_Rasterizer          = device->CreateRasterizerState(rasterizer);
   if (!m_Rasterizer)
     return context.ReportFailure("Could not create transparent rasterizer state.");
-  xiiRenderPassResourceScope scope(context);
+  xiiRenderPassResourceScope                     scope(context);
   xiiHashTable<xiiHashedString, xiiHashedString> materialVariables;
   const auto                                     feature = [&](xiiStringView key, bool enabled) {
     xiiHashedString name, value;

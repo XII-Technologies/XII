@@ -61,8 +61,8 @@ xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
-    xiiRenderGraphTextureHandle m_Output;
-    xiiSharedPtr<xiiGALFence>   m_Ready;
+    xiiRenderGraphTextureHandle              m_Output;
+    xiiSharedPtr<xiiGALFence>                m_Ready;
     xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {

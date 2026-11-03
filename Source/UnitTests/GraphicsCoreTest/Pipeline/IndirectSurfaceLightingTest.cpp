@@ -10,7 +10,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IndependentIndirectSurfaceSchemas)
 {
   xiiDiffuseSurfaceLightingPass diffuse;
   diffuse.m_bAddIrradiance = true;
-  xiiVariantDictionary          properties;
+  xiiVariantDictionary properties;
   properties.Insert("Scale", 2.0f);
   properties.Insert("AddIrradiance", true);
   XII_TEST_RESULT(diffuse.Configure(properties));

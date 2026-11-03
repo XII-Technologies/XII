@@ -73,4 +73,3 @@ float3 FresnelSchlick(float3 specularColor, float u)
   // specularColor below 2% is considered to be shadowing
   return saturate(50.0 * GetLuminance(specularColor)) * f5 + (1 - f5) * specularColor;
 }
-

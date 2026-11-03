@@ -35,10 +35,10 @@ bool LoadSurfaceGeometry(uint2 pixel, out SurfaceSample result)
   const float4 material = g_SurfaceMaterial.Load(int3(pixel, 0));
   if (!xiiGBufferReceivesLighting(material))
     return false;
-  result.Roughness      = clamp(material.r, 0.01f, 1);
-  result.Metallic       = saturate(material.g);
-  result.Specular       = saturate(material.b);
-  result.MaterialFlags  = xiiGBufferMaterialFlags(material.a);
-  result.Occlusion      = saturate(g_SurfaceAlbedo.Load(int3(pixel, 0)).a);
+  result.Roughness     = clamp(material.r, 0.01f, 1);
+  result.Metallic      = saturate(material.g);
+  result.Specular      = saturate(material.b);
+  result.MaterialFlags = xiiGBufferMaterialFlags(material.a);
+  result.Occlusion     = saturate(g_SurfaceAlbedo.Load(int3(pixel, 0)).a);
   return isfinite(result.Occlusion) && all(isfinite(result.Normal)) && all(isfinite(result.View)) && all(isfinite(result.Albedo)) && all(isfinite(material));
 }

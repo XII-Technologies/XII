@@ -13,8 +13,8 @@ class XII_GRAPHICSCORE_DLL xiiAtmosphereConstantsPass final : public xiiRenderPi
 public:
   xiiRenderPipelineBufferOutputPin m_OutputAtmosphereConstants{true, xiiGALBindFlags::UniformBuffer};
 
-  bool                  m_bUseWorldAtmosphere = false;
-  bool                  m_bEnabled            = true;
+  bool m_bUseWorldAtmosphere = false;
+  bool m_bEnabled            = true;
   /// Publish no atmosphere when no world component is selected, instead of using authored fallback settings.
   bool                  m_bRequireWorldAtmosphere = false;
   xiiAtmosphereSettings m_Settings;

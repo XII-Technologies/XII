@@ -330,7 +330,7 @@ void xiiVisualShaderTypeRegistry::ExtractNodePins(const xiiOpenDdlReaderElement*
           pin.m_pDataType = xiiGetStaticRTTI<xiiVec2>();
         else if (sType == "float" || sType == "numeric")
         {
-          pin.m_pDataType = xiiGetStaticRTTI<float>();
+          pin.m_pDataType       = xiiGetStaticRTTI<float>();
           pin.m_bDynamicNumeric = sType == "numeric";
         }
         else if (sType == "string")

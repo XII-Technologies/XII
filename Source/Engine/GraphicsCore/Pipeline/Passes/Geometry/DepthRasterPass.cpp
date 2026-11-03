@@ -132,10 +132,10 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
     value.Assign(m_bShadowCaster ? "RENDER_PASS_DEPTH_ONLY" : m_FillMode == xiiGALFillMode::Wireframe ? "RENDER_PASS_PICKING_WIREFRAME" :
                                                                                                         "RENDER_PASS_PICKING");
     variables.Insert(name, value);
-    m_hShader            = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
+    m_hShader             = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
     m_bCachedMeshShaders  = useMesh;
     m_bCachedShadowCaster = m_bShadowCaster;
-    m_CachedFill         = m_FillMode;
+    m_CachedFill          = m_FillMode;
   }
   xiiResourceLock<xiiShaderPermutationResource> shader(m_hShader, xiiResourceAcquireMode::BlockTillLoaded);
   if (!shader.IsValid() || !shader->IsShaderValid())

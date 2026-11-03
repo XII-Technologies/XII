@@ -724,7 +724,7 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   xiiMaterialResourceDescriptor bounceDescription;
   bounceDescription.m_BaseColor     = xiiColor::Black;
   bounceDescription.m_EmissiveColor = {4, 0.04f, 0.02f};
-  const auto bounceMaterial         = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.GIEmitter", std::move(bounceDescription));
+  const auto        bounceMaterial  = xiiResourceManager::CreateResource<xiiMaterialResource>("CanonicalRenderer.GIEmitter", std::move(bounceDescription));
   xiiMeshComponent* bounceGeometry[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {

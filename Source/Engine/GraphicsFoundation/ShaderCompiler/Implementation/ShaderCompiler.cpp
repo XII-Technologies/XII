@@ -272,8 +272,8 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
   m_ShaderData.m_StateSource = sections.GetSectionContent(xiiGALShaderSections::RenderState, uiFirstLine);
 
-  xiiUInt32     uiFirstShaderLine = 0;
-  xiiStringView sShaderSource     = sections.GetSectionContent(xiiGALShaderSections::Shader, uiFirstShaderLine);
+  xiiUInt32           uiFirstShaderLine    = 0;
+  xiiStringView       sShaderSource        = sections.GetSectionContent(xiiGALShaderSections::Shader, uiFirstShaderLine);
   xiiUInt32           uiFirstConstantsLine = 0;
   const xiiStringView sMaterialConstants   = sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, uiFirstConstantsLine);
   xiiStringView       trimmedConstants     = sMaterialConstants;

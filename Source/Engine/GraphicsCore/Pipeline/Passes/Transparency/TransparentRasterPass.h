@@ -17,26 +17,26 @@ class XII_GRAPHICSCORE_DLL xiiTransparentRasterPass final : public xiiRenderPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiTransparentRasterPass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineBufferInputPin   m_VisibilityView{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_SceneInstances{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_SkinningMatrices{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_VisibleMeshlets{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_GeometryMetadata{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_MeshletMetadata{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_SurfaceMaterials{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_RasterConstants{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineBufferInputPin   m_DrawCommands{true, xiiGALBindFlags::IndirectDrawArguments};
-  xiiRenderPipelineBufferInputPin   m_DrawCommandCount{true, xiiGALBindFlags::IndirectDrawArguments};
-  xiiRenderPipelineBufferInputPin   m_Camera{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineBufferInputPin   m_Environment{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineBufferInputPin   m_Lights{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_LightCounts{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_LightCandidates{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_IESProfiles{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_LightGrid{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_LightIndices{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_LightOverflow{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineTextureInputPin  m_Depth{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineBufferInputPin  m_VisibilityView{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_SceneInstances{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_SkinningMatrices{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_VisibleMeshlets{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_GeometryMetadata{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_MeshletMetadata{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_SurfaceMaterials{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_RasterConstants{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferInputPin  m_DrawCommands{true, xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferInputPin  m_DrawCommandCount{true, xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferInputPin  m_Camera{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferInputPin  m_Environment{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineBufferInputPin  m_Lights{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_LightCounts{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_LightCandidates{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_IESProfiles{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_LightGrid{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_LightIndices{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin  m_LightOverflow{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineTextureInputPin m_Depth{xiiGALResourceFormat::D32Float, false, xiiGALBindFlags::DepthStencil, xiiGALResourceDimension::Texture2D, 1};
   /// Completed opaque/atmosphere/reflection color, before any transparent layers are resolved.
   xiiRenderPipelineTextureInputPin  m_BackgroundRadiance{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineDataInputPin     m_LightLayout{xiiGetStaticRTTI<xiiLightClusterFrameData>()};
@@ -55,7 +55,7 @@ public:
 
   float                   m_fLightingScale = 1, m_fWeightDepthScale = 5, m_fMaximumWeight = 3000;
   float                   m_fDepthBias = 0.0005f, m_fNormalBias = 0.02f, m_fNormalBiasTexels = 1.5f;
-  xiiEnum<xiiGALFillMode> m_FillMode = xiiGALFillMode::Solid;
+  xiiEnum<xiiGALFillMode> m_FillMode                      = xiiGALFillMode::Solid;
   bool                    m_bEnableRefraction             = false;
   float                   m_fRefractionDistance           = 100.0f;
   float                   m_fRefractionThicknessTolerance = 0.1f;

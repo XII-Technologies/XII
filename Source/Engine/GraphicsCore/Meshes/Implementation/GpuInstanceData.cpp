@@ -521,8 +521,8 @@ xiiGpuInstanceUploadStatistics xiiGpuInstanceData::GetUploadStatistics() const
 
 xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 frameIndex) const
 {
-  auto&         state = *m_pState;
-  const auto    upload = state.m_Upload;
+  auto&      state  = *m_pState;
+  const auto upload = state.m_Upload;
   XII_LOCK(upload->m_Mutex);
   UploadHandles cached;
   if (state.m_SetupUploads.TryGetValue(graph.GetSetupSerial(), cached))

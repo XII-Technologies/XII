@@ -29,8 +29,8 @@ struct xiiAmbientOcclusionTemporalPass::State : public xiiRefCounted
   xiiSharedPtr<xiiGALComputePipelineState> m_SpatialPipeline;
   xiiSharedPtr<xiiGALTexture>              m_LastMask, m_LastSurface;
   xiiSharedPtr<xiiGALFence>                m_LastFence;
-  xiiUInt64                                m_uiLastReadyValue = 0;
-  bool                                     m_bHistoryValid    = false;
+  xiiUInt64                                m_uiLastReadyValue  = 0;
+  bool                                     m_bHistoryValid     = false;
   xiiUInt64                                m_uiHistoryRevision = 0;
 };
 xiiAmbientOcclusionTemporalPass::xiiAmbientOcclusionTemporalPass()
@@ -184,13 +184,13 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
-    xiiRenderGraphTextureHandle m_Raw, m_Depth, m_Normal, m_Velocity, m_Previous, m_PreviousSurface, m_Output, m_Surface;
-    xiiRenderGraphBufferHandle  m_Camera, m_Global, m_Constants;
-    xiiSharedPtr<xiiGALTexture> m_MaskImage, m_SurfaceImage;
-    xiiSharedPtr<xiiGALFence>   m_ReadyFence;
-    xiiUInt64                   m_uiReadyValue;
-    xiiTemporalDenoiseConstants m_Parameters;
-    xiiSizeU32                  m_Size;
+    xiiRenderGraphTextureHandle              m_Raw, m_Depth, m_Normal, m_Velocity, m_Previous, m_PreviousSurface, m_Output, m_Surface;
+    xiiRenderGraphBufferHandle               m_Camera, m_Global, m_Constants;
+    xiiSharedPtr<xiiGALTexture>              m_MaskImage, m_SurfaceImage;
+    xiiSharedPtr<xiiGALFence>                m_ReadyFence;
+    xiiUInt64                                m_uiReadyValue;
+    xiiTemporalDenoiseConstants              m_Parameters;
+    xiiSizeU32                               m_Size;
     xiiSharedPtr<State>                      m_State;
     xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
     xiiUInt64                                m_uiHistoryRevision;

@@ -51,7 +51,7 @@ xiiResult xiiMaterialInstance::Initialize(xiiSharedPtr<const xiiMaterialSchema> 
     m_ResourceBindings[i].m_Id = pTextureDefinitions[i].m_Id;
   }
 
-  m_DirtyFlags                = xiiMaterialDirtyFlags::All;
+  m_DirtyFlags = xiiMaterialDirtyFlags::All;
   ++m_uiRevision;
   m_RuntimeState.m_uiRevision = m_uiRevision;
   return XII_SUCCESS;

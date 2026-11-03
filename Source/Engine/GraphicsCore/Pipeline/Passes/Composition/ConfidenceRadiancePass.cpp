@@ -29,7 +29,7 @@ void xiiConfidenceRadiancePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& o
 
 xiiResult xiiConfidenceRadiancePass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto  signal            = context.GetInputTexture(this->m_Signal);
+  const auto signal = context.GetInputTexture(this->m_Signal);
   if (!signal.IsValid() && m_bAllowAbsentSignal)
     return XII_SUCCESS;
   const auto* signalDescription = xiiCompositionPassUtils::Image(context, signal);

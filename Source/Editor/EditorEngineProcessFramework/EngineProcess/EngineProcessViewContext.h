@@ -125,8 +125,8 @@ private:
   xiiEngineProcessDocumentContext* m_pDocumentContext;
   const xiiPlatformProfile*        m_pPipelineProfile = nullptr;
   xiiString                        m_sPipelineReference;
-  xiiEditorRenderPipelineUsage     m_PipelineUsage           = xiiEditorRenderPipelineUsage::Main;
-  bool                             m_bPipelinePolicySelected = false;
+  xiiEditorRenderPipelineUsage     m_PipelineUsage               = xiiEditorRenderPipelineUsage::Main;
+  bool                             m_bPipelinePolicySelected     = false;
   bool                             m_bShowNavigationGizmo        = false;
   bool                             m_bNavigationHovered          = false;
   xiiInt32                         m_iNavigationHoveredAxis      = -1;
