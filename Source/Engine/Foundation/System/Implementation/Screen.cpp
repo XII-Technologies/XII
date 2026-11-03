@@ -4,27 +4,20 @@
 
 #include <Foundation/System/Screen.h>
 
-#if XII_ENABLED(XII_SUPPORTS_SDL)
-#  include <Foundation/Platform/Implementation/SDL/Screen_SDL.inl>
-#else
-
-xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens)
-{
-  XII_IGNORE_UNUSED(out_Screens);
-  XII_ASSERT_NOT_IMPLEMENTED;
-  return XII_FAILURE;
-}
-
-#endif
-
 void xiiScreen::PrintScreenInfo(const xiiHybridArray<xiiScreenInfo, 2>& screens, xiiLogInterface* pLog /*= xiiLog::GetThreadLocalLogSystem()*/)
 {
   XII_LOG_BLOCK(pLog, "Screens");
 
   xiiLog::Dev(pLog, "Found {0} screens", screens.GetCount());
 
-  for (const auto& screen : screens)
+  for (const xiiScreenInfo& screen : screens)
   {
     xiiLog::Dev(pLog, "'{0}': Offset = ({1}, {2}), Resolution = ({3}, {4}){5}", screen.m_sDisplayName, screen.m_iOffsetX, screen.m_iOffsetY, screen.m_iResolutionX, screen.m_iResolutionY, screen.m_bIsPrimary ? " (primary)" : "");
   }
 }
+
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <Foundation/Platform/Implementation/SDL/Screen_SDL.h>
+#else
+#  include <Foundation/Platform/Implementation/NoImpl/Screen_NoImpl.h>
+#endif
