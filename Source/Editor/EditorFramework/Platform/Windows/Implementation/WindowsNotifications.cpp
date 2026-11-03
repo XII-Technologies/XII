@@ -350,9 +350,9 @@ void xiiWindowsNotifications::ProcessorEventHandler(const xiiAssetProcessorEvent
   if (e.m_Type == xiiAssetProcessorEvent::Type::TransformsFinished)
   {
     const auto progress   = e.m_Progress;
-    const auto generation = m_uiProjectGeneration.load();
+    const auto generation = m_uiProjectGeneration;
     QMetaObject::invokeMethod(this, [this, progress, generation]() {
-      if (generation != m_uiProjectGeneration.load() || progress.m_bCancelRequested || progress.m_uiCanceled > 0 ||
+      if (generation != m_uiProjectGeneration || progress.m_bCancelRequested || progress.m_uiCanceled > 0 ||
           !IsEligible(IsForeground(), progress.m_Duration.GetSeconds(), progress.m_uiFailed == 0 && progress.m_uiNeedsImport == 0, true))
         return;
       Notify({progress.m_uiFailed > 0 ? QStringLiteral("Asset transformation failed") : (progress.m_uiNeedsImport > 0 ? QStringLiteral("Assets require import") : QStringLiteral("Asset transformation complete")),
@@ -362,9 +362,9 @@ void xiiWindowsNotifications::ProcessorEventHandler(const xiiAssetProcessorEvent
   if (e.m_Type != xiiAssetProcessorEvent::Type::AssetProcessed || e.m_Result != xiiTransformResult::Failure || e.m_bRequested || e.m_bCanceled)
     return;
   const QString sAsset              = xiiMakeQString(e.m_sAssetPath);
-  const auto    uiProjectGeneration = m_uiProjectGeneration.load();
+  const auto    uiProjectGeneration = m_uiProjectGeneration;
   QMetaObject::invokeMethod(this, [this, sAsset, uiProjectGeneration]() {
-    if (uiProjectGeneration == m_uiProjectGeneration.load())
+    if (uiProjectGeneration == m_uiProjectGeneration)
       Notify({QStringLiteral("Background asset processing failed"), sAsset + QStringLiteral(" could not be processed. Return to XII Editor for details.")}); }, Qt::QueuedConnection);
 }
 
@@ -377,9 +377,9 @@ void xiiWindowsNotifications::LongOpEventHandler(const xiiLongOpControllerEvent&
   if (pOp == nullptr || pOp->m_StartOrDuration.GetSeconds() < 10.0)
     return;
   const QString sName               = xiiMakeQString(pOp->m_pProxyOp->GetDisplayName());
-  const auto    uiProjectGeneration = m_uiProjectGeneration.load();
+  const auto    uiProjectGeneration = m_uiProjectGeneration;
   QMetaObject::invokeMethod(this, [this, sName, uiProjectGeneration]() {
-    if (uiProjectGeneration == m_uiProjectGeneration.load())
+    if (uiProjectGeneration == m_uiProjectGeneration)
       Notify({QStringLiteral("Background operation failed"), sName + QStringLiteral(" failed. Return to XII Editor for details.")}); }, Qt::QueuedConnection);
 }
 
@@ -387,8 +387,10 @@ void xiiWindowsNotifications::ProjectEventHandler(const xiiToolsProjectEvent& e)
 {
   if (e.m_Type == xiiToolsProjectEvent::Type::ProjectClosing)
   {
-    ++m_uiProjectGeneration;
+    m_uiProjectGeneration.Increment();
+
     Clear();
+
     m_Tools.clear();
   }
 }

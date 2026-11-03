@@ -294,7 +294,7 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
   if (!IsReady() || !xiiToolsProject::IsProjectOpen())
     return;
 
-  static std::atomic<bool> bReentry = false;
+  static xiiAtomicBool bReentry = false;
   if (bReentry)
     return;
 

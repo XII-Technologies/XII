@@ -12,11 +12,11 @@
 namespace
 {
   // Capture work is opt-in. Bound both each reliable packet and the number of graphs per request.
-  constexpr xiiUInt32    s_uiMaxCaptureBytes = 16 * 1024 * 1024;
-  std::atomic<xiiUInt64> s_uiRequest         = 0;
-  std::atomic<xiiInt64>  s_iExpires          = 0;
-  xiiUInt64              s_uiHandledRequest  = 0;
-  xiiHashSet<xiiUInt64>  s_CapturedGraphs; // Used only inside the serialized execution event.
+  constexpr xiiUInt32   s_uiMaxCaptureBytes = 16 * 1024 * 1024;
+  xiiAtomicIntegerU64   s_uiRequest         = 0;
+  xiiAtomicInteger64    s_iExpires          = 0;
+  xiiUInt64             s_uiHandledRequest  = 0;
+  xiiHashSet<xiiUInt64> s_CapturedGraphs; // Used only inside the serialized execution event.
 
   class CaptureStream : public xiiStreamWriter
   {
@@ -46,9 +46,9 @@ namespace
 
   void GraphExecuted(const xiiRenderGraphDebug::ExecutionEvent& event)
   {
-    if (static_cast<xiiInt64>(xiiTime::Now().GetMicroseconds()) > s_iExpires.load())
+    if (static_cast<xiiInt64>(xiiTime::Now().GetMicroseconds()) > s_iExpires)
       return;
-    const auto request = s_uiRequest.load();
+    const auto request = s_uiRequest;
     if (request != s_uiHandledRequest)
     {
       s_uiHandledRequest = request;
@@ -68,8 +68,8 @@ namespace
     {
       if (message.GetMessageID() != 'CAPT')
         continue;
-      s_uiRequest.fetch_add(1);
-      s_iExpires.store(static_cast<xiiInt64>((xiiTime::Now() + xiiTime::MakeFromSeconds(2)).GetMicroseconds()));
+      s_uiRequest.PostIncrement();
+      s_iExpires.Set(static_cast<xiiInt64>((xiiTime::Now() + xiiTime::MakeFromSeconds(2)).GetMicroseconds()));
     }
   }
 
@@ -84,8 +84,8 @@ namespace
 
     // Also collect the render graph's resolved duration queries. They have durations and frame
     // identities, but no calibrated absolute timestamps; do not fabricate timeline positions.
-    s_uiRequest.fetch_add(1);
-    s_iExpires.store(static_cast<xiiInt64>((xiiTime::Now() + xiiTime::MakeFromSeconds(2)).GetMicroseconds()));
+    s_uiRequest.PostIncrement();
+    s_iExpires.Set(static_cast<xiiInt64>((xiiTime::Now() + xiiTime::MakeFromSeconds(2)).GetMicroseconds()));
 
     xiiProfilingSystem::ProfilingData capture;
     xiiProfilingSystem::Capture(capture); // Preserve the application's own profiling history.
@@ -114,7 +114,9 @@ namespace
   void ConnectionEvent(const xiiTelemetry::TelemetryEventData& event)
   {
     if (event.m_EventType == xiiTelemetry::TelemetryEventData::DisconnectedFromClient)
-      s_iExpires.store(0);
+    {
+      s_iExpires.Set(0);
+    }
   }
 } // namespace
 
@@ -125,6 +127,7 @@ void AddRenderingEventHandler()
   xiiTelemetry::AcceptMessagesForSystem('RGRF', true, RequestGraph);
   xiiTelemetry::AcceptMessagesForSystem('PROF', true, RequestProfile);
   xiiTelemetry::AddEventHandler(ConnectionEvent);
+
   xiiRenderGraphDebug::s_ExecutionEvents.AddEventHandler(GraphExecuted);
 }
 
@@ -133,8 +136,11 @@ void RemoveRenderingEventHandler()
   xiiTelemetry::AcceptMessagesForSystem('RGRF', false);
   xiiTelemetry::AcceptMessagesForSystem('PROF', false);
   xiiTelemetry::RemoveEventHandler(ConnectionEvent);
+
   xiiRenderGraphDebug::s_ExecutionEvents.RemoveEventHandler(GraphExecuted);
-  s_iExpires.store(0);
+
+  s_iExpires.Set(0);
+
   s_CapturedGraphs.Clear();
 }
 

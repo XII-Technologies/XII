@@ -159,7 +159,7 @@ public:
   /// Waits for init task to finish.
   xiiStatus WaitForInitialize();
   /// True after the initial asset scan. Independent of rendering-process readiness.
-  bool IsReady() const { return m_bReady.load(); }
+  bool IsReady() const { return m_bReady; }
   void Deinitialize();
 
   void MainThreadTick(bool bTopLevel);
@@ -479,11 +479,11 @@ private:
   friend class xiiProcessTask;
 
   mutable xiiCuratorMutex m_CuratorMutex; // Global lock
-  std::atomic<bool>       m_bReady       = false;
+  xiiAtomicBool           m_bReady       = false;
   bool                    m_bInitialized = false;
   xiiTaskGroupID          m_InitializeCuratorTaskID;
   xiiTaskGroupID          m_CheckFileSystemTaskID; ///< GUI-thread owned; joined before file-model teardown.
-  std::atomic<bool>       m_bCheckingFileSystem = false;
+  xiiAtomicBool           m_bCheckingFileSystem = false;
 
   xiiUInt32 m_uiActiveAssetProfile = 0;
 

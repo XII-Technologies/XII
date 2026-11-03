@@ -243,10 +243,10 @@ XII_CREATE_SIMPLE_TEST(EditorBackgroundAssetChecks, ResponsiveRescanAndShutdown)
   } observer;
   qApp->installEventFilter(&observer);
   XII_SCOPE_EXIT(qApp->removeEventFilter(&observer));
-  xiiThreadSignal   release;
-  std::atomic<bool> entered      = false;
-  auto              subscription = files->m_FileChangedEvents.AddEventHandler([&](const xiiFileChangedEvent& event) {
-    if (event.m_Type == xiiFileChangedEvent::Type::ModelReset && !xiiThreadUtils::IsMainThread() && !entered.exchange(true))
+  xiiThreadSignal release;
+  xiiAtomicBool   bIsEntered   = false;
+  auto            subscription = files->m_FileChangedEvents.AddEventHandler([&](const xiiFileChangedEvent& event) {
+    if (event.m_Type == xiiFileChangedEvent::Type::ModelReset && !xiiThreadUtils::IsMainThread() && !bIsEntered.Set(true))
     {
       release.WaitForSignal(xiiTime::MakeFromSeconds(10));
     }
@@ -286,7 +286,7 @@ XII_CREATE_SIMPLE_TEST(EditorBackgroundAssetChecks, ResponsiveRescanAndShutdown)
     editing.setText(QString::number(++heartbeats));
     XII_TEST_BOOL(QApplication::activeModalWidget() == nullptr);
     XII_TEST_BOOL(!editor.IsProgressBarProcessingEvents());
-    if (entered && heartbeats >= 3)
+    if (bIsEntered && heartbeats >= 3)
       release.RaiseSignal();
   });
   heartbeat.start(5);
@@ -305,7 +305,7 @@ XII_CREATE_SIMPLE_TEST(EditorBackgroundAssetChecks, ResponsiveRescanAndShutdown)
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
   }
   QApplication::processEvents();
-  XII_TEST_BOOL(entered);
+  XII_TEST_BOOL(bIsEntered);
   XII_TEST_BOOL(!curator->IsCheckingFileSystem());
   XII_TEST_BOOL(heartbeats >= 3 && !editing.text().isEmpty());
   XII_TEST_INT(finished, 1);
@@ -669,13 +669,12 @@ XII_CREATE_SIMPLE_TEST(EditorBackgroundTransforms, BatchFailureAndCancellation)
   public:
     void HandleLogMessage(const xiiLoggingEventData& e) override
     {
-      if (e.m_EventType == xiiLogMsgType::ErrorMsg &&
-          (e.m_sText.FindSubString("11111111-2222-3333-4444-555555555555") || e.m_sText.FindSubString("Failure.xiiSurfaceAsset")))
-        ++m_uiDiagnostics;
+      if (e.m_EventType == xiiLogMsgType::ErrorMsg && (e.m_sText.FindSubString("11111111-2222-3333-4444-555555555555") || e.m_sText.FindSubString("Failure.xiiSurfaceAsset")))
+        m_uiDiagnostics.Increment();
       else
         xiiTestLogInterface::HandleLogMessage(e);
     }
-    std::atomic<xiiUInt32> m_uiDiagnostics = 0;
+    xiiAtomicIntegerU32 m_uiDiagnostics = 0;
   } failureLog;
   xiiTestLogSystemScope failureScope(&failureLog, true);
   failureLog.ExpectMessage("Asset transformation:", xiiLogMsgType::ErrorMsg);

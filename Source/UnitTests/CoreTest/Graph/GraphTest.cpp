@@ -12,7 +12,7 @@ XII_CREATE_SIMPLE_TEST(Graph, Structure)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Recoverable identity and capacity failures")
   {
-    xiiAtomicInteger<xiiUInt64> counter(xiiMath::MaxValue<xiiUInt64>() - 1);
+    xiiAtomicIntegerU64 counter(xiiMath::MaxValue<xiiUInt64>() - 1);
     xiiUInt64                   identity = 0;
     XII_TEST_RESULT(xiiInternal::AllocateGraphIdentity(counter, identity));
     XII_TEST_BOOL(identity == xiiMath::MaxValue<xiiUInt64>());

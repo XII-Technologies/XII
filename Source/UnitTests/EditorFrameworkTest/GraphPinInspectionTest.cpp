@@ -203,15 +203,26 @@ namespace
           return item->mapRectToParent(item->boundingRect());
       return {};
     }
+
     bool HasComment(const xiiDocumentObject* object, xiiStringView text) const
     {
-      const auto* node = m_Nodes.Find(object).Value();
+      const auto*   node     = m_Nodes.Find(object).Value();
+      const QString expected = QString::fromUtf8(text.GetStartPointer(), text.GetElementCount());
+
       for (const auto* item : node->childItems())
-        if (const auto* label = dynamic_cast<const QGraphicsTextItem*>(item))
-          if (label->isVisible() && label->toPlainText() == QString::fromUtf8(text.GetStartPointer(), text.GetElementCount()))
-            return true;
+      {
+        if (item->type() != QGraphicsTextItem::Type)
+          continue;
+
+        const auto* label = static_cast<const QGraphicsTextItem*>(item);
+
+        if (label->isVisible() && label->toPlainText() == expected)
+          return true;
+      }
+
       return false;
     }
+
     xiiQtPin* FindPin(const xiiDocumentObject* object, bool input)
     {
       auto node = m_Nodes.Find(object);
