@@ -7,6 +7,7 @@
 #include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/Uuid.h>
 
@@ -79,9 +80,9 @@ public:
 
   static bool IsProjectOpen() { return GetSingleton() != nullptr && GetSingleton()->m_State == State::Ready; }
   static bool IsProjectClosing() { return GetSingleton() != nullptr && GetSingleton()->m_State == State::Closing; }
-  State       GetState() const { return m_State.load(); }
+  State       GetState() const { return m_State; }
   /// Monotonic process-local session identity, distinct from the persistent project UUID.
-  static xiiUInt64          GetProjectGeneration() { return s_uiProjectGeneration.load(); }
+  static xiiUInt64          GetProjectGeneration() { return s_uiProjectGeneration; }
   static bool               IsProjectGenerationCurrent(xiiUInt64 uiGeneration) { return GetSingleton() != nullptr && s_uiProjectGeneration == uiGeneration; }
   const xiiProjectManifest& GetManifest() const { return m_Manifest; }
   /// Validates and atomically persists changes before publishing them. Project identity is immutable.
@@ -142,9 +143,9 @@ private:
   xiiStatus Open();
 
 private:
-  std::atomic<State>            m_State = State::Opening;
-  xiiProjectManifest            m_Manifest;
-  static std::atomic<xiiUInt64> s_uiProjectGeneration;
-  xiiString                     m_sProjectPath;
-  xiiHybridArray<xiiString, 4>  m_AllowedDocumentRoots;
+  xiiAtomicInteger<State>      m_State = State::Opening;
+  xiiProjectManifest           m_Manifest;
+  static xiiAtomicIntegerU64   s_uiProjectGeneration;
+  xiiString                    m_sProjectPath;
+  xiiHybridArray<xiiString, 4> m_AllowedDocumentRoots;
 };

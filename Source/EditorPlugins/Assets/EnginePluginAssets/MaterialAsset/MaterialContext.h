@@ -40,11 +40,11 @@ private:
   xiiVariant                            m_LastLightingMessage;
   bool                                  m_bPreviewGrid        = false;
   float                                 m_fPreviewOrientation = 0.0f;
-  xiiMaterialResourceHandle m_hMaterial;
-  xiiMeshResourceHandle     m_hSphereMesh;
-  xiiMeshResourceHandle     m_hBoxMesh;
-  xiiMeshResourceHandle     m_hPlaneMesh;
-  xiiComponentHandle        m_hMeshComponent;
+  xiiMaterialResourceHandle             m_hMaterial;
+  xiiMeshResourceHandle                 m_hSphereMesh;
+  xiiMeshResourceHandle                 m_hBoxMesh;
+  xiiMeshResourceHandle                 m_hPlaneMesh;
+  xiiComponentHandle                    m_hMeshComponent;
 
   enum class PreviewModel : xiiUInt8
   {

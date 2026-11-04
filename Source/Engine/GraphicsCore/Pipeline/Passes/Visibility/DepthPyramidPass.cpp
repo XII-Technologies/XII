@@ -33,7 +33,7 @@ void xiiDepthPyramidPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pin
 
 xiiResult xiiDepthPyramidPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto  input  = context.GetInputTexture(m_Depth);
+  const auto input = context.GetInputTexture(m_Depth);
   if (!input.IsValid() && m_bAllowAbsentDepth)
     return XII_SUCCESS;
   const auto* source = context.m_Graph.GetTextureDescription(input);

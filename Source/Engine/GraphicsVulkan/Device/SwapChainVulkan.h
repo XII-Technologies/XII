@@ -53,6 +53,7 @@ private:
   vk::Result AcquireNextImage();
 
 private:
+  void*            m_pMetalLayer = nullptr;
   vk::SurfaceKHR   m_vkSurface;
   vk::SwapchainKHR m_vkSwapChain;
   vk::Format       m_vkColorFormat        = vk::Format::eUndefined;

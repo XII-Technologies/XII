@@ -47,7 +47,7 @@ void xiiScreenIrradianceTracePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
 }
 xiiResult xiiScreenIrradianceTracePass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto  depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal), radiance = context.GetInputTexture(m_Radiance);
+  const auto depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal), radiance = context.GetInputTexture(m_Radiance);
   if (!depth.IsValid() && m_bAllowAbsentDepth)
     return XII_SUCCESS;
   const auto  camera = context.GetInputBuffer(m_Camera);

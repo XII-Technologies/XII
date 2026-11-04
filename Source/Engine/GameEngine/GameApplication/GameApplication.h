@@ -111,7 +111,7 @@ protected:
   bool                          m_bShowConsole = false;
   xiiUniquePtr<xiiQuakeConsole> m_pConsole;
 
-  xiiEventSubscriptionID m_CVarChangeSubscriptionID;
+  xiiEventSubscriptionID               m_CVarChangeSubscriptionID;
   xiiGameApplicationSettings           m_Settings;
   xiiEvent<xiiSettings*>::Unsubscriber m_SettingsSubscription;
   bool                                 m_bSettingsInitialized = false;

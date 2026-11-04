@@ -1424,6 +1424,10 @@ public:
   /// \param pDestinationTexture - The handle to the destination texture object.
   void CopyTexture(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture);
 
+  /// Copies and scales a single-sample 2D color image, converting compatible color formats.
+  /// Must be recorded outside a render pass on a graphics/transfer list. Returns failure when unsupported.
+  virtual xiiResult BlitTexture(xiiGALTexture*, xiiGALTexture*) { return XII_FAILURE; }
+
   /// Copies a region from the source texture to the destination texture.
   ///
   /// \param pSourceTexture          - The handle to the source texture object.

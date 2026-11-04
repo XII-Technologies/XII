@@ -15,7 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiDepthPyramidPass final : public xiiRenderPipelineP
 public:
   xiiRenderPipelineTextureInputPin            m_Depth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Pyramid{xiiGALResourceFormat::R32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
-  bool                                        m_bAsyncCompute = true;
+  bool                                        m_bAsyncCompute     = true;
   bool                                        m_bClosestDepth     = false;
   bool                                        m_bAllowAbsentDepth = false;
   void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;

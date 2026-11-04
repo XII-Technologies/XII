@@ -69,7 +69,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewEditorPipeline)
   const xiiString previousTransparencyId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(transparencyId).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(transparencyId);
   XII_SCOPE_EXIT(if (previousTransparencyId != transparencyId) xiiResourceManager::RegisterNamedResource(transparencyId, previousTransparencyId));
-  const auto      particlesId         = xiiPipelineLibraryTestIdentity("SceneParticles");
+  const auto      particlesId          = xiiPipelineLibraryTestIdentity("SceneParticles");
   const auto      irradianceId         = xiiPipelineLibraryTestIdentity("SceneScreenSpaceIrradiance");
   const xiiString previousIrradianceId = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(irradianceId).GetResourceID();
   xiiResourceManager::UnregisterNamedResource(irradianceId);

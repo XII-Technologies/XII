@@ -113,7 +113,7 @@ void xiiQtPluginSelectionWidget::on_PluginsList_currentItemChanged(QListWidgetIt
 
   if (current)
   {
-    auto& state = m_States[PluginsList->row(current)];
+    auto&       state    = m_States[PluginsList->row(current)];
     const auto& info     = *state.m_pInfo;
     QString     metadata = tr("Bundle: %1\n%2\n\n").arg(xiiMakeQString(state.m_sID), current->toolTip());
     metadata += xiiMakeQString(info.m_sDescription);

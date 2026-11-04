@@ -27,8 +27,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereApplyPass,1,xiiRTTIDefaultAllocato
 // clang-format on
 xiiResult xiiAtmosphereApplyPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto  depth = context.GetInputTexture(m_Depth), radiance = context.GetInputTexture(m_Radiance), transmittance = context.GetInputTexture(m_Transmittance), multiScatter = context.GetInputTexture(m_MultiScatter);
-  const auto  camera = context.GetInputBuffer(m_Camera), light = context.GetInputBuffer(m_Light), atmosphere = context.GetInputBuffer(m_Atmosphere);
+  const auto depth = context.GetInputTexture(m_Depth), radiance = context.GetInputTexture(m_Radiance), transmittance = context.GetInputTexture(m_Transmittance), multiScatter = context.GetInputTexture(m_MultiScatter);
+  const auto camera = context.GetInputBuffer(m_Camera), light = context.GetInputBuffer(m_Light), atmosphere = context.GetInputBuffer(m_Atmosphere);
   if (!atmosphere.IsValid())
     return context.SetOutput(m_Output, radiance);
   const auto* d = xiiScreenSpacePassUtils::Image(context, depth, 1);

@@ -272,11 +272,37 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewDestroyedResponseMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiViewDestroyedResponseMsgToEditor>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiViewRedrawMsgToEngine>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewFrameMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiViewFrameMsgToEditor>)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("HWND", m_uiHWND),
+    XII_MEMBER_PROPERTY("FrameID", m_uiFrameID),
+    XII_MEMBER_PROPERTY("TextureID", m_uiTextureID),
+    XII_MEMBER_PROPERTY("Width", m_uiWidth),
+    XII_MEMBER_PROPERTY("Height", m_uiHeight),
+    XII_MEMBER_PROPERTY("Memory", m_Memory),
+    XII_MEMBER_PROPERTY("Pixels", m_Pixels),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewFrameConsumedMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiViewFrameConsumedMsgToEngine>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("FrameID", m_uiFrameID),
+    XII_MEMBER_PROPERTY("SharedTextureAccepted", m_bSharedTextureAccepted),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 2, xiiRTTIDefaultAllocator<xiiViewRedrawMsgToEngine>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("UseSharedTexture", m_bUseSharedTexture),
     XII_MEMBER_PROPERTY("WindowWidth", m_uiWindowWidth),
     XII_MEMBER_PROPERTY("WindowHeight", m_uiWindowHeight),
     XII_MEMBER_PROPERTY("DevicePixelRatio", m_fDevicePixelRatio),

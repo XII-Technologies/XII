@@ -20,10 +20,10 @@ target_link_libraries(${PROJECT_NAME}
   VulkanMemoryAllocator
 )
 
-if (XII_3RDPARTY_SDL_SUPPORT)
-  if(XII_COMPILE_ENGINE_AS_DLL)
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-shared)
-  else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-static)
-  endif()
+if(XII_3RDPARTY_SDL_SUPPORT)
+  xii_link_thirdparty_sdl(${PROJECT_NAME})
+endif()
+
+if(XII_CMAKE_PLATFORM_OSX)
+  target_link_libraries(${PROJECT_NAME} PRIVATE "-framework QuartzCore" objc)
 endif()

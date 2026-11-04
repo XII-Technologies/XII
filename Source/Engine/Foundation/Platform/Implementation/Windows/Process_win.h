@@ -7,16 +7,16 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <Foundation/System/Process.h>
 #include <future>
 
-struct xiiPipeWin
+struct xiiPipeWindows
 {
-  HANDLE            m_pipeRead  = nullptr;
-  HANDLE            m_pipeWrite = nullptr;
-  std::thread       m_readThread;
-  std::atomic<bool> m_running = false;
+  HANDLE        m_hPipeRead  = nullptr;
+  HANDLE        m_hPipeWrite = nullptr;
+  std::thread   m_ReadThread;
+  xiiAtomicBool m_bIsRunning = false;
 
   bool IsRunning() const
   {
-    return m_running;
+    return m_bIsRunning;
   }
 
   void Create()
@@ -29,27 +29,27 @@ struct xiiPipeWin
     saAttr.lpSecurityDescriptor = nullptr;
 
     // Create a pipe for the child process.
-    if (!CreatePipe(&m_pipeRead, &m_pipeWrite, &saAttr, 0))
-      xiiLog::Error("xiiPipeWin: CreatePipe failed");
+    if (!CreatePipe(&m_hPipeRead, &m_hPipeWrite, &saAttr, 0))
+      xiiLog::Error("xiiPipeWindows: CreatePipe failed");
 
     // Ensure the read handle to the pipe is not inherited.
-    if (!SetHandleInformation(m_pipeRead, HANDLE_FLAG_INHERIT, 0))
+    if (!SetHandleInformation(m_hPipeRead, HANDLE_FLAG_INHERIT, 0))
       xiiLog::Error("Stdout SetHandleInformation");
   }
 
   void Close()
   {
-    if (m_pipeWrite)
+    if (m_hPipeWrite)
     {
-      CloseHandle(m_pipeWrite);
-      m_pipeWrite = nullptr;
+      CloseHandle(m_hPipeWrite);
+      m_hPipeWrite = nullptr;
 
-      if (m_readThread.joinable())
+      if (m_ReadThread.joinable())
       {
-        m_readThread.join();
+        m_ReadThread.join();
       }
-      CloseHandle(m_pipeRead);
-      m_pipeRead = nullptr;
+      CloseHandle(m_hPipeRead);
+      m_hPipeRead = nullptr;
     }
   }
 
@@ -76,10 +76,10 @@ struct xiiPipeWin
 
   void StartRead(xiiDelegate<void(xiiStringView)>& ref_onStdOut)
   {
-    if (m_pipeWrite)
+    if (m_hPipeWrite)
     {
-      m_running    = true;
-      m_readThread = std::thread([&]() {
+      m_bIsRunning = true;
+      m_ReadThread = std::thread([&]() {
         xiiHybridArray<char, 256> overflowBuffer;
 
         constexpr xiiInt32 BUFSIZE = 512;
@@ -87,7 +87,7 @@ struct xiiPipeWin
         while (true)
         {
           DWORD bytesRead = 0;
-          bool  res       = ReadFile(m_pipeRead, chBuf, BUFSIZE, &bytesRead, nullptr);
+          bool  res       = ReadFile(m_hPipeRead, chBuf, BUFSIZE, &bytesRead, nullptr);
           if (!res || bytesRead == 0)
           {
             if (!overflowBuffer.IsEmpty())
@@ -139,7 +139,7 @@ struct xiiPipeWin
             }
           }
         }
-        m_running = false;
+        m_bIsRunning = false;
         //
       });
     }
@@ -151,8 +151,8 @@ struct xiiProcessImpl
   xiiOsProcessHandle m_ProcessHandle    = nullptr;
   xiiOsProcessHandle m_MainThreadHandle = nullptr;
   xiiOsProcessID     m_ProcessID        = 0;
-  xiiPipeWin         m_pipeStdOut;
-  xiiPipeWin         m_pipeStdErr;
+  xiiPipeWindows     m_PipeStdOut;
+  xiiPipeWindows     m_PipeStdErr;
 
   ~xiiProcessImpl() { Close(); }
 
@@ -170,8 +170,8 @@ struct xiiProcessImpl
       m_ProcessHandle = nullptr;
     }
 
-    m_pipeStdOut.Close();
-    m_pipeStdErr.Close();
+    m_PipeStdOut.Close();
+    m_PipeStdErr.Close();
   }
 };
 
@@ -295,17 +295,17 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
 
   if (m_OnStdOut.IsValid())
   {
-    m_pImpl->m_pipeStdOut.Create();
-    startupInformation.hStdOutput = m_pImpl->m_pipeStdOut.m_pipeWrite;
+    m_pImpl->m_PipeStdOut.Create();
+    startupInformation.hStdOutput = m_pImpl->m_PipeStdOut.m_hPipeWrite;
     startupInformation.dwFlags |= STARTF_USESTDHANDLES;
-    HandlesToInherit[uiNumHandlesToInherit++] = m_pImpl->m_pipeStdOut.m_pipeWrite;
+    HandlesToInherit[uiNumHandlesToInherit++] = m_pImpl->m_PipeStdOut.m_hPipeWrite;
   }
   if (m_OnStdError.IsValid())
   {
-    m_pImpl->m_pipeStdErr.Create();
-    startupInformation.hStdError = m_pImpl->m_pipeStdErr.m_pipeWrite;
+    m_pImpl->m_PipeStdErr.Create();
+    startupInformation.hStdError = m_pImpl->m_PipeStdErr.m_hPipeWrite;
     startupInformation.dwFlags |= STARTF_USESTDHANDLES;
-    HandlesToInherit[uiNumHandlesToInherit++] = m_pImpl->m_pipeStdErr.m_pipeWrite;
+    HandlesToInherit[uiNumHandlesToInherit++] = m_pImpl->m_PipeStdErr.m_hPipeWrite;
   }
 
   // In theory this can be used to force the process's main window to be in the background, but except for SW_HIDE and SW_SHOWMINNOACTIVE this doesn't work, and those are not useful.
@@ -345,13 +345,13 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
                                         HandlesToInherit       // rgHandlesToInherit
                                         ))
   {
-    m_pImpl->m_pipeStdOut.Close();
-    m_pImpl->m_pipeStdErr.Close();
+    m_pImpl->m_PipeStdOut.Close();
+    m_pImpl->m_PipeStdErr.Close();
     xiiLog::Error("Failed to launch '{} {}' - {}", sProcess, xiiArgSensitive(sCmdLine, "CommandLine"), xiiArgErrorCode(GetLastError()));
     return XII_FAILURE;
   }
-  m_pImpl->m_pipeStdOut.StartRead(m_OnStdOut);
-  m_pImpl->m_pipeStdErr.StartRead(m_OnStdError);
+  m_pImpl->m_PipeStdOut.StartRead(m_OnStdOut);
+  m_pImpl->m_PipeStdErr.StartRead(m_OnStdError);
 
   m_pImpl->m_ProcessHandle = processInformation.hProcess;
   m_pImpl->m_ProcessID     = processInformation.dwProcessId;
@@ -419,8 +419,8 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
 
   // The process has finished
 
-  m_pImpl->m_pipeStdOut.Close();
-  m_pImpl->m_pipeStdErr.Close();
+  m_pImpl->m_PipeStdOut.Close();
+  m_pImpl->m_PipeStdErr.Close();
 
   GetExitCodeProcess(m_pImpl->m_ProcessHandle, reinterpret_cast<DWORD*>(&m_iExitCode));
 
@@ -486,15 +486,15 @@ xiiProcessState xiiProcess::GetState() const
   }
 
   // Do not consider a process finished if the pipe threads have not exited yet.
-  if (m_pImpl->m_pipeStdOut.IsRunning() || m_pImpl->m_pipeStdErr.IsRunning())
+  if (m_pImpl->m_PipeStdOut.IsRunning() || m_pImpl->m_PipeStdErr.IsRunning())
   {
     if (xiiTime::Now() - m_ProcessExited < xiiTime::MakeFromSeconds(2))
     {
       return xiiProcessState::Running;
     }
 
-    m_pImpl->m_pipeStdOut.Close();
-    m_pImpl->m_pipeStdErr.Close();
+    m_pImpl->m_PipeStdOut.Close();
+    m_pImpl->m_PipeStdErr.Close();
   }
 
   m_iExitCode = (xiiInt32)exitCode;

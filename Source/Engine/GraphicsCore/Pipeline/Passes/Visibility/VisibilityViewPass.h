@@ -17,16 +17,16 @@ public:
   xiiVisibilityViewPass();
   ~xiiVisibilityViewPass() override;
   /// Optional exact candidate stream. Empty selections use one invalid-index sentinel.
-  xiiRenderPipelineBufferInputPin          m_InputCandidates{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferOutputPin         m_View{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferOutputPin         m_Candidates{false, xiiGALBindFlags::ShaderResource};
-  xiiUInt32                                m_uiVisibilityMask  = 0xFFFFFFFFU;
-  xiiUInt32                                m_uiRequiredFlags   = xiiGpuInstanceFlags::Enabled;
-  xiiUInt32                                m_uiExcludedFlags   = 0;
-  float                                    m_fLodHysteresis    = 0.1f;
-  float                                    m_fLodScreenScale   = 1.0f;
-  bool                                     m_bUseViewSelection = true;
-  bool                                     m_bEnabled          = true;
+  xiiRenderPipelineBufferInputPin  m_InputCandidates{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_View{false, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_Candidates{false, xiiGALBindFlags::ShaderResource};
+  xiiUInt32                        m_uiVisibilityMask  = 0xFFFFFFFFU;
+  xiiUInt32                        m_uiRequiredFlags   = xiiGpuInstanceFlags::Enabled;
+  xiiUInt32                        m_uiExcludedFlags   = 0;
+  float                            m_fLodHysteresis    = 0.1f;
+  float                            m_fLodScreenScale   = 1.0f;
+  bool                             m_bUseViewSelection = true;
+  bool                             m_bEnabled          = true;
   /// With no GPU-supplied candidate stream, inspect the exact extracted view selection.
   /// GPU-supplied candidates use a conservative world-wide presence test.
   bool                                     m_bSkipEmptySelection = false;

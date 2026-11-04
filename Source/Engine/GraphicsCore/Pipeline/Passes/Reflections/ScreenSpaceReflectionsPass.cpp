@@ -27,7 +27,7 @@ struct xiiScreenSpaceReflectionsPass::Data
   xiiRenderGraphBufferHandle  m_hConstants;              ///< ConstantBuffer in (SSR quality and traversal settings).
   xiiSSRConstants             m_Constants;
 
-  xiiSizeU32                 m_Size;
+  xiiSizeU32                               m_Size;
   xiiRenderGraphBufferHandle               m_hPerFrameCamera;
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALSampler>              m_Linear, m_Point;

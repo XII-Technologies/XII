@@ -108,12 +108,12 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
     if (!present)
       return XII_SUCCESS;
   }
-  xiiFrustum  frustum;
+  xiiFrustum frustum;
   view.ComputeCullingFrustum(frustum);
   const auto           temporalData = context.GetInputData(m_TemporalCamera);
   const auto*          temporal     = xiiDynamicCast<const xiiTemporalCameraSnapshot*>(temporalData.Borrow());
   xiiGpuVisibilityView snapshot;
-  snapshot.m_ViewProjectionMatrix          = view.GetViewProjectionMatrix(xiiCameraEye::Left);
+  snapshot.m_ViewProjectionMatrix = view.GetViewProjectionMatrix(xiiCameraEye::Left);
   if (temporal && temporal->m_Sample.m_bEnabled)
   {
     snapshot.m_ViewProjectionMatrix = temporal->m_Sample.m_Camera.m_ViewProjectionMatrix;

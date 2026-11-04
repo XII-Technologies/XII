@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/FoundationInternal.h>
+
 XII_FOUNDATION_INTERNAL_HEADER
 
 #include <SDL3/SDL_init.h>
@@ -20,6 +21,8 @@ xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Scre
   SDL_DisplayID* pDisplayIDs = SDL_GetDisplays(&iDisplayCount);
 
   XII_SCOPE_EXIT(if (pDisplayIDs != nullptr) { SDL_free(pDisplayIDs); });
+
+  out_Screens.Reserve(iDisplayCount);
 
   for (xiiInt32 i = 0; i < iDisplayCount; ++i)
   {

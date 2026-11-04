@@ -74,7 +74,7 @@ private:
   xiiSharedPtr<CallbackState> m_CallbackState;
   xiiUInt64                   m_uiGeneration = 0;
   xiiTime                     m_LastAttempt;
-  std::atomic<xiiUInt64>      m_uiProjectGeneration = 0;
+  xiiAtomicIntegerU64         m_uiProjectGeneration = 0;
   bool                        m_bStopped            = false;
 };
 

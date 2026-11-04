@@ -92,7 +92,7 @@ public:
   static void SaveShortcutAssignment();
   /// Saves staged assignments without changing live action descriptors. Unspecified actions retain their bindings.
   static xiiResult SaveShortcutAssignment(const xiiMap<xiiString, xiiString>& assignments);
-  static void LoadShortcutAssignment();
+  static void      LoadShortcutAssignment();
 
   static const xiiIdTable<xiiActionId, xiiActionDescriptor*>::ConstIterator GetActionIterator();
 

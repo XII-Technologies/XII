@@ -9,5 +9,5 @@
 namespace xiiInternal
 {
   /// Saturating identity allocation. Failure leaves the counter exhausted and clears the output.
-  XII_CORE_DLL xiiResult AllocateGraphIdentity(xiiAtomicInteger<xiiUInt64>& counter, xiiUInt64& out_identity);
+  XII_CORE_DLL xiiResult AllocateGraphIdentity(xiiAtomicIntegerU64& counter, xiiUInt64& out_identity);
 } // namespace xiiInternal

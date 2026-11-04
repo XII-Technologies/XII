@@ -4,6 +4,7 @@
 
 #include <GameEngine/GameEngineDLL.h>
 
+#include <Core/System/Window.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Size.h>
 #include <Foundation/Strings/String.h>

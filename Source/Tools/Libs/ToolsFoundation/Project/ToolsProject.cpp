@@ -9,7 +9,7 @@
 
 XII_IMPLEMENT_SINGLETON(xiiToolsProject);
 
-std::atomic<xiiUInt64> xiiToolsProject::s_uiProjectGeneration = 0;
+xiiAtomicIntegerU64 xiiToolsProject::s_uiProjectGeneration = 0;
 
 namespace
 {
@@ -31,7 +31,7 @@ xiiToolsProjectRequest::xiiToolsProjectRequest()
 xiiToolsProject::xiiToolsProject(xiiStringView sProjectPath) :
   m_SingletonRegistrar(this)
 {
-  ++s_uiProjectGeneration;
+  s_uiProjectGeneration.Increment();
 
   m_sProjectPath = sProjectPath;
   XII_ASSERT_DEV(!m_sProjectPath.IsEmpty(), "Path cannot be empty.");
@@ -120,7 +120,8 @@ void xiiToolsProject::CloseProject()
   if (!s_bOpeningProject && GetSingleton() && GetSingleton()->m_State != State::Opening && !IsProjectClosing())
   {
     GetSingleton()->m_State = State::Closing;
-    ++s_uiProjectGeneration;
+
+    s_uiProjectGeneration.Increment();
 
     xiiToolsProjectEvent e;
     e.m_pProject = GetSingleton();

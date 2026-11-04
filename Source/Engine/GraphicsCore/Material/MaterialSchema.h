@@ -77,14 +77,14 @@ public:
 
   [[nodiscard]] bool IsValid() const { return m_bValid; }
 
-  [[nodiscard]] const xiiString&                 GetName() const { return m_sName; }
-  [[nodiscard]] const xiiShaderResourceHandle&   GetShader() const { return m_hShader; }
+  [[nodiscard]] const xiiString&                                      GetName() const { return m_sName; }
+  [[nodiscard]] const xiiShaderResourceHandle&                        GetShader() const { return m_hShader; }
   [[nodiscard]] const xiiHashTable<xiiHashedString, xiiHashedString>& GetPermutations() const { return m_Permutations; }
-  [[nodiscard]] xiiEnum<xiiMaterialDomain>       GetDomain() const { return m_Domain; }
-  [[nodiscard]] xiiEnum<xiiMaterialShadingModel> GetShadingModel() const { return m_ShadingModel; }
-  [[nodiscard]] xiiUInt32                        GetVersion() const { return m_uiVersion; }
-  [[nodiscard]] xiiUInt32                        GetParameterBlockSize() const { return m_uiParameterBlockSize; }
-  [[nodiscard]] xiiUInt64                        GetLayoutHash() const { return m_uiLayoutHash; }
+  [[nodiscard]] xiiEnum<xiiMaterialDomain>                            GetDomain() const { return m_Domain; }
+  [[nodiscard]] xiiEnum<xiiMaterialShadingModel>                      GetShadingModel() const { return m_ShadingModel; }
+  [[nodiscard]] xiiUInt32                                             GetVersion() const { return m_uiVersion; }
+  [[nodiscard]] xiiUInt32                                             GetParameterBlockSize() const { return m_uiParameterBlockSize; }
+  [[nodiscard]] xiiUInt64                                             GetLayoutHash() const { return m_uiLayoutHash; }
 
   [[nodiscard]] xiiArrayPtr<const xiiMaterialParameterDefinition> GetParameters() const { return m_Parameters; }
   [[nodiscard]] xiiArrayPtr<const xiiMaterialTextureDefinition>   GetTextures() const { return m_Textures; }

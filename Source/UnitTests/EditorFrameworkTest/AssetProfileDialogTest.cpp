@@ -70,9 +70,9 @@ void TestAssetProfileDialog(xiiStringView projectDirectory)
   const auto before = ReadFile(definitions);
   {
     xiiQtAssetProfilesPage cancelled(nullptr);
-    const auto*           draft    = GetDraft(cancelled);
-    auto*                 accessor = draft->GetObjectAccessor();
-    const auto*           profile  = draft->GetObjectManager()->GetRootObject()->GetChildren()[0];
+    const auto*            draft    = GetDraft(cancelled);
+    auto*                  accessor = draft->GetObjectAccessor();
+    const auto*            profile  = draft->GetObjectManager()->GetRootObject()->GetChildren()[0];
     accessor->StartTransaction("Draft profile edit");
     XII_TEST_STATUS(accessor->SetValueByName(profile, "TargetPlatform", "Linux"));
     accessor->FinishTransaction();
@@ -83,11 +83,11 @@ void TestAssetProfileDialog(xiiStringView projectDirectory)
   }
 
   xiiQtAssetProfilesPage dialog(nullptr);
-  const auto*           draft     = GetDraft(dialog);
-  auto*                 accessor  = draft->GetObjectAccessor();
-  const auto*           root      = draft->GetObjectManager()->GetRootObject();
-  const auto*           oldObject = root->GetChildren()[1];
-  xiiUuid               first, second;
+  const auto*            draft     = GetDraft(dialog);
+  auto*                  accessor  = draft->GetObjectAccessor();
+  const auto*            root      = draft->GetObjectManager()->GetRootObject();
+  const auto*            oldObject = root->GetChildren()[1];
+  xiiUuid                first, second;
   accessor->StartTransaction("Add two draft profiles");
   XII_TEST_STATUS(accessor->AddObjectByName(root, "Children", -1, xiiGetStaticRTTI<xiiPlatformProfile>(), first));
   XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(first), "Name", "FirstDialogProfile"));

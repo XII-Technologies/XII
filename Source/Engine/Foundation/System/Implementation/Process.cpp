@@ -3,14 +3,6 @@
 #include <Foundation/FoundationPCH.h>
 
 #if XII_ENABLED(XII_SUPPORTS_PROCESSES)
-// Include inline file
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#    include <Foundation/System/Implementation/Win/Process_win.h>
-#  elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
-#    include <Foundation/System/Implementation/Posix/Process_posix.h>
-#  else
-#    error "Process functions are not implemented on current platform"
-#  endif
 
 #  include <Foundation/Strings/Implementation/StringIterator.h>
 
@@ -127,4 +119,12 @@ void xiiProcess::BuildFullCommandLineString(const xiiProcessOptions& opt, xiiStr
 
   opt.BuildCommandLineString(cmd);
 }
+
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#    include <Foundation/Platform/Implementation/Windows/Process_win.h>
+#  elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
+#    include <Foundation/Platform/Implementation/Posix/Process_posix.h>
+#  else
+#    error "Process functions are not implemented on current platform"
+#  endif
 #endif

@@ -5,13 +5,19 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Logging/Log.h>
 
+// Vulkan platform interfaces.
 #define VK_ENABLE_BETA_EXTENSIONS
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  define VK_USE_PLATFORM_WIN32_KHR
+#  define VULKAN_HPP_NO_WIN32_PROTOTYPES
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  define VK_USE_PLATFORM_WAYLAND_KHR
+#  define VK_USE_PLATFORM_XLIB_KHR
 #elif XII_ENABLED(XII_PLATFORM_OSX)
-#  define VK_USE_PLATFORM_MACOS_MVK
+#  define VK_USE_PLATFORM_METAL_EXT
+#else
+#  error "Vulkan is not supported on this platform."
 #endif
 
 // Enable dynamic Vulkan functions.
@@ -30,19 +36,44 @@
 // Turn off any "enhanced mode" function overloads (ArrayProxy, return-value transforms...).
 #define VULKAN_HPP_DISABLE_ENHANCED_MODE
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  define VULKAN_HPP_NO_WIN32_PROTOTYPES
-#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
-#endif
-
 #include <vulkan/vulkan.hpp>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <vulkan/vulkan_win32.h>
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  ifdef VK_USE_PLATFORM_WAYLAND_KHR
-#    include <vulkan/vulkan_wayland.h>
-#  endif
+#if XII_ENABLED(XII_PLATFORM_LINUX) && defined(VK_USE_PLATFORM_XLIB_KHR)
+// Prevent Xlib macros from polluting XII's namespace.
+#  undef Bool
+#  undef Status
+#  undef True
+#  undef False
+#  undef None
+#  undef Success
+#  undef Always
+#  undef Above
+#  undef Below
+#  undef Complex
+#  undef CurrentTime
+#  undef NoSymbol
+#  undef CopyFromParent
+
+// X11 window and input event identifiers.
+#  undef KeyPress
+#  undef KeyRelease
+#  undef FocusIn
+#  undef FocusOut
+#  undef Expose
+#  undef Button1
+#  undef Button2
+#  undef Button3
+#  undef Button4
+#  undef Button5
+
+// Additional potentially conflicting X11 identifiers.
+#  undef InputOutput
+#  undef InputOnly
+#  undef Unsorted
+#  undef AllocNone
+#  undef AllocAll
+#  undef StaticColor
+#  undef TrueColor
 #endif
 
 namespace VulkanUtilities

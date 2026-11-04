@@ -231,7 +231,8 @@ xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChai
 {
   VerifyMultithreadedAccess();
 
-  XII_GAL_DEVICE_CHECK(description.m_pWindow != nullptr, "Swap chain creation failed: Window handle (m_pWindow) is null. A valid window reference is required.");
+  XII_GAL_DEVICE_CHECK((description.m_pWindow != nullptr) != (description.m_NativeWindow.m_Type != xiiGALNativeWindowDescription::Type::None), "Supply exactly one SDL window or native presentation window.");
+  XII_GAL_DEVICE_CHECK(description.m_NativeWindow.m_Type == xiiGALNativeWindowDescription::Type::None || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Vulkan, "Native presentation windows require Vulkan.");
   XII_GAL_DEVICE_CHECK(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "Swap chain creation failed: Color buffer format is 'Unknown'. Specify a valid format for rendering output.");
   XII_GAL_DEVICE_CHECK(!description.m_UsageFlags.IsNoFlagSet(), "Swap chain creation failed: No usage flags specified. Define at least one usage via m_UsageFlags.");
   XII_GAL_DEVICE_CHECK(description.m_fDefaultDepthValue >= 0.0f && description.m_fDefaultDepthValue <= 1.0f, "Swap chain creation failed: Default depth value must be in [0, 1]. Check m_fDefaultDepthValue.");

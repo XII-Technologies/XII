@@ -5,6 +5,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Containers/Blob.h>
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
 class xiiStreamWriter;
@@ -78,6 +79,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags             = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags. The default is None.
   xiiGALOptimizedClearValue           m_ClearValue            = {};                                 ///< Optimized clear value.
   void*                               m_pExistingNativeObject = nullptr;                            ///< Used to encapsulate existing native textures in objects usable by the GAL.
+  xiiGALExternalMemoryDescription     m_ExternalMemory;                                             ///< Borrowed import handles, or export options. Handles are duplicated during creation.
 };
 
 /// This describes the data for one texture sub-resource.
@@ -180,6 +182,13 @@ public:
 
   /// Returns the external memory description for this texture.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALExternalMemoryDescription& GetExternalMemoryDescription() const { return m_ExternalMemoryDescription; }
+
+  /// Acquire a binary-semaphore shared texture after the external consumer has submitted its release.
+  /// The command list must be a recording graphics list. Submit it before rendering into this texture.
+  virtual xiiResult AcquireExternalMemory(xiiGALCommandList*) { return XII_FAILURE; }
+  /// Release the texture to an external API in General layout and signal its binary semaphore.
+  /// Submit this graphics list after all rendering into the texture has been submitted.
+  virtual xiiResult ReleaseExternalMemory(xiiGALCommandList*) { return XII_FAILURE; }
 
   /// Returns the calculated memory consumption for texture.
   [[nodiscard]] virtual xiiUInt64 GetMemoryConsumption() const;

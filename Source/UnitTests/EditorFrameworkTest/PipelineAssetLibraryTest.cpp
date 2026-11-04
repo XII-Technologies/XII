@@ -96,7 +96,7 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
   xiiStringBuilder lookupTable;
   for (const xiiStringView name : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneSpotShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene", "Editor"})
   {
-    xiiStringBuilder        source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
+    xiiStringBuilder source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
     xiiTestFramework::Output(xiiTestOutput::Details, "Exporting %s", name.GetStartPointer());
     PipelineLibraryDocument storage(source);
     xiiDocument*            document = &storage;

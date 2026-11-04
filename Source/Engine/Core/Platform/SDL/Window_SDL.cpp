@@ -167,11 +167,8 @@ xiiResult xiiWindow::Initialize()
     return XII_FAILURE;
   }
 
-#  if XII_ENABLED(XII_PLATFORM_LINUX)
-  m_hWindowHandle.m_pSDLWindow = pWindow;
-#  else
   m_hWindowHandle = pWindow;
-#  endif
+
 
   if (m_CreationDescription.m_Position != xiiVec2I32(0x80000000, 0x80000000))
   {
@@ -185,7 +182,9 @@ xiiResult xiiWindow::Initialize()
   if (!SDL_SetPointerProperty(SDL_GetWindowProperties(pWindow), "XII.Window", this))
   {
     SDL_DestroyWindow(pWindow);
-    m_hWindowHandle = INVALID_INTERNAL_WINDOW_HANDLE;
+
+    m_hWindowHandle = XII_INVALID_WINDOW_HANDLE_VALUE;
+
     return XII_FAILURE;
   }
 
@@ -214,7 +213,7 @@ xiiResult xiiWindow::Destroy()
 
   SDL_DestroyWindow(m_hWindowHandle);
 
-  m_hWindowHandle = INVALID_INTERNAL_WINDOW_HANDLE;
+  m_hWindowHandle = XII_INVALID_WINDOW_HANDLE_VALUE;
 
   m_bInitialized = false;
 
@@ -244,36 +243,43 @@ void xiiWindow::ProcessWindowMessages()
   SDL_Event event;
   while (SDL_PollEvent(&event))
   {
-    SDL_Window* nativeWindow = SDL_GetWindowFromEvent(&event);
-    auto*       target       = nativeWindow ? static_cast<xiiWindow*>(SDL_GetPointerProperty(SDL_GetWindowProperties(nativeWindow), "XII.Window", nullptr)) : nullptr;
+    SDL_Window* pWindowSDL    = SDL_GetWindowFromEvent(&event);
+    auto*       pWindowTarget = pWindowSDL ? static_cast<xiiWindow*>(SDL_GetPointerProperty(SDL_GetWindowProperties(pWindowSDL), "XII.Window", nullptr)) : nullptr;
+
     if (event.type == SDL_EVENT_QUIT)
-      target = this;
-    if (!target)
+    {
+      pWindowTarget = this;
+    }
+
+    if (!pWindowTarget)
       continue;
-    if (auto* input = target->GetInputDevice())
-      input->WindowMessage(&event);
+
+    if (auto* pInputDevice = pWindowTarget->GetInputDevice())
+    {
+      pInputDevice->WindowMessage(&event);
+    }
 
     switch (event.type)
     {
       case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
       case SDL_EVENT_QUIT:
       {
-        target->OnClickClose();
+        pWindowTarget->OnClickClose();
       }
       break;
       case SDL_EVENT_WINDOW_MOVED:
       {
-        target->OnWindowMove(event.window.data1, event.window.data2);
+        pWindowTarget->OnWindowMove(event.window.data1, event.window.data2);
       }
       break;
       case SDL_EVENT_WINDOW_RESIZED:
       {
         xiiSizeU32 newSize = {static_cast<xiiUInt32>(event.window.data1), static_cast<xiiUInt32>(event.window.data2)};
-        if (newSize != target->m_CreationDescription.m_Resolution)
+        if (newSize != pWindowTarget->m_CreationDescription.m_Resolution)
         {
-          target->m_CreationDescription.m_Resolution = newSize;
+          pWindowTarget->m_CreationDescription.m_Resolution = newSize;
 
-          target->OnResize(newSize);
+          pWindowTarget->OnResize(newSize);
         }
       }
       break;
@@ -281,102 +287,82 @@ void xiiWindow::ProcessWindowMessages()
       {
         // Window was restored from minimized state. Notify visibility change and update size.
         xiiInt32 iWidth = 0, iHeight = 0;
-#  if XII_ENABLED(XII_PLATFORM_LINUX)
-        if (target->m_hWindowHandle.m_pSDLWindow)
+        if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(target->m_hWindowHandle.m_pSDLWindow, &iWidth, &iHeight);
+          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
-#  else
-        if (target->m_hWindowHandle)
-        {
-          SDL_GetWindowSize(target->m_hWindowHandle, &iWidth, &iHeight);
-        }
-#  endif
+
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
-          if (reportedSize != target->m_CreationDescription.m_Resolution)
+          if (reportedSize != pWindowTarget->m_CreationDescription.m_Resolution)
           {
-            target->m_CreationDescription.m_Resolution = reportedSize;
+            pWindowTarget->m_CreationDescription.m_Resolution = reportedSize;
 
-            target->OnResize(reportedSize);
+            pWindowTarget->OnResize(reportedSize);
           }
         }
-        target->OnVisibleChange(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_FOCUS_GAINED:
       {
-        target->OnFocus(true);
-        target->OnVisibleChange(true);
+        pWindowTarget->OnFocus(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_FOCUS_LOST:
       {
-        target->OnFocus(false);
+        pWindowTarget->OnFocus(false);
       }
       break;
       case SDL_EVENT_WINDOW_MINIMIZED:
       {
-        target->OnVisibleChange(false);
+        pWindowTarget->OnVisibleChange(false);
       }
       break;
       case SDL_EVENT_WINDOW_MAXIMIZED:
       {
         // Window may have changed size when maximized. Query and notify about the new size.
         xiiInt32 iWidth = 0, iHeight = 0;
-#  if XII_ENABLED(XII_PLATFORM_LINUX)
-        if (target->m_hWindowHandle.m_pSDLWindow)
+        if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(target->m_hWindowHandle.m_pSDLWindow, &iWidth, &iHeight);
+          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
-#  else
-        if (target->m_hWindowHandle)
-        {
-          SDL_GetWindowSize(target->m_hWindowHandle, &iWidth, &iHeight);
-        }
-#  endif
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
-          if (reportedSize != target->m_CreationDescription.m_Resolution)
+          if (reportedSize != pWindowTarget->m_CreationDescription.m_Resolution)
           {
-            target->m_CreationDescription.m_Resolution = reportedSize;
+            pWindowTarget->m_CreationDescription.m_Resolution = reportedSize;
 
-            target->OnResize(reportedSize);
+            pWindowTarget->OnResize(reportedSize);
           }
         }
-        target->OnVisibleChange(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_HIDDEN:
       {
-        target->OnVisibleChange(false);
+        pWindowTarget->OnVisibleChange(false);
       }
       break;
       case SDL_EVENT_WINDOW_SHOWN:
       {
         // Window shown - ensure the current size is propagated.
         xiiInt32 iWidth = 0, iHeight = 0;
-#  if XII_ENABLED(XII_PLATFORM_LINUX)
-        if (target->m_hWindowHandle.m_pSDLWindow)
+        if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(target->m_hWindowHandle.m_pSDLWindow, &iWidth, &iHeight);
+          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
-#  else
-        if (target->m_hWindowHandle)
-        {
-          SDL_GetWindowSize(target->m_hWindowHandle, &iWidth, &iHeight);
-        }
-#  endif
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
-          if (reportedSize != target->m_CreationDescription.m_Resolution)
+          if (reportedSize != pWindowTarget->m_CreationDescription.m_Resolution)
           {
-            target->m_CreationDescription.m_Resolution = reportedSize;
+            pWindowTarget->m_CreationDescription.m_Resolution = reportedSize;
 
-            target->OnResize(reportedSize);
+            pWindowTarget->OnResize(reportedSize);
           }
         }
-        target->OnVisibleChange(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
 
@@ -388,11 +374,7 @@ void xiiWindow::ProcessWindowMessages()
 
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  return static_cast<xiiWindowHandle>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_hWindowHandle), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
-#  else
   return m_hWindowHandle;
-#  endif
 }
 
 #endif

@@ -218,7 +218,7 @@ XII_CREATE_SIMPLE_TEST(EditorSystemTray, BackgroundAndQueuedShutdown)
   xiiProgress               progress;
   QPointer<QSystemTrayIcon> icon;
   QPointer<QMenu>           menu;
-  std::atomic<bool>         keepBroadcasting = true;
+  xiiAtomicBool             bKeepBroadcasting = true;
   std::thread               broadcaster;
   {
     xiiQtEditorSystemTray tray(editor, window, progress);
@@ -247,7 +247,7 @@ XII_CREATE_SIMPLE_TEST(EditorSystemTray, BackgroundAndQueuedShutdown)
     broadcaster = std::thread([&]() {
       xiiAssetProcessorEvent event;
       event.m_Type = xiiAssetProcessorEvent::Type::ProcessTaskStateChanged;
-      for (xiiUInt32 i = 0; i < 1000 && keepBroadcasting; ++i)
+      for (xiiUInt32 i = 0; i < 1000 && bKeepBroadcasting; ++i)
         pProcessor->m_Events.Broadcast(event);
     });
     xiiEditorSystemTrayTest::Exit(tray).trigger();
@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(EditorSystemTray, BackgroundAndQueuedShutdown)
     });
     queued.join();
   }
-  keepBroadcasting = false;
+  bKeepBroadcasting = false;
   broadcaster.join();
   XII_TEST_BOOL(icon.isNull());
   XII_TEST_BOOL(menu.isNull());

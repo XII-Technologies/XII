@@ -26,8 +26,8 @@ xiiResult xiiGraph::TryInitialize()
     return XII_FAILURE;
   if (m_pStorage)
     return XII_SUCCESS;
-  static xiiAtomicInteger<xiiUInt64> nextId;
-  xiiUInt64                          identity;
+  static xiiAtomicIntegerU64 nextId;
+  xiiUInt64                  identity;
   XII_SUCCEED_OR_RETURN(xiiInternal::AllocateGraphIdentity(nextId, identity));
   // Metadata allocation is checked directly; Foundation containers retain their normal allocator contract.
   void* memory = m_pAllocator->Allocate(sizeof(Storage), alignof(Storage));

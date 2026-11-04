@@ -195,11 +195,11 @@ private:
 
   // Process thread and its state
   xiiUniquePtr<xiiProcessThread> m_pThread;
-  std::atomic<bool>              m_bForceStop = false; ///< If set, background processes will be killed when stopping without waiting for their current task to finish.
+  xiiAtomicBool                  m_bForceStop = false; ///< If set, background processes will be killed when stopping without waiting for their current task to finish.
 
   // Locks writes to m_ProcessTaskState to make sure the state machine does not go from running to stopped before having fired stopping.
-  mutable xiiMutex              m_ProcessorMutex;
-  std::atomic<ProcessTaskState> m_ProcessTaskState = ProcessTaskState::Stopped;
+  mutable xiiMutex                   m_ProcessorMutex;
+  xiiAtomicInteger<ProcessTaskState> m_ProcessTaskState = ProcessTaskState::Stopped;
 
   // Data owned by the process thread.
   xiiDynamicArray<xiiProcessTask> m_ProcessTasks;
@@ -211,6 +211,6 @@ private:
   xiiSet<xiiUuid>              m_DeferredImports; ///< Live edits awaiting save/close; checked only by the GUI tick.
   xiiAssetTransformProgress    m_TransformProgress;
   xiiTime                      m_TransformStart;
-  std::atomic<bool>            m_bAutomatic          = false;
+  xiiAtomicBool                m_bAutomatic          = false;
   xiiUInt64                    m_uiProjectGeneration = 0;
 };

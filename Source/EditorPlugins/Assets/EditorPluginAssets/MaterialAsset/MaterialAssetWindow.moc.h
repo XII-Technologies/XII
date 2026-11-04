@@ -44,19 +44,19 @@ private Q_SLOTS:
   void OnOpenShaderClicked(bool);
 
 private:
-  void UpdatePreview();
+  void                       UpdatePreview();
   void                       CreatePreviewControls();
   xiiPreviewLightingSettings m_PreviewLighting;
   bool                       m_bPreviewGrid        = false;
   float                      m_fPreviewOrientation = 0.0f;
-  void PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e);
-  void SelectionEventHandler(const xiiSelectionManagerEvent& e);
-  void SendRedrawMsg();
-  void RestoreResource();
-  void UpdateNodeEditorVisibility();
-  void OnVseConfigChanged(xiiStringView sFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type);
-  void VisualShaderEventHandler(const xiiMaterialVisualShaderEvent& e);
-  void SetupDirectoryWatcher(bool needIt);
+  void                       PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e);
+  void                       SelectionEventHandler(const xiiSelectionManagerEvent& e);
+  void                       SendRedrawMsg();
+  void                       RestoreResource();
+  void                       UpdateNodeEditorVisibility();
+  void                       OnVseConfigChanged(xiiStringView sFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type);
+  void                       VisualShaderEventHandler(const xiiMaterialVisualShaderEvent& e);
+  void                       SetupDirectoryWatcher(bool needIt);
 
   xiiEngineViewConfig      m_ViewConfig;
   xiiQtOrbitCamViewWidget* m_pViewWidget       = nullptr;

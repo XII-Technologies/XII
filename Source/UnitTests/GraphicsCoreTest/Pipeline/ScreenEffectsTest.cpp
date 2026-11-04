@@ -15,7 +15,7 @@
 XII_CREATE_SIMPLE_TEST(Pipeline, ScreenEffectResourceComposition)
 {
   xiiScreenIrradianceTracePass gi;
-  gi.m_uiStepCount = 3;
+  gi.m_uiStepCount       = 3;
   gi.m_fSurfaceBias      = 0.05f;
   gi.m_bAllowAbsentDepth = true;
   xiiVariantDictionary properties;

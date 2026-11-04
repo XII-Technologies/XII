@@ -21,7 +21,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 struct DocumentNodeManager_NodeMetaData
 {
-  xiiVec2 m_Pos = xiiVec2::MakeZero();
+  xiiVec2   m_Pos = xiiVec2::MakeZero();
   xiiString m_sComment;
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, DocumentNodeManager_NodeMetaData);
@@ -442,7 +442,7 @@ void xiiDocumentNodeManager::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& 
         const NodeInternal& node = it2.Value();
 
         DocumentNodeManager_NodeMetaData nodeMetaData;
-        nodeMetaData.m_Pos = node.m_vPos;
+        nodeMetaData.m_Pos      = node.m_vPos;
         nodeMetaData.m_sComment = node.m_sComment;
         rttiConverter.AddProperties(pAbstractObject, pNodeMetaDataType, &nodeMetaData);
       }

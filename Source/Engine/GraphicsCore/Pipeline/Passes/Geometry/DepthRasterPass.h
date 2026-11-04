@@ -47,7 +47,7 @@ private:
   xiiMaterialRasterBatches           m_MaterialBatches;
   xiiShaderPermutationResourceHandle m_hShader;
   xiiSharedPtr<xiiGALSampler>        m_Sampler;
-  bool                               m_bCachedMeshShaders = false;
+  bool                               m_bCachedMeshShaders  = false;
   bool                               m_bCachedShadowCaster = false;
-  xiiGALFillMode::Enum               m_CachedFill         = xiiGALFillMode::Undefined;
+  xiiGALFillMode::Enum               m_CachedFill          = xiiGALFillMode::Undefined;
 };

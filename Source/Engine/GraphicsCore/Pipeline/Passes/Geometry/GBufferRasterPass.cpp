@@ -124,13 +124,13 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
   struct Data
   {
     xiiDynamicArray<xiiMaterialRasterBatch> m_Batches;
-    xiiRenderGraphBufferHandle          m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
-    xiiRenderGraphTextureHandle         m_Depth, m_Albedo, m_Normal, m_Material, m_Emissive, m_NormalRoughness, m_Velocity, m_ObjectId;
-    xiiShaderPermutationResourceHandle  m_Shader;
-    xiiSharedPtr<xiiGALSampler>         m_Sampler;
-    xiiUInt32                           m_uiWidth, m_uiHeight, m_uiCapacity;
-    xiiSharedPtr<xiiGALRasterizerState> m_Rasterizer;
-    bool                                m_bMesh;
+    xiiRenderGraphBufferHandle              m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
+    xiiRenderGraphTextureHandle             m_Depth, m_Albedo, m_Normal, m_Material, m_Emissive, m_NormalRoughness, m_Velocity, m_ObjectId;
+    xiiShaderPermutationResourceHandle      m_Shader;
+    xiiSharedPtr<xiiGALSampler>             m_Sampler;
+    xiiUInt32                               m_uiWidth, m_uiHeight, m_uiCapacity;
+    xiiSharedPtr<xiiGALRasterizerState>     m_Rasterizer;
+    bool                                    m_bMesh;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Batches = batches;

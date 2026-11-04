@@ -53,7 +53,7 @@ private:
   void UpdateGraphScene(QWidget* pFocus);
   void UpdateSelectionState();
 
-  ButtonType m_ButtonType;
+  ButtonType               m_ButtonType;
   QPointer<xiiQtNodeScene> m_pGraphScene;
   QMetaObject::Connection  m_FocusConnection;
   QMetaObject::Connection  m_GraphSelectionConnection;

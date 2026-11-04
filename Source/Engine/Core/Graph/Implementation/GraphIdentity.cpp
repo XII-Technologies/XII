@@ -4,7 +4,7 @@
 #include <Core/Graph/Implementation/GraphIdentity.h>
 #include <Foundation/Math/Math.h>
 
-xiiResult xiiInternal::AllocateGraphIdentity(xiiAtomicInteger<xiiUInt64>& counter, xiiUInt64& out_identity)
+xiiResult xiiInternal::AllocateGraphIdentity(xiiAtomicIntegerU64& counter, xiiUInt64& out_identity)
 {
   out_identity      = 0;
   xiiUInt64 current = counter;

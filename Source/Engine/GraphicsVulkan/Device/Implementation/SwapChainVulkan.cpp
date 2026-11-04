@@ -15,11 +15,43 @@
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
 #  include <SDL3/SDL_init.h>
+#  include <SDL3/SDL_properties.h>
 #  include <SDL3/SDL_video.h>
 #endif
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 #  include <wayland-client.h>
+#endif
+
+#if XII_ENABLED(XII_PLATFORM_OSX)
+#  include <CoreGraphics/CGGeometry.h>
+#  include <objc/message.h>
+#  include <objc/runtime.h>
+namespace
+{
+  xiiResult xiiCreateMetalLayer(void* view, void*& out_layer)
+  {
+    auto send = reinterpret_cast<void* (*)(void*, SEL)>(objc_msgSend);
+    out_layer = send(reinterpret_cast<void*>(objc_getClass("CAMetalLayer")), sel_registerName("new"));
+    if (!out_layer)
+      return XII_FAILURE;
+    reinterpret_cast<void (*)(void*, SEL, bool)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), true);
+    reinterpret_cast<void (*)(void*, SEL, void*)>(objc_msgSend)(view, sel_registerName("setLayer:"), out_layer);
+    void* window = send(view, sel_registerName("window"));
+    if (window)
+    {
+      const double scale = reinterpret_cast<double (*)(void*, SEL)>(objc_msgSend)(window, sel_registerName("backingScaleFactor"));
+      reinterpret_cast<void (*)(void*, SEL, double)>(objc_msgSend)(out_layer, sel_registerName("setContentsScale:"), scale);
+    }
+    return XII_SUCCESS;
+  }
+  void xiiReleaseMetalLayer(void*& layer)
+  {
+    if (layer)
+      reinterpret_cast<void (*)(void*, SEL)>(objc_msgSend)(layer, sel_registerName("release"));
+    layer = nullptr;
+  }
+} // namespace
 #endif
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
@@ -41,12 +73,16 @@ xiiGALSwapChainVulkan::~xiiGALSwapChainVulkan()
 
     XII_ASSERT_DEV(m_vkSwapChain == VK_NULL_HANDLE, "The Vulkan swap chain has not yet been released!");
 
-    m_Description.m_pWindow->RemoveReference();
+    if (m_Description.m_pWindow)
+      m_Description.m_pWindow->RemoveReference();
   }
 
   if (m_vkSurface != VK_NULL_HANDLE)
   {
     vkInstance.destroySurfaceKHR(m_vkSurface, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+#if XII_ENABLED(XII_PLATFORM_OSX)
+    xiiReleaseMetalLayer(m_pMetalLayer);
+#endif
   }
 }
 
@@ -55,7 +91,7 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   XII_LOG_BLOCK("xiiGALSwapChainVulkan::InitPlatform");
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
-  if (!SDL_Init(SDL_INIT_VIDEO))
+  if (m_Description.m_pWindow && !SDL_Init(SDL_INIT_VIDEO))
   {
     xiiLog::Error("Unable to initialize SDL Video: {}", SDL_GetError());
     return XII_FAILURE;
@@ -85,7 +121,8 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   XII_IGNORE_UNUSED(AcquireNextImage());
 
   // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
-  m_Description.m_pWindow->AddReference();
+  if (m_Description.m_pWindow)
+    m_Description.m_pWindow->AddReference();
 
   return XII_SUCCESS;
 }
@@ -106,27 +143,81 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   if (m_vkSurface != VK_NULL_HANDLE)
   {
     vkInstance.destroySurfaceKHR(m_vkSurface, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+#if XII_ENABLED(XII_PLATFORM_OSX)
+    xiiReleaseMetalLayer(m_pMetalLayer);
+#endif
 
     m_vkSurface = VK_NULL_HANDLE;
   }
 
-  // Create OS-Specific surface.
+  const auto& native = m_Description.m_NativeWindow;
+  if (native.m_Type != xiiGALNativeWindowDescription::Type::None)
+  {
+    switch (native.m_Type)
+    {
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
+      case xiiGALNativeWindowDescription::Type::Win32:
+      {
+        vk::Win32SurfaceCreateInfoKHR info;
+        info.hinstance = GetModuleHandle(nullptr);
+        info.hwnd      = reinterpret_cast<HWND>(native.m_uiWindowHandle);
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWin32SurfaceKHR(&info, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+        return XII_SUCCESS;
+      }
+#endif
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
+      case xiiGALNativeWindowDescription::Type::X11:
+      {
+        vk::XlibSurfaceCreateInfoKHR info;
+        info.dpy    = static_cast<Display*>(native.m_pDisplay);
+        info.window = static_cast<Window>(native.m_uiWindowHandle);
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXlibSurfaceKHR(&info, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+        return XII_SUCCESS;
+      }
+#endif
+#if defined(VK_USE_PLATFORM_WAYLAND_KHR)
+      case xiiGALNativeWindowDescription::Type::Wayland:
+      {
+        vk::WaylandSurfaceCreateInfoKHR info;
+        info.display = static_cast<wl_display*>(native.m_pDisplay);
+        info.surface = reinterpret_cast<wl_surface*>(native.m_uiWindowHandle);
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&info, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+        return XII_SUCCESS;
+      }
+#endif
+#if defined(VK_USE_PLATFORM_METAL_EXT)
+      case xiiGALNativeWindowDescription::Type::Cocoa:
+      {
+        XII_SUCCEED_OR_RETURN(xiiCreateMetalLayer(reinterpret_cast<void*>(native.m_uiWindowHandle), m_pMetalLayer));
+        vk::MetalSurfaceCreateInfoEXT info;
+        info.pLayer = static_cast<const CAMetalLayer*>(m_pMetalLayer);
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createMetalSurfaceEXT(&info, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+        return XII_SUCCESS;
+      }
+#endif
+      default:
+        xiiLog::Error("Unsupported native presentation window type.");
+        return XII_FAILURE;
+    }
+  }
+
+  // Create OS-Specific surface.
+#if XII_ENABLED(XII_SUPPORTS_SDL) && defined(VK_USE_PLATFORM_WIN32_KHR)
   vk::Win32SurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                         = nullptr;
   vkSurfaceCreateInfo.flags                         = {};
   vkSurfaceCreateInfo.hinstance                     = GetModuleHandle(NULL);
-  vkSurfaceCreateInfo.hwnd                          = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
+  vkSurfaceCreateInfo.hwnd                          = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWin32SurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
+#elif XII_ENABLED(XII_SUPPORTS_SDL) && defined(VK_USE_PLATFORM_MACOS_MVK)
   vk::MacOSSurfaceCreateInfoMVK vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                         = nullptr;
   vkSurfaceCreateInfo.flags                         = {};
   vkSurfaceCreateInfo.pView                         = m_Description.m_pWindow->GetNativeWindowHandle();
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createMacOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#elif XII_ENABLED(XII_SUPPORTS_SDL) && defined(VK_USE_PLATFORM_WAYLAND_KHR)
   vk::WaylandSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                           = nullptr;
   vkSurfaceCreateInfo.flags                           = {};
@@ -135,16 +226,33 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #else
-#  error "Unsupported platform."
+  xiiLog::Error("Standalone Vulkan surface creation is unavailable on this platform.");
+  return XII_FAILURE;
 #endif
+
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
+{
+#if XII_ENABLED(XII_PLATFORM_OSX)
+  if (m_pMetalLayer && m_Description.m_SurfaceSize.HasNonZeroArea())
+  {
+    const CGSize size = {static_cast<double>(m_Description.m_SurfaceSize.width), static_cast<double>(m_Description.m_SurfaceSize.height)};
+    reinterpret_cast<void (*)(void*, SEL, CGSize)>(objc_msgSend)(m_pMetalLayer, sel_registerName("setDrawableSize:"), size);
+  }
+#endif
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+  vk::Device                       vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Check present support on the graphics queue.
   {
-    vk::PhysicalDevice           vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
     xiiGALQueueInformationVulkan graphicsQueueInformation = pDeviceVulkan->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics);
     vk::Bool32                   bHasPresentSupport       = vk::False;
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueFamilyIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     if (bHasPresentSupport == vk::False)
     {
@@ -153,14 +261,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
     }
   }
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
-  vk::Device                       vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Retrieve the list of vk::Formats that are supported.
   xiiUInt32 uiFormatCount = 0U;
@@ -290,7 +390,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     xiiLog::Dev("Using {} swap chain pre-transform.", vk::to_string(vkPreTransform).data());
   }
 
-  xiiSizeU32   windowSize        = m_Description.m_pWindow->GetClientAreaSize();
+  xiiSizeU32   windowSize        = (m_Description.m_pWindow ? m_Description.m_pWindow->GetClientAreaSize() : m_Description.m_SurfaceSize);
   vk::Extent2D vkSwapchainExtent = {};
   // The width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
   if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && windowSize.HasNonZeroArea())
@@ -707,7 +807,7 @@ void xiiGALSwapChainVulkan::Present()
   if (m_vkSwapChain == VK_NULL_HANDLE || m_bIsMinimized || !m_CurrentSize.HasNonZeroArea())
   {
     // Check if the window was restored without a resize event. If the client area is now non-zero, recreate the swap chain.
-    xiiSizeU32 windowSize = m_Description.m_pWindow->GetClientAreaSize();
+    xiiSizeU32 windowSize = (m_Description.m_pWindow ? m_Description.m_pWindow->GetClientAreaSize() : m_Description.m_SurfaceSize);
     if (windowSize.HasNonZeroArea())
     {
       xiiLog::Dev("Window restored to non-zero size ({}x{}). Recreating swap chain.", windowSize.width, windowSize.height);
@@ -847,7 +947,8 @@ void xiiGALSwapChainVulkan::Present()
 
 xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
-  bool bRecreateSwapChain = false;
+  m_Description.m_SurfaceSize = newSize;
+  bool bRecreateSwapChain     = false;
 
   // Set minimized flag based on new size early so creation logic can react accordingly.
   m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);

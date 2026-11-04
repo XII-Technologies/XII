@@ -170,15 +170,15 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
   struct Data
   {
     xiiDynamicArray<xiiMaterialRasterBatch> m_Batches;
-    xiiRenderGraphBufferHandle         m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
-    xiiRenderGraphTextureHandle        m_Surface, m_Depth;
-    xiiShaderPermutationResourceHandle m_Shader;
-    xiiSharedPtr<xiiGALSampler>        m_Sampler;
-    xiiUInt32                          m_uiWidth, m_uiHeight, m_uiCapacity;
-    bool                               m_bMesh;
-    xiiRenderGraphBufferHandle         m_Diagnostics;
-    bool                               m_bDiagnostics;
-    xiiRenderGraphTextureHandle        m_DiagnosticDepth;
+    xiiRenderGraphBufferHandle              m_Scene, m_Skinning, m_Visible, m_Count, m_Geometry, m_Meshlets, m_Materials, m_Constants, m_Arguments, m_ArgumentCount;
+    xiiRenderGraphTextureHandle             m_Surface, m_Depth;
+    xiiShaderPermutationResourceHandle      m_Shader;
+    xiiSharedPtr<xiiGALSampler>             m_Sampler;
+    xiiUInt32                               m_uiWidth, m_uiHeight, m_uiCapacity;
+    bool                                    m_bMesh;
+    xiiRenderGraphBufferHandle              m_Diagnostics;
+    bool                                    m_bDiagnostics;
+    xiiRenderGraphTextureHandle             m_DiagnosticDepth;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Batches = batches;

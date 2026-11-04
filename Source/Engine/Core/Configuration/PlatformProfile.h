@@ -64,10 +64,10 @@ public:
   xiiUInt32 GetLastModificationCounter() const { return m_uiLastModificationCounter; }
 
 private:
-  xiiUInt32                              m_uiLastModificationCounter = 0;
-  xiiString                              m_sName;
-  xiiString                              m_sTargetPlatform = "Windows";
-  xiiDynamicArray<xiiProfileConfigData*> m_Configs;
+  xiiUInt32                                                    m_uiLastModificationCounter = 0;
+  xiiString                                                    m_sName;
+  xiiString                                                    m_sTargetPlatform = "Windows";
+  xiiDynamicArray<xiiProfileConfigData*>                       m_Configs;
   xiiCopyOnBroadcastEvent<const xiiPluginEvent&>::Unsubscriber m_PluginSubscription;
 };
 

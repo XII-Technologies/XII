@@ -19,11 +19,11 @@ public:
   xiiRenderPipelineTextureOutputPin              m_Output{xiiGALResourceFormat::R8UNormalized, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferOutputPin               m_Constants{true, xiiGALBindFlags::UniformBuffer};
   /// Disabled occurrences publish no visibility mask. Optional lighting inputs retain unoccluded illumination.
-  bool                                           m_bEnabled          = true;
-  bool                                           m_bUseRayTracing    = true;
-  bool                                           m_bAllowScreenSpace = true;
-  float                                          m_fRadius = 2.0f, m_fRayOriginBias = 0.005f, m_fRayTMin = 0.001f, m_fNormalBias = 0.05f, m_fPixelStride = 6.0f, m_fMinSampleDistance = 0.005f;
-  xiiUInt32                                      m_uiDirectionCount = 8, m_uiStepCount = 4;
+  bool      m_bEnabled          = true;
+  bool      m_bUseRayTracing    = true;
+  bool      m_bAllowScreenSpace = true;
+  float     m_fRadius = 2.0f, m_fRayOriginBias = 0.005f, m_fRayTMin = 0.001f, m_fNormalBias = 0.05f, m_fPixelStride = 6.0f, m_fMinSampleDistance = 0.005f;
+  xiiUInt32 m_uiDirectionCount = 8, m_uiStepCount = 4;
   xiiAmbientOcclusionPass();
   ~xiiAmbientOcclusionPass();
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;

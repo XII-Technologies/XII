@@ -89,7 +89,7 @@ void xiiRenderDoc::StartFrameCapture(xiiWindowHandle hWnd)
 {
   if (m_pRenderDocAPI)
   {
-    m_pRenderDocAPI->StartFrameCapture(nullptr, hWnd);
+    m_pRenderDocAPI->StartFrameCapture(nullptr, nullptr);
   }
 }
 
@@ -102,7 +102,7 @@ void xiiRenderDoc::EndFrameCaptureAndWriteOutput(xiiWindowHandle hWnd)
 {
   if (m_pRenderDocAPI)
   {
-    m_pRenderDocAPI->EndFrameCapture(nullptr, hWnd);
+    m_pRenderDocAPI->EndFrameCapture(nullptr, nullptr);
   }
 }
 
@@ -110,7 +110,7 @@ void xiiRenderDoc::EndFrameCaptureAndDiscardResult(xiiWindowHandle hWnd)
 {
   if (m_pRenderDocAPI)
   {
-    m_pRenderDocAPI->DiscardFrameCapture(nullptr, hWnd);
+    m_pRenderDocAPI->DiscardFrameCapture(nullptr, nullptr);
   }
 }
 

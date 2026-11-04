@@ -271,7 +271,7 @@ void xiiMaterialAssetProperties::LoadOldValues()
     {
       if (pProp->GetCategory() == xiiPropertyCategory::Member)
       {
-        xiiString sPropName = pProp->GetPropertyName();
+        xiiString        sPropName = pProp->GetPropertyName();
         xiiStringBuilder key(pType->GetTypeName(), "|", sPropName);
         auto             it = m_pDocument->m_ShaderAuthoringValues.Find(key);
         if (it.IsValid())
@@ -1181,4 +1181,3 @@ bool xiiMaterialAssetDocument::Paste(const xiiArrayPtr<PasteInfo>& info, const x
   xiiDocumentNodeManager* pManager = static_cast<xiiDocumentNodeManager*>(GetObjectManager());
   return pManager->PasteObjects(info, objectGraph, xiiQtNodeScene::GetLastMouseInteractionPos(), bAllowPickedPosition);
 }
-

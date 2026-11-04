@@ -5,6 +5,7 @@
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
+#include <EditorFramework/DocumentWindow/SharedTextureWidget.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <EditorFramework/InputContexts/EditorViewportNavigationGizmo.h>
 #include <EditorFramework/Settings/EditorPreferences.h>
@@ -25,27 +26,6 @@ void xiiObjectPickingResult::Reset()
   m_vPickedNormal.SetZero();
   m_vPickingRayStart.SetZero();
 }
-
-/// Small helper class which exposes the native surface that the renderer can render into.
-class xiiQtNativeSurfaceWidget : public QWidget
-{
-public:
-  xiiQtNativeSurfaceWidget(QWidget* pParent = nullptr) :
-    QWidget(pParent)
-  {
-    // setAttribute(Qt::WA_OpaquePaintEvent);
-    setAutoFillBackground(false);
-    setMouseTracking(true);
-    setMinimumSize(64, 64); // prevent the window from becoming zero sized, otherwise the rendering code may crash
-
-    setAttribute(Qt::WA_PaintOnScreen, true);
-    setAttribute(Qt::WA_NativeWindow, true);
-    setAttribute(Qt::WA_NoSystemBackground);
-  }
-
-  virtual void          paintEvent(QPaintEvent* pEvent) override {}
-  virtual QPaintEngine* paintEngine() const override { return nullptr; }
-};
 
 ////////////////////////////////////////////////////////////////////////
 // xiiQtEngineViewWidget public functions
@@ -94,7 +74,9 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
   xiiEditorEngineProcessConnection::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineViewWidget::EngineViewProcessEventHandler, this));
 
   {
-    // Ensure the engine process swap chain is destroyed before the window.
+    // Finish presentation GPU use before destroying the producer.
+    delete m_pViewportWidget;
+    m_pViewportWidget = nullptr;
     xiiViewDestroyedMsgToEngine msg;
     msg.m_uiViewID = GetViewID();
     // If we fail to send the message the engine process is down and we don't need to clean up.
@@ -154,7 +136,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
 
   const auto* activeContext = xiiEditorInputContext::GetActiveInputContext();
   const bool  activeView    = activeContext && activeContext->GetOwnerView() == this;
-  cam.m_uiHWND              = (xiiUInt64)(m_pViewportWidget->winId());
+  cam.m_bUseSharedTexture   = static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SupportsSharedTextures();
   cam.m_uiWindowWidth       = m_pViewportWidget->width() * this->devicePixelRatio();
   cam.m_uiWindowHeight      = m_pViewportWidget->height() * this->devicePixelRatio();
   cam.m_fDevicePixelRatio   = static_cast<float>(devicePixelRatio());
@@ -407,6 +389,12 @@ xiiResult xiiQtEngineViewWidget::PickPlane(xiiUInt16 uiScreenPosX, xiiUInt16 uiS
 
 void xiiQtEngineViewWidget::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
 {
+  if (const auto* frame = xiiDynamicCast<const xiiViewFrameMsgToEditor*>(pMsg))
+  {
+    if (m_pViewportWidget)
+      static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetFrame(*frame);
+    return;
+  }
   if (const xiiViewPickingResultMsgToEditor* pFullMsg = xiiDynamicCast<const xiiViewPickingResultMsgToEditor*>(pMsg))
   {
     m_LastPickingResult.m_PickedObject     = pFullMsg->m_ObjectGuid;
@@ -847,11 +835,18 @@ void xiiQtEngineViewWidget::RecreateEngineViewport()
   {
     m_pViewportWidget->removeEventFilter(this);
     m_pViewportWidget->hide();
-    m_pViewportWidget->setParent(nullptr);
-    m_pViewportWidget->deleteLater();
+    delete m_pViewportWidget;
   }
 
-  m_pViewportWidget = new xiiQtNativeSurfaceWidget(this);
+  auto* presentation              = new xiiQtSharedTextureWidget(this);
+  presentation->m_OnFrameConsumed = [this](xiiUInt64 frameID, bool shared) {
+    xiiViewFrameConsumedMsgToEngine message;
+    message.m_uiViewID               = GetViewID();
+    message.m_uiFrameID              = frameID;
+    message.m_bSharedTextureAccepted = shared;
+    m_pDocumentWindow->GetDocument()->SendMessageToEngine(&message);
+  };
+  m_pViewportWidget = presentation;
   m_pViewportWidget->installEventFilter(this);
   m_pViewportWidget->setFocusProxy(this);
   if (s_FixedResolution.HasNonZeroArea())

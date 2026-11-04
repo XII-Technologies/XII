@@ -166,8 +166,8 @@ private:
   void                          CommandHistoryEventHandler(const xiiCommandHistoryEvent& event);
   bool                          m_bRestoreShaderProperties = false;
   xiiMap<xiiString, xiiVariant> m_ShaderAuthoringValues;
-  xiiStringBuilder m_sCheckPermutations;
-  static xiiUuid   s_NeutralNormalMap;
+  xiiStringBuilder              m_sCheckPermutations;
+  static xiiUuid                s_NeutralNormalMap;
 };
 
 class xiiMaterialObjectManager : public xiiVisualShaderNodeManager

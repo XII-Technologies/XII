@@ -13,12 +13,12 @@ class XII_GRAPHICSCORE_DLL xiiTemporalAntiAliasingPass final : public xiiRenderP
   XII_DISALLOW_COPY_AND_ASSIGN(xiiTemporalAntiAliasingPass);
 
 public:
-  xiiRenderPipelineDataInputPin     m_TemporalCamera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>(), true};
-  xiiRenderPipelineTextureInputPin  m_InputHDRSceneColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin  m_InputDilatedVelocityBuffer{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin  m_InputSceneDepth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineDataInputPin    m_TemporalCamera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>(), true};
+  xiiRenderPipelineTextureInputPin m_InputHDRSceneColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin m_InputDilatedVelocityBuffer{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin m_InputSceneDepth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   /// Optional transmittance of transparent coverage; untrusted pixels also reject history after disappearance.
-  xiiRenderPipelineTextureInputPin  m_HistoryTrust{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin m_HistoryTrust{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   /// Nonzero incident radiance marks unstable lighting; disappearance rejects its retained history too.
   xiiRenderPipelineTextureInputPin  m_ReactiveRadiance{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputTAAResolved{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Texture2D, 1};

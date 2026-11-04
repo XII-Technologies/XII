@@ -123,7 +123,7 @@ void xiiProjectActions::RegisterActions()
   s_hOpenDocument    = XII_REGISTER_ACTION_1("Document.Open", xiiActionScope::Global, "Project", "Ctrl+O", xiiProjectAction, xiiProjectAction::ButtonType::OpenDocument);
   s_hRecentDocuments = XII_REGISTER_DYNAMIC_MENU("Project.RecentDocuments.Menu", xiiRecentDocumentsMenuAction, "");
 
-  s_hShortcutEditor = XII_REGISTER_ACTION_1("Editor.Shortcuts", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::Shortcuts);
+  s_hShortcutEditor    = XII_REGISTER_ACTION_1("Editor.Shortcuts", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::Shortcuts);
   s_hEditorPreferences = XII_REGISTER_ACTION_1("Editor.Preferences", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::EditorPreferences);
 
   s_hCatToolsExternal = XII_REGISTER_CATEGORY("G.Tools.External");
