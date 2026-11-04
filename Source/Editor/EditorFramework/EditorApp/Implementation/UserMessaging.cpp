@@ -9,7 +9,7 @@ void xiiQtEditorApp::AddRestartRequiredReason(const char* szReason, bool bPrompt
   if (!m_RestartRequiredReasons.Find(szReason).IsValid())
   {
     m_RestartRequiredReasons.Insert(szReason);
-    UpdateGlobalStatusBarMessage();
+    UpdateRequiredActions();
   }
 
   if (!bPrompt)
@@ -42,20 +42,11 @@ void xiiQtEditorApp::AddReloadProjectRequiredReason(const char* szReason, bool b
     if (bPrompt)
       xiiQtUiServices::MessageBoxInformation(s);
 
-    UpdateGlobalStatusBarMessage();
+    UpdateRequiredActions();
   }
 }
 
-void xiiQtEditorApp::UpdateGlobalStatusBarMessage()
+void xiiQtEditorApp::UpdateRequiredActions()
 {
-  xiiStringBuilder sText;
-
-  if (!m_RestartRequiredReasons.IsEmpty())
-    sText.Append("Restart the editor to apply changes.   ");
-
-  if (!m_ReloadProjectRequiredReasons.IsEmpty())
-    sText.Append("Reload the project to apply changes.   ");
-
-  xiiQtUiServices::ShowGlobalStatusBarMessage(sText);
   Q_EMIT RequiredActionsChanged(!m_RestartRequiredReasons.IsEmpty(), !m_ReloadProjectRequiredReasons.IsEmpty());
 }

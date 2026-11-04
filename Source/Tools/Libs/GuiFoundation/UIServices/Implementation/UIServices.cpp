@@ -355,18 +355,6 @@ void xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage(const xiiFormatS
   s_Events.Broadcast(e, 1);
 }
 
-void xiiQtUiServices::ShowGlobalStatusBarMessage(const xiiFormatString& msg)
-{
-  xiiStringBuilder tmp;
-
-  Event e;
-  e.m_Type  = Event::ShowGlobalStatusBarText;
-  e.m_sText = msg.GetText(tmp);
-  e.m_Time  = xiiTime::MakeFromSeconds(0);
-
-  s_Events.Broadcast(e);
-}
-
 bool xiiQtUiServices::OpenFileInDefaultProgram(xiiStringView sPath)
 {
   return QDesktopServices::openUrl(QUrl::fromLocalFile(xiiMakeQString(sPath)));

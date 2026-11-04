@@ -27,7 +27,6 @@ public:
     {
       ShowDocumentTemporaryStatusBarText,
       ShowDocumentPermanentStatusBarText,
-      ShowGlobalStatusBarText,
       ClickedDocumentPermanentStatusBarText,
       CheckForUpdates,
     };
@@ -95,9 +94,6 @@ public:
   static void ShowAllDocumentsTemporaryStatusBarMessage(const xiiFormatString& msg, xiiTime timeOut);
 
   static void ShowAllDocumentsPermanentStatusBarMessage(const xiiFormatString& msg, Event::TextType type);
-
-  /// Shows a 'critical' message in all container windows (in red), which does not disappear, until it is replaced with another (empty) string.
-  static void ShowGlobalStatusBarMessage(const xiiFormatString& msg);
 
   /// Opens the given file in the program that is registered in the OS to handle that file type.
   static bool OpenFileInDefaultProgram(xiiStringView sPath);

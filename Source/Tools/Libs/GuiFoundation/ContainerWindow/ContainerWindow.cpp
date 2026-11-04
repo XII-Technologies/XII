@@ -22,7 +22,6 @@
 #include <QPainter>
 #include <QSettings>
 #include <QShortcut>
-#include <QStatusBar>
 #include <QStyleHints>
 #include <QTabBar>
 #include <QTimer>
@@ -115,7 +114,6 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 #endif
 
   m_bWindowLayoutRestored         = false;
-  m_pStatusBarLabel               = nullptr;
   m_iWindowLayoutRestoreScheduled = 0;
 
   s_pContainerWindow = this;
@@ -125,7 +123,6 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   xiiQtDocumentWindow::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::DocumentWindowEventHandler, this));
   xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::ProjectEventHandler, this));
-  xiiQtUiServices::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::UIServicesEventHandler, this));
 
   UpdateWindowTitle();
 
@@ -297,7 +294,6 @@ xiiQtContainerWindow::~xiiQtContainerWindow()
 
   xiiQtDocumentWindow::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::DocumentWindowEventHandler, this));
   xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::ProjectEventHandler, this));
-  xiiQtUiServices::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::UIServicesEventHandler, this));
 }
 
 void xiiQtContainerWindow::UpdateWindowTitle()
@@ -1074,36 +1070,6 @@ void xiiQtContainerWindow::ProjectEventHandler(const xiiToolsProjectEvent& e)
     case xiiToolsProjectEvent::Type::ProjectClosed:
       UpdateWindowTitle();
       break;
-
-    default:
-      break;
-  }
-}
-
-void xiiQtContainerWindow::UIServicesEventHandler(const xiiQtUiServices::Event& e)
-{
-  switch (e.m_Type)
-  {
-    case xiiQtUiServices::Event::Type::ShowGlobalStatusBarText:
-    {
-      if (statusBar() == nullptr)
-        setStatusBar(new QStatusBar());
-
-      if (m_pStatusBarLabel == nullptr)
-      {
-        m_pStatusBarLabel = new QLabel();
-        statusBar()->addWidget(m_pStatusBarLabel);
-
-        QPalette pal = m_pStatusBarLabel->palette();
-        pal.setColor(QPalette::WindowText, QColor(Qt::red));
-        m_pStatusBarLabel->setPalette(pal);
-      }
-
-      statusBar()->setHidden(e.m_sText.IsEmpty());
-
-      m_pStatusBarLabel->setText(xiiMakeQString(e.m_sText));
-    }
-    break;
 
     default:
       break;

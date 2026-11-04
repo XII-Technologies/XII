@@ -8,6 +8,7 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/OSFile.h>
+#include <QToolTip>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 xiiFileNameValidator::xiiFileNameValidator(QObject* pParent, xiiStringView sParentFolder, xiiStringView sCurrentName) :
@@ -220,12 +221,12 @@ void eqQtAssetBrowserFolderView::dragMoveEvent(QDragMoveEvent* e)
   xiiStatus                    res = canDrop(e, files, sTarget);
   if (res.Failed())
   {
-    xiiQtUiServices::ShowGlobalStatusBarMessage(res.GetMessageString().GetView());
+    QToolTip::showText(viewport()->mapToGlobal(e->position().toPoint()), xiiMakeQString(res.GetMessageString().GetView()), this);
     e->ignore();
   }
   else
   {
-    xiiQtUiServices::ShowGlobalStatusBarMessage({});
+    QToolTip::hideText();
   }
 }
 
@@ -286,7 +287,7 @@ xiiStatus eqQtAssetBrowserFolderView::canDrop(QDropEvent* e, xiiDynamicArray<xii
 
 void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)
 {
-  xiiQtUiServices::ShowGlobalStatusBarMessage({});
+  QToolTip::hideText();
   xiiHybridArray<xiiString, 1> files;
   xiiString                    sTargetFolder;
   // Always accept and call base class to end the drop operation as a no-op in the base class.

@@ -371,11 +371,6 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, ProgressToolsAndGuiThread)
   XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::Error);
   Test::CloseProject(taskbar);
   XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
-  xiiQtUiServices::ShowGlobalStatusBarMessage("Application condition");
-  Test::CloseProject(taskbar);
-  XII_TEST_BOOL(Test::GetState(taskbar).m_Overlay == Test::Overlay::None);
-  xiiQtUiServices::ShowGlobalStatusBarMessage({});
-  XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
 }
 
 XII_CREATE_SIMPLE_TEST(EditorTaskbar, ActionableOverlays)
@@ -392,7 +387,6 @@ XII_CREATE_SIMPLE_TEST(EditorTaskbar, ActionableOverlays)
 
   xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Old warning", xiiQtUiServices::Event::Warning);
   xiiQtUiServices::ShowAllDocumentsPermanentStatusBarMessage("Old error", xiiQtUiServices::Event::Error);
-  xiiQtUiServices::ShowGlobalStatusBarMessage("New version available");
   XII_TEST_BOOL(Test::GetState(taskbar) == Test::State{});
 
   Q_EMIT editor.RequiredActionsChanged(false, true);
