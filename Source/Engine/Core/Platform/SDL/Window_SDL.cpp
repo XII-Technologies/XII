@@ -368,7 +368,6 @@ void xiiWindow::ProcessWindowMessages()
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
   return m_hWindowHandle;
-
 }
 
 #endif

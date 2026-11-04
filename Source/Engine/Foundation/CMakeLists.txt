@@ -68,4 +68,6 @@ if(XII_3RDPARTY_TRACY_SUPPORT)
   target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient)
 endif()
 
-xii_link_thirdparty_sdl(${PROJECT_NAME})
+if(XII_3RDPARTY_SDL_SUPPORT)
+  xii_link_thirdparty_sdl(${PROJECT_NAME})
+endif()

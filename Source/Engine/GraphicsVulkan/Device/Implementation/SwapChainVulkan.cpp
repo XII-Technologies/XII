@@ -202,7 +202,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   }
 
   // Create OS-Specific surface.
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
+#if XII_ENABLED(XII_SUPPORTS_SDL) && defined(VK_USE_PLATFORM_WIN32_KHR)
   vk::Win32SurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                         = nullptr;
   vkSurfaceCreateInfo.flags                         = {};
@@ -210,14 +210,14 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.hwnd                          = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWin32SurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
+#elif XII_ENABLED(XII_SUPPORTS_SDL) && defined(VK_USE_PLATFORM_MACOS_MVK)
   vk::MacOSSurfaceCreateInfoMVK vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                         = nullptr;
   vkSurfaceCreateInfo.flags                         = {};
   vkSurfaceCreateInfo.pView                         = m_Description.m_pWindow->GetNativeWindowHandle();
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createMacOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#elif XII_ENABLED(XII_SUPPORTS_SDL) && defined(VK_USE_PLATFORM_WAYLAND_KHR)
   vk::WaylandSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                           = nullptr;
   vkSurfaceCreateInfo.flags                           = {};

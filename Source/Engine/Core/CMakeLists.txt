@@ -22,4 +22,6 @@ if (XII_3RDPARTY_LUA_SUPPORT)
   target_link_libraries(${PROJECT_NAME} PUBLIC Lua)
 endif()
 
-xii_link_thirdparty_sdl(${PROJECT_NAME})
+if(XII_3RDPARTY_SDL_SUPPORT)
+  xii_link_thirdparty_sdl(${PROJECT_NAME})
+endif()
