@@ -36,7 +36,10 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
     {
       XII_TEST_BOOL(sample.m_fDurationMs >= 0);
       if (sample.m_bSubmission)
+      {
+        XII_TEST_INT(sample.m_uiPassIndex, 0); // Submission identity is local to its graph.
         ++resolvedSubmissions;
+      }
       else
         ++resolvedPasses;
     }

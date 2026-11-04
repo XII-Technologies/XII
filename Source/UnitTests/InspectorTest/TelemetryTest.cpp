@@ -66,7 +66,8 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
   xiiQtProfilingWidget   profile(&manager);
   xiiTelemetry::AcceptMessagesForSystem('RGRF', true, xiiQtRenderGraphWidget::ProcessTelemetry);
   xiiTelemetry::AcceptMessagesForSystem('PSTR', true, xiiQtProfilingWidget::ProcessTelemetry);
-  XII_SCOPE_EXIT(xiiTelemetry::CloseConnection(); xiiTelemetry::AcceptMessagesForSystem('RGRF', false); xiiTelemetry::AcceptMessagesForSystem('PSTR', false));
+  xiiTelemetry::AcceptMessagesForSystem('PSNP', true, xiiQtProfilingWidget::ProcessTelemetry);
+  XII_SCOPE_EXIT(xiiTelemetry::CloseConnection(); xiiTelemetry::AcceptMessagesForSystem('RGRF', false); xiiTelemetry::AcceptMessagesForSystem('PSTR', false); xiiTelemetry::AcceptMessagesForSystem('PSNP', false));
   xiiStringBuilder address;
   address.SetFormat("localhost:{}", port);
   XII_TEST_RESULT(xiiTelemetry::ConnectToServer(address));
@@ -124,4 +125,16 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(5));
   }
   XII_TEST_BOOL(session->m_uiSession != previousSession && session->m_uiSequence >= 2);
+  profile.RequestHistorySnapshot();
+  const auto snapshotUntil = xiiTime::Now() + xiiTime::MakeFromSeconds(3);
+  while (session->m_bSnapshotPending && xiiTime::Now() < snapshotUntil)
+  {
+    xiiTelemetry::PerFrameUpdate();
+    QApplication::processEvents();
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(5));
+  }
+  XII_TEST_BOOL(!session->m_bSnapshotPending && session->m_bPaused);
+  XII_TEST_BOOL(!session->Display().m_Scopes.isEmpty());
+  XII_TEST_BOOL(session->Display().m_Application == "InspectorTest");
+  XII_TEST_BOOL(session->Display().m_uiProcessId > 0);
 }

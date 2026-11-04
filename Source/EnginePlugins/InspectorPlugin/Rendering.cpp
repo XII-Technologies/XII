@@ -4,6 +4,7 @@
 
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 #include <atomic>
@@ -72,6 +73,22 @@ namespace
     }
   }
 
+  void RequestHistory(void*)
+  {
+    xiiTelemetryMessage message;
+    bool                requested = false;
+    while (xiiTelemetry::RetrieveMessage('PSNP', message).Succeeded())
+      requested |= message.GetMessageID() == 'CAPT';
+    if (!requested || !xiiTelemetry::IsConnectedToClient())
+      return;
+    // Preserve the explicit application-history capture formerly exposed through Data Transfer.
+    // This path is never polled or used for live updates or incremental recording.
+    xiiProfilingSystem::ProfilingData capture;
+    xiiProfilingSystem::Capture(capture);
+    CaptureStream stream;
+    SendCapture('PSNP', stream, capture.Write(stream).Succeeded());
+  }
+
   void ConnectionEvent(const xiiTelemetry::TelemetryEventData& event)
   {
     if (event.m_EventType == xiiTelemetry::TelemetryEventData::DisconnectedFromClient)
@@ -84,7 +101,9 @@ namespace
 void AddRenderingEventHandler()
 {
   xiiTelemetry::SetOutgoingQueueSize('RGRF', 0);
+  xiiTelemetry::SetOutgoingQueueSize('PSNP', 0);
   xiiTelemetry::AcceptMessagesForSystem('RGRF', true, RequestGraph);
+  xiiTelemetry::AcceptMessagesForSystem('PSNP', true, RequestHistory);
   xiiTelemetry::AddEventHandler(ConnectionEvent);
 
   xiiRenderGraphDebug::s_ExecutionEvents.AddEventHandler(GraphExecuted);
@@ -93,6 +112,7 @@ void AddRenderingEventHandler()
 void RemoveRenderingEventHandler()
 {
   xiiTelemetry::AcceptMessagesForSystem('RGRF', false);
+  xiiTelemetry::AcceptMessagesForSystem('PSNP', false);
   xiiTelemetry::RemoveEventHandler(ConnectionEvent);
 
   xiiRenderGraphDebug::s_ExecutionEvents.RemoveEventHandler(GraphExecuted);

@@ -29,6 +29,7 @@ public:
   bool                                         LoadCapture(const QByteArray& bytes);
   void                                         ApplyGraphCapture(const QJsonObject& object);
   void                                         RequestCapture();
+  void                                         RequestHistorySnapshot();
   void                                         Refresh();
   QSharedPointer<xiiInspectorProfilingSession> GetSession() const { return m_pSession; }
 
@@ -59,6 +60,7 @@ private:
   QDoubleSpinBox*                              m_pBudget;
   QPushButton*                                 m_pPause;
   QPushButton*                                 m_pRecord;
+  QPushButton*                                 m_pSnapshot;
   QTreeWidget*                                 m_pHotspots  = nullptr;
   QTreeWidget*                                 m_pScopes    = nullptr;
   QTreeWidget*                                 m_pGpuPasses = nullptr;

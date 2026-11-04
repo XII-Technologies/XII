@@ -3,6 +3,8 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Threading/Thread.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 
 XII_CREATE_SIMPLE_TEST(Profiling, IncrementalStream)
@@ -46,5 +48,46 @@ XII_CREATE_SIMPLE_TEST(Profiling, IncrementalStream)
   xiiProfilingSystem::AddCPUScope("Disabled stream", "IncrementalStream", now - xiiTime::MakeFromMilliseconds(1), now, {});
   xiiProfilingSystem::DrainStream(stream);
   XII_TEST_BOOL(stream.m_Scopes.IsEmpty() && stream.m_Frames.IsEmpty());
+#endif
+}
+
+XII_CREATE_SIMPLE_TEST(Profiling, IncrementalWorkerStream)
+{
+#if XII_ENABLED(XII_USE_PROFILING)
+  class Worker final : public xiiThread
+  {
+  public:
+    Worker() : xiiThread("Profiling stream worker") {}
+
+  private:
+    xiiUInt32 Run() override
+    {
+      const auto end = xiiTime::Now();
+      xiiProfilingSystem::AddCPUScope("Worker operation", "WorkerStream", end - xiiTime::MakeFromMilliseconds(1), end, {});
+      return 0;
+    }
+  };
+  xiiProfilingSystem::SetStreamingEnabled(true);
+  XII_SCOPE_EXIT(xiiProfilingSystem::SetStreamingEnabled(false));
+  Worker worker;
+  worker.Start();
+  worker.Join();
+  xiiProfilingSystem::StreamData stream;
+  xiiProfilingSystem::DrainStream(stream);
+  bool      found = false, named = false;
+  xiiUInt64 workerId = 0;
+  for (const auto& scope : stream.m_Scopes)
+    if (xiiStringUtils::IsEqual(scope.m_szName, "Worker operation"))
+    {
+      workerId = scope.m_uiThreadId;
+      XII_TEST_BOOL(workerId != static_cast<xiiUInt64>(xiiThreadUtils::GetCurrentThreadID()));
+      XII_TEST_BOOL(scope.m_EndTime > scope.m_BeginTime);
+      XII_TEST_STRING(scope.m_szFunction, "WorkerStream");
+      found = true;
+    }
+  for (const auto& thread : stream.m_Threads)
+    if (thread.m_uiThreadId == workerId && thread.m_sName == "Profiling stream worker")
+      named = true;
+  XII_TEST_BOOL(found && named);
 #endif
 }

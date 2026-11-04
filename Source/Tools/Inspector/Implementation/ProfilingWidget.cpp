@@ -272,13 +272,15 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   auto* live = new QPushButton("Resume live");
   m_pRecord  = new QPushButton("Start recording");
   m_pRecord->setObjectName("Record profiling");
+  m_pSnapshot = new QPushButton("Snapshot history");
+  m_pSnapshot->setToolTip("Request the application’s existing profiling history once. Live monitoring and recording use incremental telemetry.");
   auto* open = new QPushButton("Open…");
   auto* save = new QPushButton("Save…");
   auto* fit  = new QPushButton("Fit");
   m_pFilter  = new QLineEdit;
   m_pFilter->setPlaceholderText(rendering ? "Search pass or graph…" : "Search scope or function…");
   m_pFilter->setAccessibleName("Profiling search");
-  for (auto* button : {m_pPause, live, m_pRecord, open, save, fit})
+  for (auto* button : {m_pPause, live, m_pRecord, m_pSnapshot, open, save, fit})
     controls->addWidget(button);
   controls->addWidget(m_pFilter, 1);
   layout->addLayout(controls);
@@ -329,6 +331,7 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   connect(m_pOverview, &QWidget::customContextMenuRequested, this, [this](QPoint point) {
     QMenu menu;
     auto* copy = menu.addAction("Copy process identifier");
+    copy->setEnabled(m_pSession->Display().m_uiProcessId != 0);
     if (menu.exec(m_pOverview->mapToGlobal(point)) == copy)
       QApplication::clipboard()->setText(QString::number(m_pSession->Display().m_uiProcessId));
   });
@@ -477,6 +480,7 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
       m_pSession->StartRecording(m_pCaptureMode->currentIndex() == 1 ? m_pCaptureFrames->value() : 36000, m_pCaptureMode->currentIndex() == 2 ? m_pCaptureSeconds->value() : 600, qsizetype(m_pCaptureMemory->value()) * 1024 * 1024);
     Refresh();
   });
+  connect(m_pSnapshot, &QPushButton::clicked, this, [this] { RequestHistorySnapshot(); });
   connect(open, &QPushButton::clicked, this, [this] { OpenCapture(); });
   connect(save, &QPushButton::clicked, this, [this] { SaveCapture(); });
   connect(fit, &QPushButton::clicked, this, [this] {
@@ -518,6 +522,12 @@ xiiQtProfilingWidget::~xiiQtProfilingWidget()
 void xiiQtProfilingWidget::Tick()
 {
   m_pSession->UpdateRecording();
+  m_pSnapshot->setEnabled(xiiTelemetry::IsConnectedToServer() && !m_pSession->m_bRecording && !m_pSession->m_bSnapshotPending);
+  if (!m_bRendering && m_pSession->m_bSnapshotPending && m_pSession->m_SnapshotTimer.elapsed() > 5000)
+  {
+    m_pSession->m_bSnapshotPending = false;
+    m_pStatus->setText("No application history snapshot received. Check the InspectorPlugin connection.");
+  }
   if (!m_bRendering)
   {
     const bool connected = xiiTelemetry::IsConnectedToServer();
@@ -568,6 +578,26 @@ void xiiQtProfilingWidget::ProcessTelemetry(void*)
     ack.GetWriter() << session.m_uiSession << session.m_uiSequence;
     xiiTelemetry::SendToServer(ack);
   }
+  while (xiiTelemetry::RetrieveMessage('PSNP', message).Succeeded())
+  {
+    if (!session.m_bSnapshotPending)
+      continue;
+    session.m_bSnapshotPending = false;
+    xiiUInt32 size             = 0;
+    message.GetReader() >> size;
+    if (size == 0 || size > 16 * 1024 * 1024)
+    {
+      s_pWidget->m_pStatus->setText("Invalid application history snapshot size.");
+      continue;
+    }
+    QByteArray bytes(size, Qt::Uninitialized);
+    if (message.GetReader().ReadBytes(bytes.data(), size) != size)
+      s_pWidget->m_pStatus->setText("Truncated application history snapshot.");
+    else if (message.GetMessageID() == 'ERRO')
+      s_pWidget->m_pStatus->setText(QString::fromUtf8(bytes));
+    else if (message.GetMessageID() != 'DATA' || !s_pWidget->LoadCapture(bytes))
+      s_pWidget->m_pStatus->setText("Unsupported application history snapshot. The previous capture is preserved.");
+  }
 }
 
 void xiiQtProfilingWidget::ResetStats()
@@ -604,6 +634,18 @@ void xiiQtProfilingWidget::RequestCapture()
   m_pSession->StartRecording(1, 10, 64 * 1024 * 1024);
   // An explicit capture remains subscribed even when its dock is hidden.
   Tick();
+}
+
+void xiiQtProfilingWidget::RequestHistorySnapshot()
+{
+  if (!xiiTelemetry::IsConnectedToServer() || m_pSession->m_bSnapshotPending || m_pSession->m_bRecording)
+    return;
+  m_pSession->SetPaused(true);
+  m_pSession->m_bSnapshotPending = true;
+  m_pSession->m_SnapshotTimer.restart();
+  xiiTelemetry::SendToServer('PSNP', 'CAPT');
+  Refresh();
+  m_pStatus->setText("Waiting for the application's profiling history snapshot…");
 }
 
 void xiiQtProfilingWidget::SaveCapture()
@@ -665,7 +707,7 @@ void xiiQtProfilingWidget::Refresh()
                        .arg(statistics.m_uiDroppedFrames)
                        .arg(statistics.m_uiDroppedGpu)
                        .arg(statistics.m_bTruncated ? " • Capture stopped at a memory, sample, or metadata limit" : ""));
-  m_pOverview->setToolTip(QString("Process ID: %1\nCPU self time excludes recorded children; the application discard threshold still applies.").arg(data.m_uiProcessId));
+  m_pOverview->setToolTip(QString("Process ID: %1\nCPU self time excludes recorded children; the application discard threshold still applies.").arg(data.m_uiProcessId == 0 ? QString("Unavailable") : QString::number(data.m_uiProcessId)));
   m_pHistory->m_fBudget = m_pBudget->value();
   if (m_bRendering)
   {

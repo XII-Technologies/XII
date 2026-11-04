@@ -78,6 +78,9 @@ public:
   double              m_fRecordEndUs = 0;
   QElapsedTimer       m_CaptureDrainTimer;
 
+  bool          m_bSnapshotPending = false;
+  QElapsedTimer m_SnapshotTimer;
+
 private:
   void             ArchiveCapture();
   quint64          m_uiNextCapture = 1;

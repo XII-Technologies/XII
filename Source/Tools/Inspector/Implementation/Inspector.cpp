@@ -79,6 +79,7 @@ public:
     xiiTelemetry::AcceptMessagesForSystem('RESM', true, xiiQtResourceWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('RGRF', true, xiiQtRenderGraphWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('PSTR', true, xiiQtProfilingWidget::ProcessTelemetry, nullptr);
+    xiiTelemetry::AcceptMessagesForSystem('PSNP', true, xiiQtProfilingWidget::ProcessTelemetry, nullptr);
 
     QSettings     Settings;
     const QString sServer = Settings.value("LastConnection", QLatin1String("localhost:1040")).toString();

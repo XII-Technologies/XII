@@ -211,6 +211,7 @@ void xiiInspectorProfilingSession::BeginStream(quint64 session)
 
 void xiiInspectorProfilingSession::ResetConnection()
 {
+  m_bSnapshotPending = false;
   // A recording ends on disconnect, but its owned capture remains inspectable.
   if (m_bRecording)
     StopRecording(false);

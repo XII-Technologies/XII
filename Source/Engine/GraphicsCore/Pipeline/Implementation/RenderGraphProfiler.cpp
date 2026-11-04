@@ -242,13 +242,17 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
   }
 
   // Read back all submission duration queries for this frame and accumulate them.
+  xiiHashTable<xiiUInt64, xiiUInt32> submissionIndices;
   for (xiiUInt32 uiSubmissionIndex = 0U; uiSubmissionIndex < frameData.m_SubmissionDurationQueries.GetCount(); ++uiSubmissionIndex)
   {
     TimingSample sample;
     sample.m_uiGraphId    = frameData.m_SubmissionInstanceIds[uiSubmissionIndex];
     sample.m_uiFrameIndex = frameData.m_uiFrameIndex;
     sample.m_RecordedAt   = frameData.m_RecordedAt;
-    sample.m_uiPassIndex  = uiSubmissionIndex;
+    xiiUInt32 localIndex  = 0;
+    submissionIndices.TryGetValue(sample.m_uiGraphId, localIndex);
+    submissionIndices.Insert(sample.m_uiGraphId, localIndex + 1);
+    sample.m_uiPassIndex  = localIndex;
     sample.m_uiQueueIndex = frameData.m_SubmissionQueueIndices[uiSubmissionIndex];
     sample.m_bSubmission  = true;
     if (!frameData.m_SubmissionQueryActive[uiSubmissionIndex])
