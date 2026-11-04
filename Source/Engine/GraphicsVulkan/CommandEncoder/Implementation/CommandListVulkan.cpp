@@ -2970,6 +2970,42 @@ void xiiGALCommandListVulkan::UpdateTexturePlatform(xiiGALTexture* pTexture, con
   UpdateTextureRegion(subresourceData.m_pData.GetPtr(), subresourceData.m_uiStride, subresourceData.m_uiDepthStride, pTextureVulkan, textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureBox);
 }
 
+xiiResult xiiGALCommandListVulkan::BlitTexture(xiiGALTexture* source, xiiGALTexture* destination)
+{
+  if (m_RecordingState != RecordingState::Recording || m_pRenderPass || !source || !destination || source == destination || source->GetDevice() != m_pDevice || destination->GetDevice() != m_pDevice)
+    return XII_FAILURE;
+  const auto& sourceDescription      = source->GetDescription();
+  const auto& destinationDescription = destination->GetDescription();
+  const auto  isDisplayFormat        = [](xiiGALResourceFormat::Enum format) {
+    return format == xiiGALResourceFormat::RGBA8UNormalized || format == xiiGALResourceFormat::RGBA8UNormalizedSRGB ||
+      format == xiiGALResourceFormat::BGRA8UNormalized || format == xiiGALResourceFormat::BGRA8UNormalizedSRGB;
+  };
+  if (!isDisplayFormat(sourceDescription.m_Format) || !isDisplayFormat(destinationDescription.m_Format) ||
+      !m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer))
+    return XII_FAILURE;
+  if (sourceDescription.m_Type != xiiGALResourceDimension::Texture2D || destinationDescription.m_Type != xiiGALResourceDimension::Texture2D || sourceDescription.m_uiSampleCount != 1 || destinationDescription.m_uiSampleCount != 1 || sourceDescription.m_uiArraySizeOrDepth != 1 || destinationDescription.m_uiArraySizeOrDepth != 1)
+    return XII_FAILURE;
+  auto                 device = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::FormatProperties sourceProperties;
+  vk::FormatProperties destinationProperties;
+  device->GetVulkanPhysicalDevice().getFormatProperties(xiiVulkanTypeConversions::GetFormat(sourceDescription.m_Format), &sourceProperties, device->GetVulkanDynamicDispatchLoader());
+  device->GetVulkanPhysicalDevice().getFormatProperties(xiiVulkanTypeConversions::GetFormat(destinationDescription.m_Format), &destinationProperties, device->GetVulkanDynamicDispatchLoader());
+  if (!(sourceProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eBlitSrc) || !(destinationProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eBlitDst))
+    return XII_FAILURE;
+  auto* sourceVulkan      = static_cast<xiiGALTextureVulkan*>(source);
+  auto* destinationVulkan = static_cast<xiiGALTextureVulkan*>(destination);
+  TransitionImageLayout(sourceVulkan, vk::ImageLayout::eTransferSrcOptimal);
+  TransitionImageLayout(destinationVulkan, vk::ImageLayout::eTransferDstOptimal);
+  FlushBarriers();
+  vk::ImageBlit region;
+  region.srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+  region.dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+  region.srcOffsets[1]  = {static_cast<xiiInt32>(sourceDescription.m_Size.width), static_cast<xiiInt32>(sourceDescription.m_Size.height), 1};
+  region.dstOffsets[1]  = {static_cast<xiiInt32>(destinationDescription.m_Size.width), static_cast<xiiInt32>(destinationDescription.m_Size.height), 1};
+  m_vkCommandBuffer.blitImage(sourceVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, destinationVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, 1, &region, vk::Filter::eNearest, device->GetVulkanDynamicDispatchLoader());
+  return XII_SUCCESS;
+}
+
 void xiiGALCommandListVulkan::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
   xiiGALTextureVulkan* pSourceTextureVulkan      = xiiDynamicCast<xiiGALTextureVulkan*>(pSourceTexture);

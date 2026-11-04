@@ -637,7 +637,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       instanceExtensions.PushBack(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_METAL_EXT)
-      instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
+      instanceExtensions.PushBack(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
 #endif
     }
 

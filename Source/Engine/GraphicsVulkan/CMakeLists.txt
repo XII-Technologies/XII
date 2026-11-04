@@ -21,3 +21,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 xii_link_thirdparty_sdl(${PROJECT_NAME})
+
+if(XII_CMAKE_PLATFORM_OSX)
+  target_link_libraries(${PROJECT_NAME} PRIVATE "-framework QuartzCore" objc)
+endif()

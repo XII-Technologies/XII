@@ -86,12 +86,31 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
   xiiGALDepthStencilClearValue  m_DepthStencil;                                   ///< Depth stencil clear value.
 };
 
+/// Native presentation surface supplied by a window toolkit. No SDL object is required.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALNativeWindowDescription
+{
+  XII_DECLARE_POD_TYPE();
+  enum class Type : xiiUInt8
+  {
+    None,
+    Win32,
+    X11,
+    Wayland,
+    Cocoa
+  };
+  Type      m_Type           = Type::None;
+  xiiUInt64 m_uiWindowHandle = 0;       ///< HWND, X11 Window, wl_surface*, or NSView*, respectively.
+  void*     m_pDisplay       = nullptr; ///< X11 Display* or wl_display*; unused on Windows and macOS.
+};
+
 /// This describes the swap chain creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xiiHashableStruct<xiiGALSwapChainCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiWindowBase*                         m_pWindow           = nullptr;                                    ///< Pointer to the window class.
+  xiiWindowBase*                         m_pWindow = nullptr;                                              ///< Pointer to the window class.
+  xiiGALNativeWindowDescription          m_NativeWindow;                                                   ///< Toolkit-owned window, supplied instead of m_pWindow. Must outlive the swapchain.
+  xiiSizeU32                             m_SurfaceSize       = xiiSizeU32::MakeZero();                     ///< Physical pixel size for an toolkit-owned window; updated by Resize().
   xiiEnum<xiiGALResourceFormat>          m_ColorBufferFormat = xiiGALResourceFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
   xiiBitflags<xiiGALSwapChainUsageFlags> m_UsageFlags        = xiiGALSwapChainUsageFlags::RenderTarget;    ///< Swap chain usage flags.
   xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;            ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
