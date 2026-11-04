@@ -74,7 +74,7 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
   xiiEditorEngineProcessConnection::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineViewWidget::EngineViewProcessEventHandler, this));
 
   {
-    // Return any pending shared frame and finish Qt GPU use before destroying the producer.
+    // Finish presentation GPU use before destroying the producer.
     delete m_pViewportWidget;
     m_pViewportWidget = nullptr;
     xiiViewDestroyedMsgToEngine msg;

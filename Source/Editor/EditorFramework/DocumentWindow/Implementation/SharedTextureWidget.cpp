@@ -4,6 +4,7 @@
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/DocumentWindow/SharedTextureWidget.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
@@ -183,7 +184,7 @@ void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
     }
     else if (xiiUInt64(frame.m_uiWidth) * frame.m_uiHeight * 4 == frame.m_Pixels.GetCount())
     {
-      xiiGALTextureSubResourceData data(frame.m_Pixels.GetArrayPtr().ToByteArray(), frame.m_uiWidth * 4);
+      xiiGALTextureSubResourceData data(frame.m_Pixels.GetArrayPtr().ToByteArray(), frame.m_uiWidth * 4, xiiUInt64(frame.m_uiWidth) * frame.m_uiHeight * 4);
       xiiGALTextureData            initialData(xiiMakeArrayPtr(&data, 1));
       m_pPresentationTexture = s_pDevice->CreateTexture(description, &initialData);
     }
