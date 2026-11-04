@@ -3,6 +3,7 @@
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
 #include <Core/ResourceManager/ResourceTypeLoader.h>
+#include <Core/System/Window.h>
 #include <Core/World/World.h>
 #include <Core/World/WorldDesc.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
@@ -221,11 +222,9 @@ namespace
   public:
     using xiiEngineProcessViewContext::xiiEngineProcessViewContext;
     using xiiEngineProcessViewContext::SetCamera;
-    using xiiEngineProcessViewContext::OnSwapChainChanged;
     using xiiEngineProcessViewContext::ResolveRenderPipeline;
     using xiiEngineProcessViewContext::UpdateRenderPipeline;
     xiiView* BorrowView() const { return GetView(); }
-    void     SetWindowHandle(xiiRegisteredWindowHandle window) { m_hEditorWindow = window; }
 
   protected:
     xiiViewHandle CreateView() override
@@ -296,43 +295,7 @@ namespace
     xiiThreadSignal& m_Release;
   };
 
-  // A test output owns a reference exactly as a GAL swapchain does.
-  class ReferencedWindowOutput : public xiiWindowOutputTargetBase
-  {
-  public:
-    ReferencedWindowOutput(xiiWindowBase& window, bool& destroyed) : m_Window(window), m_Destroyed(destroyed) { m_Window.AddReference(); }
-    ~ReferencedWindowOutput()
-    {
-      m_Window.RemoveReference();
-      m_Destroyed = true;
-    }
-    bool      GetVSyncEnabled() const override { return m_VSync; }
-    void      SetVSyncEnabled(bool value) override { m_VSync = value; }
-    void      PresentImage() override { ++m_Presents; }
-    void      Resize(const xiiSizeU32& size) override { m_Size = size; }
-    xiiResult CaptureImage(xiiImage&) override { return XII_FAILURE; }
-
-  private:
-    xiiWindowBase& m_Window;
-    bool&          m_Destroyed;
-    bool           m_VSync    = false;
-    xiiUInt32      m_Presents = 0;
-    xiiSizeU32     m_Size     = xiiSizeU32::MakeZero();
-  };
 } // namespace
-
-XII_CREATE_SIMPLE_TEST(EditorViews, OutputOwnership)
-{
-  bool destroyed = false;
-  {
-    xiiEditorProcessViewWindow              window;
-    xiiUniquePtr<xiiWindowOutputTargetBase> output = XII_DEFAULT_NEW(ReferencedWindowOutput, window, destroyed);
-    window.SetOutputTarget(std::move(output));
-    XII_TEST_BOOL(window.GetOutputTarget() != nullptr);
-    XII_TEST_BOOL(!destroyed);
-  }
-  XII_TEST_BOOL(destroyed);
-}
 
 XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
 {
@@ -517,30 +480,21 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
   xiiView* stale = nullptr;
   XII_TEST_BOOL(!module->TryGetView(removed, stale));
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Document redraw requests expire after presentation and release their windows")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Document redraw requests expire after presentation")
   {
     const auto           guid    = xiiUuid::MakeUuid();
     TestDocumentContext* context = XII_DEFAULT_NEW(TestDocumentContext, world);
     XII_TEST_STATUS(xiiEngineProcessDocumentContext::AddDocumentContext(guid, {}, context, nullptr, "View test"));
     auto* viewContext = context->AddView();
     viewContext->SetupRenderTarget({}, texture->GetDefaultView(xiiGALTextureViewType::RenderTarget), 80, 60);
-    auto*      windows = xiiWindowManager::GetSingleton();
-    const auto window  = windows->Register("Editor Test", viewContext, XII_DEFAULT_NEW(xiiEditorProcessViewWindow));
-    viewContext->SetWindowHandle(window);
-    bool redraw = true;
-    XII_TEST_BOOL(xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw));
-    XII_TEST_BOOL(!redraw);
+    auto* view = viewContext->BorrowView();
+    XII_TEST_BOOL(view != nullptr);
     viewContext->Redraw(true);
-    XII_TEST_BOOL(xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw));
-    XII_TEST_BOOL(redraw);
     xiiEngineProcessDocumentContext::FinishFrame();
-    XII_TEST_BOOL(xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw));
-    XII_TEST_BOOL(!redraw);
-    XII_TEST_BOOL(!xiiEngineProcessDocumentContext::TryGetWindowRedrawState({}, redraw));
+    XII_TEST_BOOL(!view->IsRenderEnabled());
     const auto handle = viewContext->GetViewHandle();
     xiiEngineProcessDocumentContext::DestroyDocumentContext(guid);
     XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(guid) == nullptr);
-    XII_TEST_BOOL(!windows->IsValid(window));
     XII_TEST_BOOL(!module->TryGetView(handle, stale));
   }
 
@@ -590,7 +544,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SwapChainViewportExtent)
   description.m_pWindow = window.Borrow();
   xiiWindowOutputTargetGAL output(description, [&](xiiSharedPtr<xiiGALSwapChain> swapChain, xiiSizeU32 size) {
     notifiedSize = size;
-    context.OnSwapChainChanged(std::move(swapChain), size);
+    context.SetupRenderTarget(std::move(swapChain), nullptr, static_cast<xiiUInt16>(size.width), static_cast<xiiUInt16>(size.height));
   });
   if (!XII_TEST_BOOL(output.m_pSwapChain != nullptr))
     return;

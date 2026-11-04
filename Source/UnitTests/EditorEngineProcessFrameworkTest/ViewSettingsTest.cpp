@@ -37,7 +37,6 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     message.m_fFovOrDim              = 42.0f;
     message.m_fNearPlane             = -1000.0f;
     message.m_fFarPlane              = 1000.0f;
-    message.m_uiHWND                 = 0;
     message.m_uiWindowWidth          = 80;
     message.m_uiWindowHeight         = 60;
     message.m_bUpdatePickingData     = false;
@@ -58,6 +57,50 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     XII_TEST_BOOL(copy.m_CameraMode == message.m_CameraMode);
     XII_TEST_BOOL(copy.m_RenderMode == message.m_RenderMode);
     XII_TEST_FLOAT(copy.m_fFovOrDim, 42.0f, 0.0f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shared frame metadata and acknowledgements survive IPC serialization")
+  {
+    xiiViewFrameMsgToEditor message;
+    message.m_DocumentGuid                     = xiiUuid::MakeUuid();
+    message.m_uiViewID                         = 7;
+    message.m_uiFrameID                        = 19;
+    message.m_uiTextureID                      = 3;
+    message.m_uiWidth                          = 128;
+    message.m_uiHeight                         = 96;
+    message.m_Memory.m_Type                    = xiiGALExternalMemoryKind::Exportable;
+    message.m_Memory.m_Flags                   = xiiGALExternalMemoryFlags::BinarySemaphore;
+    message.m_Memory.m_uiNativeHandle          = 123;
+    message.m_Memory.m_uiNativeSemaphoreHandle = 456;
+    message.m_Memory.m_uiSize                  = 65536;
+    message.m_Memory.m_uiProcessId             = 789;
+    message.m_Memory.m_uiMemoryTypeIndex       = 2;
+    message.m_Memory.m_DeviceUUID              = xiiUuid::MakeUuid();
+    xiiDefaultMemoryStreamStorage storage;
+    xiiMemoryStreamWriter         writer(&storage);
+    xiiReflectionSerializer::WriteObjectToBinary(writer, message.GetDynamicRTTI(), &message);
+    xiiViewFrameMsgToEditor copy;
+    xiiMemoryStreamReader   reader(&storage);
+    xiiReflectionSerializer::ReadObjectPropertiesFromBinary(reader, *copy.GetDynamicRTTI(), &copy);
+    XII_TEST_BOOL(copy.m_DocumentGuid == message.m_DocumentGuid);
+    XII_TEST_INT(copy.m_uiViewID, 7);
+    XII_TEST_INT(copy.m_uiFrameID, 19);
+    XII_TEST_INT(copy.m_uiTextureID, 3);
+    XII_TEST_INT(copy.m_uiWidth, 128);
+    XII_TEST_INT(copy.m_uiHeight, 96);
+    XII_TEST_BOOL(copy.m_Memory == message.m_Memory);
+    XII_TEST_BOOL(copy.m_Pixels.IsEmpty());
+    xiiViewFrameConsumedMsgToEngine consumed;
+    consumed.m_uiFrameID              = 19;
+    consumed.m_bSharedTextureAccepted = true;
+    storage.Clear();
+    xiiMemoryStreamWriter consumedWriter(&storage);
+    xiiReflectionSerializer::WriteObjectToBinary(consumedWriter, consumed.GetDynamicRTTI(), &consumed);
+    xiiViewFrameConsumedMsgToEngine consumedCopy;
+    xiiMemoryStreamReader           consumedReader(&storage);
+    xiiReflectionSerializer::ReadObjectPropertiesFromBinary(consumedReader, *consumedCopy.GetDynamicRTTI(), &consumedCopy);
+    XII_TEST_INT(consumedCopy.m_uiFrameID, 19);
+    XII_TEST_BOOL(consumedCopy.m_bSharedTextureAccepted);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Preview lighting toggles and cleans up Engine objects")

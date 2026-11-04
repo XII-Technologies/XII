@@ -84,7 +84,6 @@ void xiiRemoteEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineV
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(size.width), static_cast<float>(size.height)));
       s_pActiveRemoteViewContext = this;
       s_uiActiveViewID           = pMsg->m_uiViewID;
-      m_hEditorWindow            = hWindow;
       pView->SetRenderEnabled(true);
     }
     return;

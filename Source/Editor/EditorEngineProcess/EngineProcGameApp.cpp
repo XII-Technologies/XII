@@ -232,9 +232,6 @@ void xiiEngineProcessGameApplication::Run_PresentImage()
   bool captured = false;
   for (const auto window : windows)
   {
-    bool redraw = false;
-    if (xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw) && !redraw)
-      continue;
     auto* nativeWindow = manager->GetWindow(window);
     auto* output       = nativeWindow ? nativeWindow->GetOutputTarget() : nullptr;
     if (!output)

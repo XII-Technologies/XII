@@ -80,38 +80,13 @@ void xiiEngineProcessDocumentContext::FinishFrame()
     auto& context = *it.Value();
     for (auto* view : context.m_ViewContexts)
       if (view)
+      {
+        view->PresentFrame();
         view->SuspendRendering();
+      }
     if (context.m_pThumbnailViewContext)
       context.m_pThumbnailViewContext->SuspendRendering();
   }
-}
-
-bool xiiEngineProcessDocumentContext::TryGetWindowRedrawState(xiiRegisteredWindowHandle hWindow, bool& out_bRedrawRequested)
-{
-  out_bRedrawRequested = false;
-  if (hWindow.IsInvalidated())
-    return false;
-
-  bool found = false;
-  for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
-  {
-    auto& context = *it.Value();
-    for (auto* viewContext : context.m_ViewContexts)
-    {
-      if (!viewContext || viewContext->GetWindowHandle() != hWindow)
-        continue;
-      found = true;
-      if (auto* world = context.GetWorld())
-      {
-        XII_LOCK(world->GetReadMarker());
-        const auto* module = static_cast<const xiiWorld*>(world)->GetModule<xiiRenderWorldModule>();
-        xiiView*    view   = nullptr;
-        if (module && module->TryGetView(viewContext->GetViewHandle(), view))
-          out_bRedrawRequested |= view->IsRenderEnabled() && view->IsValid();
-      }
-    }
-  }
-  return found;
 }
 
 void xiiEngineProcessDocumentContext::DestroyDocumentContext(xiiUuid guid)

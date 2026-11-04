@@ -8,15 +8,19 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
 #include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
-#include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Image.h>
 
 xiiEngineProcessViewContext::xiiEngineProcessViewContext(xiiEngineProcessDocumentContext* pContext) :
@@ -81,8 +85,8 @@ xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
     }
   }
 
-  if (auto* manager = xiiWindowManager::GetSingleton())
-    manager->CloseAll(this);
+  m_pViewportTarget.Clear();
+  m_pViewportTexture.Clear();
 }
 
 void xiiEngineProcessViewContext::SetViewID(xiiUInt32 uiId)
@@ -94,44 +98,54 @@ void xiiEngineProcessViewContext::SetViewID(xiiUInt32 uiId)
 
 void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
   if (const xiiViewRedrawMsgToEngine* pViewRedrawMsg = xiiDynamicCast<const xiiViewRedrawMsgToEngine*>(pMsg))
   {
-    if (pViewRedrawMsg->m_uiWindowWidth > 0 && pViewRedrawMsg->m_uiWindowHeight > 0)
-    {
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-      HandleWindowUpdate(reinterpret_cast<xiiWindowHandle>(pViewRedrawMsg->m_uiHWND), pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight);
-#  else
-      xiiWindowHandle windowHandle;
-      windowHandle.type                    = xiiWindowHandle::Type::XCB;
-      windowHandle.xcbWindow.m_Window      = static_cast<xiiUInt32>(pViewRedrawMsg->m_uiHWND);
-      windowHandle.xcbWindow.m_pConnection = nullptr;
-      HandleWindowUpdate(windowHandle, pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight);
-#  endif
-    }
+    // Camera and input state continue to update while presentation applies backpressure.
+    const bool ready = !m_bFramePending && pViewRedrawMsg->m_uiWindowWidth > 0 && pViewRedrawMsg->m_uiWindowHeight > 0 &&
+      UpdateRenderTarget(pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight, pViewRedrawMsg->m_bUseSharedTexture).Succeeded();
     m_bShowNavigationGizmo        = pViewRedrawMsg->m_bShowNavigationGizmo;
     m_bNavigationHovered          = pViewRedrawMsg->m_bNavigationHovered;
     m_iNavigationHoveredAxis      = pViewRedrawMsg->m_iNavigationHoveredAxis;
     m_fNavigationDevicePixelRatio = xiiMath::IsFinite(pViewRedrawMsg->m_fDevicePixelRatio) ? xiiMath::Max(0.5f, pViewRedrawMsg->m_fDevicePixelRatio) : 1.0f;
     // The first redraw creates the view; apply the message camera to that new view as well.
     SetCamera(pViewRedrawMsg);
-    if (pViewRedrawMsg->m_uiWindowWidth > 0 && pViewRedrawMsg->m_uiWindowHeight > 0)
+    if (ready)
       Redraw(true);
   }
   else if (const xiiViewScreenshotMsgToEngine* pViewScreenshotMsg = xiiDynamicCast<const xiiViewScreenshotMsgToEngine*>(pMsg))
   {
-    auto* window = xiiWindowManager::GetSingleton()->GetWindow(m_hEditorWindow);
-    if (window && window->GetOutputTarget())
-    {
-      static_cast<xiiWindowOutputTargetGAL*>(window->GetOutputTarget())->RequestScreenshot(pViewScreenshotMsg->m_sOutputFile);
-      Redraw(true);
-    }
-    else
-      xiiLog::Error("Cannot capture a view without a window output target.");
+    m_sScreenshot = pViewScreenshotMsg->m_sOutputFile;
   }
-#else
-#  error "Unsupported platform."
-#endif
+  else if (const auto* consumed = xiiDynamicCast<const xiiViewFrameConsumedMsgToEngine*>(pMsg))
+  {
+    if (!m_bFramePending || consumed->m_uiFrameID != m_uiFrameID)
+      return;
+    m_bFramePending = false;
+    if (m_bExternalOwner && consumed->m_bSharedTextureAccepted)
+    {
+      auto device  = xiiGALDevice::GetDefaultDevice();
+      auto command = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      if (!command)
+        return;
+      command->Begin();
+      const auto result = m_pViewportTexture->AcquireExternalMemory(command);
+      command->End();
+      if (result.Failed())
+        return;
+      device->GetCommandQueue()->Submit(command);
+      m_bExternalOwner = false;
+    }
+    else if (m_bExternalOwner)
+    {
+      // A rejected import has not waited on or used the texture. Retire it without
+      // submitting a semaphore wait that the consumer will never signal.
+      m_bExternalOwner = false;
+      m_bSharingFailed = true;
+      m_pViewportTarget.Clear();
+      m_pViewportTexture.Clear();
+      xiiLog::Warning("GPU viewport import unavailable; using offscreen readback presentation.");
+    }
+  }
 }
 
 void xiiEngineProcessViewContext::SendViewMessage(xiiEditorEngineViewMsg* pViewMsg)
@@ -142,69 +156,93 @@ void xiiEngineProcessViewContext::SendViewMessage(xiiEditorEngineViewMsg* pViewM
   GetDocumentContext()->SendProcessMessage(pViewMsg);
 }
 
-void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+xiiResult xiiEngineProcessViewContext::UpdateRenderTarget(xiiUInt16 uiWidth, xiiUInt16 uiHeight, bool bShared)
 {
-  XII_LOG_BLOCK("xiiEngineProcessViewContext::HandleWindowUpdate");
-
-  auto* manager = xiiWindowManager::GetSingleton();
-  if (auto* window = static_cast<xiiEditorProcessViewWindow*>(manager->GetWindow(m_hEditorWindow)))
+  auto device = xiiGALDevice::GetDefaultDevice();
+  bShared     = bShared && !m_bSharingFailed && device->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled && device->GetFeatures().m_ExternalMemory == xiiGALDeviceFeatureState::Enabled && device->GetFeatures().m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled;
+  const xiiSizeU32 size(uiWidth, uiHeight);
+  if (m_pViewportTexture && m_pViewportTexture->GetDescription().m_Size == size &&
+      m_pViewportTexture->GetExternalMemoryKind().IsSet(xiiGALExternalMemoryKind::Exportable) == bShared)
+    return XII_SUCCESS;
+  if (m_bFramePending || m_bExternalOwner)
+    return XII_FAILURE;
+  xiiGALTextureCreationDescription description;
+  description.m_Type                   = xiiGALResourceDimension::Texture2D;
+  description.m_Size                   = size;
+  description.m_Format                 = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  description.m_BindFlags              = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+  description.m_ExternalMemory.m_Flags = xiiGALExternalMemoryFlags::BinarySemaphore;
+  auto texture                         = device->CreateTexture(description, nullptr, bShared ? xiiGALExternalMemoryKind::Exportable : xiiGALExternalMemoryKind::None);
+  if (!texture && bShared)
   {
-    if (window->GetClientAreaSize() == xiiSizeU32(uiWidth, uiHeight))
-      return;
-    if (window->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
-    {
-      xiiLog::Error("Failed to resize Editor Process View Window.");
-      return;
-    }
-    window->GetOutputTarget()->Resize(window->GetClientAreaSize());
-    return;
+    m_bSharingFailed = true;
+    xiiLog::Warning("Vulkan image export unavailable; using offscreen readback presentation.");
+    texture = device->CreateTexture(description);
   }
-
-  xiiUniquePtr<xiiEditorProcessViewWindow> window = XII_DEFAULT_NEW(xiiEditorProcessViewWindow);
-  if (window->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
-  {
-    xiiLog::Error("Failed to create Editor Process View Window.");
-    return;
-  }
-
-  xiiGALSwapChainCreationDescription description;
-  description.m_pWindow                         = window.Borrow();
-  description.m_ColorBufferFormat               = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-  description.m_UsageFlags                      = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
-  description.m_PreTransform                    = xiiGALSurfaceTransform::Optimal;
-  description.m_uiBufferCount                   = 2U;
-  description.m_fDefaultDepthValue              = 0.0f;
-  description.m_uiDefaultStencilValue           = 0U;
-  xiiUniquePtr<xiiWindowOutputTargetGAL> output = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, description, [this](xiiSharedPtr<xiiGALSwapChain> swapChain, xiiSizeU32 size) { OnSwapChainChanged(swapChain, size); });
-  if (!output->GetSwapChain())
-  {
-    xiiLog::Error("Failed to create swapchain for Editor Process View Window.");
-    return;
-  }
-  SetupRenderTarget(output->m_pSwapChain, nullptr, uiWidth, uiHeight);
-  window->SetOutputTarget(std::move(output));
-  m_hEditorWindow = manager->Register("Editor View", this, std::move(window));
+  if (!texture)
+    return XII_FAILURE;
+  auto target = texture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  if (!target)
+    return XII_FAILURE;
+  auto clear = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  if (!clear)
+    return XII_FAILURE;
+  clear->Begin();
+  clear->ClearRenderTargetView(target, xiiColor::Black);
+  clear->End();
+  device->GetCommandQueue()->Submit(clear);
+  m_bViewportSetup = true;
+  SetupRenderTarget({}, target, uiWidth, uiHeight);
+  m_bViewportSetup   = false;
+  m_pViewportTarget  = target;
+  m_pViewportTexture = texture;
+  ++m_uiTextureID;
+  return XII_SUCCESS;
 }
 
-void xiiEngineProcessViewContext::OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size)
+void xiiEngineProcessViewContext::PresentFrame()
 {
-  if (xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext())
+  if (!m_bRenderedFrame || !m_pViewportTexture || m_bFramePending)
+    return;
+  m_bRenderedFrame = false;
+  const auto size  = m_pViewportTexture->GetDescription().m_Size;
+  if (!m_sScreenshot.IsEmpty())
   {
-    if (xiiWorld* pWorld = pDocumentContext->GetWorld())
-    {
-      XII_LOCK(pWorld->GetWriteMarker());
-
-      if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
-      {
-        xiiView* pView = nullptr;
-        if (!pRenderWorldModule->TryGetView(m_hView, pView))
-          return;
-
-        pView->SetSwapChain(pSwapChain.Borrow());
-        pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)size.width, (float)size.height));
-      }
-    }
+    xiiImage image;
+    if (xiiCaptureThumbnail(m_pViewportTexture, size, image).Failed() || image.SaveTo(m_sScreenshot).Failed())
+      xiiLog::Error("Could not capture viewport screenshot '{}'.", m_sScreenshot);
+    m_sScreenshot.Clear();
   }
+  xiiViewFrameMsgToEditor frame;
+  frame.m_uiFrameID   = ++m_uiFrameID;
+  frame.m_uiTextureID = m_uiTextureID;
+  frame.m_uiWidth     = static_cast<xiiUInt16>(size.width);
+  frame.m_uiHeight    = static_cast<xiiUInt16>(size.height);
+  if (m_pViewportTexture->GetExternalMemoryKind().IsSet(xiiGALExternalMemoryKind::Exportable))
+  {
+    auto device  = xiiGALDevice::GetDefaultDevice();
+    auto command = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    if (!command)
+      return;
+    command->Begin();
+    const auto result = m_pViewportTexture->ReleaseExternalMemory(command);
+    command->End();
+    if (result.Failed())
+      return;
+    device->GetCommandQueue()->Submit(command);
+    frame.m_Memory   = m_pViewportTexture->GetExternalMemoryDescription();
+    m_bExternalOwner = true;
+  }
+  else
+  {
+    xiiImage image;
+    if (xiiCaptureThumbnail(m_pViewportTexture, size, image).Failed())
+      return;
+    frame.m_Pixels.SetCountUninitialized(size.width * size.height * 4);
+    xiiMemoryUtils::Copy(frame.m_Pixels.GetData(), image.GetPixelPointer<xiiUInt8>(), frame.m_Pixels.GetCount());
+  }
+  m_bFramePending = true;
+  SendViewMessage(&frame);
 }
 
 xiiView* xiiEngineProcessViewContext::GetView() const
@@ -234,7 +272,7 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain
   }
   if (auto* view = GetView())
   {
-    if (pRenderTargetView != nullptr && m_PipelineUsage == xiiEditorRenderPipelineUsage::ScenePreview)
+    if (pRenderTargetView != nullptr && !m_bViewportSetup && m_PipelineUsage == xiiEditorRenderPipelineUsage::ScenePreview)
     {
       // A short thumbnail capture cannot adapt exposure reliably against its
       // mostly black background. Use stable studio exposure for asset inspection.
@@ -254,6 +292,8 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain
 
 void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
 {
+  if (m_bFramePending || m_bExternalOwner)
+    return;
   if (xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext())
   {
     if (xiiWorld* pWorld = pDocumentContext->GetWorld())
@@ -266,8 +306,7 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
 
-        // Surface-driven swapchain recreation can occur during presentation, without
-        // a resize message. Full-window Editor views follow the allocated extent.
+        // Remote standalone views still follow their own swapchain extent.
         if (const auto* swapChain = pView->GetSwapChain())
         {
           const auto size = swapChain->GetCurrentSize();
@@ -278,6 +317,7 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         // pipeline composition here as well once the scene resource has loaded.
         UpdateRenderPipeline(*pView);
         pView->SetRenderEnabled(true);
+        m_bRenderedFrame = m_pViewportTexture != nullptr;
         if (m_bShowNavigationGizmo && pView->GetCamera() && pView->GetCamera()->GetCameraMode() != xiiCameraMode::Stereo)
         {
           const auto&                      viewport = pView->GetViewport();
@@ -422,11 +462,3 @@ void xiiEngineProcessViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg
     }
   }
 }
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <EditorEngineProcessFramework/EngineProcess/Implementation/Windows/EngineProcessViewContext_win.h>
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <EditorEngineProcessFramework/EngineProcess/Implementation/Linux/EngineProcessViewContext_linux.h>
-#else
-#  error Platform not supported
-#endif

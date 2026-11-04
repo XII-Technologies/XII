@@ -87,8 +87,6 @@ public:
   static void      UpdateDocumentContexts();
   /// Consumes redraw requests after presentation; thumbnails request another frame on their next tick.
   static void FinishFrame();
-  /// Returns whether a window belongs to document views and combines their presentation requests.
-  static bool TryGetWindowRedrawState(xiiRegisteredWindowHandle hWindow, bool& out_bRedrawRequested);
   static void DestroyDocumentContext(xiiUuid guid);
   /// Releases borrowed-world contexts before contexts which own their world.
   static void DestroyAllDocumentContexts();

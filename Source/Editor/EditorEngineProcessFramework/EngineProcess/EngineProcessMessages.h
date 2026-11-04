@@ -10,6 +10,7 @@
 #include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Logging/LogEntry.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <ToolsFoundation/Object/DocumentObjectMirror.h>
 #include <ToolsFoundation/Reflection/ReflectedType.h>
 
@@ -262,12 +263,34 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewDestroyedResponseMsgToEditor :
   XII_ADD_DYNAMIC_REFLECTION(xiiViewDestroyedResponseMsgToEditor, xiiEditorEngineViewMsg);
 };
 
+/// One completed offscreen frame. A single frame per view may be outstanding.
+class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewFrameMsgToEditor : public xiiEditorEngineViewMsg
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiViewFrameMsgToEditor, xiiEditorEngineViewMsg);
+public:
+  xiiUInt64 m_uiFrameID = 0;
+  xiiUInt64 m_uiTextureID = 0;
+  xiiUInt16 m_uiWidth = 0;
+  xiiUInt16 m_uiHeight = 0;
+  xiiGALExternalMemoryDescription m_Memory;
+  xiiDataBuffer m_Pixels; ///< Packed RGBA8, only used when GPU interoperability is unavailable.
+};
+
+/// Sent only after the consumer has submitted its semaphore signal, or rejected the import.
+class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewFrameConsumedMsgToEngine : public xiiEditorEngineViewMsg
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiViewFrameConsumedMsgToEngine, xiiEditorEngineViewMsg);
+public:
+  xiiUInt64 m_uiFrameID = 0;
+  bool m_bSharedTextureAccepted = false;
+};
+
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewRedrawMsgToEngine : public xiiEditorEngineViewMsg
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiViewRedrawMsgToEngine, xiiEditorEngineViewMsg);
 
 public:
-  xiiUInt64 m_uiHWND;
+  bool m_bUseSharedTexture = false;
   xiiUInt16 m_uiWindowWidth;
   xiiUInt16 m_uiWindowHeight;
   float     m_fDevicePixelRatio = 1.0f;
