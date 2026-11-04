@@ -557,7 +557,8 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
 xiiResult xiiGALTextureVulkan::AcquireExternalMemory(xiiGALCommandList* pCommandList)
 {
   auto* command = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
-  if (!command || !m_vkExternalMemorySemaphore || !m_ExternalMemoryDescription.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore))
+  if (!command || command->GetDevice() != m_pDevice || command->GetRecordingState() != xiiGALCommandList::RecordingState::Recording ||
+      !command->GetDescription().m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics) || !m_vkExternalMemorySemaphore || !m_ExternalMemoryDescription.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore))
     return XII_FAILURE;
   command->AddWaitSemaphore(m_vkExternalMemorySemaphore, vk::PipelineStageFlagBits::eAllCommands);
   command->FlushBarriers();
@@ -577,7 +578,8 @@ xiiResult xiiGALTextureVulkan::AcquireExternalMemory(xiiGALCommandList* pCommand
 xiiResult xiiGALTextureVulkan::ReleaseExternalMemory(xiiGALCommandList* pCommandList)
 {
   auto* command = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
-  if (!command || !m_vkExternalMemorySemaphore || !m_ExternalMemoryDescription.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore))
+  if (!command || command->GetDevice() != m_pDevice || command->GetRecordingState() != xiiGALCommandList::RecordingState::Recording ||
+      !command->GetDescription().m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics) || !m_vkExternalMemorySemaphore || !m_ExternalMemoryDescription.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore))
     return XII_FAILURE;
   command->FlushBarriers();
   vk::ImageMemoryBarrier barrier;

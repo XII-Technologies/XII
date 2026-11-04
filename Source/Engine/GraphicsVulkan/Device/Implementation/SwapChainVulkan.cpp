@@ -24,6 +24,7 @@
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_OSX)
+#  include <CoreGraphics/CGGeometry.h>
 #  include <objc/message.h>
 #  include <objc/runtime.h>
 namespace
@@ -36,6 +37,12 @@ namespace
       return XII_FAILURE;
     reinterpret_cast<void (*)(void*, SEL, bool)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), true);
     reinterpret_cast<void (*)(void*, SEL, void*)>(objc_msgSend)(view, sel_registerName("setLayer:"), out_layer);
+    void* window = send(view, sel_registerName("window"));
+    if (window)
+    {
+      const double scale = reinterpret_cast<double (*)(void*, SEL)>(objc_msgSend)(window, sel_registerName("backingScaleFactor"));
+      reinterpret_cast<void (*)(void*, SEL, double)>(objc_msgSend)(out_layer, sel_registerName("setContentsScale:"), scale);
+    }
     return XII_SUCCESS;
   }
   void xiiReleaseMetalLayer(void*& layer)
@@ -223,9 +230,25 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   return XII_FAILURE;
 #endif
 
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
+{
+#if XII_ENABLED(XII_PLATFORM_OSX)
+  if (m_pMetalLayer && m_Description.m_SurfaceSize.HasNonZeroArea())
+  {
+    const CGSize size = {static_cast<double>(m_Description.m_SurfaceSize.width), static_cast<double>(m_Description.m_SurfaceSize.height)};
+    reinterpret_cast<void (*)(void*, SEL, CGSize)>(objc_msgSend)(m_pMetalLayer, sel_registerName("setDrawableSize:"), size);
+  }
+#endif
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+  vk::Device                       vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
+
   // Check present support on the graphics queue.
   {
-    vk::PhysicalDevice           vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
     xiiGALQueueInformationVulkan graphicsQueueInformation = pDeviceVulkan->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics);
     vk::Bool32                   bHasPresentSupport       = vk::False;
 
@@ -238,14 +261,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
     }
   }
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
-  vk::Device                       vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Retrieve the list of vk::Formats that are supported.
   xiiUInt32 uiFormatCount = 0U;
