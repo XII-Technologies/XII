@@ -4,7 +4,6 @@
 
 #include <Foundation/Communication/Telemetry.h>
 #include <Inspector/CVarsWidget.moc.h>
-#include <Inspector/DataTransferWidget.moc.h>
 #include <Inspector/FileWidget.moc.h>
 #include <Inspector/GlobalEventsWidget.moc.h>
 #include <Inspector/InputWidget.moc.h>
@@ -75,12 +74,6 @@ void xiiQtMainWindow::on_ActionShowWindowGlobalEvents_triggered()
 {
   xiiQtGlobalEventsWidget::s_pWidget->toggleView(ActionShowWindowGlobalEvents->isChecked());
   xiiQtGlobalEventsWidget::s_pWidget->raise();
-}
-
-void xiiQtMainWindow::on_ActionShowWindowData_triggered()
-{
-  xiiQtDataWidget::s_pWidget->toggleView(ActionShowWindowData->isChecked());
-  xiiQtDataWidget::s_pWidget->raise();
 }
 
 void xiiQtMainWindow::on_ActionShowWindowResource_triggered()

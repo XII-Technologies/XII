@@ -5,6 +5,7 @@
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QMap>
 #include <QTreeWidget>
 #include <QWheelEvent>
 #include <cmath>
@@ -13,8 +14,37 @@ namespace xiiInspectorUi
 {
   inline const char* QueueName(int queue)
   {
-    static const char* names[] = {"Graphics", "Async compute", "Async transfer"};
+    static const char* names[] = {"Graphics Queue 0", "Compute Queue 1", "Transfer Queue 2"};
     return queue >= 0 && queue < 3 ? names[queue] : "Unknown queue";
+  }
+
+  inline QString GraphLabel(const QMap<quint64, QString>& graphs, quint64 id)
+  {
+    const auto name       = graphs.value(id, "Render graph");
+    int        duplicates = 0, ordinal = 0;
+    for (auto it = graphs.begin(); it != graphs.end(); ++it)
+      if (it.value() == name)
+      {
+        ++duplicates;
+        if (it.key() <= id)
+          ++ordinal;
+      }
+    return duplicates > 1 ? name + QString(" · Graph %1").arg(ordinal) : name;
+  }
+
+  inline QString ResourceName(const QJsonObject& resource, int index)
+  {
+    const auto name = resource["name"].toString();
+    return name.isEmpty() ? QString("%1 %2").arg(resource["texture"].toBool() ? "Texture" : "Buffer").arg(index + 1) : name;
+  }
+
+  inline QString Bytes(quint64 bytes)
+  {
+    if (bytes >= 1024 * 1024)
+      return QString::number(double(bytes) / (1024 * 1024), 'f', 2) + " MiB";
+    if (bytes >= 1024)
+      return QString::number(double(bytes) / 1024, 'f', 2) + " KiB";
+    return QString::number(bytes) + " B";
   }
 
   inline QColor QueueColor(int queue)
@@ -45,6 +75,8 @@ namespace xiiInspectorUi
       const int    column      = treeWidget()->sortColumn();
       bool         leftNumeric = false, rightNumeric = false;
       const double left = text(column).toDouble(&leftNumeric), right = other.text(column).toDouble(&rightNumeric);
+      if (leftNumeric != rightNumeric)
+        return !leftNumeric;
       return leftNumeric && rightNumeric ? left < right : text(column).localeAwareCompare(other.text(column)) < 0;
     }
   };

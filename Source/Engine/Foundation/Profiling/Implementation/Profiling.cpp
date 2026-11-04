@@ -12,6 +12,8 @@
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/ThreadUtils.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <atomic>
 
 #if XII_ENABLED(XII_USE_PROFILING)
 
@@ -53,6 +55,18 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 namespace
 {
+  // The live side channel never waits on the consumer. Strings are owned across plugin unloads.
+  std::atomic<bool>                                             s_bStreaming{false};
+  std::atomic<xiiUInt64>                                        s_uiDroppedStreamScopes{0};
+  xiiMutex                                                      s_StreamMutex;
+  xiiUInt64                                                     s_uiStreamScopeSequence = 0;
+  std::atomic<xiiUInt64>                                        s_uiDroppedStreamGpuScopes{0};
+  xiiStaticRingBuffer<xiiProfilingSystem::StreamGpuScope, 2048> s_StreamGpuScopes;
+  xiiStaticRingBuffer<xiiProfilingSystem::StreamScope, 8192>    s_StreamScopes;
+  xiiStaticRingBuffer<xiiProfilingSystem::StreamFrame, 256>     s_StreamFrames;
+  xiiUInt64                                                     s_uiDroppedStreamFrames = 0;
+  xiiTime                                                       s_StreamFrameBegin;
+
   enum
   {
     BUFFER_SIZE_OTHER_THREAD = 1024 * 1024,
@@ -666,6 +680,21 @@ xiiUInt64 xiiProfilingSystem::GetFrameCount()
 // static
 void xiiProfilingSystem::StartNewFrame()
 {
+  const xiiTime now = xiiTime::Now();
+  if (s_bStreaming.load(std::memory_order_relaxed))
+  {
+    XII_LOCK(s_StreamMutex);
+    if (s_StreamFrameBegin.IsPositive())
+    {
+      if (!s_StreamFrames.CanAppend())
+      {
+        s_StreamFrames.PopFront();
+        ++s_uiDroppedStreamFrames;
+      }
+      s_StreamFrames.PushBack({s_uiFrameCount, s_StreamFrameBegin, now});
+    }
+    s_StreamFrameBegin = now;
+  }
   ++s_uiFrameCount;
 
   if (!s_FrameStartTimes.CanAppend())
@@ -673,7 +702,7 @@ void xiiProfilingSystem::StartNewFrame()
     s_FrameStartTimes.PopFront();
   }
 
-  s_FrameStartTimes.PushBack(xiiTime::Now());
+  s_FrameStartTimes.PushBack(now);
 }
 
 // static
@@ -713,6 +742,29 @@ void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctio
   scope.m_EndTime       = endTime;
   xiiStringUtils::Copy(scope.m_szName, XII_ARRAY_SIZE(scope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
+  if (s_bStreaming.load(std::memory_order_relaxed))
+  {
+    if (s_StreamMutex.TryLock().Succeeded())
+    {
+      XII_SCOPE_EXIT(s_StreamMutex.Unlock());
+      if (s_StreamScopes.CanAppend())
+      {
+        StreamScope sample;
+        sample.m_uiSequence = ++s_uiStreamScopeSequence;
+        sample.m_uiThreadId = pScopes->m_uiThreadId;
+        sample.m_BeginTime  = beginTime;
+        sample.m_EndTime    = endTime;
+        xiiStringUtils::Copy(sample.m_szName, XII_ARRAY_SIZE(sample.m_szName), scope.m_szName);
+        xiiStringUtils::CopyN(sample.m_szFunction, XII_ARRAY_SIZE(sample.m_szFunction), sFunctionName.GetStartPointer(), XII_ARRAY_SIZE(sample.m_szFunction) - 1, sFunctionName.GetEndPointer());
+        s_StreamScopes.PushBack(sample);
+      }
+      else
+        ++s_uiDroppedStreamScopes;
+    }
+    else
+      ++s_uiDroppedStreamScopes;
+  }
+
   if (xiiThreadUtils::IsMainThread())
   {
     auto pMainThreadBuffer = CastToMainThreadEventBuffer(pScopes);
@@ -741,6 +793,52 @@ void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctio
 }
 
 // static
+void xiiProfilingSystem::SetStreamingEnabled(bool bEnabled)
+{
+  s_bStreaming.store(false, std::memory_order_relaxed);
+  XII_LOCK(s_StreamMutex);
+  s_StreamScopes.Clear();
+  s_StreamGpuScopes.Clear();
+  s_uiDroppedStreamGpuScopes = 0;
+  s_StreamFrames.Clear();
+  s_uiDroppedStreamScopes = 0;
+  s_uiDroppedStreamFrames = 0;
+  s_StreamFrameBegin      = {};
+  s_bStreaming.store(bEnabled, std::memory_order_relaxed);
+}
+
+void xiiProfilingSystem::DrainStream(StreamData& out_data)
+{
+  {
+    XII_LOCK(s_StreamMutex);
+    out_data.m_Scopes.SetCount(s_StreamScopes.GetCount());
+    for (auto& scope : out_data.m_Scopes)
+    {
+      scope = s_StreamScopes.PeekFront();
+      s_StreamScopes.PopFront();
+    }
+    out_data.m_Frames.SetCount(s_StreamFrames.GetCount());
+    for (auto& frame : out_data.m_Frames)
+    {
+      frame = s_StreamFrames.PeekFront();
+      s_StreamFrames.PopFront();
+    }
+    out_data.m_GpuScopes.SetCount(s_StreamGpuScopes.GetCount());
+    for (auto& scope : out_data.m_GpuScopes)
+    {
+      scope = s_StreamGpuScopes.PeekFront();
+      s_StreamGpuScopes.PopFront();
+    }
+    out_data.m_uiDroppedGpuScopes = s_uiDroppedStreamGpuScopes.load();
+    out_data.m_uiDroppedScopes    = s_uiDroppedStreamScopes.load();
+    out_data.m_uiDroppedFrames    = s_uiDroppedStreamFrames;
+  }
+  XII_LOCK(s_ThreadInfosMutex);
+  out_data.m_Threads.SetCount(xiiMath::Min(1024U, s_ThreadInfos.GetCount()));
+  for (xiiUInt32 i = 0; i < out_data.m_Threads.GetCount(); ++i)
+    out_data.m_Threads[i] = s_ThreadInfos[i];
+}
+
 void xiiProfilingSystem::Initialize()
 {
   SetThreadName("Main Thread");
@@ -837,6 +935,19 @@ void xiiProfilingSystem::AddGPUScope(xiiStringView sName, xiiTime beginTime, xii
   xiiStringUtils::Copy(scope.m_szName, XII_ARRAY_SIZE(scope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
   s_GPUScopes[uiGpuIndex]->PushBack(scope);
+  if (s_bStreaming.load(std::memory_order_relaxed))
+  {
+    if (s_StreamMutex.TryLock().Succeeded())
+    {
+      XII_SCOPE_EXIT(s_StreamMutex.Unlock());
+      if (s_StreamGpuScopes.CanAppend())
+        s_StreamGpuScopes.PushBack({scope, uiGpuIndex});
+      else
+        ++s_uiDroppedStreamGpuScopes;
+    }
+    else
+      ++s_uiDroppedStreamGpuScopes;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -915,6 +1026,17 @@ void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctio
   XII_IGNORE_UNUSED(scopeTimeout);
 }
 
+void xiiProfilingSystem::SetStreamingEnabled(bool bEnabled) { XII_IGNORE_UNUSED(bEnabled); }
+void xiiProfilingSystem::DrainStream(StreamData& out_data)
+{
+  out_data.m_Scopes.Clear();
+  out_data.m_GpuScopes.Clear();
+  out_data.m_uiDroppedGpuScopes = 0;
+  out_data.m_Frames.Clear();
+  out_data.m_Threads.Clear();
+  out_data.m_uiDroppedScopes = 0;
+  out_data.m_uiDroppedFrames = 0;
+}
 void xiiProfilingSystem::Initialize() {}
 
 void xiiProfilingSystem::Reset() {}

@@ -18,6 +18,7 @@ public:
   ~xiiQtRenderGraphWidget() override;
   static xiiQtRenderGraphWidget* s_pWidget;
   static void                    ProcessTelemetry(void*);
+  void                           LocatePass(const QString& graph, int pass);
   bool                           ApplyCapture(const QJsonObject& object) override;
 
 protected:
@@ -38,4 +39,6 @@ private:
   QPlainTextEdit*            m_pDetails;
   QMap<QString, QJsonObject> m_Graphs;
   QString                    m_sSelectedPassId;
+  QString                    m_sPendingGraph;
+  int                        m_iPendingPass = -1;
 };

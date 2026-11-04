@@ -11,6 +11,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   ${CMAKE_SOURCE_DIR}/Source/Tools/Inspector/Implementation/RenderingCapture.cpp
   ${CMAKE_SOURCE_DIR}/Source/Tools/Inspector/Implementation/RenderGraphWidget.cpp
   ${CMAKE_SOURCE_DIR}/Source/Tools/Inspector/Implementation/ProfilingWidget.cpp
+  ${CMAKE_SOURCE_DIR}/Source/Tools/Inspector/Implementation/ProfilingSession.cpp
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE TestFramework GuiFoundation GraphicsCore ads)
 add_dependencies(${PROJECT_NAME} InspectorPlugin)

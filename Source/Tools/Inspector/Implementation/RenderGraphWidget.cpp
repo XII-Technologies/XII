@@ -1,13 +1,16 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Inspector/CaptureUi.h>
 #include <Inspector/InspectorPCH.h>
+
+#include <Inspector/CaptureUi.h>
 #include <Inspector/ProfilingWidget.h>
 #include <Inspector/RenderGraphWidget.h>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QGraphicsScene>
 #include <QJsonDocument>
 #include <QLabel>
+#include <QMenu>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSplitter>
@@ -49,7 +52,25 @@ xiiQtRenderGraphWidget::xiiQtRenderGraphWidget(ads::CDockManager* manager) : xii
   tabs->addTab(m_pResources, "Resources");
   m_pBarriers = Table({"Index", "Resource", "Before", "After", "Transition", "Source queue", "Target queue", "Ownership", "Mip range", "Slice range"}, "Graph barriers");
   tabs->addTab(m_pBarriers, "Barriers");
-  m_pVersions = Table({"Resource", "Version", "Parent", "Producer ID", "First pass", "Last pass", "Required state", "Current state", "Exported", "Stable ID"}, "Resource versions");
+  m_pVersions = Table({"Resource", "Version", "Parent", "Producer pass", "First pass", "Last pass", "Required state", "Current state", "Exported", "Stable ID"}, "Resource versions");
+  m_pResources->setColumnHidden(6, true);
+  m_pVersions->setColumnHidden(9, true);
+  m_pResources->setColumnWidth(0, 260);
+  m_pPasses->setColumnWidth(1, 260);
+  m_pVersions->setColumnWidth(0, 260);
+  for (auto* table : {m_pResources, m_pVersions})
+  {
+    table->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(table, &QWidget::customContextMenuRequested, this, [table, this](QPoint point) {
+      auto* item = table->itemAt(point);
+      if (!item)
+        return;
+      QMenu menu;
+      auto* copy = menu.addAction("Copy resource identifier");
+      if (menu.exec(table->viewport()->mapToGlobal(point)) == copy)
+        QApplication::clipboard()->setText(item->text(table == m_pResources ? 6 : 9));
+    });
+  }
   tabs->addTab(m_pVersions, "Versions");
   m_pSubmissions = Table({"Submission", "Queue", "Compiled pass order", "Wait submissions", "Signal value", "Wait values"}, "Queue submissions");
   tabs->addTab(m_pSubmissions, "Queue schedule");
@@ -149,13 +170,25 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
   const auto           selected = m_pGraphs->currentData().toString();
   const QSignalBlocker blocker(m_pGraphs);
   m_pGraphs->clear();
+  QMap<quint64, QString> names;
   for (auto it = m_Graphs.begin(); it != m_Graphs.end(); ++it)
-    m_pGraphs->addItem((it.value()["view"].toString().isEmpty() ? it.value()["name"].toString() : it.value()["view"].toString() + " / " + it.value()["name"].toString()) + " [" + it.key() + "]", it.key());
+    names[it.key().toULongLong()] = (it.value()["view"].toString().isEmpty() ? QString{} : it.value()["view"].toString() + " / ") + it.value()["name"].toString("Render graph");
+  for (auto it = m_Graphs.begin(); it != m_Graphs.end(); ++it)
+  {
+    m_pGraphs->addItem(GraphLabel(names, it.key().toULongLong()), it.key());
+    m_pGraphs->setItemData(m_pGraphs->count() - 1, "Graph instance: " + it.key(), Qt::ToolTipRole);
+  }
   const int previous = m_pGraphs->findData(selected);
   m_pGraphs->setCurrentIndex(previous >= 0 ? previous : m_pGraphs->findData(id));
   Rebuild();
-  if (xiiQtProfilingWidget::s_pWidget)
-    xiiQtProfilingWidget::s_pWidget->ApplyGraphCapture(object);
+  if (xiiQtProfilingWidget::s_pRenderingWidget)
+    xiiQtProfilingWidget::s_pRenderingWidget->ApplyGraphCapture(object);
+  if (m_sPendingGraph == id)
+  {
+    const auto pending = m_iPendingPass;
+    m_sPendingGraph.clear();
+    LocatePass(id, pending);
+  }
   return true;
 }
 
@@ -274,7 +307,7 @@ void xiiQtRenderGraphWidget::Rebuild()
   for (int index = 0; index < resources.size(); ++index)
   {
     const auto    resource                   = resources[index].toObject();
-    const QString name                       = resource["name"].toString();
+    const QString name                       = ResourceName(resource, index);
     resourceNames[resource["id"].toString()] = name;
     const int   flags                        = resource["flags"].toInt();
     QStringList flagNames;
@@ -284,7 +317,7 @@ void xiiQtRenderGraphWidget::Rebuild()
       flagNames << "External";
     if (flags & 4)
       flagNames << "Persistent";
-    Row(m_pResources, {name, resource["texture"].toBool() ? "Texture" : "Buffer", flagNames.join(" | "), Index(resource["first"]), Index(resource["last"]), Index(resource["alias"]), resource["id"].toString(), resource["texture"].toBool() ? QString("%1 × %2 × %3").arg(resource["width"].toInt()).arg(resource["height"].toInt()).arg(resource["depthOrSlices"].toInt()) : resource["bufferBytes"].toString(), resource["format"].toString(), resource["texture"].toBool() ? Index(resource["mips"]) : QString{}}, filter);
+    Row(m_pResources, {name, resource["texture"].toBool() ? "Texture" : "Buffer", flagNames.join(" | "), Index(resource["first"]), Index(resource["last"]), Index(resource["alias"]), resource["id"].toString(), resource["texture"].toBool() ? QString("%1 × %2 × %3").arg(resource["width"].toInt()).arg(resource["height"].toInt()).arg(resource["depthOrSlices"].toInt()) : Bytes(resource["bufferBytes"].toString().toULongLong()), resource["format"].toString(), resource["texture"].toBool() ? Index(resource["mips"]) : QString{}}, filter);
     if ((!filter.isEmpty() && !name.contains(filter, Qt::CaseInsensitive)) || resource["first"].toDouble() == 4294967295.0)
       continue;
     auto* label = m_pLifetimeScene->addSimpleText(QFontMetrics(QApplication::font()).elidedText(name, Qt::ElideRight, 250));
@@ -309,15 +342,18 @@ void xiiQtRenderGraphWidget::Rebuild()
   {
     const auto    barrier  = barriers[index].toObject();
     const int     resource = barrier["resource"].toInt(-1);
-    const QString name     = resource >= 0 && resource < resources.size() ? resources[resource].toObject()["name"].toString() : "Unknown resource";
+    const QString name     = resource >= 0 && resource < resources.size() ? ResourceName(resources[resource].toObject(), resource) : "Unknown resource";
     const QString type     = barrier["type"].toInt() == 0 ? "Immediate" : barrier["type"].toInt() == 1 ? "Split begin" :
                                                                                                          "Split end";
     Row(m_pBarriers, {QString::number(index), name, barrier["beforeName"].toString(QString("0x%1").arg(barrier["before"].toInteger(), 0, 16)), barrier["afterName"].toString(QString("0x%1").arg(barrier["after"].toInteger(), 0, 16)), type, QueueName(barrier["sourceQueue"].toInt()), QueueName(barrier["targetQueue"].toInt()), barrier["ownershipTransfer"].toBool() ? "Transfer" : "", Index(barrier["firstMip"]) + " + " + Index(barrier["mips"]), Index(barrier["firstSlice"]) + " + " + Index(barrier["slices"])}, filter);
   }
+  QMap<QString, QString> passNames;
+  for (const auto& value : passes)
+    passNames[value.toObject()["id"].toString()] = value.toObject()["name"].toString();
   for (const auto& value : graph["versions"].toArray())
   {
     const auto version = value.toObject();
-    Row(m_pVersions, {resourceNames.value(version["resource"].toString()), Index(version["version"]), version["parent"].toInt() == 65535 ? "-" : Index(version["parent"]), version["producer"].toString(), Index(version["first"]), Index(version["last"]), QString("0x%1").arg(version["requiredState"].toInteger(), 0, 16), QString("0x%1").arg(version["currentState"].toInteger(), 0, 16), version["exported"].toBool() ? "Yes" : "", version["id"].toString()}, filter);
+    Row(m_pVersions, {resourceNames.value(version["resource"].toString()), Index(version["version"]), version["parent"].toInt() == 65535 ? "-" : Index(version["parent"]), passNames.value(version["producer"].toString(), "External / no producer"), Index(version["first"]), Index(version["last"]), version["requiredStateName"].toString(QString("0x%1").arg(version["requiredState"].toInteger(), 0, 16)), version["currentStateName"].toString(QString("0x%1").arg(version["currentState"].toInteger(), 0, 16)), version["exported"].toBool() ? "Yes" : "", version["id"].toString()}, filter);
   }
   const auto submissions = graph["submissions"].toArray();
   for (int index = 0; index < submissions.size(); ++index)
@@ -329,7 +365,13 @@ void xiiQtRenderGraphWidget::Rebuild()
     Row(m_pSubmissions, {QString::number(index), QueueName(submission["queue"].toInt()), Indices(submission["passes"].toArray()), Indices(submission["waits"].toArray()), submission["signal"].toString(), waits.join(", ")}, filter);
   }
   for (auto* table : {m_pPasses, m_pResources, m_pBarriers, m_pVersions, m_pSubmissions})
+  {
     table->setSortingEnabled(true);
+    for (int row = 0; row < table->topLevelItemCount(); ++row)
+      for (int column = 0; column < table->columnCount(); ++column)
+        table->topLevelItem(row)->setToolTip(column, table->topLevelItem(row)->text(0) + "\n" + table->topLevelItem(row)->text(table == m_pResources ? 6 : table == m_pVersions ? 9 :
+                                                                                                                                                                                  0));
+  }
   m_pGraphScene->setSceneRect(m_pGraphScene->itemsBoundingRect().adjusted(-15, -15, 15, 15));
   m_pLifetimeScene->setSceneRect(m_pLifetimeScene->itemsBoundingRect().adjusted(-15, -15, 15, 15));
   for (const auto& value : passes)
@@ -348,4 +390,26 @@ void xiiQtRenderGraphWidget::SelectPass(int index)
       return;
     }
   }
+}
+
+void xiiQtRenderGraphWidget::LocatePass(const QString& graph, int pass)
+{
+  toggleView(true);
+  raise();
+  const int index = m_pGraphs->findData(graph);
+  if (index < 0)
+  {
+    m_sPendingGraph = graph;
+    m_iPendingPass  = pass;
+    RequestCapture();
+    return;
+  }
+  m_pGraphs->setCurrentIndex(index);
+  for (const auto& value : m_Document["passes"].toArray())
+    if (value.toObject()["index"].toInt() == pass)
+      m_sSelectedPassId = value.toObject()["id"].toString();
+  Rebuild();
+  SelectPass(pass);
+  for (auto* item : m_pGraphScene->selectedItems())
+    m_pGraphView->ensureVisible(item);
 }

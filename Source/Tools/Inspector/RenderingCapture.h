@@ -34,7 +34,6 @@ protected:
 
   QVBoxLayout* m_pLayout;
   QHBoxLayout* m_pControls;
-  QCheckBox*   m_pLive;
   QLineEdit*   m_pFilter;
   QLabel*      m_pStatus;
   QJsonObject  m_Document;

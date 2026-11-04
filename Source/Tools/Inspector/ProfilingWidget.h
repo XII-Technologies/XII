@@ -1,52 +1,70 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
-#include <Inspector/RenderingCapture.h>
-#include <QMap>
-#include <QVector>
+#include <Inspector/ProfilingSession.h>
+#include <QElapsedTimer>
+#include <QSharedPointer>
+#include <ads/DockWidget.h>
 
 class QComboBox;
 class QDoubleSpinBox;
-class QGraphicsScene;
+class QSpinBox;
+class QLabel;
+class QLineEdit;
+class QPushButton;
 class QTreeWidget;
+class xiiQtProfilingPlot;
 
-class xiiQtProfilingWidget : public xiiQtRenderingCapture
+class xiiQtProfilingWidget : public ads::CDockWidget
 {
 public:
-  xiiQtProfilingWidget(ads::CDockManager* manager);
+  explicit xiiQtProfilingWidget(ads::CDockManager* manager, bool rendering = false, QSharedPointer<xiiInspectorProfilingSession> session = {});
   ~xiiQtProfilingWidget() override;
-  static xiiQtProfilingWidget* s_pWidget;
-  static void                  ProcessTelemetry(void*);
-  bool                         ApplyCapture(const QJsonObject& object) override;
-  void                         ApplyGraphCapture(const QJsonObject& object);
-
-  struct Scope
-  {
-    QString m_Name, m_Lane, m_Function;
-    double  m_fBeginUs = 0, m_fEndUs = 0;
-  };
-  /// Accept Chrome complete events and the engine's named begin/end pairs. Metadata is retained.
-  static bool Decode(const QJsonObject& object, QVector<Scope>& scopes, QMap<QString, QString>& lanes);
-
-protected:
-  void ClearCapture() override;
-  void Rebuild() override;
+  static xiiQtProfilingWidget*                 s_pWidget;
+  static xiiQtProfilingWidget*                 s_pRenderingWidget;
+  static void                                  ProcessTelemetry(void*);
+  void                                         ResetStats();
+  bool                                         ApplyCapture(const QJsonObject& object);
+  bool                                         LoadCapture(const QByteArray& bytes);
+  void                                         ApplyGraphCapture(const QJsonObject& object);
+  void                                         RequestCapture();
+  void                                         RequestHistorySnapshot();
+  void                                         Refresh();
+  QSharedPointer<xiiInspectorProfilingSession> GetSession() const { return m_pSession; }
 
 private:
-  void                       SelectCapture(int index);
-  void                       RebuildGpu();
-  QComboBox*                 m_pHistory;
-  QComboBox*                 m_pFrames;
-  QComboBox*                 m_pLanes;
-  QDoubleSpinBox*            m_pBudget;
-  QGraphicsScene*            m_pTimeline;
-  QGraphicsScene*            m_pFrameChart;
-  QTreeWidget*               m_pHotspots;
-  QTreeWidget*               m_pScopes;
-  QTreeWidget*               m_pGpuPasses;
-  QMap<QString, QJsonObject> m_GpuGraphs;
-  QVector<QJsonObject>       m_History;
-  QVector<Scope>             m_Scopes;
-  QVector<Scope>             m_Frames;
-  QMap<QString, QString>     m_Lanes;
+  void                                         Tick();
+  void                                         RebuildCpu(double begin, double end, bool updateTables);
+  void                                         RebuildGpu();
+  void                                         UpdateGpuHistory();
+  void                                         SaveCapture();
+  void                                         OpenCapture();
+  QSharedPointer<xiiInspectorProfilingSession> m_pSession;
+  bool                                         m_bRendering;
+  quint64                                      m_uiRevision = ~quint64(0);
+  QElapsedTimer                                m_AnalysisTime, m_SubscriptionTime;
+  QLabel*                                      m_pStatus;
+  QLabel*                                      m_pOverview;
+  QLineEdit*                                   m_pFilter;
+  QComboBox*                                   m_pCaptureHistory;
+  QComboBox*                                   m_pFrames;
+  QComboBox*                                   m_pLastFrame;
+  QComboBox*                                   m_pLanes;
+  QComboBox*                                   m_pGraphs;
+  QComboBox*                                   m_pQueues;
+  QComboBox*                                   m_pCaptureMode;
+  QSpinBox*                                    m_pCaptureFrames;
+  QDoubleSpinBox*                              m_pCaptureSeconds;
+  QSpinBox*                                    m_pCaptureMemory;
+  QDoubleSpinBox*                              m_pBudget;
+  QPushButton*                                 m_pPause;
+  QPushButton*                                 m_pRecord;
+  QPushButton*                                 m_pSnapshot;
+  QTreeWidget*                                 m_pHotspots  = nullptr;
+  QTreeWidget*                                 m_pScopes    = nullptr;
+  QTreeWidget*                                 m_pGpuPasses = nullptr;
+  xiiQtProfilingPlot*                          m_pTimeline  = nullptr;
+  xiiQtProfilingPlot*                          m_pHistory;
+  QString                                      m_SelectedGpu;
 };

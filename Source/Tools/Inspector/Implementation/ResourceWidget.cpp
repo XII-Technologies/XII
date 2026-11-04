@@ -9,8 +9,10 @@
 #include <qgraphicsitem.h>
 
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <QClipboard>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QMenu>
 
 /// \todo Refcount ? (Max?)
 /// \todo Select Resource -> send to App for preview
@@ -29,6 +31,16 @@ xiiQtResourceWidget::xiiQtResourceWidget(ads::CDockManager* pDockManager, QWidge
 
   setIcon(QIcon(":/Icons/Icons/Resources.svg"));
 
+  Table->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(Table, &QWidget::customContextMenuRequested, this, [this](QPoint point) {
+    auto* item = Table->itemAt(point);
+    if (!item)
+      return;
+    QMenu menu;
+    auto* copy = menu.addAction("Copy resource identifier");
+    if (menu.exec(Table->viewport()->mapToGlobal(point)) == copy)
+      QApplication::clipboard()->setText(Table->item(item->row(), 7)->text());
+  });
   m_bShowDeleted = true;
 
   ResetStats();
@@ -55,11 +67,14 @@ void xiiQtResourceWidget::ResetStats()
     Headers.append(" CPU Mem. ");
     Headers.append(" GPU Mem. ");
     Headers.append(" Resource ID ");
-    Headers.append(" Description ");
+    Headers.append(" Resource ");
 
     Table->setColumnCount(static_cast<xiiInt32>(Headers.size()));
     Table->setHorizontalHeaderLabels(Headers);
     Table->horizontalHeader()->show();
+    Table->setColumnHidden(7, true);
+    Table->horizontalHeader()->moveSection(Table->horizontalHeader()->visualIndex(8), 0);
+    Table->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Stretch);
   }
 
   Table->resizeColumnsToContents();
@@ -202,30 +217,32 @@ void xiiQtResourceWidget::UpdateTable()
       }
 
       pItem = Table->item(iTableRow, 8);
-      pItem->setText(res.m_sResourceDescription.GetData());
+      pItem->setText(res.m_sResourceDescription.IsEmpty() ? QString::fromUtf8(res.m_sResourceType.GetData()) + " (unnamed resource)" : QString::fromUtf8(res.m_sResourceDescription.GetData()));
+      pItem->setToolTip(QString::fromUtf8(res.m_sResourceDescription.GetData()) + "\nResource identifier: " + QString::fromUtf8(res.m_sResourceID.GetData()));
 
       pItem = Table->item(iTableRow, 7);
       pItem->setText(res.m_sResourceID.GetData());
+      pItem = Table->item(iTableRow, 8);
 
       if (res.m_LoadingState.m_State == xiiResourceState::LoadedResourceMissing)
       {
         pItem->setIcon(QIcon(":/Icons/Icons/ResourceMissing.svg"));
-        pItem->setToolTip("The resource could not be loaded.");
+        pItem->setToolTip(pItem->toolTip() + "\nThe resource could not be loaded.");
       }
       else if (!res.m_Flags.IsAnySet(xiiResourceFlags::IsReloadable))
       {
         pItem->setIcon(QIcon(":/Icons/Icons/ResourceCreated.svg"));
-        pItem->setToolTip("Resource is not reloadable.");
+        pItem->setToolTip(pItem->toolTip() + "\nResource is not reloadable.");
       }
       else if (res.m_Flags.IsAnySet(xiiResourceFlags::ResourceHasFallback))
       {
         pItem->setIcon(QIcon(":/Icons/Icons/ResourceFallback.svg"));
-        pItem->setToolTip("A fallback resource is specified.");
+        pItem->setToolTip(pItem->toolTip() + "\nA fallback resource is specified.");
       }
       else
       {
         pItem->setIcon(QIcon(":/Icons/Icons/Resource.svg"));
-        pItem->setToolTip("Resource is reloadable but no fallback is available.");
+        pItem->setToolTip(pItem->toolTip() + "\nResource is reloadable but no fallback is available.");
       }
 
       pItem = Table->item(iTableRow, 0);
@@ -318,12 +335,12 @@ void xiiQtResourceWidget::UpdateTable()
 
       if (res.m_LoadingState.m_State == xiiResourceState::Invalid)
       {
-        Table->item(iTableRow, 7)->setIcon(QIcon(":/Icons/Icons/ResourceDeleted.svg"));
+        Table->item(iTableRow, 8)->setIcon(QIcon(":/Icons/Icons/ResourceDeleted.svg"));
         // Table->item(iTableRow, 1)->setText(""); // Priority
         // Table->item(iTableRow, 3)->setText(""); // QL D
         // Table->item(iTableRow, 4)->setText(""); // QL L
 
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 9; ++i)
           Table->item(iTableRow, i)->setForeground(QColor::fromRgb(128, 128, 128));
       }
     }
