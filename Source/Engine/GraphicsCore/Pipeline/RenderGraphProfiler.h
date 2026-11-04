@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <Foundation/Communication/Event.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Containers/DynamicArray.h>
@@ -77,6 +78,23 @@ public:
   static constexpr xiiUInt32 s_uiRingFrameCount   = 3U; ///< Number of in-flight frames buffered.
   static constexpr xiiUInt32 s_uiMaxTrackedPasses = 128U;
 
+  /// Duration-only measurement, emitted on query retirement, including unavailable results.
+  /// Frame identity is the recording frame, never the readback frame. No CPU clock correlation is implied.
+  struct TimingSample
+  {
+    xiiUInt64       m_uiGraphId    = 0;
+    xiiUInt64       m_uiFrameIndex = 0;
+    xiiTime         m_RecordedAt; ///< CPU recording time for capture membership, not a GPU timestamp.
+    xiiUInt32       m_uiPassIndex  = 0;
+    xiiUInt32       m_uiQueueIndex = 0;
+    bool            m_bSubmission  = false;
+    bool            m_bAvailable   = false;
+    double          m_fDurationMs  = 0;
+    xiiHashedString m_sName;
+  };
+  /// Callbacks must not call the profiler, retain GPU references, or wait on a consumer.
+  static xiiEvent<const TimingSample&, xiiMutex> s_TimingEvents;
+
 public:
   xiiRenderGraphTimestampProfiler(xiiSharedPtr<xiiGALDevice> pDevice);
   ~xiiRenderGraphTimestampProfiler() override;
@@ -108,9 +126,10 @@ private:
   {
     xiiSharedPtr<xiiGALQuery> m_pDurationQuery;
     xiiHashedString           m_sPassName;
-    bool                      m_bActive     = false;
-    xiiUInt64                 m_uiGraphId   = 0;
-    xiiUInt32                 m_uiPassIndex = 0;
+    bool                      m_bActive      = false;
+    xiiUInt64                 m_uiGraphId    = 0;
+    xiiUInt32                 m_uiPassIndex  = 0;
+    xiiUInt32                 m_uiQueueIndex = 0;
   };
 
   struct FrameData
@@ -120,6 +139,8 @@ private:
     xiiDynamicArray<bool>                      m_SubmissionQueryActive;
     xiiDynamicArray<xiiUInt64>                 m_SubmissionGraphIds;
     xiiDynamicArray<xiiUInt32>                 m_SubmissionQueueIndices;
+    xiiDynamicArray<xiiUInt64>                 m_SubmissionInstanceIds;
+    xiiTime                                    m_RecordedAt;
     xiiUInt64                                  m_uiFrameIndex = xiiInvalidIndex;
   };
 
@@ -145,4 +166,5 @@ private:
   xiiUInt64                                                m_uiRecordingFrameIndex   = xiiInvalidIndex;
   xiiUInt32                                                m_uiPassQueryOffset       = 0U;
   xiiUInt32                                                m_uiSubmissionQueryOffset = 0U;
+  xiiUInt32                                                m_uiRecordingQueueIndex   = 0;
 };

@@ -4,7 +4,6 @@
 
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/IO/MemoryStream.h>
-#include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 #include <atomic>
@@ -73,44 +72,6 @@ namespace
     }
   }
 
-  void RequestProfile(void*)
-  {
-    xiiTelemetryMessage message;
-    bool                requested = false;
-    while (xiiTelemetry::RetrieveMessage('PROF', message).Succeeded())
-      requested |= message.GetMessageID() == 'CAPT';
-    if (!requested || !xiiTelemetry::IsConnectedToClient())
-      return;
-
-    // Also collect the render graph's resolved duration queries. They have durations and frame
-    // identities, but no calibrated absolute timestamps; do not fabricate timeline positions.
-    s_uiRequest.PostIncrement();
-    s_iExpires.Set(static_cast<xiiInt64>((xiiTime::Now() + xiiTime::MakeFromSeconds(2)).GetMicroseconds()));
-
-    xiiProfilingSystem::ProfilingData capture;
-    xiiProfilingSystem::Capture(capture); // Preserve the application's own profiling history.
-    const xiiTime cutoff = xiiTime::Now() - xiiTime::MakeFromSeconds(1);
-    for (auto& buffer : capture.m_AllEventBuffers)
-    {
-      for (xiiUInt32 i = buffer.m_Data.GetCount(); i-- > 0;)
-        if (buffer.m_Data[i].m_EndTime < cutoff)
-          buffer.m_Data.RemoveAtAndSwap(i);
-    }
-    for (auto& buffer : capture.m_GPUScopes)
-    {
-      for (xiiUInt32 i = buffer.GetCount(); i-- > 0;)
-        if (buffer[i].m_EndTime < cutoff)
-          buffer.RemoveAtAndSwap(i);
-    }
-    // Keep frame numbering intact: only remove the old prefix.
-    xiiUInt32 first = 0;
-    while (first + 1 < capture.m_FrameStartTimes.GetCount() && capture.m_FrameStartTimes[first + 1] < cutoff)
-      ++first;
-    capture.m_FrameStartTimes.RemoveAtAndCopy(0, first);
-    CaptureStream stream;
-    SendCapture('PROF', stream, capture.Write(stream).Succeeded());
-  }
-
   void ConnectionEvent(const xiiTelemetry::TelemetryEventData& event)
   {
     if (event.m_EventType == xiiTelemetry::TelemetryEventData::DisconnectedFromClient)
@@ -123,9 +84,7 @@ namespace
 void AddRenderingEventHandler()
 {
   xiiTelemetry::SetOutgoingQueueSize('RGRF', 0);
-  xiiTelemetry::SetOutgoingQueueSize('PROF', 0);
   xiiTelemetry::AcceptMessagesForSystem('RGRF', true, RequestGraph);
-  xiiTelemetry::AcceptMessagesForSystem('PROF', true, RequestProfile);
   xiiTelemetry::AddEventHandler(ConnectionEvent);
 
   xiiRenderGraphDebug::s_ExecutionEvents.AddEventHandler(GraphExecuted);
@@ -134,7 +93,6 @@ void AddRenderingEventHandler()
 void RemoveRenderingEventHandler()
 {
   xiiTelemetry::AcceptMessagesForSystem('RGRF', false);
-  xiiTelemetry::AcceptMessagesForSystem('PROF', false);
   xiiTelemetry::RemoveEventHandler(ConnectionEvent);
 
   xiiRenderGraphDebug::s_ExecutionEvents.RemoveEventHandler(GraphExecuted);

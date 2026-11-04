@@ -50,6 +50,8 @@ void RemoveFileSystemEventHandler();
 void AddResourceManagerEventHandler();
 void RemoveResourceManagerEventHandler();
 
+void AddProfilingStream();
+void RemoveProfilingStream();
 void SetAppStats();
 void AddRenderingEventHandler();
 void RemoveRenderingEventHandler();
@@ -79,12 +81,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(InspectorPlugin, InspectorPluginMain)
     AddFileSystemEventHandler();
     AddResourceManagerEventHandler();
     AddRenderingEventHandler();
+    AddProfilingStream();
 
     SetAppStats();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
+    RemoveProfilingStream();
     RemoveRenderingEventHandler();
     RemoveResourceManagerEventHandler();
     RemoveFileSystemEventHandler();

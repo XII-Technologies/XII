@@ -122,6 +122,39 @@ public:
   };
 
 public:
+  /// Owned, incremental samples for a single live consumer. CPU timestamps share xiiTime::Now's domain.
+  /// Scopes can finish after their frame; associate them by interval, not by delivery order.
+  struct StreamScope
+  {
+    xiiUInt64 m_uiThreadId = 0;
+    xiiTime   m_BeginTime;
+    xiiTime   m_EndTime;
+    char      m_szName[CPUScope::NAME_SIZE];
+    char      m_szFunction[192];
+  };
+
+  struct StreamFrame
+  {
+    xiiUInt64 m_uiFrameIndex = 0;
+    xiiTime   m_BeginTime;
+    xiiTime   m_EndTime;
+  };
+
+  struct StreamData
+  {
+    xiiDynamicArray<StreamScope>   m_Scopes;
+    xiiDynamicArray<StreamFrame>   m_Frames;
+    xiiHybridArray<ThreadInfo, 16> m_Threads;
+    xiiUInt64                      m_uiDroppedScopes = 0;
+    xiiUInt64                      m_uiDroppedFrames = 0;
+  };
+
+  /// Enables a bounded, non-blocking side channel using the existing scope instrumentation.
+  /// Main-thread only. Disabling discards pending samples and leaves ordinary captures untouched.
+  static void SetStreamingEnabled(bool bEnabled);
+  /// Main-thread only. Drains new samples; never captures or clears the ordinary profiling history.
+  static void DrainStream(StreamData& out_data);
+
   static void Clear();
 
   static void Capture(xiiProfilingSystem::ProfilingData& out_capture, bool bClearAfterCapture = false);

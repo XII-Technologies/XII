@@ -5,6 +5,8 @@
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsFoundation/Device/Device.h>
 
+xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex> xiiRenderGraphTimestampProfiler::s_TimingEvents;
+
 xiiRenderGraphTimestampProfiler::xiiRenderGraphTimestampProfiler(xiiSharedPtr<xiiGALDevice> pDevice) :
   m_pDevice(std::move(pDevice))
 {
@@ -54,6 +56,7 @@ void xiiRenderGraphTimestampProfiler::OnFrameBegin(xiiUInt64 uiFrameIndex)
   if (frame.m_uiFrameIndex != xiiInvalidIndex)
     ReadbackFrame(frame);
   frame.m_uiFrameIndex    = uiFrameIndex;
+  frame.m_RecordedAt      = xiiTime::Now();
   m_uiRecordingFrameIndex = uiFrameIndex;
 }
 
@@ -66,6 +69,7 @@ void xiiRenderGraphTimestampProfiler::SetGraphInstance(xiiUInt64 uiInstanceId)
 }
 void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
+  m_uiRecordingQueueIndex = uiQueueIndex;
   uiSubmissionIndex += m_uiSubmissionQueryOffset;
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
@@ -77,8 +81,10 @@ void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandLis
     frame.m_SubmissionQueryActive.SetCount(uiSubmissionIndex + 1U, false);
     frame.m_SubmissionGraphIds.SetCount(uiSubmissionIndex + 1U, 0ULL);
     frame.m_SubmissionQueueIndices.SetCount(uiSubmissionIndex + 1U, 0U);
+    frame.m_SubmissionInstanceIds.SetCount(uiSubmissionIndex + 1U);
   }
   frame.m_SubmissionGraphIds[uiSubmissionIndex]     = uiGraphId;
+  frame.m_SubmissionInstanceIds[uiSubmissionIndex]  = m_uiRecordingGraphId;
   frame.m_SubmissionQueueIndices[uiSubmissionIndex] = uiQueueIndex;
 
   if (!SupportsDurationQueries(commandList))
@@ -139,8 +145,9 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   PassQueries& pass = frame.m_PassQueries[uiQueryIndex];
   pass.m_bActive    = SupportsDurationQueries(commandList);
   pass.m_sPassName.Assign(sPassName);
-  pass.m_uiGraphId   = m_uiRecordingGraphId;
-  pass.m_uiPassIndex = uiPassIndex;
+  pass.m_uiGraphId    = m_uiRecordingGraphId;
+  pass.m_uiPassIndex  = uiPassIndex;
+  pass.m_uiQueueIndex = m_uiRecordingQueueIndex;
 
   if (!pass.m_bActive)
     return;
@@ -202,8 +209,20 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
 
   for (PassQueries& pass : frameData.m_PassQueries)
   {
-    if (!pass.m_bActive || pass.m_pDurationQuery == nullptr)
+    if (pass.m_sPassName.IsEmpty())
       continue;
+    TimingSample sample;
+    sample.m_uiGraphId    = pass.m_uiGraphId;
+    sample.m_uiFrameIndex = frameData.m_uiFrameIndex;
+    sample.m_RecordedAt   = frameData.m_RecordedAt;
+    sample.m_uiPassIndex  = pass.m_uiPassIndex;
+    sample.m_uiQueueIndex = pass.m_uiQueueIndex;
+    sample.m_sName        = pass.m_sPassName;
+    if (!pass.m_bActive || pass.m_pDurationQuery == nullptr)
+    {
+      s_TimingEvents.Broadcast(sample);
+      continue;
+    }
 
     xiiGALQueryDataDuration durationData;
     if (pass.m_pDurationQuery->GetData(&durationData, sizeof(durationData), /*bAutoInvalidate=*/false))
@@ -214,26 +233,44 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
 
         m_ResolvedDurationsMs.Insert(pass.m_sPassName, fDurationMs);
         m_ResolvedPassTimings[pass.m_uiGraphId].Insert(pass.m_uiPassIndex, Timing{fDurationMs, frameData.m_uiFrameIndex, pass.m_sPassName});
+        sample.m_bAvailable  = true;
+        sample.m_fDurationMs = fDurationMs;
       }
     }
     pass.m_bActive = false;
+    s_TimingEvents.Broadcast(sample);
   }
 
   // Read back all submission duration queries for this frame and accumulate them.
   for (xiiUInt32 uiSubmissionIndex = 0U; uiSubmissionIndex < frameData.m_SubmissionDurationQueries.GetCount(); ++uiSubmissionIndex)
   {
+    TimingSample sample;
+    sample.m_uiGraphId    = frameData.m_SubmissionInstanceIds[uiSubmissionIndex];
+    sample.m_uiFrameIndex = frameData.m_uiFrameIndex;
+    sample.m_RecordedAt   = frameData.m_RecordedAt;
+    sample.m_uiPassIndex  = uiSubmissionIndex;
+    sample.m_uiQueueIndex = frameData.m_SubmissionQueueIndices[uiSubmissionIndex];
+    sample.m_bSubmission  = true;
     if (!frameData.m_SubmissionQueryActive[uiSubmissionIndex])
+    {
+      s_TimingEvents.Broadcast(sample);
       continue;
+    }
 
     xiiSharedPtr<xiiGALQuery>& pSubmissionQuery = frameData.m_SubmissionDurationQueries[uiSubmissionIndex];
     if (pSubmissionQuery == nullptr)
+    {
+      s_TimingEvents.Broadcast(sample);
       continue;
+    }
 
     xiiGALQueryDataDuration submissionDurationData;
     if (pSubmissionQuery->GetData(&submissionDurationData, sizeof(submissionDurationData), /*bAutoInvalidate=*/false))
     {
       if (submissionDurationData.m_uiFrequency > 0ULL)
       {
+        sample.m_bAvailable  = true;
+        sample.m_fDurationMs = static_cast<double>(submissionDurationData.m_uiDuration) / static_cast<double>(submissionDurationData.m_uiFrequency) * 1000.0;
         fFrameDurationMs += static_cast<float>(submissionDurationData.m_uiDuration) / static_cast<float>(submissionDurationData.m_uiFrequency) * 1000.0f;
         const float     fSubmissionMs = static_cast<float>(submissionDurationData.m_uiDuration) / static_cast<float>(submissionDurationData.m_uiFrequency) * 1000.0f;
         const xiiUInt64 uiGraphId     = frameData.m_SubmissionGraphIds[uiSubmissionIndex];
@@ -249,6 +286,7 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
     }
 
     frameData.m_SubmissionQueryActive[uiSubmissionIndex] = false;
+    s_TimingEvents.Broadcast(sample);
   }
 
   // Use a reserved name for the total frame duration so callers can query it like a pass.
@@ -265,6 +303,7 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
   frameData.m_SubmissionQueryActive.Clear();
   frameData.m_SubmissionGraphIds.Clear();
   frameData.m_SubmissionQueueIndices.Clear();
+  frameData.m_SubmissionInstanceIds.Clear();
   frameData.m_uiFrameIndex = xiiInvalidIndex;
 }
 
