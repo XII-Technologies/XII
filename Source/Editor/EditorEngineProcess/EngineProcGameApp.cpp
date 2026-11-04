@@ -194,6 +194,9 @@ xiiApplication::Execution xiiEngineProcessGameApplication::Run()
     }
   } while (!WasQuitRequested() && !bPendingOpInProgress && m_uiRedrawCountExecuted == m_uiRedrawCountReceived);
 
+  if (WasQuitRequested())
+    return xiiApplication::Execution::Quit;
+
   // If the editor enqueues a frame to be rendered, the loop above will break due to m_uiRedrawCountExecuted != m_uiRedrawCountReceived, and we will render a frame.
   // Alternatively, a pending operations is active at which point we render as fast as we can, ignoring the editor lock step.
   xiiApplication::Execution res = SUPER::Run();
@@ -297,39 +300,16 @@ void xiiEngineProcessGameApplication::LogWriter(const xiiLoggingEventData& e)
   m_IPC.SendMessage(&msg);
 }
 
-static bool EmptyAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
-{
-  XII_IGNORE_UNUSED(szSourceFile);
-  XII_IGNORE_UNUSED(uiLine);
-  XII_IGNORE_UNUSED(szFunction);
-  XII_IGNORE_UNUSED(szExpression);
-  XII_IGNORE_UNUSED(szAssertMsg);
-  return false;
-}
-
 bool xiiEngineProcessGameApplication::ProcessIPCMessages(bool bPendingOpInProgress)
 {
   XII_PROFILE_SCOPE("ProcessIPCMessages");
 
   if (!m_IPC.IsHostAlive()) // check whether the host crashed
   {
-    // The problem here is, that the editor process crashed (or was terminated through Visual Studio),
-    // but our process depends on it for cleanup!
-    // That means, this process created rendering resources through a device that is bound to a window handle, which belonged to the editor
-    // process. So now we can't clean up, and therefore we can only crash. Therefore we try to crash as silently as possible.
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    // Make sure that Windows doesn't show a default message box when we call abort
-    _set_abort_behavior(0, _WRITE_ABORT_MSG);
-    TerminateProcess(GetCurrentProcess(), 0);
-#endif
-
-    xiiLog::SeriousWarning("Host process no longer alive, exiting engine process.");
-
-    // The OS will still call destructors for our objects (even though we called abort ... what a pointless design).
-    // Our code might assert on destruction, so make sure our assert handler doesn't show anything.
-    xiiSetAssertHandler(EmptyAssertHandler);
-    std::abort();
+    // Viewports own offscreen resources, so host loss no longer invalidates native
+    // rendering windows. Normal shutdown can release the device and document worlds.
+    RequestQuit();
+    return false;
   }
   else
   {

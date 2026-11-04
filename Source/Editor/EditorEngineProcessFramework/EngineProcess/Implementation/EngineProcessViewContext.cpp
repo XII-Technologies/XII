@@ -125,20 +125,24 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
     {
       auto device  = xiiGALDevice::GetDefaultDevice();
       auto command = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-      if (!command)
-        return;
-      command->Begin();
-      const auto result = m_pViewportTexture->AcquireExternalMemory(command);
-      command->End();
-      if (result.Failed())
-        return;
-      device->GetCommandQueue()->Submit(command);
-      m_bExternalOwner = false;
+      if (command)
+      {
+        command->Begin();
+        const auto result = m_pViewportTexture->AcquireExternalMemory(command);
+        command->End();
+        if (result.Succeeded())
+        {
+          device->GetCommandQueue()->Submit(command);
+          m_bExternalOwner = false;
+          return;
+        }
+      }
+      xiiLog::Error("Could not reacquire the shared viewport texture.");
     }
-    else if (m_bExternalOwner)
+    if (m_bExternalOwner)
     {
-      // A rejected import has not waited on or used the texture. Retire it without
-      // submitting a semaphore wait that the consumer will never signal.
+      // Retire the export without submitting another producer wait. A successful
+      // consumer import keeps its allocation alive until that consumer releases it.
       m_bExternalOwner = false;
       m_bSharingFailed = true;
       m_pViewportTarget.Clear();
