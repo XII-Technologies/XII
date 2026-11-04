@@ -182,7 +182,9 @@ xiiResult xiiWindow::Initialize()
   if (!SDL_SetPointerProperty(SDL_GetWindowProperties(pWindow), "XII.Window", this))
   {
     SDL_DestroyWindow(pWindow);
+
     m_hWindowHandle = XII_INVALID_WINDOW_HANDLE_VALUE;
+
     return XII_FAILURE;
   }
 
@@ -241,36 +243,43 @@ void xiiWindow::ProcessWindowMessages()
   SDL_Event event;
   while (SDL_PollEvent(&event))
   {
-    SDL_Window* nativeWindow = SDL_GetWindowFromEvent(&event);
-    auto*       target       = nativeWindow ? static_cast<xiiWindow*>(SDL_GetPointerProperty(SDL_GetWindowProperties(nativeWindow), "XII.Window", nullptr)) : nullptr;
+    SDL_Window* pWindowSDL    = SDL_GetWindowFromEvent(&event);
+    auto*       pWindowTarget = pWindowSDL ? static_cast<xiiWindow*>(SDL_GetPointerProperty(SDL_GetWindowProperties(pWindowSDL), "XII.Window", nullptr)) : nullptr;
+
     if (event.type == SDL_EVENT_QUIT)
-      target = this;
-    if (!target)
+    {
+      pWindowTarget = this;
+    }
+
+    if (!pWindowTarget)
       continue;
-    if (auto* input = target->GetInputDevice())
-      input->WindowMessage(&event);
+
+    if (auto* pInputDevice = pWindowTarget->GetInputDevice())
+    {
+      pInputDevice->WindowMessage(&event);
+    }
 
     switch (event.type)
     {
       case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
       case SDL_EVENT_QUIT:
       {
-        target->OnClickClose();
+        pWindowTarget->OnClickClose();
       }
       break;
       case SDL_EVENT_WINDOW_MOVED:
       {
-        target->OnWindowMove(event.window.data1, event.window.data2);
+        pWindowTarget->OnWindowMove(event.window.data1, event.window.data2);
       }
       break;
       case SDL_EVENT_WINDOW_RESIZED:
       {
         xiiSizeU32 newSize = {static_cast<xiiUInt32>(event.window.data1), static_cast<xiiUInt32>(event.window.data2)};
-        if (newSize != target->m_CreationDescription.m_Resolution)
+        if (newSize != pWindowTarget->m_CreationDescription.m_Resolution)
         {
-          target->m_CreationDescription.m_Resolution = newSize;
+          pWindowTarget->m_CreationDescription.m_Resolution = newSize;
 
-          target->OnResize(newSize);
+          pWindowTarget->OnResize(newSize);
         }
       }
       break;
@@ -278,84 +287,82 @@ void xiiWindow::ProcessWindowMessages()
       {
         // Window was restored from minimized state. Notify visibility change and update size.
         xiiInt32 iWidth = 0, iHeight = 0;
-        if (target->m_hWindowHandle)
+        if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(target->m_hWindowHandle, &iWidth, &iHeight);
+          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
 
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
-          if (reportedSize != target->m_CreationDescription.m_Resolution)
+          if (reportedSize != pWindowTarget->m_CreationDescription.m_Resolution)
           {
-            target->m_CreationDescription.m_Resolution = reportedSize;
+            pWindowTarget->m_CreationDescription.m_Resolution = reportedSize;
 
-            target->OnResize(reportedSize);
+            pWindowTarget->OnResize(reportedSize);
           }
         }
-        target->OnVisibleChange(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_FOCUS_GAINED:
       {
-        target->OnFocus(true);
-        target->OnVisibleChange(true);
+        pWindowTarget->OnFocus(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_FOCUS_LOST:
       {
-        target->OnFocus(false);
+        pWindowTarget->OnFocus(false);
       }
       break;
       case SDL_EVENT_WINDOW_MINIMIZED:
       {
-        target->OnVisibleChange(false);
+        pWindowTarget->OnVisibleChange(false);
       }
       break;
       case SDL_EVENT_WINDOW_MAXIMIZED:
       {
         // Window may have changed size when maximized. Query and notify about the new size.
         xiiInt32 iWidth = 0, iHeight = 0;
-        if (target->m_hWindowHandle)
+        if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(target->m_hWindowHandle, &iWidth, &iHeight);
+          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
-
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
-          if (reportedSize != target->m_CreationDescription.m_Resolution)
+          if (reportedSize != pWindowTarget->m_CreationDescription.m_Resolution)
           {
-            target->m_CreationDescription.m_Resolution = reportedSize;
+            pWindowTarget->m_CreationDescription.m_Resolution = reportedSize;
 
-            target->OnResize(reportedSize);
+            pWindowTarget->OnResize(reportedSize);
           }
         }
-        target->OnVisibleChange(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_HIDDEN:
       {
-        target->OnVisibleChange(false);
+        pWindowTarget->OnVisibleChange(false);
       }
       break;
       case SDL_EVENT_WINDOW_SHOWN:
       {
         // Window shown - ensure the current size is propagated.
         xiiInt32 iWidth = 0, iHeight = 0;
-        if (target->m_hWindowHandle)
+        if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(target->m_hWindowHandle, &iWidth, &iHeight);
+          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
-
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
-          if (reportedSize != target->m_CreationDescription.m_Resolution)
+          if (reportedSize != pWindowTarget->m_CreationDescription.m_Resolution)
           {
-            target->m_CreationDescription.m_Resolution = reportedSize;
+            pWindowTarget->m_CreationDescription.m_Resolution = reportedSize;
 
-            target->OnResize(reportedSize);
+            pWindowTarget->OnResize(reportedSize);
           }
         }
-        target->OnVisibleChange(true);
+        pWindowTarget->OnVisibleChange(true);
       }
       break;
 
