@@ -6,7 +6,6 @@
 #include <Foundation/Communication/Telemetry.h>
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 #include <Inspector/CVarsWidget.moc.h>
-#include <Inspector/DataTransferWidget.moc.h>
 #include <Inspector/FileWidget.moc.h>
 #include <Inspector/GlobalEventsWidget.moc.h>
 #include <Inspector/InputWidget.moc.h>
@@ -77,10 +76,9 @@ public:
     xiiTelemetry::AcceptMessagesForSystem('PLUG', true, xiiQtPluginsWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('EVNT', true, xiiQtGlobalEventsWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('RFLC', true, xiiQtReflectionWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('TRAN', true, xiiQtDataWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('RESM', true, xiiQtResourceWidget::ProcessTelemetry, nullptr);
     xiiTelemetry::AcceptMessagesForSystem('RGRF', true, xiiQtRenderGraphWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('PROF', true, xiiQtProfilingWidget::ProcessTelemetry, nullptr);
+    xiiTelemetry::AcceptMessagesForSystem('PSTR', true, xiiQtProfilingWidget::ProcessTelemetry, nullptr);
 
     QSettings     Settings;
     const QString sServer = Settings.value("LastConnection", QLatin1String("localhost:1040")).toString();

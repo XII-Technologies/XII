@@ -9,8 +9,10 @@
 #include <qgraphicsitem.h>
 
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <QClipboard>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QMenu>
 
 /// \todo Refcount ? (Max?)
 /// \todo Select Resource -> send to App for preview
@@ -29,6 +31,16 @@ xiiQtResourceWidget::xiiQtResourceWidget(ads::CDockManager* pDockManager, QWidge
 
   setIcon(QIcon(":/Icons/Icons/Resources.svg"));
 
+  Table->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(Table, &QWidget::customContextMenuRequested, this, [this](QPoint point) {
+    auto* item = Table->itemAt(point);
+    if (!item)
+      return;
+    QMenu menu;
+    auto* copy = menu.addAction("Copy resource identifier");
+    if (menu.exec(Table->viewport()->mapToGlobal(point)) == copy)
+      QApplication::clipboard()->setText(Table->item(item->row(), 7)->text());
+  });
   m_bShowDeleted = true;
 
   ResetStats();
@@ -55,11 +67,14 @@ void xiiQtResourceWidget::ResetStats()
     Headers.append(" CPU Mem. ");
     Headers.append(" GPU Mem. ");
     Headers.append(" Resource ID ");
-    Headers.append(" Description ");
+    Headers.append(" Resource ");
 
     Table->setColumnCount(static_cast<xiiInt32>(Headers.size()));
     Table->setHorizontalHeaderLabels(Headers);
     Table->horizontalHeader()->show();
+    Table->setColumnHidden(7, true);
+    Table->horizontalHeader()->moveSection(Table->horizontalHeader()->visualIndex(8), 0);
+    Table->setColumnWidth(8, 300);
   }
 
   Table->resizeColumnsToContents();
@@ -202,7 +217,8 @@ void xiiQtResourceWidget::UpdateTable()
       }
 
       pItem = Table->item(iTableRow, 8);
-      pItem->setText(res.m_sResourceDescription.GetData());
+      pItem->setText(res.m_sResourceDescription.IsEmpty() ? QString::fromUtf8(res.m_sResourceType.GetData()) + " (unnamed resource)" : QString::fromUtf8(res.m_sResourceDescription.GetData()));
+      pItem->setToolTip(QString::fromUtf8(res.m_sResourceDescription.GetData()) + "\nResource identifier: " + QString::fromUtf8(res.m_sResourceID.GetData()));
 
       pItem = Table->item(iTableRow, 7);
       pItem->setText(res.m_sResourceID.GetData());

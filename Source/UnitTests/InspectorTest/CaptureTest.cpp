@@ -66,6 +66,7 @@ XII_CREATE_SIMPLE_TEST(Inspector, GraphCaptureAndOfflineUi)
   XII_TEST_STRING(capture["frame"].toString().toUtf8().constData(), "9007199254740993");
   XII_TEST_INT(capture["passes"].toArray().size(), 2);
   XII_TEST_INT(capture["resources"].toArray().size(), 1);
+  XII_TEST_BOOL(capture["versions"].toArray()[0].toObject()["requiredStateName"].isString());
   XII_TEST_BOOL(!capture["passes"].toArray()[0].toObject()["timingAvailable"].toBool());
   XII_TEST_BOOL(capture["passes"].toArray()[1].toObject()["dependencies"].toArray().contains(0));
   ads::CDockManager      manager;
@@ -78,6 +79,7 @@ XII_CREATE_SIMPLE_TEST(Inspector, GraphCaptureAndOfflineUi)
     return;
   XII_TEST_INT(passes->topLevelItemCount(), 2);
   XII_TEST_INT(resources->topLevelItemCount(), 1);
+  XII_TEST_BOOL(resources->isColumnHidden(6));
   passes->setCurrentItem(passes->topLevelItem(0));
   XII_TEST_BOOL(!widget.findChild<QPlainTextEdit*>()->toPlainText().isEmpty());
   widget.findChild<QLineEdit*>()->setText("Consume");
@@ -104,10 +106,10 @@ XII_CREATE_SIMPLE_TEST(Inspector, GraphCaptureAndOfflineUi)
 
 XII_CREATE_SIMPLE_TEST(Inspector, ProfilingScopesAndSelfTime)
 {
-  QVector<xiiQtProfilingWidget::Scope> scopes;
-  QMap<QString, QString>               lanes;
-  const auto                           capture = MakeProfile();
-  XII_TEST_BOOL(xiiQtProfilingWidget::Decode(capture, scopes, lanes));
+  QVector<xiiInspectorProfilingSession::Scope> scopes;
+  QMap<QString, QString>                       lanes;
+  const auto                                   capture = MakeProfile();
+  XII_TEST_BOOL(xiiInspectorProfilingSession::Decode(capture, scopes, lanes));
   XII_TEST_INT(scopes.size(), 4);
   XII_TEST_BOOL(lanes.contains("1:5") && lanes.contains("2:5"));
   ads::CDockManager    manager;
@@ -158,7 +160,7 @@ XII_CREATE_SIMPLE_TEST(Inspector, CaptureLimitsAndUnavailableTiming)
   XII_TEST_BOOL(graph.ApplyCapture(first));
   XII_TEST_BOOL(graph.ApplyCapture(second));
   XII_TEST_INT(graph.findChild<QComboBox*>()->count(), 2);
-  xiiQtProfilingWidget profile(&manager);
+  xiiQtProfilingWidget profile(&manager, true);
   profile.ApplyGraphCapture(MakeGraphCapture());
   auto* costs = profile.findChild<QTreeWidget*>("GPU pass costs");
   XII_TEST_INT(costs->topLevelItemCount(), 2);

@@ -4,7 +4,9 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Containers/StaticRingBuffer.h>
+#include <Foundation/Strings/String.h>
 #include <Foundation/System/Process.h>
 #include <Foundation/Time/Time.h>
 
@@ -126,6 +128,7 @@ public:
   /// Scopes can finish after their frame; associate them by interval, not by delivery order.
   struct StreamScope
   {
+    xiiUInt64 m_uiSequence = 0;
     xiiUInt64 m_uiThreadId = 0;
     xiiTime   m_BeginTime;
     xiiTime   m_EndTime;
@@ -140,13 +143,21 @@ public:
     xiiTime   m_EndTime;
   };
 
+  struct StreamGpuScope
+  {
+    GPUScope  m_Scope;
+    xiiUInt32 m_uiGpuIndex = 0;
+  };
+
   struct StreamData
   {
-    xiiDynamicArray<StreamScope>   m_Scopes;
-    xiiDynamicArray<StreamFrame>   m_Frames;
-    xiiHybridArray<ThreadInfo, 16> m_Threads;
-    xiiUInt64                      m_uiDroppedScopes = 0;
-    xiiUInt64                      m_uiDroppedFrames = 0;
+    xiiDynamicArray<StreamGpuScope> m_GpuScopes;
+    xiiUInt64                       m_uiDroppedGpuScopes = 0;
+    xiiDynamicArray<StreamScope>    m_Scopes;
+    xiiDynamicArray<StreamFrame>    m_Frames;
+    xiiHybridArray<ThreadInfo, 16>  m_Threads;
+    xiiUInt64                       m_uiDroppedScopes = 0;
+    xiiUInt64                       m_uiDroppedFrames = 0;
   };
 
   /// Enables a bounded, non-blocking side channel using the existing scope instrumentation.

@@ -3,7 +3,6 @@
 #include <Inspector/InspectorPCH.h>
 
 #include <Inspector/CVarsWidget.moc.h>
-#include <Inspector/DataTransferWidget.moc.h>
 #include <Inspector/FileWidget.moc.h>
 #include <Inspector/GlobalEventsWidget.moc.h>
 #include <Inspector/InputWidget.moc.h>
@@ -18,8 +17,9 @@
 #include <Inspector/ResourceWidget.moc.h>
 #include <Inspector/SubsystemsWidget.moc.h>
 #include <Inspector/TimeWidget.moc.h>
+#include <initializer_list>
 
-const int g_iDockingStateVersion = 1;
+const int g_iDockingStateVersion = 3;
 
 xiiQtMainWindow* xiiQtMainWindow::s_pWidget = nullptr;
 
@@ -58,10 +58,11 @@ xiiQtMainWindow::xiiQtMainWindow() :
   xiiQtPluginsWidget*      pPluginsWidget      = new xiiQtPluginsWidget(m_pDockManager);
   xiiQtGlobalEventsWidget* pGlobalEventsWidget = new xiiQtGlobalEventsWidget(m_pDockManager);
   xiiQtReflectionWidget*   pReflectionWidget   = new xiiQtReflectionWidget(m_pDockManager);
-  xiiQtDataWidget*         pDataWidget         = new xiiQtDataWidget(m_pDockManager);
   xiiQtResourceWidget*     pResourceWidget     = new xiiQtResourceWidget(m_pDockManager);
   auto*                    pRenderGraphWidget  = new xiiQtRenderGraphWidget(m_pDockManager);
   auto*                    pProfilingWidget    = new xiiQtProfilingWidget(m_pDockManager);
+  auto*                    pRenderingWidget    = new xiiQtProfilingWidget(m_pDockManager, true, pProfilingWidget->GetSession());
+  menuWindows->addAction(pRenderingWidget->toggleViewAction());
   menuWindows->addAction(pRenderGraphWidget->toggleViewAction());
   menuWindows->addAction(pProfilingWidget->toggleViewAction());
 
@@ -76,7 +77,6 @@ xiiQtMainWindow::xiiQtMainWindow() :
   XII_VERIFY(nullptr != QWidget::connect(pFileWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pPluginsWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pGlobalEventsWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
-  XII_VERIFY(nullptr != QWidget::connect(pDataWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pResourceWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
 
   QMenu* pHistoryMenu = new QMenu;
@@ -110,27 +110,21 @@ xiiQtMainWindow::xiiQtMainWindow() :
 
   pMemoryWidget->raise();
 
-  m_pDockManager->addDockWidget(ads::LeftDockWidgetArea, pMainWidget);
-  m_pDockManager->addDockWidget(ads::CenterDockWidgetArea, pLogWidget);
-
-  m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pCVarsWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pGlobalEventsWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pDataWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pInputWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPluginsWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pReflectionWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pResourceWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pSubsystemsWidget);
-  m_pDockManager->addDockWidgetTab(ads::CenterDockWidgetArea, pRenderGraphWidget);
-  m_pDockManager->addDockWidgetTab(ads::CenterDockWidgetArea, pProfilingWidget);
-
-  m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, pFileWidget);
-  m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, pMemoryWidget);
-  m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, pTimeWidget);
-
-
-  pLogWidget->raise();
-  pCVarsWidget->raise();
+  auto* analysisArea = m_pDockManager->addDockWidget(ads::CenterDockWidgetArea, pProfilingWidget);
+  m_pDockManager->addDockWidgetTabToArea(pRenderingWidget, analysisArea);
+  m_pDockManager->addDockWidgetTabToArea(pRenderGraphWidget, analysisArea);
+  m_pDockManager->addDockWidgetTabToArea(pLogWidget, analysisArea);
+  auto* applicationArea = m_pDockManager->addDockWidget(ads::LeftDockWidgetArea, pMainWidget, analysisArea);
+  auto* detailsArea     = m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pCVarsWidget, analysisArea);
+  for (ads::CDockWidget* widget : std::initializer_list<ads::CDockWidget*>{pGlobalEventsWidget, pInputWidget, pPluginsWidget, pReflectionWidget, pResourceWidget, pSubsystemsWidget})
+    m_pDockManager->addDockWidgetTabToArea(widget, detailsArea);
+  auto* bottomArea = m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, pFileWidget, analysisArea);
+  m_pDockManager->addDockWidgetTabToArea(pMemoryWidget, bottomArea);
+  m_pDockManager->addDockWidgetTabToArea(pTimeWidget, bottomArea);
+  for (ads::CDockWidget* widget : std::initializer_list<ads::CDockWidget*>{pCVarsWidget, pGlobalEventsWidget, pInputWidget, pPluginsWidget, pReflectionWidget, pResourceWidget, pSubsystemsWidget, pFileWidget, pMemoryWidget, pTimeWidget})
+    widget->toggleView(false);
+  m_pDockManager->setSplitterSizes(applicationArea, {260, 1180});
+  pProfilingWidget->raise();
 
   if (bRestoreDockingState)
   {
@@ -151,6 +145,8 @@ xiiQtMainWindow::xiiQtMainWindow() :
     restoreState(Settings.value("WindowState", saveState()).toByteArray());
   }
 
+  if (!bRestoreDockingState)
+    resize(1440, 900);
   Settings.endGroup();
 
   for (xiiInt32 i = 0; i < 10; ++i)
@@ -202,7 +198,7 @@ void xiiQtMainWindow::SetupNetworkTimer()
   if (m_pNetworkTimer == nullptr)
     m_pNetworkTimer = new QTimer(this);
 
-  m_pNetworkTimer->singleShot(40, this, SLOT(UpdateNetworkTimeOut()));
+  m_pNetworkTimer->singleShot(16, this, SLOT(UpdateNetworkTimeOut()));
 }
 
 void xiiQtMainWindow::UpdateNetworkTimeOut()
@@ -272,7 +268,6 @@ void xiiQtMainWindow::UpdateNetwork()
     xiiQtPluginsWidget::s_pWidget->ResetStats();
     xiiQtSubsystemsWidget::s_pWidget->ResetStats();
     xiiQtGlobalEventsWidget::s_pWidget->ResetStats();
-    xiiQtDataWidget::s_pWidget->ResetStats();
     xiiQtResourceWidget::s_pWidget->ResetStats();
     xiiQtRenderGraphWidget::s_pWidget->ResetStats();
     xiiQtProfilingWidget::s_pWidget->ResetStats();
@@ -287,7 +282,6 @@ void xiiQtMainWindow::UpdateNetwork()
   xiiQtTimeWidget::s_pWidget->UpdateStats();
   xiiQtFileWidget::s_pWidget->UpdateStats();
   xiiQtResourceWidget::s_pWidget->UpdateStats();
-  // xiiQtDataWidget::s_pWidget->UpdateStats();
 
   for (xiiInt32 i = 0; i < 10; ++i)
     m_pStatHistoryWidgets[i]->UpdateStats();
@@ -309,7 +303,6 @@ void xiiQtMainWindow::DockWidgetVisibilityChanged(bool bVisible)
   ActionShowWindowFile->setChecked(!xiiQtFileWidget::s_pWidget->isClosed());
   ActionShowWindowPlugins->setChecked(!xiiQtPluginsWidget::s_pWidget->isClosed());
   ActionShowWindowGlobalEvents->setChecked(!xiiQtGlobalEventsWidget::s_pWidget->isClosed());
-  ActionShowWindowData->setChecked(!xiiQtDataWidget::s_pWidget->isClosed());
   ActionShowWindowResource->setChecked(!xiiQtResourceWidget::s_pWidget->isClosed());
 
   for (xiiInt32 i = 0; i < 10; ++i)

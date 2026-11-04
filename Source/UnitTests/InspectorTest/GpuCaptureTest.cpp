@@ -23,9 +23,26 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
   xiiRenderGraphResourceCache     cache(environment.GetDeviceShared());
   xiiRenderGraphTimestampProfiler profiler(environment.GetDeviceShared());
   XII_SCOPE_EXIT(device->WaitIdle());
-  xiiRenderGraph                                                          graphs[] = {xiiRenderGraph("Inspection"), xiiRenderGraph("Inspection")};
-  xiiRenderGraphBlackboard                                                blackboard;
-  xiiUInt32                                                               eventCount = 0;
+  xiiRenderGraph                                                                    graphs[] = {xiiRenderGraph("Inspection"), xiiRenderGraph("Inspection")};
+  xiiRenderGraphBlackboard                                                          blackboard;
+  xiiUInt32                                                                         eventCount     = 0;
+  xiiUInt64                                                                         recordingFrame = 0;
+  xiiUInt32                                                                         resolvedPasses = 0, resolvedSubmissions = 0;
+  xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex>::Handler timingHandler = [&](const xiiRenderGraphTimestampProfiler::TimingSample& sample) {
+    XII_TEST_BOOL(sample.m_uiFrameIndex < recordingFrame);
+    XII_TEST_BOOL(sample.m_uiGraphId == graphs[0].GetInstanceId() || sample.m_uiGraphId == graphs[1].GetInstanceId());
+    XII_TEST_BOOL(sample.m_RecordedAt.IsPositive());
+    if (sample.m_bAvailable)
+    {
+      XII_TEST_BOOL(sample.m_fDurationMs >= 0);
+      if (sample.m_bSubmission)
+        ++resolvedSubmissions;
+      else
+        ++resolvedPasses;
+    }
+  };
+  auto timingSubscription = xiiRenderGraphTimestampProfiler::s_TimingEvents.AddEventHandler(timingHandler);
+  XII_SCOPE_EXIT(xiiRenderGraphTimestampProfiler::s_TimingEvents.RemoveEventHandler(timingSubscription));
   QJsonObject                                                             captures[2];
   xiiEvent<const xiiRenderGraphDebug::ExecutionEvent&, xiiMutex>::Handler handler = [&](const xiiRenderGraphDebug::ExecutionEvent& event) {
     XII_TEST_BOOL(event.m_bSucceeded);
@@ -40,6 +57,7 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
   XII_SCOPE_EXIT(xiiRenderGraphDebug::s_ExecutionEvents.RemoveEventHandler(subscription));
   for (xiiUInt64 frame = 1; frame <= 8; ++frame)
   {
+    recordingFrame = frame;
     device->BeginFrame();
     cache.BeginFrame(frame, frame - 1);
     for (int i = 0; i < 2; ++i)
@@ -69,6 +87,8 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
     device->WaitIdle(); // Test-only synchronization; production capture never waits.
   }
   XII_TEST_INT(eventCount, 16);
+  if (device->GetFeatures().m_DurationQueries == xiiGALDeviceFeatureState::Enabled)
+    XII_TEST_BOOL(resolvedPasses > 0 && resolvedSubmissions > 0);
   XII_TEST_BOOL(captures[0]["instance"] != captures[1]["instance"]);
   for (int i = 0; i < 2; ++i)
   {

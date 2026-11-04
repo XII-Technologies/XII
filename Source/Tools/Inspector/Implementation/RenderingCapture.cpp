@@ -19,8 +19,6 @@ xiiQtRenderingCapture::xiiQtRenderingCapture(ads::CDockManager* manager, const c
   m_pLayout->addLayout(m_pControls);
   auto* capture = new QPushButton("Capture");
   capture->setToolTip("Request a capture from the connected application's InspectorPlugin.");
-  m_pLive = new QCheckBox("Live");
-  m_pLive->setToolTip("Request at most one capture per second while this panel is visible.");
   auto* open = new QPushButton("Open…");
   auto* save = new QPushButton("Save…");
   m_pFilter  = new QLineEdit;
@@ -28,7 +26,6 @@ xiiQtRenderingCapture::xiiQtRenderingCapture(ads::CDockManager* manager, const c
   m_pFilter->setAccessibleName("Capture name filter");
   for (auto* button : {capture, open, save})
     m_pControls->addWidget(button);
-  m_pControls->addWidget(m_pLive);
   m_pControls->addWidget(m_pFilter, 1);
   m_pStatus = new QLabel("Connect to an application with InspectorPlugin, then capture. Saved captures can be opened offline.");
   m_pStatus->setWordWrap(true);
@@ -46,8 +43,6 @@ xiiQtRenderingCapture::xiiQtRenderingCapture(ads::CDockManager* manager, const c
       m_bPending = false;
       m_pStatus->setText("No capture received. Check InspectorPlugin is loaded and a render graph is executing.");
     }
-    if (m_pLive->isChecked() && !isClosed() && isVisible() && !m_bPending && xiiTelemetry::IsConnectedToServer())
-      RequestCapture();
   });
   timer->start(1000);
 }
@@ -159,7 +154,6 @@ void xiiQtRenderingCapture::OpenCapture()
     m_pStatus->setText("Capture exceeds 16 MiB.");
   else
   {
-    m_pLive->setChecked(false);
     LoadCapture(file.readAll());
   }
 }

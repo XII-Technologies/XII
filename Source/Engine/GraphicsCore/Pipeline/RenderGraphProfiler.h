@@ -8,6 +8,8 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Strings/HashedString.h>
+#include <Foundation/Threading/Mutex.h>
+#include <Foundation/Time/Time.h>
 #include <Foundation/Types/SharedPtr.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>

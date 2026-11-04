@@ -15,9 +15,15 @@ XII_CREATE_SIMPLE_TEST(Profiling, IncrementalStream)
   const auto now = xiiTime::Now();
   xiiProfilingSystem::AddCPUScope("Incremental outer", "IncrementalStream", now - xiiTime::MakeFromMilliseconds(2), now, {});
   xiiProfilingSystem::AddCPUScope("Incremental inner", "IncrementalStream", now - xiiTime::MakeFromMilliseconds(1), now, {});
+  xiiProfilingSystem::InitializeGPUData();
+  xiiProfilingSystem::AddGPUScope("Timestamp scope", now - xiiTime::MakeFromMilliseconds(1), now);
   xiiProfilingSystem::StartNewFrame();
   xiiProfilingSystem::DrainStream(stream);
   XII_TEST_INT(stream.m_Scopes.GetCount(), 2);
+  XII_TEST_INT(stream.m_GpuScopes.GetCount(), 1);
+  XII_TEST_STRING(stream.m_Scopes[0].m_szName, "Incremental outer");
+  XII_TEST_STRING(stream.m_Scopes[0].m_szFunction, "IncrementalStream");
+  XII_TEST_BOOL(stream.m_Scopes[1].m_uiSequence > stream.m_Scopes[0].m_uiSequence);
   XII_TEST_INT(stream.m_Frames.GetCount(), 1);
   XII_TEST_INT(stream.m_Frames[0].m_uiFrameIndex, xiiProfilingSystem::GetFrameCount() - 1);
   XII_TEST_BOOL(stream.m_Frames[0].m_EndTime >= stream.m_Frames[0].m_BeginTime);

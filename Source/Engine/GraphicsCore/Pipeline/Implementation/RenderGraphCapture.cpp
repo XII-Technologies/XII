@@ -137,6 +137,11 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     writer.AddVariableUInt32("last", version.m_uiLastUsePassIndex);
     writer.AddVariableUInt32("requiredState", version.m_RequiredState.GetValue());
     writer.AddVariableUInt32("currentState", version.m_CurrentState.GetValue());
+    xiiStringBuilder state;
+    xiiReflectionUtils::BitflagsToString(version.m_RequiredState, state);
+    writer.AddVariableString("requiredStateName", state);
+    xiiReflectionUtils::BitflagsToString(version.m_CurrentState, state);
+    writer.AddVariableString("currentStateName", state);
     writer.AddVariableBool("exported", version.m_bExported);
     writer.EndObject();
   }

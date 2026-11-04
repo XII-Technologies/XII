@@ -50,7 +50,6 @@
      <string>Panels</string>
     </property>
     <addaction name="ActionShowWindowCVar"/>
-    <addaction name="ActionShowWindowData"/>
     <addaction name="ActionShowWindowFile"/>
     <addaction name="ActionShowWindowGlobalEvents"/>
     <addaction name="ActionShowWindowInput"/>
@@ -227,14 +226,6 @@
    </property>
    <property name="toolTip">
     <string>Reflection</string>
-   </property>
-  </action>
-  <action name="ActionShowWindowData">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Data</string>
    </property>
   </action>
   <action name="ActionShowWindowResource">

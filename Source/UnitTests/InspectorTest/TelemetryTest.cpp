@@ -26,7 +26,7 @@ int RunInspectorCaptureServer()
   xiiTelemetry::s_uiPort = static_cast<xiiUInt16>(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-capture-port", 24731));
   xiiTelemetry::CreateServer();
   xiiRenderGraph graph("Telemetry fixture");
-  for (xiiUInt64 frame = 1; frame <= 500; ++frame)
+  for (xiiUInt64 frame = 1; frame <= static_cast<xiiUInt64>(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-capture-frames", 1500)); ++frame)
   {
     graph.BeginSetup(frame);
     struct Data
@@ -65,8 +65,8 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
   xiiQtRenderGraphWidget graph(&manager);
   xiiQtProfilingWidget   profile(&manager);
   xiiTelemetry::AcceptMessagesForSystem('RGRF', true, xiiQtRenderGraphWidget::ProcessTelemetry);
-  xiiTelemetry::AcceptMessagesForSystem('PROF', true, xiiQtProfilingWidget::ProcessTelemetry);
-  XII_SCOPE_EXIT(xiiTelemetry::CloseConnection(); xiiTelemetry::AcceptMessagesForSystem('RGRF', false); xiiTelemetry::AcceptMessagesForSystem('PROF', false));
+  xiiTelemetry::AcceptMessagesForSystem('PSTR', true, xiiQtProfilingWidget::ProcessTelemetry);
+  XII_SCOPE_EXIT(xiiTelemetry::CloseConnection(); xiiTelemetry::AcceptMessagesForSystem('RGRF', false); xiiTelemetry::AcceptMessagesForSystem('PSTR', false));
   xiiStringBuilder address;
   address.SetFormat("localhost:{}", port);
   XII_TEST_RESULT(xiiTelemetry::ConnectToServer(address));
@@ -82,6 +82,8 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
   auto* hotspots = profile.findChild<QTreeWidget*>("Profiling hotspots");
   XII_TEST_INT(passes->topLevelItemCount(), 0); // Producer sends no graph data before a request.
   graph.RequestCapture();
+  profile.show();
+  manager.show();
   profile.RequestCapture();
   while ((passes->topLevelItemCount() == 0 || hotspots->topLevelItemCount() == 0) && xiiTime::Now() < deadline)
   {
@@ -89,7 +91,37 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
     QApplication::processEvents();
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
+  profile.Refresh();
   XII_TEST_INT(passes->topLevelItemCount(), 1);
   XII_TEST_BOOL(hotspots->topLevelItemCount() > 0);
   XII_TEST_BOOL(passes->topLevelItem(0) && passes->topLevelItem(0)->text(1) == "Telemetry rendering pass");
+  auto session = profile.GetSession();
+  session->StopRecording(false);
+  session->SetPaused(false);
+  const auto liveUntil = xiiTime::Now() + xiiTime::MakeFromSeconds(1);
+  while (xiiTime::Now() < liveUntil)
+  {
+    xiiTelemetry::PerFrameUpdate();
+    QApplication::processEvents();
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(5));
+  }
+  XII_TEST_BOOL(session->m_uiSequence >= 10); // Several incremental updates within a second.
+  XII_TEST_BOOL(session->m_Live.m_Frames.size() >= 20);
+  if (session->m_Live.m_Frames.isEmpty())
+    return;
+  XII_TEST_BOOL(session->m_Live.m_Frames.back().m_uiIndex > session->m_Live.m_Frames.front().m_uiIndex);
+  const auto previousSession = session->m_uiSession;
+  xiiTelemetry::CloseConnection();
+  QApplication::processEvents();
+  session->ResetConnection();
+  XII_TEST_BOOL(!session->m_bSubscribed);
+  XII_TEST_RESULT(xiiTelemetry::ConnectToServer(address));
+  const auto reconnectUntil = xiiTime::Now() + xiiTime::MakeFromSeconds(3);
+  while ((session->m_uiSession == previousSession || session->m_uiSequence < 2) && xiiTime::Now() < reconnectUntil)
+  {
+    xiiTelemetry::PerFrameUpdate();
+    QApplication::processEvents();
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(5));
+  }
+  XII_TEST_BOOL(session->m_uiSession != previousSession && session->m_uiSequence >= 2);
 }

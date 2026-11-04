@@ -6,6 +6,7 @@
 #include <Foundation/Containers/StaticRingBuffer.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/System/Process.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
@@ -48,14 +49,17 @@ namespace
 
   xiiUInt32 Intern(xiiStringView name)
   {
-    xiiString text = name;
-    auto      it   = s_Strings.Find(text);
+    // Debug names are bounded independently of sample count. Keep UTF-8 character boundaries.
+    if (name.GetElementCount() > 512)
+      name = name.GetSubString(0, 512);
+    auto it = s_Strings.Find(name);
     if (it.IsValid())
       return it.Value();
     // A new subscription resets the dictionary. The reserved empty entry makes overflow explicit.
     if (s_Strings.GetCount() >= 32768)
       return 0;
-    const xiiUInt32 id = s_Strings.GetCount();
+    const xiiUInt32 id   = s_Strings.GetCount();
+    xiiString       text = name;
     s_Strings.Insert(text, id);
     s_NewStrings.PushBack(std::move(text));
     return id;
@@ -159,7 +163,14 @@ namespace
 
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         body(&storage);
-    xiiUInt32                     threadCount = 0;
+    auto*                         application = xiiApplication::GetApplicationInstance();
+    body << Intern(application ? application->GetApplicationName().GetView() : xiiStringView("XII application"));
+#if XII_ENABLED(XII_SUPPORTS_PROCESSES)
+    body << static_cast<xiiUInt64>(xiiProcess::GetCurrentProcessID());
+#else
+    body << xiiUInt64(0);
+#endif
+    xiiUInt32 threadCount = 0;
     for (const auto& thread : s_Cpu.m_Threads)
       if (!s_Threads.Contains(thread.m_uiThreadId) || s_Threads[thread.m_uiThreadId] != thread.m_sName)
         ++threadCount;
@@ -176,8 +187,15 @@ namespace
       body << frame.m_uiFrameIndex << frame.m_BeginTime.GetMicroseconds() << frame.m_EndTime.GetMicroseconds();
     body << s_Cpu.m_Scopes.GetCount();
     for (const auto& scope : s_Cpu.m_Scopes)
-      body << scope.m_uiThreadId << Intern(scope.m_szName) << Intern(scope.m_szFunction) << scope.m_BeginTime.GetMicroseconds() << scope.m_EndTime.GetMicroseconds();
+    {
+      const auto name     = Intern(static_cast<const char*>(scope.m_szName));
+      const auto function = Intern(static_cast<const char*>(scope.m_szFunction));
+      body << scope.m_uiSequence << scope.m_uiThreadId << name << function << scope.m_BeginTime.GetMicroseconds() << scope.m_EndTime.GetMicroseconds();
+    }
 
+    body << s_Cpu.m_GpuScopes.GetCount();
+    for (const auto& sample : s_Cpu.m_GpuScopes)
+      body << sample.m_uiGpuIndex << Intern(static_cast<const char*>(sample.m_Scope.m_szName)) << sample.m_Scope.m_BeginTime.GetMicroseconds() << sample.m_Scope.m_EndTime.GetMicroseconds();
     {
       XII_LOCK(s_Mutex);
       xiiUInt32 graphCount = 0;
@@ -205,7 +223,7 @@ namespace
     batch.SetMessageID('PSTR', 'BTCH');
     auto& writer = batch.GetWriter();
     writer << xiiUInt32(1) << s_uiSession << ++s_uiSequence << now.GetMicroseconds()
-           << s_Cpu.m_uiDroppedScopes << s_Cpu.m_uiDroppedFrames << s_uiDroppedGpu.load();
+           << s_Cpu.m_uiDroppedScopes << s_Cpu.m_uiDroppedFrames << (s_uiDroppedGpu.load() + s_Cpu.m_uiDroppedGpuScopes);
     writer << s_NewStrings.GetCount();
     for (const auto& name : s_NewStrings)
       writer << name;
