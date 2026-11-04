@@ -185,7 +185,7 @@ void xiiQtEditorApp::SlotVersionCheckCompleted(bool bNewVersionReleased, bool bF
 
   if (m_pVersionChecker->IsLatestNewer())
   {
-    xiiQtUiServices::GetSingleton()->ShowGlobalStatusBarMessage(xiiFmt("New version '{}' available, please update.", m_pVersionChecker->GetKnownLatestVersion()));
+    xiiLog::Info("New version '{}' available, please update.", m_pVersionChecker->GetKnownLatestVersion());
   }
 }
 

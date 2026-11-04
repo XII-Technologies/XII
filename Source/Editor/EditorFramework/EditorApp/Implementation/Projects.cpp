@@ -257,7 +257,6 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     xiiStringBuilder s;
     s.SetFormat("Failed to open project:\n'{0}'", sProjectFile);
 
-    xiiQtUiServices::ShowGlobalStatusBarMessage(xiiFmt("Project initialization failed: {}", res.GetMessageString()));
     xiiQtUiServices::MessageBoxStatus(res, s);
     return XII_FAILURE;
   }
@@ -326,7 +325,6 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
 xiiStatus xiiQtEditorApp::InitializeProject()
 {
   xiiDynamicStringEnum::s_RequestUnknownCallback = xiiMakeDelegate(&xiiQtEditorApp::OnDemandDynamicStringEnumLoad, this);
-  xiiQtUiServices::ShowGlobalStatusBarMessage("Loading project configuration...");
   UpdateStartupProgress(QStringLiteral("Loading project configuration"));
   LoadProjectPreferences();
   XII_SUCCEED_OR_RETURN(SetupDataDirectories());
@@ -358,7 +356,6 @@ xiiStatus xiiQtEditorApp::InitializeProject()
       }
     }
   }
-  xiiQtUiServices::ShowGlobalStatusBarMessage("Indexing project assets...");
   UpdateStartupProgress(QStringLiteral("Indexing project assets"), QStringLiteral("Checking files and resolving asset metadata"));
   XII_SUCCEED_OR_RETURN(xiiAssetCurator::GetSingleton()->WaitForInitialize());
 
@@ -376,7 +373,6 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
 
     case xiiToolsProjectEvent::Type::ProjectOpenFailed:
       xiiLog::Error("Project initialization failed: {}", r.m_pInitializationStatus->GetMessageString());
-      xiiQtUiServices::ShowGlobalStatusBarMessage(xiiFmt("Project initialization failed: {}", r.m_pInitializationStatus->GetMessageString()));
       break;
 
     case xiiToolsProjectEvent::Type::ProjectCreated:
@@ -414,10 +410,8 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
         }
       }
       xiiLog::Info("Project '{}' is ready for asset operations.", r.m_pProject->GetManifest().m_sName);
-      if (editorAssetsReady && xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup())
-        xiiQtUiServices::ShowGlobalStatusBarMessage(xiiFmt("Project ready: {}", r.m_pProject->GetManifest().m_sName));
-      else
-        xiiQtUiServices::ShowGlobalStatusBarMessage("Project ready for assets; rendering initialization is degraded. See the log, retry failed assets, or restart the rendering process.");
+      if (!editorAssetsReady || !xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup())
+        xiiLog::Warning("Project ready for assets; rendering initialization is degraded. See the log, retry failed assets, or restart the rendering process.");
       m_sLastDocumentFolder = xiiToolsProject::GetSingleton()->GetProjectFile();
       m_sLastProjectFolder  = xiiToolsProject::GetSingleton()->GetProjectFile();
 
@@ -522,7 +516,7 @@ Explanation: For assets to work properly, they must be <a href='https://xiiengin
       xiiFileSystem::SetSpecialDirectory("project", nullptr); // removes this directory
 
       m_ReloadProjectRequiredReasons.Clear();
-      UpdateGlobalStatusBarMessage();
+      UpdateRequiredActions();
 
       xiiEditorSettings::ClearProjectSettings();
 

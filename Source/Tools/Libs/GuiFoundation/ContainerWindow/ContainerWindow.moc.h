@@ -112,13 +112,11 @@ private:
 
   void DocumentWindowEventHandler(const xiiQtDocumentWindowEvent& e);
   void ProjectEventHandler(const xiiToolsProjectEvent& e);
-  void UIServicesEventHandler(const xiiQtUiServices::Event& e);
 
   virtual void closeEvent(QCloseEvent* e) override;
 
 private:
   ads::CDockManager*                    m_pDockManager = nullptr;
-  QLabel*                               m_pStatusBarLabel;
   QLabel*                               m_pProjectLabel = nullptr;
   QMenuBar*                             m_pDocumentMenu = nullptr;
   QPointer<QMenuBar>                    m_pMenuSource;

@@ -284,7 +284,7 @@ private Q_SLOTS:
   void SlotVersionCheckCompleted(bool bNewVersionReleased, bool bForced);
 
 private:
-  void UpdateGlobalStatusBarMessage();
+  void UpdateRequiredActions();
 
   void DocumentManagerRequestHandler(xiiDocumentManager::Request& r);
   void DocumentManagerEventHandler(const xiiDocumentManager::Event& r);
