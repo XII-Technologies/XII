@@ -7,4 +7,4 @@
 using xiiWindowHandle         = void*;
 using xiiWindowInternalHandle = xiiWindowHandle;
 
-#define INVALID_WINDOW_HANDLE_VALUE nullptr
+#define XII_INVALID_WINDOW_HANDLE_VALUE nullptr
