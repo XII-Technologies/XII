@@ -7,6 +7,7 @@
 #include <Foundation/Algorithm/HashableStruct.h>
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Size.h>
+#include <Foundation/Types/Uuid.h>
 
 #include <GraphicsFoundation/Declarations/Constants.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
@@ -517,6 +518,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHa
 {
   XII_DECLARE_POD_TYPE();
 
+  /// Duplicates borrowed memory/semaphore handles into this process. The caller owns the result.
+  xiiResult DuplicateHandles(xiiGALExternalMemoryDescription& out_description) const;
+  /// Closes owned handles in this process. Never call this on a borrowed export description.
+  void CloseHandles();
+
   xiiBitflags<xiiGALExternalMemoryKind>  m_Type                    = xiiGALExternalMemoryKind::None;  ///< The type of external memory handle.
   xiiBitflags<xiiGALExternalMemoryFlags> m_Flags                   = xiiGALExternalMemoryFlags::None; ///< The usage flags for the external memory.
   xiiUInt64                              m_uiNativeHandle          = 0U;                              ///< Native external memory handle (e.g., HANDLE on Windows, file descriptor on Linux).
@@ -524,4 +530,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHa
   xiiUInt64                              m_uiProcessId             = 0U;                              ///< Process ID of the process that created the external memory handle. This is used for cross-process memory sharing.
   xiiUInt32                              m_uiMemoryTypeIndex       = 0U;                              ///< Memory type index that is compatible with the external memory handle. This is used to ensure that the imported memory can be used with the graphics device.
   xiiUInt64                              m_uiNativeSemaphoreHandle = 0U;                              ///< Native external semaphore handle (e.g., HANDLE on Windows, file descriptor on Linux). Used when importing semaphores for synchronization.
+  xiiUuid                                m_DeviceUUID;                                                ///< Vulkan physical device UUID; interop must use the same GPU.
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALExternalMemoryDescription);

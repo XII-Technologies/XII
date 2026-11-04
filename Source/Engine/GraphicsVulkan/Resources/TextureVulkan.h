@@ -30,6 +30,9 @@ public:
   [[nodiscard]] vk::ImageLayout GetVulkanImageLayout() const;
   void                          SetVulkanImageLayout(vk::ImageLayout vkImageLayout);
 
+  virtual xiiResult AcquireExternalMemory(xiiGALCommandList* pCommandList) override final;
+  virtual xiiResult ReleaseExternalMemory(xiiGALCommandList* pCommandList) override final;
+
   // For non-compressed color format buffer, the offset must be a multiple of the format's texel block size.
   // For compressed format buffer, the offset must be a multiple of the compressed texel block size in bytes.
   // For depth-stencil format buffer, the offset must be a multiple of 4.
@@ -70,4 +73,5 @@ private:
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 
   vk::Semaphore m_vkExternalMemorySemaphore;
+  bool          m_bOwnsExternalHandles = false;
 };

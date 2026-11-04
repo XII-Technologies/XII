@@ -1927,10 +1927,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryFlags
 
   enum Enum : StorageType
   {
-    None         = 0U,
-    ReadOnly     = XII_BIT(0), ///< The external memory is immutable and will not be written by the GAL.
-    WriteOnly    = XII_BIT(1), ///< The external memory may be written by the GAL.
-    SharedAccess = XII_BIT(2), ///< The external memory will be accessed by both the GAL and an external producer/consumer.
+    None            = 0U,
+    ReadOnly        = XII_BIT(0), ///< The external memory is immutable and will not be written by the GAL.
+    WriteOnly       = XII_BIT(1), ///< The external memory may be written by the GAL.
+    SharedAccess    = XII_BIT(2), ///< The external memory will be accessed by both the GAL and an external producer/consumer.
+    BinarySemaphore = XII_BIT(3), ///< Export a binary semaphore for external API interoperability instead of a timeline semaphore.
 
     Default = None
   };
@@ -1940,6 +1941,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryFlags
     StorageType ReadOnly : 1;
     StorageType WriteOnly : 1;
     StorageType SharedAccess : 1;
+    StorageType BinarySemaphore : 1;
   };
 };
 

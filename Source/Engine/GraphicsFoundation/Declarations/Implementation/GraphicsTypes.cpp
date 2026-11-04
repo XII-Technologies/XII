@@ -723,6 +723,7 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALExternalMemoryFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALExternalMemoryFlags::ReadOnly),
   XII_BITFLAGS_CONSTANT(xiiGALExternalMemoryFlags::WriteOnly),
   XII_BITFLAGS_CONSTANT(xiiGALExternalMemoryFlags::SharedAccess),
+  XII_BITFLAGS_CONSTANT(xiiGALExternalMemoryFlags::BinarySemaphore),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
