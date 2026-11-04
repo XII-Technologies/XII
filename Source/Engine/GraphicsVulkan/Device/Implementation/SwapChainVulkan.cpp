@@ -15,6 +15,7 @@
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
 #  include <SDL3/SDL_init.h>
+#  include <SDL3/SDL_properties.h>
 #  include <SDL3/SDL_video.h>
 #endif
 
@@ -116,7 +117,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.pNext                         = nullptr;
   vkSurfaceCreateInfo.flags                         = {};
   vkSurfaceCreateInfo.hinstance                     = GetModuleHandle(NULL);
-  vkSurfaceCreateInfo.hwnd                          = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
+  vkSurfaceCreateInfo.hwnd                          = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWin32SurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
