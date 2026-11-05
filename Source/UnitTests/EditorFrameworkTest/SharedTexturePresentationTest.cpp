@@ -84,6 +84,9 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
       XII_TEST_BOOL(!shared);
       consumed = true;
     };
+    widgets[0]->SetVSyncEnabled(false);
+    widgets[0]->SetFrame(frame);
+    widgets[0]->SetVSyncEnabled(true);
     widgets[0]->SetFrame(frame);
     XII_TEST_BOOL(consumed);
     XII_TEST_BOOL(checkPresented(*widgets[0], QColor(Qt::red)));

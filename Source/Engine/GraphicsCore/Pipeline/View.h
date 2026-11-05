@@ -245,11 +245,6 @@ private:
   void UpdateRenderResolutionState() const;
   void UpdateFrameStats();
 
-  bool      m_bShowFrameStats = false;
-  xiiTime   m_LastStatsFrame;
-  xiiTime   m_StatsInterval;
-  xiiUInt32 m_uiStatsFrames     = 0;
-  double    m_fDisplayedFrameMs = 0.0;
   xiiResult SynchronizeRenderPipeline();
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
@@ -281,6 +276,12 @@ private:
   mutable float     m_fLastViewportAspectRatio            = 1.0f;
 
   mutable xiiViewData m_Data;
+
+  bool      m_bShowFrameStats = false;
+  xiiTime   m_LastStatsFrame;
+  xiiTime   m_StatsInterval;
+  xiiUInt32 m_uiStatsFrames     = 0;
+  double    m_fDisplayedFrameMs = 0.0;
 
   /// Camera-dependent resolution policy and feedback belong to this view, not a graph occurrence.
   struct DynamicResolution

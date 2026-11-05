@@ -19,6 +19,7 @@
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -364,9 +365,18 @@ bool xiiGameApplication::Run_ProcessApplicationInput()
       if (auto* world = state->GetMainWorld())
       {
         XII_LOCK(world->GetWriteMarker());
-        if (auto* module = world->GetModule<xiiRenderWorldModule>())
-          if (auto* view = module->GetViewByUsageHint(xiiCameraUsageHint::MainView))
-            view->SetShowFrameStats(!view->GetShowFrameStats());
+        if (auto* view = state->GetMainView())
+        {
+          const bool show = !view->GetShowFrameStats();
+          view->SetShowFrameStats(show);
+          if (auto* cameras = world->GetComponentManager<xiiCameraComponentManager>())
+            for (auto camera = cameras->GetComponents(); camera.IsValid(); ++camera)
+              if (camera->IsActive() && camera->GetUsageHint() == xiiCameraUsageHint::MainView)
+              {
+                camera->SetShowFrameStats(show);
+                break;
+              }
+        }
       }
   }
 

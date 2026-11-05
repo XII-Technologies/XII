@@ -43,10 +43,11 @@ namespace
   }
 } // namespace
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 3, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 4, xiiRTTINoAllocator)
   {
     XII_BEGIN_PROPERTIES
     {
+      XII_ACCESSOR_PROPERTY("ShowFPS", GetShowFrameStats, SetShowFrameStats)->AddAttributes(new xiiDefaultValueAttribute(false)),
       XII_ENUM_ACCESSOR_PROPERTY("RenderPath", xiiRenderPath, GetRenderPath, SetRenderPath),
       XII_ACCESSOR_PROPERTY("RenderScale", GetRenderScale, SetRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
     } XII_END_PROPERTIES;
@@ -190,7 +191,6 @@ void xiiView::SetRenderScale(float fRenderScale)
 
 void xiiView::UpdateFrameStats()
 {
-  const auto now = xiiTime::Now();
   if (!m_bShowFrameStats)
   {
     m_LastStatsFrame    = {};
@@ -199,6 +199,7 @@ void xiiView::UpdateFrameStats()
     m_fDisplayedFrameMs = 0.0;
     return;
   }
+  const auto now = xiiTime::Now();
   if (m_LastStatsFrame.IsPositive())
   {
     m_StatsInterval += now - m_LastStatsFrame;

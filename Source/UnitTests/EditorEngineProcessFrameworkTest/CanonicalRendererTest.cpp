@@ -173,6 +173,11 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
   views[0]->SetRenderTargetView(targets[0]->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   views[0]->SetViewport({8, 12, 64, 32});
   views[0]->SetRenderScale(0.5f);
+  views[0]->SetRenderScale(xiiMath::NaN<float>());
+  XII_TEST_FLOAT(views[0]->GetRenderScale(), 0.5f, 0.0f);
+  XII_TEST_INT(views[0]->GetRenderResolutionWidth(), 32);
+  XII_TEST_INT(views[0]->GetRenderResolutionHeight(), 16);
+  XII_TEST_FLOAT(views[1]->GetRenderScale(), 1.0f, 0.0f);
   views[0]->SetPipelineParameter("Editor.ShapeIcons", true);
   update(6);
   if (!XII_TEST_RESULT(views[0]->GetLastRenderResult()))

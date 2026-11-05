@@ -6,6 +6,7 @@
 #include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
@@ -244,7 +245,7 @@ namespace
       if (auto* view = qobject_cast<xiiQtEngineViewWidget*>(widget))
       {
         const auto size = view->GetRenderResolution();
-        xiiLog::Info("View {}: {} | scale {}%%, {} x {}, Show FPS {}, VSync {}", view->GetViewID(), view->windowTitle().toUtf8().constData(),
+        xiiLog::Info("View {}: {} | scale {}%%, {} x {}, Show FPS {}, VSync {}", view->GetViewID(), view->GetDocumentWindow()->GetDocument()->GetDocumentPath(),
                      view->m_pViewConfig->m_fRenderScale * 100.0f, size.width, size.height, view->m_pViewConfig->m_bShowFrameStats, view->m_pViewConfig->m_bVSync);
       }
   }
@@ -313,7 +314,10 @@ void xiiRenderingControlsAction::Execute(const xiiVariant& value)
       const auto* panel   = xiiQtCVarPanel::GetSingleton();
       const auto* current = panel ? panel->FindEngineCVar("App.FrameLimit") : nullptr;
       if (!current)
+      {
+        xiiLog::Warning("The engine has not reported App.FrameLimit yet. Retry once the engine process is ready.");
         return;
+      }
       const int limit = QInputDialog::getInt(view, "Application frame limit", "Engine application FPS (0 = unlimited; editor redraw preferences also apply)", xiiMath::Clamp(current->m_iValue, 0, 1000), 0, 1000, 1, &accepted);
       if (accepted)
       {
@@ -329,6 +333,8 @@ void xiiRenderingControlsAction::Execute(const xiiVariant& value)
       const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(xiiRenderPipelineProfileConfig::s_szEditorPipeline);
       if (asset)
         xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(asset->m_pAssetInfo->m_Path.GetAbsolutePath());
+      else
+        xiiLog::Warning("The Editor scene pipeline asset is unavailable in this project.");
       break;
     }
   }
