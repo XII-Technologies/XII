@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFramework/EditorFrameworkPCH.h>
+#include <EditorFramework/Project/PlayerSession.h>
 
 #include <Core/Scripting/LuaWrapper.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
@@ -127,6 +128,7 @@ void xiiQtEditorApp::InitQt(xiiInt32 iArgc, char** pArgv)
 
 void xiiQtEditorApp::DeInitQt()
 {
+  m_pPlayerSessions.Clear();
   const xiiInt32 iCount = m_pQtApplication->property("Shared").toInt();
   if (iCount == 1)
   {

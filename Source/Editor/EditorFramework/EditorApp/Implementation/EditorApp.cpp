@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFramework/EditorFrameworkPCH.h>
+#include <EditorFramework/Project/PlayerSession.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
@@ -836,4 +837,11 @@ void xiiQtEditorApp::OpenDemoDocument()
   {
     SlotQueuedOpenDocument(sBestDoc.GetData(), nullptr);
   }
+}
+
+xiiQtPlayerSession* xiiQtEditorApp::GetPlayerSessions()
+{
+  if (!m_pPlayerSessions)
+    m_pPlayerSessions = XII_DEFAULT_NEW(xiiQtPlayerSession);
+  return m_pPlayerSessions.Borrow();
 }

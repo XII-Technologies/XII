@@ -8,8 +8,10 @@
 #include <Foundation/Communication/IpcChannel.h>
 #include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/Threading/ThreadSignal.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
+#include <GameEngine/GameApplication/PlayerMessages.h>
 #include <TestFramework/Utilities/TestSetup.h>
 
 // Production asset plugins resolve application data during subsystem startup.
@@ -37,6 +39,40 @@ public:
     // A real pipe/protocol peer exercises startup response delivery without creating a GPU
     // device or adding a simulated operation to the Editor. Only the test executable uses it.
     auto* pCommand = xiiCommandLineUtils::GetGlobalInstance();
+    if (pCommand->HasOption("-playerSessionIgnoreStopPeer"))
+    {
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+      return Execution::Continue;
+    }
+    if (pCommand->HasOption("-playerSessionCleanExitPeer"))
+    {
+      xiiUniquePtr<xiiIpcChannel>                                 channel = xiiIpcChannel::CreatePipeChannel(pCommand->GetStringOption("-player-ipc"), xiiIpcChannel::Mode::Client);
+      xiiThreadSignal                                             connected;
+      xiiEvent<const xiiIpcChannelEvent&, xiiMutex>::Unsubscriber subscription;
+      channel->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& event) {
+        if (event.m_Type == xiiIpcChannelEvent::Connected)
+          connected.RaiseSignal();
+      },
+                                        subscription);
+      xiiIpcProcessMessageProtocol protocol(channel.Borrow());
+      channel->Connect();
+      if (!channel->IsConnected())
+        connected.WaitForSignal(xiiTime::MakeFromSeconds(5));
+      xiiPlayerStatusMessage message;
+      message.m_sInstance = pCommand->GetStringOption("-player-instance");
+      message.m_sStage    = "running";
+      const bool ready    = protocol.Send(&message);
+      message.m_sStage    = "stopping";
+      protocol.Send(&message);
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(250));
+      SetReturnCode(ready ? 0 : 1);
+      return Execution::Quit;
+    }
+    if (pCommand->HasOption("-playerSessionExitPeer"))
+    {
+      SetReturnCode(23);
+      return Execution::Quit;
+    }
     if (pCommand->HasOption("-splashIpcTestPeer"))
     {
       xiiUniquePtr<xiiIpcChannel>                                 peer = xiiIpcChannel::CreatePipeChannel(pCommand->GetStringOption("-IPC"), xiiIpcChannel::Mode::Client);

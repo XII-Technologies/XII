@@ -23,6 +23,7 @@
 #include <QApplication>
 #include <QString>
 
+class xiiQtPlayerSession;
 class QMainWindow;
 class QWidget;
 class xiiProgress;
@@ -165,6 +166,7 @@ public:
   void     StartupEditor();
   void     StartupEditor(xiiBitflags<StartupFlags> startupFlags, const char* szUserDataFolder = nullptr);
   void     ShutdownEditor();
+  xiiQtPlayerSession* GetPlayerSessions();
   xiiInt32 RunEditor();
   void     DeInitQt();
 
@@ -378,6 +380,7 @@ private:
   void              OnDemandDynamicStringEnumLoad(xiiStringView sEnumName, xiiDynamicStringEnum& e);
 
   xiiUniquePtr<xiiQtVersionChecker> m_pVersionChecker;
+  xiiUniquePtr<xiiQtPlayerSession>  m_pPlayerSessions;
 };
 
 XII_DECLARE_FLAGS_OPERATORS(xiiQtEditorApp::StartupFlags);
