@@ -163,6 +163,8 @@ public:
   /// LOD index and retain the strongest visibility priority until the missing range is resident.
   static void RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
   static void Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+  /// A positive budget permits one indivisible record to exceed the allowance before any
+  /// bytes have been consumed. Zero pauses admission of new geometry records.
   static void ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 
   [[nodiscard]] static bool                               IsValid(xiiGeometryHandle handle);
@@ -253,7 +255,7 @@ private:
     xiiUInt32 m_uiCount  = 0U;
   };
 
-  static bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget);
+  static bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget, bool bAllowBudgetOverrun);
   static bool RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, xiiMeshBufferResource& mesh);
   static void ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
   static void EnforceBudget(xiiUInt64 uiCompletedFrame);

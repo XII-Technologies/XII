@@ -565,7 +565,7 @@ void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFr
   }
 }
 
-bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget)
+bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget, bool bAllowBudgetOverrun)
 {
   xiiGpuGeometryRecord      record     = slot.m_GpuRecord;
   xiiUInt64                 uiNewBytes = 0U;
@@ -664,7 +664,9 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
     }
   }
 
-  if (uiNewBytes > inout_uiUploadBudget)
+  // Residency is committed atomically. A record larger than an entire frame's
+  // allowance must be admitted on an unused positive budget or it can never load.
+  if (uiNewBytes > inout_uiUploadBudget && !bAllowBudgetOverrun)
   {
     rollback();
     return false;
@@ -698,7 +700,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   for (UploadPassData::MeshletUpload& upload : uploads)
     s_pState->m_PendingMeshletUploads.PushBack(std::move(upload));
 
-  inout_uiUploadBudget -= uiNewBytes;
+  inout_uiUploadBudget -= xiiMath::Min(inout_uiUploadBudget, uiNewBytes);
   slot.m_uiResidentBytes += uiNewBytes;
   s_pState->m_uiResidentBytes += uiNewBytes;
   slot.m_GpuRecord            = record;
@@ -849,11 +851,12 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
     return lhsIndex < rhsIndex;
   });
 
+  const xiiUInt64 uiInitialUploadBudget = uiUploadBudgetBytes;
   for (xiiUInt32 uiSlotIndex : streamingQueue)
   {
     Slot& slot   = s_pState->m_Slots[uiSlotIndex];
     slot.m_State = xiiGeometryResidencyState::Loading;
-    BuildResidentRecord(slot, uiUploadBudgetBytes);
+    BuildResidentRecord(slot, uiUploadBudgetBytes, uiUploadBudgetBytes > 0U && uiUploadBudgetBytes == uiInitialUploadBudget);
   }
 
   EnforceBudget(uiCompletedFrame);
