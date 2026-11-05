@@ -105,6 +105,7 @@ void xiiSceneLoadUtility::StartSceneLoading(xiiStringView sSceneFile, xiiStringV
   XII_LOG_BLOCK("StartSceneLoading");
 
   m_LoadingState = LoadingState::Ongoing;
+  m_sRequestedCollection = sPreloadCollectionFile;
 
   m_sRequestedFile                 = sSceneFile;
   xiiStringBuilder sFinalSceneFile = sSceneFile;
@@ -208,10 +209,9 @@ void xiiSceneLoadUtility::TickSceneLoading()
 
       if (pCollection.GetAcquireResult() == xiiResourceAcquireResult::Final)
       {
-        if (pCollection->PreloadResources())
-        {
-          XII_REPORT_FAILURE("Failed to start preloading all resources.");
-        }
+        // Queue a bounded number each frame; true means more entries remain, not failure.
+        if (pCollection->PreloadResources(64))
+          return;
 
         float progress = 0.0f;
         if (pCollection->IsLoadingFinished(&progress))
@@ -222,6 +222,11 @@ void xiiSceneLoadUtility::TickSceneLoading()
         {
           m_fLoadingProgress = progress * fCollectionPreloadPiece;
         }
+      }
+      else if (xiiResourceManager::GetLoadingState(m_hPreloadCollection) == xiiResourceState::LoadedResourceMissing)
+      {
+        LoadingFailed("The preload collection is missing. Export it and include its dependencies in the package.");
+        return;
       }
     }
 

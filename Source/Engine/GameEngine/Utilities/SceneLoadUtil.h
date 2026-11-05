@@ -47,6 +47,7 @@ public:
   };
 
   LoadingPhase GetLoadingPhase() const { return m_LoadingPhase; }
+  bool         HasMeasuredProgress() const { return m_LoadingPhase == LoadingPhase::Instantiating || m_LoadingPhase == LoadingPhase::Ready || (m_LoadingPhase == LoadingPhase::Preloading && m_hPreloadCollection.IsValid()); }
 
   /// Cancels without waiting for disk IO. The task owns its input and result and never calls back into this utility.
   /// Call on the same thread as TickSceneLoading(), before unloading plugins or shutting down the task system.
@@ -74,6 +75,7 @@ public:
 
   /// Returns the path to the scene file as it was originally requested.
   xiiStringView GetRequestedScene() const { return m_sRequestedFile; }
+  xiiStringView GetRequestedPreloadCollection() const { return m_sRequestedCollection; }
 
   /// Returns the path to the scene file after it was redirected.
   xiiStringView GetRedirectedScene() const { return m_sRedirectedFile; }
@@ -87,6 +89,7 @@ private:
   xiiString    m_sFailureReason;
 
   xiiString                                              m_sRequestedFile;
+  xiiString                                              m_sRequestedCollection;
   xiiString                                              m_sRedirectedFile;
   xiiCollectionResourceHandle                            m_hPreloadCollection;
   xiiSharedPtr<class xiiSceneReadTask>                   m_pReadTask;

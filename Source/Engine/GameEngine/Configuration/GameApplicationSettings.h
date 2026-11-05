@@ -14,6 +14,12 @@ class XII_GAMEENGINE_DLL xiiGameApplicationSettings : public xiiSettings
 
 public:
   bool m_bVSync = true;
+  xiiUInt32 m_uiFrameLimit           = 0;
+  xiiUInt32 m_uiBackgroundFrameLimit = 30;
+  float     m_fRenderScale           = 1.0f;
+  bool      m_bShowFrameStats        = false;
+  float     m_fMasterVolume          = 1.0f;
+  bool      m_bMuteInBackground      = true;
 
   /// If no reflected file exists, adopts the legacy saved CVar value. Existing reflected data wins.
   /// Failed reads leave current values intact. The caller must preserve an unreadable file.

@@ -4,6 +4,7 @@
 
 #include <Core/Console/QuakeConsole.h>
 #include <Core/Input/InputManager.h>
+#include <Core/Interfaces/SoundInterface.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Communication/GlobalEvent.h>
@@ -18,6 +19,7 @@
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
+#include <GameEngine/GameApplication/PlayerMessages.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -46,6 +48,17 @@ xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sPr
 
   m_CVarChangeSubscriptionID = cvar_AppVSync.m_CVarEvents.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnVSyncChanged, this));
   m_Settings.m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnSettingsChanged, this), m_SettingsSubscription);
+  if (auto* cap = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("App.FrameLimit")))
+    m_FrameLimitSubscriptionID = cap->m_CVarEvents.AddEventHandler([this, cap](const xiiCVarEvent& event) {
+      if (event.m_EventType != xiiCVarEvent::ValueChanged || !m_bSettingsInitialized)
+        return;
+      const auto value = static_cast<xiiUInt32>(xiiMath::Clamp(cap->GetValue(), 0, 1000));
+      if (m_Settings.m_uiFrameLimit != value)
+      {
+        m_Settings.m_uiFrameLimit = value;
+        m_Settings.NotifyChanged();
+      }
+    });
 }
 
 xiiGameApplication::~xiiGameApplication()
@@ -53,6 +66,10 @@ xiiGameApplication::~xiiGameApplication()
   s_pGameApplicationInstance = nullptr;
 
   cvar_AppVSync.m_CVarEvents.RemoveEventHandler(m_CVarChangeSubscriptionID);
+  if (auto* cap = xiiCVar::FindCVarByName("App.FrameLimit"))
+    cap->m_CVarEvents.RemoveEventHandler(m_FrameLimitSubscriptionID);
+  if (xiiConsole::GetMainConsole() == m_pConsole.Borrow())
+    xiiConsole::SetMainConsole(nullptr);
 }
 
 // static
@@ -103,6 +120,7 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
 {
   XII_PROFILE_SCOPE("Run_WorldUpdateAndRender");
 
+  RenderConsole();
   Run_BeforeWorldUpdate();
 
   xiiTaskGroupID updateWorldsTaskID = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
@@ -179,6 +197,7 @@ void xiiGameApplication::RenderConsole()
   {
     if (xiiWorld* pMainWorld = pGameState->GetMainWorld())
     {
+      XII_LOCK(pMainWorld->GetWriteMarker());
       xiiRenderWorldModule* pRenderWorldModule = pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
 
       if (const xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView))
@@ -247,21 +266,48 @@ void xiiGameApplication::Init_ConfigureCVars()
 {
   SUPER::Init_ConfigureCVars();
   m_bSettingsWritable = !xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-no-file-cvars", false);
-  if (m_bSettingsWritable && m_Settings.Load(":appdata/RuntimeConfigs/Presentation.ddl", cvar_AppVSync.GetValue()).Failed())
+  m_Settings.m_bVSync = cvar_AppVSync.GetValue();
+  if (const auto* limit = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("App.FrameLimit")))
+    m_Settings.m_uiFrameLimit = xiiMath::Clamp(limit->GetValue(), 0, 1000);
+  if (m_Settings.Load(":project/RuntimeConfigs/Presentation.ddl", m_Settings.m_bVSync).Failed())
+    xiiLog::Warning("Cannot read the project's presentation defaults; using engine defaults.");
+  if (m_bSettingsWritable && m_Settings.Load(":appdata/RuntimeConfigs/Presentation.ddl", m_Settings.m_bVSync).Failed())
   {
     m_bSettingsWritable = false;
-    m_Settings.m_bVSync = cvar_AppVSync.GetValue();
-    xiiLog::Warning("Unable to load runtime presentation settings; preserving the original file and using the legacy/default value.");
+    xiiLog::Warning("Cannot read user presentation settings; preserving the original file and using project defaults.");
   }
-  if (xiiCommandLineUtils::GetGlobalInstance()->HasOption("-App.VSync"))
-    m_Settings.m_bVSync = xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-App.VSync", m_Settings.m_bVSync);
-  m_bSettingsInitialized = true;
+  const auto* command = xiiCommandLineUtils::GetGlobalInstance();
+  if (command->HasOption("-App.VSync"))
+    m_Settings.m_bVSync = command->GetBoolOption("-App.VSync", m_Settings.m_bVSync);
+  if (command->HasOption("-App.FrameLimit"))
+    m_Settings.m_uiFrameLimit = xiiMath::Clamp(command->GetIntOption("-App.FrameLimit", m_Settings.m_uiFrameLimit), 0, 1000);
+  if (command->HasOption("-background-fps"))
+    m_Settings.m_uiBackgroundFrameLimit = xiiMath::Clamp(command->GetIntOption("-background-fps", 30), 1, 1000);
+  if (command->HasOption("-render-scale"))
+    m_Settings.m_fRenderScale = xiiMath::Clamp(static_cast<float>(command->GetFloatOption("-render-scale", 1.0)), 0.1f, 1.0f);
+  if (command->HasOption("-show-fps"))
+    m_Settings.m_bShowFrameStats = command->GetBoolOption("-show-fps", false);
+  if (command->HasOption("-volume"))
+    m_Settings.m_fMasterVolume = xiiMath::Clamp(static_cast<float>(command->GetFloatOption("-volume", 1.0)), 0.0f, 1.0f);
+  // Startup overrides are ephemeral. Save only explicit runtime commits, never startup resolution.
   m_Settings.NotifyChanged();
+  m_bSettingsInitialized = true;
+}
+
+xiiResult xiiGameApplication::ApplySettings(const xiiGameApplicationSettings& settings)
+{
+  XII_SUCCEED_OR_RETURN(m_Settings.Apply(settings));
+  // Explicit commits also retry an unchanged value after an earlier write failure.
+  if (m_bSettingsInitialized && m_bSettingsWritable)
+    return m_Settings.Save(":appdata/RuntimeConfigs/Presentation.ddl");
+  return XII_SUCCESS;
 }
 
 void xiiGameApplication::OnSettingsChanged(xiiSettings*)
 {
   cvar_AppVSync = m_Settings.m_bVSync;
+  if (auto* limit = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("App.FrameLimit")))
+    *limit = static_cast<xiiInt32>(m_Settings.m_uiFrameLimit);
   if (m_bSettingsInitialized && m_bSettingsWritable && m_Settings.Save(":appdata/RuntimeConfigs/Presentation.ddl").Failed())
     xiiLog::Error("Failed to save runtime presentation settings.");
   auto pWindowManager = xiiWindowManager::GetSingleton();
@@ -282,6 +328,7 @@ void xiiGameApplication::OnSettingsChanged(xiiSettings*)
       pOutput->SetVSyncEnabled(m_Settings.m_bVSync);
     }
   }
+  ApplyViewSettings();
 }
 
 namespace
@@ -417,3 +464,267 @@ bool xiiGameApplication::Run_ProcessApplicationInput()
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_GameApplication);
+
+void xiiGameApplication::InitializeManagedSession()
+{
+  if (m_pSessionChannel)
+    return;
+  auto* command = xiiCommandLineUtils::GetGlobalInstance();
+  m_sSession    = command->GetStringOption("-player-session");
+  m_sInstance   = command->GetStringOption("-player-instance");
+  if (m_sSession.IsEmpty())
+    return;
+  auto validIdentifier = [](xiiStringView value) {
+    if (value.IsEmpty() || value.GetElementCount() > 100)
+      return false;
+    for (const auto character : value)
+      if (!((character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || (character >= '0' && character <= '9') || character == '-'))
+        return false;
+    return true;
+  };
+  if (!validIdentifier(m_sSession) || !validIdentifier(m_sInstance) || command->GetStringOption("-player-ipc") != m_sInstance)
+  {
+    xiiLog::Error("Invalid managed Player identity or private IPC endpoint.");
+    SetReturnCode(2);
+    RequestQuit();
+    return;
+  }
+  const xiiString project = command->GetStringOption("-project");
+  if (!project.IsAbsolutePath())
+  {
+    xiiLog::Error("Managed application project paths must be absolute.");
+    SetReturnCode(2);
+    RequestQuit();
+    return;
+  }
+  m_sAppProjectPath = project;
+  m_pSessionChannel = xiiIpcChannel::CreatePipeChannel(m_sInstance, xiiIpcChannel::Mode::Client);
+  if (!m_pSessionChannel)
+  {
+    SetReturnCode(2);
+    RequestQuit();
+    return;
+  }
+  m_pSessionProtocol = XII_DEFAULT_NEW(xiiIpcProcessMessageProtocol, m_pSessionChannel.Borrow());
+  m_pSessionProtocol->m_MessageEvent.AddEventHandler([this](const xiiIpcProcessMessageProtocol::Event& event) {
+    if (const auto* scene = xiiDynamicCast<const xiiPlayerSceneMessage*>(event.m_pMessage))
+    {
+      if (auto* state = xiiGameState::GetActiveGameState())
+      {
+        if (scene->m_bCancel)
+          state->CancelBackgroundSceneLoading();
+        else if (state->TransitionToScene(scene->m_sScene, scene->m_sPreloadCollection).Failed())
+          ReportStatus("failed", "Invalid scene transition request; provide a nonempty scene reference.");
+      }
+    }
+    if (event.m_pMessage->IsInstanceOf<xiiPlayerStopMessage>())
+    {
+      ReportStatus("stopping", "Graceful stop requested by editor.");
+      RequestQuit();
+    }
+  });
+  m_pSessionChannel->Connect();
+}
+
+void xiiGameApplication::AfterCoreSystemsStartup()
+{
+  InitializeManagedSession();
+  if (!WasQuitRequested())
+    SUPER::AfterCoreSystemsStartup();
+}
+
+void xiiGameApplication::Init_FileSystem_ConfigureDataDirs()
+{
+  SUPER::Init_FileSystem_ConfigureDataDirs();
+  if (m_sSession.IsEmpty() || WasQuitRequested())
+    return;
+  xiiStringBuilder projectKey;
+  projectKey.SetFormat("{}", xiiArgU(xiiHashingUtils::StringHash(FindProjectDirectory()), 16, true, 16));
+  xiiStringBuilder directory(xiiOSFile::GetUserDataFolder(), "/", GetApplicationName(), "/", projectKey);
+  directory.AppendPath("Sessions", m_sInstance);
+  if (xiiOSFile::CreateDirectoryStructure(directory).Failed() ||
+      m_ManagedPreferencesLock.Open(xiiStringBuilder(directory, "/Preferences.lock"), xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Failed())
+  {
+    ReportStatus("failed", "Cannot create or exclusively lock managed application preferences.");
+    SetReturnCode(4);
+    RequestQuit();
+    return;
+  }
+  m_sManagedWritableDirectory = directory;
+  // Shared permutations are read-only and have lower lookup priority than private outputs.
+  xiiFileSystem::AddDataDirectory(">sdk/Output/", "ManagedPlayer", "", xiiDataDirUsage::ReadOnly).IgnoreResult();
+  for (const char* root : {"appdata", "bin", "shadercache"})
+  {
+    xiiFileSystem::RemoveDataDirectory(root);
+    if (xiiFileSystem::AddDataDirectory(directory, "ManagedPlayer", root, xiiDataDirUsage::AllowWrites).Failed())
+    {
+      ReportStatus("failed", "Cannot mount private managed application data.");
+      SetReturnCode(4);
+      RequestQuit();
+      return;
+    }
+  }
+  const xiiString temp = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-player-temp");
+  if (temp.IsEmpty() || !temp.IsAbsolutePath())
+  {
+    ReportStatus("failed", "Managed application temporary directory must be absolute.");
+    SetReturnCode(4);
+    RequestQuit();
+    return;
+  }
+  xiiFileSystem::SetSpecialDirectory("temp", temp);
+  xiiLog::Info("Managed application '{}' uses private data '{}'.", m_sInstance, directory);
+}
+
+void xiiGameApplication::Init_ConfigureTelemetry()
+{
+  SUPER::Init_ConfigureTelemetry();
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && defined(BUILDSYSTEM_ENABLE_ENET_SUPPORT)
+  if (!m_sSession.IsEmpty() && xiiTelemetry::GetConnectionMode() != xiiTelemetry::Server)
+  {
+    ReportStatus("failed", "Cannot bind the assigned telemetry port. Select a different launch base port.");
+    SetReturnCode(6);
+    RequestQuit();
+  }
+#endif
+}
+
+xiiApplication::Execution xiiGameApplication::Run()
+{
+  PumpSession();
+  return SUPER::Run();
+}
+
+void xiiGameApplication::PumpSession()
+{
+  if (!m_pSessionChannel)
+    return;
+  if (m_pSessionChannel->GetConnectionState() == xiiIpcChannel::ConnectionState::Disconnected &&
+      xiiTime::Now() - m_LastConnectAttempt > xiiTime::MakeFromMilliseconds(200))
+  {
+    if (m_bSessionConnected)
+    {
+      RequestQuit();
+      return;
+    }
+    m_LastConnectAttempt = xiiTime::Now();
+    m_pSessionChannel->Connect();
+  }
+  m_pSessionProtocol->ProcessMessages();
+  if (m_pSessionChannel->IsConnected())
+  {
+    m_bSessionConnected = true;
+    if (xiiTime::Now() - m_LastStatus > xiiTime::MakeFromSeconds(1))
+      ReportStatus(m_sStage, m_sDetail);
+  }
+}
+
+void xiiGameApplication::ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress)
+{
+  if (m_sStage == sStage && m_sDetail == sDetail && xiiTime::Now() - m_LastStatus < xiiTime::MakeFromMilliseconds(500))
+    return;
+  if (m_sStage != sStage)
+    m_sStage = sStage;
+  if (m_sDetail != sDetail)
+    m_sDetail = sDetail;
+  m_LastStatus = xiiTime::Now();
+  if (m_pSessionChannel && m_pSessionChannel->IsConnected())
+  {
+    xiiPlayerStatusMessage status;
+    status.m_sInstance = m_sInstance;
+    status.m_sStage    = m_sStage;
+    status.m_sDetail   = m_sDetail;
+    status.m_fProgress = fProgress;
+    if (const auto* state = xiiGameState::GetActiveGameState())
+      status.m_uiSceneRevision = state->GetWorldRevision();
+    m_pSessionProtocol->Send(&status);
+  }
+}
+
+void xiiGameApplication::Run_InputUpdate()
+{
+  SUPER::Run_InputUpdate();
+  if (auto* active = GetActiveGameState())
+    if (active->WasQuitRequested())
+      RequestQuit();
+  if (auto* state = xiiGameState::GetActiveGameState())
+  {
+    if (state->GetWorldRevision() != m_uiConfiguredWorldRevision)
+    {
+      m_uiConfiguredWorldRevision = state->GetWorldRevision();
+      ApplyViewSettings();
+    }
+    if (!state->GetSceneLoadingError().IsEmpty())
+      ReportStatus("failed", state->GetSceneLoadingError());
+    else if (state->IsLoadingSceneInBackground())
+    {
+      const bool activating = state->GetSceneLoadingPhase() == xiiSceneLoadUtility::LoadingPhase::Instantiating;
+      float      progress   = 0.0f;
+      state->IsLoadingSceneInBackground(&progress);
+      ReportStatus(activating ? "activating" : "loading", activating ? "Activating incoming scene" : "Reading scene and preloading resources", state->HasMeasuredSceneLoadingProgress() ? progress : -1.0f);
+    }
+    else
+    {
+      xiiStringBuilder ready;
+      ready.SetFormat("Ready: {}", state->GetActiveScene());
+      ReportStatus("running", ready);
+    }
+  }
+  else if (GetActiveGameState())
+    ReportStatus("running", "Application game state active");
+  if (auto* sound = xiiSingletonRegistry::GetSingletonInstance<xiiSoundInterface>(); sound && !xiiStartup::HasApplicationTag("editorengineprocess"))
+  {
+    sound->SetMasterChannelVolume(GetSettings().m_fMasterVolume);
+    auto*       state  = xiiGameState::GetActiveGameState();
+    const auto* window = state ? state->GetMainWindow() : nullptr;
+    sound->SetMasterChannelMute(GetSettings().m_bMuteInBackground && window && !window->HasFocus());
+  }
+}
+
+void xiiGameApplication::BeforeHighLevelSystemsShutdown()
+{
+  ReportStatus("stopping", "Releasing scene and application services");
+  SUPER::BeforeHighLevelSystemsShutdown();
+}
+
+void xiiGameApplication::BeforeCoreSystemsShutdown()
+{
+  SUPER::BeforeCoreSystemsShutdown();
+  ReportStatus("exited", "Shutdown complete");
+  m_pSessionProtocol.Clear();
+  m_pSessionChannel.Clear();
+  m_ManagedPreferencesLock.Close();
+}
+
+xiiUInt32 xiiGameApplication::GetFrameLimit() const
+{
+  const auto  foregroundLimit = SUPER::GetFrameLimit();
+  auto*       state           = xiiGameState::GetActiveGameState();
+  const auto* window          = state ? state->GetMainWindow() : nullptr;
+  if (window && (!window->HasFocus() || !window->IsVisible()))
+    return foregroundLimit == 0 ? GetSettings().m_uiBackgroundFrameLimit : xiiMath::Min(foregroundLimit, GetSettings().m_uiBackgroundFrameLimit);
+  return foregroundLimit;
+}
+
+void xiiGameApplication::ApplyViewSettings()
+{
+  // Editor view/camera preferences are owned and synchronized by the editor's viewport controls.
+  if (xiiStartup::HasApplicationTag("editorengineprocess"))
+    return;
+  auto* state = xiiGameState::GetActiveGameState();
+  if (!state || !state->GetMainWorld())
+    return;
+  XII_LOCK(state->GetMainWorld()->GetWriteMarker());
+  if (auto* view = state->GetMainView())
+  {
+    view->SetRenderScale(GetSettings().m_fRenderScale);
+    view->SetShowFrameStats(GetSettings().m_bShowFrameStats);
+  }
+  if (auto* cameras = state->GetMainWorld()->GetComponentManager<xiiCameraComponentManager>())
+    for (auto camera = cameras->GetComponents(); camera.IsValid(); ++camera)
+      if (camera->IsActive() && camera->GetUsageHint() == xiiCameraUsageHint::MainView)
+      {
+        camera->SetRenderScale(GetSettings().m_fRenderScale);
+        camera->SetShowFrameStats(GetSettings().m_bShowFrameStats);
+      }
+}

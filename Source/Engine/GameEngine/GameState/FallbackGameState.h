@@ -64,6 +64,7 @@ protected:
 
   virtual void OnBackgroundSceneLoadingFinished(xiiUniquePtr<xiiWorld>&& pWorld) override;
   virtual void OnBackgroundSceneLoadingFailed(xiiStringView sReason) override;
+  virtual void OnBackgroundSceneLoadingCanceled() override;
 
   virtual void ConfigureMainCamera() override;
 };

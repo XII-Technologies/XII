@@ -6,9 +6,11 @@
 #include <Core/Prefabs/PrefabResource.h>
 #include <Core/System/WindowManager.h>
 #include <Core/World/World.h>
+#include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/System/Screen.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <GameEngine/Components/GamePlay/PlayerStartPointComponent.h>
 #include <GameEngine/Configuration/PlayerConfig.h>
@@ -69,6 +71,7 @@ void xiiGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, 
 
 void xiiGameState::OnDeactivation()
 {
+  m_bDeactivating = true;
   CancelBackgroundSceneLoading();
   // Join cancelled readers while their component RTTI and plugin code are still loaded.
   m_CancelledSceneLoads.Clear();
@@ -110,7 +113,9 @@ void xiiGameState::ProcessInput()
     if (!m_sSceneLoadingError.IsEmpty())
       xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("{}\nPress Escape to exit or select another scene.", m_sSceneLoadingError), xiiColor::OrangeRed);
     else if (phase == xiiSceneLoadUtility::LoadingPhase::Instantiating)
-      xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Activating scene: {}%", xiiMath::RoundToInt(m_pBackgroundSceneLoad->GetLoadingProgress() * 100.0f)));
+      xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Activating scene: {}%%", xiiMath::RoundToInt(m_pBackgroundSceneLoad->GetLoadingProgress() * 100.0f)));
+    else if (IsLoadingSceneInBackground() && HasMeasuredSceneLoadingProgress())
+      xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Preloading resources: {}%%", xiiMath::RoundToInt(m_pBackgroundSceneLoad->GetLoadingProgress() * 100.0f)));
     else if (IsLoadingSceneInBackground())
       xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", szPhase);
   }
@@ -121,6 +126,7 @@ xiiView* xiiGameState::GetMainView()
   if (!m_pMainWorld)
     return nullptr;
 
+  XII_LOCK(m_pMainWorld->GetReadMarker());
   xiiView* pView = nullptr;
 
   if (const xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetModuleReadOnly<xiiRenderWorldModule>())
@@ -132,6 +138,11 @@ xiiView* xiiGameState::GetMainView()
   }
 
   return pView;
+}
+
+xiiWindow* xiiGameState::GetMainWindow()
+{
+  return static_cast<xiiWindow*>(xiiWindowManager::GetSingleton()->GetWindow(m_hMainWindow));
 }
 
 bool xiiGameState::IsLoadingSceneInBackground(float* out_pProgress) const
@@ -166,7 +177,8 @@ void xiiGameState::CreateWindows()
   XII_LOG_BLOCK("CreateWindows");
 
   xiiUniquePtr<xiiWindow> pMainWindow = CreateMainWindow();
-  XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateWindows().");
+  if (!pMainWindow)
+    return;
 
   xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = CreateMainOutputTarget(pMainWindow.Borrow());
 
@@ -301,6 +313,7 @@ void xiiGameState::ChangeMainWorld(xiiWorld* pNewMainWorld, xiiStringView sStart
   if (m_pMainWorld == pNewMainWorld)
     return;
 
+  ++m_uiWorldRevision;
   xiiWorld* pPreviousWorld = m_pMainWorld;
   m_pMainWorld             = pNewMainWorld;
 
@@ -403,11 +416,56 @@ xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 
   xiiWindowCreationDescription windowDescription;
   windowDescription.LoadFromDDL(sWindowConfig).IgnoreResult();
+  const auto* command = xiiCommandLineUtils::GetGlobalInstance();
+  if (command->HasOption("-width"))
+    windowDescription.m_Resolution.width = xiiMath::Clamp(command->GetIntOption("-width", 1280), 320, 16384);
+  if (command->HasOption("-height"))
+    windowDescription.m_Resolution.height = xiiMath::Clamp(command->GetIntOption("-height", 720), 200, 16384);
+  if (command->HasOption("-display"))
+    windowDescription.m_iMonitor = static_cast<xiiInt8>(xiiMath::Clamp(command->GetIntOption("-display", 0), -1, 127));
+  const auto mode = command->GetStringOption("-window-mode");
+  if (mode == "window")
+    windowDescription.m_WindowMode = xiiWindowMode::WindowResizable;
+  if (mode == "borderless")
+    windowDescription.m_WindowMode = xiiWindowMode::FullscreenBorderlessNativeResolution;
+  if (mode == "fullscreen")
+    windowDescription.m_WindowMode = xiiWindowMode::FullscreenFixedResolution;
+  if (command->HasOption("-window-x") || command->HasOption("-window-y"))
+  {
+    windowDescription.m_Position.Set(command->GetIntOption("-window-x", 0), command->GetIntOption("-window-y", 0));
+    windowDescription.m_bCenterWindowOnDisplay = false;
+  }
+  const auto instance = command->GetStringOption("-player-instance");
+  if (!instance.IsEmpty())
+  {
+    xiiStringBuilder title;
+    title.SetFormat("XII Player [{}] - {}", xiiString(instance).GetLast(8), command->GetStringOption("-role", 0, "standalone"));
+    windowDescription.m_Title                = title;
+    windowDescription.m_bSetForegroundOnInit = command->GetUIntOption("-player-index", 0) == 0;
+  }
+  if (command->HasOption("-window-title"))
+    windowDescription.m_Title = command->GetStringOption("-window-title");
   windowDescription.AdjustWindowSizeAndPosition().IgnoreResult();
 
-  xiiUniquePtr<xiiWindow> pWindow = XII_DEFAULT_NEW(xiiWindow);
-  pWindow->Initialize(windowDescription).AssertSuccess("Failed to create window.");
+  auto*                   application = xiiGameApplication::GetGameApplicationInstance();
+  xiiUniquePtr<xiiWindow> pWindow     = application ? application->TakeStartupWindow() : xiiUniquePtr<xiiWindow>();
+  if (pWindow)
+  {
+    if (pWindow->ApplyWindowSettings(windowDescription).Failed())
+      xiiLog::Warning("Cannot apply startup display configuration; retaining the startup window.");
+  }
+  else
+  {
+    pWindow = XII_DEFAULT_NEW(xiiWindow);
+    if (pWindow->Initialize(windowDescription).Failed())
+    {
+      xiiLog::Error("Cannot create the game window. Check the display configuration.");
+      RequestQuit("Window creation failed");
+      return {};
+    }
+  }
 
+  pWindow->SetTitle(windowDescription.m_Title).IgnoreResult();
   pWindow->GetWindowEvents().AddEventHandler(xiiMakeDelegate(&xiiGameState::OnWindowEvent, this));
 
   return pWindow;
@@ -436,7 +494,10 @@ void xiiGameState::GetStartupOptions(xiiString& out_sScene, xiiString& out_sPrel
   xiiPlayerConfig config;
   if (config.Load().Failed())
     xiiLog::Error("Cannot read RuntimeConfigs/Player.ddl. Check the project startup configuration.");
-  out_sScene             = config.m_sMainScene;
+  xiiFileReader      manifestFile;
+  xiiProjectManifest manifest;
+  if (manifestFile.Open(":project/xiiProject").Succeeded() && manifest.Read(manifestFile).Succeeded())
+    out_sScene = manifest.m_sDefaultScene;
   out_sPreloadCollection = config.m_sPreloadCollection;
   if (xiiCommandLineUtils::GetGlobalInstance()->HasOption("-scene"))
   {
@@ -456,6 +517,8 @@ void xiiGameState::GetStartupOptions(xiiString& out_sScene, xiiString& out_sPrel
 
 void xiiGameState::LoadScene(xiiStringView sSceneFile, xiiStringView sPreloadCollection, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
+  if (m_bInSceneLoadingCallback || m_bDeactivating)
+    return;
   m_sTargetSceneSpawnPoint = sStartPosition;
   m_TargetSceneSpawnOffset = startPositionOffset;
 
@@ -479,8 +542,10 @@ xiiSceneLoadUtility::LoadingPhase xiiGameState::GetSceneLoadingPhase() const
 
 xiiResult xiiGameState::TransitionToScene(xiiStringView sSceneFile, xiiStringView sPreloadCollection)
 {
-  if (sSceneFile.IsEmpty())
+  if (sSceneFile.IsEmpty() || m_bInSceneLoadingCallback || m_bDeactivating)
     return XII_FAILURE;
+  m_sTargetSceneSpawnPoint.Clear();
+  m_TargetSceneSpawnOffset = xiiTransform::MakeIdentity();
   StartBackgroundSceneLoading(sSceneFile, sPreloadCollection);
   m_bTransitionWhenReady = true;
   if (!m_pMainWorld)
@@ -490,6 +555,11 @@ xiiResult xiiGameState::TransitionToScene(xiiStringView sSceneFile, xiiStringVie
 
 void xiiGameState::SwitchToLoadingScreen(xiiStringView sTargetSceneFile)
 {
+  if (m_pLoadedWorld && m_pMainWorld == m_pLoadedWorld)
+  {
+    XII_LOCK(m_pLoadedWorld->GetWriteMarker());
+    m_pLoadedWorld->SetWorldSimulationEnabled(false);
+  }
   // Detach the view before releasing a previous loading screen.
   auto pPreviousLoadingScreen = std::move(m_pLoadingScreenWorld);
   m_pLoadingScreenWorld       = CreateLoadingScreenWorld(sTargetSceneFile);
@@ -505,12 +575,19 @@ xiiUniquePtr<xiiWorld> xiiGameState::CreateLoadingScreenWorld(xiiStringView sTar
 
 void xiiGameState::StartBackgroundSceneLoading(xiiStringView sSceneFile, xiiStringView sPreloadCollection)
 {
+  if (m_bInSceneLoadingCallback || m_bDeactivating)
+  {
+    xiiLog::Error("Scene requests from loading callbacks or deactivation are not supported; enqueue the request for the next frame.");
+    return;
+  }
   m_bTransitionWhenReady = false;
 
-  if ((m_pBackgroundSceneLoad != nullptr) && (m_pBackgroundSceneLoad->GetRequestedScene() == sSceneFile))
+  if (m_pBackgroundSceneLoad && m_pBackgroundSceneLoad->GetRequestedScene() == sSceneFile &&
+      m_pBackgroundSceneLoad->GetRequestedPreloadCollection() == sPreloadCollection)
   {
-    // already being loaded
-    return;
+    const auto state = m_pBackgroundSceneLoad->GetLoadingState();
+    if (state == xiiSceneLoadUtility::LoadingState::Ongoing || state == xiiSceneLoadUtility::LoadingState::FinishedSuccessfully)
+      return;
   }
 
   CancelBackgroundSceneLoading();
@@ -522,13 +599,26 @@ void xiiGameState::StartBackgroundSceneLoading(xiiStringView sSceneFile, xiiStri
 
 void xiiGameState::CancelBackgroundSceneLoading()
 {
+  if (m_bInSceneLoadingCallback)
+    return;
   if (m_pBackgroundSceneLoad)
   {
+    m_bInSceneLoadingCallback = true;
     OnBackgroundSceneLoadingCanceled();
+    m_bInSceneLoadingCallback = false;
 
     m_pBackgroundSceneLoad->Cancel();
-    m_CancelledSceneLoads.PushBack(std::move(m_pBackgroundSceneLoad));
+    if (m_pBackgroundSceneLoad->IsReadTaskFinished())
+      m_pBackgroundSceneLoad.Clear();
+    else
+      m_CancelledSceneLoads.PushBack(std::move(m_pBackgroundSceneLoad));
     m_bTransitionWhenReady = false;
+    if (!m_bDeactivating && m_pLoadedWorld && IsInLoadingScreen())
+    {
+      XII_LOCK(m_pLoadedWorld->GetWriteMarker());
+      m_pLoadedWorld->SetWorldSimulationEnabled(true);
+      ChangeMainWorld(m_pLoadedWorld.Borrow(), {}, xiiTransform::MakeIdentity());
+    }
   }
 }
 
@@ -558,8 +648,19 @@ void xiiGameState::UpdateBackgroundSceneLoading()
       {
         if (m_bTransitionWhenReady)
         {
-          OnBackgroundSceneLoadingFinished(m_pBackgroundSceneLoad->RetrieveLoadedScene());
-
+          m_bInSceneLoadingCallback = true;
+          XII_SCOPE_EXIT(m_bInSceneLoadingCallback = false);
+          auto             world = m_pBackgroundSceneLoad->RetrieveLoadedScene();
+          xiiStringBuilder error;
+          xiiResult        activation = XII_FAILURE;
+          {
+            XII_LOCK(world->GetWriteMarker());
+            activation = OnBeforeSceneActivation(*world, error);
+          }
+          if (activation.Succeeded())
+            OnBackgroundSceneLoadingFinished(std::move(world));
+          else
+            OnBackgroundSceneLoadingFailed(error.IsEmpty() ? xiiStringView("Scene activation was rejected by the application.") : error.GetView());
           m_pBackgroundSceneLoad.Clear();
         }
       }
@@ -567,6 +668,8 @@ void xiiGameState::UpdateBackgroundSceneLoading()
 
       case xiiSceneLoadUtility::LoadingState::Failed:
       {
+        m_bInSceneLoadingCallback = true;
+        XII_SCOPE_EXIT(m_bInSceneLoadingCallback = false);
         OnBackgroundSceneLoadingFailed(m_pBackgroundSceneLoad->GetLoadingFailureReason());
 
         m_pBackgroundSceneLoad.Clear();
@@ -578,7 +681,8 @@ void xiiGameState::UpdateBackgroundSceneLoading()
 
 void xiiGameState::OnBackgroundSceneLoadingFinished(xiiUniquePtr<xiiWorld>&& pWorld)
 {
-  xiiLog::Success("Finished loading scene '{}'.", m_pBackgroundSceneLoad->GetRequestedScene());
+  m_sActiveScene = m_pBackgroundSceneLoad->GetRequestedScene();
+  xiiLog::Success("Finished loading scene '{}'.", m_sActiveScene);
 
   // Keep the old world alive until ChangeMainWorld has detached its view and notified consumers.
   auto pPreviousWorld = std::move(m_pLoadedWorld);
@@ -595,6 +699,12 @@ void xiiGameState::OnBackgroundSceneLoadingFailed(xiiStringView sReason)
 {
   m_sSceneLoadingError = sReason;
   xiiLog::Error("Scene loading failed: {}", sReason);
+  if (m_pLoadedWorld && IsInLoadingScreen())
+  {
+    XII_LOCK(m_pLoadedWorld->GetWriteMarker());
+    m_pLoadedWorld->SetWorldSimulationEnabled(true);
+    ChangeMainWorld(m_pLoadedWorld.Borrow(), {}, xiiTransform::MakeIdentity());
+  }
 }
 
 void xiiGameState::OnBackgroundSceneLoadingCanceled()

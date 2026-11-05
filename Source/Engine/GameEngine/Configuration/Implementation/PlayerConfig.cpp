@@ -4,6 +4,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GameEngine/Configuration/PlayerConfig.h>
 #include <GameEngine/GameEnginePCH.h>
 
@@ -32,7 +33,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPlayerConfig, 1, xiiRTTIDefaultAllocator<xii
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("MainScene", m_sMainScene),
     XII_MEMBER_PROPERTY("PreloadCollection", m_sPreloadCollection),
     XII_ARRAY_MEMBER_PROPERTY("LaunchConfigurations", m_LaunchConfigurations),
   }
@@ -94,3 +94,85 @@ const xiiPlayerLaunchConfig* xiiPlayerConfig::FindLaunch(xiiStringView sName) co
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Configuration_Implementation_PlayerConfig);
+
+xiiStatus xiiPlayerLaunchConfig::ValidateRuntimeArguments(xiiArrayPtr<const xiiString> arguments)
+{
+  for (xiiUInt32 i = 0; i < arguments.GetCount(); ++i)
+  {
+    const auto& arg     = arguments[i];
+    bool        integer = true;
+    double      minimum = 0.0;
+    double      maximum = 0.0;
+    if (arg.IsEqual_NoCase("-width"))
+    {
+      minimum = 320;
+      maximum = 16384;
+    }
+    else if (arg.IsEqual_NoCase("-height"))
+    {
+      minimum = 200;
+      maximum = 16384;
+    }
+    else if (arg.IsEqual_NoCase("-display"))
+    {
+      minimum = -1;
+      maximum = 127;
+    }
+    else if (arg.IsEqual_NoCase("-App.FrameLimit"))
+    {
+      minimum = 0;
+      maximum = 1000;
+    }
+    else if (arg.IsEqual_NoCase("-background-fps"))
+    {
+      minimum = 1;
+      maximum = 1000;
+    }
+    else if (arg.IsEqual_NoCase("-render-scale"))
+    {
+      minimum = 0.1;
+      maximum = 1.0;
+      integer = false;
+    }
+    else if (arg.IsEqual_NoCase("-volume"))
+    {
+      minimum = 0;
+      maximum = 1.0;
+      integer = false;
+    }
+    else if (arg.IsEqual_NoCase("-port") || arg.IsEqual_NoCase("-TelemetryPort"))
+    {
+      minimum = 0;
+      maximum = 65535;
+    }
+    else if (arg.IsEqual_NoCase("-window-x") || arg.IsEqual_NoCase("-window-y"))
+    {
+      minimum = -32768;
+      maximum = 32767;
+    }
+    else if (arg.IsEqual_NoCase("-window-mode"))
+    {
+      if (i + 1 >= arguments.GetCount() || (arguments[i + 1] != "window" && arguments[i + 1] != "borderless" && arguments[i + 1] != "fullscreen"))
+        return xiiStatus("Window mode must be window, borderless or fullscreen.");
+      continue;
+    }
+    else
+      continue;
+    if (i + 1 >= arguments.GetCount())
+      return xiiStatus(xiiFmt("Missing value for '{}'.", arg));
+    double      number = 0;
+    const char* end    = nullptr;
+    xiiResult   parsed = XII_FAILURE;
+    if (integer)
+    {
+      xiiInt32 value = 0;
+      parsed         = xiiConversionUtils::StringToInt(arguments[i + 1], value, &end);
+      number         = value;
+    }
+    else
+      parsed = xiiConversionUtils::StringToFloat(arguments[i + 1], number, &end);
+    if (parsed.Failed() || end != arguments[i + 1].GetData() + arguments[i + 1].GetElementCount() || !xiiMath::IsFinite(number) || number < minimum || number > maximum)
+      return xiiStatus(xiiFmt("Invalid value '{}' for '{}'; expected {} to {}.", arguments[i + 1], arg, minimum, maximum));
+  }
+  return xiiStatus(XII_SUCCESS);
+}

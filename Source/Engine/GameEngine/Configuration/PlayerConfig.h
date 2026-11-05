@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include <GameEngine/GameEngineDLL.h>
+
 #include <Foundation/Configuration/Settings.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Strings/String.h>
-#include <GameEngine/GameEngineDLL.h>
+#include <Foundation/Types/Status.h>
 
 /// A named, project-owned launch description. Extra arguments are tokens, not a shell command.
 struct XII_GAMEENGINE_DLL xiiPlayerLaunchConfig
@@ -24,6 +26,8 @@ struct XII_GAMEENGINE_DLL xiiPlayerLaunchConfig
   xiiDynamicArray<xiiString> m_InstanceArguments;
 
   xiiResult Validate() const;
+  /// Validates Player-owned numeric/window options while leaving application/plugin arguments intact.
+  static xiiStatus ValidateRuntimeArguments(xiiArrayPtr<const xiiString> arguments);
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiPlayerLaunchConfig);
 
@@ -34,7 +38,6 @@ class XII_GAMEENGINE_DLL xiiPlayerConfig : public xiiSettings
   XII_ADD_DYNAMIC_REFLECTION(xiiPlayerConfig, xiiSettings);
 
 public:
-  xiiString                              m_sMainScene;
   xiiString                              m_sPreloadCollection;
   xiiDynamicArray<xiiPlayerLaunchConfig> m_LaunchConfigurations;
 

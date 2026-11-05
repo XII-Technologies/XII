@@ -298,10 +298,22 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
       xiiStringView sGraphicsAPIName = GetGraphicsAPINameFromCommandLine();
 
       pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
-      XII_ASSERT_DEV(pDevice != nullptr, "Device implementation for '{}' not found.", sGraphicsAPIName);
+      if (!pDevice)
+      {
+        xiiLog::Error("Device implementation for '{}' was not found. Check -renderer and installed renderer plugins.", sGraphicsAPIName);
+        SetReturnCode(3);
+        RequestQuit();
+        return;
+      }
     }
 
-    XII_VERIFY(pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
+    if (!pDevice || pDevice->Initialize().Failed())
+    {
+      xiiLog::Error("Graphics device initialization failed. Check the renderer, driver and device diagnostics.");
+      SetReturnCode(3);
+      RequestQuit();
+      return;
+    }
 
     pDevice->SetDebugName("Master Graphics Device");
 
@@ -317,6 +329,13 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
   xiiStringView sShaderModel     = {};
   xiiStringView sShaderCompiler  = {};
   xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
+  if (sShaderModel.IsEmpty() || sShaderCompiler.IsEmpty())
+  {
+    xiiLog::Error("Renderer '{}' is unavailable. Check -renderer and installed graphics plugins.", sGraphicsAPIName);
+    SetReturnCode(5);
+    RequestQuit();
+    return;
+  }
 
   xiiGALShaderManager::Configure(sShaderModel, true);
 
@@ -330,7 +349,12 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
 
 #endif
 
-  XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", sShaderCompiler);
+  if (xiiPlugin::LoadPlugin(sShaderCompiler).Failed())
+  {
+    xiiLog::Error("Shader compiler '{}' could not be loaded. Check -renderer and the application package.", sShaderCompiler);
+    SetReturnCode(5);
+    RequestQuit();
+  }
 }
 
 void xiiGameApplication::Deinit_ShutdownGraphicsDevice()

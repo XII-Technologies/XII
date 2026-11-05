@@ -10,6 +10,7 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/Configuration/PlayerConfig.h>
 #include <GameEngine/Utilities/SceneLoadUtil.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(Player);
 
@@ -99,20 +100,46 @@ XII_CREATE_SIMPLE_TEST(Player, SceneLoading)
     XII_TEST_BOOL(loader.GetLoadingState() == xiiSceneLoadUtility::LoadingState::Failed);
     XII_TEST_BOOL(!loader.GetLoadingFailureReason().IsEmpty());
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Truncated component payload returns failure instead of spinning on EOF")
+  {
+    xiiWorldDescription description("Truncated scene");
+    xiiWorld            world(description);
+    XII_LOCK(world.GetWriteMarker());
+    xiiGameObject* object = nullptr;
+    world.CreateObject(xiiGameObjectDescription(), object);
+    xiiCameraComponent* camera = nullptr;
+    xiiCameraComponent::CreateComponent(object, camera);
+    xiiContiguousMemoryStreamStorage storage;
+    xiiMemoryStreamWriter            stream(&storage);
+    xiiAssetFileHeader               header;
+    XII_TEST_RESULT(header.Write(stream));
+    XII_TEST_RESULT(stream.WriteBytes("[xiiBinaryScene]", 16));
+    xiiWorldWriter writer;
+    writer.WriteWorld(stream, world);
+    const char* path = ":imgout/Player/Truncated.xiiBinScene";
+    {
+      xiiFileWriter file;
+      XII_TEST_RESULT(file.Open(path));
+      XII_TEST_RESULT(file.WriteBytes(storage.GetData(), storage.GetStorageSize32() - 3));
+    }
+    xiiSceneLoadUtility loader;
+    loader.StartSceneLoading(path, {});
+    advance(loader);
+    XII_TEST_BOOL(loader.GetLoadingState() == xiiSceneLoadUtility::LoadingState::Failed);
+    XII_TEST_BOOL(!loader.GetLoadingFailureReason().IsEmpty());
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shared project startup and named launch round trip")
   {
     const char*     szConfig = ":imgout/Player/Player.ddl";
     xiiPlayerConfig config;
-    config.m_sMainScene  = "{ d83bb009-7ef8-315a-1f96-12e7df0c90f7 }";
-    auto& launch         = config.m_LaunchConfigurations.ExpandAndGetRef();
-    launch.m_sName       = "Two clients";
-    launch.m_uiInstances = 2;
+    auto&           launch = config.m_LaunchConfigurations.ExpandAndGetRef();
+    launch.m_sName         = "Two clients";
+    launch.m_uiInstances   = 2;
     launch.m_Arguments.PushBack("-App.FrameLimit");
     launch.m_Arguments.PushBack("60");
     XII_TEST_RESULT(config.Save(szConfig));
     xiiPlayerConfig loaded;
     XII_TEST_RESULT(loaded.Load(szConfig));
-    XII_TEST_STRING(loaded.m_sMainScene, config.m_sMainScene);
     const auto* saved = loaded.FindLaunch("Two clients");
     if (XII_TEST_BOOL(saved != nullptr))
       XII_TEST_INT(saved->m_uiInstances, 2);
