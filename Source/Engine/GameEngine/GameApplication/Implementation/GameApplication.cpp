@@ -31,7 +31,6 @@ xiiGameApplication*                                                             
 xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
 
 xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Compatibility control for runtime presentation settings. Updates VSync in RuntimeConfigs/Presentation.ddl; the reflected file takes precedence over legacy saved CVar values.");
-xiiCVarBool xiiGameApplication::cvar_AppShowFrameStats("App.ShowFrameStats", false, xiiCVarFlags::Save, "Displays a live frames-stats overlay on-screen to aid profiling and spot frame-time spikes during development and debugging. Provides an immediate performance readout without affecting rendering state.");
 
 static xiiCVarFloat cvar_FrameTimeWarningMS("App.FrameTimeWarningMS", 0.0f, xiiCVarFlags::Default, "Log frames exceeding this measured wall-clock duration in milliseconds. Zero disables warnings; intended for temporary hitch diagnosis.");
 
@@ -166,60 +165,6 @@ void xiiGameApplication::Run_FinishFrame()
   const float fThreshold = cvar_FrameTimeWarningMS.GetValue();
   if (xiiMath::IsFinite(fThreshold) && fThreshold > 0.0f && m_FrameTime.GetMilliseconds() > fThreshold)
     xiiLog::Warning("Frame took {0} ms (App.FrameTimeWarningMS = {1}).", m_FrameTime.GetMilliseconds(), fThreshold);
-}
-
-void xiiGameApplication::RenderFps()
-{
-  XII_PROFILE_SCOPE("RenderFps");
-  // Do not use xiiClock for this, it smooths and clamps the timestep
-
-  static xiiTime   tAccumTime;
-  static xiiTime   tDisplayedFrameTime = m_FrameTime;
-  static xiiUInt32 uiFrames            = 0;
-  static xiiUInt32 uiFPS               = 0;
-
-  ++uiFrames;
-  tAccumTime += m_FrameTime;
-
-  if (tAccumTime >= xiiTime::MakeFromSeconds(0.5))
-  {
-    tAccumTime -= xiiTime::MakeFromSeconds(0.5);
-    tDisplayedFrameTime = m_FrameTime;
-
-    uiFPS    = uiFrames * 2;
-    uiFrames = 0;
-  }
-
-  if (cvar_AppShowFrameStats)
-  {
-    if (xiiGameState* pGameState = xiiDynamicCast<xiiGameState*>(m_pGameState.Borrow()))
-    {
-      if (xiiWorld* pMainWorld = pGameState->GetMainWorld())
-      {
-        xiiRenderWorldModule* pRenderWorldModule = pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
-
-        if (const xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView))
-        {
-          if (uiFPS >= 60)
-          {
-            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
-          }
-          else if (uiFPS >= 30)
-          {
-            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
-          }
-          else if (uiFPS >= 15)
-          {
-            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
-          }
-          else
-          {
-            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
-          }
-        }
-      }
-    }
-  }
 }
 
 void xiiGameApplication::RenderConsole()
@@ -415,7 +360,14 @@ bool xiiGameApplication::Run_ProcessApplicationInput()
 
   if (xiiInputManager::GetInputActionState(s_szInputSet, s_szShowFpsAction) == xiiKeyState::Pressed)
   {
-    cvar_AppShowFrameStats = !cvar_AppShowFrameStats;
+    if (auto* state = xiiDynamicCast<xiiGameState*>(m_pGameState.Borrow()))
+      if (auto* world = state->GetMainWorld())
+      {
+        XII_LOCK(world->GetWriteMarker());
+        if (auto* module = world->GetModule<xiiRenderWorldModule>())
+          if (auto* view = module->GetViewByUsageHint(xiiCameraUsageHint::MainView))
+            view->SetShowFrameStats(!view->GetShowFrameStats());
+      }
   }
 
   if (xiiInputManager::GetInputActionState(s_szInputSet, s_szReloadResourcesAction) == xiiKeyState::Pressed)

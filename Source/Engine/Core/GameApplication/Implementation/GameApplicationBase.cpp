@@ -4,12 +4,14 @@
 
 #include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/TaskSystem.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Time/Timestamp.h>
@@ -22,6 +24,8 @@
 #include <Core/System/WindowManager.h>
 
 #include <Texture/Image/Image.h>
+
+static xiiCVarInt cvar_AppFrameLimit("App.FrameLimit", 0, xiiCVarFlags::Save, "Application frame cap in FPS (0 = unlimited, 1-1000 = capped). Applies after presentation; VSync may impose a lower rate.");
 
 xiiGameApplicationBase* xiiGameApplicationBase::s_pGameApplicationBaseInstance = nullptr;
 
@@ -448,6 +452,15 @@ void xiiGameApplicationBase::RunOneFrame()
     Run_PresentImage();
   }
 
+  const xiiInt32 frameLimit = xiiMath::Clamp(cvar_AppFrameLimit.GetValue(), 0, 1000);
+  if (frameLimit != cvar_AppFrameLimit.GetValue())
+    cvar_AppFrameLimit = frameLimit;
+  if (frameLimit > 0 && m_LastFrameTime.IsPositive())
+  {
+    const auto remaining = xiiTime::MakeFromSeconds(1.0 / frameLimit) - (xiiTime::Now() - m_LastFrameTime);
+    if (remaining.IsPositive())
+      xiiThreadUtils::Sleep(remaining);
+  }
   xiiClock::GetGlobalClock()->Update();
   UpdateFrameTime();
 
@@ -561,9 +574,8 @@ void xiiGameApplicationBase::UpdateFrameTime()
   // Do not use xiiClock for this, it smooths and clamps the timestep
   const xiiTime tNow = xiiClock::GetGlobalClock()->GetLastUpdateTime();
 
-  static xiiTime tLast = tNow;
-  m_FrameTime          = tNow - tLast;
-  tLast                = tNow;
+  m_FrameTime     = m_LastFrameTime.IsPositive() ? tNow - m_LastFrameTime : xiiTime::MakeZero();
+  m_LastFrameTime = tNow;
 }
 
 XII_STATICLINK_FILE(Core, Core_GameApplication_Implementation_GameApplicationBase);

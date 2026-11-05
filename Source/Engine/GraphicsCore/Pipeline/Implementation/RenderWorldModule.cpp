@@ -642,6 +642,7 @@ void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext
     view.m_LastRenderResult       = XII_FAILURE;
     if (view.IsRenderEnabled() && view.IsValid() && view.SynchronizeRenderPipeline().Succeeded())
     {
+      view.UpdateFrameStats();
       detail.m_bPrepared = true;
       m_ExtractionRequirements |= view.GetExtractionRequirements();
       m_RuntimeFeatures |= view.GetRuntimeFeatures();

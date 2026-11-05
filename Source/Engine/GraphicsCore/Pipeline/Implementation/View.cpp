@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
@@ -170,7 +171,12 @@ xiiSharedPtr<xiiGALTexture> xiiView::GetSensorOutputTexture() const
 
 void xiiView::SetRenderScale(float fRenderScale)
 {
-  m_DynamicResolution.m_fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+  if (!xiiMath::IsFinite(fRenderScale))
+    return;
+  fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+  if (m_DynamicResolution.m_fRenderScale == fRenderScale)
+    return;
+  m_DynamicResolution.m_fRenderScale = fRenderScale;
 
   float fDynamicMin = 0.1f;
   float fDynamicMax = 1.0f;
@@ -180,6 +186,34 @@ void xiiView::SetRenderScale(float fRenderScale)
   m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   UpdateRenderResolutionState();
+}
+
+void xiiView::UpdateFrameStats()
+{
+  const auto now = xiiTime::Now();
+  if (!m_bShowFrameStats)
+  {
+    m_LastStatsFrame    = {};
+    m_StatsInterval     = {};
+    m_uiStatsFrames     = 0;
+    m_fDisplayedFrameMs = 0.0;
+    return;
+  }
+  if (m_LastStatsFrame.IsPositive())
+  {
+    m_StatsInterval += now - m_LastStatsFrame;
+    ++m_uiStatsFrames;
+    if (m_StatsInterval.GetSeconds() >= 0.5)
+    {
+      m_fDisplayedFrameMs = m_StatsInterval.GetMilliseconds() / m_uiStatsFrames;
+      m_StatsInterval     = {};
+      m_uiStatsFrames     = 0;
+    }
+  }
+  m_LastStatsFrame = now;
+  if (m_fDisplayedFrameMs > 0.0)
+    xiiDebugRenderer::DrawInfoText(*this, xiiDebugTextPlacement::BottomLeft, "FPS",
+                                   xiiFmt("{} FPS, {} ms | {} x {}", xiiArgF(1000.0 / m_fDisplayedFrameMs, 1), xiiArgF(m_fDisplayedFrameMs, 2), GetRenderResolutionWidth(), GetRenderResolutionHeight()), xiiColor::LightGreen);
 }
 
 float xiiView::GetRenderScale() const

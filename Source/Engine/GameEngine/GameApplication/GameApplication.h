@@ -40,7 +40,6 @@ class XII_GAMEENGINE_DLL xiiGameApplication : public xiiGameApplicationBase
 {
 public:
   static xiiCVarBool cvar_AppVSync;
-  static xiiCVarBool cvar_AppShowFrameStats;
 
   const xiiGameApplicationSettings& GetSettings() const { return m_Settings; }
   /// Commits validated configuration and notifies output targets once.
@@ -99,7 +98,6 @@ protected:
 protected:
   static xiiGameApplication* s_pGameApplicationInstance;
 
-  void RenderFps();
   void RenderConsole();
 
   void OnVSyncChanged(const xiiCVarEvent& e);
