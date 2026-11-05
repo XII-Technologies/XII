@@ -33,6 +33,7 @@ public:
   mutable xiiDynamicArray<xiiLogEntry> m_LogEntries;
   xiiString                            m_sImportBefore;
   xiiString                            m_sImportAfter;
+  xiiDynamicArray<xiiString>           m_ImportFiles; ///< Files published by the importer, discovered before applying graph references.
 };
 
 class XII_EDITORFRAMEWORK_DLL xiiFreeAllResourcesMsg : public xiiProcessMessage
