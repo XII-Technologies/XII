@@ -203,7 +203,7 @@ void xiiFallbackGameState::ProcessInput()
 {
   SUPER::ProcessInput();
 
-  if (IsInLoadingScreen())
+
   {
     float fProgress = 0.0f;
     IsLoadingSceneInBackground(&fProgress);
@@ -415,7 +415,7 @@ bool xiiFallbackGameState::DisplayMenu()
 
       if (xiiInputManager::GetInputSlotState(xiiInputSlot_KeyReturn) == xiiKeyState::Pressed || xiiInputManager::GetInputSlotState(xiiInputSlot_KeyNumpadEnter) == xiiKeyState::Pressed)
       {
-        LoadScene(m_AvailableScenes[m_uiSelectedScene], {}, "", xiiTransform::MakeIdentity());
+        TransitionToScene(m_AvailableScenes[m_uiSelectedScene]).IgnoreResult();
         m_bShowMenu = false;
       }
 

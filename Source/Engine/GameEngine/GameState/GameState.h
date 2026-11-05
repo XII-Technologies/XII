@@ -92,6 +92,14 @@ public:
   /// The xiiGameState doesn't implement any input logic, but it forwards to UpdateBackgroundSceneLoading().
   virtual void ProcessInput() override;
 
+  /// Starts a transition while keeping the current world usable. A newer request replaces the pending one.
+  /// An empty request fails without replacing the running world. Completion/activation occurs in ProcessInput(),
+  /// before world update tasks. Loading screens and persistent services remain owned by the game state.
+  xiiResult TransitionToScene(xiiStringView sSceneFile, xiiStringView sPreloadCollection = {});
+
+  xiiStringView                     GetSceneLoadingError() const { return m_sSceneLoadingError; }
+  xiiSceneLoadUtility::LoadingPhase GetSceneLoadingPhase() const;
+
   /// Immediately switches to a loading screen and starts loading a level.
   ///
   /// When the level is finished loading, `OnBackgroundSceneLoadingFinished()` is called, which switches to it immediately, unless overridden.
@@ -214,9 +222,10 @@ protected:
 protected:
   static xiiGameState* s_pActiveGameState;
 
-  xiiWorld*     m_pMainWorld = nullptr;
-  xiiCamera     m_MainCamera;
-  xiiViewHandle m_hMainView;
+  xiiWorld*                 m_pMainWorld = nullptr;
+  xiiCamera                 m_MainCamera;
+  xiiViewHandle             m_hMainView;
+  xiiRegisteredWindowHandle m_hMainWindow;
 
   bool m_bStateWantsToQuit = false;
 
@@ -224,6 +233,9 @@ protected:
   xiiUniquePtr<xiiSceneLoadUtility> m_pBackgroundSceneLoad;
   xiiUniquePtr<xiiWorld>            m_pLoadingScreenWorld;
   xiiUniquePtr<xiiWorld>            m_pLoadedWorld;
+
+  xiiDynamicArray<xiiUniquePtr<xiiSceneLoadUtility>> m_CancelledSceneLoads;
+  xiiString                                          m_sSceneLoadingError;
 
   xiiString    m_sTargetSceneSpawnPoint;
   xiiTransform m_TargetSceneSpawnOffset = xiiTransform::MakeIdentity();
