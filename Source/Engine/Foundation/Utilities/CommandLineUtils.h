@@ -25,6 +25,10 @@ public:
 
   /// Splits a string into the classic argc/argv string.
   ///
+  /// Appends whitespace-separated arguments to out_args, retaining quoted spaces and empty quoted arguments.
+  /// Rebuilds out_argsV to borrow all out_args strings. Mutating out_args invalidates these pointers.
+  /// Quotes group text; shell expansion and platform-specific escape sequences are not interpreted.
+  ///
   /// Useful for platforms where command line args come in as a single string.
   /// \param addExecutableDir
   ///   Adds executable path as first parameter (just as it would normally be in 'int main(argc, argv)').

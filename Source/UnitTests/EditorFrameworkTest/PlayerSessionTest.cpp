@@ -1,9 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+
 #include <Core/World/World.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <EditorFramework/Project/PlayerSession.h>
-#include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 #include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
@@ -83,6 +84,7 @@ XII_CREATE_SIMPLE_TEST(PlayerSessions, ManagedProcesses)
   launch.m_Arguments.PushBack("640");
   launch.m_Arguments.PushBack("-height");
   launch.m_Arguments.PushBack("360");
+  launch.m_InstanceArguments.PushBack("-window-title \"Session Client One\" -height 360");
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two real Players become ready; individual stop preserves another project")
   {

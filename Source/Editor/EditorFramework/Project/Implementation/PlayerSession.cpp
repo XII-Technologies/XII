@@ -9,6 +9,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/System/Process.h>
 #include <Foundation/Threading/ThreadUtils.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GameEngine/GameApplication/PlayerMessages.h>
 #include <QDir>
@@ -188,11 +189,15 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
 
     if (i < config.m_InstanceArguments.GetCount())
     {
-      const auto first = option.m_Arguments.GetCount();
-      option.AddCommandLine(config.m_InstanceArguments[i]);
-      for (xiiUInt32 j = first; j < option.m_Arguments.GetCount(); ++j)
-        if (reserved(option.m_Arguments[j]))
-          return xiiStatus(xiiFmt("Instance argument '{}' is managed by the session.", option.m_Arguments[j]));
+      xiiDynamicArray<xiiString>   instance;
+      xiiDynamicArray<const char*> argv;
+      xiiCommandLineUtils::SplitCommandLineString(config.m_InstanceArguments[i], false, instance, argv);
+      for (const auto& arg : instance)
+      {
+        if (reserved(arg))
+          return xiiStatus(xiiFmt("Instance argument '{}' is managed by the session.", arg));
+        option.m_Arguments.PushBack(arg);
+      }
     }
     for (const auto& arg : config.m_Arguments)
       option.m_Arguments.PushBack(arg);

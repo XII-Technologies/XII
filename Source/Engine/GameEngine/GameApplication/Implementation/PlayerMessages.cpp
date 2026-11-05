@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GameEngine/GameApplication/PlayerMessages.h>
 #include <GameEngine/GameEnginePCH.h>
+
+#include <GameEngine/GameApplication/PlayerMessages.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPlayerStatusMessage, 1, xiiRTTIDefaultAllocator<xiiPlayerStatusMessage>)

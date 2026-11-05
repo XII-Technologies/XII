@@ -1,12 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GameEngine/GameEnginePCH.h>
+
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GameEngine/Configuration/PlayerConfig.h>
-#include <GameEngine/GameEnginePCH.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiPlayerLaunchConfig, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiPlayerLaunchConfig>)

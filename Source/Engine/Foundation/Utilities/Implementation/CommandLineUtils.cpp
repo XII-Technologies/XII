@@ -3,6 +3,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Strings/Implementation/StringIterator.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 
@@ -32,25 +33,36 @@ void xiiCommandLineUtils::SplitCommandLineString(const char* szCommandString, bo
 #endif
   }
 
-  // Simple args splitting. Not as powerful as Win32's CommandLineToArgvW.
-  const char* currentChar = szCommandString;
-  const char* lastEnd     = currentChar;
-  bool        inQuotes    = false;
-  while (*currentChar != '\0')
+  // Simple quoted arguments, without shell expansion or platform-specific escaping.
+  xiiStringBuilder argument;
+  bool             inQuotes    = false;
+  bool             hasArgument = false;
+  for (auto it = xiiStringView(szCommandString).GetIteratorFront(); it.IsValid(); ++it)
   {
-    if (*currentChar == '\"')
-      inQuotes = !inQuotes;
-    else if (*currentChar == ' ' && !inQuotes)
+    const auto character = it.GetCharacter();
+    if (character == '\"')
     {
-      xiiStringBuilder path = xiiStringView(lastEnd, currentChar);
-      path.Trim(" \"");
-      out_args.PushBack(path);
-      lastEnd = currentChar + 1;
+      inQuotes = !inQuotes;
+      hasArgument = true;
     }
-    xiiUnicodeUtils::MoveToNextUtf8(currentChar).IgnoreResult();
+    else if ((character == ' ' || character == '\t' || character == '\n' || character == '\r') && !inQuotes)
+    {
+      if (hasArgument)
+        out_args.PushBack(argument);
+      argument.Clear();
+      hasArgument = false;
+    }
+    else
+    {
+      argument.Append(character);
+      hasArgument = true;
+    }
   }
+  if (hasArgument)
+    out_args.PushBack(argument);
 
-  out_argsV.Reserve(out_argsV.GetCount());
+  out_argsV.Clear();
+  out_argsV.Reserve(out_args.GetCount());
   for (xiiString& str : out_args)
     out_argsV.PushBack(str.GetData());
 }

@@ -8,9 +8,9 @@
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Configuration/Startup.h>
-#include <Foundation/System/Process.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Threading/ThreadUtils.h>
+#include <Foundation/Types/Uuid.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <GameEngine/Configuration/PlayerConfig.h>
 #include <GameEngine/GameApplication/PlayerMessages.h>
@@ -66,7 +66,9 @@ void xiiPlayerApplication::AfterCoreSystemsStartup()
   if (m_sSession.IsEmpty() && m_sInstance.IsEmpty())
   {
     xiiStringBuilder identifier;
-    identifier.SetFormat("standalone-{}", xiiProcess::GetCurrentProcessID());
+    xiiUInt64        low, high;
+    xiiUuid::MakeUuid().GetValues(low, high);
+    identifier.SetFormat("standalone-{}{}", xiiArgU(high, 16, true, 16), xiiArgU(low, 16, true, 16));
     m_sInstance = identifier;
     command->InjectCustomArgument("-player-instance");
     command->InjectCustomArgument(m_sInstance);
@@ -196,7 +198,7 @@ void xiiPlayerApplication::Init_FileSystem_ConfigureDataDirs()
   if (m_UserSettingsLock.Open(xiiStringBuilder(directory, "/Preferences.lock"), xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Failed())
   {
     directory.AppendPath("Instances");
-    directory.AppendFormat("/{}-{}", xiiProcess::GetCurrentProcessID(), xiiArgU(static_cast<xiiUInt64>(xiiTime::Now().GetMicroseconds()), 16, true, 16));
+    directory.AppendPath(m_sInstance);
     if (xiiOSFile::CreateDirectoryStructure(directory).Failed() ||
         m_UserSettingsLock.Open(xiiStringBuilder(directory, "/Preferences.lock"), xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Failed())
     {
@@ -223,8 +225,7 @@ void xiiPlayerApplication::Init_FileSystem_ConfigureDataDirs()
   xiiStringBuilder temp = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-player-temp");
   if (temp.IsEmpty())
   {
-    temp.SetFormat("{}/xiiPlayer/{}-{}", xiiOSFile::GetTempDataFolder(), xiiProcess::GetCurrentProcessID(),
-                   xiiArgU(static_cast<xiiUInt64>(xiiTime::Now().GetMicroseconds()), 16, true, 16));
+    temp.SetFormat("{}/xiiPlayer/{}", xiiOSFile::GetTempDataFolder(), m_sInstance);
     m_sOwnedTemporaryDirectory = temp;
   }
   if (!temp.IsAbsolutePath() || xiiOSFile::CreateDirectoryStructure(temp).Failed())
@@ -256,7 +257,7 @@ void xiiPlayerApplication::Init_ConfigureTelemetry()
   for (xiiUInt32 attempt = 0; attempt < (explicitPort ? 1U : 64U); ++attempt)
   {
     if (attempt > 0)
-      port = 1041 + (xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(m_sAppProjectPath)) + xiiProcess::GetCurrentProcessID() + attempt) % 18000;
+      port = 1041 + (xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(m_sInstance)) + attempt) % 18000;
     if (m_sSession.IsEmpty())
     {
       m_TelemetryPortLease.Close();
@@ -321,9 +322,10 @@ xiiResult xiiPlayerApplication::ResolveLaunchConfiguration()
     const auto                 index     = command->GetUIntOption("-player-index", 0);
     if (index < launch->m_InstanceArguments.GetCount())
     {
-      xiiProcessOptions instance;
-      instance.AddCommandLine(launch->m_InstanceArguments[index]);
-      for (const auto& arg : instance.m_Arguments)
+      xiiDynamicArray<xiiString>   instance;
+      xiiDynamicArray<const char*> argv;
+      xiiCommandLineUtils::SplitCommandLineString(launch->m_InstanceArguments[index], false, instance, argv);
+      for (const auto& arg : instance)
         effective.PushBack(arg);
     }
     for (const auto& arg : launch->m_Arguments)
