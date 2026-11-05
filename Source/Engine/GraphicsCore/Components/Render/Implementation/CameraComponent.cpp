@@ -151,7 +151,7 @@ void xiiCameraComponentManager::OnCameraConfigsChanged(void* dummy)
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 1, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -172,6 +172,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 1, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("ISO", GetISO, SetISO)->AddAttributes(new xiiDefaultValueAttribute(100.0f), new xiiClampValueAttribute(50.0f, 64000.0f)),
     XII_ACCESSOR_PROPERTY("ExposureCompensation", GetExposureCompensation, SetExposureCompensation)->AddAttributes(new xiiClampValueAttribute(-32.0f, 32.0f)),
     XII_MEMBER_PROPERTY("ShowStats", m_bShowStats),
+    XII_ACCESSOR_PROPERTY("ShowFPS", GetShowFrameStats, SetShowFrameStats)->AddAttributes(new xiiDefaultValueAttribute(false)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -211,6 +212,7 @@ void xiiCameraComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
   s << m_vRenderTargetRectOffset;
   s << m_vRenderTargetRectSize;
   s << m_bShowStats;
+  s << m_bShowFrameStats;
 }
 
 void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -236,6 +238,8 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_vRenderTargetRectOffset;
   s >> m_vRenderTargetRectSize;
   s >> m_bShowStats;
+  if (inout_stream.GetComponentTypeVersion(GetStaticRTTI()) >= 2)
+    s >> m_bShowFrameStats;
 
   MarkAsModified();
 }
@@ -360,8 +364,18 @@ void xiiCameraComponent::SetOrthoDimension(float fVal)
   MarkAsModified();
 }
 
+void xiiCameraComponent::SetShowFrameStats(bool bShow)
+{
+  if (m_bShowFrameStats == bShow)
+    return;
+  m_bShowFrameStats = bShow;
+  MarkAsModified();
+}
+
 void xiiCameraComponent::SetRenderScale(float fVal)
 {
+  if (!xiiMath::IsFinite(fVal))
+    return;
   const float fClamped = xiiMath::Clamp(fVal, 0.1f, 1.0f);
   if (fClamped == m_fRenderScale)
     return;
@@ -459,6 +473,7 @@ void xiiCameraComponent::ApplySettingsToView(xiiView* pView) const
   pView->m_IncludeTags = m_IncludeTags;
   pView->m_ExcludeTags = m_ExcludeTags;
   pView->SetRenderScale(m_fRenderScale);
+  pView->SetShowFrameStats(m_bShowFrameStats);
 
   const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
   pView->m_ExcludeTags.Set(tagEditor);

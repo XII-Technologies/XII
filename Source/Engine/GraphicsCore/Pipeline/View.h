@@ -5,6 +5,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Threading/DelegateTask.h>
+#include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/TagSet.h>
@@ -117,6 +118,10 @@ public:
   /// Sets the per-view render scale factor (1.0 = native).
   ///        This integrates with dynamic resolution as a baseline multiplier.
   void SetRenderScale(float fRenderScale);
+
+  /// Per-view overlay preference. Mutate with exclusive access to the owning world.
+  void SetShowFrameStats(bool bShow) { m_bShowFrameStats = bShow; }
+  bool GetShowFrameStats() const { return m_bShowFrameStats; }
 
   /// Returns the configured per-view render scale factor (1.0 = native).
   float GetRenderScale() const;
@@ -236,8 +241,10 @@ private:
 
   void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
 
-  void      UpdateCachedMatrices() const;
-  void      UpdateRenderResolutionState() const;
+  void UpdateCachedMatrices() const;
+  void UpdateRenderResolutionState() const;
+  void UpdateFrameStats();
+
   xiiResult SynchronizeRenderPipeline();
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
@@ -269,6 +276,12 @@ private:
   mutable float     m_fLastViewportAspectRatio            = 1.0f;
 
   mutable xiiViewData m_Data;
+
+  bool      m_bShowFrameStats = false;
+  xiiTime   m_LastStatsFrame;
+  xiiTime   m_StatsInterval;
+  xiiUInt32 m_uiStatsFrames     = 0;
+  double    m_fDisplayedFrameMs = 0.0;
 
   /// Camera-dependent resolution policy and feedback belong to this view, not a graph occurrence.
   struct DynamicResolution

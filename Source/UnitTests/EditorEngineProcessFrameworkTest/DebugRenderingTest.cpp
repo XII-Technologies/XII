@@ -9,6 +9,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -130,6 +131,37 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   checkCenter(0, 0, 255);
   world.Update();
   checkCenter(0, 0, 0);
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Frame overlay is view-local and keeps native text resolution at reduced scene scale")
+  {
+    first->SetShowFrameStats(true);
+    XII_TEST_BOOL(!second->GetShowFrameStats());
+    world.Update();
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(510));
+    world.Update();
+    auto countTextPixels = [&]() {
+      xiiImage  image;
+      xiiUInt32 pixels = 0;
+      if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, image)))
+        for (xiiUInt32 y = 0; y < 64; ++y)
+          for (xiiUInt32 x = 0; x < 64; ++x)
+          {
+            const auto* pixel = image.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y);
+            if (pixel[1] > 0)
+              ++pixels;
+          }
+      return pixels;
+    };
+    const auto nativePixels = countTextPixels();
+    XII_TEST_BOOL(nativePixels > 0);
+    first->SetRenderScale(0.5f);
+    world.Update();
+    XII_TEST_INT(countTextPixels(), nativePixels);
+    first->SetShowFrameStats(false);
+    world.Update();
+    XII_TEST_INT(countTextPixels(), 0);
+    first->SetRenderScale(1.0f);
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Reduced-resolution depth preserves debug occlusion on an odd display target")
   {

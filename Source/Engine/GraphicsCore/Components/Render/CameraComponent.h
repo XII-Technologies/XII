@@ -90,6 +90,10 @@ public:
   float GetOrthoDimension() const { return m_fOrthoDimension; } // [ property ]
   void  SetOrthoDimension(float fVal);                          // [ property ]
 
+  /// Per-view frame statistics initialized by this camera.
+  bool GetShowFrameStats() const { return m_bShowFrameStats; }
+  void SetShowFrameStats(bool bShow);
+
   /// Per-camera render scale baseline (1.0 = native resolution).
   float GetRenderScale() const { return m_fRenderScale; } // [ property ]
   void  SetRenderScale(float fVal);                       // [ property ]
@@ -128,6 +132,7 @@ private:
   float                       m_fFarPlane               = 1000.0f;
   float                       m_fPerspectiveFieldOfView = 60.0f;
   float                       m_fOrthoDimension         = 10.0f;
+  bool                        m_bShowFrameStats         = false;
   float                       m_fRenderScale            = 1.0f;
 
   float   m_fAperture             = 1.0f;

@@ -263,5 +263,6 @@ protected:
   void UpdateFrameTime();
 
   xiiTime m_FrameTime;
+  xiiTime m_LastFrameTime;
   ///@}
 };

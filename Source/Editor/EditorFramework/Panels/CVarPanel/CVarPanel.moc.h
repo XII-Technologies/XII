@@ -21,6 +21,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtCVarPanel : public xiiQtApplicationPanel
 public:
   xiiQtCVarPanel(ads::CDockManager* pDockManager);
   ~xiiQtCVarPanel();
+  const xiiCVarWidgetData* FindEngineCVar(xiiStringView sName) const;
 
 protected:
   virtual void ToolsProjectEventHandler(const xiiToolsProjectEvent& e) override;

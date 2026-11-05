@@ -269,10 +269,12 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewFrameMsgToEditor : public xiiE
   XII_ADD_DYNAMIC_REFLECTION(xiiViewFrameMsgToEditor, xiiEditorEngineViewMsg);
 
 public:
-  xiiUInt64                       m_uiFrameID   = 0;
-  xiiUInt64                       m_uiTextureID = 0;
-  xiiUInt16                       m_uiWidth     = 0;
-  xiiUInt16                       m_uiHeight    = 0;
+  xiiUInt64                       m_uiFrameID      = 0;
+  xiiUInt64                       m_uiTextureID    = 0;
+  xiiUInt32                       m_uiRenderWidth  = 0;
+  xiiUInt32                       m_uiRenderHeight = 0;
+  xiiUInt16                       m_uiWidth        = 0;
+  xiiUInt16                       m_uiHeight       = 0;
   xiiGALExternalMemoryDescription m_Memory;
   xiiDataBuffer                   m_Pixels; ///< Packed RGBA8, only used when GPU interoperability is unavailable.
 };
@@ -292,6 +294,8 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewRedrawMsgToEngine : public xii
   XII_ADD_DYNAMIC_REFLECTION(xiiViewRedrawMsgToEngine, xiiEditorEngineViewMsg);
 
 public:
+  bool      m_bShowFrameStats   = false;
+  float     m_fRenderScale      = 1.0f;
   bool      m_bUseSharedTexture = false;
   xiiUInt16 m_uiWindowWidth;
   xiiUInt16 m_uiWindowHeight;

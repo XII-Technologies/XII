@@ -1,13 +1,17 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+#include <EditorFrameworkTest/RenderPipelineSettingsEditorTest.h>
 
+#include <Core/Console/LuaInterpreter.h>
+#include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/DocumentWindow/GameObjectDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/GameObjectViewWidget.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/InputContexts/CameraMoveContext.h>
 #include <EditorFramework/InputContexts/OrbitCameraContext.h>
+#include <EditorFramework/Settings/QuadViewPreferences.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
@@ -24,6 +28,7 @@
 #include <QPointer>
 #include <QThread>
 #include <QWheelEvent>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <Texture/Image/Image.h>
 
 namespace
@@ -134,7 +139,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportNavigation, NavigationGeometry)
   }
 }
 
-XII_CREATE_SIMPLE_TEST(EditorViewportNavigation, NavigationInput)
+static void TestViewportInput(bool bRenderingControlsOnly)
 {
   auto* editor = xiiQtEditorApp::GetSingleton();
   xiiStartup::StartupCoreSystems();
@@ -177,6 +182,56 @@ XII_CREATE_SIMPLE_TEST(EditorViewportNavigation, NavigationInput)
   window->AddViewWidget(view);
   view->SetSurfaceSize(800, 600);
   XII_SCOPE_EXIT(delete view);
+  if (bRenderingControlsOnly)
+  {
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Rendering menu and targeted console share independent persisted preferences")
+    {
+      xiiEngineViewConfig otherConfig;
+      auto*               other = new NavigationView(window, window, &otherConfig);
+      window->AddViewWidget(other);
+      XII_SCOPE_EXIT(delete other);
+      xiiActionContext context;
+      context.m_pWindow   = view;
+      context.m_pDocument = scene;
+      xiiRenderingControlsAction                  action(context, "Rendering", "");
+      xiiDynamicArray<xiiDynamicMenuAction::Item> entries;
+      action.GetEntries(entries);
+      XII_TEST_BOOL(entries[0].m_CheckState == xiiDynamicMenuAction::Item::CheckMark::Unchecked);
+      action.Execute(0);
+      action.Execute(2);
+      XII_TEST_BOOL(config.m_bShowFrameStats && !config.m_bVSync);
+      XII_TEST_BOOL(!otherConfig.m_bShowFrameStats && otherConfig.m_bVSync);
+#ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
+      xiiCommandInterpreterLua   interpreter;
+      xiiCommandInterpreterState state;
+      state.m_sInput.SetFormat("View_RenderScale({}, 0.65)", view->GetViewID());
+      interpreter.Interpret(state);
+      XII_TEST_FLOAT(config.m_fRenderScale, 0.65f, 0.0f);
+      XII_TEST_FLOAT(otherConfig.m_fRenderScale, 1.0f, 0.0f);
+      state.m_sInput.SetFormat("View_ShowFPS({}, false)", view->GetViewID());
+      interpreter.Interpret(state);
+      action.GetEntries(entries);
+      XII_TEST_BOOL(entries[0].m_CheckState == xiiDynamicMenuAction::Item::CheckMark::Unchecked);
+      state.m_sInput.SetFormat("View_RenderScale({}, 0.05)", view->GetViewID());
+      xiiTestLogInterface log;
+      xiiLogSystemScope   scope(&log);
+      log.ExpectMessage("Render scale must be finite", xiiLogMsgType::ErrorMsg);
+      interpreter.Interpret(state);
+      XII_TEST_FLOAT(config.m_fRenderScale, 0.65f, 0.0f);
+#endif
+      auto* preferences                           = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(scene);
+      preferences->m_ViewSingle.m_fRenderScale    = config.m_fRenderScale;
+      preferences->m_ViewSingle.m_bShowFrameStats = true;
+      preferences->m_ViewSingle.m_bVSync          = false;
+      XII_TEST_RESULT(xiiEditorSettings::SaveSettings(preferences));
+      xiiEditorSettings::ClearDocumentSettings(scene);
+      const auto* restored = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(scene);
+      XII_TEST_FLOAT(restored->m_ViewSingle.m_fRenderScale, config.m_fRenderScale, 0.0f);
+      XII_TEST_BOOL(restored->m_ViewSingle.m_bShowFrameStats && !restored->m_ViewSingle.m_bVSync);
+    }
+    TestRenderPipelineSettingsWindow(*editor, path.GetFileDirectory());
+    return;
+  }
   NavigationInputProbe probe;
   probe.SetOwner(window, view);
   view->m_InputContexts.InsertAt(0, &probe);
@@ -438,4 +493,15 @@ XII_CREATE_SIMPLE_TEST(EditorViewportNavigation, NavigationInput)
     view->SetNavigationGizmoEnabled(true);
   }
 #endif
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViewportNavigation, NavigationInput)
+{
+  TestViewportInput(false);
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorRenderingControls);
+XII_CREATE_SIMPLE_TEST(EditorRenderingControls, ViewPreferencesAndQuality)
+{
+  TestViewportInput(true);
 }

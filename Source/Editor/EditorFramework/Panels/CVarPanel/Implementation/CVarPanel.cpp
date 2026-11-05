@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <Core/Console/Console.h>
+#include <Core/Console/LuaInterpreter.h>
 #include <EditorFramework/Panels/CVarPanel/CVarPanel.moc.h>
 #include <Foundation/Configuration/CVar.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
@@ -14,6 +15,14 @@ class xiiCommandInterpreterFwd : public xiiCommandInterpreter
 public:
   virtual void Interpret(xiiCommandInterpreterState& inout_state) override
   {
+#ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
+    if (inout_state.m_sInput.StartsWith("View_"))
+    {
+      xiiCommandInterpreterLua interpreter;
+      interpreter.Interpret(inout_state);
+      return;
+    }
+#endif
     xiiConsoleCmdMsgToEngine msg;
     msg.m_iType    = 0;
     msg.m_sCommand = inout_state.m_sInput;
@@ -23,6 +32,14 @@ public:
 
   virtual void AutoComplete(xiiCommandInterpreterState& inout_state) override
   {
+#ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
+    if (inout_state.m_sInput.StartsWith("View_"))
+    {
+      xiiCommandInterpreterLua interpreter;
+      interpreter.AutoComplete(inout_state);
+      return;
+    }
+#endif
     xiiConsoleCmdMsgToEngine msg;
     msg.m_iType    = 1;
     msg.m_sCommand = inout_state.m_sInput;
@@ -203,4 +220,10 @@ void xiiQtCVarPanel::StringChanged(xiiStringView sCVar, xiiStringView sNewValue)
   msg.m_sCVarName = sCVar;
   msg.m_NewValue  = sNewValue;
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
+}
+
+const xiiCVarWidgetData* xiiQtCVarPanel::FindEngineCVar(xiiStringView sName) const
+{
+  const auto entry = m_EngineCVarState.Find(sName);
+  return entry.IsValid() ? &entry.Value() : nullptr;
 }
