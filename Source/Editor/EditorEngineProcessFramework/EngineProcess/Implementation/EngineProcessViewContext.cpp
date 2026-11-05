@@ -109,6 +109,15 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
     m_fNavigationDevicePixelRatio = xiiMath::IsFinite(pViewRedrawMsg->m_fDevicePixelRatio) ? xiiMath::Max(0.5f, pViewRedrawMsg->m_fDevicePixelRatio) : 1.0f;
     // The first redraw creates the view; apply the message camera to that new view as well.
     SetCamera(pViewRedrawMsg);
+    if (auto* world = GetDocumentContext()->GetWorld())
+    {
+      XII_LOCK(world->GetWriteMarker());
+      if (auto* view = GetView())
+      {
+        view->SetShowFrameStats(pViewRedrawMsg->m_bShowFrameStats);
+        view->SetRenderScale(pViewRedrawMsg->m_fRenderScale);
+      }
+    }
     if (ready)
       Redraw(true);
   }
@@ -218,6 +227,15 @@ void xiiEngineProcessViewContext::PresentFrame()
     m_sScreenshot.Clear();
   }
   xiiViewFrameMsgToEditor frame;
+  if (const auto* world = GetDocumentContext()->GetWorld())
+  {
+    XII_LOCK(world->GetReadMarker());
+    if (const auto* view = GetView())
+    {
+      frame.m_uiRenderWidth  = view->GetRenderResolutionWidth();
+      frame.m_uiRenderHeight = view->GetRenderResolutionHeight();
+    }
+  }
   frame.m_uiFrameID   = ++m_uiFrameID;
   frame.m_uiTextureID = m_uiTextureID;
   frame.m_uiWidth     = static_cast<xiiUInt16>(size.width);

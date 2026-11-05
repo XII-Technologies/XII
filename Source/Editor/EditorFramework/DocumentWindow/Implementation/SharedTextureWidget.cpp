@@ -78,6 +78,7 @@ xiiResult xiiQtSharedTextureWidget::EnsureSwapChain()
   const xiiSizeU32 size(static_cast<xiiUInt32>(qRound(width() * devicePixelRatioF())), static_cast<xiiUInt32>(qRound(height() * devicePixelRatioF())));
   if (m_pSwapChain)
   {
+    m_pSwapChain->SetPresentMode(m_bVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
     if (m_pSwapChain->GetCurrentSize() != size)
       return m_pSwapChain->Resize(size);
     return XII_SUCCESS;
@@ -126,6 +127,8 @@ xiiResult xiiQtSharedTextureWidget::EnsureSwapChain()
   return XII_FAILURE;
 #endif
   m_pSwapChain = s_pDevice->CreateSwapChain(description);
+  if (m_pSwapChain)
+    m_pSwapChain->SetPresentMode(m_bVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
   return m_pSwapChain ? XII_SUCCESS : XII_FAILURE;
 }
 

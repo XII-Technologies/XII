@@ -22,6 +22,7 @@ public:
 
   static void MapToolbarActions(xiiStringView sMapping, xiiUInt32 uiFlags);
 
+  static xiiActionDescriptorHandle s_hRenderingControls;
   static xiiActionDescriptorHandle s_hRenderMode;
   static xiiActionDescriptorHandle s_hPerspective;
   static xiiActionDescriptorHandle s_hNavigationGizmo;
@@ -72,4 +73,14 @@ public:
 
 private:
   ButtonType m_ButtonType;
+};
+
+class XII_EDITORFRAMEWORK_DLL xiiRenderingControlsAction : public xiiDynamicMenuAction
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderingControlsAction, xiiDynamicMenuAction);
+
+public:
+  xiiRenderingControlsAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
+  void GetEntries(xiiDynamicArray<Item>& out_entries) override;
+  void Execute(const xiiVariant& value) override;
 };

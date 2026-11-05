@@ -17,6 +17,7 @@ public:
   explicit xiiQtSharedTextureWidget(QWidget* pParent);
   ~xiiQtSharedTextureWidget();
 
+  void                               SetVSyncEnabled(bool bEnabled) { m_bVSync = bEnabled; }
   bool                               SupportsSharedTextures();
   void                               SetFrame(const xiiViewFrameMsgToEditor& frame);
   xiiDelegate<void(xiiUInt64, bool)> m_OnFrameConsumed;
@@ -39,6 +40,7 @@ private:
   xiiSharedPtr<xiiGALTexture>       m_pImportedTexture;
   xiiSharedPtr<xiiGALTexture>       m_pPresentationTexture;
   xiiUInt64                         m_uiTextureID      = 0;
+  bool                              m_bVSync           = true;
   bool                              m_bSharingFailed   = false;
   bool                              m_bCreatingSurface = false;
 };

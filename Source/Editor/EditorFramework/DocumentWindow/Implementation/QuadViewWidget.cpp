@@ -41,13 +41,19 @@ void xiiQtQuadViewWidget::SaveViewConfig(const xiiEngineViewConfig& cfg, xiiEngi
   pref.m_vCamUp          = cfg.m_Camera.GetDirUp();
   pref.m_PerspectiveMode = cfg.m_Perspective;
   pref.m_RenderMode      = cfg.m_RenderMode;
+  pref.m_fRenderScale    = cfg.m_fRenderScale;
+  pref.m_bShowFrameStats = cfg.m_bShowFrameStats;
+  pref.m_bVSync          = cfg.m_bVSync;
   pref.m_fFov            = cfg.m_Camera.GetFovOrDim();
 }
 
 void xiiQtQuadViewWidget::LoadViewConfig(xiiEngineViewConfig& cfg, xiiEngineViewPreferences& pref)
 {
-  cfg.m_Perspective = (xiiSceneViewPerspective::Enum)pref.m_PerspectiveMode;
-  cfg.m_RenderMode  = (xiiViewRenderMode::Enum)pref.m_RenderMode;
+  cfg.m_Perspective     = (xiiSceneViewPerspective::Enum)pref.m_PerspectiveMode;
+  cfg.m_RenderMode      = (xiiViewRenderMode::Enum)pref.m_RenderMode;
+  cfg.m_fRenderScale    = xiiMath::IsFinite(pref.m_fRenderScale) ? xiiMath::Clamp(pref.m_fRenderScale, 0.1f, 1.0f) : 1.0f;
+  cfg.m_bShowFrameStats = pref.m_bShowFrameStats;
+  cfg.m_bVSync          = pref.m_bVSync;
   cfg.m_Camera.LookAt(xiiVec3(0), xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));
 
   if (cfg.m_Perspective == xiiSceneViewPerspective::Perspective)

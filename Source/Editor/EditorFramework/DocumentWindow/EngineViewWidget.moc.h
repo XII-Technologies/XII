@@ -50,6 +50,7 @@ public:
   xiiHybridArray<xiiEditorInputContext*, 8> m_InputContexts;
 
   /// Returns the ID of this view
+  xiiSizeU32                 GetRenderResolution() const { return m_RenderResolution; }
   xiiUInt32                  GetViewID() const { return m_uiViewID; }
   xiiQtEngineDocumentWindow* GetDocumentWindow() const { return m_pDocumentWindow; }
 
@@ -162,6 +163,7 @@ protected:
   xiiUInt32                  m_uiViewID;
   xiiQtEngineDocumentWindow* m_pDocumentWindow = nullptr;
 
+  xiiSizeU32       m_RenderResolution = xiiSizeU32(0, 0);
   static xiiUInt32 s_uiNextViewID;
 
   // Owned by this view; removed before the view is destroyed.
