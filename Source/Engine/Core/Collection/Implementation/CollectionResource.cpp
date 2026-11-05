@@ -88,15 +88,12 @@ bool xiiCollectionResource::IsLoadingFinished(float* out_pProgress) const
     xiiUInt64                 thisWeight = xiiMath::Max(entry.m_uiFileSize, 1ull); // if file sizes are not specified, we weight by 1
     xiiResourceState          state      = xiiResourceManager::GetLoadingState(hResource);
 
+    totalWeight += thisWeight;
     if (state == xiiResourceState::Loaded || state == xiiResourceState::LoadedResourceMissing)
     {
       loadedWeight += thisWeight;
     }
-    else if (state != xiiResourceState::Invalid)
-    {
-      totalWeight += thisWeight;
-    }
-    else
+    else if (state == xiiResourceState::Invalid)
     {
       if (uiPoked < 3)
       {

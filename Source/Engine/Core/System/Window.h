@@ -264,6 +264,16 @@ public:
   /// Destroys the window.
   xiiResult Destroy();
 
+  bool HasFocus() const { return m_bHasFocus; }
+
+  /// Updates the native title without recreating the window or its output target.
+  xiiResult SetTitle(xiiStringView sTitle);
+
+  /// Applies display mode/monitor/size to the existing native window on its owning thread.
+  /// A failure may leave a partial native change; callers offering a preview must restore the previous description.
+  /// Output targets follow the resulting resize events; the native handle remains valid.
+  xiiResult ApplyWindowSettings(const xiiWindowCreationDescription& description);
+
   /// Tries to resize the window.
   /// Override OnResize to get the actual new window size.
   xiiResult Resize(const xiiSizeU32& newWindowSize);

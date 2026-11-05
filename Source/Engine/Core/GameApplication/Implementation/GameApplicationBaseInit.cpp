@@ -36,22 +36,29 @@ xiiString xiiGameApplicationBase::GetProjectDataDirectoryPath() const
 
 void xiiGameApplicationBase::ExecuteInitFunctions()
 {
-  Init_PlatformProfile_SetPreferred();
-  Init_ConfigureTelemetry();
-  Init_FileSystem_SetSpecialDirs();
-  Init_LoadRequiredPlugins();
-  Init_ConfigureAssetManagement();
-  Init_FileSystem_ConfigureDataDirs();
-  if (WasQuitRequested())
-    return;
-  Init_LoadWorldModuleConfig();
-  Init_LoadProjectPlugins();
-  Init_PlatformProfile_LoadForRuntime();
-  Init_ConfigureInput();
-  Init_ConfigureTags();
-  Init_ConfigureCVars();
-  Init_SetupGraphicsDevice();
-  Init_SetupDefaultResources();
+  using InitFunction             = void (xiiGameApplicationBase::*)();
+  const InitFunction functions[] = {
+    &xiiGameApplicationBase::Init_PlatformProfile_SetPreferred,
+    &xiiGameApplicationBase::Init_ConfigureTelemetry,
+    &xiiGameApplicationBase::Init_FileSystem_SetSpecialDirs,
+    &xiiGameApplicationBase::Init_LoadRequiredPlugins,
+    &xiiGameApplicationBase::Init_ConfigureAssetManagement,
+    &xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs,
+    &xiiGameApplicationBase::Init_LoadWorldModuleConfig,
+    &xiiGameApplicationBase::Init_LoadProjectPlugins,
+    &xiiGameApplicationBase::Init_PlatformProfile_LoadForRuntime,
+    &xiiGameApplicationBase::Init_ConfigureInput,
+    &xiiGameApplicationBase::Init_ConfigureTags,
+    &xiiGameApplicationBase::Init_ConfigureCVars,
+    &xiiGameApplicationBase::Init_SetupGraphicsDevice,
+    &xiiGameApplicationBase::Init_SetupDefaultResources,
+  };
+  for (const auto function : functions)
+  {
+    if (WasQuitRequested())
+      return;
+    (this->*function)();
+  }
 }
 
 void xiiGameApplicationBase::Init_PlatformProfile_SetPreferred()

@@ -170,7 +170,7 @@ private:
 
   void ReadGameObjectDesc(GameObjectToCreate& godesc);
   void ReadComponentTypeInfo(xiiUInt32 uiComponentTypeIdx);
-  void ReadComponentDataToMemStream(bool warningOnUnknownSkip = true);
+  xiiResult ReadComponentDataToMemStream(bool warningOnUnknownSkip = true);
 
   xiiUniquePtr<InstantiationContextBase> Instantiate(xiiWorld& world, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
 

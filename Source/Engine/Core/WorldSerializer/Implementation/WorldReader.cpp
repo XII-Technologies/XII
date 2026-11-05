@@ -30,6 +30,7 @@ xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool
   // destroy old context first
   m_pStringDedupReadContext = nullptr;
   m_pStringDedupReadContext = XII_DEFAULT_NEW(xiiStringDeduplicationReadContext, ref_stream);
+  XII_SCOPE_EXIT(m_pStringDedupReadContext->SetActive(false));
 
   if (m_uiVersion == 8)
   {
@@ -73,9 +74,7 @@ xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool
   }
 
   // read all component data
-  ReadComponentDataToMemStream(bWarningOnUnknownSkip);
-  m_pStringDedupReadContext->SetActive(false);
-
+  XII_SUCCEED_OR_RETURN(ReadComponentDataToMemStream(bWarningOnUnknownSkip));
   return XII_SUCCESS;
 }
 
@@ -254,14 +253,14 @@ void xiiWorldReader::ReadComponentTypeInfo(xiiUInt32 uiComponentTypeIdx)
   m_ComponentTypeVersions[pRtti]               = uiRttiVersion;
 }
 
-void xiiWorldReader::ReadComponentDataToMemStream(bool warningOnUnknownSkip)
+xiiResult xiiWorldReader::ReadComponentDataToMemStream(bool warningOnUnknownSkip)
 {
-  auto WriteToMemStream = [&](xiiMemoryStreamWriter& ref_writer, bool bReadNumComponents) {
+  auto WriteToMemStream = [&](xiiMemoryStreamWriter& ref_writer, bool bReadNumComponents) -> xiiResult {
     xiiUInt8 Temp[4096];
     for (auto& compTypeInfo : m_ComponentTypes)
     {
       xiiUInt32 uiAllComponentsSize = 0;
-      *m_pReadStream >> uiAllComponentsSize;
+      XII_SUCCEED_OR_RETURN(m_pReadStream->ReadDWordValue(&uiAllComponentsSize));
 
       if (compTypeInfo.m_pRtti == nullptr)
       {
@@ -270,13 +269,16 @@ void xiiWorldReader::ReadComponentDataToMemStream(bool warningOnUnknownSkip)
           xiiLog::Warning("Skipping components of unknown type");
         }
 
-        m_pReadStream->SkipBytes(uiAllComponentsSize);
+        if (m_pReadStream->SkipBytes(uiAllComponentsSize) != uiAllComponentsSize)
+          return XII_FAILURE;
       }
       else
       {
         if (bReadNumComponents)
         {
-          *m_pReadStream >> compTypeInfo.m_uiNumComponents;
+          if (uiAllComponentsSize < sizeof(xiiUInt32))
+            return XII_FAILURE;
+          XII_SUCCEED_OR_RETURN(m_pReadStream->ReadDWordValue(&compTypeInfo.m_uiNumComponents));
           uiAllComponentsSize -= sizeof(xiiUInt32);
 
           m_uiTotalNumComponents += compTypeInfo.m_uiNumComponents;
@@ -288,23 +290,27 @@ void xiiWorldReader::ReadComponentDataToMemStream(bool warningOnUnknownSkip)
         {
           const xiiUInt64 uiRead = m_pReadStream->ReadBytes(Temp, xiiMath::Min<xiiUInt32>(uiAllComponentsSize, XII_ARRAY_SIZE(Temp)));
 
-          ref_writer.WriteBytes(Temp, uiRead).IgnoreResult();
+          if (uiRead == 0)
+            return XII_FAILURE;
+          XII_SUCCEED_OR_RETURN(ref_writer.WriteBytes(Temp, uiRead));
 
           uiAllComponentsSize -= (xiiUInt32)uiRead;
         }
       }
     }
+    return XII_SUCCESS;
   };
 
   {
     xiiMemoryStreamWriter writer(&m_ComponentCreationStream);
-    WriteToMemStream(writer, true);
+    XII_SUCCEED_OR_RETURN(WriteToMemStream(writer, true));
   }
 
   {
     xiiMemoryStreamWriter writer(&m_ComponentDataStream);
-    WriteToMemStream(writer, false);
+    XII_SUCCEED_OR_RETURN(WriteToMemStream(writer, false));
   }
+  return XII_SUCCESS;
 }
 
 xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::Instantiate(xiiWorld& world, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options)
