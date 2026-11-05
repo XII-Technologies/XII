@@ -2,11 +2,16 @@
 
 #pragma once
 
+#include <GameEngine/GameEngineDLL.h>
+
 #include <GameEngine/GameState/GameState.h>
 
 #include <Core/Console/ConsoleFunction.h>
 #include <Core/GameApplication/GameApplicationBase.h>
+#include <Foundation/Communication/IpcChannel.h>
+#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/Configuration/CVar.h>
+#include <Foundation/IO/OSFile.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GameEngine/Configuration/GameApplicationSettings.h>
@@ -43,7 +48,7 @@ public:
 
   const xiiGameApplicationSettings& GetSettings() const { return m_Settings; }
   /// Commits validated configuration and notifies output targets once.
-  xiiResult ApplySettings(const xiiGameApplicationSettings& settings) { return m_Settings.Apply(settings); }
+  xiiResult ApplySettings(const xiiGameApplicationSettings& settings);
 
 public:
   using SUPER = xiiGameApplicationBase;
@@ -54,6 +59,11 @@ public:
 
   /// Returns the xiiGameApplication singleton
   static xiiGameApplication* GetGameApplicationInstance() { return s_pGameApplicationInstance; }
+
+  /// Transfers an optional already-responsive startup window to the game state. Called once by CreateMainWindow().
+  virtual xiiUniquePtr<xiiWindow> TakeStartupWindow() { return {}; }
+
+  xiiApplication::Execution Run() override;
 
   /// Returns the active renderer of the current app. Either the default or overridden via -render command line flag.
   static xiiStringView GetActiveRenderer();
@@ -78,6 +88,33 @@ public:
   xiiStringView GetAppProjectPath() const { return m_sAppProjectPath; }
 
 protected:
+  void      AfterCoreSystemsStartup() override;
+  void      BeforeHighLevelSystemsShutdown() override;
+  void      BeforeCoreSystemsShutdown() override;
+  void      Run_InputUpdate() override;
+  xiiUInt32 GetFrameLimit() const override;
+  void      ApplyViewSettings();
+  xiiUInt64 m_uiConfiguredWorldRevision = 0;
+  void      Init_FileSystem_ConfigureDataDirs() override;
+  void      Init_ConfigureTelemetry() override;
+
+  /// Custom staged startup calls this after core startup, before its first initialization stage.
+  void         InitializeManagedSession();
+  void         PumpSession();
+  virtual void ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0f);
+
+  xiiString                                  m_sInstance;
+  xiiString                                  m_sSession;
+  xiiString                                  m_sStage = "initializing";
+  xiiString                                  m_sDetail;
+  xiiString                                  m_sManagedWritableDirectory;
+  xiiUniquePtr<xiiIpcChannel>                m_pSessionChannel;
+  xiiUniquePtr<xiiIpcProcessMessageProtocol> m_pSessionProtocol;
+  xiiTime                                    m_LastStatus;
+  xiiTime                                    m_LastConnectAttempt;
+  bool                                       m_bSessionConnected = false;
+  xiiOSFile                                  m_ManagedPreferencesLock;
+
   virtual void Init_ConfigureInput() override;
   virtual void Init_ConfigureCVars() override;
   virtual void Init_ConfigureAssetManagement() override;
@@ -110,6 +147,7 @@ protected:
   xiiUniquePtr<xiiQuakeConsole> m_pConsole;
 
   xiiEventSubscriptionID               m_CVarChangeSubscriptionID;
+  xiiEventSubscriptionID               m_FrameLimitSubscriptionID = 0;
   xiiGameApplicationSettings           m_Settings;
   xiiEvent<xiiSettings*>::Unsubscriber m_SettingsSubscription;
   bool                                 m_bSettingsInitialized = false;

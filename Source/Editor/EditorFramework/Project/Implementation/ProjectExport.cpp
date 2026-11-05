@@ -421,7 +421,7 @@ xiiResult xiiProjectExport::CreateLaunchConfig(const xiiDynamicArray<xiiString>&
   for (const auto& sf : sceneFiles)
   {
     xiiStringBuilder cmd;
-    cmd.SetFormat("start Bin/xiiPlayer.exe -project \"Data/project\" -scene \"{}\"", sf);
+    cmd.SetFormat("@echo off\r\nstart \"\" \"%%~dp0Bin\\xiiPlayer.exe\" -project \"%%~dp0Data\\project\" -scene \"{}\"\r\n", sf);
 
     xiiStringBuilder bat;
     bat.SetFormat("{}/Launch {}.bat", szTargetDirectory, xiiPathUtils::GetFileName(sf));

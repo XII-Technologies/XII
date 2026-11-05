@@ -15,7 +15,7 @@ xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets Svg)
 if(XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME} PRIVATE Ole32.lib Uuid.lib Shell32.lib RuntimeObject.lib)
 endif()
-add_dependencies(${PROJECT_NAME} EditorProcessor)
+add_dependencies(${PROJECT_NAME} EditorProcessor Player)
 xii_ci_add_test(${PROJECT_NAME})
 
 # Compile the canonical authored assets before GPU suites consume them.

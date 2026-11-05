@@ -8,6 +8,7 @@
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/System/WindowManager.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Size.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -62,6 +63,7 @@ public:
 
   /// Returns the xiiView that is currently the one used for rendering the main output.
   xiiView* GetMainView();
+  xiiWindow* GetMainWindow();
 
   /// Whether a scene is currently being loaded.
   bool IsLoadingSceneInBackground(float* out_pProgress = nullptr) const;
@@ -91,6 +93,18 @@ public:
 
   /// The xiiGameState doesn't implement any input logic, but it forwards to UpdateBackgroundSceneLoading().
   virtual void ProcessInput() override;
+
+  /// Starts a transition while keeping the current world usable. A newer request replaces the pending one.
+  /// An empty request fails without replacing the running world. Completion/activation occurs in ProcessInput(),
+  /// before world update tasks. Loading screens and persistent services remain owned by the game state.
+  xiiResult TransitionToScene(xiiStringView sSceneFile, xiiStringView sPreloadCollection = {});
+
+  bool HasMeasuredSceneLoadingProgress() const { return m_pBackgroundSceneLoad && m_pBackgroundSceneLoad->HasMeasuredProgress(); }
+
+  xiiUInt64                         GetWorldRevision() const { return m_uiWorldRevision; }
+  xiiStringView                     GetActiveScene() const { return m_sActiveScene; }
+  xiiStringView                     GetSceneLoadingError() const { return m_sSceneLoadingError; }
+  xiiSceneLoadUtility::LoadingPhase GetSceneLoadingPhase() const;
 
   /// Immediately switches to a loading screen and starts loading a level.
   ///
@@ -197,6 +211,16 @@ protected:
   ///   `OnBackgroundSceneLoadingFailed()`
   void UpdateBackgroundSceneLoading();
 
+  /// Last validation before committing an incoming world. Failure keeps the outgoing world active.
+  /// Runs on the game-state thread with write access to the incoming world and no world update tasks in flight. Do not start another
+  /// transition from a loading callback; enqueue that request for the following frame instead.
+  virtual xiiResult OnBeforeSceneActivation(xiiWorld& world, xiiStringBuilder& out_sError)
+  {
+    XII_IGNORE_UNUSED(world);
+    XII_IGNORE_UNUSED(out_sError);
+    return XII_SUCCESS;
+  }
+
   /// Called by `UpdateBackgroundSceneLoading()` when a scene is finished loading.
   ///
   /// May switch to the scene immediately or wait, for example for a user to confirm.
@@ -214,16 +238,24 @@ protected:
 protected:
   static xiiGameState* s_pActiveGameState;
 
-  xiiWorld*     m_pMainWorld = nullptr;
-  xiiCamera     m_MainCamera;
-  xiiViewHandle m_hMainView;
+  xiiWorld*                 m_pMainWorld = nullptr;
+  xiiCamera                 m_MainCamera;
+  xiiViewHandle             m_hMainView;
+  xiiRegisteredWindowHandle m_hMainWindow;
 
   bool m_bStateWantsToQuit = false;
+  bool m_bInSceneLoadingCallback = false;
+  bool m_bDeactivating           = false;
 
   bool                              m_bTransitionWhenReady = false;
   xiiUniquePtr<xiiSceneLoadUtility> m_pBackgroundSceneLoad;
   xiiUniquePtr<xiiWorld>            m_pLoadingScreenWorld;
   xiiUniquePtr<xiiWorld>            m_pLoadedWorld;
+
+  xiiDynamicArray<xiiUniquePtr<xiiSceneLoadUtility>> m_CancelledSceneLoads;
+  xiiString                                          m_sSceneLoadingError;
+  xiiString                                          m_sActiveScene;
+  xiiUInt64                                          m_uiWorldRevision = 0;
 
   xiiString    m_sTargetSceneSpawnPoint;
   xiiTransform m_TargetSceneSpawnOffset = xiiTransform::MakeIdentity();

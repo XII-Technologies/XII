@@ -10,6 +10,7 @@
 - [Viewport navigation gizmo](ViewportNavigation.md)
 - [Node layout and alignment](NodeLayout.md)
 - [Inspector rendering](InspectorRendering.md)
+- [Player, launch configurations, and managed play sessions](Player.md)
 
 ## Generating the API docs with Doxygen
 

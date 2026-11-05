@@ -25,6 +25,18 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
   return XII_FAILURE;
 }
 
+xiiResult xiiWindow::SetTitle(xiiStringView sTitle)
+{
+  XII_IGNORE_UNUSED(sTitle);
+  return XII_FAILURE;
+}
+
+xiiResult xiiWindow::ApplyWindowSettings(const xiiWindowCreationDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+  return XII_FAILURE;
+}
+
 void xiiWindow::ProcessWindowMessages()
 {
   XII_ASSERT_NOT_IMPLEMENTED;

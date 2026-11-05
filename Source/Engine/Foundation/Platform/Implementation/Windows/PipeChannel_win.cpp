@@ -225,9 +225,10 @@ bool xiiPipeChannel_win::ProcessIncomingMessages(DWORD uiBytesRead)
           m_InputState.IsPending = true;
           return true;
         }
-        if (m_Mode == Mode::Server)
+        if (m_Mode == Mode::Server && error != ERROR_BROKEN_PIPE && error != ERROR_PIPE_NOT_CONNECTED)
         {
-          // only log when in server mode, otherwise this can result in an endless recursion
+          // Peer shutdown is reported through Disconnected; only unexpected IO errors need a log.
+          // Only log in server mode, otherwise this can result in an endless recursion.
           xiiLog::Error("Read from pipe failed: {0}", xiiArgErrorCode(error));
         }
         return false;

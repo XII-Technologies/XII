@@ -4,6 +4,7 @@
 
 #include <EditorPluginScene/EditorPluginSceneDLL.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
+#include <GameEngine/Configuration/PlayerConfig.h>
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 
@@ -106,7 +107,7 @@ public:
 
   virtual void Execute(const xiiVariant& value) override;
 
-  void        LaunchPlayer(const char* szPlayerApp);
+  void        LaunchPlayer(const xiiPlayerLaunchConfig& config, bool bUseCurrentScene);
   QStringList GetPlayerCommandLine(xiiStringBuilder& out_sSingleLine) const;
 
 private:

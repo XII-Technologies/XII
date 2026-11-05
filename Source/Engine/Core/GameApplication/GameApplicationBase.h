@@ -250,6 +250,8 @@ public:
   xiiTime GetFrameTime() const { return m_FrameTime; }
 
 protected:
+  /// Application-wide pacing. Overrides may impose a lower background cap without changing saved CVars.
+  virtual xiiUInt32 GetFrameLimit() const;
   virtual void Run_InputUpdate();
   virtual bool Run_ProcessApplicationInput();
   virtual void Run_WorldUpdateAndRender() = 0;

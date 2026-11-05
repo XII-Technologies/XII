@@ -12,6 +12,7 @@
 #include <EditorFramework/Dialogs/LaunchFileserveDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
+#include <EditorFramework/Project/PlayerSession.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Profiling/ProfilingUtils.h>
@@ -21,6 +22,7 @@
 #include <ads/AutoHideDockContainer.h>
 
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectGeneral;
+xiiActionDescriptorHandle xiiProjectActions::s_hPlayerSessions;
 xiiActionDescriptorHandle xiiProjectActions::s_hFindAssets;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectAssets;
 xiiActionDescriptorHandle xiiProjectActions::s_hCatProjectExternal;
@@ -74,6 +76,7 @@ xiiActionDescriptorHandle xiiProjectActions::s_hRegenerateCppSolution;
 
 void xiiProjectActions::RegisterActions()
 {
+  s_hPlayerSessions     = XII_REGISTER_ACTION_1("Project.PlayerSessions", xiiActionScope::Global, "Project", "Ctrl+Shift+R", xiiProjectAction, xiiProjectAction::ButtonType::PlayerSessions);
   s_hConfigurationMenu  = XII_REGISTER_MENU("G.Edit.Configuration");
   s_hProjectSettings    = XII_REGISTER_ACTION_1("Project.Settings", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::ProjectSettings);
   s_hFindAssets         = XII_REGISTER_ACTION_1("Editor.FindAssets", xiiActionScope::Global, "Editor", "Ctrl+Space", xiiProjectAction, xiiProjectAction::ButtonType::FindAssets);
@@ -143,6 +146,7 @@ void xiiProjectActions::RegisterActions()
 
 void xiiProjectActions::UnregisterActions()
 {
+  xiiActionManager::UnregisterAction(s_hPlayerSessions);
   xiiActionManager::UnregisterAction(s_hConfigurationMenu);
   xiiActionManager::UnregisterAction(s_hProjectSettings);
   xiiActionManager::UnregisterAction(s_hFindAssets);
@@ -203,6 +207,7 @@ void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xii
   pMap->MapAction(s_hCatProjectExternal, "G.Project", 5.0f);
 
   pMap->MapAction(s_hCatToolsExternal, "G.Tools", 1.0f);
+  pMap->MapAction(s_hPlayerSessions, "G.Tools.External", 0.0f);
   pMap->MapAction(s_hCatToolsEditor, "G.Tools", 2.0f);
   pMap->MapAction(s_hCatToolsDocument, "G.Tools", 3.0f);
 
@@ -560,6 +565,13 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 {
   switch (m_ButtonType)
   {
+    case xiiProjectAction::ButtonType::PlayerSessions:
+    {
+      auto* sessions = xiiQtEditorApp::GetSingleton()->GetPlayerSessions();
+      sessions->show();
+      sessions->raise();
+      break;
+    }
     case xiiProjectAction::ButtonType::ProjectSettings:
       xiiQtConfigurationDlg::Show(xiiQtConfigurationDlg::Section::ProjectSettings, m_Context.m_pDocument);
       break;

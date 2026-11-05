@@ -324,3 +324,5 @@ Editor.FindAssets;Find Assets
 
 G.Edit.Configuration;Configuration
 Project.Settings;Project Settings;Configures the current project
+
+Project.PlayerSessions;Player Sessions...;Shows owned Player instances, readiness, transitions, logs and stop controls

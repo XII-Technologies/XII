@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFramework/EditorFrameworkPCH.h>
+#include <EditorFramework/Project/PlayerSession.h>
 
 #include <EditorFramework/Actions/AssetActions.h>
 #include <EditorFramework/Actions/CommonAssetActions.h>
@@ -538,6 +539,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
 void xiiQtEditorApp::ShutdownEditor()
 {
+  m_pPlayerSessions.Clear();
   m_bIsRunning = false;
   CloseSplashScreen();
 

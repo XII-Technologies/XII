@@ -344,6 +344,12 @@ xiiResult xiiTelemetry::OpenConnection(ConnectionMode Mode, xiiStringView sConne
   {
     case xiiTelemetry::Server:
       InitializeAsServer();
+      if (g_pHost == nullptr)
+      {
+        xiiLog::Error("Cannot bind the telemetry server to UDP port {}. Another application may be using it.", s_uiPort);
+        CloseConnection();
+        return XII_FAILURE;
+      }
       break;
     case xiiTelemetry::Client:
       if (InitializeAsClient(sConnectTo) == XII_FAILURE)

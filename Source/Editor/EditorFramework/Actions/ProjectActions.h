@@ -59,6 +59,7 @@ public:
   static xiiActionDescriptorHandle s_hReloadEngine;
   static xiiActionDescriptorHandle s_hLaunchFileserve;
   static xiiActionDescriptorHandle s_hLaunchInspector;
+  static xiiActionDescriptorHandle s_hPlayerSessions;
   static xiiActionDescriptorHandle s_hLaunchTracy;
   static xiiActionDescriptorHandle s_hSaveProfiling;
   static xiiActionDescriptorHandle s_hOpenVsCode;
@@ -140,6 +141,7 @@ public:
     PluginSelection,
     ClearAssetCaches,
     FindAssets,
+    PlayerSessions,
   };
 
   xiiProjectAction(const xiiActionContext& context, const char* szName, ButtonType button);

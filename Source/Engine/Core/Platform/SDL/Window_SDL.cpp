@@ -235,6 +235,70 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
   return XII_SUCCESS;
 }
 
+xiiResult xiiWindow::SetTitle(xiiStringView sTitle)
+{
+  xiiString title(sTitle);
+  if (!m_bInitialized || !SDL_SetWindowTitle(m_hWindowHandle, title))
+    return XII_FAILURE;
+  m_CreationDescription.m_Title = title;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiWindow::ApplyWindowSettings(const xiiWindowCreationDescription& description)
+{
+  if (!m_bInitialized || !description.m_Resolution.HasNonZeroArea() || description.m_Resolution.width > 16384 || description.m_Resolution.height > 16384)
+    return XII_FAILURE;
+  int            displayCount = 0;
+  SDL_DisplayID* displays     = SDL_GetDisplays(&displayCount);
+  const int      monitor      = description.m_iMonitor < 0 ? 0 : description.m_iMonitor;
+  if (!displays || monitor >= displayCount)
+  {
+    SDL_free(displays);
+    return XII_FAILURE;
+  }
+  const SDL_DisplayID display = description.m_iMonitor < 0 ? SDL_GetPrimaryDisplay() : displays[monitor];
+  SDL_free(displays);
+  const bool fullscreen = xiiWindowMode::IsFullscreen(description.m_WindowMode);
+  if (!SDL_SetWindowFullscreen(m_hWindowHandle, false))
+    return XII_FAILURE;
+  SDL_Rect bounds;
+  if (!SDL_GetDisplayBounds(display, &bounds) ||
+      !SDL_SetWindowPosition(m_hWindowHandle, bounds.x, bounds.y) ||
+      !SDL_SetWindowResizable(m_hWindowHandle, description.m_WindowMode == xiiWindowMode::WindowResizable))
+    return XII_FAILURE;
+  if (description.m_WindowMode == xiiWindowMode::FullscreenFixedResolution)
+  {
+    SDL_DisplayMode mode;
+    if (!SDL_GetClosestFullscreenDisplayMode(display, description.m_Resolution.width, description.m_Resolution.height, 0.0f, true, &mode) ||
+        !SDL_SetWindowFullscreenMode(m_hWindowHandle, &mode))
+      return XII_FAILURE;
+  }
+  else if (!SDL_SetWindowFullscreenMode(m_hWindowHandle, nullptr))
+    return XII_FAILURE;
+  if (fullscreen)
+  {
+    if (!SDL_SetWindowFullscreen(m_hWindowHandle, true))
+      return XII_FAILURE;
+  }
+  else
+  {
+    if (!SDL_SetWindowSize(m_hWindowHandle, description.m_Resolution.width, description.m_Resolution.height))
+      return XII_FAILURE;
+    const bool explicitPosition = description.m_Position != xiiVec2I32(0x80000000, 0x80000000);
+    const int  x                = explicitPosition && !description.m_bCenterWindowOnDisplay ? description.m_Position.x : bounds.x + (bounds.w - description.m_Resolution.width) / 2;
+    const int  y                = explicitPosition && !description.m_bCenterWindowOnDisplay ? description.m_Position.y : bounds.y + (bounds.h - description.m_Resolution.height) / 2;
+    if (!SDL_SetWindowPosition(m_hWindowHandle, x, y))
+      return XII_FAILURE;
+  }
+  m_CreationDescription.m_WindowMode             = description.m_WindowMode;
+  m_CreationDescription.m_iMonitor               = description.m_iMonitor;
+  m_CreationDescription.m_bClipMouseCursor       = description.m_bClipMouseCursor;
+  m_CreationDescription.m_bShowMouseCursor       = description.m_bShowMouseCursor;
+  m_CreationDescription.m_bCenterWindowOnDisplay = description.m_bCenterWindowOnDisplay;
+  m_CreationDescription.m_Position               = description.m_Position;
+  return XII_SUCCESS;
+}
+
 void xiiWindow::ProcessWindowMessages()
 {
   if (!m_bInitialized)
@@ -272,9 +336,13 @@ void xiiWindow::ProcessWindowMessages()
         pWindowTarget->OnWindowMove(event.window.data1, event.window.data2);
       }
       break;
+      case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
       case SDL_EVENT_WINDOW_RESIZED:
       {
-        xiiSizeU32 newSize = {static_cast<xiiUInt32>(event.window.data1), static_cast<xiiUInt32>(event.window.data2)};
+        int width = 0, height = 0;
+        if (!SDL_GetWindowSizeInPixels(pWindowTarget->m_hWindowHandle, &width, &height) || width <= 0 || height <= 0)
+          break;
+        xiiSizeU32 newSize = {static_cast<xiiUInt32>(width), static_cast<xiiUInt32>(height)};
         if (newSize != pWindowTarget->m_CreationDescription.m_Resolution)
         {
           pWindowTarget->m_CreationDescription.m_Resolution = newSize;
@@ -289,7 +357,7 @@ void xiiWindow::ProcessWindowMessages()
         xiiInt32 iWidth = 0, iHeight = 0;
         if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
+          SDL_GetWindowSizeInPixels(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
 
         {
@@ -326,7 +394,7 @@ void xiiWindow::ProcessWindowMessages()
         xiiInt32 iWidth = 0, iHeight = 0;
         if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
+          SDL_GetWindowSizeInPixels(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
@@ -351,7 +419,7 @@ void xiiWindow::ProcessWindowMessages()
         xiiInt32 iWidth = 0, iHeight = 0;
         if (pWindowTarget->m_hWindowHandle)
         {
-          SDL_GetWindowSize(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
+          SDL_GetWindowSizeInPixels(pWindowTarget->m_hWindowHandle, &iWidth, &iHeight);
         }
         {
           xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};

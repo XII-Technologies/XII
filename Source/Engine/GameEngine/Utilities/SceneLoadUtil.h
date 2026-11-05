@@ -7,6 +7,7 @@
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Utilities/Progress.h>
 
@@ -28,6 +29,7 @@ public:
     FinishedSuccessfully,
     FinishedAndRetrieved, ///< Loading succeeded and someone already called RetrieveLoadedScene()
     Failed,
+    Cancelled,
   };
 
   /// Returns whether loading is still ongoing or finished.
@@ -35,6 +37,22 @@ public:
 
   /// Returns a loading progress value in 0 to 1 range.
   float GetLoadingProgress() const { return m_fLoadingProgress; }
+
+  enum class LoadingPhase
+  {
+    Preloading,
+    Reading,       ///< File IO and object graph deserialization; no measurable completion fraction.
+    Instantiating, ///< Time-sliced world mutation on the caller's thread.
+    Ready,
+  };
+
+  LoadingPhase GetLoadingPhase() const { return m_LoadingPhase; }
+  bool         HasMeasuredProgress() const { return m_LoadingPhase == LoadingPhase::Instantiating || m_LoadingPhase == LoadingPhase::Ready || (m_LoadingPhase == LoadingPhase::Preloading && m_hPreloadCollection.IsValid()); }
+
+  /// Cancels without waiting for disk IO. The task owns its input and result and never calls back into this utility.
+  /// Call on the same thread as TickSceneLoading(), before unloading plugins or shutting down the task system.
+  void Cancel();
+  bool IsReadTaskFinished() const;
 
   /// In case loading failed, this returns what went wrong.
   xiiStringView GetLoadingFailureReason() const { return m_sFailureReason; }
@@ -57,6 +75,7 @@ public:
 
   /// Returns the path to the scene file as it was originally requested.
   xiiStringView GetRequestedScene() const { return m_sRequestedFile; }
+  xiiStringView GetRequestedPreloadCollection() const { return m_sRequestedCollection; }
 
   /// Returns the path to the scene file after it was redirected.
   xiiStringView GetRedirectedScene() const { return m_sRedirectedFile; }
@@ -65,14 +84,15 @@ private:
   void LoadingFailed(const xiiFormatString& reason);
 
   LoadingState m_LoadingState     = LoadingState::NotStarted;
+  LoadingPhase m_LoadingPhase     = LoadingPhase::Preloading;
   float        m_fLoadingProgress = 0.0f;
   xiiString    m_sFailureReason;
 
   xiiString                                              m_sRequestedFile;
+  xiiString                                              m_sRequestedCollection;
   xiiString                                              m_sRedirectedFile;
   xiiCollectionResourceHandle                            m_hPreloadCollection;
-  xiiFileReader                                          m_FileReader;
-  xiiWorldReader                                         m_WorldReader;
+  xiiSharedPtr<class xiiSceneReadTask>                   m_pReadTask;
   xiiUniquePtr<xiiWorld>                                 m_pWorld;
   xiiUniquePtr<xiiWorldReader::InstantiationContextBase> m_pInstantiationContext;
   xiiProgress                                            m_InstantiationProgress;

@@ -6,6 +6,7 @@
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Project/PlayerSession.h>
 #include <EditorPluginScene/Actions/SceneActions.h>
 #include <EditorPluginScene/Dialogs/ExportAndRunDlg.moc.h>
 #include <EditorPluginScene/Dialogs/ExtractGeometryDlg.moc.h>
@@ -14,7 +15,6 @@
 #include <Foundation/Utilities/Progress.h>
 #include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/Action/ActionMapManager.h>
-#include <QProcess>
 #include <SharedPluginScene/Common/Messages.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
@@ -270,9 +270,13 @@ void xiiSceneAction::Execute(const xiiVariant& value)
     case ActionType::ExportAndRunScene:
     {
       xiiStringBuilder sCmd;
-      GetPlayerCommandLine(sCmd);
+      const auto       previewArguments = GetPlayerCommandLine(sCmd);
 
       xiiQtExportAndRunDlg dlg(nullptr);
+      dlg.m_sCurrentScene = previewArguments[3].toUtf8().constData();
+      xiiStringBuilder sourceScene(m_pSceneDocument->GetDocumentPath());
+      sourceScene.MakeRelativeTo(xiiToolsProject::GetSingleton()->GetProjectDirectory()).IgnoreResult();
+      dlg.m_sCurrentSourceScene    = sourceScene;
       dlg.m_sCmdLine               = sCmd;
       dlg.s_bUpdateThumbnail       = false;
       dlg.m_bShowThumbnailCheckbox = !m_pSceneDocument->IsPrefab();
@@ -355,7 +359,7 @@ void xiiSceneAction::Execute(const xiiVariant& value)
 
       if (dlg.m_bRunAfterExport)
       {
-        LaunchPlayer(dlg.m_sApplication);
+        LaunchPlayer(dlg.m_Launch, dlg.m_bUseCurrentScene);
       }
 
       return;
@@ -507,24 +511,30 @@ void xiiSceneAction::Execute(const xiiVariant& value)
   }
 }
 
-void xiiSceneAction::LaunchPlayer(const char* szPlayerApp)
+void xiiSceneAction::LaunchPlayer(const xiiPlayerLaunchConfig& config, bool bUseCurrentScene)
 {
-  xiiStringBuilder sCmd;
-  QStringList      arguments = GetPlayerCommandLine(sCmd);
-
-  xiiLog::Info("Running: {} {}", szPlayerApp, sCmd);
-  m_pSceneDocument->ShowDocumentStatus(xiiFmt("Running: {} {}", szPlayerApp, sCmd));
-
-  xiiStringBuilder sPlayerApp = szPlayerApp;
-#if XII_ENABLED(XII_PLATFORM_LINUX)
-  if (sPlayerApp.IsRelativePath())
+  xiiStringBuilder           command;
+  const auto                 original = GetPlayerCommandLine(command);
+  xiiDynamicArray<xiiString> arguments;
+  // The session controller supplies the project. Scene launches explicitly override the named configuration.
+  for (int i = bUseCurrentScene ? 2 : 4; i < original.size(); ++i)
   {
-    sPlayerApp.Prepend("./");
+    if (!config.m_sProject.IsEmpty() && (original[i] == "-wnd" || original[i] == "-profile"))
+    {
+      ++i;
+      continue;
+    }
+    arguments.PushBack(original[i].toUtf8().constData());
   }
-#endif
-
-  QProcess proc;
-  proc.startDetached(xiiMakeQString(sPlayerApp), arguments);
+  xiiPlayerLaunchConfig launch = config;
+  if (bUseCurrentScene)
+    launch.m_sScene = original[3].toUtf8().constData();
+  const auto result = xiiQtEditorApp::GetSingleton()->GetPlayerSessions()->Launch(launch, xiiToolsProject::GetSingleton()->GetProjectDirectory(), arguments);
+  if (result.Failed())
+  {
+    xiiLog::Error("Cannot launch Player: {}", result.GetMessageString());
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning(xiiFmt("{}", result.GetMessageString()));
+  }
 }
 
 QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_sSingleLine) const

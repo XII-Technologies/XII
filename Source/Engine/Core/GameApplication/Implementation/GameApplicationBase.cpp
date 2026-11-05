@@ -452,9 +452,7 @@ void xiiGameApplicationBase::RunOneFrame()
     Run_PresentImage();
   }
 
-  const xiiInt32 frameLimit = xiiMath::Clamp(cvar_AppFrameLimit.GetValue(), 0, 1000);
-  if (frameLimit != cvar_AppFrameLimit.GetValue())
-    cvar_AppFrameLimit = frameLimit;
+  const xiiUInt32 frameLimit = GetFrameLimit();
   if (frameLimit > 0 && m_LastFrameTime.IsPositive())
   {
     const auto remaining = xiiTime::MakeFromSeconds(1.0 / frameLimit) - (xiiTime::Now() - m_LastFrameTime);
@@ -477,6 +475,14 @@ void xiiGameApplicationBase::RunOneFrame()
 
     Run_FinishFrame();
   }
+}
+
+xiiUInt32 xiiGameApplicationBase::GetFrameLimit() const
+{
+  const xiiInt32 frameLimit = xiiMath::Clamp(cvar_AppFrameLimit.GetValue(), 0, 1000);
+  if (frameLimit != cvar_AppFrameLimit.GetValue())
+    cvar_AppFrameLimit = frameLimit;
+  return static_cast<xiiUInt32>(frameLimit);
 }
 
 void xiiGameApplicationBase::Run_InputUpdate()

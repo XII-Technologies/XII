@@ -6,6 +6,27 @@
 
 XII_CREATE_SIMPLE_TEST(Utility, CommandLineUtils)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SplitCommandLineString")
+  {
+    xiiDynamicArray<xiiString>   arguments;
+    xiiDynamicArray<const char*> argv;
+    xiiCommandLineUtils::SplitCommandLineString("  -title \"Client One\"\t-empty \"\" -last final", false, arguments, argv);
+    XII_TEST_INT(arguments.GetCount(), 6);
+    XII_TEST_INT(argv.GetCount(), arguments.GetCount());
+    XII_TEST_STRING(arguments[0], "-title");
+    XII_TEST_STRING(arguments[1], "Client One");
+    XII_TEST_STRING(arguments[2], "-empty");
+    XII_TEST_STRING(arguments[3], "");
+    XII_TEST_STRING(arguments[4], "-last");
+    XII_TEST_STRING(arguments[5], "final");
+    xiiCommandLineUtils::SplitCommandLineString(" \"尾部\"  ", false, arguments, argv);
+    XII_TEST_INT(arguments.GetCount(), 7);
+    XII_TEST_INT(argv.GetCount(), arguments.GetCount());
+    for (xiiUInt32 i = 0; i < arguments.GetCount(); ++i)
+      XII_TEST_STRING(argv[i], arguments[i]);
+    XII_TEST_STRING(arguments[6], "尾部");
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetParameterCount / GetParameter")
   {
     const int   argc       = 9;

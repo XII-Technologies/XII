@@ -29,6 +29,8 @@ void xiiFallbackGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPo
     return;
 
   // otherwise we need to load a scene
+  if (!m_pMainWorld)
+    SwitchToLoadingScreen("");
 
   if (!xiiFileSystem::ExistsFile(":project/xiiProject"))
   {
@@ -203,7 +205,7 @@ void xiiFallbackGameState::ProcessInput()
 {
   SUPER::ProcessInput();
 
-  if (IsInLoadingScreen())
+
   {
     float fProgress = 0.0f;
     IsLoadingSceneInBackground(&fProgress);
@@ -415,7 +417,7 @@ bool xiiFallbackGameState::DisplayMenu()
 
       if (xiiInputManager::GetInputSlotState(xiiInputSlot_KeyReturn) == xiiKeyState::Pressed || xiiInputManager::GetInputSlotState(xiiInputSlot_KeyNumpadEnter) == xiiKeyState::Pressed)
       {
-        LoadScene(m_AvailableScenes[m_uiSelectedScene], {}, "", xiiTransform::MakeIdentity());
+        TransitionToScene(m_AvailableScenes[m_uiSelectedScene]).IgnoreResult();
         m_bShowMenu = false;
       }
 
@@ -450,6 +452,14 @@ void xiiFallbackGameState::OnBackgroundSceneLoadingFailed(xiiStringView sReason)
   }
 
   SUPER::OnBackgroundSceneLoadingFailed(sReason);
+}
+
+void xiiFallbackGameState::OnBackgroundSceneLoadingCanceled()
+{
+  m_bShowMenu = IsInLoadingScreen();
+  if (m_bShowMenu)
+    m_State = State::NoScene;
+  SUPER::OnBackgroundSceneLoadingCanceled();
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_FallbackGameState);
