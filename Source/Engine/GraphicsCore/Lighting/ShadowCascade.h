@@ -18,6 +18,8 @@ struct XII_GRAPHICSCORE_DLL xiiShadowCascadeSettings
   float     m_fMaximumShadowDistance = 250.0f;
   float     m_fDepthPadding          = 50.0f; ///< Extra light-space depth for off-frustum casters.
   xiiUInt32 m_uiShadowMapResolution  = 4096U;
+  float     m_fCascadeBlendFraction  = 0.1f; ///< Fraction of each logical cascade interval blended into the next cascade.
+  float     m_fFilterRadius          = 1.0f; ///< PCF kernel offset in shadow texels; zero selects bilinear comparison filtering.
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadowCascadeSettings);
 

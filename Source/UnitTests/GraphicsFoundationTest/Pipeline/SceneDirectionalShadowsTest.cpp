@@ -94,8 +94,8 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
     return;
   const auto                      shadowNode  = xiiUuid::MakeStableUuidFromString("XII.Scene/DirectionalShadows");
   const auto                      cascadeNode = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneDirectionalShadows/World Directional Cascades");
-  xiiRenderPipelineResourceHandle pipelines[2];
-  for (xiiUInt32 variant = 0; variant < 2; ++variant)
+  xiiRenderPipelineResourceHandle pipelines[3];
+  for (xiiUInt32 variant = 0; variant < 3; ++variant)
   {
     xiiRenderPipelineResourceDescriptor root;
     root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, scene.GetResourceID()});
@@ -106,12 +106,26 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
       override.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiAmbientOcclusionPass"));
       override.m_Properties.Insert("Enabled", false);
     }
-    if (variant)
+    if (variant == 1)
     {
       auto& override = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
       override.m_Path.PushBack(shadowNode);
       override.m_Path.PushBack(cascadeNode);
       override.m_Properties.Insert("Enabled", false);
+    }
+    if (variant == 2)
+    {
+      xiiResourceLock<xiiRenderPipelineResource> shadows(shadowResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      xiiVariantDictionary                       settings;
+      for (const auto& pass : shadows->GetAuthoring()->m_Descriptor.m_Passes)
+        if (pass.m_pType == xiiGetStaticRTTI<xiiShadowCascadePass>())
+          settings = pass.m_Properties.GetValue("Settings")->Get<xiiVariantDictionary>();
+      settings.Insert("FilterRadius", 4.0f);
+      settings.Insert("CascadeBlendFraction", 0.5f);
+      auto& override = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
+      override.m_Path.PushBack(shadowNode);
+      override.m_Path.PushBack(cascadeNode);
+      override.m_Properties.Insert("Settings", settings);
     }
     for (const xiiStringView name : {"ShadowAtlas", "ShadowVisibility", "AmbientLighting", "DirectLighting", "HDRSceneColor", "SceneDepth", "ObjectId"})
     {
@@ -119,7 +133,9 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
       XII_TEST_RESULT(root.Connect(node, name, capture, "Input"));
       root.m_Interface.PushBack({name, false, root.m_Passes[capture].m_Id, "Output"});
     }
-    pipelines[variant] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(variant ? "SceneShadow.Disabled" : "SceneShadow.Enabled", std::move(root));
+    pipelines[variant] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(variant == 2 ? "SceneShadow.WideFilter" : variant ? "SceneShadow.Disabled" :
+                                                                                                                                           "SceneShadow.Enabled",
+                                                                                       std::move(root));
   }
   xiiGeometry geometry;
   geometry.AddBox(xiiVec3(1), true);
@@ -139,14 +155,14 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
   {
     xiiUniquePtr<xiiWorld>      m_World;
     xiiCamera                   m_Camera;
-    xiiView*                    m_Views[2];
-    xiiSharedPtr<xiiGALTexture> m_Targets[2];
+    xiiView*                    m_Views[3];
+    xiiSharedPtr<xiiGALTexture> m_Targets[3];
     xiiGameObjectHandle         m_Caster;
     xiiComponentHandle          m_Mesh, m_Light;
     xiiGameObjectHandle         m_Sun;
   } worlds[2];
   const auto resize = [&](World& world, xiiUInt32 width, xiiUInt32 height) {
-    for (xiiUInt32 view = 0; view < 2; ++view)
+    for (xiiUInt32 view = 0; view < 3; ++view)
     {
       xiiGALTextureCreationDescription target;
       target.m_Type         = xiiGALResourceDimension::Texture2D;
@@ -199,7 +215,7 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
     world.m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
     world.m_Camera.LookAt({-4, -5, 3}, {0, 0, 0.2f}, {0, 0, 1});
     world.m_Camera.SetExposure(8);
-    for (xiiUInt32 view = 0; view < 2; ++view)
+    for (xiiUInt32 view = 0; view < 3; ++view)
     {
       module->CreateView("Shadow enabled/disabled comparison", world.m_Views[view]);
       world.m_Views[view]->SetCamera(&world.m_Camera);
@@ -311,6 +327,23 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
         if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "AmbientLighting"), ambient[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "DirectLighting"), direct[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "HDRSceneColor"), hdr[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "SceneDepth"), depth[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "ObjectId"), ids[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), world.m_Targets[view], output[view]))
           return;
       XII_TEST_BOOL(depth[0] == depth[1] && ids[0] == ids[1] && ambient[0] == ambient[1]);
+      if (phase == 2)
+      {
+        xiiDynamicArray<float>     wideMask;
+        xiiDynamicArray<xiiUInt32> wideOutput;
+        if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(2, "ShadowVisibility"), wideMask) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), world.m_Targets[2], wideOutput))
+          return;
+        xiiUInt32 changedMask = 0, changedOutput = 0;
+        for (xiiUInt32 pixel = 0; pixel < mask.GetCount(); ++pixel)
+        {
+          XII_TEST_BOOL(xiiMath::IsFinite(wideMask[pixel]) && wideMask[pixel] >= 0 && wideMask[pixel] <= 1.000001f);
+          changedMask += xiiMath::Abs(wideMask[pixel] - mask[pixel]) > 0.00001f;
+          changedOutput += wideOutput[pixel] != output[0][pixel];
+        }
+        XII_TEST_BOOL(changedMask > 0 && changedOutput > 0);
+        xiiTestFramework::Output(xiiTestOutput::Details, "Wide shadow filtering changed %u visibility and %u final pixels.", changedMask, changedOutput);
+      }
+
       if (phase >= 8)
         for (const auto identity : ids[0])
           if (identity)

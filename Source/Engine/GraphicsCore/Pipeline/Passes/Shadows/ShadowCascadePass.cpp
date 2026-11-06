@@ -18,6 +18,8 @@ namespace
       xiiMath::IsFinite(settings.m_fMaximumShadowDistance) && settings.m_fMaximumShadowDistance > 0 &&
       xiiMath::IsFinite(settings.m_fDepthPadding) && settings.m_fDepthPadding >= 0 &&
       settings.m_uiShadowMapResolution >= 64 && settings.m_uiShadowMapResolution <= 16384 &&
+      xiiMath::IsFinite(settings.m_fCascadeBlendFraction) && settings.m_fCascadeBlendFraction >= 0 && settings.m_fCascadeBlendFraction <= 0.5f &&
+      xiiMath::IsFinite(settings.m_fFilterRadius) && settings.m_fFilterRadius >= 0 && settings.m_fFilterRadius <= 4 &&
       direction.IsValid() && !direction.IsZero();
   }
 } // namespace
@@ -84,6 +86,8 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
     for (auto& matrix : data.m_Snapshot.CascadeViewProjection) matrix = xiiMat4::MakeIdentity();
     data.m_Snapshot.CascadeSplitDepths = xiiVec4::MakeZero();
     data.m_Snapshot.CascadeWorldRadii = xiiVec4::MakeZero();
+    data.m_Snapshot.CascadeBlendStarts = xiiVec4::MakeZero();
+    data.m_Snapshot.CascadeFiltering = xiiVec4(m_Settings.m_fFilterRadius, 0, 0, 0);
     data.m_Snapshot.ActiveCascadeCount = cascades.GetCount();
     data.m_Snapshot._Pad = xiiVec3::MakeZero();
     for (xiiUInt32 i = 0; i < cascades.GetCount(); ++i)
@@ -91,6 +95,7 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
       data.m_Snapshot.CascadeViewProjection[i] = cascades[i].m_mViewProjection;
       data.m_Snapshot.CascadeSplitDepths.GetData()[i] = cascades[i].m_fSplitFar;
       data.m_Snapshot.CascadeWorldRadii.GetData()[i] = cascades[i].m_fWorldRadius;
+      data.m_Snapshot.CascadeBlendStarts.GetData()[i] = xiiMath::Lerp(cascades[i].m_fSplitFar, cascades[i].m_fSplitNear, m_Settings.m_fCascadeBlendFraction);
     } }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     xiiGALMapHelper<xiiShadowCascadeConstants> mapped(execute.GetCommandList(), execute.GetBuffer(data.m_Buffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
     *mapped = data.m_Snapshot; });

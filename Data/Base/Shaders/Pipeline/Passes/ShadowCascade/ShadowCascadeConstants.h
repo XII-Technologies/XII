@@ -14,6 +14,8 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiShadowCascadeConstants)
   [4];                        ///< View-projection matrix for each active cascade (up to 4).
   FLOAT4(CascadeSplitDepths); ///< View-space split depths for the 4 cascade boundaries.
   FLOAT4(CascadeWorldRadii);  ///< Half-extent in metres of each cascade's orthographic projection.
+  FLOAT4(CascadeBlendStarts); ///< View-space start of each transition; projections overlap the preceding transition.
+  FLOAT4(CascadeFiltering);   ///< PCF radius in shadow texels; remaining components reserved.
   UINT1(ActiveCascadeCount);  ///< Number of valid cascades (1–4).
   FLOAT3(_Pad);
 };
