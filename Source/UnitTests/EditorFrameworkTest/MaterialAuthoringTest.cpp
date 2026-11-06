@@ -63,66 +63,6 @@ namespace
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(MaterialAuthoring);
-XII_CREATE_SIMPLE_TEST(MaterialAuthoring, ProbePermutationCacheUpgrade)
-{
-  xiiStartup::StartupCoreSystems();
-  auto*           application  = xiiApplication::GetApplicationInstance();
-  const xiiString previousName = application->GetApplicationName();
-  application->SetApplicationName("xiiEditor");
-  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
-  auto*                  editor = xiiQtEditorApp::GetSingleton();
-  const auto             output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  const xiiStringBuilder preferences(output, "/ProbePreferences");
-  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(preferences));
-  editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
-  XII_SCOPE_EXIT(editor->CloseProject(); QApplication::processEvents(); editor->ShutdownEditor());
-  const xiiStringBuilder project(output, "/ProbeProject/xiiProject");
-  if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
-    return;
-  xiiVisualShaderTypeRegistry::GetSingleton()->UpdateNodeData();
-  const xiiStringBuilder path(project.GetFileDirectory(), "/ProbeSurface.xiiMaterialAsset");
-  auto*                  document = xiiDynamicCast<xiiMaterialAssetDocument*>(editor->CreateDocument(path, xiiDocumentFlags::EmptyDocument));
-  if (!XII_TEST_BOOL(document != nullptr))
-    return;
-  XII_SCOPE_EXIT(document->GetDocumentManager()->CloseDocument(document));
-  auto*   accessor = document->GetObjectAccessor();
-  xiiUuid main;
-  accessor->StartTransaction("Create probe surface");
-  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiRTTI::FindTypeByName("ShaderNode::MaterialOutput"), main));
-  XII_TEST_STATUS(accessor->SetValueByName(document->GetPropertyObject(), "ShaderMode", static_cast<xiiInt64>(xiiMaterialShaderMode::Custom)));
-  accessor->FinishTransaction();
-  const auto compiled = document->CompileShader();
-  XII_TEST_STATUS(compiled);
-  if (compiled.Failed())
-    return;
-  auto*            assets = static_cast<xiiMaterialAssetDocumentManager*>(document->GetDocumentManager());
-  const auto*      type   = document->GetAssetDocumentTypeDescriptor();
-  const auto       cached = assets->GetAbsoluteOutputFileName(type, path, "VISUAL_SHADER");
-  xiiStringBuilder source;
-  {
-    xiiFileReader file;
-    if (!XII_TEST_RESULT(file.Open(cached)))
-      return;
-    source.ReadAll(file);
-  }
-  xiiGALShaderTextSectionizer sections;
-  xiiGALShaderSections::GetShaderSections(source, sections);
-  xiiUInt32 line = 0;
-  XII_TEST_BOOL(sections.GetSectionContent(xiiGALShaderSections::Permutations, line).FindSubString("FORWARD_PROBES") != nullptr);
-  const auto write = [&](xiiStringView text) {
-    xiiFileWriter file;
-    XII_SUCCEED_OR_RETURN(file.Open(cached));
-    return file.WriteBytes(text.GetStartPointer(), text.GetElementCount());
-  };
-  XII_SCOPE_EXIT(write(source).IgnoreResult());
-  XII_TEST_RESULT(write("//1234|10\n[PLATFORMS]\nALL\n"));
-  XII_TEST_BOOL(!assets->IsOutputUpToDate(path, "VISUAL_SHADER", 1234, type));
-  xiiStringBuilder current;
-  current.SetFormat("//1234|{}\n[PLATFORMS]\nALL\n", document->GetAssetTypeVersion());
-  XII_TEST_RESULT(write(current));
-  XII_TEST_BOOL(assets->IsOutputUpToDate(path, "VISUAL_SHADER", 1234, type));
-}
-
 XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
 {
   xiiStartup::StartupCoreSystems();
@@ -342,6 +282,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   XII_TEST_BOOL(!sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, line).IsEmpty());
   XII_TEST_BOOL(source.FindSubString("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)") == nullptr);
   XII_TEST_BOOL(source.FindSubString("VSE_CONSTANTS") == nullptr);
+  XII_TEST_BOOL(sections.GetSectionContent(xiiGALShaderSections::Permutations, line).FindSubString("FORWARD_PROBES") != nullptr);
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Core Graph rejects imported cycles with node and port diagnostics")
   {
     MaterialTopologyTestDocument malformed(xiiStringBuilder(output, "/MalformedMaterialGraph.xiiGraph"));
@@ -417,7 +358,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
       return file.WriteBytes(text.GetStartPointer(), text.GetElementCount());
     };
     XII_SCOPE_EXIT(write(original).IgnoreResult());
-    XII_TEST_RESULT(write("//1234|8\n[PLATFORMS]\nALL\n"));
+    XII_TEST_RESULT(write("//1234|10\n[PLATFORMS]\nALL\n"));
     XII_TEST_BOOL(!assets->IsOutputUpToDate(document->GetDocumentPath(), "VISUAL_SHADER", 1234, type));
     xiiStringBuilder current;
     current.SetFormat("//1234|{}\n[PLATFORMS]\nALL\n", document->GetAssetTypeVersion());
