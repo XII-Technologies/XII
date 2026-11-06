@@ -340,13 +340,30 @@ Fractional percentile weights remain fractional for one-pixel viewports. First
 frames do not read uninitialized previous exposure.
 
 Bloom extracts HDR luminance above the reflected threshold with a soft knee and
-a normalized nine-sample tent footprint at the authored radius. Its RGBA16Float
-SRV/UAV image follows its authored resolution, input-sized in Scene. With resolved
+a normalized nine-sample tent footprint. Up to five reductions build a six-level
+RGBA16Float pyramid, using ceiling half extents and clamping narrow dimensions
+to one. Reconstruction combines each fine level with the coarser result using
+equal weights. Every reduction filter and reconstruction combination has unit
+weight, so constant radiance does not increase with the number of levels.
+`BloomRadius` controls the tent footprint in each source level's texels; the
+coarse levels produce a wider glow than a full-resolution-only kernel. Zero
+radius records extraction only. Output remains input-sized in Scene. Each stage
+declares its own reads and transient write through the existing graph; there are
+at most eleven compute stages and no CPU readbacks or additional persistent state. With resolved
 BloomStrength zero, the operation produces no bloom image and records no bloom
 dispatch. Tone mapping accepts the absent input only at zero strength and uses a
 zero-weight HDR binding for that shader slot; the shader bypasses its sample.
 Active missing bloom remains a view failure. These operations validate dimensions,
 formats, binding flags and dispatch bounds; binding failures report failure before dispatch.
+
+Multiscale acceptance reads the actual Scene HDR, bloom and final images. It
+verifies a halo more than ten pixels beyond the source bounds, zero-radius and
+zero-strength stage elimination, deterministic resize/reload behavior, and
+uniform-field energy at 9x11, 65x1, 1x65 and 1x1 extents. The existing final-pixel
+exposure/tone-map/transfer oracle still passes. In the small acceptance workload,
+the existing GPU timestamp profiler measured 0.0072–0.0095 ms per bloom stage
+across 11–13 available samples; these are mixed small-view pass measurements,
+not a representative frame-time baseline or a measured speedup.
 
 Tone mapping adds bloom to HDR before exposure and maps that result to
 display-linear color. Existing grading and presentation apply afterward. Controls
