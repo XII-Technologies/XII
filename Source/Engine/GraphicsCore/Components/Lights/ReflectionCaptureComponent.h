@@ -54,7 +54,6 @@ class XII_GRAPHICSCORE_DLL xiiReflectionCaptureRenderData : public xiiRenderData
 
 public:
   xiiTextureCubeResourceHandle              m_hReflectionMap;
-  xiiTransform                              m_GlobalTransform = xiiTransform::MakeIdentity();
   xiiVec3                                   m_vHalfExtents    = xiiVec3(5.0f);
   xiiEnum<xiiReflectionProbeInfluenceShape> m_InfluenceShape;
   float                                     m_fSphereRadius      = 5.0f;

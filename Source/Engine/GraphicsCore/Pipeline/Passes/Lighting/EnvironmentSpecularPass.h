@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/ReflectionProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/States/PipelineState.h>
@@ -15,11 +16,13 @@ public:
   xiiRenderPipelineTextureInputPin            m_Normal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Albedo{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Material{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin            m_Radiance{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin            m_Lut{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin            m_Radiance{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin            m_Lut{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Occlusion{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin             m_Camera{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineDataInputPin               m_Probes{xiiGetStaticRTTI<xiiReflectionProbeFrameData>(), true};
+  bool                                        m_bAllowAbsentRadiance = false;
   float                                       m_fScale        = 1;
   bool                                        m_bAsyncCompute = false;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
@@ -27,6 +30,6 @@ public:
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
 
 private:
-  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline, m_ProbePipeline;
   xiiSharedPtr<xiiGALSampler>              m_Linear;
 };

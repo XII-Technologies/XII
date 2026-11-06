@@ -253,7 +253,7 @@ static void TestAuthoredPreview(AuthoredPreview type)
     xiiMaterialInstanceSnapshot          snapshot;
     resource->GetDefaultInstance()->CreateSnapshot(snapshot);
     auto variables = snapshot.m_pSchema->GetPermutations();
-    for (auto key : {"FORWARD_DIRECTIONAL_SHADOWS", "FORWARD_ATMOSPHERE", "FORWARD_REFRACTION", "FORWARD_SPOT_SHADOWS", "BLEND_MODE", "RENDER_PASS"})
+    for (auto key : {"FORWARD_DIRECTIONAL_SHADOWS", "FORWARD_ATMOSPHERE", "FORWARD_REFRACTION", "FORWARD_SPOT_SHADOWS", "FORWARD_PROBES", "BLEND_MODE", "RENDER_PASS"})
     {
       xiiHashedString name, value;
       name.Assign(key);

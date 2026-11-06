@@ -30,7 +30,9 @@ bool LoadSurfaceGeometry(uint2 pixel, out SurfaceSample result)
     normal.xy = (1 - abs(normal.yx)) * float2(normal.x >= 0 ? 1 : -1, normal.y >= 0 ? 1 : -1);
   result.Normal         = normalize(normal);
   const float3 toCamera = SurfaceCameraPositionNear.xyz - result.Position;
-  result.View           = dot(toCamera, toCamera) > 1e-12f ? normalize(toCamera) : result.Normal;
+  const bool   orthographic = dot(SurfaceViewProjection[3].xyz, SurfaceViewProjection[3].xyz) < 1e-8f;
+  result.View               = orthographic ? -normalize(SurfaceCameraForwardFar.xyz) : dot(toCamera, toCamera) > 1e-12f ? normalize(toCamera) :
+                                                                                                                          result.Normal;
   result.Albedo         = max(g_SurfaceAlbedo.Load(int3(pixel, 0)).rgb, 0);
   const float4 material = g_SurfaceMaterial.Load(int3(pixel, 0));
   if (!xiiGBufferReceivesLighting(material))

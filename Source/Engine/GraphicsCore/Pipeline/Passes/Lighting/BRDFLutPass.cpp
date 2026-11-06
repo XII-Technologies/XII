@@ -20,6 +20,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBRDFLutPass, 1, xiiRTTIDefaultAllocator<xiiB
   {
     XII_BEGIN_PROPERTIES
     {
+      XII_MEMBER_PROPERTY("ReflectionProbes", m_Probes)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("Activation", m_Activation)->AddFlags(xiiPropertyFlags::ReadOnly),
       XII_MEMBER_PROPERTY("RequireActivation", m_bRequireActivation)->AddAttributes(new xiiDefaultValueAttribute(false)),
       XII_MEMBER_PROPERTY("BRDFLut", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -41,7 +42,8 @@ void xiiBRDFLutPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) co
 xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
 {
   // Activation is setup-time resource presence, not a shader input or GPU dependency.
-  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid())
+  const auto probes = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
+  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid() && (!probes || probes->m_Textures.IsEmpty()))
     return XII_SUCCESS;
   if (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled)
     return context.ReportFailure("BRDF integration requires RG16Float storage-image support (TextureUAVExtendedFormats).");

@@ -9,6 +9,7 @@
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/Implementation/ReflectionProbePassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/Implementation/SpotShadowPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Transparency/TransparentRasterPass.h>
@@ -44,6 +45,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentRasterPass,3,xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("DrawCommands",m_DrawCommands)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("DrawCommandCount",m_DrawCommandCount)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Camera",m_Camera)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("ReflectionProbes", m_Probes)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("BRDFLut", m_BRDFLut)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Environment",m_Environment)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Lights",m_Lights)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("LightCounts",m_LightCounts)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -211,7 +214,19 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
       return context.ReportFailure("Active refraction requires matching immutable HDR background and shader-readable opaque D32 depth.");
     XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_RefractionSampler));
   }
-  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U) | (refractive ? 4U : 0U) | (spots ? 8U : 0U);
+  const auto probes      = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
+  const bool localProbes = probes && !probes->m_Textures.IsEmpty();
+  const auto brdf        = context.GetInputTexture(m_BRDFLut);
+  if (localProbes)
+  {
+    if (device->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled)
+      return context.ReportFailure("Transparent reflection probes require nonuniform resource-array support.");
+    const auto* lookup = context.m_Graph.GetTextureDescription(brdf);
+    if (!lookup || lookup->m_Type != xiiGALResourceDimension::Texture2D || !lookup->m_Size.HasNonZeroArea() || lookup->m_uiSampleCount != 1 || !lookup->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiScreenSpacePassUtils::Image(context, brdf, 2))
+      return context.ReportFailure("Transparent reflection probes require a readable BRDF lookup.");
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_AtmosphereSampler));
+  }
+  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U) | (refractive ? 4U : 0U) | (spots ? 8U : 0U) | (localProbes ? 16U : 0U);
   if (!m_hShaders[permutation].IsValid())
   {
     constexpr const char*                          paths[] = {"Shaders/Geometry/TransparentVertexPull.xiiShader", "Shaders/Geometry/TransparentShadowVertexPull.xiiShader", "Shaders/Geometry/TransparentAtmosphereVertexPull.xiiShader", "Shaders/Geometry/TransparentWorldVertexPull.xiiShader"};
@@ -224,6 +239,9 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     variables.Insert(name, value);
     name.Assign("FORWARD_SPOT_SHADOWS");
     value.Assign(spots ? "TRUE" : "FALSE");
+    variables.Insert(name, value);
+    name.Assign("FORWARD_PROBES");
+    value.Assign(localProbes ? "TRUE" : "FALSE");
     variables.Insert(name, value);
     m_hShaders[permutation] = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
   }
@@ -263,6 +281,7 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   feature("FORWARD_ATMOSPHERE", atmospheric);
   feature("FORWARD_REFRACTION", refractive);
   feature("FORWARD_SPOT_SHADOWS", spots != nullptr);
+  feature("FORWARD_PROBES", localProbes);
   xiiDynamicArray<xiiMaterialRasterBatch> batches;
   xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
   XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visibleMeshlets, drawCommandCount, batches, sortedVisible, materialDraws, xiiMaterialRasterBatches::Pass::Transparent, &materialVariables));
@@ -309,6 +328,8 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     commands.TransitionResourceStates(transitions); });
   struct Data
   {
+    xiiReflectionProbePassUtils::Bindings         m_Probes;
+    xiiRenderGraphTextureHandle                   m_BRDFLut;
     xiiDynamicArray<xiiMaterialRasterBatch>       m_Batches;
     xiiRenderGraphBufferHandle                    m_SceneInstances;
     xiiRenderGraphBufferHandle                    m_SkinningMatrices;
@@ -381,6 +402,11 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     data.m_DrawCommandCount=builder.ReadBuffer(drawCommandCount,xiiGALResourceStateFlags::IndirectArgument);
     data.m_Camera=builder.ReadBuffer(camera,xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Environment=builder.ReadBuffer(environment,xiiGALResourceStateFlags::ConstantBuffer);
+    if (localProbes)
+    {
+      data.m_Probes  = xiiReflectionProbePassUtils::Read(probes, builder);
+      data.m_BRDFLut = builder.ReadTexture(brdf, xiiGALResourceStateFlags::ShaderResource);
+    }
     data.m_Lights=builder.ReadBuffer(lights,xiiGALResourceStateFlags::ShaderResource);
     data.m_LightCounts=builder.ReadBuffer(lightCounts,xiiGALResourceStateFlags::ShaderResource);
     data.m_LightCandidates=builder.ReadBuffer(lightCandidates,xiiGALResourceStateFlags::ShaderResource);
@@ -422,12 +448,23 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
       pipeline.m_pPipelineResourceSignature = binding.m_Signature; pipeline.m_pVertexShader = binding.m_Vertex; pipeline.m_pPixelShader = binding.m_Pixel;
       pipeline.m_GraphicsPipeline.m_pBlendState = binding.m_Blend; pipeline.m_GraphicsPipeline.m_pDepthStencilState = binding.m_Depth; pipeline.m_GraphicsPipeline.m_pRasterizerState = binding.m_Rasterizer;
     }
-    const auto state=xiiGALPipelineCache::GetPipeline(pipeline);if(!state){execute.ReportFailure("Could not create transparent layer raster pipeline, including required floating-point attachment blending.");return;}
+    const auto state = xiiGALPipelineCache::GetPipeline(pipeline);
+    if (!state)
+    {
+      execute.ReportFailure("Could not create transparent layer raster pipeline, including required floating-point attachment blending.");
+      return;
+    }
     commands.SetPipelineState(state.Borrow());commands.SetViewport({0,0,float(data.m_Size.width),float(data.m_Size.height),0,1});
     commands.ResolveAndSetSampler("g_sAnisotropicWrap",data.m_MaterialSampler.Borrow());commands.ResolveAndSetSampler("g_sLinearWrap",data.m_MaterialSampler.Borrow());
     commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants",execute.GetBuffer(data.m_RasterConstants));
     commands.ResolveAndSetConstantBuffer("PerFrameCamera",execute.GetBuffer(data.m_Camera),xiiGALShaderType::Pixel);
     commands.ResolveAndSetConstantBuffer("xiiEnvironmentLightConstants",execute.GetBuffer(data.m_Environment),xiiGALShaderType::Pixel);
+    if (data.m_Probes.m_Snapshot)
+    {
+      xiiReflectionProbePassUtils::Bind(data.m_Probes, execute, xiiGALShaderType::Pixel);
+      commands.ResolveAndSetSampler("LinearClampSampler", data.m_AtmosphereSampler.Borrow());
+      commands.ResolveAndSetShaderResourceTextureView("g_BRDFLut", execute.GetTexture(data.m_BRDFLut)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+    }
     commands.ResolveAndSetConstantBuffer("xiiLightClusterConstants",execute.GetBuffer(data.m_ClusterConstants),xiiGALShaderType::Pixel);
     commands.ResolveAndSetConstantBuffer("xiiTransparentRasterConstants",execute.GetBuffer(data.m_LayerConstants),xiiGALShaderType::Pixel);
     commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances",execute.GetBuffer(data.m_SceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource));

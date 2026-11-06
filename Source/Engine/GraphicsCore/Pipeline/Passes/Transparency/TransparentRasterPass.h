@@ -5,6 +5,7 @@
 
 #include <GraphicsCore/Pipeline/Passes/Implementation/MaterialRasterBatches.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterFrameData.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/ReflectionProbeFrameData.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -28,6 +29,8 @@ public:
   xiiRenderPipelineBufferInputPin  m_DrawCommands{true, xiiGALBindFlags::IndirectDrawArguments};
   xiiRenderPipelineBufferInputPin  m_DrawCommandCount{true, xiiGALBindFlags::IndirectDrawArguments};
   xiiRenderPipelineBufferInputPin  m_Camera{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineDataInputPin    m_Probes{xiiGetStaticRTTI<xiiReflectionProbeFrameData>(), true};
+  xiiRenderPipelineTextureInputPin m_BRDFLut{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin  m_Environment{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin  m_Lights{false, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin  m_LightCounts{false, xiiGALBindFlags::ShaderResource};
@@ -69,7 +72,7 @@ public:
 
 private:
   xiiMaterialRasterBatches            m_MaterialBatches;
-  xiiShaderPermutationResourceHandle  m_hShaders[16];
+  xiiShaderPermutationResourceHandle  m_hShaders[32];
   xiiSharedPtr<xiiGALSampler>         m_MaterialSampler, m_AtmosphereSampler;
   xiiSharedPtr<xiiGALSampler>         m_RefractionSampler;
   xiiSharedPtr<xiiGALRasterizerState> m_Rasterizer;
