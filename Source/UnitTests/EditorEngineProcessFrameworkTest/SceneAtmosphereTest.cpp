@@ -1,0 +1,7 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+
+#include <GraphicsFoundationTest/Pipeline/SceneAtmosphereTestUtils.h>
+
+XII_CREATE_SIMPLE_TEST(EditorViews, PhysicalSkyIlluminationAndIndependentWorlds) { xiiSceneAtmosphereTest::Run(true); }

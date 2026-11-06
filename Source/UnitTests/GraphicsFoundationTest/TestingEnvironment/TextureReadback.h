@@ -11,7 +11,7 @@
 namespace xiiGpuTestReadback
 {
   template <typename T>
-  bool ReadTexturePixels(xiiGALDevice& device, const xiiSharedPtr<xiiGALTexture>& texture, xiiDynamicArray<T>& pixels)
+  bool ReadTexturePixels(xiiGALDevice& device, const xiiSharedPtr<xiiGALTexture>& texture, xiiDynamicArray<T>& pixels, xiiUInt32 mip = 0, xiiUInt32 slice = 0)
   {
     if (!XII_TEST_BOOL(texture != nullptr))
       return false;
@@ -19,7 +19,7 @@ namespace xiiGpuTestReadback
     auto                  commands = device.CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
     commands->Begin();
     const auto                       previous = texture->GetResourceState();
-    const auto                       enqueued = readback.Enqueue(commands, {.m_pTexture = texture.Borrow()});
+    const auto                       enqueued = readback.Enqueue(commands, {.m_pTexture = texture.Borrow(), .m_uiMipLevel = mip, .m_uiArraySlice = slice});
     xiiGALStateTransitionDescription transition;
     transition.m_pResource       = texture.Borrow();
     transition.m_NewState        = previous;

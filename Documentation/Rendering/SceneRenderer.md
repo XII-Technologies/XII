@@ -878,7 +878,7 @@ retirement. A real texture asset reload retains and verifies both lighting
 versions after unloading the source. Scene/Editor acceptance adds diffuse energy, ambient replacement,
 zero-intensity bypass and native/authored translucent equivalence.
 
-Coat/sheen/anisotropic environment lobes, dynamic captures, atmospheric sky capture,
+Coat/sheen/anisotropic environment lobes, dynamic geometry captures, higher resolution sky integration,
 clustered probe assignment and representative performance remain required follow-up work. The
 small GPU fixture collects existing-profiler samples and CPU update timing; it
 does not establish a representative frame-time or speedup. Stereo and runtime
@@ -923,7 +923,53 @@ executes them in reverse order and verifies independent specular/irradiance valu
 The Scene and Editor reflection workloads also check per-pixel SSR confidence
 composition against global sky fallback, independent worlds, resize/reload and
 retained recording after world retirement.
-Dynamic captures and atmosphere-to-environment convolution remain separate work.
+Dynamic geometry captures remain separate work.
+
+## Physical sky environment capture
+
+Scene's atmosphere constants operation enables `CacheLookups`. A settings change
+initializes immutable 256 by 64 transmittance and 32 by 32 multiple-scattering
+RGBA32Float images through the existing shader entry points. `LookupData` carries
+the physical owner and its frame-specific constant-buffer binding. The existing
+LUT operations publish preserved graph versions with an explicit general-fence
+wait, so readiness reaches every consuming queue even when image layouts match.
+Custom authored LUT extents keep their existing graph-local integration path.
+The integrated sky BRDF requires RG16Float storage-image support; unavailable
+support reports a build failure, and an authored environment bypass remains
+available for restricted configurations.
+
+When no authored sky cubemap is selected, reflection preparation consumes that
+lookup snapshot and the same selected directional emitter used by direct and
+visible-sky lighting. It captures a 64 by 64 RGBA32Float cubemap using the shared
+atmosphere segment integrator, at the camera's altitude along planet up. The sun
+disk is excluded because the analytic directional light already accounts for its
+direct illumination. Ground intersections limit the captured ray segment; the
+source contains atmospheric scattering rather than geometry reflections.
+
+Capture completion is an explicit input fence to the existing GGX/Lambert
+convolution. Deferred and forward shading then consume the ordinary immutable
+sky environment snapshot, with local probe coverage and screen-reflection
+confidence unchanged. Stable physical settings, solar direction/color/intensity
+and camera altitude reuse their images. Camera rotation, horizontal movement,
+resize and camera cuts do not invalidate the capture. A solar change reuses the
+physical LUTs; a physical-settings change replaces both levels. Caches belong to
+the operation instance, and old graphs retain their original native images.
+Creation requires the active shared GPU frame and validates current-device
+ownership of its source images and optional readiness fence.
+
+Native GPU acceptance compares LUT texels against CPU references, checks solar
+linearity over every source face and convolved mip, and verifies a vacuum stays
+black even with a bright directional emitter. Scene and authored Editor acceptance
+use three views across independent worlds: full atmosphere, no atmosphere, and
+atmosphere with indirect lighting disabled. Readbacks isolate changed surface
+illumination while preserving the visible sky, and cover cache reuse, settings and
+sun changes, resize/reload, disappearance/recreation and world retirement.
+
+The capture resolution and integration remain approximations. Canonical lookups
+are cached per operation instance; multiple views can duplicate cold allocations.
+Changing altitude or solar state can require another capture and convolution.
+Representative dynamic-weather performance, other-backend runtime acceptance,
+stereo, atmospheric shadows, clouds and geometry reflection captures remain work.
 
 ## Screen-space reflections
 

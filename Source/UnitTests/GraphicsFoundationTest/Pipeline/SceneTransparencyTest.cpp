@@ -31,7 +31,7 @@ XII_CREATE_SIMPLE_TEST_GROUP(SceneTransparency);
 XII_CREATE_SIMPLE_TEST(SceneTransparency, RealWorldAlphaLayers)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
     return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
