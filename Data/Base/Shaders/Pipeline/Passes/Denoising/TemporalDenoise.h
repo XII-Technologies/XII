@@ -111,8 +111,13 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
   const uint2  previousPixel   = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
   const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
   const float3 previousNormal  = DecodeOctNormal(previousSurface.xy);
-  const bool   surfaceMatches  = previousSurface.w > 0.0f &&
-    abs(previousSurface.z - linearDepth) <= max(linearDepth * DepthThreshold, 0.01f) &&
+#  if defined(XII_DENOISE_REPROJECT_DEPTH)
+  const float expectedPreviousDepth = dot(ReconstructWorldPos(uv, depth) - PreviousCameraPosition.xyz, PreviousCameraForward.xyz);
+#  else
+  const float expectedPreviousDepth = linearDepth;
+#  endif
+  const bool surfaceMatches = previousSurface.w > 0.0f &&
+    expectedPreviousDepth > 0 && abs(previousSurface.z - expectedPreviousDepth) <= max(expectedPreviousDepth * DepthThreshold, 0.01f) &&
     dot(previousNormal, normal) >= NormalThreshold;
   if (!surfaceMatches)
   {

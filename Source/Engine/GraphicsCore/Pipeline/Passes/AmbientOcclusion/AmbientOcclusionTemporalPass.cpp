@@ -12,24 +12,26 @@
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <Shaders/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionReprojectionConstants.h>
 #include <Shaders/Pipeline/Passes/Denoising/TemporalDenoiseConstants.h>
 
 struct xiiAmbientOcclusionTemporalPass::State : public xiiRefCounted
 {
-  struct Slot
+  struct Slot : xiiRefCounted
   {
     xiiSharedPtr<xiiGALTexture> m_Mask, m_Surface;
     xiiSharedPtr<xiiGALFence>   m_ReadyFence;
     xiiUInt64                   m_uiReadyValue    = 0;
     xiiUInt64                   m_uiLastUsedFrame = 0;
+    xiiUInt64                   m_uiFrame         = 0;
+    xiiFrameCameraConstants     m_Camera;
   };
-  xiiDynamicArray<Slot>                    m_Slots;
+  static constexpr xiiUInt32               s_uiMaximumHistorySlots = 8;
+  xiiDynamicArray<xiiSharedPtr<Slot>>      m_Slots;
+  xiiSharedPtr<Slot>                       m_Last;
   xiiMutex                                 m_Mutex;
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_SpatialPipeline;
-  xiiSharedPtr<xiiGALTexture>              m_LastMask, m_LastSurface;
-  xiiSharedPtr<xiiGALFence>                m_LastFence;
-  xiiUInt64                                m_uiLastReadyValue  = 0;
   bool                                     m_bHistoryValid     = false;
   xiiUInt64                                m_uiHistoryRevision = 0;
 };
@@ -46,12 +48,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionTemporalPass, 1, xiiRTTIDefa
     XII_MEMBER_PROPERTY("RawAO", m_Raw)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("GBufferNormal", m_Normal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("DilatedVelocityBuffer", m_Velocity)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute(), new xiiRenderPipelinePinEnabledAttribute("UseHistory")),
+    XII_MEMBER_PROPERTY("DilatedVelocityBuffer", m_Velocity)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameCamera", m_Camera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameGlobal", m_Global)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("StableAO", m_Output)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PreviousAO", m_Previous)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Surface", m_Surface)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("UseHistory", m_bUseHistory)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("HistoryWeight", m_fHistoryWeight)->AddAttributes(new xiiDefaultValueAttribute(0.92f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("DepthThreshold", m_fDepthThreshold)->AddAttributes(new xiiDefaultValueAttribute(0.08f), new xiiClampValueAttribute(0.0f, 1.0f)),
@@ -88,19 +91,19 @@ xiiResult xiiAmbientOcclusionTemporalPass::BuildTemporalHistory(xiiRenderPipelin
   xiiUInt64 completed;
   if (xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
     return context.ReportFailure("AO history requires an active shared GPU frame.");
-  // Temporal outputs may be read by arbitrary downstream queues, even during resize.
-  for (auto& slot : m_pState->m_Slots)
-    if (slot.m_Mask == m_pState->m_LastMask)
-      slot.m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
-  xiiRenderPassResourceScope  scope(context);
-  xiiRenderGraphTextureHandle previous;
-  context.m_Graph.AddPass<xiiRenderGraphTextureHandle>("Publish AO History", xiiGALCommandQueueFlags::Compute, [&](auto& data, xiiRenderGraphBuilder& builder) {
-    builder.WaitForFence(m_pState->m_LastFence, m_pState->m_uiLastReadyValue).AssertSuccess();
-    // Publish a preserved version after external readiness so every consumer queue
-    // depends on this operation even when no layout transition is necessary.
-    data = builder.ReadWriteTexture(builder.ImportTexture("Previous AO", m_pState->m_LastMask, m_pState->m_LastMask->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-    previous = data; }, [](const auto&, xiiRenderGraphPassContext&) {});
-  return context.SetOutput(m_Previous, previous);
+  const auto last         = m_pState->m_Last;
+  last->m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
+  xiiRenderPassResourceScope scope(context);
+  struct Data
+  {
+    xiiSharedPtr<State::Slot>   m_Slot;
+    xiiRenderGraphTextureHandle m_Output;
+  };
+  const auto emitted = context.m_Graph.AddPass<Data>("Publish AO History", xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
+    data.m_Slot = last;
+    builder.WaitForFence(last->m_ReadyFence, last->m_uiReadyValue).AssertSuccess();
+    data.m_Output = builder.ReadWriteTexture(builder.ImportTexture("Previous AO", last->m_Mask, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource); }, [](const Data&, xiiRenderGraphPassContext&) {});
+  return context.SetOutput(m_Previous, emitted.first->m_Output);
 }
 xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -134,59 +137,56 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
   XII_LOCK(state.m_Mutex);
   auto& pipeline = m_bUseHistory ? state.m_Pipeline : state.m_SpatialPipeline;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, m_bUseHistory ? "Shaders/Pipeline/AmbientOcclusionTemporal.xiiShader" : "Shaders/Pipeline/SpatialAmbientOcclusion.xiiShader"));
-  const bool  historyValid = m_bUseHistory && state.m_bHistoryValid && state.m_LastMask && state.m_LastMask->GetDescription().m_Size == size;
-  State::Slot next;
+  const auto temporalCamera = context.GetInputData(m_TemporalCamera).Downcast<const xiiTemporalCameraSnapshot>();
+  if (m_bUseHistory && (!temporalCamera || temporalCamera->m_Sample.m_Size != size))
+    return context.ReportFailure("Temporal AO requires a matching explicit temporal camera snapshot.");
+  const bool historyValid = m_bUseHistory && state.m_bHistoryValid && state.m_Last && state.m_Last->m_Mask->GetDescription().m_Size == size &&
+    temporalCamera->m_Sample.m_bHistoryValid && state.m_Last->m_uiFrame == temporalCamera->m_Sample.m_uiPreviousFrame && state.m_Last->m_uiFrame < context.m_Graph.GetFrameIndex();
+  xiiSharedPtr<State::Slot> next;
   if (m_bUseHistory)
   {
-    xiiUInt32 selected = xiiInvalidIndex;
-    for (xiiUInt32 i = 0; i < state.m_Slots.GetCount(); ++i)
-      if (state.m_Slots[i].m_Mask != state.m_LastMask && state.m_Slots[i].m_uiLastUsedFrame <= completed)
-      {
-        selected = i;
-        break;
-      }
-    if (selected == xiiInvalidIndex)
-      selected = state.m_Slots.GetCount();
-    if (selected < state.m_Slots.GetCount())
-      next = state.m_Slots[selected];
-    if (!next.m_Mask || next.m_Mask->GetDescription().m_Size != size)
+    for (xiiUInt32 i = state.m_Slots.GetCount(); i-- > 0;)
     {
+      const auto& slot = state.m_Slots[i];
+      if (slot != state.m_Last && slot->GetRefCount() == 1 && slot->m_uiLastUsedFrame <= completed)
+      {
+        if (slot->m_Mask->GetDescription().m_Size != size)
+          state.m_Slots.RemoveAtAndSwap(i);
+        else if (!next)
+          next = slot;
+      }
+    }
+    if (!next)
+    {
+      if (state.m_Slots.GetCount() >= State::s_uiMaximumHistorySlots)
+        return context.ReportFailure("Temporal AO history capacity is exhausted by in-flight or retained recordings.");
+      next = XII_DEFAULT_NEW(State::Slot);
       xiiGALTextureCreationDescription description;
       description.m_Type      = xiiGALResourceDimension::Texture2D;
       description.m_Size      = size;
       description.m_Format    = xiiGALResourceFormat::R8UNormalized;
       description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-      next.m_Mask             = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+      next->m_Mask            = device->CreateTexture(description);
       description.m_Format    = xiiGALResourceFormat::RGBA16Float;
-      next.m_Surface          = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-      if (!next.m_Mask || !next.m_Surface)
-        return context.ReportFailure("Could not allocate AO history images.");
-    }
-    if (!next.m_ReadyFence)
-    {
-      xiiGALFenceCreationDescription description;
-      description.m_Type = xiiGALFenceType::General;
-      next.m_ReadyFence  = xiiGALDevice::GetDefaultDevice()->CreateFence(description);
-      if (!next.m_ReadyFence)
-        return context.ReportFailure("Could not allocate AO history readiness fence.");
-    }
-    ++next.m_uiReadyValue;
-    next.m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
-    if (selected == state.m_Slots.GetCount())
+      next->m_Surface         = device->CreateTexture(description);
+      next->m_ReadyFence      = device->CreateFence({.m_Type = xiiGALFenceType::General});
+      if (!next->m_Mask || !next->m_Surface || !next->m_ReadyFence)
+        return context.ReportFailure("Could not allocate AO history images or readiness fence.");
       state.m_Slots.PushBack(next);
-    else
-      state.m_Slots[selected] = next;
+    }
+    ++next->m_uiReadyValue;
+    next->m_uiFrame = next->m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
+    next->m_Camera                            = temporalCamera->m_Sample.m_Camera;
     if (historyValid)
-      for (auto& slot : state.m_Slots)
-        if (slot.m_Mask == state.m_LastMask)
-          slot.m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
+      state.m_Last->m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
   }
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
     xiiRenderGraphTextureHandle              m_Raw, m_Depth, m_Normal, m_Velocity, m_Previous, m_PreviousSurface, m_Output, m_Surface;
-    xiiRenderGraphBufferHandle               m_Camera, m_Global, m_Constants;
-    xiiSharedPtr<xiiGALTexture>              m_MaskImage, m_SurfaceImage;
+    xiiRenderGraphBufferHandle               m_Camera, m_Global, m_Constants, m_Reprojection;
+    xiiSharedPtr<State::Slot>                m_Next, m_PreviousSlot;
+    xiiAmbientOcclusionReprojectionConstants m_ReprojectionParameters;
     xiiSharedPtr<xiiGALFence>                m_ReadyFence;
     xiiUInt64                                m_uiReadyValue;
     xiiTemporalDenoiseConstants              m_Parameters;
@@ -200,23 +200,24 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
     data.m_State = m_pState;
     data.m_Pipeline = pipeline;
     data.m_uiHistoryRevision = state.m_uiHistoryRevision;
-    data.m_ReadyFence = next.m_ReadyFence;
-    data.m_uiReadyValue = next.m_uiReadyValue;
-    if (historyValid) builder.WaitForFence(state.m_LastFence, state.m_uiLastReadyValue).AssertSuccess();
+    data.m_Next              = next;
+    data.m_ReadyFence        = next ? next->m_ReadyFence : nullptr;
+    data.m_uiReadyValue      = next ? next->m_uiReadyValue : 0;
+    data.m_PreviousSlot      = historyValid ? state.m_Last : nullptr;
+    if (historyValid)
+      builder.WaitForFence(state.m_Last->m_ReadyFence, state.m_Last->m_uiReadyValue).AssertSuccess();
     data.m_Raw = builder.ReadTexture(raw, xiiGALResourceStateFlags::ShaderResource);
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Normal = builder.ReadTexture(normal, xiiGALResourceStateFlags::ShaderResource);
     data.m_Velocity = m_bUseHistory ? builder.ReadTexture(velocity, xiiGALResourceStateFlags::ShaderResource) : data.m_Normal;
     // HistoryValid == 0 exits the shader before history reads. Bind initialized
     // current inputs for the first frame and after camera cuts or size changes.
-    data.m_Previous = historyValid ? builder.ReadTexture(builder.ImportTexture("AO Previous Mask", state.m_LastMask, state.m_LastMask->GetResourceState()), xiiGALResourceStateFlags::ShaderResource) : data.m_Raw;
-    data.m_PreviousSurface = historyValid ? builder.ReadTexture(builder.ImportTexture("AO Previous Surface", state.m_LastSurface, state.m_LastSurface->GetResourceState()), xiiGALResourceStateFlags::ShaderResource) : data.m_Normal;
-    data.m_MaskImage = next.m_Mask;
-    data.m_SurfaceImage = next.m_Surface;
+    data.m_Previous        = historyValid ? builder.ReadTexture(builder.ImportTexture("AO Previous Mask", state.m_Last->m_Mask, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource) : data.m_Raw;
+    data.m_PreviousSurface = historyValid ? builder.ReadTexture(builder.ImportTexture("AO Previous Surface", state.m_Last->m_Surface, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource) : data.m_Normal;
     if (m_bUseHistory)
     {
-      data.m_Output = builder.WriteTexture(builder.ImportTexture("AO Filtered", next.m_Mask, next.m_Mask->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_Surface = builder.WriteTexture(builder.ImportTexture("AO Surface", next.m_Surface, next.m_Surface->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_Output  = builder.WriteTexture(builder.ImportTexture("AO Filtered", next->m_Mask, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_Surface = builder.WriteTexture(builder.ImportTexture("AO Surface", next->m_Surface, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::UnorderedAccess);
     }
     else
     {
@@ -226,6 +227,13 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
       description.m_Format = xiiGALResourceFormat::R8UNormalized;
       description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
       data.m_Output = builder.WriteTexture("Spatial AO", description, xiiGALResourceStateFlags::UnorderedAccess);
+    }
+    if (m_bUseHistory)
+    {
+      const auto& previous                                 = historyValid ? state.m_Last->m_Camera : next->m_Camera;
+      data.m_ReprojectionParameters.PreviousCameraPosition = previous.m_CameraPositionAndNearPlane;
+      data.m_ReprojectionParameters.PreviousCameraForward  = previous.m_CameraForwardAndFarPlane;
+      data.m_Reprojection                                  = xiiRenderPassUtils::Constants(builder, "AO Reprojection", sizeof(data.m_ReprojectionParameters));
     }
     data.m_Camera = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Global = builder.ReadBuffer(global, xiiGALResourceStateFlags::ConstantBuffer);
@@ -242,7 +250,14 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
       xiiGALMapHelper<xiiTemporalDenoiseConstants> constants(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *constants = data.m_Parameters;
     }
+    if (data.m_Reprojection.IsValid())
+    {
+      xiiGALMapHelper<xiiAmbientOcclusionReprojectionConstants> mapped(commands, execute.GetBuffer(data.m_Reprojection), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *mapped = data.m_ReprojectionParameters;
+    }
     commands.SetPipelineState(data.m_Pipeline.Borrow());
+    if (data.m_Reprojection.IsValid())
+      commands.ResolveAndSetConstantBuffer("xiiAmbientOcclusionReprojectionConstants", execute.GetBuffer(data.m_Reprojection), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("PerFrameCamera", execute.GetBuffer(data.m_Camera), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("PerFrameGlobal", execute.GetBuffer(data.m_Global), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
@@ -255,18 +270,19 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
     commands.ResolveAndSetUnorderedAccessTextureView("g_DenoisedOutput", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     if (data.m_Surface.IsValid())
       commands.ResolveAndSetUnorderedAccessTextureView("g_CurrentSurface", execute.GetTexture(data.m_Surface)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
+    if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      execute.ReportFailure("Could not bind ambient visibility filtering resources.");
+      return;
+    }
     commands.DispatchCompute({(data.m_Size.width + 7U) / 8U, (data.m_Size.height + 7U) / 8U, 1});
     if (data.m_ReadyFence)
     {
       commands.EnqueueSignal(data.m_ReadyFence.Borrow(), data.m_uiReadyValue);
       XII_LOCK(data.m_State->m_Mutex);
-      if (data.m_uiHistoryRevision == data.m_State->m_uiHistoryRevision)
+      if (data.m_uiHistoryRevision == data.m_State->m_uiHistoryRevision && (!data.m_State->m_bHistoryValid || data.m_State->m_Last->m_uiFrame < data.m_Next->m_uiFrame))
       {
-        data.m_State->m_LastFence = data.m_ReadyFence;
-        data.m_State->m_uiLastReadyValue = data.m_uiReadyValue;
-        data.m_State->m_LastMask = data.m_MaskImage;
-        data.m_State->m_LastSurface = data.m_SurfaceImage;
+        data.m_State->m_Last          = data.m_Next;
         data.m_State->m_bHistoryValid = true;
       }
     } });

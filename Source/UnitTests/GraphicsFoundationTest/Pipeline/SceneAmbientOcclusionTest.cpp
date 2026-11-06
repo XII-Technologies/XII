@@ -14,6 +14,7 @@
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -262,6 +263,9 @@ XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, RetainedRecordingsAndInvalidationB
   properties.Insert("UseRayTracing", false);
   const auto ao     = descriptor.AddPass("Ambient visibility", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), properties);
   const auto filter = descriptor.AddPass("Temporal filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
+  const auto temporalCamera = descriptor.AddPass("Temporal camera", xiiGetStaticRTTI<xiiTemporalCameraPass>());
+  descriptor.m_Passes[temporalCamera].m_Properties.Insert("Enabled", false);
+  XII_TEST_RESULT(descriptor.Connect(temporalCamera, "TemporalCamera", filter, "TemporalCamera"));
   for (const auto pass : {ao, filter})
   {
     XII_TEST_RESULT(descriptor.Connect(source, "Depth", pass, "SceneDepth"));

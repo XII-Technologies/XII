@@ -6,6 +6,7 @@
 
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/Passes/Transparency/WeightedBlendedOITResolvePass.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
@@ -389,6 +390,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
   screenProperties.Insert("UseRayTracing", false);
   const auto generate = leaf.AddPass("Generate", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), screenProperties);
   const auto temporal = leaf.AddPass("Filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
+  const auto temporalCamera = leaf.AddPass("Temporal camera", xiiGetStaticRTTI<xiiTemporalCameraPass>());
+  leaf.m_Passes[temporalCamera].m_Properties.Insert("Enabled", false);
+  XII_TEST_RESULT(leaf.Connect(temporalCamera, "TemporalCamera", temporal, "TemporalCamera"));
   XII_TEST_RESULT(leaf.Connect(emptyDepth, "Texture", generate, "SceneDepth"));
   XII_TEST_RESULT(leaf.Connect(normal, "Texture", generate, "NormalRoughness"));
   XII_TEST_RESULT(leaf.Connect(signal, "Texture", temporal, "RawAO"));
