@@ -310,6 +310,14 @@ void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& 
   if (msg.m_pExtractedRenderData == nullptr || pRenderData == nullptr)
     return;
 
+  // IfStatic is a conditional request. Dynamic owners must be extracted again
+  // after their transforms change, even when the component requests caching.
+  if (caching == xiiRenderData::Caching::IfStatic)
+  {
+    const xiiGameObject* owner = nullptr;
+    if (GetWorld()->TryGetObject(msg.m_hCurrentObject, owner) && owner->IsDynamic())
+      caching = xiiRenderData::Caching::Never;
+  }
   msg.m_pExtractedRenderData->AddRenderData(pRenderData, caching);
 
   if (msg.m_hCurrentObject.IsInvalidated())
@@ -706,7 +714,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
         msg.m_hCurrentObject    = hObject;
         msg.m_hCurrentComponent = xiiComponentHandle();
 
-        if (ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hObject, *viewDetail.m_pExtractedData))
+        if (pObject->IsStatic() && ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hObject, *viewDetail.m_pExtractedData))
         {
           msg.m_hCurrentObject = xiiGameObjectHandle();
           continue;
@@ -756,7 +764,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
             m_SharedFramePackets[hComponent]; // Also caches an empty extraction for this frame.
           }
 
-          if (ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hComponent, *viewDetail.m_pExtractedData))
+          if (pObject->IsStatic() && ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hComponent, *viewDetail.m_pExtractedData))
           {
             ++viewDetail.m_pView->m_ExtractionStatistics.m_uiReusedComponents;
             continue;

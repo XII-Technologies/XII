@@ -53,7 +53,7 @@ public:
     ++m_uiExtractions;
     auto* packet      = GetWorld()->GetModule<xiiRenderWorldModule>()->CreateRenderDataForThisFrame<xiiExtractionTestPacket>(this);
     packet->m_uiValue = m_uiValue;
-    msg.AddRenderData(packet, GetOwner()->IsStatic() ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never);
+    msg.AddRenderData(packet, xiiRenderData::Caching::IfStatic);
   }
 };
 XII_BEGIN_COMPONENT_TYPE(xiiExtractionTestComponent, 1, xiiComponentMode::Static)
@@ -202,5 +202,51 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     XII_TEST_BOOL(derived->m_bObservedGeometryDemand);
     for (auto* view : views)
       module->DestroyView(view->GetHandle());
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IfStatic does not retain dynamic owner snapshots")
+  {
+    xiiWorldDescription description("Dynamic IfStatic extraction");
+    xiiWorld            world(description);
+    XII_LOCK(world.GetWriteMarker());
+    auto*                    module = world.GetOrCreateModule<xiiRenderWorldModule>();
+    xiiGameObjectDescription objectDescription;
+    objectDescription.m_bDynamic = true;
+    xiiGameObject* object        = nullptr;
+    world.CreateObject(objectDescription, object);
+    xiiExtractionTestComponent* component = nullptr;
+    xiiExtractionTestComponent::CreateComponent(object, component);
+    xiiRenderPipelineResourceDescriptor descriptor;
+    xiiVariantDictionary                properties;
+    properties.Insert("Categories", static_cast<xiiUInt32>(xiiRenderExtractionCategory::Geometry));
+    descriptor.AddPass("Demand", xiiGetStaticRTTI<xiiExtractionDemandPass>(), properties);
+    const auto resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Dynamic IfStatic extraction", std::move(descriptor));
+    xiiCamera  camera;
+    camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+    xiiView* views[2];
+    for (auto*& view : views)
+    {
+      module->CreateView("Shared dynamic extraction", view);
+      view->SetCamera(&camera);
+      view->SetViewport({0, 0, 16, 16});
+      view->SetRenderPipelineResource(resource);
+    }
+    for (xiiUInt32 frame = 0; frame < 3; ++frame)
+    {
+      component->m_uiValue = frame + 20;
+      object->SetLocalPosition(xiiVec3(float(frame), 0, 0));
+      world.Update();
+      XII_TEST_INT(component->m_uiExtractions, frame + 1);
+      for (const auto* view : views)
+      {
+        const auto packets = view->GetExtractedRenderData()->GetAllRenderData();
+        if (!XII_TEST_INT(packets.GetCount(), 1))
+          return;
+        const auto* packet = static_cast<const xiiExtractionTestPacket*>(packets[0]);
+        XII_TEST_INT(packet->m_uiValue, frame + 20);
+        XII_TEST_FLOAT(packet->m_GlobalTransform.m_vPosition.x, float(frame), 0.0001f);
+      }
+      XII_TEST_BOOL(views[0]->GetExtractedRenderData()->GetAllRenderData()[0] == views[1]->GetExtractedRenderData()->GetAllRenderData()[0]);
+    }
   }
 }
