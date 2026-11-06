@@ -93,7 +93,7 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Visible = builder.ReadBuffer(visible, xiiGALResourceStateFlags::ShaderResource);
       data.m_Count = builder.ReadBuffer(count, xiiGALResourceStateFlags::ShaderResource);
       data.m_Lod = builder.ReadBuffer(lod, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Arguments = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument | xiiGALResourceStateFlags::ShaderResource);
+      data.m_Arguments   = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument | xiiGALResourceStateFlags::ShaderResource);
       data.m_OutputCount = builder.ReadWriteBuffer(initialCount, xiiGALResourceStateFlags::UnorderedAccess);
       data.m_Overflow = builder.ReadWriteBuffer(initialOverflow, xiiGALResourceStateFlags::UnorderedAccess);
       xiiGALBufferCreationDescription description;
