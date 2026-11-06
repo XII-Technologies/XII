@@ -11,7 +11,7 @@ class XII_GRAPHICSCORE_DLL xiiAutoExposurePass final : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiAutoExposurePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineBufferInputPin  m_InputLuminanceHistogram;
+  xiiRenderPipelineBufferInputPin  m_InputLuminanceHistogram{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin m_OutputCurrentExposure;
 
   xiiAutoExposurePass();

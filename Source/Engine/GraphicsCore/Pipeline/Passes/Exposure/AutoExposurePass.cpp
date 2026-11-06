@@ -87,7 +87,6 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/ExposureAdaptation.xiiShader"));
   xiiDisplayOutputSettings authored;
   authored.m_Exposure         = m_Settings;
   const auto previousRevision = m_pState->m_Display.m_uiViewRevision;
@@ -96,6 +95,34 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
   if (!wasValid || previousRevision != m_pState->m_Display.m_uiViewRevision || previousOverride != m_pState->m_Display.m_Override)
     InvalidateTemporalHistory();
+  const auto& settings = m_pState->m_Display.m_Settings.m_Exposure;
+  if (settings.m_Mode == xiiExposureMode::Manual)
+  {
+    const float   cameraExposure = context.m_pView && context.m_pView->GetCamera() ? context.m_pView->GetCamera()->GetExposure() : 1.0f;
+    const xiiVec2 value(cameraExposure * xiiMath::Pow(2.0f, settings.m_fExposureCompensation), 0);
+    if (!value.IsValid() || value.x <= 0)
+      return context.ReportFailure("Manual exposure requires a finite positive compensated camera exposure.");
+    InvalidateTemporalHistory();
+    m_pState->m_Exposure.Clear();
+    struct Manual
+    {
+      xiiRenderGraphBufferHandle m_Output;
+      xiiVec2                    m_Value;
+    };
+    const auto emitted = context.m_Graph.AddPass<Manual>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Manual& data, xiiRenderGraphBuilder& builder) {
+      data.m_Value = value;
+      xiiGALBufferCreationDescription description;
+      description.m_uiElementByteStride = sizeof(float);
+      description.m_uiSize = sizeof(xiiVec2);
+      description.m_BindFlags = xiiGALBindFlags::ShaderResource;
+      description.m_Mode = xiiGALBufferMode::Structured;
+      data.m_Output = builder.WriteBuffer("Manual Exposure", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Manual& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Output), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Value), sizeof(data.m_Value))); });
+    return context.SetOutput(m_OutputCurrentExposure, emitted.first->m_Output);
+  }
+  const auto* histogram = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_InputLuminanceHistogram));
+  if (!histogram || histogram->m_Mode != xiiGALBufferMode::Structured || histogram->m_uiSize != 256 * sizeof(xiiUInt32) || histogram->m_uiElementByteStride != sizeof(xiiUInt32) || !histogram->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+    return context.ReportFailure("Auto exposure requires a readable structured histogram of 256 uint counters.");
+  XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/ExposureAdaptation.xiiShader"));
   if (!m_pState->m_Exposure)
   {
     xiiGALBufferCreationDescription description;
@@ -107,9 +134,6 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
     if (!m_pState->m_Exposure)
       return XII_FAILURE;
   }
-  const auto* histogram = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_InputLuminanceHistogram));
-  if (!histogram || histogram->m_Mode != xiiGALBufferMode::Structured || histogram->m_uiSize != 256 * sizeof(xiiUInt32) || histogram->m_uiElementByteStride != sizeof(xiiUInt32) || !histogram->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-    return context.ReportFailure("Auto exposure requires a readable structured histogram of 256 uint counters.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_hHistogram = context.GetInputBuffer(m_InputLuminanceHistogram);
     data.m_DisplaySettings = m_pState->m_Display.m_Settings;

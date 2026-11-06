@@ -2,6 +2,11 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+#include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 
 #include <Core/World/World.h>
@@ -172,9 +177,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ReusableExposureOperations)
       ++inspected;
       const auto branch   = compiled->GetProvenance()[index].m_InstancePath[0] == brighter ? 1U : 0U;
       auto       exposure = view->GetRenderGraph()->GetExportedBuffer(readback->m_Exposure);
-      if (frame == 0)
-        histories[branch] = exposure;
-      XII_TEST_BOOL(exposure && exposure == histories[branch]);
+      histories[branch]   = exposure;
+      XII_TEST_BOOL(exposure != nullptr);
       auto staging = view->GetRenderGraph()->GetExportedBuffer(readback->m_Readback);
       if (!XII_TEST_BOOL(staging != nullptr))
         return;
@@ -292,4 +296,86 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOutputOperations)
     }
   }
   module->DestroyView(viewHandle);
+}
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, RetainedManualExposureNeedsNoHistogram)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor descriptor;
+  xiiAutoExposurePass                 authored;
+  authored.m_Settings.m_Mode                  = xiiExposureMode::Manual;
+  authored.m_Settings.m_fExposureCompensation = 1;
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(authored.GetProperties(properties));
+  const auto adapt   = descriptor.AddPass("Manual exposure", xiiGetStaticRTTI<xiiAutoExposurePass>(), properties);
+  const auto capture = descriptor.AddPass("Capture", xiiGetStaticRTTI<xiiOptionalBufferTestExport>());
+  XII_TEST_RESULT(descriptor.Connect(adapt, "CurrentExposure", capture, "Input"));
+  descriptor.m_Interface.PushBack({"Exposure", false, descriptor.m_Passes[capture].m_Id, "Output"});
+  const auto             resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Retained manual exposure", std::move(descriptor));
+  xiiWorldDescription    description("Retained manual exposure world");
+  xiiUniquePtr<xiiWorld> world = XII_DEFAULT_NEW(xiiWorld, description);
+  xiiCamera              camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView* view = nullptr;
+  {
+    XII_LOCK(world->GetWriteMarker());
+    world->SetWorldSimulationEnabled(false);
+    world->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Retained exposure", view);
+    view->SetCamera(&camera);
+    view->SetViewport({0, 0, 8, 8});
+  }
+  xiiRenderPipelineInstance recording;
+  if (!XII_TEST_RESULT(recording.Synchronize(resource)))
+    return;
+  xiiRenderGraphTestContext  contexts[2];
+  xiiRenderGraphBufferHandle outputs[2];
+  xiiUInt64                  frames[2];
+  const float                cameraExposure[] = {0.25f, 8.0f};
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    if (!XII_TEST_RESULT(contexts[index].Initialize("Retained manual exposure graph")))
+      return;
+    camera.SetExposure(cameraExposure[index]);
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    frames[index] = frame.GetFrameIndex();
+    auto& graph   = contexts[index].GetGraph();
+    graph.BeginSetup(frames[index]);
+    {
+      XII_LOCK(world->GetWriteMarker());
+      if (!XII_TEST_RESULT(recording.Build(view, graph, contexts[index].GetBlackboard())))
+        return;
+    }
+    outputs[index] = recording.GetInterfaceBinding(recording.GetPipeline()->FindInterface("Exposure", false))->m_hBuffer;
+    graph.EndSetup();
+    frame.End();
+  }
+  recording.Clear();
+  world.Clear();
+  xiiSharedPtr<xiiGALBuffer> resolved[2];
+  for (const xiiUInt32 index : {1U, 0U})
+  {
+    auto& context = contexts[index];
+    auto& graph   = context.GetGraph();
+    auto& cache   = context.GetResourceCache();
+    cache.BeginFrame(frames[index], frames[index]);
+    XII_SCOPE_EXIT(cache.EndFrame());
+    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
+      return;
+    environment.GetDevice()->WaitIdle();
+    xiiTestExposureResources(graph, false);
+    resolved[index] = graph.GetExportedBuffer(outputs[index]);
+    xiiVec2 exposure;
+    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), resolved[index].Borrow(), 0, exposure))
+      return;
+    XII_TEST_FLOAT(exposure.x, cameraExposure[index] * 2, 0);
+    XII_TEST_FLOAT(exposure.y, 0, 0);
+  }
+  XII_TEST_BOOL(resolved[0] != resolved[1]);
 }
