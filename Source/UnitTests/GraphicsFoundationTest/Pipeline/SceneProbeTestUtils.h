@@ -12,6 +12,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/ReflectionCaptureComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
+#include <GraphicsCore/Components/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -191,6 +192,22 @@ namespace xiiSceneProbeTest
       capture->SetActiveFlag(restricted && i == 0);
       probes[i] = capture->GetHandle();
     }
+    xiiComponentHandle skies[2];
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      xiiGameObjectDescription distant;
+      distant.m_bDynamic      = true;
+      distant.m_LocalPosition = xiiVec3(5000, 8000, -3000);
+      distant.m_LocalScaling  = xiiVec3(2, 0.5f, 3);
+      xiiGameObject* owner    = nullptr;
+      world.CreateObject(distant, owner);
+      xiiSkyLightComponent* sky = nullptr;
+      xiiSkyLightComponent::CreateComponent(owner, sky);
+      sky->SetEnvironmentMap(i ? blue : red);
+      sky->SetPriority(xiiMath::MinValue<xiiInt32>());
+      sky->SetActiveFlag(false);
+      skies[i] = sky->GetHandle();
+    }
     xiiGameObjectDescription atmosphereObject;
     xiiGameObject*           atmosphereOwner = nullptr;
     world.CreateObject(atmosphereObject, atmosphereOwner);
@@ -253,12 +270,15 @@ namespace xiiSceneProbeTest
                                                                     subscription);
     xiiTime   cpuUpdates;
     xiiUInt32 cpuSamples = 0;
-    xiiVec4   center[27];
-    for (xiiUInt32 phase = 0; phase < (restricted ? 1U : 27U); ++phase)
+    xiiVec4   center[42];
+    for (xiiUInt32 phase = 0; phase < (restricted ? 1U : 42U); ++phase)
     {
       xiiReflectionCaptureComponent *first = nullptr, *second = nullptr;
       xiiMeshComponent *             opaque = nullptr, *transparent = nullptr;
       if (!XII_TEST_BOOL(world.TryGetComponent(probes[0], first) && world.TryGetComponent(probes[1], second) && world.TryGetComponent(surfaces[0], opaque) && world.TryGetComponent(surfaces[1], transparent)))
+        return;
+      xiiSkyLightComponent *sky = nullptr, *otherSky = nullptr;
+      if (!XII_TEST_BOOL(world.TryGetComponent(skies[0], sky) && world.TryGetComponent(skies[1], otherSky)))
         return;
       if (phase == 1)
         first->SetActiveFlag(true);
@@ -371,6 +391,72 @@ namespace xiiSceneProbeTest
       }
       if (phase == 26)
         transparent->SetMaterialOverride(0, dielectricAuthored);
+      if (phase == 27)
+      {
+        first->SetActiveFlag(false);
+        second->SetActiveFlag(false);
+        sky->SetActiveFlag(true);
+      }
+      if (phase == 28)
+      {
+        opaque->SetActiveFlag(true);
+        opaque->SetMaterialOverride(0, dielectric);
+        transparent->SetActiveFlag(false);
+        view->SetPipelineParameter("EnvironmentAmbientRadiance", xiiVec3(20, 30, 40));
+      }
+      if (phase == 29)
+        otherSky->SetActiveFlag(true);
+      if (phase == 30)
+        otherSky->SetPriority(10);
+      if (phase == 31)
+      {
+        otherSky->SetActiveFlag(false);
+        sky->SetEnvironmentMap(mipMap);
+        opaque->SetMaterialOverride(0, mirror);
+      }
+      if (phase == 32)
+        sky->GetOwner()->SetLocalRotation(xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(90)));
+      if (phase == 33)
+      {
+        sky->GetOwner()->SetLocalRotation(xiiQuat::MakeIdentity());
+        sky->SetSaturation(0);
+      }
+      if (phase == 34)
+        sky->SetIntensity(0.5f);
+      if (phase == 35)
+      {
+        sky->SetIntensity(1);
+        sky->SetSaturation(1);
+        sky->SetEnvironmentMap(blue);
+        first->SetActiveFlag(true);
+        first->SetInfluenceShape(xiiReflectionProbeInfluenceShape::Sphere);
+        first->SetSphereRadius(1);
+        first->SetBlendDistance(1);
+        opaque->SetMaterialOverride(0, dielectric);
+      }
+      if (phase == 36)
+        first->SetBlendDistance(0);
+      if (phase == 37)
+      {
+        first->SetActiveFlag(false);
+        sky->SetIntensity(0);
+        view->SetPipelineParameter("EnvironmentAmbientRadiance", xiiVec3::MakeZero());
+      }
+      if (phase == 38)
+      {
+        sky->SetIntensity(1);
+        sky->SetActiveFlag(false);
+      }
+      if (phase == 39)
+        sky->SetActiveFlag(true);
+      if (phase == 40)
+      {
+        opaque->SetActiveFlag(false);
+        transparent->SetActiveFlag(true);
+        transparent->SetMaterialOverride(0, dielectricTransparent);
+      }
+      if (phase == 41)
+        transparent->SetMaterialOverride(0, dielectricAuthored);
       if (phase == 17)
         atmosphere->SetActiveFlag(false);
       if (phase == 12)
@@ -406,7 +492,7 @@ namespace xiiSceneProbeTest
       center[phase]               = hdr[centerIndex];
       const auto color            = center[phase];
       XII_TEST_BOOL(color.IsValid());
-      if (phase == 0 || phase == 8 || phase == 13 || phase == 23 || phase == 24)
+      if (phase == 0 || phase == 8 || phase == 13 || phase == 23 || phase == 24 || phase == 37 || phase == 38)
       {
         XII_TEST_BOOL(!image("EnvironmentSpecular"));
         XII_TEST_BOOL(!image("ReflectionLighting"));
@@ -436,7 +522,7 @@ namespace xiiSceneProbeTest
         XII_TEST_FLOAT(color.y, 0, 0.0001f);
         XII_TEST_FLOAT(color.z, 0, 0.0001f);
       }
-      else
+      else if (phase <= 27 || phase == 40 || phase == 41)
       {
         xiiDynamicArray<xiiVec4> accumulation;
         if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image("TransparentAccumulation"), accumulation))
@@ -475,6 +561,33 @@ namespace xiiSceneProbeTest
         XII_TEST_FLOAT(color.y, 0, 0.0001f);
         XII_TEST_FLOAT(color.z, 0, 0.0001f);
       }
+      if (phase == 27)
+        XII_TEST_VEC3(color.GetAsVec3(), center[26].GetAsVec3(), 0.003f);
+      if (phase == 28 || phase == 36)
+        XII_TEST_VEC3(color.GetAsVec3(), center[22].GetAsVec3(), 0.003f);
+      if (phase == 29)
+      {
+        const bool firstWins = skies[0].GetInternalID().m_Data < skies[1].GetInternalID().m_Data;
+        XII_TEST_VEC3(color.GetAsVec3(), firstWins ? center[28].GetAsVec3() : xiiVec3(0, 0, center[28].x), 0.003f);
+      }
+      if (phase == 30 || phase == 39)
+        XII_TEST_VEC3(color.GetAsVec3(), xiiVec3(0, 0, center[28].x), 0.003f);
+      if (phase == 31)
+        XII_TEST_BOOL(color.x > color.y + color.z + 0.1f);
+      if (phase == 32)
+        XII_TEST_BOOL(color.y > color.x + color.z + 0.1f);
+      if (phase == 33)
+      {
+        XII_TEST_FLOAT(color.x, color.y, 0.001f);
+        XII_TEST_FLOAT(color.y, color.z, 0.001f);
+        XII_TEST_BOOL(color.x > 0.01f);
+      }
+      if (phase == 34)
+        XII_TEST_VEC3(color.GetAsVec3(), center[33].GetAsVec3() * 0.5f, 0.001f);
+      if (phase == 35)
+        XII_TEST_VEC3(color.GetAsVec3(), xiiVec3(center[28].x * 0.5f, 0, center[28].x * 0.5f), 0.003f);
+      if (phase == 40 || phase == 41)
+        XII_TEST_VEC3(color.GetAsVec3(), center[39].GetAsVec3() * 0.5f, 0.003f);
       xiiUInt32 presented;
       if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), target.Borrow(), size.width / 2, size.height / 2, presented))
         return;
@@ -489,6 +602,14 @@ namespace xiiSceneProbeTest
     }
     if (!restricted)
     {
+      xiiSkyLightComponent* sky = nullptr;
+      if (!XII_TEST_BOOL(world.TryGetComponent(skies[0], sky)))
+        return;
+      sky->SetActiveFlag(false);
+      xiiReflectionCaptureComponent* original = nullptr;
+      if (!XII_TEST_BOOL(world.TryGetComponent(probes[0], original)))
+        return;
+      original->SetActiveFlag(true);
       xiiHybridArray<xiiComponentHandle, 64> extraProbes;
       for (xiiUInt32 index = 0; index < 64; ++index)
       {

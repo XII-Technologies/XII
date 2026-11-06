@@ -7,3 +7,5 @@
 XII_CREATE_SIMPLE_TEST(EditorViews, TemporalScreenReflections) { xiiSceneReflectionTest::Run(true, true, true); }
 
 XII_CREATE_SIMPLE_TEST(EditorViews, ProbeFallbackReplacesScreenConfidence) { xiiSceneReflectionTest::Run(true, true, true, true); }
+
+XII_CREATE_SIMPLE_TEST(EditorViews, SkyFallbackReplacesScreenConfidence) { xiiSceneReflectionTest::Run(true, true, true, true, true); }

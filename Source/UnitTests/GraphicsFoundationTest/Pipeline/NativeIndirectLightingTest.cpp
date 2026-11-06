@@ -9,15 +9,25 @@
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentSpecularPass.h>
 
 #include <Core/Graphics/Camera.h>
+#include <Core/World/World.h>
+#include <Core/WorldSerializer/WorldReader.h>
+#include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Components/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
+#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/WorldReflectionProbesPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
@@ -334,5 +344,186 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
     }
     frame.End();
+  }
+}
+
+
+XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, SkyLightingUsesScalarBindingsAndSurvivesWorldRetirement)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  {
+    const auto                                     shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Passes/Lighting/EnvironmentSkySpecular.xiiShader");
+    xiiHashTable<xiiHashedString, xiiHashedString> variables;
+    const auto                                     handle = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
+    xiiResourceLock<xiiShaderPermutationResource>  compiled(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(compiled.IsValid() && compiled->IsShaderValid()))
+      return;
+    bool radiance = false, irradiance = false;
+    for (const auto& binding : compiled->GetPipelineResourceSignature()->GetDescription().m_Resources)
+    {
+      XII_TEST_INT(binding.m_uiArraySize, 1);
+      radiance |= binding.m_sName == "g_SkyRadiance";
+      irradiance |= binding.m_sName == "g_SkyIrradiance";
+    }
+    XII_TEST_BOOL(radiance && irradiance);
+  }
+  xiiRenderPipelineResourceDescriptor root;
+  const auto                          clear = [&](xiiStringView name, xiiColor color, xiiGALResourceFormat::Enum format) {
+    xiiClearTexturePass pass;
+    pass.m_OutputTexture.SetResolution({xiiRenderPipelineTextureResolutionMode::Fixed, 9, 11});
+    pass.m_OutputTexture.SetFormat(format);
+    pass.m_Color = color;
+    xiiVariantDictionary properties;
+    XII_TEST_RESULT(pass.GetProperties(properties));
+    return root.AddPass(name, xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
+  };
+  const auto depth    = clear("Depth", {0.5f, 0, 0}, xiiGALResourceFormat::R32Float);
+  const auto normal   = clear("Normal", {0.5f, 0.5f, 0}, xiiGALResourceFormat::RG32Float);
+  const auto albedo   = clear("Albedo", {0.8f, 0.8f, 0.8f}, xiiGALResourceFormat::RGBA32Float);
+  const auto material = clear("Material", {0.5f, 0, 0.5f, 0}, xiiGALResourceFormat::RGBA32Float);
+  const auto camera   = root.AddPass("Camera and BRDF", xiiGetStaticRTTI<xiiIndirectTestCameraLut>());
+  const auto sky      = root.AddPass("World environment", xiiGetStaticRTTI<xiiWorldReflectionProbesPass>());
+  const auto lighting = root.AddPass("Sky lighting", xiiGetStaticRTTI<xiiEnvironmentSpecularPass>());
+  XII_TEST_RESULT(root.Connect(depth, "Texture", lighting, "Depth"));
+  XII_TEST_RESULT(root.Connect(normal, "Texture", lighting, "Normal"));
+  XII_TEST_RESULT(root.Connect(albedo, "Texture", lighting, "Albedo"));
+  XII_TEST_RESULT(root.Connect(material, "Texture", lighting, "Material"));
+  XII_TEST_RESULT(root.Connect(camera, "Camera", lighting, "Camera"));
+  XII_TEST_RESULT(root.Connect(camera, "BRDFLut", lighting, "BRDFLut"));
+  XII_TEST_RESULT(root.Connect(sky, "ReflectionProbes", lighting, "ReflectionProbes"));
+  for (const auto name : {"Lighting", "EnvironmentIrradiance"})
+  {
+    const auto sink = root.AddPass(name, xiiGetStaticRTTI<xiiIndirectTestExport>());
+    XII_TEST_RESULT(root.Connect(lighting, name, sink, "Input"));
+    root.m_Interface.PushBack({name, false, root.m_Passes[sink].m_Id, "Output"});
+  }
+  const auto                  resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Sky.RetainedIndependentWorlds", std::move(root));
+  xiiRenderGraphTestContext   contexts[2];
+  xiiRenderGraphTextureHandle outputs[2][2];
+  xiiRenderGraphFrame         frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  XII_SCOPE_EXIT(frame.End());
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    if (!XII_TEST_RESULT(contexts[index].Initialize("Retained independent sky")))
+      return;
+    contexts[index].GetResourceCache().BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+  }
+  XII_SCOPE_EXIT(for (auto& context : contexts) context.GetResourceCache().EndFrame());
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    xiiTextureCubeResourceDescriptor cube;
+    cube.m_TextureDescription.m_Type               = xiiGALResourceDimension::TextureCube;
+    cube.m_TextureDescription.m_Size               = {1, 1};
+    cube.m_TextureDescription.m_uiArraySizeOrDepth = 6;
+    cube.m_TextureDescription.m_uiMipLevels        = 1;
+    cube.m_TextureDescription.m_Format             = xiiGALResourceFormat::RGBA32Float;
+    cube.m_TextureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
+    const xiiVec4                value             = index ? xiiVec4(0, 0, 2, 1) : xiiVec4(2, 0, 0, 1);
+    xiiGALTextureSubResourceData faces[6];
+    for (auto& face : faces)
+      face = xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(&value), sizeof(value)), sizeof(value), sizeof(value));
+    cube.m_InitialContent      = faces;
+    auto                source = xiiResourceManager::CreateResource<xiiTextureCubeResource>(index ? "Sky.RetiredBlue" : "Sky.RetiredRed", std::move(cube));
+    xiiWorldDescription description("Retired sky owner");
+    xiiWorld            world(description);
+    XII_LOCK(world.GetWriteMarker());
+    world.SetWorldSimulationEnabled(false);
+    auto*                    renderer = world.GetOrCreateModule<xiiRenderWorldModule>();
+    xiiGameObjectDescription authored;
+    xiiGameObject*           owner = nullptr;
+    world.CreateObject(authored, owner);
+    xiiSkyLightComponent* component = nullptr;
+    xiiSkyLightComponent::CreateComponent(owner, component);
+    component->SetEnvironmentMap(source);
+    world.Update();
+    if (index == 1)
+    {
+      component->SetIntensity(0.5f);
+      component->SetSaturation(0.25f);
+      component->SetPriority(-7);
+      xiiDefaultMemoryStreamStorage bytes;
+      xiiMemoryStreamWriter         writer(&bytes);
+      xiiWorldWriter                worldWriter;
+      const xiiGameObject*          root = owner;
+      worldWriter.WriteObjects(writer, xiiMakeArrayPtr(&root, 1));
+      xiiMemoryStreamReader reader(&bytes);
+      xiiWorldReader        worldReader;
+      if (!XII_TEST_RESULT(worldReader.ReadWorldDescription(reader)))
+        return;
+      xiiDynamicArray<xiiGameObject*> roots;
+      xiiPrefabInstantiationOptions   options;
+      options.m_pCreatedRootObjectsOut = &roots;
+      worldReader.InstantiatePrefab(world, xiiTransform::MakeIdentity(), options);
+      world.Update();
+      if (!XII_TEST_INT(roots.GetCount(), 1) || !XII_TEST_BOOL(roots[0]->TryGetComponentOfBaseType(component)))
+        return;
+      owner = roots[0];
+      XII_TEST_BOOL(component->GetEnvironmentMap() == source);
+      XII_TEST_FLOAT(component->GetIntensity(), 0.5f, 0);
+      XII_TEST_FLOAT(component->GetSaturation(), 0.25f, 0);
+      XII_TEST_INT(component->GetPriority(), -7);
+    }
+    xiiView* view = nullptr;
+    renderer->CreateView("Retired sky view", view);
+    view->SetRenderEnabled(false);
+    view->SetViewport({0, 0, 9, 11});
+    xiiSkyLightRenderData packet;
+    packet.m_hEnvironmentMap = source;
+    packet.m_hOwnerObject    = owner->GetHandle();
+    packet.m_hOwnerComponent = component->GetHandle();
+    view->GetExtractedRenderData()->AddRenderData(&packet);
+    view->GetExtractedRenderData()->SortAndBatches();
+    xiiRenderPipelineInstance instance;
+    if (!XII_TEST_RESULT(instance.Synchronize(resource)))
+      return;
+    auto& context = contexts[index];
+    auto& graph   = context.GetGraph();
+    if (index == 0)
+    {
+      packet.m_fIntensity = xiiMath::Infinity<float>();
+      graph.BeginSetup(frame.GetFrameIndex());
+      XII_TEST_BOOL(instance.Build(view, graph, context.GetBlackboard()).Failed());
+      XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("Invalid extracted sky light") != nullptr);
+      graph.EndSetup();
+      packet.m_fIntensity = 1;
+    }
+    graph.BeginSetup(frame.GetFrameIndex());
+    if (!XII_TEST_RESULT(instance.Build(view, graph, context.GetBlackboard())))
+      return;
+    outputs[index][0] = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Lighting", false))->m_hTexture;
+    outputs[index][1] = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("EnvironmentIrradiance", false))->m_hTexture;
+    graph.EndSetup();
+    instance.Clear();
+    view->GetExtractedRenderData()->Clear();
+    if (!XII_TEST_RESULT(graph.Compile()))
+      return;
+  }
+  xiiResourceManager::FreeAllUnusedResources();
+  for (xiiUInt32 index : {1U, 0U})
+  {
+    auto& context = contexts[index];
+    if (!XII_TEST_RESULT(context.GetGraph().Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &context.GetResourceCache())))
+      return;
+  }
+  for (xiiUInt32 index = 0; index < 2; ++index)
+  {
+    const auto irradiance = contexts[index].GetGraph().GetExportedTexture(outputs[index][1]);
+    const auto specular   = contexts[index].GetGraph().GetExportedTexture(outputs[index][0]);
+    xiiVec4    diffuse, reflected;
+    if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), irradiance.Borrow(), 4, 5, diffuse) || !xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), specular.Borrow(), 4, 5, reflected))
+      return;
+    const xiiUInt32 channel = index ? 2 : 0;
+    XII_TEST_FLOAT(reflected.GetData()[channel], 2 * (0.04f * 0.275f + 0.1f), 0.001f);
+    XII_TEST_FLOAT(diffuse.GetData()[channel], 2 * (1 - 0.04f * 0.275f - 0.1f) * xiiMath::Pi<float>(), 0.001f);
+    XII_TEST_FLOAT(diffuse.w, 1, 0);
+    XII_TEST_FLOAT(reflected.GetData()[2 - channel], 0, 0.0001f);
+    XII_TEST_FLOAT(diffuse.GetData()[2 - channel], 0, 0.0001f);
   }
 }

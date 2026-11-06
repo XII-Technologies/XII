@@ -817,8 +817,8 @@ applies its split-sum `F0*A+B` response once. The forward transparent shader use
 the same probe sampler and BRDF response, evaluated at the fragment's position,
 normal, view and roughness. Unlit materials do not receive probe lighting. Empty
 snapshots add no lookup, sampling dispatch, radiance image or transparent shader
-bindings. Generated material shader caches advance to document version 11 so
-previous graph shaders regenerate with the forward probe permutation. Active lookup generation currently requires extended storage formats;
+bindings. Generated material shader caches advance to document version 12 so
+previous graph shaders regenerate with the forward probe and sky permutations. Active lookup generation currently requires extended storage formats;
 the authored probe bypass remains usable when that device feature is disabled.
 
 The existing reflection workload blends candidate radiance as
@@ -828,7 +828,7 @@ Reflections now precede aerial perspective, so atmospheric extinction attenuates
 the completed opaque surface result. Transparent probes are evaluated before that
 fragment's own atmosphere integration.
 
-Scene/Editor GPU acceptance checks 27 phases covering absence, colored captures,
+Scene/Editor GPU acceptance checks 42 phases covering absence, colored captures,
 overlap, priority, box/sphere fade, resource replacement, saturation, rotation,
 roughness mip response, nonuniform scale, odd resize, box parallax and native/authored transparent surfaces.
 The absorption-only atmosphere case matches `exp(-0.35)` attenuation and restores
@@ -878,11 +878,52 @@ retirement. A real texture asset reload retains and verifies both lighting
 versions after unloading the source. Scene/Editor acceptance adds diffuse energy, ambient replacement,
 zero-intensity bypass and native/authored translucent equivalence.
 
-Coat/sheen/anisotropic environment lobes, dynamic captures, global environment
-fallback, clustered probe assignment and representative performance remain required follow-up work. The
+Coat/sheen/anisotropic environment lobes, dynamic captures, atmospheric sky capture,
+clustered probe assignment and representative performance remain required follow-up work. The
 small GPU fixture collects existing-profiler samples and CPU update timing; it
 does not establish a representative frame-time or speedup. Stereo and runtime
 acceptance on other backends remain unverified.
+
+## Global environment lighting
+
+`xiiSkyLightComponent` authors a distant source-radiance cubemap, intensity,
+saturation and signed priority. It is always visible to light extraction and
+serializes through the normal component/world format. Each view selects the
+highest-priority active sky, breaking ties by component identity. Owner rotation
+sets the angular frame; translation and scale do not affect distant lighting.
+Inactive, absent-map and zero-intensity components emit no packet. Extracted owner
+membership and finite sampling settings are checked before resource acquisition.
+
+The existing `WorldReflectionProbes` operation retains the selected immutable
+`xiiEnvironmentMap` and graph-owned rotation/settings, separately from the 64 local
+probe slots. It shares resident-source convolution and readiness fences with local
+captures. Sky-only sampling uses scalar cubemap bindings and a dedicated shader
+variant; it introduces no descriptor-indexed probe arrays. The configured Vulkan
+backend currently reports bindless resources as always enabled, so a genuinely
+non-bindless runtime device has not been exercised.
+
+Deferred environment lighting and native/authored transparent surfaces use the
+same sky/probe sampling functions. Local weighted radiance covers its influence
+fraction, and sky radiance fills the remainder. Diffuse irradiance uses the same
+coverage without box parallax. Complete sky coverage replaces constant ambient
+rather than adding it. The split-sum response, diffuse energy reduction, material
+occlusion, transmission and screen-reflection confidence retain their existing
+consumers. Disabling SSR therefore preserves both local and global environment
+fallback. No source draws a visible sky background through this component; the
+optional atmosphere and skybox paths remain separate.
+
+Production Scene/Editor readbacks cover selection and signed-priority ties,
+rotation, translation/scale independence, intensity, saturation, local fade to sky,
+full local replacement, disabling/re-enabling the source, constant-ambient
+replacement, and matching native/authored transparent response. An independent
+native test checks component save/reload, malformed extracted settings and the
+scalar compiled signature. It prepares two world-specific
+graphs, destroys their views/worlds and releases unused source resources, then
+executes them in reverse order and verifies independent specular/irradiance values.
+The Scene and Editor reflection workloads also check per-pixel SSR confidence
+composition against global sky fallback, independent worlds, resize/reload and
+retained recording after world retirement.
+Dynamic captures and atmosphere-to-environment convolution remain separate work.
 
 ## Screen-space reflections
 
@@ -955,7 +996,7 @@ explicit half-float output constraint must resample/convert that output themselv
 
 A miss contributes zero reflection and preserves the incoming scene radiance.
 Offscreen and hidden surfaces cannot appear in the screen trace. Its misses retain
-the local probe contribution through confidence blending. Global environment fallback and hardware-ray reflections remain separate work. Spatial roughness filtering is an
+the local probe contribution through confidence blending. Hardware-ray reflections remain separate work; authored sky lights provide global environment fallback. Spatial roughness filtering is an
 approximation rather than a multi-sample glossy transport solution.
 
 ### Optional temporal reflection resolve

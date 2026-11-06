@@ -44,7 +44,7 @@ namespace xiiSceneReflectionTest
     return true;
   }
 
-  inline void Run(bool extendedFormats, bool temporal = false, bool editor = false, bool localProbes = false)
+  inline void Run(bool extendedFormats, bool temporal = false, bool editor = false, bool environmentFallback = false, bool globalSky = false)
   {
     xiiGPUTestingEnvironment environment;
     if (!XII_TEST_RESULT(environment.Initialize(false, extendedFormats)))
@@ -124,18 +124,27 @@ namespace xiiSceneReflectionTest
       }
       pipelines[variant] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(variant ? "Reflection.Root.On" : "Reflection.Root.Off", std::move(root));
     }
-    const auto reflectionMap = localProbes ? xiiSceneProbeTest::Cube("Reflection.GreenFallback", {0, 0.25f, 0}, {0, 0.25f, 0}) : xiiTextureCubeResourceHandle();
+    const auto reflectionMap = environmentFallback ? xiiSceneProbeTest::Cube("Reflection.GreenFallback", {0, 0.25f, 0}, {0, 0.25f, 0}) : xiiTextureCubeResourceHandle();
     const auto addProbe      = [&](xiiWorld& targetWorld) {
-      if (!localProbes)
+      if (!environmentFallback)
         return;
       xiiGameObjectDescription description;
       xiiGameObject*           object = nullptr;
       targetWorld.CreateObject(description, object);
-      xiiReflectionCaptureComponent* probe = nullptr;
-      xiiReflectionCaptureComponent::CreateComponent(object, probe);
-      probe->SetReflectionMap(reflectionMap);
-      probe->SetHalfExtents(xiiVec3(100));
-      probe->SetBlendDistance(0);
+      if (globalSky)
+      {
+        xiiSkyLightComponent* sky = nullptr;
+        xiiSkyLightComponent::CreateComponent(object, sky);
+        sky->SetEnvironmentMap(reflectionMap);
+      }
+      else
+      {
+        xiiReflectionCaptureComponent* probe = nullptr;
+        xiiReflectionCaptureComponent::CreateComponent(object, probe);
+        probe->SetReflectionMap(reflectionMap);
+        probe->SetHalfExtents(xiiVec3(100));
+        probe->SetBlendDistance(0);
+      }
     };
     xiiGeometry geometry;
     geometry.AddBox(xiiVec3(1), true);
@@ -375,7 +384,7 @@ namespace xiiSceneReflectionTest
           !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(1, "UnreflectedColor"), base))
         return;
       xiiDynamicArray<xiiVec4> fallback;
-      if (localProbes)
+      if (environmentFallback)
       {
         if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(1, "EnvironmentSpecular"), fallback))
           return;
@@ -415,10 +424,10 @@ namespace xiiSceneReflectionTest
           XII_TEST_BOOL(history == baseline);
         }
       }
-      if (!localProbes)
+      if (!environmentFallback)
         XII_TEST_BOOL(off == base);
       XII_TEST_BOOL(image(0, "ScreenReflections") == nullptr);
-      XII_TEST_BOOL(bool(image(0, "ReflectionLighting")) == localProbes);
+      XII_TEST_BOOL(bool(image(0, "ReflectionLighting")) == environmentFallback);
       xiiUInt32 hits = 0, redHits = 0, blueHits = 0, changed = 0, floorHits = 0;
       double    floorEnergy = 0, redPosition = 0;
       for (xiiUInt32 pixel = 0; pixel < raw.GetCount(); ++pixel)
@@ -429,7 +438,7 @@ namespace xiiSceneReflectionTest
         {
           XII_TEST_FLOAT(weighted[pixel].GetData()[channel], raw[pixel].GetData()[channel] * raw[pixel].w + fallback[pixel].GetData()[channel] * (1 - raw[pixel].w), 0.0001f);
           XII_TEST_FLOAT(on[pixel].GetData()[channel], base[pixel].GetData()[channel] + weighted[pixel].GetData()[channel], 0.0001f);
-          if (localProbes)
+          if (environmentFallback)
             XII_TEST_FLOAT(off[pixel].GetData()[channel], base[pixel].GetData()[channel] + fallback[pixel].GetData()[channel], 0.0001f);
         }
         hits += raw[pixel].w > 0.001f;
@@ -525,7 +534,7 @@ namespace xiiSceneReflectionTest
       blueHits += pixel.w > 0.001f && pixel.z > pixel.x * 2 + 0.01f;
     }
     XII_TEST_BOOL(blueHits > 8);
-    if (localProbes)
+    if (environmentFallback)
     {
       xiiDynamicArray<xiiVec4> reflected;
       if (!ReadSceneReflectionPixels(*environment.GetDevice(), graph.GetExportedTexture(retiredLighting), reflected))
