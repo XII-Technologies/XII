@@ -23,8 +23,10 @@
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
 #include <Shaders/Pipeline/Passes/RayTracing/SceneRayProbeConstants.h>
 XII_DEFINE_AS_POD_TYPE(xiiSceneRayProbeResult);
+XII_DEFINE_AS_POD_TYPE(xiiRayTracingGeometryData);
 XII_CREATE_SIMPLE_TEST_GROUP(NativeSceneRayProbe);
 XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwnerRetirement)
 {
@@ -188,16 +190,24 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     outputs[1] = pipeline.GetInterfaceBinding(pipeline.GetPipeline()->FindInterface("OffsetResult", false))->m_hBuffer;
     XII_TEST_BOOL(outputs[0] != outputs[1]);
     xiiGALTopLevelAS* structures[2] = {};
+    xiiRenderGraphBufferHandle geometryRecords;
     xiiUInt32         sceneCount    = 0;
     for (xiiUInt32 i = 0; i < pipeline.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
       if (const auto* scene = xiiDynamicCast<const xiiRayTracingScenePass*>(pipeline.GetPass(i)))
       {
         XII_TEST_INT(scene->GetLastBuildStatistics().m_uiInstanceCount, phase == 4 ? 0 : 1);
         structures[sceneCount++] = pipeline.GetOutputBinding(i, "Scene")->m_AccelerationStructure.m_pStructure.Borrow();
+        if (phase != 4)
+          geometryRecords = pipeline.GetOutputBinding(i, "Geometry")->m_hBuffer;
       }
     XII_TEST_INT(sceneCount, 2);
     if (phase != 4)
+    {
       XII_TEST_BOOL(structures[0] && structures[1] && structures[0] != structures[1]);
+      graph.AddPass<xiiRenderGraphBufferHandle>("Export indexed ray geometry", xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
+        data = builder.ReadBuffer(geometryRecords, xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(data, xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+    }
     if (phase == 3)
     {
       pipeline.Clear();
@@ -217,6 +227,15 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     XII_TEST_INT(graph.GetStatistics().m_uiQueueSubmissionCount, 1);
     frame.End();
     environment.GetDevice()->WaitIdle();
+    if (phase != 4)
+    {
+      xiiRayTracingGeometryData geometry;
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(geometryRecords).Borrow(), 0, geometry))
+        return;
+      // Closest-hit shading must use the same indexed addressing as BLAS traversal.
+      XII_TEST_INT(geometry.BufferIndices.z, sizeof(xiiUInt16));
+      XII_TEST_BOOL(geometry.BufferIndices.y != xiiInvalidIndex);
+    }
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
       xiiSceneRayProbeResult result;
