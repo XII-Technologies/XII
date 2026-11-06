@@ -288,6 +288,48 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, CompiledMeshletPreparation)
   XII_TEST_BOOL(rejected->GetLoadingState() == xiiResourceState::LoadedResourceMissing);
 }
 
+XII_CREATE_SIMPLE_TEST(PipelineResources, ProceduralMeshletDrawRanges)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiGeometry box;
+  box.AddBox(xiiVec3(1), true);
+  for (xiiUInt32 sections : {1U, 2U})
+  {
+    xiiMeshResourceDescriptor descriptor;
+    descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList);
+    for (xiiUInt32 section = 0; section < sections; ++section)
+      descriptor.AddSection(12 / sections, section * (12 / sections), section);
+    descriptor.ComputeBounds();
+    xiiStringBuilder name;
+    name.SetFormat("Procedural meshlet ranges {}", sections);
+    const auto                       mesh = xiiResourceManager::CreateResource<xiiMeshResource>(name, std::move(descriptor));
+    xiiResourceLock<xiiMeshResource> loaded(mesh, xiiResourceAcquireMode::PointerOnly);
+    if (!XII_TEST_BOOL(loaded->GetLoadingState() == xiiResourceState::Loaded))
+      return;
+    const auto lods = loaded->GetLODs();
+    XII_TEST_INT(lods.GetCount(), 1);
+    XII_TEST_BOOL(lods[0].m_uiMeshletCount >= sections);
+    xiiResourceLock<xiiMeshBufferResource> buffer(loaded->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+    for (const auto& section : loaded->GetSections())
+    {
+      XII_TEST_BOOL(section.m_uiMeshletCount > 0);
+      xiiUInt32 primitives = 0;
+      for (const auto& meshlet : buffer->GetMeshlets().GetSubArray(section.m_uiFirstMeshlet, section.m_uiMeshletCount))
+      {
+        XII_TEST_BOOL(meshlet.m_uiFirstPrimitive >= section.m_uiFirstPrimitive);
+        XII_TEST_BOOL(meshlet.m_uiFirstPrimitive + meshlet.m_uiPrimitiveCount <= section.m_uiFirstPrimitive + section.m_uiPrimitiveCount);
+        primitives += meshlet.m_uiPrimitiveCount;
+      }
+      XII_TEST_INT(primitives, section.m_uiPrimitiveCount);
+    }
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryCoverageIdentity)
 {
   xiiGPUTestingEnvironment environment;

@@ -25,7 +25,7 @@ Each geometry slot lazily owns an interval index per authored LOD. Sorted primit
 
 Instance entries retain the geometry lease, source revisions, primitive-range coverage, and local bounds. Coverage changes only with geometry or range identity. Transform changes trigger the normal-matrix calculation; transform or local-bounds changes trigger world-bounds propagation. Material flags are resolved once per unique material per extraction, so hot reload remains observable. Scratch membership sets retain capacity. Pose, morph, previous-transform, instance topology, and view-selection updates retain their existing dynamic behavior.
 
-Compiled resources validate supplied meshlet bounds, source ranges, remaps, local indices, LODs, and sections instead of reclustering them. Descriptors without clusters retain the builder path. Procedural callers changing raw data must explicitly rebuild clusters. Asset serialization and GPU record sizes are unchanged.
+Compiled resources validate supplied meshlet bounds, source ranges, remaps, local indices, LODs, and sections instead of reclustering them. Descriptors without clusters retain the builder path. Buffer-level procedural clustering may precede section/LOD authoring: after payload validation, nonempty sections or LODs with missing draw ranges use the existing descriptor builder before publication. Fully prepared compiled descriptors retain their clusters, including authored bounds. Explicitly empty LODs do not force a rebuild. Procedural callers changing raw data must explicitly rebuild clusters. Asset serialization and GPU record sizes are unchanged.
 
 ### Admission, commit, and scheduling
 
