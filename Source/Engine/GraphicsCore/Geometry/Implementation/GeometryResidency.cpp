@@ -755,10 +755,36 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
       {
         meshlet.m_uiLodIndex = static_cast<xiiUInt16>(i);
         const xiiUInt64 end  = xiiUInt64(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
-        if (meshlet.m_uiFirstPrimitive < previousStart || end < previousEnd || end > xiiMath::MaxValue<xiiUInt32>())
+        if (meshlet.m_uiFirstPrimitive < previousStart || end > xiiMath::MaxValue<xiiUInt32>())
           lod.m_uiMeshletRangesOrdered = 0U;
-        previousStart = meshlet.m_uiFirstPrimitive;
-        previousEnd   = end;
+        previousStart             = meshlet.m_uiFirstPrimitive;
+        previousEnd               = xiiMath::Max(previousEnd, end);
+        meshlet.m_uiGpuPadding[0] = static_cast<xiiUInt32>(previousEnd);
+      }
+      if (lod.m_uiMeshletRangesOrdered == 0U)
+      {
+        // Authored section order need not follow primitive order. Arena metadata
+        // has no source-index identity: remap/primitive offsets remain absolute.
+        // Sort the admitted copy once, preserving source buffers and LOD spans.
+        upload->m_Meshlets.Sort([](const xiiMeshlet& a, const xiiMeshlet& b) {
+          if (a.m_uiFirstPrimitive != b.m_uiFirstPrimitive)
+            return a.m_uiFirstPrimitive < b.m_uiFirstPrimitive;
+          if (a.m_uiPrimitiveCount != b.m_uiPrimitiveCount)
+            return a.m_uiPrimitiveCount < b.m_uiPrimitiveCount;
+          if (a.m_uiSectionIndex != b.m_uiSectionIndex)
+            return a.m_uiSectionIndex < b.m_uiSectionIndex;
+          return a.m_uiPrimitiveIndexOffset < b.m_uiPrimitiveIndexOffset;
+        });
+        lod.m_uiMeshletRangesOrdered = 1U;
+        previousEnd                  = 0U;
+        for (auto& meshlet : upload->m_Meshlets)
+        {
+          const xiiUInt64 end = xiiUInt64(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
+          if (end > xiiMath::MaxValue<xiiUInt32>())
+            lod.m_uiMeshletRangesOrdered = 0U;
+          previousEnd               = xiiMath::Max(previousEnd, end);
+          meshlet.m_uiGpuPadding[0] = static_cast<xiiUInt32>(previousEnd);
+        }
       }
       uploads.PushBack(std::move(upload));
       s_pState->m_StreamingStats.m_uiPreparedMeshlets += lod.m_uiMeshletCount;

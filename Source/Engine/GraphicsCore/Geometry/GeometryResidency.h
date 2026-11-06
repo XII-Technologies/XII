@@ -80,7 +80,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
   float     m_fMinimumScreenCoverage        = 0.0f;
   xiiUInt32 m_uiIndexType                   = 0U;
   xiiUInt32 m_uiMeshletMetadataOffset       = 0U;
-  xiiUInt32 m_uiMeshletRangesOrdered        = 0U; ///< Both primitive endpoints are monotonic and fit UInt32.
+  xiiUInt32 m_uiMeshletRangesOrdered        = 0U; ///< Primitive-sorted arena metadata with UInt32 prefix ends in GPU padding[0].
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuGeometryLod);

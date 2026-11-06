@@ -2,9 +2,10 @@
 
 #pragma once
 
-// Included after the canonical g_Meshlets declaration. Ordered endpoints allow
-// section candidates to skip unrelated meshlets. Unordered authored ranges retain
-// the complete scan and the existing exact per-meshlet overlap test.
+// Residency sorts its arena copy by primitive start and stores prefix-maximum
+// primitive ends in Padding.x. Binary search gives a conservative candidate span
+// even for overlapping intervals; the culler retains its exact overlap test.
+// Externally supplied metadata without this index retains the complete scan.
 void GetCandidateMeshletRange(GpuSceneInstance instance, GpuGeometryLod lod, out uint first, out uint count)
 {
   uint capacity, stride;
@@ -18,7 +19,7 @@ void GetCandidateMeshletRange(GpuSceneInstance instance, GpuGeometryLod lod, out
   {
     uint       middle  = low + (high - low) / 2u;
     GpuMeshlet meshlet = g_Meshlets[lod.MeshletMetadataOffset + middle];
-    uint       end     = meshlet.Header.x + (meshlet.PackedPrimitiveVertexCount & 0xFFFFu);
+    uint       end     = meshlet.Padding.x;
     if (end <= instance.FirstPrimitive)
       low = middle + 1u;
     else

@@ -6,7 +6,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
-/// Builds safe indirect meshlet work dimensions without a CPU count readback.
+/// Builds bounded scheduling dimensions without a CPU count readback. The culler
+/// visits the complete candidate range through grid-stride iteration.
 class XII_GRAPHICSCORE_DLL xiiMeshletDispatchPass final : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshletDispatchPass, xiiRenderPipelinePass);

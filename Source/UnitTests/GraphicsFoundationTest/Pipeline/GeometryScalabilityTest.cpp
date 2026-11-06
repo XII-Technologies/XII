@@ -287,3 +287,70 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, CompiledMeshletPreparation)
   xiiResourceLock<xiiMeshResource> rejected(bad, xiiResourceAcquireMode::PointerOnly);
   XII_TEST_BOOL(rejected->GetLoadingState() == xiiResourceState::LoadedResourceMissing);
 }
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryCoverageIdentity)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiGeometryResidencyDescription configuration;
+  configuration.m_uiMaxGeometries = 8;
+  configuration.m_uiMaxMeshlets   = 8;
+  XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(configuration));
+  xiiGeometry box;
+  box.AddBox(xiiVec3(1), true);
+  xiiMeshBufferResourceDescriptor descriptor;
+  descriptor.AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, true);
+  const auto                original = descriptor.m_Meshlets[0];
+  const auto                indices  = descriptor.m_IndexData;
+  xiiDynamicArray<xiiUInt8> repeated;
+  for (xiiUInt32 i = 0; i < 4; ++i)
+    repeated.PushBackRange(indices);
+  descriptor.SetIndexData(repeated, descriptor.GetIndexCount() * 4, descriptor.m_IndexType);
+  descriptor.m_Meshlets.SetCount(4);
+  for (xiiUInt32 i = 0; i < 4; ++i)
+  {
+    descriptor.m_Meshlets[i]                    = original;
+    descriptor.m_Meshlets[i].m_uiFirstPrimitive = (3 - i) * 12;
+  }
+  const auto             buffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Unordered coverage identity", std::move(descriptor));
+  xiiGeometryDescription description;
+  for (xiiUInt32 lod = 0; lod < 2; ++lod)
+  {
+    auto& source            = description.m_Lods.ExpandAndGetRef();
+    source.m_hMeshBuffer    = buffer;
+    source.m_uiFirstMeshlet = lod * 2;
+    source.m_uiMeshletCount = 2;
+  }
+  const auto handle                                    = xiiGeometryResidencyManager::RegisterGeometry(description);
+  xiiUInt32  counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 5, 20, xiiMakeArrayPtr(counts)));
+  XII_TEST_INT(counts[0], 1);
+  XII_TEST_INT(counts[1], 2);
+  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 12, 12, xiiMakeArrayPtr(counts)));
+  XII_TEST_INT(counts[0], 0);
+  XII_TEST_INT(counts[1], 1);
+  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 0, 0, xiiMakeArrayPtr(counts)));
+  XII_TEST_INT(counts[0], 2);
+  XII_TEST_INT(counts[1], 2);
+  xiiGeometryResidencyManager::RequestResidency(handle, 0, 1);
+  xiiGeometryResidencyManager::ProcessStreaming(1, 0, 1);
+  const auto* record = xiiGeometryResidencyManager::GetGpuRecord(handle);
+  if (!XII_TEST_BOOL(record != nullptr))
+    return;
+  XII_TEST_INT(record->m_uiResidentLodMask, 3);
+  XII_TEST_INT(record->m_Lods[0].m_uiMeshletRangesOrdered, 1);
+  XII_TEST_INT(record->m_Lods[1].m_uiMeshletRangesOrdered, 1);
+  xiiGeometryResidencyManager::UnregisterGeometry(handle, 1);
+  xiiGeometryResidencyManager::ProcessStreaming(2, 1, 0);
+  description.m_Lods[0].m_uiMeshletCount = 1;
+  const auto replacement                 = xiiGeometryResidencyManager::RegisterGeometry(description);
+  XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(replacement, 2));
+  XII_TEST_BOOL(replacement != handle);
+  XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 24, 12, xiiMakeArrayPtr(counts)).Failed());
+  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(replacement, 24, 12, xiiMakeArrayPtr(counts)));
+  XII_TEST_INT(counts[0], 0);
+}

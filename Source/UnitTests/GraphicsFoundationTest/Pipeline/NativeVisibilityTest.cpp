@@ -64,9 +64,11 @@ public:
     xiiGpuSceneInstance records[129];
     for (xiiUInt32 i = 0; i < capacity; ++i)
     {
-      records[i].m_uiGeometryIndex    = 0;
-      records[i].m_uiObjectId         = m_uiBaseId + i + (phase >= 3 ? 100 : 0);
-      records[i].m_uiFlags            = i == 65 ? 0 : xiiGpuInstanceFlags::Enabled;
+      records[i].m_uiGeometryIndex = 0;
+      records[i].m_uiObjectId      = m_uiBaseId + i + (phase >= 3 ? 100 : 0);
+      records[i].m_uiFlags         = i == 65 ? 0 : xiiGpuInstanceFlags::Enabled;
+      if (phase == 10 && i != 0)
+        records[i].m_uiFlags = 0;
       records[i].m_uiVisibilityMask   = i == 64 ? 0 : 1;
       records[i].m_BoundsCenterRadius = xiiVec4(i == 66 ? 102.0f : distance, 0, 0, 1);
     }
@@ -75,6 +77,12 @@ public:
       records[0].m_uiFirstPrimitive = 6;
       records[0].m_uiPrimitiveCount = 2;
     }
+    if (phase == 11)
+      for (xiiUInt32 i = 0; i < capacity; ++i)
+      {
+        records[i].m_uiFirstPrimitive = 6;
+        records[i].m_uiPrimitiveCount = 2;
+      }
     if (phase == 6)
     {
       records[0].m_GlobalTransform = xiiMat4::MakeScaling(xiiVec3(2, 1, 1));
@@ -94,9 +102,10 @@ public:
     geometry.m_uiResidentLodMask                 = 3;
     geometry.m_Lods[0].m_fMinimumScreenCoverage  = 16;
     geometry.m_Lods[1].m_fMinimumScreenCoverage  = 0;
-    geometry.m_Lods[0].m_uiMeshletCount          = 129;
+    const xiiUInt32 fineMeshlets                 = phase == 10 ? 8193U : 129U;
+    geometry.m_Lods[0].m_uiMeshletCount          = fineMeshlets;
     geometry.m_Lods[1].m_uiMeshletCount          = 65;
-    geometry.m_Lods[1].m_uiMeshletMetadataOffset = 129;
+    geometry.m_Lods[1].m_uiMeshletMetadataOffset = fineMeshlets;
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
       geometry.m_Lods[i].m_uiVertexBufferIndex           = 1;
@@ -104,16 +113,28 @@ public:
       geometry.m_Lods[i].m_uiMeshletPrimitiveBufferIndex = 1;
       geometry.m_Lods[i].m_uiIndexCount                  = geometry.m_Lods[i].m_uiMeshletCount * 3;
     }
-    xiiMeshlet metadata[194] = {};
+    xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> metadata;
+    metadata.SetCount(fineMeshlets + 65U);
     for (xiiUInt32 lod = 0; lod < 2; ++lod)
     {
-      const xiiUInt32 base = lod == 0 ? 0 : 129;
-      for (xiiUInt32 i = 0; i < (lod == 0 ? 129U : 65U); ++i)
+      const xiiUInt32 base = lod == 0 ? 0 : fineMeshlets;
+      for (xiiUInt32 i = 0; i < (lod == 0 ? fineMeshlets : 65U); ++i)
       {
         metadata[base + i].m_uiFirstPrimitive = i;
         metadata[base + i].m_uiPrimitiveCount = i == 5 ? 4 : 1;
         metadata[base + i].m_uiVertexCount    = 3;
         metadata[base + i].m_uiLodIndex       = static_cast<xiiUInt16>(lod);
+      }
+      if (phase == 11)
+      {
+        geometry.m_Lods[lod].m_uiMeshletRangesOrdered = 1;
+        xiiUInt32 prefixEnd                           = 0;
+        for (xiiUInt32 i = 0; i < (lod == 0 ? fineMeshlets : 65U); ++i)
+        {
+          const auto& meshlet                  = metadata[base + i];
+          prefixEnd                            = xiiMath::Max(prefixEnd, meshlet.m_uiFirstPrimitive + meshlet.m_uiPrimitiveCount);
+          metadata[base + i].m_uiGpuPadding[0] = prefixEnd;
+        }
       }
       metadata[base].m_Bounds          = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(102, 0, 0), 0.1f);
       metadata[base + 1].m_Bounds      = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(1, 0, 0), 0.1f);
@@ -160,7 +181,7 @@ public:
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Scene, upload("Synthetic Instances", sizeof(xiiGpuSceneInstance), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(records), capacity * sizeof(xiiGpuSceneInstance)))));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Geometry, upload("Synthetic Residency", sizeof(geometry), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&geometry), sizeof(geometry)))));
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_View, upload("Synthetic Culling View", sizeof(view), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&view), sizeof(view)))));
-    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Meshlets, upload("Synthetic Meshlets", sizeof(xiiMeshlet), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(metadata), sizeof(metadata)))));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Meshlets, upload("Synthetic Meshlets", sizeof(xiiMeshlet), metadata.GetByteArrayPtr())));
     return context.SetOutput(m_Candidates, upload("Synthetic Candidates", sizeof(xiiUInt32), xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(selection), (m_bSelectOne ? 1 : capacity) * sizeof(xiiUInt32))));
   }
 };
@@ -393,7 +414,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
     if (!XII_TEST_RESULT(instances[i].Initialize(compiled)) || !XII_TEST_RESULT(contexts[i].Initialize("Native culling view")))
       return;
   }
-  for (xiiUInt32 phase = 0; phase < 10; ++phase)
+  for (xiiUInt32 phase = 0; phase < 12; ++phase)
   {
     if (phase == 4)
       instances[0].InvalidateTemporalHistory();
@@ -429,11 +450,13 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer.Borrow(), 0, arguments))
             return;
           const bool      coarse = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
-          const xiiUInt32 count  = phase == 5 ? 0 : selected ? 1 :
-             phase >= 6                                      ? 126 :
-                                                               64;
-          XII_TEST_INT(arguments.x, count == 0 ? 0 : coarse ? 2 :
-                                                              3);
+          const xiiUInt32 count  = phase == 5 ? 0 : selected || phase == 10 ? 1 :
+             phase >= 6                                                     ? 126 :
+                                                                              64;
+          XII_TEST_INT(arguments.x, count == 0 ? 0 : phase == 11 ? 1 :
+                         phase == 10                             ? 64 :
+                         coarse                                  ? 2 :
+                                                                   3);
           XII_TEST_INT(arguments.y, count);
           XII_TEST_INT(arguments.z, count == 0 ? 0 : 1);
         }
@@ -445,9 +468,9 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), countBuffer.Borrow(), 0, count) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), overflowBuffer.Borrow(), 0, overflow))
             return;
           const bool      coarse   = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
-          const xiiUInt32 visible  = phase == 5 ? 0 : selected ? 1 :
-             phase >= 6                                        ? 126 :
-                                                                 64;
+          const xiiUInt32 visible  = phase == 5 ? 0 : selected || phase == 10 ? 1 :
+             phase >= 6                                                       ? 126 :
+                                                                                64;
           xiiUInt32       expected = visible * (coarse ? 63 : 127);
           if (phase == 2)
             expected = (visible - 1) * 127 + 3;
@@ -457,6 +480,10 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
             expected = visible * 129;
           if (phase == 8 || phase == 9)
             expected = visible * 128;
+          if (phase == 10)
+            expected = 8191; // More than two scheduling strides, including the last meshlet.
+          if (phase == 11)
+            expected = visible * 3; // Prefix-end search preserves the overlapping boundary meshlet.
           const xiiUInt32 capacity = selected ? 16 : 16384;
           XII_TEST_INT(count, xiiMath::Min(expected, capacity));
           XII_TEST_INT(overflow, expected > capacity ? 1 : 0);
@@ -472,13 +499,14 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
                                                                    67U));
               XII_TEST_BOOL(pair.x != 64 && pair.x != 65 && pair.x != 66);
               const xiiUInt32 local = pair.y - (coarse ? 129 : 0);
-              XII_TEST_BOOL(local < (coarse ? 65U : 129U));
+              XII_TEST_BOOL(local < (coarse ? 65U : phase == 10 ? 8193U :
+                                                                  129U));
               if (phase != 7)
               {
                 XII_TEST_BOOL(local != 0 || (phase == 6 && pair.x == 3));
                 XII_TEST_BOOL(local != 1 || phase == 8 || phase == 9 || (phase == 6 && (pair.x == 0 || pair.x == 1 || pair.x == 3)));
               }
-              if (phase == 2 && pair.x == 0)
+              if ((phase == 2 && pair.x == 0) || phase == 11)
                 XII_TEST_BOOL(local >= 5 && local < 8);
               xiiUInt32 drawIndex = xiiInvalidIndex;
               for (xiiUInt32 j = 0; j < compiled->GetProvenance().GetCount(); ++j)
@@ -490,7 +518,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
               xiiVec4U32 command;
               if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), commandBuffer.Borrow(), xiiUInt64(position) * sizeof(command), command))
                 return;
-              const bool clipped = phase == 2 && pair.x == 0 && local == 5;
+              const bool clipped = ((phase == 2 && pair.x == 0) || phase == 11) && local == 5;
               XII_TEST_INT(command.x, clipped ? 6 : local == 5 ? 12 :
                                                                  3);
               XII_TEST_INT(command.y, 1);
@@ -550,9 +578,9 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
           xiiUInt32 visibleCount = xiiInvalidIndex;
           if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), count.Borrow(), 0, visibleCount))
             return;
-          const xiiUInt32 expectedCount = phase == 5 ? 0 : selected ? 1 :
-            phase >= 6                                              ? 126 :
-                                                                      64;
+          const xiiUInt32 expectedCount = phase == 5 ? 0 : selected || phase == 10 ? 1 :
+            phase >= 6                                                             ? 126 :
+                                                                                     64;
           XII_TEST_INT(visibleCount, expectedCount);
           XII_TEST_INT(lod->GetDescription().m_uiSize, (phase >= 6 ? 129 : 67) * sizeof(xiiVec4U32));
           xiiVec4U32 choice;
@@ -573,7 +601,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
               return;
             XII_TEST_INT(choice.x, xiiInvalidIndex);
           }
-          else if (phase >= 6)
+          else if (phase >= 6 && phase != 10)
           {
             if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), lod.Borrow(), 128 * sizeof(xiiVec4U32), choice))
               return;

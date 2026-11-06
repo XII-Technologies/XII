@@ -24,7 +24,9 @@ void main()
     g_MeshletDispatchArguments[2] = 0u;
     return;
   }
-  g_MeshletDispatchArguments[0] = groups;
+  // A bounded scheduling width avoids largest-section x candidate-count launch
+  // amplification. The culler uses grid-stride iteration and still visits all work.
+  g_MeshletDispatchArguments[0] = min(groups, 64u);
   g_MeshletDispatchArguments[1] = min(count, 65535u);
   g_MeshletDispatchArguments[2] = (count + 65534u) / 65535u;
 }
