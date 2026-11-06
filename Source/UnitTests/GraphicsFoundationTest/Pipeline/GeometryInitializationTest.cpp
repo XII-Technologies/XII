@@ -114,12 +114,20 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   // A zero budget pauses streaming. Positive budgets must eventually admit an
   // indivisible record even when it exceeds the whole frame allowance.
   xiiGeometryResidencyManager::ProcessStreaming(0, 0, 0);
+  xiiGeometryResidencyManager::ProcessStreaming(0, 0, bytes * 10);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 0);
   for (xiiUInt32 frame = 1; frame <= 3; ++frame)
   {
     xiiGeometryResidencyManager::ProcessStreaming(frame, 0, 1);
     XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, frame);
     XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, bytes * frame);
+    const auto stats = xiiGeometryResidencyManager::GetStats();
+    XII_TEST_INT(stats.m_uiAdmittedBytes, bytes);
+    XII_TEST_INT(stats.m_uiRemainingUploadBytes, 0);
+    // A second world/view in the same device frame cannot grant another allowance.
+    xiiGeometryResidencyManager::ProcessStreaming(frame, 0, bytes * 10);
+    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, frame);
+    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, stats.m_uiPreparedMeshlets);
   }
   for (const auto handle : handles)
   {
@@ -141,6 +149,10 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   xiiGeometryResidencyManager::ProcessStreaming(4, 0, bytes + 1);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, bytes * 4);
+  const auto prepared = xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets;
+  xiiGeometryResidencyManager::ProcessStreaming(4, 0, bytes * 10);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, prepared);
   xiiGeometryResidencyManager::ProcessStreaming(5, 0, bytes);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 5);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, bytes * 5);

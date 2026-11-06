@@ -20,7 +20,7 @@ public:
   xiiRenderPipelineBufferInputPin  m_Visible{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin  m_Count{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin  m_Lod{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin  m_Arguments{true, xiiGALBindFlags::IndirectDrawArguments};
+  xiiRenderPipelineBufferInputPin  m_Arguments{true, xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin  m_InitialCount{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferInputPin  m_InitialOverflow{false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineBufferOutputPin m_Output{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};

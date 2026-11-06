@@ -64,7 +64,7 @@ struct GpuGeometryLod
   float MinimumScreenCoverage;
   uint  IndexType;
   uint  MeshletMetadataOffset;
-  uint  Padding;
+  uint  MeshletRangesOrdered;
 };
 
 struct GpuGeometryRecord

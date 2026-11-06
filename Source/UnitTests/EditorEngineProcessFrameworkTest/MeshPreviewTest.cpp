@@ -7,16 +7,21 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 #include <EnginePluginAssets/MeshAsset/MeshContext.h>
+#include <Foundation/Containers/Map.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -125,7 +130,23 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewEditorPipeline)
   descriptor.UseExistingMeshBuffer(sharedBufferHandle);
   descriptor.AddSection(12, 0, 0);
   descriptor.ComputeBounds();
-  const auto importSource = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-importModel");
+  const auto importSource   = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-importModel");
+  const auto compiledSource = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-compiledMesh");
+  const bool externalMesh   = !importSource.IsEmpty() || !compiledSource.IsEmpty();
+  if (!compiledSource.IsEmpty())
+  {
+    XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(compiledSource.GetFileDirectory(), "CompiledMeshPreview", "CompiledMeshPreview"));
+    xiiFileReader reader;
+    if (!XII_TEST_RESULT(reader.Open(xiiStringBuilder(":CompiledMeshPreview/", compiledSource.GetFileNameAndExtension()))))
+      return;
+    xiiAssetFileHeader header;
+    if (!XII_TEST_RESULT(header.Read(reader)) || !XII_TEST_RESULT(descriptor.Load(reader)))
+      return;
+    reader.Close();
+    xiiFileSystem::RemoveDataDirectoryGroup("CompiledMeshPreview");
+    for (xiiUInt32 i = 0; i < descriptor.GetMaterials().GetCount(); ++i)
+      descriptor.SetMaterial(i, "");
+  }
   if (!importSource.IsEmpty())
   {
     xiiModelMeshImport imported;
@@ -157,7 +178,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewEditorPipeline)
   document.m_bDisplayGrid = false;
   xiiEditorEngineSetMaterialsMsg materials;
   materials.m_Materials.PushBack(material.GetResourceID());
-  if (!importSource.IsEmpty())
+  if (externalMesh)
   {
     xiiResourceLock<xiiMeshResource> resource(mesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     for (xiiUInt32 i = 1; i < resource->GetDescriptor().GetMaterials().GetCount(); ++i)
@@ -179,13 +200,48 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewEditorPipeline)
   xiiView* view = nullptr;
   if (!XII_TEST_BOOL(world->GetOrCreateModule<xiiRenderWorldModule>()->TryGetView(context->GetViewHandle(), view)))
     return;
+  struct TimingTotals
+  {
+    double    m_fMilliseconds = 0;
+    xiiUInt32 m_uiCount       = 0;
+  };
+  xiiMap<xiiString, TimingTotals>                                                        timings;
+  xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex>::Unsubscriber timingSubscription;
+  if (externalMesh)
+    xiiRenderGraphTimestampProfiler::s_TimingEvents.AddEventHandler([&](const xiiRenderGraphTimestampProfiler::TimingSample& sample) {
+      if (sample.m_bAvailable && !sample.m_bSubmission)
+      {
+        auto& total = timings[xiiString(sample.m_sName.GetView())];
+        total.m_fMilliseconds += sample.m_fDurationMs;
+        ++total.m_uiCount;
+      }
+    },
+                                                                    timingSubscription);
   for (xiiUInt32 frame = 0; frame < 8; ++frame)
   {
-    if (!importSource.IsEmpty())
+    if (externalMesh)
       document.UpdateThumbnailViewContext(context);
     context->Redraw(false);
     world->Update();
     environment.GetDevice()->WaitIdle();
+  }
+  if (externalMesh)
+  {
+    const auto stats = xiiGeometryResidencyManager::GetStats();
+    xiiTestFramework::Output(xiiTestOutput::Details, "Geometry streaming: %.3f ms, %u examined, %u admitted, %llu admitted bytes, %llu prepared meshlets.", stats.m_fStreamingMilliseconds, stats.m_uiExamined, stats.m_uiAdmitted, stats.m_uiAdmittedBytes, stats.m_uiPreparedMeshlets);
+    const auto geometry = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
+    if (const auto* record = xiiGeometryResidencyManager::GetGpuRecord(geometry))
+      for (xiiUInt32 lod = 0; lod < record->m_uiLodCount; ++lod)
+        xiiTestFramework::Output(xiiTestOutput::Details, "Resident LOD %u: %u meshlets, indexed ranges %u.", lod, record->m_Lods[lod].m_uiMeshletCount, record->m_Lods[lod].m_uiMeshletRangesOrdered);
+    xiiGeometryResidencyManager::ReleaseMeshGeometry(geometry, 0);
+    for (auto it = timings.GetIterator(); it.IsValid(); ++it)
+    {
+      const char* type = "graph operation";
+      for (const auto& pass : view->GetRenderPipelineInstance().GetPipeline()->GetDescriptor().m_Passes)
+        if (it.Key() == pass.m_sName && pass.m_pType)
+          type = pass.m_pType->GetTypeName().GetStartPointer();
+      xiiTestFramework::Output(xiiTestOutput::Details, "GPU '%s' (%s): %.3f ms average (%u samples).", it.Key().GetData(), type, it.Value().m_fMilliseconds / it.Value().m_uiCount, it.Value().m_uiCount);
+    }
   }
   XII_TEST_RESULT(view->GetLastRenderResult());
   XII_TEST_BOOL(view->GetRenderPipelineInstance().GetResourceAcquireResult() == xiiResourceAcquireResult::Final);
@@ -203,7 +259,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshPreviewEditorPipeline)
     return;
   XII_TEST_BOOL(before != after);
   world->GetOrCreateComponentManager<xiiMeshComponentManager>()->GetComponents()->SetActiveFlag(true);
-  if (!importSource.IsEmpty())
+  if (externalMesh)
     return; // Fixed unit-box orthographic assertions below are unrelated to external model framing.
   xiiCamera                   orthographic[3];
   xiiView*                    additional[3] = {};

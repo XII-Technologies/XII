@@ -9,9 +9,13 @@ StructuredBuffer<GpuMeshlet>        g_Meshlets;
 StructuredBuffer<uint>              g_VisibleInstances;
 StructuredBuffer<uint>              g_VisibleInstanceCount;
 StructuredBuffer<uint4>             g_CurrentLodHistory;
+StructuredBuffer<uint>              g_MeshletWorkArguments;
 RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
 RWStructuredBuffer<uint>            g_VisibleMeshletOverflow;
+#include "MeshletRange.h"
+groupshared uint s_FirstMeshlet;
+groupshared uint s_RangeMeshletCount;
 #if defined(XII_CULL_DIAGNOSTICS)
 RWStructuredBuffer<uint4> g_DiagnosticMeshlets;
 RWStructuredBuffer<uint>  g_DiagnosticMeshletCount;
@@ -39,29 +43,91 @@ void                      RecordDecision(uint instance, uint meshlet, uint outco
 #else
 void RecordDecision(uint instance, uint meshlet, uint outcome) {}
 #endif
-bool ReserveMeshlet(out uint destination)
+groupshared uint s_VisibleCount;
+groupshared uint s_Destination;
+groupshared uint s_Granted;
+void             ReserveMeshletBatch(uint requested)
 {
   uint capacity, stride;
   g_VisibleMeshlets.GetDimensions(capacity, stride);
+  s_Destination = 0u;
+  s_Granted     = 0u;
+  if (requested == 0u)
+    return;
   for (;;)
   {
-    uint count = g_VisibleMeshletCount[0];
-    if (count >= capacity)
+    uint count   = g_VisibleMeshletCount[0];
+    uint granted = min(requested, capacity - min(count, capacity));
+    if (granted == 0u)
     {
       InterlockedOr(g_VisibleMeshletOverflow[0], 1u);
-      destination = 0u;
-      return false;
+      return;
     }
     uint observed;
-    InterlockedCompareExchange(g_VisibleMeshletCount[0], count, count + 1u, observed);
+    InterlockedCompareExchange(g_VisibleMeshletCount[0], count, count + granted, observed);
     if (observed == count)
     {
-      destination = count;
-      return true;
+      s_Destination = count;
+      s_Granted     = granted;
+      if (granted < requested)
+        InterlockedOr(g_VisibleMeshletOverflow[0], 1u);
+      return;
     }
   }
 }
-[numthreads(64, 1, 1)] void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID) {
+bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVisibilityView view, uint lodIndex)
+{
+  GpuMeshlet meshlet = g_Meshlets[meshletIndex];
+  if ((meshlet.PackedLodSection & 0xFFFFu) != lodIndex)
+    return false;
+  uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  if (primitives == 0u || (meshlet.PackedPrimitiveVertexCount >> 16u) == 0u)
+    return false;
+  if (instance.PrimitiveCount != 0u)
+  {
+    // Difference comparisons preserve half-open ranges without overflowing uint ends.
+    if (meshlet.Header.x >= instance.FirstPrimitive)
+    {
+      if (meshlet.Header.x - instance.FirstPrimitive >= instance.PrimitiveCount)
+        return false;
+    }
+    else if (instance.FirstPrimitive - meshlet.Header.x >= primitives)
+      return false;
+  }
+  float3 c0          = float3(instance.GlobalTransform[0][0], instance.GlobalTransform[1][0], instance.GlobalTransform[2][0]);
+  float3 c1          = float3(instance.GlobalTransform[0][1], instance.GlobalTransform[1][1], instance.GlobalTransform[2][1]);
+  float3 c2          = float3(instance.GlobalTransform[0][2], instance.GlobalTransform[1][2], instance.GlobalTransform[2][2]);
+  float3 diagonal    = float3(dot(c0, c0), dot(c1, c1), dot(c2, c2));
+  float3 offDiagonal = abs(float3(dot(c0, c1), dot(c0, c2), dot(c1, c2)));
+  // The largest Gram-matrix row sum bounds the squared stretch, including shear.
+  float3 stretch      = diagonal + float3(offDiagonal.x + offDiagonal.y, offDiagonal.x + offDiagonal.z, offDiagonal.y + offDiagonal.z);
+  float  maximumScale = sqrt(max(stretch.x, max(stretch.y, stretch.z)));
+  bool   posed        = instance.SkinningCount != 0u;
+  float3 center       = posed ? instance.BoundsCenterRadius.xyz : mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
+  float  radius       = posed ? instance.BoundsCenterRadius.w : meshlet.Bounds.w * maximumScale;
+  if (!SphereInsideFrustum(center, radius, view))
+  {
+    RecordDecision(index, meshletIndex, 1u);
+    return false;
+  }
+  float tolerance    = max(max(diagonal.x, max(diagonal.y, diagonal.z)), 0.00000001f) * 0.001f;
+  bool  uniformScale = max(diagonal.x, max(diagonal.y, diagonal.z)) - min(diagonal.x, min(diagonal.y, diagonal.z)) <= tolerance &&
+    max(offDiagonal.x, max(offDiagonal.y, offDiagonal.z)) <= tolerance;
+  if (view.LodParameters.w == 0.0f && !posed && (instance.Flags & (1u << 9u)) == 0u && meshlet.Cone.w >= 0.0f && uniformScale && dot(c0, cross(c1, c2)) > 0.0f)
+  {
+    float3 axis     = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
+    float3 toCamera = view.CameraPosition.xyz - center;
+    // Include the bounding sphere radius for conservative rejection near a surface.
+    if (dot(axis, toCamera) <= -sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w)) * length(toCamera) - radius)
+    {
+      RecordDecision(index, meshletIndex, 2u);
+      return false;
+    }
+  }
+  RecordDecision(index, meshletIndex, 0u);
+  return true;
+}
+[numthreads(64, 1, 1)] void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID, uint lane : SV_GroupIndex) {
   uint capacity, stride, sceneCount, geometryCount, meshletCount, historyCount, viewCount;
   g_VisibleInstances.GetDimensions(capacity, stride);
   g_SceneInstances.GetDimensions(sceneCount, stride);
@@ -90,60 +156,28 @@ bool ReserveMeshlet(out uint destination)
   if (history.x >= min(geometry.LodCount, 8u) || history.y != geometry.Generation || history.z != g_SceneInstances[selectionIndex].ObjectId ||
       (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x))
     return;
-  GpuGeometryLod lod          = geometry.Lods[history.x];
-  uint           localMeshlet = tid.x;
-  if (localMeshlet >= lod.MeshletCount || lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset)
-    return;
-  uint       meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
-  GpuMeshlet meshlet      = g_Meshlets[meshletIndex];
-  if ((meshlet.PackedLodSection & 0xFFFFu) != history.x)
-    return;
-  uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
-  if (primitives == 0u || (meshlet.PackedPrimitiveVertexCount >> 16u) == 0u)
-    return;
-  if (instance.PrimitiveCount != 0u)
+  GpuGeometryLod lod = geometry.Lods[history.x];
+  if (lane == 0u)
+    GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
+  GroupMemoryBarrierWithGroupSync();
+  const uint workStride = max(g_MeshletWorkArguments[0], 1u) * 64u;
+  // Uniform tile iterations keep group barriers safe even for partial ranges.
+  for (uint base = group.x * 64u; base < s_RangeMeshletCount; base += workStride)
   {
-    // Difference comparisons preserve half-open ranges without overflowing uint ends.
-    if (meshlet.Header.x >= instance.FirstPrimitive)
-    {
-      if (meshlet.Header.x - instance.FirstPrimitive >= instance.PrimitiveCount)
-        return;
-    }
-    else if (instance.FirstPrimitive - meshlet.Header.x >= primitives)
-      return;
+    if (lane == 0u)
+      s_VisibleCount = 0u;
+    GroupMemoryBarrierWithGroupSync();
+    uint meshletIndex = lod.MeshletMetadataOffset + s_FirstMeshlet + base + lane;
+    uint rank         = 0xFFFFFFFFu;
+    if (base + lane < s_RangeMeshletCount)
+      if (CullMeshlet(index, meshletIndex, instance, view, history.x))
+        InterlockedAdd(s_VisibleCount, 1u, rank);
+    GroupMemoryBarrierWithGroupSync();
+    if (lane == 0u)
+      ReserveMeshletBatch(s_VisibleCount);
+    GroupMemoryBarrierWithGroupSync();
+    if (rank < s_Granted)
+      g_VisibleMeshlets[s_Destination + rank] = uint2(index, meshletIndex);
+    GroupMemoryBarrierWithGroupSync();
   }
-  float3 c0          = float3(instance.GlobalTransform[0][0], instance.GlobalTransform[1][0], instance.GlobalTransform[2][0]);
-  float3 c1          = float3(instance.GlobalTransform[0][1], instance.GlobalTransform[1][1], instance.GlobalTransform[2][1]);
-  float3 c2          = float3(instance.GlobalTransform[0][2], instance.GlobalTransform[1][2], instance.GlobalTransform[2][2]);
-  float3 diagonal    = float3(dot(c0, c0), dot(c1, c1), dot(c2, c2));
-  float3 offDiagonal = abs(float3(dot(c0, c1), dot(c0, c2), dot(c1, c2)));
-  // The largest Gram-matrix row sum bounds the squared stretch, including shear.
-  float3 stretch      = diagonal + float3(offDiagonal.x + offDiagonal.y, offDiagonal.x + offDiagonal.z, offDiagonal.y + offDiagonal.z);
-  float  maximumScale = sqrt(max(stretch.x, max(stretch.y, stretch.z)));
-  bool   posed        = instance.SkinningCount != 0u;
-  float3 center       = posed ? instance.BoundsCenterRadius.xyz : mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
-  float  radius       = posed ? instance.BoundsCenterRadius.w : meshlet.Bounds.w * maximumScale;
-  if (!SphereInsideFrustum(center, radius, view))
-  {
-    RecordDecision(index, meshletIndex, 1u);
-    return;
-  }
-  float tolerance    = max(max(diagonal.x, max(diagonal.y, diagonal.z)), 0.00000001f) * 0.001f;
-  bool  uniformScale = max(diagonal.x, max(diagonal.y, diagonal.z)) - min(diagonal.x, min(diagonal.y, diagonal.z)) <= tolerance &&
-    max(offDiagonal.x, max(offDiagonal.y, offDiagonal.z)) <= tolerance;
-  if (view.LodParameters.w == 0.0f && !posed && (instance.Flags & (1u << 9u)) == 0u && meshlet.Cone.w >= 0.0f && uniformScale && dot(c0, cross(c1, c2)) > 0.0f)
-  {
-    float3 axis     = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
-    float3 toCamera = view.CameraPosition.xyz - center;
-    // Include the bounding sphere radius for conservative rejection near a surface.
-    if (dot(axis, toCamera) <= -sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w)) * length(toCamera) - radius)
-    {
-      RecordDecision(index, meshletIndex, 2u);
-      return;
-    }
-  }
-  uint destination;
-  RecordDecision(index, meshletIndex, 0u);
-  if (ReserveMeshlet(destination))
-    g_VisibleMeshlets[destination] = uint2(index, meshletIndex);
 }

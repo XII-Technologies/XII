@@ -93,7 +93,7 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Visible = builder.ReadBuffer(visible, xiiGALResourceStateFlags::ShaderResource);
       data.m_Count = builder.ReadBuffer(count, xiiGALResourceStateFlags::ShaderResource);
       data.m_Lod = builder.ReadBuffer(lod, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Arguments = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument);
+      data.m_Arguments   = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument | xiiGALResourceStateFlags::ShaderResource);
       data.m_OutputCount = builder.ReadWriteBuffer(initialCount, xiiGALResourceStateFlags::UnorderedAccess);
       data.m_Overflow = builder.ReadWriteBuffer(initialOverflow, xiiGALResourceStateFlags::UnorderedAccess);
       xiiGALBufferCreationDescription description;
@@ -118,6 +118,7 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
       commands.ResolveAndSetShaderResourceBufferView("g_VisibleInstances", execute.GetBuffer(data.m_Visible)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_VisibleInstanceCount", execute.GetBuffer(data.m_Count)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_CurrentLodHistory", execute.GetBuffer(data.m_Lod)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      commands.ResolveAndSetShaderResourceBufferView("g_MeshletWorkArguments", execute.GetBuffer(data.m_Arguments)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshlets", execute.GetBuffer(data.m_Output)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       commands.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshletCount", execute.GetBuffer(data.m_OutputCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       commands.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshletOverflow", execute.GetBuffer(data.m_Overflow)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);

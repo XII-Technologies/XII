@@ -12,6 +12,7 @@ StructuredBuffer<uint> g_VisibleInstances;
 StructuredBuffer<uint> g_VisibleInstanceCount;
 StructuredBuffer<uint4> g_CurrentLodHistory;
 RWStructuredBuffer<uint> g_MaximumMeshletGroups;
+#include "MeshletRange.h"
 groupshared uint s_Maximum;
 uint GroupsForCandidate(uint candidate)
 {
@@ -42,7 +43,8 @@ uint GroupsForCandidate(uint candidate)
       (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x)) return 0u;
   GpuGeometryLod lod = geometry.Lods[history.x];
   if (lod.MeshletMetadataOffset >= meshletCount) return 0u;
-  uint available = min(lod.MeshletCount, meshletCount - lod.MeshletMetadataOffset);
+  uint first, available;
+  GetCandidateMeshletRange(instance, lod, first, available);
   return available / 64u + (available % 64u != 0u ? 1u : 0u);
 }
 [numthreads(64, 1, 1)]
