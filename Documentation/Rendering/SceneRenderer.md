@@ -454,11 +454,34 @@ algorithm selected implicitly.
 
 This integration is screen-space ambient visibility, with the usual missing
 offscreen and hidden geometry. It is not ray-traced visibility or indirect light
-transport. Scene deliberately does not use temporal AO yet. Its optional temporal camera now
-supplies coherent previous-camera matrices and jitter, but the AO history shader
-still needs jitter/depth reprojection and moving-scene acceptance. Its retained
-operation has occurrence-local, completion-aware slots and revision-checked
-recording ownership; that alone does not certify temporal AO.
+transport. Spatial filtering remains the default. Setting the filter occurrence's
+`UseHistory=true` opts into temporal accumulation using Scene's existing explicit
+temporal camera and G-buffer motion producer. The filter validates camera extent,
+previous-frame identity and consecutive camera history before sampling old masks.
+The previous surface depth is tested in its own camera basis, reconstructed from
+the current world position; camera translation does not compare unrelated view
+depths. Current neighbourhood clipping bounds accumulated visibility.
+
+Each temporal occurrence owns at most eight mask/surface slots. Graph snapshots
+retain both consumed and produced slots. GPU completion and exclusive slot
+ownership are both required for reuse; exhausted retained recordings report an
+explicit capacity failure. Imports resolve their native state at execution, and
+history publication propagates readiness to every consumer queue. Revisions and
+monotonic frame publication prevent old recordings from restoring invalidated or
+newer state. Spatial filtering allocates none of this persistent storage.
+
+`RawAmbientOcclusion`, `AmbientOcclusionHistory` and `AmbientOcclusionSurface`
+provide optional resource inspection alongside the final visibility mask.
+
+Scene and authored Editor acceptance compare temporal, spatial and disabled
+visibility across independent worlds. Readbacks verify neighbourhood bounds,
+previous-mask identity, camera dolly/pan, moved and removed geometry, orthographic
+projection, camera cuts, resize and reload. A CPU camera-space oracle checks
+numerical history blending on more than a thousand rendered surface reprojections
+per motion phase, including pixels whose previous and current view depths differ.
+Eight retained native recordings execute in reverse after world destruction;
+a ninth reports the explicit capacity limit. Combined jittered TAA/AO quality,
+animated surfaces, stereo and representative performance remain acceptance work.
 
 Vulkan acceptance uses a material-bearing cube contacting a real floor, a world
 directional light and manual exposure. Full image readbacks compare AO enabled
