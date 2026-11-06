@@ -21,6 +21,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracingScenePass, 1, xiiRTTIDefaultAlloca
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Activation", m_Activation)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("RequireActivation", m_bRequireActivation)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Scene", m_OutputScene)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Materials", m_OutputMaterials)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("Geometry", m_OutputGeometry)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -34,6 +36,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracingScenePass, 1, xiiRTTIDefaultAlloca
 xiiResult xiiRayTracingScenePass::Build(xiiRenderPipelinePassContext& context)
 {
   m_Statistics = {};
+  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid())
+    return XII_SUCCESS;
   if (m_bOnlyDiagnosticViews && (!context.m_pView || !xiiViewRenderMode::IsRayTracingVisualizationMode(context.m_pView->GetViewRenderMode())))
     return XII_SUCCESS;
   if (!context.m_pView || !context.m_pView->GetWorld())

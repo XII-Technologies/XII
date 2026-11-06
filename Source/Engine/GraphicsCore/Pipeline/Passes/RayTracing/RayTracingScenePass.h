@@ -15,6 +15,9 @@ public:
   xiiRenderPipelineAccelerationStructureOutputPin m_OutputScene{true};
   xiiRenderPipelineBufferOutputPin                m_OutputMaterials{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin                m_OutputGeometry{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineTextureInputPin                m_Activation{xiiGALResourceFormat::Unknown, true};
+  /// When enabled, absence of this token skips all occurrence-local TLAS work.
+  bool                                            m_bRequireActivation         = false;
   bool                                            m_bUseViewSelection          = true;
   bool                                            m_bRequireHardwareRayTracing = false;
   /// Skip TLAS construction outside explicit ray-tracing diagnostic view modes.
