@@ -12,7 +12,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiTAAConstants)
   FLOAT1(MotionBlendScale); ///< Additional current-frame contribution per NDC velocity unit.
   FLOAT1(DepthThreshold);
   UINT1(HasCamera);
-  UINT1(ReactiveFlags); ///< Bit 0: history trust, bit 1: unstable radiance.
+  UINT1(ReactiveFlags); ///< Bits 0/1: trust/radiance; bits 2/3: current/retained ambient visibility.
   FLOAT2(JitterDelta);
   FLOAT4(CameraPosition);
   MAT4(InverseViewProjection);
