@@ -324,7 +324,8 @@ the canonical resource rather than introducing a second display manager or a
 subgraph with no additional reusable boundary:
 
 ```text
-HDRSceneColor -> Luminance Histogram -> Auto Exposure --------+
+HDRSceneColor -> automatic Luminance Histogram -> Auto Exposure --+
+Camera exposure -> manual two-float upload -----------------------+
        +-> TAA -> Upscale -> optional Bloom ------------------+-> Tone Mapping -> Grading -> Present
                          +-----------------------------------+
 ```
@@ -332,9 +333,13 @@ HDRSceneColor -> Luminance Histogram -> Auto Exposure --------+
 Histogram input is readable single-sample RGBA; its output is a graph-owned
 structured 256-uint SRV/UAV buffer (1,024 bytes). The producer clears counters,
 then counts every input pixel into log-luminance bins. Adaptation validates
-this exact layout and imports its own two-float SRV/UAV exposure/average-luminance
-buffer. Valid history is an explicit read-modify-write dependency. Manual mode
-writes the camera exposure with compensation; automatic mode clips authored
+this exact layout in automatic mode and imports its own two-float SRV/UAV
+exposure/average-luminance buffer. Valid history is an explicit read-modify-write
+dependency. Resolved manual mode omits histogram buffers, constants and dispatch.
+It uploads compensated camera exposure and zero average luminance into an eight-byte
+graph-owned SRV buffer, without loading or dispatching adaptation. The upload owns
+its snapshot across delayed execution and owner destruction. Returning to automatic
+mode restarts adaptation from current metering; automatic mode clips authored
 percentiles, reconstructs bin centers and adapts toward the metered exposure.
 Fractional percentile weights remain fractional for one-pixel viewports. First
 frames do not read uninitialized previous exposure.
@@ -370,7 +375,7 @@ display-linear color. Existing grading and presentation apply afterward. Control
 remain reflected or per-view display settings, and independent occurrences own
 their configuration/history. This change preserves Scene/Editor identities,
 existing root interfaces and the nine-source asset library; only Scene's native
-pin metadata changes to describe optional bloom.
+pin metadata describes optional bloom and histogram resources.
 
 `SceneDisplay/BloomAndMeteredExposureAffectProductionOutput` exercises actual
 opaque emissive geometry and production Scene resources. Thirteen bloom phases
@@ -384,7 +389,12 @@ between enabled and disabled views.
 Nine metering phases verify manual/automatic independent views, one-pixel
 initialization, frozen adaptation, camera cuts, reload, resize and both nonzero
 adaptation rates against deterministic clock steps. Histogram totals equal the
-actual pixel count, and presented pixels match the measured exposure. The test
+actual pixel count, and presented pixels match the measured exposure. Four additional
+phases exercise manual/automatic transitions, compensation and a runtime display
+override. Scene and inherited Editor graph resources confirm the absence of
+histogram/adaptation allocations in manual mode. Standalone manual graphs need no
+histogram input; two retained recordings execute in reverse order after owner
+destruction with distinct correct exposure values. The test
 reproduced luminance 512 being metered as 425.48 in a one-pixel viewport; corrected
 fractional weights and bin decoding yield 503.68 within quantization error. Active
 missing bloom and a four-byte histogram fail the view; zero bloom strength permits
@@ -401,11 +411,11 @@ Vulkan Scene sample pass. Existing Qt font and unused Vulkan output warnings rem
 Generated pipeline binaries, caches and unrelated scene edits are excluded.
 
 This certifies the bounded spatial tent bloom and existing log-histogram exposure
-path. Multiscale/anisotropic bloom, lens dirt, representative performance, HDR
+path. Anisotropic bloom, lens dirt, representative performance, HDR
 monitor calibration, stereo and other backends remain unverified. Manual exposure
-still produces the histogram for the existing resource contract; this is not a
-zero-dispatch manual display path. Arbitrary retained exposure recordings across
-intervening submissions remain separate acceptance work; existing epoch and
+uses a transfer upload with no metering or adaptation dispatch. Arbitrary retained
+automatic exposure recordings across intervening submissions remain separate
+acceptance work; existing epoch and
 world-destruction recording regressions pass.
 
 ## Ambient visibility
