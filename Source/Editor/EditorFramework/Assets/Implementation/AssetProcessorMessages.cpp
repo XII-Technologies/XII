@@ -31,6 +31,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessAssetResponseMsg, 1, xiiRTTIDefaultAl
     XII_ARRAY_MEMBER_PROPERTY("LogEntries", m_LogEntries),
     XII_MEMBER_PROPERTY("ImportBefore", m_sImportBefore),
     XII_MEMBER_PROPERTY("ImportAfter", m_sImportAfter),
+    XII_ARRAY_MEMBER_PROPERTY("ImportFiles", m_ImportFiles),
   }
   XII_END_PROPERTIES;
 }

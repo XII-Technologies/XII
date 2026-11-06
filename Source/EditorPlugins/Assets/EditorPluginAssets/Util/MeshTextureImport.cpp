@@ -203,6 +203,9 @@ namespace
 
 xiiStatus xiiMeshImportUtils::ResolveAssetReference(xiiStringView sAbsolutePath, xiiString& out_sAsset)
 {
+  // Reused sidecars also belong to this import's publication batch, including
+  // assets retained after a canceled worker import that the editor has not seen.
+  xiiAssetCurator::GetSingleton()->NotifyOfFileChange(sAbsolutePath);
   if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sAbsolutePath))
   {
     xiiStringBuilder id;

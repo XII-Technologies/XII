@@ -339,6 +339,7 @@ void xiiProcessTask::EventHandlerIPC(const xiiProcessCommunicationChannel::Event
       XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
       m_sImportBefore  = pMsg->m_sImportBefore;
       m_sImportAfter   = pMsg->m_sImportAfter;
+      m_ImportFiles    = pMsg->m_ImportFiles;
       m_bImportPending = true;
       m_bImportApplied = false;
       m_State          = State::ApplyingImport;
@@ -648,6 +649,7 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           return true;
         m_sImportBefore.Clear();
         m_sImportAfter.Clear();
+        m_ImportFiles.Clear();
         m_State = State::ReportResult;
       }
       break;

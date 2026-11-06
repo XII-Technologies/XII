@@ -16,9 +16,11 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/System/CrashHandler.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <GuiFoundation/Action/ActionManager.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
 xiiCommandLineOptionPath   opt_OutputDir("_EditorProcessor", "-outputDir", "Output directory", "");
@@ -149,9 +151,39 @@ public:
                 text = xiiStringView(reinterpret_cast<const char*>(storage.GetData()), storage.GetStorageSize32());
               };
               capture(msg.m_sImportBefore);
+              // Explicit importer notifications are synchronous; do not depend on a
+              // second process observing directory-watcher events in the same order.
+              xiiCopyOnBroadcastEvent<const xiiFileChangedEvent&, xiiMutex>::Unsubscriber importFiles;
+              xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.AddEventHandler([&](const xiiFileChangedEvent& event) {
+                if (xiiThreadUtils::IsMainThread() &&
+                    (event.m_Type == xiiFileChangedEvent::Type::FileAdded || event.m_Type == xiiFileChangedEvent::Type::FileChanged || event.m_Type == xiiFileChangedEvent::Type::DocumentLinked))
+                {
+                  const xiiString path(event.m_Path.GetAbsolutePath());
+                  if (path != pMsg->m_sAssetPath && !msg.m_ImportFiles.Contains(path))
+                    msg.m_ImportFiles.PushBack(path);
+                }
+              },
+                                                                                      importFiles);
               msg.m_Status = document->TransformAssetForImport(curator->GetAssetProfile(uiPlatform));
               if (msg.m_Status.Succeeded())
+              {
                 capture(msg.m_sImportAfter);
+                importFiles.Unsubscribe();
+                // A reused material may reference textures that were created in an
+                // earlier import. Publish their physical paths as well as its own.
+                for (xiiUInt32 i = 0; i < msg.m_ImportFiles.GetCount(); ++i)
+                {
+                  xiiSet<xiiString> dependencies;
+                  curator->GenerateTransitiveHull(msg.m_ImportFiles[i], dependencies, true, true, true);
+                  for (const auto& dependency : dependencies)
+                    if (const auto asset = curator->FindSubAsset(dependency))
+                    {
+                      const xiiString path(asset->m_pAssetInfo->m_Path.GetAbsolutePath());
+                      if (path != pMsg->m_sAssetPath && !msg.m_ImportFiles.Contains(path))
+                        msg.m_ImportFiles.PushBack(path);
+                    }
+                }
+              }
             }
           }
           else if (state == xiiAssetInfo::NeedsThumbnail || state == xiiAssetInfo::NeedsTransform || pMsg->m_TransformFlags.IsSet(xiiTransformFlags::ForceTransform))

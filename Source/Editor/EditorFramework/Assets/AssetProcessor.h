@@ -126,10 +126,11 @@ private:
   bool                                  m_bRequested = false;
   xiiDynamicArray<xiiUuid>              m_ReservedAssets;
   // Protected by the curator mutex; consumed by the existing GUI-thread curator tick.
-  bool      m_bImportPending = false;
-  bool      m_bImportApplied = false;
-  xiiString m_sImportBefore;
-  xiiString m_sImportAfter;
+  bool                       m_bImportPending = false;
+  bool                       m_bImportApplied = false;
+  xiiString                  m_sImportBefore;
+  xiiString                  m_sImportAfter;
+  xiiDynamicArray<xiiString> m_ImportFiles;
 };
 
 /// Background asset processing is handled by this class.

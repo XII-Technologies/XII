@@ -37,6 +37,11 @@ void xiiAssetProcessor::ApplyImportResults()
       task.m_Status = xiiTransformStatus(xiiTransformResult::NeedsImport);
       continue;
     }
+    // The worker has saved sidecars that may not have reached the directory watcher.
+    // Discover the entire batch under the curator lock before publishing their GUIDs
+    // in the source graph or preparing another dependency-hash snapshot.
+    for (const auto& path : task.m_ImportFiles)
+      xiiAssetCurator::GetSingleton()->NotifyOfFileChange(path);
     xiiProcessAssetMsg current;
     if (PrepareAssetRequest(task.m_AssetGuid, current, task.m_Request.m_sPlatform).Failed() ||
         current.m_AssetHash != task.m_Request.m_AssetHash || current.m_ThumbHash != task.m_Request.m_ThumbHash || current.m_PackageHash != task.m_Request.m_PackageHash)
