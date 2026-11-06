@@ -5,6 +5,7 @@
 #include <Core/ResourceManager/Implementation/Declarations.h>
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Threading/Mutex.h>
 #include <Foundation/Time/Timestamp.h>
 
 /// The base class for all resources.
@@ -182,6 +183,10 @@ protected:
   /// Non-const version for resources that want to write this variable directly.
   MemoryUsage& ModifyMemoryUsage() { return m_MemoryUsage; }
 
+  /// Recomputes and publishes memory use without racing a loader's publication.
+  /// Release resource-specific data locks before calling: UpdateMemoryUsage may acquire them.
+  void RefreshMemoryUsage();
+
   /// Call this to specify whether a resource is reloadable.
   ///
   /// By default all created resources are flagged as not reloadable.
@@ -232,6 +237,7 @@ private:
   xiiString                     m_sUniqueID;
   xiiString                     m_sResourceDescription;
   MemoryUsage                   m_MemoryUsage;
+  xiiMutex                      m_MemoryUsageMutex;
   xiiBitflags<xiiResourceFlags> m_Flags;
 
   xiiTime             m_LastAcquire;

@@ -912,18 +912,7 @@ void xiiResourceManager::SetResourceLowResData(const xiiTypelessResourceHandle& 
 
   XII_ASSERT_DEV(pResource->GetLoadingState() != xiiResourceState::Unloaded, "The resource should have changed its loading state.");
 
-  // Update Memory Usage
-  {
-    xiiResource::MemoryUsage memoryUsage;
-    memoryUsage.m_uiMemoryCPU = 0xFFFFFFFF;
-    memoryUsage.m_uiMemoryGPU = 0xFFFFFFFF;
-    pResource->UpdateMemoryUsage(memoryUsage);
-
-    XII_ASSERT_DEV(memoryUsage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its CPU memory usage", pResource->GetResourceID());
-    XII_ASSERT_DEV(memoryUsage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its GPU memory usage", pResource->GetResourceID());
-
-    pResource->m_MemoryUsage = memoryUsage;
-  }
+  pResource->RefreshMemoryUsage();
 }
 
 xiiResourceTypeLoader* xiiResourceManager::GetDefaultResourceLoader()
