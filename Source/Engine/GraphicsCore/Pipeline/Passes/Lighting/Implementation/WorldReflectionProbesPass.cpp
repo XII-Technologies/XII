@@ -5,11 +5,13 @@
 #include <Core/World/World.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Components/Lights/ReflectionCaptureComponent.h>
+#include <GraphicsCore/Components/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/WorldReflectionProbesPass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <Shaders/Pipeline/SkyLightData.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiReflectionProbeFrameData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -34,9 +36,18 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
     return context.ReportFailure("Reflection probes require an extracted authoritative view.");
   XII_PROFILE_SCOPE("World reflection probe extraction");
   const auto&                                                                      world = *context.m_pView->GetWorld();
+  const xiiSkyLightRenderData*                                                     sky   = nullptr;
   xiiHybridArray<const xiiReflectionCaptureRenderData*, XII_MAX_REFLECTION_PROBES> selected;
   for (const auto* packet : context.m_pView->GetExtractedRenderData()->GetAllRenderData())
   {
+    if (const auto* candidate = xiiDynamicCast<const xiiSkyLightRenderData*>(packet))
+    {
+      const xiiComponent* component = nullptr;
+      if (candidate->m_hOwnerComponent.GetInternalID().m_WorldIndex == world.GetIndex() && world.TryGetComponent(candidate->m_hOwnerComponent, component) && component->IsActiveAndInitialized() && component->GetOwner()->IsActive() && component->GetOwner()->GetHandle() == candidate->m_hOwnerObject &&
+          (!sky || candidate->m_iPriority > sky->m_iPriority || (candidate->m_iPriority == sky->m_iPriority && candidate->m_hOwnerComponent.GetInternalID().m_Data < sky->m_hOwnerComponent.GetInternalID().m_Data)))
+        sky = candidate;
+      continue;
+    }
     const auto* probe = xiiDynamicCast<const xiiReflectionCaptureRenderData*>(packet);
     if (!probe)
       continue;
@@ -89,33 +100,60 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
     textures.PushBack(environment->m_Specular);
     environments.PushBack(std::move(environment));
   }
-  xiiRenderGraphBufferHandle recordBuffer, constants;
-  if (!records.IsEmpty())
+  xiiSharedPtr<const xiiEnvironmentMap> skyEnvironment;
+  xiiSkyLightConstants                  skySettings{};
+  if (sky)
+  {
+    const auto& rotation = sky->m_GlobalTransform.m_qRotation;
+    if (!rotation.IsValid() || !xiiMath::IsFinite(sky->m_fIntensity) || sky->m_fIntensity < 0 || !xiiMath::IsFinite(sky->m_fSaturation) || sky->m_fSaturation < 0 || sky->m_fSaturation > 1 || !sky->m_hEnvironmentMap.IsValid())
+      return context.ReportFailure("Invalid extracted sky light rotation or radiance settings.");
+    xiiResourceLock<xiiTextureCubeResource> resource(sky->m_hEnvironmentMap, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!resource.IsValid())
+      return context.ReportFailure("An authored sky cubemap could not be loaded.");
+    const auto prepared = resource->GetEnvironmentMap(skyEnvironment);
+    if (prepared.Failed())
+      return context.ReportFailure(prepared.GetMessageString());
+    skySettings.SkyWorldToEnvironment = xiiTransform(xiiVec3::MakeZero(), rotation.GetInverse()).GetAsMat4();
+    skySettings.SkyLightParameters    = xiiVec4(sky->m_fIntensity, sky->m_fSaturation, 1, 0);
+  }
+  xiiRenderGraphBufferHandle recordBuffer, constants, skyConstants;
+  if (!records.IsEmpty() || skyEnvironment)
   {
     xiiRenderPassResourceScope scope(context);
     struct Data
     {
       xiiHybridArray<xiiGPUReflectionProbe, XII_MAX_REFLECTION_PROBES> m_Records;
       xiiRenderGraphBufferHandle                                       m_Buffer, m_Constants;
+      xiiRenderGraphBufferHandle                                       m_SkyConstants;
+      xiiSkyLightConstants                                             m_Sky;
     };
     const auto uploaded = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Records = std::move(records);
+      data.m_Sky = skySettings;
+      data.m_SkyConstants = xiiRenderPassUtils::Constants(builder, "Sky Light Settings", sizeof(xiiSkyLightConstants));
+      if (!data.m_Records.IsEmpty())
+      {
       xiiGALBufferCreationDescription description;
       description.m_uiElementByteStride = sizeof(xiiGPUReflectionProbe);
       description.m_uiSize = data.m_Records.GetCount() * sizeof(xiiGPUReflectionProbe);
       description.m_Mode = xiiGALBufferMode::Structured;
       description.m_BindFlags = xiiGALBindFlags::ShaderResource;
       data.m_Buffer = builder.WriteBuffer("Reflection Probe Records", description, xiiGALResourceStateFlags::CopyDestination);
-      data.m_Constants = xiiRenderPassUtils::Constants(builder, "Reflection Probe Counts", sizeof(xiiReflectionProbeConstants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Constants = xiiRenderPassUtils::Constants(builder, "Reflection Probe Counts", sizeof(xiiReflectionProbeConstants)); } }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
+      xiiGALMapHelper<xiiSkyLightConstants> skyMapped(commands, execute.GetBuffer(data.m_SkyConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *skyMapped = data.m_Sky;
+      if (data.m_Records.IsEmpty())
+        return;
       commands.UpdateBuffer(execute.GetBuffer(data.m_Buffer), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData()), data.m_Records.GetCount() * sizeof(xiiGPUReflectionProbe)));
       xiiGALMapHelper<xiiReflectionProbeConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *mapped = {};
       mapped->ActiveProbeCount = data.m_Records.GetCount(); });
     recordBuffer        = uploaded.first->m_Buffer;
     constants           = uploaded.first->m_Constants;
+    skyConstants        = uploaded.first->m_SkyConstants;
   }
-  return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetSetupSerial(), recordBuffer, constants, std::move(textures), std::move(environments)));
+  return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetSetupSerial(), recordBuffer, constants, std::move(textures), std::move(environments), std::move(skyEnvironment), skyConstants));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_Implementation_WorldReflectionProbesPass);

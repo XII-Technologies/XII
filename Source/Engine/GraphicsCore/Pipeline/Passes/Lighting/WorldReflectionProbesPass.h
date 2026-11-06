@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/Passes/Lighting/ReflectionProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
-/// Extracts authored local probes for shared deferred, forward and offscreen hit evaluation.
+/// Extracts authored local probes and a deterministic global sky for shared environment lighting.
 /// More than the supported descriptor capacity fails explicitly instead of dropping influences.
 class XII_GRAPHICSCORE_DLL xiiWorldReflectionProbesPass final : public xiiRenderPipelinePass
 {
