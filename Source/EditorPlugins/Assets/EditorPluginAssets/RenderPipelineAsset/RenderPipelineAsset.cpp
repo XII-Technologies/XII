@@ -6,6 +6,7 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
+#include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
@@ -561,9 +562,44 @@ void xiiRenderPipelineNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRT
       ref_types.PushBack(type);
 }
 
-bool xiiRenderPipelineNodeManager::InternalCanConnectToSelf(const xiiPin& source, const xiiPin&) const
+namespace
 {
-  return static_cast<const xiiPipelineEditorPin&>(source).m_Schema.m_bTemporalHistoryOutput;
+  bool PipelineOutputDependsOnInput(const xiiPin& output, const xiiPin& input)
+  {
+    const auto* object = output.GetParent();
+    if (!object->GetType()->IsDerivedFrom<xiiRenderPipelineSubgraphPass>())
+      return true;
+    // Instance overrides can change a nested definition's dependency shape.
+    // Keep the conservative rule until that exact overridden expansion is available.
+    if (object->GetTypeAccessor().GetCount("Overrides") > 0)
+      return true;
+    const auto resource = object->GetTypeAccessor().GetValue("Resource");
+    if (!resource.IsA<xiiString>() || resource.Get<xiiString>().IsEmpty())
+      return true;
+    const auto resolved = ResolvePipelineResource(resource.Get<xiiString>());
+    const bool exported = xiiFileSystem::ExistsFile(resolved);
+    auto       handle   = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(resolved);
+    if (!handle.IsValid() && exported)
+      handle = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(resolved);
+    if (!handle.IsValid())
+      return true;
+    xiiResourceLock<xiiRenderPipelineResource> loaded(handle, exported ? xiiResourceAcquireMode::BlockTillLoaded_NeverFail : xiiResourceAcquireMode::PointerOnly);
+    const auto                                 authoring = loaded.GetAcquireResult() == xiiResourceAcquireResult::Final ? loaded->GetAuthoring() : xiiSharedPtr<const xiiRenderPipelineAuthoring>();
+    // Pin discovery also runs before project indexing and asset transformation.
+    // Inspect only already-exported or resident resources. Do not transform assets
+    // or load unresolved nested references while discovering pins.
+    if (!authoring || !authoring->m_Descriptor.m_References.IsEmpty())
+      return true;
+    xiiSharedPtr<const xiiRenderPipeline> pipeline;
+    if (xiiRenderPipeline::Compile(authoring->m_Descriptor, pipeline).Failed())
+      return true;
+    return !pipeline || pipeline->DoesInterfaceOutputDependOnInput(output.GetName(), input.GetName());
+  }
+} // namespace
+
+bool xiiRenderPipelineNodeManager::InternalCanConnectToSelf(const xiiPin& source, const xiiPin& target) const
+{
+  return static_cast<const xiiPipelineEditorPin&>(source).m_Schema.m_bTemporalHistoryOutput || !PipelineOutputDependsOnInput(source, target);
 }
 
 xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const
@@ -575,24 +611,24 @@ xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source,
     return xiiStatus("Render pipeline pin types, formats, dimensions or sample requirements do not match.");
   if (!output.m_bTemporalHistoryOutput)
   {
-    xiiDynamicArray<const xiiDocumentObject*> pending;
-    xiiHashSet<const xiiDocumentObject*>      visited;
-    pending.PushBack(target.GetParent());
+    xiiDynamicArray<const xiiPin*> pending;
+    xiiHashSet<const xiiPin*>      visited;
+    pending.PushBack(&target);
     while (!pending.IsEmpty())
     {
-      const auto* node = pending.PeekBack();
+      const auto* currentInput = pending.PeekBack();
       pending.PopBack();
-      if (node == source.GetParent())
-        return xiiStatus("Render pipeline contains an intra-frame dependency cycle. Use explicit temporal history output pins for previous-frame feedback.");
-      if (visited.Contains(node))
+      if (visited.Contains(currentInput))
         continue;
-      visited.Insert(node);
-      for (const auto& pin : GetOutputPins(node))
+      visited.Insert(currentInput);
+      for (const auto& pin : GetOutputPins(currentInput->GetParent()))
       {
-        if (static_cast<const xiiPipelineEditorPin*>(pin.Borrow())->m_Schema.m_bTemporalHistoryOutput)
+        if (static_cast<const xiiPipelineEditorPin*>(pin.Borrow())->m_Schema.m_bTemporalHistoryOutput || !PipelineOutputDependsOnInput(*pin, *currentInput))
           continue;
+        if (pin.Borrow() == &source)
+          return xiiStatus("Render pipeline contains an intra-frame dependency cycle. Use explicit temporal history output pins for previous-frame feedback.");
         for (const auto* connection : GetConnections(*pin))
-          pending.PushBack(connection->GetTargetPin().GetParent());
+          pending.PushBack(&connection->GetTargetPin());
       }
     }
   }

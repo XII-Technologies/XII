@@ -256,7 +256,8 @@ XII_CREATE_SIMPLE_TEST(PipelineEditor, SubgraphPinsFromSourceAsset)
   curator->MainThreadTick(false);
   XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") != nullptr);
   XII_TEST_BOOL(restoredManager->GetOutputPinByName(restoredNode, "LiveResult") != nullptr);
-  XII_TEST_INT(visiblePinCount(), 6);
+  // ClearTexture also publishes its optional resolution-reference input.
+  XII_TEST_INT(visiblePinCount(), 7);
   auto connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
   if (XII_TEST_INT(connections.GetCount(), 1))
     XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
@@ -273,7 +274,7 @@ XII_CREATE_SIMPLE_TEST(PipelineEditor, SubgraphPinsFromSourceAsset)
   curator->MainThreadTick(false);
   XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "LiveResult") == nullptr);
   XII_TEST_BOOL(manager->GetOutputPinByName(accessor->GetObject(id), "Result") != nullptr);
-  XII_TEST_INT(visiblePinCount(), 5);
+  XII_TEST_INT(visiblePinCount(), 6);
   connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
   if (XII_TEST_INT(connections.GetCount(), 1))
     XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
@@ -1173,4 +1174,59 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, TextureResolutionInputSelector)
   XII_TEST_INT(combo->count(), 2);
   XII_TEST_BOOL(combo->findData(QString("Input")) >= 0);
   XII_TEST_BOOL(combo->findData(QString("Extra")) < 0); // Disabled native pins are not candidates.
+}
+
+
+XII_CREATE_SIMPLE_TEST(PipelineEditor, IndependentSubgraphOutputDoesNotCreateFeedback)
+{
+  xiiRenderPipelineResourceDescriptor leaf;
+  const auto                          dependent   = leaf.AddPass("Dependent", xiiGetStaticRTTI<xiiEditorPinTestPass>());
+  const auto                          independent = leaf.AddPass("Independent", xiiGetStaticRTTI<xiiEditorPinTestPass>());
+  leaf.m_Interface.PushBack({"Input", true, leaf.m_Passes[dependent].m_Id, "Input"});
+  leaf.m_Interface.PushBack({"Dependent", false, leaf.m_Passes[dependent].m_Id, "Output"});
+  leaf.m_Interface.PushBack({"Independent", false, leaf.m_Passes[independent].m_Id, "Output"});
+  xiiGraphDefinition definition;
+  if (!XII_TEST_RESULT(leaf.MakeGraphDefinition(definition)))
+    return;
+  xiiRenderPipelineResourceDescriptor nested;
+  nested.m_Definitions.PushBack(definition);
+  const auto occurrence = nested.AddSubgraph("Nested producers", definition.m_Id);
+  for (const auto name : {"Input", "Dependent", "Independent"})
+    nested.m_Interface.PushBack({name, xiiStringView(name) == "Input", nested.m_Passes[occurrence].m_Id, name});
+  const auto                                 resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Editor.IndependentSubgraphOutputs", std::move(nested));
+  xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  const auto                                 pipeline = loaded->GetPipeline();
+  if (!XII_TEST_BOOL(pipeline != nullptr))
+    return;
+  XII_TEST_BOOL(pipeline->DoesInterfaceOutputDependOnInput("Dependent", "Input"));
+  XII_TEST_BOOL(!pipeline->DoesInterfaceOutputDependOnInput("Independent", "Input"));
+  XII_TEST_BOOL(pipeline->DoesInterfaceOutputDependOnInput("Missing", "Input"));
+
+  PinDocument document(xiiStringBuilder(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/IndependentSubgraphOutputs.xiiRenderPipelineAsset"));
+  auto*       accessor = document.GetObjectAccessor();
+  auto*       manager  = static_cast<xiiRenderPipelineNodeManager*>(document.GetObjectManager());
+  xiiUuid     child, relays[2];
+  accessor->StartTransaction("Compose independent outputs");
+  XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineSubgraphPass>(), child));
+  XII_TEST_STATUS(accessor->SetValueByName(accessor->GetObject(child), "Resource", resource.GetResourceID()));
+  for (auto& relay : relays)
+  {
+    XII_TEST_STATUS(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiEditorPinTestPass>(), relay));
+  }
+  accessor->FinishTransaction();
+  const auto* object            = accessor->GetObject(child);
+  const auto* input             = manager->GetInputPinByName(object, "Input");
+  const auto* independentOutput = manager->GetOutputPinByName(object, "Independent");
+  const auto* dependentOutput   = manager->GetOutputPinByName(object, "Dependent");
+  if (!XII_TEST_BOOL(input && independentOutput && dependentOutput))
+    return;
+  xiiDocumentNodeManager::CanConnectResult result;
+  XII_TEST_STATUS(manager->CanConnect(manager->GetConnectionType(), *independentOutput, *input, result));
+  XII_TEST_BOOL(manager->CanConnect(manager->GetConnectionType(), *dependentOutput, *input, result).Failed());
+  accessor->StartTransaction("Connect each independent branch");
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *independentOutput, *manager->GetInputPinByName(accessor->GetObject(relays[0]), "Input")));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(document.GetCommandHistory(), manager->GetConnectionType(), *dependentOutput, *manager->GetInputPinByName(accessor->GetObject(relays[1]), "Input")));
+  accessor->FinishTransaction();
+  XII_TEST_STATUS(manager->CanConnect(manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(relays[0]), "Output"), *input, result));
+  XII_TEST_BOOL(manager->CanConnect(manager->GetConnectionType(), *manager->GetOutputPinByName(accessor->GetObject(relays[1]), "Output"), *input, result).Failed());
 }
