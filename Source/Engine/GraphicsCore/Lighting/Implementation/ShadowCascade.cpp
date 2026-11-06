@@ -18,6 +18,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiShadowCascadeSettings, xiiNoBase, 2, xiiRTTID
     XII_MEMBER_PROPERTY("ShadowMapResolution", m_uiShadowMapResolution)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
     XII_MEMBER_PROPERTY("CascadeBlendFraction", m_fCascadeBlendFraction)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f), new xiiDefaultValueAttribute(0.1f)),
     XII_MEMBER_PROPERTY("FilterRadius", m_fFilterRadius)->AddAttributes(new xiiClampValueAttribute(0.0f, 4.0f), new xiiDefaultValueAttribute(1.0f)),
+    XII_MEMBER_PROPERTY("SoftShadows", m_bSoftShadows)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("MaximumPenumbraTexels", m_fMaximumPenumbraTexels)->AddAttributes(new xiiClampValueAttribute(4.0f, 64.0f), new xiiDefaultValueAttribute(16.0f)),
   }
   XII_END_PROPERTIES;
 }
@@ -39,7 +41,8 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
 {
   out_cascades.Clear();
   if (!xiiMath::IsFinite(settings.m_fCascadeBlendFraction) || settings.m_fCascadeBlendFraction < 0 || settings.m_fCascadeBlendFraction > 0.5f ||
-      !xiiMath::IsFinite(settings.m_fFilterRadius) || settings.m_fFilterRadius < 0 || settings.m_fFilterRadius > 4)
+      !xiiMath::IsFinite(settings.m_fFilterRadius) || settings.m_fFilterRadius < 0 || settings.m_fFilterRadius > 4 ||
+      !xiiMath::IsFinite(settings.m_fMaximumPenumbraTexels) || settings.m_fMaximumPenumbraTexels < 4 || settings.m_fMaximumPenumbraTexels > 64)
     return XII_FAILURE;
 
   const xiiUInt32 uiCascadeCount = xiiMath::Clamp(settings.m_uiCascadeCount, 1U, 4U);

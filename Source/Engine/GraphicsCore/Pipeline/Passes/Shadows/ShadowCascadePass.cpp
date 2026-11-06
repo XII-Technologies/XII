@@ -20,6 +20,7 @@ namespace
       settings.m_uiShadowMapResolution >= 64 && settings.m_uiShadowMapResolution <= 16384 &&
       xiiMath::IsFinite(settings.m_fCascadeBlendFraction) && settings.m_fCascadeBlendFraction >= 0 && settings.m_fCascadeBlendFraction <= 0.5f &&
       xiiMath::IsFinite(settings.m_fFilterRadius) && settings.m_fFilterRadius >= 0 && settings.m_fFilterRadius <= 4 &&
+      xiiMath::IsFinite(settings.m_fMaximumPenumbraTexels) && settings.m_fMaximumPenumbraTexels >= 4 && settings.m_fMaximumPenumbraTexels <= 64 &&
       direction.IsValid() && !direction.IsZero();
   }
 } // namespace
@@ -50,6 +51,7 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
   if (!m_bEnabled)
     return XII_SUCCESS;
   auto direction = m_LightDirection;
+  float fSourceSine = 0;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ShadowLightDirection", direction));
   if (m_bUseWorldLight)
   {
@@ -60,6 +62,9 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
     if (!light->m_bCastsShadows || light->m_DirectionAndIlluminance.w <= 0)
       return XII_SUCCESS;
     direction = light->m_DirectionAndIlluminance.GetAsVec3();
+    fSourceSine = light->m_ColorAndAngularRadius.w;
+    if (!xiiMath::IsFinite(fSourceSine) || fSourceSine < 0 || fSourceSine >= 1)
+      return context.ReportFailure("Directional shadow source requires a finite sine of the angular radius in [0, 1).");
   }
   if (!ValidCascadeProperties(m_Settings, direction))
     return context.ReportFailure("Invalid directional cascade settings or light direction.");
@@ -87,7 +92,7 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
     data.m_Snapshot.CascadeSplitDepths = xiiVec4::MakeZero();
     data.m_Snapshot.CascadeWorldRadii = xiiVec4::MakeZero();
     data.m_Snapshot.CascadeBlendStarts = xiiVec4::MakeZero();
-    data.m_Snapshot.CascadeFiltering = xiiVec4(m_Settings.m_fFilterRadius, 0, 0, 0);
+    data.m_Snapshot.CascadeFiltering   = xiiVec4(m_Settings.m_fFilterRadius, m_Settings.m_bSoftShadows ? fSourceSine / xiiMath::Sqrt(1 - fSourceSine * fSourceSine) : 0, m_Settings.m_fMaximumPenumbraTexels, 0);
     data.m_Snapshot.ActiveCascadeCount = cascades.GetCount();
     data.m_Snapshot._Pad = xiiVec3::MakeZero();
     for (xiiUInt32 i = 0; i < cascades.GetCount(); ++i)

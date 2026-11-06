@@ -33,7 +33,31 @@ float xiiSampleDirectionalCascade(float3 world, float3 normal, uint cascade, uin
   const int tileSize = int(resolution);
   const int2 origin = int2(cascade % 2u, cascade / 2u) * tileSize;
   const float2 position = localUV * float(tileSize) - 0.5f;
-  const float radius = CascadeFiltering.x;
+  float radius = CascadeFiltering.x;
+  [branch] if (CascadeFiltering.y > 0)
+  {
+    // Orthographic reversed depth is linear. Convert blocker separation to metres
+    // using the world-to-depth gradient before applying the light's angular size.
+    const float depthPerMetre = length(float3(CascadeViewProjection[cascade][2][0], CascadeViewProjection[cascade][2][1], CascadeViewProjection[cascade][2][2]));
+    float blockerDepth = 0;
+    uint blockers = 0;
+    [unroll] for (uint sampleIndex = 0; sampleIndex < 16u; ++sampleIndex)
+    {
+      const float angle = float(sampleIndex) * 2.39996323f;
+      const float2 offset = sampleIndex == 0u ? float2(0, 0) : float2(cos(angle), sin(angle)) * sqrt(float(sampleIndex) / 15.0f) * CascadeFiltering.z;
+      const int2 pixel = origin + clamp(int2(floor(position + offset + 0.5f)), 0, tileSize - 1);
+      const float stored = g_ShadowAtlas.Load(int3(pixel, 0));
+      if (stored > projection.z + bias.x)
+      {
+        blockerDepth += stored;
+        ++blockers;
+      }
+    }
+    if (blockers == 0u)
+      return 1;
+    const float separation = max(blockerDepth / float(blockers) - projection.z, 0) / max(depthPerMetre, 1e-8f);
+    radius = clamp(separation * CascadeFiltering.y / texelWorldSize, radius, CascadeFiltering.z);
+  }
   if (radius <= 0)
     return xiiDirectionalShadowCompare(position, origin, tileSize, projection.z + bias.x);
 

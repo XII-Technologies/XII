@@ -120,8 +120,9 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
       for (const auto& pass : shadows->GetAuthoring()->m_Descriptor.m_Passes)
         if (pass.m_pType == xiiGetStaticRTTI<xiiShadowCascadePass>())
           settings = pass.m_Properties.GetValue("Settings")->Get<xiiVariantDictionary>();
-      settings.Insert("FilterRadius", 4.0f);
+      settings.Insert("FilterRadius", 0.0f);
       settings.Insert("CascadeBlendFraction", 0.5f);
+      settings.Insert("SoftShadows", true);
       auto& override = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
       override.m_Path.PushBack(shadowNode);
       override.m_Path.PushBack(cascadeNode);
@@ -227,7 +228,7 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
     }
     resize(world, 129, 97);
   }
-  xiiDynamicArray<float> previousMasks[2];
+  xiiDynamicArray<float> previousMasks[2], previousSoftMasks[2];
   for (xiiUInt32 phase = 0; phase < 13; ++phase)
   {
     if (phase == 5 && !ReloadShadowLayout(shadowResource))
@@ -244,8 +245,14 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
         continue;
       XII_LOCK(world.m_World->GetWriteMarker());
       if (phase == 3)
+      {
         for (auto* view : world.m_Views)
           view->InvalidateTemporalHistory();
+        xiiDirectionalLightComponent* source = nullptr;
+        if (!XII_TEST_BOOL(world.m_World->TryGetComponent(world.m_Light, source)))
+          return;
+        source->SetSourceAngle(xiiAngle::MakeFromDegree(10));
+      }
       if (phase == 4)
         resize(world, 97, 73);
       if (phase == 6 && index == 0)
@@ -327,7 +334,7 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
         if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "AmbientLighting"), ambient[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "DirectLighting"), direct[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "HDRSceneColor"), hdr[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "SceneDepth"), depth[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "ObjectId"), ids[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), world.m_Targets[view], output[view]))
           return;
       XII_TEST_BOOL(depth[0] == depth[1] && ids[0] == ids[1] && ambient[0] == ambient[1]);
-      if (phase == 2)
+      if (phase == 2 || phase == 3)
       {
         xiiDynamicArray<float>     wideMask;
         xiiDynamicArray<xiiUInt32> wideOutput;
@@ -341,6 +348,15 @@ static void TestCanonicalDirectionalShadows(bool extendedFormats)
           changedOutput += wideOutput[pixel] != output[0][pixel];
         }
         XII_TEST_BOOL(changedMask > 0 && changedOutput > 0);
+        if (phase == 3)
+        {
+          xiiUInt32 angularChanges = 0;
+          for (xiiUInt32 pixel = 0; pixel < wideMask.GetCount(); ++pixel)
+            angularChanges += xiiMath::Abs(wideMask[pixel] - previousSoftMasks[index][pixel]) > 0.00001f;
+          XII_TEST_BOOL(angularChanges > 0);
+          xiiTestFramework::Output(xiiTestOutput::Details, "Changing the sun source angle changed %u PCSS pixels.", angularChanges);
+        }
+        previousSoftMasks[index] = wideMask;
         xiiTestFramework::Output(xiiTestOutput::Details, "Wide shadow filtering changed %u visibility and %u final pixels.", changedMask, changedOutput);
       }
 

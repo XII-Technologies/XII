@@ -140,7 +140,8 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
         xiiGALMapHelper<xiiShadowCascadeConstants> constants(cmd, execute.GetBuffer(data.m_Cascades), xiiGALMapType::Write, xiiGALMapFlags::Discard);
         for (auto& matrix : constants->CascadeViewProjection) matrix = xiiMat4::MakeIdentity();
         constants->CascadeSplitDepths = xiiVec4(100); constants->CascadeWorldRadii = xiiVec4(1);
-        constants->CascadeBlendStarts = xiiVec4(100); constants->CascadeFiltering = xiiVec4::MakeZero();
+        constants->CascadeBlendStarts                                              = xiiVec4(100);
+        constants->CascadeFiltering                                                = xiiVec4::MakeZero();
         constants->ActiveCascadeCount = data.m_uiCascadeCount; constants->_Pad = xiiVec3::MakeZero(); });
       xiiHybridArray<xiiRenderPipelineInputBinding, 4> inputs;
       for (auto prefix : {"Complete/", "Bounded/"})
