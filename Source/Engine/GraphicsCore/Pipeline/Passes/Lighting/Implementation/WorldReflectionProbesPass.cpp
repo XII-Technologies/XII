@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Components/Lights/ReflectionCaptureComponent.h>
@@ -23,6 +24,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldReflectionProbesPass, 1, xiiRTTIDefault
   {
     XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ReflectionProbes", m_Probes)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("Atmosphere", m_Atmosphere)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("DirectionalLight", m_Directional)->AddFlags(xiiPropertyFlags::ReadOnly),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Lighting") } XII_END_ATTRIBUTES;
 } XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -31,7 +34,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldReflectionProbesPass, 1, xiiRTTIDefault
 xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& context)
 {
   if (!m_bEnabled)
+  {
+    m_AtmosphereEnvironment.Clear();
     return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetSetupSerial(), xiiRenderGraphBufferHandle(), xiiRenderGraphBufferHandle(), xiiReflectionProbeFrameData::Textures()));
+  }
   if (!context.m_pView || !context.m_pView->GetWorld() || !context.m_pView->GetExtractedRenderData())
     return context.ReportFailure("Reflection probes require an extracted authoritative view.");
   XII_PROFILE_SCOPE("World reflection probe extraction");
@@ -116,6 +122,29 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
     skySettings.SkyWorldToEnvironment = xiiTransform(xiiVec3::MakeZero(), rotation.GetInverse()).GetAsMat4();
     skySettings.SkyLightParameters    = xiiVec4(sky->m_fIntensity, sky->m_fSaturation, 1, 0);
   }
+  else if (const auto atmosphere = context.GetInputData(m_Atmosphere).Downcast<const xiiAtmosphereFrameData>())
+  {
+    const auto  light  = context.GetInputData(m_Directional).Downcast<const xiiDirectionalLightFrameData>();
+    const auto* camera = context.m_pView->GetCamera();
+    if (!light || !camera)
+      return context.ReportFailure("Physical sky lighting requires the selected directional light and a camera.");
+    const auto& settings = atmosphere->m_Lookup->m_Constants;
+    const float altitude = xiiMath::Max(camera->GetPosition().Dot(settings.PlanetUpAndGroundAltitudeMeters.GetAsVec3()) - settings.PlanetUpAndGroundAltitudeMeters.w, 0.0f);
+    const auto  color    = light->m_ColorAndAngularRadius.GetAsVec3();
+    if (!m_AtmosphereEnvironment || !m_AtmosphereEnvironment->Matches(atmosphere->m_Lookup, light->m_DirectionAndIlluminance, color, altitude))
+    {
+      xiiSharedPtr<const xiiAtmosphereEnvironment> replacement;
+      const auto                                   initialized = xiiAtmosphereEnvironment::Create(atmosphere->m_Lookup, light->m_DirectionAndIlluminance, color, altitude, replacement);
+      if (initialized.Failed())
+        return context.ReportFailure(initialized.GetMessageString());
+      m_AtmosphereEnvironment = std::move(replacement);
+    }
+    skyEnvironment                    = m_AtmosphereEnvironment->m_Environment;
+    skySettings.SkyWorldToEnvironment = xiiMat4::MakeIdentity();
+    skySettings.SkyLightParameters    = xiiVec4(1, 1, 1, 0);
+  }
+  if (sky || !skyEnvironment)
+    m_AtmosphereEnvironment.Clear();
   xiiRenderGraphBufferHandle recordBuffer, constants, skyConstants;
   if (!records.IsEmpty() || skyEnvironment)
   {

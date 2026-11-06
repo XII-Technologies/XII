@@ -11,12 +11,17 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereFrameData, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereConstantsPass, 1, xiiRTTIDefaultAllocator<xiiAtmosphereConstantsPass>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("AtmosphereConstants", m_OutputAtmosphereConstants)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("LookupData", m_LookupData)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("CacheLookups", m_bCacheLookups)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("UseWorldAtmosphere", m_bUseWorldAtmosphere)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("RequireWorldAtmosphere", m_bRequireWorldAtmosphere)->AddAttributes(new xiiDefaultValueAttribute(false)),
@@ -41,7 +46,10 @@ xiiResult xiiAtmosphereConstantsPass::Configure(const xiiVariantDictionary& prop
 xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
   if (!m_bEnabled)
+  {
+    m_Lookup.Clear();
     return XII_SUCCESS;
+  }
   xiiRenderPassResourceScope scope(context);
   auto                       settings = m_Settings;
   if (m_bUseWorldAtmosphere)
@@ -53,10 +61,24 @@ xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& contex
     if (atmosphere)
       settings = atmosphere->m_AtmosphereSettings;
     else if (m_bRequireWorldAtmosphere)
+    {
+      m_Lookup.Clear();
       return XII_SUCCESS;
+    }
   }
   if (!xiiIsValidAtmosphereSettings(settings))
     return context.ReportFailure("Invalid authored or extracted atmosphere parameters.");
+  if (m_bCacheLookups)
+  {
+    if (!m_Lookup || !m_Lookup->Matches(settings))
+    {
+      xiiSharedPtr<const xiiAtmosphereLookup> replacement;
+      const auto                              initialized = xiiAtmosphereLookup::Create(settings, replacement);
+      if (initialized.Failed())
+        return context.ReportFailure(initialized.GetMessageString());
+      m_Lookup = std::move(replacement);
+    }
+  }
   struct Data
   {
     xiiAtmosphereConstants     m_Constants;
@@ -75,6 +97,8 @@ xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& contex
       transition.m_NewState = xiiGALResourceStateFlags::ConstantBuffer;
       transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
       commands.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1)); });
+  if (m_bCacheLookups)
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_LookupData, XII_DEFAULT_NEW(xiiAtmosphereFrameData, context.m_Graph.GetSetupSerial(), m_Lookup, emitted.first->m_Buffer)));
   return context.SetOutput(m_OutputAtmosphereConstants, emitted.first->m_Buffer);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Atmosphere_AtmosphereConstantsPass);

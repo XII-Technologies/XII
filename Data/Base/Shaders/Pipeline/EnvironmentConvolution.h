@@ -9,21 +9,7 @@ SamplerState        LinearClampSampler;
 XII_STORAGE_IMAGE_FORMAT("rgba32f")
 RWTexture2DArray<float4> ReflectionOutput;
 
-float3 EnvironmentFaceDirection(uint2 pixel, uint face)
-{
-  const float2 uv = (float2(pixel) + 0.5f) * (2.0f / FaceExtent) - 1.0f;
-  if (face == 0u)
-    return normalize(float3(1, -uv.y, -uv.x));
-  if (face == 1u)
-    return normalize(float3(-1, -uv.y, uv.x));
-  if (face == 2u)
-    return normalize(float3(uv.x, 1, uv.y));
-  if (face == 3u)
-    return normalize(float3(uv.x, -1, -uv.y));
-  if (face == 4u)
-    return normalize(float3(uv.x, -uv.y, 1));
-  return normalize(float3(-uv.x, -uv.y, -1));
-}
+#include <Shaders/Pipeline/CubeFaceDirection.h>
 
 float2 EnvironmentHammersley(uint index)
 {
@@ -40,7 +26,7 @@ float3 EnvironmentTangentToCube(float3 sampleDirection, float3 normal)
 [numthreads(8, 8, 1)] void main(uint3 tid : SV_DispatchThreadID) {
   if (any(tid.xy >= FaceExtent) || tid.z >= 6u)
     return;
-  const float3 normal   = EnvironmentFaceDirection(tid.xy, tid.z);
+  const float3 normal   = EnvironmentFaceDirection(tid.xy, tid.z, FaceExtent);
   float3       radiance = 0;
   float        weight   = 0;
   uint         sourceWidth, sourceHeight, sourceMips;

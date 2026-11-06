@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 /// Compute a graph-owned atmosphere lookup image from explicit physical parameters.
@@ -12,6 +13,7 @@ class XII_GRAPHICSCORE_DLL xiiAtmosphereTransmittancePass final : public xiiRend
 
 public:
   xiiRenderPipelineBufferInputPin m_Atmosphere{true, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineDataInputPin   m_LookupData{xiiGetStaticRTTI<xiiAtmosphereFrameData>(), true};
 
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   xiiUInt32                                   m_uiWidth = 256, m_uiHeight = 64;
