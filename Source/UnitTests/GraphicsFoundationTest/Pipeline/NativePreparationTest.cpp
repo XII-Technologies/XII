@@ -47,6 +47,43 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNativePreparationExport, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativePreparation);
+
+namespace
+{
+  // Integrate incident directions directly with midpoint hemisphere quadrature.
+  // This deliberately does not share the GPU's half-vector importance sampling.
+  xiiVec2 IntegrateEnvironmentBRDF(double noV, double roughness, xiiUInt32 zenithSteps = 512, xiiUInt32 azimuthSteps = 1024)
+  {
+    const double alpha = roughness * roughness, alpha2 = alpha * alpha;
+    const double vx       = xiiMath::Sqrt(1.0 - noV * noV);
+    const double viewRoot = xiiMath::Sqrt(alpha2 + (1.0 - alpha2) * noV * noV);
+    double       a = 0, b = 0;
+    for (xiiUInt32 z = 0; z < zenithSteps; ++z)
+    {
+      const double noL       = (z + 0.5) / zenithSteps;
+      const double radius    = xiiMath::Sqrt(1.0 - noL * noL);
+      const double lightRoot = xiiMath::Sqrt(alpha2 + (1.0 - alpha2) * noL * noL);
+      const double geometry  = 2.0 * noV * noL / (noL * viewRoot + noV * lightRoot);
+      for (xiiUInt32 azimuth = 0; azimuth < azimuthSteps; ++azimuth)
+      {
+        const double phi               = 2.0 * xiiMath::Pi<double>() * (azimuth + 0.5) / azimuthSteps;
+        const double lx                = radius * xiiMath::Cos(xiiAngled::MakeFromRadian(phi));
+        const double inverseHalfLength = 1.0 / xiiMath::Sqrt(2.0 + 2.0 * (vx * lx + noV * noL));
+        const double noH               = (noV + noL) * inverseHalfLength;
+        const double voH               = (1.0 + vx * lx + noV * noL) * inverseHalfLength;
+        const double denominator       = noH * noH * (alpha2 - 1.0) + 1.0;
+        const double distribution      = alpha2 / (xiiMath::Pi<double>() * denominator * denominator);
+        const double fresnel           = xiiMath::Pow(1.0 - voH, 5.0);
+        const double weight            = distribution * geometry / (4.0 * noV);
+        a += (1.0 - fresnel) * weight;
+        b += fresnel * weight;
+      }
+    }
+    const double solidAngle = 2.0 * xiiMath::Pi<double>() / (zenithSteps * azimuthSteps);
+    return xiiVec2(float(a * solidAngle), float(b * solidAngle));
+  }
+} // namespace
+
 XII_CREATE_SIMPLE_TEST(NativePreparation, SharedImmutableBRDFLookup)
 {
   xiiGPUTestingEnvironment environment;
@@ -139,6 +176,29 @@ XII_CREATE_SIMPLE_TEST(NativePreparation, SharedImmutableBRDFLookup)
       const float fresnel = xiiMath::Pow(1.0f - ndotv, 5.0f);
       XII_TEST_FLOAT(float(row[x * 2]), 1.0f - fresnel, 0.003f);
       XII_TEST_FLOAT(float(row[x * 2 + 1]), fresnel, 0.003f);
+    }
+    for (xiiUInt32 y : {102U, 179U, 255U})
+    {
+      const auto* roughRow = xiiMemoryUtils::AddByteOffset(row, y * mapped.m_uiStride);
+      for (xiiUInt32 x : {25U, 128U, 230U})
+      {
+        const auto reference = IntegrateEnvironmentBRDF((x + 0.5) / 256.0, (y + 0.5) / 256.0);
+        XII_TEST_FLOAT(float(roughRow[x * 2]), reference.x, 0.008f);
+        XII_TEST_FLOAT(float(roughRow[x * 2 + 1]), reference.y, 0.003f);
+      }
+    }
+    const auto grazingReference = IntegrateEnvironmentBRDF(25.5 / 256.0, 102.5 / 256.0);
+    const auto refinedReference = IntegrateEnvironmentBRDF(25.5 / 256.0, 102.5 / 256.0, 1024, 2048);
+    XII_TEST_FLOAT(grazingReference.x, refinedReference.x, 0.0001f);
+    XII_TEST_FLOAT(grazingReference.y, refinedReference.y, 0.0001f);
+    for (xiiUInt32 y = 0; y < 256; ++y)
+    {
+      const auto* values = xiiMemoryUtils::AddByteOffset(row, y * mapped.m_uiStride);
+      for (xiiUInt32 x = 0; x < 256; ++x)
+      {
+        const float a = values[x * 2], b = values[x * 2 + 1];
+        XII_TEST_BOOL(xiiMath::IsFinite(a) && xiiMath::IsFinite(b) && a >= 0 && b >= 0 && a + b <= 1.01f);
+      }
     }
     XII_TEST_RESULT(commands->UnmapTextureSubresource(capture.m_pStagingTexture, {}));
   }
