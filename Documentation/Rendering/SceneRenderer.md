@@ -762,6 +762,35 @@ views that intentionally make no render attempt, and isolated layout dependency
 registration. Other backends and interactive desktop acceptance remain unverified.
 
 
+## Environment BRDF integration
+
+The device-shared 256 by 256 RG16Float lookup stores Schlick coefficients A and B
+for `F0*A+B`. Both axes use texel-center coordinates: cosine of view angle on X
+and perceptual roughness on Y. The producer converts perceptual roughness to the
+GGX slope parameter exactly once, uses height-correlated Smith masking-shadowing,
+and integrates 4,096 Hammersley half-vector samples per texel. This replaces an
+extra roughness squaring and a separable visibility approximation. The correlated
+model follows [Heitz, equation 99](https://jcgt.org/published/0003/02/03/paper.pdf).
+
+Deferred environment lighting, screen reflections and forward probe lighting use
+the shared `F0*A+B` helper. Screen reflections no longer apply an additional
+view-dependent Fresnel factor to the already integrated response. Lookup allocation,
+generation gating, immutable device ownership and cross-graph readiness remain
+unchanged. Generation has four times the previous sample work once per device;
+no representative initialization-time or frame-time result is claimed.
+
+`NativePreparation/SharedImmutableBRDFLookup` compares nine rough/grazing texels
+against independent double-precision midpoint integration over incident directions.
+The worst grazing reference is checked again at twice the angular resolution.
+It also checks the mirror limit and finite, nonnegative, bounded coefficients
+across all 65,536 texels. The existing independent-view, restricted-device and
+retained-recording checks exercise the same production producer. The indirect
+surface fixture uses coherent perspective and orthographic cameras and compares
+the shared material response against an analytic two-channel lookup.
+
+This is the single-scattering GGX split-sum response. Cubemap convolution, diffuse
+irradiance and microfacet multiple-scattering compensation remain separate work.
+
 ## Local reflection probes
 
 Scene now consumes authored `xiiReflectionCaptureComponent` packets through

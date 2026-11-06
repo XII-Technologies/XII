@@ -8,6 +8,7 @@ ALL
 #include <Shaders/Common/StorageImageFormat.h>
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/GBufferMaterial.h>
+#include <Shaders/Pipeline/EnvironmentBRDF.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 
@@ -131,11 +132,9 @@ void main(uint3 id:SV_DispatchThreadID)
   const float3 radiance=max(g_HDRScene.SampleLevel(LinearClampSampler,hitUV,lod).rgb,0);
   const float3 albedo=g_GBufAlbedo.Load(int3(id.xy,0)).rgb;
   const float NoV=saturate(dot(normal,view));
-  const float3 f0=lerp((0.08f*saturate(material.b)).xxx,albedo,saturate(material.g));
-  const float3 fresnel=f0+(max(1.0f-roughness,f0)-f0)*pow(1-NoV,5);
   const float2 brdf=g_BRDFLut.SampleLevel(LinearClampSampler,float2(NoV,roughness),0);
   const float2 edge=saturate(min(hitUV,1-hitUV)*8);
   const float confidence=edge.x*edge.y*saturate(1-travel/MaxDistance)*saturate(1-roughness/max(MaxRoughness,0.0001f))*quality;
-  const float3 reflected=radiance*(fresnel*brdf.x+brdf.y);
+  const float3 reflected=radiance*xiiEnvironmentSpecularResponse(albedo,material.g,material.b,brdf);
   g_SSROut[id.xy]=all(isfinite(reflected))?float4(reflected,saturate(confidence)):0;
 }

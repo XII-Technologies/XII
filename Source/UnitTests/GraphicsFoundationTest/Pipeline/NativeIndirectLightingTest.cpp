@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentLightConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/EnvironmentSpecularPass.h>
 
+#include <Core/Graphics/Camera.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
@@ -20,6 +21,25 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
+
+namespace
+{
+  xiiFrameCameraConstants MakeIndirectTestCamera(float cameraZ, bool orthographic)
+  {
+    xiiCamera camera;
+    camera.SetCameraMode(orthographic ? xiiCameraMode::OrthoFixedHeight : xiiCameraMode::PerspectiveFixedFovY, orthographic ? 2.0f : 60.0f, 0.1f, 100.0f);
+    camera.LookAt({0, 0, cameraZ}, {0, 0, 0}, {0, 1, 0});
+    xiiMat4 projection;
+    camera.GetProjectionMatrix(9.0f / 11.0f, projection, xiiCameraEye::Left, xiiClipSpaceDepthRange::ZeroToOne);
+    xiiFrameCameraConstants result;
+    result.m_ViewProjectionMatrix        = projection * camera.GetViewMatrix();
+    result.m_InverseViewProjectionMatrix = result.m_ViewProjectionMatrix.GetInverse();
+    result.m_CameraPositionAndNearPlane  = xiiVec4(camera.GetPosition(), camera.GetNearPlane());
+    result.m_CameraForwardAndFarPlane    = xiiVec4(camera.GetDirForwards(), camera.GetFarPlane());
+    return result;
+  }
+} // namespace
+
 class xiiIndirectTestCameraLut : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiIndirectTestCameraLut, xiiRenderPipelinePass);
@@ -31,6 +51,8 @@ public:
   {
     const auto* parameter = context.m_Parameters.GetValue("IndirectCameraZ");
     const float cameraZ   = parameter ? parameter->Get<float>() : 2.0f;
+    const auto* mode         = context.m_Parameters.GetValue("IndirectOrthographic");
+    const bool  orthographic = mode && mode->Get<bool>();
     struct Data
     {
       xiiRenderGraphBufferHandle  m_Camera;
@@ -39,7 +61,7 @@ public:
       xiiVec2                     m_Pixels[16];
     };
     const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
-      data.m_Snapshot=xiiFrameCameraConstants(); data.m_Snapshot.m_CameraPositionAndNearPlane=xiiVec4(0,0,cameraZ,0.1f);
+      data.m_Snapshot=MakeIndirectTestCamera(cameraZ, orthographic);
       for(xiiUInt32 y=0;y<4;++y) for(xiiUInt32 x=0;x<4;++x) data.m_Pixels[y*4+x]=xiiVec2(0.1f+0.2f*(x+0.5f)/4,0.05f+0.1f*(y+0.5f)/4);
       xiiGALBufferCreationDescription b; b.m_uiSize=sizeof(xiiFrameCameraConstants); b.m_BindFlags=xiiGALBindFlags::UniformBuffer; b.m_Usage=xiiGALResourceUsage::Dynamic; b.m_CPUAccessFlags=xiiGALCPUAccessFlag::Write; data.m_Camera=builder.WriteBuffer("Analytic camera",b,xiiGALResourceStateFlags::ConstantBuffer);
       xiiGALTextureCreationDescription t; t.m_Type=xiiGALResourceDimension::Texture2D; t.m_Size={4,4}; t.m_Format=xiiGALResourceFormat::RG32Float; t.m_BindFlags=xiiGALBindFlags::ShaderResource; data.m_Lut=builder.WriteTexture("Analytic BRDF lookup",t,xiiGALResourceStateFlags::CopyDestination); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
@@ -243,6 +265,7 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       const float          cameraZ = view ? 3.5f : 2.0f;
       xiiVariantDictionary parameters;
       parameters.Insert("IndirectCameraZ", cameraZ);
+      parameters.Insert("IndirectOrthographic", view == 1);
       if (phase == 5)
       {
         XII_TEST_BOOL(instances[view].Build(nullptr, graph, context.GetBlackboard(), parameters).Failed());
@@ -277,15 +300,16 @@ XII_CREATE_SIMPLE_TEST(NativeIndirectLighting, LayeredIrradianceMaterialBrdfAndR
       const auto specularValue = [&](xiiUInt32 x, xiiUInt32 y) {
         if (phase == 4)
           return xiiVec3::MakeZero();
-        const xiiVec3 world(2 * (x + 0.5f) / 9 - 1, 1 - 2 * (y + 0.5f) / 11, 0.5f);
-        const float   NoV = (cameraZ - 0.5f) / (xiiVec3(0, 0, cameraZ) - world).GetLength(), roughness = xiiMath::Max(material.x, 0.02f);
-        const float   brdfX = 0.1f + 0.2f * xiiMath::Clamp(NoV, 0.125f, 0.875f), brdfY = 0.05f + 0.1f * xiiMath::Clamp(roughness, 0.125f, 0.875f), fresnelPower = xiiMath::Pow(1 - NoV, 5.0f);
+        const auto    camera    = MakeIndirectTestCamera(cameraZ, view == 1);
+        const auto    projected = camera.m_InverseViewProjectionMatrix * xiiVec4(2 * (x + 0.5f) / 9 - 1, 1 - 2 * (y + 0.5f) / 11, 0.5f, 1);
+        const xiiVec3 world     = projected.GetAsVec3() / projected.w;
+        const float   NoV = view == 1 ? 1.0f : (cameraZ - world.z) / (xiiVec3(0, 0, cameraZ) - world).GetLength(), roughness = xiiMath::Max(material.x, 0.02f);
+        const float   brdfX = 0.1f + 0.2f * xiiMath::Clamp(NoV, 0.125f, 0.875f), brdfY = 0.05f + 0.1f * xiiMath::Clamp(roughness, 0.125f, 0.875f);
         xiiVec3       value;
         for (xiiUInt32 k = 0; k < 3; ++k)
         {
           const float f0     = xiiMath::Lerp(0.08f * material.z, albedo.GetData()[k], material.y);
-          const float f      = f0 + (xiiMath::Max(1 - roughness, f0) - f0) * fresnelPower;
-          value.GetData()[k] = xiiMath::Max(radiance.GetData()[k], 0.0f) * (f * brdfX + brdfY) * visibility;
+          value.GetData()[k] = xiiMath::Max(radiance.GetData()[k], 0.0f) * (f0 * brdfX + brdfY) * visibility;
         }
         return value;
       };
