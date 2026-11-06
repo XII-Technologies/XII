@@ -6474,10 +6474,10 @@ o
 	u3 %v{1}
 	p
 	{
-		s %Access{"xiiRenderPipelinePinAccess::Write"}
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
 		s %DataType{""}
-		s %DeclaredFormat{"xiiGALResourceFormat::RGBA32Float"}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ScreenIrradiance"}
 		b %Optional{1}

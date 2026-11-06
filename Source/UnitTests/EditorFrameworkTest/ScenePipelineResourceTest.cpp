@@ -10,7 +10,7 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   const auto pipeline = scene.GetPipeline();
   XII_TEST_INT(scene.GetAuthoring()->m_Descriptor.m_References.GetCount(), 7);
   XII_TEST_BOOL(pipeline->GetExtractionRequirements() == (xiiRenderExtractionCategory::Geometry | xiiRenderExtractionCategory::Lights | xiiRenderExtractionCategory::Atmosphere | xiiRenderExtractionCategory::Particles));
-  XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting));
+  XII_TEST_BOOL(pipeline->GetRuntimeFeatures() == (xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::Lighting | xiiRenderPipelineFeature::RayTracing));
   XII_TEST_INT(pipeline->GetDescriptor().m_Settings.m_uiOutputSamples, 1);
   for (const auto& pass : pipeline->GetDescriptor().m_Passes)
     XII_TEST_BOOL(pass.m_pType != xiiGetStaticRTTI<xiiRenderPipelineSubgraphPass>());
@@ -64,9 +64,20 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   const auto ao            = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
   const auto filter        = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
   const auto trace         = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
-  bool       diffuseBounce = false, reactiveBounce = false;
+  xiiUuid    selected;
+  bool       screenFallback = false, rayPrimary = false;
   for (const auto& connection : descriptor.m_Connections)
-    if (descriptor.m_Passes[connection.m_uiSource].m_Id == trace && connection.m_sOutput == "Irradiance")
+    if (descriptor.m_Passes[connection.m_uiSource].m_Id == trace && connection.m_sOutput == "Irradiance" && connection.m_sInput == "Fallback" && descriptor.m_Passes[connection.m_uiTarget].m_pType->GetTypeName() == "xiiTextureSelectionPass")
+    {
+      selected       = descriptor.m_Passes[connection.m_uiTarget].m_Id;
+      screenFallback = true;
+    }
+  for (const auto& connection : descriptor.m_Connections)
+    rayPrimary |= descriptor.m_Passes[connection.m_uiTarget].m_Id == selected && connection.m_sInput == "Primary" && descriptor.m_Passes[connection.m_uiSource].m_pType->GetTypeName() == "xiiRayTracedIrradiancePass";
+  XII_TEST_BOOL(screenFallback && rayPrimary);
+  bool diffuseBounce = false, reactiveBounce = false;
+  for (const auto& connection : descriptor.m_Connections)
+    if (descriptor.m_Passes[connection.m_uiSource].m_Id == selected && connection.m_sOutput == "Texture")
     {
       const auto& consumer = descriptor.m_Passes[connection.m_uiTarget];
       if (consumer.m_pType->GetTypeName() == "xiiDiffuseSurfaceLightingPass" && connection.m_sInput == "Irradiance")
