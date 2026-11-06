@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Types/Id.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -77,7 +80,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
   float     m_fMinimumScreenCoverage        = 0.0f;
   xiiUInt32 m_uiIndexType                   = 0U;
   xiiUInt32 m_uiMeshletMetadataOffset       = 0U;
-  xiiUInt32 m_uiPadding                     = 0U;
+  xiiUInt32 m_uiMeshletRangesOrdered        = 0U; ///< Both primitive endpoints are monotonic and fit UInt32.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuGeometryLod);
@@ -110,9 +113,17 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiResidentBytes         = 0U;
   xiiUInt64 m_uiBudgetBytes           = 0U;
   xiiUInt64 m_uiUploadedBytes         = 0U;
-  xiiUInt64 m_uiCoverageQueries       = 0U;
-  xiiUInt64 m_uiCoverageIndexBuilds   = 0U;
-  xiiUInt64 m_uiCoverageMeshlets      = 0U;
+  xiiUInt64 m_uiAdmittedBytes         = 0U;
+  xiiUInt64 m_uiRemainingUploadBytes  = 0U;
+  xiiUInt64 m_uiPreparedMeshlets      = 0U;
+  xiiUInt32 m_uiExamined = 0U, m_uiAdmitted = 0U, m_uiBudgetDeferred = 0U;
+  xiiUInt32 m_uiNotReady = 0U, m_uiArenaDeferred = 0U, m_uiMemoryDeferred = 0U, m_uiFailed = 0U;
+  xiiUInt32 m_uiArenaMeshlets        = 0U;
+  double    m_fStreamingMilliseconds = 0.0;
+  xiiUInt64 m_uiCoverageQueries      = 0U;
+  xiiUInt64 m_uiCoverageCacheHits    = 0U;
+  xiiUInt64 m_uiCoverageIndexBuilds  = 0U;
+  xiiUInt64 m_uiCoverageMeshlets     = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyStats);
@@ -167,8 +178,9 @@ public:
   /// LOD index and retain the strongest visibility priority until the missing range is resident.
   static void RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
   static void Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
-  /// A positive budget permits one indivisible record to exceed the allowance before any
-  /// bytes have been consumed. Zero pauses admission of new geometry records.
+  /// The first invocation in a device frame establishes its shared allowance. Further calls
+  /// consume the remainder, including newly discovered geometry. One indivisible record may
+  /// exceed an unused positive allowance. Zero pauses admission for the entire frame.
   static void ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 
   [[nodiscard]] static bool                               IsValid(xiiGeometryHandle handle);
@@ -218,6 +230,15 @@ private:
     Lod m_Lods[xiiGpuGeometryRecord::s_uiMaxLods];
   };
 
+  struct MeshletUpload : xiiRefCounted
+  {
+    xiiUInt32                                               m_uiSlotIndex = 0U, m_uiLod = 0U;
+    xiiUInt32                                               m_uiOffset = 0U;
+    xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> m_Meshlets;
+    bool                                                    m_bRecorded = false;
+    bool                                                    m_bCanceled = false;
+  };
+
   struct Slot
   {
     static constexpr xiiUInt32 s_uiBindlessResourcesPerLod = 5U;
@@ -231,7 +252,11 @@ private:
     xiiUInt32                          m_uiRequestedLod       = 0U;
     xiiUInt32                          m_uiVisibilityPriority = 0U;
     xiiUInt64                          m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
+    xiiUInt64                          m_uiAdmissionFrame     = xiiMath::MaxValue<xiiUInt64>();
     bool                               m_bAllocated           = false;
+    bool                               m_bQueued              = false;
+    xiiUInt32                          m_uiActiveIndex        = 0U;
+    xiiSharedPtr<MeshletUpload>        m_PendingUploads[xiiGpuGeometryRecord::s_uiMaxLods];
     xiiUniquePtr<CoverageIndex>        m_pCoverage;
     /// One bit per frame-in-flight metadata slice. A record change must reach every slice
     /// before it is considered clean; a single boolean would leave rotating slices stale.
@@ -246,24 +271,18 @@ private:
 
   struct Upload
   {
-    xiiUInt32            m_uiOffset    = 0U;
-    xiiUInt32            m_uiSlotIndex = xiiInvalidIndex;
-    xiiUInt64            m_uiFrameBit  = 0U;
-    xiiGpuGeometryRecord m_Record;
+    xiiUInt32 m_uiOffset    = 0U;
+    xiiUInt32 m_uiSlotIndex = xiiInvalidIndex;
+    xiiUInt64 m_uiFrameBit  = 0U;
   };
 
   struct UploadPassData
   {
-    xiiRenderGraphBufferHandle                          m_hGeometryBuffer;
-    xiiRenderGraphBufferHandle                          m_hMeshletBuffer;
-    xiiDynamicArray<Upload, xiiAlignedAllocatorWrapper> m_Uploads;
-    struct MeshletUpload
-    {
-      xiiUInt64                                               m_uiUploadId = 0U;
-      xiiUInt32                                               m_uiOffset   = 0U;
-      xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> m_Meshlets;
-    };
-    xiiDynamicArray<MeshletUpload> m_MeshletUploads;
+    xiiRenderGraphBufferHandle                                        m_hGeometryBuffer;
+    xiiRenderGraphBufferHandle                                        m_hMeshletBuffer;
+    xiiDynamicArray<Upload, xiiAlignedAllocatorWrapper>               m_Uploads;
+    xiiDynamicArray<xiiGpuGeometryRecord, xiiAlignedAllocatorWrapper> m_Records;
+    xiiDynamicArray<xiiSharedPtr<MeshletUpload>>                      m_MeshletUploads;
   };
 
   struct FreeRange
@@ -272,14 +291,24 @@ private:
     xiiUInt32 m_uiCount  = 0U;
   };
 
-  static bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget, bool bAllowBudgetOverrun);
-  static bool RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, xiiMeshBufferResource& mesh);
-  static void ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
-  static void EnforceBudget(xiiUInt64 uiCompletedFrame);
-  static bool AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
-  static void FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
-  static void ReleaseMeshletAllocations(Slot& slot);
+  enum class AdmissionResult
+  {
+    Admitted,
+    BudgetDeferred,
+    NotReady,
+    ArenaDeferred,
+    MemoryDeferred,
+    Failed
+  };
+  static AdmissionResult BuildResidentRecord(Slot& slot, xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
+  static bool            RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, xiiMeshBufferResource& mesh);
+  static void            ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
+  static void            EnforceBudget(xiiUInt64 uiCompletedFrame, xiiUInt64 uiRequiredBytes = 0U);
+  static bool            EvictOne(xiiUInt64 uiCompletedFrame);
+  static bool            AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
+  static void            FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
+  static void            ReleaseMeshletAllocations(Slot& slot);
 
   class State;
-  static xiiUniquePtr<State> s_pState;
+  static xiiSharedPtr<State> s_pState;
 };

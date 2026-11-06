@@ -20,6 +20,9 @@ ALL
 StructuredBuffer<GpuSceneInstance>      g_SceneInstances;
 StructuredBuffer<GpuGeometryRecord>     g_Geometry;
 StructuredBuffer<GpuMeshlet>            g_Meshlets;
+#include <Shaders/Visibility/MeshletRange.h>
+groupshared uint s_FirstMeshlet;
+groupshared uint s_RangeMeshletCount;
 StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
 ByteAddressBuffer                       g_Buffers[];
 #include <Shaders/Pipeline/GpuSceneSkinning.h>
@@ -90,7 +93,7 @@ bool ReserveTriangle(out uint destination)
 }
 
 [numthreads(128, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_GroupID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_GroupID, uint lane : SV_GroupIndex)
 {
   uint sceneCount, sceneStride;
   uint geometryCount, geometryStride;
@@ -140,9 +143,12 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     return;
 
   const GpuGeometryLod lod = geometry.Lods[lodIndex];
-  const uint localMeshlet = groupId.x;
-  if (localMeshlet >= min(lod.MeshletCount, MaxMeshletCount) || lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset)
+  if (lane == 0u)
+    GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
+  GroupMemoryBarrierWithGroupSync();
+  if (groupId.x >= min(s_RangeMeshletCount, MaxMeshletCount))
     return;
+  const uint localMeshlet = s_FirstMeshlet + groupId.x;
 
   const GpuMeshlet meshlet = g_Meshlets[lod.MeshletMetadataOffset + localMeshlet];
   const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;

@@ -3,8 +3,76 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Memory/MemoryUtils.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+
+namespace
+{
+  xiiResult ValidateCompiledMeshlets(const xiiMeshResourceDescriptor& descriptor)
+  {
+    XII_PROFILE_SCOPE("Compiled meshlet validation");
+    const auto& buffer         = descriptor.GetMeshBufferDescriptor();
+    const auto  primitiveCount = buffer.GetPrimitiveCount();
+    const auto  indexSize      = buffer.m_IndexType == xiiGALValueType::UInt16 ? 2U : 4U;
+    if (buffer.m_Topology != xiiGALPrimitiveTopology::TriangleList || buffer.GetIndexCount() % 3 != 0 ||
+        (buffer.m_IndexType != xiiGALValueType::UInt16 && buffer.m_IndexType != xiiGALValueType::UInt32) ||
+        xiiUInt64(buffer.GetVertexCount()) * buffer.GetVertexStride() > buffer.m_VertexData.GetCount() ||
+        xiiUInt64(buffer.GetIndexCount()) * indexSize > buffer.m_IndexData.GetCount())
+      return XII_FAILURE;
+    const xiiMeshVertexStream* position = nullptr;
+    for (const auto& stream : buffer.m_VertexStreams)
+      if (stream.m_Semantic == xiiMeshVertexSemantic::Position)
+        position = &stream;
+    if (!position || position->m_Format != xiiMeshVertexStreamFormat::Float3 || position->m_uiStride < sizeof(xiiVec3) ||
+        position->m_uiOffset > position->m_uiStride - sizeof(xiiVec3) || xiiUInt64(buffer.GetVertexCount()) * position->m_uiStride > buffer.m_VertexData.GetCount())
+      return XII_FAILURE;
+    for (xiiUInt32 i = 0; i < buffer.GetVertexCount(); ++i)
+    {
+      xiiVec3 value;
+      xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&value), buffer.m_VertexData.GetData() + i * position->m_uiStride + position->m_uiOffset, sizeof(value));
+      if (!value.IsValid())
+        return XII_FAILURE;
+    }
+    for (xiiUInt32 i = 0; i < buffer.GetIndexCount(); ++i)
+    {
+      const xiiUInt32 index = indexSize == 2U ? reinterpret_cast<const xiiUInt16*>(buffer.m_IndexData.GetData())[i] : reinterpret_cast<const xiiUInt32*>(buffer.m_IndexData.GetData())[i];
+      if (index >= buffer.GetVertexCount())
+        return XII_FAILURE;
+    }
+    for (const auto& meshlet : buffer.m_Meshlets)
+    {
+      if (meshlet.m_uiVertexCount == 0 || meshlet.m_uiVertexCount > xiiMeshlet::s_uiMaxVertices || meshlet.m_uiPrimitiveCount == 0 || meshlet.m_uiPrimitiveCount > xiiMeshlet::s_uiMaxPrimitives ||
+          meshlet.m_uiFirstPrimitive > primitiveCount || meshlet.m_uiPrimitiveCount > primitiveCount - meshlet.m_uiFirstPrimitive ||
+          meshlet.m_uiVertexRemapOffset > buffer.m_MeshletVertexRemap.GetCount() || meshlet.m_uiVertexCount > buffer.m_MeshletVertexRemap.GetCount() - meshlet.m_uiVertexRemapOffset ||
+          meshlet.m_uiPrimitiveIndexOffset > buffer.m_MeshletPrimitiveIndices.GetCount() || meshlet.m_uiPrimitiveCount * 3U > buffer.m_MeshletPrimitiveIndices.GetCount() - meshlet.m_uiPrimitiveIndexOffset ||
+          !meshlet.m_Bounds.IsValid() || !meshlet.m_vConeAxis.IsValid() || !xiiMath::IsFinite(meshlet.m_fConeCutoff))
+        return XII_FAILURE;
+      for (xiiUInt32 i = 0; i < meshlet.m_uiVertexCount; ++i)
+        if (buffer.m_MeshletVertexRemap[meshlet.m_uiVertexRemapOffset + i] >= buffer.GetVertexCount())
+          return XII_FAILURE;
+      for (xiiUInt32 i = 0; i < meshlet.m_uiPrimitiveCount * 3U; ++i)
+        if (buffer.m_MeshletPrimitiveIndices[meshlet.m_uiPrimitiveIndexOffset + i] >= meshlet.m_uiVertexCount)
+          return XII_FAILURE;
+    }
+    for (const auto& section : descriptor.GetSubMeshes())
+      if (section.m_uiFirstPrimitive > primitiveCount || section.m_uiPrimitiveCount > primitiveCount - section.m_uiFirstPrimitive ||
+          section.m_uiFirstMeshlet > buffer.m_Meshlets.GetCount() || section.m_uiMeshletCount > buffer.m_Meshlets.GetCount() - section.m_uiFirstMeshlet)
+        return XII_FAILURE;
+    for (const auto& lod : descriptor.GetLODs())
+    {
+      if (lod.m_uiFirstMeshlet > buffer.m_Meshlets.GetCount() || lod.m_uiMeshletCount > buffer.m_Meshlets.GetCount() - lod.m_uiFirstMeshlet)
+        return XII_FAILURE;
+      for (const auto& section : lod.m_Sections)
+        if (section.m_uiFirstPrimitive > primitiveCount || section.m_uiPrimitiveCount > primitiveCount - section.m_uiFirstPrimitive ||
+            section.m_uiFirstMeshlet < lod.m_uiFirstMeshlet || section.m_uiFirstMeshlet > lod.m_uiFirstMeshlet + lod.m_uiMeshletCount ||
+            section.m_uiMeshletCount > lod.m_uiFirstMeshlet + lod.m_uiMeshletCount - section.m_uiFirstMeshlet)
+          return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+} // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshResource, 1, xiiRTTIDefaultAllocator<xiiMeshResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -170,8 +238,12 @@ void xiiMeshResource::LoadMaterialSlots(const xiiMeshResourceDescriptor& descrip
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
 {
-  descriptor.ComputeBounds();
-  if (descriptor.BuildMeshlets().Failed())
+  XII_PROFILE_SCOPE("Mesh resource preparation");
+  if (!descriptor.GetBounds().IsValid())
+    descriptor.ComputeBounds();
+  const auto& compiled    = static_cast<const xiiMeshResourceDescriptor&>(descriptor).GetMeshBufferDescriptor();
+  const auto  preparation = !descriptor.GetExistingMeshBuffer().IsValid() && !compiled.m_Meshlets.IsEmpty() ? ValidateCompiledMeshlets(descriptor) : descriptor.BuildMeshlets();
+  if (preparation.Failed())
     return {xiiResourceState::LoadedResourceMissing, 0, 0};
 
   CreateMeshBufferFromDescriptor(descriptor);

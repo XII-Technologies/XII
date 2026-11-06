@@ -122,16 +122,18 @@ public:
     xiiUInt64                      m_StatsFrame = xiiMath::MaxValue<xiiUInt64>();
     xiiGpuInstanceUploadStatistics m_Stats;
   };
-  xiiSharedPtr<UploadState>                                  m_Upload = XII_DEFAULT_NEW(UploadState);
-  xiiHashTable<xiiUInt64, xiiGpuInstanceData::UploadHandles> m_SetupUploads;
-  xiiDynamicArray<xiiMat4>                                   m_LastPose;
-  xiiUInt64                                                  m_Version = 0, m_PoseVersion = 1;
-  xiiUInt64                                                  m_Identity = 0;
-  const xiiWorld&                                            m_World;
-  xiiDynamicArray<Entry>                                     m_Entries;
-  xiiHashTable<PacketKey, xiiUInt32, PacketHash>             m_Packets;
-  xiiHashTable<xiiUInt32, xiiUInt32>                         m_Identities;
-  xiiUInt64                                                  m_Extraction = 0, m_Frame = 0;
+  xiiSharedPtr<UploadState>                                                 m_Upload = XII_DEFAULT_NEW(UploadState);
+  xiiHashTable<xiiUInt64, xiiGpuInstanceData::UploadHandles>                m_SetupUploads;
+  xiiDynamicArray<xiiMat4>                                                  m_LastPose;
+  xiiUInt64                                                                 m_Version = 0, m_PoseVersion = 1;
+  xiiUInt64                                                                 m_Identity = 0;
+  const xiiWorld&                                                           m_World;
+  xiiDynamicArray<Entry>                                                    m_Entries;
+  xiiHashTable<PacketKey, xiiUInt32, PacketHash>                            m_Packets;
+  xiiHashTable<xiiUInt32, xiiUInt32>                                        m_Identities;
+  xiiHashSet<PacketKey, PacketHash>                                         m_Groups, m_Selected;
+  xiiHashTable<xiiMaterialResourceHandle, xiiBitflags<xiiGpuInstanceFlags>> m_MaterialFlags;
+  xiiUInt64                                                                 m_Extraction = 0, m_Frame = 0;
 
   bool IsLive(const xiiGpuInstanceSource& source) const
   {
@@ -176,7 +178,9 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(const xiiExtractedRenderData&
 xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)
 {
   XII_PROFILE_SCOPE("GPU scene synchronization");
+#if XII_ENABLED(XII_USE_PROFILING)
   const auto syncStart = xiiTime::Now();
+#endif
   if (xiiGeometryResidencyManager::EnsureInitialized().Failed())
     return XII_FAILURE;
   auto&      state           = *m_pState;
@@ -213,8 +217,10 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (nextFrame)
       entry.m_PreviousPose = entry.m_CurrentPose;
   }
-  xiiHashSet<PacketKey, PacketHash> groups;
-  auto                              pack = [&](const xiiMeshRenderData& packet, const xiiMeshResource& mesh, const xiiExtractedMeshSkinning& skinning, xiiUInt32 bufferRevision, const PacketKey& key, xiiUInt32 materialIndex, xiiUInt32 first, xiiUInt32 count, xiiUInt32& representative) -> xiiResult {
+  state.m_Groups.Clear();
+  state.m_MaterialFlags.Clear();
+  auto& groups = state.m_Groups;
+  auto  pack   = [&](const xiiMeshRenderData& packet, const xiiMeshResource& mesh, const xiiExtractedMeshSkinning& skinning, xiiUInt32 bufferRevision, const PacketKey& key, xiiUInt32 materialIndex, xiiUInt32 first, xiiUInt32 count, xiiUInt32& representative) -> xiiResult {
     xiiUInt32  index           = 0;
     const bool fresh           = !state.m_Packets.TryGetValue(key, index);
     const bool acquireGeometry = fresh || state.m_Entries[index].m_Mesh != packet.m_hMesh ||
@@ -275,7 +281,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     record.m_uiMaterialIndex         = entry.m_GpuMaterial.IsInvalidated() ? xiiInvalidIndex : entry.m_GpuMaterial.GetInternalID().m_InstanceIndex;
     const auto transform             = key.m_Instance == xiiInvalidIndex ? packet.m_GlobalTransform.GetAsMat4() : packet.m_GlobalTransform.GetAsMat4() * packet.m_InstanceTransforms[key.m_Instance];
     record.m_PreviousGlobalTransform = fresh ? transform : nextFrame ? record.m_GlobalTransform :
-                                                                                                    record.m_PreviousGlobalTransform;
+                                                                          record.m_PreviousGlobalTransform;
     const bool transformChanged      = resetPose || record.m_GlobalTransform != transform;
     record.m_GlobalTransform         = transform;
     if (transformChanged)
@@ -298,7 +304,15 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       record.m_BoundsCenterRadius = xiiVec4(bounds.m_vCenter.x, bounds.m_vCenter.y, bounds.m_vCenter.z, bounds.m_fSphereRadius);
       record.m_BoundsExtents      = xiiVec4(bounds.m_vBoxHalfExtents.x, bounds.m_vBoxHalfExtents.y, bounds.m_vBoxHalfExtents.z, 0);
     }
-    record.m_uiFlags           = GetFlags(packet, material).GetValue();
+    xiiBitflags<xiiGpuInstanceFlags> flags;
+    if (!state.m_MaterialFlags.TryGetValue(material, flags))
+    {
+      flags = GetFlags(packet, material);
+      state.m_MaterialFlags.Insert(material, flags);
+    }
+    flags.AddOrRemove(xiiGpuInstanceFlags::Static, packet.m_Flags.IsSet(xiiMeshRenderDataFlags::StaticObject));
+    flags.AddOrRemove(xiiGpuInstanceFlags::RayTracingVisible, packet.m_Flags.IsSet(xiiMeshRenderDataFlags::RayTracingVisible));
+    record.m_uiFlags           = flags.GetValue();
     record.m_uiUserData        = packet.m_uiUniqueID;
     record.m_uiVisibilityMask  = packet.m_uiVisibilityMask;
     const bool coverageChanged = resetPose || record.m_uiFirstPrimitive != first || record.m_uiPrimitiveCount != count;
@@ -466,8 +480,10 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       ++i;
     m_UploadRanges.PushBack({first, i - first});
   }
+#if XII_ENABLED(XII_USE_PROFILING)
   xiiStats::SetStat("Renderer/GPU scene/Instances", m_Instances.GetCount());
   xiiStats::SetStat("Renderer/GPU scene/Synchronization ms", (xiiTime::Now() - syncStart).GetMilliseconds());
+#endif
   return XII_SUCCESS;
 }
 
@@ -519,7 +535,8 @@ xiiResult xiiGpuInstanceData::Resolve(xiiUInt32 identity, xiiGpuInstanceSource& 
 void xiiGpuInstanceData::SelectInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiDynamicArray<xiiUInt32>& indices) const
 {
   indices.Clear();
-  xiiHashSet<PacketKey, PacketHash> selected;
+  auto& selected = m_pState->m_Selected;
+  selected.Clear();
   for (const auto* data : packets)
     if (const auto* packet = xiiDynamicCast<const xiiMeshRenderData*>(data))
     {

@@ -12,6 +12,9 @@ StructuredBuffer<uint4>             g_CurrentLodHistory;
 RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
 RWStructuredBuffer<uint>            g_VisibleMeshletOverflow;
+#include "MeshletRange.h"
+groupshared uint s_FirstMeshlet;
+groupshared uint s_RangeMeshletCount;
 #if defined(XII_CULL_DIAGNOSTICS)
 RWStructuredBuffer<uint4> g_DiagnosticMeshlets;
 RWStructuredBuffer<uint>  g_DiagnosticMeshletCount;
@@ -61,7 +64,7 @@ bool ReserveMeshlet(out uint destination)
     }
   }
 }
-[numthreads(64, 1, 1)] void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID) {
+[numthreads(64, 1, 1)] void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID, uint lane : SV_GroupIndex) {
   uint capacity, stride, sceneCount, geometryCount, meshletCount, historyCount, viewCount;
   g_VisibleInstances.GetDimensions(capacity, stride);
   g_SceneInstances.GetDimensions(sceneCount, stride);
@@ -90,10 +93,13 @@ bool ReserveMeshlet(out uint destination)
   if (history.x >= min(geometry.LodCount, 8u) || history.y != geometry.Generation || history.z != g_SceneInstances[selectionIndex].ObjectId ||
       (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x))
     return;
-  GpuGeometryLod lod          = geometry.Lods[history.x];
-  uint           localMeshlet = tid.x;
-  if (localMeshlet >= lod.MeshletCount || lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset)
+  GpuGeometryLod lod = geometry.Lods[history.x];
+  if (lane == 0u)
+    GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
+  GroupMemoryBarrierWithGroupSync();
+  if (tid.x >= s_RangeMeshletCount)
     return;
+  uint       localMeshlet = s_FirstMeshlet + tid.x;
   uint       meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
   GpuMeshlet meshlet      = g_Meshlets[meshletIndex];
   if ((meshlet.PackedLodSection & 0xFFFFu) != history.x)

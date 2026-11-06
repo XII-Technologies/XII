@@ -208,6 +208,8 @@ public:
   /// Clusters each section independently and stores contiguous LOD ranges. Returns failure for invalid
   /// section topology or geometry, clearing generated ranges and MeshShaderReady. Shared GPU buffers
   /// retain their supplied ranges; point/line meshes succeed without clusters.
+  /// Resource creation validates and reuses supplied clusters. Call this explicitly
+  /// after changing raw vertex/index data, topology, or section ranges.
   xiiResult BuildMeshlets(xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
 
   /// Sets the bounding volume for this mesh resource, used for culling and LOD selection.
