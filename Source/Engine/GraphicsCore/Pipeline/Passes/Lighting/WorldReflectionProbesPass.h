@@ -17,4 +17,5 @@ public:
   xiiRenderPipelineDataOutputPin           m_Probes{xiiGetStaticRTTI<xiiReflectionProbeFrameData>()};
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Lights; }
+  xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return m_bEnabled ? xiiRenderPipelineDeviceFeature::Compute : xiiRenderPipelineDeviceFeature::None; }
 };

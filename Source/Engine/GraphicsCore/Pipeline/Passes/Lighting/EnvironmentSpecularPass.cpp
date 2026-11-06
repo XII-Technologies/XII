@@ -18,6 +18,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEnvironmentSpecularPass,1,xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("Albedo",m_Albedo)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Material",m_Material)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ReflectionProbes", m_Probes)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("EnvironmentIrradiance", m_Irradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("AllowAbsentRadiance", m_bAllowAbsentRadiance)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("EnvironmentRadiance",m_Radiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("BRDFLut",m_Lut)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -60,7 +61,7 @@ xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& contex
   {
     xiiReflectionProbePassUtils::Bindings    m_Probes;
     xiiSurfaceLightingPassUtils::Inputs      m_Surface;
-    xiiRenderGraphTextureHandle              m_Radiance, m_Lut, m_Occlusion, m_Output;
+    xiiRenderGraphTextureHandle              m_Radiance, m_Lut, m_Occlusion, m_Output, m_Irradiance;
     xiiRenderGraphBufferHandle               m_Constants;
     xiiSurfaceLightingConstants              m_Snapshot;
     xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
@@ -69,6 +70,15 @@ xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& contex
   const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Surface=xiiSurfaceLightingPassUtils::Read(surface,builder); if (local) data.m_Probes=xiiReflectionProbePassUtils::Read(probes,builder); else data.m_Radiance=builder.ReadTexture(radiance,xiiGALResourceStateFlags::ShaderResource); data.m_Lut=builder.ReadTexture(lut,xiiGALResourceStateFlags::ShaderResource); data.m_Occlusion=occlusion.IsValid() ? builder.ReadTexture(occlusion,xiiGALResourceStateFlags::ShaderResource):data.m_Surface.m_Depth;
     data.m_Output=xiiCompositionPassUtils::Output(builder,surface.m_Size,xiiGALResourceFormat::RGBA32Float); data.m_Pipeline=pipeline; data.m_Linear=m_Linear;
+    if (local)
+    {
+      xiiGALTextureCreationDescription image;
+      image.m_Type      = xiiGALResourceDimension::Texture2D;
+      image.m_Size      = surface.m_Size;
+      image.m_Format    = xiiGALResourceFormat::RGBA32Float;
+      image.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+      data.m_Irradiance = builder.WriteTexture("Local Environment Irradiance", image, xiiGALResourceStateFlags::UnorderedAccess);
+    }
     data.m_Snapshot.SurfaceExtent=xiiVec4U32(surface.m_Size.width,surface.m_Size.height,occlusion.IsValid() ? 1:0,0); data.m_Snapshot.SurfaceEvaluation=xiiVec4(m_fScale,0,0,0); data.m_Constants=xiiRenderPassUtils::Constants(builder,"Environment BRDF evaluation",sizeof(xiiSurfaceLightingConstants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands=execute.GetCommandList(); commands.SetPipelineState(data.m_Pipeline.Borrow());
     xiiSurfaceLightingPassUtils::Bind(data.m_Surface,execute); xiiSurfaceLightingPassUtils::BindConstants(execute,data.m_Constants,data.m_Snapshot);
@@ -78,8 +88,16 @@ xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& contex
     commands.ResolveAndSetShaderResourceTextureView("g_BRDFLut",execute.GetTexture(data.m_Lut)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_Occlusion",execute.GetTexture(data.m_Occlusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource),xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessTextureView("g_Lighting",execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess),xiiGALShaderType::Compute);
-    if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed()) { execute.ReportFailure("Could not bind environment specular resources."); return; }
+    if (data.m_Irradiance.IsValid())
+      commands.ResolveAndSetUnorderedAccessTextureView("g_ProbeIrradiance", execute.GetTexture(data.m_Irradiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+    {
+      execute.ReportFailure("Could not bind environment specular resources.");
+      return;
+    }
     commands.DispatchCompute({(data.m_Surface.m_Size.width+7U)/8U,(data.m_Surface.m_Size.height+7U)/8U,1}); });
+  if (local)
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_Irradiance, pass.first->m_Irradiance));
   return context.SetOutput(m_Output, pass.first->m_Output);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_EnvironmentSpecularPass);
