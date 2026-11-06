@@ -752,13 +752,15 @@ views that intentionally make no render attempt, and isolated layout dependency
 registration. Other backends and interactive desktop acceptance remain unverified.
 
 
-## Spatial screen-space reflections
+## Screen-space reflections
 
-`SceneScreenSpaceReflections.xiiRenderPipelineAsset` is an eight-operation workload
+`SceneScreenSpaceReflections.xiiRenderPipelineAsset` is a nine-operation workload
 between atmosphere application and temporal reconstruction. Its source identity is
 `{ 78cb6185-5e43-9953-e249-8fe1c45085f5 }`. Scene and Editor retain their existing
 identities and interfaces; Scene additionally exposes optional `ScreenReflections`
 (straight RGB with confidence alpha) and `ReflectionLighting` (confidence-weighted RGB).
+`RawScreenReflections` exposes the current trace; `ReflectionHistory` exposes the
+previous completed temporal resolve when one exists.
 
 The authored `Reflection Depth` texture-forward operation has `Enabled=false` and
 `RequireInput=true`. Enabling this occurrence is the single reflection policy switch.
@@ -777,6 +779,8 @@ SceneDepth -> Reflection Depth -> Closest Depth / Farthest Depth --+
                     +-> Integrate BRDF                           |
 GBuffer normal/material/albedo + coherent camera ----------------+-> Trace Reflections
                                                                        |
+                                                              Temporal Reflections
+                                                                       |
                                                              Reflection Confidence
                                                                        |
 atmosphere HDR -------------------------------------------------> Add Reflections -> TAA
@@ -790,7 +794,8 @@ atmosphere HDR -------------------------------------------------> Add Reflection
 | BRDF lookup | RG16Float, existing device-shared lookup extent, SRV/UAV | GGX integration / split-sum specular response |
 | Camera | Exact 160-byte uniform | Existing view constants / world reconstruction and projection |
 | Reflection constants | 48-byte uniform | Reflected traversal, distance, bias and material settings / trace |
-| ScreenReflections | RGBA32Float, viewport-sized, SRV/UAV | Spatial trace / confidence weighting |
+| RawScreenReflections | RGBA32Float, viewport-sized, SRV/UAV | Spatial trace / optional temporal resolve |
+| ScreenReflections | RGBA32Float spatial or RGBA16Float temporal, viewport-sized, SRV/UAV | Trace or temporal resolve / confidence weighting |
 | ReflectionLighting | RGBA32Float, viewport-sized, SRV/UAV | Confidence weighting / HDR addition |
 | HDRSceneColor | RGBA32Float in Scene | Atmosphere plus weighted reflection / TAA and display |
 
@@ -803,8 +808,8 @@ resource; each recording retains its integration pipeline. A recording prepared
 before another graph initializes the lookup also waits for its readiness fence;
 setup order does not decide which recording performs integration. Its initial
 imported state is resolved by GAL at execution, rather than captured before another
-recording changes it. No new renderer manager
-or mutable cross-occurrence reflection history is introduced.
+recording changes it. Temporal histories belong to each compiled pass occurrence;
+no renderer manager or mutable history is shared between occurrences.
 
 Tracing walks complete projected hierarchy cell segments, descends on overlapping
 near/far bounds, solves depth crossings at the finest level, and rejects departure
@@ -819,15 +824,44 @@ explicit half-float output constraint must resample/convert that output themselv
 A miss contributes zero reflection and preserves the incoming scene radiance.
 Offscreen and hidden surfaces therefore cannot appear; no environment, hardware-ray
 or diffuse-irradiance algorithm is substituted. Environment convolution/probes and
-SSR temporal filtering remain separate work. The old SSR temporal operation depends
-on a different previous-surface contract and is deliberately absent here. This path
-has no reflection history to invalidate on cuts, first frames, resize or reload.
-Whole-scene TAA remains a separate authored choice; moving-reflection/reactive-mask
-quality with TAA, stereo, representative performance and non-Vulkan backends still
-need acceptance. Spatial roughness filtering is an approximation rather than a
-multi-sample glossy transport solution.
+hardware-ray reflections remain separate work. Spatial roughness filtering is an
+approximation rather than a multi-sample glossy transport solution.
 
-The current GGX lookup requires `TextureUAVExtendedFormats` for RG16Float storage.
+### Optional temporal reflection resolve
+
+The authored `Temporal Reflections` occurrence defaults to `Enabled=false` and
+forwards the raw trace without allocating histories or dispatching work. Enabling
+it requires the existing explicit temporal camera snapshot, depth, encoded normal,
+material, object ID and NDC velocity. Scene supplies these inputs from its ordinary
+world extraction and temporal-camera producer; Editor inherits the same workload.
+Whole-scene TAA remains an independent authored choice. Older custom graphs using
+the legacy ReSTIR previous-surface SSR contract must reconnect the new explicit
+camera and object ID inputs; the production workload does not use that old contract.
+
+The resolve reprojects with motion and jitter, compares the previous projected
+depth, normal and material/object identity, and clips accepted radiance to the
+current matching-surface neighborhood's range and variance. Current trace confidence
+is preserved, so repeated reuse cannot inflate the reflection's contribution.
+Current misses produce zero even when previous history contains a bright emitter.
+Initialization, cuts, resize, input precision changes, resource reload, disabled
+execution and explicit invalidation reject history. Independent occurrences and
+views do not share history. Rigid motion and changing reflected radiance remain
+conservative: this is a radiance filter, not a reflected-hit motion reconstruction.
+
+Each immutable history slot uses 24 bytes per pixel: half-float radiance, packed
+16-bit normal/full-float depth and material/object identity. Recorded graphs retain
+slots and readiness fences, including after the owning world or pass is destroyed.
+Completed storage is reused only after all recordings release it. The pool permits
+up to eight pinned slots and reports an explicit build failure at capacity. Newer
+executed frames remain authoritative if an older recording executes afterward;
+an invalidation revision prevents old work from restoring invalidated history.
+This contract covers retained one-time execution, not arbitrary graph replay.
+
+Stereo, simultaneous whole-scene TAA/reactive-mask quality, representative glossy
+transport/performance and non-Vulkan backends still need acceptance.
+
+The current GGX lookup and temporal resolve require `TextureUAVExtendedFormats`
+for RG16Float and RG32UInt storage respectively.
 An enabled unsupported workload fails explicitly before allocation; the authored
 reflection switch provides the disabled fallback. AO must also be disabled explicitly
 on the same restricted device. The reflection path executes without mesh shaders.
@@ -857,6 +891,17 @@ failure, exact read-only RGBA16 forwarding, absent confidence and scaled RGBA32 
 Scene and Editor and exact restoration after the reflection switch is disabled.
 The Editor fixture reacquires its floor component by owner handle after world
 updates, honoring component storage relocation.
+
+
+`TemporalReflections` verifies actual weighted history reuse for both input
+precisions, jittered cameras, nonzero-motion pixel reprojection, unchanged confidence, surface/identity/motion rejection, independent
+views, cuts, resize and disable/re-enable. Retained recordings test execution order,
+eight-slot capacity and recovery, abandoned recordings and owner destruction.
+`SceneReflections/TemporalWorldSurfaceOutput` and
+`EditorViews/TemporalScreenReflections` run the same world-surface workload through
+the authored Scene and inherited Editor resources, comparing raw trace, previous
+resolve, confidence composition and final HDR during material/emitter changes,
+resize, projection changes and reload.
 
 
 Final Windows/MSVC Debug validation passed the four CTest targets:
