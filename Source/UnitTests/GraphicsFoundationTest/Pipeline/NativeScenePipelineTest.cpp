@@ -264,6 +264,7 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposur
     }
   }
   float firstExposure = 0;
+  float lastAutomaticExposure[2] = {};
   for (xiiUInt32 phase = 0; phase < 3; ++phase)
   {
     const float luminance = phase == 0 ? 4.0f : phase == 1 ? 400.0f :
@@ -322,11 +323,16 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposur
       const auto exposure = graph.GetExportedBuffer(exposures[i]);
       if (phase == 0)
         histories[i] = exposure;
-      XII_TEST_BOOL(exposure == histories[i]);
+      XII_TEST_BOOL(phase < 2 ? exposure == histories[i] : exposure != histories[i]);
       if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), exposure.Borrow(), 0, values[i]))
         return;
       if (phase == 2)
       {
+        float retainedAutomatic = 0, manualLuminance = -1;
+        if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), histories[i].Borrow(), 0, retainedAutomatic) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), exposure.Borrow(), sizeof(float), manualLuminance))
+          return;
+        XII_TEST_FLOAT(retainedAutomatic, lastAutomaticExposure[i], 0.000001f);
+        XII_TEST_FLOAT(manualLuminance, 0, 0);
         XII_TEST_FLOAT(values[i], i ? 0.5f : 1.0f, 0.0001f);
         const float x = luminance * values[i], linear = xiiMath::Saturate(x * (2.51f * x + 0.03f) / (x * (2.43f * x + 0.59f) + 0.14f));
         const float encoded = linear < 0.0031308f ? linear * 12.92f : 1.055f * xiiMath::Pow(linear, 1.0f / 2.4f) - 0.055f;
@@ -336,6 +342,8 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposur
         for (xiiUInt32 channel = 0; channel < 3; ++channel)
           XII_TEST_FLOAT(float((pixel >> (channel * 8)) & 255) / 255, encoded, 0.005f);
       }
+      else
+        lastAutomaticExposure[i] = values[i];
     }
     if (phase < 2)
     {
