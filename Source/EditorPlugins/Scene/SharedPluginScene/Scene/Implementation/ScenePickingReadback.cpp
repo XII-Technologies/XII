@@ -5,6 +5,16 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 
+xiiScenePickingReadback::xiiScenePickingReadback() : m_pLifetime(XII_DEFAULT_NEW(Lifetime))
+{
+  m_pLifetime->m_pOwner = this;
+}
+
+xiiScenePickingReadback::~xiiScenePickingReadback()
+{
+  m_pLifetime->m_pOwner = nullptr;
+}
+
 void xiiScenePickingReadback::Invalidate()
 {
   ++m_uiEpoch;
@@ -108,6 +118,7 @@ xiiResult xiiScenePickingReadback::AddCapture(xiiRenderPipelinePassContext& cont
   if (index == XII_ARRAY_SIZE(m_Slots))
     return XII_SUCCESS;
   auto& slot                       = m_Slots[index];
+  ++slot.m_uiReservation;
   slot.m_State                     = Slot::Reserved;
   slot.m_uiSetupFrameIndex         = context.m_Graph.GetFrameIndex();
   slot.m_Snapshot.m_pWorld         = context.m_pView->GetWorld();
@@ -124,13 +135,16 @@ xiiResult xiiScenePickingReadback::AddCapture(xiiRenderPipelinePassContext& cont
   };
   xiiStringBuilder name;
   name.SetFormat("{}: Read picking {}", context.m_sPassName, index);
-  context.m_Graph.AddPass<Data>(name, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) { data.m_Texture = builder.ReadTexture(texture, xiiGALResourceStateFlags::CopySource); }, [this, index](const Data& data, xiiRenderGraphPassContext& execution) {
-      auto& captureSlot = m_Slots[index];
-      const auto result = m_pReadback->Enqueue(&execution.GetCommandList(), {.m_pTexture = execution.GetTexture(data.m_Texture), .m_uiTextureID = index});
+  context.m_Graph.AddPass<Data>(name, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) { data.m_Texture = builder.ReadTexture(texture, xiiGALResourceStateFlags::CopySource); }, [lifetime = m_pLifetime, index, reservation = slot.m_uiReservation, epoch = m_uiEpoch](const Data& data, xiiRenderGraphPassContext& execution) {
+      auto* owner = lifetime->m_pOwner;
+      if (!owner || owner->m_uiEpoch != epoch || owner->m_Slots[index].m_uiReservation != reservation || owner->m_Slots[index].m_State != Slot::Reserved)
+        return;
+      auto& captureSlot = owner->m_Slots[index];
+      const auto result = owner->m_pReadback->Enqueue(&execution.GetCommandList(), {.m_pTexture = execution.GetTexture(data.m_Texture), .m_uiTextureID = index});
       captureSlot.m_State = result.Succeeded() ? Slot::Pending : Slot::Free;
       if (result.Failed())
       {
-        Invalidate();
+        owner->Invalidate();
         xiiLog::Error("Failed to enqueue scene picking readback.");
       } }, true);
   out_uiReservedSlot = index;

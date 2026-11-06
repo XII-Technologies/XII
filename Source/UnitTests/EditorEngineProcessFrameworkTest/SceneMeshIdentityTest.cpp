@@ -302,6 +302,19 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
       XII_TEST_RESULT(asyncReadback.AddCapture(captureContext, query, backpressureSlot));
       XII_TEST_INT(backpressureSlot, xiiInvalidIndex);
+      // Captures invalidated or destroyed before execution must not publish or
+      // dereference the retired CPU transport when this graph eventually runs.
+      xiiScenePickingReadback invalidatedReadback;
+      xiiUInt32               invalidatedSlot;
+      XII_TEST_RESULT(invalidatedReadback.AddCapture(captureContext, query, invalidatedSlot));
+      XII_TEST_BOOL(invalidatedSlot != xiiInvalidIndex);
+      invalidatedReadback.Invalidate();
+      {
+        xiiScenePickingReadback retiredReadback;
+        xiiUInt32               retiredSlot;
+        XII_TEST_RESULT(retiredReadback.AddCapture(captureContext, query, retiredSlot));
+        XII_TEST_BOOL(retiredSlot != xiiInvalidIndex);
+      }
       graph.EndSetup();
       if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphContext.GetBlackboard(), &cache)))
         return;
@@ -334,6 +347,9 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 2]), 0.0f, 0.0001f);
         XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 3]), 0.5f, 0.0001f);
       }
+      XII_TEST_RESULT(invalidatedReadback.Poll(completedSlot));
+      XII_TEST_INT(completedSlot, xiiInvalidIndex);
+      XII_TEST_BOOL(!invalidatedReadback.Matches(*view));
       // ReadIds waited for a subsequent graphics submission; the capture transport itself never waits.
       XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
       XII_TEST_INT(completedSlot, reservedSlot);
