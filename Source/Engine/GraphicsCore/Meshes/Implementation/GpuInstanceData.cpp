@@ -4,9 +4,11 @@
 
 #include <Core/World/World.h>
 #include <Foundation/Containers/HashSet.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
+#include <Foundation/Utilities/Stats.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
@@ -86,6 +88,8 @@ public:
   }
   struct Entry
   {
+    xiiUInt32                           m_uiMeshRevision = 0, m_uiBufferRevision = 0;
+    xiiBoundingBoxSphere                m_LocalBounds = xiiBoundingBoxSphere::MakeInvalid();
     PacketKey                           m_Key;
     xiiGpuInstanceSource                m_Source;
     xiiGeometryHandle                   m_Geometry;
@@ -171,6 +175,8 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(const xiiExtractedRenderData&
 
 xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)
 {
+  XII_PROFILE_SCOPE("GPU scene synchronization");
+  const auto syncStart = xiiTime::Now();
   if (xiiGeometryResidencyManager::EnsureInitialized().Failed())
     return XII_FAILURE;
   auto&      state           = *m_pState;
@@ -208,13 +214,17 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       entry.m_PreviousPose = entry.m_CurrentPose;
   }
   xiiHashSet<PacketKey, PacketHash> groups;
-  auto                              pack = [&](const xiiMeshRenderData& packet, const xiiMeshResource& mesh, const xiiExtractedMeshSkinning& skinning, const PacketKey& key, xiiUInt32 materialIndex, xiiUInt32 first, xiiUInt32 count, xiiUInt32& representative) -> xiiResult {
-    const auto geometry = xiiGeometryResidencyManager::AcquireMeshGeometry(packet.m_hMesh);
+  auto                              pack = [&](const xiiMeshRenderData& packet, const xiiMeshResource& mesh, const xiiExtractedMeshSkinning& skinning, xiiUInt32 bufferRevision, const PacketKey& key, xiiUInt32 materialIndex, xiiUInt32 first, xiiUInt32 count, xiiUInt32& representative) -> xiiResult {
+    xiiUInt32  index           = 0;
+    const bool fresh           = !state.m_Packets.TryGetValue(key, index);
+    const bool acquireGeometry = fresh || state.m_Entries[index].m_Mesh != packet.m_hMesh ||
+      state.m_Entries[index].m_uiMeshRevision != mesh.GetCurrentResourceChangeCounter() ||
+      state.m_Entries[index].m_uiBufferRevision != bufferRevision ||
+      !xiiGeometryResidencyManager::IsValid(state.m_Entries[index].m_Geometry);
+    const auto geometry = acquireGeometry ? xiiGeometryResidencyManager::AcquireMeshGeometry(packet.m_hMesh) : state.m_Entries[index].m_Geometry;
     if (geometry.IsInvalidated())
       return XII_SUCCESS;
     const auto material = materialIndex < packet.m_hMaterials.GetCount() ? packet.m_hMaterials[materialIndex] : xiiMaterialResourceHandle{};
-    xiiUInt32  index    = 0;
-    const bool fresh    = !state.m_Packets.TryGetValue(key, index);
     if (fresh)
     {
       const auto identity = s_NextGpuIdentity.Increment();
@@ -238,9 +248,11 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     auto&      record    = m_Instances[index];
     const auto before    = record;
     const bool resetPose = fresh || entry.m_Geometry != geometry;
-    if (!fresh)
+    if (!fresh && acquireGeometry)
       xiiGeometryResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, frame);
-    entry.m_Geometry = geometry;
+    entry.m_Geometry         = geometry;
+    entry.m_uiMeshRevision   = mesh.GetCurrentResourceChangeCounter();
+    entry.m_uiBufferRevision = bufferRevision;
     // Keep unchanged resource leases instead of churning reference counts every frame.
     if (entry.m_Mesh != packet.m_hMesh)
       entry.m_Mesh = packet.m_hMesh;
@@ -264,28 +276,37 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     const auto transform             = key.m_Instance == xiiInvalidIndex ? packet.m_GlobalTransform.GetAsMat4() : packet.m_GlobalTransform.GetAsMat4() * packet.m_InstanceTransforms[key.m_Instance];
     record.m_PreviousGlobalTransform = fresh ? transform : nextFrame ? record.m_GlobalTransform :
                                                                                                     record.m_PreviousGlobalTransform;
+    const bool transformChanged      = resetPose || record.m_GlobalTransform != transform;
     record.m_GlobalTransform         = transform;
-    auto normal                      = record.m_GlobalTransform.GetRotationalPart();
-    if (normal.Invert().Succeeded())
-      normal.Transpose();
-    else
-      normal.SetIdentity();
-    const auto row0 = normal.GetRow(0), row1 = normal.GetRow(1), row2 = normal.GetRow(2);
-    record.m_NormalTransformRow0 = xiiVec4(row0.x, row0.y, row0.z, 0);
-    record.m_NormalTransformRow1 = xiiVec4(row1.x, row1.y, row1.z, 0);
-    record.m_NormalTransformRow2 = xiiVec4(row2.x, row2.y, row2.z, 0);
-    auto bounds                  = skinning.m_Bounds;
-    bounds.Transform(record.m_GlobalTransform);
-    record.m_BoundsCenterRadius = xiiVec4(bounds.m_vCenter.x, bounds.m_vCenter.y, bounds.m_vCenter.z, bounds.m_fSphereRadius);
-    record.m_BoundsExtents      = xiiVec4(bounds.m_vBoxHalfExtents.x, bounds.m_vBoxHalfExtents.y, bounds.m_vBoxHalfExtents.z, 0);
-    record.m_uiFlags            = GetFlags(packet, material).GetValue();
-    record.m_uiUserData         = packet.m_uiUniqueID;
-    record.m_uiVisibilityMask   = packet.m_uiVisibilityMask;
-    record.m_uiFirstPrimitive   = first;
-    record.m_uiPrimitiveCount   = count;
-    record.m_uiForcedLod        = packet.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? packet.m_uiLODIndex : xiiInvalidIndex;
-    record.m_uiDrawLod          = key.m_Lod;
-    record.m_fLodBias           = packet.m_fLodBias;
+    if (transformChanged)
+    {
+      auto normal = record.m_GlobalTransform.GetRotationalPart();
+      if (normal.Invert().Succeeded())
+        normal.Transpose();
+      else
+        normal.SetIdentity();
+      const auto row0 = normal.GetRow(0), row1 = normal.GetRow(1), row2 = normal.GetRow(2);
+      record.m_NormalTransformRow0 = xiiVec4(row0.x, row0.y, row0.z, 0);
+      record.m_NormalTransformRow1 = xiiVec4(row1.x, row1.y, row1.z, 0);
+      record.m_NormalTransformRow2 = xiiVec4(row2.x, row2.y, row2.z, 0);
+    }
+    if (transformChanged || entry.m_LocalBounds != skinning.m_Bounds)
+    {
+      entry.m_LocalBounds = skinning.m_Bounds;
+      auto bounds         = skinning.m_Bounds;
+      bounds.Transform(record.m_GlobalTransform);
+      record.m_BoundsCenterRadius = xiiVec4(bounds.m_vCenter.x, bounds.m_vCenter.y, bounds.m_vCenter.z, bounds.m_fSphereRadius);
+      record.m_BoundsExtents      = xiiVec4(bounds.m_vBoxHalfExtents.x, bounds.m_vBoxHalfExtents.y, bounds.m_vBoxHalfExtents.z, 0);
+    }
+    record.m_uiFlags           = GetFlags(packet, material).GetValue();
+    record.m_uiUserData        = packet.m_uiUniqueID;
+    record.m_uiVisibilityMask  = packet.m_uiVisibilityMask;
+    const bool coverageChanged = resetPose || record.m_uiFirstPrimitive != first || record.m_uiPrimitiveCount != count;
+    record.m_uiFirstPrimitive  = first;
+    record.m_uiPrimitiveCount  = count;
+    record.m_uiForcedLod       = packet.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? packet.m_uiLODIndex : xiiInvalidIndex;
+    record.m_uiDrawLod         = key.m_Lod;
+    record.m_fLodBias          = packet.m_fLodBias;
     if (record.m_uiObjectId == representative)
     {
       entry.m_CurrentPose  = packet.m_SkinningMatrices;
@@ -298,12 +319,15 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       record.m_uiBoneWeightsOffset    = skinning.m_uiBoneWeightsOffset;
       record.m_uiSkinningVertexStride = skinning.m_uiVertexStride;
     }
-    xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-    XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts)));
-    entry.m_MaximumMeshlets = 0;
-    for (xiiUInt32 lod = 0; lod < xiiGpuGeometryRecord::s_uiMaxLods; ++lod)
-      if (key.m_Lod == xiiInvalidIndex || key.m_Lod == lod)
-        entry.m_MaximumMeshlets = xiiMath::Max(entry.m_MaximumMeshlets, counts[lod]);
+    if (coverageChanged)
+    {
+      xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+      XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts)));
+      entry.m_MaximumMeshlets = 0;
+      for (xiiUInt32 lod = 0; lod < xiiGpuGeometryRecord::s_uiMaxLods; ++lod)
+        if (key.m_Lod == xiiInvalidIndex || key.m_Lod == lod)
+          entry.m_MaximumMeshlets = xiiMath::Max(entry.m_MaximumMeshlets, counts[lod]);
+    }
     xiiGeometryResidencyManager::RequestResidency(geometry, packet.m_uiLODIndex, frame);
     xiiGeometryResidencyManager::Touch(geometry, frame);
     entry.m_Changed |= xiiMemoryUtils::Compare(&before, &record, 1) != 0;
@@ -324,8 +348,12 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       continue;
     xiiExtractedMeshSkinning skinning;
     XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*mesh.GetPointer(), *packet, skinning));
-    const bool instanced = packet->m_Flags.IsSet(xiiMeshRenderDataFlags::Instanced);
-    const auto group     = key;
+    xiiResourceLock<xiiMeshBufferResource> sourceBuffer(mesh->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+    if (sourceBuffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      continue;
+    const auto bufferRevision = sourceBuffer->GetCurrentResourceChangeCounter();
+    const bool instanced      = packet->m_Flags.IsSet(xiiMeshRenderDataFlags::Instanced);
+    const auto group          = key;
     for (xiiUInt32 instance = 0; instance < (instanced ? packet->m_InstanceTransforms.GetCount() : 1U); ++instance)
     {
       key            = group;
@@ -340,7 +368,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
         const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[xiiMath::Min(packet->m_uiLODIndex, mesh->GetLODs().GetCount() - 1)].m_Sections.GetArrayPtr();
         if (key.m_Section < sections.GetCount())
           material = sections[key.m_Section].m_uiMaterialIndex;
-        XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, key, material, packet->m_uiFirstPrimitive, packet->m_uiPrimitiveCount, representative));
+        XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, bufferRevision, key, material, packet->m_uiFirstPrimitive, packet->m_uiPrimitiveCount, representative));
       }
       else
         for (xiiUInt32 lod = 0; lod < xiiMath::Max(1U, mesh->GetLODs().GetCount()); ++lod)
@@ -356,7 +384,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
               continue;
             key.m_Section = section;
             key.m_Lod     = lod;
-            XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, key, sections[section].m_uiMaterialIndex, sections[section].m_uiFirstPrimitive, sections[section].m_uiPrimitiveCount, representative));
+            XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, bufferRevision, key, sections[section].m_uiMaterialIndex, sections[section].m_uiFirstPrimitive, sections[section].m_uiPrimitiveCount, representative));
           }
         }
     }
@@ -438,6 +466,8 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       ++i;
     m_UploadRanges.PushBack({first, i - first});
   }
+  xiiStats::SetStat("Renderer/GPU scene/Instances", m_Instances.GetCount());
+  xiiStats::SetStat("Renderer/GPU scene/Synchronization ms", (xiiTime::Now() - syncStart).GetMilliseconds());
   return XII_SUCCESS;
 }
 

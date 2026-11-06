@@ -5,10 +5,13 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/Mutex.h>
+
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
+#include <algorithm>
 
 class xiiGeometryResidencyManager::State
 {
@@ -26,6 +29,8 @@ public:
     xiiUInt32             m_uiBufferRevision = 0U;
     xiiUInt32             m_uiReferenceCount = 0U;
   };
+
+  xiiUInt64 m_uiCoverageQueries = 0U, m_uiCoverageIndexBuilds = 0U, m_uiCoverageMeshlets = 0U;
 
   void ClearGpuState()
   {
@@ -416,10 +421,11 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
   if (!IsInitialized() || s_pState->m_pMetadataBuffer == nullptr || s_pState->m_GeometryIds.GetCount() >= s_pState->m_Slots.GetCount() || description.m_Lods.IsEmpty() || description.m_Lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
     return {};
 
-  const xiiGeometryId id          = s_pState->m_GeometryIds.Insert(0U);
-  const xiiUInt32     uiIndex     = id.m_InstanceIndex;
-  s_pState->m_GeometryIds[id]     = uiIndex;
-  Slot& slot                      = s_pState->m_Slots[uiIndex];
+  const xiiGeometryId id      = s_pState->m_GeometryIds.Insert(0U);
+  const xiiUInt32     uiIndex = id.m_InstanceIndex;
+  s_pState->m_GeometryIds[id] = uiIndex;
+  Slot& slot                  = s_pState->m_Slots[uiIndex];
+  slot.m_pCoverage.Clear();
   slot.m_Description              = description;
   slot.m_GpuRecord                = {};
   slot.m_GpuRecord.m_uiGeneration = id.m_Generation;
@@ -887,9 +893,13 @@ xiiResult xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometr
   if (!IsValid(handle) || out_counts.GetCount() != xiiGpuGeometryRecord::s_uiMaxLods || uiPrimitiveCount > xiiMath::MaxValue<xiiUInt32>() - uiFirstPrimitive)
     return XII_FAILURE;
 
-  const auto&               slot  = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
+  XII_PROFILE_SCOPE("Geometry coverage");
+  ++s_pState->m_uiCoverageQueries;
+  auto&                     slot  = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
   State::MeshGeometryEntry* entry = nullptr;
   s_pState->m_MeshGeometries.TryGetValue(handle, entry);
+  if (!slot.m_pCoverage)
+    slot.m_pCoverage = XII_DEFAULT_NEW(CoverageIndex);
   xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
   for (xiiUInt32 lod = 0; lod < slot.m_Description.m_Lods.GetCount(); ++lod)
   {
@@ -897,19 +907,40 @@ xiiResult xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometr
     xiiResourceLock<xiiMeshBufferResource> buffer(source.m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
     if (buffer->GetLoadingState() != xiiResourceState::Loaded || (entry && buffer->GetCurrentResourceChangeCounter() != entry->m_uiBufferRevision))
       return XII_FAILURE;
-    const auto meshlets = buffer->GetMeshlets();
-    if (source.m_uiFirstMeshlet > meshlets.GetCount())
-      return XII_FAILURE;
-    const auto available = meshlets.GetCount() - source.m_uiFirstMeshlet;
-    const auto count     = source.m_uiMeshletCount == 0 ? available : source.m_uiMeshletCount;
-    if (count > available)
-      return XII_FAILURE;
-    for (const auto& meshlet : meshlets.GetSubArray(source.m_uiFirstMeshlet, count))
+    auto&      index    = slot.m_pCoverage->m_Lods[lod];
+    const auto revision = buffer->GetCurrentResourceChangeCounter();
+    if (!index.m_bValid || index.m_uiRevision != revision)
     {
-      // Use the same overlap test as native MeshletCull, including boundary meshlets.
-      const xiiUInt64 end = static_cast<xiiUInt64>(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
-      if (uiPrimitiveCount == 0 || (meshlet.m_uiFirstPrimitive < uiFirstPrimitive + uiPrimitiveCount && end > uiFirstPrimitive))
-        ++counts[lod];
+      const auto meshlets = buffer->GetMeshlets();
+      if (source.m_uiFirstMeshlet > meshlets.GetCount())
+        return XII_FAILURE;
+      const auto available = meshlets.GetCount() - source.m_uiFirstMeshlet;
+      const auto count     = source.m_uiMeshletCount == 0 ? available : source.m_uiMeshletCount;
+      if (count > available)
+        return XII_FAILURE;
+      index.m_Starts.SetCountUninitialized(count);
+      index.m_Ends.SetCountUninitialized(count);
+      for (xiiUInt32 i = 0; i < count; ++i)
+      {
+        const auto& meshlet = meshlets[source.m_uiFirstMeshlet + i];
+        index.m_Starts[i]   = meshlet.m_uiFirstPrimitive;
+        index.m_Ends[i]     = xiiUInt64(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
+      }
+      index.m_Starts.Sort();
+      index.m_Ends.Sort();
+      index.m_uiRevision = revision;
+      index.m_bValid     = true;
+      ++s_pState->m_uiCoverageIndexBuilds;
+      s_pState->m_uiCoverageMeshlets += count;
+    }
+    // Half-open overlap: starts < query end, minus ends <= query start.
+    // Sorting endpoints independently also handles unordered and overlapping meshlets.
+    counts[lod] = index.m_Starts.GetCount();
+    if (uiPrimitiveCount != 0 && !index.m_Starts.IsEmpty())
+    {
+      const auto starts = std::lower_bound(index.m_Starts.GetData(), index.m_Starts.GetData() + index.m_Starts.GetCount(), uiFirstPrimitive + uiPrimitiveCount);
+      const auto ends   = std::upper_bound(index.m_Ends.GetData(), index.m_Ends.GetData() + index.m_Ends.GetCount(), xiiUInt64(uiFirstPrimitive));
+      counts[lod]       = static_cast<xiiUInt32>((starts - index.m_Starts.GetData()) - (ends - index.m_Ends.GetData()));
     }
   }
   out_counts.CopyFrom(xiiMakeArrayPtr(counts));
@@ -937,9 +968,12 @@ xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats()
   if (s_pState == nullptr)
     return stats;
 
-  stats.m_uiBudgetBytes   = s_pState->m_uiBudgetBytes;
-  stats.m_uiResidentBytes = s_pState->m_uiResidentBytes;
-  stats.m_uiUploadedBytes = s_pState->m_uiLastUploadedBytes;
+  stats.m_uiCoverageQueries     = s_pState->m_uiCoverageQueries;
+  stats.m_uiCoverageIndexBuilds = s_pState->m_uiCoverageIndexBuilds;
+  stats.m_uiCoverageMeshlets    = s_pState->m_uiCoverageMeshlets;
+  stats.m_uiBudgetBytes         = s_pState->m_uiBudgetBytes;
+  stats.m_uiResidentBytes       = s_pState->m_uiResidentBytes;
+  stats.m_uiUploadedBytes       = s_pState->m_uiLastUploadedBytes;
   for (const Slot& slot : s_pState->m_Slots)
   {
     if (!slot.m_bAllocated)

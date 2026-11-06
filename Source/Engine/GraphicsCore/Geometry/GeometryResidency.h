@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Types/Id.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsFoundation/Resources/BindlessResource.h>
@@ -109,6 +110,9 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiResidentBytes         = 0U;
   xiiUInt64 m_uiBudgetBytes           = 0U;
   xiiUInt64 m_uiUploadedBytes         = 0U;
+  xiiUInt64 m_uiCoverageQueries       = 0U;
+  xiiUInt64 m_uiCoverageIndexBuilds   = 0U;
+  xiiUInt64 m_uiCoverageMeshlets      = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyStats);
@@ -172,8 +176,8 @@ public:
   [[nodiscard]] static const xiiGpuGeometryRecord*        GetGpuRecord(xiiGeometryHandle handle);
   /// Counts meshlets overlapping a primitive range in each authored LOD, including unloaded LODs.
   /// A zero primitive count selects the entire LOD, matching GPU visibility. The output must have
-  /// s_uiMaxLods entries and is cleared on failure. Reads source metadata in O(total meshlets);
-  /// cache the result until the geometry handle or primitive range changes. Rejects reloaded
+  /// s_uiMaxLods entries and is cleared on failure. Builds a revision-owned interval index once,
+  /// then counts exact overlaps in O(LODs * log(meshlets)). Rejects reloaded
   /// source buffers belonging to a different revision. Call on the render thread.
   [[nodiscard]] static xiiResult                  GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts);
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> GetMetadataBuffer();
@@ -202,6 +206,18 @@ private:
   static void      EngineStartup();
   static void      EngineShutdown();
 
+  struct CoverageIndex
+  {
+    struct Lod
+    {
+      xiiDynamicArray<xiiUInt32> m_Starts;
+      xiiDynamicArray<xiiUInt64> m_Ends;
+      xiiUInt32                  m_uiRevision = 0U;
+      bool                       m_bValid     = false;
+    };
+    Lod m_Lods[xiiGpuGeometryRecord::s_uiMaxLods];
+  };
+
   struct Slot
   {
     static constexpr xiiUInt32 s_uiBindlessResourcesPerLod = 5U;
@@ -216,6 +232,7 @@ private:
     xiiUInt32                          m_uiVisibilityPriority = 0U;
     xiiUInt64                          m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
     bool                               m_bAllocated           = false;
+    xiiUniquePtr<CoverageIndex>        m_pCoverage;
     /// One bit per frame-in-flight metadata slice. A record change must reach every slice
     /// before it is considered clean; a single boolean would leave rotating slices stale.
     xiiUInt64 m_uiDirtyFrameMask                                        = 0U;
