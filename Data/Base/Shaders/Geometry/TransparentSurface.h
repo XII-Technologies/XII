@@ -19,18 +19,13 @@
 #  include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereSampling.h>
 #endif
 
-#if FORWARD_PROBES
+#if FORWARD_PROBES || FORWARD_SKY_LIGHT
 #  if !XII_TRANSPARENT_ATMOSPHERE
 SamplerState LinearClampSampler;
 #  endif
 #  include <Shaders/Pipeline/EnvironmentBRDF.h>
-#  include <Shaders/Pipeline/ReflectionProbeData.h>
-StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
-TextureCube<float4>                     g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES];
-TextureCube<float4>                     g_ReflectionProbeIrradiance[XII_MAX_REFLECTION_PROBES];
-#  define XII_REFLECTION_PROBE_IRRADIANCE
-Texture2D<float2>                       g_BRDFLut;
-#  include <Shaders/Pipeline/Passes/Reflection/ReflectionProbeSampling.h>
+Texture2D<float2> g_BRDFLut;
+#  include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightingSampling.h>
 #endif
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
@@ -143,13 +138,13 @@ TransparentOutput xiiShadeTransparentSurface(GBufferVertex input, xiiMaterialSur
   else
   {
     float3 environmentDiffuse = max(EnvironmentAmbientRadiance.rgb, 0) / 3.14159265f;
-#if FORWARD_PROBES
+#if FORWARD_PROBES || FORWARD_SKY_LIGHT
     float        probeCoverage;
     const float  roughness      = max(surface.Roughness, 0.02f);
-    const float3 probeRadiance  = xiiSampleLocalReflectionEnvironment(input.WorldPosition, reflect(-view, surface.Normal), roughness, probeCoverage);
+    const float3 probeRadiance  = xiiSampleReflectionEnvironment(input.WorldPosition, reflect(-view, surface.Normal), roughness, probeCoverage);
     const float2 integratedBRDF = g_BRDFLut.SampleLevel(LinearClampSampler, float2(saturate(dot(surface.Normal, view)), roughness), 0);
     float        diffuseCoverage;
-    const float3 irradiance      = xiiSampleLocalReflectionIrradiance(input.WorldPosition, surface.Normal, diffuseCoverage);
+    const float3 irradiance      = xiiSampleReflectionIrradiance(input.WorldPosition, surface.Normal, diffuseCoverage);
     const float3 remainingEnergy = 1.0f - saturate(xiiEnvironmentSpecularResponse(surface.BaseColor.rgb, surface.Metallic, surface.Reflectance, integratedBRDF));
     environmentDiffuse           = lerp(environmentDiffuse, irradiance * remainingEnergy, diffuseCoverage);
     lighting += probeRadiance * xiiEnvironmentSpecularResponse(surface.BaseColor.rgb, surface.Metallic, surface.Reflectance, integratedBRDF) * (probeCoverage * surface.Occlusion);

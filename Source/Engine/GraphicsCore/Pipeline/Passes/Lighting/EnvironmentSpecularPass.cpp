@@ -40,7 +40,8 @@ xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& contex
 {
   const auto probes = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
   const bool local  = probes && !probes->m_Textures.IsEmpty();
-  if (!local && !context.GetInputTexture(m_Radiance).IsValid() && m_bAllowAbsentRadiance)
+  const bool environmentLighting = local || (probes && probes->m_Sky);
+  if (!environmentLighting && !context.GetInputTexture(m_Radiance).IsValid() && m_bAllowAbsentRadiance)
     return XII_SUCCESS;
   if (local && xiiGALDevice::GetDefaultDevice()->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled)
     return context.ReportFailure("Local reflection probes require nonuniform resource-array support.");
@@ -51,10 +52,12 @@ xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& contex
     const auto* d = context.m_Graph.GetTextureDescription(image);
     return d && d->m_Size.HasNonZeroArea() && (!sameSize || d->m_Size == surface.m_Size) && d->m_Type == xiiGALResourceDimension::Texture2D && d->m_uiArraySizeOrDepth == 1 && d->m_uiSampleCount == 1 && d->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) && xiiSurfaceLightingPassUtils::FloatReadable(d->m_Format) && xiiGALTextureUtilities::GetComponentCount(d->m_Format) >= channels;
   };
-  if ((!local && !valid(radiance, 4, true)) || !valid(lut, 2, false) || (occlusion.IsValid() && !valid(occlusion, 1, true)))
+  if ((!environmentLighting && !valid(radiance, 4, true)) || !valid(lut, 2, false) || (occlusion.IsValid() && !valid(occlusion, 1, true)))
     return context.ReportFailure("Environment specular requires matching radiance/occlusion and a float-readable two-channel BRDF lookup.");
-  auto& pipeline = local ? m_ProbePipeline : m_Pipeline;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, local ? "Shaders/Pipeline/Passes/Lighting/EnvironmentProbeSpecular.xiiShader" : "Shaders/Pipeline/Passes/Lighting/EnvironmentSpecular.xiiShader"));
+  auto& pipeline = local ? m_ProbePipeline : environmentLighting ? m_SkyPipeline :
+                                                                   m_Pipeline;
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, local ? "Shaders/Pipeline/Passes/Lighting/EnvironmentProbeSpecular.xiiShader" : environmentLighting ? "Shaders/Pipeline/Passes/Lighting/EnvironmentSkySpecular.xiiShader" :
+                                                                                                                                                                                "Shaders/Pipeline/Passes/Lighting/EnvironmentSpecular.xiiShader"));
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_Linear));
   xiiRenderPassResourceScope scope(context);
   struct Data
@@ -68,9 +71,9 @@ xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& contex
     xiiSharedPtr<xiiGALSampler>              m_Linear;
   };
   const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_Surface=xiiSurfaceLightingPassUtils::Read(surface,builder); if (local) data.m_Probes=xiiReflectionProbePassUtils::Read(probes,builder); else data.m_Radiance=builder.ReadTexture(radiance,xiiGALResourceStateFlags::ShaderResource); data.m_Lut=builder.ReadTexture(lut,xiiGALResourceStateFlags::ShaderResource); data.m_Occlusion=occlusion.IsValid() ? builder.ReadTexture(occlusion,xiiGALResourceStateFlags::ShaderResource):data.m_Surface.m_Depth;
+    data.m_Surface=xiiSurfaceLightingPassUtils::Read(surface,builder); if (environmentLighting) data.m_Probes=xiiReflectionProbePassUtils::Read(probes,builder); else data.m_Radiance=builder.ReadTexture(radiance,xiiGALResourceStateFlags::ShaderResource); data.m_Lut=builder.ReadTexture(lut,xiiGALResourceStateFlags::ShaderResource); data.m_Occlusion=occlusion.IsValid() ? builder.ReadTexture(occlusion,xiiGALResourceStateFlags::ShaderResource):data.m_Surface.m_Depth;
     data.m_Output=xiiCompositionPassUtils::Output(builder,surface.m_Size,xiiGALResourceFormat::RGBA32Float); data.m_Pipeline=pipeline; data.m_Linear=m_Linear;
-    if (local)
+    if (environmentLighting)
     {
       xiiGALTextureCreationDescription image;
       image.m_Type      = xiiGALResourceDimension::Texture2D;
@@ -96,7 +99,7 @@ xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& contex
       return;
     }
     commands.DispatchCompute({(data.m_Surface.m_Size.width+7U)/8U,(data.m_Surface.m_Size.height+7U)/8U,1}); });
-  if (local)
+  if (environmentLighting)
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Irradiance, pass.first->m_Irradiance));
   return context.SetOutput(m_Output, pass.first->m_Output);
 }

@@ -216,17 +216,19 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   }
   const auto probes      = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
   const bool localProbes = probes && !probes->m_Textures.IsEmpty();
+  const bool skyLight            = probes && probes->m_Sky;
+  const bool environmentLighting = localProbes || skyLight;
   const auto brdf        = context.GetInputTexture(m_BRDFLut);
-  if (localProbes)
+  if (environmentLighting)
   {
-    if (device->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled)
+    if (localProbes && device->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled)
       return context.ReportFailure("Transparent reflection probes require nonuniform resource-array support.");
     const auto* lookup = context.m_Graph.GetTextureDescription(brdf);
     if (!lookup || lookup->m_Type != xiiGALResourceDimension::Texture2D || !lookup->m_Size.HasNonZeroArea() || lookup->m_uiSampleCount != 1 || !lookup->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiScreenSpacePassUtils::Image(context, brdf, 2))
       return context.ReportFailure("Transparent reflection probes require a readable BRDF lookup.");
     XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_AtmosphereSampler));
   }
-  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U) | (refractive ? 4U : 0U) | (spots ? 8U : 0U) | (localProbes ? 16U : 0U);
+  const xiiUInt32 permutation = (shadows ? 1U : 0U) | (atmospheric ? 2U : 0U) | (refractive ? 4U : 0U) | (spots ? 8U : 0U) | (localProbes ? 16U : 0U) | (skyLight ? 32U : 0U);
   if (!m_hShaders[permutation].IsValid())
   {
     constexpr const char*                          paths[] = {"Shaders/Geometry/TransparentVertexPull.xiiShader", "Shaders/Geometry/TransparentShadowVertexPull.xiiShader", "Shaders/Geometry/TransparentAtmosphereVertexPull.xiiShader", "Shaders/Geometry/TransparentWorldVertexPull.xiiShader"};
@@ -242,6 +244,9 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     variables.Insert(name, value);
     name.Assign("FORWARD_PROBES");
     value.Assign(localProbes ? "TRUE" : "FALSE");
+    variables.Insert(name, value);
+    name.Assign("FORWARD_SKY_LIGHT");
+    value.Assign(skyLight ? "TRUE" : "FALSE");
     variables.Insert(name, value);
     m_hShaders[permutation] = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
   }
@@ -282,6 +287,7 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
   feature("FORWARD_REFRACTION", refractive);
   feature("FORWARD_SPOT_SHADOWS", spots != nullptr);
   feature("FORWARD_PROBES", localProbes);
+  feature("FORWARD_SKY_LIGHT", skyLight);
   xiiDynamicArray<xiiMaterialRasterBatch> batches;
   xiiRenderGraphBufferHandle              sortedVisible, materialDraws;
   XII_SUCCEED_OR_RETURN(m_MaterialBatches.Build(context, visibleMeshlets, drawCommandCount, batches, sortedVisible, materialDraws, xiiMaterialRasterBatches::Pass::Transparent, &materialVariables));
@@ -402,7 +408,7 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
     data.m_DrawCommandCount=builder.ReadBuffer(drawCommandCount,xiiGALResourceStateFlags::IndirectArgument);
     data.m_Camera=builder.ReadBuffer(camera,xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Environment=builder.ReadBuffer(environment,xiiGALResourceStateFlags::ConstantBuffer);
-    if (localProbes)
+    if (environmentLighting)
     {
       data.m_Probes  = xiiReflectionProbePassUtils::Read(probes, builder);
       data.m_BRDFLut = builder.ReadTexture(brdf, xiiGALResourceStateFlags::ShaderResource);

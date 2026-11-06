@@ -31,6 +31,6 @@ public:
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
 
 private:
-  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline, m_ProbePipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline, m_ProbePipeline, m_SkyPipeline;
   xiiSharedPtr<xiiGALSampler>              m_Linear;
 };

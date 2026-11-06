@@ -12,6 +12,8 @@ namespace xiiReflectionProbePassUtils
   {
     xiiSharedPtr<const xiiReflectionProbeFrameData> m_Snapshot;
     xiiRenderGraphBufferHandle                      m_Records, m_Constants;
+    xiiRenderGraphBufferHandle                      m_SkyConstants;
+    xiiRenderGraphTextureHandle                     m_SkyRadiance, m_SkyIrradiance;
     xiiRenderGraphTextureHandle                     m_Textures[XII_MAX_REFLECTION_PROBES];
     xiiRenderGraphTextureHandle                     m_Irradiance[XII_MAX_REFLECTION_PROBES];
   };
@@ -20,8 +22,17 @@ namespace xiiReflectionProbePassUtils
   {
     Bindings result;
     result.m_Snapshot  = snapshot;
-    result.m_Records   = builder.ReadBuffer(snapshot->m_Records, xiiGALResourceStateFlags::ShaderResource);
-    result.m_Constants = builder.ReadBuffer(snapshot->m_Constants, xiiGALResourceStateFlags::ConstantBuffer);
+    if (!snapshot->m_Textures.IsEmpty())
+    {
+      result.m_Records   = builder.ReadBuffer(snapshot->m_Records, xiiGALResourceStateFlags::ShaderResource);
+      result.m_Constants = builder.ReadBuffer(snapshot->m_Constants, xiiGALResourceStateFlags::ConstantBuffer);
+    }
+    result.m_SkyConstants = builder.ReadBuffer(snapshot->m_SkyConstants, xiiGALResourceStateFlags::ConstantBuffer);
+    // Bind an already retained local image when the shader's sky branch is disabled.
+    const auto& sky = snapshot->m_Sky ? snapshot->m_Sky : snapshot->m_Environments[0];
+    builder.WaitForFence(sky->m_Ready, 1).AssertSuccess();
+    result.m_SkyRadiance   = builder.ReadTexture(builder.ImportTexture("Sky Specular Cubemap", sky->m_Specular, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
+    result.m_SkyIrradiance = builder.ReadTexture(builder.ImportTexture("Sky Irradiance Cubemap", sky->m_Irradiance, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
     for (xiiUInt32 i = 0; i < snapshot->m_Textures.GetCount(); ++i)
     {
       xiiStringBuilder name;
@@ -38,6 +49,11 @@ namespace xiiReflectionProbePassUtils
   inline void Bind(const Bindings& data, xiiRenderGraphPassContext& execute, xiiBitflags<xiiGALShaderType> stages)
   {
     auto& commands = execute.GetCommandList();
+    commands.ResolveAndSetConstantBuffer("xiiSkyLightConstants", execute.GetBuffer(data.m_SkyConstants), stages);
+    commands.ResolveAndSetShaderResourceTextureView("g_SkyRadiance", execute.GetTexture(data.m_SkyRadiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), stages);
+    commands.ResolveAndSetShaderResourceTextureView("g_SkyIrradiance", execute.GetTexture(data.m_SkyIrradiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), stages);
+    if (data.m_Snapshot->m_Textures.IsEmpty())
+      return;
     commands.ResolveAndSetConstantBuffer("xiiReflectionProbeConstants", execute.GetBuffer(data.m_Constants), stages);
     commands.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", execute.GetBuffer(data.m_Records)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stages);
     xiiSharedPtr<xiiGALTextureView> views[XII_MAX_REFLECTION_PROBES];
