@@ -56,7 +56,9 @@ XII_CREATE_SIMPLE_TEST(SceneTransparency, RealWorldAlphaLayers)
         enable.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneTransparency/Transparent View"));
         enable.m_Properties.Insert("Enabled", variant == 1);
       }
-    definition.m_Interface.PushBack({"UntransformedColor", false, xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenReflections"), "HDRSceneColor"});
+    for (const auto& connection : definition.m_Connections)
+      if (definition.m_Passes[connection.m_uiTarget].m_Id == trans && connection.m_sInput == "Radiance")
+        definition.m_Interface.PushBack({"UntransformedColor", false, definition.m_Passes[connection.m_uiSource].m_Id, connection.m_sOutput});
     const auto                          source = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(variant ? "Transparency.Scene.On" : "Transparency.Scene.Off", std::move(definition));
     xiiRenderPipelineResourceDescriptor root;
     root.m_References.PushBack({loaded->GetAuthoring()->m_Descriptor.m_Id, source.GetResourceID()});
