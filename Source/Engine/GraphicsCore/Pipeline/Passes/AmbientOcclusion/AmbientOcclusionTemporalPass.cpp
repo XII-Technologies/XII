@@ -233,6 +233,8 @@ xiiResult xiiAmbientOcclusionTemporalPass::Build(xiiRenderPipelinePassContext& c
       const auto& previous                                 = historyValid ? state.m_Last->m_Camera : next->m_Camera;
       data.m_ReprojectionParameters.PreviousCameraPosition = previous.m_CameraPositionAndNearPlane;
       data.m_ReprojectionParameters.PreviousCameraForward  = previous.m_CameraForwardAndFarPlane;
+      data.m_ReprojectionParameters.JitterDelta            = temporalCamera->m_Sample.m_PreviousJitter - temporalCamera->m_Sample.m_Jitter;
+      data.m_ReprojectionParameters._ReprojectionPadding   = xiiVec2::MakeZero();
       data.m_Reprojection                                  = xiiRenderPassUtils::Constants(builder, "AO Reprojection", sizeof(data.m_ReprojectionParameters));
     }
     data.m_Camera = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);

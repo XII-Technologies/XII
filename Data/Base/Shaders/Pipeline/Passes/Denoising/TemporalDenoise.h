@@ -101,8 +101,14 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
 
   const float2 uv         = (float2(pixel) + 0.5f) / float2(dimensions);
   const float2 velocity   = g_Velocity.Load(int3(pixel, 0));
+#  if defined(XII_DENOISE_REPROJECT_DEPTH)
+  // Raster motion excludes projection jitter; raw AO and surface histories
+  // retain the previous raster grid rather than TAA's stable color grid.
+  const float2 previousUV = uv + (JitterDelta - velocity) * float2(0.5f, -0.5f);
+#  else
   const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
-  if (any(previousUV <= 0.0f) || any(previousUV >= 1.0f))
+#  endif
+  if (!all(isfinite(previousUV)) || any(previousUV <= 0.0f) || any(previousUV >= 1.0f))
   {
     g_DenoisedOutput[pixel] = current;
     return;
