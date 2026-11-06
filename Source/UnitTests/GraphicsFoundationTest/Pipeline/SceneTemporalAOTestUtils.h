@@ -50,7 +50,7 @@ namespace xiiSceneTemporalAOTest
     normal.y += normal.y >= 0 ? -correction : correction;
     return normal.GetNormalized();
   }
-  inline void Run(bool editor)
+  inline void Run(bool editor, bool jittered = false)
   {
     xiiGPUTestingEnvironment environment;
     if (!XII_TEST_RESULT(environment.Initialize(false)))
@@ -59,8 +59,17 @@ namespace xiiSceneTemporalAOTest
     xiiStartup::StartupHighLevelSystems();
     XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-    const auto                                 canonical = xiiLoadPipelineLibraryResource("Scene");
-    const auto                                 scene     = xiiMakeReloadablePipelineTestResource(canonical, "SceneAO.ReloadableScene");
+    const auto                      canonical = xiiLoadPipelineLibraryResource("Scene");
+    xiiRenderPipelineResourceHandle instrumented;
+    {
+      xiiResourceLock<xiiRenderPipelineResource> loaded(canonical, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring()))
+        return;
+      auto descriptor = loaded->GetAuthoring()->m_Descriptor;
+      descriptor.m_Interface.PushBack({"CurrentHDR", false, xiiUuid::MakeStableUuidFromString("XII.Scene/Atmosphere"), "HDRSceneColor"});
+      instrumented = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("TemporalAO.InstrumentedScene", std::move(descriptor));
+    }
+    const auto                                 scene = xiiMakeReloadablePipelineTestResource(instrumented, "SceneAO.ReloadableScene");
     xiiResourceLock<xiiRenderPipelineResource> loaded(scene, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetAuthoring() && loaded->GetPipeline()))
       return;
@@ -70,7 +79,7 @@ namespace xiiSceneTemporalAOTest
     auto                source     = scene;
     auto                sourceId   = loaded->GetAuthoring()->m_Descriptor.m_Id;
     xiiUuid             editorScene;
-    const xiiStringView names[] = {"AmbientOcclusion", "RawAmbientOcclusion", "AmbientOcclusionHistory", "AmbientLighting", "DirectLighting", "HDRSceneColor", "SceneDepth", "ObjectId", "Velocity", "AmbientOcclusionSurface"};
+    const xiiStringView names[] = {"AmbientOcclusion", "RawAmbientOcclusion", "AmbientOcclusionHistory", "AmbientLighting", "DirectLighting", "HDRSceneColor", "SceneDepth", "ObjectId", "Velocity", "AmbientOcclusionSurface", "CurrentHDR"};
     if (editor)
     {
       const auto                                 editorResource = xiiLoadPipelineLibraryResource("Editor");
@@ -98,6 +107,11 @@ namespace xiiSceneTemporalAOTest
       xiiRenderPipelineResourceDescriptor descriptor;
       descriptor.m_References.PushBack({sourceId, source.GetResourceID()});
       const auto node           = descriptor.AddSubgraph("Production AO", sourceId);
+      auto&      cameraOverride = descriptor.m_Passes[node].m_Overrides.ExpandAndGetRef();
+      if (editor)
+        cameraOverride.m_Path.PushBack(editorScene);
+      cameraOverride.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiTemporalCameraPass"));
+      cameraOverride.m_Properties.Insert("Enabled", jittered);
       auto&      filterOverride = descriptor.m_Passes[node].m_Overrides.ExpandAndGetRef();
       if (editor)
         filterOverride.m_Path.PushBack(editorScene);
@@ -211,7 +225,7 @@ namespace xiiSceneTemporalAOTest
     for (xiiUInt32 phase = 0; phase < 16; ++phase)
     {
       if (phase == 5)
-        xiiMakeReloadablePipelineTestResource(canonical, scene.GetResourceID());
+        xiiMakeReloadablePipelineTestResource(instrumented, scene.GetResourceID());
       for (xiiUInt32 index = 0; index < 2; ++index)
       {
         auto& world = worlds[index];
@@ -292,14 +306,48 @@ namespace xiiSceneTemporalAOTest
         xiiDynamicArray<float>     depth[3];
         xiiDynamicArray<xiiUInt32> output[3];
         for (xiiUInt32 view = 0; view < 3; ++view)
-          if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "AmbientLighting"), ambient[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "DirectLighting"), direct[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "HDRSceneColor"), hdr[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "SceneDepth"), depth[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), world.m_Targets[view], output[view]))
+          if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "AmbientLighting"), ambient[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "DirectLighting"), direct[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "CurrentHDR"), hdr[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(view, "SceneDepth"), depth[view]) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), world.m_Targets[view], output[view]))
             return;
         xiiDynamicArray<Half2> velocity;
         xiiDynamicArray<Half4> surface;
         if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(0, "Velocity"), velocity) ||
             !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(0, "AmbientOcclusionSurface"), surface))
           return;
-        const auto camera = xiiSnapshotCameraConstants(*world.m_Views[0]);
+        xiiSharedPtr<const xiiTemporalCameraSnapshot> samples[3];
+        for (xiiUInt32 view = 0; view < 3; ++view)
+        {
+          const auto& instance = world.m_Views[view]->GetRenderPipelineInstance();
+          for (xiiUInt32 pass = 0; pass < instance.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++pass)
+            if (instance.GetPass(pass)->GetDynamicRTTI() == xiiGetStaticRTTI<xiiTemporalCameraPass>())
+              samples[view] = instance.GetOutputBinding(pass, "TemporalCamera")->m_pFrameData.Downcast<const xiiTemporalCameraSnapshot>();
+          if (!XII_TEST_BOOL(samples[view] != nullptr))
+            return;
+          XII_TEST_BOOL(samples[view]->m_Sample.m_bEnabled == jittered);
+          XII_TEST_BOOL(samples[view]->m_Sample.m_Jitter == samples[0]->m_Sample.m_Jitter);
+          XII_TEST_BOOL(samples[view]->m_Sample.m_uiSequence == samples[0]->m_Sample.m_uiSequence);
+        }
+        const auto& camera = samples[0]->m_Sample.m_Camera;
+        if (jittered)
+        {
+          XII_TEST_BOOL(!samples[0]->m_Sample.m_Jitter.IsZero());
+          xiiDynamicArray<xiiVec4> resolved;
+          if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(0, "HDRSceneColor"), resolved))
+            return;
+          xiiUInt32 reconstructed = 0, occludedReconstructed = 0;
+          for (xiiUInt32 pixel = 0; pixel < resolved.GetCount(); ++pixel)
+          {
+            XII_TEST_BOOL(resolved[pixel].IsValid());
+            const bool changed = !resolved[pixel].IsEqual(hdr[0][pixel], 0.000001f);
+            reconstructed += changed;
+            occludedReconstructed += changed && mask[pixel] < 250;
+          }
+          xiiTestFramework::Output(xiiTestOutput::Details, "Jittered AO phase %u: sequence %u, %u reconstructed HDR pixels (%u occluded).", phase, samples[0]->m_Sample.m_uiSequence, reconstructed, occludedReconstructed);
+          if (phase == 2 || phase == 6 || phase == 7)
+          {
+            XII_TEST_BOOL(reconstructed > 16);
+            XII_TEST_BOOL(occludedReconstructed > 8);
+          }
+        }
         if (phase == 6 || phase == 7)
         {
           xiiUInt32 verified = 0, differentCameraDepths = 0, matched = 0;
@@ -308,7 +356,8 @@ namespace xiiSceneTemporalAOTest
             if (surface[pixel].w < 0.5f)
               continue;
             const float u = (float(pixel % width) + 0.5f) / width, v = (float(pixel / width) + 0.5f) / height;
-            const float previousU = u - float(velocity[pixel].x) * 0.5f, previousV = v + float(velocity[pixel].y) * 0.5f;
+            const auto  jitterDelta = samples[0]->m_Sample.m_PreviousJitter - samples[0]->m_Sample.m_Jitter;
+            const float previousU = u + (jitterDelta.x - float(velocity[pixel].x)) * 0.5f, previousV = v - (jitterDelta.y - float(velocity[pixel].y)) * 0.5f;
             if (previousU <= 0 || previousV <= 0 || previousU >= 1 || previousV >= 1)
               continue;
             const auto  previousPixel = xiiUInt32(previousV * height) * width + xiiUInt32(previousU * width);

@@ -4,3 +4,5 @@
 #include <GraphicsFoundationTest/Pipeline/SceneTemporalAOTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, TemporalAmbientVisibilityAndDisocclusion) { xiiSceneTemporalAOTest::Run(true); }
+
+XII_CREATE_SIMPLE_TEST(EditorViews, JitteredAmbientVisibilityAndReconstruction) { xiiSceneTemporalAOTest::Run(true, true); }

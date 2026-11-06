@@ -461,6 +461,17 @@ previous-frame identity and consecutive camera history before sampling old masks
 The previous surface depth is tested in its own camera basis, reconstructed from
 the current world position; camera translation does not compare unrelated view
 depths. Current neighbourhood clipping bounds accumulated visibility.
+Raster motion deliberately excludes projection jitter. AO's raw mask and surface
+histories instead follow the previous raster grid, so their history UV adds the
+previous-minus-current jitter offset before either image is sampled. This keeps
+AO reprojection aligned with SSR surface histories while TAA retains its stable
+resolved-color grid. TAA retains an additional R8 provenance image when ambient
+visibility is present. A currently unoccluded pixel rejects color history carrying
+old occlusion; stable occluded pixels still accumulate. The last provenance image
+is consumed once when the AO input disappears, then released from active use.
+This prevents disappeared occluders from leaving resolved darkening on an unchanged
+receiver. The optional provenance path requires extended storage formats and adds
+one byte per pixel to each participating TAA history slot.
 
 Each temporal occurrence owns at most eight mask/surface slots. Graph snapshots
 retain both consumed and produced slots. GPU completion and exclusive slot
@@ -480,8 +491,13 @@ projection, camera cuts, resize and reload. A CPU camera-space oracle checks
 numerical history blending on more than a thousand rendered surface reprojections
 per motion phase, including pixels whose previous and current view depths differ.
 Eight retained native recordings execute in reverse after world destruction;
-a ninth reports the explicit capacity limit. Combined jittered TAA/AO quality,
-animated surfaces, stereo and representative performance remain acceptance work.
+a ninth reports the explicit capacity limit. Combined jittered TAA/AO acceptance
+also uses the exact rendered camera snapshots, matching per-view Halton sequences,
+pre/post reconstruction HDR readbacks and a numerical jitter-aware history oracle.
+The regression fails against the jitter-free AO history lookup. Scene and Editor
+both cover camera motion, cuts, resize/reload, moved and removed occluders and
+orthographic projection while reconstruction remains enabled. Animation-specific
+visibility, stereo and representative quality/performance remain acceptance work.
 
 Vulkan acceptance uses a material-bearing cube contacting a real floor, a world
 directional light and manual exposure. Full image readbacks compare AO enabled
