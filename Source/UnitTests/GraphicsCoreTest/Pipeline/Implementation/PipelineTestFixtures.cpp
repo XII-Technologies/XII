@@ -1279,7 +1279,6 @@ xiiRenderPipelineResourceHandle xiiCreateOpaqueCompositionTestResource()
   definition.m_Interface.PushBack({"GBufferAlbedo", true, xiiUuid(14967694722601598231ULL, 1043517102153277010ULL), "GBufferAlbedo"});
   definition.m_Interface.PushBack({"EnvironmentSpecular", true, xiiUuid(16665290791082630377ULL, 854878152842290275ULL), "Background"});
   definition.m_Interface.PushBack({"EnvironmentSpecular", true, xiiUuid(16518978834382752911ULL, 12704962462092383471ULL), "PreviousContribution"});
-  definition.m_Interface.PushBack({"PerFrameCamera", true, xiiUuid(4636142280475155744ULL, 13924201128523914742ULL), "PerFrameCamera"});
   definition.m_Interface.PushBack({"PerFrameCamera", true, xiiUuid(14967694722601598231ULL, 1043517102153277010ULL), "PerFrameCamera"});
   definition.m_Interface.PushBack({"GBufferMaterial", true, xiiUuid(14967694722601598231ULL, 1043517102153277010ULL), "GBufferMaterial"});
   definition.m_Interface.PushBack({"GBufferMaterial", true, xiiUuid(4636142280475155744ULL, 13924201128523914742ULL), "GBufferMaterial"});
@@ -1292,7 +1291,6 @@ xiiRenderPipelineResourceHandle xiiCreateOpaqueCompositionTestResource()
   definition.m_Interface.PushBack({"SSRTerm", true, xiiUuid(5854133695977897071ULL, 16582261059846360024ULL), "Primary"});
   definition.m_Interface.PushBack({"PerFrameGlobal", true, xiiUuid(14967694722601598231ULL, 1043517102153277010ULL), "PerFrameGlobal"});
   definition.m_Interface.PushBack({"HiZPyramid", true, xiiUuid(14967694722601598231ULL, 1043517102153277010ULL), "HiZPyramid"});
-  definition.m_Interface.PushBack({"ReSTIRDISurfacePrevious", true, xiiUuid(4636142280475155744ULL, 13924201128523914742ULL), "ReSTIRDISurfacePrevious"});
   definition.m_Interface.PushBack({"GBufferNormal", true, xiiUuid(4636142280475155744ULL, 13924201128523914742ULL), "GBufferNormal"});
   definition.m_Interface.PushBack({"GBufferNormal", true, xiiUuid(14967694722601598231ULL, 1043517102153277010ULL), "GBufferNormal"});
   definition.m_Interface.PushBack({"SSRRawTerm", true, xiiUuid(10138069768760136295ULL, 9211749055447873217ULL), "Primary"});
@@ -1309,6 +1307,9 @@ xiiRenderPipelineResourceHandle xiiCreateOpaqueCompositionTestResource()
   definition.m_Interface.PushBack({"HDRSceneColor", false, xiiUuid(16518978834382752911ULL, 12704962462092383471ULL), "Radiance"});
   definition.m_Interface.PushBack({"GBufferObjectId", true, xiiUuid(4636142280475155744ULL, 13924201128523914742ULL), "GBufferObjectId"});
   definition.m_Interface.PushBack({"SSRRawTerm", false, xiiUuid(10138069768760136295ULL, 9211749055447873217ULL), "Texture"});
+  const auto temporalCamera = definition.AddPass("Reflection camera history", xiiRTTI::FindTypeByName("xiiTemporalCameraPass"));
+  definition.m_Passes[temporalCamera].m_Properties.Insert("Enabled", false);
+  definition.Connect(temporalCamera, "TemporalCamera", 10, "TemporalCamera").AssertSuccess();
   return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(identity, std::move(definition));
 }
 

@@ -110,7 +110,6 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   const auto                                 radiance            = clear("Screen reflection signal", {0.8f, 0.4f, 0.2f, 0.5f});
   const auto                                 depth               = clear("Depth", xiiColor::MakeZero(), xiiGALResourceFormat::R32Float);
   const auto                                 attributes          = clear("Material", {1, 0, 0, 0}); // Roughness rejects screen traversal deterministically.
-  const auto                                 surface             = clear("Previous surface", xiiColor::MakeZero());
   const auto                                 objects             = clear("Object identity", xiiColor::MakeZero(), xiiGALResourceFormat::R32UInt);
   const auto                                 camera              = leaf.AddPass("Camera", xiiGetStaticRTTI<xiiViewConstantsPass>());
   const auto                                 compositionResource = xiiCreateOpaqueCompositionTestResource();
@@ -140,7 +139,6 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
   connect(radiance, "SSRRawTerm");
   connect(attributes, "DilatedVelocityBuffer");
   connect(objects, "GBufferObjectId");
-  connect(surface, "ReSTIRDISurfacePrevious");
   XII_TEST_RESULT(leaf.Connect(camera, "PerFrameCamera", opaque, "PerFrameCamera"));
   XII_TEST_RESULT(leaf.Connect(camera, "PerFrameGlobal", opaque, "PerFrameGlobal"));
   const auto exportPin = [&](xiiStringView name, xiiUInt32 source, xiiStringView pin) {
