@@ -8,10 +8,13 @@
 #include <Core/World/World.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/Passes/Composition/RadianceAddPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/RayTracedIrradiancePass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/ScreenIrradianceTracePass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/TextureForwardPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
@@ -28,16 +31,40 @@
 
 namespace xiiSceneIrradianceTest
 {
-  inline void Run(bool editor)
+  inline void Run(bool editor, bool rayTraced = false, bool enableRayTracing = true)
   {
 
     xiiGPUTestingEnvironment environment;
-    if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    if (!XII_TEST_RESULT(environment.Initialize(false, false, true, enableRayTracing)))
       return;
     xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
     xiiStartup::StartupHighLevelSystems();
     XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-    const auto                      scene = xiiLoadPipelineLibraryResource("Scene");
+    const bool rayRequested = rayTraced;
+    if (rayTraced && !xiiRayTracingResources::IsHardwareRayTracingSupported() && enableRayTracing)
+    {
+      xiiTestFramework::Output(xiiTestOutput::Message, "Ray diffuse transport requires hardware ray tracing.");
+      return;
+    }
+    if (!enableRayTracing)
+      XII_TEST_BOOL(environment.GetDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Disabled);
+    rayTraced                    = rayRequested && xiiRayTracingResources::IsHardwareRayTracingSupported();
+    const auto scene             = xiiLoadPipelineLibraryResource("Scene");
+    const auto irradianceLibrary = xiiLoadPipelineLibraryResource("SceneScreenSpaceIrradiance");
+    xiiUuid    rayGate;
+    if (rayRequested)
+    {
+      xiiResourceLock<xiiRenderPipelineResource> library(irradianceLibrary, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (!XII_TEST_BOOL(library.IsValid() && library->GetAuthoring()))
+        return;
+      const auto& definition = library->GetAuthoring()->m_Descriptor;
+      const auto  ray        = xiiFindPipelineTestPass(definition, "xiiRayTracedIrradiancePass");
+      for (const auto& edge : definition.m_Connections)
+        if (definition.m_Passes[edge.m_uiTarget].m_Id == ray && edge.m_sInput == "Depth")
+          rayGate = definition.m_Passes[edge.m_uiSource].m_Id;
+      if (!XII_TEST_BOOL(rayGate.IsValid()))
+        return;
+    }
     xiiRenderPipelineResourceHandle pipelines[2], sources[2];
     xiiUuid                         editorScene;
     for (xiiUInt32 variant = 0; variant < 2; ++variant)
@@ -55,7 +82,13 @@ namespace xiiSceneIrradianceTest
         {
           auto& enabled = pass.m_Overrides.ExpandAndGetRef();
           enabled.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth"));
-          enabled.m_Properties.Insert("Enabled", variant != 0);
+          enabled.m_Properties.Insert("Enabled", variant != 0 && !rayTraced);
+          if (rayRequested)
+          {
+            auto& rayEnable = pass.m_Overrides.ExpandAndGetRef();
+            rayEnable.m_Path.PushBack(rayGate);
+            rayEnable.m_Properties.Insert("Enabled", variant != 0);
+          }
         }
       }
       xiiStringBuilder name;
@@ -176,7 +209,7 @@ namespace xiiSceneIrradianceTest
     normalDescriptor.m_TextureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
     normalDescriptor.m_InitialContent              = xiiMakeArrayPtr(&normalData, 1);
     const auto normalMap                           = xiiResourceManager::CreateResource<xiiTexture2DResource>("Irradiance.ReceiverNormal", std::move(normalDescriptor));
-    for (xiiUInt32 phase = 0; phase < 20; ++phase)
+    for (xiiUInt32 phase = 0; phase < (rayTraced ? 22U : 20U); ++phase)
     {
       floor->SetMaterialOverride(0, floorMaterial);
       if (phase == 11 || phase == 12 || phase == 15 || phase == 16 || phase == 18)
@@ -198,7 +231,9 @@ namespace xiiSceneIrradianceTest
       emitter->SetMaterialOverride(0, phase == 1 ? black : phase == 3 ? blue :
                                                                         red);
       blocker->SetActiveFlag(phase == 4);
-      emitter->SetActiveFlag(phase != 5);
+      emitter->SetActiveFlag(phase != 5 && phase != 21);
+      if (phase == 20)
+        emitter->GetOwner()->SetLocalPosition(xiiVec3(0, -5, 1));
       if (phase == 6)
         camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 4, 0.1f, 100);
       if (phase == 8)
@@ -284,8 +319,10 @@ namespace xiiSceneIrradianceTest
         initialEnergy = energy;
         initial       = hdr[1];
       }
-      if (phase == 1 || phase == 5 || phase == 13 || phase == 18)
+      if (phase == 1 || phase == 5 || (!rayTraced && phase == 13) || (!rayTraced && phase == 18) || phase == 21)
         XII_TEST_BOOL(hits == 0 && final[0] == final[1]);
+      else if (rayTraced && phase == 13)
+        XII_TEST_BOOL(irradiance.GetCount() == 1);
       else if (phase == 11 || phase == 12 || phase == 15)
         XII_TEST_BOOL(hits > 8 && final[0] == final[1]);
       else
@@ -296,6 +333,21 @@ namespace xiiSceneIrradianceTest
         XII_TEST_BOOL(energy < initialEnergy * 0.9);
       if (phase == 4)
         XII_TEST_BOOL(energy < initialEnergy * 0.95);
+      if (phase == 20)
+      {
+        xiiUInt32 emitterPixels = 0;
+        for (const auto id : ids[1])
+        {
+          if (!id)
+            continue;
+          xiiGpuInstanceSource source;
+          if (!XII_TEST_RESULT(views[1]->GetGpuInstanceData()->Resolve(id, source)))
+            return;
+          emitterPixels += source.m_hOwnerObject == emitter->GetOwner()->GetHandle();
+        }
+        XII_TEST_INT(emitterPixels, 0);
+        XII_TEST_BOOL(hits > 8 && energy > 0.1);
+      }
       if (phase == 0)
         for (xiiUInt32 variant = 0; variant < 2; ++variant)
         {
@@ -306,6 +358,13 @@ namespace xiiSceneIrradianceTest
         }
     }
 
+    if (rayTraced)
+    {
+      emitter->GetOwner()->SetLocalPosition(xiiVec3(0, 1, 1));
+      emitter->SetActiveFlag(true);
+      world.Update();
+      environment.GetDevice()->WaitIdle();
+    }
     const auto image = [](xiiView* view, xiiStringView pin) {
       auto&       instance = view->GetRenderPipelineInstance();
       const auto* binding  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface(pin, false));
@@ -505,7 +564,7 @@ namespace xiiSceneIrradianceTest
     for (xiiUInt32 index = missingRadiance.m_Connections.GetCount(); index-- > 0;)
     {
       const auto& connection = missingRadiance.m_Connections[index];
-      if (connection.m_sInput == "Radiance" && missingRadiance.m_Passes[connection.m_uiTarget].m_pType->GetTypeName() == "xiiScreenIrradianceTracePass")
+      if (connection.m_sInput == (rayTraced ? "Geometry" : "Radiance") && missingRadiance.m_Passes[connection.m_uiTarget].m_pType->GetTypeName() == (rayTraced ? "xiiRayTracedIrradiancePass" : "xiiScreenIrradianceTracePass"))
       {
         XII_TEST_RESULT(missingRadiance.Disconnect(index));
         ++removed;
@@ -517,7 +576,7 @@ namespace xiiSceneIrradianceTest
     {
       xiiTestLogInterface   expected;
       xiiTestLogSystemScope expectedScope(&expected);
-      expected.ExpectMessage("ScreenIrradianceTrace requires matching depth, normal and radiance", xiiLogMsgType::ErrorMsg, 1);
+      expected.ExpectMessage(rayTraced ? "Ray irradiance requires a current TLAS dependency and matching canonical hit records" : "ScreenIrradianceTrace requires matching depth, normal and radiance", xiiLogMsgType::ErrorMsg, 1);
       expected.ExpectMessage("Failed to execute render graph for view", xiiLogMsgType::ErrorMsg, 1);
       world.Update();
       XII_TEST_BOOL(views[0]->GetLastRenderResult().Failed());
