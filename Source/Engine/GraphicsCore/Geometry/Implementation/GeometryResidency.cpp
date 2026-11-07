@@ -17,6 +17,7 @@
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <algorithm>
+#include <utility>
 
 class xiiGeometryResidencyManager::State : public xiiRefCounted
 {
@@ -53,6 +54,18 @@ public:
     xiiUInt32                                m_uiReferenceCount = 0U;
   };
 
+  struct RetiringLod
+  {
+    LodBinding m_Binding;
+    xiiUInt64  m_uiLastUseFrame;
+    xiiUInt32  m_uiArenaOffset;
+    xiiUInt32  m_uiMeshletCount;
+  };
+
+  xiiDynamicArray<RetiringLod> m_RetiringLods;
+  xiiUInt64                    m_uiLastIncompleteFeedbackFrame = 0U;
+  xiiUInt32                    m_uiNextFineTrimSlot            = 0U;
+
   xiiResult UploadTopology(const xiiMeshBufferResource& mesh, xiiGALDevice& device, const TopologyRange& range, TopologyBinding& out_binding);
 
   const TopologyBinding* FindTopology(const xiiGALBuffer* pVertexBuffer, xiiUInt64 uiKey) const
@@ -80,6 +93,11 @@ public:
   {
     for (Slot& slot : m_Slots)
       xiiGeometryResidencyManager::ReleaseBindlessResources(slot, xiiMath::Max(slot.m_uiLastUsedFrame, slot.m_uiRetireFrame));
+    for (const auto& retiring : m_RetiringLods)
+      xiiGeometryResidencyManager::ReleaseSourceBinding(retiring.m_Binding, retiring.m_uiLastUseFrame);
+    m_RetiringLods.Clear();
+    m_uiLastIncompleteFeedbackFrame = 0U;
+    m_uiNextFineTrimSlot            = 0U;
     XII_ASSERT_DEV(m_SourceBindings.IsEmpty(), "All geometry source bindings must be released with their slots.");
     m_pTopologyUploadFence.Clear();
     m_uiTopologyUploadValue   = 0U;
@@ -150,6 +168,12 @@ namespace
   constexpr xiiUInt64 s_uiPressureTrimInterval      = 8U;
   constexpr xiiUInt64 s_uiPressureMinimumIdleFrames = 120U;
   constexpr xiiUInt32 s_uiPressureMaxEvictions      = 4U;
+  constexpr xiiUInt32 s_uiFineTrimScanLimit         = 128U;
+
+  bool IsRecentDemand(xiiUInt64 uiDemandFrame, xiiUInt64 uiFrame)
+  {
+    return uiDemandFrame != 0U && uiFrame - xiiMath::Min(uiFrame, uiDemandFrame) < s_uiPressureMinimumIdleFrames;
+  }
 
   xiiUInt64 MakeTopologyKey(xiiUInt32 uiFirstMeshlet, xiiUInt32 uiMeshletCount)
   {
@@ -360,6 +384,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyStats, xiiNoBase, 1, xiiRTTI
       XII_MEMBER_PROPERTY("ReclaimedArenaBytes", m_uiReclaimedArenaBytes),
       XII_MEMBER_PROPERTY("Evictions", m_uiEvictions),
       XII_MEMBER_PROPERTY("PressureEvictions", m_uiPressureEvictions),
+      XII_MEMBER_PROPERTY("FineLodEvictions", m_uiFineLodEvictions),
       XII_MEMBER_PROPERTY("RemainingUploadBytes", m_uiRemainingUploadBytes),
       XII_MEMBER_PROPERTY("PreparedMeshlets", m_uiPreparedMeshlets),
       XII_MEMBER_PROPERTY("Examined", m_uiExamined),
@@ -560,6 +585,13 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
   slot.m_GpuRecord                = {};
   slot.m_GpuRecord.m_uiGeneration = id.m_Generation;
   slot.m_GpuRecord.m_uiLodCount   = description.m_Lods.GetCount();
+  if (!description.m_bPinned && description.m_Lods.GetCount() > 1U)
+    slot.m_GpuRecord.m_uiFlags |= xiiGpuGeometryRecord::s_uiTrackLodDemand;
+  slot.m_uiLastFeedbackFrame = 0U;
+  slot.m_uiLastFineTrimFrame = 0U;
+  slot.m_uiForcedDemandFrame = 0U;
+  slot.m_uiForcedDemandLod   = xiiInvalidIndex;
+  xiiMemoryUtils::ZeroFill(slot.m_uiLastLodDemand, XII_ARRAY_SIZE(slot.m_uiLastLodDemand));
   for (xiiUInt32 uiLod = 0U; uiLod < description.m_Lods.GetCount(); ++uiLod)
     slot.m_GpuRecord.m_Lods[uiLod].m_fMinimumScreenCoverage = description.m_Lods[uiLod].m_fMinimumScreenCoverage;
   slot.m_State                = xiiGeometryResidencyState::Unloaded;
@@ -662,9 +694,12 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
 {
   if (!IsValid(handle))
     return;
-  Slot&           slot           = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
-  const xiiUInt32 uiRequestedLod = xiiMath::Min(uiMinimumLod, slot.m_Description.m_Lods.GetCount() - 1U);
-  slot.m_uiLastUsedFrame         = xiiMath::Max(slot.m_uiLastUsedFrame, uiFrameIndex);
+  Slot& slot = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
+  if (slot.m_State == xiiGeometryResidencyState::EvictPending)
+    return;
+  const xiiUInt32 uiRequestedLod         = xiiMath::Min(uiMinimumLod, slot.m_Description.m_Lods.GetCount() - 1U);
+  slot.m_uiLastUsedFrame                 = xiiMath::Max(slot.m_uiLastUsedFrame, uiFrameIndex);
+  slot.m_uiLastLodDemand[uiRequestedLod] = xiiMath::Max(slot.m_uiLastLodDemand[uiRequestedLod], uiFrameIndex);
 
   // Once streaming has started, later shadow or reflection requests must not replace a finer
   // main/sensor request. A fresh unloaded slot still accepts its initial coarse request.
@@ -685,7 +720,7 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
 
   // A resident geometry may receive a finer request later. Keep the existing LODs live while
   // loading the missing range; BuildResidentRecord commits the additions transactionally.
-  if (bRequiresStreaming && slot.m_State != xiiGeometryResidencyState::EvictPending)
+  if (bRequiresStreaming)
   {
     if (slot.m_State != xiiGeometryResidencyState::Requested && slot.m_State != xiiGeometryResidencyState::Loading)
       slot.m_uiFirstRequestFrame = uiFrameIndex;
@@ -697,6 +732,46 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
       s_pState->m_StreamingQueue.PushBack(handle.GetInternalID().m_InstanceIndex);
     }
   }
+}
+
+void xiiGeometryResidencyManager::RequestInstanceResidency(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiFrameIndex, bool bForced)
+{
+  if (!IsValid(handle))
+    return;
+
+  auto& slot = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
+  if (bForced && uiFrameIndex >= slot.m_uiForcedDemandFrame)
+  {
+    const xiiUInt32 uiClampedLod = xiiMath::Min(uiLod, slot.m_GpuRecord.m_uiLodCount - 1U);
+    slot.m_uiForcedDemandLod     = uiFrameIndex == slot.m_uiForcedDemandFrame ? xiiMath::Min(slot.m_uiForcedDemandLod, uiClampedLod) : uiClampedLod;
+    slot.m_uiForcedDemandFrame   = uiFrameIndex;
+  }
+  if (bForced || !IsRecentDemand(slot.m_uiLastFeedbackFrame, uiFrameIndex))
+    RequestResidency(handle, uiLod, uiFrameIndex);
+  else if (slot.m_GpuRecord.m_uiResidentLodMask == 0U)
+    RequestResidency(handle, slot.m_GpuRecord.m_uiLodCount - 1U, uiFrameIndex);
+  else
+    Touch(handle, uiFrameIndex);
+}
+
+bool xiiGeometryResidencyManager::ReportLodDemand(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiSourceFrame, xiiUInt32 uiVisibilityPriority)
+{
+  if (!IsValid(handle))
+    return false;
+  auto& slot = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
+  if (slot.m_State == xiiGeometryResidencyState::EvictPending || uiLod >= slot.m_GpuRecord.m_uiLodCount || uiSourceFrame < slot.m_uiLastFineTrimFrame)
+    return false;
+
+  if ((slot.m_GpuRecord.m_uiFlags & xiiGpuGeometryRecord::s_uiTrackLodDemand) != 0U)
+    slot.m_uiLastFeedbackFrame = xiiMath::Max(slot.m_uiLastFeedbackFrame, uiSourceFrame);
+  RequestResidency(handle, uiLod, uiSourceFrame, uiVisibilityPriority);
+  return true;
+}
+
+void xiiGeometryResidencyManager::NoteIncompleteLodFeedback(xiiUInt64 uiSourceFrame)
+{
+  if (s_pState)
+    s_pState->m_uiLastIncompleteFeedbackFrame = xiiMath::Max(s_pState->m_uiLastIncompleteFeedbackFrame, uiSourceFrame);
 }
 
 void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex)
@@ -754,8 +829,14 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
   State::MeshGeometryEntry*                                                                 meshEntry = nullptr;
   const auto                                                                                slotIndex = static_cast<xiiUInt32>(&slot - s_pState->m_Slots.GetData());
   s_pState->m_MeshGeometries.TryGetValue(xiiGeometryHandle(xiiGeometryId(slotIndex, record.m_uiGeneration)), meshEntry);
-  xiiUInt64 uiArenaBytes = 0U;
-  for (xiiUInt32 i = slot.m_uiRequestedLod; i < slot.m_Description.m_Lods.GetCount(); ++i)
+  const bool bPressured       = !slot.m_Description.m_bPinned && s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
+  const bool bRequiredMissing = slot.m_uiForcedDemandLod != xiiInvalidIndex &&
+    uiFrameIndex - xiiMath::Min(uiFrameIndex, slot.m_uiForcedDemandFrame) <= s_pState->m_uiFramesInFlight &&
+    (record.m_uiResidentLodMask & XII_BIT(slot.m_uiForcedDemandLod)) == 0U;
+  // Under pressure, admit the exact LOD needed by a forced draw before optional finer work.
+  const xiiUInt32 uiFirstLod   = bPressured && bRequiredMissing ? xiiMath::Max(slot.m_uiRequestedLod, slot.m_uiForcedDemandLod) : slot.m_uiRequestedLod;
+  xiiUInt64       uiArenaBytes = 0U;
+  for (xiiUInt32 i = uiFirstLod; i < slot.m_Description.m_Lods.GetCount(); ++i)
   {
     if ((record.m_uiResidentLodMask & XII_BIT(i)) != 0U)
       continue;
@@ -800,8 +881,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
 
   xiiUInt64     topologyKeys[xiiGpuGeometryRecord::s_uiMaxLods] = {};
   TopologyRange topologyRanges[xiiGpuGeometryRecord::s_uiMaxLods];
-  const bool    bProtectFallback = record.m_uiResidentLodMask != 0U && !slot.m_Description.m_bPinned &&
-    s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
+  const bool    bProtectFallback = record.m_uiResidentLodMask != 0U && bPressured && !bRequiredMissing;
   for (xiiUInt32 n = 0; n < newLods.GetCount(); ++n)
   {
     const xiiUInt32 uiLod   = newLods[n];
@@ -900,7 +980,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
       FreeMeshlets(lod.m_uiMeshletMetadataOffset, lod.m_uiMeshletCount);
     }
     for (xiiUInt32 n = 0; n < registered; ++n)
-      ReleaseSourceBinding(slot, newLods[n], 0U);
+      ReleaseSourceBinding(std::exchange(slot.m_BoundSources[newLods[n]], LodBinding{}), 0U);
   };
   for (xiiUInt32 n = 0; n < newLods.GetCount(); ++n)
   {
@@ -976,6 +1056,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
   }
   for (const auto i : newLods)
   {
+    slot.m_uiLastLodDemand[i]                 = xiiMath::Max(slot.m_uiLastLodDemand[i], uiFrameIndex);
     slot.m_uiMeshletArenaOffset[i]            = record.m_Lods[i].m_uiMeshletMetadataOffset;
     slot.m_uiMeshletArenaCount[i]             = record.m_Lods[i].m_uiMeshletCount;
     s_pState->m_uiMaximumResidentMeshletCount = xiiMath::Max(s_pState->m_uiMaximumResidentMeshletCount, record.m_Lods[i].m_uiMeshletCount);
@@ -992,7 +1073,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
   s_pState->m_uiResidentBytes += uiArenaBytes;
   slot.m_uiAdmissionFrame     = uiFrameIndex;
   slot.m_GpuRecord            = record;
-  slot.m_State                = xiiGeometryResidencyState::Resident;
+  slot.m_State                = uiFirstLod == slot.m_uiRequestedLod ? xiiGeometryResidencyState::Resident : xiiGeometryResidencyState::Requested;
   slot.m_uiDirtyFrameMask     = s_pState->m_uiAllFrameMask;
   slot.m_uiVisibilityPriority = 0U;
   slot.m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
@@ -1122,14 +1203,12 @@ bool xiiGeometryResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGe
   return true;
 }
 
-void xiiGeometryResidencyManager::ReleaseSourceBinding(Slot& slot, xiiUInt32 uiLod, xiiUInt64 uiLastUseFrame)
+void xiiGeometryResidencyManager::ReleaseSourceBinding(LodBinding binding, xiiUInt64 uiLastUseFrame)
 {
-  const LodBinding binding = slot.m_BoundSources[uiLod];
   if (binding.m_pVertexBuffer == nullptr)
     return;
 
-  slot.m_BoundSources[uiLod] = {};
-  auto* pSource              = s_pState->m_SourceBindings.GetValue(binding.m_pVertexBuffer);
+  auto* pSource = s_pState->m_SourceBindings.GetValue(binding.m_pVertexBuffer);
   XII_ASSERT_DEV(pSource != nullptr && pSource->m_uiReferenceCount != 0U, "An admitted LOD must own a source lease.");
   if (binding.m_uiTopologyKey != 0U)
   {
@@ -1160,7 +1239,7 @@ void xiiGeometryResidencyManager::ReleaseBindlessResources(Slot& slot, xiiUInt64
 {
   for (xiiUInt32 uiLod = 0U; uiLod < xiiGpuGeometryRecord::s_uiMaxLods; ++uiLod)
   {
-    ReleaseSourceBinding(slot, uiLod, uiLastUseFrame);
+    ReleaseSourceBinding(std::exchange(slot.m_BoundSources[uiLod], LodBinding{}), uiLastUseFrame);
 
     xiiGpuGeometryLod& lod              = slot.m_GpuRecord.m_Lods[uiLod];
     lod.m_uiVertexBufferIndex           = xiiInvalidIndex;
@@ -1228,6 +1307,61 @@ bool xiiGeometryResidencyManager::EvictOne(xiiUInt64 uiCompletedFrame, xiiUInt64
   return false;
 }
 
+void xiiGeometryResidencyManager::TrimFineLods(xiiUInt64 uiFrameIndex, xiiUInt32 uiMaxLods)
+{
+  if (IsRecentDemand(s_pState->m_uiLastIncompleteFeedbackFrame, uiFrameIndex))
+    return;
+
+  const auto&     active      = s_pState->m_ActiveSlots;
+  const xiiUInt32 uiScanCount = xiiMath::Min(active.GetCount(), s_uiFineTrimScanLimit);
+  for (xiiUInt32 n = 0U; n < uiScanCount && uiMaxLods != 0U; ++n)
+  {
+    s_pState->m_uiNextFineTrimSlot %= active.GetCount();
+    auto& slot   = s_pState->m_Slots[active[s_pState->m_uiNextFineTrimSlot++]];
+    auto& record = slot.m_GpuRecord;
+    if (slot.m_State != xiiGeometryResidencyState::Resident || (record.m_uiFlags & xiiGpuGeometryRecord::s_uiTrackLodDemand) == 0U ||
+        slot.m_uiLastUsedFrame >= uiFrameIndex || slot.m_uiAdmissionFrame == uiFrameIndex ||
+        xiiMath::CountBits(record.m_uiResidentLodMask) < 2U)
+      continue;
+
+    xiiUInt32 uiKeepFrom = 0U;
+    while (uiKeepFrom < record.m_uiLodCount && !IsRecentDemand(slot.m_uiLastLodDemand[uiKeepFrom], uiFrameIndex))
+      ++uiKeepFrom;
+    if (uiKeepFrom == record.m_uiLodCount || (record.m_uiResidentLodMask & XII_BIT(uiKeepFrom)) == 0U)
+      continue; // Require positive, recent demand for a resident fallback.
+
+    while (uiMaxLods != 0U && xiiMath::FirstBitLow(record.m_uiResidentLodMask) < uiKeepFrom)
+    {
+      const xiiUInt32 uiLod   = xiiMath::FirstBitLow(record.m_uiResidentLodMask);
+      const xiiUInt32 uiCount = slot.m_uiMeshletArenaCount[uiLod];
+      s_pState->m_RetiringLods.PushBack({
+        std::exchange(slot.m_BoundSources[uiLod], LodBinding{}),
+        uiFrameIndex - 1U, // Older submitted frames may still read the original mask.
+        std::exchange(slot.m_uiMeshletArenaOffset[uiLod], 0U),
+        uiCount,
+      });
+      slot.m_uiMeshletArenaCount[uiLod] = 0U;
+      slot.m_uiResidentBytes -= xiiUInt64(uiCount) * sizeof(xiiMeshlet);
+      if (slot.m_PendingUploads[uiLod])
+      {
+        slot.m_PendingUploads[uiLod]->m_bCanceled = true;
+        slot.m_PendingUploads[uiLod].Clear();
+      }
+      auto&       lod                    = record.m_Lods[uiLod];
+      const float fMinimumScreenCoverage = lod.m_fMinimumScreenCoverage;
+      lod                                = {};
+      lod.m_fMinimumScreenCoverage       = fMinimumScreenCoverage;
+      record.m_uiResidentLodMask &= ~XII_BIT(uiLod);
+      slot.m_uiRequestedLod      = xiiMath::FirstBitLow(record.m_uiResidentLodMask);
+      slot.m_uiLastFineTrimFrame = uiFrameIndex;
+      slot.m_uiDirtyFrameMask    = s_pState->m_uiAllFrameMask;
+      s_pState->m_bMaximumDirty  = true;
+      ++s_pState->m_StreamingStats.m_uiFineLodEvictions;
+      --uiMaxLods;
+    }
+  }
+}
+
 void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes)
 {
   if (!IsInitialized())
@@ -1241,6 +1375,21 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
     s_pState->m_uiStreamingFrame      = uiFrameIndex;
     s_pState->m_uiInitialUploadBudget = s_pState->m_uiRemainingUploadBudget = uiUploadBudgetBytes;
     s_pState->m_StreamingStats                                              = {};
+  }
+  for (xiiUInt32 i = 0U; i < s_pState->m_RetiringLods.GetCount();)
+  {
+    const auto& retiring = s_pState->m_RetiringLods[i];
+    if (retiring.m_uiLastUseFrame > uiCompletedFrame)
+    {
+      ++i;
+      continue;
+    }
+    ReleaseSourceBinding(retiring.m_Binding, retiring.m_uiLastUseFrame);
+    FreeMeshlets(retiring.m_uiArenaOffset, retiring.m_uiMeshletCount);
+    const xiiUInt64 uiBytes = xiiUInt64(retiring.m_uiMeshletCount) * sizeof(xiiMeshlet);
+    s_pState->m_uiResidentBytes -= uiBytes;
+    s_pState->m_StreamingStats.m_uiReclaimedArenaBytes += uiBytes;
+    s_pState->m_RetiringLods.RemoveAtAndSwap(i);
   }
   for (xiiUInt32 n = 0; n < s_pState->m_RetireQueue.GetCount();)
   {
@@ -1267,8 +1416,10 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
   if (bNewFrame && uiFrameIndex % s_uiPressureTrimInterval == 0U && s_pState->m_uiResidentTopologyBytes != 0U &&
       s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured())
   {
-    for (xiiUInt32 i = 0U; i < s_uiPressureMaxEvictions && EvictOne(uiCompletedFrame, s_uiPressureMinimumIdleFrames); ++i)
+    xiiUInt32 uiRemaining = s_uiPressureMaxEvictions;
+    for (; uiRemaining != 0U && EvictOne(uiCompletedFrame, s_uiPressureMinimumIdleFrames); --uiRemaining)
       ++s_pState->m_StreamingStats.m_uiPressureEvictions;
+    TrimFineLods(uiFrameIndex, uiRemaining);
   }
   auto& streamingQueue = s_pState->m_StreamingQueue;
   for (xiiUInt32 n = 0; n < streamingQueue.GetCount();)
@@ -1342,6 +1493,7 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
   xiiStats::SetStat("Renderer/Geometry/Reclaimed arena bytes", s_pState->m_StreamingStats.m_uiReclaimedArenaBytes);
   xiiStats::SetStat("Renderer/Geometry/Residency evictions", s_pState->m_StreamingStats.m_uiEvictions);
   xiiStats::SetStat("Renderer/Geometry/Pressure evictions", s_pState->m_StreamingStats.m_uiPressureEvictions);
+  xiiStats::SetStat("Renderer/Geometry/Fine LOD evictions", s_pState->m_StreamingStats.m_uiFineLodEvictions);
   xiiStats::SetStat("Renderer/Geometry/Resident topology bytes", s_pState->m_uiResidentTopologyBytes);
   xiiStats::SetStat("Renderer/Geometry/Topology upload bytes", s_pState->m_StreamingStats.m_uiTopologyUploadBytes);
   xiiStats::SetStat("Renderer/Geometry/Retired topology bytes", s_pState->m_StreamingStats.m_uiRetiredTopologyBytes);

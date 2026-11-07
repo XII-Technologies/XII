@@ -10,6 +10,8 @@ StructuredBuffer<GpuVisibilityView> g_VisibilityView;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<uint> g_Candidates;
 RWStructuredBuffer<GeometryLodRequest> g_Requests;
+// xiiGpuGeometryRecord::s_uiTrackLodDemand
+static const uint TrackLodDemand = 1u;
 uint HashKey(uint key)
 {
   key ^= key >> 16u; key *= 0x7FEB352Du; key ^= key >> 15u; key *= 0x846CA68Bu; return key ^ (key >> 16u);
@@ -39,7 +41,9 @@ void main(uint3 tid : SV_DispatchThreadID)
   float radius = GetInstanceLodRadius(selection);
   if (!isfinite(distanceToCamera) || !isfinite(radius) || radius < 0.0f || !isfinite(view.ViewportAndHiZ.y) || view.ViewportAndHiZ.y <= 0.0f || geometry.Generation > 255u) return;
   uint desired = SelectInstanceDesiredLod(geometry, selection, distanceToCamera, view.ViewportAndHiZ.y);
-  if (desired >= min(geometry.LodCount, 8u) || (geometry.ResidentLodMask & (1u << desired)) != 0u) return;
+  if (desired >= min(geometry.LodCount, 8u)) return;
+  if ((geometry.ResidentLodMask & (1u << desired)) != 0u &&
+      ((geometry.Flags & TrackLodDemand) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != desired))) return;
   // Complete 24-bit slot and 8-bit generation identity. The invalid slot was rejected above.
   uint key = ((geometry.Generation << 24u) | instance.GeometryIndex) + 1u;
   uint capacity = entries - 1u, base = HashKey(key) & (capacity - 1u), ignored;
