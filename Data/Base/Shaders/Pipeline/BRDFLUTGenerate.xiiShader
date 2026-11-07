@@ -1,9 +1,9 @@
-// XII Engine - BRDFLUTGenerate.xiiShader
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 // Pass: Split-sum BRDF LUT generation (GGX Smith).
 // Generated once into a 256×256 R16G16F texture.
 // uv.x = NdotV (cosine of viewing angle), uv.y = roughness (perceptual).
-// Output: x=DFG1 (Schlick fresnel term), y=DFG2 (full integral term).
-// Dispatch: 32 × 32 × 1 (each thread covers an 8×8 region).
+// Output: x=A, y=B for the integrated Schlick response F0*A+B.
+// Dispatch: 32 x 32 x 1 groups, 8 x 8 threads per group.
 
 [PLATFORMS]
 ALL
@@ -51,13 +51,14 @@ float3 ImportanceSampleGGX(float2 xi, float roughness, float3 N)
 // Geometry term - Smith GGX correlated.
 float GeometrySmith(float NdotV, float NdotL, float roughness)
 {
-    float k   = roughness * roughness * 0.5f;
-    float GV  = NdotV / (NdotV * (1.0f - k) + k);
-    float GL  = NdotL / (NdotL * (1.0f - k) + k);
-    return GV * GL;
+    const float alpha = roughness * roughness;
+    const float alpha2 = alpha * alpha;
+    const float viewRoot = sqrt(alpha2 + (1.0f - alpha2) * NdotV * NdotV);
+    const float lightRoot = sqrt(alpha2 + (1.0f - alpha2) * NdotL * NdotL);
+    return 2.0f * NdotV * NdotL / max(NdotL * viewRoot + NdotV * lightRoot, 1e-8f);
 }
 
-static const uint k_uiSampleCount = 1024u;
+static const uint k_uiSampleCount = 4096u;
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)
@@ -69,7 +70,6 @@ void main(uint3 tid : SV_DispatchThreadID)
     // NdotV = x-axis, roughness = y-axis.
     float NdotV    = saturate((float(tid.x) + 0.5f) / float(dims.x));
     float roughness = saturate((float(tid.y) + 0.5f) / float(dims.y));
-    roughness       = roughness * roughness; // perceptual -> linear
 
     float3 V = float3(sqrt(1.0f - NdotV * NdotV), 0.0f, NdotV);
     float3 N = float3(0.0f, 0.0f, 1.0f);
