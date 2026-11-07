@@ -17414,8 +17414,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{1560545576700807847,5132840556600473791}}
-		s %SourcePin{"Lighting"}
+		Uuid %Source{u4{10411941511264895865,583470843143871508}}
+		s %SourcePin{"FilteredLighting"}
 		Uuid %Target{u4{2779644629998748830,4920303891654109498}}
 		s %TargetPin{"B"}
 	}
@@ -19488,6 +19488,17 @@ o
 			Uuid{u4{13649322927810929120,5756101234561997996}}
 			Uuid{u4{11653480599665375078,8601457695299163932}}
 			Uuid{u4{11783128550530452908,9084148343304704384}}
+			Uuid{u4{10411941511264895865,583470843143871508}}
+			Uuid{u4{9315809852081153308,6500529570464423728}}
+			Uuid{u4{11085614471003736326,282121750032702008}}
+			Uuid{u4{13638015594121836403,18304319695633535637}}
+			Uuid{u4{11974595783777491403,13923764623955220876}}
+			Uuid{u4{12375949053874865181,12324744975235766531}}
+			Uuid{u4{9506963793469803303,14529099113852198169}}
+			Uuid{u4{12194639912689047522,8413023765615433949}}
+			Uuid{u4{13359646230482437988,108296053950271597}}
+			Uuid{u4{13623645087154798687,2667021170309290821}}
+			Uuid{u4{11869886147293122941,14613572813451645834}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -40494,6 +40505,153 @@ o
 		s %SourcePin{"PreviousTexture"}
 		Uuid %Target{u4{1560545576700807847,5132840556600473791}}
 		s %TargetPin{"PreviousReservoirs"}
+	}
+}
+o
+{
+	Uuid %id{u4{10411941511264895865,583470843143871508}}
+	s %t{"xiiLocalLightDenoisePass"}
+	u3 %v{1}
+	p
+	{
+		b %Enabled{1}
+		b %UseHistory{1}
+		f %SpatialWeight{0.92}
+		f %HistoryWeight{0.90}
+		f %DepthThreshold{0.04}
+		f %NormalThreshold{0.92}
+		Vec2 %Node::Pos{f{3600,-100}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{9315809852081153308,6500529570464423728}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{14939312244239055766,4953692598478633014}}
+		s %SourcePin{"SceneDepth"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{11085614471003736326,282121750032702008}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15079277433419316148,5063535791766638878}}
+		s %SourcePin{"Normal"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{13638015594121836403,18304319695633535637}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15079277433419316148,5063535791766638878}}
+		s %SourcePin{"Material"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"GBufferMaterial"}
+	}
+}
+o
+{
+	Uuid %id{u4{11974595783777491403,13923764623955220876}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15079277433419316148,5063535791766638878}}
+		s %SourcePin{"ObjectId"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"GBufferObjectId"}
+	}
+}
+o
+{
+	Uuid %id{u4{12375949053874865181,12324744975235766531}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15079277433419316148,5063535791766638878}}
+		s %SourcePin{"Velocity"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"DilatedVelocityBuffer"}
+	}
+}
+o
+{
+	Uuid %id{u4{9506963793469803303,14529099113852198169}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{67912245935081614,5249451356357653836}}
+		s %SourcePin{"PerFrameCamera"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"PerFrameCamera"}
+	}
+}
+o
+{
+	Uuid %id{u4{12194639912689047522,8413023765615433949}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{14604849846532491007,17913967361741613237}}
+		s %SourcePin{"TemporalCamera"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"TemporalCamera"}
+	}
+}
+o
+{
+	Uuid %id{u4{13359646230482437988,108296053950271597}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{67912245935081614,5249451356357653836}}
+		s %SourcePin{"PerFrameGlobal"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"PerFrameGlobal"}
+	}
+}
+o
+{
+	Uuid %id{u4{13623645087154798687,2667021170309290821}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1560545576700807847,5132840556600473791}}
+		s %SourcePin{"Lighting"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"Lighting"}
+	}
+}
+o
+{
+	Uuid %id{u4{11869886147293122941,14613572813451645834}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1560545576700807847,5132840556600473791}}
+		s %SourcePin{"ReservoirDomain"}
+		Uuid %Target{u4{10411941511264895865,583470843143871508}}
+		s %TargetPin{"ReservoirDomain"}
 	}
 }
 }
