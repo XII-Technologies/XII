@@ -240,6 +240,68 @@ o
 }
 o
 {
+	Uuid %id{u4{13762086784777800381,11728167925311755048}}
+	s %t{"xiiRenderPipelinePinConfiguration"}
+	u3 %v{1}
+	p
+	{
+		s %DisplayName{""}
+		Uuid %Id{u4{9962220265890284526,9045538646220363332}}
+		Uuid %Metadata{u4{13003196222185868299,16501284648904514204}}
+		b %OverrideResolution{0}
+		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
+		Uuid %Requirements{u4{11921713231684762183,391275238923587841}}
+		Uuid %Resolution{u4{12161491072164536847,5209241728316231908}}
+	}
+}
+o
+{
+	Uuid %id{u4{13003196222185868299,16501284648904514204}}
+	s %t{"xiiRenderPipelinePinMetadata"}
+	u3 %v{1}
+	p
+	{
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
+		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{"xiiReflectionProbeFrameData"}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		b %Input{1}
+		s %Name{"ReflectionProbes"}
+		b %Optional{1}
+		s %ResourceType{"xiiRenderPipelinePinType::FrameData"}
+		b %TemporalHistory{0}
+	}
+}
+o
+{
+	Uuid %id{u4{11921713231684762183,391275238923587841}}
+	s %t{"xiiRenderPipelinePinConstraints"}
+	u3 %v{1}
+	p
+	{
+		s %Dimension{"xiiGALResourceDimension::Undefined"}
+		u3 %Height{0}
+		s %RequiredBindFlags{""}
+		u3 %Samples{0}
+		u3 %Width{0}
+	}
+}
+o
+{
+	Uuid %id{u4{12161491072164536847,5209241728316231908}}
+	s %t{"xiiRenderPipelineTextureResolution"}
+	u3 %v{1}
+	p
+	{
+		u3 %Height{0}
+		s %Input{""}
+		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
+		f %Scale{0x0000803F}
+		u3 %Width{0}
+	}
+}
+o
+{
 	Uuid %id{u4{17527460707750734110,4113445835405847170}}
 	s %t{"xiiRenderPipelineAssetInterface"}
 	u3 %v{1}
@@ -247,6 +309,7 @@ o
 	{
 		VarArray %Pins
 		{
+			Uuid{u4{13762086784777800381,11728167925311755048}}
 			Uuid{u4{11007396990331621226,11457271826446722572}}
 			Uuid{u4{8063081550135198948,3273292946234137189}}
 			Uuid{u4{9457598888040668923,16384393653097076322}}
@@ -3764,6 +3827,7 @@ o
 		Vec2 %Node::Pos{f{0,0}}
 		Uuid %Normal{u4{3907951674222111928,1485654795365769161}}
 		VarDict %ParameterOverrides{}
+		u3 %EnvironmentLightSamples{4}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{8632694143691791933,10866714722446529810}}
@@ -3785,7 +3849,7 @@ o
 		}
 		b %PowerWeightedLights{1}
 		f %RayLength{0x0000A041}
-		u3 %SampleCount{32}
+		u3 %SampleCount{8}
 		u3 %SampleOffset{0}
 		Uuid %Scene{u4{6381154244069163634,12012567437751009330}}
 		f %SurfaceBias{0x0AD7A33C}
@@ -4224,6 +4288,8 @@ o
 			Uuid{u4{11958548026730304043,13602279917728258013}}
 			Uuid{u4{11799507193431011175,1957780701702346826}}
 			Uuid{u4{12923943719691877824,15973876538130782713}}
+			Uuid{u4{9962220265890284526,9045538646220363332}}
+			Uuid{u4{9783935214680309305,7729268666975474340}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -8673,6 +8739,35 @@ o
 		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
 		f %Scale{0x0000803F}
 		u3 %Width{0}
+	}
+}
+o
+{
+	Uuid %id{u4{9962220265890284526,9045538646220363332}}
+	s %t{"xiiRenderPipelineInterfacePass"}
+	u3 %v{1}
+	p
+	{
+		s %Name{"ReflectionProbes"}
+		b %Input{1}
+		s %ResourceType{"xiiRenderPipelinePinType::FrameData"}
+		s %Format{"xiiGALResourceFormat::Unknown"}
+		s %DataType{"xiiReflectionProbeFrameData"}
+		Vec2 %Node::Pos{f{-700,1200}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{9783935214680309305,7729268666975474340}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9962220265890284526,9045538646220363332}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{12445614536573714179,5713849736353831241}}
+		s %TargetPin{"ReflectionProbes"}
 	}
 }
 }
