@@ -13,6 +13,54 @@ xiiRenderPipeline::xiiRenderPipeline() :
 {
 }
 
+bool xiiRenderPipeline::DoesInterfaceOutputDependOnInput(xiiStringView output, xiiStringView input) const
+{
+  const auto source = FindInterface(input, true), target = FindInterface(output, false);
+  if (source == xiiInvalidIndex || target == xiiInvalidIndex)
+    return true;
+  xiiDynamicArray<xiiUInt32> pending;
+  xiiDynamicArray<bool>      visited;
+  visited.SetCount(m_uiBindingCount, false);
+  pending = m_Interface[target].m_Bindings;
+  while (!pending.IsEmpty())
+  {
+    const auto binding = pending.PeekBack();
+    pending.PopBack();
+    if (m_Interface[source].m_Bindings.Contains(binding))
+      return true;
+    if (binding >= visited.GetCount())
+      return true;
+    if (visited[binding])
+      continue;
+    visited[binding]  = true;
+    const Pass* owner = nullptr;
+    for (const auto& pass : m_Passes)
+      if (binding >= pass.m_uiBindingOffset && binding - pass.m_uiBindingOffset < pass.m_Pins.GetCount())
+      {
+        owner = &pass;
+        break;
+      }
+    if (!owner)
+      return true;
+    const auto& pin = owner->m_Pins[binding - owner->m_uiBindingOffset];
+    if (pin.m_bInput)
+    {
+      for (const auto& connection : m_Connections)
+        if (connection.m_uiTargetBinding == binding)
+          pending.PushBack(connection.m_uiSourceBinding);
+    }
+    else if (!pin.m_bTemporalHistoryOutput)
+    {
+      // A native operation is conservative across its own pins. Composition is
+      // already expanded, so independent leaf producers remain independent.
+      for (xiiUInt32 index = 0; index < owner->m_Pins.GetCount(); ++index)
+        if (owner->m_Pins[index].m_bInput)
+          pending.PushBack(owner->m_uiBindingOffset + index);
+    }
+  }
+  return false;
+}
+
 xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
   if (!descriptor.m_References.IsEmpty())

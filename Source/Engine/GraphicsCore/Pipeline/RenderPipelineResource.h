@@ -109,6 +109,9 @@ public:
   };
   xiiArrayPtr<const Interface>                    GetInterface() const { return m_Interface; }
   xiiUInt32                                       FindInterface(xiiStringView name, bool input) const;
+  /// Conservative leaf-pass dependency after expansion. Independent subgraph outputs can feed
+  /// other nodes without depending on the subgraph's unrelated image inputs. Unknown pins fail closed.
+  bool                                            DoesInterfaceOutputDependOnInput(xiiStringView output, xiiStringView input) const;
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   const xiiGraph&                                 GetTopology() const { return m_Topology; }
