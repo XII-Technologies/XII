@@ -1,6 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+#ifndef XII_LOCAL_RESERVOIR_SEED
+#  define XII_LOCAL_RESERVOIR_SEED 0
+#endif
 #include <Shaders/Common/StorageImageFormat.h>
 #include <Shaders/Pipeline/Passes/Lighting/LightClusterConstants.h>
 #include <Shaders/Pipeline/Passes/Lighting/SurfaceInputs.h>
@@ -38,32 +41,72 @@ bool ReceivesSpotShadows(uint2 pixel)
   return low < count && g_SpotReceiverFlags[low].x == identity && (g_SpotReceiverFlags[low].y & (1u << 3u)) != 0;
 }
 #endif
-float3 Evaluate(uint index, SurfaceSample surface, bool receives, inout float reactive)
+uint ActiveLocalLightRecordCount()
 {
-  if ((uint)SurfaceEvaluation.z == ViewRenderMode_ClusterID || (uint)SurfaceEvaluation.z == ViewRenderMode_LightComplexity)
-    return 0;
   uint count, stride;
   g_Lights.GetDimensions(count, stride);
-  if (index >= min(count, g_Counts[0].x))
+  return min(count, g_Counts[0].x);
+}
+
+float3 EvaluateUnshadowedLocal(uint index, SurfaceSample surface)
+{
+  if ((uint)SurfaceEvaluation.z == ViewRenderMode_ClusterID || (uint)SurfaceEvaluation.z == ViewRenderMode_LightComplexity || index >= ActiveLocalLightRecordCount())
     return 0;
   const xiiGpuLightData light = g_Lights[index];
   const uint            type  = GetLightType(light);
   if (type == XII_LIGHT_TYPE_DIRECTIONAL || type > XII_LIGHT_TYPE_TUBE || light.ColorAndIntensity.w <= 0)
     return 0;
-  float3 result = EvaluateLocalLightLayered(light, surface.Position, surface.Normal, surface.View, surface.Albedo, surface.Roughness, surface.Metallic, surface.Specular, surface.Transmission, 0, 0.1f);
+  return EvaluateLocalLightLayered(light, surface.Position, surface.Normal, surface.View, surface.Albedo,
+                                   surface.Roughness, surface.Metallic, surface.Specular, surface.Transmission, 0, 0.1f);
+}
+
+float3 Evaluate(uint index, SurfaceSample surface, bool receives, inout float reactive)
+{
+  float3 result = EvaluateUnshadowedLocal(index, surface);
 #if XII_SPOT_SHADOWS
-  if (receives && xiiHasSpotShadow(index))
+  if (receives && any(result > 0) && xiiHasSpotShadow(index))
   {
-    // Mark potential incident light before visibility: a fully shadowed receiver
-    // must also reject its history after this shadow-producing light disappears.
-    if (any(result > 0))
-      reactive = 1;
+    reactive = 1;
     result *= xiiSampleSpotShadow(index, surface.Position, surface.Normal, SurfaceCameraPositionNear.xyz);
   }
 #endif
   return result;
 }
+
+uint LocalClusterIdentity(uint2 pixel, float3 position)
+{
+  const float depth = dot(position - CameraPosition.xyz, CameraForward.xyz);
+  if (depth < DepthRange.x || depth > DepthRange.y)
+    return 0;
+  const float t     = DepthRange.w > 0 ? log2(max(depth, DepthRange.x) / DepthRange.x) / DepthRange.z : (depth - DepthRange.x) / (DepthRange.y - DepthRange.x);
+  const uint  slice = min(uint(saturate(t) * ClusterCounts.z), ClusterCounts.z - 1u);
+  const uint2 cell  = min(pixel / Viewport.z, ClusterCounts.xy - 1u);
+  return (slice * ClusterCounts.y + cell.y) * ClusterCounts.x + cell.x + 1u;
+}
+
+uint2 LocalClusterRange(uint identity)
+{
+  uint gridCount, stride;
+  g_LightGrid.GetDimensions(gridCount, stride);
+  if (identity == 0 || identity > gridCount)
+    return 0;
+  const uint2 range = g_LightGrid[identity - 1u];
+  uint        capacity;
+  g_LightIndices.GetDimensions(capacity, stride);
+  return uint2(range.x, range.x < capacity ? min(min(range.y, Viewport.w), capacity - range.x) : 0u);
+}
+
+#if defined(XII_LOCAL_RESERVOIRS)
+#  include <Shaders/Pipeline/Passes/Lighting/LocalLightReservoirSampling.h>
+#endif
+
 [numthreads(8, 8, 1)] void main(uint3 tid : SV_DispatchThreadID) {
+#if defined(XII_LOCAL_RESERVOIR_SEED) && XII_LOCAL_RESERVOIR_SEED
+  const uint2 tileCount = (SurfaceExtent.xy - 1u) / LocalReservoirGrid.x + 1u;
+  if (any(tid.xy >= tileCount))
+    return;
+  WriteLocalReservoir(tid.xy, SeedLocalReservoir(LocalReservoirWriter(tid.xy)));
+#else
   if (any(tid.xy >= SurfaceExtent.xy))
     return;
   SurfaceSample surface;
@@ -73,42 +116,32 @@ float3 Evaluate(uint index, SurfaceSample surface, bool receives, inout float re
   uint          clusterIdentity = 0;
   if (LoadSurface(tid.xy, surface))
   {
-    const float clusterDepth = dot(surface.Position - CameraPosition.xyz, CameraForward.xyz);
-    if (clusterDepth >= DepthRange.x && clusterDepth <= DepthRange.y)
-    {
-      const float t     = DepthRange.w > 0 ? log2(max(clusterDepth, DepthRange.x) / DepthRange.x) / DepthRange.z : (clusterDepth - DepthRange.x) / (DepthRange.y - DepthRange.x);
-      const uint  slice = min((uint)(saturate(t) * ClusterCounts.z), ClusterCounts.z - 1);
-      const uint2 cell  = min(tid.xy / Viewport.z, ClusterCounts.xy - 1);
-      clusterIdentity   = (slice * ClusterCounts.y + cell.y) * ClusterCounts.x + cell.x + 1u;
-    }
-    bool receives = true;
-#if XII_SPOT_SHADOWS
+    clusterIdentity = LocalClusterIdentity(tid.xy, surface.Position);
+    bool receives   = true;
+#  if XII_SPOT_SHADOWS
     receives = ReceivesSpotShadows(tid.xy);
-#endif
+#  endif
     if (g_Overflow[0] != 0)
     {
-      // Capacity overflow preserves semantics by evaluating this view's full candidate set.
+      // Capacity overflow evaluates the complete view candidate domain.
       uint count, stride;
       g_Candidates.GetDimensions(count, stride);
       evaluatedLights = count;
-      [loop] for (uint i = 0; i < count; ++i) result += Evaluate(g_Candidates[i], surface, receives, reactive);
+      [loop] for (uint i = 0; i < count; ++i)
+        result += Evaluate(g_Candidates[i], surface, receives, reactive);
     }
     else
     {
-      if (clusterIdentity != 0u)
-      {
-        const uint cluster = clusterIdentity - 1u;
-        uint       gridCount, stride;
-        g_LightGrid.GetDimensions(gridCount, stride);
-        if (cluster < gridCount)
-        {
-          const uint2 range = g_LightGrid[cluster];
-          uint        capacity;
-          g_LightIndices.GetDimensions(capacity, stride);
-          evaluatedLights = range.x < capacity ? min(min(range.y, Viewport.w), capacity - range.x) : 0u;
-          [loop] for (uint i = 0; i < min(range.y, Viewport.w); ++i) if (range.x < capacity && i < capacity - range.x) result += Evaluate(g_LightIndices[range.x + i], surface, receives, reactive);
-        }
-      }
+      const uint2 range = LocalClusterRange(clusterIdentity);
+      evaluatedLights   = range.y;
+      bool resolved     = false;
+#  if defined(XII_LOCAL_RESERVOIRS)
+      if (range.y > XII_LOCAL_LIGHT_RESERVOIR_MIN_LIGHTS)
+        resolved = ResolveLocalReservoir(tid.xy, clusterIdentity, surface, receives, reactive, result);
+#  endif
+      if (!resolved)
+        [loop] for (uint i = 0; i < range.y; ++i)
+          result += Evaluate(g_LightIndices[range.x + i], surface, receives, reactive);
     }
   }
   result *= SurfaceEvaluation.x;
@@ -117,7 +150,8 @@ float3 Evaluate(uint index, SurfaceSample surface, bool receives, inout float re
   if ((uint)SurfaceEvaluation.z == ViewRenderMode_LightComplexity)
     result = evaluatedLights == 0u ? 0.0f : ViewHeatColor(saturate(log2(float(evaluatedLights) + 1.0f) / 5.0f));
   g_Lighting[tid.xy] = float4(all(isfinite(result)) ? clamp(result, 0, 65504.0f) : 0, 1);
-#if XII_SPOT_SHADOWS
+#  if XII_SPOT_SHADOWS
   g_SpotReactive[tid.xy] = float4(reactive.xxx, 0);
+#  endif
 #endif
 }
