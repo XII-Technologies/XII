@@ -36,13 +36,13 @@ struct xiiTemporalSignalDenoisePass::State : public xiiRefCounted
   bool                                     m_bHistoryValid     = false;
   xiiUInt64                                m_uiHistoryRevision = 0;
 };
-xiiTemporalSignalDenoisePass::xiiTemporalSignalDenoisePass(xiiUInt32 signalMode) :
-  m_Raw(signalMode == 0 ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1),
-  m_Output(signalMode == 0 ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1),
-  m_Previous(signalMode == 0 ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read, true),
-  m_Surface(signalMode == 0 ? xiiGALResourceFormat::RGBA16Float : xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1),
-  m_uiSignalMode(signalMode),
-  m_Format(signalMode == 0 ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::RGBA32Float)
+xiiTemporalSignalDenoisePass::xiiTemporalSignalDenoisePass(SignalMode mode) :
+  m_Raw(mode == SignalMode::Occlusion ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1),
+  m_Output(mode == SignalMode::Occlusion ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1),
+  m_Previous(mode == SignalMode::Occlusion ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Read, true),
+  m_Surface(mode == SignalMode::Occlusion ? xiiGALResourceFormat::RGBA16Float : xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1),
+  m_Mode(mode),
+  m_Format(mode == SignalMode::Occlusion ? xiiGALResourceFormat::R8UNormalized : xiiGALResourceFormat::RGBA32Float)
 {
   m_Output.SetResolution({xiiRenderPipelineTextureResolutionMode::Input});
 }
@@ -88,7 +88,7 @@ void xiiTemporalSignalDenoisePass::InvalidateTemporalHistory()
 }
 xiiResult xiiTemporalSignalDenoisePass::BuildTemporalHistory(xiiRenderPipelinePassContext& context)
 {
-  if (!m_bEnabled || !m_bUseHistory || !m_pState || (m_uiSignalMode == 1 && xiiGALDevice::GetDefaultDevice()->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled))
+  if (!m_bEnabled || !m_bUseHistory || !m_pState || (m_Mode == SignalMode::Irradiance && xiiGALDevice::GetDefaultDevice()->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled))
     return XII_SUCCESS;
   XII_LOCK(m_pState->m_Mutex);
   if (!m_pState->m_bHistoryValid)
@@ -116,30 +116,39 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
 {
   const auto raw = context.GetInputTexture(m_Raw), depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal), velocity = context.GetInputTexture(m_Velocity);
   const auto camera = context.GetInputBuffer(m_Camera), global = context.GetInputBuffer(m_Global);
-  if (!m_bEnabled || !raw.IsValid())
+  const bool occlusion     = m_Mode == SignalMode::Occlusion;
+  const bool localLighting = m_Mode == SignalMode::LocalLighting;
+  const auto domain        = localLighting ? context.GetInputTexture(m_SampleDomain) : xiiRenderGraphTextureHandle();
+  if (!m_bEnabled || !raw.IsValid() || (localLighting && !domain.IsValid()))
   {
     InvalidateTemporalHistory();
     return raw.IsValid() ? context.SetOutput(m_Output, raw) : XII_SUCCESS;
   }
   const auto device = xiiGALDevice::GetDefaultDevice();
-  if (!device || (m_uiSignalMode == 0 && device->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled))
+  if (!device || (occlusion && device->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled))
     return context.ReportFailure("Signal filtering requires R8 storage-image support (TextureUAVExtendedFormats).");
-  const bool useHistory = m_bUseHistory && (m_uiSignalMode == 0 || device->GetFeatures().m_TextureUAVExtendedFormats == xiiGALDeviceFeatureState::Enabled);
+  const bool useHistory = m_bUseHistory && (m_Mode != SignalMode::Irradiance || device->GetFeatures().m_TextureUAVExtendedFormats == xiiGALDeviceFeatureState::Enabled);
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_Output, raw, size));
   const auto* sizingInput = context.m_Graph.GetTextureDescription(raw);
-  if (!sizingInput || sizingInput->m_Size != size || (m_uiSignalMode == 1 && sizingInput->m_Format != xiiGALResourceFormat::RGBA16Float && sizingInput->m_Format != xiiGALResourceFormat::RGBA32Float))
+  if (!sizingInput || sizingInput->m_Size != size || (!occlusion && sizingInput->m_Format != xiiGALResourceFormat::RGBA16Float && sizingInput->m_Format != xiiGALResourceFormat::RGBA32Float))
     return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   if (!xiiScreenSpacePassUtils::Image(context, depth, 1, &size) || !xiiScreenSpacePassUtils::Image(context, normal, 2, &size) || (useHistory && !xiiScreenSpacePassUtils::Image(context, velocity, 2, &size)))
     return context.ReportFailure("Signal filtering requires matching readable depth, normal and, with history, velocity images.");
   xiiRenderGraphTextureHandle material, objectId;
-  if (m_uiSignalMode == 1)
+  if (!occlusion)
   {
     material             = context.GetInputTexture(m_Material);
     objectId             = context.GetInputTexture(m_ObjectId);
     const auto* identity = context.m_Graph.GetTextureDescription(objectId);
     if (!xiiScreenSpacePassUtils::Image(context, material, 4, &size) || !identity || identity->m_Format != xiiGALResourceFormat::R32UInt || identity->m_Size != size || identity->m_uiSampleCount != 1 || !identity->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-      return context.ReportFailure("Irradiance denoising requires matching material and object identity images.");
+      return context.ReportFailure("RGB signal denoising requires matching material and object identity images.");
+  }
+  if (localLighting)
+  {
+    const auto* sampleDomain = context.m_Graph.GetTextureDescription(domain);
+    if (!sampleDomain || sampleDomain->m_Format != xiiGALResourceFormat::R32UInt || sampleDomain->m_Size != size || sampleDomain->m_uiSampleCount != 1 || !sampleDomain->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+      return context.ReportFailure("Local light denoising requires a matching readable R32UInt reservoir domain.");
   }
   const auto* cameraDescription = context.m_Graph.GetBufferDescription(camera);
   const auto* globalDescription = context.m_Graph.GetBufferDescription(global);
@@ -152,8 +161,15 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
     m_pState = XII_DEFAULT_NEW(State);
   auto& state = *m_pState;
   XII_LOCK(state.m_Mutex);
-  auto& pipeline = useHistory ? state.m_Pipeline : state.m_SpatialPipeline;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, m_uiSignalMode == 0 ? (useHistory ? "Shaders/Pipeline/AmbientOcclusionTemporal.xiiShader" : "Shaders/Pipeline/SpatialAmbientOcclusion.xiiShader") : (useHistory ? "Shaders/Pipeline/IrradianceTemporalDenoise.xiiShader" : "Shaders/Pipeline/IrradianceSpatialDenoise.xiiShader")));
+  auto&       pipeline = useHistory ? state.m_Pipeline : state.m_SpatialPipeline;
+  const char* shader;
+  if (occlusion)
+    shader = useHistory ? "Shaders/Pipeline/AmbientOcclusionTemporal.xiiShader" : "Shaders/Pipeline/SpatialAmbientOcclusion.xiiShader";
+  else if (localLighting)
+    shader = useHistory ? "Shaders/Pipeline/LocalLightTemporalDenoise.xiiShader" : "Shaders/Pipeline/LocalLightSpatialDenoise.xiiShader";
+  else
+    shader = useHistory ? "Shaders/Pipeline/IrradianceTemporalDenoise.xiiShader" : "Shaders/Pipeline/IrradianceSpatialDenoise.xiiShader";
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, shader));
   const auto temporalCamera = context.GetInputData(m_TemporalCamera).Downcast<const xiiTemporalCameraSnapshot>();
   if (useHistory && (!temporalCamera || temporalCamera->m_Sample.m_Size != size))
     return context.ReportFailure("Temporal signal filtering requires a matching explicit temporal camera snapshot.");
@@ -184,15 +200,15 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
       description.m_Format    = m_Format;
       description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
       next->m_Signal          = device->CreateTexture(description);
-      description.m_Format    = m_uiSignalMode == 0 ? xiiGALResourceFormat::RGBA16Float : xiiGALResourceFormat::RGBA32Float;
+      description.m_Format    = occlusion ? xiiGALResourceFormat::RGBA16Float : xiiGALResourceFormat::RGBA32Float;
       next->m_Surface         = device->CreateTexture(description);
-      if (m_uiSignalMode == 1)
+      if (!occlusion)
       {
-        description.m_Format = xiiGALResourceFormat::RG32UInt;
+        description.m_Format = localLighting ? xiiGALResourceFormat::RGBA32UInt : xiiGALResourceFormat::RG32UInt;
         next->m_Identity     = device->CreateTexture(description);
       }
       next->m_ReadyFence = device->CreateFence({.m_Type = xiiGALFenceType::General});
-      if (!next->m_Signal || !next->m_Surface || !next->m_ReadyFence || (m_uiSignalMode == 1 && !next->m_Identity))
+      if (!next->m_Signal || !next->m_Surface || !next->m_ReadyFence || (!occlusion && !next->m_Identity))
         return context.ReportFailure("Could not allocate signal history images or readiness fence.");
       state.m_Slots.PushBack(next);
     }
@@ -207,7 +223,7 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
   struct Data
   {
     xiiRenderGraphTextureHandle              m_Raw, m_Depth, m_Normal, m_Velocity, m_Previous, m_PreviousSurface, m_Output, m_Surface;
-    xiiRenderGraphTextureHandle              m_Material, m_ObjectId, m_PreviousIdentity, m_Identity;
+    xiiRenderGraphTextureHandle              m_Material, m_ObjectId, m_PreviousIdentity, m_Identity, m_Domain;
     xiiRenderGraphBufferHandle               m_Camera, m_Global, m_Constants, m_Reprojection;
     xiiSharedPtr<State::Slot>                m_Next, m_PreviousSlot;
     xiiAmbientOcclusionReprojectionConstants m_ReprojectionParameters;
@@ -238,7 +254,9 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
     // current inputs for the first frame and after camera cuts or size changes.
     data.m_Previous        = historyValid ? builder.ReadTexture(builder.ImportTexture("Previous Signal", state.m_Last->m_Signal, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource) : data.m_Raw;
     data.m_PreviousSurface = historyValid ? builder.ReadTexture(builder.ImportTexture("Previous Surface", state.m_Last->m_Surface, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource) : data.m_Normal;
-    if (m_uiSignalMode == 1)
+    if (localLighting)
+      data.m_Domain = builder.ReadTexture(domain, xiiGALResourceStateFlags::ShaderResource);
+    if (!occlusion)
     {
       data.m_Material = builder.ReadTexture(material, xiiGALResourceStateFlags::ShaderResource);
       data.m_ObjectId = builder.ReadTexture(objectId, xiiGALResourceStateFlags::ShaderResource);
@@ -279,7 +297,7 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
     data.m_Parameters.NormalThreshold = m_fNormalThreshold;
     data.m_Parameters.SpatialWeight   = m_fSpatialWeight;
     data.m_Parameters.HistoryValid    = historyValid ? 1U : 0U;
-    data.m_Parameters.SignalMode      = m_uiSignalMode;
+    data.m_Parameters.SignalMode      = occlusion ? 0U : 1U;
     data.m_Parameters._Padding        = xiiVec2::MakeZero();
   };
   const auto record = [](const Data& data, xiiRenderGraphPassContext& execute) {
@@ -305,6 +323,8 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
     commands.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", execute.GetTexture(data.m_Normal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_Velocity", execute.GetTexture(data.m_Velocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_PreviousSurface", execute.GetTexture(data.m_PreviousSurface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    if (data.m_Domain.IsValid())
+      commands.ResolveAndSetShaderResourceTextureView("g_SampleDomain", execute.GetTexture(data.m_Domain)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     if (data.m_Material.IsValid())
     {
       commands.ResolveAndSetShaderResourceTextureView("g_GBufferMaterial", execute.GetTexture(data.m_Material)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);

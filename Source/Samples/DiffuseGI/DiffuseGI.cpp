@@ -25,6 +25,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Pipeline/Passes/Denoising/LocalLightDenoisePass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/RayTracedIrradiancePass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/ClusteredLocalSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -107,34 +108,46 @@ namespace
     return {};
   }
 
-  xiiRenderPipelineResourceHandle EnableLocalLightReservoirs(bool editor)
+  xiiRenderPipelineResourceHandle EnableLocalLightReservoirs(bool editor, bool reconstruct)
   {
     xiiResourceLock<xiiRenderPipelineResource> scene(LoadPipeline("Scene"), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     xiiResourceLock<xiiRenderPipelineResource> root(LoadPipeline(editor ? "Editor" : "Scene"), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!scene || !scene->GetAuthoring() || !root || !root->GetAuthoring())
       return {};
     const auto& source = scene->GetAuthoring()->m_Descriptor;
-    xiiUuid     lightPass;
+    xiiUuid     lightPass, reconstructionPass;
     for (const auto& pass : source.m_Passes)
+    {
       if (pass.m_pType == xiiGetStaticRTTI<xiiClusteredLocalSurfaceLightingPass>())
         lightPass = pass.m_Id;
-    if (!lightPass.IsValid())
-      return {};
-    auto descriptor = root->GetAuthoring()->m_Descriptor;
-    for (auto& pass : descriptor.m_Passes)
-    {
-      if (editor && pass.m_Definition == source.m_Id)
-      {
-        auto& setting = pass.m_Overrides.ExpandAndGetRef();
-        setting.m_Path.PushBack(lightPass);
-        setting.m_Properties.Insert("UseReservoirs", true);
-      }
-      else if (!editor && pass.m_Id == lightPass)
-      {
-        pass.m_Properties.Insert("UseReservoirs", true);
-      }
+      else if (pass.m_pType == xiiGetStaticRTTI<xiiLocalLightDenoisePass>())
+        reconstructionPass = pass.m_Id;
     }
-    return xiiResourceManager::CreateResource<xiiRenderPipelineResource>(editor ? "DiffuseGI.Editor.LocalReservoirs" : "DiffuseGI.Scene.LocalReservoirs", std::move(descriptor));
+    if (!lightPass.IsValid() || !reconstructionPass.IsValid())
+      return {};
+    auto       descriptor  = root->GetAuthoring()->m_Descriptor;
+    const auto setProperty = [&](xiiUuid id, xiiStringView property, bool value) {
+      for (auto& pass : descriptor.m_Passes)
+      {
+        if (editor && pass.m_Definition == source.m_Id)
+        {
+          auto& setting = pass.m_Overrides.ExpandAndGetRef();
+          setting.m_Path.PushBack(id);
+          setting.m_Properties.Insert(property, value);
+          return true;
+        }
+        if (!editor && pass.m_Id == id)
+        {
+          pass.m_Properties.Insert(property, value);
+          return true;
+        }
+      }
+      return false;
+    };
+    if (!setProperty(lightPass, "UseReservoirs", true) || !setProperty(reconstructionPass, "Enabled", reconstruct))
+      return {};
+    const xiiStringBuilder name("DiffuseGI.", editor ? "Editor" : "Scene", reconstruct ? ".FilteredLocalReservoirs" : ".RawLocalReservoirs");
+    return xiiResourceManager::CreateResource<xiiRenderPipelineResource>(name, std::move(descriptor));
   }
 
   void AddLocalLights(xiiWorld& world)
@@ -338,7 +351,7 @@ private:
 #endif
     const bool localLights = opt_LocalLights.GetOptionValue(xiiCommandLineOption::LogMode::Never);
     const auto base        = LoadPipeline(pipeline);
-    const auto enabled     = localLights ? EnableLocalLightReservoirs(editor) : EnableGI(editor, opt_ScreenOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
+    const auto enabled     = localLights ? EnableLocalLightReservoirs(editor, true) : EnableGI(editor, opt_ScreenOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
     if (!enabled.IsValid())
       return XII_FAILURE;
     xiiWorldDescription worldDescription("Diffuse GI demonstration");
@@ -404,7 +417,11 @@ private:
     if (localLights)
     {
       XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Exact.png")));
-      return render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Reservoirs.png"));
+      const auto raw = EnableLocalLightReservoirs(editor, false);
+      if (!raw.IsValid())
+        return XII_FAILURE;
+      XII_SUCCEED_OR_RETURN(render(raw, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Reservoirs.png")));
+      return render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Reconstructed.png"));
     }
     XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-GI-Off.png")));
     XII_SUCCEED_OR_RETURN(render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-GI-On.png")));

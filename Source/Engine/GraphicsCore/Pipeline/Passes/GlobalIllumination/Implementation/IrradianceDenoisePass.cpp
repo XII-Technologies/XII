@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/IrradianceDenoisePass.h>
 
-xiiIrradianceDenoisePass::xiiIrradianceDenoisePass() : xiiTemporalSignalDenoisePass(1) {}
+xiiIrradianceDenoisePass::xiiIrradianceDenoisePass() : xiiTemporalSignalDenoisePass(SignalMode::Irradiance) {}
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiIrradianceDenoisePass,1,xiiRTTIDefaultAllocator<xiiIrradianceDenoisePass>)
 {

@@ -26,6 +26,7 @@ public:
   xiiRenderPipelineDataInputPin               m_TemporalCamera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>(), true};
   xiiRenderPipelineTextureInputPin            m_PreviousReservoirs{xiiGALResourceFormat::RGBA32UInt, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Reservoirs{xiiGALResourceFormat::RGBA32UInt, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin           m_ReservoirDomain{xiiGALResourceFormat::R32UInt, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   bool                                        m_bUseReservoirs = false;
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Reactive{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};

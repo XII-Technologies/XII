@@ -29,6 +29,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusteredLocalSurfaceLightingPass,2,xiiRTTID
     XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousReservoirs", m_PreviousReservoirs)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Reservoirs", m_Reservoirs)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("ReservoirDomain", m_ReservoirDomain)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("UseReservoirs", m_bUseReservoirs)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Lighting",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ReactiveRadiance",m_Reactive)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -119,7 +120,7 @@ xiiResult xiiClusteredLocalSurfaceLightingPass::Build(xiiRenderPipelinePassConte
   struct Data
   {
     xiiSurfaceLightingPassUtils::Inputs      m_Surface;
-    xiiRenderGraphTextureHandle              m_Output, m_SpotAtlas, m_Ids, m_Reactive, m_Current, m_Previous, m_Velocity;
+    xiiRenderGraphTextureHandle              m_Output, m_SpotAtlas, m_Ids, m_Reactive, m_Current, m_Previous, m_Velocity, m_Domain;
     xiiRenderGraphBufferHandle               m_SpotConstants, m_Receivers, m_Constants, m_Layout, m_Lights, m_Counts, m_Candidates, m_Profiles, m_Grid, m_Indices, m_Overflow, m_ReservoirConstants;
     xiiSurfaceLightingConstants              m_Snapshot;
     xiiLightClusterConstants                 m_ClusterSnapshot;
@@ -168,6 +169,12 @@ xiiResult xiiClusteredLocalSurfaceLightingPass::Build(xiiRenderPipelinePassConte
         data.m_Current  = builder.ReadTexture(currentReservoirs, xiiGALResourceStateFlags::ShaderResource);
         data.m_Previous = previousReservoirs.IsValid() ? builder.ReadTexture(previousReservoirs, xiiGALResourceStateFlags::ShaderResource) : data.m_Current;
         data.m_Velocity = builder.ReadTexture(velocity, xiiGALResourceStateFlags::ShaderResource);
+        xiiGALTextureCreationDescription domain;
+        domain.m_Type      = xiiGALResourceDimension::Texture2D;
+        domain.m_Size      = surface.m_Size;
+        domain.m_Format    = xiiGALResourceFormat::R32UInt;
+        domain.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+        data.m_Domain      = builder.WriteTexture("Local Light Reservoir Domain", domain, xiiGALResourceStateFlags::UnorderedAccess);
       }
     }
     data.m_Snapshot.SurfaceExtent     = xiiVec4U32(surface.m_Size.width, surface.m_Size.height, 0, 0);
@@ -239,6 +246,7 @@ xiiResult xiiClusteredLocalSurfaceLightingPass::Build(xiiRenderPipelinePassConte
         bindTexture("g_CurrentReservoirs", data.m_Current);
         bindTexture("g_PreviousReservoirs", data.m_Previous);
         bindTexture("g_ReservoirVelocity", data.m_Velocity);
+        bindOutput("g_ReservoirDomain", data.m_Domain);
       }
     }
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
@@ -265,6 +273,8 @@ xiiResult xiiClusteredLocalSurfaceLightingPass::Build(xiiRenderPipelinePassConte
   const auto pass = context.m_Graph.AddPass<Data>(name, queue, resolveSetup, record);
   if (shadows)
     XII_SUCCEED_OR_RETURN(context.SetOutput(m_Reactive, pass.first->m_Reactive));
+  if (useReservoirs)
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_ReservoirDomain, pass.first->m_Domain));
   return context.SetOutput(m_Output, pass.first->m_Output);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_ClusteredLocalSurfaceLightingPass);

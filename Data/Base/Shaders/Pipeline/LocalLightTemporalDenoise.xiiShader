@@ -1,0 +1,13 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#define XII_DENOISE_FORMAT "rgba32f"
+#define XII_DENOISE_SURFACE_FORMAT "rgba32f"
+#define XII_DENOISE_CAPTURE_SURFACE
+#define XII_DENOISE_REPROJECT_DEPTH
+#define XII_DENOISE_MATERIAL_VALIDATION
+#define XII_DENOISE_CAPTURE_IDENTITY
+#define XII_DENOISE_LOCAL_LIGHT
+#include <Shaders/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionReprojectionConstants.h>
+#include <Shaders/Pipeline/Passes/Denoising/TemporalDenoise.h>

@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 
-xiiAmbientOcclusionTemporalPass::xiiAmbientOcclusionTemporalPass() : xiiTemporalSignalDenoisePass(0) {}
+xiiAmbientOcclusionTemporalPass::xiiAmbientOcclusionTemporalPass() : xiiTemporalSignalDenoisePass(SignalMode::Occlusion) {}
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionTemporalPass,1,xiiRTTIDefaultAllocator<xiiAmbientOcclusionTemporalPass>)
 {
