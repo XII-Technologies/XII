@@ -50,6 +50,7 @@ namespace
   xiiCommandLineOptionBool   opt_SkyOnly("DiffuseGI", "-sky-only", "Light the room with the sky and disable the emissive panel.", false);
   xiiCommandLineOptionBool   opt_OffscreenEmitter("DiffuseGI", "-offscreen-emitter", "Compare camera and world probes with an emitter outside the frame.", false);
   xiiCommandLineOptionBool   opt_BlockEmitter("DiffuseGI", "-block-emitter", "Add an opaque cover beneath the offscreen emitter.", false);
+  xiiCommandLineOptionBool   opt_DenseEmitter("DiffuseGI", "-dense-emitter", "Use a tessellated offscreen panel with 4,608 triangles.", false);
   xiiCommandLineOptionBool   opt_NoReuse("DiffuseGI", "-no-reuse", "Use fresh ray paths instead of reservoir resampling.", false);
   xiiCommandLineOptionInt    opt_Paths("DiffuseGI", "-paths", "Override fresh ray paths per pixel (zero uses the authored count).", 0, 0, 32);
   xiiCommandLineOptionBool   opt_NoRay("DiffuseGI", "-no-ray", "Disable hardware rays to render the scene probe fallback.", false);
@@ -228,7 +229,16 @@ namespace
     box("GI.Right", {0.4f, -2.15f, 1.65f}, {4.2f, 0.2f, 3.3f}, green);
     if (bOffscreenEmitter)
     {
-      box("GI.Panel", {-2.65f, 0, 3.26f}, {0.7f, 3.8f, 0.12f}, emitter);
+      if (opt_DenseEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never))
+      {
+        xiiGeometry             panel;
+        xiiGeometry::GeoOptions options;
+        options.m_MainAxis = xiiBasisAxis::NegativeZ;
+        panel.AddRect({0.7f, 3.8f}, 48, 48, options);
+        AddMesh(world, "GI.DensePanel", {-2.65f, 0, 3.2f}, panel, emitter);
+      }
+      else
+        box("GI.Panel", {-2.65f, 0, 3.26f}, {0.7f, 3.8f, 0.12f}, emitter);
       if (opt_BlockEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never))
         box("GI.EmitterCover", {-2.65f, 0, 3.15f}, {0.94f, 4.1f, 0.1f}, white);
     }
@@ -428,6 +438,8 @@ private:
           xiiLog::Info("{} used the scene probe update.", sFilename);
         else if (pass.m_sName == "Trace World Geometry for Directional Probes")
           xiiLog::Info("{} used the world-geometry probe update.", sFilename);
+        else if (pass.m_sName == "Trace World Meshlets for Directional Probes")
+          xiiLog::Info("{} used the meshlet-bounded world probe update.", sFilename);
         else if (pass.m_sName == "Resolve Current Spatial and Temporal GI")
           xiiLog::Info("{} read current spatial and previous temporal diffuse path reservoirs.", sFilename);
         else if (pass.m_sName == "Resolve Spatial and Temporal Local Light Reservoirs")
