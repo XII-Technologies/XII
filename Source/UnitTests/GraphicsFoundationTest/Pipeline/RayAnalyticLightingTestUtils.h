@@ -100,9 +100,9 @@ namespace xiiRayAnalyticLightingTest
     }
     if (!XII_TEST_BOOL(gate.IsValid()))
       return;
-    constexpr xiiUInt32             count = 5;
+    constexpr xiiUInt32             count = 6;
     xiiRenderPipelineResourceHandle resources[count];
-    const xiiUInt32                 budgets[count] = {0, 1, 4, 0, 4};
+    const xiiUInt32                 budgets[count] = {0, 1, 4, 0, 4, 4};
     for (xiiUInt32 variant = 0; variant < count; ++variant)
     {
       xiiResourceLock<xiiRenderPipelineResource> original(scene, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -121,6 +121,7 @@ namespace xiiRayAnalyticLightingTest
           settings.m_Path.PushBack(ray);
           settings.m_Properties.Insert("MaximumHits", 1U);
           settings.m_Properties.Insert("AnalyticLightSamples", budgets[variant]);
+          settings.m_Properties.Insert("PowerWeightedLights", variant != 1 && variant != 5);
         }
       }
       xiiStringBuilder name;
@@ -303,7 +304,7 @@ namespace xiiRayAnalyticLightingTest
       views[variant]->SetPipelineParameter("Editor.ShapeIcons", false);
       views[variant]->SetRenderPipelineResource(resources[variant]);
       views[variant]->SetViewport({0, 0, 21, 15});
-      if (variant < 3)
+      if (variant < 3 || variant == 5)
         views[variant]->m_ExcludeTags.Set(excluded);
       xiiGALTextureCreationDescription target;
       target.m_Type      = xiiGALResourceDimension::Texture2D;
@@ -320,8 +321,11 @@ namespace xiiRayAnalyticLightingTest
     xiiDynamicArray<xiiVec4> original, unshadowedBlocked;
     xiiDynamicArray<xiiVec4> emitterReferences[6];
     xiiMutex                 timingMutex;
-    double                   traceMilliseconds = 0;
-    xiiUInt32                traceSamples      = 0;
+    double                   traceMilliseconds   = 0;
+    xiiUInt32                traceSamples        = 0;
+    const xiiStringView      scanNames[]         = {"GI candidate power scan", "GI block power scan"};
+    double                   scanMilliseconds[2] = {};
+    xiiUInt32                scanSamples[2]      = {};
     xiiHashSet<xiiString>    traceNames;
     for (const auto& resource : resources)
     {
@@ -332,6 +336,14 @@ namespace xiiRayAnalyticLightingTest
     }
     xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex>::Unsubscriber timingSubscription;
     xiiRenderGraphTimestampProfiler::s_TimingEvents.AddEventHandler([&](const xiiRenderGraphTimestampProfiler::TimingSample& sample) {
+      if (sample.m_bAvailable && !sample.m_bSubmission)
+        for (xiiUInt32 scan = 0; scan < 2; ++scan)
+          if (sample.m_sName.GetView() == scanNames[scan])
+          {
+            XII_LOCK(timingMutex);
+            scanMilliseconds[scan] += sample.m_fDurationMs;
+            ++scanSamples[scan];
+          }
       if (sample.m_bAvailable && !sample.m_bSubmission && traceNames.Contains(xiiString(sample.m_sName.GetView())))
       {
         XII_LOCK(timingMutex);
@@ -340,7 +352,8 @@ namespace xiiRayAnalyticLightingTest
       }
     },
                                                                     timingSubscription);
-    for (xiiUInt32 phase = 0; phase < 27; ++phase)
+    xiiDynamicArray<xiiPointLightComponent*> boundaryLights;
+    for (xiiUInt32 phase = 0; phase < 33; ++phase)
     {
       for (xiiUInt32 i = 0; i < 9; ++i)
       {
@@ -348,11 +361,38 @@ namespace xiiRayAnalyticLightingTest
         points[i]->SetIntensity(phase == 1 ? 200.0f : 100.0f);
         points[i]->SetCastShadows(phase >= 6);
         points[i]->SetIESProfile(phase == 2 ? halfIES : xiiIESProfileResourceHandle());
+        points[i]->SetLightColor(phase == 32 ? xiiColor::Black : xiiColor::Red);
       }
       if (phase == 11 || phase >= 13)
         for (auto* point : points)
           point->SetActiveFlag(false);
-      blue->SetActiveFlag(phase == 4 || phase == 13);
+      if (phase >= 27)
+        for (xiiUInt32 i = 0; i < 9; ++i)
+        {
+          points[i]->SetActiveFlag(phase != 30);
+          points[i]->SetCastShadows(false);
+          points[i]->SetIntensity(phase == 31 ? 1000.0f : phase == 29 ? 100.0f :
+                                    i == (phase == 27 ? 0U : 8U)      ? 10000.0f :
+                                                                        1.0f);
+        }
+      if (phase == 29)
+        for (xiiUInt32 i = 0; i < 512; ++i)
+        {
+          xiiPointLightComponent* point = nullptr;
+          xiiPointLightComponent::CreateComponent(addObject({-2, 0, 0}, {1, 1, 1}), point);
+          point->SetLightColor(xiiColor::Red);
+          point->SetTemperature(6500);
+          point->SetIntensityUnit(xiiPhotometricUnit::Candela);
+          point->SetIntensity(100);
+          point->SetRange(4);
+          boundaryLights.PushBack(point);
+        }
+      for (auto* point : boundaryLights)
+        point->SetActiveFlag(phase == 29);
+      blue->SetActiveFlag(phase == 4 || phase == 13 || phase == 31);
+      blue->SetIntensity(phase == 31 ? 10.0f : 100.0f);
+      blue->SetRange(phase == 31 ? 10.0f : 4.0f);
+      blue->SetLightColor(phase == 31 ? xiiColorGammaUB(0, 0, 13) : xiiColorGammaUB(xiiColor::Blue));
       for (xiiUInt32 emitter = 0; emitter < 6; ++emitter)
       {
         additional[emitter]->SetActiveFlag(phase == 14 + emitter || phase == 20 + emitter || (phase == 26 && emitter == 0));
@@ -375,6 +415,23 @@ namespace xiiRayAnalyticLightingTest
       {
         if (!XII_TEST_RESULT_MSG(views[variant]->GetLastRenderResult(), "%s", views[variant]->GetRenderPipelineInstance().GetLastBuildError().GetStartPointer()))
           return;
+        xiiUInt32 scanPasses = 0;
+        for (const auto& pass : views[variant]->GetRenderGraph()->GetCompiledPasses())
+          if (!pass.m_bIsCulled && (pass.m_sName.GetView() == scanNames[0] || pass.m_sName.GetView() == scanNames[1]))
+            ++scanPasses;
+        auto&       pipelineInstance = views[variant]->GetRenderPipelineInstance();
+        const auto& definition       = pipelineInstance.GetPipeline()->GetDescriptor();
+        for (xiiUInt32 pass = 0; pass < definition.m_Passes.GetCount(); ++pass)
+          if (definition.m_Passes[pass].m_pType->GetTypeName() == "xiiWorldLightsUploadPass")
+          {
+            const auto* binding     = pipelineInstance.GetOutputBinding(pass, "Candidates");
+            const auto* description = binding ? views[variant]->GetRenderGraph()->GetBufferDescription(binding->m_hBuffer) : nullptr;
+            if (!XII_TEST_BOOL(description != nullptr))
+              return;
+            const bool expected = budgets[variant] != 0 && variant != 1 && variant != 5 && description->m_uiSize > sizeof(xiiUInt32);
+            XII_TEST_BOOL((scanPasses != 0) == expected);
+            break;
+          }
         const auto image = [&](xiiStringView pin) {
           auto& instance = views[variant]->GetRenderPipelineInstance();
           return views[variant]->GetRenderGraph()->GetExportedTexture(instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface(pin, false))->m_hTexture);
@@ -384,7 +441,7 @@ namespace xiiRayAnalyticLightingTest
         if (variant == 0 && !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image("SceneDepth"), depth))
           return;
       }
-      double    energy  = 0;
+      double    energy = 0, uniformError = 0, powerError = 0, weakBlueReference = 0, weakBlueEstimate = 0;
       xiiUInt32 changed = 0;
       for (xiiUInt32 pixel = 0; pixel < irradiance[2].GetCount(); ++pixel)
       {
@@ -397,7 +454,7 @@ namespace xiiRayAnalyticLightingTest
             XII_TEST_FLOAT(irradiance[variant][pixel].GetAsVec3().GetLength(), 0, 1e-6f);
           else
           {
-            const auto baseline = variant < 3 ? 0 : 3;
+            const auto baseline = variant == 4 ? 3 : 0;
             for (xiiUInt32 channel = 0; channel < 3; ++channel)
             {
               const float reflectance = float((albedo[variant][pixel] >> (8 * channel)) & 255) / 255;
@@ -405,7 +462,7 @@ namespace xiiRayAnalyticLightingTest
             }
           }
         }
-        if (phase != 4)
+        if (phase != 4 && phase < 27)
           XII_TEST_FLOAT(irradiance[1][pixel].x, irradiance[2][pixel].x, 1e-5f);
         if (phase == 1 || phase == 2 || phase == 3 || phase == 5 || phase == 9 || phase == 12)
         {
@@ -416,6 +473,29 @@ namespace xiiRayAnalyticLightingTest
         }
         if (phase == 6 || phase == 10 || phase == 11 || phase == 13 || phase == 26)
           XII_TEST_FLOAT(irradiance[2][pixel].GetAsVec3().GetLength(), 0, 1e-6f);
+        if (phase == 27 || phase == 28)
+        {
+          const float reference = original[pixel].x * 100.08f;
+          powerError += xiiMath::Square(double(irradiance[2][pixel].x - reference));
+          uniformError += xiiMath::Square(double(irradiance[5][pixel].x - reference));
+        }
+        if (phase == 29)
+          XII_TEST_FLOAT(irradiance[2][pixel].x, original[pixel].x * 521.0f, 2e-3f);
+        if (phase == 30 || phase == 32)
+          XII_TEST_FLOAT(irradiance[2][pixel].GetAsVec3().GetLength(), 0, 1e-6f);
+        if (phase == 31)
+        {
+          const auto* lights = world.GetOrCreateModule<xiiRenderWorldModule>()->GetWorldLightData();
+          const auto  index  = lights->GetIndex(blue->GetHandle());
+          if (!XII_TEST_BOOL(index < lights->GetLights().GetCount()))
+            return;
+          const auto& record    = lights->GetLights()[index];
+          const auto  clip      = xiiVec4((float(pixel % 21) + 0.5f) / 21 * 2 - 1, 1 - (float(pixel / 21) + 0.5f) / 15 * 2, depth[pixel], 1);
+          const auto  projected = xiiSnapshotCameraConstants(*views[4]).m_InverseViewProjectionMatrix * clip;
+          weakBlueReference += PointOracle(projected.GetAsVec3() / projected.w, pixel, record) * record.m_ColorAndIntensity.z;
+          weakBlueEstimate += irradiance[4][pixel].z;
+          XII_TEST_FLOAT(irradiance[2][pixel].z, 0, 1e-8f);
+        }
         if (phase == 13)
           XII_TEST_FLOAT(irradiance[4][pixel].z, original[pixel].x * xiiEvaluateLightColor(xiiColorLinearUB(xiiColor::Blue), 6500).b / xiiEvaluateLightColor(xiiColorLinearUB(xiiColor::Red), 6500).r, 1e-4f);
         if (phase >= 20 && phase < 26 && phase != 22)
@@ -448,6 +528,16 @@ namespace xiiRayAnalyticLightingTest
         XII_TEST_BOOL(energy > 0.001 && changed > 0);
       if (phase >= 14 && phase < 26)
         XII_TEST_BOOL(energy > 0.001 && changed > 0);
+      if (phase == 27 || phase == 28)
+      {
+        XII_TEST_BOOL(powerError < uniformError * 0.1);
+        xiiTestFramework::Output(xiiTestOutput::Details, "Unequal-light squared error: power %.6f, uniform %.6f at equal four-light sample budget.", powerError, uniformError);
+      }
+      if (phase == 31)
+      {
+        XII_TEST_BOOL(weakBlueReference > 0 && weakBlueEstimate > weakBlueReference * 0.6 && weakBlueEstimate < weakBlueReference * 1.4);
+        xiiTestFramework::Output(xiiTestOutput::Details, "Dim-blue transport: estimate %.9f, independent reference %.9f with strong red lights.", weakBlueEstimate, weakBlueReference);
+      }
       if (phase == 4)
       {
         double blueEnergy = 0;
@@ -501,6 +591,9 @@ namespace xiiRayAnalyticLightingTest
         xiiTestFramework::Output(xiiTestOutput::Details, "21x15 analytic GI trace mean %.6f ms over %u retired GPU samples; correctness fixture only.", traceMilliseconds / traceSamples, traceSamples);
       else
         xiiTestFramework::Output(xiiTestOutput::Details, "Analytic GI timing unavailable on this configuration.");
+      for (xiiUInt32 scan = 0; scan < 2; ++scan)
+        if (scanSamples[scan])
+          xiiTestFramework::Output(xiiTestOutput::Details, "%s mean %.6f ms over %u retired GPU samples.", scanNames[scan].GetStartPointer(), scanMilliseconds[scan] / scanSamples[scan], scanSamples[scan]);
     }
   }
 } // namespace xiiRayAnalyticLightingTest
