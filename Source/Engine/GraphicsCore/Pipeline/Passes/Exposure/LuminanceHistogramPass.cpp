@@ -69,11 +69,13 @@ xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/ExposureHistogram.xiiShader"));
   xiiDisplayOutputSettings authored;
   authored.m_Exposure.m_fMinimumLogLuminance = m_fMinimumLogLuminance;
   authored.m_Exposure.m_fMaximumLogLuminance = m_fMaximumLogLuminance;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
+  if (m_pState->m_Display.m_Settings.m_Exposure.m_Mode == xiiExposureMode::Manual)
+    return XII_SUCCESS;
+  XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/ExposureHistogram.xiiShader"));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), size));
   if (!xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputHDRSceneColor), 4))

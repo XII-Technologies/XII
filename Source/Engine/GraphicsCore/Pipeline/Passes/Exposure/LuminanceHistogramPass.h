@@ -12,7 +12,7 @@ class XII_GRAPHICSCORE_DLL xiiLuminanceHistogramPass final : public xiiRenderPip
 
 public:
   xiiRenderPipelineTextureInputPin m_InputHDRSceneColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineBufferOutputPin m_OutputLuminanceHistogram;
+  xiiRenderPipelineBufferOutputPin m_OutputLuminanceHistogram{true};
 
   xiiLuminanceHistogramPass();
   ~xiiLuminanceHistogramPass();

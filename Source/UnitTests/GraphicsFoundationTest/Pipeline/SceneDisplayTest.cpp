@@ -12,7 +12,6 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
-#include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -56,7 +55,7 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
   }
   for (const xiiStringView pin : {"CurrentExposure", "Histogram"})
   {
-    const auto output = root.AddPass(pin, xiiGetStaticRTTI<xiiBufferExportPass>());
+    const auto output = root.AddPass(pin, xiiGetStaticRTTI<xiiOptionalBufferTestExport>());
     XII_TEST_RESULT(root.Connect(scene, pin, output, "Input"));
     root.m_Interface.PushBack({pin, false, root.m_Passes[output].m_Id, "Output"});
   }
@@ -341,7 +340,11 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
         return;
       XII_TEST_BOOL(exposure[view].IsValid());
       if (!view)
+      {
         XII_TEST_FLOAT(exposure[view].x, camera.GetExposure(), 1e-7f);
+        XII_TEST_FLOAT(exposure[view].y, 0, 0);
+        XII_TEST_BOOL(!buffer(view, "Histogram"));
+      }
       xiiUInt32  pixel = 0;
       const auto size  = targets[view]->GetDescription().m_Size;
       if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[view].Borrow(), size.width / 2, size.height / 2, pixel))
@@ -353,6 +356,8 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
         XII_TEST_FLOAT(float((pixel >> (channel * 8)) & 255) / 255, encoded, 0.005f);
     }
     XII_TEST_BOOL(buffer(0, "CurrentExposure") != buffer(1, "CurrentExposure"));
+    for (xiiUInt32 view = 0; view < 2; ++view)
+      xiiTestExposureResources(*views[view]->GetRenderGraph(), view != 0);
     if (phase == 0)
       firstExposure = exposure[1].x;
     if (phase == 1)
@@ -381,6 +386,58 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
       count += bin;
     XII_TEST_INT(count, targets[1]->GetDescription().m_Size.width * targets[1]->GetDescription().m_Size.height);
     xiiTestFramework::Output(xiiTestOutput::Details, "Metering phase %u: exposure %.8f, luminance %.4f, %u samples", phase, exposure[1].x, exposure[1].y, count);
+  }
+  // Manual/automatic transitions must restart metering even with zero adaptation
+  // speed, and compensation must agree with the final display transform.
+  for (xiiUInt32 phase = 0; phase < 4; ++phase)
+  {
+    const bool  automatic                        = (phase & 1U) != 0;
+    const float luminance                        = phase == 0 ? 0.25f : phase == 1 ? 8.0f :
+                             phase == 2                                            ? 1024.0f :
+                                                                                     0.5f;
+    auto        settings                         = views[1]->GetDisplayOutputSettings();
+    settings.m_Exposure.m_Mode                   = automatic ? xiiExposureMode::Automatic : xiiExposureMode::Manual;
+    settings.m_Exposure.m_fAdaptationSpeedBright = settings.m_Exposure.m_fAdaptationSpeedDark = 0;
+    settings.m_Exposure.m_fExposureCompensation                                               = phase == 2 ? -1.0f : 1.0f;
+    if (phase == 2)
+    {
+      settings.m_Exposure.m_Mode = xiiExposureMode::Automatic;
+      xiiVariantDictionary displayOverride, exposureOverride;
+      exposureOverride.Insert("Mode", static_cast<xiiInt64>(xiiExposureMode::Manual));
+      displayOverride.Insert("Exposure", exposureOverride);
+      views[1]->SetPipelineParameter("DisplayOutput", displayOverride);
+    }
+    else
+      views[1]->RemovePipelineParameter("DisplayOutput");
+    XII_TEST_RESULT(views[1]->SetDisplayOutputSettings(settings));
+    xiiStringBuilder name;
+    name.SetFormat("Display.ModeTransition.{}", phase);
+    emitter->SetMaterialOverride(0, surface(name, {luminance, luminance, luminance}));
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    if (!XII_TEST_RESULT(views[1]->GetLastRenderResult()))
+      return;
+    xiiTestExposureResources(*views[1]->GetRenderGraph(), automatic);
+    XII_TEST_BOOL(bool(buffer(1, "Histogram")) == automatic);
+    xiiVec2 exposure;
+    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), buffer(1, "CurrentExposure").Borrow(), 0, exposure))
+      return;
+    const float compensation = xiiMath::Pow(2.0f, settings.m_Exposure.m_fExposureCompensation);
+    if (automatic)
+      XII_TEST_FLOAT(exposure.x, compensation / (9.6f * exposure.y), 1e-6f);
+    else
+    {
+      XII_TEST_FLOAT(exposure.x, camera.GetExposure() * compensation, 1e-7f);
+      XII_TEST_FLOAT(exposure.y, 0, 0);
+    }
+    xiiUInt32 pixel = 0;
+    if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), targets[1].Borrow(), 6, 4, pixel))
+      return;
+    const float value   = luminance * exposure.x;
+    const float linear  = xiiMath::Saturate(value * (2.51f * value + 0.03f) / (value * (2.43f * value + 0.59f) + 0.14f));
+    const float encoded = linear < 0.0031308f ? linear * 12.92f : 1.055f * xiiMath::Pow(linear, 1.0f / 2.4f) - 0.055f;
+    for (xiiUInt32 channel = 0; channel < 3; ++channel)
+      XII_TEST_FLOAT(float((pixel >> (channel * 8)) & 255) / 255, encoded, 0.005f);
   }
   xiiResourceLock<xiiRenderPipelineResource> authored(source, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   auto                                       missingBloom = authored->GetAuthoring()->m_Descriptor;
@@ -417,6 +474,11 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
   const auto counter = badHistogram.AddPass("Malformed four-byte histogram", xiiGetStaticRTTI<xiiCounterResetPass>());
   XII_TEST_RESULT(badHistogram.Connect(counter, "Counter", adaptIndex, "LuminanceHistogram"));
   views[0]->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Display.BadHistogram", std::move(badHistogram)));
+  // A connected histogram is irrelevant in manual mode, even if malformed.
+  world.Update();
+  XII_TEST_RESULT(views[0]->GetLastRenderResult());
+  settings.m_Exposure.m_Mode = xiiExposureMode::Automatic;
+  XII_TEST_RESULT(views[0]->SetDisplayOutputSettings(settings));
   {
     xiiTestLogInterface   expected;
     xiiTestLogSystemScope expectedScope(&expected);

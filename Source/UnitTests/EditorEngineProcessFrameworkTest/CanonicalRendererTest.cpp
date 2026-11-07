@@ -2,6 +2,8 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Core/World/World.h>
 #include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
@@ -820,8 +822,11 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
       }
       update(3);
       for (xiiUInt32 view = 0; view < 2; ++view)
+      {
         if (!XII_TEST_RESULT(views[view]->GetLastRenderResult()) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[view], displayImages[view][phase]))
           return;
+        xiiTestExposureResources(*views[view]->GetRenderGraph(), feature && phase % 2);
+      }
     }
     xiiUInt32 displayChanges[2] = {}, matchingDisplayChanges = 0;
     for (xiiUInt32 pixel = 0; pixel < displayImages[0][0].GetCount(); ++pixel)
