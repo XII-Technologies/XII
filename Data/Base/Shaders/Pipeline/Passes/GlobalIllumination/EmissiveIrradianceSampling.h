@@ -73,7 +73,7 @@ bool IrradianceSampleEmitter(float3 position, float3 normal, float coneWidth, fl
   const float lightPDF = IrradianceEmitterSolidAnglePDF(index, distance * distance, direction);
   if (cosine <= 0 || lightPDF <= 0)
     return false;
-  IrradiancePayload emissionQuery;
+  IrradiancePayload emissionQuery = (IrradiancePayload)0;
   emissionQuery.Radiance = 0;
   emissionQuery.Flags    = XII_IRRADIANCE_EMITTER_RAY;
   // These fields carry the exact target identity on a nonrecursive emission query.

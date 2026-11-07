@@ -6,7 +6,7 @@
 // The hit stage declares the canonical material, geometry and bindless tables.
 struct xiiRayTracingSurface
 {
-  float3 BaseColor, Emission, Normal;
+  float3 BaseColor, Emission, Normal, GeometricNormal;
   float  Roughness, Metallic, Transmission, ClearCoat, ClearCoatRoughness, Occlusion;
 };
 
@@ -114,6 +114,7 @@ xiiRayTracingSurface xiiLoadRayTracingSurface(uint instanceIndex, uint primitive
   result.BaseColor          = baseColor;
   result.Emission           = emissive;
   result.Normal             = worldNormal;
+  result.GeometricNormal    = worldTriangleArea > 1e-12f ? cross(worldEdge0, worldEdge1) / worldTriangleArea : 0;
   result.Roughness          = roughness;
   result.Metallic           = metallic;
   result.Transmission       = transmission;
