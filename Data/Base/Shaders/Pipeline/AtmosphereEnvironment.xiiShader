@@ -1,0 +1,33 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/CubeFaceDirection.h>
+#include <Shaders/Pipeline/AtmosphereEnvironmentConstants.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereSampling.h>
+
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2DArray<float4> g_CapturedSky;
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  if (any(tid.xy >= CaptureExtent.xy) || tid.z >= 6)
+    return;
+  const float3 cubeDirection = EnvironmentFaceDirection(tid.xy, tid.z, CaptureExtent.x);
+  const float3 direction = float3(cubeDirection.x, -cubeDirection.z, cubeDirection.y);
+  const float3 sun = normalize(-CaptureDirectionAndIlluminance.xyz);
+  const float3 up = normalize(PlanetUpAndGroundAltitudeMeters.xyz);
+  const float height = PlanetAtmosphereRadiiScaleHeights.x + CaptureColorAndAltitudeMeters.w * 0.001f;
+  const float3 origin = up * height;
+  float distance = DistanceToSphereExit(origin, direction, PlanetAtmosphereRadiiScaleHeights.y);
+  const float ground = DistanceToGround(origin, direction, PlanetAtmosphereRadiiScaleHeights.x);
+  if (ground >= 0)
+    distance = min(distance, ground);
+  float3 transmittance, radiance;
+  IntegrateAtmosphereSegment(origin, direction, distance, sun, dot(direction, sun),
+    CaptureColorAndAltitudeMeters.rgb * CaptureDirectionAndIlluminance.w, clamp(SampleCounts.z, 1u, 64u), transmittance, radiance);
+  // Direct illumination is evaluated analytically by the selected directional light.
+  // Sampling its tiny disk again here would double count it and alias cubemap texels.
+  g_CapturedSky[tid] = float4(all(isfinite(radiance)) ? max(radiance, 0) : 0, 1);
+}

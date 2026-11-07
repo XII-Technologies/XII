@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereTransmittancePass.h>
+#include <GraphicsCore/Pipeline/Passes/Atmosphere/Implementation/AtmosphereLookupPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
@@ -12,6 +13,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereTransmittancePass,1,xiiRTTIDefault
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Atmosphere",m_Atmosphere)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("LookupData",m_LookupData)->AddFlags(xiiPropertyFlags::ReadOnly),
 
     XII_MEMBER_PROPERTY("Transmittance",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Width",m_uiWidth)->AddAttributes(new xiiDefaultValueAttribute(256U),new xiiClampValueAttribute(1U,4096U)),
@@ -28,6 +30,14 @@ xiiResult xiiAtmosphereTransmittancePass::Configure(const xiiVariantDictionary& 
 }
 xiiResult xiiAtmosphereTransmittancePass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (const auto lookup = context.GetInputData(m_LookupData).Downcast<const xiiAtmosphereFrameData>())
+  {
+    if (context.GetInputBuffer(m_Atmosphere) != lookup->m_Constants)
+      return context.ReportFailure("Cached transmittance and atmosphere constants must share one physical settings source.");
+    if (m_uiWidth == 256 && m_uiHeight == 64)
+      return xiiAtmosphereLookupPassUtils::Publish(context, lookup, lookup->m_Lookup->m_Transmittance, m_Output, m_bAsyncCompute);
+    // Explicit custom extents retain the existing graph-local integration path.
+  }
   const auto atmosphere = context.GetInputBuffer(m_Atmosphere);
   if (!atmosphere.IsValid())
     return XII_SUCCESS;

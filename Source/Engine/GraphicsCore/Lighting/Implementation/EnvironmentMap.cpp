@@ -18,12 +18,14 @@ xiiEnvironmentMap::xiiEnvironmentMap(xiiSharedPtr<xiiGALTexture> source, xiiShar
 {
 }
 
-xiiStatus xiiEnvironmentMap::Create(const xiiSharedPtr<xiiGALTexture>& source, xiiSharedPtr<const xiiEnvironmentMap>& out_map)
+xiiStatus xiiEnvironmentMap::Create(const xiiSharedPtr<xiiGALTexture>& source, xiiSharedPtr<const xiiEnvironmentMap>& out_map, xiiSharedPtr<xiiGALFence> sourceReady)
 {
   out_map.Clear();
   if (!source || !xiiGALDevice::HasDefaultDevice())
     return xiiStatus("Environment convolution requires a resident cubemap and a device.");
   auto       device     = xiiGALDevice::GetDefaultDevice();
+  if (source->GetDevice() != device || (sourceReady && (sourceReady->GetDevice() != device || sourceReady->GetDescription().m_Type != xiiGALFenceType::General)))
+    return xiiStatus("Environment convolution requires a source and optional general readiness fence from the current device.");
   auto*      cache      = xiiRenderGraphManager::GetResourceCache();
   const auto frameIndex = xiiRenderGraphManager::GetActiveFrameIndex();
   if (!cache || !frameIndex)
@@ -65,6 +67,7 @@ xiiStatus xiiEnvironmentMap::Create(const xiiSharedPtr<xiiGALTexture>& source, x
     xiiRenderGraphBufferHandle               m_Constants;
   };
   graph.AddPass<Data>("Initialize environment lighting", xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
+    if (sourceReady) builder.WaitForFence(sourceReady, 1).AssertSuccess();
     data.m_Map = map; data.m_SpecularPipeline = specularPipeline; data.m_DiffusePipeline = diffusePipeline; data.m_Sampler = sampler;
     data.m_Source = builder.ReadTexture(builder.ImportTexture("Environment source", source, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
     data.m_Specular = builder.WriteTexture(builder.ImportTexture("GGX environment", specular, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::UnorderedAccess);

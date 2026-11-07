@@ -3,6 +3,9 @@
 #pragma once
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <GraphicsCore/Lighting/AtmosphereEnvironment.h>
+#include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereFrameData.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/DirectionalLightFrameData.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/ReflectionProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
@@ -15,7 +18,12 @@ class XII_GRAPHICSCORE_DLL xiiWorldReflectionProbesPass final : public xiiRender
 public:
   bool                                     m_bEnabled = true;
   xiiRenderPipelineDataOutputPin           m_Probes{xiiGetStaticRTTI<xiiReflectionProbeFrameData>()};
+  xiiRenderPipelineDataInputPin               m_Atmosphere{xiiGetStaticRTTI<xiiAtmosphereFrameData>(), true};
+  xiiRenderPipelineDataInputPin               m_Directional{xiiGetStaticRTTI<xiiDirectionalLightFrameData>(), true};
   xiiResult                                Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const override { return xiiRenderExtractionCategory::Lights; }
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return m_bEnabled ? xiiRenderPipelineDeviceFeature::Compute : xiiRenderPipelineDeviceFeature::None; }
+
+private:
+  xiiSharedPtr<const xiiAtmosphereEnvironment> m_AtmosphereEnvironment;
 };

@@ -13,6 +13,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/AtmosphereEnvironment.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
@@ -310,6 +311,77 @@ XII_CREATE_SIMPLE_TEST(NativeAtmosphere, WorldComponentsAndIndependentLookupView
   frame.End();
   environment.GetDevice()->WaitIdle();
   CheckAtmosphereLookups(*environment.GetDevice(), graph.GetExportedTexture(transmission), graph.GetExportedTexture(multiple), fallback.m_Settings);
+}
+
+XII_CREATE_SIMPLE_TEST(NativeAtmosphere, ImmutablePhysicalSkySolarLinearityAndVacuum)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  XII_SCOPE_EXIT(frame.End());
+  xiiAtmosphereSettings settings;
+  settings.m_uiTransmittanceIntegrationSteps = 32;
+  settings.m_uiMultiScatterSqrtSamples       = 4;
+  xiiSharedPtr<const xiiAtmosphereLookup> lookup;
+  if (!XII_TEST_BOOL(xiiAtmosphereLookup::Create(settings, lookup).Succeeded()))
+    return;
+  XII_TEST_BOOL(lookup->Matches(settings));
+  auto changed = settings;
+  changed.m_vRayleighScattering *= 2;
+  XII_TEST_BOOL(!lookup->Matches(changed));
+  xiiSharedPtr<const xiiAtmosphereEnvironment> captures[2];
+  for (xiiUInt32 index = 0; index < 2; ++index)
+    if (!XII_TEST_BOOL(xiiAtmosphereEnvironment::Create(lookup, xiiVec4(0, 0, -1, index ? 4.0f : 2.0f), xiiVec3(1, 0.5f, 0.1f), 3, captures[index]).Succeeded()))
+      return;
+  XII_TEST_BOOL(captures[0]->Matches(lookup, xiiVec4(0, 0, -1, 2), xiiVec3(1, 0.5f, 0.1f), 3));
+  XII_TEST_BOOL(!captures[0]->Matches(lookup, xiiVec4(0, 0, -1, 2), xiiVec3(1, 0.5f, 0.1f), 4));
+  environment.GetDevice()->WaitIdle();
+  CheckAtmosphereLookups(*environment.GetDevice(), lookup->m_Transmittance, lookup->m_MultiScatter, settings);
+  const auto original = lookup;
+  settings.m_vRayleighScattering.SetZero();
+  settings.m_vMieScattering.SetZero();
+  settings.m_vMieAbsorption.SetZero();
+  settings.m_vOzoneAbsorption.SetZero();
+  if (!XII_TEST_BOOL(xiiAtmosphereLookup::Create(settings, lookup).Succeeded()))
+    return;
+  xiiSharedPtr<const xiiAtmosphereEnvironment> vacuum;
+  if (!XII_TEST_BOOL(xiiAtmosphereEnvironment::Create(lookup, xiiVec4(0, 0, -1, 100000), xiiVec3(1), 3, vacuum).Succeeded()))
+    return;
+  environment.GetDevice()->WaitIdle();
+  double energy = 0;
+  for (xiiUInt32 kind = 0; kind < 3; ++kind)
+  {
+    const auto image = [&](const xiiSharedPtr<const xiiAtmosphereEnvironment>& capture) {
+      return kind == 0 ? capture->m_Environment->m_Source : kind == 1 ? capture->m_Environment->m_Specular :
+                                                                        capture->m_Environment->m_Irradiance;
+    };
+    for (xiiUInt32 mip = 0; mip < image(captures[0])->GetDescription().m_uiMipLevels; ++mip)
+      for (xiiUInt32 face = 0; face < 6; ++face)
+      {
+        xiiDynamicArray<xiiVec4> pixels[3];
+        if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(captures[0]), pixels[0], mip, face) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(captures[1]), pixels[1], mip, face) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(vacuum), pixels[2], mip, face))
+          return;
+        for (xiiUInt32 pixel = 0; pixel < pixels[0].GetCount(); ++pixel)
+        {
+          XII_TEST_BOOL(pixels[0][pixel].IsValid() && pixels[1][pixel].IsValid() && pixels[2][pixel].IsValid());
+          energy += pixels[0][pixel].GetAsVec3().GetLength();
+          for (xiiUInt32 channel = 0; channel < 3; ++channel)
+          {
+            XII_TEST_FLOAT(pixels[1][pixel].GetData()[channel], pixels[0][pixel].GetData()[channel] * 2, 0.0001f);
+            XII_TEST_FLOAT(pixels[2][pixel].GetData()[channel], 0, 0.000001f);
+          }
+        }
+      }
+  }
+  XII_TEST_BOOL(energy > 1);
+  // Old captures keep the original physical lookup and convolved images after replacement.
+  XII_TEST_BOOL(captures[0]->m_Lookup == original && captures[0]->m_Lookup != lookup);
 }
 
 class xiiResolutionHistoryTestPass : public xiiRenderPipelinePass

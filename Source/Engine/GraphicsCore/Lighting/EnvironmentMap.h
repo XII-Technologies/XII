@@ -15,7 +15,7 @@
 class XII_GRAPHICSCORE_DLL xiiEnvironmentMap final : public xiiRefCounted
 {
 public:
-  static xiiStatus Create(const xiiSharedPtr<xiiGALTexture>& source, xiiSharedPtr<const xiiEnvironmentMap>& out_map);
+  static xiiStatus Create(const xiiSharedPtr<xiiGALTexture>& source, xiiSharedPtr<const xiiEnvironmentMap>& out_map, xiiSharedPtr<xiiGALFence> sourceReady = {});
 
   xiiEnvironmentMap(xiiSharedPtr<xiiGALTexture> source, xiiSharedPtr<xiiGALTexture> specular, xiiSharedPtr<xiiGALTexture> irradiance, xiiSharedPtr<xiiGALFence> ready, xiiUInt64 memory);
 

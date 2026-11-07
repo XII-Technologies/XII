@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/Atmosphere/AtmosphereMultiScatterPass.h>
+#include <GraphicsCore/Pipeline/Passes/Atmosphere/Implementation/AtmosphereLookupPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
@@ -12,6 +13,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereMultiScatterPass,1,xiiRTTIDefaultA
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Atmosphere",m_Atmosphere)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("LookupData",m_LookupData)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Transmittance",m_Transmittance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("MultiScatter",m_Output)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Width",m_uiWidth)->AddAttributes(new xiiDefaultValueAttribute(32U),new xiiClampValueAttribute(1U,4096U)),
@@ -28,6 +30,15 @@ xiiResult xiiAtmosphereMultiScatterPass::Configure(const xiiVariantDictionary& p
 }
 xiiResult xiiAtmosphereMultiScatterPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (const auto lookup = context.GetInputData(m_LookupData).Downcast<const xiiAtmosphereFrameData>())
+  {
+    if (context.GetInputBuffer(m_Atmosphere) != lookup->m_Constants)
+      return context.ReportFailure("Cached multiple scattering and atmosphere constants must share one physical settings source.");
+    const auto* input = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_Transmittance));
+    if (m_uiWidth == 32 && m_uiHeight == 32 && input && input->m_Size == xiiSizeU32(256, 64))
+      return xiiAtmosphereLookupPassUtils::Publish(context, lookup, lookup->m_Lookup->m_MultiScatter, m_Output, m_bAsyncCompute);
+    // Explicit custom extents retain the existing graph-local integration path.
+  }
   const auto atmosphere = context.GetInputBuffer(m_Atmosphere);
   if (!atmosphere.IsValid())
     return XII_SUCCESS;
