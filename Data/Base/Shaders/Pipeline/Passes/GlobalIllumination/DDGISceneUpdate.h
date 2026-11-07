@@ -45,6 +45,10 @@ uint HashProbe(uint value)
   return value ^ (value >> 16u);
 }
 
+#if defined(XII_DDGI_ANALYTIC_LIGHTING)
+#  include <Shaders/Pipeline/Passes/DDGI/DDGIWorldLighting.h>
+#endif
+
 bool SampleDepth(float3 position, uint2 extent, out uint2 pixel, out float gap)
 {
   pixel             = 0;
@@ -204,12 +208,17 @@ float3 SampleSurfaceRadiance(float3 probe, uint2 extent, uint index, uint seed, 
 #if defined(XII_DDGI_WORLD_TRACE)
     if (ProbeWorldComplete != 0u)
     {
-      RayDistance[lane] = worldHit.Distance;
-      float3 radiance   = worldHit.Emissive;
-      uint2  pixel;
-      float  gap;
-      if (worldHit.Found && SampleDepth(origin + direction * worldHit.Distance, extent, pixel, gap) && abs(gap) <= 0.035f)
+      RayDistance[lane]     = worldHit.Distance;
+      float3       radiance = worldHit.Emissive;
+      uint2        pixel;
+      float        gap;
+      const float3 position = origin + direction * worldHit.Distance;
+      if (worldHit.Found && SampleDepth(position, extent, pixel, gap) && abs(gap) <= 0.035f)
         radiance = g_Radiance.Load(int3(pixel, 0)).rgb;
+#  if defined(XII_DDGI_ANALYTIC_LIGHTING)
+      else if (worldHit.Found)
+        radiance += ShadeProbeWorldHit(worldHit, position, -direction, HashProbe(seed ^ lane), SpacingHysteresisDistance.z);
+#  endif
       radiance = all(isfinite(radiance)) ? clamp(radiance, 0, 65504) : 0;
       [unroll] for (uint axis = 0; axis < XII_DDGI_DIRECTION_COUNT; ++axis)
         SurfaceIrradiance[axis][lane] = radiance * (12.5663706144f / float(RayCount)) * max(dot(xiiDDGIAxis(axis), direction), 0);

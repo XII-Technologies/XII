@@ -5,6 +5,7 @@
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Math/BoundingBox.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbePassUtils.h>
@@ -35,6 +36,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGISceneUpdatePass, 1, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("GeometryMetadata", m_Geometry)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("MeshletMetadata", m_Meshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SurfaceMaterials", m_Materials)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("Lights", m_Lights)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("LightCounts", m_LightCounts)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("LightCandidates", m_LightCandidates)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("IESProfiles", m_IESProfiles)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("InitialProbeStates", m_StatesInput)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("GBufferNormal", m_Normal)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -86,6 +91,10 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
   const auto                 instances = context.GetInputBuffer(m_Instances), geometry = context.GetInputBuffer(m_Geometry), materials = context.GetInputBuffer(m_Materials);
   const auto*                world    = context.m_pView ? context.m_pView->GetGpuInstanceData() : nullptr;
   const auto&                features = device->GetFeatures();
+  const auto                 meshlets = context.GetInputBuffer(m_Meshlets);
+  const auto                 lights = context.GetInputBuffer(m_Lights), lightCounts = context.GetInputBuffer(m_LightCounts), lightCandidates = context.GetInputBuffer(m_LightCandidates), profiles = context.GetInputBuffer(m_IESProfiles);
+  const bool                 analyticInputs = meshlets.IsValid() && lights.IsValid() && lightCounts.IsValid() && lightCandidates.IsValid() && profiles.IsValid();
+  bool                       useAnalytic    = false;
   xiiDynamicArray<xiiUInt32> candidates;
   if (m_bUseWorldGeometry && world && instances.IsValid() && geometry.IsValid() && materials.IsValid() &&
       features.m_BindlessResources == xiiGALDeviceFeatureState::Enabled && features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled)
@@ -93,8 +102,14 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
     auto coverage = xiiBoundingBox::MakeInvalid();
     for (const auto& update : snapshot->m_Updates)
       coverage.ExpandToInclude(update.m_vPositionAndHistoryWeight.GetAsVec3());
-    coverage.Grow(xiiVec3(snapshot->m_Constants.SpacingHysteresisDistance.z));
-    constexpr xiiUInt32 maxCandidates = 256;
+    const auto reach = snapshot->m_Constants.SpacingHysteresisDistance.z;
+    coverage.Grow(xiiVec3(reach));
+    // An offscreen first hit can launch one more ray inside the configured reach.
+    auto shadowCoverage = coverage;
+    shadowCoverage.Grow(xiiVec3(reach + 0.02f));
+    constexpr xiiUInt32        maxCandidates = 256;
+    xiiDynamicArray<xiiUInt32> shadowCandidates;
+    bool                       shadowOverflow = false;
     for (const auto index : context.m_pView->GetGpuInstanceSelection())
     {
       if (index >= world->GetInstanceCount())
@@ -106,21 +121,31 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
         continue;
       const auto center  = instance.m_BoundsCenterRadius.GetAsVec3();
       const auto extents = instance.m_BoundsExtents.GetAsVec3();
-      if (!coverage.Overlaps(xiiBoundingBox::MakeFromMinMax(center - extents, center + extents)))
+      const auto bounds  = xiiBoundingBox::MakeFromMinMax(center - extents, center + extents);
+      const bool primary = coverage.Overlaps(bounds);
+      if (!primary && (!analyticInputs || shadowOverflow || (instance.m_uiFlags & xiiGpuInstanceFlags::CastShadows) == 0 || !shadowCoverage.Overlaps(bounds)))
         continue;
-      if (candidates.GetCount() == maxCandidates)
+      if (primary && candidates.GetCount() == maxCandidates)
       {
         candidates.Clear();
         break;
       }
       // Keep unsupported deforming meshes as conservative blockers. An intersecting
       // ray rejects the software update instead of tracing through their bind pose.
-      const bool deformed = instance.m_uiSkinningCount != 0 || !world->GetMorphWeights(index).IsEmpty();
-      candidates.PushBack(index | (deformed ? 0x80000000U : 0U));
+      const bool deformed  = instance.m_uiSkinningCount != 0 || !world->GetMorphWeights(index).IsEmpty();
+      const auto candidate = index | (deformed ? 0x80000000U : 0U);
+      if (primary)
+        candidates.PushBack(candidate);
+      else if (shadowCandidates.GetCount() < maxCandidates)
+        shadowCandidates.PushBack(candidate);
+      else
+        shadowOverflow = true;
     }
+    useAnalytic = analyticInputs && !candidates.IsEmpty() && !shadowOverflow && candidates.GetCount() + shadowCandidates.GetCount() <= maxCandidates;
+    if (useAnalytic)
+      candidates.PushBackRange(shadowCandidates);
   }
   const bool useWorld    = !candidates.IsEmpty();
-  const auto meshlets    = context.GetInputBuffer(m_Meshlets);
   const bool useMeshlets = useWorld && meshlets.IsValid();
   if (useMeshlets)
   {
@@ -129,9 +154,29 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
         description->m_uiSize % sizeof(xiiMeshlet) != 0 || !description->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
       return context.ReportFailure("World probe tracing requires canonical structured meshlet metadata.");
   }
-  auto&      pipeline = useMeshlets ? m_WorldMeshletPipeline : (useWorld ? m_WorldPipeline : m_Pipeline);
-  const auto shader   = useMeshlets ? "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldMeshletUpdate.xiiShader" :
-                                      (useWorld ? "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldUpdate.xiiShader" : "Shaders/Pipeline/Passes/GlobalIllumination/DDGISceneUpdate.xiiShader");
+  if (useAnalytic)
+  {
+    const auto records   = context.m_Graph.GetBufferDescription(lights);
+    const auto selection = context.m_Graph.GetBufferDescription(lightCandidates);
+    const auto ies       = context.m_Graph.GetBufferDescription(profiles);
+    using xiiDDGIProbePassUtils::Buffer;
+    if (!records || !records->m_uiSize || records->m_uiSize / sizeof(xiiGpuLightData) > 1048576 ||
+        !Buffer(context, lights, sizeof(xiiGpuLightData), xiiUInt32(records->m_uiSize / sizeof(xiiGpuLightData)), xiiGALBindFlags::ShaderResource) ||
+        !selection || !selection->m_uiSize || selection->m_uiSize / sizeof(xiiUInt32) > records->m_uiSize / sizeof(xiiGpuLightData) ||
+        !Buffer(context, lightCandidates, sizeof(xiiUInt32), xiiUInt32(selection->m_uiSize / sizeof(xiiUInt32)), xiiGALBindFlags::ShaderResource) ||
+        !ies || !ies->m_uiSize || (ies->m_uiSize != sizeof(float) && ies->m_uiSize % (2048 * sizeof(float))) || ies->m_uiSize / sizeof(float) > xiiMath::MaxValue<xiiUInt32>() ||
+        !Buffer(context, profiles, sizeof(float), xiiUInt32(ies->m_uiSize / sizeof(float)), xiiGALBindFlags::ShaderResource) ||
+        !Buffer(context, lightCounts, sizeof(xiiVec4U32), 1, xiiGALBindFlags::ShaderResource))
+      return context.ReportFailure("World probe lighting requires canonical light, count, view-candidate and IES records.");
+  }
+  auto&       pipeline = useAnalytic ? m_WorldLitPipeline : (useMeshlets ? m_WorldMeshletPipeline : (useWorld ? m_WorldPipeline : m_Pipeline));
+  const char* shader   = "Shaders/Pipeline/Passes/GlobalIllumination/DDGISceneUpdate.xiiShader";
+  if (useAnalytic)
+    shader = "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldLitUpdate.xiiShader";
+  else if (useMeshlets)
+    shader = "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldMeshletUpdate.xiiShader";
+  else if (useWorld)
+    shader = "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldUpdate.xiiShader";
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, shader));
   xiiRenderPassResourceScope scope(context);
   xiiRenderGraphBufferHandle candidateBuffer, worldConstants;
@@ -187,6 +232,7 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
   {
     xiiRenderGraphBufferHandle                m_Camera, m_Constants, m_Updates, m_States;
     xiiRenderGraphBufferHandle                m_Instances, m_Geometry, m_Meshlets, m_Materials, m_Candidates, m_WorldConstants;
+    xiiRenderGraphBufferHandle                m_Lights, m_LightCounts, m_LightCandidates, m_Profiles;
     xiiRenderGraphTextureHandle               m_Depth, m_Normal, m_Radiance, m_Irradiance, m_Distance;
     xiiSharedPtr<xiiGALComputePipelineState>  m_Pipeline;
     xiiSharedPtr<xiiGALSampler>               m_Sampler;
@@ -208,6 +254,13 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
     data.m_uiGroups   = groups;
     if (useMeshlets)
       data.m_Meshlets = builder.ReadBuffer(meshlets, xiiGALResourceStateFlags::ShaderResource);
+    if (useAnalytic)
+    {
+      data.m_Lights          = builder.ReadBuffer(lights, xiiGALResourceStateFlags::ShaderResource);
+      data.m_LightCounts     = builder.ReadBuffer(lightCounts, xiiGALResourceStateFlags::ShaderResource);
+      data.m_LightCandidates = builder.ReadBuffer(lightCandidates, xiiGALResourceStateFlags::ShaderResource);
+      data.m_Profiles        = builder.ReadBuffer(profiles, xiiGALResourceStateFlags::ShaderResource);
+    }
     if (useWorld)
     {
       data.m_Instances      = builder.ReadBuffer(instances, xiiGALResourceStateFlags::ShaderResource);
@@ -239,6 +292,13 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
       bind("g_ProbeGeometry", data.m_Geometry);
       if (data.m_Meshlets.IsValid())
         bind("g_Meshlets", data.m_Meshlets);
+      if (data.m_Lights.IsValid())
+      {
+        bind("g_Lights", data.m_Lights);
+        bind("g_LightCounts", data.m_LightCounts);
+        bind("g_LightCandidates", data.m_LightCandidates);
+        bind("g_IESProfiles", data.m_Profiles);
+      }
       bind("g_ProbeMaterials", data.m_Materials);
       bind("g_ProbeCandidates", data.m_Candidates);
       commands.ResolveAndSetConstantBuffer("xiiDDGIWorldTraceConstants", execute.GetBuffer(data.m_WorldConstants), xiiGALShaderType::Compute);
@@ -255,7 +315,8 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
     commands.DispatchCompute({data.m_uiGroups, 1, 1});
     data.m_Snapshot->CommitUpdates();
   };
-  const auto name    = useMeshlets ? "Trace World Meshlets for Directional Probes" : (useWorld ? "Trace World Geometry for Directional Probes" : "Update Directional Scene Probes");
+  const auto name    = useAnalytic ? "Shade Offscreen Hits for Directional Probes" :
+                                     (useMeshlets ? "Trace World Meshlets for Directional Probes" : (useWorld ? "Trace World Geometry for Directional Probes" : "Update Directional Scene Probes"));
   const auto emitted = context.m_Graph.AddPass<Data>(name, xiiGALCommandQueueFlags::Compute, setup, record);
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_States, emitted.first->m_States));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Irradiance, emitted.first->m_Irradiance));
