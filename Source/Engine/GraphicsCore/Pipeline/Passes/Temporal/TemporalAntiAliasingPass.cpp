@@ -16,14 +16,15 @@ struct xiiTemporalAntiAliasingPass::State : xiiRefCounted
 {
   struct Slot : xiiRefCounted
   {
-    xiiSharedPtr<xiiGALTexture> m_Color, m_Depth;
+    xiiSharedPtr<xiiGALTexture> m_Color, m_Depth, m_AmbientTrust;
+    bool                        m_bAmbientVisibility = false;
     xiiSharedPtr<xiiGALFence>   m_Ready;
     xiiUInt64                   m_uiReadyValue = 0, m_uiLastUsedFrame = 0, m_uiFrame = 0;
   };
   xiiMutex                                 m_Mutex;
   xiiDynamicArray<xiiSharedPtr<Slot>>      m_Slots;
   xiiSharedPtr<Slot>                       m_Last;
-  xiiSharedPtr<xiiGALComputePipelineState> m_Pipelines[4];
+  xiiSharedPtr<xiiGALComputePipelineState> m_Pipelines[6];
   xiiSharedPtr<xiiGALSampler>              m_Point, m_Linear;
   xiiUInt64                                m_uiRevision = 0;
   bool                                     m_bValid     = false;
@@ -42,6 +43,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporalAntiAliasingPass, 2, xiiRTTIDefaultA
     XII_MEMBER_PROPERTY("TemporalCamera", m_TemporalCamera)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("HistoryTrust",m_HistoryTrust)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ReactiveRadiance",m_ReactiveRadiance)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("AmbientOcclusion", m_AmbientVisibility)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("DepthThreshold", m_fDepthThreshold)->AddAttributes(new xiiDefaultValueAttribute(0.01f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("HDRSceneColor", m_InputHDRSceneColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -140,21 +142,32 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     if (!mask || (mask->m_Format != xiiGALResourceFormat::R8UNormalized && mask->m_Format != xiiGALResourceFormat::R16Float && mask->m_Format != xiiGALResourceFormat::R32Float))
       return context.ReportFailure("TAA history trust requires matching readable R8UNormalized, R16Float or R32Float coverage.");
   }
+  const auto ambient = context.GetInputTexture(m_AmbientVisibility);
+  if (ambient.IsValid())
+  {
+    const auto* mask = xiiScreenSpacePassUtils::Image(context, ambient, 1, &size);
+    if (!mask || mask->m_Format != xiiGALResourceFormat::R8UNormalized)
+      return context.ReportFailure("TAA ambient visibility requires matching readable R8UNormalized input.");
+  }
   xiiUInt64 completed = 0;
   if (xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
     return context.ReportFailure("TAA requires an active shared GPU frame.");
   auto& state = *m_pState;
   XII_LOCK(state.m_Mutex);
-  const bool            hasReactive = trust.IsValid() || reactive.IsValid();
-  const xiiUInt32       variant     = (description->m_Format == xiiGALResourceFormat::RGBA32Float ? 1U : 0U) + (hasReactive ? 2U : 0U);
-  auto&                 pipeline    = state.m_Pipelines[variant];
-  constexpr const char* paths[]     = {"Shaders/Pipeline/TAA.xiiShader", "Shaders/Pipeline/TAA32.xiiShader", "Shaders/Pipeline/TAAReactive.xiiShader", "Shaders/Pipeline/TAAReactive32.xiiShader"};
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, paths[variant]));
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(state.m_Linear));
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::PointClampSampler(state.m_Point));
   const bool valid = state.m_bValid && state.m_Last && state.m_Last->m_Color->GetDescription().m_Size == size &&
     state.m_Last->m_Color->GetDescription().m_Format == description->m_Format && state.m_Last->m_uiFrame < context.m_Graph.GetFrameIndex() &&
     (!camera || (camera->m_Sample.m_bHistoryValid && state.m_Last->m_uiFrame == camera->m_Sample.m_uiPreviousFrame));
+  const bool hasAmbient = ambient.IsValid() || (valid && state.m_Last->m_bAmbientVisibility);
+  if (hasAmbient && xiiGALDevice::GetDefaultDevice()->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled)
+    return context.ReportFailure("TAA ambient visibility provenance requires R8 storage-image support (TextureUAVExtendedFormats).");
+  const bool            hasReactive = trust.IsValid() || reactive.IsValid() || hasAmbient;
+  const xiiUInt32       variant     = (description->m_Format == xiiGALResourceFormat::RGBA32Float ? 1U : 0U) + (hasAmbient ? 4U : hasReactive ? 2U :
+                                                                                                                                                0U);
+  auto&                 pipeline    = state.m_Pipelines[variant];
+  constexpr const char* paths[]     = {"Shaders/Pipeline/TAA.xiiShader", "Shaders/Pipeline/TAA32.xiiShader", "Shaders/Pipeline/TAAReactive.xiiShader", "Shaders/Pipeline/TAAReactive32.xiiShader", "Shaders/Pipeline/TAAAmbient.xiiShader", "Shaders/Pipeline/TAAAmbient32.xiiShader"};
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, paths[variant]));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(state.m_Linear));
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::PointClampSampler(state.m_Point));
   // The slot itself is retained by every recording/publication. Completion alone
   // cannot authorize overwriting images referenced by a recording executed later.
   xiiSharedPtr<State::Slot> next;
@@ -187,6 +200,18 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
       return context.ReportFailure("Could not allocate TAA color/depth history and readiness fence.");
     state.m_Slots.PushBack(next);
   }
+  if (hasAmbient && !next->m_AmbientTrust)
+  {
+    xiiGALTextureCreationDescription allocation;
+    allocation.m_Type      = xiiGALResourceDimension::Texture2D;
+    allocation.m_Size      = size;
+    allocation.m_Format    = xiiGALResourceFormat::R8UNormalized;
+    allocation.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    next->m_AmbientTrust   = xiiGALDevice::GetDefaultDevice()->CreateTexture(allocation);
+    if (!next->m_AmbientTrust)
+      return context.ReportFailure("Could not allocate TAA ambient visibility provenance.");
+  }
+  next->m_bAmbientVisibility = ambient.IsValid();
   ++next->m_uiReadyValue;
   next->m_uiFrame = next->m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
   if (valid)
@@ -195,6 +220,7 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
   struct Data
   {
     xiiRenderGraphTextureHandle              m_Color, m_Velocity, m_Depth, m_Trust, m_Reactive, m_PreviousColor, m_PreviousDepth, m_Output, m_OutputDepth;
+    xiiRenderGraphTextureHandle              m_Ambient, m_PreviousAmbientTrust, m_OutputAmbientTrust;
     xiiRenderGraphBufferHandle               m_Constants;
     xiiTAAConstants                          m_Parameters;
     xiiSizeU32                               m_Size;
@@ -234,6 +260,12 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
       data.m_PreviousColor = data.m_Color;
       data.m_PreviousDepth = data.m_Depth;
     }
+    if (hasAmbient)
+    {
+      data.m_Ambient              = ambient.IsValid() ? builder.ReadTexture(ambient, xiiGALResourceStateFlags::ShaderResource) : data.m_Depth;
+      data.m_PreviousAmbientTrust = valid && state.m_Last->m_bAmbientVisibility ? builder.ReadTexture(builder.ImportTexture("TAA Previous Ambient Provenance", state.m_Last->m_AmbientTrust, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource) : data.m_Depth;
+      data.m_OutputAmbientTrust   = builder.WriteTexture(builder.ImportTexture("TAA Ambient Provenance", next->m_AmbientTrust, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::UnorderedAccess);
+    }
     data.m_Output = builder.WriteTexture(builder.ImportTexture("TAA Resolved", next->m_Color, next->m_Color->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
     data.m_OutputDepth = builder.WriteTexture(builder.ImportTexture("TAA Retained Depth", next->m_Depth, next->m_Depth->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
     data.m_Parameters = {};
@@ -242,7 +274,7 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     data.m_Parameters.MotionBlendScale = m_fMotionBlendScale;
     data.m_Parameters.DepthThreshold = m_fDepthThreshold;
     data.m_Parameters.HasCamera = camera ? 1U : 0U;
-    data.m_Parameters.ReactiveFlags          = (trust.IsValid() ? 1U : 0U) | (reactive.IsValid() ? 2U : 0U);
+    data.m_Parameters.ReactiveFlags          = (trust.IsValid() ? 1U : 0U) | (reactive.IsValid() ? 2U : 0U) | (ambient.IsValid() ? 4U : 0U) | (valid && state.m_Last->m_bAmbientVisibility ? 8U : 0U);
     data.m_Parameters.InverseViewProjection = camera ? camera->m_Sample.m_Camera.m_InverseViewProjectionMatrix : xiiMat4::MakeIdentity();
     data.m_Parameters.PreviousViewProjection = camera ? camera->m_Sample.m_PreviousViewProjection : xiiMat4::MakeIdentity();
     data.m_Parameters.CameraPosition = camera ? camera->m_Sample.m_Camera.m_CameraPositionAndNearPlane : xiiVec4::MakeZero();
@@ -266,6 +298,12 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     {
       commands.ResolveAndSetShaderResourceTextureView("g_HistoryTrust", execute.GetTexture(data.m_Trust)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceTextureView("g_ReactiveRadiance", execute.GetTexture(data.m_Reactive)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+    if (data.m_OutputAmbientTrust.IsValid())
+    {
+      commands.ResolveAndSetShaderResourceTextureView("g_CurrentAmbientVisibility", execute.GetTexture(data.m_Ambient)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      commands.ResolveAndSetShaderResourceTextureView("g_HistoryAmbientTrust", execute.GetTexture(data.m_PreviousAmbientTrust)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      commands.ResolveAndSetUnorderedAccessTextureView("g_RetainedAmbientTrust", execute.GetTexture(data.m_OutputAmbientTrust)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     }
     commands.ResolveAndSetUnorderedAccessTextureView("g_Resolved", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessTextureView("g_RetainedDepth", execute.GetTexture(data.m_OutputDepth)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);

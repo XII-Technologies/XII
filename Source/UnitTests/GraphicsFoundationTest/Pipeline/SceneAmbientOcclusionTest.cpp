@@ -523,3 +523,5 @@ XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, BoundedRetainedHistoryAndReverseEx
   for (auto& context : contexts)
     context.GetResourceCache().EndFrame();
 }
+
+XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, JitteredReconstructionAndCameraSpaceHistory) { xiiSceneTemporalAOTest::Run(false, true); }

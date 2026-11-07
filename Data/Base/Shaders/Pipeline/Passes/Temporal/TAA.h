@@ -16,6 +16,12 @@ Texture2D<float>  g_HistoryDepth;
 Texture2D<float>  g_HistoryTrust;
 Texture2D<float4> g_ReactiveRadiance;
 #endif
+#if defined(XII_TAA_AMBIENT_TRUST)
+Texture2D<float> g_CurrentAmbientVisibility;
+Texture2D<float> g_HistoryAmbientTrust;
+XII_STORAGE_IMAGE_FORMAT("r8")
+RWTexture2D<float> g_RetainedAmbientTrust;
+#endif
 XII_STORAGE_IMAGE_FORMAT("r32f")
 RWTexture2D<float> g_RetainedDepth;
 XII_STORAGE_IMAGE_FORMAT(XII_TAA_STORAGE_FORMAT)
@@ -79,6 +85,12 @@ float3 ClipAABB(float3 minimumColor, float3 maximumColor, float3 historyColor)
   if ((ReactiveFlags & 2u) != 0u)
     untrusted = untrusted || any(g_ReactiveRadiance.Load(int3(dispatchThreadId.xy, 0)).rgb > 0);
 #endif
+#if defined(XII_TAA_AMBIENT_TRUST)
+  const float ambientVisibility = (ReactiveFlags & 4u) != 0u ? g_CurrentAmbientVisibility.Load(int3(dispatchThreadId.xy, 0)) : 1;
+  const bool  ambientFree       = ambientVisibility >= 1.0f - 0.5f / 255.0f;
+  // Resolved color provenance follows its stable grid, rather than raw AO jitter.
+  g_RetainedAmbientTrust[dispatchThreadId.xy] = ambientFree ? 1 : 0;
+#endif
   // Negative values encode invalid color provenance in private depth history.
   // This also rejects disappeared transparent or indirect-light contributions.
   g_RetainedDepth[dispatchThreadId.xy] = untrusted ? -(depth + 1.0f) : depth;
@@ -122,6 +134,14 @@ float3 ClipAABB(float3 minimumColor, float3 maximumColor, float3 historyColor)
     g_Resolved[dispatchThreadId.xy] = current;
     return;
   }
+#if defined(XII_TAA_AMBIENT_TRUST)
+  const float previousAmbientTrust = (ReactiveFlags & 8u) != 0u ? g_HistoryAmbientTrust.SampleLevel(LinearClampSampler, previousUv, 0) : 1;
+  if (ambientFree && previousAmbientTrust < 0.999f)
+  {
+    g_Resolved[dispatchThreadId.xy] = current;
+    return;
+  }
+#endif
   const float previousDepth = g_HistoryDepth.SampleLevel(PointClampSampler, previousSurfaceUv, 0);
   // A depth-changing surface is conservatively rejected, including previously covered
   // background. Moving geometry in depth may reject valid history rather than ghost.

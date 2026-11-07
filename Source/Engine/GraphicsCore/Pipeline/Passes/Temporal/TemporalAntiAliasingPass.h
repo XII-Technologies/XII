@@ -21,6 +21,8 @@ public:
   xiiRenderPipelineTextureInputPin m_HistoryTrust{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   /// Nonzero incident radiance marks unstable lighting; disappearance rejects its retained history too.
   xiiRenderPipelineTextureInputPin  m_ReactiveRadiance{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  /// Optional ambient visibility used to reject resolved color after occlusion disappears.
+  xiiRenderPipelineTextureInputPin  m_AmbientVisibility{xiiGALResourceFormat::R8UNormalized, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputTAAResolved{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputPreviousColor{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Texture2D, 1, xiiRenderPipelinePinAccess::Automatic, true};
 
