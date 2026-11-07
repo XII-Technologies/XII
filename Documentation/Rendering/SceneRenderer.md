@@ -1524,19 +1524,16 @@ resumption of 0.92 history / 0.08 current blending. Active missing radiance must
 fail the view, while disabling the authored gate bypasses the incomplete workload.
 The scene fixture runs with mesh shaders and extended texture UAV formats disabled.
 
-Editor composition changes 5,879 matching final Scene/Editor pixels, with exact
-enabled/disabled restoration. Final Windows/MSVC Debug builds pass GraphicsCore,
-GraphicsCoreTest, GraphicsFoundationTest, EditorFrameworkTest,
-EditorEngineProcessFrameworkTest and GpuDrivenScene using the isolated runtime.
-Complete suite runs pass GraphicsCoreTest (81 subtests), Vulkan
-GraphicsFoundationTest (140) and Vulkan EditorEngineProcessFrameworkTest (76).
-The final missing-radiance acceptance additions also pass both SceneIrradiance
-subtests. RendererAssets regenerates all ten sources deterministically on repeated
-runs; EditorDocuments (20) and NodeLayout (3) pass, including the updated Scene
-graph. The rebuilt Vulkan sample explicitly completes 300 Scene frames.
-Existing unused Vulkan shader-output and offscreen Qt font warnings remain.
-No generated pipeline binaries, validation artifacts or unrelated scene edits are
-committed. These are direct executable runs, not an additional CTest certification.
+`EditorViews/GeometryDependentDiffuseTransportAndIndependentWorlds` executes the
+same complete fixture through the authored Editor resource. It redirects Editor's
+Scene reference to the instrumented production definition, publishes only capture
+interfaces, and prefixes all Scene overrides with the actual Editor occurrence.
+Editor camera hints are used and selection/icon overlays are disabled. All twenty
+material/visibility phases, eight independent-world temporal phases, asynchronous
+trace preference, missing-input failure and retained-world recording assertions
+run in both compositions. The Windows/Vulkan Debug Scene and Editor runs passed.
+The fixture keeps mesh shaders and extended texture UAV formats disabled, so this
+screen transport contract remains a non-ray path.
 
 This is bounded, single-bounce screen-space transport. Hidden/offscreen surfaces,
 probe/voxel transport, multiple bounces, volume transport and environment-convolved
