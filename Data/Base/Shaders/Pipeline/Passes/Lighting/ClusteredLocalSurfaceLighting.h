@@ -115,7 +115,7 @@ uint2 LocalClusterRange(uint identity)
   uint          evaluatedLights = 0;
   uint          clusterIdentity = 0;
 #  if defined(XII_LOCAL_RESERVOIRS)
-  uint          domain          = 0u;
+  uint domain = 0u;
 #  endif
   if (LoadSurface(tid.xy, surface))
   {

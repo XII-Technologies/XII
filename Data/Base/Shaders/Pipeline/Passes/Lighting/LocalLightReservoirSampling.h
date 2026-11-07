@@ -235,7 +235,7 @@ bool ResolveLocalReservoir(uint2 pixel, uint cluster, SurfaceSample surface, boo
   if (selection.Index != InvalidLight && selection.Count > 0 && selection.Target > 0 && isfinite(selection.Sum))
     result = Evaluate(selection.Index, surface, receives, reactive) * ((selection.Sum / float(selection.Count)) / selection.Target);
   const uint hash = LocalHash(current.Domain.x ^ LocalHash(current.Domain.y));
-  domain = max(hash & ~XII_LOCAL_LIGHT_SHADOW_DOMAIN, 1u);
+  domain          = max(hash & ~XII_LOCAL_LIGHT_SHADOW_DOMAIN, 1u);
   if (reactive > 0.0f)
     domain |= XII_LOCAL_LIGHT_SHADOW_DOMAIN;
   return true;
