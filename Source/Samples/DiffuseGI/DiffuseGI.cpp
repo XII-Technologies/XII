@@ -43,6 +43,8 @@ namespace
   xiiCommandLineOptionInt    opt_Frames("DiffuseGI", "-frames", "Frames of temporal accumulation per image.", 20, 2, 240);
   xiiCommandLineOptionString opt_Pipeline("DiffuseGI", "-pipeline", "Authored root to render: Scene or Editor.", "Scene");
   xiiCommandLineOptionBool   opt_SkyOnly("DiffuseGI", "-sky-only", "Light the room with the sky and disable the emissive panel.", false);
+  xiiCommandLineOptionBool   opt_NoRay("DiffuseGI", "-no-ray", "Disable hardware rays to render the scene probe fallback.", false);
+  xiiCommandLineOptionBool   opt_ScreenOnly("DiffuseGI", "-screen-only", "Use only screen-space diffuse transport for comparison.", false);
   xiiCommandLineOptionBool   opt_Diagnostics("DiffuseGI", "-diagnostics", "Also capture the Editor GI inspection views.", false);
 
   xiiRenderPipelineResourceHandle LoadPipeline(xiiStringView sName)
@@ -50,7 +52,7 @@ namespace
     return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiStringBuilder("RenderPipelines/", sName, ".xiiBinRenderPipeline"));
   }
 
-  xiiRenderPipelineResourceHandle EnableGI(bool bEditor)
+  xiiRenderPipelineResourceHandle EnableGI(bool bEditor, bool bScreenOnly)
   {
     const auto                                 handle = LoadPipeline(bEditor ? "Editor" : "Scene");
     xiiResourceLock<xiiRenderPipelineResource> root(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -70,13 +72,14 @@ namespace
         ray = workload.m_Passes[edge.m_uiSource].m_Id;
     if (!ray.IsValid())
       return {};
+    const auto gate = bScreenOnly ? xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth") : ray;
     for (auto& node : descriptor.m_Passes)
       if (bEditor ? node.m_Definition == sceneId : node.m_Id == gi)
       {
         auto& setting = node.m_Overrides.ExpandAndGetRef();
         if (bEditor)
           setting.m_Path.PushBack(gi);
-        setting.m_Path.PushBack(ray);
+        setting.m_Path.PushBack(gate);
         setting.m_Properties.Insert("Enabled", true);
         return xiiResourceManager::CreateResource<xiiRenderPipelineResource>(bEditor ? "DiffuseGI.Editor" : "DiffuseGI.Scene", std::move(descriptor));
       }
@@ -237,7 +240,7 @@ private:
     description.m_DeviceFeatures.m_IndependentBlend           = xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_BindlessResources          = xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Optional;
-    description.m_DeviceFeatures.m_RayTracing                 = xiiGALDeviceFeatureState::Optional;
+    description.m_DeviceFeatures.m_RayTracing                 = opt_NoRay.GetOptionValue(xiiCommandLineOption::LogMode::Never) ? xiiGALDeviceFeatureState::Disabled : xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_MeshShaders                = xiiGALDeviceFeatureState::Disabled;
     auto device                                               = xiiGALDeviceFactory::CreateDevice(renderer, xiiFoundation::GetDefaultAllocator(), description);
     if (!device || device->Initialize().Failed())
@@ -245,7 +248,7 @@ private:
     xiiGALDevice::SetDefaultDevice(device);
     xiiStartup::StartupHighLevelSystems();
     XII_SCOPE_EXIT(device->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr));
-    xiiLog::Info("Diffuse transport: {}", xiiRayTracingResources::IsHardwareRayTracingSupported() ? "hardware ray tracing" : "screen space");
+    xiiLog::Info("Diffuse transport: {}", xiiRayTracingResources::IsHardwareRayTracingSupported() ? "hardware ray tracing available" : "hardware ray tracing unavailable");
 
     const bool editor = pipeline == "Editor";
 #ifdef XII_DIFFUSE_GI_EDITOR
@@ -258,7 +261,7 @@ private:
       return XII_FAILURE;
     }
 #endif
-    const auto base = LoadPipeline(pipeline), enabled = EnableGI(editor);
+    const auto base = LoadPipeline(pipeline), enabled = EnableGI(editor, opt_ScreenOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
     if (!enabled.IsValid())
       return XII_FAILURE;
     xiiWorldDescription worldDescription("Diffuse GI demonstration");
@@ -303,6 +306,9 @@ private:
         }
       }
       device->WaitIdle();
+      for (const auto& pass : view->GetRenderGraph()->GetCompiledPasses())
+        if (!pass.m_bIsCulled && pass.m_sName == "Update Directional Scene Probes")
+          xiiLog::Info("{} used the scene probe update.", sFilename);
       xiiLog::Info("Saving {}.", sFilename);
       return SaveImage(*device, target.Borrow(), xiiStringBuilder(":capture/", sFilename));
     };
