@@ -2,6 +2,8 @@
 
 [PLATFORMS]
 ALL
+[PERMUTATIONS]
+GI_EMISSIVE_SAMPLING
 [SHADER]
 #include <Shaders/Pipeline/Passes/ScreenSpaceGeometry.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/RayTracedIrradianceConstants.h>
@@ -12,8 +14,12 @@ struct IrradiancePayload
   uint Depth;
   float ConeWidth, ConeSpread;
   uint Random, Flags;
+#if GI_EMISSIVE_SAMPLING
+  float PreviousPDF;
+#endif
 };
 static const uint XII_IRRADIANCE_VISIBILITY_RAY = 1u;
+static const uint XII_IRRADIANCE_EMITTER_RAY = 2u;
 uint IrradianceHash(uint value)
 {
   value ^= value >> 16; value *= 0x7feb352du;
@@ -35,6 +41,9 @@ float3 IrradianceDirection(float3 normal, float2 xi)
 [RAY_GENERATION_SHADER]
 #include <Shaders/Common/StorageImageFormat.h>
 RaytracingAccelerationStructure g_Scene;
+#if GI_EMISSIVE_SAMPLING
+#include <Shaders/Pipeline/Passes/GlobalIllumination/EmissiveIrradianceSampling.h>
+#endif
 Texture2D<float> g_Depth;
 Texture2D<float2> g_Normal;
 XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Irradiance;
@@ -67,6 +76,19 @@ void main()
     ray.Origin=position+normal*RayDistances.y;
     ray.Direction=IrradianceDirection(normal,xi);
     ray.TMin=0.001f; ray.TMax=RayDistances.x;
+#if GI_EMISSIVE_SAMPLING
+    payload.PreviousPDF = max(dot(normal, ray.Direction), 0) / 3.14159265359f;
+    uint emissiveRandom = IrradianceHash(payload.Random ^ 0xa511e9b3u);
+    float3 direct = 0;
+    [loop] for (uint emitterSample = 0; emitterSample < EmissiveSamples.x; ++emitterSample)
+    {
+      float3 direction, weightedEmission;
+      if (IrradianceSampleEmitter(position, normal, payload.ConeWidth, payload.ConeSpread, emissiveRandom, direction, weightedEmission))
+        direct += max(dot(normal, direction), 0) * weightedEmission;
+    }
+    // The final conversion below multiplies every primary sample by pi.
+    radiance += direct / (3.14159265359f * float(EmissiveSamples.x));
+#endif
     TraceRay(g_Scene,0,0xff,0,1,0,ray,payload);
     radiance+=payload.Radiance;
   }
@@ -84,6 +106,9 @@ void main(inout IrradiancePayload payload)
 }
 [RAY_CLOSEST_HIT_SHADER]
 RaytracingAccelerationStructure g_Scene;
+#if GI_EMISSIVE_SAMPLING
+#include <Shaders/Pipeline/Passes/GlobalIllumination/EmissiveIrradianceSampling.h>
+#endif
 StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials;
 StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry;
 ByteAddressBuffer g_RayTracingBuffers[];
@@ -109,6 +134,9 @@ float IrradianceVisibility(float3 position, float3 normal, float3 direction, flo
   visibility.Radiance=0; visibility.Depth=0; visibility.Random=0;
   visibility.Flags=XII_IRRADIANCE_VISIBILITY_RAY;
   visibility.ConeWidth=coneWidth; visibility.ConeSpread=0;
+#if GI_EMISSIVE_SAMPLING
+  visibility.PreviousPDF=0;
+#endif
   // Force any-hit for ordinary opaque meshes too: shadow-casting policy and
   // alpha cutouts are evaluated independently of diffuse path intersections.
   TraceRay(g_Scene,RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_FORCE_NON_OPAQUE,
@@ -179,9 +207,18 @@ float3 IrradianceAnalyticLighting(xiiRayTracingSurface surface, xiiRayTracingMat
 [shader("closesthit")]
 void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
+#if GI_EMISSIVE_SAMPLING
+  if ((payload.Flags & XII_IRRADIANCE_EMITTER_RAY) != 0 &&
+      (payload.Random != InstanceIndex() || payload.Depth != PrimitiveIndex()))
+  { payload.Radiance = 0; return; }
+#endif
   const xiiRayTracingMaterialData material=g_RayTracingMaterials[InstanceIndex()];
   const xiiRayTracingSurface surface=xiiLoadRayTracingSurface(InstanceIndex(),PrimitiveIndex(),attributes.barycentrics,payload.ConeWidth,payload.ConeSpread);
   payload.Radiance=surface.Emission;
+#if GI_EMISSIVE_SAMPLING
+  if ((payload.Flags & XII_IRRADIANCE_EMITTER_RAY) != 0) return;
+  payload.Radiance *= IrradianceEmitterHitWeight(g_RayTracingGeometry[InstanceIndex()], PrimitiveIndex(), RayTCurrent(), WorldRayDirection(), payload.PreviousPDF);
+#endif
   // Emission is independent of receiving illumination. Unlit/nonreceiving hits
   // terminate the diffuse path without inventing reflected light.
   if (material.Metadata.z==6u || (material.Metadata.w & 4096u)==0 || !all(isfinite(surface.Normal)) || dot(surface.Normal,surface.Normal)<0.5f) return;
@@ -189,6 +226,18 @@ void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttribu
   const float coneWidth=max(payload.ConeWidth+RayTCurrent()*payload.ConeSpread,1e-6f);
   payload.Radiance+=IrradianceAnalyticLighting(surface,material,position,normalize(-WorldRayDirection()),coneWidth,payload.Random);
   if(payload.Depth+1>=PathSamples.y) return;
+#if GI_EMISSIVE_SAMPLING
+  uint emissiveRandom = IrradianceHash(payload.Random ^ 0xa511e9b3u);
+  float3 directEmission = 0;
+  [loop] for (uint emitterSample = 0; emitterSample < EmissiveSamples.x; ++emitterSample)
+  {
+    float3 direction, weightedEmission;
+    if (IrradianceSampleEmitter(position, surface.Normal, coneWidth, max(payload.ConeSpread,0.25f), emissiveRandom, direction, weightedEmission))
+      directEmission += BRDFLayered(saturate(surface.BaseColor),surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),
+        surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness,surface.Normal,direction,normalize(-WorldRayDirection())) * weightedEmission;
+  }
+  payload.Radiance += directEmission * (surface.Occlusion / float(EmissiveSamples.x));
+#endif
   IrradiancePayload child=payload;
   child.Radiance=0; child.Depth++;
   child.ConeWidth=max(payload.ConeWidth+RayTCurrent()*payload.ConeSpread,1e-6f);
@@ -202,6 +251,9 @@ void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttribu
   const float cosine=max(dot(surface.Normal,ray.Direction),1e-6f);
   const float3 response=BRDFLayered(saturate(surface.BaseColor),surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),
     surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness,surface.Normal,ray.Direction,normalize(-WorldRayDirection()));
+#if GI_EMISSIVE_SAMPLING
+  child.PreviousPDF = cosine / 3.14159265359f;
+#endif
   TraceRay(g_Scene,0,0xff,0,1,0,ray,child);
   payload.Radiance+=response*(3.14159265359f/cosine)*surface.Occlusion*child.Radiance;
 }

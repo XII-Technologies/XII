@@ -17,6 +17,7 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/RayTracedIrradianceConstants.h>
 #include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 
 xiiRayTracedIrradiancePass::xiiRayTracedIrradiancePass() { m_Irradiance.SetResolution({xiiRenderPipelineTextureResolutionMode::Input}); }
 // clang-format off
@@ -34,6 +35,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("LightCounts", m_LightCounts)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("LightCandidates", m_LightCandidates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("IESProfiles", m_IESProfiles)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("EmissiveTriangles", m_EmissiveTriangles)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("EmissiveHeader", m_EmissiveHeader)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("TriangleAliases", m_TriangleAliases)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("BlockAliases", m_BlockAliases)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("AliasHeader", m_AliasHeader)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("EmissiveLightSamples", m_uiEmissiveLightSamples)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 8U)),
     XII_MEMBER_PROPERTY("Irradiance", m_Irradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(8U), new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("MaximumHits", m_uiMaximumHits)->AddAttributes(new xiiDefaultValueAttribute(2U), new xiiClampValueAttribute(1U, 4U)),
@@ -51,7 +58,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
 xiiResult xiiRayTracedIrradiancePass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return m_uiSampleCount > 0 && m_uiSampleCount <= 32 && m_uiMaximumHits > 0 && m_uiMaximumHits <= 4 && m_uiAnalyticLightSamples <= 8 && xiiMath::IsFinite(m_fRayLength) && m_fRayLength > 0.001f && m_fRayLength <= 100000 && xiiMath::IsFinite(m_fSurfaceBias) && m_fSurfaceBias >= 0 && m_fSurfaceBias <= 10 ? XII_SUCCESS : XII_FAILURE;
+  return m_uiSampleCount > 0 && m_uiSampleCount <= 32 && m_uiMaximumHits > 0 && m_uiMaximumHits <= 4 && m_uiAnalyticLightSamples <= 8 && m_uiEmissiveLightSamples <= 8 && xiiMath::IsFinite(m_fRayLength) && m_fRayLength > 0.001f && m_fRayLength <= 100000 && xiiMath::IsFinite(m_fSurfaceBias) && m_fSurfaceBias >= 0 && m_fSurfaceBias <= 10 ? XII_SUCCESS : XII_FAILURE;
 }
 xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -110,21 +117,47 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
   const auto* g = context.m_Graph.GetBufferDescription(geometry);
   if (!scene.IsValid() || !context.m_Graph.GetBufferDescription(scene.m_Dependency) || !m || !g || m->m_Mode != xiiGALBufferMode::Structured || g->m_Mode != xiiGALBufferMode::Structured || m->m_uiElementByteStride != sizeof(xiiRayTracingMaterialData) || g->m_uiElementByteStride != sizeof(xiiRayTracingGeometryData) || m->m_uiSize / sizeof(xiiRayTracingMaterialData) != g->m_uiSize / sizeof(xiiRayTracingGeometryData) || m->m_uiSize == 0 || m->m_uiSize % sizeof(xiiRayTracingMaterialData) != 0 || g->m_uiSize % sizeof(xiiRayTracingGeometryData) != 0 || !m->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !g->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     return context.ReportFailure("Ray irradiance requires a current TLAS dependency and matching canonical hit records.");
+  const bool                             emissiveSampling = m_uiEmissiveLightSamples != 0;
+  const xiiRenderPipelineBufferInputPin* emissivePins[]   = {&m_EmissiveTriangles, &m_EmissiveHeader, &m_TriangleAliases, &m_BlockAliases, &m_AliasHeader};
+  xiiRenderGraphBufferHandle             emissiveTables[5];
+  if (emissiveSampling)
+  {
+    for (xiiUInt32 index = 0; index < 5; ++index)
+      emissiveTables[index] = context.GetInputBuffer(*emissivePins[index]);
+    const auto* triangles = context.m_Graph.GetBufferDescription(emissiveTables[0]);
+    if (!triangles || triangles->m_uiSize == 0 || triangles->m_uiSize % sizeof(xiiGpuEmissiveTriangle) != 0 || triangles->m_uiSize / sizeof(xiiGpuEmissiveTriangle) > 16U * 1024U * 1024U)
+      return context.ReportFailure("Ray irradiance requires bounded native emissive triangle records.");
+    const xiiUInt32 capacity = xiiUInt32(triangles->m_uiSize / sizeof(xiiGpuEmissiveTriangle));
+    if (!Buffer(context, emissiveTables[0], sizeof(xiiGpuEmissiveTriangle), capacity, xiiGALBindFlags::ShaderResource) ||
+        !Buffer(context, emissiveTables[1], sizeof(xiiGpuEmissiveLightHeader), 1, xiiGALBindFlags::ShaderResource) ||
+        !Buffer(context, emissiveTables[2], sizeof(xiiGpuEmissiveAliasEntry), capacity, xiiGALBindFlags::ShaderResource) ||
+        !Buffer(context, emissiveTables[3], sizeof(xiiGpuEmissiveAliasEntry), (capacity + 255U) / 256U, xiiGALBindFlags::ShaderResource) ||
+        !Buffer(context, emissiveTables[4], sizeof(xiiGpuEmissiveAliasHeader), 1, xiiGALBindFlags::ShaderResource))
+      return context.ReportFailure("Ray irradiance requires matching native emissive header and alias tables.");
+  }
   const xiiUInt32 recursionDepth = m_uiMaximumHits + (m_uiAnalyticLightSamples != 0 ? 1U : 0U);
   if (!limits.m_uiShaderGroupHandleSize || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupBaseAlignment) || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupHandleAlignment) || limits.m_uiMaxRecursionDepth < recursionDepth)
     return context.ReportFailure("Ray irradiance exceeds shader record or recursion capabilities.");
   const auto stride = xiiMemoryUtils::AlignSize(xiiUInt64(limits.m_uiShaderGroupHandleSize), xiiUInt64(xiiMath::Max(limits.m_uiShaderGroupBaseAlignment, limits.m_uiShaderGroupHandleAlignment)));
   if (stride > limits.m_uiMaxShaderRecordStride || stride > xiiMath::MaxValue<xiiUInt32>() / 3U)
     return context.ReportFailure("Ray irradiance shader records exceed device limits.");
-  if (!m_Shader.IsValid())
-    m_Shader = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RayTracedIrradiance.xiiShader"), {}, false);
-  xiiResourceLock<xiiShaderPermutationResource> shader(m_Shader, xiiResourceAcquireMode::BlockTillLoaded);
+  auto& shaderHandle = m_Shader[emissiveSampling ? 1 : 0];
+  if (!shaderHandle.IsValid())
+  {
+    xiiHashTable<xiiHashedString, xiiHashedString> variables;
+    xiiHashedString                                name, value;
+    name.Assign("GI_EMISSIVE_SAMPLING");
+    value.Assign(emissiveSampling ? "TRUE" : "FALSE");
+    variables.Insert(name, value);
+    shaderHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RayTracedIrradiance.xiiShader"), variables, false);
+  }
+  xiiResourceLock<xiiShaderPermutationResource> shader(shaderHandle, xiiResourceAcquireMode::BlockTillLoaded);
   if (!shader.IsValid() || !shader->IsShaderValid())
     return context.ReportFailure("Ray irradiance shader is unavailable.");
   xiiGALRayTracingPipelineStateCreationDescription description;
   description.m_pPipelineResourceSignature               = shader->GetPipelineResourceSignature();
   description.m_RayTracingPipeline.m_uiMaxRecursionDepth = recursionDepth;
-  description.m_uiMaximumPayloadSize                     = 32;
+  description.m_uiMaximumPayloadSize                     = emissiveSampling ? 36 : 32;
   description.m_uiMaximumAttributeSize                   = 8;
   auto& generation                                       = description.m_GeneralShaders.ExpandAndGetRef();
   generation.m_sName.Assign("IrradianceGeneration");
@@ -237,6 +270,7 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     xiiRenderGraphBufferHandle                  m_Dependency, m_Camera, m_Constants, m_Materials, m_Geometry, m_Records;
     xiiRenderGraphBufferHandle                  m_Lights, m_LightCounts, m_LightCandidates, m_IESProfiles;
     xiiRenderGraphBufferHandle                  m_LightCDF, m_BlockCDF;
+    xiiRenderGraphBufferHandle                  m_EmissiveTables[5];
     xiiRayTracedIrradianceConstants             m_Settings;
     xiiSharedPtr<xiiGALTopLevelAS>              m_Scene;
     xiiSharedPtr<xiiGALRayTracingPipelineState> m_Pipeline;
@@ -257,10 +291,14 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     data.m_IESProfiles           = builder.ReadBuffer(profiles, xiiGALResourceStateFlags::ShaderResource);
     data.m_LightCDF              = builder.ReadBuffer(lightCDF, xiiGALResourceStateFlags::ShaderResource);
     data.m_BlockCDF              = builder.ReadBuffer(blockCDF, xiiGALResourceStateFlags::ShaderResource);
+    if (emissiveSampling)
+      for (xiiUInt32 index = 0; index < 5; ++index)
+        data.m_EmissiveTables[index] = builder.ReadBuffer(emissiveTables[index], xiiGALResourceStateFlags::ShaderResource);
     data.m_Scene                 = scene.m_pStructure;
     data.m_Output                = xiiCompositionPassUtils::Output(builder, size, xiiGALResourceFormat::RGBA32Float);
     data.m_Constants             = xiiRenderPassUtils::Constants(builder, "Ray irradiance settings", sizeof(data.m_Settings));
     data.m_Settings.RayDistances = xiiVec4(m_fRayLength, m_fSurfaceBias, powerWeighted ? 1.0f : 0.0f, 0);
+    data.m_Settings.EmissiveSamples = xiiVec4U32(m_uiEmissiveLightSamples, xiiUInt32(context.m_Graph.GetFrameIndex()), 0, 0);
     data.m_Settings.PathSamples  = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset, m_uiAnalyticLightSamples);
     data.m_Size                  = size;
     data.m_Stride                = stride;
@@ -295,6 +333,12 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     commands.ResolveAndSetShaderResourceBufferView("g_IESProfiles", execute.GetBuffer(data.m_IESProfiles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
     commands.ResolveAndSetShaderResourceBufferView("g_LightCDF", execute.GetBuffer(data.m_LightCDF)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
     commands.ResolveAndSetShaderResourceBufferView("g_BlockCDF", execute.GetBuffer(data.m_BlockCDF)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+    if (data.m_Settings.EmissiveSamples.x != 0)
+    {
+      const xiiTempHashedString names[] = {"g_EmissiveTriangles", "g_EmissiveHeader", "g_EmissiveTriangleAliases", "g_EmissiveBlockAliases", "g_EmissiveAliasHeader"};
+      for (xiiUInt32 index = 0; index < 5; ++index)
+        commands.ResolveAndSetShaderResourceBufferView(names[index], execute.GetBuffer(data.m_EmissiveTables[index])->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit);
+    }
     commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
     xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_RayTracingBuffers", stages);
     xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_RayTracingTextures", stages);
