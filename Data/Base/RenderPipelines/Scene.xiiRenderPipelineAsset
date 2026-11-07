@@ -19499,6 +19499,9 @@ o
 			Uuid{u4{13359646230482437988,108296053950271597}}
 			Uuid{u4{13623645087154798687,2667021170309290821}}
 			Uuid{u4{11869886147293122941,14613572813451645834}}
+			Uuid{u4{10212990020128186121,8291627348684005168}}
+			Uuid{u4{12226532236887203340,12117498207612458953}}
+			Uuid{u4{13820796598547088565,5568646151126342526}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -40652,6 +40655,45 @@ o
 		s %SourcePin{"ReservoirDomain"}
 		Uuid %Target{u4{10411941511264895865,583470843143871508}}
 		s %TargetPin{"ReservoirDomain"}
+	}
+}
+o
+{
+	Uuid %id{u4{10212990020128186121,8291627348684005168}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9573474610976168838,5037307491721962436}}
+		s %SourcePin{"SceneInstances"}
+		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
+		s %TargetPin{"SceneInstances"}
+	}
+}
+o
+{
+	Uuid %id{u4{12226532236887203340,12117498207612458953}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{16180107492330357140,5489540397947222843}}
+		s %SourcePin{"GeometryMetadata"}
+		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
+		s %TargetPin{"GeometryMetadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{13820796598547088565,5568646151126342526}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{18073486846302166184,4728672746802554363}}
+		s %SourcePin{"SurfaceMaterials"}
+		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
+		s %TargetPin{"SurfaceMaterials"}
 	}
 }
 }

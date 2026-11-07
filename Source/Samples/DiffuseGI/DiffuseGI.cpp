@@ -26,6 +26,7 @@
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/Passes/Denoising/LocalLightDenoisePass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGISceneUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/RayTracedIrradiancePass.h>
 #include <GraphicsCore/Pipeline/Passes/Lighting/ClusteredLocalSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -47,6 +48,8 @@ namespace
   xiiCommandLineOptionString opt_Pipeline("DiffuseGI", "-pipeline", "Authored root to render: Scene or Editor.", "Scene");
   xiiCommandLineOptionBool   opt_LocalLights("DiffuseGI", "-local-lights", "Compare exact and reservoir evaluation of a dense local-light scene.", false);
   xiiCommandLineOptionBool   opt_SkyOnly("DiffuseGI", "-sky-only", "Light the room with the sky and disable the emissive panel.", false);
+  xiiCommandLineOptionBool   opt_OffscreenEmitter("DiffuseGI", "-offscreen-emitter", "Compare camera and world probes with an emitter outside the frame.", false);
+  xiiCommandLineOptionBool   opt_BlockEmitter("DiffuseGI", "-block-emitter", "Add an opaque cover beneath the offscreen emitter.", false);
   xiiCommandLineOptionBool   opt_NoReuse("DiffuseGI", "-no-reuse", "Use fresh ray paths instead of reservoir resampling.", false);
   xiiCommandLineOptionInt    opt_Paths("DiffuseGI", "-paths", "Override fresh ray paths per pixel (zero uses the authored count).", 0, 0, 32);
   xiiCommandLineOptionBool   opt_NoRay("DiffuseGI", "-no-ray", "Disable hardware rays to render the scene probe fallback.", false);
@@ -58,7 +61,7 @@ namespace
     return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(xiiStringBuilder("RenderPipelines/", sName, ".xiiBinRenderPipeline"));
   }
 
-  xiiRenderPipelineResourceHandle EnableGI(bool bEditor, bool bScreenOnly)
+  xiiRenderPipelineResourceHandle EnableGI(bool bEditor, bool bScreenOnly, bool bWorldGeometry = true)
   {
     const auto                                 handle = LoadPipeline(bEditor ? "Editor" : "Scene");
     xiiResourceLock<xiiRenderPipelineResource> root(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -90,6 +93,16 @@ namespace
           setting.m_Path.PushBack(gi);
         setting.m_Path.PushBack(gate);
         setting.m_Properties.Insert("Enabled", true);
+        if (!bWorldGeometry)
+          for (const auto& pass : workload.m_Passes)
+            if (pass.m_pType == xiiGetStaticRTTI<xiiDDGISceneUpdatePass>())
+            {
+              auto& probes = node.m_Overrides.ExpandAndGetRef();
+              if (bEditor)
+                probes.m_Path.PushBack(gi);
+              probes.m_Path.PushBack(pass.m_Id);
+              probes.m_Properties.Insert("UseWorldGeometry", false);
+            }
         const auto paths     = opt_Paths.GetOptionValue(xiiCommandLineOption::LogMode::Never);
         const bool freshOnly = opt_NoReuse.GetOptionValue(xiiCommandLineOption::LogMode::Never);
         if (freshOnly || paths != 0)
@@ -103,7 +116,7 @@ namespace
           if (paths != 0)
             transport.m_Properties.Insert("SampleCount", xiiUInt32(paths));
         }
-        return xiiResourceManager::CreateResource<xiiRenderPipelineResource>(bEditor ? "DiffuseGI.Editor" : "DiffuseGI.Scene", std::move(descriptor));
+        return xiiResourceManager::CreateResource<xiiRenderPipelineResource>(xiiStringBuilder(bEditor ? "DiffuseGI.Editor" : "DiffuseGI.Scene", bWorldGeometry ? "" : ".CameraProbes"), std::move(descriptor));
       }
     return {};
   }
@@ -196,13 +209,14 @@ namespace
     component->SetMaterialOverride(0, material);
   }
 
-  void MakeRoom(xiiWorld& world, bool bSkyOnly, bool bLocalLights)
+  void MakeRoom(xiiWorld& world, bool bSkyOnly, bool bLocalLights, bool bOffscreenEmitter)
   {
-    const auto white   = Material("GI.White", xiiColor(0.75f, 0.75f, 0.75f), xiiColor::Black);
-    const auto red     = Material("GI.Red", xiiColor(0.7f, 0.06f, 0.04f), xiiColor::Black);
-    const auto green   = Material("GI.Green", xiiColor(0.06f, 0.62f, 0.14f), xiiColor::Black);
-    const auto emitter = Material("GI.Emitter", xiiColor::White, bSkyOnly || bLocalLights ? xiiColor::Black : xiiColor(12, 9, 6));
-    const auto box     = [&](xiiStringView sName, xiiVec3 vPosition, xiiVec3 vExtent, const xiiMaterialResourceHandle& material) {
+    const auto white    = Material("GI.White", xiiColor(0.75f, 0.75f, 0.75f), xiiColor::Black);
+    const auto red      = Material("GI.Red", xiiColor(0.7f, 0.06f, 0.04f), xiiColor::Black);
+    const auto green    = Material("GI.Green", xiiColor(0.06f, 0.62f, 0.14f), xiiColor::Black);
+    const auto emission = bOffscreenEmitter ? xiiColor(96, 60, 24) : (bSkyOnly || bLocalLights ? xiiColor::Black : xiiColor(12, 9, 6));
+    const auto emitter  = Material("GI.Emitter", xiiColor::White, emission);
+    const auto box      = [&](xiiStringView sName, xiiVec3 vPosition, xiiVec3 vExtent, const xiiMaterialResourceHandle& material) {
       xiiGeometry geometry;
       geometry.AddBox(vExtent, true);
       AddMesh(world, sName, vPosition, geometry, material);
@@ -212,7 +226,14 @@ namespace
     box("GI.Back", {2.5f, 0, 1.65f}, {0.2f, 4.3f, 3.3f}, white);
     box("GI.Left", {0.4f, 2.15f, 1.65f}, {4.2f, 0.2f, 3.3f}, red);
     box("GI.Right", {0.4f, -2.15f, 1.65f}, {4.2f, 0.2f, 3.3f}, green);
-    box("GI.Panel", {0.55f, 0, 3.21f}, {1.2f, 1.25f, 0.12f}, emitter);
+    if (bOffscreenEmitter)
+    {
+      box("GI.Panel", {-2.65f, 0, 3.26f}, {0.7f, 3.8f, 0.12f}, emitter);
+      if (opt_BlockEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never))
+        box("GI.EmitterCover", {-2.65f, 0, 3.15f}, {0.94f, 4.1f, 0.1f}, white);
+    }
+    else
+      box("GI.Panel", {0.55f, 0, 3.21f}, {1.2f, 1.25f, 0.12f}, emitter);
     box("GI.Pedestal", {1.1f, 0.95f, 0.64f}, {0.95f, 0.95f, 1.28f}, white);
     xiiGeometry sphere;
     sphere.AddStackedSphere(0.65f, 32, 16);
@@ -223,6 +244,8 @@ namespace
       AddLocalLights(world);
       return;
     }
+    if (bOffscreenEmitter)
+      return;
 
     // A blue sky outside the open side provides a second transport source.
     xiiTextureCubeResourceDescriptor sky;
@@ -328,7 +351,8 @@ private:
     description.m_DeviceFeatures.m_IndependentBlend           = xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_BindlessResources          = xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Optional;
-    description.m_DeviceFeatures.m_RayTracing                 = opt_NoRay.GetOptionValue(xiiCommandLineOption::LogMode::Never) ? xiiGALDeviceFeatureState::Disabled : xiiGALDeviceFeatureState::Optional;
+    const bool offscreenEmitter                               = opt_OffscreenEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+    description.m_DeviceFeatures.m_RayTracing                 = offscreenEmitter || opt_NoRay.GetOptionValue(xiiCommandLineOption::LogMode::Never) ? xiiGALDeviceFeatureState::Disabled : xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_MeshShaders                = xiiGALDeviceFeatureState::Disabled;
     auto device                                               = xiiGALDeviceFactory::CreateDevice(renderer, xiiFoundation::GetDefaultAllocator(), description);
     if (!device || device->Initialize().Failed())
@@ -349,16 +373,16 @@ private:
       return XII_FAILURE;
     }
 #endif
-    const bool localLights = opt_LocalLights.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+    const bool localLights = !offscreenEmitter && opt_LocalLights.GetOptionValue(xiiCommandLineOption::LogMode::Never);
     const auto base        = LoadPipeline(pipeline);
-    const auto enabled     = localLights ? EnableLocalLightReservoirs(editor, true) : EnableGI(editor, opt_ScreenOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
+    const auto enabled     = localLights ? EnableLocalLightReservoirs(editor, true) : EnableGI(editor, !offscreenEmitter && opt_ScreenOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
     if (!enabled.IsValid())
       return XII_FAILURE;
     xiiWorldDescription worldDescription("Diffuse GI demonstration");
     xiiWorld            world(worldDescription);
     XII_LOCK(world.GetWriteMarker());
     world.SetWorldSimulationEnabled(false);
-    MakeRoom(world, opt_SkyOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never), localLights);
+    MakeRoom(world, opt_SkyOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never), localLights, offscreenEmitter);
     xiiCamera camera;
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 48, 0.1f, 40);
     camera.LookAt({-5.5f, 0, 1.65f}, {1.6f, 0, 1.6f}, {0, 0, 1});
@@ -402,6 +426,8 @@ private:
           continue;
         if (pass.m_sName == "Update Directional Scene Probes")
           xiiLog::Info("{} used the scene probe update.", sFilename);
+        else if (pass.m_sName == "Trace World Geometry for Directional Probes")
+          xiiLog::Info("{} used the world-geometry probe update.", sFilename);
         else if (pass.m_sName == "Resolve Current Spatial and Temporal GI")
           xiiLog::Info("{} read current spatial and previous temporal diffuse path reservoirs.", sFilename);
         else if (pass.m_sName == "Resolve Spatial and Temporal Local Light Reservoirs")
@@ -422,6 +448,14 @@ private:
         return XII_FAILURE;
       XII_SUCCEED_OR_RETURN(render(raw, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Reservoirs.png")));
       return render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Reconstructed.png"));
+    }
+    if (offscreenEmitter)
+    {
+      const auto cameraProbes = EnableGI(editor, false, false);
+      if (!cameraProbes.IsValid())
+        return XII_FAILURE;
+      XII_SUCCEED_OR_RETURN(render(cameraProbes, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Camera-Probes.png")));
+      return render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-World-Probes.png"));
     }
     XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-GI-Off.png")));
     XII_SUCCEED_OR_RETURN(render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-GI-On.png")));
