@@ -38,7 +38,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshResourceSections)
   XII_TEST_INT(mesh->GetSections()[1].m_uiFirstMeshlet, 1);
   XII_TEST_INT(mesh->GetLODs()[0].m_uiMeshletCount, 2);
   xiiResourceLock<xiiMeshBufferResource> buffer(mesh->GetMeshBuffer(), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-  XII_TEST_BOOL(buffer->GetVertexBuffer() != nullptr && buffer->GetIndexBuffer() != nullptr && buffer->GetMeshletVertexRemapBuffer() != nullptr);
+  XII_TEST_BOOL(buffer->GetVertexBuffer() != nullptr && buffer->GetIndexBuffer() != nullptr && !buffer->GetMeshletVertexRemap().IsEmpty());
   XII_TEST_INT(buffer->GetMeshlets()[0].m_uiMaterialIndex, 0);
   XII_TEST_INT(buffer->GetMeshlets()[1].m_uiMaterialIndex, 1);
 
