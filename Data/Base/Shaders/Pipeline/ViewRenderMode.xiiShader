@@ -10,6 +10,7 @@ ALL
 #include <Shaders/Pipeline/ViewRenderModeHelpers.h>
 
 Texture2D<float4> g_Source;
+Texture2D<float4> g_Comparison;
 Texture2D<float> g_Depth;
 Texture2D<uint4> g_ObjectIds;
 XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Output;
@@ -95,6 +96,13 @@ void main(uint3 tid : SV_DispatchThreadID)
         }
         case ViewRenderMode_DepthNonLinear: color = depth.xxx; break;
         case ViewRenderMode_MotionVectors: color = float3(saturate(value.xy * float2(0.5f, -0.5f) * MotionVectorScale + 0.5f), 0.5f); break;
+        case ViewRenderMode_DiffuseGIReconstructionDelta:
+        case ViewRenderMode_DiffuseGIFrameDelta:
+        {
+            const float3 difference = abs(value.rgb - g_Comparison.Load(int3(pixel, 0)).rgb);
+            color = difference / (1.0f + difference);
+            break;
+        }
         case ViewRenderMode_DiffuseGI: case ViewRenderMode_DiffuseGIRaw: case ViewRenderMode_DiffuseGIHistory:
         case ViewRenderMode_Emissive: case ViewRenderMode_IndirectLighting: case ViewRenderMode_ReflectionContribution: case ViewRenderMode_Bloom: color = max(value.rgb, 0.0f) / (1.0f + max(value.rgb, 0.0f)); break;
         default: color = float3(1.0f, 0.0f, 1.0f); break;

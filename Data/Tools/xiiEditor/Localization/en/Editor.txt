@@ -149,6 +149,8 @@ xiiViewRenderMode::IndirectLighting;Indirect Diffuse Lighting
 xiiViewRenderMode::DiffuseGI;Diffuse GI (Reconstructed)
 xiiViewRenderMode::DiffuseGIRaw;Diffuse GI (Raw)
 xiiViewRenderMode::DiffuseGIHistory;Diffuse GI (Previous Frame)
+xiiViewRenderMode::DiffuseGIReconstructionDelta;Diffuse GI (Reconstruction Delta)
+xiiViewRenderMode::DiffuseGIFrameDelta;Diffuse GI (Frame Delta)
 xiiViewRenderMode::ReflectionContribution;Reflection Contribution
 xiiViewRenderMode::Exposure;Applied Exposure (Stops)
 xiiViewRenderMode::Bloom;Bloom
