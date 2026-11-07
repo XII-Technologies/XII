@@ -25,6 +25,9 @@ bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
     case DepthNonLinear:
     case MotionVectors:
     case IndirectLighting:
+    case DiffuseGI:
+    case DiffuseGIRaw:
+    case DiffuseGIHistory:
     case ReflectionContribution:
     case Bloom:
     case Exposure:
@@ -168,6 +171,9 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewRenderMode, 1U)
   XII_ENUM_CONSTANT(xiiViewRenderMode::Bloom),
   XII_ENUM_CONSTANT(xiiViewRenderMode::ToneMappingCurve),
   XII_ENUM_CONSTANT(xiiViewRenderMode::ColorGradingLUT),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGI),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGIRaw),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGIHistory),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 

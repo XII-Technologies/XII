@@ -2731,6 +2731,12 @@ o
 		Vec2 %Node::Pos{f{0,0}}
 		Uuid %Output{u4{2019506354815979185,14856713496310580486}}
 		VarDict %ParameterOverrides{}
+		VarArray %EnabledViewModes
+		{
+			s{"xiiViewRenderMode::DiffuseGI"}
+			s{"xiiViewRenderMode::DiffuseGIRaw"}
+			s{"xiiViewRenderMode::DiffuseGIHistory"}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{7814433985249868187,7871168015980476686}}

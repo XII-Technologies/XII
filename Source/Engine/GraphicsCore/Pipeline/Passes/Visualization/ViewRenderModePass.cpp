@@ -44,6 +44,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRenderModePass, 1, xiiRTTIDefaultAllocat
     XII_MEMBER_PROPERTY("DilatedVelocityBuffer", m_InputDilatedVelocityBuffer)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("StableAO", m_InputStableAO)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("IndirectLighting", m_InputIndirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiffuseGI", m_InputDiffuseGI)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiffuseGIRaw", m_InputDiffuseGIRaw)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("DiffuseGIHistory", m_InputDiffuseGIHistory)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("DirectLighting", m_InputDirectLighting)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ShadowVisibility", m_InputShadowVisibility)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ShadowCascades", m_InputShadowCascades)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -209,6 +212,18 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
       source   = &m_InputIndirectLighting;
       channels = 3;
       break;
+    case xiiViewRenderMode::DiffuseGI:
+      source   = &m_InputDiffuseGI;
+      channels = 3;
+      break;
+    case xiiViewRenderMode::DiffuseGIRaw:
+      source   = &m_InputDiffuseGIRaw;
+      channels = 3;
+      break;
+    case xiiViewRenderMode::DiffuseGIHistory:
+      source   = &m_InputDiffuseGIHistory;
+      channels = 3;
+      break;
     case xiiViewRenderMode::ReflectionContribution:
       source   = &m_InputEnvironmentSpecular;
       channels = 3;
@@ -235,6 +250,23 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
       description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
       output = builder.WriteTexture("Unshadowed visibility", description, xiiGALResourceStateFlags::CopyDestination); }, [](const auto& output, xiiRenderGraphPassContext& execute) { ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(output)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::White); });
     selected           = *neutral.first;
+  }
+  const bool diffuseGI = mode == xiiViewRenderMode::DiffuseGI || mode == xiiViewRenderMode::DiffuseGIRaw || mode == xiiViewRenderMode::DiffuseGIHistory;
+  // Keep reconstruction alive even when only its previous result is displayed.
+  const auto currentGI = mode == xiiViewRenderMode::DiffuseGIHistory ? context.GetInputTexture(m_InputDiffuseGI) : xiiRenderGraphTextureHandle();
+  if (diffuseGI && !xiiScreenSpacePassUtils::Image(context, selected, 3, &size))
+  {
+    // History is absent on the first frame, after invalidation and on the spatial-only profile.
+    const auto setup = [&](xiiRenderGraphTextureHandle& output, xiiRenderGraphBuilder& builder) {
+      if (currentGI.IsValid())
+        (void)builder.ReadTexture(currentGI, xiiGALResourceStateFlags::ShaderResource);
+      output = builder.WriteTexture("Unavailable diffuse GI signal", outputDescription, xiiGALResourceStateFlags::CopyDestination);
+    };
+    const auto clear = [](const xiiRenderGraphTextureHandle& output, xiiRenderGraphPassContext& execute) {
+      ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(output)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+    };
+    const auto empty = context.m_Graph.AddPass<xiiRenderGraphTextureHandle>("Unavailable diffuse GI signal", xiiGALCommandQueueFlags::Graphics, setup, clear);
+    return context.SetOutput(m_OutputDisplayLinearColor, *empty.first);
   }
   if (!selected.IsValid() || !depth.IsValid() || !camera.IsValid() || ((mode == xiiViewRenderMode::Wireframe || mode == xiiViewRenderMode::InstanceID || surface) && !objects.IsValid()))
   {
@@ -280,6 +312,7 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
     xiiSharedPtr<xiiGALSampler>              m_pSampler;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
+    if (currentGI.IsValid()) (void)builder.ReadTexture(currentGI, xiiGALResourceStateFlags::ShaderResource);
     data.m_Source = builder.ReadTexture(selected, xiiGALResourceStateFlags::ShaderResource);
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Objects = builder.ReadTexture(objects, xiiGALResourceStateFlags::ShaderResource);
