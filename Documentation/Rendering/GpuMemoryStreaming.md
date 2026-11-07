@@ -8,7 +8,7 @@ The Vulkan backend reports each heap's capacity, process budget and usage, alloc
 - **Committed bytes** counts Vulkan memory blocks VMA owns. Several buffers and images can share one block.
 - **Occupied bytes** counts VMA suballocations. This includes resources pending GPU retirement. Committed bytes can stay high after occupied bytes fall because VMA can reuse a block.
 - **Occupied arena bytes** counts geometry metadata ranges assigned to active records. Geometry eviction makes these ranges reusable.
-- **Resident topology bytes** counts the padded remap and primitive-index payload once per live mesh revision. **Retired topology bytes** counts payloads passed to deferred retirement during the frame. The Vulkan occupied count includes them until the bindless views and their buffers are released.
+- **Resident topology bytes** counts the padded remap and primitive-index payload once per live meshlet range within each mesh revision. **Retired topology bytes** counts payloads passed to deferred retirement during the frame. The Vulkan occupied count includes them until the bindless views and their buffers are released.
 
 Profiling builds publish the default Vulkan device's heap counters under **Renderer / GPU memory** in Inspector. Geometry arena occupancy and reclamation appear under **Renderer / Geometry**. When checking scene unload, sample after the relevant queue fences have completed. Compare both occupied and committed bytes. An unchanged occupied count points to a remaining allocation owner, in-flight work, or another workload. A drop in occupied bytes with unchanged committed bytes indicates space available within existing allocator blocks, subject to alignment and fragmentation.
 
@@ -28,8 +28,10 @@ Texture resources continue sampling the coarse image when refinement is deferred
 
 ## Geometry topology residency
 
-The geometry manager creates GPU remap and primitive-index buffers on first admission, using the compiled CPU topology retained by the mesh resource. Records and authored LODs for the same mesh revision share their buffer bindings. A new upload consumes the geometry transfer allowance once. The metadata graph waits on the graphics queue signal before exposing the new bindings to its consumers.
+The geometry manager creates GPU remap and primitive-index buffers for the admitted LOD's meshlet range. It validates the range against the compiled CPU streams and uploads the smallest covering span from each stream. The uploaded meshlet metadata uses offsets relative to those spans. Primitive identities and the compiled asset data retain their original values.
 
-Eviction and unregister release a record's lease after its last referenced frame completes. The final lease retires the shared descriptors and their backing buffers through the existing bindless and GAL deletion queues. The mesh resource retains its canonical vertex and index buffers for debug rendering, ray tracing, and export. A later request can upload the topology again from the same loaded mesh.
+Identical ranges within a mesh revision share topology bindings and transfer charges. Distinct ranges share the canonical vertex and index bindings. Overlapping ranges can duplicate topology bytes, and a range with gaps retains the bytes between its first and last reference. The metadata graph waits on the graphics queue signal before exposing new bindings to its consumers.
 
-While the device reports pressure, the manager checks every eight frames for unpinned records idle for at least 120 frames. It retires up to four completed records per check. A fine LOD that needs fresh topology waits under pressure if a coarser LOD is already resident. Sharing and reclamation are at mesh-revision granularity.
+Eviction and unregister release a record's leases after its last referenced frame completes. A range retires its descriptors and buffers when its final lease ends, even if another range of the same mesh stays resident. The mesh resource retains its canonical vertex and index buffers for debug rendering, ray tracing, and export. A later request can upload the topology again from the same loaded mesh.
+
+While the device reports pressure, the manager checks every eight frames for unpinned records idle for at least 120 frames. It retires up to four completed records per check. A fine LOD that needs fresh topology waits under pressure if a coarser LOD is already resident. The eviction policy still selects whole records. Independently dropping a finer LOD from an active record requires finer usage tracking.
