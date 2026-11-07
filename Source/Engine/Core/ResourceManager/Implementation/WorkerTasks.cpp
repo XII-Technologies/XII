@@ -135,18 +135,7 @@ void xiiResourceManagerWorkerUpdateContent::Execute()
 
   XII_ASSERT_DEV(m_pResourceToLoad->GetLoadingState() != xiiResourceState::Unloaded, "The resource should have changed its loading state.");
 
-  // Update Memory Usage
-  {
-    xiiResource::MemoryUsage MemUsage;
-    MemUsage.m_uiMemoryCPU = 0xFFFFFFFF;
-    MemUsage.m_uiMemoryGPU = 0xFFFFFFFF;
-    m_pResourceToLoad->UpdateMemoryUsage(MemUsage);
-
-    XII_ASSERT_DEV(MemUsage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its CPU memory usage", m_pResourceToLoad->GetResourceID());
-    XII_ASSERT_DEV(MemUsage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its GPU memory usage", m_pResourceToLoad->GetResourceID());
-
-    m_pResourceToLoad->m_MemoryUsage = MemUsage;
-  }
+  m_pResourceToLoad->RefreshMemoryUsage();
 
   m_pLoader->CloseDataStream(m_pResourceToLoad, m_LoaderData);
 

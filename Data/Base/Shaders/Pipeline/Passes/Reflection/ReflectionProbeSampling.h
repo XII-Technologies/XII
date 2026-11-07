@@ -141,3 +141,34 @@ float3 xiiSampleLocalReflectionEnvironment(float3 worldPosition, float3 reflecti
   coverage                    = saturate(totalWeight);
   return totalWeight > 1e-4f ? (firstRadiance * firstWeight + secondRadiance * secondWeight) / totalWeight : 0.0f;
 }
+
+#ifdef XII_REFLECTION_PROBE_IRRADIANCE
+float3 xiiSampleLocalReflectionIrradiance(float3 worldPosition, float3 worldNormal, out float coverage)
+{
+  const uint2 selected = xiiFindReflectionProbesAtPosition(worldPosition);
+  float3      radiance[2];
+  float       weights[2];
+  [unroll] for (uint i = 0; i < 2; ++i)
+  {
+    radiance[i] = 0;
+    weights[i]  = 0;
+    if (selected[i] != 0u)
+    {
+      const xiiGPUReflectionProbe probe = g_ReflectionProbeData[selected[i] - 1u];
+      float3                      localPosition;
+      weights[i]                = xiiEvaluateReflectionProbeWeight(probe, worldPosition, localPosition);
+      const float3 inverseScale = float3(length(probe.WorldToProbe[0].xyz), length(probe.WorldToProbe[1].xyz), length(probe.WorldToProbe[2].xyz));
+      const float3 normal       = mul((float3x3)probe.WorldToProbe, worldNormal) / max(inverseScale, 1e-6f);
+      const uint   textureIndex = NonUniformResourceIndex(probe.Metadata.y);
+      const float3 value        = max(g_ReflectionProbeIrradiance[textureIndex].SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER, xiiReflectionProbeCubeDirection(normal), 0).rgb, 0);
+      const float  luminance    = dot(value, float3(0.2126f, 0.7152f, 0.0722f));
+      radiance[i]               = lerp(luminance.xxx, value, probe.ProbeParameters.z) * probe.ProbeParameters.y;
+    }
+  }
+  if (selected.x != 0u && selected.y != 0u && asint(g_ReflectionProbeData[selected.x - 1u].Metadata.z) != asint(g_ReflectionProbeData[selected.y - 1u].Metadata.z))
+    weights[1] *= 1.0f - saturate(weights[0]);
+  const float weight = weights[0] + weights[1];
+  coverage           = saturate(weight);
+  return weight > 1e-4f ? (radiance[0] * weights[0] + radiance[1] * weights[1]) / weight : 0;
+}
+#endif

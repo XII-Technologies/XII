@@ -4,6 +4,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Containers/HybridArray.h>
+#include <GraphicsCore/Lighting/EnvironmentMap.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderPipelineFrameData.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -17,9 +18,14 @@ class XII_GRAPHICSCORE_DLL xiiReflectionProbeFrameData final : public xiiRenderP
 
 public:
   using Textures = xiiHybridArray<xiiSharedPtr<xiiGALTexture>, XII_MAX_REFLECTION_PROBES>;
-  xiiReflectionProbeFrameData(xiiUInt64 setup, xiiRenderGraphBufferHandle records, xiiRenderGraphBufferHandle constants, Textures textures) :
-    xiiRenderPipelineFrameData(setup), m_Records(records), m_Constants(constants), m_Textures(std::move(textures)) {}
+  using Environments = xiiHybridArray<xiiSharedPtr<const xiiEnvironmentMap>, XII_MAX_REFLECTION_PROBES>;
+  xiiReflectionProbeFrameData(xiiUInt64 setup, xiiRenderGraphBufferHandle records, xiiRenderGraphBufferHandle constants, Textures textures, Environments environments = {}) :
+    xiiRenderPipelineFrameData(setup), m_Records(records), m_Constants(constants), m_Textures(std::move(textures)), m_Environments(std::move(environments))
+  {
+    XII_ASSERT_DEV(m_Textures.GetCount() == m_Environments.GetCount(), "Probe images must carry their immutable environment owner and readiness.");
+  }
 
   const xiiRenderGraphBufferHandle m_Records, m_Constants;
   const Textures                   m_Textures;
+  const Environments               m_Environments;
 };

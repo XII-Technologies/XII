@@ -27,6 +27,8 @@ SamplerState LinearClampSampler;
 #  include <Shaders/Pipeline/ReflectionProbeData.h>
 StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
 TextureCube<float4>                     g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES];
+TextureCube<float4>                     g_ReflectionProbeIrradiance[XII_MAX_REFLECTION_PROBES];
+#  define XII_REFLECTION_PROBE_IRRADIANCE
 Texture2D<float2>                       g_BRDFLut;
 #  include <Shaders/Pipeline/Passes/Reflection/ReflectionProbeSampling.h>
 #endif
@@ -140,14 +142,19 @@ TransparentOutput xiiShadeTransparentSurface(GBufferVertex input, xiiMaterialSur
   }
   else
   {
-    lighting += max(EnvironmentAmbientRadiance.rgb, 0) * surface.BaseColor.rgb * (1 - surface.Metallic) * (1 - surface.Transmission) * surface.Occlusion / 3.14159265f;
+    float3 environmentDiffuse = max(EnvironmentAmbientRadiance.rgb, 0) / 3.14159265f;
 #if FORWARD_PROBES
     float        probeCoverage;
     const float  roughness      = max(surface.Roughness, 0.02f);
     const float3 probeRadiance  = xiiSampleLocalReflectionEnvironment(input.WorldPosition, reflect(-view, surface.Normal), roughness, probeCoverage);
     const float2 integratedBRDF = g_BRDFLut.SampleLevel(LinearClampSampler, float2(saturate(dot(surface.Normal, view)), roughness), 0);
+    float        diffuseCoverage;
+    const float3 irradiance      = xiiSampleLocalReflectionIrradiance(input.WorldPosition, surface.Normal, diffuseCoverage);
+    const float3 remainingEnergy = 1.0f - saturate(xiiEnvironmentSpecularResponse(surface.BaseColor.rgb, surface.Metallic, surface.Reflectance, integratedBRDF));
+    environmentDiffuse           = lerp(environmentDiffuse, irradiance * remainingEnergy, diffuseCoverage);
     lighting += probeRadiance * xiiEnvironmentSpecularResponse(surface.BaseColor.rgb, surface.Metallic, surface.Reflectance, integratedBRDF) * (probeCoverage * surface.Occlusion);
 #endif
+    lighting += environmentDiffuse * surface.BaseColor.rgb * (1 - surface.Metallic) * (1 - surface.Transmission) * surface.Occlusion;
     if (EnvironmentDirectionAndIlluminance.w > 0)
     {
       float visibility = 1;

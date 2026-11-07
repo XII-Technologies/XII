@@ -7,6 +7,7 @@
 DECLARE_CONSTANT_BUFFER_AUTO(xiiReflectionFilteredSpecularConstants)
 {
   UINT1(MipLevel);
-  FLOAT1(Intensity);
-  FLOAT1(Saturation);
+  UINT1(MipCount);
+  UINT1(FaceExtent);
+  UINT1(SampleCount);
 };

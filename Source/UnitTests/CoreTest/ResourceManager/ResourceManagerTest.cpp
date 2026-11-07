@@ -5,6 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Threading/ThreadSignal.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(ResourceManager);
@@ -143,11 +144,57 @@ namespace
     }
   };
 
+  class RuntimeMemoryResource : public TestResource
+  {
+  public:
+    void Refresh(xiiInt64 bytes)
+    {
+      m_Bytes = bytes;
+      RefreshMemoryUsage();
+    }
+    xiiAtomicInteger32 m_Overlaps = 0;
+
+  protected:
+    void UpdateMemoryUsage(MemoryUsage& usage) override
+    {
+      if (m_Active.Increment() != 1)
+        m_Overlaps.Increment();
+      xiiThreadUtils::YieldTimeSlice();
+      usage.m_uiMemoryCPU = sizeof(RuntimeMemoryResource);
+      usage.m_uiMemoryGPU = xiiUInt64(m_Bytes);
+      m_Active.Decrement();
+    }
+
+  private:
+    xiiAtomicInteger64 m_Bytes  = 0;
+    xiiAtomicInteger32 m_Active = 0;
+  };
+
   XII_RESOURCE_IMPLEMENT_COMMON_CODE(TestResource);
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(TestResource, 1, xiiRTTIDefaultAllocator<TestResource>)
   XII_END_DYNAMIC_REFLECTED_TYPE;
 
 } // namespace
+
+XII_CREATE_SIMPLE_TEST(ResourceManager, ConcurrentRuntimeMemoryRefresh)
+{
+  RuntimeMemoryResource resource;
+  xiiTaskGroupID        groups[8];
+  for (xiiUInt32 i = 0; i < 8; ++i)
+  {
+    auto task = XII_DEFAULT_NEW(xiiDelegateTask<void>, "Refresh resource memory", xiiTaskNesting::Never, [&resource, i]() {
+      for (xiiUInt32 iteration = 0; iteration < 100; ++iteration)
+        resource.Refresh(i * 100 + iteration);
+    });
+    groups[i] = xiiTaskSystem::StartSingleTask(task, xiiTaskPriority::EarlyThisFrame);
+  }
+  for (auto group : groups)
+    xiiTaskSystem::WaitForGroup(group);
+  XII_TEST_INT(resource.m_Overlaps, 0);
+  resource.Refresh(4096);
+  XII_TEST_INT(resource.GetMemoryUsage().m_uiMemoryCPU, sizeof(RuntimeMemoryResource));
+  XII_TEST_INT(resource.GetMemoryUsage().m_uiMemoryGPU, 4096);
+}
 
 XII_CREATE_SIMPLE_TEST(ResourceManager, LoadingFallbackModes)
 {

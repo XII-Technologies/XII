@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Textures/TextureCubeResource.h>
+#include <utility>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeResource, 1, xiiRTTIDefaultAllocator<xiiTextureCubeResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -21,13 +22,16 @@ xiiTextureCubeResource::xiiTextureCubeResource() :
 
 xiiResourceLoadDescription xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
 {
+  XII_LOCK(m_EnvironmentMutex);
   if (m_uiLoadedTextures > 0)
   {
     for (xiiInt32 r = 0; r < 2; ++r)
     {
       --m_uiLoadedTextures;
 
+      m_EnvironmentMaps[m_uiLoadedTextures].Clear();
       m_pGALTexture[m_uiLoadedTextures].Clear();
+      m_uiMemoryGPU[m_uiLoadedTextures] = 0;
 
       if (WhatToUnload == Unload::OneQualityLevel || m_uiLoadedTextures == 0)
         break;
@@ -148,7 +152,7 @@ xiiResourceLoadDescription xiiTextureCubeResource::UpdateContent(xiiStreamReader
 
         id.m_uiDepthStride = pImage->GetDepthPitch(mip);
 
-        m_uiMemoryGPU[m_uiLoadedTextures] += static_cast<xiiUInt32>(id.m_uiDepthStride);
+        m_uiMemoryGPU[m_uiLoadedTextures] += id.m_uiDepthStride;
       }
     }
   }
@@ -178,12 +182,53 @@ xiiResourceLoadDescription xiiTextureCubeResource::UpdateContent(xiiStreamReader
 
 void xiiTextureCubeResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
+  XII_LOCK(m_EnvironmentMutex);
   out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiTextureCubeResource);
   out_NewMemoryUsage.m_uiMemoryGPU = m_uiMemoryGPU[0] + m_uiMemoryGPU[1];
+  for (const auto& environment : m_EnvironmentMaps)
+    if (environment)
+    {
+      out_NewMemoryUsage.m_uiMemoryGPU += environment->m_uiMemoryGPU;
+      out_NewMemoryUsage.m_uiMemoryCPU += sizeof(xiiEnvironmentMap);
+    }
+}
+
+xiiStatus xiiTextureCubeResource::GetEnvironmentMap(xiiSharedPtr<const xiiEnvironmentMap>& out_map)
+{
+  out_map.Clear();
+  xiiSharedPtr<xiiGALTexture> source;
+  {
+    XII_LOCK(m_EnvironmentMutex);
+    if (!m_uiLoadedTextures)
+      return xiiStatus("Cannot convolve an unloaded cubemap.");
+    out_map = m_EnvironmentMaps[m_uiLoadedTextures - 1];
+    if (out_map)
+      return XII_SUCCESS;
+    source = GetGALTexture();
+  }
+  // Shader acquisition may wait for resource loader tasks, including this
+  // resource's memory update. Never hold its mutex across those acquisitions.
+  xiiSharedPtr<const xiiEnvironmentMap> prepared;
+  XII_SUCCEED_OR_RETURN(xiiEnvironmentMap::Create(source, prepared));
+  {
+    XII_LOCK(m_EnvironmentMutex);
+    for (xiiUInt32 level = 0; level < m_uiLoadedTextures; ++level)
+      if (m_pGALTexture[level] == source)
+      {
+        if (!m_EnvironmentMaps[level])
+          m_EnvironmentMaps[level] = prepared;
+        prepared = m_EnvironmentMaps[level];
+        break;
+      }
+  }
+  RefreshMemoryUsage();
+  out_map = std::move(prepared);
+  return XII_SUCCESS;
 }
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResourceDescriptor)
 {
+  XII_LOCK(m_EnvironmentMutex);
   xiiResourceLoadDescription ret;
   ret.m_uiQualityLevelsDiscardable = descriptor.m_uiQualityLevelsDiscardable;
   ret.m_uiQualityLevelsLoadable    = descriptor.m_uiQualityLevelsLoadable;
@@ -197,12 +242,14 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
   m_uiWidthAndHeight = descriptor.m_TextureDescription.m_Size.width;
 
   xiiGALTextureData textureData(descriptor.m_InitialContent);
+  m_EnvironmentMaps[m_uiLoadedTextures].Clear();
   descriptor.m_TextureDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_TextureDescription, &textureData);
 
   XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");
 
   m_pGALTexture[m_uiLoadedTextures]->SetDebugName(GetResourceDescription());
+  m_uiMemoryGPU[m_uiLoadedTextures] = m_pGALTexture[m_uiLoadedTextures]->GetMemoryConsumption();
 
   m_pSampler.Clear();
   m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);

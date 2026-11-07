@@ -13,6 +13,7 @@ namespace xiiReflectionProbePassUtils
     xiiSharedPtr<const xiiReflectionProbeFrameData> m_Snapshot;
     xiiRenderGraphBufferHandle                      m_Records, m_Constants;
     xiiRenderGraphTextureHandle                     m_Textures[XII_MAX_REFLECTION_PROBES];
+    xiiRenderGraphTextureHandle                     m_Irradiance[XII_MAX_REFLECTION_PROBES];
   };
 
   inline Bindings Read(const xiiSharedPtr<const xiiReflectionProbeFrameData>& snapshot, xiiRenderGraphBuilder& builder)
@@ -26,6 +27,10 @@ namespace xiiReflectionProbePassUtils
       xiiStringBuilder name;
       name.SetFormat("Local Reflection Cubemap {}", i);
       result.m_Textures[i] = builder.ReadTexture(builder.ImportTexture(name, snapshot->m_Textures[i], xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
+      const auto& environment = snapshot->m_Environments[i];
+      builder.WaitForFence(environment->m_Ready, 1).AssertSuccess();
+      name.SetFormat("Local Irradiance Cubemap {}", i);
+      result.m_Irradiance[i] = builder.ReadTexture(builder.ImportTexture(name, environment->m_Irradiance, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
     }
     return result;
   }
@@ -43,5 +48,11 @@ namespace xiiReflectionProbePassUtils
       images[i] = views[i].Borrow();
     }
     commands.ResolveAndSetShaderResourceTextureViews("g_ReflectionProbeTextures", 0, images, stages);
+    for (xiiUInt32 i = 0; i < XII_MAX_REFLECTION_PROBES; ++i)
+    {
+      views[i]  = execute.GetTexture(data.m_Irradiance[i < data.m_Snapshot->m_Environments.GetCount() ? i : 0])->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      images[i] = views[i].Borrow();
+    }
+    commands.ResolveAndSetShaderResourceTextureViews("g_ReflectionProbeIrradiance", 0, images, stages);
   }
 } // namespace xiiReflectionProbePassUtils

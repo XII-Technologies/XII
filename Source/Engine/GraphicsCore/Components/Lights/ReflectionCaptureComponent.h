@@ -44,10 +44,10 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiReflectionProbeInfluenceSh
 
 /// Immutable render packet extracted from an authored reflection capture.
 ///
-/// The cubemap is expected to contain a full GGX pre-filter mip chain. Keeping
-/// filtering in the asset pipeline avoids repeating expensive convolution for
-/// static probes every frame while still allowing dynamic captures to replace
-/// the handle when their asynchronous convolution completes.
+/// The cubemap supplies source radiance, with ordinary color mips when available.
+/// Its resident texture resource initializes shared GGX radiance and Lambert
+/// irradiance once. Replacing or reloading the source produces independent
+/// immutable lighting images; extracted consumers retain their original images.
 class XII_GRAPHICSCORE_DLL xiiReflectionCaptureRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiReflectionCaptureRenderData, xiiRenderData);

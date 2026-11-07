@@ -270,18 +270,7 @@ void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDescription& ld
   m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
   m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
 
-  // Update Memory Usage
-  {
-    xiiResource::MemoryUsage MemUsage;
-    MemUsage.m_uiMemoryCPU = 0xFFFFFFFF;
-    MemUsage.m_uiMemoryGPU = 0xFFFFFFFF;
-    UpdateMemoryUsage(MemUsage);
-
-    XII_ASSERT_DEV(MemUsage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its CPU memory usage", GetResourceID());
-    XII_ASSERT_DEV(MemUsage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its GPU memory usage", GetResourceID());
-
-    m_MemoryUsage = MemUsage;
-  }
+  RefreshMemoryUsage();
 
   xiiResourceEvent e;
   e.m_pResource = this;
@@ -289,6 +278,18 @@ void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDescription& ld
   xiiResourceManager::BroadcastResourceEvent(e);
 
   xiiLog::Debug("Created {0} - '{1}' ", GetDynamicRTTI()->GetTypeName(), xiiArgSensitive(GetResourceIdOrDescription(), "ResourceDesc"));
+}
+
+void xiiResource::RefreshMemoryUsage()
+{
+  XII_LOCK(m_MemoryUsageMutex);
+  MemoryUsage usage;
+  usage.m_uiMemoryCPU = 0xFFFFFFFF;
+  usage.m_uiMemoryGPU = 0xFFFFFFFF;
+  UpdateMemoryUsage(usage);
+  XII_ASSERT_DEV(usage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{}' did not update CPU memory usage", GetResourceID());
+  XII_ASSERT_DEV(usage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{}' did not update GPU memory usage", GetResourceID());
+  m_MemoryUsage = usage;
 }
 
 XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_Resource);

@@ -61,7 +61,7 @@ namespace
       for (auto key : {"g_RefractionDepth", "g_RefractionBackground", "g_ShadowAtlas", "g_SpotShadowAtlas", "g_Transmittance", "g_MultiScatter", "g_BRDFLut"})
         if (name == key)
           type = xiiGALShaderResourceType::TextureSRV;
-      if (name == "g_ReflectionProbeTextures")
+      if (name == "g_ReflectionProbeTextures" || name == "g_ReflectionProbeIrradiance")
       {
         type  = xiiGALShaderResourceType::TextureSRV;
         array = true;

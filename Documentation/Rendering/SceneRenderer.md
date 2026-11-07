@@ -788,14 +788,15 @@ retained-recording checks exercise the same production producer. The indirect
 surface fixture uses coherent perspective and orthographic cameras and compares
 the shared material response against an analytic two-channel lookup.
 
-This is the single-scattering GGX split-sum response. Cubemap convolution, diffuse
-irradiance and microfacet multiple-scattering compensation remain separate work.
+This is the single-scattering GGX split-sum response. Microfacet multiple-scattering
+compensation remains separate work; cubemap convolution and diffuse irradiance
+are integrated below.
 
 ## Local reflection probes
 
 Scene now consumes authored `xiiReflectionCaptureComponent` packets through
 `xiiWorldReflectionProbesPass`. It validates active world owners, transforms,
-influence shapes and complete readable RGB cubemap mip chains, sorts deterministic
+influence shapes and readable RGB source cubemaps, sorts deterministic
 owner identities and publishes one immutable snapshot. Record/constant uploads
 exist only for nonempty snapshots. The snapshot owns native images so replacing
 an authored resource or destroying its world cannot invalidate a retained graph.
@@ -827,7 +828,7 @@ Reflections now precede aerial perspective, so atmospheric extinction attenuates
 the completed opaque surface result. Transparent probes are evaluated before that
 fragment's own atmosphere integration.
 
-Scene/Editor GPU acceptance checks 22 phases covering absence, colored captures,
+Scene/Editor GPU acceptance checks 27 phases covering absence, colored captures,
 overlap, priority, box/sphere fade, resource replacement, saturation, rotation,
 roughness mip response, nonuniform scale, odd resize, box parallax and native/authored transparent surfaces.
 The absorption-only atmosphere case matches `exp(-0.35)` attenuation and restores
@@ -838,9 +839,47 @@ resize and a retained graph executing after its world is destroyed. Conditional
 static-cache requests now refresh dynamic owners, with a shared-view extraction
 regression; probe packets use the inherited render-data transform.
 
-These probes consume prefiltered authored cubemaps. Generating GGX convolution,
-diffuse irradiance, dynamic captures, global environment fallback, clustered probe
-assignment and representative performance remain required follow-up work. The
+The authored cubemap now supplies source radiance rather than a manually
+prefiltered GGX chain. Ordinary color mips improve importance-sampling footprints;
+a single source mip is supported. Each resident texture quality level lazily owns
+one immutable `xiiEnvironmentMap`: a source-resolution RGBA32Float GGX mip chain and
+a 16 by 16 RGBA32Float diffuse cube containing E/pi. A one-pixel source face
+uses two output pixels so mirror and rough endpoints remain distinct. Existing specular and
+irradiance shader entry points share cube-face orientation, 1,024 Hammersley
+samples, PDF-derived source LODs and stable weighted means. GGX roughness is the
+perceptual mip fraction; Lambert convolution uses cosine-weighted sampling.
+
+Initialization submits a one-time render graph inside the active shared GPU frame.
+It uses the existing transient cache and retains a general completion fence.
+Every deferred or forward consumer declares that fence before sampling. Retained
+view graphs contain reads of the completed images and never replay convolution
+writes. Resource reload or residency replacement creates a distinct pair; old
+snapshots retain the original source, results and fence. Texture resource memory
+accounting includes resident sources and derived images. Per-resource memory
+publication serializes loader and runtime refreshes; shader acquisition runs
+outside the source resource mutex to avoid blocking loader completion. There is no process-wide
+probe cache and no per-frame convolution for unchanged resident sources.
+
+`EnvironmentIrradiance` carries the diffuse result and influence coverage into the
+existing diffuse lighting pass. Local irradiance replaces the constant ambient
+fallback by coverage, while screen-space bounce remains a separate input. The
+single-scattering integrated specular response removes energy from the diffuse
+lobe. Metallic, transmission, material occlusion and screen AO apply in the
+existing consumer. Forward native and authored surfaces use the same calculation.
+The dielectric uniform-field case yields 1.616 red HDR from source radiance 2,
+albedo 0.8 and F0 0.04; half-opacity native and authored layers yield 0.808.
+
+`EnvironmentConvolution/AnalyticCubemapsResourceReuseAndRetirement` checks all six
+faces and every generated mip against constant, million-scale HDR and analytic
+linear directional fields, including a 17-pixel source with one mip. It checks
+GGX angular moments against independent quadrature, Lambert's two-thirds linear
+moment, resource reuse, memory accounting and readback after source-resource
+retirement. A real texture asset reload retains and verifies both lighting
+versions after unloading the source. Scene/Editor acceptance adds diffuse energy, ambient replacement,
+zero-intensity bypass and native/authored translucent equivalence.
+
+Coat/sheen/anisotropic environment lobes, dynamic captures, global environment
+fallback, clustered probe assignment and representative performance remain required follow-up work. The
 small GPU fixture collects existing-profiler samples and CPU update timing; it
 does not establish a representative frame-time or speedup. Stereo and runtime
 acceptance on other backends remain unverified.
@@ -916,8 +955,7 @@ explicit half-float output constraint must resample/convert that output themselv
 
 A miss contributes zero reflection and preserves the incoming scene radiance.
 Offscreen and hidden surfaces cannot appear in the screen trace. Its misses retain
-the local probe contribution through confidence blending. Environment convolution,
-global environment fallback and hardware-ray reflections remain separate work. Spatial roughness filtering is an
+the local probe contribution through confidence blending. Global environment fallback and hardware-ray reflections remain separate work. Spatial roughness filtering is an
 approximation rather than a multi-sample glossy transport solution.
 
 ### Optional temporal reflection resolve

@@ -10,7 +10,6 @@
 #include <GraphicsCore/Pipeline/Passes/Lighting/WorldReflectionProbesPass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiReflectionProbeFrameData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -56,6 +55,7 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
   selected.Sort([](const auto* a, const auto* b) { return a->m_hOwnerComponent.GetInternalID().m_Data < b->m_hOwnerComponent.GetInternalID().m_Data; });
   xiiHybridArray<xiiGPUReflectionProbe, XII_MAX_REFLECTION_PROBES> records;
   xiiReflectionProbeFrameData::Textures                            textures;
+  xiiReflectionProbeFrameData::Environments                        environments;
   for (const auto* probe : selected)
   {
     const auto& transform = probe->m_GlobalTransform;
@@ -68,13 +68,10 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
     xiiResourceLock<xiiTextureCubeResource> resource(probe->m_hReflectionMap, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!resource.IsValid())
       return context.ReportFailure("An authored reflection cubemap could not be loaded.");
-    auto texture = resource->GetGALTexture();
-    if (!texture)
-      return context.ReportFailure("An authored reflection cubemap has no resident image.");
-    const auto& image  = texture->GetDescription();
-    const auto& format = xiiGALTextureUtilities::GetResourceFormatProperties(image.m_Format);
-    if (image.m_Type != xiiGALResourceDimension::TextureCube || image.m_uiArraySizeOrDepth != 6 || !image.m_Size.HasNonZeroArea() || image.m_Size.width != image.m_Size.height || image.m_uiSampleCount != 1 || !image.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || xiiGALTextureUtilities::GetComponentCount(image.m_Format) < 3 || format.IsTypeless() || (format.m_ComponentType != xiiGALResourceFormatComponentType::Float && !format.IsNormalized() && format.m_ComponentType != xiiGALResourceFormatComponentType::UnsignedNormalizedSRGB) || image.m_uiMipLevels != xiiMath::Log2i(image.m_Size.width) + 1)
-      return context.ReportFailure("Reflection probes require a readable RGB single cubemap with a complete prefiltered mip chain.");
+    xiiSharedPtr<const xiiEnvironmentMap> environment;
+    const auto                            prepared = resource->GetEnvironmentMap(environment);
+    if (prepared.Failed())
+      return context.ReportFailure(prepared.GetMessageString());
     xiiGPUReflectionProbe record{};
     const auto            inverse = transform.GetAsMat4().GetInverse();
     if (!inverse.IsValid())
@@ -89,7 +86,8 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
     record.ProbeParameters     = xiiVec4(probe->m_fSphereRadius, probe->m_fIntensity, probe->m_fSaturation, probe->m_InfluenceShape == xiiReflectionProbeInfluenceShape::Sphere ? float(XII_REFLECTION_PROBE_SHAPE_SPHERE) : float(XII_REFLECTION_PROBE_SHAPE_BOX));
     record.Metadata            = xiiVec4U32(records.GetCount(), records.GetCount(), static_cast<xiiUInt32>(probe->m_iPriority), probe->m_bParallaxCorrected ? 1 : 0);
     records.PushBack(record);
-    textures.PushBack(std::move(texture));
+    textures.PushBack(environment->m_Specular);
+    environments.PushBack(std::move(environment));
   }
   xiiRenderGraphBufferHandle recordBuffer, constants;
   if (!records.IsEmpty())
@@ -117,7 +115,7 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
     recordBuffer        = uploaded.first->m_Buffer;
     constants           = uploaded.first->m_Constants;
   }
-  return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetSetupSerial(), recordBuffer, constants, std::move(textures)));
+  return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetSetupSerial(), recordBuffer, constants, std::move(textures), std::move(environments)));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_Implementation_WorldReflectionProbesPass);

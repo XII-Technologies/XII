@@ -22,6 +22,7 @@ public:
   xiiRenderPipelineBufferInputPin             m_Camera{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineDataInputPin               m_Probes{xiiGetStaticRTTI<xiiReflectionProbeFrameData>(), true};
+  xiiRenderPipelineTextureOutputPin           m_Irradiance{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   bool                                        m_bAllowAbsentRadiance = false;
   float                                       m_fScale        = 1;
   bool                                        m_bAsyncCompute = false;

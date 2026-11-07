@@ -47,7 +47,8 @@ namespace xiiSceneProbeTest
       const auto base = directional && face == 5 ? xiiColor(0, 2, 0) : fine;
       for (xiiUInt32 i = 0; i < 4; ++i)
         pixels[face][i] = xiiVec4(base.r, base.g, base.b, 1);
-      pixels[face][4]    = xiiVec4(coarse.r, coarse.g, coarse.b, 1);
+      const auto mipColor = directional ? base : coarse;
+      pixels[face][4]     = xiiVec4(mipColor.r, mipColor.g, mipColor.b, 1);
       data[face * 2]     = xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(pixels[face]), 4 * sizeof(xiiVec4)), 2 * sizeof(xiiVec4), 4 * sizeof(xiiVec4));
       data[face * 2 + 1] = xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(&pixels[face][4]), sizeof(xiiVec4)), sizeof(xiiVec4), sizeof(xiiVec4));
     }
@@ -84,7 +85,7 @@ namespace xiiSceneProbeTest
       editorScene = occurrence;
       if (!XII_TEST_BOOL(occurrence.IsValid()))
         return;
-      for (const xiiStringView name : {"EnvironmentSpecular", "ReflectionLighting", "TransparentAccumulation", "HDRSceneColor"})
+      for (const xiiStringView name : {"EnvironmentSpecular", "EnvironmentIrradiance", "ReflectionLighting", "TransparentAccumulation", "HDRSceneColor"})
         descriptor.m_Interface.PushBack({name, false, occurrence, name});
       sourceId = descriptor.m_Id;
       source   = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Probes.EditorCapture", std::move(descriptor));
@@ -92,7 +93,7 @@ namespace xiiSceneProbeTest
     xiiRenderPipelineResourceDescriptor root;
     root.m_References.PushBack({sourceId, source.GetResourceID()});
     const auto renderer = root.AddSubgraph("Authored renderer", sourceId);
-    for (const xiiStringView name : {"EnvironmentSpecular", "ReflectionLighting", "HDRSceneColor", "ObjectId", "SceneDepth", "TransparentAccumulation"})
+    for (const xiiStringView name : {"EnvironmentSpecular", "EnvironmentIrradiance", "ReflectionLighting", "HDRSceneColor", "ObjectId", "SceneDepth", "TransparentAccumulation"})
     {
       const auto capture = root.AddPass(name, xiiGetStaticRTTI<xiiOpaqueTestExport>());
       XII_TEST_RESULT(root.Connect(renderer, name, capture, "Input"));
@@ -110,7 +111,7 @@ namespace xiiSceneProbeTest
     const auto                     pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Probes.ProductionCapture", std::move(root));
     const auto                     red      = Cube("Probes.Red", {2, 0, 0}, {2, 0, 0});
     const auto                     blue     = Cube("Probes.Blue", {0, 0, 2}, {0, 0, 2});
-    const auto                     mipMap   = Cube("Probes.MipsAndFaces", {0, 2, 0}, {2, 0, 0}, true);
+    const auto                     mipMap   = Cube("Probes.SourceFaces", {2, 0, 0}, {2, 0, 0}, true);
     xiiTexture2DResourceDescriptor whiteDescriptor;
     whiteDescriptor.m_TextureDescription.m_Size        = {1, 1};
     whiteDescriptor.m_TextureDescription.m_uiMipLevels = 1;
@@ -126,10 +127,10 @@ namespace xiiSceneProbeTest
     meshDescriptor.AddSection(12, 0, 0);
     meshDescriptor.ComputeBounds();
     const auto mesh     = xiiResourceManager::CreateResource<xiiMeshResource>("Probes.Box", std::move(meshDescriptor));
-    const auto material = [&](xiiStringView name, float roughness, bool transparent, bool authored = false) {
+    const auto material = [&](xiiStringView name, float roughness, bool transparent, bool authored = false, float metallic = 1.0f) {
       xiiMaterialResourceDescriptor descriptor;
       descriptor.m_BaseColor  = xiiColor(0.8f, 0.8f, 0.8f, transparent ? 0.5f : 1.0f);
-      descriptor.m_fMetallic  = 1;
+      descriptor.m_fMetallic  = metallic;
       descriptor.m_fRoughness = roughness;
       descriptor.m_BlendMode  = transparent ? xiiMaterialBlendMode::Translucent : xiiMaterialBlendMode::Opaque;
       if (authored)
@@ -148,7 +149,7 @@ namespace xiiSceneProbeTest
         {
           auto& value = descriptor.m_Parameters.ExpandAndGetRef();
           value.m_Name.Assign(parameter);
-          value.m_Value = parameter == "BaseColor" ? xiiVariant(xiiColor(0.8f, 0.8f, 0.8f, 0.5f)) : parameter == "MetallicValue" ? xiiVariant(1.0f) :
+          value.m_Value = parameter == "BaseColor" ? xiiVariant(xiiColor(0.8f, 0.8f, 0.8f, 0.5f)) : parameter == "MetallicValue" ? xiiVariant(metallic) :
                                                                                                                                    xiiVariant(0.02f);
         }
       }
@@ -158,6 +159,9 @@ namespace xiiSceneProbeTest
     const auto          rough               = material("Probes.Rough", 1, false);
     const auto          translucent         = material("Probes.Translucent", 0.02f, true);
     const auto          authoredTranslucent = material("Probes.AuthoredTranslucent", 0.02f, true, true);
+    const auto          dielectric            = material("Probes.Dielectric", 0.02f, false, false, 0);
+    const auto          dielectricTransparent = material("Probes.DielectricTransparent", 0.02f, true, false, 0);
+    const auto          dielectricAuthored    = material("Probes.DielectricAuthored", 0.02f, true, true, 0);
     xiiWorldDescription description("Authored reflection probe world");
     xiiWorld            world(description);
     XII_LOCK(world.GetWriteMarker());
@@ -249,8 +253,8 @@ namespace xiiSceneProbeTest
                                                                     subscription);
     xiiTime   cpuUpdates;
     xiiUInt32 cpuSamples = 0;
-    xiiVec4   center[22];
-    for (xiiUInt32 phase = 0; phase < (restricted ? 1U : 22U); ++phase)
+    xiiVec4   center[27];
+    for (xiiUInt32 phase = 0; phase < (restricted ? 1U : 27U); ++phase)
     {
       xiiReflectionCaptureComponent *first = nullptr, *second = nullptr;
       xiiMeshComponent *             opaque = nullptr, *transparent = nullptr;
@@ -338,6 +342,35 @@ namespace xiiSceneProbeTest
       }
       if (phase == 21)
         first->SetParallaxCorrected(true);
+      if (phase == 22)
+      {
+        first->GetOwner()->SetLocalPosition(xiiVec3::MakeZero());
+        first->GetOwner()->SetLocalScaling(xiiVec3(1));
+        first->SetHalfExtents(xiiVec3(4));
+        first->SetReflectionMap(red);
+        opaque->SetMaterialOverride(0, dielectric);
+        view->SetPipelineParameter("EnvironmentAmbientRadiance", xiiVec3(20, 30, 40));
+      }
+      if (phase == 23)
+      {
+        first->SetIntensity(0);
+        view->SetPipelineParameter("EnvironmentAmbientRadiance", xiiVec3::MakeZero());
+      }
+      if (phase == 24)
+      {
+        first->SetActiveFlag(false);
+        view->SetPipelineParameter("EnvironmentAmbientRadiance", xiiVec3::MakeZero());
+      }
+      if (phase == 25)
+      {
+        first->SetActiveFlag(true);
+        first->SetIntensity(1);
+        opaque->SetActiveFlag(false);
+        transparent->SetActiveFlag(true);
+        transparent->SetMaterialOverride(0, dielectricTransparent);
+      }
+      if (phase == 26)
+        transparent->SetMaterialOverride(0, dielectricAuthored);
       if (phase == 17)
         atmosphere->SetActiveFlag(false);
       if (phase == 12)
@@ -373,13 +406,13 @@ namespace xiiSceneProbeTest
       center[phase]               = hdr[centerIndex];
       const auto color            = center[phase];
       XII_TEST_BOOL(color.IsValid());
-      if (phase == 0 || phase == 8 || phase == 13)
+      if (phase == 0 || phase == 8 || phase == 13 || phase == 23 || phase == 24)
       {
         XII_TEST_BOOL(!image("EnvironmentSpecular"));
         XII_TEST_BOOL(!image("ReflectionLighting"));
         XII_TEST_FLOAT(color.GetAsVec3().GetLength(), 0, 1e-6f);
       }
-      else if (phase < 14 || phase == 16 || phase == 17 || phase >= 20)
+      else if (phase < 14 || phase == 16 || phase == 17 || phase == 20 || phase == 21)
       {
         xiiDynamicArray<xiiVec4> environmentLight, reflected;
         if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image("EnvironmentSpecular"), environmentLight) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image("ReflectionLighting"), reflected))
@@ -390,6 +423,18 @@ namespace xiiSceneProbeTest
             XII_TEST_FLOAT(hdr[i].GetData()[channel], environmentLight[i].GetData()[channel] * (phase == 16 ? xiiMath::Exp(-0.35f) : 1.0f), phase == 16 ? 0.004f : 1e-5f);
             XII_TEST_FLOAT(reflected[i].GetData()[channel], environmentLight[i].GetData()[channel], 1e-5f);
           }
+      }
+      else if (phase == 22)
+      {
+        xiiDynamicArray<xiiVec4> specular, irradiance;
+        if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image("EnvironmentSpecular"), specular) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image("EnvironmentIrradiance"), irradiance))
+          return;
+        for (xiiUInt32 i = 0; i < hdr.GetCount(); ++i)
+          for (xiiUInt32 channel = 0; channel < 3; ++channel)
+            XII_TEST_FLOAT(hdr[i].GetData()[channel], specular[i].GetData()[channel] + irradiance[i].GetData()[channel] * irradiance[i].w * 0.8f / xiiMath::Pi<float>(), 0.0001f);
+        XII_TEST_FLOAT(color.x, phase == 22 ? 1.616f : 0, 0.003f);
+        XII_TEST_FLOAT(color.y, 0, 0.0001f);
+        XII_TEST_FLOAT(color.z, 0, 0.0001f);
       }
       else
       {
@@ -414,11 +459,22 @@ namespace xiiSceneProbeTest
         XII_TEST_FLOAT(color.y, color.z, 0.001f);
         XII_TEST_BOOL(color.x > 0.01f);
       }
-      if (phase == 10 || phase == 11 || phase == 21)
+      if (phase == 10 || phase == 21)
         XII_TEST_BOOL(color.y > color.x + color.z + 0.1f);
+      if (phase == 11)
+      {
+        XII_TEST_BOOL(color.y > 0.01f && color.x > color.y);
+        XII_TEST_BOOL(color.x + color.y < center[9].x + center[9].y);
+      }
       if (phase == 18 || phase == 19)
         for (xiiUInt32 channel = 0; channel < 3; ++channel)
           XII_TEST_FLOAT(color.GetData()[channel], center[phase - 4].GetData()[channel], 0.005f);
+      if (phase == 25 || phase == 26)
+      {
+        XII_TEST_FLOAT(color.x, center[22].x * 0.5f, 0.003f);
+        XII_TEST_FLOAT(color.y, 0, 0.0001f);
+        XII_TEST_FLOAT(color.z, 0, 0.0001f);
+      }
       xiiUInt32 presented;
       if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), target.Borrow(), size.width / 2, size.height / 2, presented))
         return;
