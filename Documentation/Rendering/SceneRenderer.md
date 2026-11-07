@@ -1626,12 +1626,75 @@ and independent-world fixture through the authored fallback. Scene, Editor and
 enclosure checks run on Windows/Vulkan Debug with mesh shaders and extended texture
 UAV formats disabled.
 
-This is bounded diffuse transport from material emission. Analytic-light sampling,
-emissive importance sampling, reservoir reuse, denoising, probe/voxel GI, volume
+This establishes bounded diffuse transport from material emission. Emissive
+importance sampling, reservoir reuse, denoising, probe/voxel GI, volume
 transport and specular path continuation remain separate work. Fixed sampling can
 be noisy for small emitters; no convergence or representative frame-time/memory
 claim is made. Imported textured scene quality, animation-specific GI acceptance,
 stereo and non-Vulkan runtime execution remain unverified.
+
+### Analytic lighting at indirect hits
+
+Ray irradiance now evaluates scene analytic lights at every eligible secondary
+surface, including the final authored surface hit. The existing world-light
+producer supplies `Lights`, `LightCounts`, `LightCandidates` and `IESProfiles`
+through the irradiance library interface. These are the same immutable graph
+uploads used by direct surface lighting. Candidate indices belong to the current
+view; an excluded light cannot enter GI through another view's shared world union.
+Secondary hits do not use the primary receiver's screen cluster.
+
+`AnalyticLightSamples` defaults to four and permits zero to eight samples per hit.
+Stratified sampling covers the complete eligible candidate domain with inverse
+proposal weighting and bounded work. Zero preserves emission-only transport.
+The existing shared point/spot photometric evaluator and finite-emitter sampler
+cover directional, point, spot, rectangle, disc, sphere and tube lights. The
+diffuse-only layered BRDF preserves Fresnel, metallic/transmission and coat energy
+policy; authored IES profiles and material occlusion remain part of the response.
+This is uniform candidate-domain sampling, not a power- or geometry-importance
+distribution. Small or highly unequal emitters can still have high variance.
+
+Shadow-casting lights trace visibility from the actual secondary surface. Point
+and finite-emitter visibility ends before the sampled emitter; directional
+visibility is bounded by `RayLength`. The trace forces any-hit evaluation for
+opaque geometry so material `CastsShadows` and alpha cutouts remain meaningful.
+Nonshadowing lights skip this visibility query. A miss marks visibility only;
+ordinary escaped GI paths still contribute zero. The payload remains 32 bytes,
+and enabled analytic sampling reserves one extra recursion level for visibility
+at the final surface hit. Exceeding the device recursion limit is a reported error.
+
+Light streams are optional only while the depth gate is absent or hardware fallback
+is selected. An active ray operation validates canonical structured strides, bounded
+light/candidate counts, the exact count record and complete IES profile storage.
+Missing active streams fail explicitly; disabling Ray Depth bypasses that workload.
+Every recording retains the graph read dependencies and upload ownership.
+
+`AnalyticRayLightingVisibilityAndViewSelection` runs 27 production phases through
+both Scene and Editor. A point source behind the camera lies outside the direct
+range of every visible receiver, yet lights the enclosure's secondary surfaces.
+An independent CPU calculation intersects the enclosure planes and integrates the
+actual point-source range law and Fresnel-attenuated diffuse response for each
+pixel. GPU irradiance matches this reference, and the HDR difference matches the
+captured primary material response. Presented pixels change with the added GI.
+
+The fixture verifies doubled intensity, a half-strength IES web, nine identical
+lights with one/four sample budgets, light removal/restoration, and a tagged blue
+light included in sibling views and excluded from three others. A closed opaque blocker
+removes point-light GI; disabling its shadow policy or using full cutout restores
+the expected result. Metallic secondary surfaces reject diffuse transport and half
+transmission halves it. All seven analytic emitter types change final output;
+point/spot, directional, disc, sphere and tube intensity scaling is checked exactly.
+Rectangle intensity changes also alter its automatically derived influence range.
+A closed enclosure rejects shadowed directional illumination. Each missing light
+stream fails an active view while its sibling remains valid, and disabling the gate
+recovers the incomplete view. Existing emissive multibounce, ray-disabled screen
+fallback and retained-world regressions remain separate acceptance cases.
+
+GPU duration queries report the trace cost of this 21-by-15 correctness fixture
+when available. This is scoped instrumentation, not a representative performance
+baseline. Power/geometry importance sampling, emissive/environment next-event
+sampling, reservoir reuse, spatiotemporal denoising and DDGI scene updates remain
+outstanding. Runtime acceptance is Windows/Vulkan Debug; other backends, textured
+ray-shadow filtering and representative animated GI quality remain unverified.
 
 ## Ballistic billboard particles
 
