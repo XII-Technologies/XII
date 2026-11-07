@@ -10,7 +10,7 @@ DiffuseGI.exe -output D:/XII/Workspace/DiffuseGI/Sky -pipeline Scene -frames 24 
 
 Each run produces a pair of PNGs at a fixed exposure. The first uses the standard authored pipeline with diffuse transport disabled. The second enables the ray request for the same camera and materials, with screen-space fallback when ray pipelines are unavailable. The room has neutral objects, red and green walls, and an emissive ceiling panel. `-sky-only` turns off the panel and uses a brighter blue sky to isolate sky bounce.
 
-The Editor run requires a build with Editor support. `-diagnostics` captures raw irradiance, reconstructed irradiance, and the previous reconstructed frame through the same view modes exposed in the viewport. The previous-frame view is black until history is available.
+The Editor run requires a build with Editor support. `-diagnostics` captures all five diffuse GI views exposed in the viewport. Raw, Reconstructed, and Previous Frame show the irradiance signals. Reconstruction Delta displays the absolute RGB difference between raw and reconstructed irradiance. Frame Delta compares current and previous reconstructed irradiance at the same screen pixel, so camera motion can also show up. The history views are black until history is available.
 
 Use `-no-ray` to capture the non-ray path on a ray-capable device. Add `-screen-only` to render the screen-space comparison in a separate output directory. The capture log identifies frames that scheduled the directional probe update.
 

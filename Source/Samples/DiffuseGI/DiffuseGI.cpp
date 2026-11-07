@@ -413,6 +413,8 @@ private:
       XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::DiffuseGIRaw, "Editor-GI-Raw.png"));
       XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::DiffuseGI, "Editor-GI-Reconstructed.png"));
       XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::DiffuseGIHistory, "Editor-GI-History.png"));
+      XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::DiffuseGIReconstructionDelta, "Editor-GI-Reconstruction-Delta.png"));
+      XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::DiffuseGIFrameDelta, "Editor-GI-Frame-Delta.png"));
     }
     return XII_SUCCESS;
   }

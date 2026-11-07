@@ -213,6 +213,8 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
       channels = 3;
       break;
     case xiiViewRenderMode::DiffuseGI:
+    case xiiViewRenderMode::DiffuseGIReconstructionDelta:
+    case xiiViewRenderMode::DiffuseGIFrameDelta:
       source   = &m_InputDiffuseGI;
       channels = 3;
       break;
@@ -251,10 +253,14 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
       output = builder.WriteTexture("Unshadowed visibility", description, xiiGALResourceStateFlags::CopyDestination); }, [](const auto& output, xiiRenderGraphPassContext& execute) { ClearRenderTargetPreservingState(execute.GetCommandList(), execute.GetTexture(output)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::White); });
     selected           = *neutral.first;
   }
-  const bool diffuseGI = mode == xiiViewRenderMode::DiffuseGI || mode == xiiViewRenderMode::DiffuseGIRaw || mode == xiiViewRenderMode::DiffuseGIHistory;
-  // Keep reconstruction alive even when only its previous result is displayed.
-  const auto currentGI = mode == xiiViewRenderMode::DiffuseGIHistory ? context.GetInputTexture(m_InputDiffuseGI) : xiiRenderGraphTextureHandle();
-  if (diffuseGI && !xiiScreenSpacePassUtils::Image(context, selected, 3, &size))
+  const bool reconstructionDelta = mode == xiiViewRenderMode::DiffuseGIReconstructionDelta;
+  const bool frameDelta          = mode == xiiViewRenderMode::DiffuseGIFrameDelta;
+  const bool historyMode         = mode == xiiViewRenderMode::DiffuseGIHistory;
+  const bool diffuseGI           = mode == xiiViewRenderMode::DiffuseGI || mode == xiiViewRenderMode::DiffuseGIRaw || historyMode || reconstructionDelta || frameDelta;
+  const auto comparison          = (reconstructionDelta || frameDelta) ? context.GetInputTexture(reconstructionDelta ? m_InputDiffuseGIRaw : m_InputDiffuseGIHistory) : xiiRenderGraphTextureHandle();
+  // Keep reconstruction alive while waiting for the first usable history image.
+  const auto currentGI = (historyMode || frameDelta) ? context.GetInputTexture(m_InputDiffuseGI) : xiiRenderGraphTextureHandle();
+  if (diffuseGI && (!xiiScreenSpacePassUtils::Image(context, selected, 3, &size) || ((reconstructionDelta || frameDelta) && !xiiScreenSpacePassUtils::Image(context, comparison, 3, &size))))
   {
     // History is absent on the first frame, after invalidation and on the spatial-only profile.
     const auto setup = [&](xiiRenderGraphTextureHandle& output, xiiRenderGraphBuilder& builder) {
@@ -303,7 +309,7 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   }
   struct Data
   {
-    xiiRenderGraphTextureHandle              m_Source, m_Depth, m_Objects, m_Output;
+    xiiRenderGraphTextureHandle              m_Source, m_Comparison, m_Depth, m_Objects, m_Output;
     xiiRenderGraphBufferHandle               m_Camera, m_Constants;
     xiiViewRenderMode::Enum                  m_Mode;
     xiiSizeU32                               m_Size;
@@ -312,8 +318,10 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
     xiiSharedPtr<xiiGALSampler>              m_pSampler;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    if (currentGI.IsValid()) (void)builder.ReadTexture(currentGI, xiiGALResourceStateFlags::ShaderResource);
     data.m_Source = builder.ReadTexture(selected, xiiGALResourceStateFlags::ShaderResource);
+    if (historyMode && currentGI.IsValid())
+      (void)builder.ReadTexture(currentGI, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Comparison         = comparison.IsValid() ? builder.ReadTexture(comparison, xiiGALResourceStateFlags::ShaderResource) : data.m_Source;
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Objects = builder.ReadTexture(objects, xiiGALResourceStateFlags::ShaderResource);
     data.m_Output = builder.WriteTexture("View visualization", outputDescription, xiiGALResourceStateFlags::UnorderedAccess);
@@ -336,6 +344,7 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
     commands.ResolveAndSetConstantBuffer("PerFrameCamera", execute.GetBuffer(data.m_Camera), xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("xiiViewRenderModeConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_Source", execute.GetTexture(data.m_Source)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    commands.ResolveAndSetShaderResourceTextureView("g_Comparison", execute.GetTexture(data.m_Comparison)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_Depth", execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceTextureView("g_ObjectIds", execute.GetTexture(data.m_Objects)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessTextureView("g_Output", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);

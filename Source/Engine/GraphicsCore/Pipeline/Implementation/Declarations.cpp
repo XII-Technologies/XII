@@ -28,6 +28,8 @@ bool xiiViewRenderMode::IsSupportedVisualizationMode(Enum mode)
     case DiffuseGI:
     case DiffuseGIRaw:
     case DiffuseGIHistory:
+    case DiffuseGIReconstructionDelta:
+    case DiffuseGIFrameDelta:
     case ReflectionContribution:
     case Bloom:
     case Exposure:
@@ -174,6 +176,8 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewRenderMode, 1U)
   XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGI),
   XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGIRaw),
   XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGIHistory),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGIReconstructionDelta),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseGIFrameDelta),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
