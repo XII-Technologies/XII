@@ -330,6 +330,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   description.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiFirstMeshlet = uiCoarseFirst, .m_uiMeshletCount = 1U});
   const auto             hGeometry = xiiGeometryResidencyManager::RegisterGeometry(description);
   xiiGeometryDescription peer;
+  peer.m_bPinned = true;
   peer.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiFirstMeshlet = uiCoarseFirst});
   const auto hPeer = xiiGeometryResidencyManager::RegisterGeometry(peer);
   xiiGeometryResidencyManager::RequestResidency(hGeometry, 1U, 1U);
@@ -395,18 +396,55 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
 
   pDevice->WaitIdle();
-  const xiiUInt64 uiBefore = GetOccupiedGpuBytes(*pDevice);
-  xiiGeometryResidencyManager::UnregisterGeometry(hGeometry, 3U);
-  xiiGeometryResidencyManager::ProcessStreaming(4U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
+  const xiiUInt64 uiBefore      = GetOccupiedGpuBytes(*pDevice);
+  const xiiUInt64 uiArenaBefore = xiiGeometryResidencyManager::GetStats().m_uiResidentBytes;
+  const xiiUInt32 uiGeneration  = pRecord->m_uiGeneration;
+  *pBudget                      = 1;
+  pDevice->BeginFrame();
+  XII_SCOPE_EXIT(pDevice->EndFrame());
+  XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
+
+  // Merge demand across views. A coarse view does not make a recent fine view cold.
+  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 0U, 119U, 3U));
+  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 1U, 127U, 1U));
+  xiiGeometryResidencyManager::ProcessStreaming(128U, 126U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
+
+  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 1U, 247U, 1U));
+  xiiGeometryResidencyManager::NoteIncompleteLodFeedback(247U);
+  xiiGeometryResidencyManager::ProcessStreaming(248U, 246U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
+
+  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 1U, 367U, 1U));
+  xiiGeometryResidencyManager::RequestInstanceResidency(hGeometry, 0U, 367U, false);
+  xiiGeometryResidencyManager::ProcessStreaming(368U, 366U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
+  XII_TEST_INT(pRecord->m_uiGeneration, uiGeneration);
+  XII_TEST_INT(pRecord->m_Lods[0].m_uiMeshletRemapBufferIndex, xiiInvalidIndex);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiFineLodEvictions, 1U);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBefore);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes + uiFineBytes);
-  xiiGeometryResidencyManager::ProcessStreaming(5U, 3U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_BOOL(!xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 0U, 367U, 3U));
+
+  xiiGeometryResidencyManager::ProcessStreaming(369U, 367U, configuration.m_uiUploadBudgetPerFrameBytes);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiFineBytes);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBefore - uiCoarseFirst * sizeof(xiiMeshlet));
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
   XII_TEST_INT(pPeer->m_uiResidentLodMask, 1U);
-  xiiGALBindlessResourceTable::Collect(3U);
+  xiiGALBindlessResourceTable::Collect(367U);
   pDevice->WaitIdle();
   const xiiUInt64 uiAfter = GetOccupiedGpuBytes(*pDevice);
   if (XII_TEST_BOOL(uiBefore >= uiAfter + uiFineBytes))
-    xiiTestFramework::Output(xiiTestOutput::Details, "Independent topology uploaded %llu coarse bytes before requesting %llu fine bytes. Retiring fine topology made %llu Vulkan allocation bytes reusable.",
+    xiiTestFramework::Output(xiiTestOutput::Details, "Independent topology uploaded %llu coarse bytes and %llu fine bytes. Active-record eviction made %llu Vulkan allocation bytes reusable.",
                              static_cast<unsigned long long>(uiCoarseBytes), static_cast<unsigned long long>(uiFineBytes), static_cast<unsigned long long>(uiBefore - uiAfter));
+
+  // Ordinary renewed demand waits under pressure. An exact forced draw can restore its LOD.
+  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 0U, 369U, 3U));
+  xiiGeometryResidencyManager::ProcessStreaming(370U, 368U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
+  xiiGeometryResidencyManager::RequestInstanceResidency(hGeometry, 0U, 370U, true);
+  xiiGeometryResidencyManager::ProcessStreaming(370U, 368U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
 }
