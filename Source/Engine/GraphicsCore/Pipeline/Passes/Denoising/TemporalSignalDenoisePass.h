@@ -23,6 +23,7 @@ public:
   xiiRenderPipelineDataInputPin     m_TemporalCamera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>(), true};
   xiiRenderPipelineTextureInputPin  m_Material{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_ObjectId{xiiGALResourceFormat::R32UInt, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_SampleDomain{xiiGALResourceFormat::R32UInt, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   bool                              m_bEnabled = true;
   /// Spatial-only filtering requires no motion producer or retained images.
   bool  m_bUseHistory      = true;
@@ -38,10 +39,16 @@ public:
   void                                        InvalidateTemporalHistory() override;
 
 protected:
-  explicit xiiTemporalSignalDenoisePass(xiiUInt32 signalMode);
+  enum class SignalMode : xiiUInt8
+  {
+    Occlusion,
+    Irradiance,
+    LocalLighting
+  };
+  explicit xiiTemporalSignalDenoisePass(SignalMode mode);
 
 private:
-  const xiiUInt32                     m_uiSignalMode;
+  const SignalMode                    m_Mode;
   const xiiEnum<xiiGALResourceFormat> m_Format;
   struct State;
   xiiSharedPtr<State> m_pState;

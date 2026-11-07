@@ -12,6 +12,8 @@ RWTexture2D<uint4> g_SeedReservoirs;
 Texture2D<uint4>  g_CurrentReservoirs;
 Texture2D<uint4>  g_PreviousReservoirs;
 Texture2D<float2> g_ReservoirVelocity;
+XII_STORAGE_IMAGE_FORMAT("r32ui")
+RWTexture2D<uint> g_ReservoirDomain;
 #endif
 
 static const uint InvalidLight    = 0xffffffffu;
@@ -187,9 +189,10 @@ void MergeLocal(LocalReservoir source, LocalReservoir current, SurfaceSample sur
   SelectLocal(selection, index, target, target * asfloat(source.Light.w) * float(count), count, randomState);
 }
 
-bool ResolveLocalReservoir(uint2 pixel, uint cluster, SurfaceSample surface, bool receives, inout float reactive, out float3 result)
+bool ResolveLocalReservoir(uint2 pixel, uint cluster, SurfaceSample surface, bool receives, inout float reactive, out float3 result, out uint domain)
 {
   result                       = 0;
+  domain                       = 0u;
   const uint2          tile    = pixel / LocalReservoirGrid.x;
   const LocalReservoir current = ReadLocalReservoir(g_CurrentReservoirs, tile);
   if (current.Surface.z != cluster || current.Domain.z != LocalReservoirGrid.y)
@@ -231,6 +234,10 @@ bool ResolveLocalReservoir(uint2 pixel, uint cluster, SurfaceSample surface, boo
 #  endif
   if (selection.Index != InvalidLight && selection.Count > 0 && selection.Target > 0 && isfinite(selection.Sum))
     result = Evaluate(selection.Index, surface, receives, reactive) * ((selection.Sum / float(selection.Count)) / selection.Target);
+  const uint hash = LocalHash(current.Domain.x ^ LocalHash(current.Domain.y));
+  domain = max(hash & ~XII_LOCAL_LIGHT_SHADOW_DOMAIN, 1u);
+  if (reactive > 0.0f)
+    domain |= XII_LOCAL_LIGHT_SHADOW_DOMAIN;
   return true;
 }
 #endif

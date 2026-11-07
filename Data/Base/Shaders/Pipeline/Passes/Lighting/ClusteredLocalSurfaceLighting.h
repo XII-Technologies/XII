@@ -114,6 +114,9 @@ uint2 LocalClusterRange(uint identity)
   float         reactive        = 0;
   uint          evaluatedLights = 0;
   uint          clusterIdentity = 0;
+#  if defined(XII_LOCAL_RESERVOIRS)
+  uint          domain          = 0u;
+#  endif
   if (LoadSurface(tid.xy, surface))
   {
     clusterIdentity = LocalClusterIdentity(tid.xy, surface.Position);
@@ -137,7 +140,7 @@ uint2 LocalClusterRange(uint identity)
       bool resolved     = false;
 #  if defined(XII_LOCAL_RESERVOIRS)
       if (range.y > XII_LOCAL_LIGHT_RESERVOIR_MIN_LIGHTS)
-        resolved = ResolveLocalReservoir(tid.xy, clusterIdentity, surface, receives, reactive, result);
+        resolved = ResolveLocalReservoir(tid.xy, clusterIdentity, surface, receives, reactive, result, domain);
 #  endif
       if (!resolved)
         [loop] for (uint i = 0; i < range.y; ++i)
@@ -150,6 +153,9 @@ uint2 LocalClusterRange(uint identity)
   if ((uint)SurfaceEvaluation.z == ViewRenderMode_LightComplexity)
     result = evaluatedLights == 0u ? 0.0f : ViewHeatColor(saturate(log2(float(evaluatedLights) + 1.0f) / 5.0f));
   g_Lighting[tid.xy] = float4(all(isfinite(result)) ? clamp(result, 0, 65504.0f) : 0, 1);
+#  if defined(XII_LOCAL_RESERVOIRS)
+  g_ReservoirDomain[tid.xy] = domain;
+#  endif
 #  if XII_SPOT_SHADOWS
   g_SpotReactive[tid.xy] = float4(reactive.xxx, 0);
 #  endif

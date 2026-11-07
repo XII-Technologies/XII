@@ -9,6 +9,11 @@
 #include <Shaders/Pipeline/Passes/Denoising/TemporalDenoiseConstants.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
+#if defined(XII_DENOISE_LOCAL_LIGHT)
+#  include <Shaders/Pipeline/Passes/Lighting/LocalLightReservoirConstants.h>
+Texture2D<uint> g_SampleDomain : register(t16);
+#endif
+
 Texture2D<float4> g_CurrentSignal : register(t4);
 Texture2D<float4> g_PreviousSignal : register(t5);
 Texture2D<float>  g_SceneDepth : register(t6);
@@ -35,9 +40,15 @@ uint2             SignalIdentity(uint2 pixel)
 }
 #endif
 #if defined(XII_DENOISE_CAPTURE_IDENTITY)
+#  if defined(XII_DENOISE_LOCAL_LIGHT)
+Texture2D<uint4> g_PreviousIdentity : register(t14);
+XII_STORAGE_IMAGE_FORMAT("rgba32ui")
+RWTexture2D<uint4> g_CurrentIdentity : register(u15);
+#  else
 Texture2D<uint2> g_PreviousIdentity : register(t14);
 XII_STORAGE_IMAGE_FORMAT("rg32ui")
 RWTexture2D<uint2> g_CurrentIdentity : register(u15);
+#  endif
 #endif
 
 float4 LoadSignal(int2 pixel, uint2 dimensions)
@@ -64,8 +75,18 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
   float4      current = LoadSignal(int2(pixel), dimensions);
   if (SignalMode == 1u)
     current = all(isfinite(current)) ? max(current, 0.0f) : 0.0f;
+#if defined(XII_DENOISE_LOCAL_LIGHT)
+  const uint domain = g_SampleDomain.Load(int3(pixel, 0));
+#endif
+#if defined(XII_DENOISE_MATERIAL_VALIDATION)
+  const uint2 identity = SignalIdentity(pixel);
+#endif
 #if defined(XII_DENOISE_CAPTURE_IDENTITY)
-  g_CurrentIdentity[pixel] = SignalIdentity(pixel);
+#  if defined(XII_DENOISE_LOCAL_LIGHT)
+  g_CurrentIdentity[pixel] = uint4(identity, domain, 0u);
+#  else
+  g_CurrentIdentity[pixel] = identity;
+#  endif
 #endif
 #if defined(XII_DENOISE_CAPTURE_SURFACE)
   // Keep the reprojection surface in this pass instance's own history. Capturing
@@ -77,6 +98,13 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
     g_DenoisedOutput[pixel] = SignalMode == 0U ? 1.0f.xxxx : current;
     return;
   }
+#if defined(XII_DENOISE_LOCAL_LIGHT)
+  if (domain == 0u)
+  {
+    g_DenoisedOutput[pixel] = current;
+    return;
+  }
+#endif
 
   const float2 encodedNormal = g_GBufferNormal.Load(int3(pixel, 0));
   const float3 normal        = DecodeOctNormal(encodedNormal);
@@ -87,9 +115,14 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
   float4 spatialSum     = current;
   float  spatialSamples = 1.0f;
 
-  [unroll] for (int y = -1; y <= 1; ++y)
+#if defined(XII_DENOISE_LOCAL_LIGHT)
+  const int radius = 2;
+#else
+  const int radius = 1;
+#endif
+  [unroll] for (int y = -radius; y <= radius; ++y)
   {
-    [unroll] for (int x = -1; x <= 1; ++x)
+    [unroll] for (int x = -radius; x <= radius; ++x)
     {
       if (x == 0 && y == 0)
         continue;
@@ -105,7 +138,11 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
         continue;
 
 #if defined(XII_DENOISE_MATERIAL_VALIDATION)
-      if (any(SignalIdentity(uint2(samplePixel)) != SignalIdentity(pixel)))
+      if (any(SignalIdentity(uint2(samplePixel)) != identity))
+        continue;
+#endif
+#if defined(XII_DENOISE_LOCAL_LIGHT)
+      if (g_SampleDomain.Load(int3(samplePixel, 0)) != domain)
         continue;
 #endif
       const float4 sampleSignal = LoadSignal(samplePixel, dimensions);
@@ -122,6 +159,14 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
 #if defined(XII_DENOISE_SPATIAL_ONLY)
   g_DenoisedOutput[pixel] = current;
 #else
+#  if defined(XII_DENOISE_LOCAL_LIGHT)
+  // Moving shadow casters can change visibility while receiver and light IDs stay fixed.
+  if ((domain & XII_LOCAL_LIGHT_SHADOW_DOMAIN) != 0u)
+  {
+    g_DenoisedOutput[pixel] = current;
+    return;
+  }
+#  endif
   if (HistoryValid == 0U)
   {
     g_DenoisedOutput[pixel] = current;
@@ -145,7 +190,11 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
 
   const uint2  previousPixel   = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
 #  if defined(XII_DENOISE_CAPTURE_IDENTITY)
-  if (any(g_PreviousIdentity.Load(int3(previousPixel, 0)) != SignalIdentity(pixel)))
+#    if defined(XII_DENOISE_LOCAL_LIGHT)
+  if (any(g_PreviousIdentity.Load(int3(previousPixel, 0)).xyz != uint3(identity, domain)))
+#    else
+  if (any(g_PreviousIdentity.Load(int3(previousPixel, 0)) != identity))
+#    endif
   {
     g_DenoisedOutput[pixel] = current;
     return;
