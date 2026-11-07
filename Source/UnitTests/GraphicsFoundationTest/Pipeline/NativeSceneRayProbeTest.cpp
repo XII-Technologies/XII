@@ -10,7 +10,9 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Lighting/EmissiveLightManager.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -28,7 +30,7 @@
 XII_DEFINE_AS_POD_TYPE(xiiSceneRayProbeResult);
 XII_DEFINE_AS_POD_TYPE(xiiRayTracingGeometryData);
 XII_CREATE_SIMPLE_TEST_GROUP(NativeSceneRayProbe);
-XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwnerRetirement)
+static void RunWorldRaySceneTest(bool emissive)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize(false)))
@@ -46,10 +48,14 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
   if (!XII_TEST_BOOL(source.IsValid() && source->GetAuthoring() && source->GetPipeline()))
     return;
   const auto authored = source->GetAuthoring();
-  xiiUuid    probeId;
+  xiiUuid    probeId, sceneId;
   for (const auto& pass : authored->m_Descriptor.m_Passes)
+  {
     if (pass.m_pType == xiiGetStaticRTTI<xiiSceneRayProbePass>())
       probeId = pass.m_Id;
+    if (pass.m_pType == xiiGetStaticRTTI<xiiRayTracingScenePass>())
+      sceneId = pass.m_Id;
+  }
   if (!XII_TEST_BOOL(probeId.IsValid()))
     return;
   xiiRenderPipelineResourceDescriptor root;
@@ -62,16 +68,38 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     properties.m_Properties.Insert("Origin", xiiVec3(i ? 5.0f : 0.0f, 0, 3));
     properties.m_Properties.Insert("Direction", xiiVec3(0, 0, -3));
     properties.m_Properties.Insert("MaximumDistance", 10.0f);
+    if (emissive)
+    {
+      auto& build = root.m_Passes[node].m_Overrides.ExpandAndGetRef();
+      build.m_Path.PushBack(sceneId);
+      build.m_Properties.Insert("BuildEmissiveLights", true);
+    }
     root.m_Interface.PushBack({i ? "OffsetResult" : "OriginResult", false, root.m_Passes[node].m_Id, "Result"});
   }
-  const auto  resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Repeated world ray probes", std::move(root));
-  xiiGeometry box;
-  box.AddBox(xiiVec3(1), true);
+  const auto      resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(emissive ? "Emissive world ray probes" : "Repeated world ray probes", std::move(root));
+  xiiGeometry     box;
+  const xiiUInt32 triangleCount = emissive ? 288 : 12;
+  for (xiiUInt32 index = 0; index < triangleCount / 12 + (emissive ? 1 : 0); ++index)
+  {
+    xiiGeometry::GeoOptions options;
+    options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0, (float(index) - (emissive ? 1 : 0)) * 4, 0));
+    box.AddBox(xiiVec3(1), true, options);
+  }
   xiiMeshResourceDescriptor meshDescription;
   meshDescription.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, false);
-  meshDescription.AddSection(12, 0, 0);
+  meshDescription.AddSection(triangleCount, emissive ? 12 : 0, 0);
   meshDescription.ComputeBounds();
-  const auto             mesh = xiiResourceManager::CreateResource<xiiMeshResource>("Ray probe world cube", std::move(meshDescription));
+  const auto                mesh = xiiResourceManager::CreateResource<xiiMeshResource>(emissive ? "Ray emissive boxes" : "Ray probe world cube", std::move(meshDescription));
+  xiiMaterialResourceHandle bright, black;
+  if (emissive)
+  {
+    xiiMaterialResourceDescriptor material;
+    material.m_EmissiveColor = xiiColor(4, 2, 1);
+    bright                   = xiiResourceManager::CreateResource<xiiMaterialResource>("Ray emissive cube", std::move(material));
+    black                    = xiiResourceManager::CreateResource<xiiMaterialResource>("Ray nonemissive cube", xiiMaterialResourceDescriptor{});
+  }
+  const auto settings = xiiEmissiveLightManager::GetConfiguration();
+  XII_SCOPE_EXIT(xiiEmissiveLightManager::Configure(settings).AssertSuccess());
   xiiUniquePtr<xiiWorld> world;
   xiiView*               view   = nullptr;
   xiiRenderWorldModule*  module = nullptr;
@@ -94,6 +122,8 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     xiiStaticMeshComponent* component = nullptr;
     componentHandle                   = xiiStaticMeshComponent::CreateComponent(object, component);
     component->SetMesh(mesh);
+    if (emissive)
+      component->SetMaterialOverride(0, bright);
   };
   createWorld();
   {
@@ -109,6 +139,13 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
   {
     if (phase == 4)
       createWorld();
+    if (emissive)
+    {
+      auto configuration = settings;
+      if (phase == 2)
+        configuration.m_uiMaxTriangles = 5;
+      XII_TEST_RESULT(xiiEmissiveLightManager::Configure(configuration));
+    }
     xiiRenderGraphFrame frame;
     if (!XII_TEST_RESULT(frame.Begin()))
       return;
@@ -130,6 +167,15 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
         if (!XII_TEST_BOOL(world->TryGetObject(objectHandle, object)))
           return;
         object->SetLocalPosition(xiiVec3(5, 0, 0));
+        if (emissive)
+          object->SetLocalScaling(xiiVec3(2, 3, 1));
+      }
+      if (emissive && (phase == 1 || phase == 2))
+      {
+        xiiStaticMeshComponent* component = nullptr;
+        if (!XII_TEST_BOOL(world->TryGetComponent(componentHandle, component)))
+          return;
+        component->SetMaterialOverride(0, phase == 1 ? black : bright);
       }
       world->Update();
       xiiExtractedRenderData  packets;
@@ -189,13 +235,18 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     outputs[0] = pipeline.GetInterfaceBinding(pipeline.GetPipeline()->FindInterface("OriginResult", false))->m_hBuffer;
     outputs[1] = pipeline.GetInterfaceBinding(pipeline.GetPipeline()->FindInterface("OffsetResult", false))->m_hBuffer;
     XII_TEST_BOOL(outputs[0] != outputs[1]);
-    xiiGALTopLevelAS* structures[2] = {};
+    xiiGALTopLevelAS*          structures[2] = {};
     xiiRenderGraphBufferHandle geometryRecords;
-    xiiUInt32         sceneCount    = 0;
+    xiiRenderGraphBufferHandle emissionTables[2][5];
+    const xiiStringView        emissionPins[] = {"EmissiveTriangles", "EmissiveHeader", "TriangleAliases", "BlockAliases", "AliasHeader"};
+    xiiUInt32                  sceneCount     = 0;
     for (xiiUInt32 i = 0; i < pipeline.GetPipeline()->GetDescriptor().m_Passes.GetCount(); ++i)
       if (const auto* scene = xiiDynamicCast<const xiiRayTracingScenePass*>(pipeline.GetPass(i)))
       {
         XII_TEST_INT(scene->GetLastBuildStatistics().m_uiInstanceCount, phase == 4 ? 0 : 1);
+        if (emissive && phase != 4)
+          for (xiiUInt32 pin = 0; pin < 5; ++pin)
+            emissionTables[sceneCount][pin] = pipeline.GetOutputBinding(i, emissionPins[pin])->m_hBuffer;
         structures[sceneCount++] = pipeline.GetOutputBinding(i, "Scene")->m_AccelerationStructure.m_pStructure.Borrow();
         if (phase != 4)
           geometryRecords = pipeline.GetOutputBinding(i, "Geometry")->m_hBuffer;
@@ -204,6 +255,21 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     if (phase != 4)
     {
       XII_TEST_BOOL(structures[0] && structures[1] && structures[0] != structures[1]);
+      if (emissive)
+      {
+        for (xiiUInt32 pin = 0; pin < 5; ++pin)
+        {
+          XII_TEST_BOOL(emissionTables[0][pin].IsValid() && emissionTables[0][pin] != emissionTables[1][pin]);
+          for (xiiUInt32 occurrence = 0; occurrence < 2; ++occurrence)
+          {
+            const auto setup = [&](auto& data, xiiRenderGraphBuilder& builder) {
+              data = builder.ReadBuffer(emissionTables[occurrence][pin], xiiGALResourceStateFlags::ShaderResource);
+              builder.ExportBuffer(data, xiiGALResourceStateFlags::ShaderResource);
+            };
+            graph.AddPass<xiiRenderGraphBufferHandle>("Export ray emissive table", xiiGALCommandQueueFlags::Graphics, setup, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+          }
+        }
+      }
       graph.AddPass<xiiRenderGraphBufferHandle>("Export indexed ray geometry", xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
         data = builder.ReadBuffer(geometryRecords, xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(data, xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
@@ -235,6 +301,101 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
       // Closest-hit shading must use the same indexed addressing as BLAS traversal.
       XII_TEST_INT(geometry.BufferIndices.z, sizeof(xiiUInt16));
       XII_TEST_BOOL(geometry.BufferIndices.y != xiiInvalidIndex);
+      XII_TEST_INT(geometry.PrimitiveRange.x, triangleCount);
+      XII_TEST_INT(geometry.VertexAttributes.w, emissive ? 12 : 0);
+      if (emissive)
+      {
+        XII_TEST_INT(geometry.PrimitiveRange.y, phase == 1 ? xiiInvalidIndex : 0);
+        for (xiiUInt32 occurrence = 0; occurrence < 2; ++occurrence)
+        {
+          const auto read = [&](xiiUInt32 pin, xiiUInt32 offset, auto& value) {
+            return xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(emissionTables[occurrence][pin]).Borrow(), offset, value);
+          };
+          xiiGpuEmissiveLightHeader header;
+          xiiGpuEmissiveAliasHeader alias;
+          if (!read(1, 0, header) || !read(4, 0, alias))
+            return;
+          XII_TEST_INT(header.FrameIndex, xiiUInt32(graph.GetFrameIndex()));
+          XII_TEST_INT(alias.FrameIndex, header.FrameIndex);
+          XII_TEST_INT(header.CandidateCount, phase == 1 ? 0 : triangleCount);
+          XII_TEST_INT(header.TriangleCount, phase == 1 ? 0 : phase == 2 ? 5 :
+                                                                           triangleCount);
+          XII_TEST_INT(header.OverflowCount, phase == 2 ? triangleCount - 5 : 0);
+          XII_TEST_INT(alias.BlockCount, phase == 1 ? 0 : phase == 2 ? 1 :
+                                                                       2);
+          float total = 0, area = 0;
+          float weights[288] = {}, probabilities[288] = {}, blockProbabilities[2] = {};
+          for (xiiUInt32 block = 0; block < alias.BlockCount; ++block)
+          {
+            xiiGpuEmissiveAliasEntry entry;
+            if (!read(3, block * sizeof(entry), entry))
+              return;
+            if (!XII_TEST_BOOL(entry.AliasIndex < alias.BlockCount))
+              return;
+            blockProbabilities[block] += entry.Probability / alias.BlockCount;
+            blockProbabilities[entry.AliasIndex] += (1 - entry.Probability) / alias.BlockCount;
+          }
+          struct TriangleRecords
+          {
+            XII_DECLARE_POD_TYPE();
+            xiiGpuEmissiveTriangle m_Records[288];
+          } triangles;
+          struct AliasRecords
+          {
+            XII_DECLARE_POD_TYPE();
+            xiiGpuEmissiveAliasEntry m_Records[288];
+          } aliases;
+          if (header.TriangleCount == 288 && (!read(0, 0, triangles) || !read(2, 0, aliases)))
+            return;
+          for (xiiUInt32 triangleIndex = 0; triangleIndex < header.TriangleCount; ++triangleIndex)
+          {
+            xiiGpuEmissiveTriangle   triangle;
+            xiiGpuEmissiveAliasEntry entry;
+            if (header.TriangleCount == 288)
+            {
+              triangle = triangles.m_Records[triangleIndex];
+              entry    = aliases.m_Records[triangleIndex];
+            }
+            else if (!read(0, triangleIndex * sizeof(triangle), triangle) || !read(2, triangleIndex * sizeof(entry), entry))
+              return;
+            XII_TEST_INT(triangle.Metadata.x, identity);
+            XII_TEST_INT(triangle.Metadata.y, 0);
+            XII_TEST_INT(triangle.Metadata.z, triangleIndex);
+            const auto  p0 = triangle.Position0AndArea.GetAsVec3(), p1 = triangle.Position1AndPowerWeight.GetAsVec3(), p2 = triangle.Position2AndInvArea.GetAsVec3();
+            const float expectedArea = (p1 - p0).CrossRH(p2 - p0).GetLength() * 0.5f;
+            XII_TEST_FLOAT(triangle.Position0AndArea.w, expectedArea, 1e-5f);
+            XII_TEST_FLOAT(triangle.Position2AndInvArea.w * expectedArea, 1, 1e-5f);
+            XII_TEST_FLOAT(triangle.NormalAndTwoSided.GetAsVec3().GetLength(), 1, 1e-5f);
+            for (auto position : {p0, p1, p2})
+            {
+              XII_TEST_FLOAT(xiiMath::Abs(position.z), 0.5f, 1e-5f);
+              XII_TEST_BOOL(xiiMath::Abs(position.x - (phase == 2 || phase == 3 ? 5.0f : 0.0f)) <= (phase == 2 || phase == 3 ? 1.00001f : 0.50001f));
+              XII_TEST_BOOL(xiiMath::Abs(position.y - float(triangleIndex / 12) * 4 * (phase == 2 || phase == 3 ? 3 : 1)) <= (phase == 2 || phase == 3 ? 1.50001f : 0.50001f));
+            }
+            const float power = expectedArea * (4 * 0.2126f + 2 * 0.7152f + 0.0722f);
+            XII_TEST_FLOAT(triangle.Position1AndPowerWeight.w, power, 1e-4f);
+            weights[triangleIndex] = power;
+            total += power;
+            area += expectedArea;
+            XII_TEST_BOOL(xiiMath::IsFinite(entry.Probability) && entry.Probability >= 0 && entry.Probability <= 1);
+            if (!XII_TEST_BOOL(entry.AliasIndex < header.TriangleCount))
+              return;
+            const xiiUInt32 block   = triangleIndex / 256;
+            const xiiUInt32 columns = xiiMath::Min(256U, header.TriangleCount - block * 256);
+            XII_TEST_INT(entry.AliasIndex / 256, block);
+            probabilities[triangleIndex] += entry.Probability / columns * blockProbabilities[block];
+            probabilities[entry.AliasIndex] += (1 - entry.Probability) / columns * blockProbabilities[block];
+          }
+          XII_TEST_FLOAT(alias.TotalPower, total, xiiMath::Max(1e-4f, total * 1e-5f));
+          if (header.TriangleCount)
+          {
+            for (xiiUInt32 index = 0; index < header.TriangleCount; ++index)
+              XII_TEST_FLOAT(probabilities[index], weights[index] / total, 1e-6f);
+            if (phase != 2)
+              XII_TEST_FLOAT(area, (phase == 3 ? 22.0f : 6.0f) * (triangleCount / 12), 1e-5f);
+          }
+        }
+      }
     }
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
@@ -246,7 +407,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
       if (hit)
       {
         XII_TEST_INT(result.Identity.y, identity);
-        XII_TEST_BOOL(result.Identity.z < 12);
+        XII_TEST_BOOL(result.Identity.z < triangleCount);
         XII_TEST_FLOAT(result.Intersection.x, 2.5f, 0.0001f);
         XII_TEST_BOOL(result.Intersection.y >= 0 && result.Intersection.z >= 0 && result.Intersection.y + result.Intersection.z <= 1.0001f);
       }
@@ -259,4 +420,14 @@ XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwne
     }
     xiiTestFramework::Output(xiiTestOutput::Details, "Ray probe phase %u: %u compiled operations, one submission, %u barriers.", phase, graph.GetStatistics().m_uiCompiledPassCount, graph.GetStatistics().m_uiTotalBarrierCount);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, WorldChangesRepeatedInstancesAndOwnerRetirement)
+{
+  RunWorldRaySceneTest(false);
+}
+
+XII_CREATE_SIMPLE_TEST(NativeSceneRayProbe, EmissiveProposalsTransformOverflowAndOwnerRetirement)
+{
+  RunWorldRaySceneTest(true);
 }
