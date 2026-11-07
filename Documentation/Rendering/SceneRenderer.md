@@ -1756,8 +1756,8 @@ sampling, reservoirs, denoising and DDGI remain outstanding.
 `EmissiveTriangles`, `EmissiveHeader`, `TriangleAliases`, `BlockAliases` and
 `AliasHeader`. It defaults to false. These are occurrence-local graph versions
 built through `xiiEmissiveLightManager`; they are not a second scene registry or
-a mutable global current-frame buffer. Existing authored diffuse transport does
-not yet consume these tables.
+a mutable global current-frame buffer. The authored ray irradiance workload now
+consumes these tables when emissive next-event sampling is enabled.
 
 The canonical ray geometry record now carries three object-to-world rows and a
 primitive range. Its stride increases from 48 to 112 bytes, adding 64 bytes per
@@ -1798,10 +1798,82 @@ triangle power. The deformation regression additionally compares proposal vertex
 heights and areas with traced skinned/morphed surfaces through negative morph
 weights, mirrored skinning, bind-pose restoration and resource reload.
 
-These tables provide the proposal domain for emissive next-event sampling. They
-do not yet change Scene/Editor GI output, combine light and BSDF estimators, or
-establish representative extraction performance. Windows Vulkan Debug is the
-local GPU acceptance platform; other backend GPU acceptance remains outstanding.
+The tables are consumed by the bounded diffuse estimator below. Windows Vulkan
+Debug is the local GPU acceptance platform; other backend GPU acceptance and
+representative extraction performance remain outstanding.
+
+## Emissive next-event sampling and diffuse MIS
+
+`RayTracedIrradiancePass.EmissiveLightSamples` accepts zero through eight emitter
+queries per path vertex. The class default is zero; the existing opt-in ray
+workload uses four and enables its scene producer's emissive tables. Both global
+GI depth gates remain off by default. The five inputs must originate from the
+same canonical `RayTracingScenePass` as the TLAS, materials and geometry.
+
+The proposal mixes 95 percent hierarchical power sampling with five percent
+uniform triangle selection. It then samples triangle area uniformly and converts
+the triangle probability to a solid-angle density at the biased ray origin.
+No centroid texture lookup determines support. An actual ray queries the selected
+TLAS instance and BLAS-local primitive, evaluating the same textured material,
+authored samplers, ray-cone LOD and alpha cutouts as ordinary path hits. A nearer
+occluder, wrong target or miss returns zero. Geometric occlusion follows diffuse
+paths even when the blocker does not cast analytic-light shadows.
+
+Each alias entry uses four previously reserved bytes for `SelectionProbability`,
+keeping its 16-byte stride. After Vose construction, the existing compute passes
+reuse probability scratch to reconstruct the mass of every stored column and
+alias target. Triangle and block masses form the actual hierarchical PDF; no
+extra distribution buffers, compute passes or CPU readbacks are introduced.
+The shared alias sampler also uses these masses instead of ideal input-power
+ratios, and native readback checks both representations against each other.
+
+At each vertex, one cosine path sample is paired with the configured number of
+emitter samples. The balance heuristic combines their PDFs. Direct emitter
+queries receive the light-sampling weight, while the next path hit's material
+emission receives the complementary BSDF weight. The previous cosine density
+adds four payload bytes only in the enabled shader permutation, increasing it
+from 32 to 36 bytes. The disabled permutation neither binds nor reads proposal
+tables; graph compilation omits all three emissive build passes.
+
+Emission queries terminate at the target. Secondary queries occur only where a
+continuation segment is allowed, preserving the existing one-to-four-hit depth
+bound without extra ray recursion. Analytic visibility retains its existing
+separate recursion requirement. Equivalent MIS equations avoid overflow in
+sample-count times light PDF and avoid an underflowing intermediate reciprocal.
+Emitter randomness is separate from path randomness. An empty, truncated,
+nonfinite-power or stale-frame proposal falls back to the unchanged path
+estimator. Structurally missing or malformed active inputs fail the operation;
+zero sampling or an absent depth gate does not require them.
+
+The shared Scene/Editor acceptance fixture compares eight configurations through
+13 phases. A unit-radiance black enclosure measures mean irradiance 3.148824 with
+MIS versus pi for the path-only control, confirming single-counted emission.
+A diffuse enclosure measures two-hit means 4.640691 versus 4.645742 for the control,
+and a bounded four-hit mean of 5.731275. Zero emission, an empty scene, cutouts and
+a closed noncasting blocker produce zero. Doubling emission doubles the output,
+and restored scenes recover their earlier images. Capacity overflow matches the
+same path-sample-budget control exactly.
+
+An off-camera 0.5 by 0.5 metre panel is compared against independent 64 by 64
+midpoint integration using captured depth and the exact camera transform. Its
+one-hit mean is 0.261626 against 0.261662 from the integral. Summed squared error
+over 221 receivers is 0.000254 for four path samples with four emitter queries,
+versus 288.166740 for 32 path-only samples. The former submits 20 rays per receiver
+in this unobstructed case, compared with 32 for the control; these counts do not
+establish equal GPU execution cost or representative convergence.
+
+A colored emissive texture scales all channels as expected. A narrow bright
+texture stripe has dark centroids on both triangles yet remains sampled; its
+mean is 0.033140 against the independent restricted-area integral of 0.032720.
+Both Scene and Editor validate the HDR consumer response and all five missing
+stream failures, then recover with sampling disabled or the depth gate absent.
+GPU pass inspection verifies disabled sampling submits no extraction/alias work.
+
+The proposal still uses area and material emission rather than receiver distance,
+visibility or textured power estimates. Environment importance sampling, reservoir
+reuse, spatiotemporal denoising, integrated DDGI updates and representative
+quality/performance remain outstanding. Escaped rays remain zero so ordinary
+environment lighting keeps ownership of sky illumination.
 
 ## Ballistic billboard particles
 
