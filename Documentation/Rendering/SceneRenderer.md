@@ -1901,6 +1901,24 @@ implementation. Authored Scene and Editor pipeline export passes. Validation is
 Windows Vulkan; other backends and representative convergence/performance remain
 unverified. This reconstruction is not a GI reservoir or a scene-driven probe update.
 
+## Sky transport and diffuse GI view modes
+
+The shared GI workload consumes the global sky selected by WorldReflectionProbes.
+A GPU scan builds a two-level luminance distribution over 64 by 32 equal-area
+sphere cells. Sky queries at secondary hits use that distribution with a uniform
+support component. Visibility follows diffuse path intersections, including alpha
+cutouts. The secondary BRDF and sky query are weighted against cosine continuation
+when both proposals are present. At the final allowed hit, the sky query receives
+full weight. A primary miss still contributes zero to diffuse transport, leaving
+primary sky illumination with the ordinary environment pass.
+
+In the Editor viewport's render mode menu, select **Diffuse GI (Raw)**,
+**Diffuse GI (Reconstructed)** or **Diffuse GI (Previous Frame)**. These modes
+request diffuse transport for that view, with screen fallback on unsupported
+hardware. The previous-frame view continues updating reconstruction and shows
+black when history is absent. The default shaded view uses the authored enable
+settings. To compare composed output, run the [Diffuse GI capture sample](../../Source/Samples/DiffuseGI/README.md).
+
 ## Ballistic billboard particles
 
 SceneParticles is an independently authored three-operation workload:

@@ -146,6 +146,9 @@ xiiViewRenderMode::DepthLinear;Linear Depth (Near to Far)
 xiiViewRenderMode::DepthNonLinear;Device Depth (Reversed Z)
 xiiViewRenderMode::MotionVectors;Motion Vectors (UV Displacement)
 xiiViewRenderMode::IndirectLighting;Indirect Diffuse Lighting
+xiiViewRenderMode::DiffuseGI;Diffuse GI (Reconstructed)
+xiiViewRenderMode::DiffuseGIRaw;Diffuse GI (Raw)
+xiiViewRenderMode::DiffuseGIHistory;Diffuse GI (Previous Frame)
 xiiViewRenderMode::ReflectionContribution;Reflection Contribution
 xiiViewRenderMode::Exposure;Applied Exposure (Stops)
 xiiViewRenderMode::Bloom;Bloom

@@ -95,6 +95,7 @@ void main(uint3 tid : SV_DispatchThreadID)
         }
         case ViewRenderMode_DepthNonLinear: color = depth.xxx; break;
         case ViewRenderMode_MotionVectors: color = float3(saturate(value.xy * float2(0.5f, -0.5f) * MotionVectorScale + 0.5f), 0.5f); break;
+        case ViewRenderMode_DiffuseGI: case ViewRenderMode_DiffuseGIRaw: case ViewRenderMode_DiffuseGIHistory:
         case ViewRenderMode_Emissive: case ViewRenderMode_IndirectLighting: case ViewRenderMode_ReflectionContribution: case ViewRenderMode_Bloom: color = max(value.rgb, 0.0f) / (1.0f + max(value.rgb, 0.0f)); break;
         default: color = float3(1.0f, 0.0f, 1.0f); break;
     }

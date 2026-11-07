@@ -10272,6 +10272,9 @@ o
 			Uuid{u4{17788844061600497826,5633269337306819515}}
 			Uuid{u4{869388832856056195,5688235275429121417}}
 			Uuid{u4{2551790278095937175,4996657404874406984}}
+			Uuid{u4{11026599997985682399,11825009019049170764}}
+			Uuid{u4{11958788783064130339,4602752885565643616}}
+			Uuid{u4{10035108729110331377,18129794941849918985}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -23112,6 +23115,45 @@ o
 		b %Optional{1}
 		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
 		b %TemporalHistory{0}
+	}
+}
+o
+{
+	Uuid %id{u4{11026599997985682399,11825009019049170764}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1650248679807836502,7487748841503432768}}
+		s %SourcePin{"ScreenIrradiance"}
+		Uuid %Target{u4{5539107456698103361,8174006311241422836}}
+		s %TargetPin{"DiffuseGI"}
+	}
+}
+o
+{
+	Uuid %id{u4{11958788783064130339,4602752885565643616}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1650248679807836502,7487748841503432768}}
+		s %SourcePin{"RawScreenIrradiance"}
+		Uuid %Target{u4{5539107456698103361,8174006311241422836}}
+		s %TargetPin{"DiffuseGIRaw"}
+	}
+}
+o
+{
+	Uuid %id{u4{10035108729110331377,18129794941849918985}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1650248679807836502,7487748841503432768}}
+		s %SourcePin{"IrradianceHistory"}
+		Uuid %Target{u4{5539107456698103361,8174006311241422836}}
+		s %TargetPin{"DiffuseGIHistory"}
 	}
 }
 }
