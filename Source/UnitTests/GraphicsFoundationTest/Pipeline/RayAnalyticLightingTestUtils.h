@@ -107,6 +107,8 @@ namespace xiiRayAnalyticLightingTest
     {
       xiiResourceLock<xiiRenderPipelineResource> original(scene, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
       auto                                       definition = original->GetAuthoring()->m_Descriptor;
+      if (!XII_TEST_RESULT(xiiSceneIrradianceTest::UseDeterministicTransport(definition)))
+        return;
       for (auto& pass : definition.m_Passes)
       {
         const auto type = pass.m_pType ? pass.m_pType->GetTypeName() : xiiStringView();

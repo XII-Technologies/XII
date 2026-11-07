@@ -44,6 +44,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("Irradiance", m_Irradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(8U), new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("MaximumHits", m_uiMaximumHits)->AddAttributes(new xiiDefaultValueAttribute(2U), new xiiClampValueAttribute(1U, 4U)),
+    XII_MEMBER_PROPERTY("AnimateSamples",m_bAnimateSamples)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("SampleOffset", m_uiSampleOffset),
     XII_MEMBER_PROPERTY("AnalyticLightSamples", m_uiAnalyticLightSamples)->AddAttributes(new xiiDefaultValueAttribute(4U), new xiiClampValueAttribute(0U, 8U)),
     XII_MEMBER_PROPERTY("PowerWeightedLights", m_bPowerWeightedLights)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -299,7 +300,7 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     data.m_Constants             = xiiRenderPassUtils::Constants(builder, "Ray irradiance settings", sizeof(data.m_Settings));
     data.m_Settings.RayDistances = xiiVec4(m_fRayLength, m_fSurfaceBias, powerWeighted ? 1.0f : 0.0f, 0);
     data.m_Settings.EmissiveSamples = xiiVec4U32(m_uiEmissiveLightSamples, xiiUInt32(context.m_Graph.GetFrameIndex()), 0, 0);
-    data.m_Settings.PathSamples  = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset, m_uiAnalyticLightSamples);
+    data.m_Settings.PathSamples     = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset + (m_bAnimateSamples ? xiiUInt32(context.m_Graph.GetFrameIndex()) * m_uiSampleCount : 0U), m_uiAnalyticLightSamples);
     data.m_Size                  = size;
     data.m_Stride                = stride;
     data.m_Pipeline              = pipeline;

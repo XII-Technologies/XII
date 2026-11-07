@@ -39,6 +39,7 @@ public:
   float                             m_fRayLength = 20, m_fSurfaceBias = 0.02f;
   /// Explicitly permit absence so an authored graph can choose its own fallback.
   bool                                        m_bAllowUnsupportedHardware = false, m_bAsyncCompute = true;
+  bool                                        m_bAnimateSamples = false;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

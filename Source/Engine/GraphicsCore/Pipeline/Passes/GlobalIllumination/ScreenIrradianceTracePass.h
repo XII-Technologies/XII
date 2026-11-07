@@ -21,6 +21,7 @@ public:
   xiiUInt32                                   m_uiSampleCount = 8, m_uiStepCount = 6, m_uiSampleOffset = 0;
   bool                                        m_bAsyncCompute     = false;
   bool                                        m_bAllowAbsentDepth = false;
+  bool                                        m_bAnimateSamples   = false;
   void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
