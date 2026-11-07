@@ -283,6 +283,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   XII_TEST_BOOL(source.FindSubString("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)") == nullptr);
   XII_TEST_BOOL(source.FindSubString("VSE_CONSTANTS") == nullptr);
   XII_TEST_BOOL(sections.GetSectionContent(xiiGALShaderSections::Permutations, line).FindSubString("FORWARD_PROBES") != nullptr);
+  XII_TEST_BOOL(sections.GetSectionContent(xiiGALShaderSections::Permutations, line).FindSubString("FORWARD_SKY_LIGHT") != nullptr);
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Core Graph rejects imported cycles with node and port diagnostics")
   {
     MaterialTopologyTestDocument malformed(xiiStringBuilder(output, "/MalformedMaterialGraph.xiiGraph"));

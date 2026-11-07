@@ -43,7 +43,7 @@ xiiResult xiiBRDFLutPass::Build(xiiRenderPipelinePassContext& context)
 {
   // Activation is setup-time resource presence, not a shader input or GPU dependency.
   const auto probes = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
-  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid() && (!probes || probes->m_Textures.IsEmpty()))
+  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid() && (!probes || (probes->m_Textures.IsEmpty() && !probes->m_Sky)))
     return XII_SUCCESS;
   if (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled)
     return context.ReportFailure("BRDF integration requires RG16Float storage-image support (TextureUAVExtendedFormats).");

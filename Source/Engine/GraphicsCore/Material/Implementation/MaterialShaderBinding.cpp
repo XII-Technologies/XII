@@ -52,13 +52,13 @@ namespace
     else if (transparent)
     {
       stages = xiiGALShaderType::Pixel;
-      for (auto key : {"PerFrameCamera", "xiiEnvironmentLightConstants", "xiiLightClusterConstants", "xiiTransparentRasterConstants", "xiiForwardRefractionConstants", "xiiShadowCascadeConstants", "xiiSpotShadowConstants", "xiiAtmosphereConstants", "xiiReflectionProbeConstants"})
+      for (auto key : {"PerFrameCamera", "xiiEnvironmentLightConstants", "xiiLightClusterConstants", "xiiTransparentRasterConstants", "xiiForwardRefractionConstants", "xiiShadowCascadeConstants", "xiiSpotShadowConstants", "xiiAtmosphereConstants", "xiiReflectionProbeConstants", "xiiSkyLightConstants"})
         if (name == key)
           type = xiiGALShaderResourceType::ConstantBuffer;
       for (auto key : {"g_Lights", "g_Counts", "g_Candidates", "g_IESProfiles", "g_LightGrid", "g_LightIndices", "g_Overflow", "g_ReflectionProbeData"})
         if (name == key)
           type = xiiGALShaderResourceType::BufferSRV;
-      for (auto key : {"g_RefractionDepth", "g_RefractionBackground", "g_ShadowAtlas", "g_SpotShadowAtlas", "g_Transmittance", "g_MultiScatter", "g_BRDFLut"})
+      for (auto key : {"g_RefractionDepth", "g_RefractionBackground", "g_ShadowAtlas", "g_SpotShadowAtlas", "g_Transmittance", "g_MultiScatter", "g_BRDFLut", "g_SkyRadiance", "g_SkyIrradiance"})
         if (name == key)
           type = xiiGALShaderResourceType::TextureSRV;
       if (name == "g_ReflectionProbeTextures" || name == "g_ReflectionProbeIrradiance")

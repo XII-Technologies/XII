@@ -49,7 +49,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 6, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // Regenerate surface shaders that do not declare the forward probe permutation.
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 11, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 12, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 

@@ -11,3 +11,5 @@ XII_CREATE_SIMPLE_TEST(SceneReflections, UnsupportedStorageHasExplicitAuthoredFa
 XII_CREATE_SIMPLE_TEST(SceneReflections, TemporalWorldSurfaceOutput) { xiiSceneReflectionTest::Run(true, true); }
 
 XII_CREATE_SIMPLE_TEST(SceneReflections, ProbeFallbackReplacesScreenConfidence) { xiiSceneReflectionTest::Run(true, true, false, true); }
+
+XII_CREATE_SIMPLE_TEST(SceneReflections, SkyFallbackReplacesScreenConfidence) { xiiSceneReflectionTest::Run(true, true, false, true, true); }

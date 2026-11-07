@@ -64,7 +64,7 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
                                                                        "BLEND_MODE_OPAQUE");
     setDefault("SHADING_MODE", snapshot.m_RuntimeState.m_ShadingModel == xiiMaterialShadingModel::Unlit ? "SHADING_MODE_FULLBRIGHT" : "SHADING_MODE_LIT");
     setDefault("TWO_SIDED", snapshot.m_RuntimeState.IsTwoSided() ? "TRUE" : "FALSE");
-    for (auto name : {"FORWARD_DIRECTIONAL_SHADOWS", "FORWARD_ATMOSPHERE", "FORWARD_REFRACTION", "FORWARD_SPOT_SHADOWS", "FORWARD_PROBES"})
+    for (auto name : {"FORWARD_DIRECTIONAL_SHADOWS", "FORWARD_ATMOSPHERE", "FORWARD_REFRACTION", "FORWARD_SPOT_SHADOWS", "FORWARD_PROBES", "FORWARD_SKY_LIGHT"})
       setDefault(name, "FALSE");
     if (pViewPermutations)
       for (const auto& variable : *pViewPermutations)

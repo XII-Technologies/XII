@@ -1,0 +1,6 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#define FORWARD_PROBES 0
+#include <Shaders/Pipeline/Passes/Lighting/EnvironmentProbeSpecular.h>

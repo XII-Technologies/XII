@@ -72,7 +72,7 @@ public:
 
 private:
   xiiMaterialRasterBatches            m_MaterialBatches;
-  xiiShaderPermutationResourceHandle  m_hShaders[32];
+  xiiShaderPermutationResourceHandle  m_hShaders[64];
   xiiSharedPtr<xiiGALSampler>         m_MaterialSampler, m_AtmosphereSampler;
   xiiSharedPtr<xiiGALSampler>         m_RefractionSampler;
   xiiSharedPtr<xiiGALRasterizerState> m_Rasterizer;

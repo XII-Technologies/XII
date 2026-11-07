@@ -3,6 +3,7 @@
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 #include <GraphicsCore/Components/Lights/ReflectionCaptureComponent.h>
+#include <GraphicsCore/Components/Lights/SkyLightComponent.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
 XII_CREATE_SIMPLE_TEST(Lighting, ReflectionProbes)
@@ -50,5 +51,23 @@ XII_CREATE_SIMPLE_TEST(Lighting, ReflectionProbes)
     XII_TEST_FLOAT(probe.GetBlendDistance(), 0.0f, 0.0f);
     XII_TEST_FLOAT(probe.GetIntensity(), 0.0f, 0.0f);
     XII_TEST_FLOAT(probe.GetSaturation(), 0.0f, 0.0f);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Sky light authoring and global bounds")
+  {
+    const auto* type = xiiGetStaticRTTI<xiiSkyLightComponent>();
+    for (const auto name : {"EnvironmentMap", "Intensity", "Saturation", "Priority"})
+      XII_TEST_BOOL(type->FindPropertyByName(name) != nullptr);
+    xiiSkyLightComponent sky;
+    sky.SetIntensity(-2);
+    sky.SetSaturation(4);
+    sky.SetPriority(xiiMath::MinValue<xiiInt32>());
+    XII_TEST_FLOAT(sky.GetIntensity(), 0, 0);
+    XII_TEST_FLOAT(sky.GetSaturation(), 1, 0);
+    XII_TEST_INT(sky.GetPriority(), xiiMath::MinValue<xiiInt32>());
+    xiiBoundingBoxSphere    bounds;
+    xiiMsgUpdateLocalBounds message;
+    bool                    alwaysVisible = false;
+    XII_TEST_RESULT(sky.GetLocalBounds(bounds, alwaysVisible, message));
+    XII_TEST_BOOL(alwaysVisible);
   }
 }
