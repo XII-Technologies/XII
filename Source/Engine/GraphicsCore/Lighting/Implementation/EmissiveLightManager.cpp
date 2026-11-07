@@ -166,12 +166,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuEmissiveTriangle, xiiNoBase, 1, xiiRTTIDef
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuEmissiveAliasEntry, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuEmissiveAliasEntry>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuEmissiveAliasEntry, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiGpuEmissiveAliasEntry>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Probability", Probability),
     XII_MEMBER_PROPERTY("AliasIndex", AliasIndex),
+    XII_MEMBER_PROPERTY("SelectionProbability", SelectionProbability),
   }
   XII_END_PROPERTIES;
 }

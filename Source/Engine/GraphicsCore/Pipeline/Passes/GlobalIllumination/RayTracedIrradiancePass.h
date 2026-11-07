@@ -25,6 +25,13 @@ public:
   xiiRenderPipelineBufferInputPin   m_LightCounts{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin   m_LightCandidates{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin   m_IESProfiles{true, xiiGALBindFlags::ShaderResource};
+  /// Native emissive tables must come from the same RayTracingScenePass as Scene and Geometry.
+  xiiRenderPipelineBufferInputPin   m_EmissiveTriangles{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_EmissiveHeader{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_TriangleAliases{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_BlockAliases{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_AliasHeader{true, xiiGALBindFlags::ShaderResource};
+  xiiUInt32                         m_uiEmissiveLightSamples = 0;
   xiiRenderPipelineTextureOutputPin m_Irradiance{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiUInt32                         m_uiSampleCount = 8, m_uiMaximumHits = 2, m_uiSampleOffset = 0;
   xiiUInt32                         m_uiAnalyticLightSamples = 4;
@@ -37,7 +44,7 @@ public:
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
 
 private:
-  xiiShaderPermutationResourceHandle m_Shader;
+  xiiShaderPermutationResourceHandle       m_Shader[2];
   xiiSharedPtr<xiiGALSampler>        m_Sampler;
   xiiSharedPtr<xiiGALComputePipelineState> m_LightScanPipeline, m_BlockScanPipeline;
 };

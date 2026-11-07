@@ -23,7 +23,8 @@ xiiGpuEmissiveAliasEntry MakeAliasEntry(float probability, uint aliasIndex)
   xiiGpuEmissiveAliasEntry entry;
   entry.Probability = probability;
   entry.AliasIndex = aliasIndex;
-  entry._Padding = uint2(0u, 0u);
+  entry.SelectionProbability = 0.0f;
+  entry._Padding = 0u;
   return entry;
 }
 
@@ -59,7 +60,11 @@ void main(uint3 groupId : SV_GroupID)
   {
     [loop]
     for (uint localIndex = 0u; localIndex < localCount; ++localIndex)
-      g_TriangleAliases[firstTriangle + localIndex] = MakeAliasEntry(1.0f, firstTriangle + localIndex);
+    {
+      xiiGpuEmissiveAliasEntry entry = MakeAliasEntry(1.0f, firstTriangle + localIndex);
+      entry.SelectionProbability = rcp((float)localCount);
+      g_TriangleAliases[firstTriangle + localIndex] = entry;
+    }
     return;
   }
 
@@ -106,4 +111,17 @@ void main(uint3 groupId : SV_GroupID)
     const uint localIndex = g_AliasSmall[firstTriangle + --smallCount];
     g_TriangleAliases[firstTriangle + localIndex] = MakeAliasEntry(1.0f, firstTriangle + localIndex);
   }
+  // The Vose work stacks are no longer live. Reuse their probability scratch
+  // to accumulate the mass of each stored column and its alias target.
+  [loop] for (uint index = 0u; index < localCount; ++index)
+    g_AliasProbabilities[firstTriangle + index] = 0.0f;
+  [loop] for (uint column = 0u; column < localCount; ++column)
+  {
+    const uint index = firstTriangle + column;
+    const xiiGpuEmissiveAliasEntry entry = g_TriangleAliases[index];
+    g_AliasProbabilities[index] += entry.Probability / (float)localCount;
+    g_AliasProbabilities[entry.AliasIndex] += (1.0f - entry.Probability) / (float)localCount;
+  }
+  [loop] for (uint index = 0u; index < localCount; ++index)
+    g_TriangleAliases[firstTriangle + index].SelectionProbability = g_AliasProbabilities[firstTriangle + index];
 }

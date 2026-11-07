@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+#include <GraphicsFoundationTest/Pipeline/RayEmissiveLightingTestUtils.h>
 #include <GraphicsFoundationTest/Pipeline/SceneIrradianceTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(SceneIrradiance, RayEnclosureEnergyMultibounceCutoutAndEmptyScene)
@@ -51,6 +52,7 @@ XII_CREATE_SIMPLE_TEST(SceneIrradiance, RayEnclosureEnergyMultibounceCutoutAndEm
         budget.m_Path.PushBack(ray);
         budget.m_Properties.Insert("MaximumHits", xiiMath::Max(hits[variant], 1U));
         budget.m_Properties.Insert("RayLength", 30.0f);
+        budget.m_Properties.Insert("EmissiveLightSamples", 0U);
       }
     }
     xiiStringBuilder name;
@@ -179,4 +181,9 @@ XII_CREATE_SIMPLE_TEST(SceneIrradiance, RayEnclosureEnergyMultibounceCutoutAndEm
     }
     xiiTestFramework::Output(xiiTestOutput::Details, "Enclosure phase %u: one/two/four-hit center irradiance %.5f / %.5f / %.5f", phase, irradiance[1][100].x, irradiance[2][100].x, irradiance[3][100].x);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(SceneIrradiance, EmissiveRaySamplingEnergyVisibilityAndPanelReference)
+{
+  xiiRayEmissiveLightingTest::Run(false);
 }

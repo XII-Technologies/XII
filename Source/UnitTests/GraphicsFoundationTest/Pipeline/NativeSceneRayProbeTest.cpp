@@ -324,7 +324,7 @@ static void RunWorldRaySceneTest(bool emissive)
           XII_TEST_INT(alias.BlockCount, phase == 1 ? 0 : phase == 2 ? 1 :
                                                                        2);
           float total = 0, area = 0;
-          float weights[288] = {}, probabilities[288] = {}, blockProbabilities[2] = {};
+          float weights[288] = {}, probabilities[288] = {}, blockProbabilities[2] = {}, storedBlockProbabilities[2] = {}, storedTriangleProbabilities[288] = {};
           for (xiiUInt32 block = 0; block < alias.BlockCount; ++block)
           {
             xiiGpuEmissiveAliasEntry entry;
@@ -332,9 +332,12 @@ static void RunWorldRaySceneTest(bool emissive)
               return;
             if (!XII_TEST_BOOL(entry.AliasIndex < alias.BlockCount))
               return;
+            storedBlockProbabilities[block] = entry.SelectionProbability;
             blockProbabilities[block] += entry.Probability / alias.BlockCount;
             blockProbabilities[entry.AliasIndex] += (1 - entry.Probability) / alias.BlockCount;
           }
+          for (xiiUInt32 block = 0; block < alias.BlockCount; ++block)
+            XII_TEST_FLOAT(storedBlockProbabilities[block], blockProbabilities[block], 1e-6f);
           struct TriangleRecords
           {
             XII_DECLARE_POD_TYPE();
@@ -374,6 +377,7 @@ static void RunWorldRaySceneTest(bool emissive)
             }
             const float power = expectedArea * (4 * 0.2126f + 2 * 0.7152f + 0.0722f);
             XII_TEST_FLOAT(triangle.Position1AndPowerWeight.w, power, 1e-4f);
+            storedTriangleProbabilities[triangleIndex] = entry.SelectionProbability;
             weights[triangleIndex] = power;
             total += power;
             area += expectedArea;
@@ -390,7 +394,10 @@ static void RunWorldRaySceneTest(bool emissive)
           if (header.TriangleCount)
           {
             for (xiiUInt32 index = 0; index < header.TriangleCount; ++index)
+            {
               XII_TEST_FLOAT(probabilities[index], weights[index] / total, 1e-6f);
+              XII_TEST_FLOAT(storedTriangleProbabilities[index] * storedBlockProbabilities[index / 256], probabilities[index], 1e-6f);
+            }
             if (phase != 2)
               XII_TEST_FLOAT(area, (phase == 3 ? 22.0f : 6.0f) * (triangleCount / 12), 1e-5f);
           }

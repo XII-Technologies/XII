@@ -46,7 +46,8 @@ struct XII_SHADER_STRUCT xiiGpuEmissiveAliasEntry
 #endif
   FLOAT1(Probability);
   UINT1(AliasIndex);
-  UINT2(_Padding);
+  FLOAT1(SelectionProbability); ///< Actual probability mass reconstructed from this table, conditional within a triangle block.
+  UINT1(_Padding);
 };
 
 /// Describes the two-level power-weighted emissive-light distribution.
