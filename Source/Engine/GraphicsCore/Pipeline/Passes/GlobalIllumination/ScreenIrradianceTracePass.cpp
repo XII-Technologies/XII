@@ -23,6 +23,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenIrradianceTracePass,2,xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("AllowAbsentDepth",m_bAllowAbsentDepth)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("SampleCount",m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(8U),new xiiClampValueAttribute(1U,32U)),
     XII_MEMBER_PROPERTY("StepCount",m_uiStepCount)->AddAttributes(new xiiDefaultValueAttribute(6U),new xiiClampValueAttribute(1U,64U)),
+    XII_MEMBER_PROPERTY("AnimateSamples",m_bAnimateSamples)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("SampleOffset",m_uiSampleOffset),
     XII_MEMBER_PROPERTY("AsyncCompute",m_bAsyncCompute),
   } XII_END_PROPERTIES;
@@ -71,7 +72,7 @@ xiiResult xiiScreenIrradianceTracePass::Build(xiiRenderPipelinePassContext& cont
   const auto pass = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Depth=builder.ReadTexture(depth,xiiGALResourceStateFlags::ShaderResource);data.m_Normal=builder.ReadTexture(normal,xiiGALResourceStateFlags::ShaderResource);data.m_Radiance=builder.ReadTexture(radiance,xiiGALResourceStateFlags::ShaderResource);data.m_Camera=builder.ReadBuffer(camera,xiiGALResourceStateFlags::ConstantBuffer);
     data.m_Size=size;data.m_Output=xiiCompositionPassUtils::Output(builder,data.m_Size,xiiGALResourceFormat::RGBA32Float);data.m_Constants=xiiRenderPassUtils::Constants(builder,"Screen irradiance options",sizeof(xiiScreenIrradianceConstants));
-    data.m_Snapshot.TraceDistances=xiiVec4(m_fRayLength,m_fThickness,m_fSurfaceBias,0);data.m_Snapshot.TraceCounts=xiiVec4U32(m_uiSampleCount,m_uiStepCount,m_uiSampleOffset,0);data.m_Pipeline=m_Pipeline; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Snapshot.TraceDistances=xiiVec4(m_fRayLength,m_fThickness,m_fSurfaceBias,0);data.m_Snapshot.TraceCounts=xiiVec4U32(m_uiSampleCount,m_uiStepCount,m_uiSampleOffset + (m_bAnimateSamples ? xiiUInt32(context.m_Graph.GetFrameIndex()) * m_uiSampleCount : 0U),0);data.m_Pipeline=m_Pipeline; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& cmd=execute.GetCommandList();{xiiGALMapHelper<xiiScreenIrradianceConstants> mapped(cmd,execute.GetBuffer(data.m_Constants),xiiGALMapType::Write,xiiGALMapFlags::Discard);*mapped=data.m_Snapshot;}
     xiiGALStateTransitionDescription transition;transition.m_pResource=execute.GetBuffer(data.m_Constants);transition.m_NewState=xiiGALResourceStateFlags::ConstantBuffer;transition.m_TransitionFlags=xiiGALStateTransitionFlags::UpdateState;cmd.TransitionResourceStates(xiiMakeArrayPtr(&transition,1));cmd.SetPipelineState(data.m_Pipeline.Borrow());
     cmd.ResolveAndSetConstantBuffer("xiiScreenIrradianceConstants",execute.GetBuffer(data.m_Constants),xiiGALShaderType::Compute);cmd.ResolveAndSetConstantBuffer("xiiSurfaceCameraConstants",execute.GetBuffer(data.m_Camera),xiiGALShaderType::Compute);
