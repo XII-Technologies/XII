@@ -15,11 +15,18 @@ public:
   xiiRenderPipelineAccelerationStructureOutputPin m_OutputScene{true};
   xiiRenderPipelineBufferOutputPin                m_OutputMaterials{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferOutputPin                m_OutputGeometry{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineTextureInputPin                m_Activation{xiiGALResourceFormat::Unknown, true};
+  /// Optional GPU emissive proposal tables built from this occurrence's exact hit geometry.
+  xiiRenderPipelineBufferOutputPin m_EmissiveTriangles{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_EmissiveHeader{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_TriangleAliases{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_BlockAliases{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferOutputPin m_AliasHeader{true, xiiGALBindFlags::ShaderResource};
+  bool                             m_bBuildEmissiveLights = false;
+  xiiRenderPipelineTextureInputPin m_Activation{xiiGALResourceFormat::Unknown, true};
   /// When enabled, absence of this token skips all occurrence-local TLAS work.
-  bool                                            m_bRequireActivation         = false;
-  bool                                            m_bUseViewSelection          = true;
-  bool                                            m_bRequireHardwareRayTracing = false;
+  bool m_bRequireActivation         = false;
+  bool m_bUseViewSelection          = true;
+  bool m_bRequireHardwareRayTracing = false;
   /// Skip TLAS construction outside explicit ray-tracing diagnostic view modes.
   bool m_bOnlyDiagnosticViews = false;
   struct BuildStatistics

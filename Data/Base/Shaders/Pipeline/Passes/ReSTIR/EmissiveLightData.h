@@ -18,7 +18,10 @@ struct XII_SHADER_STRUCT xiiGpuEmissiveTriangle
   FLOAT4(Position2AndInvArea);
   FLOAT4(NormalAndTwoSided);
   FLOAT4(RadianceAndLuminance);
-  UINT4(Metadata); ///< x = stable ID, y = scene instance, z = source primitive, w = 16-bit revision | 16-bit material index.
+  /// Producer provenance. Meshlet extraction: stable triangle ID, scene instance, source primitive,
+  /// packed revision/material. Canonical ray extraction: stable object ID, TLAS instance,
+  /// BLAS-local primitive, material slot. Neither address space may be mixed with the other.
+  UINT4(Metadata);
 };
 
 /// Counters written by emissive extraction. The saturating triangle count is safe to consume as a

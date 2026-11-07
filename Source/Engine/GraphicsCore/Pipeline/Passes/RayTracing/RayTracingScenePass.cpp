@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/World/World.h>
+#include <GraphicsCore/Lighting/EmissiveLightManager.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
@@ -21,6 +22,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracingScenePass, 1, xiiRTTIDefaultAlloca
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("BuildEmissiveLights", m_bBuildEmissiveLights)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("EmissiveTriangles", m_EmissiveTriangles)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("EmissiveHeader", m_EmissiveHeader)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("TriangleAliases", m_TriangleAliases)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("BlockAliases", m_BlockAliases)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("AliasHeader", m_AliasHeader)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Activation", m_Activation)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("RequireActivation", m_bRequireActivation)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Scene", m_OutputScene)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -59,6 +66,23 @@ xiiResult xiiRayTracingScenePass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("World-derived ray-tracing resources could not be built.");
   if (!built.m_pTopLevelAS)
     return XII_SUCCESS;
+  if (m_bBuildEmissiveLights)
+  {
+    xiiEmissiveLightManager::BuildDescription description;
+    description.m_hRayGeometry                = built.m_hGeometryData;
+    description.m_hRayMaterials               = built.m_hMaterialData;
+    description.m_hRaySceneDependency         = built.m_hSceneDependency;
+    description.m_uiInstanceCount             = built.m_uiInstanceCount;
+    description.m_uiRayEmissivePrimitiveCount = built.m_uiEmissivePrimitiveCount;
+    const auto emissive                       = xiiEmissiveLightManager::AddBuildPass(context.m_Graph, context.m_Graph.GetFrameIndex(), description);
+    if (!emissive.IsValid())
+      return context.ReportFailure("Ray-scene emissive proposal tables could not be built.");
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_EmissiveTriangles, emissive.m_hTriangles));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_EmissiveHeader, emissive.m_hHeader));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_TriangleAliases, emissive.m_hTriangleAliases));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_BlockAliases, emissive.m_hBlockAliases));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_AliasHeader, emissive.m_hAliasHeader));
+  }
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputScene, {built.m_pTopLevelAS, built.m_hSceneDependency}));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputMaterials, built.m_hMaterialData));
   return context.SetOutput(m_OutputGeometry, built.m_hGeometryData);
