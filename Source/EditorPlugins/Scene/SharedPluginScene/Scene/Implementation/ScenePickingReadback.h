@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include <SharedPluginScene/SharedPluginSceneDLL.h>
+
+#include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
-#include <SharedPluginScene/SharedPluginSceneDLL.h>
 
 /// Internal view-local capture transport shared by scene picking consumers. It owns only pixel
 /// and view snapshots; callers retain the matching native owner metadata in three slot tables.
@@ -13,6 +15,10 @@
 class XII_SHAREDPLUGINSCENE_DLL xiiScenePickingReadback
 {
 public:
+  xiiScenePickingReadback();
+  ~xiiScenePickingReadback();
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiScenePickingReadback);
+
   static constexpr xiiUInt32 SlotCount = 3;
   /// Publishes the newest completed image and returns its slot, or InvalidIndex when unchanged.
   /// Consume/swap that slot's metadata before AddCapture can reserve a slot again.
@@ -49,8 +55,16 @@ private:
     } m_State = Free;
     Snapshot  m_Snapshot;
     xiiUInt64 m_uiSetupFrameIndex = 0;
+    xiiUInt64 m_uiReservation     = 0;
   };
 
+  // Callbacks may outlive this CPU-owned transport. Access remains serialized
+  // at frame boundaries; retired or superseded captures become no-ops.
+  struct Lifetime : xiiRefCounted
+  {
+    xiiScenePickingReadback* m_pOwner = nullptr;
+  };
+  xiiSharedPtr<Lifetime>              m_pLifetime;
   Slot                                m_Slots[SlotCount];
   xiiUInt64                           m_uiEpoch = 1;
   bool                                m_bValid  = false;

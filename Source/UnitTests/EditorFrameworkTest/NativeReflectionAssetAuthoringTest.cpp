@@ -66,10 +66,12 @@ namespace
     }
     for (const xiiStringView pin : {"GBufferAlbedo", "BRDFLut", "HiZClosestPyramid", "HiZPyramid"})
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, true, trace, pin));
-    for (const xiiStringView pin : {"GBufferObjectId", "DilatedVelocityBuffer", "ReSTIRDISurfacePrevious"})
+    for (const xiiStringView pin : {"GBufferObjectId", "DilatedVelocityBuffer"})
       XII_SUCCEED_OR_RETURN(author.Boundary(pin, true, temporal, pin));
     XII_SUCCEED_OR_RETURN(author.Boundary("PerFrameCamera", true, trace, "PerFrameCamera", xiiRenderPipelinePin::Buffer));
-    XII_SUCCEED_OR_RETURN(author.Boundary("PerFrameCamera", true, temporal, "PerFrameCamera", xiiRenderPipelinePin::Buffer));
+    const auto* temporalCamera = author.Add("Reflection Camera History", "xiiTemporalCameraPass", {2100, 1000});
+    XII_SUCCEED_OR_RETURN(author.Set(temporalCamera, "Enabled", false));
+    XII_SUCCEED_OR_RETURN(author.Connect(temporalCamera, "TemporalCamera", temporal, "TemporalCamera"));
     XII_SUCCEED_OR_RETURN(author.Boundary("PerFrameGlobal", true, trace, "PerFrameGlobal", xiiRenderPipelinePin::Buffer));
     XII_SUCCEED_OR_RETURN(author.Connect(scene, "Texture", trace, "HDRSceneColor"));
     XII_SUCCEED_OR_RETURN(author.Connect(scene, "Texture", composite, "HDRSceneColor"));

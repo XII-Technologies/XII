@@ -12,5 +12,8 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiSSRTemporalConstants)
   FLOAT1(DepthThreshold);
   FLOAT1(NormalThreshold);
   UINT1(HistoryValid);
-  UINT3(_Padding);
+  UINT1(_Padding);
+  FLOAT2(JitterDelta);
+  MAT4(InverseViewProjection);
+  MAT4(PreviousViewProjection);
 };
