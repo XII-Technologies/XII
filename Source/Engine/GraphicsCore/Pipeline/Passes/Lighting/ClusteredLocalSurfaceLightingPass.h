@@ -5,6 +5,7 @@
 
 #include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterFrameData.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowFrameData.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 class XII_GRAPHICSCORE_DLL xiiClusteredLocalSurfaceLightingPass final : public xiiRenderPipelinePass
@@ -21,6 +22,11 @@ public:
   xiiRenderPipelineDataInputPin               m_Spots{xiiGetStaticRTTI<xiiSpotShadowSnapshot>(), true};
   xiiRenderPipelineTextureInputPin            m_SpotAtlas{xiiGALResourceFormat::D32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_ObjectId{xiiGALResourceFormat::R32UInt, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin            m_Velocity{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineDataInputPin               m_TemporalCamera{xiiGetStaticRTTI<xiiTemporalCameraSnapshot>(), true};
+  xiiRenderPipelineTextureInputPin            m_PreviousReservoirs{xiiGALResourceFormat::RGBA32UInt, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin           m_Reservoirs{xiiGALResourceFormat::RGBA32UInt, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  bool                                        m_bUseReservoirs = false;
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Reactive{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   float                                       m_fScale        = 1;
@@ -35,4 +41,5 @@ public:
 private:
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_ShadowedPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_SeedPipeline, m_ReservoirPipeline[2];
 };

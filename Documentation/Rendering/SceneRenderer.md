@@ -2069,3 +2069,9 @@ includes the additional child dependency. Final particle mode assertions also pa
 as a focused three-subtest Vulkan run. Logs and captures are project-local under
 `Workspace/SceneParticles` and `Workspace/scene-particles-*.log`; binaries, caches
 and temporary authoring helpers are excluded from commits.
+
+## Clustered local-light reservoirs
+
+Scene and Editor can opt into local-light reservoirs through the clustered local lighting pass's `UseReservoirs` property. The normal configuration uses exact clustered lighting. With reservoirs enabled, dense clusters seed four uniform proposals per rotating tile anchor. Resolve combines fresh candidates, compatible current neighbors and the previous frame's reprojected tile. Reuse checks the cluster light set, light revisions and the receiving surface. The selected light uses the existing material and IES evaluation and, when available, current spotlight shadow visibility.
+
+Small clusters, cluster overflow, and diagnostic lighting modes use exact evaluation. Each reservoir grid is capped at 8 MiB by increasing the tile stride. The point-light capture compares both paths through the authored Scene and Editor pipelines. The reservoir path still shows visible noise. Direct-light reconstruction, motion and spotlight quality, and performance on production scenes need verification.
