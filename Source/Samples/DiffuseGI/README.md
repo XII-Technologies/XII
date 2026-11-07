@@ -21,3 +21,5 @@ For a first-frame comparison, add `-frames 1` to both captures. The reuse captur
 Use `-local-lights -no-ray` to capture exact clustered lighting, raw reservoirs, and reconstructed reservoirs in a 30-point-light room. All three captures use the same camera, materials, and fixed exposure. `-frames 1` shows spatial filtering before temporal history is available.
 
 Use `-offscreen-emitter` to capture the camera-based and world-geometry probe updates with an emissive panel outside the frame. This mode disables hardware ray tracing and removes the sky light. Add `-block-emitter` to place an opaque cover beneath the panel and compare the shadowed bounce. The capture log identifies which probe update ran.
+
+Add `-dense-emitter` to replace the offscreen panel with a downward-facing, 4,608-triangle surface. This stresses meshlet rejection while keeping the emitter outside the camera view.

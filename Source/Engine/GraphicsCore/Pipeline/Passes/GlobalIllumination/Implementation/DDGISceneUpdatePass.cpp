@@ -33,6 +33,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGISceneUpdatePass, 1, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("ProbeUpdates", m_Updates)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SceneInstances", m_Instances)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("GeometryMetadata", m_Geometry)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("MeshletMetadata", m_Meshlets)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SurfaceMaterials", m_Materials)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("InitialProbeStates", m_StatesInput)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -118,9 +119,20 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
       candidates.PushBack(index | (deformed ? 0x80000000U : 0U));
     }
   }
-  const bool useWorld = !candidates.IsEmpty();
-  auto&      pipeline = useWorld ? m_WorldPipeline : m_Pipeline;
-  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, useWorld ? "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldUpdate.xiiShader" : "Shaders/Pipeline/Passes/GlobalIllumination/DDGISceneUpdate.xiiShader"));
+  const bool useWorld    = !candidates.IsEmpty();
+  const auto meshlets    = context.GetInputBuffer(m_Meshlets);
+  const bool useMeshlets = useWorld && meshlets.IsValid();
+  if (useMeshlets)
+  {
+    const auto* description = context.m_Graph.GetBufferDescription(meshlets);
+    if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiMeshlet) ||
+        description->m_uiSize % sizeof(xiiMeshlet) != 0 || !description->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+      return context.ReportFailure("World probe tracing requires canonical structured meshlet metadata.");
+  }
+  auto&      pipeline = useMeshlets ? m_WorldMeshletPipeline : (useWorld ? m_WorldPipeline : m_Pipeline);
+  const auto shader   = useMeshlets ? "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldMeshletUpdate.xiiShader" :
+                                      (useWorld ? "Shaders/Pipeline/Passes/GlobalIllumination/DDGIWorldUpdate.xiiShader" : "Shaders/Pipeline/Passes/GlobalIllumination/DDGISceneUpdate.xiiShader");
+  XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(pipeline, shader));
   xiiRenderPassResourceScope scope(context);
   xiiRenderGraphBufferHandle candidateBuffer, worldConstants;
   if (useWorld)
@@ -174,7 +186,7 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
   struct Data
   {
     xiiRenderGraphBufferHandle                m_Camera, m_Constants, m_Updates, m_States;
-    xiiRenderGraphBufferHandle                m_Instances, m_Geometry, m_Materials, m_Candidates, m_WorldConstants;
+    xiiRenderGraphBufferHandle                m_Instances, m_Geometry, m_Meshlets, m_Materials, m_Candidates, m_WorldConstants;
     xiiRenderGraphTextureHandle               m_Depth, m_Normal, m_Radiance, m_Irradiance, m_Distance;
     xiiSharedPtr<xiiGALComputePipelineState>  m_Pipeline;
     xiiSharedPtr<xiiGALSampler>               m_Sampler;
@@ -194,6 +206,8 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
     data.m_Snapshot   = snapshot;
     data.m_Pipeline   = pipeline;
     data.m_uiGroups   = groups;
+    if (useMeshlets)
+      data.m_Meshlets = builder.ReadBuffer(meshlets, xiiGALResourceStateFlags::ShaderResource);
     if (useWorld)
     {
       data.m_Instances      = builder.ReadBuffer(instances, xiiGALResourceStateFlags::ShaderResource);
@@ -223,6 +237,8 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
       };
       bind("g_ProbeInstances", data.m_Instances);
       bind("g_ProbeGeometry", data.m_Geometry);
+      if (data.m_Meshlets.IsValid())
+        bind("g_Meshlets", data.m_Meshlets);
       bind("g_ProbeMaterials", data.m_Materials);
       bind("g_ProbeCandidates", data.m_Candidates);
       commands.ResolveAndSetConstantBuffer("xiiDDGIWorldTraceConstants", execute.GetBuffer(data.m_WorldConstants), xiiGALShaderType::Compute);
@@ -239,7 +255,8 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
     commands.DispatchCompute({data.m_uiGroups, 1, 1});
     data.m_Snapshot->CommitUpdates();
   };
-  const auto emitted = context.m_Graph.AddPass<Data>(useWorld ? "Trace World Geometry for Directional Probes" : "Update Directional Scene Probes", xiiGALCommandQueueFlags::Compute, setup, record);
+  const auto name    = useMeshlets ? "Trace World Meshlets for Directional Probes" : (useWorld ? "Trace World Geometry for Directional Probes" : "Update Directional Scene Probes");
+  const auto emitted = context.m_Graph.AddPass<Data>(name, xiiGALCommandQueueFlags::Compute, setup, record);
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_States, emitted.first->m_States));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Irradiance, emitted.first->m_Irradiance));
   return context.SetOutput(m_Distance, emitted.first->m_Distance);

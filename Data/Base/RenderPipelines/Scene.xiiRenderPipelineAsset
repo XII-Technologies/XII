@@ -19502,6 +19502,7 @@ o
 			Uuid{u4{10212990020128186121,8291627348684005168}}
 			Uuid{u4{12226532236887203340,12117498207612458953}}
 			Uuid{u4{13820796598547088565,5568646151126342526}}
+			Uuid{u4{12509645017214403654,16773244592173636335}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -40694,6 +40695,19 @@ o
 		s %SourcePin{"SurfaceMaterials"}
 		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
 		s %TargetPin{"SurfaceMaterials"}
+	}
+}
+o
+{
+	Uuid %id{u4{12509645017214403654,16773244592173636335}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{16180107492330357140,5489540397947222843}}
+		s %SourcePin{"MeshletMetadata"}
+		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
+		s %TargetPin{"MeshletMetadata"}
 	}
 }
 }

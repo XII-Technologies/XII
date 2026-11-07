@@ -394,6 +394,7 @@ o
 			Uuid{u4{11499618960743953726,15868004442140201438}}
 			Uuid{u4{12567194596130448677,2330411099647991008}}
 			Uuid{u4{13081826359205208680,14407225908618615965}}
+			Uuid{u4{12492589430619736664,16403554738783017018}}
 		}
 	}
 }
@@ -1472,6 +1473,68 @@ o
 o
 {
 	Uuid %id{u4{11254578270426818205,2947719616154849874}}
+	s %t{"xiiRenderPipelineTextureResolution"}
+	u3 %v{1}
+	p
+	{
+		u3 %Height{0}
+		s %Input{""}
+		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
+		f %Scale{0x0000803F}
+		u3 %Width{0}
+	}
+}
+o
+{
+	Uuid %id{u4{12492589430619736664,16403554738783017018}}
+	s %t{"xiiRenderPipelinePinConfiguration"}
+	u3 %v{1}
+	p
+	{
+		s %DisplayName{""}
+		Uuid %Id{u4{11290523024964273389,12857536475542740287}}
+		Uuid %Metadata{u4{13073765603920668318,1198192933791290499}}
+		b %OverrideResolution{0}
+		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
+		Uuid %Requirements{u4{12326563773654419198,9479485272368634572}}
+		Uuid %Resolution{u4{10547441441661086813,14376009588290117533}}
+	}
+}
+o
+{
+	Uuid %id{u4{13073765603920668318,1198192933791290499}}
+	s %t{"xiiRenderPipelinePinMetadata"}
+	u3 %v{1}
+	p
+	{
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
+		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		b %Input{1}
+		s %Name{"MeshletMetadata"}
+		b %Optional{1}
+		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
+		b %TemporalHistory{0}
+	}
+}
+o
+{
+	Uuid %id{u4{12326563773654419198,9479485272368634572}}
+	s %t{"xiiRenderPipelinePinConstraints"}
+	u3 %v{1}
+	p
+	{
+		s %Dimension{"xiiGALResourceDimension::Undefined"}
+		u3 %Height{0}
+		s %RequiredBindFlags{"xiiGALBindFlags::ShaderResource"}
+		u3 %Samples{0}
+		u3 %Width{0}
+	}
+}
+o
+{
+	Uuid %id{u4{10547441441661086813,14376009588290117533}}
 	s %t{"xiiRenderPipelineTextureResolution"}
 	u3 %v{1}
 	p
@@ -4600,6 +4663,8 @@ o
 			Uuid{u4{11513081827083929128,14246993671335728363}}
 			Uuid{u4{10484211296898921315,11626385654958086208}}
 			Uuid{u4{10837204348363140222,17706143621235365039}}
+			Uuid{u4{11290523024964273389,12857536475542740287}}
+			Uuid{u4{9435614593626203852,15423301186889339652}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -9731,6 +9796,35 @@ o
 		s %SourcePin{"Value"}
 		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
 		s %TargetPin{"SurfaceMaterials"}
+	}
+}
+o
+{
+	Uuid %id{u4{11290523024964273389,12857536475542740287}}
+	s %t{"xiiRenderPipelineInterfacePass"}
+	u3 %v{1}
+	p
+	{
+		s %Name{"MeshletMetadata"}
+		b %Input{1}
+		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
+		s %Format{"xiiGALResourceFormat::Unknown"}
+		s %DataType{""}
+		Vec2 %Node::Pos{f{-700,1200}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{9435614593626203852,15423301186889339652}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11290523024964273389,12857536475542740287}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"MeshletMetadata"}
 	}
 }
 }

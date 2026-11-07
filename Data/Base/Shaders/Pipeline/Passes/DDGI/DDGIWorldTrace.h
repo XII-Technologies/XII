@@ -14,6 +14,12 @@ ByteAddressBuffer                       g_Buffers[];
 Texture2D<float4>                       g_Textures[];
 SamplerState                            g_ProbeSampler;
 
+#if defined(XII_DDGI_MESHLET_BOUNDS)
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+#  include <Shaders/Visibility/MeshletRange.h>
+#endif
+
+
 struct ProbeHit
 {
   float  Distance;
@@ -65,6 +71,115 @@ float4 ProbeTexture(uint textureIndex, uint samplerIndex, float2 uv)
   return textureIndex == 0xffffffffu ? 1.0f : xiiSampleSurfaceTextureLevel(g_Textures[NonUniformResourceIndex(textureIndex)], samplerIndex, g_ProbeSampler, uv, 0);
 }
 
+void TraceProbePrimitive(float3 origin, float3 direction, float4x4 transform, uint vertexBufferIndex, uint vertexCount,
+                         xiiGpuSurfaceMaterial material, uint3 vertices, inout ProbeHit hit)
+{
+  if (any(vertices >= vertexCount))
+    return;
+  const uint   vertexBuffer = NonUniformResourceIndex(vertexBufferIndex);
+  const uint3  offsets      = vertices * ProbeSceneLayout.z;
+  const float3 a            = mul(transform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.x)), 1.0f)).xyz;
+  const float3 b            = mul(transform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.y)), 1.0f)).xyz;
+  const float3 c            = mul(transform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.z)), 1.0f)).xyz;
+  float3       barycentrics;
+  float        distance;
+  bool         front;
+  if (!IntersectProbeTriangle(origin, direction, a, b, c, hit.Distance, barycentrics, distance, front))
+    return;
+  const uint3  uvOffsets = offsets + ProbeSceneLayout.w;
+  const float2 uv        = asfloat(g_Buffers[vertexBuffer].Load2(uvOffsets.x)) * barycentrics.x +
+    asfloat(g_Buffers[vertexBuffer].Load2(uvOffsets.y)) * barycentrics.y +
+    asfloat(g_Buffers[vertexBuffer].Load2(uvOffsets.z)) * barycentrics.z;
+  if (material.Metadata.z == 1u &&
+      material.BaseColorOpacity.a * ProbeTexture(material.TextureIndices0.x, material.SamplerIndices0.x, uv).a < material.LayerParameters.x)
+    return;
+  hit.Distance = distance;
+  hit.Found    = true;
+  hit.Emissive = 0;
+  if (front || (material.Metadata.y & (1u << 10u)) != 0u)
+    hit.Emissive = material.EmissiveColorAndRoughness.rgb * ProbeTexture(material.TextureIndices1.x, material.SamplerIndices1.x, uv).rgb;
+}
+
+#if defined(XII_DDGI_MESHLET_BOUNDS)
+uint ProbeMeshletByte(ByteAddressBuffer stream, uint offset)
+{
+  return (stream.Load(offset & ~3u) >> ((offset & 3u) * 8u)) & 0xffu;
+}
+
+// Validate that a single meshlet section covers the complete draw before using
+// its reordered primitives. A partial span cannot be mixed with raw indices.
+bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instance, GpuGeometryLod lod, uint lodIndex,
+                        xiiGpuSurfaceMaterial material, uint begin, uint end, inout uint remainingMeshlets,
+                        inout uint remainingTriangles, inout ProbeHit hit, out bool complete)
+{
+  complete = false;
+  if (lod.MeshletRangesOrdered == 0u || lod.MeshletRemapBufferIndex == 0xffffffffu || lod.MeshletPrimitiveBufferIndex == 0xffffffffu)
+    return false;
+  uint first, count;
+  GetCandidateMeshletRange(instance, lod, first, count);
+  if (count == 0u || count > remainingMeshlets)
+    return false;
+  remainingMeshlets -= count;
+  first += lod.MeshletMetadataOffset;
+
+  const uint remapBuffer     = NonUniformResourceIndex(lod.MeshletRemapBufferIndex);
+  const uint primitiveBuffer = NonUniformResourceIndex(lod.MeshletPrimitiveBufferIndex);
+  uint       remapBytes, primitiveBytes;
+  g_Buffers[remapBuffer].GetDimensions(remapBytes);
+  g_Buffers[primitiveBuffer].GetDimensions(primitiveBytes);
+  const uint section = g_Meshlets[first].PackedLodSection >> 16u;
+  uint       cursor  = begin;
+  [loop] for (uint i = first; i < first + count; ++i)
+  {
+    const GpuMeshlet meshlet   = g_Meshlets[i];
+    const uint       triangles = meshlet.PackedPrimitiveVertexCount & 0xffffu;
+    const uint       vertices  = meshlet.PackedPrimitiveVertexCount >> 16u;
+    if (meshlet.Header.x != cursor || triangles == 0u || triangles > end - cursor ||
+        (meshlet.PackedLodSection & 0xffffu) != lodIndex || (meshlet.PackedLodSection >> 16u) != section ||
+        meshlet.Header.y >= remapBytes / 4u || vertices == 0u || vertices > remapBytes / 4u - meshlet.Header.y ||
+        meshlet.Header.z >= primitiveBytes || triangles * 3u > primitiveBytes - meshlet.Header.z)
+      return false;
+    cursor += triangles;
+  }
+  if (cursor != end)
+    return false;
+
+  // The AABB of a transformed sphere uses the lengths of the linear transform rows.
+  const float3 sphereScale = float3(length(instance.GlobalTransform[0].xyz),
+                                    length(instance.GlobalTransform[1].xyz),
+                                    length(instance.GlobalTransform[2].xyz));
+  [loop] for (uint i = first; i < first + count; ++i)
+  {
+    const GpuMeshlet meshlet = g_Meshlets[i];
+    const float3     center  = mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
+    const float3     extents = sphereScale * meshlet.Bounds.w;
+    if (meshlet.Bounds.w >= 0.0f && all(isfinite(center)) && all(isfinite(extents)) &&
+        !IntersectsProbeBounds(origin, direction, hit.Distance, center, extents))
+      continue;
+
+    const uint triangles = meshlet.PackedPrimitiveVertexCount & 0xffffu;
+    if (triangles > remainingTriangles)
+      return true;
+    remainingTriangles -= triangles;
+    const uint vertices = meshlet.PackedPrimitiveVertexCount >> 16u;
+    [loop] for (uint primitive = 0u; primitive < triangles; ++primitive)
+    {
+      const uint  offset = meshlet.Header.z + primitive * 3u;
+      const uint3 local  = uint3(ProbeMeshletByte(g_Buffers[primitiveBuffer], offset),
+                                 ProbeMeshletByte(g_Buffers[primitiveBuffer], offset + 1u),
+                                 ProbeMeshletByte(g_Buffers[primitiveBuffer], offset + 2u));
+      if (any(local >= vertices))
+        return true;
+      const uint3 remap  = (meshlet.Header.y + local) * 4u;
+      const uint3 source = uint3(g_Buffers[remapBuffer].Load(remap.x), g_Buffers[remapBuffer].Load(remap.y), g_Buffers[remapBuffer].Load(remap.z));
+      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, source, hit);
+    }
+  }
+  complete = true;
+  return true;
+}
+#endif
+
 // Return false when the scene cannot be covered within the bounded software budget.
 bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHit hit)
 {
@@ -76,6 +191,10 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
   g_ProbeGeometry.GetDimensions(geometryCount, stride);
   g_ProbeMaterials.GetDimensions(materialCount, stride);
   uint remaining = 2048u;
+#if defined(XII_DDGI_MESHLET_BOUNDS)
+  uint remainingMeshlets = 4096u;
+#endif
+
   [loop] for (uint i = 0u; i < count; ++i)
   {
     const uint             candidate = g_ProbeCandidates[i];
@@ -98,13 +217,10 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
     const xiiGpuSurfaceMaterial material = g_ProbeMaterials[materialIndex];
     if (material.Metadata.z >= 2u)
       continue;
-    const bool indexed   = lod.IndexBufferIndex != 0xffffffffu;
-    const uint available = (indexed ? lod.IndexCount : lod.VertexCount) / 3u;
-    const uint begin     = min(instance.FirstPrimitive, available);
-    const uint triangles = instance.PrimitiveCount == 0u ? available - begin : min(instance.PrimitiveCount, available - begin);
-    if (triangles > remaining)
-      return false;
-    remaining -= triangles;
+    const bool indexed      = lod.IndexBufferIndex != 0xffffffffu;
+    const uint available    = (indexed ? lod.IndexCount : lod.VertexCount) / 3u;
+    const uint begin        = min(instance.FirstPrimitive, available);
+    const uint triangles    = instance.PrimitiveCount == 0u ? available - begin : min(instance.PrimitiveCount, available - begin);
     const uint vertexBuffer = NonUniformResourceIndex(lod.VertexBufferIndex);
     const uint indexBuffer  = NonUniformResourceIndex(lod.IndexBufferIndex);
     uint       vertexBytes;
@@ -120,6 +236,18 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
       if ((!shortIndex && lod.IndexType != 6u) || lod.IndexCount > indexBytes / (shortIndex ? 2u : 4u))
         return false;
     }
+#if defined(XII_DDGI_MESHLET_BOUNDS)
+    bool complete;
+    if (TraceProbeMeshlets(origin, direction, instance, lod, lodIndex, material, begin, begin + triangles, remainingMeshlets, remaining, hit, complete))
+    {
+      if (!complete)
+        return false;
+      continue;
+    }
+#endif
+    if (triangles > remaining)
+      return false;
+    remaining -= triangles;
     [loop] for (uint primitive = begin; primitive < begin + triangles; ++primitive)
     {
       uint3 vertices = primitive * 3u + uint3(0u, 1u, 2u);
@@ -127,29 +255,7 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
         vertices = uint3(LoadProbeIndex(g_Buffers[indexBuffer], vertices.x, shortIndex),
                          LoadProbeIndex(g_Buffers[indexBuffer], vertices.y, shortIndex),
                          LoadProbeIndex(g_Buffers[indexBuffer], vertices.z, shortIndex));
-      if (any(vertices >= lod.VertexCount))
-        continue;
-      const uint3  offsets = vertices * ProbeSceneLayout.z;
-      const float3 a       = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.x)), 1.0f)).xyz;
-      const float3 b       = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.y)), 1.0f)).xyz;
-      const float3 c       = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.z)), 1.0f)).xyz;
-      float3       barycentrics;
-      float        distance;
-      bool         front;
-      if (!IntersectProbeTriangle(origin, direction, a, b, c, hit.Distance, barycentrics, distance, front))
-        continue;
-      const uint3  uvOffsets = offsets + ProbeSceneLayout.w;
-      const float2 uv        = asfloat(g_Buffers[vertexBuffer].Load2(uvOffsets.x)) * barycentrics.x +
-        asfloat(g_Buffers[vertexBuffer].Load2(uvOffsets.y)) * barycentrics.y +
-        asfloat(g_Buffers[vertexBuffer].Load2(uvOffsets.z)) * barycentrics.z;
-      if (material.Metadata.z == 1u &&
-          material.BaseColorOpacity.a * ProbeTexture(material.TextureIndices0.x, material.SamplerIndices0.x, uv).a < material.LayerParameters.x)
-        continue;
-      hit.Distance = distance;
-      hit.Found    = true;
-      hit.Emissive = 0.0f;
-      if (front || (material.Metadata.y & (1u << 10u)) != 0u)
-        hit.Emissive = material.EmissiveColorAndRoughness.rgb * ProbeTexture(material.TextureIndices1.x, material.SamplerIndices1.x, uv).rgb;
+      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, vertices, hit);
     }
   }
   return true;
