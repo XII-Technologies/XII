@@ -7,7 +7,7 @@
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 
-/// Incident irradiance transported from material emission through bounded diffuse scene paths.
+/// Incident irradiance transported from material emission and analytic lighting through bounded diffuse paths.
 /// Environment misses are zero; the ordinary lighting consumer retains its sky contribution.
 class XII_GRAPHICSCORE_DLL xiiRayTracedIrradiancePass final : public xiiRenderPipelinePass
 {
@@ -20,9 +20,15 @@ public:
   xiiRenderPipelineBufferInputPin                m_Camera{false, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineAccelerationStructureInputPin m_Scene{true};
   xiiRenderPipelineBufferInputPin                m_Materials{true, xiiGALBindFlags::ShaderResource}, m_Geometry{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineTextureOutputPin              m_Irradiance{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiUInt32                                      m_uiSampleCount = 8, m_uiMaximumHits = 2, m_uiSampleOffset = 0;
-  float                                          m_fRayLength = 20, m_fSurfaceBias = 0.02f;
+  /// Optional while the depth gate is absent; every active trace validates all light streams.
+  xiiRenderPipelineBufferInputPin   m_Lights{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_LightCounts{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_LightCandidates{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_IESProfiles{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineTextureOutputPin m_Irradiance{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiUInt32                         m_uiSampleCount = 8, m_uiMaximumHits = 2, m_uiSampleOffset = 0;
+  xiiUInt32                         m_uiAnalyticLightSamples = 4;
+  float                             m_fRayLength = 20, m_fSurfaceBias = 0.02f;
   /// Explicitly permit absence so an authored graph can choose its own fallback.
   bool                                        m_bAllowUnsupportedHardware = false, m_bAsyncCompute = true;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
