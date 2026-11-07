@@ -3,12 +3,13 @@
 #pragma once
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <GraphicsCore/Pipeline/Passes/Lighting/ReflectionProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 
 /// Incident irradiance transported from material emission and analytic lighting through bounded diffuse paths.
-/// Environment misses are zero; the ordinary lighting consumer retains its sky contribution.
+/// Primary misses remain zero; secondary surfaces can transport the canonical sky with MIS.
 class XII_GRAPHICSCORE_DLL xiiRayTracedIrradiancePass final : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRayTracedIrradiancePass, xiiRenderPipelinePass);
@@ -21,10 +22,10 @@ public:
   xiiRenderPipelineAccelerationStructureInputPin m_Scene{true};
   xiiRenderPipelineBufferInputPin                m_Materials{true, xiiGALBindFlags::ShaderResource}, m_Geometry{true, xiiGALBindFlags::ShaderResource};
   /// Optional while the depth gate is absent; every active trace validates all light streams.
-  xiiRenderPipelineBufferInputPin   m_Lights{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_LightCounts{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_LightCandidates{true, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_IESProfiles{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin m_Lights{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin m_LightCounts{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin m_LightCandidates{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin m_IESProfiles{true, xiiGALBindFlags::ShaderResource};
   /// Native emissive tables must come from the same RayTracingScenePass as Scene and Geometry.
   xiiRenderPipelineBufferInputPin   m_EmissiveTriangles{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin   m_EmissiveHeader{true, xiiGALBindFlags::ShaderResource};
@@ -32,6 +33,8 @@ public:
   xiiRenderPipelineBufferInputPin   m_BlockAliases{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin   m_AliasHeader{true, xiiGALBindFlags::ShaderResource};
   xiiUInt32                         m_uiEmissiveLightSamples = 0;
+  xiiRenderPipelineDataInputPin     m_Environment{xiiGetStaticRTTI<xiiReflectionProbeFrameData>(), true};
+  xiiUInt32                         m_uiEnvironmentLightSamples = 0;
   xiiRenderPipelineTextureOutputPin m_Irradiance{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiUInt32                         m_uiSampleCount = 8, m_uiMaximumHits = 2, m_uiSampleOffset = 0;
   xiiUInt32                         m_uiAnalyticLightSamples = 4;
@@ -45,7 +48,7 @@ public:
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
 
 private:
-  xiiShaderPermutationResourceHandle       m_Shader[2];
-  xiiSharedPtr<xiiGALSampler>        m_Sampler;
-  xiiSharedPtr<xiiGALComputePipelineState> m_LightScanPipeline, m_BlockScanPipeline;
+  xiiShaderPermutationResourceHandle       m_Shader[4];
+  xiiSharedPtr<xiiGALSampler>              m_Sampler, m_EnvironmentSampler;
+  xiiSharedPtr<xiiGALComputePipelineState> m_LightScanPipeline, m_BlockScanPipeline, m_EnvironmentScanPipeline;
 };

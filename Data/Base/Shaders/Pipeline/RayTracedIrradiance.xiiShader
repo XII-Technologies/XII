@@ -4,6 +4,7 @@
 ALL
 [PERMUTATIONS]
 GI_EMISSIVE_SAMPLING
+GI_ENVIRONMENT_SAMPLING
 [SHADER]
 #include <Shaders/Pipeline/Passes/ScreenSpaceGeometry.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/RayTracedIrradianceConstants.h>
@@ -14,12 +15,13 @@ struct IrradiancePayload
   uint Depth;
   float ConeWidth, ConeSpread;
   uint Random, Flags;
-#if GI_EMISSIVE_SAMPLING
+#if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
   float PreviousPDF;
 #endif
 };
 static const uint XII_IRRADIANCE_VISIBILITY_RAY = 1u;
 static const uint XII_IRRADIANCE_EMITTER_RAY = 2u;
+static const uint XII_IRRADIANCE_SKY_VISIBILITY_RAY = XII_IRRADIANCE_VISIBILITY_RAY | 4u;
 uint IrradianceHash(uint value)
 {
   value ^= value >> 16; value *= 0x7feb352du;
@@ -76,8 +78,10 @@ void main()
     ray.Origin=position+normal*RayDistances.y;
     ray.Direction=IrradianceDirection(normal,xi);
     ray.TMin=0.001f; ray.TMax=RayDistances.x;
-#if GI_EMISSIVE_SAMPLING
+#if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
     payload.PreviousPDF = max(dot(normal, ray.Direction), 0) / 3.14159265359f;
+#endif
+#if GI_EMISSIVE_SAMPLING
     uint emissiveRandom = IrradianceHash(payload.Random ^ 0xa511e9b3u);
     float3 direct = 0;
     [loop] for (uint emitterSample = 0; emitterSample < EmissiveSamples.x; ++emitterSample)
@@ -97,14 +101,28 @@ void main()
   g_Irradiance[pixel]=float4(all(isfinite(result)) ? max(result,0) : 0,1);
 }
 [RAY_MISS_SHADER]
+#if GI_ENVIRONMENT_SAMPLING
+#include <Shaders/Pipeline/Passes/GlobalIllumination/EnvironmentIrradianceSampling.h>
+#endif
 [shader("miss")]
 void main(inout IrradiancePayload payload)
 {
-  // The ordinary environment consumer owns sky illumination. Scene-only transport
-  // must not count that boundary condition again on an escaped path.
   payload.Radiance=(payload.Flags & XII_IRRADIANCE_VISIBILITY_RAY)!=0 ? 1.0f : 0.0f;
+#if GI_ENVIRONMENT_SAMPLING
+  // The primary receiver already receives ordinary environment lighting. Only
+  // escaped continuation paths transport sky through a secondary surface.
+  if(payload.Flags==0 && payload.Depth>0)
+  {
+    const float scaledBSDF=payload.PreviousPDF/float(EmissiveSamples.z);
+    const float weight=scaledBSDF/(scaledBSDF+IrradianceEnvironmentPDF(WorldRayDirection()));
+    payload.Radiance=IrradianceEnvironmentRadiance(WorldRayDirection())*weight;
+  }
+#endif
 }
 [RAY_CLOSEST_HIT_SHADER]
+#if GI_ENVIRONMENT_SAMPLING
+#include <Shaders/Pipeline/Passes/GlobalIllumination/EnvironmentIrradianceSampling.h>
+#endif
 RaytracingAccelerationStructure g_Scene;
 #if GI_EMISSIVE_SAMPLING
 #include <Shaders/Pipeline/Passes/GlobalIllumination/EmissiveIrradianceSampling.h>
@@ -123,7 +141,7 @@ StructuredBuffer<uint4> g_LightCounts;
 StructuredBuffer<uint> g_LightCandidates;
 #include <Shaders/Pipeline/Passes/GlobalIllumination/LightPowerSampling.h>
 
-float IrradianceVisibility(float3 position, float3 normal, float3 direction, float maximumDistance, float coneWidth)
+float IrradianceVisibility(float3 position, float3 normal, float3 direction, float maximumDistance, float coneWidth, bool sky = false)
 {
   if (maximumDistance<=0.001f) return 1;
   RayDesc ray;
@@ -132,14 +150,15 @@ float IrradianceVisibility(float3 position, float3 normal, float3 direction, flo
   ray.TMin=0.001f; ray.TMax=maximumDistance;
   IrradiancePayload visibility;
   visibility.Radiance=0; visibility.Depth=0; visibility.Random=0;
-  visibility.Flags=XII_IRRADIANCE_VISIBILITY_RAY;
-  visibility.ConeWidth=coneWidth; visibility.ConeSpread=0;
-#if GI_EMISSIVE_SAMPLING
+  visibility.Flags=sky ? XII_IRRADIANCE_SKY_VISIBILITY_RAY : XII_IRRADIANCE_VISIBILITY_RAY;
+  visibility.ConeWidth=coneWidth; visibility.ConeSpread=sky ? 0.25f : 0;
+#if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
   visibility.PreviousPDF=0;
 #endif
   // Force any-hit for ordinary opaque meshes too: shadow-casting policy and
   // alpha cutouts are evaluated independently of diffuse path intersections.
-  TraceRay(g_Scene,RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_FORCE_NON_OPAQUE,
+  const uint flags=RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
+  TraceRay(g_Scene,sky ? flags : flags | RAY_FLAG_FORCE_NON_OPAQUE,
     0xff,0,1,0,ray,visibility);
   return visibility.Radiance.x;
 }
@@ -204,6 +223,29 @@ float3 IrradianceAnalyticLighting(xiiRayTracingSurface surface, xiiRayTracingMat
   }
   return result*surface.Occlusion;
 }
+#if GI_ENVIRONMENT_SAMPLING
+float3 IrradianceEnvironmentLighting(xiiRayTracingSurface surface, xiiRayTracingMaterialData material,
+  float3 position, float3 viewDirection, float coneWidth, uint pathDepth, uint randomState)
+{
+  float3 result=0;
+  const uint count=EmissiveSamples.z;
+  [loop] for(uint index=0;index<count;++index)
+  {
+    float pdf;
+    const float3 direction=IrradianceSampleEnvironment(randomState,pdf);
+    const float cosine=max(dot(surface.Normal,direction),0);
+    if(cosine<=0 || pdf<=0) continue;
+    const float3 radiance=IrradianceEnvironmentRadiance(direction);
+    if(!any(radiance>0)) continue;
+    const float3 response=BRDFLayered(saturate(surface.BaseColor),surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),
+      surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness,surface.Normal,direction,viewDirection);
+    const float bsdfPDF=pathDepth+1<PathSamples.y ? cosine/3.14159265359f : 0;
+    const float visibility=IrradianceVisibility(position,surface.Normal,direction,RayDistances.x,coneWidth,true);
+    result+=response*radiance*visibility/(pdf+bsdfPDF/float(count));
+  }
+  return result*(surface.Occlusion/float(count));
+}
+#endif
 [shader("closesthit")]
 void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
@@ -225,6 +267,9 @@ void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttribu
   const float3 position=WorldRayOrigin()+WorldRayDirection()*RayTCurrent();
   const float coneWidth=max(payload.ConeWidth+RayTCurrent()*payload.ConeSpread,1e-6f);
   payload.Radiance+=IrradianceAnalyticLighting(surface,material,position,normalize(-WorldRayDirection()),coneWidth,payload.Random);
+#if GI_ENVIRONMENT_SAMPLING
+  payload.Radiance+=IrradianceEnvironmentLighting(surface,material,position,normalize(-WorldRayDirection()),coneWidth,payload.Depth,IrradianceHash(payload.Random^0x63d83595u));
+#endif
   if(payload.Depth+1>=PathSamples.y) return;
 #if GI_EMISSIVE_SAMPLING
   uint emissiveRandom = IrradianceHash(payload.Random ^ 0xa511e9b3u);
@@ -251,7 +296,7 @@ void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttribu
   const float cosine=max(dot(surface.Normal,ray.Direction),1e-6f);
   const float3 response=BRDFLayered(saturate(surface.BaseColor),surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),
     surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness,surface.Normal,ray.Direction,normalize(-WorldRayDirection()));
-#if GI_EMISSIVE_SAMPLING
+#if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
   child.PreviousPDF = cosine / 3.14159265359f;
 #endif
   TraceRay(g_Scene,0,0xff,0,1,0,ray,child);
@@ -267,7 +312,7 @@ SamplerState g_sAnisotropicWrap;
 [shader("anyhit")]
 void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-  if((payload.Flags & XII_IRRADIANCE_VISIBILITY_RAY)!=0 && (g_RayTracingMaterials[InstanceIndex()].Metadata.w & 8192u)==0)
+  if(payload.Flags==XII_IRRADIANCE_VISIBILITY_RAY && (g_RayTracingMaterials[InstanceIndex()].Metadata.w & 8192u)==0)
   { IgnoreHit(); return; }
   if(xiiShouldIgnoreRayTracingHitWithRayCone(InstanceIndex(),PrimitiveIndex(),attributes.barycentrics,payload.ConeWidth+RayTCurrent()*payload.ConeSpread)) IgnoreHit();
 }
