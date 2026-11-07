@@ -250,20 +250,20 @@ namespace
         for (float y : {-1.35f, -0.45f, 0.45f, 1.35f})
         {
           xiiGameObjectDescription description;
-          description.m_LocalPosition = {-2.65f, y, 2.80f};
+          description.m_LocalPosition = {-2.65f, y, 3.04f};
           xiiGameObject* owner        = nullptr;
           world.CreateObject(description, owner);
           xiiPointLightComponent* light = nullptr;
           xiiPointLightComponent::CreateComponent(owner, light);
-          light->SetRange(0.78f);
-          light->SetIntensity(120.0f);
+          light->SetRange(0.90f);
+          light->SetIntensity(480.0f);
           light->SetLightColor(xiiColorGammaUB(255, 183, 100));
           light->SetCastShadows(castShadows);
           if (blocked)
           {
             xiiGeometry::GeoOptions options;
-            options.m_Transform.SetTranslationVector({-2.65f, y, 2.93f});
-            covers.AddBox({0.32f, 0.39f, 0.06f}, true, options);
+            options.m_Transform.SetTranslationVector({-2.65f, y, 3.075f});
+            covers.AddBox({0.24f, 0.28f, 0.02f}, true, options);
           }
         }
         if (blocked)
