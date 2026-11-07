@@ -3,6 +3,7 @@
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
 #include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+#include <GraphicsFoundationTest/Pipeline/SceneIrradianceTestUtils.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/World/World.h>
@@ -672,6 +673,8 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     xiiResourceLock<xiiRenderPipelineResource> editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     auto                                       sceneDefinition  = scene->GetAuthoring()->m_Descriptor;
     auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
+    if (!XII_TEST_RESULT(xiiSceneIrradianceTest::UseDeterministicTransport(sceneDefinition, &editorDefinition)))
+      return;
     const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/Transparency");
     const auto                                 raster           = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneTransparency/Raster Transparent Layers");
     for (auto& pass : sceneDefinition.m_Passes)
@@ -755,6 +758,8 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     xiiResourceLock<xiiRenderPipelineResource> editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     auto                                       sceneDefinition  = scene->GetAuthoring()->m_Descriptor;
     auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
+    if (!XII_TEST_RESULT(xiiSceneIrradianceTest::UseDeterministicTransport(sceneDefinition, &editorDefinition)))
+      return;
     const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");
     const auto                                 gate             = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth");
     for (auto& pass : sceneDefinition.m_Passes)
@@ -878,6 +883,8 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     xiiResourceLock<xiiRenderPipelineResource> scene(scenePipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail), editor(editorPipeline, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     auto                                       sceneDefinition  = scene->GetAuthoring()->m_Descriptor;
     auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
+    if (!XII_TEST_RESULT(xiiSceneIrradianceTest::UseDeterministicTransport(sceneDefinition, &editorDefinition)))
+      return;
     const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/SpotShadows");
     const auto                                 prepare          = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneSpotShadows/World Spotlights");
     const auto                                 irradiance       = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");

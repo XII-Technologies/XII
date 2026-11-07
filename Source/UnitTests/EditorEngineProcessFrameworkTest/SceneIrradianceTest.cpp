@@ -4,6 +4,7 @@
 #include <GraphicsFoundationTest/Pipeline/RayAnalyticLightingTestUtils.h>
 #include <GraphicsFoundationTest/Pipeline/RayEmissiveLightingTestUtils.h>
 #include <GraphicsFoundationTest/Pipeline/SceneIrradianceTestUtils.h>
+#include <GraphicsFoundationTest/Pipeline/TemporalIrradianceTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, GeometryDependentDiffuseTransportAndIndependentWorlds) { xiiSceneIrradianceTest::Run(true); }
 
@@ -15,3 +16,5 @@ XII_CREATE_SIMPLE_TEST(EditorViews, EmissiveRaySamplingEnergyVisibilityAndPanelR
 {
   xiiRayEmissiveLightingTest::Run(true);
 }
+
+XII_CREATE_SIMPLE_TEST(EditorViews, TemporalIrradianceReconstruction) { xiiTemporalIrradianceTest::Run(true); }

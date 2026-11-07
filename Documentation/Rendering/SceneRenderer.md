@@ -1871,9 +1871,35 @@ GPU pass inspection verifies disabled sampling submits no extraction/alias work.
 
 The proposal still uses area and material emission rather than receiver distance,
 visibility or textured power estimates. Environment importance sampling, reservoir
-reuse, spatiotemporal denoising, integrated DDGI updates and representative
-quality/performance remain outstanding. Escaped rays remain zero so ordinary
+reuse, integrated DDGI updates and representative quality/performance remain
+outstanding. Diffuse reconstruction is integrated below. Escaped rays remain zero so ordinary
 environment lighting keeps ownership of sky illumination.
+
+## Integrated diffuse reconstruction
+
+SceneScreenSpaceIrradiance now routes the selected hardware-ray or screen-space
+transport through IrradianceDenoise before ambient composition and the TAA reactive
+mask. Editor inherits that same Scene workload. RawScreenIrradiance and
+IrradianceHistory remain available as diagnostic exports. Ray requests automatically
+activate the screen fallback on devices without ray-pipeline support; the unused
+screen trace is culled when hardware transport produces its output.
+
+Both trace producers animate their sample sequences in this authored workload.
+The shared temporal signal filter preserves the AO pin contract while adding
+RGBA irradiance filtering, depth/normal reprojection, local radiance clipping,
+material/object identity rejection and finite-value sanitization. History uses
+bounded, fence-protected occurrence-local slots and explicit temporal camera
+snapshots. Cuts, resize, raw format changes, disabled transport and explicit
+invalidation reject history. Devices without extended storage-image formats use
+spatial irradiance filtering without retained identity images.
+
+The focused Scene and Editor check follows seven frames through accumulation,
+material edits, resize, disappearing emission and explicit invalidation. It checks
+raw versus reconstructed irradiance and the final HDR albedo/pi response. Existing
+AO motion/disocclusion and retained-history checks exercise the shared lifetime
+implementation. Authored Scene and Editor pipeline export passes. Validation is
+Windows Vulkan; other backends and representative convergence/performance remain
+unverified. This reconstruction is not a GI reservoir or a scene-driven probe update.
 
 ## Ballistic billboard particles
 

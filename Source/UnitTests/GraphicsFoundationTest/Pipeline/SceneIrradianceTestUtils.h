@@ -31,6 +31,36 @@
 
 namespace xiiSceneIrradianceTest
 {
+  // Raw transport oracles isolate sampling from optional reconstruction.
+  inline xiiResult UseDeterministicTransport(xiiRenderPipelineResourceDescriptor& scene, xiiRenderPipelineResourceDescriptor* editor = nullptr)
+  {
+    xiiResourceLock<xiiRenderPipelineResource> library(xiiLoadPipelineLibraryResource("SceneScreenSpaceIrradiance"), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!library.IsValid() || !library->GetAuthoring())
+      return XII_FAILURE;
+    const auto& definition = library->GetAuthoring()->m_Descriptor;
+    for (auto& occurrence : scene.m_Passes)
+      if (occurrence.m_Definition == definition.m_Id)
+        for (const auto& leaf : definition.m_Passes)
+        {
+          const auto type = leaf.m_pType ? leaf.m_pType->GetTypeName() : xiiStringView();
+          if (type == "xiiIrradianceDenoisePass" || type == "xiiRayTracedIrradiancePass" || type == "xiiScreenIrradianceTracePass")
+          {
+            auto& override = occurrence.m_Overrides.ExpandAndGetRef();
+            override.m_Path.PushBack(leaf.m_Id);
+            override.m_Properties.Insert(type == "xiiIrradianceDenoisePass" ? "Enabled" : "AnimateSamples", false);
+            if (editor)
+              for (auto& parent : editor->m_Passes)
+                if (parent.m_Definition == scene.m_Id)
+                {
+                  auto& nested = parent.m_Overrides.ExpandAndGetRef();
+                  nested       = override;
+                  nested.m_Path.InsertAt(0, occurrence.m_Id);
+                }
+          }
+        }
+    return XII_SUCCESS;
+  }
+
   inline void Run(bool editor, bool rayTraced = false, bool enableRayTracing = true)
   {
 
@@ -73,6 +103,8 @@ namespace xiiSceneIrradianceTest
       if (!XII_TEST_BOOL(canonical.IsValid() && canonical->GetAuthoring()))
         return;
       auto definition = canonical->GetAuthoring()->m_Descriptor;
+      if (!XII_TEST_RESULT(UseDeterministicTransport(definition)))
+        return;
       for (auto& pass : definition.m_Passes)
       {
         const auto type = pass.m_pType ? pass.m_pType->GetTypeName() : xiiStringView();
@@ -82,7 +114,7 @@ namespace xiiSceneIrradianceTest
         {
           auto& enabled = pass.m_Overrides.ExpandAndGetRef();
           enabled.m_Path.PushBack(xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth"));
-          enabled.m_Properties.Insert("Enabled", variant != 0 && !rayTraced);
+          enabled.m_Properties.Insert("Enabled", variant != 0 && !rayRequested);
           if (rayRequested)
           {
             auto& rayEnable = pass.m_Overrides.ExpandAndGetRef();

@@ -86,9 +86,14 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
       connected |= descriptor.m_Passes[edge.m_uiSource].m_Id == worldLights && edge.m_sOutput == output && descriptor.m_Passes[edge.m_uiTarget].m_Id == rayTrace && edge.m_sInput == input;
     XII_TEST_BOOL(connected);
   }
+  const auto denoiser = xiiFindPipelineTestPass(descriptor, "xiiIrradianceDenoisePass");
+  bool       filtered = false;
+  for (const auto& connection : descriptor.m_Connections)
+    filtered |= descriptor.m_Passes[connection.m_uiSource].m_Id == selected && descriptor.m_Passes[connection.m_uiTarget].m_Id == denoiser && connection.m_sInput == "Irradiance";
+  XII_TEST_BOOL(filtered);
   bool diffuseBounce = false, reactiveBounce = false;
   for (const auto& connection : descriptor.m_Connections)
-    if (descriptor.m_Passes[connection.m_uiSource].m_Id == selected && connection.m_sOutput == "Texture")
+    if (descriptor.m_Passes[connection.m_uiSource].m_Id == denoiser && connection.m_sOutput == "FilteredIrradiance")
     {
       const auto& consumer = descriptor.m_Passes[connection.m_uiTarget];
       if (consumer.m_pType->GetTypeName() == "xiiDiffuseSurfaceLightingPass" && connection.m_sInput == "Irradiance")
