@@ -61,7 +61,7 @@ public:
 private:
   struct ReservoirState;
   xiiSharedPtr<ReservoirState>             m_ReservoirState;
-  xiiShaderPermutationResourceHandle       m_Shader[8];
+  xiiShaderPermutationResourceHandle       m_Shader[12];
   xiiSharedPtr<xiiGALSampler>              m_Sampler, m_EnvironmentSampler;
   xiiSharedPtr<xiiGALComputePipelineState> m_LightScanPipeline, m_BlockScanPipeline, m_EnvironmentScanPipeline;
 };

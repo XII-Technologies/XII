@@ -1,3 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-bool GI_PATH_RESERVOIRS
+enum GI_PATH_RESERVOIRS
+{
+  GI_PATH_RESERVOIRS_NONE,
+  GI_PATH_RESERVOIRS_SEED,
+  GI_PATH_RESERVOIRS_RESOLVE
+};

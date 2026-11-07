@@ -3,11 +3,15 @@
 #pragma once
 #include <Shaders/Pipeline/Passes/GlobalIllumination/GIPathReservoirConstants.h>
 
-StructuredBuffer<xiiGIPathReservoir>   g_PreviousReservoirs;
+#if GI_PATH_RESERVOIRS == GI_PATH_RESERVOIRS_SEED
 RWStructuredBuffer<xiiGIPathReservoir> g_CurrentReservoirs;
-Texture2D<float2>                      g_ReceiverVelocity;
-Texture2D<uint>                        g_ReceiverObject;
-Texture2D<float4>                      g_ReceiverMaterial;
+#else
+StructuredBuffer<xiiGIPathReservoir> g_PreviousReservoirs;
+StructuredBuffer<xiiGIPathReservoir> g_SpatialReservoirs;
+Texture2D<float2>                    g_ReceiverVelocity;
+#endif
+Texture2D<uint>   g_ReceiverObject;
+Texture2D<float4> g_ReceiverMaterial;
 
 static const float IrradiancePi          = 3.14159265359f;
 static const uint  ReservoirHistoryLimit = 32u;
@@ -57,18 +61,31 @@ uint4 ReceiverKeys(uint2 pixel, float2 encodedNormal)
                material.x | (material.y << 8u) | (material.z << 16u) | (material.w << 24u));
 }
 
+uint2 ReservoirWriter(uint2 tile, uint2 extent)
+{
+  const uint stride = ReservoirGrid.z;
+  const uint phase  = EmissiveSamples.y % (stride * stride);
+  return min(tile * stride + uint2(phase % stride, phase / stride), extent - 1u);
+}
+
+#if GI_PATH_RESERVOIRS == GI_PATH_RESERVOIRS_RESOLVE
 struct PathEstimate
 {
   float3 Sum;
   float  Count;
 };
 
-void ReconnectPath(int2 tile, uint4 receiverKeys, float3 receiver, float3 normal, float footprint, float coneSpread, float confidence,
+void ReconnectPath(int2 tile, bool sameFrame, uint4 receiverKeys, float3 receiver, float3 normal, float footprint, float coneSpread, float confidence,
                    inout PathEstimate estimate)
 {
   if (any(tile < 0) || any(tile >= int2(ReservoirGrid.xy)))
     return;
-  const xiiGIPathReservoir previous = g_PreviousReservoirs[tile.y * ReservoirGrid.x + tile.x];
+  const uint         index = uint(tile.y) * ReservoirGrid.x + uint(tile.x);
+  xiiGIPathReservoir previous;
+  if (sameFrame)
+    previous = g_SpatialReservoirs[index];
+  else
+    previous = g_PreviousReservoirs[index];
   if (previous.ReceiverAndCount.w <= 0 || any(previous.Keys.zw != receiverKeys.zw))
     return;
   const float2 previousOct   = float2(previous.Keys.y & 0xffffu, previous.Keys.y >> 16u) / 65535.0f;
@@ -105,9 +122,9 @@ void ReconnectPath(int2 tile, uint4 receiverKeys, float3 receiver, float3 normal
   path.Endpoint          = previous.EndpointAndWeight.xyz;
   path.EndpointNormal    = 0;
   path.Flags             = XII_IRRADIANCE_RECONNECTION_RAY;
-#if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
+#  if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
   path.PreviousPDF = max(dot(normal, ray.Direction), 0) / IrradiancePi;
-#endif
+#  endif
   TraceRay(g_Scene, 0, 0xff, 0, 1, 0, ray, path);
   path.Radiance               = all(isfinite(path.Radiance)) ? max(path.Radiance, 0) : 0;
   const float  receiverCosine = max(dot(normal, ray.Direction), 0);
@@ -118,23 +135,16 @@ void ReconnectPath(int2 tile, uint4 receiverKeys, float3 receiver, float3 normal
     estimate.Sum += contribution;
 }
 
-bool IsReservoirWriter(uint2 pixel, uint2 extent)
+#else
+void StorePathReservoir(uint2 tile, float3 receiver, uint4 keys, PathSelection selection, float3 freshRadiance)
 {
-  const uint  stride     = ReservoirGrid.z;
-  const uint  phase      = EmissiveSamples.y % (stride * stride);
-  const uint2 tileOrigin = (pixel / stride) * stride;
-  return all(pixel == min(tileOrigin + uint2(phase % stride, phase / stride), extent - 1u));
-}
-
-void StorePathReservoir(uint2 pixel, float3 receiver, uint4 keys, PathSelection selection)
-{
-  const uint2        tile      = pixel / ReservoirGrid.z;
   const uint         index     = tile.y * ReservoirGrid.x + tile.x;
   xiiGIPathReservoir reservoir = (xiiGIPathReservoir)0;
   if (selection.Count > 0)
   {
     reservoir.ReceiverAndCount = float4(receiver, float(min(selection.Count, ReservoirHistoryLimit)));
     reservoir.Keys             = uint4(selection.Seed, keys.yzw);
+    reservoir.FreshRadiance    = float4(freshRadiance, 0);
   }
   if (selection.Count > 0 && selection.Target > 0 && isfinite(selection.WeightSum))
   {
@@ -144,3 +154,4 @@ void StorePathReservoir(uint2 pixel, float3 receiver, uint4 keys, PathSelection 
   }
   g_CurrentReservoirs[index] = reservoir;
 }
+#endif

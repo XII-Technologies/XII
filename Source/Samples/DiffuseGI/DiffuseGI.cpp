@@ -40,7 +40,7 @@
 namespace
 {
   xiiCommandLineOptionPath   opt_Output("DiffuseGI", "-output", "Directory for the rendered PNGs.", "");
-  xiiCommandLineOptionInt    opt_Frames("DiffuseGI", "-frames", "Frames of temporal accumulation per image.", 20, 2, 240);
+  xiiCommandLineOptionInt    opt_Frames("DiffuseGI", "-frames", "Frames of temporal accumulation per image.", 20, 1, 240);
   xiiCommandLineOptionString opt_Pipeline("DiffuseGI", "-pipeline", "Authored root to render: Scene or Editor.", "Scene");
   xiiCommandLineOptionBool   opt_SkyOnly("DiffuseGI", "-sky-only", "Light the room with the sky and disable the emissive panel.", false);
   xiiCommandLineOptionBool   opt_NoReuse("DiffuseGI", "-no-reuse", "Use fresh ray paths instead of reservoir resampling.", false);
@@ -330,8 +330,10 @@ private:
           continue;
         if (pass.m_sName == "Update Directional Scene Probes")
           xiiLog::Info("{} used the scene probe update.", sFilename);
-        else if (pass.m_sName == "Reuse Diffuse Path Reservoirs")
-          xiiLog::Info("{} read previous diffuse path reservoirs.", sFilename);
+        else if (pass.m_sName == "Resolve Current Spatial and Temporal GI")
+          xiiLog::Info("{} read current spatial and previous temporal diffuse path reservoirs.", sFilename);
+        else if (pass.m_sName == "Resolve Current Spatial GI")
+          xiiLog::Info("{} read current spatial diffuse path reservoirs without temporal history.", sFilename);
       }
       xiiLog::Info("Saving {}.", sFilename);
       return SaveImage(*device, target.Borrow(), xiiStringBuilder(":capture/", sFilename));

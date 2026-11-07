@@ -1921,31 +1921,31 @@ settings. To compare composed output, run the [Diffuse GI capture sample](../../
 
 ## Diffuse path reservoirs
 
-The authored ray GI workload selects a fresh indirect path for each reservoir
-cell using luminance-weighted reservoir sampling. Each record stores the
-secondary world position, its tail seed and normalized area weight, the
-receiving surface signature, and the effective candidate count. The writer
-rotates within each tile. Up to four fence-protected slots retain the grids,
-with a 12 MiB limit per slot. The tile size increases to fit larger views.
-If retained recordings occupy every slot, the current frame uses fresh paths.
+The authored ray GI workload first dispatches one seed ray-generation invocation
+per reservoir tile. It selects an indirect path by luminance and records the
+secondary world position, tail seed, normalized area weight, receiver signature,
+effective candidate count, and anchor's fresh radiance sum. The writer rotates
+within each tile. Up to four fence-protected slots retain the grids, with a
+12 MiB limit per slot. The tile size increases to fit larger views. When retained
+recordings occupy all slots, the renderer traces fresh paths for that frame.
 
-Velocity and jitter reproject the current receiver into the previous grid.
-The ray pass considers its corresponding reservoir and two spatial neighbours,
-rejecting incompatible positions, normals, materials and objects. Each reused
-candidate traces to the retained endpoint and re-evaluates the path against the
-current scene. The area target accounts for the change in projected solid angle.
-Compatible zero-target proposals remain in the count. Current shading combines
-fresh paths and the weighted RGB estimates from reconnections. Only fresh
-candidates enter the next retained grid, limiting repeated path correlation.
-Cuts, resize, missing GI and explicit invalidation discard incompatible history.
+The resolve dispatch reads the completed current grid through an explicit graph
+edge. Tile anchors consume their saved fresh radiance, while the other pixels
+trace their own fresh paths. The resolve considers two neighbours from the
+current grid on every frame, plus the corresponding receiver from the retained
+grid when motion and jitter reprojection succeeds. It rejects incompatible
+positions, normals, materials and objects. A reconnection must reach its stored
+endpoint, then re-evaluates material and lighting against the current scene.
+The area target accounts for changes in projected solid angle, and compatible
+zero-target proposals remain in the count. Cuts, resize, missing GI, and explicit
+invalidation discard temporal reuse without disabling current spatial reuse.
 
-The diffuse denoiser follows path reuse in both Scene and Editor. The capture
-sample can compare the same fresh-path budget with `-paths 1` and
-`-paths 1 -no-reuse`. Reconnection adds up to three traces per receiver before
-any secondary shading rays, so the two captures do not have equal total cost.
-Cross-frame reuse, including neighbours, uses the retained grid. Current-frame
-spatial sharing, representative quality and performance, and ReSTIR DI remain
-separate work.
+The diffuse denoiser follows the resolve in both Scene and Editor. Use
+`-frames 1 -paths 1` to capture current spatial reuse before any history exists.
+Add `-no-reuse` for a fresh-only control. The two paths trace the same number of
+fresh paths per pixel. Spatial reuse adds up to two reconnections and temporal
+reuse adds up to one. These captures do not establish an equal-cost quality gain.
+ReSTIR DI and representative quality and performance remain separate work.
 
 ## Camera-observed directional probe fallback
 
