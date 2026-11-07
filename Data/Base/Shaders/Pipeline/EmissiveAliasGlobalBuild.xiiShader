@@ -23,7 +23,8 @@ xiiGpuEmissiveAliasEntry MakeAliasEntry(float probability, uint aliasIndex)
   xiiGpuEmissiveAliasEntry entry;
   entry.Probability = probability;
   entry.AliasIndex = aliasIndex;
-  entry._Padding = uint2(0u, 0u);
+  entry.SelectionProbability = 0.0f;
+  entry._Padding = 0u;
   return entry;
 }
 
@@ -91,4 +92,17 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     const uint blockIndex = g_AliasSmall[--smallCount];
     g_BlockAliases[blockIndex] = MakeAliasEntry(1.0f, blockIndex);
   }
+  // The Vose work stacks are no longer live. Reuse their probability scratch
+  // to accumulate the mass of each stored column and its alias target.
+  [loop] for (uint index = 0u; index < blockCount; ++index)
+    g_AliasProbabilities[0u + index] = 0.0f;
+  [loop] for (uint column = 0u; column < blockCount; ++column)
+  {
+    const uint index = 0u + column;
+    const xiiGpuEmissiveAliasEntry entry = g_BlockAliases[index];
+    g_AliasProbabilities[index] += entry.Probability / (float)blockCount;
+    g_AliasProbabilities[entry.AliasIndex] += (1.0f - entry.Probability) / (float)blockCount;
+  }
+  [loop] for (uint index = 0u; index < blockCount; ++index)
+    g_BlockAliases[0u + index].SelectionProbability = g_AliasProbabilities[0u + index];
 }

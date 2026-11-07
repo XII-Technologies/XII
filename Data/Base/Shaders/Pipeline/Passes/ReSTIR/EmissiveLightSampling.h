@@ -41,6 +41,24 @@ bool xiiHasEmissiveAliasDistribution()
     aliasHeader.FrameIndex == g_EmissiveHeader[0].FrameIndex;
 }
 
+// Actual stored-table probability. A path-hit lookup uses the same PDF as NEE.
+float xiiGetEmissiveTriangleProbability(uint triangleIndex)
+{
+  uint triangleAliases, triangleStride, blockAliases, blockStride, headers, headerStride;
+  g_EmissiveTriangleAliases.GetDimensions(triangleAliases, triangleStride);
+  g_EmissiveBlockAliases.GetDimensions(blockAliases, blockStride);
+  g_EmissiveAliasHeader.GetDimensions(headers, headerStride);
+  if (headers == 0u || triangleIndex >= min(triangleAliases, xiiGetEmissiveTriangleCount()))
+    return 0.0f;
+  const uint blockSize = g_EmissiveAliasHeader[0].TrianglesPerBlock;
+  if (blockSize == 0u)
+    return 0.0f;
+  const uint block = triangleIndex / blockSize;
+  if (block >= min(blockAliases, g_EmissiveAliasHeader[0].BlockCount))
+    return 0.0f;
+  return g_EmissiveTriangleAliases[triangleIndex].SelectionProbability * g_EmissiveBlockAliases[block].SelectionProbability;
+}
+
 bool xiiSampleEmissiveTriangleAlias(float4 randomSample, out uint triangleIndex, out float proposalProbability)
 {
   triangleIndex       = 0u;
@@ -80,6 +98,6 @@ bool xiiSampleEmissiveTriangleAlias(float4 randomSample, out uint triangleIndex,
   if (triangleIndex >= triangleCount)
     return false;
 
-  proposalProbability = max(g_EmissiveTriangles[triangleIndex].Position1AndPowerWeight.w, 0.0f) / aliasHeader.TotalPower;
+  proposalProbability = xiiGetEmissiveTriangleProbability(triangleIndex);
   return xiiEmissiveIsFinitePositive(proposalProbability);
 }
