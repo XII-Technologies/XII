@@ -22,6 +22,10 @@ public:
   xiiRenderPipelineBufferInputPin             m_Geometry{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Meshlets{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_Materials{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_Lights{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_LightCounts{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_LightCandidates{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin             m_IESProfiles{true, xiiGALBindFlags::ShaderResource};
   xiiRenderPipelineBufferInputPin             m_StatesInput{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess};
   xiiRenderPipelineTextureInputPin            m_Depth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Normal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
@@ -39,6 +43,6 @@ public:
 private:
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_WorldPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState> m_WorldMeshletPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_WorldMeshletPipeline, m_WorldLitPipeline;
   xiiSharedPtr<xiiGALSampler>              m_ProbeSampler;
 };

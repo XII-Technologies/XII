@@ -25,6 +25,13 @@ struct ProbeHit
   float  Distance;
   float3 Emissive;
   bool   Found;
+#if defined(XII_DDGI_ANALYTIC_LIGHTING)
+  float3 Normal;
+  float3 Albedo;
+  float4 Material;
+  float  Occlusion;
+  bool   ReceivesShadows;
+#endif
 };
 
 bool IntersectsProbeBounds(float3 origin, float3 direction, float maximum, float3 center, float3 extents)
@@ -72,7 +79,7 @@ float4 ProbeTexture(uint textureIndex, uint samplerIndex, float2 uv)
 }
 
 void TraceProbePrimitive(float3 origin, float3 direction, float4x4 transform, uint vertexBufferIndex, uint vertexCount,
-                         xiiGpuSurfaceMaterial material, uint3 vertices, inout ProbeHit hit)
+                         xiiGpuSurfaceMaterial material, uint3 vertices, uint instanceFlags, bool shadowQuery, inout ProbeHit hit)
 {
   if (any(vertices >= vertexCount))
     return;
@@ -95,9 +102,25 @@ void TraceProbePrimitive(float3 origin, float3 direction, float4x4 transform, ui
     return;
   hit.Distance = distance;
   hit.Found    = true;
-  hit.Emissive = 0;
-  if (front || (material.Metadata.y & (1u << 10u)) != 0u)
+  if (shadowQuery)
+    return;
+  hit.Emissive      = 0;
+  const bool facing = front || (material.Metadata.y & (1u << 10u)) != 0u;
+  if (facing)
     hit.Emissive = material.EmissiveColorAndRoughness.rgb * ProbeTexture(material.TextureIndices1.x, material.SamplerIndices1.x, uv).rgb;
+#if defined(XII_DDGI_ANALYTIC_LIGHTING)
+  hit.Normal = 0;
+  if (facing && material.Metadata.x != 6u && (material.Metadata.y & (1u << 12u)) != 0u)
+  {
+    hit.Normal                     = normalize(cross(b - a, c - a)) * (front ? 1.0f : -1.0f);
+    hit.Albedo                     = saturate(material.BaseColorOpacity.rgb * ProbeTexture(material.TextureIndices0.x, material.SamplerIndices0.x, uv).rgb);
+    const float4 metallicRoughness = ProbeTexture(material.TextureIndices0.z, material.SamplerIndices0.z, uv);
+    const float  transmission      = material.SurfaceParameters.z * ProbeTexture(material.TextureIndices1.w, material.SamplerIndices1.w, uv).r;
+    hit.Material                   = saturate(float4(material.EmissiveColorAndRoughness.w * metallicRoughness.g, material.SurfaceParameters.x * metallicRoughness.b, material.SurfaceParameters.y, transmission));
+    hit.Occlusion                  = lerp(1.0f, saturate(ProbeTexture(material.TextureIndices0.w, material.SamplerIndices0.w, uv).r), saturate(material.SurfaceParameters.w));
+    hit.ReceivesShadows            = (instanceFlags & (1u << 3u)) != 0u;
+  }
+#endif
 }
 
 #if defined(XII_DDGI_MESHLET_BOUNDS)
@@ -110,7 +133,7 @@ uint ProbeMeshletByte(ByteAddressBuffer stream, uint offset)
 // its reordered primitives. A partial span cannot be mixed with raw indices.
 bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instance, GpuGeometryLod lod, uint lodIndex,
                         xiiGpuSurfaceMaterial material, uint begin, uint end, inout uint remainingMeshlets,
-                        inout uint remainingTriangles, inout ProbeHit hit, out bool complete)
+                        inout uint remainingTriangles, bool shadowQuery, inout ProbeHit hit, out bool complete)
 {
   complete = false;
   if (lod.MeshletRangesOrdered == 0u || lod.MeshletRemapBufferIndex == 0xffffffffu || lod.MeshletPrimitiveBufferIndex == 0xffffffffu)
@@ -172,7 +195,12 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
         return true;
       const uint3 remap  = (meshlet.Header.y + local) * 4u;
       const uint3 source = uint3(g_Buffers[remapBuffer].Load(remap.x), g_Buffers[remapBuffer].Load(remap.y), g_Buffers[remapBuffer].Load(remap.z));
-      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, source, hit);
+      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, source, instance.Flags, shadowQuery, hit);
+      if (shadowQuery && hit.Found)
+      {
+        complete = true;
+        return true;
+      }
     }
   }
   complete = true;
@@ -181,11 +209,10 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
 #endif
 
 // Return false when the scene cannot be covered within the bounded software budget.
-bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHit hit)
+bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHit hit, bool shadowQuery = false)
 {
+  hit          = (ProbeHit)0;
   hit.Distance = maximum;
-  hit.Emissive = 0;
-  hit.Found    = false;
   uint count, stride, geometryCount, materialCount;
   g_ProbeCandidates.GetDimensions(count, stride);
   g_ProbeGeometry.GetDimensions(geometryCount, stride);
@@ -199,6 +226,8 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
   {
     const uint             candidate = g_ProbeCandidates[i];
     const GpuSceneInstance instance  = g_ProbeInstances[candidate & 0x7fffffffu];
+    if (shadowQuery && (instance.Flags & (1u << 2u)) == 0u)
+      continue;
     if (!IntersectsProbeBounds(origin, direction, hit.Distance, instance.BoundsCenterRadius.xyz, instance.BoundsExtents.xyz))
       continue;
     if ((candidate & 0x80000000u) != 0u)
@@ -215,7 +244,7 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
     if (lod.VertexBufferIndex == 0xffffffffu)
       return false;
     const xiiGpuSurfaceMaterial material = g_ProbeMaterials[materialIndex];
-    if (material.Metadata.z >= 2u)
+    if (material.Metadata.z >= 2u || (shadowQuery && (material.Metadata.y & (1u << 13u)) == 0u))
       continue;
     const bool indexed      = lod.IndexBufferIndex != 0xffffffffu;
     const uint available    = (indexed ? lod.IndexCount : lod.VertexCount) / 3u;
@@ -238,10 +267,12 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
     }
 #if defined(XII_DDGI_MESHLET_BOUNDS)
     bool complete;
-    if (TraceProbeMeshlets(origin, direction, instance, lod, lodIndex, material, begin, begin + triangles, remainingMeshlets, remaining, hit, complete))
+    if (TraceProbeMeshlets(origin, direction, instance, lod, lodIndex, material, begin, begin + triangles, remainingMeshlets, remaining, shadowQuery, hit, complete))
     {
       if (!complete)
         return false;
+      if (shadowQuery && hit.Found)
+        return true;
       continue;
     }
 #endif
@@ -255,7 +286,9 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
         vertices = uint3(LoadProbeIndex(g_Buffers[indexBuffer], vertices.x, shortIndex),
                          LoadProbeIndex(g_Buffers[indexBuffer], vertices.y, shortIndex),
                          LoadProbeIndex(g_Buffers[indexBuffer], vertices.z, shortIndex));
-      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, vertices, hit);
+      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, vertices, instance.Flags, shadowQuery, hit);
+      if (shadowQuery && hit.Found)
+        return true;
     }
   }
   return true;

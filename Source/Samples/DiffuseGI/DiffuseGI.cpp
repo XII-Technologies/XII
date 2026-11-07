@@ -51,6 +51,8 @@ namespace
   xiiCommandLineOptionBool   opt_OffscreenEmitter("DiffuseGI", "-offscreen-emitter", "Compare camera and world probes with an emitter outside the frame.", false);
   xiiCommandLineOptionBool   opt_BlockEmitter("DiffuseGI", "-block-emitter", "Add an opaque cover beneath the offscreen emitter.", false);
   xiiCommandLineOptionBool   opt_DenseEmitter("DiffuseGI", "-dense-emitter", "Use a tessellated offscreen panel with 4,608 triangles.", false);
+  xiiCommandLineOptionBool   opt_OffscreenLight("DiffuseGI", "-offscreen-light", "Illuminate a non-emissive offscreen panel with short-range point lights.", false);
+  xiiCommandLineOptionBool   opt_NoLightShadows("DiffuseGI", "-no-light-shadows", "Disable shadows for the offscreen point lights.", false);
   xiiCommandLineOptionBool   opt_NoReuse("DiffuseGI", "-no-reuse", "Use fresh ray paths instead of reservoir resampling.", false);
   xiiCommandLineOptionInt    opt_Paths("DiffuseGI", "-paths", "Override fresh ray paths per pixel (zero uses the authored count).", 0, 0, 32);
   xiiCommandLineOptionBool   opt_NoRay("DiffuseGI", "-no-ray", "Disable hardware rays to render the scene probe fallback.", false);
@@ -210,12 +212,12 @@ namespace
     component->SetMaterialOverride(0, material);
   }
 
-  void MakeRoom(xiiWorld& world, bool bSkyOnly, bool bLocalLights, bool bOffscreenEmitter)
+  void MakeRoom(xiiWorld& world, bool bSkyOnly, bool bLocalLights, bool bOffscreenEmitter, bool bOffscreenLight)
   {
     const auto white    = Material("GI.White", xiiColor(0.75f, 0.75f, 0.75f), xiiColor::Black);
     const auto red      = Material("GI.Red", xiiColor(0.7f, 0.06f, 0.04f), xiiColor::Black);
     const auto green    = Material("GI.Green", xiiColor(0.06f, 0.62f, 0.14f), xiiColor::Black);
-    const auto emission = bOffscreenEmitter ? xiiColor(96, 60, 24) : (bSkyOnly || bLocalLights ? xiiColor::Black : xiiColor(12, 9, 6));
+    const auto emission = bOffscreenLight ? xiiColor::Black : (bOffscreenEmitter ? xiiColor(96, 60, 24) : (bSkyOnly || bLocalLights ? xiiColor::Black : xiiColor(12, 9, 6)));
     const auto emitter  = Material("GI.Emitter", xiiColor::White, emission);
     const auto box      = [&](xiiStringView sName, xiiVec3 vPosition, xiiVec3 vExtent, const xiiMaterialResourceHandle& material) {
       xiiGeometry geometry;
@@ -239,7 +241,35 @@ namespace
       }
       else
         box("GI.Panel", {-2.65f, 0, 3.26f}, {0.7f, 3.8f, 0.12f}, emitter);
-      if (opt_BlockEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never))
+      if (bOffscreenLight)
+      {
+        const bool  blocked     = opt_BlockEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+        const bool  castShadows = !opt_NoLightShadows.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+        const auto  cover       = blocked ? Material("GI.LightCover", xiiColor::Black, xiiColor::Black) : xiiMaterialResourceHandle();
+        xiiGeometry covers;
+        for (float y : {-1.35f, -0.45f, 0.45f, 1.35f})
+        {
+          xiiGameObjectDescription description;
+          description.m_LocalPosition = {-2.65f, y, 3.04f};
+          xiiGameObject* owner        = nullptr;
+          world.CreateObject(description, owner);
+          xiiPointLightComponent* light = nullptr;
+          xiiPointLightComponent::CreateComponent(owner, light);
+          light->SetRange(0.90f);
+          light->SetIntensity(480.0f);
+          light->SetLightColor(xiiColorGammaUB(255, 183, 100));
+          light->SetCastShadows(castShadows);
+          if (blocked)
+          {
+            xiiGeometry::GeoOptions options;
+            options.m_Transform.SetTranslationVector({-2.65f, y, 3.075f});
+            covers.AddBox({0.24f, 0.28f, 0.02f}, true, options);
+          }
+        }
+        if (blocked)
+          AddMesh(world, "GI.LightCovers", xiiVec3::MakeZero(), covers, cover);
+      }
+      else if (opt_BlockEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never))
         box("GI.EmitterCover", {-2.65f, 0, 3.15f}, {0.94f, 4.1f, 0.1f}, white);
     }
     else
@@ -361,7 +391,8 @@ private:
     description.m_DeviceFeatures.m_IndependentBlend           = xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_BindlessResources          = xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Optional;
-    const bool offscreenEmitter                               = opt_OffscreenEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+    const bool offscreenLight                                 = opt_OffscreenLight.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+    const bool offscreenEmitter                               = offscreenLight || opt_OffscreenEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never);
     description.m_DeviceFeatures.m_RayTracing                 = offscreenEmitter || opt_NoRay.GetOptionValue(xiiCommandLineOption::LogMode::Never) ? xiiGALDeviceFeatureState::Disabled : xiiGALDeviceFeatureState::Optional;
     description.m_DeviceFeatures.m_MeshShaders                = xiiGALDeviceFeatureState::Disabled;
     auto device                                               = xiiGALDeviceFactory::CreateDevice(renderer, xiiFoundation::GetDefaultAllocator(), description);
@@ -392,7 +423,7 @@ private:
     xiiWorld            world(worldDescription);
     XII_LOCK(world.GetWriteMarker());
     world.SetWorldSimulationEnabled(false);
-    MakeRoom(world, opt_SkyOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never), localLights, offscreenEmitter);
+    MakeRoom(world, opt_SkyOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never), localLights, offscreenEmitter, offscreenLight);
     xiiCamera camera;
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 48, 0.1f, 40);
     camera.LookAt({-5.5f, 0, 1.65f}, {1.6f, 0, 1.6f}, {0, 0, 1});
@@ -440,6 +471,8 @@ private:
           xiiLog::Info("{} used the world-geometry probe update.", sFilename);
         else if (pass.m_sName == "Trace World Meshlets for Directional Probes")
           xiiLog::Info("{} used the meshlet-bounded world probe update.", sFilename);
+        else if (pass.m_sName == "Shade Offscreen Hits for Directional Probes")
+          xiiLog::Info("{} used analytic lighting for offscreen probe hits.", sFilename);
         else if (pass.m_sName == "Resolve Current Spatial and Temporal GI")
           xiiLog::Info("{} read current spatial and previous temporal diffuse path reservoirs.", sFilename);
         else if (pass.m_sName == "Resolve Spatial and Temporal Local Light Reservoirs")

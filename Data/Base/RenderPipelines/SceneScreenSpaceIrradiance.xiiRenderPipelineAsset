@@ -4665,6 +4665,10 @@ o
 			Uuid{u4{10837204348363140222,17706143621235365039}}
 			Uuid{u4{11290523024964273389,12857536475542740287}}
 			Uuid{u4{9435614593626203852,15423301186889339652}}
+			Uuid{u4{13182920358995540734,12355707517027308918}}
+			Uuid{u4{9290189855236574639,13820149062586159546}}
+			Uuid{u4{10934083644138999013,11197567552410506657}}
+			Uuid{u4{12757438808429776651,10347694660735816608}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -9825,6 +9829,58 @@ o
 		s %SourcePin{"Value"}
 		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
 		s %TargetPin{"MeshletMetadata"}
+	}
+}
+o
+{
+	Uuid %id{u4{13182920358995540734,12355707517027308918}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12720115576925584709,13686200231778803118}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"Lights"}
+	}
+}
+o
+{
+	Uuid %id{u4{9290189855236574639,13820149062586159546}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11906309636483707538,197860911925517938}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"LightCounts"}
+	}
+}
+o
+{
+	Uuid %id{u4{10934083644138999013,11197567552410506657}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9369259662774174935,3375311351403601836}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"LightCandidates"}
+	}
+}
+o
+{
+	Uuid %id{u4{12757438808429776651,10347694660735816608}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12037293267642687660,279872281650354634}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"IESProfiles"}
 	}
 }
 }

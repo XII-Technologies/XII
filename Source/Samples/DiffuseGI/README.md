@@ -23,3 +23,5 @@ Use `-local-lights -no-ray` to capture exact clustered lighting, raw reservoirs,
 Use `-offscreen-emitter` to capture the camera-based and world-geometry probe updates with an emissive panel outside the frame. This mode disables hardware ray tracing and removes the sky light. Add `-block-emitter` to place an opaque cover beneath the panel and compare the shadowed bounce. The capture log identifies which probe update ran.
 
 Add `-dense-emitter` to replace the offscreen panel with a downward-facing, 4,608-triangle surface. This stresses meshlet rejection while keeping the emitter outside the camera view.
+
+Use `-offscreen-light` to replace emission with four short-range point lights illuminating the panel. The camera and world captures use the same scene and exposure with hardware rays disabled. Add `-block-emitter` to cover the lights and compare against the same covered scene with `-no-light-shadows` to isolate secondary visibility.
