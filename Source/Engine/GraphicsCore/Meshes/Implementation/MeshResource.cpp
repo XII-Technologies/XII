@@ -242,7 +242,28 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
   if (!descriptor.GetBounds().IsValid())
     descriptor.ComputeBounds();
   const auto& compiled    = static_cast<const xiiMeshResourceDescriptor&>(descriptor).GetMeshBufferDescriptor();
-  const auto  preparation = !descriptor.GetExistingMeshBuffer().IsValid() && !compiled.m_Meshlets.IsEmpty() ? ValidateCompiledMeshlets(descriptor) : descriptor.BuildMeshlets();
+  xiiResult   preparation = XII_FAILURE;
+  if (!descriptor.GetExistingMeshBuffer().IsValid() && !compiled.m_Meshlets.IsEmpty())
+  {
+    // Buffer-level clustering can precede section/LOD authoring for procedural
+    // meshes. Validate the payload before rebuilding its missing draw ranges;
+    // complete compiled assets retain their clusters without repeating the build.
+    preparation = ValidateCompiledMeshlets(descriptor);
+    if (preparation.Succeeded())
+    {
+      bool bMissingRanges = false;
+      for (const auto& section : descriptor.GetSubMeshes())
+        bMissingRanges |= section.m_uiPrimitiveCount != 0 && section.m_uiMeshletCount == 0;
+      for (const auto& lod : static_cast<const xiiMeshResourceDescriptor&>(descriptor).GetLODs())
+        for (const auto& section : lod.m_Sections)
+          bMissingRanges |= section.m_uiPrimitiveCount != 0 && (section.m_uiMeshletCount == 0 || lod.m_uiMeshletCount == 0);
+      bMissingRanges |= descriptor.GetSubMeshes().IsEmpty();
+      if (bMissingRanges)
+        preparation = descriptor.BuildMeshlets();
+    }
+  }
+  else
+    preparation = descriptor.BuildMeshlets();
   if (preparation.Failed())
     return {xiiResourceState::LoadedResourceMissing, 0, 0};
 
