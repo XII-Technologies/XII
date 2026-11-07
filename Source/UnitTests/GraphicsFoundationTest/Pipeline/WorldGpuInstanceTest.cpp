@@ -245,6 +245,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
         XII_DECLARE_POD_TYPE();
       };
       graph.AddPass<Export>("World inputs", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+        // External readback runs on graphics. Keep this queue handoff even though exports only root their producers.
+        builder.SetPassSideEffects(true);
         builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
         builder.ExportBuffer(builder.ReadBuffer(uploadInstances[camera].GetOutputBinding(2, "GeometryMetadata")->m_hBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
@@ -586,10 +588,13 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       XII_DECLARE_POD_TYPE();
     };
     graph.AddPass<Export>("Retained world buffers", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+      builder.SetPassSideEffects(true); // Preserve the transfer-to-graphics dependency before external readback.
       builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
       builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
     graph.EndSetup();
-    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
+    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_INT(graph.GetStatistics().m_uiCulledPassCount, 0) || !XII_TEST_INT(graph.GetQueueSubmissions().GetCount(), 2))
+      return;
+    if (!XII_TEST_BOOL(graph.GetQueueSubmissions()[1].m_WaitSubmissionIndices.Contains(0)) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
       return;
     xiiGpuSceneInstance record;
     xiiMat4             pose;

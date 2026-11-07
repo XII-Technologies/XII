@@ -96,6 +96,9 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
     xiiResourceLock<xiiRenderPipelineResource> missing(hMissing, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     XII_TEST_BOOL(missing.IsValid());
     XII_TEST_BOOL(missing.GetAcquireResult() == xiiResourceAcquireResult::MissingFallback);
+    // The first synchronization may have selected a loading fallback. Observe
+    // the completed missing-resource state before requiring its diagnostic.
+    XII_TEST_RESULT(loadingInstance.Synchronize(hMissing));
   }
 
   xiiWorldDescription worldDescription("Clear color fallback test");
