@@ -1,0 +1,54 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/LightPower.h>
+StructuredBuffer<xiiGpuLightData> g_Lights;
+StructuredBuffer<uint4> g_LightCounts;
+StructuredBuffer<uint> g_LightCandidates;
+RWStructuredBuffer<float> g_LightCDF;
+RWStructuredBuffer<float> g_BlockPower;
+groupshared float Prefix[256];
+[numthreads(256,1,1)]
+void main(uint3 group:SV_GroupID,uint lane:SV_GroupIndex)
+{
+  uint count,stride,records,recordStride;
+  g_LightCandidates.GetDimensions(count,stride);
+  g_Lights.GetDimensions(records,recordStride);
+  const uint candidate=group.x*256+lane;
+  float power=0;
+  if(candidate<count)
+  {
+    const uint index=g_LightCandidates[candidate];
+    if(index<min(g_LightCounts[0].x,records))
+    {
+      const xiiGpuLightData light=g_Lights[index];
+      // Infinite sources have no total flux. Use illuminance over one square
+      // metre only as a proposal heuristic; the estimator retains exact units.
+      power=GetLightType(light)==XII_LIGHT_TYPE_DIRECTIONAL ?
+        dot(max(light.ColorAndIntensity.rgb,0),float3(0.2126f,0.7152f,0.0722f))*max(light.ColorAndIntensity.w,0) : GetLightPowerWeight(light);
+    }
+  }
+  Prefix[lane]=isfinite(power) ? max(power,0):0;
+  GroupMemoryBarrierWithGroupSync();
+  [unroll] for(uint offset=1;offset<256;offset*=2)
+  {
+    const float previous=lane>=offset ? Prefix[lane-offset]:0;
+    GroupMemoryBarrierWithGroupSync();
+    Prefix[lane]+=previous;
+    GroupMemoryBarrierWithGroupSync();
+  }
+  // Floating-point reassociation can make adjacent parallel sums disagree by
+  // an ulp. A prefix maximum preserves a searchable monotone stored CDF.
+  [unroll] for(uint offset=1;offset<256;offset*=2)
+  {
+    const float previous=lane>=offset ? Prefix[lane-offset]:0;
+    GroupMemoryBarrierWithGroupSync();
+    Prefix[lane]=max(Prefix[lane],previous);
+    GroupMemoryBarrierWithGroupSync();
+  }
+  const bool valid=isfinite(Prefix[255]);
+  if(candidate<count) g_LightCDF[candidate]=valid ? Prefix[lane]:0;
+  if(lane==255) g_BlockPower[group.x]=valid ? Prefix[255]:0;
+}

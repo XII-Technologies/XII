@@ -388,7 +388,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{16426160417551843304,9185843375471567954}}
-		u4 %Hash{13325342850411441609}
+		u4 %Hash{11175676724923253765}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{17527460707750734110,4113445835405847170}}
@@ -2346,6 +2346,7 @@ o
 			Uuid{u4{4123079461189198836,15013519355814626001}}
 			Uuid{u4{18432795961522544755,16158557530308553270}}
 		}
+		b %PowerWeightedLights{1}
 		f %RayLength{0x0000A041}
 		u3 %SampleCount{32}
 		u3 %SampleOffset{0}

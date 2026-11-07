@@ -1,0 +1,23 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+StructuredBuffer<float> g_BlockPower;
+RWStructuredBuffer<float> g_BlockCDF;
+// At most 4096 blocks for the canonical one-million-light limit. This bounded
+// top-level scan runs once per view, never once per indirect surface/sample.
+[numthreads(1,1,1)]
+void main()
+{
+  uint count,stride;
+  g_BlockPower.GetDimensions(count,stride);
+  float cumulative=0;
+  [loop] for(uint block=0;block<count;++block)
+  {
+    cumulative+=g_BlockPower[block];
+    g_BlockCDF[block]=cumulative;
+  }
+  if(!isfinite(cumulative))
+    [loop] for(uint block=0;block<count;++block) g_BlockCDF[block]=0;
+}
