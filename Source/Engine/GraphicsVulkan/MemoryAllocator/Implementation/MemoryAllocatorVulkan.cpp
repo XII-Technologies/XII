@@ -48,7 +48,6 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 static_assert(sizeof(xiiVulkanAllocation) == sizeof(VmaAllocation));
 static_assert(sizeof(xiiVulkanAllocationInfo) == sizeof(VmaAllocationInfo));
 
-XII_DEFINE_AS_POD_TYPE(VmaBudget);
 
 namespace
 {
@@ -142,6 +141,7 @@ struct xiiVulkanMemoryAllocator::Implementation
   vk::PhysicalDevice                 m_vkPhysicalDevice;              ///< The Vulkan physical device.
   vk::Device                         m_vkLogicalDevice;               ///< The Vulkan logical device.
   vk::PhysicalDeviceMemoryProperties m_vkMemoryProperties;            ///< The physical device memory properties.
+  bool                               m_bNativeBudget = false;
 
   xiiMutex                                    m_ExportedSharedPoolsMutex; ///< Mutex to protect access to the exported shared pools.
   xiiHashTable<xiiUInt32, ExportedSharedPool> m_ExportedSharedPools;      ///< Hashtable of exported shared pools, keyed by memory type index.
@@ -166,7 +166,7 @@ xiiVulkanMemoryAllocator::~xiiVulkanMemoryAllocator()
 //////////////////////////////////////////////////////////////////////////
 // Initialize / DeInitialize
 
-vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiPreferredBlockSize /*= 0U*/)
+vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulkan, bool bNativeBudget, xiiUInt32 uiPreferredBlockSize /*= 0U*/)
 {
   // We prefer dynamically finding the function pointers.
 
@@ -190,6 +190,12 @@ vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulka
   vmaAllocatorCreateInfo.preferredLargeHeapBlockSize = uiPreferredBlockSize;
   vmaAllocatorCreateInfo.pVulkanFunctions            = &vmaVulkanFunctions;
   vmaAllocatorCreateInfo.flags                       = {};
+
+  m_pImplementation->m_bNativeBudget = bNativeBudget;
+  if (bNativeBudget)
+  {
+    vmaAllocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+  }
 
   const xiiGALDeviceVulkan::ExtensionFeatures& logicalDeviceExtensionFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
@@ -423,26 +429,38 @@ vk::Result xiiVulkanMemoryAllocator::InvalidateAllocation(xiiVulkanAllocation al
   return static_cast<vk::Result>(vmaInvalidateAllocation(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), offset, size));
 }
 
-xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
+void xiiVulkanMemoryAllocator::BeginFrame(xiiUInt32 uiFrameIndex)
 {
-  xiiVulkanMemoryStatistics vkMemoryStatistics;
+  vmaSetCurrentFrameIndex(m_pImplementation->m_VmaAllocator, uiFrameIndex);
+}
 
-  xiiTemporaryHybridArray<VmaBudget, 4U> vmaBudgets;
-  vmaBudgets.SetCount(m_pImplementation->m_vkMemoryProperties.memoryHeapCount);
+void xiiVulkanMemoryAllocator::GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const
+{
+  const auto& properties = m_pImplementation->m_vkMemoryProperties;
+  VmaBudget   budgets[VK_MAX_MEMORY_HEAPS];
+  vmaGetHeapBudgets(m_pImplementation->m_VmaAllocator, budgets);
+  out_heaps.SetCount(properties.memoryHeapCount);
 
-  vmaGetHeapBudgets(m_pImplementation->m_VmaAllocator, vmaBudgets.GetData());
-
-  for (xiiUInt32 i = 0; i < m_pImplementation->m_vkMemoryProperties.memoryHeapCount; ++i)
+  for (xiiUInt32 i = 0; i < properties.memoryHeapCount; ++i)
   {
-    const VmaBudget& budget = vmaBudgets[i];
-
-    vkMemoryStatistics.m_uiBlockCount += budget.statistics.blockCount;
-    vkMemoryStatistics.m_uiBlockBytes += static_cast<xiiUInt64>(budget.statistics.blockBytes);
-    vkMemoryStatistics.m_uiAllocationCount += budget.statistics.allocationCount;
-    vkMemoryStatistics.m_uiAllocationBytes += static_cast<xiiUInt64>(budget.statistics.allocationBytes);
+    const auto& budget      = budgets[i];
+    auto&       heap        = out_heaps[i];
+    heap.m_uiCapacityBytes  = properties.memoryHeaps[i].size;
+    heap.m_uiBudgetBytes    = budget.budget;
+    heap.m_uiUsageBytes     = budget.usage;
+    heap.m_uiCommittedBytes = budget.statistics.blockBytes;
+    heap.m_uiAllocatedBytes = budget.statistics.allocationBytes;
+    heap.m_bDeviceLocal     = static_cast<bool>(properties.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal);
+    heap.m_bHostVisible     = false;
+    heap.m_bNativeBudget    = m_pImplementation->m_bNativeBudget;
   }
 
-  return vkMemoryStatistics;
+  for (xiiUInt32 i = 0; i < properties.memoryTypeCount; ++i)
+  {
+    const auto& type = properties.memoryTypes[i];
+    if (type.propertyFlags & vk::MemoryPropertyFlagBits::eHostVisible)
+      out_heaps[type.heapIndex].m_bHostVisible = true;
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_MemoryAllocator_Implementation_MemoryAllocatorVulkan);

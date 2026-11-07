@@ -959,6 +959,12 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   xiiTemporaryHybridArray<const char*, 4U> deviceExtensions;
 
+  if ((m_uiVulkanVersion >= VK_API_VERSION_1_1 || IsExtensionEnabled(m_EnabledExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) &&
+      IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME))
+  {
+    deviceExtensions.PushBack(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+  }
+
   if (IsExtensionEnabled(m_EnabledExtensions, VK_KHR_SURFACE_EXTENSION_NAME))
   {
     deviceExtensions.PushBack(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -1629,7 +1635,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   {
     m_pVulkanMemoryAllocator = XII_NEW(&m_Allocator, xiiVulkanMemoryAllocator);
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_pVulkanMemoryAllocator->Initialize(this));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_pVulkanMemoryAllocator->Initialize(this, IsLogicalDeviceExtensionEnabled(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)));
   }
 
   // Create pools.
@@ -1738,6 +1744,12 @@ void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation alloca
 
 void xiiGALDeviceVulkan::BeginFramePlatform()
 {
+  m_pVulkanMemoryAllocator->BeginFrame(++m_uiAllocatorFrameIndex);
+}
+
+void xiiGALDeviceVulkan::GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const
+{
+  m_pVulkanMemoryAllocator->GetMemoryHeapStatistics(out_heaps);
 }
 
 void xiiGALDeviceVulkan::EndFramePlatform()

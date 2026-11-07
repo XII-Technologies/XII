@@ -5,12 +5,26 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
+
+/// A snapshot of one graphics memory heap. Keep heap budgets separate when testing whether an allocation fits.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryHeapStatistics
+{
+  xiiUInt64 m_uiCapacityBytes  = 0U;    ///< Physical capacity reported for this heap.
+  xiiUInt64 m_uiBudgetBytes    = 0U;    ///< Process budget, or a conservative estimate when unavailable.
+  xiiUInt64 m_uiUsageBytes     = 0U;    ///< Process usage, or committed allocator bytes when unavailable.
+  xiiUInt64 m_uiCommittedBytes = 0U;    ///< Memory blocks owned by the backend allocator.
+  xiiUInt64 m_uiAllocatedBytes = 0U;    ///< Occupied bytes within those blocks, including pending GPU retirement.
+  bool      m_bDeviceLocal     = false; ///< Vulkan device-local heaps may also be accessible to the host.
+  bool      m_bHostVisible     = false; ///< At least one host-visible memory type uses this heap.
+  bool      m_bNativeBudget    = false; ///< Usage and budget are sourced from native budget reporting.
+};
 
 /// The xiiGALDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
@@ -243,6 +257,9 @@ public:
 
   /// This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   [[nodiscard]] const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
+
+  /// Returns current allocator and budget statistics. Backends without reporting return an empty array.
+  virtual void GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const { out_heaps.Clear(); }
 
   /// This retrieves the device feature states. See xiiGALDeviceFeatures.
   [[nodiscard]] const xiiGALDeviceFeatures& GetFeatures() const;

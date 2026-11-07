@@ -107,6 +107,7 @@ public:
 
 public:
   virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
+  virtual void                GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
@@ -318,6 +319,7 @@ private:
 
   // Vulkan Memory Allocator.
   xiiUniquePtr<xiiVulkanMemoryAllocator> m_pVulkanMemoryAllocator;
+  xiiUInt32                              m_uiAllocatorFrameIndex = 0U;
 
   // Graphics Queue Information.
   mutable xiiMutex                            m_GraphicsQueueMutex;

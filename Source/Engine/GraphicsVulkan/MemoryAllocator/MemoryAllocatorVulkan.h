@@ -133,16 +133,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationInfo
   const char*      m_szName;         ///< Optional debug name for the allocation, used for profiling or diagnostics.
 };
 
-/// Reports memory usage statistics for Vulkan allocations.
-///
-/// This structure provides an overview of memory consumption, including the number of blocks and allocations, as well as their total sizes in bytes.
-struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryStatistics
-{
-  xiiUInt32 m_uiBlockCount      = 0U; ///< Number of memory blocks currently allocated.
-  xiiUInt32 m_uiAllocationCount = 0U; ///< Number of individual allocations across all blocks.
-  xiiUInt64 m_uiBlockBytes      = 0U; ///< Total size in bytes of all allocated memory blocks.
-  xiiUInt64 m_uiAllocationBytes = 0U; ///< Total size in bytes of all active allocations.
-};
+struct xiiGALMemoryHeapStatistics;
 
 /// Vulkan memory allocator wrapper.
 ///
@@ -161,7 +152,7 @@ public:
   ///
   /// \param pDeviceVulkan        - The Vulkan device implementation.
   /// \param uiPreferredBlockSize - Optional preferred block size for allocations.
-  vk::Result Initialize(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiPreferredBlockSize = 0U);
+  vk::Result Initialize(xiiGALDeviceVulkan* pDeviceVulkan, bool bNativeBudget, xiiUInt32 uiPreferredBlockSize = 0U);
 
   /// Cleans up internal resources.
   void DeInitialize();
@@ -251,7 +242,10 @@ public:
   /// Returns current memory usage statistics.
   ///
   /// \return Struct containing block and allocation counts and sizes.
-  xiiVulkanMemoryStatistics GetStatistics() const;
+  void GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const;
+
+  /// Updates the allocator's cached native budget at the frame boundary.
+  void BeginFrame(xiiUInt32 uiFrameIndex);
 
 private:
   struct Implementation; ///< Internal implementation details.
