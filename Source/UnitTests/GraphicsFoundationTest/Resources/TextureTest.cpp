@@ -2,13 +2,95 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Threading/Thread.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Textures/Texture3DResource.h>
+#include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
+#include <Texture/Utilities/TextureAssetFile.h>
+
+XII_CREATE_SIMPLE_TEST_GROUP(TextureResidency);
+
+XII_CREATE_SIMPLE_TEST(TextureResidency, PromoteMipTail)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  const auto testPromotion = []<typename Resource>(const char* szPath, xiiGALResourceDimension::Enum type, xiiUInt32 uiLayersOrDepth) {
+    auto description                 = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
+    description.m_Type               = type;
+    description.m_Size               = {64U, 64U};
+    description.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
+    description.m_uiMipLevels        = 7U;
+    description.m_uiArraySizeOrDepth = uiLayersOrDepth;
+    xiiImage image;
+    image.ResetAndAlloc(description);
+    auto pixels = image.GetBlobPtr<xiiUInt8>();
+    xiiMemoryUtils::ZeroFill(pixels.GetPtr(), pixels.GetCount());
+
+    const auto sampler = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+    {
+      xiiAssetFileHeader header;
+      header.SetFileHashAndVersion(1, 2);
+      xiiFileWriter file;
+      if (!XII_TEST_RESULT(file.Open(szPath)) || !XII_TEST_RESULT(xiiTextureAssetFile::WriteImage(file, image, sampler, header)))
+        return;
+    }
+
+    const auto                    handle = xiiResourceManager::LoadResource<Resource>(szPath);
+    xiiDefaultMemoryStreamStorage storage;
+    xiiMemoryStreamWriter         writer(&storage);
+    writer << xiiGALTextureUtilities::GetDefaultTexture2DDescription();
+    writer << sampler;
+    writer << true;
+    xiiImage* pImage = &image;
+    if (!XII_TEST_RESULT(writer.WriteBytes(&pImage, sizeof(pImage))))
+      return;
+    xiiMemoryStreamReader reader(&storage);
+    xiiResourceManager::SetResourceLowResData(handle, &reader);
+
+    xiiResourceLock<Resource> resource(handle, xiiResourceAcquireMode::PointerOnly);
+    auto                      pCoarse = resource->GetGALTexture();
+    if (!XII_TEST_BOOL(pCoarse != nullptr))
+      return;
+    XII_TEST_INT(pCoarse->GetDescription().m_uiMipLevels, 6);
+    XII_TEST_INT(resource->GetNumQualityLevelsLoadable(), 1);
+
+    xiiResourceManager::PreloadResource(handle);
+    const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+    xiiTaskSystem::WaitForCondition([&] { return !xiiResourceManager::IsAnyLoadingInProgress() || xiiTime::Now() > deadline; });
+    if (!XII_TEST_BOOL(!xiiResourceManager::IsAnyLoadingInProgress()))
+      return;
+
+    auto pFull = resource->GetGALTexture();
+    if (!XII_TEST_BOOL(pFull != nullptr && pFull != pCoarse))
+      return;
+    XII_TEST_INT(pFull->GetDescription().m_uiMipLevels, 7);
+    XII_TEST_INT(resource->GetNumQualityLevelsLoadable(), 0);
+    XII_TEST_INT(resource->GetMemoryUsage().m_uiMemoryGPU, pFull->GetMemoryConsumption());
+    XII_TEST_INT(pCoarse->GetRefCount(), 1);
+  };
+
+  testPromotion.operator()<xiiTexture2DResource>(":imgout/Residency/Promotion.xiiBinTexture2D", xiiGALResourceDimension::Texture2D, 1U);
+  testPromotion.operator()<xiiTexture3DResource>(":imgout/Residency/Promotion.xiiBinTexture3D", xiiGALResourceDimension::Texture3D, 4U);
+  testPromotion.operator()<xiiTextureCubeResource>(":imgout/Residency/Promotion.xiiBinTextureCube", xiiGALResourceDimension::TextureCube, 6U);
+}
 
 namespace
 {
@@ -94,8 +176,8 @@ XII_CREATE_SIMPLE_TEST(Resources, Texture)
     // On devices without concurrent creation, retain the initial view so both
     // workers exercise cache acquisition without creating platform objects.
     auto                     retained = environment.GetDevice()->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled ?
-                          xiiSharedPtr<xiiGALTextureView>() :
-                          texture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      xiiSharedPtr<xiiGALTextureView>() :
+      texture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
     DefaultTextureViewThread first(texture), second(texture);
     first.Start();
     second.Start();

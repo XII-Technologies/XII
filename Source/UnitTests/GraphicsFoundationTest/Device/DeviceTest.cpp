@@ -60,8 +60,9 @@ XII_CREATE_SIMPLE_TEST(Device, MemoryHeapStatistics)
     pDevice->BeginFrame();
     const xiiUInt64                 uiBaseline = getAllocatedBytes();
     xiiGALBufferCreationDescription description;
-    description.m_uiSize = 1024U * 1024U;
-    auto pBuffer         = pDevice->CreateBuffer(description);
+    description.m_uiSize    = 1024U * 1024U;
+    description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+    auto pBuffer            = pDevice->CreateBuffer(description);
     if (XII_TEST_BOOL(pBuffer != nullptr))
     {
       const xiiUInt64 uiAllocated = getAllocatedBytes();

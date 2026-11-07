@@ -5,11 +5,16 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Threading/Lock.h>
+#include <Foundation/Threading/Mutex.h>
 
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 
 #include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 class xiiImage;
 
@@ -33,16 +38,44 @@ class XII_GRAPHICSCORE_DLL xiiTexture3DResource : public xiiResource
 public:
   xiiTexture3DResource();
 
-  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetFormat() const { return m_Format; }
-  XII_ALWAYS_INLINE xiiUInt32                     GetWidth() const { return m_uiWidth; }
-  XII_ALWAYS_INLINE xiiUInt32                     GetHeight() const { return m_uiHeight; }
-  XII_ALWAYS_INLINE xiiUInt32                     GetDepth() const { return m_uiDepth; }
-  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceDimension> GetType() const { return m_Type; }
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetFormat() const
+  {
+    XII_LOCK(m_TextureMutex);
+    return m_Format;
+  }
+  XII_ALWAYS_INLINE xiiUInt32 GetWidth() const
+  {
+    XII_LOCK(m_TextureMutex);
+    return m_uiWidth;
+  }
+  XII_ALWAYS_INLINE xiiUInt32 GetHeight() const
+  {
+    XII_LOCK(m_TextureMutex);
+    return m_uiHeight;
+  }
+  XII_ALWAYS_INLINE xiiUInt32 GetDepth() const
+  {
+    XII_LOCK(m_TextureMutex);
+    return m_uiDepth;
+  }
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceDimension> GetType() const
+  {
+    XII_LOCK(m_TextureMutex);
+    return m_Type;
+  }
 
   static void FillOutDescriptor(xiiTexture3DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
 
-  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pGALTexture[m_uiLoadedTextures - 1]; }
-  xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pSampler; }
+  xiiSharedPtr<xiiGALTexture> GetGALTexture() const
+  {
+    XII_LOCK(m_TextureMutex);
+    return m_pGALTexture;
+  }
+  xiiSharedPtr<xiiGALSampler> GetGALSampler() const
+  {
+    XII_LOCK(m_TextureMutex);
+    return m_pSampler;
+  }
 
 protected:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
@@ -51,9 +84,8 @@ protected:
 
   xiiTexture3DResource(DoUpdate ResourceUpdateThread);
 
-  xiiUInt8                    m_uiLoadedTextures = 0;
-  xiiSharedPtr<xiiGALTexture> m_pGALTexture[2];
-  xiiUInt32                   m_uiMemoryGPU[2] = {0, 0};
+  mutable xiiMutex            m_TextureMutex;
+  xiiSharedPtr<xiiGALTexture> m_pGALTexture;
 
   xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALResourceDimension::Undefined;
   xiiEnum<xiiGALResourceFormat>    m_Format   = xiiGALResourceFormat::Unknown;
