@@ -650,7 +650,7 @@ bool xiiRayTracingResources::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   slot.m_uiTangentOffset      = pTangentStream != nullptr ? pTangentStream->m_uiOffset : xiiInvalidIndex;
   slot.m_uiTexCoordStride     = pTexCoordStream != nullptr ? pTexCoordStream->m_uiStride : 0U;
   slot.m_uiTexCoordOffset     = pTexCoordStream != nullptr ? pTexCoordStream->m_uiOffset : xiiInvalidIndex;
-  slot.m_uiIndexStride        = pIndexBuffer == nullptr ? 0U : (mesh->GetIndexType() == xiiGALValueType::UInt32 ? 4U : 2U);
+  slot.m_uiIndexStride        = slot.m_pIndexBuffer == nullptr ? 0U : (mesh->GetIndexType() == xiiGALValueType::UInt32 ? 4U : 2U);
   slot.m_uiPrimitiveCount     = count;
   slot.m_bBLASDirty           = true;
   return true;

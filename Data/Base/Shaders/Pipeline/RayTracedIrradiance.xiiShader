@@ -1,0 +1,131 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[SHADER]
+#include <Shaders/Pipeline/Passes/ScreenSpaceGeometry.h>
+#include <Shaders/Pipeline/Passes/GlobalIllumination/RayTracedIrradianceConstants.h>
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
+struct IrradiancePayload
+{
+  float3 Radiance;
+  uint Depth;
+  float ConeWidth, ConeSpread;
+  uint Random, Reserved;
+};
+uint IrradianceHash(uint value)
+{
+  value ^= value >> 16; value *= 0x7feb352du;
+  value ^= value >> 15; value *= 0x846ca68bu;
+  return value ^ (value >> 16);
+}
+float IrradianceRandom(inout uint state)
+{
+  state = IrradianceHash(state);
+  return float(state & 0x00ffffffu) / 16777216.0f;
+}
+float3 IrradianceDirection(float3 normal, float2 xi)
+{
+  const float3 up = abs(normal.z) < 0.999f ? float3(0,0,1) : float3(1,0,0);
+  const float3 tangent = normalize(cross(up,normal)), bitangent = cross(normal,tangent);
+  const float radius = sqrt(xi.x), phi = 6.28318530718f * xi.y;
+  return tangent * (radius * cos(phi)) + bitangent * (radius * sin(phi)) + normal * sqrt(1-xi.x);
+}
+[RAY_GENERATION_SHADER]
+#include <Shaders/Common/StorageImageFormat.h>
+RaytracingAccelerationStructure g_Scene;
+Texture2D<float> g_Depth;
+Texture2D<float2> g_Normal;
+XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Irradiance;
+[shader("raygeneration")]
+void main()
+{
+  const uint2 pixel = DispatchRaysIndex().xy, extent = DispatchRaysDimensions().xy;
+  const float depth = g_Depth.Load(int3(pixel,0));
+  float3 position;
+  const float2 uv = (float2(pixel)+0.5f)/float2(extent);
+  if (!isfinite(depth) || depth <= 0 || depth > 1 || !xiiScreenWorldPosition(uv,depth,position))
+  { g_Irradiance[pixel] = 0; return; }
+  const float3 normal = xiiScreenNormal(g_Normal.Load(int3(pixel,0)));
+  if (!all(isfinite(normal)) || dot(normal,normal)<0.5f)
+  { g_Irradiance[pixel] = 0; return; }
+  const float2 neighbourUV = uv + float2(pixel.x+1<extent.x ? 1.0f : -1.0f,0)/float2(extent);
+  float3 neighbour;
+  const float footprint = xiiScreenWorldPosition(neighbourUV,depth,neighbour) ? length(neighbour-position) : 0;
+  float3 radiance = 0;
+  [loop] for (uint sampleIndex=0; sampleIndex<PathSamples.x; ++sampleIndex)
+  {
+    IrradiancePayload payload;
+    payload.Radiance=0; payload.Depth=0; payload.Reserved=0;
+    payload.Random=IrradianceHash(pixel.x+pixel.y*extent.x+(PathSamples.z+sampleIndex+1)*0x9e3779b9u);
+    payload.ConeWidth=footprint;
+    payload.ConeSpread=footprint/max(length(position-SurfaceCameraPositionNear.xyz),1e-3f);
+    const float first=IrradianceRandom(payload.Random);
+    const float2 xi=float2(first,IrradianceRandom(payload.Random));
+    RayDesc ray;
+    ray.Origin=position+normal*RayDistances.y;
+    ray.Direction=IrradianceDirection(normal,xi);
+    ray.TMin=0.001f; ray.TMax=RayDistances.x;
+    TraceRay(g_Scene,0,0xff,0,1,0,ray,payload);
+    radiance+=payload.Radiance;
+  }
+  // Cosine-weighted incident irradiance, before the primary receiver's BRDF.
+  const float3 result=radiance*(3.14159265359f/float(PathSamples.x));
+  g_Irradiance[pixel]=float4(all(isfinite(result)) ? max(result,0) : 0,1);
+}
+[RAY_MISS_SHADER]
+[shader("miss")]
+void main(inout IrradiancePayload payload)
+{
+  // The ordinary environment consumer owns sky illumination. Scene-only transport
+  // must not count that boundary condition again on an escaped path.
+  payload.Radiance=0;
+}
+[RAY_CLOSEST_HIT_SHADER]
+RaytracingAccelerationStructure g_Scene;
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials;
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry;
+ByteAddressBuffer g_RayTracingBuffers[];
+Texture2D<float4> g_RayTracingTextures[];
+SamplerState g_sAnisotropicWrap;
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingSurface.h>
+#define XII_BRDF_VIEW_MODE ViewRenderMode_DiffuseOnly
+#include <Shaders/Pipeline/SurfaceBRDF.h>
+[shader("closesthit")]
+void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  const xiiRayTracingMaterialData material=g_RayTracingMaterials[InstanceIndex()];
+  const xiiRayTracingSurface surface=xiiLoadRayTracingSurface(InstanceIndex(),PrimitiveIndex(),attributes.barycentrics,payload.ConeWidth,payload.ConeSpread);
+  payload.Radiance=surface.Emission;
+  // Emission is independent of receiving illumination. Unlit/nonreceiving hits
+  // terminate the diffuse path without inventing reflected light.
+  if (payload.Depth+1>=PathSamples.y || material.Metadata.z==6u || (material.Metadata.w & 4096u)==0 || !all(isfinite(surface.Normal)) || dot(surface.Normal,surface.Normal)<0.5f) return;
+  const float3 position=WorldRayOrigin()+WorldRayDirection()*RayTCurrent();
+  IrradiancePayload child=payload;
+  child.Radiance=0; child.Depth++;
+  child.ConeWidth=max(payload.ConeWidth+RayTCurrent()*payload.ConeSpread,1e-6f);
+  child.ConeSpread=max(payload.ConeSpread,0.25f);
+  const float first=IrradianceRandom(child.Random);
+  const float2 xi=float2(first,IrradianceRandom(child.Random));
+  RayDesc ray;
+  ray.Origin=position+surface.Normal*RayDistances.y;
+  ray.Direction=IrradianceDirection(surface.Normal,xi);
+  ray.TMin=0.001f; ray.TMax=RayDistances.x;
+  const float cosine=max(dot(surface.Normal,ray.Direction),1e-6f);
+  const float3 response=BRDFLayered(saturate(surface.BaseColor),surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),
+    surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness,surface.Normal,ray.Direction,normalize(-WorldRayDirection()));
+  TraceRay(g_Scene,0,0xff,0,1,0,ray,child);
+  payload.Radiance+=response*(3.14159265359f/cosine)*surface.Occlusion*child.Radiance;
+}
+[RAY_ANY_HIT_SHADER]
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials;
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry;
+ByteAddressBuffer g_RayTracingBuffers[];
+Texture2D<float4> g_RayTracingTextures[];
+SamplerState g_sAnisotropicWrap;
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingAlphaTest.h>
+[shader("anyhit")]
+void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  if(xiiShouldIgnoreRayTracingHitWithRayCone(InstanceIndex(),PrimitiveIndex(),attributes.barycentrics,payload.ConeWidth+RayTCurrent()*payload.ConeSpread)) IgnoreHit();
+}

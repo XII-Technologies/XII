@@ -42,7 +42,7 @@ xiiGPUTestingEnvironment::~xiiGPUTestingEnvironment()
   Shutdown();
 }
 
-xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders, bool bEnableExtendedTextureUAVFormats, bool bEnableIndependentBlend)
+xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders, bool bEnableExtendedTextureUAVFormats, bool bEnableIndependentBlend, bool bEnableRayTracing)
 {
   XII_SUCCEED_OR_RETURN(xiiConfigureGPUTestDataDirectories());
 
@@ -53,7 +53,7 @@ xiiResult xiiGPUTestingEnvironment::Initialize(bool bEnableMeshShaders, bool bEn
   description.m_DeviceFeatures.m_GeometryShaders                    = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_Tessellation                       = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_MeshShaders                        = bEnableMeshShaders ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
-  description.m_DeviceFeatures.m_RayTracing                         = xiiGALDeviceFeatureState::Optional;
+  description.m_DeviceFeatures.m_RayTracing                         = bEnableRayTracing ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
   description.m_DeviceFeatures.m_BindlessResources                  = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_OcclusionQueries                   = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_BinaryOcclusionQueries             = xiiGALDeviceFeatureState::Optional;

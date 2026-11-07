@@ -623,7 +623,7 @@ o
 		Uuid %Id{u4{11965106388565801786,16918514623404039763}}
 		Uuid %Metadata{u4{2013932067015620988,15748758528900667886}}
 		b %OverrideResolution{0}
-		s %RequiredFormat{"xiiGALResourceFormat::RGBA32Float"}
+		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
 		Uuid %Requirements{u4{15233235318326936978,12082878557742220716}}
 		Uuid %Resolution{u4{13172836383132869964,15353568876747304786}}
 	}
@@ -678,7 +678,7 @@ o
 			s{"{ dcc2963c-bbe0-6a2e-e15f-03ef8d374edb }"}
 		}
 		Uuid %DocumentID{u4{17838772279808529951,3556294463007207433}}
-		u4 %Hash{620088159085313995}
+		u4 %Hash{9491448124599456438}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{3244159327931217666,835577455807645679}}
@@ -1843,10 +1843,10 @@ o
 	u3 %v{1}
 	p
 	{
-		s %Dimension{"xiiGALResourceDimension::Texture2D"}
+		s %Dimension{"xiiGALResourceDimension::Undefined"}
 		u3 %Height{0}
-		s %RequiredBindFlags{"xiiGALBindFlags::ShaderResource|xiiGALBindFlags::UnorderedAccess"}
-		u3 %Samples{1}
+		s %RequiredBindFlags{""}
+		u3 %Samples{0}
 		u3 %Width{0}
 	}
 }
@@ -2385,10 +2385,10 @@ o
 	u3 %v{1}
 	p
 	{
-		s %Access{"xiiRenderPipelinePinAccess::Write"}
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
 		s %DataType{""}
-		s %DeclaredFormat{"xiiGALResourceFormat::RGBA32Float"}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"ScreenIrradiance"}
 		b %Optional{1}
@@ -29445,10 +29445,10 @@ o
 	u3 %v{1}
 	p
 	{
-		s %Access{"xiiRenderPipelinePinAccess::Write"}
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
 		s %Cardinality{"xiiRenderPipelinePinCardinality::Multiple"}
 		s %DataType{""}
-		s %DeclaredFormat{"xiiGALResourceFormat::RGBA32Float"}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
 		b %Input{0}
 		s %Name{"Irradiance"}
 		b %Optional{1}

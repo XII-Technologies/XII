@@ -4,3 +4,5 @@
 #include <GraphicsFoundationTest/Pipeline/SceneIrradianceTestUtils.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, GeometryDependentDiffuseTransportAndIndependentWorlds) { xiiSceneIrradianceTest::Run(true); }
+
+XII_CREATE_SIMPLE_TEST(EditorViews, OffscreenRayDiffuseTransportAndWorldRetirement) { xiiSceneIrradianceTest::Run(true, true); }

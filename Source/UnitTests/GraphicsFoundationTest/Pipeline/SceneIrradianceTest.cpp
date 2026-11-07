@@ -5,3 +5,7 @@
 
 XII_CREATE_SIMPLE_TEST_GROUP(SceneIrradiance);
 XII_CREATE_SIMPLE_TEST(SceneIrradiance, GeometryTransportsEmissionToDiffuseReceivers) { xiiSceneIrradianceTest::Run(false); }
+
+XII_CREATE_SIMPLE_TEST(SceneIrradiance, OffscreenRayDiffuseTransportAndWorldRetirement) { xiiSceneIrradianceTest::Run(false, true); }
+
+XII_CREATE_SIMPLE_TEST(SceneIrradiance, AuthoredScreenFallbackWithoutRayHardware) { xiiSceneIrradianceTest::Run(false, true, false); }

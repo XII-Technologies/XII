@@ -1544,6 +1544,95 @@ spatial banding. Representative quality and performance, moving-emitter temporal
 reconstruction, stereo and non-Vulkan backends remain unverified. Existing DDGI
 and sparse-voxel environment seeding/gather operations remain operation-level work.
 
+## Offscreen emissive ray diffuse transport
+
+The same `SceneScreenSpaceIrradiance` occurrence now contains an independent
+`Ray Depth` gate, a world-derived `Offscreen Scene`, `Trace Emissive Paths`, and
+`Select Transport`. Both depth gates default to disabled. The world ray producer
+requires its activation token before constructing an occurrence-local TLAS and
+uses all eligible world instances, including geometry outside the camera view.
+
+```text
+SceneDepth -> Ray Depth -> Offscreen Scene -> Scene / Materials / Geometry
+                  +-----------------------------> Trace Emissive Paths
+Normal + Camera --------------------------------> Trace Emissive Paths
+Trace Emissive Paths.Irradiance -> Select Transport.Primary
+Trace Diffuse Bounce.Irradiance -> Select Transport.Fallback
+Select Transport.Texture ------> Ambient Diffuse + TAA reactive union
+```
+
+The selector forwards one transport image. It never adds screen and ray estimates
+of the same light. `AllowAbsentFallback` permits the existing absent-GI contract
+when neither produces output. With `AllowUnsupportedHardware` enabled on the ray
+operation, a device without standalone hardware ray pipelines or bindless resources
+leaves its output absent; an enabled screen gate supplies the existing fallback.
+Malformed active inputs, shader/binding failures and exceeded dispatch, record or
+recursion limits remain failures. Disabling Ray Depth omits ray work entirely.
+
+The ray operation consumes the exact current camera uniform, matching depth and
+normal images, a current TLAS build dependency, and parallel canonical material
+and geometry records. Output is input-sized RGBA32Float incident irradiance.
+An active empty scene clears this image to zero. Valid receivers have confidence
+one; background and invalid reconstructed surfaces are zero. The existing diffuse
+consumer applies the primary receiver's material response exactly once.
+
+Each deterministic cosine-weighted primary sample traces material emission through
+one to four bounded surface hits. Continuation uses the shared layered diffuse
+BRDF, including dielectric Fresnel, metallic/transmission removal, coat attenuation
+and authored material occlusion. Unlit and nonreceiving hits contribute emission
+and terminate. A miss contributes zero: ordinary environment lighting retains its
+existing ownership of sky illumination. The operation does not consume screen
+radiance or accumulate its own output as an input.
+
+Hit shading reuses the existing final-gather material evaluator: indexed geometry,
+interpolated and normal-mapped normals, authored samplers, ray-cone texture LOD,
+emission and layered PBR properties. Cutout visibility uses the shared any-hit
+evaluator. Indexed registration now derives its stride from the retained index
+buffer; checking the moved-from pointer previously advertised nonindexed addressing
+to hit shaders while BLAS traversal still used indices.
+
+Authored defaults are 32 primary samples, two surface hits, a 20-unit maximum per
+segment, 0.02 surface bias and fixed sample offset zero. Reflected settings permit
+1-32 samples and 1-4 hits. Sequence state depends on the pixel and authored offset,
+not unrelated device frames or other views. There is one full-resolution 16-byte
+irradiance image per pixel, plus occurrence-local TLAS/SBT resources and canonical
+scene records. Shared BLAS residency and deformation retain existing ownership.
+Every recording retains its TLAS, pipeline, sampler, constants and build/read
+dependencies through graph/GAL lifetime management. There is no GI history cache.
+
+### Ray diffuse acceptance and limits
+
+The Scene and Editor `OffscreenRayDiffuseTransportAndWorldRetirement` tests run the
+shared material, projection, resize, reload, asynchronous queue, missing-input and
+independent-world acceptance fixture with actual ray transport. An emitter behind
+the camera has zero visible object-ID pixels while illuminating 3,709 floor pixels
+and changing their presented color. Removing it restores exact disabled output.
+The independent-world disappearance phase rejects stale GI on all 3,053 checked
+interior pixels, and retained recording remains valid after its world is destroyed.
+
+`RayEnclosureEnergyMultibounceCutoutAndEmptyScene` compares disabled, one-, two-
+and four-hit production Scene variants inside a uniform emissive enclosure. A
+single hit returns exactly pi times emission; black reflectance removes all extra
+bounce energy. Additional hits increase energy within the material's geometric
+series bound. Black emission, full cutout and an empty scene all return zero;
+restoration reproduces the original result. Every HDR increment matches captured
+albedo times incident irradiance divided by pi. This regression exposed the index
+stride defect; `NativeSceneRayProbe` also reads canonical GPU geometry records to
+verify the retained indexed contract directly.
+
+`AuthoredScreenFallbackWithoutRayHardware` creates a Vulkan device with ray tracing
+explicitly disabled, activates the ray option and runs the complete screen transport
+and independent-world fixture through the authored fallback. Scene, Editor and
+enclosure checks run on Windows/Vulkan Debug with mesh shaders and extended texture
+UAV formats disabled.
+
+This is bounded diffuse transport from material emission. Analytic-light sampling,
+emissive importance sampling, reservoir reuse, denoising, probe/voxel GI, volume
+transport and specular path continuation remain separate work. Fixed sampling can
+be noisy for small emitters; no convergence or representative frame-time/memory
+claim is made. Imported textured scene quality, animation-specific GI acceptance,
+stereo and non-Vulkan runtime execution remain unverified.
+
 ## Ballistic billboard particles
 
 SceneParticles is an independently authored three-operation workload:
