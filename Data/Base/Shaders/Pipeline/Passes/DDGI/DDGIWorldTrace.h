@@ -107,8 +107,19 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
     remaining -= triangles;
     const uint vertexBuffer = NonUniformResourceIndex(lod.VertexBufferIndex);
     const uint indexBuffer  = NonUniformResourceIndex(lod.IndexBufferIndex);
-    // xiiGALValueType::UInt16. The other native index type is UInt32.
+    uint       vertexBytes;
+    g_Buffers[vertexBuffer].GetDimensions(vertexBytes);
+    if (vertexBytes / ProbeSceneLayout.z != lod.VertexCount)
+      return false;
+    // Native index types are xiiGALValueType::UInt16 and UInt32.
     const bool shortIndex = lod.IndexType == 5u;
+    if (indexed)
+    {
+      uint indexBytes;
+      g_Buffers[indexBuffer].GetDimensions(indexBytes);
+      if ((!shortIndex && lod.IndexType != 6u) || lod.IndexCount > indexBytes / (shortIndex ? 2u : 4u))
+        return false;
+    }
     [loop] for (uint primitive = begin; primitive < begin + triangles; ++primitive)
     {
       uint3 vertices = primitive * 3u + uint3(0u, 1u, 2u);
