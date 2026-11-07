@@ -39,6 +39,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("MaximumHits", m_uiMaximumHits)->AddAttributes(new xiiDefaultValueAttribute(2U), new xiiClampValueAttribute(1U, 4U)),
     XII_MEMBER_PROPERTY("SampleOffset", m_uiSampleOffset),
     XII_MEMBER_PROPERTY("AnalyticLightSamples", m_uiAnalyticLightSamples)->AddAttributes(new xiiDefaultValueAttribute(4U), new xiiClampValueAttribute(0U, 8U)),
+    XII_MEMBER_PROPERTY("PowerWeightedLights", m_bPowerWeightedLights)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("RayLength", m_fRayLength)->AddAttributes(new xiiDefaultValueAttribute(20.0f)),
     XII_MEMBER_PROPERTY("SurfaceBias", m_fSurfaceBias)->AddAttributes(new xiiDefaultValueAttribute(0.02f)),
     XII_MEMBER_PROPERTY("AllowUnsupportedHardware", m_bAllowUnsupportedHardware)->AddAttributes(new xiiDefaultValueAttribute(false)),
@@ -152,11 +153,90 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     if (!m_Sampler)
       return context.ReportFailure("Could not allocate ray material fallback sampler.");
   }
+  // Graph-local tables follow the current view's immutable candidate list.
+  // Disabled sampling binds existing float storage but submits no scan work.
+  xiiRenderGraphBufferHandle lightCDF = profiles, blockCDF = profiles, blockPower;
+  const bool                 powerWeighted = m_bPowerWeightedLights && m_uiAnalyticLightSamples != 0 && selection->m_uiSize > sizeof(xiiUInt32);
+  if (powerWeighted)
+  {
+    const xiiUInt32 candidateCount = xiiUInt32(selection->m_uiSize / sizeof(xiiUInt32));
+    const xiiUInt32 blockCount     = (candidateCount + 255U) / 256U;
+    const auto&     compute        = device->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
+    if (compute.m_uiMaxThreadGroupInvocations < 256 || compute.m_uiMaxThreadGroupSizeX < 256 || compute.m_uiMaxThreadGroupCountX < blockCount)
+      return context.ReportFailure("Ray light power scan exceeds compute group limits.");
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_LightScanPipeline, "Shaders/Pipeline/Passes/GlobalIllumination/LightPowerScan.xiiShader"));
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_BlockScanPipeline, "Shaders/Pipeline/Passes/GlobalIllumination/LightBlockScan.xiiShader"));
+    struct ScanData
+    {
+      xiiRenderGraphBufferHandle               m_Lights, m_Counts, m_Candidates, m_CDF, m_Power;
+      xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+      xiiUInt32                                m_Groups = 1;
+      bool                                     m_Global = false;
+    };
+    for (xiiUInt32 stage = 0; stage < 2; ++stage)
+    {
+      const auto setup = [&](ScanData& data, xiiRenderGraphBuilder& builder) {
+        data.m_Global   = stage != 0;
+        data.m_Pipeline = data.m_Global ? m_BlockScanPipeline : m_LightScanPipeline;
+        if (data.m_Global)
+        {
+          data.m_Power = builder.ReadBuffer(blockPower, xiiGALResourceStateFlags::ShaderResource);
+          data.m_CDF   = builder.WriteBuffer("GI light block CDF", xiiLightClusterPassUtils::Description(sizeof(float), blockCount), xiiGALResourceStateFlags::UnorderedAccess);
+        }
+        else
+        {
+          data.m_Lights     = builder.ReadBuffer(lights, xiiGALResourceStateFlags::ShaderResource);
+          data.m_Counts     = builder.ReadBuffer(counts, xiiGALResourceStateFlags::ShaderResource);
+          data.m_Candidates = builder.ReadBuffer(candidates, xiiGALResourceStateFlags::ShaderResource);
+          data.m_CDF        = builder.WriteBuffer("GI candidate power CDF", xiiLightClusterPassUtils::Description(sizeof(float), candidateCount), xiiGALResourceStateFlags::UnorderedAccess);
+          data.m_Power      = builder.WriteBuffer("GI light block power", xiiLightClusterPassUtils::Description(sizeof(float), blockCount), xiiGALResourceStateFlags::UnorderedAccess);
+          data.m_Groups     = blockCount;
+        }
+      };
+      const auto record = [](const ScanData& data, xiiRenderGraphPassContext& execute) {
+        auto& commands = execute.GetCommandList();
+        commands.SetPipelineState(data.m_Pipeline.Borrow());
+        const auto bind = [&](xiiStringView name, xiiRenderGraphBufferHandle buffer) {
+          commands.ResolveAndSetShaderResourceBufferView(xiiTempHashedString(name), execute.GetBuffer(buffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+        };
+        if (data.m_Global)
+        {
+          bind("g_BlockPower", data.m_Power);
+          commands.ResolveAndSetUnorderedAccessBufferView("g_BlockCDF", execute.GetBuffer(data.m_CDF)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        }
+        else
+        {
+          bind("g_Lights", data.m_Lights);
+          bind("g_LightCounts", data.m_Counts);
+          bind("g_LightCandidates", data.m_Candidates);
+          commands.ResolveAndSetUnorderedAccessBufferView("g_LightCDF", execute.GetBuffer(data.m_CDF)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+          commands.ResolveAndSetUnorderedAccessBufferView("g_BlockPower", execute.GetBuffer(data.m_Power)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        }
+        if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+        {
+          execute.ReportFailure("Could not bind ray light power scan resources.");
+          return;
+        }
+        xiiGALDispatchComputeDescription dispatch;
+        dispatch.m_uiThreadGroupCountX = data.m_Groups;
+        commands.DispatchCompute(dispatch);
+      };
+      const auto pass = context.m_Graph.AddPass<ScanData>(stage == 0 ? "GI candidate power scan" : "GI block power scan", m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, setup, record);
+      if (stage == 0)
+      {
+        lightCDF   = pass.first->m_CDF;
+        blockPower = pass.first->m_Power;
+      }
+      else
+        blockCDF = pass.first->m_CDF;
+    }
+  }
   struct Data
   {
     xiiRenderGraphTextureHandle                 m_Depth, m_Normal, m_Output;
     xiiRenderGraphBufferHandle                  m_Dependency, m_Camera, m_Constants, m_Materials, m_Geometry, m_Records;
     xiiRenderGraphBufferHandle                  m_Lights, m_LightCounts, m_LightCandidates, m_IESProfiles;
+    xiiRenderGraphBufferHandle                  m_LightCDF, m_BlockCDF;
     xiiRayTracedIrradianceConstants             m_Settings;
     xiiSharedPtr<xiiGALTopLevelAS>              m_Scene;
     xiiSharedPtr<xiiGALRayTracingPipelineState> m_Pipeline;
@@ -175,10 +255,12 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     data.m_LightCounts           = builder.ReadBuffer(counts, xiiGALResourceStateFlags::ShaderResource);
     data.m_LightCandidates       = builder.ReadBuffer(candidates, xiiGALResourceStateFlags::ShaderResource);
     data.m_IESProfiles           = builder.ReadBuffer(profiles, xiiGALResourceStateFlags::ShaderResource);
+    data.m_LightCDF              = builder.ReadBuffer(lightCDF, xiiGALResourceStateFlags::ShaderResource);
+    data.m_BlockCDF              = builder.ReadBuffer(blockCDF, xiiGALResourceStateFlags::ShaderResource);
     data.m_Scene                 = scene.m_pStructure;
     data.m_Output                = xiiCompositionPassUtils::Output(builder, size, xiiGALResourceFormat::RGBA32Float);
     data.m_Constants             = xiiRenderPassUtils::Constants(builder, "Ray irradiance settings", sizeof(data.m_Settings));
-    data.m_Settings.RayDistances = xiiVec4(m_fRayLength, m_fSurfaceBias, 0, 0);
+    data.m_Settings.RayDistances = xiiVec4(m_fRayLength, m_fSurfaceBias, powerWeighted ? 1.0f : 0.0f, 0);
     data.m_Settings.PathSamples  = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset, m_uiAnalyticLightSamples);
     data.m_Size                  = size;
     data.m_Stride                = stride;
@@ -211,6 +293,8 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     commands.ResolveAndSetShaderResourceBufferView("g_LightCounts", execute.GetBuffer(data.m_LightCounts)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
     commands.ResolveAndSetShaderResourceBufferView("g_LightCandidates", execute.GetBuffer(data.m_LightCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
     commands.ResolveAndSetShaderResourceBufferView("g_IESProfiles", execute.GetBuffer(data.m_IESProfiles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+    commands.ResolveAndSetShaderResourceBufferView("g_LightCDF", execute.GetBuffer(data.m_LightCDF)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+    commands.ResolveAndSetShaderResourceBufferView("g_BlockCDF", execute.GetBuffer(data.m_BlockCDF)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
     commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
     xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_RayTracingBuffers", stages);
     xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_RayTracingTextures", stages);

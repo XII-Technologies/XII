@@ -1650,8 +1650,9 @@ The existing shared point/spot photometric evaluator and finite-emitter sampler
 cover directional, point, spot, rectangle, disc, sphere and tube lights. The
 diffuse-only layered BRDF preserves Fresnel, metallic/transmission and coat energy
 policy; authored IES profiles and material occlusion remain part of the response.
-This is uniform candidate-domain sampling, not a power- or geometry-importance
-distribution. Small or highly unequal emitters can still have high variance.
+Uniform candidate-domain sampling remains available as an explicit comparison
+mode. The power-weighted proposal below reduces variance from unequal emitters;
+geometric importance and visibility-aware proposals remain separate work.
 
 Shadow-casting lights trace visibility from the actual secondary surface. Point
 and finite-emitter visibility ends before the sampled emitter; directional
@@ -1691,10 +1692,63 @@ fallback and retained-world regressions remain separate acceptance cases.
 
 GPU duration queries report the trace cost of this 21-by-15 correctness fixture
 when available. This is scoped instrumentation, not a representative performance
-baseline. Power/geometry importance sampling, emissive/environment next-event
-sampling, reservoir reuse, spatiotemporal denoising and DDGI scene updates remain
+baseline. Geometry importance sampling, emissive/environment next-event sampling,
+reservoir reuse, spatiotemporal denoising and DDGI scene updates remain
 outstanding. Runtime acceptance is Windows/Vulkan Debug; other backends, textured
 ray-shadow filtering and representative animated GI quality remain unverified.
+
+### Power-weighted analytic light proposals
+
+`PowerWeightedLights` defaults to true on the existing ray irradiance operation.
+Two graph-local GPU scans build a two-level CDF from the current view's candidate
+indices and immutable light/count uploads. The existing clustered-light emitted
+power calculation is shared through `LightPower.h`; directional sources use
+illuminance over a one-square-metre reference area only as a proposal heuristic.
+The estimator still evaluates the source's original photometric units and BRDF.
+
+The first scan uses 256-thread groups for local inclusive sums. A prefix maximum
+keeps stored intervals monotone despite floating-point reassociation. The second
+scan accumulates at most 4,096 block powers for the canonical 1,048,576-candidate
+limit. Selection uses binary searches over the block and local CDFs. It does not
+walk the light list at every ray hit. No CPU readback, new world registry or
+independent view cache is introduced. All tables and their build/read dependencies
+belong to the recording's render graph.
+
+The proposal mixes 95 percent power sampling with five percent uniform sampling.
+This preserves support for a dim light whose CDF interval rounds to zero. The
+weight uses actual stored interval widths at both levels and the complete mixture
+probability, rather than reconstructing an inconsistent theoretical power ratio.
+CDF upper endpoints are kept exclusive. Empty/zero-power distributions revert to
+uniform selection; nonfinite scan totals are cleared rather than sampled. A
+single candidate, disabled analytic sampling or an explicit uniform mode submits
+no distribution scans. The ordinary absent-depth and unsupported-ray fallbacks
+still bypass this workload.
+
+The candidate CDF uses four bytes per candidate, plus two four-byte arrays per
+256-candidate block before graph aliasing. The maximum transient table storage is
+4,227,072 bytes at the existing candidate cap. Active power scans require the
+validated 256-thread compute group and bounded dispatch dimensions. These resources
+are released with the graph/GAL recording lifetime; no temporal proposal history
+is retained.
+
+The shared Scene/Editor analytic fixture now runs 33 phases and six comparison
+views. At equal four-light sample budgets, an unequal coincident-light case is
+compared with its independently known linear sum. Placing the strongest source at
+the first or last list position reduces squared error from 1,311.415 / 1,253.272
+for uniform sampling to 13.872 / 13.535 for power sampling in this deterministic
+fixture. A 521-light case verifies the exact summed response across multiple CDF
+blocks and a partial final block. Removing all lights and retaining nonempty black
+light records both return zero. A dim blue source beside much stronger red sources
+retains positive transport near its independent enclosure reference, while excluded
+views remain blue-free. Existing photometric, cutout, shadow policy, resource-failure,
+HDR/presentation and ray-disabled fallback checks remain in place.
+
+The fixture also records both scan durations and trace durations when GPU query
+results retire. Error reductions and timings describe these controlled correctness
+scenes; they do not establish representative quality, convergence or frame time.
+Power is a view-independent heuristic within the view-eligible list. Distance,
+visibility and material-dependent proposals, emissive/environment importance
+sampling, reservoirs, denoising and DDGI remain outstanding.
 
 ## Ballistic billboard particles
 

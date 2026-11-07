@@ -96,6 +96,7 @@ SamplerState g_sAnisotropicWrap;
 StructuredBuffer<xiiGpuLightData> g_Lights;
 StructuredBuffer<uint4> g_LightCounts;
 StructuredBuffer<uint> g_LightCandidates;
+#include <Shaders/Pipeline/Passes/GlobalIllumination/LightPowerSampling.h>
 
 float IrradianceVisibility(float3 position, float3 normal, float3 direction, float maximumDistance, float coneWidth)
 {
@@ -124,14 +125,15 @@ float3 IrradianceAnalyticLighting(xiiRayTracingSurface surface, xiiRayTracingMat
   const uint activeCount=min(g_LightCounts[0].x,recordCount);
   if (activeCount==0 || PathSamples.w==0) return 0;
   const uint sampleCount=min(PathSamples.w,candidateCount);
-  const float weight=float(candidateCount)/float(max(sampleCount,1u));
   float3 result=0;
   // Use the complete view-eligible domain, not a primary receiver's screen
-  // cluster. Stratification bounds work while retaining every light's support.
+  // cluster. The GPU power distribution retains a uniform support component.
   [loop] for(uint sampleIndex=0;sampleIndex<sampleCount;++sampleIndex)
   {
     const float sample=(float(sampleIndex)+IrradianceRandom(randomState))/float(sampleCount);
-    const uint index=g_LightCandidates[min(uint(sample*float(candidateCount)),candidateCount-1)];
+    float probability;
+    const uint candidate=IrradianceSelectLight(sample,candidateCount,randomState,probability);
+    const uint index=g_LightCandidates[candidate];
     if(index>=activeCount) continue;
     const xiiGpuLightData light=g_Lights[index];
     const uint type=GetLightType(light);
@@ -170,7 +172,7 @@ float3 IrradianceAnalyticLighting(xiiRayTracingSurface surface, xiiRayTracingMat
     else continue;
     if(dot(surface.Normal,direction)<=0 || !any(contribution>0)) continue;
     const float visibility=light.ShadowData.x>0.5f ? IrradianceVisibility(position,surface.Normal,direction,maximumDistance,coneWidth) : 1;
-    result+=contribution*visibility*weight;
+    result+=contribution*visibility/(float(sampleCount)*probability);
   }
   return result*surface.Occlusion;
 }
