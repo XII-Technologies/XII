@@ -319,8 +319,9 @@ xiiResult xiiViewRenderModePass::Build(xiiRenderPipelinePassContext& context)
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Source = builder.ReadTexture(selected, xiiGALResourceStateFlags::ShaderResource);
-    if (historyMode && currentGI.IsValid()) (void)builder.ReadTexture(currentGI, xiiGALResourceStateFlags::ShaderResource);
-    data.m_Comparison = comparison.IsValid() ? builder.ReadTexture(comparison, xiiGALResourceStateFlags::ShaderResource) : data.m_Source;
+    if (historyMode && currentGI.IsValid())
+      (void)builder.ReadTexture(currentGI, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Comparison         = comparison.IsValid() ? builder.ReadTexture(comparison, xiiGALResourceStateFlags::ShaderResource) : data.m_Source;
     data.m_Depth = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Objects = builder.ReadTexture(objects, xiiGALResourceStateFlags::ShaderResource);
     data.m_Output = builder.WriteTexture("View visualization", outputDescription, xiiGALResourceStateFlags::UnorderedAccess);
