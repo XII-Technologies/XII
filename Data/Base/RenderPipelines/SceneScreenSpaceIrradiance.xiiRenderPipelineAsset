@@ -3897,6 +3897,7 @@ o
 		Uuid %Normal{u4{3907951674222111928,1485654795365769161}}
 		VarDict %ParameterOverrides{}
 		u3 %EnvironmentLightSamples{4}
+		b %UsePathReservoirs{1}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{8632694143691791933,10866714722446529810}}
@@ -4398,6 +4399,10 @@ o
 			Uuid{u4{10436821800869837494,5640439401995918703}}
 			Uuid{u4{11975731449043873125,3441958637848385876}}
 			Uuid{u4{13120050533259185441,3220185059429212080}}
+			Uuid{u4{13249960056270932743,15734606841303618251}}
+			Uuid{u4{12707546762049050574,2738267956810636839}}
+			Uuid{u4{10899068682903596043,2983296934718624302}}
+			Uuid{u4{10284109457975736611,1057376993200853527}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -9389,6 +9394,58 @@ o
 		s %SourcePin{"Irradiance"}
 		Uuid %Target{u4{13656174733021644500,10550638381264165073}}
 		s %TargetPin{"Background"}
+	}
+}
+o
+{
+	Uuid %id{u4{13249960056270932743,15734606841303618251}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11965124308639604302,15698323666074557157}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{12445614536573714179,5713849736353831241}}
+		s %TargetPin{"ReceiverVelocity"}
+	}
+}
+o
+{
+	Uuid %id{u4{12707546762049050574,2738267956810636839}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9245256847768731311,17843504811202138556}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{12445614536573714179,5713849736353831241}}
+		s %TargetPin{"ReceiverObject"}
+	}
+}
+o
+{
+	Uuid %id{u4{10899068682903596043,2983296934718624302}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{10871559952070083882,10043957367019756968}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{12445614536573714179,5713849736353831241}}
+		s %TargetPin{"ReceiverMaterial"}
+	}
+}
+o
+{
+	Uuid %id{u4{10284109457975736611,1057376993200853527}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12495311328907643866,32019792274741247}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{12445614536573714179,5713849736353831241}}
+		s %TargetPin{"TemporalCamera"}
 	}
 }
 }
