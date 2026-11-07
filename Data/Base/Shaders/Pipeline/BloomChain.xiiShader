@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 [PLATFORMS]
 ALL
 
@@ -5,12 +6,13 @@ ALL
 
 #include <Shaders/Common/StorageImageFormat.h>
 
-// Full-resolution soft-knee bloom extraction with a tent filter.
+// Soft-knee extraction, normalized reduction, and energy-preserving multiscale reconstruction.
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
 
 Texture2D<float4>   g_HDRIn;
+Texture2D<float4>   g_LowBloom;
 XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_BloomOut;
 
 float3 ExtractBloom(float3 color)
@@ -24,26 +26,33 @@ float3 ExtractBloom(float3 color)
   return max(color, 0.0f) * contribution;
 }
 
+float3 ReadBloom(float2 uv)
+{
+  const float3 color = g_HDRIn.SampleLevel(LinearClampSampler, uv, 0).rgb;
+  return BloomParameters.w < 0.5f ? ExtractBloom(all(isfinite(color)) ? max(color, 0) : 0) : max(color, 0);
+}
+
 [numthreads(8, 8, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
   uint2 dimensions;
   g_BloomOut.GetDimensions(dimensions.x, dimensions.y);
-  if (any(dispatchThreadId.xy >= dimensions))
+  if (any(tid.xy >= dimensions))
     return;
-
-  const float2 uv = (float2(dispatchThreadId.xy) + 0.5f) / float2(dimensions);
-  const float2 texel = rcp(float2(dimensions)) * BloomParameters.z;
-
-  float3 bloom = ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv, 0.0f).rgb) * 0.25f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(-texel.x, 0.0f), 0.0f).rgb) * 0.125f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(texel.x, 0.0f), 0.0f).rgb) * 0.125f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(0.0f, -texel.y), 0.0f).rgb) * 0.125f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(0.0f, texel.y), 0.0f).rgb) * 0.125f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(-texel.x, -texel.y), 0.0f).rgb) * 0.0625f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(texel.x, -texel.y), 0.0f).rgb) * 0.0625f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(-texel.x, texel.y), 0.0f).rgb) * 0.0625f;
-  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(texel.x, texel.y), 0.0f).rgb) * 0.0625f;
-
-  g_BloomOut[dispatchThreadId.xy] = float4(bloom, 1.0f);
+  const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
+  uint2 sourceSize;
+  g_HDRIn.GetDimensions(sourceSize.x, sourceSize.y);
+  const float2 texel = BloomParameters.z / float2(sourceSize);
+  float3 bloom = 0;
+  [unroll] for (int y = -1; y <= 1; ++y)
+    [unroll] for (int x = -1; x <= 1; ++x)
+  {
+    const float weight = (x == 0 ? 2.0f : 1.0f) * (y == 0 ? 2.0f : 1.0f) / 16.0f;
+    bloom += ReadBloom(uv + float2(x, y) * texel) * weight;
+  }
+  // A convex combination preserves a uniform field across level counts instead
+  // of amplifying its energy each time another scale is available.
+  if (BloomParameters.w > 1.5f)
+    bloom = lerp(bloom, max(g_LowBloom.SampleLevel(LinearClampSampler, uv, 0).rgb, 0), 0.5f);
+  g_BloomOut[tid.xy] = float4(all(isfinite(bloom)) ? clamp(bloom, 0, 65504.0f) : 0, 1);
 }

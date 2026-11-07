@@ -4,6 +4,7 @@
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/World/World.h>
+#include <Foundation/Containers/Map.h>
 #include <Foundation/Math/Color16f.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Time/Clock.h>
@@ -13,6 +14,7 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/BufferExportPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/CounterResetPass.h>
+#include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -131,6 +133,24 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
     const auto* binding  = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface(name, false));
     return views[view]->GetRenderGraph()->GetExportedBuffer(binding->m_hBuffer);
   };
+  struct BloomTiming
+  {
+    double    m_fMilliseconds = 0;
+    xiiUInt32 m_uiSamples     = 0;
+  };
+  xiiMap<xiiString, BloomTiming>                                                         bloomTimings;
+  xiiMutex                                                                               timingMutex;
+  xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex>::Unsubscriber timingSubscription;
+  xiiRenderGraphTimestampProfiler::s_TimingEvents.AddEventHandler([&](const xiiRenderGraphTimestampProfiler::TimingSample& sample) {
+    if (sample.m_bAvailable && !sample.m_bSubmission && sample.m_sName.GetView().StartsWith("Bloom "))
+    {
+      XII_LOCK(timingMutex);
+      auto& total = bloomTimings[xiiString(sample.m_sName.GetView())];
+      total.m_fMilliseconds += sample.m_fDurationMs;
+      ++total.m_uiSamples;
+    }
+  },
+                                                                  timingSubscription);
   xiiDynamicArray<xiiUInt32> initial[2];
   xiiUInt32                  initialHalo = 0;
   for (xiiUInt32 phase = 0; phase < 13; ++phase)
@@ -170,6 +190,11 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
       changed += final[0][pixel] != final[1][pixel];
       halo += final[0][pixel] != final[1][pixel] && hdr[0][pixel].x < 0.2f;
     }
+    xiiUInt32 bloomStages = 0;
+    for (const auto& pass : views[1]->GetRenderGraph()->GetCompiledPasses())
+      bloomStages += !pass.m_bIsCulled && pass.m_sName.GetView().StartsWith("Bloom ");
+    XII_TEST_INT(bloomStages, phase == 6 ? 0 : phase == 3 ? 1 :
+                                                            11);
     const auto bloom = image(1, "Bloom");
     XII_TEST_BOOL(bool(bloom) == (phase != 6));
     if (bloom)
@@ -179,6 +204,27 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
         return;
       for (const auto& pixel : light)
         XII_TEST_BOOL(pixel.ToLinearFloat().IsValid());
+      if (phase == 0)
+      {
+        xiiUInt32 minX = 129, maxX = 0, minY = 97, maxY = 0;
+        for (xiiUInt32 pixel = 0; pixel < hdr[1].GetCount(); ++pixel)
+          if (hdr[1][pixel].x > 1)
+          {
+            minX = xiiMath::Min(minX, pixel % 129);
+            maxX = xiiMath::Max(maxX, pixel % 129);
+            minY = xiiMath::Min(minY, pixel / 129);
+            maxY = xiiMath::Max(maxY, pixel / 129);
+          }
+        xiiUInt32 distantHalo = 0;
+        for (xiiUInt32 pixel = 0; pixel < light.GetCount(); ++pixel)
+        {
+          const auto x = pixel % 129, y = pixel / 129;
+          const bool distant = x + 10 < minX || x > maxX + 10 || y + 10 < minY || y > maxY + 10;
+          distantHalo += distant && light[pixel].ToLinearFloat().r > 0.001f;
+        }
+        XII_TEST_BOOL(distantHalo > 8);
+        xiiTestFramework::Output(xiiTestOutput::Details, "Multiscale bloom reaches %u pixels over ten pixels beyond the source bounds.", distantHalo);
+      }
       // Compare final composition against the actual GPU bloom and HDR inputs,
       // including exposure before tone mapping and the presentation transfer.
       for (xiiUInt32 pixel = 0; pixel < final[1].GetCount(); ++pixel)
@@ -213,6 +259,38 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
     if (phase == 2 || phase == 8 || phase == 11 || phase == 12)
       XII_TEST_BOOL(final[0] == initial[0] && final[1] == initial[1]);
     xiiTestFramework::Output(xiiTestOutput::Details, "Bloom phase %u: %u final pixels, %u halo pixels", phase, changed, halo);
+  }
+  // Constant radiance must not gain energy when the number of pyramid levels
+  // changes. Include odd, narrow and single-pixel viewports through real Scene.
+  emitter->GetOwner()->SetLocalScaling(xiiVec3(1, 1000, 1000));
+  for (const auto extent : {xiiSizeU32(9, 11), xiiSizeU32(65, 1), xiiSizeU32(1, 65), xiiSizeU32(1, 1)})
+  {
+    resize(extent.width, extent.height);
+    auto uniform              = views[1]->GetDisplayOutputSettings();
+    uniform.m_fBloomThreshold = uniform.m_fBloomKnee = 0;
+    uniform.m_fBloomRadius                           = 2;
+    uniform.m_fBloomStrength                         = 1;
+    XII_TEST_RESULT(views[1]->SetDisplayOutputSettings(uniform));
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    if (!XII_TEST_RESULT(views[1]->GetLastRenderResult()))
+      return;
+    xiiDynamicArray<xiiVec4>           hdr;
+    xiiDynamicArray<xiiColorLinear16f> light;
+    if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(1, "HDRSceneColor"), hdr) || !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(1, "Bloom"), light))
+      return;
+    for (xiiUInt32 pixel = 0; pixel < light.GetCount(); ++pixel)
+    {
+      XII_TEST_FLOAT(hdr[pixel].x, 32.0f, 0.005f);
+      for (xiiUInt32 channel = 0; channel < 3; ++channel)
+        XII_TEST_FLOAT(light[pixel].ToLinearFloat().GetData()[channel], hdr[pixel].GetData()[channel], 0.005f);
+    }
+  }
+  emitter->GetOwner()->SetLocalScaling(xiiVec3(1));
+  {
+    XII_LOCK(timingMutex);
+    for (const auto& entry : bloomTimings)
+      xiiTestFramework::Output(xiiTestOutput::Details, "%s: %.4f ms average over %u GPU samples.", entry.Key().GetData(), entry.Value().m_fMilliseconds / entry.Value().m_uiSamples, entry.Value().m_uiSamples);
   }
   resize(1, 1);
   auto*      clock         = xiiClock::GetGlobalClock();
