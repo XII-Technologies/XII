@@ -75,6 +75,17 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
   for (const auto& connection : descriptor.m_Connections)
     rayPrimary |= descriptor.m_Passes[connection.m_uiTarget].m_Id == selected && connection.m_sInput == "Primary" && descriptor.m_Passes[connection.m_uiSource].m_pType->GetTypeName() == "xiiRayTracedIrradiancePass";
   XII_TEST_BOOL(screenFallback && rayPrimary);
+  const auto rayTrace    = xiiFindPipelineTestPass(descriptor, "xiiRayTracedIrradiancePass");
+  const auto worldLights = xiiFindPipelineTestPass(descriptor, "xiiWorldLightsUploadPass");
+  for (const xiiStringView input : {"Lights", "LightCounts", "LightCandidates", "IESProfiles"})
+  {
+    const xiiStringView output    = input == "LightCounts" ? "Counts" : input == "LightCandidates" ? "Candidates" :
+                                                                                                     input;
+    bool                connected = false;
+    for (const auto& edge : descriptor.m_Connections)
+      connected |= descriptor.m_Passes[edge.m_uiSource].m_Id == worldLights && edge.m_sOutput == output && descriptor.m_Passes[edge.m_uiTarget].m_Id == rayTrace && edge.m_sInput == input;
+    XII_TEST_BOOL(connected);
+  }
   bool diffuseBounce = false, reactiveBounce = false;
   for (const auto& connection : descriptor.m_Connections)
     if (descriptor.m_Passes[connection.m_uiSource].m_Id == selected && connection.m_sOutput == "Texture")
