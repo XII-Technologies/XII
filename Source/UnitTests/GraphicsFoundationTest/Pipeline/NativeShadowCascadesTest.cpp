@@ -145,6 +145,9 @@ XII_CREATE_SIMPLE_TEST(NativeShadowCascades, SharedDefinitionPrivateCameraSnapsh
           XII_TEST_BOOL(xiiMemoryUtils::IsEqual(&gpu.CascadeViewProjection[c], &expected, 1));
           XII_TEST_FLOAT(gpu.CascadeSplitDepths.GetData()[c], c < snapshots[i].GetCount() ? snapshots[i][c].m_fSplitFar : 0, 0.00001f);
           XII_TEST_FLOAT(gpu.CascadeWorldRadii.GetData()[c], c < snapshots[i].GetCount() ? snapshots[i][c].m_fWorldRadius : 0, 0.00001f);
+          const auto* pass = static_cast<const xiiShadowCascadePass*>(pipelines[v].GetPass(i));
+          XII_TEST_FLOAT(gpu.CascadeBlendStarts.GetData()[c], c < snapshots[i].GetCount() ? xiiMath::Lerp(snapshots[i][c].m_fSplitFar, snapshots[i][c].m_fSplitNear, pass->m_Settings.m_fCascadeBlendFraction) : 0, 0.00001f);
+          XII_TEST_FLOAT(gpu.CascadeFiltering.x, pass->m_Settings.m_fFilterRadius, 0);
         }
       }
       XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());

@@ -32,6 +32,31 @@ XII_CREATE_SIMPLE_TEST(Lighting, ShadowCascades)
     fPreviousFar = cascade.m_fSplitFar;
   }
   XII_TEST_FLOAT(cascades.PeekBack().m_fSplitFar, settings.m_fMaximumShadowDistance, 0.01f);
+
+  // The next projection must cover the whole transition before the logical split,
+  // including the corners at the previous cascade's blend start.
+  for (xiiUInt32 i = 1; i < cascades.GetCount(); ++i)
+  {
+    const auto& previous   = cascades[i - 1];
+    const float distance   = xiiMath::Lerp(previous.m_fSplitFar, previous.m_fSplitNear, settings.m_fCascadeBlendFraction);
+    const float halfHeight = distance * xiiMath::Tan(camera.GetFovY(16.0f / 9.0f) * 0.5f);
+    const float halfWidth  = halfHeight * 16.0f / 9.0f;
+    for (float x : {-1.0f, 1.0f})
+      for (float y : {-1.0f, 1.0f})
+      {
+        const auto corner = camera.GetPosition() + camera.GetDirForwards() * distance + camera.GetDirRight() * (x * halfWidth) + camera.GetDirUp() * (y * halfHeight);
+        const auto clip   = cascades[i].m_mViewProjection.TransformPosition(corner);
+        XII_TEST_BOOL(xiiMath::Abs(clip.x) <= 1 && xiiMath::Abs(clip.y) <= 1 && clip.z >= 0 && clip.z <= 1);
+      }
+  }
+
+  settings.m_fCascadeBlendFraction = -0.1f;
+  XII_TEST_BOOL(xiiShadowCascadeUtils::Build(camera, 1, xiiVec3(0, 0, -1), settings, cascades).Failed());
+  XII_TEST_BOOL(cascades.IsEmpty());
+  settings.m_fCascadeBlendFraction = 0.1f;
+  settings.m_fFilterRadius         = xiiMath::NaN<float>();
+  XII_TEST_BOOL(xiiShadowCascadeUtils::Build(camera, 1, xiiVec3(0, 0, -1), settings, cascades).Failed());
+  settings.m_fFilterRadius = 1;
   for (const xiiVec2 range : {xiiVec2(-10, 30), xiiVec2(-50, -10)})
   {
     camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 8, range.x, range.y);

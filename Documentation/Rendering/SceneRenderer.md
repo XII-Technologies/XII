@@ -562,9 +562,25 @@ Defaults are four 1024 by 1024 cascades, 120 metres maximum distance and 50 metr
 light-space depth padding. The atlas occupies 16 MiB before graph allocation
 overhead. Extents, splits and padding remain reflected cascade settings. Sampling
 exposes normalized depth bias, world normal bias and normal bias in shadow-texel
-units. Four explicit comparison taps provide bilinear PCF, clamped within each
-tile. The resolution-aware normal offset prevents flat receivers from acquiring
-self-shadowing when atlas resolution changes. There is no temporal shadow history.
+units. `Settings.FilterRadius` selects a normalized 3 by 3 tent of bilinear
+comparison samples (0–4 shadow texels); zero retains four-tap bilinear PCF.
+Every comparison tap is clamped to its cascade tile. `CascadeBlendFraction`
+(0–0.5, default 0.1) blends the end of each logical interval into the next
+cascade. Its projection and caster frustum include the preceding transition,
+so the second sample has real coverage. The last interval fades to unshadowed
+light at the maximum distance. Logical splits and texel stabilization remain intact.
+
+`SoftShadows` enables a bounded 16-sample PCSS blocker search for world lights.
+The selected light publishes sin(half source angle); the preparation pass converts
+this to its tangent. The sampler converts orthographic reversed-depth separation
+to world metres using the projection depth gradient, then to a penumbra radius in
+shadow texels. `MaximumPenumbraTexels` bounds the search and filter (4–64, default
+16); `FilterRadius` is the minimum footprint. Zero-size sources use PCF. A missing
+world source has no angular extent. Search and filtering include the centre and
+clamp within the same tile. This finite search/kernel approximates penumbrae;
+small distant blockers and very wide sources need representative quality testing.
+Opaque and transparent surfaces call the same sampling implementation. The
+resolution-aware normal offset remains in use. There is no temporal shadow history.
 
 `Enabled=false`, no directional emitter, zero intensity or the selected emitter's
 `CastShadows=false` produces no cascades, atlas or visibility. Directional lighting
@@ -617,8 +633,10 @@ texel-aware bias fixes; the recording regression verifies failure diagnostics,
 stopped dependent work and a successful green-image readback after recovery.
 
 This is a conventional directional cascade path. Point/area shadows, virtual-page
-shadow residency, hardware-ray shadows, contact-shadow tracing, angular-source
-penumbrae, atmospheric shadowing and cascade-blend quality remain separate work.
+shadow residency, hardware-ray shadows, contact-shadow tracing and atmospheric
+shadowing remain separate work. PCSS and cascade transitions now execute in the
+ordinary Scene path; production-scale penumbra and transition quality remain to
+be evaluated.
 Animated/cutout shadow content, stereo, large-world performance, other backends and
 interactive desktop acceptance require further effect-specific validation.
 

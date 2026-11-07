@@ -7,7 +7,7 @@
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiShadowCascadeSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiShadowCascadeSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiShadowCascadeSettings, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiShadowCascadeSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -16,6 +16,10 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiShadowCascadeSettings, xiiNoBase, 1, xiiRTTID
     XII_MEMBER_PROPERTY("MaximumShadowDistance", m_fMaximumShadowDistance)->AddAttributes(new xiiDefaultValueAttribute(250.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("DepthPadding", m_fDepthPadding)->AddAttributes(new xiiDefaultValueAttribute(50.0f), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("ShadowMapResolution", m_uiShadowMapResolution)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
+    XII_MEMBER_PROPERTY("CascadeBlendFraction", m_fCascadeBlendFraction)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f), new xiiDefaultValueAttribute(0.1f)),
+    XII_MEMBER_PROPERTY("FilterRadius", m_fFilterRadius)->AddAttributes(new xiiClampValueAttribute(0.0f, 4.0f), new xiiDefaultValueAttribute(1.0f)),
+    XII_MEMBER_PROPERTY("SoftShadows", m_bSoftShadows)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("MaximumPenumbraTexels", m_fMaximumPenumbraTexels)->AddAttributes(new xiiClampValueAttribute(4.0f, 64.0f), new xiiDefaultValueAttribute(16.0f)),
   }
   XII_END_PROPERTIES;
 }
@@ -36,6 +40,10 @@ namespace
 xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRatio, const xiiVec3& vLightDirection, const xiiShadowCascadeSettings& settings, xiiStaticArray<xiiShadowCascadeDescription, 4>& out_cascades)
 {
   out_cascades.Clear();
+  if (!xiiMath::IsFinite(settings.m_fCascadeBlendFraction) || settings.m_fCascadeBlendFraction < 0 || settings.m_fCascadeBlendFraction > 0.5f ||
+      !xiiMath::IsFinite(settings.m_fFilterRadius) || settings.m_fFilterRadius < 0 || settings.m_fFilterRadius > 4 ||
+      !xiiMath::IsFinite(settings.m_fMaximumPenumbraTexels) || settings.m_fMaximumPenumbraTexels < 4 || settings.m_fMaximumPenumbraTexels > 64)
+    return XII_FAILURE;
 
   const xiiUInt32 uiCascadeCount = xiiMath::Clamp(settings.m_uiCascadeCount, 1U, 4U);
   const float     fNearPlane     = camera.IsOrthographic() ? camera.GetNearPlane() : xiiMath::Max(camera.GetNearPlane(), 0.001f);
@@ -55,7 +63,8 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
   const float   fDepthPadding   = xiiMath::Max(settings.m_fDepthPadding, 0.0f);
   const float   fResolution     = static_cast<float>(xiiMath::Max(settings.m_uiShadowMapResolution, 1U));
 
-  float fPreviousSplit = fNearPlane;
+  float fPreviousSplit      = fNearPlane;
+  float fPreviousBlendStart = fNearPlane;
   for (xiiUInt32 uiCascade = 0U; uiCascade < uiCascadeCount; ++uiCascade)
   {
     const float fT            = static_cast<float>(uiCascade + 1U) / static_cast<float>(uiCascadeCount);
@@ -69,14 +78,14 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
     {
       const float fHalfWidth  = camera.GetDimensionX(fAspectRatio) * 0.5f;
       const float fHalfHeight = camera.GetDimensionY(fAspectRatio) * 0.5f;
-      AddFrustumPlaneCorners(vCameraPosition + vCameraForward * fPreviousSplit, vCameraRight, vCameraUp, fHalfWidth, fHalfHeight, &vCorners[0]);
+      AddFrustumPlaneCorners(vCameraPosition + vCameraForward * fPreviousBlendStart, vCameraRight, vCameraUp, fHalfWidth, fHalfHeight, &vCorners[0]);
       AddFrustumPlaneCorners(vCameraPosition + vCameraForward * fSplitFar, vCameraRight, vCameraUp, fHalfWidth, fHalfHeight, &vCorners[4]);
     }
     else
     {
       const float fTanHalfFovY = xiiMath::Tan(camera.GetFovY(fAspectRatio) * 0.5f);
       const float fTanHalfFovX = xiiMath::Tan(camera.GetFovX(fAspectRatio) * 0.5f);
-      AddFrustumPlaneCorners(vCameraPosition + vCameraForward * fPreviousSplit, vCameraRight, vCameraUp, fPreviousSplit * fTanHalfFovX, fPreviousSplit * fTanHalfFovY, &vCorners[0]);
+      AddFrustumPlaneCorners(vCameraPosition + vCameraForward * fPreviousBlendStart, vCameraRight, vCameraUp, fPreviousBlendStart * fTanHalfFovX, fPreviousBlendStart * fTanHalfFovY, &vCorners[0]);
       AddFrustumPlaneCorners(vCameraPosition + vCameraForward * fSplitFar, vCameraRight, vCameraUp, fSplitFar * fTanHalfFovX, fSplitFar * fTanHalfFovY, &vCorners[4]);
     }
 
@@ -124,7 +133,10 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
     cascade.m_fSplitNear                 = fPreviousSplit;
     cascade.m_fSplitFar                  = fSplitFar;
     cascade.m_fWorldRadius               = fRadius;
-    fPreviousSplit                       = fSplitFar;
+    // The next projection includes this interval's transition region. Logical
+    // split depths remain unchanged for selection and distance-based fading.
+    fPreviousBlendStart = xiiMath::Lerp(fSplitFar, fPreviousSplit, settings.m_fCascadeBlendFraction);
+    fPreviousSplit      = fSplitFar;
   }
 
   return XII_SUCCESS;
