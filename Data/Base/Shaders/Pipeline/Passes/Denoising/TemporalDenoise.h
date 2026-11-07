@@ -18,8 +18,26 @@ Texture2D<float4> g_PreviousSurface : register(t9);
 XII_STORAGE_IMAGE_FORMAT(XII_DENOISE_FORMAT)
 RWTexture2D<float4> g_DenoisedOutput : register(u10);
 #if defined(XII_DENOISE_CAPTURE_SURFACE)
-XII_STORAGE_IMAGE_FORMAT("rgba16f")
+#  if !defined(XII_DENOISE_SURFACE_FORMAT)
+#    define XII_DENOISE_SURFACE_FORMAT "rgba16f"
+#  endif
+XII_STORAGE_IMAGE_FORMAT(XII_DENOISE_SURFACE_FORMAT)
 RWTexture2D<float4> g_CurrentSurface : register(u11);
+#endif
+
+#if defined(XII_DENOISE_MATERIAL_VALIDATION)
+Texture2D<uint>   g_ObjectId : register(t12);
+Texture2D<float4> g_GBufferMaterial : register(t13);
+uint2             SignalIdentity(uint2 pixel)
+{
+  const uint4 material = (uint4)round(saturate(g_GBufferMaterial.Load(int3(pixel, 0))) * 255.0f);
+  return uint2(g_ObjectId.Load(int3(pixel, 0)), material.x | (material.y << 8u) | (material.z << 16u) | (material.w << 24u));
+}
+#endif
+#if defined(XII_DENOISE_CAPTURE_IDENTITY)
+Texture2D<uint2> g_PreviousIdentity : register(t14);
+XII_STORAGE_IMAGE_FORMAT("rg32ui")
+RWTexture2D<uint2> g_CurrentIdentity : register(u15);
 #endif
 
 float4 LoadSignal(int2 pixel, uint2 dimensions)
@@ -44,6 +62,11 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
   const uint2 pixel   = dispatchThreadId.xy;
   const float depth   = g_SceneDepth.Load(int3(pixel, 0));
   float4      current = LoadSignal(int2(pixel), dimensions);
+  if (SignalMode == 1u)
+    current = all(isfinite(current)) ? max(current, 0.0f) : 0.0f;
+#if defined(XII_DENOISE_CAPTURE_IDENTITY)
+  g_CurrentIdentity[pixel] = SignalIdentity(pixel);
+#endif
 #if defined(XII_DENOISE_CAPTURE_SURFACE)
   // Keep the reprojection surface in this pass instance's own history. Capturing
   // it here avoids a dependency on a lighting algorithm's unrelated history.
@@ -81,7 +104,13 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
       if (abs(sampleLinearDepth - linearDepth) > max(linearDepth * DepthThreshold, 0.01f) || dot(sampleNormal, normal) < NormalThreshold)
         continue;
 
+#if defined(XII_DENOISE_MATERIAL_VALIDATION)
+      if (any(SignalIdentity(uint2(samplePixel)) != SignalIdentity(pixel)))
+        continue;
+#endif
       const float4 sampleSignal = LoadSignal(samplePixel, dimensions);
+      if (!all(isfinite(sampleSignal)))
+        continue;
       localMinimum              = min(localMinimum, sampleSignal);
       localMaximum              = max(localMaximum, sampleSignal);
       spatialSum += sampleSignal;
@@ -115,6 +144,13 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
   }
 
   const uint2  previousPixel   = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
+#  if defined(XII_DENOISE_CAPTURE_IDENTITY)
+  if (any(g_PreviousIdentity.Load(int3(previousPixel, 0)) != SignalIdentity(pixel)))
+  {
+    g_DenoisedOutput[pixel] = current;
+    return;
+  }
+#  endif
   const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
   const float3 previousNormal  = DecodeOctNormal(previousSurface.xy);
 #  if defined(XII_DENOISE_REPROJECT_DEPTH)
@@ -132,6 +168,8 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
   }
 
   float4 history          = g_PreviousSignal.Load(int3(previousPixel, 0));
+  if (!all(isfinite(history)))
+    history = current;
   history                 = SignalMode == 1U ? history : history.xxxx;
   history                 = clamp(history, localMinimum, localMaximum);
   g_DenoisedOutput[pixel] = lerp(current, history, saturate(HistoryWeight));
