@@ -11,8 +11,9 @@ struct IrradiancePayload
   float3 Radiance;
   uint Depth;
   float ConeWidth, ConeSpread;
-  uint Random, Reserved;
+  uint Random, Flags;
 };
+static const uint XII_IRRADIANCE_VISIBILITY_RAY = 1u;
 uint IrradianceHash(uint value)
 {
   value ^= value >> 16; value *= 0x7feb352du;
@@ -56,7 +57,7 @@ void main()
   [loop] for (uint sampleIndex=0; sampleIndex<PathSamples.x; ++sampleIndex)
   {
     IrradiancePayload payload;
-    payload.Radiance=0; payload.Depth=0; payload.Reserved=0;
+    payload.Radiance=0; payload.Depth=0; payload.Flags=0;
     payload.Random=IrradianceHash(pixel.x+pixel.y*extent.x+(PathSamples.z+sampleIndex+1)*0x9e3779b9u);
     payload.ConeWidth=footprint;
     payload.ConeSpread=footprint/max(length(position-SurfaceCameraPositionNear.xyz),1e-3f);
@@ -79,7 +80,7 @@ void main(inout IrradiancePayload payload)
 {
   // The ordinary environment consumer owns sky illumination. Scene-only transport
   // must not count that boundary condition again on an escaped path.
-  payload.Radiance=0;
+  payload.Radiance=(payload.Flags & XII_IRRADIANCE_VISIBILITY_RAY)!=0 ? 1.0f : 0.0f;
 }
 [RAY_CLOSEST_HIT_SHADER]
 RaytracingAccelerationStructure g_Scene;
@@ -90,7 +91,89 @@ Texture2D<float4> g_RayTracingTextures[];
 SamplerState g_sAnisotropicWrap;
 #include <Shaders/Pipeline/Passes/RayTracing/RayTracingSurface.h>
 #define XII_BRDF_VIEW_MODE ViewRenderMode_DiffuseOnly
-#include <Shaders/Pipeline/SurfaceBRDF.h>
+#include <Shaders/Pipeline/SurfaceLocalLight.h>
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingEmitterSampling.h>
+StructuredBuffer<xiiGpuLightData> g_Lights;
+StructuredBuffer<uint4> g_LightCounts;
+StructuredBuffer<uint> g_LightCandidates;
+
+float IrradianceVisibility(float3 position, float3 normal, float3 direction, float maximumDistance, float coneWidth)
+{
+  if (maximumDistance<=0.001f) return 1;
+  RayDesc ray;
+  ray.Origin=position+normal*RayDistances.y;
+  ray.Direction=direction;
+  ray.TMin=0.001f; ray.TMax=maximumDistance;
+  IrradiancePayload visibility;
+  visibility.Radiance=0; visibility.Depth=0; visibility.Random=0;
+  visibility.Flags=XII_IRRADIANCE_VISIBILITY_RAY;
+  visibility.ConeWidth=coneWidth; visibility.ConeSpread=0;
+  // Force any-hit for ordinary opaque meshes too: shadow-casting policy and
+  // alpha cutouts are evaluated independently of diffuse path intersections.
+  TraceRay(g_Scene,RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_FORCE_NON_OPAQUE,
+    0xff,0,1,0,ray,visibility);
+  return visibility.Radiance.x;
+}
+
+float3 IrradianceAnalyticLighting(xiiRayTracingSurface surface, xiiRayTracingMaterialData material,
+  float3 position, float3 viewDirection, float coneWidth, inout uint randomState)
+{
+  uint recordCount, recordStride, candidateCount, candidateStride;
+  g_Lights.GetDimensions(recordCount,recordStride);
+  g_LightCandidates.GetDimensions(candidateCount,candidateStride);
+  const uint activeCount=min(g_LightCounts[0].x,recordCount);
+  if (activeCount==0 || PathSamples.w==0) return 0;
+  const uint sampleCount=min(PathSamples.w,candidateCount);
+  const float weight=float(candidateCount)/float(max(sampleCount,1u));
+  float3 result=0;
+  // Use the complete view-eligible domain, not a primary receiver's screen
+  // cluster. Stratification bounds work while retaining every light's support.
+  [loop] for(uint sampleIndex=0;sampleIndex<sampleCount;++sampleIndex)
+  {
+    const float sample=(float(sampleIndex)+IrradianceRandom(randomState))/float(sampleCount);
+    const uint index=g_LightCandidates[min(uint(sample*float(candidateCount)),candidateCount-1)];
+    if(index>=activeCount) continue;
+    const xiiGpuLightData light=g_Lights[index];
+    const uint type=GetLightType(light);
+    float3 direction, contribution;
+    float maximumDistance=RayDistances.x;
+    if(type==XII_LIGHT_TYPE_DIRECTIONAL)
+    {
+      direction=normalize(-light.DirectionAndType.xyz);
+      contribution=BRDFLayered(saturate(surface.BaseColor),surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),
+        surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness,surface.Normal,direction,viewDirection)*
+        max(light.ColorAndIntensity.rgb*light.ColorAndIntensity.w,0);
+    }
+    else if(type>=XII_LIGHT_TYPE_POINT && type<=XII_LIGHT_TYPE_TUBE)
+    {
+      const float first=IrradianceRandom(randomState);
+      const float2 xi=float2(first,IrradianceRandom(randomState));
+      float3 emitter; float projectedArea;
+      xiiSampleRayTracingLocalEmitter(light,position,xi,emitter,projectedArea);
+      const float3 toEmitter=emitter-position;
+      const float distance=length(toEmitter);
+      if(distance<=0.001f) continue;
+      direction=toEmitter/distance;
+      maximumDistance=max(distance-2*RayDistances.y,0.001f);
+      if(type>=XII_LIGHT_TYPE_RECTANGLE)
+        contribution=EvaluateAreaLightSample(light,emitter,projectedArea,position,surface.Normal,viewDirection,
+          saturate(surface.BaseColor),surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),
+          surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness);
+      else
+      {
+        xiiGpuLightData sampled=light;
+        sampled.PositionAndInvRange.xyz=emitter;
+        contribution=EvaluateLocalLightLayered(sampled,position,surface.Normal,viewDirection,saturate(surface.BaseColor),
+          surface.Roughness,surface.Metallic,saturate(material.SurfaceParameters.y),surface.Transmission,surface.ClearCoat,surface.ClearCoatRoughness);
+      }
+    }
+    else continue;
+    if(dot(surface.Normal,direction)<=0 || !any(contribution>0)) continue;
+    const float visibility=light.ShadowData.x>0.5f ? IrradianceVisibility(position,surface.Normal,direction,maximumDistance,coneWidth) : 1;
+    result+=contribution*visibility*weight;
+  }
+  return result*surface.Occlusion;
+}
 [shader("closesthit")]
 void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
@@ -99,8 +182,11 @@ void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttribu
   payload.Radiance=surface.Emission;
   // Emission is independent of receiving illumination. Unlit/nonreceiving hits
   // terminate the diffuse path without inventing reflected light.
-  if (payload.Depth+1>=PathSamples.y || material.Metadata.z==6u || (material.Metadata.w & 4096u)==0 || !all(isfinite(surface.Normal)) || dot(surface.Normal,surface.Normal)<0.5f) return;
+  if (material.Metadata.z==6u || (material.Metadata.w & 4096u)==0 || !all(isfinite(surface.Normal)) || dot(surface.Normal,surface.Normal)<0.5f) return;
   const float3 position=WorldRayOrigin()+WorldRayDirection()*RayTCurrent();
+  const float coneWidth=max(payload.ConeWidth+RayTCurrent()*payload.ConeSpread,1e-6f);
+  payload.Radiance+=IrradianceAnalyticLighting(surface,material,position,normalize(-WorldRayDirection()),coneWidth,payload.Random);
+  if(payload.Depth+1>=PathSamples.y) return;
   IrradiancePayload child=payload;
   child.Radiance=0; child.Depth++;
   child.ConeWidth=max(payload.ConeWidth+RayTCurrent()*payload.ConeSpread,1e-6f);
@@ -127,5 +213,7 @@ SamplerState g_sAnisotropicWrap;
 [shader("anyhit")]
 void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
+  if((payload.Flags & XII_IRRADIANCE_VISIBILITY_RAY)!=0 && (g_RayTracingMaterials[InstanceIndex()].Metadata.w & 8192u)==0)
+  { IgnoreHit(); return; }
   if(xiiShouldIgnoreRayTracingHitWithRayCone(InstanceIndex(),PrimitiveIndex(),attributes.barycentrics,payload.ConeWidth+RayTCurrent()*payload.ConeSpread)) IgnoreHit();
 }

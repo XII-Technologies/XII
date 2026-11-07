@@ -3,8 +3,10 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/RayTracedIrradiancePass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/LightClusterPassUtils.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
@@ -28,10 +30,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("Scene", m_Scene)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Materials", m_Materials)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Geometry", m_Geometry)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("Lights", m_Lights)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("LightCounts", m_LightCounts)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("LightCandidates", m_LightCandidates)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("IESProfiles", m_IESProfiles)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("Irradiance", m_Irradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(8U), new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("MaximumHits", m_uiMaximumHits)->AddAttributes(new xiiDefaultValueAttribute(2U), new xiiClampValueAttribute(1U, 4U)),
     XII_MEMBER_PROPERTY("SampleOffset", m_uiSampleOffset),
+    XII_MEMBER_PROPERTY("AnalyticLightSamples", m_uiAnalyticLightSamples)->AddAttributes(new xiiDefaultValueAttribute(4U), new xiiClampValueAttribute(0U, 8U)),
     XII_MEMBER_PROPERTY("RayLength", m_fRayLength)->AddAttributes(new xiiDefaultValueAttribute(20.0f)),
     XII_MEMBER_PROPERTY("SurfaceBias", m_fSurfaceBias)->AddAttributes(new xiiDefaultValueAttribute(0.02f)),
     XII_MEMBER_PROPERTY("AllowUnsupportedHardware", m_bAllowUnsupportedHardware)->AddAttributes(new xiiDefaultValueAttribute(false)),
@@ -43,7 +50,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
 xiiResult xiiRayTracedIrradiancePass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return m_uiSampleCount > 0 && m_uiSampleCount <= 32 && m_uiMaximumHits > 0 && m_uiMaximumHits <= 4 && xiiMath::IsFinite(m_fRayLength) && m_fRayLength > 0.001f && m_fRayLength <= 100000 && xiiMath::IsFinite(m_fSurfaceBias) && m_fSurfaceBias >= 0 && m_fSurfaceBias <= 10 ? XII_SUCCESS : XII_FAILURE;
+  return m_uiSampleCount > 0 && m_uiSampleCount <= 32 && m_uiMaximumHits > 0 && m_uiMaximumHits <= 4 && m_uiAnalyticLightSamples <= 8 && xiiMath::IsFinite(m_fRayLength) && m_fRayLength > 0.001f && m_fRayLength <= 100000 && xiiMath::IsFinite(m_fSurfaceBias) && m_fSurfaceBias >= 0 && m_fSurfaceBias <= 10 ? XII_SUCCESS : XII_FAILURE;
 }
 xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -66,6 +73,19 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_Irradiance, depth, outputSize));
   if (outputSize != size)
     return context.ReportFailure("Ray irradiance requires input-sized output.");
+  const auto  lights = context.GetInputBuffer(m_Lights), counts = context.GetInputBuffer(m_LightCounts), candidates = context.GetInputBuffer(m_LightCandidates), profiles = context.GetInputBuffer(m_IESProfiles);
+  const auto* records   = context.m_Graph.GetBufferDescription(lights);
+  const auto* selection = context.m_Graph.GetBufferDescription(candidates);
+  const auto* ies       = context.m_Graph.GetBufferDescription(profiles);
+  using xiiLightClusterPassUtils::Buffer;
+  if (!records || !records->m_uiSize || records->m_uiSize % sizeof(xiiGpuLightData) || records->m_uiSize / sizeof(xiiGpuLightData) > 1048576 ||
+      !Buffer(context, lights, sizeof(xiiGpuLightData), records->m_uiSize / sizeof(xiiGpuLightData), xiiGALBindFlags::ShaderResource) ||
+      !selection || !selection->m_uiSize || selection->m_uiSize % sizeof(xiiUInt32) || selection->m_uiSize / sizeof(xiiUInt32) > records->m_uiSize / sizeof(xiiGpuLightData) ||
+      !Buffer(context, candidates, sizeof(xiiUInt32), selection->m_uiSize / sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource) ||
+      !ies || !ies->m_uiSize || (ies->m_uiSize != sizeof(float) && ies->m_uiSize % (2048 * sizeof(float))) ||
+      !Buffer(context, profiles, sizeof(float), ies->m_uiSize / sizeof(float), xiiGALBindFlags::ShaderResource) ||
+      !Buffer(context, counts, sizeof(xiiVec4U32), 1, xiiGALBindFlags::ShaderResource))
+    return context.ReportFailure("Ray irradiance requires canonical light, count, view-candidate and IES records.");
   const auto                 scene = context.GetInputAccelerationStructure(m_Scene);
   xiiRenderPassResourceScope scope(context);
   if (scene.IsEmpty())
@@ -89,7 +109,8 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
   const auto* g = context.m_Graph.GetBufferDescription(geometry);
   if (!scene.IsValid() || !context.m_Graph.GetBufferDescription(scene.m_Dependency) || !m || !g || m->m_Mode != xiiGALBufferMode::Structured || g->m_Mode != xiiGALBufferMode::Structured || m->m_uiElementByteStride != sizeof(xiiRayTracingMaterialData) || g->m_uiElementByteStride != sizeof(xiiRayTracingGeometryData) || m->m_uiSize / sizeof(xiiRayTracingMaterialData) != g->m_uiSize / sizeof(xiiRayTracingGeometryData) || m->m_uiSize == 0 || m->m_uiSize % sizeof(xiiRayTracingMaterialData) != 0 || g->m_uiSize % sizeof(xiiRayTracingGeometryData) != 0 || !m->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !g->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     return context.ReportFailure("Ray irradiance requires a current TLAS dependency and matching canonical hit records.");
-  if (!limits.m_uiShaderGroupHandleSize || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupBaseAlignment) || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupHandleAlignment) || limits.m_uiMaxRecursionDepth < m_uiMaximumHits)
+  const xiiUInt32 recursionDepth = m_uiMaximumHits + (m_uiAnalyticLightSamples != 0 ? 1U : 0U);
+  if (!limits.m_uiShaderGroupHandleSize || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupBaseAlignment) || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupHandleAlignment) || limits.m_uiMaxRecursionDepth < recursionDepth)
     return context.ReportFailure("Ray irradiance exceeds shader record or recursion capabilities.");
   const auto stride = xiiMemoryUtils::AlignSize(xiiUInt64(limits.m_uiShaderGroupHandleSize), xiiUInt64(xiiMath::Max(limits.m_uiShaderGroupBaseAlignment, limits.m_uiShaderGroupHandleAlignment)));
   if (stride > limits.m_uiMaxShaderRecordStride || stride > xiiMath::MaxValue<xiiUInt32>() / 3U)
@@ -101,7 +122,7 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     return context.ReportFailure("Ray irradiance shader is unavailable.");
   xiiGALRayTracingPipelineStateCreationDescription description;
   description.m_pPipelineResourceSignature               = shader->GetPipelineResourceSignature();
-  description.m_RayTracingPipeline.m_uiMaxRecursionDepth = m_uiMaximumHits;
+  description.m_RayTracingPipeline.m_uiMaxRecursionDepth = recursionDepth;
   description.m_uiMaximumPayloadSize                     = 32;
   description.m_uiMaximumAttributeSize                   = 8;
   auto& generation                                       = description.m_GeneralShaders.ExpandAndGetRef();
@@ -135,6 +156,7 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
   {
     xiiRenderGraphTextureHandle                 m_Depth, m_Normal, m_Output;
     xiiRenderGraphBufferHandle                  m_Dependency, m_Camera, m_Constants, m_Materials, m_Geometry, m_Records;
+    xiiRenderGraphBufferHandle                  m_Lights, m_LightCounts, m_LightCandidates, m_IESProfiles;
     xiiRayTracedIrradianceConstants             m_Settings;
     xiiSharedPtr<xiiGALTopLevelAS>              m_Scene;
     xiiSharedPtr<xiiGALRayTracingPipelineState> m_Pipeline;
@@ -149,11 +171,15 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     data.m_Dependency            = builder.ReadBuffer(scene.m_Dependency, xiiGALResourceStateFlags::BuildASRead);
     data.m_Materials             = builder.ReadBuffer(materials, xiiGALResourceStateFlags::ShaderResource);
     data.m_Geometry              = builder.ReadBuffer(geometry, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Lights                = builder.ReadBuffer(lights, xiiGALResourceStateFlags::ShaderResource);
+    data.m_LightCounts           = builder.ReadBuffer(counts, xiiGALResourceStateFlags::ShaderResource);
+    data.m_LightCandidates       = builder.ReadBuffer(candidates, xiiGALResourceStateFlags::ShaderResource);
+    data.m_IESProfiles           = builder.ReadBuffer(profiles, xiiGALResourceStateFlags::ShaderResource);
     data.m_Scene                 = scene.m_pStructure;
     data.m_Output                = xiiCompositionPassUtils::Output(builder, size, xiiGALResourceFormat::RGBA32Float);
     data.m_Constants             = xiiRenderPassUtils::Constants(builder, "Ray irradiance settings", sizeof(data.m_Settings));
     data.m_Settings.RayDistances = xiiVec4(m_fRayLength, m_fSurfaceBias, 0, 0);
-    data.m_Settings.PathSamples  = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset, 0);
+    data.m_Settings.PathSamples  = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset, m_uiAnalyticLightSamples);
     data.m_Size                  = size;
     data.m_Stride                = stride;
     data.m_Pipeline              = pipeline;
@@ -181,6 +207,10 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     const auto stages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
     commands.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", execute.GetBuffer(data.m_Materials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stages);
     commands.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stages);
+    commands.ResolveAndSetShaderResourceBufferView("g_Lights", execute.GetBuffer(data.m_Lights)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+    commands.ResolveAndSetShaderResourceBufferView("g_LightCounts", execute.GetBuffer(data.m_LightCounts)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+    commands.ResolveAndSetShaderResourceBufferView("g_LightCandidates", execute.GetBuffer(data.m_LightCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+    commands.ResolveAndSetShaderResourceBufferView("g_IESProfiles", execute.GetBuffer(data.m_IESProfiles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
     commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
     xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_RayTracingBuffers", stages);
     xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_RayTracingTextures", stages);
