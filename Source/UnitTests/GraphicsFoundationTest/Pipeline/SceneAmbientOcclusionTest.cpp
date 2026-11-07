@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 #include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+#include <GraphicsFoundationTest/Pipeline/SceneTemporalAOTestUtils.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/World/World.h>
@@ -14,6 +15,7 @@
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionTemporalPass.h>
 #include <GraphicsCore/Pipeline/Passes/Preparation/ViewConstantsPass.h>
+#include <GraphicsCore/Pipeline/Passes/Temporal/TemporalCameraPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -262,6 +264,9 @@ XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, RetainedRecordingsAndInvalidationB
   properties.Insert("UseRayTracing", false);
   const auto ao     = descriptor.AddPass("Ambient visibility", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), properties);
   const auto filter = descriptor.AddPass("Temporal filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
+  const auto temporalCamera = descriptor.AddPass("Temporal camera", xiiGetStaticRTTI<xiiTemporalCameraPass>());
+  descriptor.m_Passes[temporalCamera].m_Properties.Insert("Enabled", false);
+  XII_TEST_RESULT(descriptor.Connect(temporalCamera, "TemporalCamera", filter, "TemporalCamera"));
   for (const auto pass : {ao, filter})
   {
     XII_TEST_RESULT(descriptor.Connect(source, "Depth", pass, "SceneDepth"));
@@ -412,4 +417,109 @@ XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, UnsupportedStorageFormatFailsAndAu
     }
     graph.EndSetup();
   }
+}
+
+XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, TemporalCameraMotionDisocclusionAndIndependentWorlds) { xiiSceneTemporalAOTest::Run(false); }
+
+XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, BoundedRetainedHistoryAndReverseExecution)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  xiiRenderPipelineResourceDescriptor descriptor;
+  const auto                          source = descriptor.AddPass("Empty surface", xiiGetStaticRTTI<xiiScreenEffectTestSource>());
+  const auto                          camera = descriptor.AddPass("View constants", xiiGetStaticRTTI<xiiViewConstantsPass>());
+  xiiVariantDictionary                properties;
+  properties.Insert("UseRayTracing", false);
+  const auto ao             = descriptor.AddPass("Ambient visibility", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), properties);
+  const auto filter         = descriptor.AddPass("Temporal filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
+  const auto temporalCamera = descriptor.AddPass("Temporal camera", xiiGetStaticRTTI<xiiTemporalCameraPass>());
+  descriptor.m_Passes[temporalCamera].m_Properties.Insert("Enabled", false);
+  XII_TEST_RESULT(descriptor.Connect(temporalCamera, "TemporalCamera", filter, "TemporalCamera"));
+  for (const auto pass : {ao, filter})
+  {
+    XII_TEST_RESULT(descriptor.Connect(source, "Depth", pass, "SceneDepth"));
+    XII_TEST_RESULT(descriptor.Connect(camera, "PerFrameCamera", pass, "PerFrameCamera"));
+    XII_TEST_RESULT(descriptor.Connect(camera, "PerFrameGlobal", pass, "PerFrameGlobal"));
+  }
+  XII_TEST_RESULT(descriptor.Connect(source, "Attributes", ao, "NormalRoughness"));
+  XII_TEST_RESULT(descriptor.Connect(source, "Attributes", filter, "GBufferNormal"));
+  XII_TEST_RESULT(descriptor.Connect(source, "Attributes", filter, "DilatedVelocityBuffer"));
+  XII_TEST_RESULT(descriptor.Connect(ao, "RawAO", filter, "RawAO"));
+  descriptor.m_Interface.PushBack({"Previous", false, descriptor.m_Passes[filter].m_Id, "PreviousAO"});
+  descriptor.m_Interface.PushBack({"Current", false, descriptor.m_Passes[filter].m_Id, "StableAO"});
+  const auto             resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("SceneAO.Retained", std::move(descriptor));
+  xiiWorldDescription    worldDescription("AO recording retirement");
+  xiiUniquePtr<xiiWorld> world = XII_DEFAULT_NEW(xiiWorld, worldDescription);
+  xiiCamera              cameraObject;
+  cameraObject.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiView* views[2];
+  {
+    XII_LOCK(world->GetWriteMarker());
+    auto* module = world->GetOrCreateModule<xiiRenderWorldModule>();
+    for (auto& view : views)
+    {
+      module->CreateView("AO recording view", view);
+      view->SetCamera(&cameraObject);
+      view->SetViewport({0, 0, 8, 8});
+    }
+  }
+  xiiRenderPipelineInstance instance;
+  if (!XII_TEST_RESULT(instance.Synchronize(resource)))
+    return;
+  xiiRenderGraphTestContext   contexts[9];
+  xiiRenderGraphTextureHandle outputs[8];
+  xiiRenderGraphFrame         frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  XII_SCOPE_EXIT(frame.End());
+  for (xiiUInt32 index = 0; index < 9; ++index)
+  {
+    auto& context = contexts[index];
+    if (!XII_TEST_RESULT(context.Initialize("Bounded retained AO")))
+      return;
+    auto& graph = context.GetGraph();
+    auto& cache = context.GetResourceCache();
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    graph.BeginSetup(frame.GetFrameIndex());
+    const auto result = instance.Build(views[0], graph, context.GetBlackboard());
+    if (index == 8)
+    {
+      XII_TEST_BOOL(result.Failed());
+      XII_TEST_BOOL(instance.GetLastBuildError().FindSubString("history capacity") != nullptr);
+    }
+    else
+    {
+      if (!XII_TEST_RESULT_MSG(result, "%s", instance.GetLastBuildError().GetStartPointer()))
+        return;
+      outputs[index] = instance.GetInterfaceBinding(instance.GetPipeline()->FindInterface("Current", false))->m_hTexture;
+      graph.AddPass<xiiUInt32>("Capture retained mask", xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) { builder.ExportTexture(builder.ReadTexture(outputs[index], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+    }
+    graph.EndSetup();
+  }
+  instance.Clear();
+  world.Clear();
+  xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 8> images;
+  for (xiiUInt32 index = 8; index-- > 0;)
+  {
+    auto& context = contexts[index];
+    auto& graph   = context.GetGraph();
+    auto& cache   = context.GetResourceCache();
+    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
+      return;
+    auto image = graph.GetExportedTexture(outputs[index]);
+    for (const auto& other : images)
+      XII_TEST_BOOL(other != image);
+    images.PushBack(image);
+    xiiDynamicArray<xiiUInt8> pixels;
+    if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image, pixels))
+      return;
+    for (const auto value : pixels)
+      XII_TEST_INT(value, 255);
+  }
+  for (auto& context : contexts)
+    context.GetResourceCache().EndFrame();
 }
