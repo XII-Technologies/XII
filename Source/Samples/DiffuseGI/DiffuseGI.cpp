@@ -43,6 +43,8 @@ namespace
   xiiCommandLineOptionInt    opt_Frames("DiffuseGI", "-frames", "Frames of temporal accumulation per image.", 20, 2, 240);
   xiiCommandLineOptionString opt_Pipeline("DiffuseGI", "-pipeline", "Authored root to render: Scene or Editor.", "Scene");
   xiiCommandLineOptionBool   opt_SkyOnly("DiffuseGI", "-sky-only", "Light the room with the sky and disable the emissive panel.", false);
+  xiiCommandLineOptionBool   opt_NoReuse("DiffuseGI", "-no-reuse", "Use fresh ray paths instead of reservoir resampling.", false);
+  xiiCommandLineOptionInt    opt_Paths("DiffuseGI", "-paths", "Override fresh ray paths per pixel (zero uses the authored count).", 0, 0, 32);
   xiiCommandLineOptionBool   opt_NoRay("DiffuseGI", "-no-ray", "Disable hardware rays to render the scene probe fallback.", false);
   xiiCommandLineOptionBool   opt_ScreenOnly("DiffuseGI", "-screen-only", "Use only screen-space diffuse transport for comparison.", false);
   xiiCommandLineOptionBool   opt_Diagnostics("DiffuseGI", "-diagnostics", "Also capture the Editor GI inspection views.", false);
@@ -66,10 +68,13 @@ namespace
     if (!library || !library->GetAuthoring())
       return {};
     const auto& workload = library->GetAuthoring()->m_Descriptor;
-    xiiUuid     ray;
+    xiiUuid     ray, trace;
     for (const auto& edge : workload.m_Connections)
       if (edge.m_sInput == "Depth" && workload.m_Passes[edge.m_uiTarget].m_pType == xiiGetStaticRTTI<xiiRayTracedIrradiancePass>())
-        ray = workload.m_Passes[edge.m_uiSource].m_Id;
+      {
+        ray   = workload.m_Passes[edge.m_uiSource].m_Id;
+        trace = workload.m_Passes[edge.m_uiTarget].m_Id;
+      }
     if (!ray.IsValid())
       return {};
     const auto gate = bScreenOnly ? xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth") : ray;
@@ -81,6 +86,19 @@ namespace
           setting.m_Path.PushBack(gi);
         setting.m_Path.PushBack(gate);
         setting.m_Properties.Insert("Enabled", true);
+        const auto paths     = opt_Paths.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+        const bool freshOnly = opt_NoReuse.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+        if (freshOnly || paths != 0)
+        {
+          auto& transport = node.m_Overrides.ExpandAndGetRef();
+          if (bEditor)
+            transport.m_Path.PushBack(gi);
+          transport.m_Path.PushBack(trace);
+          if (freshOnly)
+            transport.m_Properties.Insert("UsePathReservoirs", false);
+          if (paths != 0)
+            transport.m_Properties.Insert("SampleCount", xiiUInt32(paths));
+        }
         return xiiResourceManager::CreateResource<xiiRenderPipelineResource>(bEditor ? "DiffuseGI.Editor" : "DiffuseGI.Scene", std::move(descriptor));
       }
     return {};
@@ -307,8 +325,14 @@ private:
       }
       device->WaitIdle();
       for (const auto& pass : view->GetRenderGraph()->GetCompiledPasses())
-        if (!pass.m_bIsCulled && pass.m_sName == "Update Directional Scene Probes")
+      {
+        if (pass.m_bIsCulled)
+          continue;
+        if (pass.m_sName == "Update Directional Scene Probes")
           xiiLog::Info("{} used the scene probe update.", sFilename);
+        else if (pass.m_sName == "Reuse Diffuse Path Reservoirs")
+          xiiLog::Info("{} read previous diffuse path reservoirs.", sFilename);
+      }
       xiiLog::Info("Saving {}.", sFilename);
       return SaveImage(*device, target.Borrow(), xiiStringBuilder(":capture/", sFilename));
     };
