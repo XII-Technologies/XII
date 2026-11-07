@@ -17,6 +17,8 @@ public:
   xiiRenderPipelineTextureOutputPin m_Previous{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Undefined, 1, xiiRenderPipelinePinAccess::Read, true};
   /// Large copies may use the transfer queue. Disable for small copies that would fragment graphics work.
   bool m_bAsyncCopy = true;
+  bool m_bAllowAbsentTexture = false;
+  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
   xiiTextureHistoryPass();
   ~xiiTextureHistoryPass();
   xiiResult Build(xiiRenderPipelinePassContext& context) override;

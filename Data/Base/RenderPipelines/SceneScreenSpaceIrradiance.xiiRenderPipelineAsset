@@ -302,6 +302,68 @@ o
 }
 o
 {
+	Uuid %id{u4{9554384275971742537,13582276472139700560}}
+	s %t{"xiiRenderPipelinePinConfiguration"}
+	u3 %v{1}
+	p
+	{
+		s %DisplayName{""}
+		Uuid %Id{u4{10815530158107356372,15798956770522715102}}
+		Uuid %Metadata{u4{9874986404915727787,17752615043441122430}}
+		b %OverrideResolution{0}
+		s %RequiredFormat{"xiiGALResourceFormat::Unknown"}
+		Uuid %Requirements{u4{9775867584351486341,10691807389471496408}}
+		Uuid %Resolution{u4{12954117976364625872,11884968703089334902}}
+	}
+}
+o
+{
+	Uuid %id{u4{9874986404915727787,17752615043441122430}}
+	s %t{"xiiRenderPipelinePinMetadata"}
+	u3 %v{1}
+	p
+	{
+		s %Access{"xiiRenderPipelinePinAccess::Read"}
+		s %Cardinality{"xiiRenderPipelinePinCardinality::Single"}
+		s %DataType{""}
+		s %DeclaredFormat{"xiiGALResourceFormat::Unknown"}
+		b %Input{1}
+		s %Name{"EnvironmentLight"}
+		b %Optional{0}
+		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
+		b %TemporalHistory{0}
+	}
+}
+o
+{
+	Uuid %id{u4{9775867584351486341,10691807389471496408}}
+	s %t{"xiiRenderPipelinePinConstraints"}
+	u3 %v{1}
+	p
+	{
+		s %Dimension{"xiiGALResourceDimension::Undefined"}
+		u3 %Height{0}
+		s %RequiredBindFlags{"xiiGALBindFlags::UniformBuffer"}
+		u3 %Samples{0}
+		u3 %Width{0}
+	}
+}
+o
+{
+	Uuid %id{u4{12954117976364625872,11884968703089334902}}
+	s %t{"xiiRenderPipelineTextureResolution"}
+	u3 %v{1}
+	p
+	{
+		u3 %Height{0}
+		s %Input{""}
+		s %Mode{"xiiRenderPipelineTextureResolutionMode::Viewport"}
+		f %Scale{0x0000803F}
+		u3 %Width{0}
+	}
+}
+o
+{
 	Uuid %id{u4{17527460707750734110,4113445835405847170}}
 	s %t{"xiiRenderPipelineAssetInterface"}
 	u3 %v{1}
@@ -309,6 +371,7 @@ o
 	{
 		VarArray %Pins
 		{
+			Uuid{u4{9554384275971742537,13582276472139700560}}
 			Uuid{u4{13762086784777800381,11728167925311755048}}
 			Uuid{u4{11007396990331621226,11457271826446722572}}
 			Uuid{u4{8063081550135198948,3273292946234137189}}
@@ -3552,8 +3615,8 @@ o
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{9000406585918981807,7353685555621889077}}
-		s %SourcePin{"Irradiance"}
+		Uuid %Source{u4{13656174733021644500,10550638381264165073}}
+		s %SourcePin{"Radiance"}
 		Uuid %Target{u4{10618163638397072933,3287145398020038343}}
 		s %TargetPin{"Fallback"}
 	}
@@ -4296,6 +4359,45 @@ o
 			Uuid{u4{12923943719691877824,15973876538130782713}}
 			Uuid{u4{9962220265890284526,9045538646220363332}}
 			Uuid{u4{9783935214680309305,7729268666975474340}}
+			Uuid{u4{13186808058188631388,8827266497969150285}}
+			Uuid{u4{12482054529105444321,11248964219323045277}}
+			Uuid{u4{13812287952165243202,9397708050005446737}}
+			Uuid{u4{13258530891675007069,14020017486229363560}}
+			Uuid{u4{13297757652200910820,1940050702760038993}}
+			Uuid{u4{13656174733021644500,10550638381264165073}}
+			Uuid{u4{9711123189025302554,16571325650911449207}}
+			Uuid{u4{11212876315114318016,667347903612802395}}
+			Uuid{u4{10815530158107356372,15798956770522715102}}
+			Uuid{u4{10666055411571854848,17901144057102684688}}
+			Uuid{u4{10676011468364941060,15727800280314174056}}
+			Uuid{u4{9293788450160685220,6236477949262123202}}
+			Uuid{u4{11160292915853172504,4944330388774608457}}
+			Uuid{u4{10081347177145710018,14571273395713105731}}
+			Uuid{u4{10585040035975363839,16829127553000756066}}
+			Uuid{u4{13253465790882835545,2168374078920351351}}
+			Uuid{u4{9243663255488768616,17801904022664663269}}
+			Uuid{u4{9540349140903017066,4294645418584723849}}
+			Uuid{u4{10746094778455954021,16400390096522728041}}
+			Uuid{u4{13348286395764850357,17438966762121678946}}
+			Uuid{u4{9350506030219466952,11512272792921595573}}
+			Uuid{u4{10133837796816520554,9698310157433002206}}
+			Uuid{u4{9526553537556655361,7240369718078102980}}
+			Uuid{u4{13622852247633189694,11651123370756431714}}
+			Uuid{u4{11151313759813800764,1926687850074757612}}
+			Uuid{u4{13668555935350251969,16349987329377261882}}
+			Uuid{u4{13433026279104676058,17357853362900259159}}
+			Uuid{u4{12072178930265619151,7232995153304441784}}
+			Uuid{u4{9429847195776179249,17519896772681356686}}
+			Uuid{u4{11558872336055543853,17916847949614833069}}
+			Uuid{u4{10844980407944447078,12153413947444059267}}
+			Uuid{u4{13239968914590052757,5631882997577440944}}
+			Uuid{u4{10147588658853472109,9346991810514016506}}
+			Uuid{u4{13223968007104842439,15210381175469464671}}
+			Uuid{u4{12385819218821054551,13936996240237091581}}
+			Uuid{u4{11345989175104639113,1977904130709476133}}
+			Uuid{u4{10436821800869837494,5640439401995918703}}
+			Uuid{u4{11975731449043873125,3441958637848385876}}
+			Uuid{u4{13120050533259185441,3220185059429212080}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -8774,6 +8876,519 @@ o
 		s %SourcePin{"Value"}
 		Uuid %Target{u4{12445614536573714179,5713849736353831241}}
 		s %TargetPin{"ReflectionProbes"}
+	}
+}
+o
+{
+	Uuid %id{u4{13186808058188631388,8827266497969150285}}
+	s %t{"xiiDDGIProbeSchedulePass"}
+	u3 %v{1}
+	p
+	{
+		b %RequireActivation{1}
+		b %SkipOnRayHardware{1}
+		b %DirectionalAtlas{1}
+		u3 %ProbeCountX{10}
+		u3 %ProbeCountY{10}
+		u3 %ProbeCountZ{6}
+		u3 %UpdateBudget{96}
+		f %Spacing{0x0000803F}
+		f %Hysteresis{0x0000603F}
+		f %ForwardOffset{0x0000C040}
+		Vec2 %Node::Pos{f{-1200,2200}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{12482054529105444321,11248964219323045277}}
+	s %t{"xiiDDGIProbeUploadPass"}
+	u3 %v{1}
+	p
+	{
+		b %AllowAbsentSchedule{1}
+		Vec2 %Node::Pos{f{-780,2200}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{13812287952165243202,9397708050005446737}}
+	s %t{"xiiDDGIAtlasPreparePass"}
+	u3 %v{1}
+	p
+	{
+		b %AllowAbsentSchedule{1}
+		Vec2 %Node::Pos{f{-780,2600}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{13258530891675007069,14020017486229363560}}
+	s %t{"xiiDDGISceneUpdatePass"}
+	u3 %v{1}
+	p
+	{
+		b %AllowAbsentSchedule{1}
+		Vec2 %Node::Pos{f{-340,2200}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{13297757652200910820,1940050702760038993}}
+	s %t{"xiiDDGIProbeGatherPass"}
+	u3 %v{1}
+	p
+	{
+		b %RequireSchedule{1}
+		Vec2 %Node::Pos{f{130,2200}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{13656174733021644500,10550638381264165073}}
+	s %t{"xiiConfidenceBlendPass"}
+	u3 %v{1}
+	p
+	{
+		b %AllowAbsentBackground{1}
+		Vec2 %Node::Pos{f{640,1980}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{9711123189025302554,16571325650911449207}}
+	s %t{"xiiTextureHistoryPass"}
+	u3 %v{1}
+	p
+	{
+		b %AllowAbsentTexture{1}
+		b %AsyncCopy{0}
+		Vec2 %Node::Pos{f{160,2690}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{11212876315114318016,667347903612802395}}
+	s %t{"xiiTextureHistoryPass"}
+	u3 %v{1}
+	p
+	{
+		b %AllowAbsentTexture{1}
+		b %AsyncCopy{0}
+		Vec2 %Node::Pos{f{160,2910}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{10815530158107356372,15798956770522715102}}
+	s %t{"xiiRenderPipelineInterfacePass"}
+	u3 %v{1}
+	p
+	{
+		s %Name{"EnvironmentLight"}
+		b %Input{1}
+		s %ResourceType{"xiiRenderPipelinePinType::Buffer"}
+		s %Format{"xiiGALResourceFormat::Unknown"}
+		s %DataType{""}
+		Vec2 %Node::Pos{f{-700,1200}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{10666055411571854848,17901144057102684688}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11652863349732954288,3444043266629784499}}
+		s %SourcePin{"Output"}
+		Uuid %Target{u4{13186808058188631388,8827266497969150285}}
+		s %TargetPin{"Activation"}
+	}
+}
+o
+{
+	Uuid %id{u4{10676011468364941060,15727800280314174056}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13186808058188631388,8827266497969150285}}
+		s %SourcePin{"Schedule"}
+		Uuid %Target{u4{12482054529105444321,11248964219323045277}}
+		s %TargetPin{"Schedule"}
+	}
+}
+o
+{
+	Uuid %id{u4{9293788450160685220,6236477949262123202}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13186808058188631388,8827266497969150285}}
+		s %SourcePin{"Schedule"}
+		Uuid %Target{u4{13812287952165243202,9397708050005446737}}
+		s %TargetPin{"Schedule"}
+	}
+}
+o
+{
+	Uuid %id{u4{11160292915853172504,4944330388774608457}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13186808058188631388,8827266497969150285}}
+		s %SourcePin{"Schedule"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"Schedule"}
+	}
+}
+o
+{
+	Uuid %id{u4{10081347177145710018,14571273395713105731}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13186808058188631388,8827266497969150285}}
+		s %SourcePin{"Schedule"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"Schedule"}
+	}
+}
+o
+{
+	Uuid %id{u4{10585040035975363839,16829127553000756066}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13258530891675007069,14020017486229363560}}
+		s %SourcePin{"Irradiance"}
+		Uuid %Target{u4{9711123189025302554,16571325650911449207}}
+		s %TargetPin{"Texture"}
+	}
+}
+o
+{
+	Uuid %id{u4{13253465790882835545,2168374078920351351}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9711123189025302554,16571325650911449207}}
+		s %SourcePin{"PreviousTexture"}
+		Uuid %Target{u4{13186808058188631388,8827266497969150285}}
+		s %TargetPin{"PreviousIrradiance"}
+	}
+}
+o
+{
+	Uuid %id{u4{9243663255488768616,17801904022664663269}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9711123189025302554,16571325650911449207}}
+		s %SourcePin{"PreviousTexture"}
+		Uuid %Target{u4{13812287952165243202,9397708050005446737}}
+		s %TargetPin{"PreviousIrradiance"}
+	}
+}
+o
+{
+	Uuid %id{u4{9540349140903017066,4294645418584723849}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13812287952165243202,9397708050005446737}}
+		s %SourcePin{"Irradiance"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"InitialIrradiance"}
+	}
+}
+o
+{
+	Uuid %id{u4{10746094778455954021,16400390096522728041}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13258530891675007069,14020017486229363560}}
+		s %SourcePin{"Distance"}
+		Uuid %Target{u4{11212876315114318016,667347903612802395}}
+		s %TargetPin{"Texture"}
+	}
+}
+o
+{
+	Uuid %id{u4{13348286395764850357,17438966762121678946}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11212876315114318016,667347903612802395}}
+		s %SourcePin{"PreviousTexture"}
+		Uuid %Target{u4{13186808058188631388,8827266497969150285}}
+		s %TargetPin{"PreviousDistance"}
+	}
+}
+o
+{
+	Uuid %id{u4{9350506030219466952,11512272792921595573}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{11212876315114318016,667347903612802395}}
+		s %SourcePin{"PreviousTexture"}
+		Uuid %Target{u4{13812287952165243202,9397708050005446737}}
+		s %TargetPin{"PreviousDistance"}
+	}
+}
+o
+{
+	Uuid %id{u4{10133837796816520554,9698310157433002206}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13812287952165243202,9397708050005446737}}
+		s %SourcePin{"Distance"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"InitialDistance"}
+	}
+}
+o
+{
+	Uuid %id{u4{9526553537556655361,7240369718078102980}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12482054529105444321,11248964219323045277}}
+		s %SourcePin{"ProbeStates"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"InitialProbeStates"}
+	}
+}
+o
+{
+	Uuid %id{u4{13622852247633189694,11651123370756431714}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12482054529105444321,11248964219323045277}}
+		s %SourcePin{"ProbeConstants"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"ProbeConstants"}
+	}
+}
+o
+{
+	Uuid %id{u4{11151313759813800764,1926687850074757612}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12482054529105444321,11248964219323045277}}
+		s %SourcePin{"ProbeUpdates"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"ProbeUpdates"}
+	}
+}
+o
+{
+	Uuid %id{u4{13668555935350251969,16349987329377261882}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{747811905671392311,6559114985411012901}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{13433026279104676058,17357853362900259159}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{6441549013804575813,3617582968409376587}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{12072178930265619151,7232995153304441784}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1254413632475313362,4761580695535360372}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"Camera"}
+	}
+}
+o
+{
+	Uuid %id{u4{9429847195776179249,17519896772681356686}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{747811905671392311,6559114985411012901}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"SceneDepth"}
+	}
+}
+o
+{
+	Uuid %id{u4{11558872336055543853,17916847949614833069}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{6441549013804575813,3617582968409376587}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"GBufferNormal"}
+	}
+}
+o
+{
+	Uuid %id{u4{10844980407944447078,12153413947444059267}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1254413632475313362,4761580695535360372}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"PerFrameCamera"}
+	}
+}
+o
+{
+	Uuid %id{u4{13239968914590052757,5631882997577440944}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{600512914285023517,7953483257674553232}}
+		s %SourcePin{"Radiance"}
+		Uuid %Target{u4{13258530891675007069,14020017486229363560}}
+		s %TargetPin{"SourceRadiance"}
+	}
+}
+o
+{
+	Uuid %id{u4{10147588658853472109,9346991810514016506}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{10815530158107356372,15798956770522715102}}
+		s %SourcePin{"Value"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"EnvironmentLight"}
+	}
+}
+o
+{
+	Uuid %id{u4{13223968007104842439,15210381175469464671}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{12482054529105444321,11248964219323045277}}
+		s %SourcePin{"ProbeConstants"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"DDGIProbeConstants"}
+	}
+}
+o
+{
+	Uuid %id{u4{12385819218821054551,13936996240237091581}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13258530891675007069,14020017486229363560}}
+		s %SourcePin{"ProbeStates"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"DDGIProbeStates"}
+	}
+}
+o
+{
+	Uuid %id{u4{11345989175104639113,1977904130709476133}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13258530891675007069,14020017486229363560}}
+		s %SourcePin{"Irradiance"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"DDGIProbeIrradianceAtlas"}
+	}
+}
+o
+{
+	Uuid %id{u4{10436821800869837494,5640439401995918703}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13258530891675007069,14020017486229363560}}
+		s %SourcePin{"Distance"}
+		Uuid %Target{u4{13297757652200910820,1940050702760038993}}
+		s %TargetPin{"DDGIProbeDistanceAtlas"}
+	}
+}
+o
+{
+	Uuid %id{u4{11975731449043873125,3441958637848385876}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13297757652200910820,1940050702760038993}}
+		s %SourcePin{"DDGIIrradiance"}
+		Uuid %Target{u4{13656174733021644500,10550638381264165073}}
+		s %TargetPin{"Layer"}
+	}
+}
+o
+{
+	Uuid %id{u4{13120050533259185441,3220185059429212080}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9000406585918981807,7353685555621889077}}
+		s %SourcePin{"Irradiance"}
+		Uuid %Target{u4{13656174733021644500,10550638381264165073}}
+		s %TargetPin{"Background"}
 	}
 }
 }

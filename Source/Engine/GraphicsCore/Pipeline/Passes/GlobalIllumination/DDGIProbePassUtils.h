@@ -14,8 +14,9 @@ namespace xiiDDGIProbePassUtils
     const auto&                               counts   = snapshot->m_Constants.ProbeCountsAndUpdateCount;
     const xiiUInt64                           count    = xiiUInt64(counts.x) * counts.y * counts.z;
     return count && count <= 1048576 && snapshot->m_Probes.GetCount() == count && snapshot->m_Updates.GetCount() == counts.w && counts.w && counts.w <= count &&
-        snapshot->m_AtlasSize.HasNonZeroArea() && snapshot->m_AtlasSize.width == xiiUInt32(snapshot->m_Constants.MinimumCellAndAtlasWidth.w) &&
-        xiiUInt64(snapshot->m_AtlasSize.width) * snapshot->m_AtlasSize.height >= count ?
+        snapshot->m_AtlasSize.HasNonZeroArea() && snapshot->m_Constants.MinimumCellAndAtlasWidth.w > 0 &&
+        snapshot->m_AtlasSize.width == xiiUInt32(snapshot->m_Constants.MinimumCellAndAtlasWidth.w) * (snapshot->m_bDirectional ? XII_DDGI_DIRECTION_COUNT : 1U) &&
+        xiiUInt64(snapshot->m_Constants.MinimumCellAndAtlasWidth.w) * snapshot->m_AtlasSize.height >= count ?
       snapshot :
       xiiSharedPtr<const xiiDDGIProbeFrameData>();
   }

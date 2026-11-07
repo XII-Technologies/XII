@@ -1,4 +1,4 @@
-// XII Engine - scrolling DDGI trilinear probe gather.
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 [PLATFORMS]
 ALL
@@ -13,7 +13,7 @@ ALL
 #include <Shaders/Pipeline/Passes/GlobalIllumination/GatherConstants.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Lighting/EnvironmentLightConstants.h>
-#include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
+#include <Shaders/Pipeline/Passes/DDGI/DDGIDirectionalAtlas.h>
 
 struct xiiGpuDDGIProbeState
 {
@@ -42,6 +42,30 @@ uint PhysicalProbeIndex(int3 cell)
     return (slot.z * counts.y + slot.y) * counts.x + slot.x;
 }
 
+float4 GatherDirectionalIrradiance(uint2 probe, float3 normal)
+{
+    const float3 weights = xiiDDGIAxisWeights(normal);
+    float4 result = 0;
+    [unroll] for (uint axis = 0; axis < 3; ++axis)
+    {
+        const uint2 pixel = xiiDDGIDirectionalTexel(probe, xiiDDGISignedAxis(axis, normal[axis]));
+        result += g_DDGIIrradianceAtlas.Load(int3(pixel, 0)) * weights[axis];
+    }
+    return result;
+}
+
+float2 GatherDirectionalMoments(uint2 probe, float3 direction)
+{
+    const float3 weights = xiiDDGIAxisWeights(direction);
+    float2 result = 0;
+    [unroll] for (uint axis = 0; axis < 3; ++axis)
+    {
+        const uint2 pixel = xiiDDGIDirectionalTexel(probe, xiiDDGISignedAxis(axis, direction[axis]));
+        result += g_DDGIDistanceAtlas.Load(int3(pixel, 0)) * weights[axis];
+    }
+    return result;
+}
+
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)
 {
@@ -65,6 +89,10 @@ void main(uint3 tid : SV_DispatchThreadID)
     const int3 baseCell = (int3)floor(probeCoordinate);
     const float3 blend = frac(probeCoordinate);
     const uint atlasWidth = max((uint)MinimumCellAndAtlasWidth.w, 1u);
+
+    uint atlasImageWidth, atlasImageHeight;
+    g_DDGIIrradianceAtlas.GetDimensions(atlasImageWidth, atlasImageHeight);
+    const bool directional = atlasImageWidth == atlasWidth * XII_DDGI_DIRECTION_COUNT;
 
     float3 irradiance = 0.0f;
     float totalWeight = 0.0f;
@@ -92,13 +120,20 @@ void main(uint3 tid : SV_DispatchThreadID)
             continue;
 
         const uint2 atlasPixel = uint2(physicalProbe % atlasWidth, physicalProbe / atlasWidth);
-        const float2 distanceMoments = g_DDGIDistanceAtlas.Load(int3(atlasPixel, 0));
+        const float4 signal = directional ? GatherDirectionalIrradiance(atlasPixel, normal) : g_DDGIIrradianceAtlas.Load(int3(atlasPixel, 0));
+        if (directional && signal.a <= 1e-4f)
+            continue;
+        const float2 distanceMoments = directional ? GatherDirectionalMoments(atlasPixel, -probeDirection) : g_DDGIDistanceAtlas.Load(int3(atlasPixel, 0));
         const float variance = max(distanceMoments.y - distanceMoments.x * distanceMoments.x, 1e-4f);
         const float delta = max(probeDistance - distanceMoments.x, 0.0f);
         weight *= delta > 0.0f ? variance / (variance + delta * delta) : 1.0f;
-        irradiance += g_DDGIIrradianceAtlas.Load(int3(atlasPixel, 0)).rgb * weight;
+        if (directional)
+            weight *= signal.a;
+        irradiance += signal.rgb * weight;
         totalWeight += weight;
     }
 
-    g_DDGIOut[tid.xy] = float4((totalWeight > 1e-5f ? irradiance / totalWeight : EnvironmentAmbientRadiance.rgb) * GatherIntensityAndPadding.x, saturate(totalWeight));
+    // Directional probes add scene bounce to the regular environment consumer.
+    const float3 fallback = directional ? 0 : EnvironmentAmbientRadiance.rgb;
+    g_DDGIOut[tid.xy] = float4((totalWeight > 1e-5f ? irradiance / totalWeight : fallback) * GatherIntensityAndPadding.x, saturate(totalWeight * (directional ? 3.0f : 1.0f)));
 }

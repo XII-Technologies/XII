@@ -1919,6 +1919,28 @@ hardware. The previous-frame view continues updating reconstruction and shows
 black when history is absent. The default shaded view uses the authored enable
 settings. To compare composed output, run the [Diffuse GI capture sample](../../Source/Samples/DiffuseGI/README.md).
 
+## Camera-observed directional probe fallback
+
+On devices without hardware ray pipelines, a ray GI request schedules a scrolling
+10 by 10 by 6 grid of one-metre probes ahead of the view camera. Up to 96 probes
+are updated per frame. Stratified surface samples integrate visible direct and
+emissive radiance over six directional irradiance lobes. Short screen-depth
+visibility queries reject occluded source samples. A separate 64-direction trace
+estimates directional distance moments for visibility-weighted trilinear gather.
+
+The two atlases retain previously observed cells across frames. A scrolled or
+invalidated cell starts without history. Gather uses sample coverage and distance
+moments to blend probe irradiance over screen-space transport. Uncovered receivers
+retain screen-space transport. The ordinary sky term is separate. Hardware ray
+views, disabled GI, and devices without the required storage formats bypass probe
+updates. Scene and Editor share the same authored workload.
+
+The fallback observes camera-visible scene geometry. It can retain prior
+observations as the camera moves, but never reconstructs geometry the view has
+not observed. Leakage, offscreen coverage, and representative performance remain
+quality limits. The DiffuseGI sample can capture the fallback with `-no-ray` and
+the comparison path with `-no-ray -screen-only`.
+
 ## Ballistic billboard particles
 
 SceneParticles is an independently authored three-operation workload:

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// Per-pixel irradiance from explicitly supplied, independently prepared GI resources.
@@ -11,15 +12,17 @@ class XII_GRAPHICSCORE_DLL xiiDDGIProbeGatherPass final : public xiiRenderPipeli
   XII_ADD_DYNAMIC_REFLECTION(xiiDDGIProbeGatherPass, xiiRenderPipelinePass);
 
 public:
+  xiiRenderPipelineDataInputPin     m_Schedule{xiiGetStaticRTTI<xiiDDGIProbeFrameData>(), true};
+  bool                              m_bRequireSchedule = false;
   xiiRenderPipelineTextureInputPin  m_Depth{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_Normal{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineBufferInputPin   m_Camera{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineTextureInputPin  m_IrradianceAtlas{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureInputPin  m_DistanceAtlas{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineBufferInputPin   m_ProbeStates{false, xiiGALBindFlags::ShaderResource};
-  xiiRenderPipelineBufferInputPin   m_ProbeConstants{false, xiiGALBindFlags::UniformBuffer};
+  xiiRenderPipelineTextureInputPin  m_IrradianceAtlas{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureInputPin  m_DistanceAtlas{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineBufferInputPin   m_ProbeStates{true, xiiGALBindFlags::ShaderResource};
+  xiiRenderPipelineBufferInputPin   m_ProbeConstants{true, xiiGALBindFlags::UniformBuffer};
   xiiRenderPipelineBufferInputPin   m_Environment{false, xiiGALBindFlags::UniformBuffer};
-  xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_Output{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   float                             m_fIntensity = 1.0f;
   xiiDDGIProbeGatherPass();
   ~xiiDDGIProbeGatherPass();

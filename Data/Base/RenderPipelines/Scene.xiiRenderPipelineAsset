@@ -19481,6 +19481,7 @@ o
 			Uuid{u4{9915475754373466386,6165499869392295190}}
 			Uuid{u4{13163675563160681797,3092024517700506411}}
 			Uuid{u4{10018372087070038851,2325891037786562244}}
+			Uuid{u4{9891176176893991983,8826896971685451958}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -40409,6 +40410,19 @@ o
 		s %SourcePin{"ReflectionProbes"}
 		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
 		s %TargetPin{"ReflectionProbes"}
+	}
+}
+o
+{
+	Uuid %id{u4{9891176176893991983,8826896971685451958}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17484319043286365095,4871199642098806893}}
+		s %SourcePin{"EnvironmentLight"}
+		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
+		s %TargetPin{"EnvironmentLight"}
 	}
 }
 }

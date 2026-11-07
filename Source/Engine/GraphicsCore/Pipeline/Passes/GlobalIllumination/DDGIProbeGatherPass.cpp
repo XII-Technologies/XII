@@ -29,6 +29,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeGatherPass, 1, xiiRTTIDefaultAlloca
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("Schedule", m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("RequireSchedule", m_bRequireSchedule)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("SceneDepth", m_Depth)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("GBufferNormal", m_Normal)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PerFrameCamera", m_Camera)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
@@ -50,6 +52,8 @@ xiiResult xiiDDGIProbeGatherPass::Configure(const xiiVariantDictionary& properti
 }
 xiiResult xiiDDGIProbeGatherPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (m_bRequireSchedule && !context.GetInputData(m_Schedule))
+    return XII_SUCCESS;
   const auto depth = context.GetInputTexture(m_Depth), normal = context.GetInputTexture(m_Normal);
   const auto camera = context.GetInputBuffer(m_Camera);
   xiiSizeU32 size;
