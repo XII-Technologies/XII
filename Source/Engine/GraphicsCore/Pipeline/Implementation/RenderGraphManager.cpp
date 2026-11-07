@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/IdTable.h>
@@ -345,10 +346,14 @@ void xiiRenderGraphManager::EndFrame(xiiRenderGraphFrame& frame)
     s_pState->m_RetiredEntries.Clear();
   }
 
-  frame.m_uiFrameIndex     = 0U;
-  frame.m_uiCompletedFrame = 0U;
-  s_pState->m_bFrameActive = false;
+  const bool bTrimUnusedGpuResources = frame.m_uiFrameIndex % 8U == 0U && xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice()->IsStreamingMemoryPressured();
+  frame.m_uiFrameIndex               = 0U;
+  frame.m_uiCompletedFrame           = 0U;
+  s_pState->m_bFrameActive           = false;
   s_pState->m_FrameMutex.Unlock();
+
+  if (bTrimUnusedGpuResources)
+    xiiResourceManager::FreeUnusedResources(xiiTime::MakeFromMilliseconds(1), xiiTime::MakeFromSeconds(2), 1U);
 }
 
 void xiiRenderGraphManager::Startup()

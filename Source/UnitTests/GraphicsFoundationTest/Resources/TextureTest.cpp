@@ -3,24 +3,102 @@
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Threading/Thread.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <Texture/Utilities/TextureAssetFile.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(TextureResidency);
+
+XII_CREATE_SIMPLE_TEST(TextureResidency, DeviceBudget)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+
+  auto* pDevice = environment.GetDevice();
+  if (pDevice->GetGraphicsDeviceType() != xiiGALGraphicsDeviceType::Vulkan)
+    return;
+
+  auto* pBudget = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Streaming.GpuBudgetMiB"));
+  auto* pUpload = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Streaming.TextureUploadMiB"));
+  if (!XII_TEST_BOOL(pBudget != nullptr && pUpload != nullptr))
+    return;
+  const xiiInt32 iPreviousBudget = pBudget->GetValue();
+  const xiiInt32 iPreviousUpload = pUpload->GetValue();
+  XII_SCOPE_EXIT(*pBudget = iPreviousBudget; *pUpload = iPreviousUpload);
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+  bufferDescription.m_uiSize    = 2U * 1024U * 1024U;
+  auto pRequiredBuffer          = pDevice->CreateBuffer(bufferDescription);
+  if (!XII_TEST_BOOL(pRequiredBuffer != nullptr))
+    return;
+
+  auto textureDescription                            = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
+  textureDescription.m_Size                          = {4U, 4U};
+  textureDescription.m_Format                        = xiiGALResourceFormat::RGBA8UNormalized;
+  textureDescription.m_Usage                         = xiiGALResourceUsage::Immutable;
+  textureDescription.m_BindFlags                     = xiiGALBindFlags::ShaderResource;
+  const xiiUInt8               pixelBytes[4 * 4 * 4] = {};
+  xiiGALTextureSubResourceData subResource;
+  subResource.m_pData         = xiiConstByteBlobPtr(pixelBytes, sizeof(pixelBytes));
+  subResource.m_uiStride      = 16U;
+  subResource.m_uiDepthStride = sizeof(pixelBytes);
+  xiiGALTextureData textureData(xiiMakeArrayPtr(&subResource, 1U));
+  textureData.m_bStreamingRefinement = true;
+
+  *pBudget = 1;
+  pDevice->BeginFrame();
+  XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
+  XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) == nullptr);
+
+  xiiRenderGraphResourceCache cache(environment.GetDeviceShared());
+  cache.BeginFrame(1U, 0U);
+  XII_TEST_BOOL(cache.AcquireBuffer(bufferDescription) != nullptr);
+  cache.EndFrame();
+  cache.BeginFrame(2U, 0U);
+  XII_TEST_INT(cache.GetPooledResourceCount(), 0);
+  cache.EndFrame();
+  cache.BeginFrame(3U, 1U);
+  XII_TEST_INT(cache.GetPooledResourceCount(), 1);
+  cache.EndFrame();
+  cache.BeginFrame(4U, 1U);
+  XII_TEST_INT(cache.GetPooledResourceCount(), 0);
+  cache.EndFrame();
+  pDevice->EndFrame();
+
+  *pBudget = 0;
+  *pUpload = 0;
+  pDevice->BeginFrame();
+  XII_TEST_BOOL(!pDevice->IsStreamingMemoryPressured());
+  XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) == nullptr);
+  textureData.m_bStreamingRefinement = false;
+  XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) != nullptr);
+  pDevice->EndFrame();
+
+  *pUpload                           = 1;
+  textureData.m_bStreamingRefinement = true;
+  pDevice->BeginFrame();
+  XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) != nullptr);
+  pDevice->EndFrame();
+  pDevice->WaitIdle();
+}
 
 XII_CREATE_SIMPLE_TEST(TextureResidency, PromoteMipTail)
 {
@@ -32,7 +110,7 @@ XII_CREATE_SIMPLE_TEST(TextureResidency, PromoteMipTail)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  const auto testPromotion = []<typename Resource>(const char* szPath, xiiGALResourceDimension::Enum type, xiiUInt32 uiLayersOrDepth) {
+  const auto testPromotion = [&environment]<typename Resource>(const char* szPath, xiiGALResourceDimension::Enum type, xiiUInt32 uiLayersOrDepth) {
     auto description                 = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
     description.m_Type               = type;
     description.m_Size               = {64U, 64U};
@@ -85,6 +163,29 @@ XII_CREATE_SIMPLE_TEST(TextureResidency, PromoteMipTail)
     XII_TEST_INT(resource->GetNumQualityLevelsLoadable(), 0);
     XII_TEST_INT(resource->GetMemoryUsage().m_uiMemoryGPU, pFull->GetMemoryConsumption());
     XII_TEST_INT(pCoarse->GetRefCount(), 1);
+
+    auto* pDevice = environment.GetDevice();
+    if (pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan)
+    {
+      const auto getOccupiedBytes = [pDevice]() {
+        xiiHybridArray<xiiGALMemoryHeapStatistics, 16> heaps;
+        pDevice->GetMemoryHeapStatistics(heaps);
+        xiiUInt64 uiOccupied = 0U;
+        for (const auto& heap : heaps)
+          uiOccupied += heap.m_uiAllocatedBytes;
+        return uiOccupied;
+      };
+
+      pDevice->WaitIdle();
+      const xiiUInt64 uiBefore      = getOccupiedBytes();
+      const xiiUInt64 uiCoarseBytes = pCoarse->GetMemoryConsumption();
+      pCoarse.Clear();
+      pDevice->WaitIdle();
+      const xiiUInt64 uiAfter = getOccupiedBytes();
+      XII_TEST_BOOL(uiBefore >= uiAfter && uiBefore - uiAfter == uiCoarseBytes);
+      xiiTestFramework::Output(xiiTestOutput::Details, "%s made %llu coarse bytes reusable and retained a %llu-byte replacement.", szPath,
+                               static_cast<unsigned long long>(uiCoarseBytes), static_cast<unsigned long long>(pFull->GetMemoryConsumption()));
+    }
   };
 
   testPromotion.operator()<xiiTexture2DResource>(":imgout/Residency/Promotion.xiiBinTexture2D", xiiGALResourceDimension::Texture2D, 1U);

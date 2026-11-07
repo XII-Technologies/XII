@@ -222,7 +222,7 @@ xiiUInt32 xiiResourceManager::FreeAllUnusedResources()
   return uiUnloaded;
 }
 
-xiiUInt32 xiiResourceManager::FreeUnusedResources(xiiTime timeout, xiiTime lastAcquireThreshold)
+xiiUInt32 xiiResourceManager::FreeUnusedResources(xiiTime timeout, xiiTime lastAcquireThreshold, xiiUInt64 uiMinimumGpuBytes)
 {
   if (timeout.IsZeroOrNegative())
     return 0;
@@ -294,7 +294,8 @@ xiiUInt32 xiiResourceManager::FreeUnusedResources(xiiTime timeout, xiiTime lastA
 
     xiiResource* pResource = itResourceID.Value();
 
-    if ((pResource->GetReferenceCount() == 0) && (tStart - pResource->GetLastAcquireTime() > lastAcquireThreshold))
+    if ((pResource->GetReferenceCount() == 0) && (tStart - pResource->GetLastAcquireTime() > lastAcquireThreshold) &&
+        (uiMinimumGpuBytes == 0U || (!IsQueuedForLoading(pResource) && pResource->GetMemoryUsage().m_uiMemoryGPU >= uiMinimumGpuBytes)))
     {
       sResourceName = pResource->GetResourceID();
 
