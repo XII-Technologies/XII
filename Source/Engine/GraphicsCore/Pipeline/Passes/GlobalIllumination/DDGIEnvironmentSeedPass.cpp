@@ -31,8 +31,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIEnvironmentSeedPass,1,xiiRTTIDefaultAllo
 xiiResult xiiDDGIEnvironmentSeedPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto snapshot = xiiDDGIProbePassUtils::Snapshot(context, m_Schedule);
-  if (!snapshot || !xiiGALDevice::HasDefaultDevice())
-    return context.ReportFailure("DDGI seeding requires a valid scheduling snapshot and device.");
+  if (!snapshot || snapshot->m_bDirectional || !xiiGALDevice::HasDefaultDevice())
+    return context.ReportFailure("DDGI environment seeding requires a valid isotropic scheduling snapshot and device.");
   const auto  constants = context.GetInputBuffer(m_Constants), environment = context.GetInputBuffer(m_Environment), updates = context.GetInputBuffer(m_Updates), states = context.GetInputBuffer(m_StatesInput);
   const auto* c          = context.m_Graph.GetBufferDescription(constants);
   const auto* e          = context.m_Graph.GetBufferDescription(environment);

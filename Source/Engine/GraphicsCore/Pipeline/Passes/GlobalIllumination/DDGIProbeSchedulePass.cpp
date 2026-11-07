@@ -2,13 +2,17 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Threading/Mutex.h>
+#include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeSchedulePass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 class xiiDDGIProbeSchedulerState : public xiiRefCounted
 {
 public:
+  xiiMutex       m_Mutex;
   xiiDDGIContext m_Context;
   xiiUInt64      m_Frame = 0;
 };
@@ -16,6 +20,7 @@ xiiDDGIProbeFrameData::xiiDDGIProbeFrameData(xiiUInt64 setup, xiiUInt64 frame, x
 xiiDDGIProbeFrameData::~xiiDDGIProbeFrameData() = default;
 void xiiDDGIProbeFrameData::CommitUpdates() const
 {
+  XII_LOCK(m_Scheduler->m_Mutex);
   if (m_Scheduler->m_Frame != m_Frame)
     return;
   for (const auto& update : m_Updates)
@@ -32,6 +37,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeSchedulePass,1,xiiRTTIDefaultAlloca
   {
     XII_MEMBER_PROPERTY("PreviousIrradiance",m_PreviousIrradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousDistance",m_PreviousDistance)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("Activation", m_Activation)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("RequireActivation", m_bRequireActivation)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("SkipOnRayHardware", m_bSkipOnRayHardware)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("ForwardOffset", m_fForwardOffset)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("Schedule",m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ProbeCountX",m_CountX)->AddAttributes(new xiiDefaultValueAttribute(24U),new xiiClampValueAttribute(1U,256U)),
     XII_MEMBER_PROPERTY("ProbeCountY",m_CountY)->AddAttributes(new xiiDefaultValueAttribute(12U),new xiiClampValueAttribute(1U,256U)),
@@ -40,6 +49,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeSchedulePass,1,xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Spacing",m_fSpacing)->AddAttributes(new xiiDefaultValueAttribute(4.0f),new xiiClampValueAttribute(0.001f,xiiVariant()),new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("Hysteresis",m_fHysteresis)->AddAttributes(new xiiDefaultValueAttribute(0.97f),new xiiClampValueAttribute(0.0f,0.9999f)),
     XII_MEMBER_PROPERTY("MaximumRelocationDistance",m_fRelocation)->AddAttributes(new xiiDefaultValueAttribute(1.8f),new xiiClampValueAttribute(0.0f,xiiVariant())),
+    XII_MEMBER_PROPERTY("DirectionalAtlas", m_bDirectional)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("UseViewCamera",m_bUseViewCamera)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("CameraPosition",m_CameraPosition),
   } XII_END_PROPERTIES;
@@ -52,7 +62,7 @@ xiiResult xiiDDGIProbeSchedulePass::Configure(const xiiVariantDictionary& proper
   const xiiUInt64 count  = xiiUInt64(m_CountX) * m_CountY * m_CountZ;
   const xiiResult result = m_CountX && m_CountY && m_CountZ && m_CountX <= 256 && m_CountY <= 256 && m_CountZ <= 256 && count <= 1048576 && m_Budget && m_Budget <= 1048576 &&
       xiiMath::IsFinite(m_fSpacing) && m_fSpacing > 0 && xiiMath::IsFinite(m_fSpacing * m_fSpacing * 16.0f) &&
-      xiiMath::IsFinite(m_fHysteresis) && m_fHysteresis >= 0 && m_fHysteresis < 1 && xiiMath::IsFinite(m_fRelocation) && m_fRelocation >= 0 && m_CameraPosition.IsValid() ?
+      xiiMath::IsFinite(m_fHysteresis) && m_fHysteresis >= 0 && m_fHysteresis < 1 && xiiMath::IsFinite(m_fRelocation) && m_fRelocation >= 0 && m_CameraPosition.IsValid() && xiiMath::IsFinite(m_fForwardOffset) && m_fForwardOffset >= 0 ?
     XII_SUCCESS :
     XII_FAILURE;
   if (result.Succeeded())
@@ -62,16 +72,27 @@ xiiResult xiiDDGIProbeSchedulePass::Configure(const xiiVariantDictionary& proper
 void xiiDDGIProbeSchedulePass::InvalidateTemporalHistory()
 {
   if (m_State)
+  {
+    XII_LOCK(m_State->m_Mutex);
+    m_State->m_Frame = 0;
     m_State->m_Context.InvalidateHistory();
+  }
 }
 xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (m_bRequireActivation && !context.GetInputTexture(m_Activation).IsValid())
+    return XII_SUCCESS;
+  if (m_bSkipOnRayHardware && xiiRayTracingResources::IsHardwareRayTracingSupported())
+    return XII_SUCCESS;
+  const auto device = xiiGALDevice::GetDefaultDevice();
+  if (m_bRequireActivation && m_bDirectional && (!device || device->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled))
+    return XII_SUCCESS;
   auto camera = m_CameraPosition;
   if (m_bUseViewCamera)
   {
     if (!context.m_pView || !context.m_pView->GetCamera())
       return context.ReportFailure("DDGI scheduling requires a view camera or an authored position.");
-    camera = context.m_pView->GetCamera()->GetPosition();
+    camera = context.m_pView->GetCamera()->GetPosition() + context.m_pView->GetCamera()->GetCenterDirForwards() * m_fForwardOffset;
   }
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "DDGICameraPosition", camera));
   if (!m_State)
@@ -87,9 +108,10 @@ xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
     settings.m_fMaximumRelocationDistance = m_fRelocation;
     XII_SUCCEED_OR_RETURN(m_State->m_Context.Initialize(settings));
   }
+  XII_LOCK(m_State->m_Mutex);
   const auto       count = m_CountX * m_CountY * m_CountZ;
   const xiiUInt32  width = xiiUInt32(xiiMath::Ceil(xiiMath::Sqrt(float(count))));
-  const xiiSizeU32 size(width, (count + width - 1) / width);
+  const xiiSizeU32 size(width * (m_bDirectional ? XII_DDGI_DIRECTION_COUNT : 1U), (count + width - 1) / width);
   const auto*      irradiance = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_PreviousIrradiance));
   const auto*      distance   = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_PreviousDistance));
   const bool       history    = irradiance && distance && irradiance->m_Size == size && distance->m_Size == size;
@@ -100,6 +122,7 @@ xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
   m_State->m_Frame                                = context.m_Graph.GetFrameIndex();
   xiiSharedPtr<xiiDDGIProbeFrameData> snapshot    = XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiDDGIProbeFrameData, context.m_Graph.GetSetupSerial(), m_State->m_Frame, m_State);
   snapshot->m_AtlasSize                           = size;
+  snapshot->m_bDirectional                        = m_bDirectional;
   snapshot->m_bHistoryValid                       = history;
   const auto minimum                              = m_State->m_Context.GetMinimumCell();
   snapshot->m_Constants.MinimumCellAndAtlasWidth  = xiiVec4I32(minimum.x, minimum.y, minimum.z, xiiInt32(width));

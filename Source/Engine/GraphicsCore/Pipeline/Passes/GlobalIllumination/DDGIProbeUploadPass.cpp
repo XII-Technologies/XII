@@ -11,6 +11,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeUploadPass,1,xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("AllowAbsentSchedule", m_bAllowAbsentSchedule)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Schedule",m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ProbeStates",m_States)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("ProbeUpdates",m_Updates)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -21,6 +22,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeUploadPass,1,xiiRTTIDefaultAllocato
 // clang-format on
 xiiResult xiiDDGIProbeUploadPass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (m_bAllowAbsentSchedule && !context.GetInputData(m_Schedule))
+    return XII_SUCCESS;
   const auto snapshot = xiiDDGIProbePassUtils::Snapshot(context, m_Schedule);
   if (!snapshot)
     return context.ReportFailure("DDGI upload requires a valid current scheduling snapshot.");

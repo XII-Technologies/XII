@@ -11,6 +11,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIAtlasPreparePass,1,xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("AllowAbsentSchedule", m_bAllowAbsentSchedule)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("Schedule",m_Schedule)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousIrradiance",m_PreviousIrradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousDistance",m_PreviousDistance)->AddFlags(xiiPropertyFlags::ReadOnly),
@@ -22,6 +23,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIAtlasPreparePass,1,xiiRTTIDefaultAllocat
 // clang-format on
 xiiResult xiiDDGIAtlasPreparePass::Build(xiiRenderPipelinePassContext& context)
 {
+  if (m_bAllowAbsentSchedule && !context.GetInputData(m_Schedule))
+    return XII_SUCCESS;
   const auto snapshot = xiiDDGIProbePassUtils::Snapshot(context, m_Schedule);
   if (!snapshot || !xiiGALDevice::HasDefaultDevice() || snapshot->m_AtlasSize.width > xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_uiMaxTexture2DDimension || snapshot->m_AtlasSize.height > xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_uiMaxTexture2DDimension)
     return context.ReportFailure("DDGI atlas extent exceeds the device or scheduling domain.");

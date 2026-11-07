@@ -12,6 +12,7 @@ class xiiDDGIProbeSchedulerState;
 class XII_GRAPHICSCORE_DLL xiiDDGIProbeFrameData final : public xiiRenderPipelineFrameData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDDGIProbeFrameData, xiiRenderPipelineFrameData);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiDDGIProbeFrameData);
 
 public:
   xiiDDGIProbeFrameData(xiiUInt64 setup, xiiUInt64 frame, xiiSharedPtr<xiiDDGIProbeSchedulerState> scheduler);
@@ -21,6 +22,7 @@ public:
   xiiDynamicArray<xiiGpuDDGIProbeUpdate, xiiAlignedAllocatorWrapper> m_Updates;
   xiiSizeU32                                                         m_AtlasSize;
   bool                                                               m_bHistoryValid = false;
+  bool                                                               m_bDirectional  = false;
   /// Commit CPU scheduling feedback only after the corresponding GPU operation records.
   void CommitUpdates() const;
 

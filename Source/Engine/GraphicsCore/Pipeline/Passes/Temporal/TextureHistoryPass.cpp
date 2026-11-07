@@ -29,6 +29,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureHistoryPass, 1, xiiRTTIDefaultAllocat
   {
     XII_MEMBER_PROPERTY("Texture", m_Input)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("PreviousTexture", m_Previous)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("AllowAbsentTexture", m_bAllowAbsentTexture)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("AsyncCopy", m_bAsyncCopy)->AddAttributes(new xiiDefaultValueAttribute(true)),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES { new xiiCategoryAttribute("Rendering/Temporal") } XII_END_ATTRIBUTES;
@@ -53,9 +54,24 @@ xiiResult xiiTextureHistoryPass::BuildTemporalHistory(xiiRenderPipelinePassConte
       data = builder.ReadWriteTexture(builder.ImportTexture("Previous Frame", last.m_Texture, last.m_Texture->GetResourceState()), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {});
   return context.SetOutput(m_Previous, *emitted.first);
 }
+void xiiTextureHistoryPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
+{
+  const auto first = pins.GetCount();
+  xiiRenderPipelinePass::GetPins(pins);
+  if (m_bAllowAbsentTexture)
+    for (xiiUInt32 i = first; i < pins.GetCount(); ++i)
+      if (pins[i].m_bInput && pins[i].m_sName == "Texture")
+        pins[i].m_bOptional = true;
+}
+
 xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  input       = context.GetInputTexture(m_Input);
+  if (m_bAllowAbsentTexture && !input.IsValid())
+  {
+    InvalidateTemporalHistory();
+    return XII_SUCCESS;
+  }
   const auto* description = context.m_Graph.GetTextureDescription(input);
   if (!description || !description->m_Size.width || !description->m_Size.height || description->m_uiSampleCount != 1 || !description->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || description->m_Usage == xiiGALResourceUsage::Sparse)
     return context.ReportFailure("Texture history requires a nonempty, single-sample, nonsparse shader-resource texture.");

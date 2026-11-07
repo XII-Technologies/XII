@@ -11,10 +11,11 @@ class XII_GRAPHICSCORE_DLL xiiDDGIAtlasPreparePass final : public xiiRenderPipel
   XII_ADD_DYNAMIC_REFLECTION(xiiDDGIAtlasPreparePass, xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelineDataInputPin     m_Schedule{xiiGetStaticRTTI<xiiDDGIProbeFrameData>()};
+  xiiRenderPipelineDataInputPin     m_Schedule{xiiGetStaticRTTI<xiiDDGIProbeFrameData>(), true};
   xiiRenderPipelineTextureInputPin  m_PreviousIrradiance{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin  m_PreviousDistance{xiiGALResourceFormat::RG32Float, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureOutputPin m_Irradiance{xiiGALResourceFormat::RGBA16Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
-  xiiRenderPipelineTextureOutputPin m_Distance{xiiGALResourceFormat::RG32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_Irradiance{xiiGALResourceFormat::RGBA16Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  xiiRenderPipelineTextureOutputPin m_Distance{xiiGALResourceFormat::RG32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  bool                              m_bAllowAbsentSchedule = false;
   xiiResult                         Build(xiiRenderPipelinePassContext& context) override;
 };
