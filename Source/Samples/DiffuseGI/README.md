@@ -15,3 +15,5 @@ The Editor run requires a build with Editor support. `-diagnostics` captures raw
 Use `-no-ray` to capture the non-ray path on a ray-capable device. Add `-screen-only` to render the screen-space comparison in a separate output directory. The capture log identifies frames that scheduled the directional probe update.
 
 On ray-capable hardware, use `-paths 1` to make the fresh-path budget explicit. Compare a second capture in a separate directory with `-paths 1 -no-reuse`. The reuse path traces additional reconnection rays. The capture log identifies when the authored ray pass reads the previous reservoir grid.
+
+For a first-frame comparison, add `-frames 1` to both captures. The reuse capture then reads the current spatial grid before any temporal history exists.
