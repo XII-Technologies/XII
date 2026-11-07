@@ -969,6 +969,18 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
     gpuGeometry.BufferIndices              = xiiVec4U32(geometry.m_hVertexBufferSRV.m_uiIndex, geometry.m_hIndexBufferSRV.m_uiIndex, geometry.m_uiIndexStride, geometry.m_uiNormalStride);
     gpuGeometry.VertexLayout               = xiiVec4U32(static_cast<xiiUInt32>(geometry.m_uiVertexStride), static_cast<xiiUInt32>(geometry.m_uiVertexBufferOffset), geometry.m_uiNormalOffset, geometry.m_uiTexCoordOffset);
     gpuGeometry.VertexAttributes           = xiiVec4U32(geometry.m_uiTangentOffset, geometry.m_uiTangentStride, geometry.m_uiTexCoordStride, geometry.m_Description.m_uiFirstPrimitive);
+    gpuGeometry.ObjectToWorld0             = instance.m_Transform.GetRow(0);
+    gpuGeometry.ObjectToWorld1             = instance.m_Transform.GetRow(1);
+    gpuGeometry.ObjectToWorld2             = instance.m_Transform.GetRow(2);
+    gpuGeometry.PrimitiveRange             = xiiVec4U32(geometry.m_uiPrimitiveCount, xiiInvalidIndex, 0, 0);
+    const auto& emission                   = materialData.PeekBack().EmissiveColorAndRoughness;
+    if (emission.x > 0 || emission.y > 0 || emission.z > 0)
+    {
+      if (geometry.m_uiPrimitiveCount > xiiMath::MaxValue<xiiUInt32>() - result.m_uiEmissivePrimitiveCount)
+        return BuildHandles{};
+      gpuGeometry.PrimitiveRange.y = result.m_uiEmissivePrimitiveCount;
+      result.m_uiEmissivePrimitiveCount += geometry.m_uiPrimitiveCount;
+    }
     if (deformed)
       gpuGeometry.BufferIndices.x = deformed->m_Srv.m_uiIndex;
   }

@@ -30,6 +30,10 @@ struct XII_SHADER_STRUCT xiiRayTracingGeometryData
   UINT4(BufferIndices);    ///< x = vertex SRV, y = index SRV or invalid, z = index stride, w = normal stride.
   UINT4(VertexLayout);     ///< x = vertex stride, y = position offset, z = normal offset or invalid, w = UV0 offset or invalid.
   UINT4(VertexAttributes); ///< x = tangent offset or invalid, y = tangent stride, z = UV0 stride, w = first source primitive.
+  FLOAT4(ObjectToWorld0);
+  FLOAT4(ObjectToWorld1);
+  FLOAT4(ObjectToWorld2);
+  UINT4(PrimitiveRange); ///< x = BLAS primitive count, y = emissive triangle base or invalid; zw reserved.
 };
 
 #if XII_ENABLED(XII_SHADER_PLATFORM)
@@ -71,6 +75,6 @@ float3 xiiDecodeRayTracingNormal(float4 normalSample, float normalScale)
 #else
 static_assert(sizeof(xiiRayTracingMaterialData) == 160U, "Ray-tracing material records must match the HLSL structured-buffer stride.");
 static_assert(alignof(xiiRayTracingMaterialData) == 16U, "Ray-tracing material records require aligned CPU storage.");
-static_assert(sizeof(xiiRayTracingGeometryData) == 48U, "Ray-tracing geometry records must match the HLSL structured-buffer stride.");
+static_assert(sizeof(xiiRayTracingGeometryData) == 112U, "Ray-tracing geometry records must match the HLSL structured-buffer stride.");
 static_assert(alignof(xiiRayTracingGeometryData) == 16U, "Ray-tracing geometry records require aligned CPU storage.");
 #endif
