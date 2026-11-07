@@ -261,6 +261,9 @@ public:
   /// Returns current allocator and budget statistics. Backends without reporting return an empty array.
   virtual void GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const { out_heaps.Clear(); }
 
+  /// Whether the backend is applying memory pressure controls to optional streaming work.
+  [[nodiscard]] virtual bool IsStreamingMemoryPressured() const { return false; }
+
   /// This retrieves the device feature states. See xiiGALDeviceFeatures.
   [[nodiscard]] const xiiGALDeviceFeatures& GetFeatures() const;
 

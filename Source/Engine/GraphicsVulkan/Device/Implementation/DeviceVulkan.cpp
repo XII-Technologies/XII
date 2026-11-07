@@ -6,7 +6,9 @@
 #  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #endif
 
+#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Utilities/Stats.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
@@ -1636,6 +1638,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     m_pVulkanMemoryAllocator = XII_NEW(&m_Allocator, xiiVulkanMemoryAllocator);
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_pVulkanMemoryAllocator->Initialize(this, IsLogicalDeviceExtensionEnabled(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)));
+    UpdateStreamingMemoryBudget();
   }
 
   // Create pools.
@@ -1742,14 +1745,149 @@ void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation alloca
   }
 }
 
+namespace
+{
+  xiiCVarInt cvar_GpuStreamingBudget("Streaming.GpuBudgetMiB", 0, xiiCVarFlags::Save, "Device-local streaming admission cap in MiB (0 uses the native budget).");
+  xiiCVarInt cvar_GpuStreamingHeadroom("Streaming.GpuHeadroomMiB", 256, xiiCVarFlags::Save, "Space held below the native device-local budget for required GPU allocations.");
+  xiiCVarInt cvar_GpuStreamingPressureHigh("Streaming.GpuPressureHighPercent", 95, xiiCVarFlags::Save, "Enter streaming memory pressure at this percentage of the usable budget.");
+  xiiCVarInt cvar_GpuStreamingPressureLow("Streaming.GpuPressureLowPercent", 85, xiiCVarFlags::Save, "Resume optional streaming below this percentage of the usable budget.");
+  xiiCVarInt cvar_TextureStreamingUploadBudget("Streaming.TextureUploadMiB", 64, xiiCVarFlags::Save, "Per-device-frame upload allowance for texture refinements in MiB (0 pauses refinements).");
+
+  constexpr xiiUInt64 s_uiBytesPerMiB = 1024ULL * 1024ULL;
+
+  xiiGALMemoryHeapStatistics GetPrimaryDeviceLocalHeap(xiiArrayPtr<const xiiGALMemoryHeapStatistics> heaps)
+  {
+    xiiGALMemoryHeapStatistics result;
+    for (const auto& heap : heaps)
+    {
+      if (heap.m_bDeviceLocal && heap.m_uiCapacityBytes > result.m_uiCapacityBytes)
+        result = heap;
+    }
+    return result;
+  }
+
+  xiiUInt64 GetAdmissionUsage(const xiiGALMemoryHeapStatistics& heap)
+  {
+    // Idle ranges in VMA blocks can be reused. Driver usage outside those
+    // blocks includes implicit resources and allocations made by other paths.
+    return xiiMath::Max(heap.m_uiUsageBytes, heap.m_uiCommittedBytes) - heap.m_uiCommittedBytes + heap.m_uiAllocatedBytes;
+  }
+} // namespace
+
 void xiiGALDeviceVulkan::BeginFramePlatform()
 {
   m_pVulkanMemoryAllocator->BeginFrame(++m_uiAllocatorFrameIndex);
+  UpdateStreamingMemoryBudget();
 }
 
 void xiiGALDeviceVulkan::GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const
 {
   m_pVulkanMemoryAllocator->GetMemoryHeapStatistics(out_heaps);
+}
+
+void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
+{
+  xiiHybridArray<xiiGALMemoryHeapStatistics, VK_MAX_MEMORY_HEAPS> heaps;
+  GetMemoryHeapStatistics(heaps);
+  const auto primary = GetPrimaryDeviceLocalHeap(heaps);
+
+  xiiUInt64 uiAdmissionLimit  = 0U;
+  xiiUInt64 uiMemoryDeferrals = 0U;
+  xiiUInt64 uiUploadDeferrals = 0U;
+  xiiUInt64 uiPendingBytes    = 0U;
+  {
+    XII_LOCK(m_StreamingBudgetMutex);
+    const xiiInt32 iBudgetMiB       = cvar_GpuStreamingBudget.GetValue();
+    m_uiStreamingBudgetCap          = iBudgetMiB > 0 ? xiiUInt64(iBudgetMiB) * s_uiBytesPerMiB : xiiMath::MaxValue<xiiUInt64>();
+    m_uiStreamingHeadroom           = xiiUInt64(xiiMath::Max(cvar_GpuStreamingHeadroom.GetValue(), 0)) * s_uiBytesPerMiB;
+    m_uiRemainingTextureUploadBytes = xiiUInt64(xiiMath::Max(cvar_TextureStreamingUploadBudget.GetValue(), 0)) * s_uiBytesPerMiB;
+
+    const xiiUInt64 uiNativeLimit = primary.m_uiBudgetBytes - xiiMath::Min(primary.m_uiBudgetBytes, m_uiStreamingHeadroom);
+    uiAdmissionLimit              = xiiMath::Min(m_uiStreamingBudgetCap, uiNativeLimit);
+    const xiiUInt64 uiHigh        = xiiMath::Clamp(cvar_GpuStreamingPressureHigh.GetValue(), 2, 100);
+    const xiiUInt64 uiLow         = xiiMath::Clamp(cvar_GpuStreamingPressureLow.GetValue(), 1, static_cast<xiiInt32>(uiHigh) - 1);
+    const xiiUInt64 uiThreshold   = m_bStreamingMemoryPressured ? uiLow : uiHigh;
+    m_bStreamingMemoryPressured   = primary.m_uiCapacityBytes != 0U &&
+      (GetAdmissionUsage(primary) >= uiAdmissionLimit * uiThreshold / 100U ||
+       xiiMath::Max(primary.m_uiUsageBytes, primary.m_uiCommittedBytes) >= uiNativeLimit * uiThreshold / 100U);
+    uiMemoryDeferrals = m_uiTextureMemoryDeferrals;
+    uiUploadDeferrals = m_uiTextureUploadDeferrals;
+    uiPendingBytes    = m_uiPendingTextureBytes;
+  }
+
+#if XII_ENABLED(XII_USE_PROFILING)
+  if (m_uiAllocatorFrameIndex % 30U == 1U && HasDefaultDevice() && GetDefaultDevice().Borrow() == this)
+  {
+    xiiStringBuilder sKey;
+    for (xiiUInt32 i = 0; i < heaps.GetCount(); ++i)
+    {
+      const auto& heap = heaps[i];
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Budget bytes", i);
+      xiiStats::SetStat(sKey, heap.m_uiBudgetBytes);
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Usage bytes", i);
+      xiiStats::SetStat(sKey, heap.m_uiUsageBytes);
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Native budget", i);
+      xiiStats::SetStat(sKey, heap.m_bNativeBudget);
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Device local", i);
+      xiiStats::SetStat(sKey, heap.m_bDeviceLocal);
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Host visible", i);
+      xiiStats::SetStat(sKey, heap.m_bHostVisible);
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Committed bytes", i);
+      xiiStats::SetStat(sKey, heap.m_uiCommittedBytes);
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Occupied bytes", i);
+      xiiStats::SetStat(sKey, heap.m_uiAllocatedBytes);
+      sKey.SetFormat("Renderer/GPU memory/Heap {}/Unused allocator bytes", i);
+      xiiStats::SetStat(sKey, heap.m_uiCommittedBytes - xiiMath::Min(heap.m_uiCommittedBytes, heap.m_uiAllocatedBytes));
+    }
+    xiiStats::SetStat("Renderer/GPU memory/Streaming admission limit bytes", uiAdmissionLimit);
+    xiiStats::SetStat("Renderer/GPU memory/Streaming pressure", static_cast<bool>(m_bStreamingMemoryPressured));
+    xiiStats::SetStat("Renderer/GPU memory/Texture memory deferrals", uiMemoryDeferrals);
+    xiiStats::SetStat("Renderer/GPU memory/Texture upload deferrals", uiUploadDeferrals);
+    xiiStats::SetStat("Renderer/GPU memory/Pending texture allocation bytes", uiPendingBytes);
+  }
+#else
+  XII_IGNORE_UNUSED(uiMemoryDeferrals);
+  XII_IGNORE_UNUSED(uiUploadDeferrals);
+  XII_IGNORE_UNUSED(uiPendingBytes);
+#endif
+}
+
+bool xiiGALDeviceVulkan::TryReserveTextureRefinement(xiiUInt64 uiUploadBytes, xiiUInt64 uiAllocationBytes)
+{
+  XII_LOCK(m_StreamingBudgetMutex);
+  if (m_bStreamingMemoryPressured)
+  {
+    ++m_uiTextureMemoryDeferrals;
+    return false;
+  }
+  if (uiUploadBytes > m_uiRemainingTextureUploadBytes)
+  {
+    ++m_uiTextureUploadDeferrals;
+    return false;
+  }
+
+  xiiHybridArray<xiiGALMemoryHeapStatistics, VK_MAX_MEMORY_HEAPS> heaps;
+  GetMemoryHeapStatistics(heaps);
+  const auto      primary          = GetPrimaryDeviceLocalHeap(heaps);
+  const xiiUInt64 uiNativeLimit    = primary.m_uiBudgetBytes - xiiMath::Min(primary.m_uiBudgetBytes, m_uiStreamingHeadroom);
+  const xiiUInt64 uiAdmissionLimit = xiiMath::Min(m_uiStreamingBudgetCap, uiNativeLimit);
+  const xiiUInt64 uiAvailable      = uiAdmissionLimit - xiiMath::Min(uiAdmissionLimit, GetAdmissionUsage(primary));
+  if (uiAllocationBytes > uiAvailable - xiiMath::Min(uiAvailable, m_uiPendingTextureBytes))
+  {
+    ++m_uiTextureMemoryDeferrals;
+    return false;
+  }
+
+  m_uiRemainingTextureUploadBytes -= uiUploadBytes;
+  m_uiPendingTextureBytes += uiAllocationBytes;
+  return true;
+}
+
+void xiiGALDeviceVulkan::ReleaseTextureRefinementReservation(xiiUInt64 uiBytes)
+{
+  XII_LOCK(m_StreamingBudgetMutex);
+  XII_ASSERT_DEV(uiBytes <= m_uiPendingTextureBytes, "Texture refinement reservations must be released once.");
+  m_uiPendingTextureBytes -= uiBytes;
 }
 
 void xiiGALDeviceVulkan::EndFramePlatform()

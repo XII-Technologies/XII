@@ -3,6 +3,8 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Foundation/System/Process.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
@@ -211,9 +213,37 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     }
     else
     {
+      const bool bRefinement       = pInitialData != nullptr && pInitialData->m_bStreamingRefinement && externalMemoryKind.IsNoFlagSet();
+      xiiUInt64  uiAllocationBytes = 0U;
+      if (bRefinement)
+      {
+        xiiUInt64 uiUploadBytes = 0U;
+        for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
+          uiUploadBytes += xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip).m_uiMipSize;
+        uiUploadBytes *= vkImageCreateInfo.arrayLayers;
+
+        uiAllocationBytes    = uiUploadBytes;
+        const auto& dispatch = pDeviceVulkan->GetVulkanDynamicDispatchLoader();
+        if (pDeviceVulkan->GetVulkanVersion() >= VK_API_VERSION_1_3 &&
+            pDeviceVulkan->GetVulkanPhysicalDeviceProperties().apiVersion >= VK_API_VERSION_1_3 &&
+            dispatch.vkGetDeviceImageMemoryRequirements != nullptr)
+        {
+          vk::DeviceImageMemoryRequirements query;
+          query.pCreateInfo = &vkImageCreateInfo;
+          vk::MemoryRequirements2 requirements;
+          pDeviceVulkan->GetVulkanLogicalDevice().getImageMemoryRequirements(&query, &requirements, dispatch);
+          uiAllocationBytes = requirements.memoryRequirements.size;
+        }
+        if (!pDeviceVulkan->TryReserveTextureRefinement(uiUploadBytes, uiAllocationBytes))
+          return XII_FAILURE;
+      }
+      XII_SCOPE_EXIT(if (bRefinement) pDeviceVulkan->ReleaseTextureRefinementReservation(uiAllocationBytes));
+
       xiiVulkanAllocationCreateInfo allocationCreateInfo;
       allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
       allocationCreateInfo.m_RequiredFlags = bIsMemoryLess ? xiiVulkanMemoryPropertyFlags::LazilyAllocated : xiiVulkanMemoryPropertyFlags::DeviceLocal;
+      if (bRefinement)
+        allocationCreateInfo.m_Flags.Add(xiiVulkanAllocationCreateFlags::StrategyWithinBudget);
 
       if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
       {
@@ -222,7 +252,10 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
       if (!externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported))
       {
-        VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo));
+        const vk::Result result = pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo);
+        if (bRefinement && result == vk::Result::eErrorOutOfDeviceMemory)
+          return XII_FAILURE;
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(result);
       }
       else if (externalMemoryKind == xiiGALExternalMemoryKind::Imported)
       {

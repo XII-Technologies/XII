@@ -123,8 +123,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData
   {
   }
 
-  xiiArrayPtr<const xiiGALTextureSubResourceData> m_pSubResources; ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
-  xiiGALCommandList*                              m_pCommandList;  ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
+  xiiArrayPtr<const xiiGALTextureSubResourceData> m_pSubResources;                ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
+  xiiGALCommandList*                              m_pCommandList;                 ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
+  bool                                            m_bStreamingRefinement = false; ///< Creation may be deferred because an older texture remains available.
 };
 
 /// This describes the mapped texture sub-resource data.

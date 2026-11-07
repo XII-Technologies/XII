@@ -32,7 +32,18 @@ xiiResourceLoadDescription xiiTexture3DResource::UnloadData(Unload whatToUnload)
   XII_LOCK(m_TextureMutex);
   m_pGALTexture.Clear();
   m_pSampler.Clear();
+  m_NextRefinementAttempt = xiiTime::MakeZero();
   return {xiiResourceState::Unloaded, 0, 1};
+}
+
+bool xiiTexture3DResource::CanLoadAdditionalQualityLevel() const
+{
+  const auto pDevice = xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : nullptr;
+  if (pDevice == nullptr || pDevice->IsStreamingMemoryPressured())
+    return false;
+
+  XII_LOCK(m_TextureMutex);
+  return xiiTime::Now() >= m_NextRefinementAttempt;
 }
 
 void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData)
@@ -127,12 +138,18 @@ xiiResourceLoadDescription xiiTexture3DResource::UpdateContent(xiiStreamReader* 
   const xiiUInt32 uiNumMipLevels   = bHasResidentImage ? uiTotalMipLevels : xiiMath::Min(uiTotalMipLevels, 6U);
   td.m_uiQualityLevelsDiscardable  = 0U;
   td.m_uiQualityLevelsLoadable     = bIsFallback || uiNumMipLevels < uiTotalMipLevels ? 1U : 0U;
+  td.m_bStreamingRefinement        = bHasResidentImage;
 
   xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 32> initData;
   xiiUInt32                                                 uiImageBytes = 0U;
   FillOutDescriptor(td, pImage, uiNumMipLevels, uiImageBytes, initData);
 
   const auto result = CreateResource(std::move(td));
+  if (result.m_State != xiiResourceState::Loaded && bHasResidentImage)
+  {
+    XII_LOCK(m_TextureMutex);
+    m_NextRefinementAttempt = xiiTime::Now() + xiiTime::MakeFromSeconds(1);
+  }
   return result.m_State == xiiResourceState::Loaded ? result : previous;
 }
 
@@ -152,7 +169,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   auto& description = descriptor.m_TextureDescription;
   description.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   xiiGALTextureData textureData(descriptor.m_InitialContent);
-  auto              pTexture = pDevice->CreateTexture(description, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
+  textureData.m_bStreamingRefinement = descriptor.m_bStreamingRefinement;
+  auto pTexture                      = pDevice->CreateTexture(description, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
   if (pTexture == nullptr)
     return {xiiResourceState::LoadedResourceMissing, 0, 0};
   auto pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);
