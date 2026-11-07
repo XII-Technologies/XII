@@ -19,12 +19,14 @@
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
+#include <GraphicsCore/Components/Lights/PointLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/RayTracedIrradiancePass.h>
+#include <GraphicsCore/Pipeline/Passes/Lighting/ClusteredLocalSurfaceLightingPass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -42,6 +44,7 @@ namespace
   xiiCommandLineOptionPath   opt_Output("DiffuseGI", "-output", "Directory for the rendered PNGs.", "");
   xiiCommandLineOptionInt    opt_Frames("DiffuseGI", "-frames", "Frames of temporal accumulation per image.", 20, 1, 240);
   xiiCommandLineOptionString opt_Pipeline("DiffuseGI", "-pipeline", "Authored root to render: Scene or Editor.", "Scene");
+  xiiCommandLineOptionBool   opt_LocalLights("DiffuseGI", "-local-lights", "Compare exact and reservoir evaluation of a dense local-light scene.", false);
   xiiCommandLineOptionBool   opt_SkyOnly("DiffuseGI", "-sky-only", "Light the room with the sky and disable the emissive panel.", false);
   xiiCommandLineOptionBool   opt_NoReuse("DiffuseGI", "-no-reuse", "Use fresh ray paths instead of reservoir resampling.", false);
   xiiCommandLineOptionInt    opt_Paths("DiffuseGI", "-paths", "Override fresh ray paths per pixel (zero uses the authored count).", 0, 0, 32);
@@ -104,6 +107,54 @@ namespace
     return {};
   }
 
+  xiiRenderPipelineResourceHandle EnableLocalLightReservoirs(bool editor)
+  {
+    xiiResourceLock<xiiRenderPipelineResource> scene(LoadPipeline("Scene"), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    xiiResourceLock<xiiRenderPipelineResource> root(LoadPipeline(editor ? "Editor" : "Scene"), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!scene || !scene->GetAuthoring() || !root || !root->GetAuthoring())
+      return {};
+    const auto& source = scene->GetAuthoring()->m_Descriptor;
+    xiiUuid     lightPass;
+    for (const auto& pass : source.m_Passes)
+      if (pass.m_pType == xiiGetStaticRTTI<xiiClusteredLocalSurfaceLightingPass>())
+        lightPass = pass.m_Id;
+    if (!lightPass.IsValid())
+      return {};
+    auto descriptor = root->GetAuthoring()->m_Descriptor;
+    for (auto& pass : descriptor.m_Passes)
+    {
+      if (editor && pass.m_Definition == source.m_Id)
+      {
+        auto& setting = pass.m_Overrides.ExpandAndGetRef();
+        setting.m_Path.PushBack(lightPass);
+        setting.m_Properties.Insert("UseReservoirs", true);
+      }
+      else if (!editor && pass.m_Id == lightPass)
+      {
+        pass.m_Properties.Insert("UseReservoirs", true);
+      }
+    }
+    return xiiResourceManager::CreateResource<xiiRenderPipelineResource>(editor ? "DiffuseGI.Editor.LocalReservoirs" : "DiffuseGI.Scene.LocalReservoirs", std::move(descriptor));
+  }
+
+  void AddLocalLights(xiiWorld& world)
+  {
+    const xiiColorGammaUB colors[] = {xiiColorGammaUB(255, 217, 168), xiiColorGammaUB(182, 219, 255), xiiColorGammaUB(255, 244, 221)};
+    for (xiiUInt32 row = 0; row < 5; ++row)
+      for (xiiUInt32 column = 0; column < 6; ++column)
+      {
+        xiiGameObjectDescription description;
+        description.m_LocalPosition = xiiVec3(-1.3f + float(row) * 0.78f, -1.65f + float(column) * 0.66f, 2.88f);
+        xiiGameObject* owner        = nullptr;
+        world.CreateObject(description, owner);
+        xiiPointLightComponent* light = nullptr;
+        xiiPointLightComponent::CreateComponent(owner, light);
+        light->SetRange(5.5f);
+        light->SetIntensity(2.5f + float((row + 3U * column) % 4U) * 0.55f);
+        light->SetLightColor(colors[(row + column) % XII_ARRAY_SIZE(colors)]);
+      }
+  }
+
   xiiMaterialResourceHandle Material(xiiStringView sName, xiiColor color, xiiColor emission)
   {
     xiiMaterialResourceDescriptor material;
@@ -132,12 +183,12 @@ namespace
     component->SetMaterialOverride(0, material);
   }
 
-  void MakeRoom(xiiWorld& world, bool bSkyOnly)
+  void MakeRoom(xiiWorld& world, bool bSkyOnly, bool bLocalLights)
   {
     const auto white   = Material("GI.White", xiiColor(0.75f, 0.75f, 0.75f), xiiColor::Black);
     const auto red     = Material("GI.Red", xiiColor(0.7f, 0.06f, 0.04f), xiiColor::Black);
     const auto green   = Material("GI.Green", xiiColor(0.06f, 0.62f, 0.14f), xiiColor::Black);
-    const auto emitter = Material("GI.Emitter", xiiColor::White, bSkyOnly ? xiiColor::Black : xiiColor(12, 9, 6));
+    const auto emitter = Material("GI.Emitter", xiiColor::White, bSkyOnly || bLocalLights ? xiiColor::Black : xiiColor(12, 9, 6));
     const auto box     = [&](xiiStringView sName, xiiVec3 vPosition, xiiVec3 vExtent, const xiiMaterialResourceHandle& material) {
       xiiGeometry geometry;
       geometry.AddBox(vExtent, true);
@@ -153,6 +204,12 @@ namespace
     xiiGeometry sphere;
     sphere.AddStackedSphere(0.65f, 32, 16);
     AddMesh(world, "GI.Sphere", {0.05f, -0.8f, 0.66f}, sphere, white);
+
+    if (bLocalLights)
+    {
+      AddLocalLights(world);
+      return;
+    }
 
     // A blue sky outside the open side provides a second transport source.
     xiiTextureCubeResourceDescriptor sky;
@@ -279,14 +336,16 @@ private:
       return XII_FAILURE;
     }
 #endif
-    const auto base = LoadPipeline(pipeline), enabled = EnableGI(editor, opt_ScreenOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
+    const bool localLights = opt_LocalLights.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+    const auto base        = LoadPipeline(pipeline);
+    const auto enabled     = localLights ? EnableLocalLightReservoirs(editor) : EnableGI(editor, opt_ScreenOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
     if (!enabled.IsValid())
       return XII_FAILURE;
     xiiWorldDescription worldDescription("Diffuse GI demonstration");
     xiiWorld            world(worldDescription);
     XII_LOCK(world.GetWriteMarker());
     world.SetWorldSimulationEnabled(false);
-    MakeRoom(world, opt_SkyOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never));
+    MakeRoom(world, opt_SkyOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never), localLights);
     xiiCamera camera;
     camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 48, 0.1f, 40);
     camera.LookAt({-5.5f, 0, 1.65f}, {1.6f, 0, 1.6f}, {0, 0, 1});
@@ -332,12 +391,21 @@ private:
           xiiLog::Info("{} used the scene probe update.", sFilename);
         else if (pass.m_sName == "Resolve Current Spatial and Temporal GI")
           xiiLog::Info("{} read current spatial and previous temporal diffuse path reservoirs.", sFilename);
+        else if (pass.m_sName == "Resolve Spatial and Temporal Local Light Reservoirs")
+          xiiLog::Info("{} resolved spatial and temporal local-light reservoirs.", sFilename);
+        else if (pass.m_sName == "Resolve Spatial Local Light Reservoirs")
+          xiiLog::Info("{} resolved current local-light reservoirs without temporal history.", sFilename);
         else if (pass.m_sName == "Resolve Current Spatial GI")
           xiiLog::Info("{} read current spatial diffuse path reservoirs without temporal history.", sFilename);
       }
       xiiLog::Info("Saving {}.", sFilename);
       return SaveImage(*device, target.Borrow(), xiiStringBuilder(":capture/", sFilename));
     };
+    if (localLights)
+    {
+      XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Exact.png")));
+      return render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-Local-Reservoirs.png"));
+    }
     XII_SUCCEED_OR_RETURN(render(base, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-GI-Off.png")));
     XII_SUCCEED_OR_RETURN(render(enabled, xiiViewRenderMode::Default, xiiStringBuilder(pipeline, "-GI-On.png")));
     if (editor && opt_Diagnostics.GetOptionValue(xiiCommandLineOption::LogMode::Never))

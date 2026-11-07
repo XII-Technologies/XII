@@ -17,3 +17,5 @@ Use `-no-ray` to capture the non-ray path on a ray-capable device. Add `-screen-
 On ray-capable hardware, use `-paths 1` to make the fresh-path budget explicit. Compare a second capture in a separate directory with `-paths 1 -no-reuse`. The reuse path traces additional reconnection rays. The capture log identifies when the authored ray pass reads the previous reservoir grid.
 
 For a first-frame comparison, add `-frames 1` to both captures. The reuse capture then reads the current spatial grid before any temporal history exists.
+
+Use `-local-lights -no-ray` to compare exact clustered lighting with opt-in local-light reservoirs in a 30-point-light room. The two captures use the same camera and materials. The reservoir output is stochastic and currently has visible noise in this scene.

@@ -14586,6 +14586,7 @@ o
 		Uuid %ObjectId{u4{12586196370449837079,1079899007630916930}}
 		Uuid %Overflow{u4{6806033586632896251,7608115855199027422}}
 		VarDict %ParameterOverrides{}
+		b %UseReservoirs{0}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{14382015229563952203,17451606733949600604}}
@@ -19482,6 +19483,11 @@ o
 			Uuid{u4{13163675563160681797,3092024517700506411}}
 			Uuid{u4{10018372087070038851,2325891037786562244}}
 			Uuid{u4{9891176176893991983,8826896971685451958}}
+			Uuid{u4{13078903902602434212,16430871774347548130}}
+			Uuid{u4{9327774529391012124,15478445423998160904}}
+			Uuid{u4{13649322927810929120,5756101234561997996}}
+			Uuid{u4{11653480599665375078,8601457695299163932}}
+			Uuid{u4{11783128550530452908,9084148343304704384}}
 		}
 		VarArray %Graph::CommentBlocks{}
 	}
@@ -40423,6 +40429,71 @@ o
 		s %SourcePin{"EnvironmentLight"}
 		Uuid %Target{u4{7694837134975820466,5472676275289524861}}
 		s %TargetPin{"EnvironmentLight"}
+	}
+}
+o
+{
+	Uuid %id{u4{13078903902602434212,16430871774347548130}}
+	s %t{"xiiTextureHistoryPass"}
+	u3 %v{1}
+	p
+	{
+		b %AllowAbsentTexture{1}
+		b %AsyncCopy{0}
+		Vec2 %Node::Pos{f{6000,5400}}
+		VarArray %PinConfigurations{}
+	}
+}
+o
+{
+	Uuid %id{u4{9327774529391012124,15478445423998160904}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{15079277433419316148,5063535791766638878}}
+		s %SourcePin{"Velocity"}
+		Uuid %Target{u4{1560545576700807847,5132840556600473791}}
+		s %TargetPin{"Velocity"}
+	}
+}
+o
+{
+	Uuid %id{u4{13649322927810929120,5756101234561997996}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{14604849846532491007,17913967361741613237}}
+		s %SourcePin{"TemporalCamera"}
+		Uuid %Target{u4{1560545576700807847,5132840556600473791}}
+		s %TargetPin{"TemporalCamera"}
+	}
+}
+o
+{
+	Uuid %id{u4{11653480599665375078,8601457695299163932}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1560545576700807847,5132840556600473791}}
+		s %SourcePin{"Reservoirs"}
+		Uuid %Target{u4{13078903902602434212,16430871774347548130}}
+		s %TargetPin{"Texture"}
+	}
+}
+o
+{
+	Uuid %id{u4{11783128550530452908,9084148343304704384}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{13078903902602434212,16430871774347548130}}
+		s %SourcePin{"PreviousTexture"}
+		Uuid %Target{u4{1560545576700807847,5132840556600473791}}
+		s %TargetPin{"PreviousReservoirs"}
 	}
 }
 }
