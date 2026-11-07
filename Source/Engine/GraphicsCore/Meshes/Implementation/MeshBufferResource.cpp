@@ -590,11 +590,6 @@ xiiSharedPtr<xiiGALBuffer> xiiMeshBufferResource::GetIndexBuffer() const
   return m_pIndexBuffer;
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiMeshBufferResource::GetMeshletBuffer() const
-{
-  return m_pMeshletBuffer;
-}
-
 xiiSharedPtr<xiiGALBuffer> xiiMeshBufferResource::GetMeshletVertexRemapBuffer() const
 {
   return m_pMeshletVertexRemapBuffer;
@@ -621,7 +616,6 @@ xiiResourceLoadDescription xiiMeshBufferResource::UnloadData(Unload whatToUnload
 
   m_pVertexBuffer.Clear();
   m_pIndexBuffer.Clear();
-  m_pMeshletBuffer.Clear();
   m_pMeshletVertexRemapBuffer.Clear();
   m_pMeshletPrimitiveIndexBuffer.Clear();
   m_pDrawCommandBuffer.Clear();
@@ -662,7 +656,7 @@ xiiResourceLoadDescription xiiMeshBufferResource::UpdateContent(xiiStreamReader*
 void xiiMeshBufferResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
   out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiMeshBufferResource) + static_cast<xiiUInt32>(m_Descriptor.m_VertexStreams.GetHeapMemoryUsage() + m_Descriptor.m_VertexData.GetHeapMemoryUsage() + m_Descriptor.m_IndexData.GetHeapMemoryUsage() + m_Descriptor.m_Meshlets.GetHeapMemoryUsage() + m_Descriptor.m_MeshletVertexRemap.GetHeapMemoryUsage() + m_Descriptor.m_MeshletPrimitiveIndices.GetHeapMemoryUsage() + m_Descriptor.m_MeshletMaterialIndices.GetHeapMemoryUsage() + m_Descriptor.m_DrawCommands.GetHeapMemoryUsage());
-  out_NewMemoryUsage.m_uiMemoryGPU = static_cast<xiiUInt32>(m_uiMemoryGPU);
+  out_NewMemoryUsage.m_uiMemoryGPU = m_uiMemoryGPU;
 }
 
 void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiUInt8> data, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName)
@@ -709,11 +703,6 @@ void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuf
   CreateGpuBuffer(out_pBuffer, AsBytes(data), uiStride, bindFlags, sDebugName);
 }
 
-void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiMeshlet> data, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName)
-{
-  CreateGpuBuffer(out_pBuffer, AsBytes(data), uiStride, bindFlags, sDebugName);
-}
-
 void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiMeshDrawCommand> data, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName)
 {
   CreateGpuBuffer(out_pBuffer, AsBytes(data), uiStride, bindFlags, sDebugName);
@@ -723,7 +712,6 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
 {
   m_pVertexBuffer.Clear();
   m_pIndexBuffer.Clear();
-  m_pMeshletBuffer.Clear();
   m_pMeshletVertexRemapBuffer.Clear();
   m_pMeshletPrimitiveIndexBuffer.Clear();
   m_pDrawCommandBuffer.Clear();
@@ -749,9 +737,6 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
 
   sDebugName.Set(GetResourceIdOrDescription(), " Index Data");
   CreateGpuBuffer(m_pIndexBuffer, m_Descriptor.m_IndexData, GetIndexSize(m_Descriptor.m_IndexType), indexBindFlags, sDebugName);
-
-  sDebugName.Set(GetResourceIdOrDescription(), " Meshlets");
-  CreateGpuBuffer(m_pMeshletBuffer, m_Descriptor.m_Meshlets, sizeof(xiiMeshlet), xiiGALBindFlags::ShaderResource, sDebugName);
 
   sDebugName.Set(GetResourceIdOrDescription(), " Meshlet Vertex Remap");
   CreateGpuBuffer(m_pMeshletVertexRemapBuffer, m_Descriptor.m_MeshletVertexRemap, sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource, sDebugName);

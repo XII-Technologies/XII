@@ -71,7 +71,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
   XII_DECLARE_POD_TYPE();
   xiiUInt32 m_uiVertexBufferIndex           = xiiInvalidIndex;
   xiiUInt32 m_uiIndexBufferIndex            = xiiInvalidIndex;
-  xiiUInt32 m_uiMeshletBufferIndex          = xiiInvalidIndex;
+  xiiUInt32 m_uiPadding                     = 0U;
   xiiUInt32 m_uiMeshletRemapBufferIndex     = xiiInvalidIndex;
   xiiUInt32 m_uiMeshletPrimitiveBufferIndex = xiiInvalidIndex;
   xiiUInt32 m_uiVertexCount                 = 0U;
@@ -110,10 +110,12 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt32 m_uiGeometryCount         = 0U;
   xiiUInt32 m_uiResidentGeometryCount = 0U;
   xiiUInt32 m_uiPendingGeometryCount  = 0U;
-  xiiUInt64 m_uiResidentBytes         = 0U;
-  xiiUInt64 m_uiBudgetBytes           = 0U;
+  xiiUInt64 m_uiResidentBytes         = 0U; ///< Occupied meshlet metadata arena bytes.
+  xiiUInt64 m_uiBudgetBytes           = 0U; ///< Soft meshlet metadata occupancy limit.
   xiiUInt64 m_uiUploadedBytes         = 0U;
-  xiiUInt64 m_uiAdmittedBytes         = 0U;
+  xiiUInt64 m_uiAdmittedBytes         = 0U; ///< Metadata transfer bytes charged for admissions this frame.
+  xiiUInt64 m_uiReclaimedArenaBytes   = 0U; ///< Arena bytes made reusable by evictions this frame.
+  xiiUInt32 m_uiEvictions             = 0U;
   xiiUInt64 m_uiRemainingUploadBytes  = 0U;
   xiiUInt64 m_uiPreparedMeshlets      = 0U;
   xiiUInt32 m_uiExamined = 0U, m_uiAdmitted = 0U, m_uiBudgetDeferred = 0U;
@@ -133,7 +135,7 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyDescription
 {
   xiiUInt32 m_uiMaxGeometries             = 65536U;
   xiiUInt32 m_uiFramesInFlight            = 3U;
-  xiiUInt64 m_uiBudgetBytes               = 512ULL * 1024ULL * 1024ULL;
+  xiiUInt64 m_uiBudgetBytes               = 512ULL * 1024ULL * 1024ULL; ///< Soft limit for occupied meshlet metadata.
   xiiUInt64 m_uiUploadBudgetPerFrameBytes = 32ULL * 1024ULL * 1024ULL;
   xiiUInt32 m_uiMaxMeshlets               = 1024U * 1024U;
 };
@@ -241,7 +243,7 @@ private:
 
   struct Slot
   {
-    static constexpr xiiUInt32 s_uiBindlessResourcesPerLod = 5U;
+    static constexpr xiiUInt32 s_uiBindlessResourcesPerLod = 4U;
 
     xiiGeometryDescription             m_Description;
     xiiGpuGeometryRecord               m_GpuRecord;
